@@ -5,7 +5,7 @@
 - **request**: requests/active/2026-04-16-phase2-auth-and-app-foundation
 - **type**: new-feature
 - **started**: 2026-04-16 13:16
-- **status**: in-progress
+- **status**: completed
 
 ## Change Folder
 
@@ -25,7 +25,7 @@
 | 6 | コードレビュー | completed | 13:52 | 14:03 | approved (iter 2, score 6.50→7.40, improving). iter 1: needs-fix (HIGH 3 IDOR) → code-fixer → iter 2: approved |
 | 7 | ADR生成 | completed | 14:03 | 14:07 | 3 ADR: authjs-jwt-strategy, route-groups-layout, session-binding-design |
 | 8 | アーカイブ | completed | 14:07 | 14:10 | archived + 6 specs synced (4 ADDED, 2 MODIFIED) |
-| 9 | PR作成 | — | — | — | |
+| 9 | PR作成 | completed | 14:10 | 14:18 | PR #1 作成。learning: 15 patterns, constraints + review-lessons 生成, 5 instincts (0 promoted). 完了 — 人間レビュー待ち |
 
 ## Retries
 
