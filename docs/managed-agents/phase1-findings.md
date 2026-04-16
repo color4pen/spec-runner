@@ -117,13 +117,63 @@ PAT → Installation Token の置き換えはロジックの 1 箇所（`getGitH
 - Phase 1: ログとして流すだけ
 - Phase 2 以降: セッションあたりのトークン / 金額を可視化
 
+## 追加検証: Git Push とローカルプロキシ（2026-04-16 追加）
+
+### 発見: コンテナ内の Git はローカルプロキシ経由
+
+`git remote -v` の結果:
+```
+origin  http://local_proxy@127.0.0.1:49622/git/color4pen/spec-runner (fetch)
+origin  http://local_proxy@127.0.0.1:49622/git/color4pen/spec-runner (push)
+```
+
+`authorization_token` は git credential としてコンテナ内に保存されるのではなく、**Anthropic がコンテナ内にローカルプロキシ（`127.0.0.1:49622`）を立てて Git 通信を中継** していた。
+
+- Agent は localhost のプロキシに接続
+- プロキシが裏で GitHub に認証付きリクエストを転送
+- Agent は `authorization_token` の値を一切見ることができない（セキュア）
+
+### 検証結果: Push は失敗
+
+```
+$ git push origin test/push-verification
+remote: Repository not found.
+fatal: repository 'http://127.0.0.1:49622/git/color4pen/spec-runner/' not found
+```
+
+**ただし、この検証には問題があった**: `color4pen/spec-runner` はまだ GitHub 上にリポジトリが存在しなかった（ローカルのみでリモート未設定）。そのため「プロキシが push をブロックしている」のか「リポが存在しないから失敗した」のか切り分けができていない。
+
+### 再検証に必要な手順
+
+1. `gh repo create spec-runner --private` でリモートリポを作成
+2. ローカルから push（`git remote add origin && git push`）
+3. 新しい Session で mount（GitHub 上にコードがある状態）
+4. Session 内で branch 作成 → `git push` を実行
+
+### アーキテクチャ上の示唆
+
+ローカルプロキシの存在は重要な設計制約:
+
+- **clone（read）は動作確認済み**: プロキシが GitHub から正しくクローンを中継
+- **push（write）は未確定**: プロキシが write リクエストを転送するかは不明
+- **セキュリティ設計として write をブロックしている可能性**: clone 専用プロキシという設計は合理的（Agent が勝手にリポを書き換えるリスクを排除）
+
+push が不可の場合の代替戦略:
+- **diff テキスト中継**: implementer Session から diff を取得 → reviewer Session にテキストで渡す
+- **Files API 中継**: 変更ファイルを Files API でアップロード → 別 Session にマウント
+- **Custom Tools 経由**: Agent が `push_changes` ツールを呼ぶ → SpecRunner アプリが GitHub API で直接 push
+
 ## Open Questions
 
-以下は Phase 1 では判明しなかった点。Phase 2 以降で要検証:
+### 解決済み
 
-1. **git credential がコンテナに残るか**
-   - `authorization_token` がクローン用だけか、push/pull もできるか未確認
-   - Agent に `git status` と `git push --dry-run` を実行させて確認すべき
+1. ~~git credential がコンテナに残るか~~
+   → **ローカルプロキシ経由**。credential はコンテナ内に存在せず、プロキシが認証を代行。push の可否はリポが存在する状態で要再検証。
+
+4. ~~`checkout` パラメータの挙動~~
+   → SDK に `BetaManagedAgentsBranchCheckout`（branch 名指定）と `BetaManagedAgentsCommitCheckout`（SHA 指定）が存在。Session 作成時の `resources[].checkout` で指定可能。Session 間のコード共有は Git branch 経由が想定されている。
+
+### 未解決
 
 2. **Session の `idle` が本当に非課金か**
    - ドキュメント記述に揺れあり
@@ -133,18 +183,19 @@ PAT → Installation Token の置き換えはロジックの 1 箇所（`getGitH
    - Env を削除すると、それを参照中の Session はどうなる?
    - 公式ドキュメントに明記なし
 
-4. **`checkout` パラメータの挙動**
-   - Session 作成時に branch / commit SHA 指定可能（`BetaManagedAgentsBranchCheckout`）
-   - 特定のコミットを checkout した Session でコードを触ると、その変更はどこに行くのか
-   - `git push` できるなら PR 作成フローに使える
-
 5. **複数リポの同時マウント**
    - SDK 上は `resources` 配列で複数マウント可能
    - Mount path がぶつかった場合の挙動は未検証
+
+6. **git push がリポ存在時に通るか**（新規）
+   - GitHub 上にリポが存在する状態で要再検証
+   - ローカルプロキシが write をブロックしているかの確認
+   - push 可否は Session 間のコード共有戦略（Git branch vs diff 中継）を決定する
 
 ## 参考リンク
 
 - [Claude Managed Agents overview - Claude API Docs](https://platform.claude.com/docs/en/managed-agents/overview)
 - [Start a session](https://platform.claude.com/docs/en/managed-agents/sessions)
 - [Pricing](https://platform.claude.com/docs/en/about-claude/pricing)
-- 関連: [guide.md](./guide.md) - 事前知識
+- [sdk-capabilities.md](./sdk-capabilities.md) - SDK 機能調査（Phase 2 計画用）
+- [guide.md](./guide.md) - 事前知識
