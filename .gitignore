@@ -44,5 +44,11 @@ yarn-error.log*
 .vscode/
 *.swp
 
+# SQLite database
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+
 # runtime-rule-promotion の生ログ。instinct に蒸留した後は参照不要
 docs/observations.jsonl

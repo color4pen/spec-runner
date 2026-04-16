@@ -1,20 +1,13 @@
-import { Dashboard } from './_components/dashboard';
-import { listAgents, listEnvironments, listSessions } from '@/lib/actions';
+import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
 
-export const dynamic = 'force-dynamic';
+export default async function RootPage() {
+  const session = await auth();
 
-export default async function Home() {
-  const [agents, environments, sessions] = await Promise.all([
-    listAgents().catch(() => []),
-    listEnvironments().catch(() => []),
-    listSessions().catch(() => []),
-  ]);
-
-  return (
-    <Dashboard
-      initialAgents={agents}
-      initialEnvironments={environments}
-      initialSessions={sessions}
-    />
-  );
+  if (session?.user) {
+    // Redirect to the protected repo list (which is (protected)/page.tsx)
+    redirect('/repos');
+  } else {
+    redirect('/login');
+  }
 }

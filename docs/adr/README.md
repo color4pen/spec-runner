@@ -14,3 +14,7 @@
 | [ADR-20260416-server-actions](ADR-20260416-server-actions.md) | CRUD を Server Actions に移行、API Route は SSE のみ | 採用 |
 | [ADR-20260416-git-branch-sharing](ADR-20260416-git-branch-sharing.md) | Session 間のコード共有は Git branch 経由 | 採用 |
 | [ADR-20260416-app-as-orchestrator](ADR-20260416-app-as-orchestrator.md) | SpecRunner アプリがオーケストレーターを担う | 採用 |
+| [ADR-20260416-sqlite-local-first](ADR-20260416-sqlite-local-first.md) | ローカル開発は SQLite + Drizzle ORM で開始 | 採用 |
+| [ADR-20260416-authjs-jwt-strategy](ADR-20260416-authjs-jwt-strategy.md) | Auth.js v5 + JWT セッション戦略 | accepted |
+| [ADR-20260416-route-groups-layout](ADR-20260416-route-groups-layout.md) | Route Groups によるレイアウト分離 | accepted |
+| [ADR-20260416-session-binding-design](ADR-20260416-session-binding-design.md) | Session 紐付けは DB 主導で管理する | accepted |

@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getAnthropicClient } from '@/lib/anthropic';
+import { auth } from '@/lib/auth';
+import { verifySessionOwnership } from '@/lib/session-actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,7 +9,33 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Authentication check
+  const session = await auth();
+  if (!session?.user) {
+    return new Response(
+      JSON.stringify({ error: 'Authentication required' }),
+      {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+
   const { id } = await params;
+
+  // Verify session ownership to prevent IDOR
+  try {
+    await verifySessionOwnership(id);
+  } catch {
+    return new Response(
+      JSON.stringify({ error: 'Session not found' }),
+      {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+
   const client = getAnthropicClient();
 
   try {
