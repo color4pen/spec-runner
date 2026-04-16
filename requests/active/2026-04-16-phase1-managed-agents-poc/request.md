@@ -76,6 +76,6 @@ GITHUB_TOKEN=ghp_...（リポジトリマウント用）
 
 ### 参考ドキュメント
 
-- `docs/managed-agents-guide.md` — Managed Agents API リファレンス
+- `docs/managed-agents/guide.md` — Managed Agents API リファレンス
 - `docs/openspec-guide.md` — OpenSpec CLI リファレンス
 - `docs/adr/ADR-20260416-tech-stack.md` — 技術スタック選定
