@@ -133,7 +133,7 @@ origin  http://local_proxy@127.0.0.1:49622/git/color4pen/spec-runner (push)
 - プロキシが裏で GitHub に認証付きリクエストを転送
 - Agent は `authorization_token` の値を一切見ることができない（セキュア）
 
-### 検証結果: Push は失敗
+### 検証結果（初回）: Push 失敗 — リポ未作成が原因
 
 ```
 $ git push origin test/push-verification
@@ -141,27 +141,39 @@ remote: Repository not found.
 fatal: repository 'http://127.0.0.1:49622/git/color4pen/spec-runner/' not found
 ```
 
-**ただし、この検証には問題があった**: `color4pen/spec-runner` はまだ GitHub 上にリポジトリが存在しなかった（ローカルのみでリモート未設定）。そのため「プロキシが push をブロックしている」のか「リポが存在しないから失敗した」のか切り分けができていない。
+初回の検証では push が失敗したが、`color4pen/spec-runner` が GitHub 上に存在しなかったことが原因。プロキシの制約ではなかった。
 
-### 再検証に必要な手順
+### 再検証: ✅ Push 成功
 
-1. `gh repo create spec-runner --private` でリモートリポを作成
-2. ローカルから push（`git remote add origin && git push`）
-3. 新しい Session で mount（GitHub 上にコードがある状態）
-4. Session 内で branch 作成 → `git push` を実行
+GitHub にリポを作成（`gh repo create spec-runner --private --source=. --push`）後、新しい Session で再検証。
+
+```
+$ git push origin test/push-verification
+remote: Create a pull request for 'test/push-verification' on GitHub by visiting:
+remote:      https://github.com/color4pen/spec-runner/pull/new/test/push-verification
+To http://127.0.0.1:49622/git/color4pen/spec-runner
+ * [new branch]      test/push-verification -> test/push-verification
+```
+
+**ローカルプロキシは read（clone/pull）だけでなく write（push）も中継する。** GitHub 上でブランチの存在も確認済み。
 
 ### アーキテクチャ上の示唆
 
-ローカルプロキシの存在は重要な設計制約:
+ローカルプロキシの特性:
 
-- **clone（read）は動作確認済み**: プロキシが GitHub から正しくクローンを中継
-- **push（write）は未確定**: プロキシが write リクエストを転送するかは不明
-- **セキュリティ設計として write をブロックしている可能性**: clone 専用プロキシという設計は合理的（Agent が勝手にリポを書き換えるリスクを排除）
+- **clone（read）**: ✅ 動作確認済み
+- **push（write）**: ✅ 動作確認済み
+- **認証情報の安全性**: Agent はトークンを直接参照できない（プロキシが代行）
+- **Session 間のコード共有**: Git branch が共有レイヤーとして機能する
 
-push が不可の場合の代替戦略:
-- **diff テキスト中継**: implementer Session から diff を取得 → reviewer Session にテキストで渡す
-- **Files API 中継**: 変更ファイルを Files API でアップロード → 別 Session にマウント
-- **Custom Tools 経由**: Agent が `push_changes` ツールを呼ぶ → SpecRunner アプリが GitHub API で直接 push
+これにより以下のフローが可能になる:
+```
+Session A (implementer): コード書く → commit → push feat/xyz
+  ↓ SpecRunner が検知
+Session B (reviewer): 同じリポを checkout: feat/xyz で mount → レビュー
+```
+
+Custom Tools や Files API による diff 中継は不要。**Git branch が Session 間の自然な共有メカニズム**として使える。
 
 ## Open Questions
 
@@ -187,10 +199,10 @@ push が不可の場合の代替戦略:
    - SDK 上は `resources` 配列で複数マウント可能
    - Mount path がぶつかった場合の挙動は未検証
 
-6. **git push がリポ存在時に通るか**（新規）
-   - GitHub 上にリポが存在する状態で要再検証
-   - ローカルプロキシが write をブロックしているかの確認
-   - push 可否は Session 間のコード共有戦略（Git branch vs diff 中継）を決定する
+### 解決済み（追加）
+
+6. ~~git push がリポ存在時に通るか~~
+   → **✅ push 成功**。ローカルプロキシは read/write 両方を中継する。Session 間のコード共有は Git branch 経由で実現可能。
 
 ## 参考リンク
 
