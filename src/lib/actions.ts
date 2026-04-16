@@ -1,7 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getAnthropicClient, getGitHubToken } from './anthropic';
+import { getAnthropicClient } from './anthropic';
+import { getAuthenticatedUser } from './auth-helpers';
+import { verifySessionOwnership } from './session-actions';
 import type { BetaManagedAgentsGitHubRepositoryResourceParams } from '@anthropic-ai/sdk/resources/beta/sessions/sessions';
 
 export interface SessionEventData {
@@ -39,6 +41,7 @@ export interface SessionSummary {
 }
 
 export async function listAgents(): Promise<AgentSummary[]> {
+  await getAuthenticatedUser();
   const client = getAnthropicClient();
   const result: AgentSummary[] = [];
   for await (const agent of client.beta.agents.list()) {
@@ -56,6 +59,7 @@ export async function createAgent(formData: {
   name: string;
   systemPrompt?: string;
 }): Promise<AgentSummary> {
+  await getAuthenticatedUser();
   const client = getAnthropicClient();
   const agent = await client.beta.agents.create({
     name: formData.name,
@@ -73,6 +77,7 @@ export async function createAgent(formData: {
 }
 
 export async function listEnvironments(): Promise<EnvironmentSummary[]> {
+  await getAuthenticatedUser();
   const client = getAnthropicClient();
   const result: EnvironmentSummary[] = [];
   for await (const env of client.beta.environments.list()) {
@@ -88,6 +93,7 @@ export async function listEnvironments(): Promise<EnvironmentSummary[]> {
 export async function createEnvironment(formData: {
   name: string;
 }): Promise<EnvironmentSummary> {
+  await getAuthenticatedUser();
   const client = getAnthropicClient();
   const env = await client.beta.environments.create({
     name: formData.name,
@@ -112,6 +118,10 @@ export async function createEnvironment(formData: {
 }
 
 export async function listSessions(): Promise<SessionSummary[]> {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Debug actions are not available in production');
+  }
+  await getAuthenticatedUser();
   const client = getAnthropicClient();
   const result: SessionSummary[] = [];
   for await (const session of client.beta.sessions.list({
@@ -139,6 +149,8 @@ export async function createSession(formData: {
   repositoryUrl?: string;
   mountPath?: string;
 }): Promise<SessionSummary> {
+  // Use OAuth token instead of GITHUB_TOKEN environment variable
+  const user = await getAuthenticatedUser();
   const client = getAnthropicClient();
 
   const resources: BetaManagedAgentsGitHubRepositoryResourceParams[] = [];
@@ -146,7 +158,7 @@ export async function createSession(formData: {
     resources.push({
       type: 'github_repository',
       url: formData.repositoryUrl,
-      authorization_token: getGitHubToken(),
+      authorization_token: user.accessToken,
       mount_path: formData.mountPath || undefined,
     });
   }
@@ -174,12 +186,20 @@ export async function createSession(formData: {
 }
 
 export async function archiveSession(sessionId: string): Promise<void> {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Debug actions are not available in production');
+  }
+  await getAuthenticatedUser();
   const client = getAnthropicClient();
   await client.beta.sessions.archive(sessionId);
   revalidatePath('/');
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Debug actions are not available in production');
+  }
+  await getAuthenticatedUser();
   const client = getAnthropicClient();
   await client.beta.sessions.delete(sessionId);
   revalidatePath('/');
@@ -189,6 +209,8 @@ export async function sendMessage(
   sessionId: string,
   message: string
 ): Promise<void> {
+  // Verify the authenticated user owns this session
+  await verifySessionOwnership(sessionId);
   const client = getAnthropicClient();
   await client.beta.sessions.events.send(sessionId, {
     events: [
@@ -204,6 +226,8 @@ export async function listSessionEvents(
   sessionId: string,
   limit = 200
 ): Promise<SessionEventData[]> {
+  // Verify the authenticated user owns this session
+  await verifySessionOwnership(sessionId);
   const client = getAnthropicClient();
   const collected: SessionEventData[] = [];
   for await (const event of client.beta.sessions.events.list(sessionId, {
