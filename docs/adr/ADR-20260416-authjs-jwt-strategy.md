@@ -33,7 +33,7 @@ Auth.js（NextAuth.js）v5 を GitHub Provider + JWT セッション戦略で使
 ### Alternative 4: Database Session 戦略（JWT ではなく）
 - **Pros**: セッション無効化が即座に可能、JWT サイズ問題なし
 - **Cons**: Auth.js の Drizzle Adapter が必要で、Auth.js 管理のテーブル構造に縛られる
-- **Why not**: 独自の users / user_sessions スキーマで管理したいため、Auth.js のアダプタ主導のスキーマ設計は避けたかった。JWT で軽量に保ち、ユーザー管理は Drizzle ORM で独自に行う
+- **Why not**: 独自スキーマ（requests 中心モデル）で管理したいため、Auth.js のアダプタ主導のスキーマ設計は避けたかった。JWT で軽量に保ち、ユーザー管理は Drizzle ORM で独自に行う
 
 ## Consequences
 

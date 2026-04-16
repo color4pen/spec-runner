@@ -29,7 +29,7 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 ### Design Decisions
 - **Auth.js v5 + JWT 戦略**: DB アダプタに縛られず独自スキーマで管理できる。ただし JWT ペイロードサイズ増大と即時無効化不可のトレードオフがある
 - **Route Groups によるレイアウト分離**: `(auth)` と `(protected)` で認証境界を構造的に表現。API Route は Route Groups の外にあるため個別の認証ガードが必要（これが IDOR 検出につながった）
-- **DB 主導のセッション管理**: Managed Agents API の sessions.list() はフィルタがなく N+1 問題が発生するため、`user_sessions` テーブルで紐付けを管理
+- **DB 主導のセッション管理**: Managed Agents API の sessions.list() はフィルタがなく N+1 問題が発生するため、requests 中心モデル（repositories → requests → sessions）で紐付けを管理
 
 ### Lessons
 - **認証(authn)と認可(authz)は別の関心事**: 認証ミドルウェアやレイアウトの認証チェックを通過しても、リソースの所有権検証は個別のエンドポイント/アクションで必要。Route Groups の構造的保護が API Route に及ばないことが典型的な見落としパターン

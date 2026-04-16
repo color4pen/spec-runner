@@ -1,7 +1,7 @@
 import { describe, test, expect, mock } from 'bun:test';
 import { createTestDb } from './test-db';
 import * as schema from '@/lib/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import path from 'path';
 
 // TC-020: SSE endpoint 401 response shape
@@ -59,9 +59,9 @@ describe('TC-022: Server Action error response shape', () => {
   });
 });
 
-// TC-023: Session creation response shape (success)
-describe('TC-023: Session creation response shape', () => {
-  test('UserSessionSummary has all required fields', () => {
+// TC-023: Session creation response shape (success) - updated for new schema
+describe('TC-023: Session record has all required fields', () => {
+  test('sessions table record has all expected fields', () => {
     const { db } = createTestDb();
 
     db.insert(schema.users).values({
@@ -71,36 +71,52 @@ describe('TC-023: Session creation response shape', () => {
       githubAvatarUrl: 'https://avatar.png',
     }).run();
 
-    db.insert(schema.userSessions).values({
+    db.insert(schema.repositories).values({
+      id: 1,
       userId: 1,
-      sessionId: 'managed-session-123',
-      repo: 'owner/repo',
+      owner: 'owner',
+      name: 'repo',
+      fullName: 'owner/repo',
+    }).run();
+
+    db.insert(schema.requests).values({
+      id: 1,
+      repositoryId: 1,
+      type: 'new-feature',
+      title: 'Test Request',
+    }).run();
+
+    db.insert(schema.sessions).values({
+      requestId: 1,
+      managedSessionId: 'managed-session-123',
+      role: 'implementer',
       title: 'Session 2026-04-16 14:30',
-      status: 'idle',
     }).run();
 
     const [record] = db
       .select()
-      .from(schema.userSessions)
-      .where(eq(schema.userSessions.sessionId, 'managed-session-123'))
+      .from(schema.sessions)
+      .where(eq(schema.sessions.managedSessionId, 'managed-session-123'))
       .all();
 
     expect(record).toHaveProperty('id');
-    expect(record).toHaveProperty('sessionId');
-    expect(record).toHaveProperty('repo');
-    expect(record).toHaveProperty('title');
+    expect(record).toHaveProperty('requestId');
+    expect(record).toHaveProperty('managedSessionId');
+    expect(record).toHaveProperty('role');
+    expect(record).toHaveProperty('step');
     expect(record).toHaveProperty('status');
+    expect(record).toHaveProperty('title');
     expect(record).toHaveProperty('createdAt');
     expect(record).toHaveProperty('updatedAt');
     expect(typeof record.id).toBe('number');
-    expect(record.sessionId).toBe('managed-session-123');
-    expect(record.repo).toBe('owner/repo');
+    expect(record.managedSessionId).toBe('managed-session-123');
+    expect(record.role).toBe('implementer');
     expect(record.title).toBe('Session 2026-04-16 14:30');
-    expect(record.status).toBe('idle');
+    expect(record.status).toBe('active');
   });
 });
 
-// TC-024: Session creation response shape (validation error)
+// TC-024: Session creation validation error response
 describe('TC-024: Session creation validation error response', () => {
   test('invalid repo format throws descriptive error', () => {
     const REPO_PATTERN = /^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/;
@@ -111,18 +127,18 @@ describe('TC-024: Session creation validation error response', () => {
     }
   });
 
-  test('validateRepo in session-actions throws with details', async () => {
+  test('session-actions has rollback pattern', async () => {
     const source = await Bun.file(
       path.join(process.cwd(), 'src/lib/session-actions.ts')
     ).text();
-    expect(source).toContain('Invalid repository format');
-    expect(source).toContain('REPO_PATTERN');
+    expect(source).toContain('DB insert failed');
+    expect(source).toContain('archive');
   });
 });
 
-// TC-025: Session list response shape
+// TC-025: Session list response shape - updated for new schema
 describe('TC-025: Session list response shape', () => {
-  test('user_sessions query returns array with correct fields in DESC order', () => {
+  test('sessions query returns array with correct fields in DESC order', () => {
     const { db } = createTestDb();
 
     db.insert(schema.users).values({
@@ -132,22 +148,37 @@ describe('TC-025: Session list response shape', () => {
       githubAvatarUrl: 'https://avatar.png',
     }).run();
 
-    db.insert(schema.userSessions).values([
+    db.insert(schema.repositories).values({
+      id: 1,
+      userId: 1,
+      owner: 'owner',
+      name: 'repo',
+      fullName: 'owner/repo',
+    }).run();
+
+    db.insert(schema.requests).values({
+      id: 1,
+      repositoryId: 1,
+      type: 'new-feature',
+      title: 'Test Request',
+    }).run();
+
+    db.insert(schema.sessions).values([
       {
-        userId: 1,
-        sessionId: 'session-old',
-        repo: 'owner/repo',
+        requestId: 1,
+        managedSessionId: 'session-old',
+        role: 'implementer',
         title: 'Old Session',
-        status: 'idle',
+        status: 'active',
         createdAt: '2026-04-15T10:00:00.000Z',
         updatedAt: '2026-04-15T10:00:00.000Z',
       },
       {
-        userId: 1,
-        sessionId: 'session-new',
-        repo: 'owner/repo',
+        requestId: 1,
+        managedSessionId: 'session-new',
+        role: 'reviewer',
         title: 'New Session',
-        status: 'running',
+        status: 'active',
         createdAt: '2026-04-16T14:30:00.000Z',
         updatedAt: '2026-04-16T14:30:00.000Z',
       },
@@ -155,33 +186,29 @@ describe('TC-025: Session list response shape', () => {
 
     const results = db
       .select()
-      .from(schema.userSessions)
-      .where(
-        and(
-          eq(schema.userSessions.userId, 1),
-          eq(schema.userSessions.repo, 'owner/repo')
-        )
-      )
-      .orderBy(desc(schema.userSessions.createdAt))
+      .from(schema.sessions)
+      .where(eq(schema.sessions.requestId, 1))
+      .orderBy(desc(schema.sessions.createdAt))
       .all();
 
     expect(results).toHaveLength(2);
-    expect(results[0].sessionId).toBe('session-new');
-    expect(results[1].sessionId).toBe('session-old');
+    expect(results[0].managedSessionId).toBe('session-new');
+    expect(results[1].managedSessionId).toBe('session-old');
 
     for (const r of results) {
       expect(r).toHaveProperty('id');
-      expect(r).toHaveProperty('sessionId');
-      expect(r).toHaveProperty('repo');
-      expect(r).toHaveProperty('title');
+      expect(r).toHaveProperty('requestId');
+      expect(r).toHaveProperty('managedSessionId');
+      expect(r).toHaveProperty('role');
       expect(r).toHaveProperty('status');
+      expect(r).toHaveProperty('title');
       expect(r).toHaveProperty('createdAt');
       expect(r).toHaveProperty('updatedAt');
     }
   });
 });
 
-// TC-026: Session archive response shape
+// TC-026: Session archive response shape - updated for new schema
 describe('TC-026: Session archive response shape', () => {
   test('archiving sets status to archived and updates updatedAt', () => {
     const { db } = createTestDb();
@@ -193,31 +220,46 @@ describe('TC-026: Session archive response shape', () => {
       githubAvatarUrl: 'https://avatar.png',
     }).run();
 
-    db.insert(schema.userSessions).values({
+    db.insert(schema.repositories).values({
+      id: 1,
       userId: 1,
-      sessionId: 'session-1',
-      repo: 'owner/repo',
-      title: 'Test Session',
-      status: 'idle',
+      owner: 'owner',
+      name: 'repo',
+      fullName: 'owner/repo',
     }).run();
 
-    db.update(schema.userSessions)
+    db.insert(schema.requests).values({
+      id: 1,
+      repositoryId: 1,
+      type: 'new-feature',
+      title: 'Test Request',
+    }).run();
+
+    db.insert(schema.sessions).values({
+      requestId: 1,
+      managedSessionId: 'session-1',
+      role: 'implementer',
+      title: 'Test Session',
+      status: 'active',
+    }).run();
+
+    db.update(schema.sessions)
       .set({
         status: 'archived',
         updatedAt: new Date().toISOString(),
       })
-      .where(eq(schema.userSessions.sessionId, 'session-1'))
+      .where(eq(schema.sessions.managedSessionId, 'session-1'))
       .run();
 
     const [updated] = db
       .select()
-      .from(schema.userSessions)
-      .where(eq(schema.userSessions.sessionId, 'session-1'))
+      .from(schema.sessions)
+      .where(eq(schema.sessions.managedSessionId, 'session-1'))
       .all();
 
     expect(updated.status).toBe('archived');
     expect(updated).toHaveProperty('id');
-    expect(updated).toHaveProperty('sessionId');
+    expect(updated).toHaveProperty('managedSessionId');
     expect(updated).toHaveProperty('updatedAt');
   });
 });

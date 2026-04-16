@@ -8,6 +8,13 @@
       "when": 1776314050899,
       "tag": "0000_illegal_vanisher",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1776500000000,
+      "tag": "0001_db_schema_redesign",
+      "breakpoints": true
     }
   ]
 }

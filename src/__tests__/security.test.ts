@@ -127,9 +127,10 @@ describe('TC-004: createBoundSession rejects unauthenticated requests', () => {
     const { createBoundSession } = await import('@/lib/session-actions');
     await expect(
       createBoundSession({
+        requestId: 1,
+        role: 'implementer',
         agentId: 'agent-1',
         environmentId: 'env-1',
-        repo: 'owner/repo',
       })
     ).rejects.toThrow('Authentication required');
   });

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getAnthropicClient } from '@/lib/anthropic';
 import { auth } from '@/lib/auth';
-import { verifySessionOwnership } from '@/lib/session-actions';
+import { verifySessionAccessByManagedId } from '@/lib/session-actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +25,7 @@ export async function GET(
 
   // Verify session ownership to prevent IDOR
   try {
-    await verifySessionOwnership(id);
+    await verifySessionAccessByManagedId(id);
   } catch {
     return new Response(
       JSON.stringify({ error: 'Session not found' }),
