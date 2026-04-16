@@ -2,8 +2,8 @@ id: server-actions-coupled-edits
 trigger: "Server Actions (actions.ts) の型やレスポンス形式を変更するとき"
 pattern: "actions.ts を変更すると、それを呼び出す Client Component (dashboard.tsx, workspace-client.tsx) も連鎖的に修正が必要になる。Phase 2 では actions.ts に 10 回、dashboard.tsx に 9 回の Edit が発生し、常にペアで修正された"
 action: "Server Action の返り値型を変更する場合、呼び出し元の Client Component を同時に確認・修正する。型定義を共通の types.ts に切り出して型の不整合を防ぐ"
-confidence: 0.6
-occurrences: 1
+confidence: 0.7
+occurrences: 2
 first_seen: 2026-04-16
 last_seen: 2026-04-16
 projects: [spec-runner]

@@ -5,7 +5,7 @@
 - **request**: requests/active/2026-04-16-db-schema-redesign
 - **type**: spec-change
 - **started**: 2026-04-16 18:31
-- **status**: in-progress
+- **status**: completed
 
 ## Change Folder
 
@@ -25,7 +25,7 @@
 | 6 | コードレビュー | completed | 19:01 | 19:10 | approved (iter 2, score 7.10→7.90, improving). iter 1: needs-fix (HIGH 1 IDOR) → code-fixer → iter 2: approved |
 | 7 | ADR生成 | completed | 19:10 | 19:12 | ADR-20260416-request-centric-schema.md + session-binding-design superseded |
 | 8 | アーカイブ | completed | 19:12 | 19:14 | archived + 6 specs synced (4 modified, 2 new) |
-| 9 | PR作成 | — | — | — | |
+| 9 | PR作成 | completed | 19:14 | 19:21 | PR #2. learning: 23 patterns, 8 instincts (0 promoted). 完了 — 人間レビュー待ち |
 
 ## Retries
 

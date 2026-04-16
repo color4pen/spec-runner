@@ -37,3 +37,45 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **既存コードへのセキュリティパターン遡及適用を忘れない**: 新機能で導入したセキュリティパターン（所有権検証）は、既存の関連コードにも必ず適用する。code-review の IDOR 検出がこれをカバーした
 - **外部 API + DB の2段階操作にはロールバック設計が必要**: Managed Agents API でセッション作成後に DB INSERT が失敗するケースのロールバック処理が architecture カテゴリで検出された
 - **Lint ルール違反は build-fixer で自動解決可能**: ESLint の `no-explicit-any`, `no-unused-vars`, Next.js の `no-img-element` は機械的に修正可能。verification のリトライで対応できる
+
+---
+
+## 2026-04-16 — DB スキーマ再設計: リクエスト中心モデルへの移行
+
+**Type**: spec-change
+**Outcome**: completed (spec-review: iter 2 approved 6.8→8.0, code-review: iter 2 approved 7.10→7.90)
+
+### Review Patterns
+
+#### Spec Review (6.8 → 8.0, +1.2)
+- **リスト API のページネーション未定義 (HIGH)**: `listRequests`, `listSessionsByRequest`, `listUserRepositories` にページネーション・上限の仕様がなかった。review-lessons で既知パターン（出現: 1回）だったが再発。リスト系 API を定義する際は仕様段階で `limit`/`offset` パラメータとデフォルト上限を必ず明記する
+- **リポジトリ登録時の GitHub アクセス権検証欠如 (HIGH)**: `getOrCreateRepository` が認証済みユーザーの GitHub リポジトリアクセス権を検証せず、任意のリポジトリを登録できてしまう仕様だった。外部サービス連携時は「認証済み≠認可済み」を仕様段階で区別する
+- **ステータス遷移ルール（状態マシン）未定義 (MEDIUM)**: `requests.status` の許容遷移パスが未定義。CRUD 設計時に status カラムがある場合、遷移ルール（状態マシン）を仕様に明記する
+- **CRUD の D（Delete）方針未記載 (MEDIUM)**: リクエスト削除の方針が明示されていなかった。意図的に省略する場合も Non-Goal として記載が必要
+- **既存 spec と実装の型乖離 (MEDIUM)**: `users.id` の型が既存 spec（UUID TEXT）と実装（INTEGER autoincrement）で乖離していた。delta spec で変更を重ねる際は、既存 spec との整合性チェックが不可欠
+- **アプリ層の暗黙的ルール未仕様化 (MEDIUM)**: `updated_at` の更新方針（SQLite に ON UPDATE トリガーがないためアプリ層で明示更新）が仕様に書かれていなかった。ORM/DB の制約に起因するアプリ層の規約は仕様に明記する
+- **CHECK 制約による多層防御の方針未記載 (MEDIUM)**: TEXT 型 enum カラムに CHECK 制約を付けるかの方針が仕様になかった。防御の多層化（DB 制約 + アプリバリデーション）の方針を仕様段階で決定する
+
+#### Code Review (7.10 → 7.90, +0.80)
+- **Server Action の IDOR 再発 (HIGH)**: `findRepositoryByFullName` が `'use server'` エクスポートで raw `userId` を受け取っており、認証済みユーザー以外の userId で呼び出し可能だった。Phase 2 の IDOR パターンと同根。Server Action は「外部からの入力として userId を受け取らない」原則を徹底する
+- **N+1 クエリパターン (MEDIUM x2)**: `listUserRepositories` で N 件のリポジトリ取得後に N 回の COUNT クエリ。`getOrCreateRepository` でも同様。リスト取得 + 関連カウントはインライン subquery または JOIN + GROUP BY で1クエリにまとめる
+- **所有権検証ロジックの重複 (MEDIUM)**: `listSessionsByRequest` が `verifyRequestOwnership` を呼ばずにインラインで同等の JOIN クエリを書いていた。検証ロジックは既存のヘルパーに委譲し、重複を避ける
+- **テストが実関数ではなく定数配列のみを検証 (MEDIUM)**: TC-012 で `createRequest` の型バリデーションを定数配列のチェックのみで済ませていた。SQLite の TEXT 型は Drizzle の enum オプションで CHECK 制約を生成しないため、アプリ層バリデーションの実テストが必要
+
+### Error Patterns
+- **Lint/Build/Test すべて PASS（リトライなし）**: Phase 2 では Lint リトライが1回発生したが、今回は初回で全フェーズ PASS。Lint ルール違反の学習が効いている
+- **verification は安定**: Build, TypeCheck, Lint, Test（61→62 tests）すべて初回 PASS。セキュリティスキャナは未設定（N/A）
+
+### Design Decisions
+- **リクエスト中心の3層スキーマ（repositories → requests → sessions）**: `user_sessions` の2テーブル構造からの再設計。FK チェーンによる所有権検証で IDOR を構造的に防止。ADR-20260416-request-centric-schema として記録
+- **FK チェーンによる所有権検証（user_id の冗長化を排除）**: 各テーブルに user_id を持たせず、sessions → requests → repositories → users の JOIN で検証。SQLite ローカル DB では JOIN コスト無視可能。データ不整合リスクを排除
+- **CASCADE DELETE でリポジトリ配下を連鎖削除**: リクエスト・セッションの孤立レコードを防止。マイグレーションは INSERT OR IGNORE + IF NOT EXISTS で冪等性確保
+- **旧 ADR（session-binding-design）の supersede**: スキーマ再設計により旧 ADR が陳腐化。明示的に superseded として新 ADR から参照
+
+### Lessons
+- **IDOR は認証(authn)と認可(authz)の混同から繰り返し発生する**: Phase 2（`actions.ts` の既存関数）に続き、Phase 3 でも `findRepositoryByFullName` で再発。Server Action が `userId` を引数に取るパターンは IDOR の強いシグナル。「Server Action は外部入力として userId を受け取らず、内部で `getAuthenticatedUser()` を呼ぶ」をルール化すべき
+- **リスト API のページネーションは review-lessons 既知パターンなのに再発した**: spec-review が検出したが、仕様作成段階で prevent できていない。constraints.md への昇格（「リスト系 API は必ず limit/offset を定義」）が必要
+- **spec-change では既存 spec との整合性チェックが最重要**: users.id の型乖離（UUID TEXT vs INTEGER）が delta spec 作成時に見落とされていた。spec-change 時は変更対象だけでなく、関連する既存 spec を必ず突合する
+- **状態を持つリソースには遷移ルールの明記が必須**: status カラムの仕様に遷移ルール（状態マシン）がないと、実装者が独自判断で許容遷移を決めてしまう。spec 段階で terminal status と許容パスを定義する
+- **N+1 クエリは「リスト取得 + 関連データ集計」の組み合わせで発生する**: 今回は repositories の一覧取得 + 各リポジトリの requests 件数カウントで典型的に発生。インライン subquery パターンで解決。パフォーマンスレビューの定番チェックポイント
+- **テストはアプリ層の実バリデーションを検証すべき**: DB 制約（特に SQLite の TEXT enum）に依存せず、アプリ層のバリデーション関数を直接テストする。DB 制約の有無は実装依存であり、テストの信頼性に影響する
