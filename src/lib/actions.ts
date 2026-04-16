@@ -1,0 +1,216 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { getAnthropicClient, getGitHubToken } from './anthropic';
+import type { BetaManagedAgentsGitHubRepositoryResourceParams } from '@anthropic-ai/sdk/resources/beta/sessions/sessions';
+
+export interface SessionEventData {
+  type: string;
+  id?: string;
+  content?: Array<{ type: string; text?: string }>;
+  name?: string;
+  input?: Record<string, unknown>;
+  message?: string;
+  stop_reason?: { type: string };
+  processed_at?: string;
+}
+
+export interface AgentSummary {
+  id: string;
+  name: string;
+  model: string;
+  createdAt: string;
+}
+
+export interface EnvironmentSummary {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface SessionSummary {
+  id: string;
+  agentId: string;
+  environmentId: string;
+  repositoryUrl?: string;
+  status: string;
+  createdAt: string;
+  archivedAt: string | null;
+}
+
+export async function listAgents(): Promise<AgentSummary[]> {
+  const client = getAnthropicClient();
+  const result: AgentSummary[] = [];
+  for await (const agent of client.beta.agents.list()) {
+    result.push({
+      id: agent.id,
+      name: agent.name,
+      model: typeof agent.model === 'string' ? agent.model : agent.model.id,
+      createdAt: agent.created_at,
+    });
+  }
+  return result;
+}
+
+export async function createAgent(formData: {
+  name: string;
+  systemPrompt?: string;
+}): Promise<AgentSummary> {
+  const client = getAnthropicClient();
+  const agent = await client.beta.agents.create({
+    name: formData.name,
+    model: 'claude-sonnet-4-6',
+    system: formData.systemPrompt || undefined,
+    tools: [{ type: 'agent_toolset_20260401' }],
+  });
+  revalidatePath('/');
+  return {
+    id: agent.id,
+    name: agent.name,
+    model: typeof agent.model === 'string' ? agent.model : agent.model.id,
+    createdAt: agent.created_at,
+  };
+}
+
+export async function listEnvironments(): Promise<EnvironmentSummary[]> {
+  const client = getAnthropicClient();
+  const result: EnvironmentSummary[] = [];
+  for await (const env of client.beta.environments.list()) {
+    result.push({
+      id: env.id,
+      name: env.name,
+      createdAt: env.created_at,
+    });
+  }
+  return result;
+}
+
+export async function createEnvironment(formData: {
+  name: string;
+}): Promise<EnvironmentSummary> {
+  const client = getAnthropicClient();
+  const env = await client.beta.environments.create({
+    name: formData.name,
+    config: {
+      type: 'cloud',
+      networking: {
+        type: 'limited',
+        allow_package_managers: true,
+        allowed_hosts: ['github.com', 'api.github.com'],
+      },
+      packages: {
+        npm: ['@fission-ai/openspec'],
+      },
+    },
+  });
+  revalidatePath('/');
+  return {
+    id: env.id,
+    name: env.name,
+    createdAt: env.created_at,
+  };
+}
+
+export async function listSessions(): Promise<SessionSummary[]> {
+  const client = getAnthropicClient();
+  const result: SessionSummary[] = [];
+  for await (const session of client.beta.sessions.list({
+    include_archived: true,
+  })) {
+    const githubResource = session.resources.find(
+      (r) => r.type === 'github_repository'
+    );
+    result.push({
+      id: session.id,
+      agentId: session.agent.id,
+      environmentId: session.environment_id,
+      repositoryUrl: githubResource?.url,
+      status: session.status,
+      createdAt: session.created_at,
+      archivedAt: session.archived_at,
+    });
+  }
+  return result;
+}
+
+export async function createSession(formData: {
+  agentId: string;
+  environmentId: string;
+  repositoryUrl?: string;
+  mountPath?: string;
+}): Promise<SessionSummary> {
+  const client = getAnthropicClient();
+
+  const resources: BetaManagedAgentsGitHubRepositoryResourceParams[] = [];
+  if (formData.repositoryUrl) {
+    resources.push({
+      type: 'github_repository',
+      url: formData.repositoryUrl,
+      authorization_token: getGitHubToken(),
+      mount_path: formData.mountPath || undefined,
+    });
+  }
+
+  const session = await client.beta.sessions.create({
+    agent: formData.agentId,
+    environment_id: formData.environmentId,
+    resources: resources.length > 0 ? resources : undefined,
+  });
+
+  revalidatePath('/');
+
+  const githubResource = session.resources.find(
+    (r) => r.type === 'github_repository'
+  );
+  return {
+    id: session.id,
+    agentId: session.agent.id,
+    environmentId: session.environment_id,
+    repositoryUrl: githubResource?.url,
+    status: session.status,
+    createdAt: session.created_at,
+    archivedAt: session.archived_at,
+  };
+}
+
+export async function archiveSession(sessionId: string): Promise<void> {
+  const client = getAnthropicClient();
+  await client.beta.sessions.archive(sessionId);
+  revalidatePath('/');
+}
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  const client = getAnthropicClient();
+  await client.beta.sessions.delete(sessionId);
+  revalidatePath('/');
+}
+
+export async function sendMessage(
+  sessionId: string,
+  message: string
+): Promise<void> {
+  const client = getAnthropicClient();
+  await client.beta.sessions.events.send(sessionId, {
+    events: [
+      {
+        type: 'user.message',
+        content: [{ type: 'text', text: message }],
+      },
+    ],
+  });
+}
+
+export async function listSessionEvents(
+  sessionId: string,
+  limit = 200
+): Promise<SessionEventData[]> {
+  const client = getAnthropicClient();
+  const collected: SessionEventData[] = [];
+  for await (const event of client.beta.sessions.events.list(sessionId, {
+    order: 'desc',
+  })) {
+    collected.push(event as unknown as SessionEventData);
+    if (collected.length >= limit) break;
+  }
+  return collected.reverse();
+}

@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
 import { getAnthropicClient } from '@/lib/anthropic';
-import { getSession, updateSessionStatus } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,36 +8,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-
-  const session = getSession(id);
-  if (!session) {
-    return new Response(JSON.stringify({ error: 'Session not found' }), {
-      status: 404,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
   const client = getAnthropicClient();
 
   try {
     const stream = await client.beta.sessions.events.stream(id);
-
     const encoder = new TextEncoder();
 
     const readableStream = new ReadableStream({
       async start(controller) {
         try {
           for await (const event of stream) {
-            // Update session status on status events
-            if (event.type === 'session.status_idle') {
-              updateSessionStatus(id, 'idle');
-            } else if (event.type === 'session.status_running') {
-              updateSessionStatus(id, 'running');
-            } else if (event.type === 'session.status_terminated') {
-              updateSessionStatus(id, 'terminated');
-            }
-
-            // Format as SSE
             const data = `data: ${JSON.stringify(event)}\n\n`;
             controller.enqueue(encoder.encode(data));
           }
