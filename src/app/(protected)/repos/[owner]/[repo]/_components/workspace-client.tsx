@@ -52,7 +52,7 @@ export function WorkspaceClient({
   const activeSessions = sessions.filter((s) => s.status !== 'archived');
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    chatEndRef.current?.scrollIntoView({ behavior: 'instant' });
   }, [events]);
 
   useEffect(() => {
@@ -253,7 +253,7 @@ export function WorkspaceClient({
   };
 
   return (
-    <div className="flex flex-1 h-[calc(100vh-57px)]">
+    <div className="flex h-[calc(100vh-57px)] overflow-hidden">
       {/* Sidebar */}
       <div className="w-72 border-r border-gray-200 bg-white flex flex-col">
         <div className="p-4 border-b border-gray-200">
@@ -300,7 +300,7 @@ export function WorkspaceClient({
                     {session.status}
                   </span>
                   <span className="text-xs text-gray-400">
-                    {new Date(session.createdAt).toLocaleDateString()}
+                    {new Date(session.createdAt).toLocaleDateString('en-CA')}
                   </span>
                 </div>
                 <div className="flex gap-1 mt-2">
@@ -334,7 +334,7 @@ export function WorkspaceClient({
       </div>
 
       {/* Main Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {error && (
           <div className="mx-4 mt-4 p-3 bg-red-100 border border-red-300 rounded text-red-700 text-sm">
             {error}
@@ -418,7 +418,7 @@ export function WorkspaceClient({
           </div>
         ) : (
           // Chat area (task 5.3)
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-h-0">
             <div className="p-3 border-b bg-gray-50 flex justify-between items-center">
               <div>
                 <span className="text-sm font-medium">
