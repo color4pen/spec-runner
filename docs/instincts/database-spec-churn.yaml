@@ -1,0 +1,11 @@
+id: database-spec-churn
+trigger: "データベーススキーマの spec を書くとき"
+pattern: "database/spec.md が全 spec の中で最も修正回数が多い（Phase 2 で 4回、db-schema-redesign で 6回）。スキーマ設計は spec-review のフィードバックで毎回修正が入り、実装後にも再修正される。テーブル設計は他の全 spec に影響するため連鎖的な修正が発生する"
+action: "database spec を先に安定させてから他の spec を書く。spec-review で指摘されやすいポイント（外部キー制約、カスケード削除、インデックス設計、マイグレーション戦略）を最初から明記する。既存の ADR-20260416-request-centric-schema.md の決定を踏まえる"
+confidence: 0.7
+occurrences: 3
+first_seen: 2026-04-16
+last_seen: 2026-04-16
+projects: [spec-runner]
+scope: project
+source: session-observation

@@ -12,7 +12,7 @@ import {
   type AgentSummary,
   type EnvironmentSummary,
   type SessionEventData,
-  type SessionSummary,
+  type ApiSessionSummary,
 } from '@/lib/actions';
 
 type StreamEvent = SessionEventData;
@@ -22,7 +22,7 @@ type Tab = 'agents' | 'environments' | 'sessions' | 'chat';
 interface DashboardProps {
   initialAgents: AgentSummary[];
   initialEnvironments: EnvironmentSummary[];
-  initialSessions: SessionSummary[];
+  initialSessions: ApiSessionSummary[];
 }
 
 export function Dashboard({

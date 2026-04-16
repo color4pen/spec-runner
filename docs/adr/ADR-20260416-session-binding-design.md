@@ -1,7 +1,7 @@
 # ADR-20260416: Session 紐付けは DB 主導で管理する
 
 **Date**: 2026-04-16
-**Status**: accepted
+**Status**: superseded by [ADR-20260416-request-centric-schema](ADR-20260416-request-centric-schema.md)
 
 ## Context
 

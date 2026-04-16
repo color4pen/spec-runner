@@ -27,18 +27,17 @@ describe('TC-012: users table github_id UNIQUE constraint', () => {
   });
 });
 
-// TC-013: user_sessions foreign key constraint
-describe('TC-013: user_sessions foreign key constraint', () => {
+// TC-013: repositories foreign key constraint
+describe('TC-013: repositories foreign key constraint', () => {
   test('INSERT with non-existent user_id is rejected', () => {
     const { db } = createTestDb();
 
     expect(() => {
-      db.insert(schema.userSessions).values({
+      db.insert(schema.repositories).values({
         userId: 9999, // Does not exist
-        sessionId: 'session-1',
-        repo: 'owner/repo',
-        title: 'Test Session',
-        status: 'idle',
+        owner: 'owner',
+        name: 'repo',
+        fullName: 'owner/repo',
       }).run();
     }).toThrow();
   });
@@ -58,12 +57,11 @@ describe('TC-014: PRAGMA foreign_keys = ON', () => {
   });
 });
 
-// TC-015: Session creation failure rolls back (user_sessions not inserted)
+// TC-015: Session creation failure rolls back
 describe('TC-015: Session creation failure does not leave orphaned records', () => {
-  test('if Managed Agents API fails, user_sessions is not inserted', () => {
+  test('if Managed Agents API fails, sessions is not inserted', () => {
     const { db } = createTestDb();
 
-    // Insert a user
     db.insert(schema.users).values({
       id: 1,
       githubId: 12345,
@@ -71,8 +69,23 @@ describe('TC-015: Session creation failure does not leave orphaned records', () 
       githubAvatarUrl: 'https://avatar.png',
     }).run();
 
+    db.insert(schema.repositories).values({
+      id: 1,
+      userId: 1,
+      owner: 'owner',
+      name: 'repo',
+      fullName: 'owner/repo',
+    }).run();
+
+    db.insert(schema.requests).values({
+      id: 1,
+      repositoryId: 1,
+      type: 'new-feature',
+      title: 'Test Request',
+    }).run();
+
     // Verify no sessions exist before
-    const before = db.select().from(schema.userSessions).all();
+    const before = db.select().from(schema.sessions).all();
     expect(before).toHaveLength(0);
   });
 
@@ -81,7 +94,7 @@ describe('TC-015: Session creation failure does not leave orphaned records', () 
       path.join(process.cwd(), 'src/lib/session-actions.ts')
     ).text();
     const apiCallIndex = source.indexOf('client.beta.sessions.create');
-    const dbInsertIndex = source.indexOf('.insert(userSessions)');
+    const dbInsertIndex = source.indexOf('.insert(sessions)');
     // API call should come before DB insert
     expect(apiCallIndex).toBeGreaterThan(-1);
     expect(dbInsertIndex).toBeGreaterThan(-1);

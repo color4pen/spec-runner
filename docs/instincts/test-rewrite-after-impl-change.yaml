@@ -2,8 +2,8 @@ id: test-rewrite-after-impl-change
 trigger: "実装アーキテクチャを変更した後にテストを書くとき"
 pattern: "テストファイル (data-integrity.test.ts, security-authed.test.ts, api-contract.test.ts) が Write 直後に再度 Write で上書きされている。最初の実装が不適切で即座に書き直しが発生した。実装のインターフェース (actions.ts の関数シグネチャなど) が確定する前にテストを書くと無駄になる"
 action: "テストは実装のインターフェースが安定した後に書く。特に Server Actions のシグネチャが review-feedback で変更される可能性がある場合、テスト作成を code-review 後に回す"
-confidence: 0.6
-occurrences: 1
+confidence: 0.7
+occurrences: 2
 first_seen: 2026-04-16
 last_seen: 2026-04-16
 projects: [spec-runner]

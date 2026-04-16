@@ -25,21 +25,14 @@ Phase 2 でユーザー認証（GitHub OAuth）とセッション管理を導入
 
 ### データモデル（初期）
 
+> **Note**: 初期モデルは `users` + `user_sessions` だったが、requests 中心モデル（`repositories → requests → sessions`）に移行予定。詳細は新スキーマ設計の ADR を参照。
+
 ```
 users
 ├── id (PRIMARY KEY)
 ├── github_id (UNIQUE)
 ├── github_login
 ├── github_avatar_url
-└── created_at
-
-user_sessions
-├── id (PRIMARY KEY)
-├── user_id (FK → users)
-├── session_id (Managed Agents の Session ID)
-├── repo (owner/name)
-├── title
-├── status (キャッシュ)
 └── created_at
 ```
 

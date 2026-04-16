@@ -3,68 +3,111 @@
 import { revalidatePath } from 'next/cache';
 import { getAnthropicClient } from './anthropic';
 import { getAuthenticatedUser } from './auth-helpers';
+import { verifyRequestOwnership } from './request-actions';
 import { getDb } from './db';
-import { userSessions } from './db/schema';
+import { sessions, requests, repositories } from './db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import type { BetaManagedAgentsGitHubRepositoryResourceParams } from '@anthropic-ai/sdk/resources/beta/sessions/sessions';
 
-export interface UserSessionSummary {
+export interface SessionSummary {
   id: number;
-  userId: number;
-  sessionId: string;
-  repo: string;
-  title: string;
+  requestId: number;
+  managedSessionId: string;
+  role: string;
+  step: string | null;
   status: string;
+  title: string;
   createdAt: string;
   updatedAt: string;
 }
 
 /**
- * Verify that the given Managed Agents sessionId belongs to the authenticated user.
+ * Verify that the given session (by DB id) belongs to the authenticated user.
+ * Checks: sessions -> requests -> repositories -> users chain.
  * Throws if the session is not found or not owned by the current user.
- * Returns the user_sessions record on success.
  */
-export async function verifySessionOwnership(
-  sessionId: string
-): Promise<UserSessionSummary> {
+export async function verifySessionAccess(
+  sessionId: number
+): Promise<SessionSummary> {
   const user = await getAuthenticatedUser();
   const db = getDb();
 
-  const [existing] = await db
-    .select()
-    .from(userSessions)
+  const results = await db
+    .select({
+      session: sessions,
+      request: requests,
+      repository: repositories,
+    })
+    .from(sessions)
+    .innerJoin(requests, eq(sessions.requestId, requests.id))
+    .innerJoin(repositories, eq(requests.repositoryId, repositories.id))
     .where(
       and(
-        eq(userSessions.sessionId, sessionId),
-        eq(userSessions.userId, user.dbId)
+        eq(sessions.id, sessionId),
+        eq(repositories.userId, user.dbId)
       )
     );
 
-  if (!existing) {
+  if (results.length === 0) {
     throw new Error('Session not found');
   }
 
+  const { session } = results[0];
   return {
-    id: existing.id,
-    userId: existing.userId,
-    sessionId: existing.sessionId,
-    repo: existing.repo,
-    title: existing.title,
-    status: existing.status,
-    createdAt: existing.createdAt,
-    updatedAt: existing.updatedAt,
+    id: session.id,
+    requestId: session.requestId,
+    managedSessionId: session.managedSessionId,
+    role: session.role,
+    step: session.step,
+    status: session.status,
+    title: session.title,
+    createdAt: session.createdAt,
+    updatedAt: session.updatedAt,
   };
 }
 
-// Repo name validation: must be "owner/repo" format with safe characters
-const REPO_PATTERN = /^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/;
+/**
+ * Verify session access by managed_session_id (for SSE stream route).
+ * Checks: sessions -> requests -> repositories -> users chain.
+ */
+export async function verifySessionAccessByManagedId(
+  managedSessionId: string
+): Promise<SessionSummary> {
+  const user = await getAuthenticatedUser();
+  const db = getDb();
 
-function validateRepo(repo: string): void {
-  if (!repo || !REPO_PATTERN.test(repo)) {
-    throw new Error(
-      `Invalid repository format: "${repo}". Expected "owner/repo" format with alphanumeric characters, dots, hyphens, and underscores only.`
+  const results = await db
+    .select({
+      session: sessions,
+      request: requests,
+      repository: repositories,
+    })
+    .from(sessions)
+    .innerJoin(requests, eq(sessions.requestId, requests.id))
+    .innerJoin(repositories, eq(requests.repositoryId, repositories.id))
+    .where(
+      and(
+        eq(sessions.managedSessionId, managedSessionId),
+        eq(repositories.userId, user.dbId)
+      )
     );
+
+  if (results.length === 0) {
+    throw new Error('Session not found');
   }
+
+  const { session } = results[0];
+  return {
+    id: session.id,
+    requestId: session.requestId,
+    managedSessionId: session.managedSessionId,
+    role: session.role,
+    step: session.step,
+    status: session.status,
+    title: session.title,
+    createdAt: session.createdAt,
+    updatedAt: session.updatedAt,
+  };
 }
 
 function generateDefaultTitle(): string {
@@ -74,20 +117,43 @@ function generateDefaultTitle(): string {
 }
 
 /**
- * Create a Managed Agents session AND insert a user_sessions record.
+ * Create a Managed Agents session AND insert a sessions record.
+ * Repo info is obtained from the request's repository.
+ * Maintains rollback: if DB insert fails, the API session is archived.
  */
 export async function createBoundSession(params: {
+  requestId: number;
+  role: 'implementer' | 'reviewer' | 'fixer' | 'explorer';
   agentId: string;
   environmentId: string;
-  repo: string;
   title?: string;
-}): Promise<UserSessionSummary> {
+}): Promise<SessionSummary> {
   const user = await getAuthenticatedUser();
+  const db = getDb();
 
-  validateRepo(params.repo);
+  // Verify request ownership and get repo info
+  const requestResults = await db
+    .select({
+      request: requests,
+      repository: repositories,
+    })
+    .from(requests)
+    .innerJoin(repositories, eq(requests.repositoryId, repositories.id))
+    .where(
+      and(
+        eq(requests.id, params.requestId),
+        eq(repositories.userId, user.dbId)
+      )
+    );
+
+  if (requestResults.length === 0) {
+    throw new Error('Request not found');
+  }
+
+  const { repository } = requestResults[0];
+  const repoUrl = `https://github.com/${repository.fullName}`;
 
   const client = getAnthropicClient();
-  const repoUrl = `https://github.com/${params.repo}`;
 
   const resources: BetaManagedAgentsGitHubRepositoryResourceParams[] = [
     {
@@ -98,85 +164,92 @@ export async function createBoundSession(params: {
   ];
 
   // Create the Managed Agents session first
-  const session = await client.beta.sessions.create({
+  const apiSession = await client.beta.sessions.create({
     agent: params.agentId,
     environment_id: params.environmentId,
     resources,
   });
 
-  // Then insert the user_sessions record, with rollback on failure
-  const db = getDb();
+  // Then insert the sessions record, with rollback on failure
   const title = params.title || generateDefaultTitle();
 
   let record;
   try {
     [record] = await db
-      .insert(userSessions)
+      .insert(sessions)
       .values({
-        userId: user.dbId,
-        sessionId: session.id,
-        repo: params.repo,
+        requestId: params.requestId,
+        managedSessionId: apiSession.id,
+        role: params.role,
+        status: 'active',
         title,
-        status: session.status,
       })
       .returning();
   } catch (dbError) {
     // DB insert failed: archive the API session to prevent orphans
     console.error(
-      `DB insert failed for session ${session.id}, archiving API session to prevent orphan:`,
+      `DB insert failed for session ${apiSession.id}, archiving API session to prevent orphan:`,
       dbError
     );
     try {
-      await client.beta.sessions.archive(session.id);
+      await client.beta.sessions.archive(apiSession.id);
     } catch (archiveError) {
       console.error(
-        `Failed to archive orphaned API session ${session.id}:`,
+        `Failed to archive orphaned API session ${apiSession.id}:`,
         archiveError
       );
     }
     throw dbError;
   }
 
-  revalidatePath(`/repos/${params.repo}`);
+  revalidatePath(`/repos/${repository.owner}/${repository.name}`);
 
   return {
     id: record.id,
-    userId: record.userId,
-    sessionId: record.sessionId,
-    repo: record.repo,
-    title: record.title,
+    requestId: record.requestId,
+    managedSessionId: record.managedSessionId,
+    role: record.role,
+    step: record.step,
     status: record.status,
+    title: record.title,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
 }
 
 /**
- * List user sessions for a specific repository.
+ * List sessions for a specific request.
+ * Verifies request ownership via verifyRequestOwnership (request-actions.ts).
  */
-export async function listUserSessions(
-  repo: string
-): Promise<UserSessionSummary[]> {
-  const user = await getAuthenticatedUser();
+export async function listSessionsByRequest(
+  requestId: number,
+  options?: { limit?: number; offset?: number }
+): Promise<SessionSummary[]> {
+  // Delegates ownership check to the canonical verifyRequestOwnership
+  await verifyRequestOwnership(requestId);
+
   const db = getDb();
+  const limit = options?.limit ?? 50;
+  const offset = options?.offset ?? 0;
 
   const results = await db
     .select()
-    .from(userSessions)
-    .where(
-      and(eq(userSessions.userId, user.dbId), eq(userSessions.repo, repo))
-    )
-    .orderBy(desc(userSessions.createdAt));
+    .from(sessions)
+    .where(eq(sessions.requestId, requestId))
+    .orderBy(desc(sessions.createdAt))
+    .limit(limit)
+    .offset(offset);
 
-  return results.map((r) => ({
-    id: r.id,
-    userId: r.userId,
-    sessionId: r.sessionId,
-    repo: r.repo,
-    title: r.title,
-    status: r.status,
-    createdAt: r.createdAt,
-    updatedAt: r.updatedAt,
+  return results.map((s) => ({
+    id: s.id,
+    requestId: s.requestId,
+    managedSessionId: s.managedSessionId,
+    role: s.role,
+    step: s.step,
+    status: s.status,
+    title: s.title,
+    createdAt: s.createdAt,
+    updatedAt: s.updatedAt,
   }));
 }
 
@@ -184,101 +257,89 @@ export async function listUserSessions(
  * Refresh session status from Managed Agents API and update cache.
  */
 export async function refreshSessionStatus(
-  userSessionId: number
-): Promise<UserSessionSummary> {
-  const user = await getAuthenticatedUser();
-  const db = getDb();
-
-  // Verify ownership
-  const [existing] = await db
-    .select()
-    .from(userSessions)
-    .where(
-      and(
-        eq(userSessions.id, userSessionId),
-        eq(userSessions.userId, user.dbId)
-      )
-    );
-
-  if (!existing) {
-    throw new Error('Session not found');
-  }
+  sessionDbId: number
+): Promise<SessionSummary> {
+  // Verify access via chain
+  const existing = await verifySessionAccess(sessionDbId);
 
   // Fetch current status from API
   const client = getAnthropicClient();
-  const apiSession = await client.beta.sessions.retrieve(existing.sessionId);
+  const apiSession = await client.beta.sessions.retrieve(
+    existing.managedSessionId
+  );
 
   const newStatus = apiSession.archived_at ? 'archived' : apiSession.status;
+  const mappedStatus = (['active', 'waiting', 'completed', 'archived'].includes(newStatus)
+    ? newStatus
+    : 'active') as 'active' | 'waiting' | 'completed' | 'archived';
 
-  // Update cache
+  const db = getDb();
   const [updated] = await db
-    .update(userSessions)
+    .update(sessions)
     .set({
-      status: newStatus,
+      status: mappedStatus,
       updatedAt: new Date().toISOString(),
     })
-    .where(eq(userSessions.id, userSessionId))
+    .where(eq(sessions.id, sessionDbId))
     .returning();
 
   return {
     id: updated.id,
-    userId: updated.userId,
-    sessionId: updated.sessionId,
-    repo: updated.repo,
-    title: updated.title,
+    requestId: updated.requestId,
+    managedSessionId: updated.managedSessionId,
+    role: updated.role,
+    step: updated.step,
     status: updated.status,
+    title: updated.title,
     createdAt: updated.createdAt,
     updatedAt: updated.updatedAt,
   };
 }
 
 /**
- * Archive a session via API and update user_sessions status.
+ * Archive a session via API and update sessions status.
  */
 export async function archiveBoundSession(
-  userSessionId: number
-): Promise<UserSessionSummary> {
-  const user = await getAuthenticatedUser();
-  const db = getDb();
-
-  // Verify ownership
-  const [existing] = await db
-    .select()
-    .from(userSessions)
-    .where(
-      and(
-        eq(userSessions.id, userSessionId),
-        eq(userSessions.userId, user.dbId)
-      )
-    );
-
-  if (!existing) {
-    throw new Error('Session not found');
-  }
+  sessionDbId: number
+): Promise<SessionSummary> {
+  // Verify access via chain
+  const existing = await verifySessionAccess(sessionDbId);
 
   // Archive via API
   const client = getAnthropicClient();
-  await client.beta.sessions.archive(existing.sessionId);
+  await client.beta.sessions.archive(existing.managedSessionId);
 
   // Update local status
+  const db = getDb();
   const [updated] = await db
-    .update(userSessions)
+    .update(sessions)
     .set({
       status: 'archived',
       updatedAt: new Date().toISOString(),
     })
-    .where(eq(userSessions.id, userSessionId))
+    .where(eq(sessions.id, sessionDbId))
     .returning();
 
-  revalidatePath(`/repos/${existing.repo}`);
+  // Get repo info for revalidation
+  const repoResults = await db
+    .select({ repository: repositories })
+    .from(requests)
+    .innerJoin(repositories, eq(requests.repositoryId, repositories.id))
+    .where(eq(requests.id, existing.requestId));
+
+  if (repoResults.length > 0) {
+    const repo = repoResults[0].repository;
+    revalidatePath(`/repos/${repo.owner}/${repo.name}`);
+  }
 
   return {
     id: updated.id,
-    userId: updated.userId,
-    sessionId: updated.sessionId,
-    repo: updated.repo,
-    title: updated.title,
+    requestId: updated.requestId,
+    managedSessionId: updated.managedSessionId,
+    role: updated.role,
+    step: updated.step,
     status: updated.status,
+    title: updated.title,
     createdAt: updated.createdAt,
     updatedAt: updated.updatedAt,
   };

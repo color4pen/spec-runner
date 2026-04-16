@@ -1,0 +1,11 @@
+id: verification-npm-bun-drift
+trigger: "verification フェーズで build/lint/test/audit コマンドを実行するとき"
+pattern: "bun プロジェクトなのに verification フェーズで npx tsc, npx eslint, npx next build, npm run build, npm audit が多用されている（bun migration 後に 39回の npm/npx 使用）。npm audit は bun.lock プロジェクトでは動かず、npm i --package-lock-only で package-lock.json を一時生成する回り道が発生した"
+action: "verification コマンドは bun run build, bunx tsc --noEmit, bunx eslint src/, bun test に統一する。audit は bun pm audit を使う（未対応ならスキップ可）。npx next build ではなく bun run build を使う"
+confidence: 0.7
+occurrences: 2
+first_seen: 2026-04-16
+last_seen: 2026-04-16
+projects: [spec-runner]
+scope: project
+source: session-observation

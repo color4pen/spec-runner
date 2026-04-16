@@ -23,9 +23,9 @@ mock.module('next/cache', () => ({
   revalidatePath: mock(),
 }));
 
-// TC-006: Other user's sessions are not accessible
+// TC-006: Other user's sessions are not accessible (updated for new schema)
 describe('TC-006: User isolation - cannot access other user sessions', () => {
-  test('listUserSessions only returns sessions for the authenticated user', () => {
+  test('session access chain prevents cross-user access', () => {
     const { db } = createTestDb();
 
     // Insert two users
@@ -34,22 +34,35 @@ describe('TC-006: User isolation - cannot access other user sessions', () => {
       { id: 2, githubId: 67890, githubLogin: 'userB', githubAvatarUrl: 'https://b.png' },
     ]).run();
 
-    // Insert sessions for both users
-    db.insert(schema.userSessions).values([
-      { userId: 1, sessionId: 'session-a', repo: 'owner/repo', title: 'A Session', status: 'idle' },
-      { userId: 2, sessionId: 'session-b', repo: 'owner/repo', title: 'B Session', status: 'idle' },
+    // Insert repositories for each user
+    db.insert(schema.repositories).values([
+      { id: 1, userId: 1, owner: 'owner', name: 'repo', fullName: 'owner/repo' },
+      { id: 2, userId: 2, owner: 'owner', name: 'repo', fullName: 'owner/repo' },
     ]).run();
 
-    // Query as user 1 (simulating what listUserSessions does)
+    // Insert requests
+    db.insert(schema.requests).values([
+      { id: 1, repositoryId: 1, type: 'new-feature', title: 'A Request' },
+      { id: 2, repositoryId: 2, type: 'new-feature', title: 'B Request' },
+    ]).run();
+
+    // Insert sessions
+    db.insert(schema.sessions).values([
+      { id: 1, requestId: 1, managedSessionId: 'session-a', role: 'implementer', title: 'A Session' },
+      { id: 2, requestId: 2, managedSessionId: 'session-b', role: 'implementer', title: 'B Session' },
+    ]).run();
+
+    // Query as user 1 via chain: sessions -> requests -> repositories (userId = 1)
     const results = db
-      .select()
-      .from(schema.userSessions)
-      .where(eq(schema.userSessions.userId, 1))
+      .select({ session: schema.sessions })
+      .from(schema.sessions)
+      .innerJoin(schema.requests, eq(schema.sessions.requestId, schema.requests.id))
+      .innerJoin(schema.repositories, eq(schema.requests.repositoryId, schema.repositories.id))
+      .where(eq(schema.repositories.userId, 1))
       .all();
 
     expect(results).toHaveLength(1);
-    expect(results[0].sessionId).toBe('session-a');
-    expect(results.find(r => r.sessionId === 'session-b')).toBeUndefined();
+    expect(results[0].session.managedSessionId).toBe('session-a');
   });
 });
 
