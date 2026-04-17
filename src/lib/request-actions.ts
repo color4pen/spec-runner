@@ -116,7 +116,7 @@ async function verifyRepositoryOwnership(repositoryId: number) {
 
 /**
  * Create a new request for a repository.
- * Validates type and verifies repository ownership.
+ * Validates type, verifies repository ownership, and checks bootstrap_status === 'ready'.
  */
 export async function createRequest(
   repositoryId: number,
@@ -131,8 +131,15 @@ export async function createRequest(
     );
   }
 
-  // Verify repository ownership
-  await verifyRepositoryOwnership(repositoryId);
+  // Verify repository ownership and get bootstrap status
+  const repo = await verifyRepositoryOwnership(repositoryId);
+
+  // Guard: reject if repository is not ready
+  if (repo.bootstrapStatus !== 'ready') {
+    throw new Error(
+      'Repository is not ready. Bootstrap must be completed first.'
+    );
+  }
 
   const db = getDb();
   const now = new Date().toISOString();

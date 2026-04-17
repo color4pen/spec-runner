@@ -19,6 +19,12 @@ import {
   type AgentSummary,
   type EnvironmentSummary,
 } from '@/lib/actions';
+import {
+  startBootstrap,
+  processBootstrapSessionEvent,
+  handleBootstrapSessionCompletedWithoutPr,
+} from '@/lib/bootstrap-actions';
+import type { BootstrapStatus } from '@/lib/bootstrap-utils';
 
 type StreamEvent = SessionEventData;
 
@@ -44,10 +50,19 @@ const ROLE_COLORS: Record<string, string> = {
   explorer: 'text-teal-700 bg-teal-50',
 };
 
+const BOOTSTRAP_STATUS_CONFIG: Record<BootstrapStatus, { label: string; badgeClass: string }> = {
+  uninitialized: { label: 'Not bootstrapped', badgeClass: 'bg-gray-100 text-gray-600' },
+  bootstrapping: { label: 'Bootstrapping in progress...', badgeClass: 'bg-yellow-100 text-yellow-700 animate-pulse' },
+  pr_pending: { label: 'PR pending review', badgeClass: 'bg-blue-100 text-blue-700' },
+  ready: { label: 'Ready', badgeClass: 'bg-green-100 text-green-700' },
+};
+
 interface WorkspaceClientProps {
   owner: string;
   repo: string;
   repositoryId: number;
+  bootstrapStatus: BootstrapStatus;
+  bootstrapPrUrl: string | null;
   initialRequests: RequestSummary[];
   agents: AgentSummary[];
   environments: EnvironmentSummary[];
@@ -57,6 +72,8 @@ export function WorkspaceClient({
   owner,
   repo,
   repositoryId,
+  bootstrapStatus: initialBootstrapStatus,
+  bootstrapPrUrl,
   initialRequests,
   agents,
   environments,
@@ -69,6 +86,7 @@ export function WorkspaceClient({
   const [selectedManagedSessionId, setSelectedManagedSessionId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [bootstrapStatus, setBootstrapStatus] = useState<BootstrapStatus>(initialBootstrapStatus);
 
   // New request form
   const [showNewRequest, setShowNewRequest] = useState(false);
@@ -82,6 +100,13 @@ export function WorkspaceClient({
   const [selectedAgentId, setSelectedAgentId] = useState('');
   const [selectedEnvId, setSelectedEnvId] = useState('');
 
+  // Bootstrap dialog
+  const [showBootstrapDialog, setShowBootstrapDialog] = useState(false);
+  const [bootstrapAgentId, setBootstrapAgentId] = useState('');
+  const [bootstrapEnvId, setBootstrapEnvId] = useState('');
+  // Track the active bootstrap request ID to handle session completion without PR URL
+  const [bootstrapRequestId, setBootstrapRequestId] = useState<number | null>(null);
+
   // Chat states
   const [chatMessage, setChatMessage] = useState('');
   const [events, setEvents] = useState<StreamEvent[]>([]);
@@ -93,6 +118,8 @@ export function WorkspaceClient({
   const selectedSession = requestSessions.find(
     (s) => s.managedSessionId === selectedManagedSessionId
   );
+
+  const isBootstrapped = bootstrapStatus === 'ready';
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'instant' });
@@ -121,6 +148,9 @@ export function WorkspaceClient({
     const eventSource = new EventSource(`/api/sessions/${managedSessionId}/stream`);
     eventSourceRef.current = eventSource;
 
+    // Track whether a PR URL has been detected during this bootstrap session
+    let prUrlDetected = false;
+
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data) as StreamEvent;
@@ -128,12 +158,36 @@ export function WorkspaceClient({
           if (data.id && prev.some((e) => e.id === data.id)) return prev;
           return [...prev, data];
         });
+
+        // Process bootstrap session events to detect PR URL (TC-028)
+        if (bootstrapStatus === 'bootstrapping' && !prUrlDetected) {
+          const eventText = data.content?.map((c) => c.text ?? '').join('') ?? data.message ?? '';
+          if (eventText) {
+            void processBootstrapSessionEvent(repositoryId, eventText).then((prUrl) => {
+              if (prUrl) {
+                prUrlDetected = true;
+                setBootstrapStatus('pr_pending');
+              }
+            });
+          }
+        }
+
         if (
           data.type === 'session.status_terminated' ||
           data.type === 'session.deleted'
         ) {
           eventSource.close();
           setIsStreaming(false);
+
+          // If bootstrap session ended without detecting a PR URL, roll back (TC-029)
+          if (bootstrapStatus === 'bootstrapping' && !prUrlDetected && bootstrapRequestId !== null) {
+            void handleBootstrapSessionCompletedWithoutPr(repositoryId, bootstrapRequestId).then(() => {
+              setBootstrapStatus('uninitialized');
+              setBootstrapRequestId(null);
+            }).catch((err) => {
+              console.error('Failed to rollback bootstrap session:', err);
+            });
+          }
         }
       } catch {
         console.error('Failed to parse event:', event.data);
@@ -144,7 +198,7 @@ export function WorkspaceClient({
       eventSource.close();
       setIsStreaming(false);
     };
-  }, []);
+  }, [bootstrapStatus, bootstrapRequestId, repositoryId]);
 
   const handleSelectRequest = useCallback(
     (requestId: number) => {
@@ -275,6 +329,26 @@ export function WorkspaceClient({
     });
   };
 
+  const handleStartBootstrap = () => {
+    if (!bootstrapAgentId || !bootstrapEnvId) return;
+    setError(null);
+    startTransition(async () => {
+      try {
+        const result = await startBootstrap(repositoryId, bootstrapAgentId, bootstrapEnvId);
+        setBootstrapStatus('bootstrapping');
+        setBootstrapRequestId(result.requestId);
+        setShowBootstrapDialog(false);
+        setBootstrapAgentId('');
+        setBootstrapEnvId('');
+        // Navigate to the bootstrap session
+        void connectStream(result.managedSessionId);
+        setSelectedManagedSessionId(result.managedSessionId);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to start bootstrap');
+      }
+    });
+  };
+
   const renderEvent = (event: StreamEvent, index: number) => {
     const key = event.id || `event-${index}`;
     switch (event.type) {
@@ -300,7 +374,7 @@ export function WorkspaceClient({
         return (
           <div key={key} className="bg-yellow-50 p-2 rounded border border-yellow-200 mb-2 text-sm">
             <span className="font-medium text-yellow-700">Tool: {event.name}</span>
-            <pre className="text-xs text-gray-600 mt-1 overflow-x-auto">
+            <pre className="text-xs text-gray-600 mt-1 overflow-x-auto whitespace-pre-wrap break-all">
               {JSON.stringify(event.input, null, 2)}
             </pre>
           </div>
@@ -309,7 +383,7 @@ export function WorkspaceClient({
         return (
           <div key={key} className="bg-green-50 p-2 rounded border border-green-200 mb-2 text-sm">
             <span className="font-medium text-green-700">Tool Result</span>
-            <pre className="text-xs text-gray-600 mt-1 overflow-x-auto max-h-32">
+            <pre className="text-xs text-gray-600 mt-1 overflow-x-auto whitespace-pre-wrap break-all max-h-32">
               {event.content?.map((c) => c.text).join('').slice(0, 500)}
               {(event.content?.map((c) => c.text).join('').length ?? 0) > 500 && '...'}
             </pre>
@@ -343,31 +417,77 @@ export function WorkspaceClient({
   };
 
   const activeSessions = requestSessions.filter((s) => s.status !== 'archived');
+  const bootstrapConfig = BOOTSTRAP_STATUS_CONFIG[bootstrapStatus];
 
   return (
     <div className="flex h-[calc(100vh-57px)] overflow-hidden">
       {/* Sidebar - Request list */}
-      <div className="w-72 border-r border-gray-200 bg-white flex flex-col">
+      <div className="w-72 shrink-0 border-r border-gray-200 bg-white flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <h2 className="text-sm font-semibold text-gray-900 truncate">
             {repoFullName}
           </h2>
-          <button
-            onClick={() => {
-              setShowNewRequest(true);
-              setSelectedRequestId(null);
-              setSelectedManagedSessionId(null);
-            }}
-            className="mt-3 w-full px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            New Request
-          </button>
+
+          {/* Bootstrap status badge */}
+          <div className="mt-2">
+            <span className={`inline-block px-2 py-0.5 text-xs rounded-full font-medium ${bootstrapConfig.badgeClass}`}>
+              {bootstrapConfig.label}
+            </span>
+            {bootstrapStatus === 'pr_pending' && bootstrapPrUrl && (
+              <a
+                href={bootstrapPrUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-2 text-xs text-blue-600 underline hover:text-blue-800"
+              >
+                View PR
+              </a>
+            )}
+          </div>
+
+          {isBootstrapped ? (
+            <button
+              onClick={() => {
+                setShowNewRequest(true);
+                setSelectedRequestId(null);
+                setSelectedManagedSessionId(null);
+              }}
+              className="mt-3 w-full px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              New Request
+            </button>
+          ) : (
+            <div className="mt-3 space-y-2">
+              <button
+                disabled
+                className="w-full px-3 py-2 text-sm bg-gray-100 text-gray-400 rounded-md cursor-not-allowed"
+                title="Repository must be bootstrapped before creating requests"
+              >
+                New Request
+              </button>
+              {bootstrapStatus === 'uninitialized' && (
+                <button
+                  onClick={() => setShowBootstrapDialog(true)}
+                  className="w-full px-3 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                >
+                  Bootstrap
+                </button>
+              )}
+              {bootstrapStatus !== 'uninitialized' && (
+                <p className="text-xs text-gray-500 text-center">
+                  {bootstrapConfig.label}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto">
           {requestsList.length === 0 ? (
             <div className="p-4 text-sm text-gray-400 text-center">
-              No requests yet. Create one to get started.
+              {isBootstrapped
+                ? 'No requests yet. Create one to get started.'
+                : 'Bootstrap this repository to start creating requests.'}
             </div>
           ) : (
             requestsList.map((req) => (
@@ -401,7 +521,7 @@ export function WorkspaceClient({
       </div>
 
       {/* Main Area */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 min-w-0">
         {error && (
           <div className="mx-4 mt-4 p-3 bg-red-100 border border-red-300 rounded text-red-700 text-sm">
             {error}
@@ -481,7 +601,7 @@ export function WorkspaceClient({
           </div>
         ) : selectedManagedSessionId ? (
           /* Chat area - session selected */
-          <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 flex flex-col min-h-0 min-w-0">
             <div className="p-3 border-b bg-gray-50 flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <button
@@ -599,15 +719,39 @@ export function WorkspaceClient({
                   <h3 className="text-sm font-semibold text-gray-700">
                     Sessions ({activeSessions.length})
                   </h3>
-                  <button
-                    onClick={() => setShowNewSession(true)}
-                    className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    New Session
-                  </button>
+                  {isBootstrapped ? (
+                    <button
+                      onClick={() => setShowNewSession(true)}
+                      className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                      New Session
+                    </button>
+                  ) : (
+                    <button
+                      disabled
+                      className="px-3 py-1.5 text-sm bg-gray-100 text-gray-400 rounded-md cursor-not-allowed"
+                      title="Repository must be bootstrapped"
+                    >
+                      New Session
+                    </button>
+                  )}
                 </div>
 
-                {showNewSession && (
+                {!isBootstrapped && (
+                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+                    This repository needs to be bootstrapped before sessions can be created.
+                    {bootstrapStatus === 'uninitialized' && (
+                      <button
+                        onClick={() => setShowBootstrapDialog(true)}
+                        className="ml-2 underline hover:text-yellow-900"
+                      >
+                        Start Bootstrap
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {showNewSession && isBootstrapped && (
                   <div className="bg-white p-4 rounded-lg border mb-4 space-y-3">
                     <h4 className="text-sm font-medium">Create Session</h4>
                     <div>
@@ -740,14 +884,113 @@ export function WorkspaceClient({
           /* Default state - nothing selected */
           <div className="flex-1 flex items-center justify-center text-gray-400">
             <div className="text-center">
-              <p className="text-lg">No request selected</p>
-              <p className="text-sm mt-2">
-                Create a new request or select an existing one from the sidebar.
-              </p>
+              {isBootstrapped ? (
+                <>
+                  <p className="text-lg">No request selected</p>
+                  <p className="text-sm mt-2">
+                    Create a new request or select an existing one from the sidebar.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-lg">Repository not bootstrapped</p>
+                  <p className="text-sm mt-2">
+                    Bootstrap this repository to enable SpecRunner workflows.
+                  </p>
+                  {bootstrapStatus === 'uninitialized' && (
+                    <button
+                      onClick={() => setShowBootstrapDialog(true)}
+                      className="mt-4 px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
+                    >
+                      Start Bootstrap
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           </div>
         )}
       </div>
+
+      {/* Bootstrap Confirmation Dialog */}
+      {showBootstrapDialog && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowBootstrapDialog(false);
+          }}
+        >
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Bootstrap Repository
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              This will start an automated agent session to initialize openspec-workflow for{' '}
+              <strong>{repoFullName}</strong>. The agent will:
+            </p>
+            <ul className="text-sm text-gray-600 list-disc list-inside mb-4 space-y-1">
+              <li>Run <code>openspec init</code></li>
+              <li>Create the directory structure</li>
+              <li>Detect the tech stack and verification commands</li>
+              <li>Place review-standards.md</li>
+              <li>Create a PR with the changes</li>
+            </ul>
+
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Agent</label>
+                <select
+                  value={bootstrapAgentId}
+                  onChange={(e) => setBootstrapAgentId(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md text-sm"
+                >
+                  <option value="">Select an agent</option>
+                  {agents.map((agent) => (
+                    <option key={agent.id} value={agent.id}>
+                      {agent.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Environment</label>
+                <select
+                  value={bootstrapEnvId}
+                  onChange={(e) => setBootstrapEnvId(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md text-sm"
+                >
+                  <option value="">Select an environment</option>
+                  {environments.map((env) => (
+                    <option key={env.id} value={env.id}>
+                      {env.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleStartBootstrap}
+                disabled={isPending || !bootstrapAgentId || !bootstrapEnvId}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 text-sm"
+              >
+                {isPending ? 'Starting...' : 'Start Bootstrap'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowBootstrapDialog(false);
+                  setBootstrapAgentId('');
+                  setBootstrapEnvId('');
+                }}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

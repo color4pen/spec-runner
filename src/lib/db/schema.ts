@@ -22,6 +22,12 @@ export const repositories = sqliteTable(
     name: text('name').notNull(),
     fullName: text('full_name').notNull(),
     defaultBranch: text('default_branch'),
+    bootstrapStatus: text('bootstrap_status', {
+      enum: ['uninitialized', 'bootstrapping', 'pr_pending', 'ready'],
+    })
+      .notNull()
+      .default('uninitialized'),
+    bootstrapPrUrl: text('bootstrap_pr_url'),
     createdAt: text('created_at')
       .notNull()
       .default(sql`(datetime('now'))`),

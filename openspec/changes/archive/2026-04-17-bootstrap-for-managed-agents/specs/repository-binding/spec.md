@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Repository Registration
 The system SHALL register a repository in the `repositories` table when a user explicitly selects it from the registration UI, replacing the previous auto-registration on workspace access.
@@ -37,17 +37,6 @@ The system SHALL provide a list of registered repositories for the authenticated
 #### Scenario: Repository list pagination
 - **WHEN** an authenticated user requests their repositories with `limit` and `offset` parameters
 - **THEN** the system returns at most `limit` records starting from `offset`, defaulting to limit=50, offset=0 if not specified
-
-### Requirement: Repository Lookup
-The system SHALL provide a lookup function to find a repository record by user ID and full_name, used internally by request creation and other operations.
-
-#### Scenario: Lookup existing repository
-- **WHEN** the system looks up a repository by user_id and full_name
-- **THEN** it returns the repository record if it exists
-
-#### Scenario: Lookup non-existent repository
-- **WHEN** the system looks up a repository that does not exist for the given user
-- **THEN** it returns null (not an error), allowing the caller to decide how to handle
 
 ## REMOVED Requirements
 

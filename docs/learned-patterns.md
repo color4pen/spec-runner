@@ -79,3 +79,41 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **状態を持つリソースには遷移ルールの明記が必須**: status カラムの仕様に遷移ルール（状態マシン）がないと、実装者が独自判断で許容遷移を決めてしまう。spec 段階で terminal status と許容パスを定義する
 - **N+1 クエリは「リスト取得 + 関連データ集計」の組み合わせで発生する**: 今回は repositories の一覧取得 + 各リポジトリの requests 件数カウントで典型的に発生。インライン subquery パターンで解決。パフォーマンスレビューの定番チェックポイント
 - **テストはアプリ層の実バリデーションを検証すべき**: DB 制約（特に SQLite の TEXT enum）に依存せず、アプリ層のバリデーション関数を直接テストする。DB 制約の有無は実装依存であり、テストの信頼性に影響する
+
+---
+
+## 2026-04-17 — マネージドエージェント向け Bootstrap 機能
+
+**Type**: new-feature
+**Outcome**: completed (spec-review: iter 2 approved 6.85→7.90, code-review: iter 2 approved 6.72→7.45)
+
+### Review Patterns
+
+#### Spec Review (6.85 → 7.90, +1.05)
+- **新機能の状態遷移が既存状態マシンと未接続 (HIGH)**: bootstrap request を `in-progress` で直接作成していたが、request-management spec の正規パスは `draft -> in-progress`。既存の状態マシンに新機能のライフサイクルを統合する必要があった。新しいエンティティが既存リソースの状態マシンに影響する場合、仕様段階で遷移パスの整合性を検証する
+- **delta spec と実装の型定義乖離の踏襲 (HIGH)**: `default_branch` カラムが既存 spec では `TEXT NOT NULL DEFAULT 'main'` だが実装は nullable。delta spec がこの乖離を是正せず踏襲していた。delta spec 作成時は、変更対象カラムだけでなく隣接カラムの spec/実装乖離も確認する
+- **design.md と tasks.md の関数シグネチャ不一致 (MEDIUM)**: `startBootstrap` の引数が design.md と tasks.md で異なっていた。設計ドキュメント間の関数インターフェース定義は一箇所を正とし、他は参照する形にする
+- **型拡張が spec レベルで未定義 (MEDIUM)**: `RepositorySummary` に `bootstrapStatus` / `bootstrapPrUrl` を追加する変更が tasks.md にのみ記載され、spec に型定義の変更がなかった。公開型の拡張は spec レベルで明示する
+
+#### Code Review (6.72 → 7.45, +0.73)
+- **IDOR（3回連続再発）(HIGH x2)**: `handleBootstrapSessionCompletedWithoutPr` と `archiveSessionsByRequest` が `'use server'` ファイルで export されながら認証・認可チェックなし。Phase 2、DB スキーマ再設計に続き3回連続。Server Action の IDOR は最も再発しやすいパターンとして定着。「`'use server'` ファイルの全 exported async 関数に `getAuthenticatedUser()` があるか」を機械的にチェックすべき
+- **定義済み関数の未呼び出し (MEDIUM)**: `processBootstrapSessionEvent` と `handleBootstrapSessionCompletedWithoutPr` が定義されていたが SSE ストリーム処理から呼び出されていなかった。関数定義とその呼び出し元の接続が実装時に漏れるパターン。テストケース（TC-028/TC-029）で検出可能だったが、テスト実装も不完全だった
+- **正規表現のアンカー不足 (MEDIUM)**: `PR_URL_REGEX` がバリデーション用途にもかかわらず非アンカー。検証用 regex と抽出用 regex は別に定義し、検証用には `^` と `$` アンカーを付ける
+- **関数名のタイポ (MEDIUM)**: `processBooststrapSessionEvent`（s が余分）。公開 API/Server Action の関数名は後から修正コストが高いため、命名時に注意する
+- **変換コードの重複（2 iteration 未修正）(MEDIUM)**: `RepositoryWithBootstrap` への変換コードが 5 箇所以上で重複。code-fixer が 2 iteration とも未対応。繰り返し検出される重複パターンはヘルパー関数抽出で解消する
+
+### Error Patterns
+- **Lint リトライ 1 回、他は初回 PASS**: Build/TypeCheck/Test(116)/Security すべて初回 PASS。Lint のみ 1 回リトライ。Phase 2 と同じ傾向で、Lint ルール違反は build-fixer で機械的に解決可能
+- **verification は安定**: 3 フェーズ連続（Phase 2、DB スキーマ再設計、Bootstrap）で Build/TypeCheck/Test が初回 PASS。ワークフローの品質ゲートとして安定して機能している
+
+### Design Decisions
+- **`'use server'` の export 制約による純粋関数分離**: `'use server'` ファイルから非 async 関数を export できないため、`bootstrap-utils.ts` を新設して型定義と純粋関数（`validateBootstrapTransition`, `extractPrUrl`）を分離。Server Action の技術的制約を設計に反映する好例
+- **createRequest ガード回避のための直接 DB INSERT**: `startBootstrap` 実行時は `bootstrapStatus === 'bootstrapping'` であり、`createRequest` の bootstrap ガード（`ready` でないと作成不可）が発動する。bootstrap request は `createRequest` を経由せず直接 INSERT で作成。ガード条件の例外を仕様で明示する必要がある
+- **better-sqlite3 / bun:sqlite 非互換のテスト回避策**: `getDb()` が `better-sqlite3` を使用し Bun テスト環境では動作しない。`createTestDb()` (bun:sqlite) による DB 層テストとソースコード静的検証の 2 種類で対応。テスト環境の制約はプロジェクト固有の対処法として記録しておく価値がある
+
+### Lessons
+- **IDOR は「`'use server'` ファイルの exported async 関数」を機械的にスキャンすることで防止すべき**: 3 フェーズ連続で IDOR が検出されている。人間のレビューではなく、静的解析または checklist の機械的チェックが必要。`export async function` が `getAuthenticatedUser()` を冒頭で呼んでいるかのパターンマッチが有効
+- **delta spec は変更対象の周辺カラムの既存乖離も是正する**: `default_branch` の乖離は既存から存在していたが、delta spec 作成時に見落とされた。変更対象テーブルの全カラムを spec と実装で突合する習慣が必要
+- **新機能の状態遷移は既存の状態マシンに統合する**: 独自の遷移パスを作ると状態マシンのバイパスが発生し整合性が崩れる。既存の `updateRequestStatus` 経由で遷移させることで、バリデーションを一元化できた
+- **code-fixer が未対応の MEDIUM 指摘は蓄積する**: `RepositoryWithBootstrap` 変換コードの重複は 2 iteration とも未修正で approved された。blocking ではない MEDIUM 指摘はワークフロー内で解消されにくいため、技術的負債として認識すべき
+- **関数定義と呼び出し元の接続は実装とテストの両方で検証する**: 関数が定義されていても呼び出されていないケースは、テストケースが呼び出しフローをカバーしていれば検出可能。TC レベルでの end-to-end シナリオが重要
