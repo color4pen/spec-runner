@@ -1,7 +1,7 @@
 # Bootstrap for Managed Agents
 
 **Date**: 2026-04-16
-**Status**: accepted
+**Status**: accepted (D6 superseded by [ADR-0011-bootstrap-session-lifecycle](ADR-0011-bootstrap-session-lifecycle.md))
 
 ## Context
 

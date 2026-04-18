@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   createBoundSession,
   refreshSessionStatus,
@@ -21,8 +22,7 @@ import {
 } from '@/lib/actions';
 import {
   startBootstrap,
-  processBootstrapSessionEvent,
-  handleBootstrapSessionCompletedWithoutPr,
+  cancelBootstrap,
 } from '@/lib/bootstrap-actions';
 import type { BootstrapStatus } from '@/lib/bootstrap-utils';
 
@@ -79,6 +79,7 @@ export function WorkspaceClient({
   environments,
 }: WorkspaceClientProps) {
   const repoFullName = `${owner}/${repo}`;
+  const router = useRouter();
 
   const [requestsList, setRequestsList] = useState(initialRequests);
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
@@ -104,8 +105,8 @@ export function WorkspaceClient({
   const [showBootstrapDialog, setShowBootstrapDialog] = useState(false);
   const [bootstrapAgentId, setBootstrapAgentId] = useState('');
   const [bootstrapEnvId, setBootstrapEnvId] = useState('');
-  // Track the active bootstrap request ID to handle session completion without PR URL
-  const [bootstrapRequestId, setBootstrapRequestId] = useState<number | null>(null);
+  const [bootstrapPrUrlState, setBootstrapPrUrlState] = useState<string | null>(bootstrapPrUrl);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Chat states
   const [chatMessage, setChatMessage] = useState('');
@@ -128,8 +129,68 @@ export function WorkspaceClient({
   useEffect(() => {
     return () => {
       eventSourceRef.current?.close();
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
     };
   }, []);
+
+  // Start polling for bootstrap status after session completion
+  const startStatusPolling = useCallback(() => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+    let pollCount = 0;
+    const MAX_POLLS = 30;
+
+    pollingIntervalRef.current = setInterval(async () => {
+      pollCount++;
+      if (pollCount > MAX_POLLS) {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/repos/${owner}/${repo}/status`);
+        if (!res.ok) return;
+        const data = await res.json() as {
+          bootstrapStatus: string;
+          bootstrapPrUrl: string | null;
+          requestStatus: string | null;
+        };
+
+        if (data.bootstrapStatus !== bootstrapStatus) {
+          setBootstrapStatus(data.bootstrapStatus as typeof bootstrapStatus);
+
+          // When transitioning to pr_pending, update PR URL and refresh
+          if (data.bootstrapStatus === 'pr_pending' && data.bootstrapPrUrl) {
+            setBootstrapPrUrlState(data.bootstrapPrUrl);
+            router.refresh();
+          }
+        }
+        if (data.bootstrapPrUrl) {
+          setBootstrapPrUrlState(data.bootstrapPrUrl);
+        }
+
+        // Stop polling when state stabilizes
+        if (
+          data.bootstrapStatus === 'pr_pending' ||
+          data.bootstrapStatus === 'uninitialized' ||
+          data.bootstrapStatus === 'ready'
+        ) {
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+        }
+      } catch {
+        // Ignore polling errors
+      }
+    }, 3000);
+  }, [bootstrapStatus, owner, repo, router]);
 
   const connectStream = useCallback(async (managedSessionId: string) => {
     eventSourceRef.current?.close();
@@ -148,9 +209,6 @@ export function WorkspaceClient({
     const eventSource = new EventSource(`/api/sessions/${managedSessionId}/stream`);
     eventSourceRef.current = eventSource;
 
-    // Track whether a PR URL has been detected during this bootstrap session
-    let prUrlDetected = false;
-
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data) as StreamEvent;
@@ -159,17 +217,9 @@ export function WorkspaceClient({
           return [...prev, data];
         });
 
-        // Process bootstrap session events to detect PR URL (TC-028)
-        if (bootstrapStatus === 'bootstrapping' && !prUrlDetected) {
-          const eventText = data.content?.map((c) => c.text ?? '').join('') ?? data.message ?? '';
-          if (eventText) {
-            void processBootstrapSessionEvent(repositoryId, eventText).then((prUrl) => {
-              if (prUrl) {
-                prUrlDetected = true;
-                setBootstrapStatus('pr_pending');
-              }
-            });
-          }
+        // When session becomes idle with end_turn, start polling for status update
+        if (data.type === 'session.status_idle' && bootstrapStatus === 'bootstrapping') {
+          startStatusPolling();
         }
 
         if (
@@ -178,16 +228,6 @@ export function WorkspaceClient({
         ) {
           eventSource.close();
           setIsStreaming(false);
-
-          // If bootstrap session ended without detecting a PR URL, roll back (TC-029)
-          if (bootstrapStatus === 'bootstrapping' && !prUrlDetected && bootstrapRequestId !== null) {
-            void handleBootstrapSessionCompletedWithoutPr(repositoryId, bootstrapRequestId).then(() => {
-              setBootstrapStatus('uninitialized');
-              setBootstrapRequestId(null);
-            }).catch((err) => {
-              console.error('Failed to rollback bootstrap session:', err);
-            });
-          }
         }
       } catch {
         console.error('Failed to parse event:', event.data);
@@ -198,7 +238,7 @@ export function WorkspaceClient({
       eventSource.close();
       setIsStreaming(false);
     };
-  }, [bootstrapStatus, bootstrapRequestId, repositoryId]);
+  }, [bootstrapStatus, startStatusPolling]);
 
   const handleSelectRequest = useCallback(
     (requestId: number) => {
@@ -336,7 +376,6 @@ export function WorkspaceClient({
       try {
         const result = await startBootstrap(repositoryId, bootstrapAgentId, bootstrapEnvId);
         setBootstrapStatus('bootstrapping');
-        setBootstrapRequestId(result.requestId);
         setShowBootstrapDialog(false);
         setBootstrapAgentId('');
         setBootstrapEnvId('');
@@ -345,6 +384,23 @@ export function WorkspaceClient({
         setSelectedManagedSessionId(result.managedSessionId);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to start bootstrap');
+      }
+    });
+  };
+
+  const handleCancelBootstrap = () => {
+    setError(null);
+    startTransition(async () => {
+      try {
+        await cancelBootstrap(repositoryId);
+        setBootstrapStatus('uninitialized');
+        setBootstrapPrUrlState(null);
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to cancel bootstrap');
       }
     });
   };
@@ -433,9 +489,9 @@ export function WorkspaceClient({
             <span className={`inline-block px-2 py-0.5 text-xs rounded-full font-medium ${bootstrapConfig.badgeClass}`}>
               {bootstrapConfig.label}
             </span>
-            {bootstrapStatus === 'pr_pending' && bootstrapPrUrl && (
+            {bootstrapStatus === 'pr_pending' && bootstrapPrUrlState && (
               <a
-                href={bootstrapPrUrl}
+                href={bootstrapPrUrlState}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ml-2 text-xs text-blue-600 underline hover:text-blue-800"
@@ -444,6 +500,17 @@ export function WorkspaceClient({
               </a>
             )}
           </div>
+
+          {/* Cancel bootstrap button */}
+          {(bootstrapStatus === 'bootstrapping' || bootstrapStatus === 'pr_pending') && (
+            <button
+              onClick={handleCancelBootstrap}
+              disabled={isPending}
+              className="mt-2 w-full px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded-md hover:bg-red-200 disabled:opacity-50 transition-colors"
+            >
+              Cancel Bootstrap
+            </button>
+          )}
 
           {isBootstrapped ? (
             <button

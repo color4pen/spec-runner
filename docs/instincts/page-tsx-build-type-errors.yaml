@@ -1,0 +1,11 @@
+id: page-tsx-build-type-errors
+trigger: "Server Component の page.tsx で外部モジュールをインポートするとき"
+pattern: "repos/[owner]/[repo]/page.tsx で build -> Edit -> build のエラー修正サイクルが 3回連続で発生（entries 1514-1529）。原因は (1) dynamic import vs static import の選択ミス（getAnthropicClient）、(2) API レスポンスの型と実装の不一致（session status type handling）。7回の Bash->Edit サイクルがこのファイルで記録されており、ビルドエラーの修正試行が多い"
+action: "page.tsx（Server Component）でインポートを追加する際は、(1) 対象モジュールが 'use server' / 'use client' のどちらか確認、(2) bunx tsc --noEmit で事前に型チェック、(3) Next.js の Server/Client Component 境界の制約（dynamic import が必要なケース）を確認してからコードを書く"
+confidence: 0.6
+occurrences: 1
+first_seen: 2026-04-18
+last_seen: 2026-04-18
+projects: [spec-runner]
+scope: project
+source: session-observation

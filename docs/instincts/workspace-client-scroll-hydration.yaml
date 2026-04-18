@@ -1,11 +1,11 @@
 id: workspace-client-scroll-hydration
 trigger: "workspace-client.tsx (チャット UI コンポーネント) を変更するとき"
-pattern: "workspace-client.tsx は累計 16回の Edit が発生している（Phase 2 で 5回、db-schema-redesign で 3回、単独 fix で 5回、bootstrap で 6回）。bootstrap フェーズでは code-review feedback 後に連続 4 回の Edit（entries 1083-1086）が発生。スクロール制御、hydration エラー、イベントハンドリングの修正が繰り返される。SSE ストリーミングとの連携部分が特に不安定。bootstrap UI の追加でも再度修正が必要になった"
+pattern: "workspace-client.tsx は累計 48回の Edit が発生しており、全ソースファイル中最多。Phase 2 で 5回、db-schema-redesign で 3回、単独 fix で 5回、bootstrap で 6回、session-lifecycle で更に大量の修正。code-review feedback 後に 8 回連続 Edit のバーストが発生（entries 1759-1773 で bootstrap-actions.ts と同時修正）。スクロール制御、hydration エラー、イベントハンドリング、SSE ストリーミング連携の修正が繰り返される。bootstrap UI 関連の変更が入るたびに連鎖修正が必要になる"
 action: "workspace-client.tsx を変更する際は、(1) useRef によるスクロール制御、(2) SSE EventSource のライフサイクル管理、(3) Server/Client Component の境界（'use client' 宣言）、(4) 新しい Server Action との結合部分を事前に確認する。テストは手動での画面確認が必須。このコンポーネントの責務が肥大化しているため、分割を検討すべき"
-confidence: 0.7
-occurrences: 4
+confidence: 0.8
+occurrences: 5
 first_seen: 2026-04-16
-last_seen: 2026-04-17
+last_seen: 2026-04-18
 projects: [spec-runner]
 scope: project
 source: session-observation

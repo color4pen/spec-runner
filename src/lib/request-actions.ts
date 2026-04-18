@@ -5,7 +5,7 @@ import { getDb } from './db';
 import { repositories, requests, sessions } from './db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 
-const VALID_TYPES = ['new-feature', 'spec-change', 'refactoring', 'bugfix'] as const;
+const VALID_TYPES = ['new-feature', 'spec-change', 'refactoring', 'bugfix', 'bootstrap'] as const;
 const VALID_STATUSES = ['draft', 'in-progress', 'reviewing', 'completed', 'cancelled'] as const;
 
 type RequestType = (typeof VALID_TYPES)[number];
@@ -15,7 +15,7 @@ type RequestStatus = (typeof VALID_STATUSES)[number];
 const ALLOWED_TRANSITIONS: Record<string, RequestStatus[]> = {
   draft: ['in-progress', 'cancelled'],
   'in-progress': ['reviewing', 'cancelled'],
-  reviewing: ['completed', 'in-progress'],
+  reviewing: ['completed', 'in-progress', 'cancelled'],
   completed: [], // terminal
   cancelled: [], // terminal
 };

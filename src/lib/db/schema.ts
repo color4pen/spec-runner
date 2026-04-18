@@ -6,6 +6,7 @@ export const users = sqliteTable('users', {
   githubId: integer('github_id').notNull().unique(),
   githubLogin: text('github_login').notNull(),
   githubAvatarUrl: text('github_avatar_url').notNull(),
+  vaultId: text('vault_id'),
   createdAt: text('created_at')
     .notNull()
     .default(sql`(datetime('now'))`),
@@ -46,7 +47,7 @@ export const requests = sqliteTable('requests', {
     .notNull()
     .references(() => repositories.id, { onDelete: 'cascade' }),
   type: text('type', {
-    enum: ['new-feature', 'spec-change', 'refactoring', 'bugfix'],
+    enum: ['new-feature', 'spec-change', 'refactoring', 'bugfix', 'bootstrap'],
   }).notNull(),
   status: text('status', {
     enum: ['draft', 'in-progress', 'reviewing', 'completed', 'cancelled'],
@@ -70,7 +71,7 @@ export const sessions = sqliteTable('sessions', {
     .references(() => requests.id, { onDelete: 'cascade' }),
   managedSessionId: text('managed_session_id').notNull(),
   role: text('role', {
-    enum: ['implementer', 'reviewer', 'fixer', 'explorer'],
+    enum: ['implementer', 'reviewer', 'fixer', 'explorer', 'bootstrap'],
   }).notNull(),
   step: text('step'),
   status: text('status', {

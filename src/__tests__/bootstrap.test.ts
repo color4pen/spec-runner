@@ -5,7 +5,6 @@ import { eq } from 'drizzle-orm';
 import path from 'path';
 import {
   validateBootstrapTransition,
-  extractPrUrl,
   isValidPrUrl,
   type BootstrapStatus,
   ALLOWED_BOOTSTRAP_TRANSITIONS,
@@ -126,31 +125,6 @@ describe('TC-013: IDOR prevention - updateBootstrapStatus uses getAuthenticatedU
     // updateBootstrapStatus and getRepositoryWithBootstrapStatus must not accept userId
     expect(source).not.toMatch(/updateBootstrapStatus\s*\([^)]*userId[^)]*\)/);
     expect(source).not.toMatch(/getRepositoryWithBootstrapStatus\s*\([^)]*userId[^)]*\)/);
-  });
-});
-
-// TC-028: PR URL 抽出 — テキストから PR URL を検出
-describe('TC-028: PR URL extraction from text', () => {
-  test('extracts PR URL from plain text', () => {
-    const text = 'Bootstrap complete! PR created at https://github.com/owner/repo/pull/123';
-    expect(extractPrUrl(text)).toBe('https://github.com/owner/repo/pull/123');
-  });
-
-  test('extracts PR URL with complex repo name', () => {
-    const text = 'See https://github.com/my-org/my.repo-name/pull/42 for details';
-    expect(extractPrUrl(text)).toBe('https://github.com/my-org/my.repo-name/pull/42');
-  });
-
-  test('returns null when no PR URL in text', () => {
-    expect(extractPrUrl('No PR URL here')).toBeNull();
-  });
-
-  test('returns null for issue URL', () => {
-    expect(extractPrUrl('https://github.com/owner/repo/issues/42')).toBeNull();
-  });
-
-  test('returns null for empty string', () => {
-    expect(extractPrUrl('')).toBeNull();
   });
 });
 
@@ -599,11 +573,12 @@ describe('TC-022: syncBootstrapPrStatus - PR merged -> ready', () => {
     expect(validateBootstrapTransition(currentStatus, expectedNewStatus)).toBe(true);
   });
 
-  test('syncBootstrapPrStatus checks merged_at first in source', async () => {
+  test('syncBootstrapPrStatus uses getPullRequestStatus from github-api.ts', async () => {
     const source = await Bun.file(
       path.join(process.cwd(), 'src/lib/bootstrap-actions.ts')
     ).text();
-    expect(source).toContain('pr.merged_at');
+    // Now uses github-api.ts getPullRequestStatus (returns { merged, state, html_url })
+    expect(source).toContain('getPullRequestStatus');
     expect(source).toContain("updateBootstrapStatus(repositoryId, 'ready')");
   });
 });
@@ -649,12 +624,12 @@ describe('TC-024: syncBootstrapPrStatus - PR open -> no change', () => {
 
 // TC-025: syncBootstrapPrStatus — GitHub API エラー時は状態維持
 describe('TC-025: syncBootstrapPrStatus - API error retains current status', () => {
-  test('syncBootstrapPrStatus throws on API error, status not changed', async () => {
-    const source = await Bun.file(
-      path.join(process.cwd(), 'src/lib/bootstrap-actions.ts')
+  test('syncBootstrapPrStatus delegates to github-api.ts which throws on API error', async () => {
+    const githubApiSource = await Bun.file(
+      path.join(process.cwd(), 'src/lib/github-api.ts')
     ).text();
-    // Must throw on non-OK response (not silently swallow)
-    expect(source).toContain('GitHub API error when fetching PR status');
+    // github-api.ts must throw on non-OK response (not silently swallow)
+    expect(githubApiSource).toContain('GitHub API error when fetching PR status');
   });
 });
 
@@ -670,12 +645,12 @@ describe('TC-026: setBootstrapPrUrl - saves PR URL and transitions to pr_pending
 });
 
 // TC-029: PR URL 未検出でセッション完了 → uninitialized ロールバック
+// Now handled by session-completion-handler.ts (handleBootstrapCompleted branch-not-found path)
 describe('TC-029: bootstrap session completed without PR URL -> rollback', () => {
-  test('handleBootstrapSessionCompletedWithoutPr sets uninitialized and cancels request', async () => {
+  test('session-completion-handler sets uninitialized and cancels request when branch not found', async () => {
     const source = await Bun.file(
-      path.join(process.cwd(), 'src/lib/bootstrap-actions.ts')
+      path.join(process.cwd(), 'src/lib/session-completion-handler.ts')
     ).text();
-    expect(source).toContain('handleBootstrapSessionCompletedWithoutPr');
     expect(source).toContain("bootstrapStatus: 'uninitialized'");
     expect(source).toContain("status: 'cancelled'");
   });

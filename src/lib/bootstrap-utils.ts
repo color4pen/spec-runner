@@ -10,9 +10,6 @@ export const ALLOWED_BOOTSTRAP_TRANSITIONS: Record<BootstrapStatus, BootstrapSta
   ready: [],
 };
 
-// Non-anchored: used for extraction from free text
-const PR_URL_REGEX = /https:\/\/github\.com\/[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+\/pull\/\d+/;
-
 // Anchored: used for strict validation of a full URL string
 const PR_URL_STRICT_REGEX = /^https:\/\/github\.com\/[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+\/pull\/\d+$/;
 
@@ -26,15 +23,6 @@ export function validateBootstrapTransition(
 ): boolean {
   const allowed = ALLOWED_BOOTSTRAP_TRANSITIONS[currentStatus];
   return allowed.includes(newStatus);
-}
-
-/**
- * Extract PR URL from session event text.
- * Returns null if not found.
- */
-export function extractPrUrl(text: string): string | null {
-  const match = text.match(PR_URL_REGEX);
-  return match ? match[0] : null;
 }
 
 /**

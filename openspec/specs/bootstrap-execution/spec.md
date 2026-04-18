@@ -1,4 +1,4 @@
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Bootstrap Initiation
 The system SHALL allow users to initiate bootstrap for an `uninitialized` repository via a UI action with confirmation.
@@ -20,16 +20,17 @@ The system SHALL allow users to initiate bootstrap for an `uninitialized` reposi
 - **THEN** the system requires the user to select an Agent and Environment from existing ones (pre-populated from the Managed Agents API). These selections MAY be remembered from previous use
 
 ### Requirement: Bootstrap Session Execution
-The system SHALL create and execute a managed agent session that performs the bootstrap process autonomously.
+The system SHALL create and execute a managed agent session that performs the bootstrap process autonomously, using `type: 'bootstrap'` for the request and `role: 'bootstrap'` for the session, with Vault-based MCP authentication.
 
 #### Scenario: Bootstrap session creation
 - **WHEN** the user confirms bootstrap initiation with selected Agent and Environment
 - **THEN** the system performs the following steps atomically:
-  1. Updates `repositories.bootstrap_status` to `bootstrapping`
-  2. Creates a request record with `type: 'new-feature'`, `title: 'Bootstrap openspec-workflow'`, `status: 'draft'`
-  3. Transitions the request status to `in-progress` via `updateRequestStatus` (following the standard `draft -> in-progress` transition)
-  4. Creates a bound session via `createBoundSession` with `role: 'implementer'`
-  5. Sends the bootstrap instruction message via `sendMessage`
+  1. Calls `ensureVaultWithCredentials` to provision/refresh the user's Vault with their current OAuth token
+  2. Updates `repositories.bootstrap_status` to `bootstrapping`
+  3. Creates a request record with `type: 'bootstrap'`, `title: 'Bootstrap openspec-workflow'`, `status: 'draft'`
+  4. Transitions the request status to `in-progress` via `updateRequestStatus` (following the standard `draft -> in-progress` transition)
+  5. Creates a bound session via `createBoundSession` with `role: 'bootstrap'`, including the Vault resource
+  6. Sends the bootstrap instruction message via `sendMessage`
 
 #### Scenario: Bootstrap instruction message content
 - **WHEN** the bootstrap session is created and the instruction message is sent
@@ -40,11 +41,17 @@ The system SHALL create and execute a managed agent session that performs the bo
   4. Detect verification commands (build, test, lint scripts)
   5. Place review-standards.md at `.claude/rules/review-standards.md`
   6. Skip hooks setup (Step 5) and .gitignore observations entry (Step 6)
-  7. Commit all changes and create a PR via `gh pr create`
+  7. Commit all changes on branch `openspec-bootstrap/{owner}/{repo}`
+  8. Push the branch to remote
+  9. Do NOT create a PR (the application will create it after session completion)
 
 #### Scenario: Bootstrap atomicity on failure
-- **WHEN** any step in the bootstrap session creation fails (DB update, request creation, status transition, session creation, or message send)
-- **THEN** the system rolls back all changes: `bootstrap_status` reverts to `uninitialized`, the request record is deleted if created, and the API session is archived if created
+- **WHEN** any step in the bootstrap session creation fails (Vault provisioning, DB update, request creation, status transition, session creation, or message send)
+- **THEN** the system rolls back all changes: `bootstrap_status` reverts to `uninitialized`, the request record is cancelled if created, and the API session is archived if created
+
+#### Scenario: Pre-existing bootstrap branch cleanup
+- **WHEN** `startBootstrap` is called and the branch `openspec-bootstrap/{owner}/{repo}` already exists on the remote (e.g., from a previous failed bootstrap)
+- **THEN** the system deletes the existing branch via `github-api.ts` `deleteBranch` before proceeding with session creation, ensuring a clean starting point for the agent
 
 #### Scenario: Only one bootstrap session at a time
 - **WHEN** the user attempts to start bootstrap for a repository that is already in `bootstrapping` status

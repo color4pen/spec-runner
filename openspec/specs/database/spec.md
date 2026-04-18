@@ -1,4 +1,4 @@
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Repositories Table Schema
 The system SHALL define a `repositories` table that binds users to their connected repositories, with bootstrap status tracking.
@@ -50,7 +50,7 @@ The system SHALL define a `requests` table that represents workflow units within
 - **THEN** all associated `requests` records are deleted via cascade
 
 #### Scenario: Request type CHECK constraint
-- **WHEN** an attempt is made to insert a request with a `type` value not in (`new-feature`, `spec-change`, `refactoring`, `bugfix`)
+- **WHEN** an attempt is made to insert a request with a `type` value not in (`new-feature`, `spec-change`, `refactoring`, `bugfix`, `bootstrap`)
 - **THEN** the database rejects the insert with a CHECK constraint violation
 
 #### Scenario: Request status CHECK constraint
@@ -73,7 +73,7 @@ The system SHALL define a `sessions` table that binds Managed Agents sessions to
 - **THEN** all associated `sessions` records are deleted via cascade
 
 #### Scenario: Session role CHECK constraint
-- **WHEN** an attempt is made to insert a session with a `role` value not in (`implementer`, `reviewer`, `fixer`, `explorer`)
+- **WHEN** an attempt is made to insert a session with a `role` value not in (`implementer`, `reviewer`, `fixer`, `explorer`, `bootstrap`)
 - **THEN** the database rejects the insert with a CHECK constraint violation
 
 #### Scenario: Session status CHECK constraint
@@ -116,6 +116,28 @@ The `users.id` column SHALL use `INTEGER PRIMARY KEY AUTOINCREMENT` as the canon
 #### Scenario: users.id is integer autoincrement
 - **WHEN** inspecting the `users` table schema
 - **THEN** the `id` column is `INTEGER PRIMARY KEY AUTOINCREMENT`, matching the actual implementation in `schema.ts`
+
+### Requirement: Users Table Schema
+The `users` table SHALL include a `vault_id` column for Anthropic Vault association.
+
+#### Scenario: Users table structure with vault_id
+- **WHEN** the database schema is applied
+- **THEN** the `users` table contains the existing columns plus `vault_id` (TEXT, nullable, default null) for storing the Anthropic Vault identifier
+
+#### Scenario: Existing users default to null vault_id
+- **WHEN** the migration adds the `vault_id` column
+- **THEN** all existing user records have `vault_id` set to null
+
+### Requirement: Vault ID Migration
+The system SHALL add a `vault_id` column to the existing `users` table via migration.
+
+#### Scenario: Migration adds vault_id column
+- **WHEN** the migration runs on a database with an existing `users` table
+- **THEN** the `vault_id` column (TEXT, nullable) is added to the `users` table
+
+#### Scenario: Migration idempotency
+- **WHEN** the migration is run on a database where the `vault_id` column already exists
+- **THEN** no errors occur and no data is modified
 
 ## REMOVED Requirements
 

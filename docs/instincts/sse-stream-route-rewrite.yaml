@@ -1,0 +1,11 @@
+id: sse-stream-route-rewrite
+trigger: "SSE ストリーミングエンドポイント (sessions/[id]/stream/route.ts) を変更するとき"
+pattern: "stream/route.ts は 6回の Write（全面書き直し）と 6回の Edit、計 12回の操作が発生。Phase 1 で 2回、Phase 2 で 1回、db-schema-redesign で 1回、bootstrap で 2回、session-lifecycle で 2回と、ほぼ全フェーズで書き直されている。セッション完了検知ロジック（idle+end_turn 判定、ループ終了条件）が特に不安定で、fix コミットが 3件連続した（entries 1506-1513）。ReadableStream の controller 管理と EventSource のライフサイクル制御が複雑"
+action: "stream/route.ts を変更する際は、(1) ReadableStream の controller.close() タイミング、(2) セッション状態遷移の判定条件（idle, ended, canceled の区別）、(3) ポーリング間隔とタイムアウト、(4) エラー時のストリーム終了処理 を事前に確認する。全面書き直しではなく、変更箇所を最小限にする意識を持つ"
+confidence: 0.7
+occurrences: 1
+first_seen: 2026-04-18
+last_seen: 2026-04-18
+projects: [spec-runner]
+scope: project
+source: session-observation

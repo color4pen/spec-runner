@@ -117,3 +117,44 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **新機能の状態遷移は既存の状態マシンに統合する**: 独自の遷移パスを作ると状態マシンのバイパスが発生し整合性が崩れる。既存の `updateRequestStatus` 経由で遷移させることで、バリデーションを一元化できた
 - **code-fixer が未対応の MEDIUM 指摘は蓄積する**: `RepositoryWithBootstrap` 変換コードの重複は 2 iteration とも未修正で approved された。blocking ではない MEDIUM 指摘はワークフロー内で解消されにくいため、技術的負債として認識すべき
 - **関数定義と呼び出し元の接続は実装とテストの両方で検証する**: 関数が定義されていても呼び出されていないケースは、テストケースが呼び出しフローをカバーしていれば検出可能。TC レベルでの end-to-end シナリオが重要
+
+---
+
+## 2026-04-18 — Bootstrap セッションライフサイクル
+
+**Type**: new-feature
+**Outcome**: completed (spec-review: iter 2 approved 6.70→7.75, code-review: iter 2 approved 6.95→7.50)
+
+### Review Patterns
+
+#### Spec Review (6.70 → 7.75, +1.05)
+- **既存状態マシンとの遷移パス不整合（4回連続）(HIGH)**: `cancelBootstrap` の pr_pending キャンセル時に `reviewing -> cancelled` 遷移が必要だが、既存の request 状態マシンでは許可されていなかった。前フェーズでも「新機能の状態遷移が既存状態マシンと未接続」が HIGH で検出されており、4フェーズ連続で状態マシン関連の指摘が発生。状態を持つリソースに新しい遷移パスを追加する場合、既存の状態マシン定義を必ず突合する
+- **delta spec と既存 spec の CHECK 制約シナリオ競合 (HIGH)**: database delta spec で `bootstrap` を追加する際、既存 spec のどのシナリオを置き換えるかが曖昧だった。delta spec の MODIFIED セクションでは既存 spec の対応シナリオを明示的に参照する必要がある
+- **モジュール設計の曖昧さ — `'use server'` vs 純粋関数 (MEDIUM x2)**: session-completion-handler と vault-actions が `'use server'` なのか純粋 lib なのかが不明確で、OAuth トークンの受け渡し方法や IDOR リスクに直結していた。API Route から Server Action を呼ぶのは Next.js のアンチパターン。モジュール境界と呼び出しコンテキスト（Server Action / API Route / lib）は仕様段階で明確化する
+- **冪等な再実行の考慮不足 (MEDIUM)**: 再 bootstrap 時に古いブランチが残っている可能性が未定義。事前チェック（`getBranchExists`）+ 削除で冪等性を保証する仕様を追加。失敗→再実行のシナリオは仕様段階で明示的に検討する
+- **SDK 型定義の事前調査義務 (MEDIUM)**: Anthropic Managed Agents SDK のイベント型（`session_updated` 等）の正確な構造が未確認のまま設計に含まれていた。外部 SDK に依存する設計は、実装前に型定義を調査し仕様に反映する
+
+#### Code Review (6.95 → 7.50, +0.55)
+- **状態マシン違反 — 終端ステータスの上書き (HIGH)**: `cancelBootstrapRequestsForRepository` が `completed` や `cancelled` 等の終端ステータスも含めて全 bootstrap request をキャンセルしていた。`ALLOWED_TRANSITIONS` で定義された状態マシンの遵守が不十分。WHERE 句に非終端ステータスのフィルタ（`inArray`）を追加して解決。一括更新クエリでは終端ステータスの除外フィルタが必須
+- **動的 import と静的 import の混在 (MEDIUM x2)**: `bootstrap-actions.ts` で同一モジュール（`github-api.ts`）の関数を静的 import と動的 import の両方で取得していた。不完全なリファクタリングの痕跡。同一モジュールからの import は静的 import に統一する
+- **操作順序と状態遷移の不整合 (MEDIUM)**: Vault セットアップとブランチ削除がステータス遷移（`bootstrapping`）より前に実行されていたため、Vault 作成成功→ステータス遷移失敗時にロールバックが効かなかった。副作用を伴う操作はステータス遷移後の try ブロック内で実行し、ロールバックを保証する
+- **ソースコード静的解析テストの限界 (MEDIUM, 未修正)**: 多数のテストケースが `toContain` でソースコードの文字列存在を検証するだけで、実際のランタイム動作を検証していなかった。iter 2 でも技術的負債として残存。テスト戦略として source-text 検証は指示系（directive）チェックに限定し、ビジネスロジックはモックを使った振る舞いテストで検証すべき
+- **デッドコードの残存 (MEDIUM)**: `extractPrUrl` が本番コードから未参照だがテスト付きで残存していた。リファクタリング後のデッドコード検出は code-review で確実に捕捉されている
+
+### Error Patterns
+- **全フェーズ初回 PASS（リトライなし）**: Build/TypeCheck/Lint/Test(149→144)/Security すべて初回 PASS。4フェーズ連続で verification が安定。Lint リトライも発生せず、過去の学習が実装品質に反映されている
+- **verification の成熟**: Phase 2 では Lint リトライ 1 回、Bootstrap 初回も Lint リトライ 1 回だったが、今回は完全初回 PASS。ワークフローの品質ゲートとして最も安定したフェーズ
+
+### Design Decisions
+- **SSE route の責務分離**: SSE route はイベントストリーミングのみに専念し、bootstrap 固有ロジック（完了検知、archive、PR 作成）を session-completion-handler に分離。将来の execute-request 対応（複数 role）への拡張基盤
+- **role ベースの完了ハンドラ分岐**: セッション完了時の処理を session role で分岐する汎用的な仕組み。bootstrap は最も単純なケース（1 session / 1 role）として実装し、将来の implementer / reviewer / fixer role に拡張可能
+- **Vault の書き込み専用設計**: Vault に GitHub OAuth トークンを保存し、MCP 経由でエージェントに提供。409 エラー時は既存 Vault を削除して再作成する冪等な設計
+- **ADR-0011 で ADR-0010 D6 を supersede**: bootstrap のセッション管理がライフサイクルに統合されたことで、旧 ADR の session-binding 設計を明示的に supersede
+
+### Lessons
+- **状態マシン関連の指摘は4フェーズ連続で発生している**: Phase 2（遷移ルール未定義）、DB スキーマ再設計（遷移パス未定義）、Bootstrap 初回（既存状態マシンと未接続）、今回（遷移パス不整合 + 終端ステータス上書き）。状態マシンは仕様・実装の両段階で最も頻出する指摘カテゴリであり、constraints への昇格が急務
+- **delta spec のマージ戦略はシナリオ単位の参照が必要**: 既存 spec のどのシナリオを置き換えるかを明示しないと、archive 時のマージで矛盾が残る。delta spec 作成時の必須チェックリスト項目とすべき
+- **`'use server'` vs 純粋 lib の設計判断は IDOR リスクに直結する**: vault-actions や session-completion-handler のモジュール境界が不明確だったことで、IDOR 懸念と API Route からの Server Action 呼び出しアンチパターンが発生。モジュールの `'use server'` 宣言はセキュリティ設計の一部として仕様段階で決定する
+- **一括更新クエリは終端ステータスの除外が必須**: `cancelBootstrapRequestsForRepository` の事例。WHERE 句なしの一括更新は状態マシンを破壊する。一括操作クエリには必ず状態フィルタを含める
+- **ソースコード静的解析テストは技術的負債として蓄積する**: better-sqlite3 / bun:sqlite 非互換のためモックテストが困難な現状は理解できるが、source-text 検証で approved されたテストは振る舞い検証に順次置き換える計画が必要
+- **verification の初回 PASS 率は学習により向上する**: 過去の Lint エラーパターン（`no-explicit-any`, `no-unused-vars`）を実装時に回避することで、リトライなしの verification が達成されている。continuous-learning のフィードバックループが機能している証拠

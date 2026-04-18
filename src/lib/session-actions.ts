@@ -5,7 +5,7 @@ import { getAnthropicClient } from './anthropic';
 import { getAuthenticatedUser } from './auth-helpers';
 import { verifyRequestOwnership } from './request-actions';
 import { getDb } from './db';
-import { sessions, requests, repositories } from './db/schema';
+import { sessions, requests, repositories, users } from './db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import type { BetaManagedAgentsGitHubRepositoryResourceParams } from '@anthropic-ai/sdk/resources/beta/sessions/sessions';
 
@@ -123,7 +123,7 @@ function generateDefaultTitle(): string {
  */
 export async function createBoundSession(params: {
   requestId: number;
-  role: 'implementer' | 'reviewer' | 'fixer' | 'explorer';
+  role: 'implementer' | 'reviewer' | 'fixer' | 'explorer' | 'bootstrap';
   agentId: string;
   environmentId: string;
   title?: string;
@@ -131,14 +131,16 @@ export async function createBoundSession(params: {
   const user = await getAuthenticatedUser();
   const db = getDb();
 
-  // Verify request ownership and get repo info
+  // Verify request ownership and get repo info (also get user's vault_id)
   const requestResults = await db
     .select({
       request: requests,
       repository: repositories,
+      userVaultId: users.vaultId,
     })
     .from(requests)
     .innerJoin(repositories, eq(requests.repositoryId, repositories.id))
+    .innerJoin(users, eq(repositories.userId, users.id))
     .where(
       and(
         eq(requests.id, params.requestId),
@@ -150,7 +152,7 @@ export async function createBoundSession(params: {
     throw new Error('Request not found');
   }
 
-  const { repository } = requestResults[0];
+  const { repository, userVaultId } = requestResults[0];
   const repoUrl = `https://github.com/${repository.fullName}`;
 
   const client = getAnthropicClient();
@@ -164,10 +166,12 @@ export async function createBoundSession(params: {
   ];
 
   // Create the Managed Agents session first
+  // Include vault_ids if user has a vault_id
   const apiSession = await client.beta.sessions.create({
     agent: params.agentId,
     environment_id: params.environmentId,
     resources,
+    ...(userVaultId ? { vault_ids: [userVaultId] } : {}),
   });
 
   // Then insert the sessions record, with rollback on failure

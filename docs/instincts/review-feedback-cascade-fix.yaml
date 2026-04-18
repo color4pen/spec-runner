@@ -1,11 +1,11 @@
 id: review-feedback-cascade-fix
 trigger: "code-review の feedback を受けて実装を修正するとき"
-pattern: "review-feedback 出力後に複数ファイルへの一斉修正が発生する。bootstrap フェーズでは review-feedback-001.md 出力後に 12 件の連続 Edit が 5 ファイル（bootstrap-utils.ts, bootstrap-actions.ts x2, workspace-client.tsx x4, repos-page-client.tsx, repository-registration-actions.ts x2）に渡って発生した。feedback の指摘が横断的（セキュリティ、型安全性、エラーハンドリング）なため、修正が複数ファイルに波及する"
+pattern: "review-feedback 出力後に複数ファイルへの一斉修正が発生する。bootstrap フェーズでは review-feedback-001.md 出力後に 12 件の連続 Edit が 5 ファイルに渡って発生。session-lifecycle フェーズでも review-feedback-001.md 出力後に bootstrap-actions.ts へ 12 回連続 Edit（8回 + 4回のバースト）+ bootstrap-utils.ts + bootstrap.test.ts への修正が発生。feedback の指摘が横断的（セキュリティ、型安全性、エラーハンドリング）なため、修正が複数ファイルに波及する"
 action: "review-feedback を受けたら、まず全指摘を分類し、影響ファイルを一覧化してから修正に着手する。特に Server Action とそれを呼び出す Client Component はペアで修正する。1 ファイルずつ直すのではなく、関連する修正をまとめてバッチ適用する"
-confidence: 0.6
-occurrences: 1
+confidence: 0.7
+occurrences: 2
 first_seen: 2026-04-17
-last_seen: 2026-04-17
+last_seen: 2026-04-18
 projects: [spec-runner]
 scope: project
 source: session-observation
