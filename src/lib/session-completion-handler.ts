@@ -11,6 +11,7 @@ import {
   getBranchExists,
   findOpenPrByHead,
 } from './github-api';
+import { generateSlug, generateBranchName } from './propose-utils';
 
 interface SessionContext {
   sessionId: number;
@@ -18,6 +19,9 @@ interface SessionContext {
   role: string;
   requestId: number;
   requestStatus: string;
+  requestTitle: string;
+  requestType: string;
+  requestCreatedAt: string;
   repositoryId: number;
   owner: string;
   name: string;
@@ -62,6 +66,9 @@ export async function handleSessionCompleted(
     role: session.role,
     requestId: request.id,
     requestStatus: request.status,
+    requestTitle: request.title,
+    requestType: request.type,
+    requestCreatedAt: request.createdAt,
     repositoryId: repository.id,
     owner: repository.owner,
     name: repository.name,
@@ -74,6 +81,8 @@ export async function handleSessionCompleted(
   switch (ctx.role) {
     case 'bootstrap':
       return handleBootstrapCompleted(ctx, accessToken);
+    case 'propose':
+      return handleProposeCompleted(ctx, accessToken);
     default:
       // For other roles: mark session as completed
       return handleDefaultCompleted(ctx);
@@ -89,6 +98,40 @@ async function handleDefaultCompleted(ctx: SessionContext): Promise<void> {
     .update(sessions)
     .set({ status: 'completed', updatedAt: new Date().toISOString() })
     .where(eq(sessions.id, ctx.sessionId));
+}
+
+/**
+ * Propose completion handler.
+ *
+ * Flow:
+ * 1. Update session status to 'completed'
+ * 2. Verify branch exists via getBranchExists()
+ * 3. Keep request in 'in-progress' status regardless of branch existence
+ *    (Do NOT create a PR — propose is the first step of the 4-session pipeline)
+ */
+async function handleProposeCompleted(
+  ctx: SessionContext,
+  accessToken: string
+): Promise<void> {
+  const db = getDb();
+  const now = new Date().toISOString();
+
+  // Step 1: Mark session as completed
+  await db
+    .update(sessions)
+    .set({ status: 'completed', updatedAt: now })
+    .where(eq(sessions.id, ctx.sessionId));
+
+  // Step 2: Check branch existence (for observability — does not affect request status)
+  // Derive branch name from request data stored in context
+  // We use the request's createdAt date and title to derive the slug deterministically
+  const createdDate = ctx.requestCreatedAt.slice(0, 10);
+  const slug = generateSlug(createdDate, ctx.requestTitle);
+  const branchName = generateBranchName(ctx.requestType, slug);
+
+  await getBranchExists(accessToken, ctx.owner, ctx.name, branchName);
+  // Branch existence check result is intentionally unused:
+  // request stays in-progress regardless (design.md Decision 4 + Risk mitigation)
 }
 
 /**

@@ -1,0 +1,30 @@
+id: structured-agent-decision-flow
+trigger: "request-execute / spec-review / code-review / test-case-generation ワークフローを実行するとき"
+pattern: |
+  agent phase の各段階で構造化された決定書ファイルが生成される pattern。
+  本セッション(2026-04-24)では:
+  - line 54-56: architect.md, spec-reviewer.md を Write
+  - line 66-67: spec-fixer.md + spec-review-result-002.md を Write
+  - line 70: test-case-generator.md を Write
+  - line 84: implementer.md を Write
+  - line 186: build-fixer.md を Write
+  - line 230, 236: code-reviewer.md, code-fixer.md を Write
+
+  決定書ファイルは各エージェント / fixer の「指示・判定根拠」を記録する役割。
+  requests/active/{request}/decisions/ 配下に集約される。
+  OpenSpec workflow では、各 agent の output contract として存在が期待される。
+action: |
+  agent から decision / findings output を受け取った際、immediately に decisions/ 下に
+  以下の形式で整理する:
+  - decisions/{agent-role}.md: architect, spec-reviewer, code-reviewer, implementer など
+  - decisions/{fixer-role}.md: spec-fixer, code-fixer, build-fixer など
+
+  この構造により、後続の continuous-learning / distill-learnings でパターン抽出が容易になる。
+  決定書がない = agent output が lost / 形式が不統一の sign。
+confidence: 0.4
+occurrences: 1
+first_seen: 2026-04-24
+last_seen: 2026-04-24
+projects: [spec-runner]
+scope: project
+source: session-observation

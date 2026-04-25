@@ -1,5 +1,7 @@
 # Learned Patterns
 
+last-distilled: 2026-04-24 18:28
+
 ワークフロー完了時に抽出されたパターンの蓄積。
 continuous-learning スキルが追記し、distill-learnings / promote-rule が消費する。
 
@@ -158,3 +160,48 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **一括更新クエリは終端ステータスの除外が必須**: `cancelBootstrapRequestsForRepository` の事例。WHERE 句なしの一括更新は状態マシンを破壊する。一括操作クエリには必ず状態フィルタを含める
 - **ソースコード静的解析テストは技術的負債として蓄積する**: better-sqlite3 / bun:sqlite 非互換のためモックテストが困難な現状は理解できるが、source-text 検証で approved されたテストは振る舞い検証に順次置き換える計画が必要
 - **verification の初回 PASS 率は学習により向上する**: 過去の Lint エラーパターン（`no-explicit-any`, `no-unused-vars`）を実装時に回避することで、リトライなしの verification が達成されている。continuous-learning のフィードバックループが機能している証拠
+
+---
+
+## 2026-04-24 — Request Create + Propose セッション機能
+
+**Type**: new-feature
+**Outcome**: completed (spec-review: iter 2 approved 6.65→8.05, code-review: iter 2 approved 6.55→7.80)
+
+### Review Patterns
+
+#### Spec Review (6.65 → 8.05, +1.40)
+- **database/spec.md の delta spec 欠落 (HIGH)**: `requests` テーブルへの `enabled` カラム追加と `sessions.role` CHECK 制約への `'propose'` 追加が、正のスキーマ定義である `database/spec.md` に反映されていなかった。個別ドメインの delta spec（request-management, session-management）だけでは CHECK 制約の更新が漏れる。スキーマ変更時は必ず `database/spec.md` の delta spec も同梱する
+- **slug 導出アルゴリズムの仕様化不足 (MEDIUM)**: slug の変換ルール（特殊文字、長さ上限、日本語制限、重複時挙動）が spec レベルで未定義だった。design.md の Open Questions に記載があるだけでは不十分。アルゴリズムの決定的導出が複数モジュールで必要な場合、仕様段階で明示化する
+- **`'use server'` 宣言方針の spec 未記載 (MEDIUM)**: propose-actions.ts のモジュール境界が spec に未記載。review-lessons 既知パターン（「モジュールの `'use server'` 宣言はセキュリティ設計の一部」）だったが再発（5フェーズ目）。`'use server'` の宣言は仕様段階で必ず明示する
+- **`createRequest()` の引数設計 (MEDIUM)**: 位置引数の5番目に optional parameter を追加する設計は fragile。options object パターンへの移行を仕様段階で決定し、将来の引数追加に備える
+
+#### Code Review (6.55 → 7.80, +1.25)
+- **`encodeURIComponent()` によるパス破壊 (HIGH)**: `getDirectoryContents()` と `getFileContent()` で `encodeURIComponent(path)` を使用しており、`/` が `%2F` にエンコードされて GitHub API が 404 を返す。URL パスの構成要素に対して `encodeURIComponent` を使うとスラッシュが破壊される。パスのエンコードはセグメント単位で行うか、そもそもエンコードしない判断が必要
+- **パストラバーサル検証の欠如 (HIGH)**: `getChangeFolderFileContent()` がクライアントからの `filePath` パラメータを検証なしで受け入れ、リポジトリ内の任意のファイルを読み取り可能だった。所有権検証（request の ownership）はあっても、ファイルパスの範囲制限がなければ横方向のデータアクセスが可能。Server Action でファイルパスを受け取る場合は必ず想定プレフィックスの `startsWith` チェック + `..` 排除を行う
+- **slug 日付ソースの不一致 (MEDIUM x2)**: `startPropose()` が `new Date()` で slug を生成し、下流の `getChangeFolderFiles()` と `session-completion-handler` が `request.createdAt` で再導出していた。日付境界（23:59 UTC → 00:01 UTC）で slug が不一致になるレイテントバグ。slug の導出ソースは単一にする（`request.createdAt` に統一）
+- **ロールバック不完全 — orphaned session (MEDIUM)**: `startPropose()` のエラーハンドリングが request status のみ rollback し、作成済みの session を放置していた。外部 API + DB の多段操作では、全リソースの rollback を保証する。これは Phase 2 の「非トランザクション操作のロールバック」パターンの再発
+- **所有権検証ロジックの3重複 (MEDIUM)**: `startPropose()`, `getChangeFolderFiles()`, `getChangeFolderFileContent()` で同一の ownership verification + repository join クエリが3箇所に存在。constraints.md 既知パターン（「所有権検証ロジックは既存のヘルパー関数に委譲」）だったが再発。`verifyRequestWithRepository()` ヘルパーを抽出して解消
+- **静的解析テストによるビジネスロジック検証 (MEDIUM, 未修正)**: TC-014/015/016 が `toContain` でソースコード文字列を検証するのみ。review-lessons 既知パターン（3フェーズ連続）だが、better-sqlite3 / bun:sqlite 非互換のため mock ベーステストへの移行が進まず。技術的負債として累積中
+- **プロンプトインジェクション防御 (MEDIUM)**: request content をそのまま managed agent の指示メッセージに含めていた。XML デリミタ（`<user-request>...</user-request>`）で content boundaries を明示する defense-in-depth 対策を追加
+
+### Error Patterns
+- **TypeCheck エラー（retry 1回で解決）**: テストファイルの型キャスト問題で TypeCheck 6 errors が発生。build-fixer で自動修正。Build/Lint/Test は初回 PASS
+- **verification は概ね安定**: 5フェーズ連続で Build/Test が初回 PASS。TypeCheck のみ 1 回リトライ。Lint リトライは発生しなかった（過去の学習が効いている）
+
+### Design Decisions
+- **`startBootstrap()` パターンの再利用**: `startPropose()` を `startBootstrap()` と同構造（status transition → Vault setup → createBoundSession → sendMessage）で実装。実績パターンの流用により信頼性とスピードを両立
+- **request 作成と propose 起動の分離（2ステップ設計）**: `createRequest()` → `startPropose()` の分離により、後から手動で propose を起動するユースケースにも対応可能。単一責任原則に基づく設計判断
+- **enabled フィールドの JSON TEXT 保存**: 正規化テーブル（request_enabled_options）ではなく TEXT（JSON 配列文字列）で保存。検索クエリで enabled の中身を参照する要件がないため、オーバーエンジニアリングを回避
+- **change folder の GitHub Contents API 閲覧**: クローンではなく Contents API でブランチ上のファイルを読み取り。Next.js デプロイモデルとの相性と低頻度アクセスの前提から選択
+- **`'use server'` 制約による純粋関数分離（propose-utils.ts）**: `'use server'` ファイルから非 async 関数を export できない制約に対し、`propose-utils.ts` を新設して slug 導出・ブランチ名生成・メッセージ構築等の純粋関数を分離。テスタビリティの向上にも寄与
+
+### Lessons
+- **`encodeURIComponent` はパス全体に適用してはならない**: ディレクトリ区切り `/` がエンコードされて API が破壊される。パスのエンコードはセグメント単位で行うか、そもそもエンコードしない判断が必要。GitHub Contents API のパスパラメータは unencoded で渡す
+- **Server Action でファイルパスを受け取る場合、パストラバーサル防止が必須**: 所有権検証だけでは不十分。ファイルパスの範囲を想定プレフィックスに制限する `startsWith` チェックが必要。さらにトレイリング `/` を付加してプレフィックス衝突（`slug-evil/secret.txt` vs `slug`）を防止する
+- **決定的導出のソースは単一にする**: slug のように複数モジュールで再導出されるデータは、導出ソース（`request.createdAt` vs `new Date()`）が分散するとレイテントバグを生む。単一ソースの原則を徹底する
+- **所有権検証ロジックの重複は5フェーズ連続で検出されている**: Phase 2 から毎回指摘されるパターン。ヘルパー関数（`verifyRequestWithRepository`）の抽出で解消されるが、新規 Server Action 追加時に再発しやすい。constraints に「新規 Server Action は既存の ownership verification ヘルパーを使う」を明記すべき
+- **静的解析テスト（source-text 検証）の技術的負債は蓄積し続けている**: 4フェーズ連続で未修正。better-sqlite3 / bun:sqlite 非互換がブロッカーだが、mock.module による回避が可能になりつつある。優先度を上げて対処すべき
+- **外部 API + DB の多段操作 rollback は再発パターン**: Phase 2 で初出し、今回も session rollback の漏れとして再発。`createBoundSession` 後のエラーで session が orphaned になるパターン。try-catch の rollback ブロックに全リソースの cleanup を列挙するチェックリスト化が有効
+- **プロンプトインジェクション防御はユーザー入力を agent に渡す全箇所で必要**: XML デリミタによる content boundary の明示は defense-in-depth の基本。managed agent にユーザー入力を送信する際は、指示部分と入力部分を構造的に分離する
+- **IDOR は今回検出されなかった（5フェーズ目で初めて）**: `getAuthenticatedUser()` パターンが定着し、Server Action での IDOR が初めてゼロだった。constraints / review-lessons への昇格と code-review の繰り返し検出が防止に寄与した証拠。このパターンの学習サイクルは成功している

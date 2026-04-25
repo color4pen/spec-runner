@@ -56,6 +56,7 @@ export const requests = sqliteTable('requests', {
     .default('draft'),
   title: text('title').notNull(),
   content: text('content'),
+  enabled: text('enabled'),
   createdAt: text('created_at')
     .notNull()
     .default(sql`(datetime('now'))`),
@@ -71,7 +72,7 @@ export const sessions = sqliteTable('sessions', {
     .references(() => requests.id, { onDelete: 'cascade' }),
   managedSessionId: text('managed_session_id').notNull(),
   role: text('role', {
-    enum: ['implementer', 'reviewer', 'fixer', 'explorer', 'bootstrap'],
+    enum: ['implementer', 'reviewer', 'fixer', 'explorer', 'bootstrap', 'propose'],
   }).notNull(),
   step: text('step'),
   status: text('status', {

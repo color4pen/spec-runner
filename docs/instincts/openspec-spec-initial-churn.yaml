@@ -1,0 +1,24 @@
+id: openspec-spec-initial-churn
+trigger: "OpenSpec proposal / design / spec ファイルを初期生成するとき"
+pattern: |
+  proposal.md, design.md, 各 spec/*.md を初期生成後、直後に複数回の Edit が連続する。
+  本セッション(2026-04-24)では:
+  - proposal.md: Write→Edit (line 30→64)
+  - design.md: Write→Edit (line 31→64)
+  - 複数 spec (propose-session, change-folder-viewer, request-management, etc): Write→Edit (line 33-38→59-64)
+  - tasks.md: Write→Edit (line 39→65)
+
+  要件: spec-review で feedback を受けた後も、「spec の初期化 → review feedback 収集 → spec 修正」の
+  3-loop を繰り返す傾向。初期生成時点で 80-90% の正確性では不足。
+action: |
+  proposal.md を最初から 3h 掛けて深く検討する時間を取る。
+  design.md は proposal と双方向リンクで最初から検証する。
+  各 spec ファイルは最低限「Success Criteria / Test Cases / 既存 spec との差分」を含める。
+  spec-review 前に実装者による自己レビューを実装タスク開始前に実施する。
+confidence: 0.5
+occurrences: 1
+first_seen: 2026-04-24
+last_seen: 2026-04-24
+projects: [spec-runner]
+scope: project
+source: session-observation

@@ -1,0 +1,26 @@
+id: test-tasks-coevolution
+trigger: "test-cases.md と tasks.md を同じセッション内で管理するとき"
+pattern: |
+  test-cases.md と tasks.md の更新が並行する。
+  本セッション(2026-04-24)では:
+  - line 71-72: test-cases.md を Write → 直後に overwrite (同じ行で重複)
+  - line 93, 101, 106, 116, 119, 127, 129: tasks.md が頻繁に Edit
+  - Edit のタイミングが implementation の進捗（spec→design→spec→tasks→impl）と
+    synchronized している。
+
+  理由: test-cases.md の must scenario が tasks を定義し、
+  各 task 完了時に tasks.md を update する loop。
+  実装者は test-cases を読みながら tasks を adjust している evidence。
+action: |
+  test-cases.md を「変更不可の契約」として扱わず、実装中に발견される必要に応じて
+  update する方針は正しい。ただし:
+  1. test-cases.md 変更時は、impact analysis (どの test / task が影響するか) を記録
+  2. tasks.md 更新時に test-cases.md との consistency を明示的に確認
+  3. Git commit message に「test-cases#5 の must scenario を実装」と紐付け
+confidence: 0.4
+occurrences: 1
+first_seen: 2026-04-24
+last_seen: 2026-04-24
+projects: [spec-runner]
+scope: project
+source: session-observation

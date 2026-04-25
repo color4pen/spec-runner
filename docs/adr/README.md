@@ -21,3 +21,4 @@
 | [ADR-20260416-request-centric-schema](ADR-20260416-request-centric-schema.md) | リクエスト中心の3層スキーマへの再設計 | accepted |
 | [ADR-0010-bootstrap-for-managed-agents](ADR-0010-bootstrap-for-managed-agents.md) | マネージドエージェント向け Bootstrap 機能 | accepted (D6 superseded) |
 | [ADR-0011-bootstrap-session-lifecycle](ADR-0011-bootstrap-session-lifecycle.md) | Bootstrap セッションライフサイクル統合 | accepted |
+| [app-20260424-request-create-propose](app-20260424-request-create-propose.md) | Request Create + Propose セッション設計 | proposed |

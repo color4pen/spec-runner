@@ -1,6 +1,13 @@
 // GitHub REST API operations — no 'use server' directive.
 // Pure API wrapper functions. Authentication is delegated to callers.
 
+export interface DirectoryEntry {
+  name: string;
+  path: string;
+  type: string;
+  size: number;
+}
+
 export interface PullRequestParams {
   head: string;
   base: string;
@@ -239,4 +246,100 @@ export async function findOpenPrByHead(
   }
 
   return { number: prs[0].number, html_url: prs[0].html_url };
+}
+
+/**
+ * Get the contents of a directory in a repository at a specific ref.
+ * GET /repos/{owner}/{repo}/contents/{path}?ref={ref}
+ * Returns an array of {name, path, type, size}.
+ * Returns empty array for 404 (path does not exist).
+ */
+export async function getDirectoryContents(
+  token: string,
+  owner: string,
+  repo: string,
+  path: string,
+  ref: string
+): Promise<DirectoryEntry[]> {
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(ref)}`;
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github.v3+json',
+    },
+  });
+
+  if (response.status === 404) {
+    return [];
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `GitHub API error when getting directory contents: ${response.status} ${response.statusText}`
+    );
+  }
+
+  const data = (await response.json()) as Array<{
+    name: string;
+    path: string;
+    type: string;
+    size: number;
+  }>;
+
+  // GitHub returns a single object (not array) for files — handle gracefully
+  if (!Array.isArray(data)) {
+    return [];
+  }
+
+  return data.map((entry) => ({
+    name: entry.name,
+    path: entry.path,
+    type: entry.type,
+    size: entry.size,
+  }));
+}
+
+/**
+ * Get the raw content of a file in a repository at a specific ref.
+ * GET /repos/{owner}/{repo}/contents/{path}?ref={ref}
+ * Returns the decoded string content.
+ * Returns null for 404 (file does not exist).
+ */
+export async function getFileContent(
+  token: string,
+  owner: string,
+  repo: string,
+  path: string,
+  ref: string
+): Promise<string | null> {
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(ref)}`;
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github.v3+json',
+    },
+  });
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `GitHub API error when getting file content: ${response.status} ${response.statusText}`
+    );
+  }
+
+  const data = (await response.json()) as {
+    content?: string;
+    encoding?: string;
+  };
+
+  if (!data.content || data.encoding !== 'base64') {
+    throw new Error('Unexpected response format from GitHub Contents API');
+  }
+
+  // GitHub returns base64-encoded content with newlines — decode it
+  const decoded = Buffer.from(data.content.replace(/\n/g, ''), 'base64').toString('utf-8');
+  return decoded;
 }

@@ -123,7 +123,7 @@ function generateDefaultTitle(): string {
  */
 export async function createBoundSession(params: {
   requestId: number;
-  role: 'implementer' | 'reviewer' | 'fixer' | 'explorer' | 'bootstrap';
+  role: 'implementer' | 'reviewer' | 'fixer' | 'explorer' | 'bootstrap' | 'propose';
   agentId: string;
   environmentId: string;
   title?: string;

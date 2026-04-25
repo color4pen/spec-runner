@@ -1,0 +1,25 @@
+id: build-check-edit-cycle
+trigger: "新しい TypeScript コードを実装するとき"
+pattern: |
+  Build / tsc / eslint / lint 実行 → エラー検出 → Edit で修正 → 再実行、の loop。
+  本セッション(2026-04-24)では:
+  - line 130-132: tsc チェック 3回連続 → workspace-client.tsx 修正
+  - line 137, 141, 144, 153: npm run build 失敗 → propose-actions.ts / propose-utils.ts Edit → 再build
+  - line 194-207: tsc / lint / test 実行 → request-create-propose.test.ts 修正
+  - line 245: bunx tsc --noEmit で型チェック
+
+  特に新規ファイル (propose-actions.ts, propose-utils.ts, session-completion-handler.ts) は
+  初期コミットの時点で既に型エラーを含んでいた。実装前の「型仕様の洗い出し」が不足。
+action: |
+  TypeScript コード実装前に:
+  1. `npx tsc --noEmit` を実行して型チェック可能状態にする
+  2. 新規 Server Action / Client Component は、interface を先に定義して型チェック
+  3. 関連ファイル (actions.ts と呼び出し元 Component) を「論理的な単位」でまとめて
+     型チェック後 commit する（分割実装して再修正の循環を避ける）
+confidence: 0.6
+occurrences: 1
+first_seen: 2026-04-24
+last_seen: 2026-04-24
+projects: [spec-runner]
+scope: project
+source: session-observation

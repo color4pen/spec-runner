@@ -4,6 +4,7 @@ import { getAuthenticatedUser } from './auth-helpers';
 import { getDb } from './db';
 import { repositories, requests, sessions } from './db/schema';
 import { eq, and, desc } from 'drizzle-orm';
+import { VALID_ENABLED_OPTIONS } from './propose-utils';
 
 const VALID_TYPES = ['new-feature', 'spec-change', 'refactoring', 'bugfix', 'bootstrap'] as const;
 const VALID_STATUSES = ['draft', 'in-progress', 'reviewing', 'completed', 'cancelled'] as const;
@@ -27,6 +28,7 @@ export interface RequestSummary {
   status: string;
   title: string;
   content: string | null;
+  enabled: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -84,6 +86,7 @@ export async function verifyRequestOwnership(
     status: request.status,
     title: request.title,
     content: request.content,
+    enabled: request.enabled ?? null,
     createdAt: request.createdAt,
     updatedAt: request.updatedAt,
   };
@@ -116,19 +119,34 @@ async function verifyRepositoryOwnership(repositoryId: number) {
 
 /**
  * Create a new request for a repository.
- * Validates type, verifies repository ownership, and checks bootstrap_status === 'ready'.
+ * Validates type and enabled values, verifies repository ownership, and checks bootstrap_status === 'ready'.
  */
-export async function createRequest(
-  repositoryId: number,
-  type: string,
-  title: string,
-  content: string | null
-): Promise<RequestSummary> {
+export async function createRequest(params: {
+  repositoryId: number;
+  type: string;
+  title: string;
+  content: string | null;
+  enabled?: string[];
+}): Promise<RequestSummary> {
+  const { repositoryId, type, title, content, enabled } = params;
+
   // Validate type
   if (!VALID_TYPES.includes(type as RequestType)) {
     throw new Error(
       `Invalid request type: "${type}". Must be one of: ${VALID_TYPES.join(', ')}`
     );
+  }
+
+  // Validate enabled values
+  if (enabled !== undefined && enabled.length > 0) {
+    const invalidOptions = enabled.filter(
+      (opt) => !VALID_ENABLED_OPTIONS.includes(opt as (typeof VALID_ENABLED_OPTIONS)[number])
+    );
+    if (invalidOptions.length > 0) {
+      throw new Error(
+        `Invalid enabled options: ${invalidOptions.join(', ')}. Must be one of: ${VALID_ENABLED_OPTIONS.join(', ')}`
+      );
+    }
   }
 
   // Verify repository ownership and get bootstrap status
@@ -144,6 +162,12 @@ export async function createRequest(
   const db = getDb();
   const now = new Date().toISOString();
 
+  // Serialize enabled to JSON string, or null if not provided/empty
+  const enabledJson =
+    enabled !== undefined && enabled.length > 0
+      ? JSON.stringify(enabled)
+      : null;
+
   const [record] = await db
     .insert(requests)
     .values({
@@ -151,6 +175,7 @@ export async function createRequest(
       type: type as RequestType,
       title,
       content,
+      enabled: enabledJson,
       createdAt: now,
       updatedAt: now,
     })
@@ -163,6 +188,7 @@ export async function createRequest(
     status: record.status,
     title: record.title,
     content: record.content,
+    enabled: record.enabled ?? null,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
@@ -198,6 +224,7 @@ export async function listRequests(
     status: r.status,
     title: r.title,
     content: r.content,
+    enabled: r.enabled ?? null,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
   }));
@@ -291,6 +318,7 @@ export async function updateRequestStatus(
     status: updated.status,
     title: updated.title,
     content: updated.content,
+    enabled: updated.enabled ?? null,
     createdAt: updated.createdAt,
     updatedAt: updated.updatedAt,
   };

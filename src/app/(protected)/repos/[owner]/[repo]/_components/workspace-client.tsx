@@ -24,6 +24,13 @@ import {
   startBootstrap,
   cancelBootstrap,
 } from '@/lib/bootstrap-actions';
+import {
+  startPropose,
+  getChangeFolderFiles,
+  getChangeFolderFileContent,
+} from '@/lib/propose-actions';
+// DirectoryEntry type is imported from github-api.ts because propose-actions.ts ('use server') cannot re-export types to client components.
+import type { DirectoryEntry } from '@/lib/github-api';
 import type { BootstrapStatus } from '@/lib/bootstrap-utils';
 
 type StreamEvent = SessionEventData;
@@ -33,6 +40,14 @@ const TYPE_OPTIONS = [
   { value: 'spec-change', label: 'Spec Change' },
   { value: 'refactoring', label: 'Refactoring' },
   { value: 'bugfix', label: 'Bug Fix' },
+] as const;
+
+const ENABLED_OPTIONS = [
+  { value: 'test-case-generator', label: 'Test Case Generator' },
+  { value: 'adr', label: 'ADR' },
+  { value: 'module-architect', label: 'Module Architect' },
+  { value: 'security-reviewer', label: 'Security Reviewer' },
+  { value: 'pattern-reviewer', label: 'Pattern Reviewer' },
 ] as const;
 
 const STATUS_COLORS: Record<string, string> = {
@@ -48,6 +63,8 @@ const ROLE_COLORS: Record<string, string> = {
   reviewer: 'text-purple-700 bg-purple-50',
   fixer: 'text-orange-700 bg-orange-50',
   explorer: 'text-teal-700 bg-teal-50',
+  propose: 'text-indigo-700 bg-indigo-50',
+  bootstrap: 'text-gray-700 bg-gray-100',
 };
 
 const BOOTSTRAP_STATUS_CONFIG: Record<BootstrapStatus, { label: string; badgeClass: string }> = {
@@ -94,6 +111,7 @@ export function WorkspaceClient({
   const [newRequestType, setNewRequestType] = useState('new-feature');
   const [newRequestTitle, setNewRequestTitle] = useState('');
   const [newRequestContent, setNewRequestContent] = useState('');
+  const [newRequestEnabled, setNewRequestEnabled] = useState<string[]>([]);
 
   // New session form
   const [showNewSession, setShowNewSession] = useState(false);
@@ -107,6 +125,17 @@ export function WorkspaceClient({
   const [bootstrapEnvId, setBootstrapEnvId] = useState('');
   const [bootstrapPrUrlState, setBootstrapPrUrlState] = useState<string | null>(bootstrapPrUrl);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Propose dialog
+  const [showProposeDialog, setShowProposeDialog] = useState(false);
+  const [proposeAgentId, setProposeAgentId] = useState('');
+  const [proposeEnvId, setProposeEnvId] = useState('');
+
+  // Change folder viewer
+  const [showChangeFolderViewer, setShowChangeFolderViewer] = useState(false);
+  const [changeFolderFiles, setChangeFolderFiles] = useState<DirectoryEntry[]>([]);
+  const [selectedChangeFolderFile, setSelectedChangeFolderFile] = useState<string | null>(null);
+  const [changeFolderFileContent, setChangeFolderFileContent] = useState<string | null>(null);
 
   // Chat states
   const [chatMessage, setChatMessage] = useState('');
@@ -222,6 +251,15 @@ export function WorkspaceClient({
           startStatusPolling();
         }
 
+        // When propose session becomes idle, reload sessions to detect completion
+        if (data.type === 'session.status_idle' && selectedRequestId) {
+          getRequestDetail(selectedRequestId).then((detail) => {
+            setRequestSessions(detail.sessions);
+          }).catch(() => {
+            // Ignore reload errors
+          });
+        }
+
         if (
           data.type === 'session.status_terminated' ||
           data.type === 'session.deleted'
@@ -238,7 +276,7 @@ export function WorkspaceClient({
       eventSource.close();
       setIsStreaming(false);
     };
-  }, [bootstrapStatus, startStatusPolling]);
+  }, [bootstrapStatus, startStatusPolling, selectedRequestId]);
 
   const handleSelectRequest = useCallback(
     (requestId: number) => {
@@ -278,12 +316,13 @@ export function WorkspaceClient({
     setError(null);
     startTransition(async () => {
       try {
-        const newReq = await createRequest(
+        const newReq = await createRequest({
           repositoryId,
-          newRequestType,
-          newRequestTitle,
-          newRequestContent || null
-        );
+          type: newRequestType,
+          title: newRequestTitle,
+          content: newRequestContent || null,
+          enabled: newRequestEnabled.length > 0 ? newRequestEnabled : undefined,
+        });
         setRequestsList((prev) => [newReq, ...prev]);
         setSelectedRequestId(newReq.id);
         setRequestSessions([]);
@@ -291,6 +330,7 @@ export function WorkspaceClient({
         setNewRequestTitle('');
         setNewRequestContent('');
         setNewRequestType('new-feature');
+        setNewRequestEnabled([]);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to create request');
       }
@@ -405,6 +445,57 @@ export function WorkspaceClient({
     });
   };
 
+  const handleStartPropose = () => {
+    if (!proposeAgentId || !proposeEnvId || !selectedRequestId) return;
+    setError(null);
+    startTransition(async () => {
+      try {
+        const result = await startPropose(selectedRequestId, proposeAgentId, proposeEnvId);
+        setShowProposeDialog(false);
+        setProposeAgentId('');
+        setProposeEnvId('');
+        // Reload request sessions
+        const detail = await getRequestDetail(selectedRequestId);
+        setRequestSessions(detail.sessions);
+        // Connect to SSE stream for the propose session
+        void connectStream(result.managedSessionId);
+        setSelectedManagedSessionId(result.managedSessionId);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to start propose');
+      }
+    });
+  };
+
+  const handleLoadChangeFolderFiles = () => {
+    if (!selectedRequestId) return;
+    setError(null);
+    startTransition(async () => {
+      try {
+        const files = await getChangeFolderFiles(selectedRequestId);
+        setChangeFolderFiles(files);
+        setShowChangeFolderViewer(true);
+        setSelectedChangeFolderFile(null);
+        setChangeFolderFileContent(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load change folder');
+      }
+    });
+  };
+
+  const handleLoadChangeFolderFileContent = (filePath: string) => {
+    if (!selectedRequestId) return;
+    setError(null);
+    startTransition(async () => {
+      try {
+        setSelectedChangeFolderFile(filePath);
+        const content = await getChangeFolderFileContent(selectedRequestId, filePath);
+        setChangeFolderFileContent(content);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load file content');
+      }
+    });
+  };
+
   const renderEvent = (event: StreamEvent, index: number) => {
     const key = event.id || `event-${index}`;
     switch (event.type) {
@@ -474,6 +565,8 @@ export function WorkspaceClient({
 
   const activeSessions = requestSessions.filter((s) => s.status !== 'archived');
   const bootstrapConfig = BOOTSTRAP_STATUS_CONFIG[bootstrapStatus];
+  const hasProposeSession = requestSessions.some((s) => s.role === 'propose');
+  const hasProposeCompleted = requestSessions.some((s) => s.role === 'propose' && s.status === 'completed');
 
   return (
     <div className="flex h-[calc(100vh-57px)] overflow-hidden">
@@ -649,6 +742,31 @@ export function WorkspaceClient({
                   placeholder="Describe the request..."
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Enabled Options (optional)
+                </label>
+                <div className="space-y-1">
+                  {ENABLED_OPTIONS.map((opt) => (
+                    <label key={opt.value} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        value={opt.value}
+                        checked={newRequestEnabled.includes(opt.value)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setNewRequestEnabled((prev) => [...prev, opt.value]);
+                          } else {
+                            setNewRequestEnabled((prev) => prev.filter((v) => v !== opt.value));
+                          }
+                        }}
+                        className="rounded"
+                      />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
               <div className="flex gap-2">
                 <button
                   onClick={handleCreateRequest}
@@ -777,6 +895,76 @@ export function WorkspaceClient({
                   <p className="text-sm text-gray-600 whitespace-pre-wrap">
                     {selectedRequest.content}
                   </p>
+                </div>
+              )}
+
+              {/* Propose actions */}
+              {isBootstrapped && selectedRequest.status === 'draft' && !hasProposeSession && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowProposeDialog(true)}
+                    disabled={isPending}
+                    className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                  >
+                    Start Propose
+                  </button>
+                </div>
+              )}
+
+              {/* Change folder viewer toggle */}
+              {hasProposeCompleted && (
+                <div>
+                  <button
+                    onClick={showChangeFolderViewer ? () => setShowChangeFolderViewer(false) : handleLoadChangeFolderFiles}
+                    disabled={isPending}
+                    className="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors"
+                  >
+                    {showChangeFolderViewer ? 'Hide Change Folder' : 'View Change Folder'}
+                  </button>
+
+                  {showChangeFolderViewer && (
+                    <div className="mt-4 border rounded-lg overflow-hidden">
+                      <div className="flex">
+                        {/* File tree sidebar */}
+                        <div className="w-48 shrink-0 border-r bg-gray-50 p-3">
+                          <h4 className="text-xs font-semibold text-gray-600 mb-2">Change Folder</h4>
+                          {changeFolderFiles.length === 0 ? (
+                            <p className="text-xs text-gray-400">No files found</p>
+                          ) : (
+                            <ul className="space-y-1">
+                              {changeFolderFiles.map((file) => (
+                                <li key={file.path}>
+                                  <button
+                                    onClick={() => handleLoadChangeFolderFileContent(file.path)}
+                                    className={`w-full text-left text-xs px-2 py-1 rounded truncate ${
+                                      selectedChangeFolderFile === file.path
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : 'text-gray-700 hover:bg-gray-100'
+                                    }`}
+                                  >
+                                    {file.name}
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+
+                        {/* File content pane */}
+                        <div className="flex-1 p-4 min-h-48 max-h-96 overflow-y-auto">
+                          {!selectedChangeFolderFile ? (
+                            <p className="text-sm text-gray-400">Select a file to view its content</p>
+                          ) : changeFolderFileContent === null ? (
+                            <p className="text-sm text-gray-400">Loading...</p>
+                          ) : (
+                            <pre className="text-xs text-gray-800 whitespace-pre-wrap break-words">
+                              {changeFolderFileContent}
+                            </pre>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1049,6 +1237,79 @@ export function WorkspaceClient({
                   setShowBootstrapDialog(false);
                   setBootstrapAgentId('');
                   setBootstrapEnvId('');
+                }}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Propose Dialog */}
+      {showProposeDialog && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowProposeDialog(false);
+          }}
+        >
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Start Propose Session
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              This will start a propose agent session to generate the change folder for{' '}
+              <strong>{selectedRequest?.title}</strong>.
+            </p>
+
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Agent</label>
+                <select
+                  value={proposeAgentId}
+                  onChange={(e) => setProposeAgentId(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md text-sm"
+                >
+                  <option value="">Select an agent</option>
+                  {agents.map((agent) => (
+                    <option key={agent.id} value={agent.id}>
+                      {agent.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Environment</label>
+                <select
+                  value={proposeEnvId}
+                  onChange={(e) => setProposeEnvId(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md text-sm"
+                >
+                  <option value="">Select an environment</option>
+                  {environments.map((env) => (
+                    <option key={env.id} value={env.id}>
+                      {env.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleStartPropose}
+                disabled={isPending || !proposeAgentId || !proposeEnvId}
+                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 text-sm"
+              >
+                {isPending ? 'Starting...' : 'Start Propose'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowProposeDialog(false);
+                  setProposeAgentId('');
+                  setProposeEnvId('');
                 }}
                 className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 text-sm"
               >
