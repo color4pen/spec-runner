@@ -1,6 +1,6 @@
 # Learned Patterns
 
-last-distilled: 2026-04-24 18:28
+last-distilled: 2026-04-27 00:14
 
 ワークフロー完了時に抽出されたパターンの蓄積。
 continuous-learning スキルが追記し、distill-learnings / promote-rule が消費する。
@@ -312,3 +312,38 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **Dead code パラメータは即座に除去するか TODO を付ける**: SDK 未対応で使えないパラメータを「将来のため」に受け取ると、コードレビューで maintainability 減点になる。明示的な TODO + tracking reference がなければ削除する
 - **IDOR ゼロ記録を 2 フェーズ連続で維持**: Phase 5 に続き Phase 6 でも IDOR 指摘なし。`getAuthenticatedUser()` + ownership verification パターンの定着が確認された。constraints / review-lessons への昇格による学習サイクルの有効性がさらに裏付けられた
 - **spec review で型記述・アルゴリズムの曖昧さは MEDIUM で検出される**: 型の揺れ（integer vs string-or-integer）や曖昧なアルゴリズム記述は iteration 1 で必ず指摘される。spec 作成時に入力パラメータの型統一と具体的なアルゴリズム記述を意識する
+
+---
+
+## 2026-04-27 — [BugFix] Custom Tool 未登録 + Propose 画面遷移 regression
+
+**Type**: bug-fix
+**Severity**: normal
+**Root Cause**: Agent 作成時の tools 配列に Custom Tool が含まれていない + merge conflict 解消で削除済みコードが復活
+
+### Bug Pattern
+
+#### Bug 1: register_branch Custom Tool が Agent に未登録
+- 症状: propose セッションで agent が register_branch を呼ばず、branch_name が DB に null のまま
+- 直接原因: `actions.ts:68` の `createAgent` の tools 配列が `[{ type: 'agent_toolset_20260401' }]` のみで `REGISTER_BRANCH_TOOL` が含まれていない
+- 根本原因: PR #11 で Custom Tool の実装（ツール定義、ハンドラ、SSE requires_action 処理）を追加した際、Agent 作成側の tools 配列への登録が漏れた。実装の「出口」側（ツール定義・ハンドラ）は完成しても「入口」側（Agent への登録）が漏れるパターン
+
+#### Bug 2: Propose 起動後にチャット画面へ自動遷移（regression）
+- 症状: Start Propose 実行後にリクエスト詳細画面からチャット画面に自動遷移する
+- 直接原因: `workspace-client.tsx:468-470` の `connectStream()` + `setSelectedManagedSessionId()` が propose 完了ハンドラ内に存在
+- 根本原因: PR #10 で修正済みだった行が PR #11 の merge conflict 解消で復活した
+
+### Process Gap
+- 検出すべきだったフェーズ: code-review（両バグとも実装段階で検出可能）
+- 観点の有無:
+  - Bug 1: なかった → ギャップ — checklist.md に「新規 tool/resource の全登録箇所確認」の観点がない
+  - Bug 2: なかった → ギャップ — merge conflict resolution 後の意図しない行復活を検出するルールがない
+- 改善アクション:
+  - checklist.md に「Custom Tool/Resource 追加時に Agent の tools 配列への登録確認」を追加
+  - checklist.md に「merge conflict resolution 後、削除済みコードの意図しない復活がないか確認」を追加
+
+### Lessons
+- **新しい機能の「出口」と「入口」の両方を確認する**: Custom Tool の実装（ツール定義、ハンドラ、SSE 処理）が揃っていても、Agent 側の tools 配列に登録されなければ機能しない。新機能追加時は「定義側」と「利用側」の接続を必ず検証する。これは Phase 3（Bootstrap）の「定義済み関数の未呼び出し」パターンと同根
+- **merge conflict resolution は新たなバグの温床**: conflict 解消時に意図的に削除した行が復活するパターンは、通常の diff レビューでは検出困難。conflict marker の解消後に「この PR で意図的に削除した変更が残っているか」を確認するプロセスが必要
+- **サイレント障害（エラーなし・機能しない）はテストでのみ検出できる**: Bug 1 はエラーメッセージが出ない。Agent がツールを呼ばないだけで、正常系と区別がつかない。Custom Tool の呼び出しを検証する end-to-end テストが最も有効な防止策
+- **同一 PR への複数機能の集約はリスクを高める**: PR #11 に Custom Tool 実装と他の変更が含まれていたため、merge conflict が発生しやすくなった。機能単位での PR 分割が conflict リスクを低減する

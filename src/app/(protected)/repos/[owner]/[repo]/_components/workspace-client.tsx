@@ -455,7 +455,7 @@ export function WorkspaceClient({
     setError(null);
     startTransition(async () => {
       try {
-        const result = await startPropose(selectedRequestId, proposeAgentId, proposeEnvId);
+        await startPropose(selectedRequestId, proposeAgentId, proposeEnvId);
         setShowProposeDialog(false);
         setProposeAgentId('');
         setProposeEnvId('');
@@ -465,9 +465,6 @@ export function WorkspaceClient({
         setRequestsList((prev) =>
           prev.map((r) => (r.id === selectedRequestId ? { ...r, ...detail } : r))
         );
-        // Connect to SSE stream for the propose session
-        void connectStream(result.managedSessionId);
-        setSelectedManagedSessionId(result.managedSessionId);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to start propose');
       }

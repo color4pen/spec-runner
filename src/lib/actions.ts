@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { getAnthropicClient } from './anthropic';
 import { getAuthenticatedUser } from './auth-helpers';
 import { verifySessionAccessByManagedId } from './session-actions';
+import { REGISTER_BRANCH_TOOL } from './register-branch-tool';
 import type { BetaManagedAgentsGitHubRepositoryResourceParams } from '@anthropic-ai/sdk/resources/beta/sessions/sessions';
 
 export interface SessionEventData {
@@ -65,7 +66,7 @@ export async function createAgent(formData: {
     name: formData.name,
     model: 'claude-sonnet-4-6',
     system: formData.systemPrompt || undefined,
-    tools: [{ type: 'agent_toolset_20260401' }],
+    tools: [{ type: 'agent_toolset_20260401' }, REGISTER_BRANCH_TOOL],
   });
   revalidatePath('/');
   return {
