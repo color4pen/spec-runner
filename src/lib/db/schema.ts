@@ -57,6 +57,8 @@ export const requests = sqliteTable('requests', {
   title: text('title').notNull(),
   content: text('content'),
   enabled: text('enabled'),
+  branchName: text('branch_name'),
+  baseBranch: text('base_branch'),
   createdAt: text('created_at')
     .notNull()
     .default(sql`(datetime('now'))`),

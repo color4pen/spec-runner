@@ -8,6 +8,12 @@ pattern: |
   - 複数 spec (propose-session, change-folder-viewer, request-management, etc): Write→Edit (line 33-38→59-64)
   - tasks.md: Write→Edit (line 39→65)
 
+  2026-04-25 セッション:
+  - 6 spec ファイルを一括 Write(lines 34-39)
+  - spec-review 後に 5 spec を Edit(lines 67-72): branch-registration, change-folder-viewer,
+    custom-tool-handling, propose-session の 4 spec + tasks.md
+  - test-cases.md も Write 後に即 Write で上書き(lines 80-81)
+
   要件: spec-review で feedback を受けた後も、「spec の初期化 → review feedback 収集 → spec 修正」の
   3-loop を繰り返す傾向。初期生成時点で 80-90% の正確性では不足。
 action: |
@@ -15,10 +21,10 @@ action: |
   design.md は proposal と双方向リンクで最初から検証する。
   各 spec ファイルは最低限「Success Criteria / Test Cases / 既存 spec との差分」を含める。
   spec-review 前に実装者による自己レビューを実装タスク開始前に実施する。
-confidence: 0.5
-occurrences: 1
+confidence: 0.6
+occurrences: 2
 first_seen: 2026-04-24
-last_seen: 2026-04-24
+last_seen: 2026-04-25
 projects: [spec-runner]
 scope: project
 source: session-observation

@@ -204,27 +204,27 @@ describe('TC-017: branch name generation maps type prefix correctly', () => {
   });
 });
 
-describe('TC-018: buildProposeMessage() contains branch name, request content, and enabled', () => {
+describe('TC-018: buildProposeMessage() contains request content and enabled (updated signature)', () => {
   test('output contains all required fields', () => {
     const message = buildProposeMessage({
-      branchName: 'feat/2026-04-24-test',
-      slug: '2026-04-24-test',
+      requestId: 10,
       requestTitle: 'Test Feature',
       requestContent: 'This is the content',
       requestType: 'new-feature',
       enabled: ['test-case-generator'],
     });
 
-    expect(message).toContain('feat/2026-04-24-test');
+    // New signature: no branchName/slug params, but includes requestId and guidelines
+    expect(message).toContain('10'); // requestId
     expect(message).toContain('Test Feature');
     expect(message).toContain('This is the content');
     expect(message).toContain('test-case-generator');
+    expect(message).toContain('register_branch');
   });
 
   test('enabled section is omitted when empty', () => {
     const message = buildProposeMessage({
-      branchName: 'feat/2026-04-24-test',
-      slug: '2026-04-24-test',
+      requestId: 1,
       requestTitle: 'Test',
       requestContent: null,
       requestType: 'new-feature',
@@ -236,8 +236,7 @@ describe('TC-018: buildProposeMessage() contains branch name, request content, a
 
   test('enabled section lists all enabled options', () => {
     const message = buildProposeMessage({
-      branchName: 'feat/slug',
-      slug: 'slug',
+      requestId: 1,
       requestTitle: 'Test',
       requestContent: null,
       requestType: 'new-feature',

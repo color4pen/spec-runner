@@ -79,6 +79,7 @@ interface WorkspaceClientProps {
   owner: string;
   repo: string;
   repositoryId: number;
+  defaultBranch: string | null;
   bootstrapStatus: BootstrapStatus;
   bootstrapPrUrl: string | null;
   initialRequests: RequestSummary[];
@@ -90,6 +91,7 @@ export function WorkspaceClient({
   owner,
   repo,
   repositoryId,
+  defaultBranch,
   bootstrapStatus: initialBootstrapStatus,
   bootstrapPrUrl,
   initialRequests,
@@ -453,13 +455,19 @@ export function WorkspaceClient({
     setError(null);
     startTransition(async () => {
       try {
-        await startPropose(selectedRequestId, proposeAgentId, proposeEnvId);
+        const result = await startPropose(selectedRequestId, proposeAgentId, proposeEnvId);
         setShowProposeDialog(false);
         setProposeAgentId('');
         setProposeEnvId('');
-        // Reload request sessions to show the new propose session with status badge
+        // Reload request list and sessions (branch_name may update via register_branch)
         const detail = await getRequestDetail(selectedRequestId);
         setRequestSessions(detail.sessions);
+        setRequestsList((prev) =>
+          prev.map((r) => (r.id === selectedRequestId ? { ...r, ...detail } : r))
+        );
+        // Connect to SSE stream for the propose session
+        void connectStream(result.managedSessionId);
+        setSelectedManagedSessionId(result.managedSessionId);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to start propose');
       }
@@ -981,6 +989,24 @@ export function WorkspaceClient({
                   <p className="text-sm text-gray-600 whitespace-pre-wrap">
                     {selectedRequest.content}
                   </p>
+                </div>
+              )}
+
+              {/* Diff URL — displayed when branch_name is stored in DB */}
+              {selectedRequest.branchName && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-500 font-medium">Branch:</span>
+                  <code className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-700">
+                    {selectedRequest.branchName}
+                  </code>
+                  <a
+                    href={`https://github.com/${owner}/${repo}/compare/${defaultBranch ?? 'main'}...${selectedRequest.branchName}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline hover:text-blue-800 text-xs"
+                  >
+                    View diff on GitHub
+                  </a>
                 </div>
               )}
 

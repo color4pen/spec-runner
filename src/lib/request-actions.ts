@@ -29,6 +29,7 @@ export interface RequestSummary {
   title: string;
   content: string | null;
   enabled: string | null;
+  branchName: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -87,6 +88,7 @@ export async function verifyRequestOwnership(
     title: request.title,
     content: request.content,
     enabled: request.enabled ?? null,
+    branchName: request.branchName ?? null,
     createdAt: request.createdAt,
     updatedAt: request.updatedAt,
   };
@@ -189,6 +191,7 @@ export async function createRequest(params: {
     title: record.title,
     content: record.content,
     enabled: record.enabled ?? null,
+    branchName: record.branchName ?? null,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
@@ -225,6 +228,7 @@ export async function listRequests(
     title: r.title,
     content: r.content,
     enabled: r.enabled ?? null,
+    branchName: r.branchName ?? null,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
   }));
@@ -319,6 +323,7 @@ export async function updateRequestStatus(
     title: updated.title,
     content: updated.content,
     enabled: updated.enabled ?? null,
+    branchName: updated.branchName ?? null,
     createdAt: updated.createdAt,
     updatedAt: updated.updatedAt,
   };

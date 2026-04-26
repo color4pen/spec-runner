@@ -11,7 +11,7 @@ import {
   getBranchExists,
   findOpenPrByHead,
 } from './github-api';
-import { generateSlug, generateBranchName } from './propose-utils';
+import { generateSlug, generateBranchName, extractSlugFromBranchName } from './propose-utils';
 
 interface SessionContext {
   sessionId: number;
@@ -22,6 +22,7 @@ interface SessionContext {
   requestTitle: string;
   requestType: string;
   requestCreatedAt: string;
+  requestBranchName: string | null;
   repositoryId: number;
   owner: string;
   name: string;
@@ -69,6 +70,7 @@ export async function handleSessionCompleted(
     requestTitle: request.title,
     requestType: request.type,
     requestCreatedAt: request.createdAt,
+    requestBranchName: request.branchName ?? null,
     repositoryId: repository.id,
     owner: repository.owner,
     name: repository.name,
@@ -123,11 +125,25 @@ async function handleProposeCompleted(
     .where(eq(sessions.id, ctx.sessionId));
 
   // Step 2: Check branch existence (for observability — does not affect request status)
-  // Derive branch name from request data stored in context
-  // We use the request's createdAt date and title to derive the slug deterministically
-  const createdDate = ctx.requestCreatedAt.slice(0, 10);
-  const slug = generateSlug(createdDate, ctx.requestTitle);
-  const branchName = generateBranchName(ctx.requestType, slug);
+  // Use DB branch_name if available; fall back to deterministic derivation.
+  let branchName: string;
+  if (ctx.requestBranchName) {
+    // DB has the agent-reported branch name from register_branch Custom Tool
+    const slug = extractSlugFromBranchName(ctx.requestBranchName);
+    if (slug) {
+      branchName = ctx.requestBranchName;
+    } else {
+      // branch_name does not contain '/': fall back to deterministic derivation
+      const createdDate = ctx.requestCreatedAt.slice(0, 10);
+      const derivedSlug = generateSlug(createdDate, ctx.requestTitle);
+      branchName = generateBranchName(ctx.requestType, derivedSlug);
+    }
+  } else {
+    // Fallback: derive slug and branch from request data (agent did not call register_branch)
+    const createdDate = ctx.requestCreatedAt.slice(0, 10);
+    const derivedSlug = generateSlug(createdDate, ctx.requestTitle);
+    branchName = generateBranchName(ctx.requestType, derivedSlug);
+  }
 
   await getBranchExists(accessToken, ctx.owner, ctx.name, branchName);
   // Branch existence check result is intentionally unused:

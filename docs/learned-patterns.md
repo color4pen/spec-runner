@@ -272,3 +272,43 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **IDOR は2フェーズ連続で検出ゼロ**: Phase 5 に続き今回もゼロ。`getAuthenticatedUser()` パターンの定着と constraints / review-lessons の効果が持続している
 - **loading/error 状態の仕様化は非同期 UI の標準チェック項目にすべき**: ディレクトリ展開のような非同期操作で loading state が未定義だった。spec-review の review-criteria に「非同期データ取得を伴う UI 操作は loading / error / success の3状態を定義しているか」を追加推奨
 - **既存の pre-existing issue は refactoring のスコープ判断が重要**: trailing slash 欠如は pre-existing だが、今回の変更で同じパターンを新規追加したことで MEDIUM 指摘になった。既存問題のある箇所に変更を加える場合、pre-existing issue の修正もスコープに含めるか明示的に判断する
+
+---
+
+## 2026-04-25 — Slug 生成のエージェント委譲 + ブランチ名追跡
+
+**Type**: new-feature
+**Outcome**: completed
+
+### Review Patterns
+
+#### Spec Review (6.90 → 7.90, +1.00)
+- **公開型拡張の delta spec 欠落 (HIGH)**: `RequestSummary` / `RequestDetail` 型への `branch_name` 追加が tasks.md にのみ記載され、対応する delta spec が存在しなかった。constraints.md「公開型の拡張は spec レベルで明示的に定義する」に違反。型拡張は tasks.md だけでなく delta spec に必ず反映する
+- **冪等性シナリオの欠落 (HIGH)**: `register_branch` が同一 `request_id` に複数回呼ばれた場合の挙動が未定義。Custom Tool のような外部エージェントが呼ぶインターフェースは、リトライ・再実行を前提とした冪等性シナリオを初回設計時に含めるべき
+- **型記述の揺れ (MEDIUM)**: `request_id` が scenario 間で `integer` と `string-or-integer` で不一致。入力パラメータの型は全 scenario で統一表記する
+- **アルゴリズムの曖昧な記述 (MEDIUM)**: branch_name から slug を抽出するロジックが「extracting the slug portion after the prefix」と曖昧。具体的なアルゴリズム（最初の `/` 以降を取得）を spec に明示すべき
+- **タイムアウト・断線のシナリオ欠落 (MEDIUM)**: Custom Tool 処理中のタイムアウトと SSE 切断のリカバリ戦略が未記載。外部 API と非同期通信を含むフローでは異常系シナリオを初回 spec に含める
+
+#### Code Review (7.45, iteration 1 で approved)
+- **静的解析テスト（source-text toContain）が再び主要な減点要因**: 5 つの must-priority テストケースが `toContain` による静的ソース解析のみ。testing スコア 6/10。review-lessons.md に「source static analysis tests should be limited to directive checks, not business logic verification」と記載済みだが改善されていない（6 フェーズ連続で未修正）
+- **path.resolve() 不使用のパストラバーサル検査 (MEDIUM)**: `startsWith` のみの文字列ベースチェック。`path.resolve()` / `path.normalize()` による正規化を前処理に入れるべき
+- **Dead code: 受け取るが使わないパラメータ (MEDIUM)**: `customTools` が `createBoundSession` に受け取られるが Anthropic API に渡されない。SDK 未対応なら受け取らないか、明示的な TODO トラッキングを付ける
+- **Last-50 イベント取得の脆弱性 (MEDIUM)**: `fetchAndHandleCustomTool` が直近 50 イベントから custom_tool_use を探す実装。長時間セッションでは対象イベントが範囲外になる可能性。ストリーミング中にキャッシュする設計が推奨
+
+### Error Patterns
+- **Build 型不一致 (retry 1)**: SSE route で `EventSendParams` 型が SDK の型定義と一致しなかった。SDK 型の変更は verification の Build phase で初めて検出される傾向がある
+- **テスト event shape 不一致 (retry 2)**: Build fix 後にテストの期待値が実装と乖離。SDK 型の修正は連鎖的にテストの期待値も壊す。型修正時はテストの event fixture も同時に更新する
+- **verification は 3 回目で全 PASS**: Build → Test の連鎖失敗パターン。SDK 型起因のエラーは build-fixer だけでなく test fixture の修正も必要
+
+### Design Decisions
+- **Custom Tool Handler のディスパッチャパターン**: `custom-tool-handler.ts` を `session-completion-handler.ts` と対称的なディスパッチャとして設計。`'use server'` なしの lib モジュールで、ツール名によるルーティングを担う。将来の `submit_verdict`, `submit_artifacts` 等の追加が容易
+- **register_branch の last-write-wins 冪等性**: 同一 request_id への複数回呼び出しは上書き（last-write-wins）で対応。エラーにしない理由は、エージェントのリトライやブランチ再作成のシナリオを自然に許容するため
+- **slug 生成のエージェント委譲**: アプリ側の `generateSlug()` が日本語タイトルで空 slug を生成する問題を、エージェントに slug 決定を委ねることで根本解決。エージェントはリポジトリ文脈を踏まえて英語 slug を生成する
+
+### Lessons
+- **冪等性は外部エージェント向けインターフェースの必須要件**: Custom Tool のようにエージェントが呼ぶ API は、リトライ・再実行を前提に設計する。冪等性シナリオを spec 初回作成時に含めるルールを確立すべき
+- **静的解析テスト（source-text 検証）の技術的負債は 6 フェーズ連続で未修正**: testing スコアの主要な足枷。mock.module や pure function の export + 直接テストなど、代替手段が提示されているが移行が進んでいない。対処の優先度を上げる必要がある
+- **SDK 型変更は Build + Test の連鎖失敗を引き起こす**: SDK の型定義に依存するコードを修正する際は、実装だけでなくテストの event fixture も同時に更新する。build-fixer の修正が test failure を生む連鎖パターンを認識する
+- **Dead code パラメータは即座に除去するか TODO を付ける**: SDK 未対応で使えないパラメータを「将来のため」に受け取ると、コードレビューで maintainability 減点になる。明示的な TODO + tracking reference がなければ削除する
+- **IDOR ゼロ記録を 2 フェーズ連続で維持**: Phase 5 に続き Phase 6 でも IDOR 指摘なし。`getAuthenticatedUser()` + ownership verification パターンの定着が確認された。constraints / review-lessons への昇格による学習サイクルの有効性がさらに裏付けられた
+- **spec review で型記述・アルゴリズムの曖昧さは MEDIUM で検出される**: 型の揺れ（integer vs string-or-integer）や曖昧なアルゴリズム記述は iteration 1 で必ず指摘される。spec 作成時に入力パラメータの型統一と具体的なアルゴリズム記述を意識する

@@ -1,11 +1,11 @@
 id: investigate-sdk-before-spec
 trigger: "新しい外部 SDK/ライブラリを使う仕様を書くとき"
-pattern: "SDK の実際の API を調べずに仕様を書くと、全 spec を破棄して書き直す羽目になる。Phase 1 では Anthropic SDK の Managed Agents API を調査せずに spec を作成し、rm -rf で全削除して再作成した"
+pattern: "SDK の実際の API を調べずに仕様を書くと、全 spec を破棄して書き直す羽目になる。Phase 1 では Anthropic SDK の Managed Agents API を調査せずに spec を作成し、rm -rf で全削除して再作成した。2026-04-25 セッションでは custom tool API (BetaManagedAgentsCustomTool, sessions.events.send 等) の型定義を 14回の grep/sed で調査(lines 88-103)。この調査は spec 作成後・実装前に行われたため、custom-tool-handler.ts の build 時に SDK 型不整合が発覚し Edit が必要になった"
 action: "仕様作成前に node_modules 内の型定義・README を読み、利用可能な API surface を確認する。proposal/design の前に SDK 調査メモを残す"
-confidence: 0.7
-occurrences: 1
+confidence: 0.8
+occurrences: 2
 first_seen: 2026-04-15
-last_seen: 2026-04-15
+last_seen: 2026-04-25
 projects: [spec-runner]
 scope: project
 source: session-observation

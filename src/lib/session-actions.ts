@@ -8,6 +8,7 @@ import { getDb } from './db';
 import { sessions, requests, repositories, users } from './db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import type { BetaManagedAgentsGitHubRepositoryResourceParams } from '@anthropic-ai/sdk/resources/beta/sessions/sessions';
+import type { BetaManagedAgentsCustomToolParams } from '@anthropic-ai/sdk/resources/beta/agents/agents';
 
 export interface SessionSummary {
   id: number;
@@ -127,6 +128,8 @@ export async function createBoundSession(params: {
   agentId: string;
   environmentId: string;
   title?: string;
+  /** Custom Tools to pass to the session (for documentation/future SDK support). */
+  customTools?: BetaManagedAgentsCustomToolParams[];
 }): Promise<SessionSummary> {
   const user = await getAuthenticatedUser();
   const db = getDb();

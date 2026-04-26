@@ -22,3 +22,4 @@
 | [ADR-0010-bootstrap-for-managed-agents](ADR-0010-bootstrap-for-managed-agents.md) | マネージドエージェント向け Bootstrap 機能 | accepted (D6 superseded) |
 | [ADR-0011-bootstrap-session-lifecycle](ADR-0011-bootstrap-session-lifecycle.md) | Bootstrap セッションライフサイクル統合 | accepted |
 | [app-20260424-request-create-propose](app-20260424-request-create-propose.md) | Request Create + Propose セッション設計 | proposed |
+| [ADR-0012-slug-delegation-and-branch-tracking](ADR-0012-slug-delegation-and-branch-tracking.md) | Slug 生成のエージェント委譲と Custom Tool によるブランチ名追跡 | proposed |

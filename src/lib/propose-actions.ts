@@ -8,14 +8,16 @@ import { createBoundSession } from './session-actions';
 import { sendMessage } from './actions';
 import { revalidatePath } from 'next/cache';
 import { ensureVaultWithCredentials } from './vault-actions';
-import { getBranchExists, deleteBranch, getDirectoryContents, getFileContent } from './github-api';
+import { getDirectoryContents, getFileContent } from './github-api';
 import type { DirectoryEntry } from './github-api';
 import {
   generateSlug,
   generateBranchName,
+  extractSlugFromBranchName,
   buildProposeMessage,
   parseEnabledJson,
 } from './propose-utils';
+import { REGISTER_BRANCH_TOOL } from './register-branch-tool';
 
 /**
  * Shared helper: verify request ownership and return request + repository.
@@ -50,14 +52,17 @@ async function verifyRequestWithRepository(
 /**
  * Start a propose session for a request.
  * Flow: verify ownership + draft status -> transition to in-progress -> Vault setup
- *       -> branch cleanup -> createBoundSession(role: 'propose') -> sendMessage
+ *       -> createBoundSession(role: 'propose') -> sendMessage
  * On failure: rollback request status to draft, cancel session if partially created.
+ *
+ * Slug generation is delegated to the agent. The agent will call register_branch
+ * Custom Tool to report slug + branch_name back to spec-runner.
  */
 export async function startPropose(
   requestId: number,
   agentId: string,
   environmentId: string
-): Promise<{ sessionId: number; managedSessionId: string; branchName: string }> {
+): Promise<{ sessionId: number; managedSessionId: string }> {
   const user = await getAuthenticatedUser();
 
   const { request, repository } = await verifyRequestWithRepository(requestId, user.dbId);
@@ -68,12 +73,6 @@ export async function startPropose(
       `Cannot start propose when request status is "${request.status}". Must be "draft".`
     );
   }
-
-  // Generate slug and branch name using request.createdAt as the date source
-  // (consistent with getChangeFolderFiles() and session-completion-handler.ts)
-  const createdDate = request.createdAt.slice(0, 10);
-  const slug = generateSlug(createdDate, request.title);
-  const branchName = generateBranchName(request.type, slug);
 
   // Step 1: Transition request to in-progress
   const db = getDb();
@@ -90,32 +89,25 @@ export async function startPropose(
     // Step 2: Ensure Vault is set up with MCP credentials
     await ensureVaultWithCredentials(user.dbId, user.accessToken);
 
-    // Step 3: Check for existing branch and delete if present (idempotency)
-    const branchExists = await getBranchExists(
-      user.accessToken,
-      repository.owner,
-      repository.name,
-      branchName
-    );
-    if (branchExists) {
-      await deleteBranch(user.accessToken, repository.owner, repository.name, branchName);
-    }
-
-    // Step 4: Create bound session (role: 'propose')
+    // Step 3: Create bound session (role: 'propose') with register_branch Custom Tool
+    // Note: The Anthropic SDK SessionCreateParams does not currently support a 'tools'
+    // parameter at the session level — tools must be registered on the Agent.
+    // The REGISTER_BRANCH_TOOL is passed here for documentation and future SDK support.
     const session = await createBoundSession({
       requestId,
       role: 'propose',
       agentId,
       environmentId,
       title: `Propose: ${request.title}`,
+      customTools: [REGISTER_BRANCH_TOOL],
     });
     sessionId = session.id;
 
-    // Step 5: Build and send propose instruction message
+    // Step 4: Build and send propose instruction message
+    // Slug generation is delegated to the agent (no server-side slug pre-computation)
     const enabledOptions = parseEnabledJson(request.enabled);
     const message = buildProposeMessage({
-      branchName,
-      slug,
+      requestId,
       requestTitle: request.title,
       requestContent: request.content,
       requestType: request.type,
@@ -128,7 +120,6 @@ export async function startPropose(
     return {
       sessionId: session.id,
       managedSessionId: session.managedSessionId,
-      branchName,
     };
   } catch (error) {
     // Rollback: revert request to draft
@@ -160,8 +151,29 @@ export async function startPropose(
 }
 
 /**
+ * Resolve slug and branch name for a request.
+ * Uses DB branch_name when available; falls back to deterministic derivation.
+ */
+function resolveSlugAndBranch(request: typeof requests.$inferSelect): {
+  slug: string;
+  branchName: string;
+} {
+  if (request.branchName) {
+    const slug = extractSlugFromBranchName(request.branchName);
+    if (slug) {
+      return { slug, branchName: request.branchName };
+    }
+  }
+  // Fallback: deterministic derivation from createdAt + title
+  const createdDate = request.createdAt.slice(0, 10);
+  const slug = generateSlug(createdDate, request.title);
+  const branchName = generateBranchName(request.type, slug);
+  return { slug, branchName };
+}
+
+/**
  * Server Action: Get the list of files in the change folder for a request.
- * Calls getDirectoryContents() for openspec/changes/{slug}/ on the request's branch.
+ * Uses DB branch_name when available; falls back to deterministic derivation.
  */
 export async function getChangeFolderFiles(
   requestId: number
@@ -170,10 +182,7 @@ export async function getChangeFolderFiles(
 
   const { request, repository } = await verifyRequestWithRepository(requestId, user.dbId);
 
-  // Derive slug and branch from request data
-  const createdDate = request.createdAt.slice(0, 10);
-  const slug = generateSlug(createdDate, request.title);
-  const branchName = generateBranchName(request.type, slug);
+  const { slug, branchName } = resolveSlugAndBranch(request);
   const changeFolderPath = `openspec/changes/${slug}`;
 
   return getDirectoryContents(
@@ -219,7 +228,7 @@ export async function getChangeFolderDirectoryContents(
 
 /**
  * Server Action: Get the content of a specific file in the change folder.
- * Calls getFileContent() for the specified path on the request's branch.
+ * Uses DB branch_name when available; falls back to deterministic derivation.
  * Validates that filePath is within the change folder to prevent path traversal.
  */
 export async function getChangeFolderFileContent(
@@ -230,13 +239,11 @@ export async function getChangeFolderFileContent(
 
   const { request, repository } = await verifyRequestWithRepository(requestId, user.dbId);
 
-  const createdDate = request.createdAt.slice(0, 10);
-  const slug = generateSlug(createdDate, request.title);
-  const branchName = generateBranchName(request.type, slug);
-  const changeFolderPath = `openspec/changes/${slug}`;
+  const { branchName } = resolveSlugAndBranch(request);
 
-  // Guard against path traversal: filePath must be within the change folder
-  if (filePath.includes('..') || !filePath.startsWith(changeFolderPath)) {
+  // Guard against path traversal: filePath must be within openspec/changes/
+  // and must not contain '..' segments.
+  if (filePath.includes('..') || !filePath.startsWith('openspec/changes/')) {
     throw new Error('Invalid file path: must be within the change folder');
   }
 

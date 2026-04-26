@@ -42,18 +42,41 @@ export function generateBranchName(type: string, slug: string): string {
 }
 
 /**
+ * Extract the slug from a branch_name stored in DB.
+ * Algorithm: take the substring after the first '/' character.
+ * Example: 'feat/2026-04-25-my-slug' -> '2026-04-25-my-slug'
+ * Returns null if branch_name does not contain '/'.
+ */
+export function extractSlugFromBranchName(branchName: string): string | null {
+  const slashIndex = branchName.indexOf('/');
+  if (slashIndex === -1) {
+    return null;
+  }
+  return branchName.slice(slashIndex + 1);
+}
+
+/**
  * Build the propose instruction message for the managed agent.
- * Includes branch name, request content, and enabled options.
+ * Delegates slug generation and branch creation to the agent.
+ * Includes request_id so the agent can pass it to the register_branch tool.
  */
 export function buildProposeMessage(params: {
-  branchName: string;
-  slug: string;
+  requestId: number;
   requestTitle: string;
   requestContent: string | null;
   requestType: string;
   enabled: string[];
 }): string {
-  const { branchName, slug, requestTitle, requestContent, requestType, enabled } = params;
+  const { requestId, requestTitle, requestContent, requestType, enabled } = params;
+
+  const typePrefix = (
+    {
+      'new-feature': 'feat',
+      'spec-change': 'change',
+      'refactoring': 'refactor',
+      'bugfix': 'fix',
+    } as Record<string, string>
+  )[requestType] ?? 'feat';
 
   const enabledSection =
     enabled.length > 0
@@ -62,16 +85,9 @@ export function buildProposeMessage(params: {
 
   return `You are tasked with running the openspec-propose workflow for this repository.
 
-## Branch Setup
-
-Create and checkout a new branch named \`${branchName}\` from the default branch:
-\`\`\`
-git checkout -b ${branchName}
-\`\`\`
-
 ## Request Details
 
-**Slug**: ${slug}
+**Request ID**: ${requestId}
 **Type**: ${requestType}
 **Title**: ${requestTitle}
 
@@ -80,15 +96,36 @@ git checkout -b ${branchName}
 ${requestContent ?? '(no content provided)'}
 </user-request>${enabledSection}
 
+## Slug Generation Guidelines
+
+Determine an appropriate English slug for this request:
+- Format: kebab-case (lowercase alphanumeric words separated by hyphens)
+- Prefix with today's date in \`YYYY-MM-DD-\` format
+- Derive meaningful English words from the request title (translate non-English titles to English)
+- Maximum 60 characters total
+- Example: \`2026-04-25-modernize-login-ui\`
+
+## Branch Setup
+
+After determining the slug, create and checkout a new branch:
+\`\`\`
+git checkout -b ${typePrefix}/{slug}
+\`\`\`
+
+Immediately after creating the branch, call the \`register_branch\` tool with:
+- \`slug\`: the slug you determined (e.g. \`2026-04-25-modernize-login-ui\`)
+- \`branch_name\`: the full branch name (e.g. \`${typePrefix}/2026-04-25-modernize-login-ui\`)
+- \`request_id\`: ${requestId}
+
 ## Your Task
 
-Follow the openspec-propose workflow to generate the change folder at \`openspec/changes/${slug}/\` containing:
+Follow the openspec-propose workflow to generate the change folder at \`openspec/changes/{slug}/\` containing:
 - \`proposal.md\` — what and why
 - \`design.md\` — technical design decisions
 - \`tasks.md\` — implementation task list
 - Any relevant spec files under \`specs/\`
 
-Also create the request file at \`requests/active/${slug}/request.md\` with the pipeline-context.md.
+Also create the request file at \`requests/active/{slug}/request.md\` with the pipeline-context.md.
 
 In the pipeline-context.md, include the following enabled options:
 \`\`\`
@@ -98,8 +135,8 @@ enabled: [${enabled.join(', ')}]
 After generating all files, commit and push to the branch:
 \`\`\`
 git add -A
-git commit -m "propose: ${slug}"
-git push origin ${branchName}
+git commit -m "propose: {slug}"
+git push origin {branch_name}
 \`\`\`
 
 Do not create a pull request — the application will handle that separately.

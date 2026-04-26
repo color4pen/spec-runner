@@ -1,11 +1,11 @@
 id: server-actions-coupled-edits
 trigger: "Server Actions (*-actions.ts) の型やレスポンス形式を変更するとき"
-pattern: "actions.ts を変更すると、それを呼び出す Client Component (dashboard.tsx, workspace-client.tsx, repos-page-client.tsx) も連鎖的に修正が必要になる。Phase 2 では actions.ts:18回 + dashboard.tsx:12回、bootstrap フェーズでは bootstrap-actions.ts:7回 + workspace-client.tsx:6回 + registration-actions.ts:4回 が常にペアで修正された。Server Action ファイルが 6 つに増加し (actions, bootstrap-actions, repository-actions, repository-registration-actions, request-actions, session-actions)、相互依存も増えている"
+pattern: "actions.ts を変更すると、それを呼び出す Client Component も連鎖的に修正が必要になる。Phase 2 では actions.ts:18回 + dashboard.tsx:12回、bootstrap フェーズでは bootstrap-actions.ts:7回 + workspace-client.tsx:6回。2026-04-25 セッションでは request-actions.ts が 5回連続 Edit(lines 131-135)、session-completion-handler.ts が 4回連続 Edit(lines 126-129)、session-actions.ts も Edit。propose-actions.ts を新規作成した際は propose-utils.ts との分離が必要になり、さらに workspace-client.tsx 4回 Edit の連鎖が発生。Server Action ファイルが 8 つに増加し (actions, bootstrap-actions, repository-actions, repository-registration-actions, request-actions, session-actions, propose-actions, propose-utils)、新規 Action 追加のたびに既存 Action と UI の両方に連鎖修正が発生する"
 action: "Server Action の返り値型を変更する場合、呼び出し元の Client Component を同時に確認・修正する。型定義を共通の types.ts に切り出して型の不整合を防ぐ。新しい Action ファイルを作る際は、既存の Action との依存関係を事前に整理する"
 confidence: 0.8
-occurrences: 5
+occurrences: 6
 first_seen: 2026-04-16
-last_seen: 2026-04-24
+last_seen: 2026-04-25
 projects: [spec-runner]
 scope: project
 source: session-observation

@@ -77,6 +77,7 @@ export default async function WorkspacePage({
       owner={owner}
       repo={repo}
       repositoryId={currentRepository.id}
+      defaultBranch={currentRepository.defaultBranch ?? null}
       bootstrapStatus={currentRepository.bootstrapStatus}
       bootstrapPrUrl={currentRepository.bootstrapPrUrl}
       initialRequests={requestsList}
