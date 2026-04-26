@@ -1,35 +1,35 @@
 ## MODIFIED Requirements
 
-### Requirement: Change Folder File Listing
-The system SHALL retrieve the list of files in a change folder from a specified branch using the GitHub Contents API.
+### Requirement: Change Folder Server Actions
+The Server Actions for change folder retrieval SHALL use the DB-stored `branch_name` when available, falling back to deterministic derivation.
 
-#### Scenario: List change folder contents
-- **WHEN** an authenticated user requests the contents of a change folder for a request they own
-- **THEN** the system calls GitHub Contents API `GET /repos/{owner}/{repo}/contents/openspec/changes/{slug}/?ref={branch}` and returns the list of files and directories
+#### Scenario: getChangeFolderFiles uses DB branch_name
+- **WHEN** `getChangeFolderFiles(requestId)` is called and the request has a non-null `branch_name` in the database
+- **THEN** the function uses the DB-stored `branch_name` for the GitHub Contents API call and derives the change folder path by extracting the slug from `branch_name`: take the substring after the first `/` character (e.g., `feat/2026-04-25-my-slug` -> `2026-04-25-my-slug`), then construct the path as `openspec/changes/{slug}/`. If `branch_name` does not contain `/`, treat it as an error and fall back to deterministic derivation
 
-#### Scenario: Nested directory listing
-- **WHEN** the change folder contains subdirectories (e.g., `specs/`)
-- **THEN** the initial listing returns shallow entries including directories with `type: 'dir'`; subdirectory contents are fetched lazily when the user expands a directory in the viewer
+#### Scenario: getChangeFolderFiles fallback to deterministic derivation
+- **WHEN** `getChangeFolderFiles(requestId)` is called and the request has a null `branch_name` in the database
+- **THEN** the function falls back to deriving slug and branch name from `request.createdAt` and `request.title` using `generateSlug()` and `generateBranchName()`
 
-#### Scenario: Change folder not found
-- **WHEN** the specified branch does not exist or the change folder path does not exist on the branch
-- **THEN** the system returns an empty result with an appropriate message (not an error)
+#### Scenario: getChangeFolderFileContent uses DB branch_name
+- **WHEN** `getChangeFolderFileContent(requestId, filePath)` is called and the request has a non-null `branch_name` in the database
+- **THEN** the function uses the DB-stored `branch_name` for the GitHub Contents API call
 
-### Requirement: Change Folder Viewer Page
-The system SHALL provide a dedicated page or panel within the workspace for viewing change folder contents.
+#### Scenario: Path traversal prevention preserved
+- **WHEN** `getChangeFolderFileContent` receives a `filePath` parameter
+- **THEN** the function validates that the resolved path starts with `openspec/changes/` and does not contain `..` segments, rejecting invalid paths with an error
 
-#### Scenario: Viewer accessible from request detail
-- **WHEN** an authenticated user views a request that has a propose session completed
-- **THEN** the UI shows a link or tab to view the generated change folder with the list of files (proposal.md, design.md, tasks.md, specs/)
+### Requirement: Diff URL Display
+The UI SHALL display a GitHub compare URL when the request has a `branch_name` stored in the database.
 
-#### Scenario: File navigation
-- **WHEN** viewing the change folder
-- **THEN** the user can navigate between files (proposal.md, design.md, tasks.md, and spec files under specs/) without leaving the page, including expanding directories to access nested files
+#### Scenario: Diff URL displayed when branch_name exists
+- **WHEN** viewing a request detail and the request has a non-null `branch_name` in the database
+- **THEN** the UI displays a link to `https://github.com/{owner}/{repo}/compare/{base}...{branch_name}` where `{base}` is the repository's `defaultBranch` (or `main` if null)
 
-#### Scenario: Session status indicator
-- **WHEN** viewing a request with a propose session
-- **THEN** the UI displays the session status (active, waiting, completed, archived) so the user knows if change folder generation is still in progress
+#### Scenario: Diff URL hidden when branch_name is null
+- **WHEN** viewing a request detail and the request has a null `branch_name`
+- **THEN** the UI does NOT display a diff URL link
 
-#### Scenario: Directory click handling
-- **WHEN** the user clicks an entry with `type: 'dir'` in the file tree
-- **THEN** the system expands the directory to show its children instead of attempting to load it as a file
+#### Scenario: Diff URL opens in new tab
+- **WHEN** the user clicks the diff URL link
+- **THEN** the link opens in a new browser tab (`target="_blank"`) with `rel="noopener noreferrer"`
