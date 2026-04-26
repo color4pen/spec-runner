@@ -186,6 +186,38 @@ export async function getChangeFolderFiles(
 }
 
 /**
+ * Server Action: Get the contents of a subdirectory within the change folder.
+ * Calls getDirectoryContents() for the specified dirPath on the request's branch.
+ * Validates that dirPath is within the change folder to prevent path traversal.
+ */
+export async function getChangeFolderDirectoryContents(
+  requestId: number,
+  dirPath: string
+): Promise<DirectoryEntry[]> {
+  const user = await getAuthenticatedUser();
+
+  const { request, repository } = await verifyRequestWithRepository(requestId, user.dbId);
+
+  const createdDate = request.createdAt.slice(0, 10);
+  const slug = generateSlug(createdDate, request.title);
+  const branchName = generateBranchName(request.type, slug);
+  const changeFolderPath = `openspec/changes/${slug}`;
+
+  // Guard against path traversal: dirPath must be within the change folder
+  if (dirPath.includes('..') || !dirPath.startsWith(changeFolderPath)) {
+    throw new Error('Invalid directory path: must be within the change folder');
+  }
+
+  return getDirectoryContents(
+    user.accessToken,
+    repository.owner,
+    repository.name,
+    dirPath,
+    branchName
+  );
+}
+
+/**
  * Server Action: Get the content of a specific file in the change folder.
  * Calls getFileContent() for the specified path on the request's branch.
  * Validates that filePath is within the change folder to prevent path traversal.

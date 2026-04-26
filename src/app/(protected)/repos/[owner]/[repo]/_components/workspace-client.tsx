@@ -28,6 +28,7 @@ import {
   startPropose,
   getChangeFolderFiles,
   getChangeFolderFileContent,
+  getChangeFolderDirectoryContents,
 } from '@/lib/propose-actions';
 // DirectoryEntry type is imported from github-api.ts because propose-actions.ts ('use server') cannot re-export types to client components.
 import type { DirectoryEntry } from '@/lib/github-api';
@@ -136,6 +137,8 @@ export function WorkspaceClient({
   const [changeFolderFiles, setChangeFolderFiles] = useState<DirectoryEntry[]>([]);
   const [selectedChangeFolderFile, setSelectedChangeFolderFile] = useState<string | null>(null);
   const [changeFolderFileContent, setChangeFolderFileContent] = useState<string | null>(null);
+  const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set());
+  const [dirChildren, setDirChildren] = useState<Map<string, DirectoryEntry[]>>(new Map());
 
   // Chat states
   const [chatMessage, setChatMessage] = useState('');
@@ -450,16 +453,13 @@ export function WorkspaceClient({
     setError(null);
     startTransition(async () => {
       try {
-        const result = await startPropose(selectedRequestId, proposeAgentId, proposeEnvId);
+        await startPropose(selectedRequestId, proposeAgentId, proposeEnvId);
         setShowProposeDialog(false);
         setProposeAgentId('');
         setProposeEnvId('');
-        // Reload request sessions
+        // Reload request sessions to show the new propose session with status badge
         const detail = await getRequestDetail(selectedRequestId);
         setRequestSessions(detail.sessions);
-        // Connect to SSE stream for the propose session
-        void connectStream(result.managedSessionId);
-        setSelectedManagedSessionId(result.managedSessionId);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to start propose');
       }
@@ -476,8 +476,39 @@ export function WorkspaceClient({
         setShowChangeFolderViewer(true);
         setSelectedChangeFolderFile(null);
         setChangeFolderFileContent(null);
+        setExpandedDirs(new Set());
+        setDirChildren(new Map());
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load change folder');
+      }
+    });
+  };
+
+  const handleToggleDirectory = (dirPath: string) => {
+    if (!selectedRequestId) return;
+    // If already expanded, collapse
+    if (expandedDirs.has(dirPath)) {
+      setExpandedDirs((prev) => {
+        const next = new Set(prev);
+        next.delete(dirPath);
+        return next;
+      });
+      return;
+    }
+    // If already fetched, just expand
+    if (dirChildren.has(dirPath)) {
+      setExpandedDirs((prev) => new Set(prev).add(dirPath));
+      return;
+    }
+    // Fetch and expand
+    setError(null);
+    startTransition(async () => {
+      try {
+        const children = await getChangeFolderDirectoryContents(selectedRequestId, dirPath);
+        setDirChildren((prev) => new Map(prev).set(dirPath, children));
+        setExpandedDirs((prev) => new Set(prev).add(dirPath));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load directory contents');
       }
     });
   };
@@ -561,6 +592,61 @@ export function WorkspaceClient({
           </div>
         );
     }
+  };
+
+  const renderFileTree = (entries: DirectoryEntry[], depth: number): React.ReactNode => {
+    return (
+      <ul className="space-y-0.5">
+        {entries.map((entry) => {
+          const isDir = entry.type === 'dir';
+          const isExpanded = expandedDirs.has(entry.path);
+          const children = dirChildren.get(entry.path);
+          const indent = depth * 12;
+
+          return (
+            <li key={entry.path}>
+              {isDir ? (
+                <>
+                  <button
+                    onClick={() => handleToggleDirectory(entry.path)}
+                    disabled={isPending}
+                    className="w-full text-left text-xs px-2 py-1 rounded truncate text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                    style={{ paddingLeft: `${8 + indent}px` }}
+                  >
+                    <span className="mr-1">{isExpanded ? '▾' : '▸'}</span>
+                    {entry.name}/
+                  </button>
+                  {isExpanded && children && (
+                    children.length === 0 ? (
+                      <p
+                        className="text-xs text-gray-400 italic py-0.5"
+                        style={{ paddingLeft: `${20 + indent}px` }}
+                      >
+                        Empty directory
+                      </p>
+                    ) : (
+                      renderFileTree(children, depth + 1)
+                    )
+                  )}
+                </>
+              ) : (
+                <button
+                  onClick={() => handleLoadChangeFolderFileContent(entry.path)}
+                  className={`w-full text-left text-xs px-2 py-1 rounded truncate ${
+                    selectedChangeFolderFile === entry.path
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                  style={{ paddingLeft: `${8 + indent}px` }}
+                >
+                  {entry.name}
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    );
   };
 
   const activeSessions = requestSessions.filter((s) => s.status !== 'archived');
@@ -926,27 +1012,12 @@ export function WorkspaceClient({
                     <div className="mt-4 border rounded-lg overflow-hidden">
                       <div className="flex">
                         {/* File tree sidebar */}
-                        <div className="w-48 shrink-0 border-r bg-gray-50 p-3">
+                        <div className="w-56 shrink-0 border-r bg-gray-50 p-3 overflow-y-auto max-h-96">
                           <h4 className="text-xs font-semibold text-gray-600 mb-2">Change Folder</h4>
                           {changeFolderFiles.length === 0 ? (
                             <p className="text-xs text-gray-400">No files found</p>
                           ) : (
-                            <ul className="space-y-1">
-                              {changeFolderFiles.map((file) => (
-                                <li key={file.path}>
-                                  <button
-                                    onClick={() => handleLoadChangeFolderFileContent(file.path)}
-                                    className={`w-full text-left text-xs px-2 py-1 rounded truncate ${
-                                      selectedChangeFolderFile === file.path
-                                        ? 'bg-blue-100 text-blue-700'
-                                        : 'text-gray-700 hover:bg-gray-100'
-                                    }`}
-                                  >
-                                    {file.name}
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
+                            renderFileTree(changeFolderFiles, 0)
                           )}
                         </div>
 

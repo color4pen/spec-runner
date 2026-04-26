@@ -563,6 +563,46 @@ describe('TC-030: getChangeFolderFiles() uses correct path pattern', () => {
 });
 
 // ============================================================
+// SECTION 10b: getChangeFolderDirectoryContents() — static analysis
+// ============================================================
+
+describe('getChangeFolderDirectoryContents() validates dirPath and verifies ownership', () => {
+  test('propose-actions.ts has getChangeFolderDirectoryContents function', async () => {
+    const source = await Bun.file(
+      path.join(process.cwd(), 'src/lib/propose-actions.ts')
+    ).text();
+    expect(source).toContain('export async function getChangeFolderDirectoryContents');
+    expect(source).toContain('getDirectoryContents');
+  });
+
+  test('getChangeFolderDirectoryContents verifies ownership via verifyRequestWithRepository', async () => {
+    const source = await Bun.file(
+      path.join(process.cwd(), 'src/lib/propose-actions.ts')
+    ).text();
+    // Extract the function body
+    const funcStart = source.indexOf('export async function getChangeFolderDirectoryContents');
+    const funcEnd = source.indexOf('export async function getChangeFolderFileContent');
+    const funcBody = source.slice(funcStart, funcEnd);
+
+    expect(funcBody).toContain('verifyRequestWithRepository');
+    expect(funcBody).toContain('getAuthenticatedUser');
+  });
+
+  test('getChangeFolderDirectoryContents rejects path traversal', async () => {
+    const source = await Bun.file(
+      path.join(process.cwd(), 'src/lib/propose-actions.ts')
+    ).text();
+    const funcStart = source.indexOf('export async function getChangeFolderDirectoryContents');
+    const funcEnd = source.indexOf('export async function getChangeFolderFileContent');
+    const funcBody = source.slice(funcStart, funcEnd);
+
+    expect(funcBody).toContain("'..'");
+    expect(funcBody).toContain('startsWith(changeFolderPath)');
+    expect(funcBody).toContain('Invalid directory path');
+  });
+});
+
+// ============================================================
 // SECTION 11: Rollback behavior verification (TC-019) — static analysis
 // ============================================================
 

@@ -241,3 +241,34 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **JSDoc コメントの更新漏れは実装変更の副作用**: コードの振る舞いが変わったときに JSDoc が追従しないパターン。自動検出は困難だが、code-review の maintainability カテゴリで確実に捕捉されている。実装者が「関数の振る舞いを変えたら JSDoc も更新する」習慣を持つことが最善の防止策
 - **変更範囲の限定は品質向上に直結する**: 今回は単一関数への追加のみで、既存コードの破壊リスクが極小だった。スコープの小ささが初回 approved の主因の一つ。大きな変更を小さな change に分割する戦略の有効性が改めて示された
 - **IDOR は2フェーズ連続で検出ゼロ**: 前回に続き今回も IDOR 指摘なし。`getAuthenticatedUser()` パターンの定着と constraints 昇格の効果が持続している。このパターンの学習サイクルは成功として確定
+
+---
+
+## 2026-04-25 — Propose UI 改善: ディレクトリ対応 + 導線改善
+
+**Type**: refactoring
+**Outcome**: completed (spec-review: approved 7.95 iter 1, code-review: approved 7.65 iter 1)
+
+### Review Patterns
+
+#### Spec Review (7.95, iter 1 approved)
+- **既存 spec との振る舞い変更の明示 (MEDIUM)**: delta spec で既存 spec の「Nested directory listing」シナリオを shallow listing + lazy expansion に置き換えているが、置き換えであることの注記が不足していた。delta spec で既存シナリオの振る舞いを変更する場合、「replaces the previous behavior」等の明示的注記が必要
+- **loading state シナリオの未定義 (MEDIUM)**: ディレクトリ展開フェッチ中の UI 状態（loading indicator）が未定義だった。非同期データ取得を伴う UI 操作では、loading / error / success の3状態を仕様段階で定義する
+- **trailing slash 付き path validation の未明記 (MEDIUM)**: `startsWith` チェック時の trailing slash 付加方針が spec に未記載。constraints.md に既存パターンがあるにもかかわらず spec で再言及されていなかった。constraints.md で定義済みのセキュリティパターンは、新しい spec でも明示的に参照する
+
+#### Code Review (7.65, iter 1 approved)
+- **trailing slash 欠如によるプレフィックス衝突リスク (MEDIUM)**: `changeFolderPath` に trailing `/` が付加されておらず、`startsWith(changeFolderPath)` でプレフィックス衝突が発生しうる。spec-review でも同じ指摘（MEDIUM）。constraints.md 既知パターンだが実装に反映されなかった。ただし既存コード（`getChangeFolderFileContent`）も同一パターンであり pre-existing issue
+- **再帰の depth guard 欠如 (MEDIUM)**: `renderFileTree` の再帰に depth guard がない。GitHub API の自然な制限で実害は低いが、防御的実装として `if (depth > 10) return null;` の1行で対応可能。再帰関数には常に depth guard を入れる習慣が有効
+- **Server Action 冒頭ロジックの重複 (LOW)**: `getChangeFolderDirectoryContents` と `getChangeFolderFileContent` の冒頭（認証、所有権検証、slug/branch/changeFolderPath 導出、path traversal guard）が完全に重複。新規 Server Action 追加時に同一パターンをコピーペーストする傾向がある。共通部分を helper に抽出する設計を推奨
+
+### Error Patterns
+- **全フェーズ初回 PASS（リトライなし）**: Build/TypeCheck/Lint/Test(189/189) すべて初回 PASS。6フェーズ連続で Build/Test が初回 PASS。verification は完全に安定
+- **初回イテレーションで承認（リトライなし）**: spec-review、code-review ともに iter 1 で approved。CRITICAL: 0, HIGH: 0。ワークフロー全体で最も効率的な完了。変更範囲が小さい（3ファイル、約120行）refactoring タイプでは iter 1 承認が達成しやすい
+
+### Lessons
+- **refactoring タイプは iter 1 承認を達成しやすい**: 新機能追加（5フェーズ連続 iter 2 必要）と比較して、既存パターンの踏襲と変更範囲の限定が iter 1 承認に寄与した。refactoring の weight override（architecture=0.25, maintainability=0.15）も高スコアに有利に作用
+- **trailing slash パターンは constraints.md に記載されていても実装時に見落とされる**: spec-review と code-review の両方で検出されたが、既存コード（pre-existing issue）も同じ問題を抱えていた。constraints.md の記述だけでは防止力が弱い。checklist への追加（「`startsWith` で path prefix を比較する場合、trailing `/` を付加しているか」）が有効
+- **Server Action の冒頭ロジック重複は新規追加のたびに拡大する**: Phase 5（Request Create + Propose）で所有権検証ロジックの3重複が指摘され `verifyRequestWithRepository` ヘルパーが抽出されたが、今回の `getChangeFolderDirectoryContents` では別の冒頭ロジック（slug/branch/changeFolderPath 導出 + path traversal guard）が再び重複。同種のロジックは Server Action 追加前にヘルパー抽出を検討する
+- **IDOR は2フェーズ連続で検出ゼロ**: Phase 5 に続き今回もゼロ。`getAuthenticatedUser()` パターンの定着と constraints / review-lessons の効果が持続している
+- **loading/error 状態の仕様化は非同期 UI の標準チェック項目にすべき**: ディレクトリ展開のような非同期操作で loading state が未定義だった。spec-review の review-criteria に「非同期データ取得を伴う UI 操作は loading / error / success の3状態を定義しているか」を追加推奨
+- **既存の pre-existing issue は refactoring のスコープ判断が重要**: trailing slash 欠如は pre-existing だが、今回の変更で同じパターンを新規追加したことで MEDIUM 指摘になった。既存問題のある箇所に変更を加える場合、pre-existing issue の修正もスコープに含めるか明示的に判断する
