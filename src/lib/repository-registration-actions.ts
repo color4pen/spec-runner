@@ -5,6 +5,7 @@ import { getDb } from './db';
 import { repositories } from './db/schema';
 import { eq, and, inArray, sql, desc } from 'drizzle-orm';
 import type { BootstrapStatus } from './bootstrap-utils';
+import { getFileContent, getDirectoryContents } from './github-api';
 
 // Valid owner/name pattern: alphanumeric, dots, hyphens, underscores
 const REPO_NAME_PATTERN = /^[a-zA-Z0-9._-]+$/;
@@ -35,6 +36,30 @@ export interface RepositoryWithStatus {
 
 /** Inline subquery for counting requests per repository. */
 const requestCountSubquery = sql<number>`(SELECT count(*) FROM requests WHERE requests.repository_id = repositories.id)`;
+
+/**
+ * Detect whether a repository has already been bootstrapped with openspec-workflow.
+ * Checks for the presence of `openspec/project.md` and `requests/active/` on the default branch.
+ * Returns `'ready'` if both exist, `'uninitialized'` otherwise.
+ * On any API error, falls back to `'uninitialized'` (safe fallback — never re-throws).
+ */
+async function detectBootstrapStatus(
+  token: string,
+  owner: string,
+  repo: string,
+  defaultBranch: string
+): Promise<BootstrapStatus> {
+  try {
+    const [projectFile, activeDir] = await Promise.all([
+      getFileContent(token, owner, repo, 'openspec/project.md', defaultBranch),
+      getDirectoryContents(token, owner, repo, 'requests/active/', defaultBranch),
+    ]);
+    const isReady = projectFile !== null && activeDir.length > 0;
+    return isReady ? 'ready' : 'uninitialized';
+  } catch {
+    return 'uninitialized';
+  }
+}
 
 /**
  * Fetch all GitHub repositories accessible to the authenticated user.
@@ -161,6 +186,13 @@ export async function registerRepository(
   const ghRepo = await response.json() as { default_branch: string };
   const db = getDb();
 
+  const bootstrapStatus = await detectBootstrapStatus(
+    user.accessToken,
+    owner,
+    name,
+    ghRepo.default_branch || 'main'
+  );
+
   // Check for duplicate
   const [existing] = await db
     .select({
@@ -189,7 +221,7 @@ export async function registerRepository(
     );
   }
 
-  // Insert with bootstrap_status: 'uninitialized'
+  // Insert with dynamically detected bootstrap_status
   const [record] = await db
     .insert(repositories)
     .values({
@@ -198,7 +230,7 @@ export async function registerRepository(
       name,
       fullName,
       defaultBranch: ghRepo.default_branch || null,
-      bootstrapStatus: 'uninitialized',
+      bootstrapStatus,
     })
     .returning();
 

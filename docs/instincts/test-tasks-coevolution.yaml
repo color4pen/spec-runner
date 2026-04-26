@@ -17,10 +17,10 @@ action: |
   1. test-cases.md 変更時は、impact analysis (どの test / task が影響するか) を記録
   2. tasks.md 更新時に test-cases.md との consistency を明示的に確認
   3. Git commit message に「test-cases#5 の must scenario を実装」と紐付け
-confidence: 0.4
-occurrences: 1
+confidence: 0.5
+occurrences: 2
 first_seen: 2026-04-24
-last_seen: 2026-04-24
+last_seen: 2026-04-25
 projects: [spec-runner]
 scope: project
 source: session-observation

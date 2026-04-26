@@ -205,3 +205,39 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **外部 API + DB の多段操作 rollback は再発パターン**: Phase 2 で初出し、今回も session rollback の漏れとして再発。`createBoundSession` 後のエラーで session が orphaned になるパターン。try-catch の rollback ブロックに全リソースの cleanup を列挙するチェックリスト化が有効
 - **プロンプトインジェクション防御はユーザー入力を agent に渡す全箇所で必要**: XML デリミタによる content boundary の明示は defense-in-depth の基本。managed agent にユーザー入力を送信する際は、指示部分と入力部分を構造的に分離する
 - **IDOR は今回検出されなかった（5フェーズ目で初めて）**: `getAuthenticatedUser()` パターンが定着し、Server Action での IDOR が初めてゼロだった。constraints / review-lessons への昇格と code-review の繰り返し検出が防止に寄与した証拠。このパターンの学習サイクルは成功している
+
+---
+
+## 2026-04-25 — リポジトリ登録時の bootstrap 済み判定
+
+**Type**: spec-change
+**Outcome**: completed (spec-review: iter 1 approved 8.25, code-review: iter 1 approved 8.10)
+
+### Review Patterns
+
+#### Spec Review (8.25, 初回 approved)
+- **既存 spec との整合性は依然として最頻出 MEDIUM (MEDIUM)**: `repository-binding/spec.md` の "Explicit registration from search UI" シナリオが `bootstrap_status` を `uninitialized` 固定と記述しており、delta spec の動的判定と矛盾。spec-change では毎回、関連 spec の記述が変更後の挙動と矛盾しないかの突合が必要。5フェーズ連続で consistency 関連の指摘が発生
+- **状態マシンの直接 INSERT パスに対する注記不足 (LOW)**: `bootstrap-status-tracking` spec の状態マシン定義に、`ready` で直接 INSERT されるパス（遷移パスに入らない）への言及がない。仕様上は問題ないが読者の混乱を招く。状態マシンに関連する仕様変更時は、遷移パス外の入口も明示すると clarity が向上する
+- **引数 4 個は閾値未満だが拡張リスクあり (LOW)**: `detectBootstrapStatus` の引数が 4 つ（token, owner, repo, defaultBranch）。constraints の 5 個閾値には達していないが、将来の引数追加余地を考慮すると options object が望ましい。現時点では対応不要
+
+#### Code Review (8.10, 初回 approved)
+- **JSDoc コメントと実装の乖離 (MEDIUM)**: `registerRepository` の JSDoc が `bootstrap_status: 'uninitialized'` 固定と記述されたままで、動的検出への変更が反映されていなかった。実装変更時は JSDoc も同時に更新する。コメントとコードの乖離は maintainability カテゴリの定番指摘
+- **末尾スラッシュの不統一 (LOW)**: `getDirectoryContents` のパス引数 `'requests/active/'` に末尾スラッシュがあるが、`getFileContent` 呼び出しでは末尾スラッシュなし。GitHub API は許容するが、同一ファイル内のスタイル統一が望ましい
+- **should テストケースの未実装 (LOW)**: TC-012（defaultBranch パラメータ転送の検証）が独立テストとして未実装。TC-007 の URL キャプチャで間接的にカバーされているが、異なるブランチ名での明示テストがない。should priority のため blocking ではない
+
+### Error Patterns
+- **全フェーズ初回 PASS（リトライなし）**: Build/TypeCheck/Lint/Test(198)/Security すべて初回 PASS。6フェーズ連続で verification が安定。今回はエラー・リトライ・エスカレーションがゼロ
+- **spec-review も code-review も初回 approved**: 過去5フェーズは全て iter 2 で approved だったが、今回は初めて両レビューが iter 1 で approved。constraints / review-lessons の蓄積と、変更範囲の限定（単一関数・追加のみ）が寄与
+
+### Design Decisions
+- **`detectBootstrapStatus` をモジュールプライベート関数として配置**: export せず `repository-registration-actions.ts` 内に閉じ込める。将来の再利用ニーズが出たら lib 分離する方針。YAGNI に基づく判断
+- **`Promise.all` による並列 API 呼び出し**: `getFileContent` と `getDirectoryContents` を並列実行。登録レイテンシへの影響を最小化。GitHub Contents API は通常 100ms 以下で、追加の API 呼び出しは 2 回のみ
+- **エラー時の安全側倒し（`'uninitialized'` フォールバック）**: `detectBootstrapStatus` の try-catch で、あらゆるエラーを catch して `'uninitialized'` を返す。bootstrap が不要なリポジトリに bootstrap を要求するのは inconvenience だが、bootstrap 済みリポジトリを `ready` と誤判定する方がリスクが高い
+- **既存の `github-api.ts` 関数の再利用**: 新しい API ラッパーを作らず、既存の `getFileContent` / `getDirectoryContents` を使用。コード量の最小化と保守性の向上
+
+### Lessons
+- **初回 approved の達成は constraints / review-lessons の蓄積効果**: 過去5フェーズの学習（IDOR 防止、状態マシン遷移チェック、`'use server'` 認証パターン等）が実装品質に反映された結果、初回のレビューで承認閾値を超えた。continuous-learning のフィードバックループが実証的に機能している
+- **spec-change は「関連 spec の突合」が最大の注意点**: 今回も `repository-binding/spec.md` との整合性が MEDIUM で指摘された。spec-change では delta spec の対象だけでなく、変更の影響を受ける全 spec のシナリオを走査する必要がある。6フェーズ連続で consistency 関連の指摘が出ており、仕様作成段階での防止が課題
+- **JSDoc コメントの更新漏れは実装変更の副作用**: コードの振る舞いが変わったときに JSDoc が追従しないパターン。自動検出は困難だが、code-review の maintainability カテゴリで確実に捕捉されている。実装者が「関数の振る舞いを変えたら JSDoc も更新する」習慣を持つことが最善の防止策
+- **変更範囲の限定は品質向上に直結する**: 今回は単一関数への追加のみで、既存コードの破壊リスクが極小だった。スコープの小ささが初回 approved の主因の一つ。大きな変更を小さな change に分割する戦略の有効性が改めて示された
+- **IDOR は2フェーズ連続で検出ゼロ**: 前回に続き今回も IDOR 指摘なし。`getAuthenticatedUser()` パターンの定着と constraints 昇格の効果が持続している。このパターンの学習サイクルは成功として確定
