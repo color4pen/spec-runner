@@ -26,7 +26,7 @@ npm-debug.log*
 bun.lock
 
 # runtime-rule-promotion の生ログ。instinct に蒸留した後は参照不要
-docs/observations.jsonl
+openspec-workflow/observations.jsonl
 
 # dogfooding logs
 docs/dogfooding/
