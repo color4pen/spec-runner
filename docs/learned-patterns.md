@@ -347,3 +347,48 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **merge conflict resolution は新たなバグの温床**: conflict 解消時に意図的に削除した行が復活するパターンは、通常の diff レビューでは検出困難。conflict marker の解消後に「この PR で意図的に削除した変更が残っているか」を確認するプロセスが必要
 - **サイレント障害（エラーなし・機能しない）はテストでのみ検出できる**: Bug 1 はエラーメッセージが出ない。Agent がツールを呼ばないだけで、正常系と区別がつかない。Custom Tool の呼び出しを検証する end-to-end テストが最も有効な防止策
 - **同一 PR への複数機能の集約はリスクを高める**: PR #11 に Custom Tool 実装と他の変更が含まれていたため、merge conflict が発生しやすくなった。機能単位での PR 分割が conflict リスクを低減する
+
+---
+
+## 2026-04-27 — CLI Core Pipeline: specrunner run の最小実装
+
+**Type**: new-feature
+**Outcome**: completed (spec-review approved iter 2: 8.50, code-review approved iter 2: 7.30)
+
+### Review Patterns
+
+#### Spec Review (7.65 → 8.50, +0.85, improving)
+- **失敗遷移テーブルと Scenario の不一致 (MEDIUM)**: 失敗遷移テーブルが特定の history step に固定されている一方、Scenario は複数段階での同一エラー（branch 検証 / change folder 検証の両方で 401）を許容しており、append される step 名が表と本文で乖離。複数フェーズで同じエラーコードを返す場合は history step 列を `step-A | step-B` と明示するか、フェーズ別に行を分ける
+- **history entry 名の Scenario 側未明記 (LOW)**: 失敗遷移テーブルで `BRANCH_NOT_REGISTERED` 等の遷移は定義されているが、Scenario 側 THEN 節で「history に `{step, status}` が append される」を再記述していない箇所あり。失敗遷移テーブルと Scenario の二重表現は冗長を排除しつつ、Scenario には observable な状態（history entry）を必ず含める
+- **状態マシンの失敗遷移省略 (HIGH iter1)**: state.status enum と terminated の矛盾、6 条件の失敗遷移テーブル不在、ポーリング → SSE break 伝播の Scenario 不在など、状態遷移の網羅性が iter 1 で複数指摘された。状態を持つ仕様は「正常遷移＋失敗遷移＋外部割り込み（abort/terminated）」を初回 spec で網羅する
+- **change folder 検証の欠落 (HIGH iter1)**: ブランチ verify と change folder verify を 2 段階で実行する Requirement が iter 1 で抜けていた。外部リソース検証は「存在するレイヤーすべて」を spec で明示する
+
+#### Code Review (6.25 → 7.30, +1.05, improving)
+- **状態変数の並行更新によるレースコンディション (HIGH)**: SSE コールバック内で `state = await updateJobState(state, ...)` のように外側変数を fire-and-forget で更新し、main flow も同じ変数を `state = await appendHistory(...)` で書き換えるパターン。lost-update race でサイレントに history が消える。callback では純粋な変数（`registeredBranch`）のみ更新し、永続化は同期点（SSE 完了後の main flow）に集約する設計が必要
+- **SDK の型制約と spec 要件の乖離 (HIGH→MEDIUM)**: `BetaManagedAgentsSession` には `stop_reason` フィールドがなく、polling 単独で「`idle` かつ `stop_reason === 'end_turn'`」を判定できない。spec で MUST と書いても SDK が許さない。`events.list()` で最新の `session.status_idle` イベントから `stop_reason` を取得するか、spec を「polling は idle で確定、`stop_reason` 確認は SSE 経路の責務」と修正する 2 択。spec 作成時に SDK の実体を確認する習慣が必要
+- **SSE 完了経路の曖昧な分岐 (HIGH)**: SSE が `idleEndTurnDetected: false` で抜けた場合（abort / error / 正常 exit）が区別できず、polling fallback と組み合わせて「未完了セッションを完了と誤判定」する経路があった。`SessionResult.terminationReason: 'end_turn' | 'terminated' | 'sse_error' | 'aborted' | 'unknown'` のような discriminated union を導入することで、ambiguous fallthrough を排除できる
+- **must テスト未実装 22/63 件（HIGH）**: 静的型チェックは PASS でも、pipeline の振る舞いテスト（`register_branch` 未呼び出し → BRANCH_NOT_REGISTERED、SSE → polling fallback、Environment 作成失敗 → agent rollback、GitHub 401/404、fail-fast 順序）が未実装で、サイレント障害を検出できない状態だった。code-fixer に test-cases.md の Coverage Gaps を渡して 22 件追加（41/63 → 54/64）で testing 4 → 7 に改善
+- **ライブラリ層での `process.exit` アンチパターン (MEDIUM)**: `expired_token` / `access_denied` の分岐で `process.exit(1)` を直接呼ぶと、テストで `vi.spyOn(process, "exit").mockImplementation(throw)` のハックが必要になり、cli 層の cleanup も阻害する。ライブラリ層は常に `SpecRunnerError` を throw し、exit code 決定は bin/cli 層に集約する
+- **OAuth client_id プレースホルダによるサイレント失敗 (MEDIUM)**: `Iv23liasdfGHclient0001` のようなプレースホルダ値をフォールバックに置くと、env 設定漏れで GitHub 側 404/401 になりサイレントに失敗する。秘密でない識別子でも fail-fast で `SPECRUNNER_GITHUB_CLIENT_ID is required` を出すか、本番値を登録する
+- **モジュールレベル mutable state (MEDIUM)**: tool handler が `currentBranch` のような module-level 変数を持つと、並列セッションで状態混線するリスク。callback で値を渡す既存ロジックがあるなら、handler は input を validate して return するだけにし、module state を完全削除する
+- **dead code: 受け取るが使わないパラメータ / export されない述語**: `_agentId`、`isRequiresActionIdle`（コードベース内未参照）、`loadJobState`（grep で未呼び出し）など、Phase 1 では使わないが Phase 2 で必要になりそうなコード。「将来のため」に残すと毎レビューで MEDIUM 指摘になる。明示的な TODO + tracking reference がなければ削除する
+- **指数バックオフの引数シグネチャ不整合 (MEDIUM)**: `calculateBackoff(attempt, intervalMs)` で `attempt` を受けながら本体では使わず、毎回 `currentIntervalMs * BACKOFF_FACTOR` のみ計算するパターン。test-cases.md が「1→3→9→27」を要求しているなら attempt ベースの指数（`INITIAL * factor^attempt`）に修正、callsite 不要なら引数削除して `nextBackoff(currentIntervalMs)` にリネーム
+
+### Error Patterns
+- **Org の monthly usage limit による subagent 中断**: implementer subagent が 86 tool uses / 33 分時点で usage limit に到達して停止。実装は概ね完了したが implementation-notes.md は未生成。`/resume-session` で再開する運用フローが有効。長時間 implementer で複雑な実装をする場合、途中の artifact 生成タイミングを早めに設計する
+- **verification は 2 回とも全 PASS（リトライなし）**: Build/TypeCheck/Test/Security audit すべて初回 PASS。lint のみ tooling 未導入で SKIP。CLI core 規模（30 src + 6→10 test files）の new-feature でも一度の verification 通過が達成可能
+
+### Design Decisions
+- **terminationReason を discriminated union で表現**: `SessionResult.terminationReason: 'end_turn' | 'terminated' | 'sse_error' | 'aborted' | 'unknown'` を追加することで、SSE が完了せず polling fallback に入る経路を曖昧さなく分岐できるようにした。ambiguous fallthrough のバグ温床を型システムで遮断するパターン
+- **module-architect の S1-S5 推奨を素直に取り込む**: registry colocate（custom tool 定義の集約）、SDK narrowing 集約、atomic write の util 抽出など、module-analysis.md の機械的分割推奨を実装で素直に採用したことで architecture スコア 8 → 9 を達成。設計段階で module-architect を走らせる効果が定量的に確認できた
+- **状態ファイル / 設定ファイルの XDG ベース**: `~/.config/specrunner/config.json`, `~/.local/share/specrunner/jobs/<id>.json` を採用し、atomic write + 0600 permission を util に集約。CLI として標準的なベストプラクティスを最初から組み込む
+
+### Lessons
+- **SSE callback と main flow の state 共有はレースの温床**: callback では「純粋な値の伝達」のみ行い、永続化は同期点に集約する。`onBranchRegistered: (b) => { registeredBranch = b; }` のように callback を最小化し、`appendHistory` のような副作用は SSE 完了後の main flow で実行することで lost-update race を完全排除できる
+- **SDK の実体（型定義・APIシグネチャ）を spec 作成時に確認する**: `BetaManagedAgentsSession.stop_reason` のように spec が要求しても SDK が提供しないフィールドは存在する。spec MUST と SDK 実体の乖離は実装段階で HIGH 指摘になる。spec 作成段階で SDK の `.d.ts` を読む習慣を architect / spec-reviewer の checklist に追加すべき
+- **discriminated union で曖昧な分岐を遮断する**: `idleEndTurnDetected: false` のような boolean ペアでは「abort なのか error なのか正常 exit なのか」が判別不能。`terminationReason: 'end_turn' | 'terminated' | 'sse_error' | 'aborted' | 'unknown'` のような union 型で「次の分岐が必要な情報」を型に込めることで、ambiguous fallthrough を構造的に防げる
+- **must テスト coverage は HIGH 相当の指摘になる**: testing スコアは weight 0.10 だが、未実装の must テストが 22 件あると HIGH severity（pass threshold 阻止要因）として扱われる。実装フェーズで「test-cases.md の must を 80% 以上実装する」をマイルストーンに含めることで iter 1 needs-fix を回避できる
+- **ライブラリ層に `process.exit` を書かない**: テストで spy + throw のハックが必要になる時点でアンチパターン。常に `SpecRunnerError` を throw し、cli/bin 層で exit code を決定する規律を constraints.md に昇格すべき
+- **module-level mutable state は並列実行で破綻する**: `currentBranch` のような handler が持つ単一インスタンス state は、Phase 2 で `specrunner ps` 等が並列セッションをサポートした時点で構造的欠陥になる。callback / return value で値を伝達する設計に Phase 1 から統一する
+- **iter1 → iter2 +1.05 で大幅改善（improving）**: code-fixer の decision-log（H1, H2, H3, H4, M9, M11, M13）すべてに着手し、HIGH 3 件中 2 件解消 + 1 件 MEDIUM 降格、testing 65% → 84%、architecture +1（module state 撤廃）、correctness +2（race / fallback 解消）、testing +3。decision-log の宣言と実行の一致が改善幅の予測可能性を高める
+- **CLI ファースト転換後の最初の new-feature として参照価値が高い**: SDK 接合（Managed Agents、Custom Tool、SSE）、状態ファイル / 設定ファイル管理、CLI コマンド構成、エラーモデル（fail-fast 5 段階）、verification ゲートなど、後続の `specrunner spec-review` / `specrunner implement` / `specrunner code-review` 接続の基盤が揃った。次の request では本実装のパターン（terminationReason、registry colocate、atomic write util）を踏襲する

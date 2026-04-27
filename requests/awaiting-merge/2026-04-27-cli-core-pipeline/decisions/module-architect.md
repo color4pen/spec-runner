@@ -1,0 +1,12 @@
+- Greenfield として既存コード分析をスキップせず、design.md / tasks.md の planned architecture を一次対象として分析する :: ソースは存在しないが implementer が参照する設計は確定済みで、構造的レビュー対象として十分
+- atomic write を util/ に抽出推奨を出す :: config と state の両方で同一ロジックが必要、drift リスクが reusability 軸で顕在化する
+- XDG 解決も util/ に抽出推奨 :: 同上、specs 2 つで同パターンが要求される
+- state.store の history truncate を pure transform として分離する補足を出す :: tasks.md 2.4 の関数列挙は意図を示すが実装方針として SRP/testability 軸を明示する価値がある
+- session.ts と completion.ts の境界に `isProposeComplete` 述語抽出を推奨する :: ポーリング loop と SSE loop の双方で同じ判定が必要、述語重複は drift リスク
+- SSE と polling の責務分離は yield/callback パターンを推奨 :: session.ts が state を直接書き換えると pipeline.ts のテスタビリティが下がる
+- SDK 型を core から直接 import しない grep ガードを implementer 任意で推奨 :: design.md の方針を構造的に担保する手段
+- cli/run.ts の preflight を core/preflight.ts へ抽出する選択肢を提示する :: 必須ではないが Phase 2 拡張時に効くため軽量に提示
+- Bug 1 再発防止については design.md / specs / tasks の 3 層で既に構造化されており追加推奨なしと判断 :: tool-registry の単一 source 設計が仕様レベルで強制済み
+- リスクのある単一責任違反候補（W1-W4）を warning として列挙する :: implementer が実装中に early warning として参照可能
+- decisions ログを直接 append-only で残す :: pipeline-context.md の指示通り、判断過程を architect / implementer が後追いできるようにする
+- out-of-scope（extensibility / deployment independence / security boundary / domain boundary）の評価は記載せず Notes に明示する :: pipeline-context.md scope 規約遵守、author-bias 維持
