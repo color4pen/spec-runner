@@ -85,6 +85,7 @@ function makeMinimalDeps(): PipelineDeps {
     githubClient: {
       verifyBranch: vi.fn().mockResolvedValue(true),
       getRawFile: vi.fn().mockResolvedValue(null),
+      verifyPath: vi.fn().mockResolvedValue(true),
     },
   };
 }

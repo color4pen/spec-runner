@@ -4,7 +4,7 @@
  * and src/core/step/executor.ts.
  */
 import type { GitHubClient } from "../../core/port/github-client.js";
-import { githubTokenExpiredError } from "../../errors.js";
+import { githubApiError, githubTokenExpiredError } from "../../errors.js";
 
 export class GitHubApiClient implements GitHubClient {
   constructor(
@@ -77,8 +77,11 @@ export class GitHubApiClient implements GitHubClient {
 
   /**
    * Verify a folder/path exists in a repository.
-   * Returns true if found, false if 404.
-   * Throws SpecRunnerError(GITHUB_TOKEN_EXPIRED) on 401.
+   * - 200 → true
+   * - 404 → false
+   * - 401 → throws SpecRunnerError(GITHUB_TOKEN_EXPIRED)
+   * - any other status (5xx 含む) → throws SpecRunnerError(GITHUB_API_ERROR)
+   * - network error → propagates from fetchFn
    */
   async verifyPath(owner: string, repo: string, branch: string, folderPath: string): Promise<boolean> {
     const encodedPath = folderPath.split("/").map(encodeURIComponent).join("/");
@@ -91,11 +94,12 @@ export class GitHubApiClient implements GitHubClient {
       },
     });
 
+    if (resp.status === 200) return true;
+    if (resp.status === 404) return false;
     if (resp.status === 401) {
       throw githubTokenExpiredError();
     }
-
-    return resp.status !== 404;
+    throw githubApiError(resp.status, `verifyPath(${owner}/${repo}@${branch}:${folderPath})`);
   }
 }
 

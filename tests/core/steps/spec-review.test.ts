@@ -93,6 +93,7 @@ function buildDeps(opts: {
     githubClient: {
       verifyBranch: vi.fn().mockResolvedValue(true),
       getRawFile: vi.fn().mockResolvedValue(fileContent),
+      verifyPath: vi.fn().mockResolvedValue(true),
     },
   };
 }

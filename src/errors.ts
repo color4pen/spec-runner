@@ -19,6 +19,7 @@ export const ERROR_CODES = {
   CONFIG_INCOMPLETE: "CONFIG_INCOMPLETE",
   CONFIG_INVALID: "CONFIG_INVALID",
   GITHUB_TOKEN_EXPIRED: "GITHUB_TOKEN_EXPIRED",
+  GITHUB_API_ERROR: "GITHUB_API_ERROR",
   NOT_GIT_REPO: "NOT_GIT_REPO",
   REMOTE_NOT_GITHUB: "REMOTE_NOT_GITHUB",
   REQUEST_MD_INVALID: "REQUEST_MD_INVALID",
@@ -57,6 +58,14 @@ export function githubTokenExpiredError(): SpecRunnerError {
     ERROR_CODES.GITHUB_TOKEN_EXPIRED,
     "Run 'specrunner login' to refresh.",
     "GitHub token expired.",
+  );
+}
+
+export function githubApiError(status: number, detail: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.GITHUB_API_ERROR,
+    "Retry after a moment; if it persists, check GitHub status.",
+    `GitHub API error (status ${status}): ${detail}`,
   );
 }
 

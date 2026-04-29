@@ -104,6 +104,7 @@ function makeMinimalDeps(clientOpts?: Parameters<typeof makeMockSessionClient>[0
     githubClient: {
       verifyBranch: vi.fn().mockResolvedValue(true),
       getRawFile: vi.fn().mockResolvedValue("- **verdict**: approved"),
+      verifyPath: vi.fn().mockResolvedValue(true),
     },
   };
 }

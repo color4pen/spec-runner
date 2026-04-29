@@ -370,7 +370,7 @@ export class StepExecutor {
    * Throws on CHANGE_FOLDER_NOT_FOUND or GITHUB_TOKEN_EXPIRED.
    */
   private async verifyChangeFolderViaPort(
-    githubClient: GitHubClient & { verifyPath?: (o: string, r: string, b: string, p: string) => Promise<boolean> },
+    githubClient: GitHubClient,
     owner: string,
     repo: string,
     branch: string,
@@ -379,10 +379,7 @@ export class StepExecutor {
     state: JobState,
     store: JobStateStore,
   ): Promise<JobState> {
-    // Use verifyPath if available (GitHubApiClient), else fallback to getRawFile probe
-    const folderExists = githubClient.verifyPath
-      ? await githubClient.verifyPath(owner, repo, branch, changeFolderPath)
-      : await githubClient.getRawFile(owner, repo, branch, changeFolderPath + "/proposal.md") !== null;
+    const folderExists = await githubClient.verifyPath(owner, repo, branch, changeFolderPath);
 
     if (!folderExists) {
       const folderErr = changeFolderNotFoundError(slug);

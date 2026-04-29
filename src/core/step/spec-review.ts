@@ -3,8 +3,6 @@ import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState, Verdict } from "../../state/schema.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT, buildSpecReviewInitialMessage } from "../../prompts/spec-review-system.js";
-import { stderrWrite } from "../../logger/stdout.js";
-import { githubTokenExpiredError } from "../../errors.js";
 
 const SPEC_REVIEW_AGENT_MODEL = "claude-sonnet-4-5";
 
@@ -97,74 +95,3 @@ export const SpecReviewStep: Step = {
   },
 };
 
-// ---------------------------------------------------------------------------
-// Fetch helper — kept for direct testing via spec-review-fetch.test.ts
-// (TC-012/013/014/015). Not used by StepExecutor (uses githubClient.getRawFile).
-// ---------------------------------------------------------------------------
-
-/**
- * Params for fetchSpecReviewResult.
- * Decoupled from PipelineDeps to avoid dependency on the removed githubFetch field.
- */
-export interface FetchSpecReviewResultParams {
-  githubFetch?: typeof fetch;
-  sleepFn?: (ms: number) => Promise<void>;
-  repo: { owner: string; name: string };
-  config: { github?: { accessToken: string } };
-}
-
-/**
- * Fetch the spec-review-result file from GitHub.
- * Returns file content as string, or null if not found after retries.
- * Throws SpecRunnerError(GITHUB_TOKEN_EXPIRED) on 401.
- *
- * 404: retries up to 3 times with 1s interval.
- */
-export async function fetchSpecReviewResult(
-  params: FetchSpecReviewResultParams,
-  slug: string,
-  branch: string,
-  iteration: number,
-): Promise<string | null> {
-  const githubFetch = params.githubFetch ?? fetch;
-  const githubToken = params.config.github!.accessToken;
-  const sleepFn = params.sleepFn ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
-
-  const filePath = buildFindingsPath(slug, iteration);
-  const encodedPath = filePath.split("/").map(encodeURIComponent).join("/");
-  const url = `https://api.github.com/repos/${params.repo.owner}/${params.repo.name}/contents/${encodedPath}?ref=${encodeURIComponent(branch)}`;
-
-  const MAX_RETRIES = 3;
-
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    if (attempt > 0) {
-      await sleepFn(1000);
-    }
-
-    const resp = await githubFetch(url, {
-      headers: {
-        Authorization: `token ${githubToken}`,
-        Accept: "application/vnd.github.v3.raw",
-      },
-    });
-
-    if (resp.status === 200) {
-      return resp.text();
-    }
-
-    if (resp.status === 401) {
-      throw githubTokenExpiredError();
-    }
-
-    if (resp.status === 404) {
-      if (attempt < MAX_RETRIES) {
-        continue;
-      }
-      return null;
-    }
-
-    return null;
-  }
-
-  return null;
-}

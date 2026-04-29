@@ -24,4 +24,16 @@ export interface GitHubClient {
     path: string,
     opts?: { maxRetries?: number; sleepFn?: (ms: number) => Promise<void> },
   ): Promise<string | null>;
+
+  /**
+   * Verify that a folder or path exists in the repository.
+   * - 200 → true
+   * - 404 → false
+   * - 401 → throws SpecRunnerError(GITHUB_TOKEN_EXPIRED)
+   * - 5xx / network error → throws GitHubApiError (or equivalent throwable)
+   *
+   * Designed for folder-level existence checks. Returns correct answer even
+   * in transient states where the folder exists but internal files are not yet present.
+   */
+  verifyPath(owner: string, repo: string, branch: string, path: string): Promise<boolean>;
 }

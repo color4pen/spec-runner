@@ -147,6 +147,7 @@ function buildMockGithubClient(opts: {
 
   return {
     verifyBranch: vi.fn().mockResolvedValue(branchFound),
+    verifyPath: vi.fn().mockResolvedValue(folderFound),
     getRawFile: vi.fn().mockImplementation(async (_owner: string, _repo: string, _branch: string, filePath: string) => {
       // Spec-review result file (e.g., spec-review-result-001.md)
       if (filePath.includes("spec-review-result")) {
@@ -154,9 +155,7 @@ function buildMockGithubClient(opts: {
         specReviewCallCount++;
         return `- **verdict**: ${verdict}\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|---|---|---|---|---|\n| 1 | HIGH | completeness | tasks.md | Missing tests | Add tests |`;
       }
-      // Change folder probe (proposal.md or other path)
-      if (!folderFound) return null;
-      return "exists";
+      return null;
     }),
   };
 }

@@ -106,6 +106,7 @@ function buildMockGithubClient(fileContent: string | null): GitHubClient {
   return {
     verifyBranch: vi.fn().mockResolvedValue(true),
     getRawFile: vi.fn().mockResolvedValue(fileContent),
+    verifyPath: vi.fn().mockResolvedValue(true),
   };
 }
 
@@ -232,7 +233,7 @@ describe("TC-019: runSpecReviewStep — SESSION_TIMEOUT error handling", () => {
   });
 });
 
-// TC-020: SPEC_REVIEW_RESULT_NOT_FOUND — fetchSpecReviewResult が null を返した場合
+// TC-020: SPEC_REVIEW_RESULT_NOT_FOUND — githubClient.getRawFile が null を返した場合
 describe("TC-020: runSpecReviewStep — SPEC_REVIEW_RESULT_NOT_FOUND when file not found", () => {
   it("fails with SPEC_REVIEW_RESULT_NOT_FOUND when result file is never found after retries", async () => {
     const jobState = await makeJobState();

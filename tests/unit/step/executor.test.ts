@@ -135,6 +135,7 @@ describe("TC-030: StepExecutor resolves agent ID via step.agent.role", () => {
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),
         getRawFile: vi.fn().mockResolvedValue(null),
+        verifyPath: vi.fn().mockResolvedValue(true),
       },
     };
 
@@ -184,6 +185,7 @@ describe("TC-031: spec-review Step does not use propose Agent ID", () => {
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),
         getRawFile: vi.fn().mockResolvedValue(null),
+        verifyPath: vi.fn().mockResolvedValue(true),
       },
     };
 

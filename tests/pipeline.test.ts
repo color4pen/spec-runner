@@ -120,10 +120,13 @@ function buildMockGithubClient(opts: {
       }
       return branchFound;
     }),
-    getRawFile: vi.fn().mockImplementation(async () => {
-      if (!folderFound) return null;
-      return "exists";
+    verifyPath: vi.fn().mockImplementation(async () => {
+      if (tokenExpired) {
+        throw Object.assign(new Error("GitHub token expired."), { code: "GITHUB_TOKEN_EXPIRED" });
+      }
+      return folderFound;
     }),
+    getRawFile: vi.fn().mockResolvedValue(null),
   };
 }
 
