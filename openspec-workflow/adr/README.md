@@ -24,3 +24,4 @@
 | [app-20260424-request-create-propose](app-20260424-request-create-propose.md) | Request Create + Propose セッション設計 | proposed |
 | [ADR-0012-slug-delegation-and-branch-tracking](ADR-0012-slug-delegation-and-branch-tracking.md) | Slug 生成のエージェント委譲と Custom Tool によるブランチ名追跡 | proposed |
 | [ADR-20260427-cli-core-pipeline](ADR-20260427-cli-core-pipeline.md) | `specrunner run` propose ステップの構造的決定（polling primary / Custom Tool registry / terminationReason enum） | accepted |
+| [ADR-20260429-spec-review-pipeline](ADR-20260429-spec-review-pipeline.md) | Spec-review セッション接続（N-step `runPipeline` / fresh-per-task dispatcher / file-based verdict / `pollUntilComplete` 再利用） | accepted |

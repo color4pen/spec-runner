@@ -4,6 +4,10 @@
 
 export type JobStatus = "running" | "success" | "failed" | "terminated";
 
+export type StepName = "propose" | "spec-review";
+
+export type Verdict = "approved" | "needs-fix" | "escalation";
+
 export interface HistoryEntry {
   ts: string;
   step: string;
@@ -34,6 +38,16 @@ export interface ErrorInfo {
   hint: string;
 }
 
+export interface StepResult {
+  session: SessionInfo | null;
+  verdict: Verdict | null;
+  findingsPath: string | null;
+  completedAt: string | null;
+  error: ErrorInfo | null;
+  /** Raw file content for the step result file (e.g. spec-review-result.md). Optional. */
+  fileContent?: string | null;
+}
+
 export interface JobState {
   version: 1;
   jobId: string;
@@ -47,6 +61,8 @@ export interface JobState {
   branch: string | null;
   history: HistoryEntry[];
   error: ErrorInfo | null;
+  /** Step-level results journal. Optional for backward compat with v1 files. */
+  steps?: Record<string, StepResult>;
 }
 
 export const MAX_HISTORY_SIZE = 100;
@@ -70,6 +86,7 @@ export function appendHistoryEntry(state: JobState, entry: HistoryEntry): JobSta
 /**
  * Validate that a raw parsed object is a valid JobState.
  * Returns the typed state or throws describing the invalid field.
+ * Backward compat: missing `steps` field is filled with `{}`.
  */
 export function validateJobState(raw: unknown): JobState {
   if (typeof raw !== "object" || raw === null) {
@@ -103,5 +120,39 @@ export function validateJobState(raw: unknown): JobState {
     throw new Error("Missing required field: history.");
   }
 
+  // Backward compat: fill missing steps field with empty object
+  if (obj["steps"] === undefined || obj["steps"] === null) {
+    obj["steps"] = {};
+  }
+
   return raw as JobState;
+}
+
+/**
+ * Append (merge-update) step result info into state.steps for the given step name.
+ * Returns a new state object (pure transform — does not persist).
+ */
+export function appendStepResult(
+  state: JobState,
+  stepName: StepName,
+  partial: Partial<StepResult>,
+): JobState {
+  const existing = state.steps?.[stepName] ?? {
+    session: null,
+    verdict: null,
+    findingsPath: null,
+    completedAt: null,
+    error: null,
+  };
+  return {
+    ...state,
+    steps: {
+      ...state.steps,
+      [stepName]: {
+        ...existing,
+        ...partial,
+      },
+    },
+    updatedAt: new Date().toISOString(),
+  };
 }

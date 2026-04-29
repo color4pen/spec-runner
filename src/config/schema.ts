@@ -24,12 +24,20 @@ export interface GithubConfig {
   scopes: string[];
 }
 
+export interface SpecReviewConfig {
+  /** Polling interval in milliseconds. Default: 10000 (10s) */
+  pollIntervalMs?: number;
+  /** Total timeout in milliseconds. Default: 600000 (10m) */
+  timeoutMs?: number;
+}
+
 export interface SpecRunnerConfig {
   version: 1;
   anthropic: AnthropicConfig;
   agent?: AgentConfig;
   environment?: EnvironmentConfig;
   github?: GithubConfig;
+  specReview?: SpecReviewConfig;
 }
 
 export interface PartialSpecRunnerConfig {

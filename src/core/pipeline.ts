@@ -1,19 +1,11 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import { startProposeSession } from "./session.js";
-import { pollUntilComplete, isProposeComplete } from "./completion.js";
-import { appendHistory, updateJobState, failJobState } from "../state/store.js";
+import { appendHistory, persistJobState } from "../state/store.js";
 import type { JobState } from "../state/schema.js";
-import { createSession } from "../sdk/sessions.js";
-import { stderrWrite } from "../logger/stdout.js";
-import {
-  branchNotRegisteredError,
-  sessionTerminatedError,
-  githubTokenExpiredError,
-  changeFolderNotFoundError,
-} from "../errors.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import type { OriginInfo } from "../git/remote.js";
 import type { ParsedRequest } from "../parser/request-md.js";
+import { runProposeStep } from "./steps/propose.js";
+import { runSpecReviewStep } from "./steps/spec-review.js";
 
 export interface PipelineDeps {
   client: Anthropic;
@@ -29,338 +21,80 @@ export interface PipelineDeps {
 }
 
 /**
- * Run the propose pipeline from start to completion.
- * Manages state transitions and history entries throughout.
+ * Run the full pipeline: propose → spec-review.
+ * Steps are executed sequentially; a failing step stops execution.
+ * State is persisted between steps for crash resilience.
+ */
+export async function runPipeline(
+  jobState: JobState,
+  deps: PipelineDeps,
+): Promise<JobState> {
+  // Step 1: propose
+  let state: JobState;
+  try {
+    state = await runProposeStep(jobState, deps);
+  } catch (err) {
+    // Propose failed — extract the failed state attached by runProposeStep.
+    // (runProposeStep already persisted it; returning jobState would lose error info)
+    const errWithState = err as { state?: JobState };
+    if (errWithState.state) {
+      return errWithState.state;
+    }
+    // Fallback: jobState is stale but there is nothing better to return
+    return jobState;
+  }
+
+  // Persist state between steps (crash resilience)
+  await persistJobState(state);
+
+  // If propose did not succeed, skip subsequent steps
+  if (state.status !== "success") {
+    return state;
+  }
+
+  // Step transition: record in history
+  state = await appendHistory(state, {
+    ts: new Date().toISOString(),
+    step: "step-transition",
+    status: "ok",
+    message: "propose → spec-review",
+  });
+
+  // Step 2: spec-review
+  // runSpecReviewStep throws on fatal errors but attaches `state` to the error.
+  // We extract the failed state from the error so we can return it to the caller.
+  try {
+    state = await runSpecReviewStep(state, deps);
+  } catch (err) {
+    // If the step attached a failed state to the error, use it.
+    const errWithState = err as { state?: JobState };
+    if (errWithState.state) {
+      return errWithState.state;
+    }
+    // Fallback: return the pre-throw state (will have the step-transition history entry)
+    return state;
+  }
+
+  // Check verdict — Phase 1: needs-fix / escalation stop pipeline (no further steps)
+  const specReviewResult = state.steps?.["spec-review"];
+  if (
+    specReviewResult?.verdict === "needs-fix" ||
+    specReviewResult?.verdict === "escalation"
+  ) {
+    // Pipeline stops here for Phase 1; future phases would continue differently
+    return state;
+  }
+
+  return state;
+}
+
+/**
+ * @deprecated Use runPipeline instead. Kept for backward compatibility with existing tests.
+ * Runs only the propose step (single-step pipeline).
  */
 export async function runProposePipeline(
   jobState: JobState,
   deps: PipelineDeps,
 ): Promise<JobState> {
-  const { client, config, repo, request, slug } = deps;
-
-  // 1. Create session
-  let state = await appendHistory(jobState, {
-    ts: new Date().toISOString(),
-    step: "session-create",
-    status: "started",
-    message: "Creating Anthropic session",
-  });
-
-  let sessionId: string;
-  try {
-    const repoUrl = `https://github.com/${repo.owner}/${repo.name}`;
-    const session = await createSession(client, {
-      agent: config.agent!.id,
-      environment_id: config.environment!.id,
-      resources: [
-        {
-          type: "github_repository",
-          url: repoUrl,
-          authorization_token: config.github!.accessToken,
-        },
-      ],
-    });
-    sessionId = session.id;
-
-    state = await updateJobState(state, {
-      session: {
-        id: sessionId,
-        agentId: config.agent!.id,
-        environmentId: config.environment!.id,
-      },
-      step: "events-stream-connected",
-    });
-    state = await appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "session-create",
-      status: "ok",
-      message: sessionId,
-    });
-  } catch (err) {
-    const errMsg = (err as Error).message;
-    state = await failJobState(state, {
-      code: "SESSION_CREATE_FAILED",
-      message: `Failed to create session: ${errMsg}`,
-      hint: "Check your API key and try again.",
-    }, "session-create");
-    state = await appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "session-create",
-      status: "error",
-      message: errMsg,
-    });
-    throw err;
-  }
-
-  // Track registered branch from SSE
-  let registeredBranch: string | null = null;
-
-  // 2. Start SSE session and poll in parallel
-  const abortController = new AbortController();
-
-  // We'll run SSE in a promise and polling in parallel
-  let sseDisconnected = false;
-
-  const ssePromise = startProposeSession({
-    client,
-    sessionId,
-    agentId: config.agent!.id,
-    environmentId: config.environment!.id,
-    requestContent: request.content,
-    onBranchRegistered: (branch) => {
-      // Only update the local variable here.
-      // State persistence happens synchronously in main flow after SSE completes
-      // to avoid lost-update race between this callback and main flow writes.
-      registeredBranch = branch;
-    },
-    onSseDisconnected: () => {
-      sseDisconnected = true;
-    },
-    abortController,
-  });
-
-  state = await appendHistory(state, {
-    ts: new Date().toISOString(),
-    step: "events-stream-connected",
-    status: "ok",
-    message: "SSE stream connected",
-  });
-
-  state = await appendHistory(state, {
-    ts: new Date().toISOString(),
-    step: "initial-message-sent",
-    status: "ok",
-    message: "Initial message sent to session",
-  });
-
-  // 3. Wait for SSE to complete (or disconnect)
-  const sseResult = await ssePromise;
-
-  if (sseResult.terminated) {
-    const termErr = sessionTerminatedError();
-    state = await failJobState(state, {
-      code: termErr.code,
-      message: termErr.message,
-      hint: termErr.hint,
-    });
-    state = await appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "session-terminated",
-      status: "error",
-      message: "Session terminated by Anthropic",
-    });
-    throw termErr;
-  }
-
-  // 4. If SSE did not detect idle+end_turn, fall back to polling.
-  // terminationReason values that require polling: "sse_error", "unknown", "aborted" (without end_turn).
-  // "end_turn" → completed via SSE. "terminated" → already handled above.
-  const needsPollingFallback =
-    sseResult.terminationReason !== "end_turn" && sseResult.terminationReason !== "terminated";
-
-  if (needsPollingFallback) {
-    stderrWrite("SSE disconnected; falling back to polling.");
-    try {
-      await pollUntilComplete(client, sessionId, abortController.signal, {
-        timeoutMs: deps.timeoutMs,
-        sleepFn: deps.sleepFn,
-      });
-    } catch (err) {
-      // Extract error code
-      const code = (err as { code?: string }).code ?? "SESSION_TIMEOUT";
-      const message = (err as Error).message;
-      const hint = (err as { hint?: string }).hint ?? "";
-
-      if (code === "SESSION_TERMINATED") {
-        state = await appendHistory(state, {
-          ts: new Date().toISOString(),
-          step: "session-terminated",
-          status: "error",
-          message,
-        });
-      } else {
-        state = await appendHistory(state, {
-          ts: new Date().toISOString(),
-          step: "session-timeout",
-          status: "error",
-          message,
-        });
-      }
-
-      state = await failJobState(state, { code, message, hint });
-      throw err;
-    }
-  } else {
-    // SSE detected idle+end_turn — signal abort to any potential polling consumer
-    abortController.abort();
-  }
-
-  // 5. Persist branch registration event (done here to avoid race with SSE callback)
-  if (registeredBranch) {
-    state = await updateJobState(state, { branch: registeredBranch });
-    state = await appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "register-branch-received",
-      status: "ok",
-      message: registeredBranch,
-    });
-  }
-
-  // 5b. Record idle+end_turn detection
-  const completionStatus = sseResult.terminationReason === "end_turn" ? "ok" : "warning";
-  state = await appendHistory(state, {
-    ts: new Date().toISOString(),
-    step: "idle-end-turn-detected",
-    status: completionStatus,
-    message: sseResult.terminationReason === "end_turn"
-      ? "Session completed via SSE idle+end_turn"
-      : "Session completed via polling fallback",
-  });
-
-  // 6. Check branch was registered
-  if (!registeredBranch) {
-    const branchErr = branchNotRegisteredError();
-    stderrWrite("Branch was not registered by the agent.");
-    state = await appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "idle-end-turn-detected",
-      status: "error",
-      message: "register_branch was not called",
-    });
-    state = await failJobState(state, {
-      code: branchErr.code,
-      message: branchErr.message,
-      hint: branchErr.hint,
-    });
-    throw branchErr;
-  }
-
-  // 7. Verify branch on GitHub
-  const githubFetch = deps.githubFetch ?? fetch;
-  const githubToken = config.github!.accessToken;
-
-  // 7a. Check branch existence (warning only)
-  try {
-    const branchUrl = `https://api.github.com/repos/${repo.owner}/${repo.name}/branches/${encodeURIComponent(registeredBranch)}`;
-    const branchResp = await githubFetch(branchUrl, {
-      headers: {
-        Authorization: `token ${githubToken}`,
-        Accept: "application/vnd.github.v3+json",
-      },
-    });
-
-    if (branchResp.status === 401) {
-      const tokenErr = githubTokenExpiredError();
-      stderrWrite("GitHub token expired. Run 'specrunner login' again.");
-      state = await failJobState(state, {
-        code: tokenErr.code,
-        message: tokenErr.message,
-        hint: tokenErr.hint,
-      });
-      throw tokenErr;
-    }
-
-    if (branchResp.status === 404) {
-      stderrWrite(`Warning: Branch '${registeredBranch}' not found on GitHub yet.`);
-      state = await appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: "branch-verified",
-        status: "warning",
-        message: `Branch '${registeredBranch}' not found on GitHub`,
-      });
-    } else {
-      state = await appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: "branch-verified",
-        status: "ok",
-        message: `Branch '${registeredBranch}' verified on GitHub`,
-      });
-    }
-  } catch (err) {
-    if ((err as { code?: string }).code === "GITHUB_TOKEN_EXPIRED") {
-      throw err;
-    }
-    // Network error — treat as warning
-    stderrWrite(`Warning: Could not verify branch on GitHub: ${(err as Error).message}`);
-    state = await appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "branch-verified",
-      status: "warning",
-      message: `Branch verification failed: ${(err as Error).message}`,
-    });
-  }
-
-  // 7b. Verify change folder exists
-  try {
-    const changeFolderPath = `openspec/changes/${slug}`;
-    const encodedPath = changeFolderPath.split("/").map(encodeURIComponent).join("/");
-    const folderUrl = `https://api.github.com/repos/${repo.owner}/${repo.name}/contents/${encodedPath}?ref=${encodeURIComponent(registeredBranch)}`;
-
-    const folderResp = await githubFetch(folderUrl, {
-      headers: {
-        Authorization: `token ${githubToken}`,
-        Accept: "application/vnd.github.v3+json",
-      },
-    });
-
-    if (folderResp.status === 401) {
-      const tokenErr = githubTokenExpiredError();
-      stderrWrite("GitHub token expired. Run 'specrunner login' again.");
-      state = await appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: "change-folder-verified",
-        status: "error",
-        message: "GitHub token expired",
-      });
-      state = await failJobState(state, {
-        code: tokenErr.code,
-        message: tokenErr.message,
-        hint: tokenErr.hint,
-      });
-      throw tokenErr;
-    }
-
-    if (folderResp.status === 404) {
-      const folderErr = changeFolderNotFoundError(slug);
-      state = await appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: "change-folder-verified",
-        status: "error",
-        message: `Change folder not found: ${changeFolderPath}`,
-      });
-      state = await failJobState(state, {
-        code: folderErr.code,
-        message: folderErr.message,
-        hint: folderErr.hint,
-      });
-      throw folderErr;
-    }
-
-    state = await appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "change-folder-verified",
-      status: "ok",
-      message: `Change folder verified: ${changeFolderPath}`,
-    });
-  } catch (err) {
-    if (
-      (err as { code?: string }).code === "CHANGE_FOLDER_NOT_FOUND" ||
-      (err as { code?: string }).code === "GITHUB_TOKEN_EXPIRED"
-    ) {
-      throw err;
-    }
-    // Network error — log warning
-    stderrWrite(`Warning: Could not verify change folder: ${(err as Error).message}`);
-  }
-
-  // 8. Mark success
-  state = await updateJobState(state, { status: "success", step: "success" });
-  state = await appendHistory(state, {
-    ts: new Date().toISOString(),
-    step: "success",
-    status: "ok",
-    message: "Propose pipeline completed successfully",
-  });
-
-  return state;
+  return runProposeStep(jobState, deps);
 }

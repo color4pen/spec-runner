@@ -27,6 +27,7 @@ export const ERROR_CODES = {
   STATE_FILE_INVALID: "STATE_FILE_INVALID",
   CHANGE_FOLDER_NOT_FOUND: "CHANGE_FOLDER_NOT_FOUND",
   SESSION_CREATE_FAILED: "SESSION_CREATE_FAILED",
+  SPEC_REVIEW_RESULT_NOT_FOUND: "SPEC_REVIEW_RESULT_NOT_FOUND",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -125,5 +126,13 @@ export function sessionCreateFailedError(detail: string): SpecRunnerError {
     ERROR_CODES.SESSION_CREATE_FAILED,
     "Check your API key and try again.",
     `Failed to create session: ${detail}`,
+  );
+}
+
+export function specReviewResultNotFoundError(slug: string, branch: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.SPEC_REVIEW_RESULT_NOT_FOUND,
+    `Ensure the spec-review agent wrote the result file to openspec/changes/${slug}/spec-review-result.md on branch '${branch}'.`,
+    `Spec-review result file not found on branch '${branch}'.`,
   );
 }

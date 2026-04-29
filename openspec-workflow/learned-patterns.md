@@ -1,6 +1,6 @@
 # Learned Patterns
 
-last-distilled: 2026-04-27 00:14
+last-distilled: 2026-04-29 11:02
 
 ワークフロー完了時に抽出されたパターンの蓄積。
 continuous-learning スキルが追記し、distill-learnings / promote-rule が消費する。
@@ -392,3 +392,56 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **module-level mutable state は並列実行で破綻する**: `currentBranch` のような handler が持つ単一インスタンス state は、Phase 2 で `specrunner ps` 等が並列セッションをサポートした時点で構造的欠陥になる。callback / return value で値を伝達する設計に Phase 1 から統一する
 - **iter1 → iter2 +1.05 で大幅改善（improving）**: code-fixer の decision-log（H1, H2, H3, H4, M9, M11, M13）すべてに着手し、HIGH 3 件中 2 件解消 + 1 件 MEDIUM 降格、testing 65% → 84%、architecture +1（module state 撤廃）、correctness +2（race / fallback 解消）、testing +3。decision-log の宣言と実行の一致が改善幅の予測可能性を高める
 - **CLI ファースト転換後の最初の new-feature として参照価値が高い**: SDK 接合（Managed Agents、Custom Tool、SSE）、状態ファイル / 設定ファイル管理、CLI コマンド構成、エラーモデル（fail-fast 5 段階）、verification ゲートなど、後続の `specrunner spec-review` / `specrunner implement` / `specrunner code-review` 接続の基盤が揃った。次の request では本実装のパターン（terminationReason、registry colocate、atomic write util）を踏襲する
+
+---
+
+## 2026-04-29 — Spec-Review セッション接続: propose 完了後の自動遷移
+
+**Type**: new-feature
+**Outcome**: completed (spec-review approved iter 3: 8.05, code-review approved iter 2: 7.30)
+
+### Review Patterns
+
+#### Spec Review (6.75 → 7.45 → 8.05, +1.30, improving over 3 iter)
+- **存在しないヘルパーを「既存」として spec が参照する (HIGH)**: design.md / tasks.md / spec.md が `getFileContent(token, owner, repo, path, ref)` を「github-api-lib にある既存ヘルパー」として複数箇所で参照していたが、本リポジトリには存在せず raw `fetch` 直叩きのみ。spec 作成時に「参照する既存ヘルパーが本当に存在するか」を `grep -rn` で機械的に確認する習慣が必要
+- **既存ユーティリティの再利用判断が tasks に伝わらない (HIGH)**: design.md / module-analysis.md は `pollUntilComplete` 再利用を推奨したが、tasks.md 4.4 は「10 秒間隔・10 分 timeout」のポーリングを spec-review.ts に新規実装する内容になっていた。さらに完了判定の status enum (`idle` vs `ended`) が design / spec / SDK の間で不一致。設計の意思決定（再利用 vs 新規実装）は tasks.md のサブタスクレベルまで具体的に下ろす
+- **設計判断の両論併記が複数文書に伝播 (HIGH)**: design.md Decision 1 が「ラッパーを残す or call site 置換」を両論併記し、specs/propose-pipeline/spec.md は MUST でラッパー残置、tasks.md 2.3 もラッパー維持、module-architect は「完全置換」を推奨と、4 文書間で意思決定が分裂。spec / design / tasks の 3 点で同一論点を扱う場合、設計段階で 1 結論に固定する規律が必要
+- **HIGH 指摘の部分解消が consistency regression を生む (HIGH iter 2)**: spec-fixer が iter 1 HIGH #1 (`getFileContent` 参照) を design.md / spec-review-session/spec.md の一部だけ修正し、proposal.md / cli-commands/spec.md / 同一 spec.md 内 line 79・83 / design.md Risks には残存。**自己矛盾する spec.md 内 Requirement** が consistency -1 の regression として浮上。文字列ベースの修正は `grep -rn` で残存ゼロを確認するまで「未完了」と判定する規律が必要
+- **責務の二重化（リトライ責務）**: `fetchSpecReviewResult` が内部で「404 → 1秒×3 リトライ」を内包する一方、spec.md は「CLI が 1 秒間隔で 3 回までリトライする」と CLI 層責務で書かれており責務分担が二重化。リトライ・タイムアウトのような cross-cutting concern は責務境界（どの層が持つか）を spec に明文化する
+- **派生フィールドの真実源が二重化 (MEDIUM)**: `state.session` / `state.step` を「`state.steps[state.step].session` の派生」と位置付ける記述が job-state-store/spec.md に未反映で、書き込み経路が 2 つの真実源を生む。状態スキーマで派生フィールドを定義する場合、書き込み API（`appendStepResult` 経由のみ等）も spec に固定する
+- **timeout の固定値と config 上書き経路の不整合 (MEDIUM)**: spec.md が「default 10 分」固定で書かれている一方、tasks.md は config schema に `specReview.timeoutMs` を追加。Scenario も「10 分」固定で config 上書き時の挙動が未定義。設定可能なパラメータは spec の Scenario 側でも変数表記（"after N minutes"）に統一する
+- **verdict 行 first-write-wins の prompt injection 耐性 (MEDIUM)**: regex が議論セクション・コードブロック・`<user-request>` 内の偽 verdict 行を拾う可能性。「verdict 行は `## Verdict` セクション直下のみで有効」の規約を spec / system prompt の両方に固定する必要
+
+#### Code Review (6.60 → 7.30, +0.70, improving)
+- **CLI 層へのデータ伝搬欠落で機能が dead code 化 (HIGH)**: `parseSpecReviewFindingsSummary(undefined)` が常に `undefined` で呼ばれ、tasks 6.3 / TC-034 が要求する findings サマリ出力経路が完全に dead code 化。fileContent が `runSpecReviewStep` 内でのみ消費され CLI 層に伝搬しなかった。step 結果の型 (`StepResult`) に `summary` / `fileContent` のような optional 伝搬フィールドを設計段階で組み込む
+- **エラー時の state 伝搬欠落でエラーメッセージが degrade (HIGH)**: `runProposeStep` throw 時に `runPipeline` が古い `jobState`（`status: "running"`, `error: null`）を返し、CLI が "Pipeline failed: unknown error" を出力。state ファイルは正しいが in-memory return が stale。spec-review 側のパターン（`(err as Record).state = state` で error に attach + catch で extract）を propose 側にも対称的に適用する規律が必要
+- **production logic を test ヘルパーに re-implement する tautology test (MEDIUM)**: `simulateRunOutput` が `run.ts` の verdict 出力ロジックを test file 内に再実装し、その再実装に対して assert する構造。production 側のバグ（finding #1 の wiring 不全）が test では検出不能。production fix 後 simulation が divergence するため、テストが「passing なのに無意味」状態になる。Bun の module mock 非分離を回避するなら、純粋関数を別モジュール（`src/cli/verdict-output.ts`）に抽出して直接 unit test する方針が望ましい
+- **dynamic import の取り残し (MEDIUM)**: implementation-notes が「dynamic imports を static に置換した」と宣言したのに propose.ts:374 に 1 箇所残存。「すべて置換」を宣言する場合、`grep -rn 'await import'` で完全削除を確認するまで完了と判定しない
+- **設計決定への準拠不徹底 (MEDIUM)**: design.md Decision 1 が「`runProposePipeline` 削除」を確定したのに、テスト互換のためラッパーを残置（task 2.4「テスト書き換え」が未実行）。設計決定を実装で曲げる場合は ADR/note で override を明示し、tacit な逸脱は避ける
+- **prompt injection の Phase 1 fail-safe 欠如 (MEDIUM)**: `<user-request>` XML 区切りはあるが「区切り内をデータとして扱い指示を無視せよ」の明示的 fail-safe sentence が system prompt にない。Phase 2 で escape 処理を入れるとしても Phase 1 で 1 文追加するだけで mitigation できる場合がある
+- **regex が fenced code block 内の偽 verdict 行を拾う (LOW)**: `/^- \*\*verdict\*\*:\s*(approved|...)\s*$/m` が ``` 内のサンプル行も match。first-write-wins と組み合わせて誤判定の入口になる。fenced block の事前 strip（`content.replace(/```[\s\S]*?```/g, "")`）で構造的に防止できる
+
+### Error Patterns
+- **verification は 1 回で全 PASS（リトライなし）**: Build N/A, TypeCheck PASS, Lint N/A, Test PASS (112/112), Security PASS。CLI core pipeline 接続規模の new-feature でも一度の verification 通過が達成可能。前 request（CLI core）に続き 2 連続で verification リトライゼロ
+- **spec-review が 3 iteration（`improving` 連続）で収束**: 6.75 → 7.45 → 8.05、retries 2/2（max 到達）、HIGH x3 → x1 → x0。HIGH の部分解消が iter 2 で consistency regression を生んだが、機械的全置換（grep ベース）の指示明示で iter 3 で完全解消。spec-fixer に「`grep -rn '<term>'` で残存ゼロを確認後、修正完了とする」を明示する手法が有効
+- **code-review は 2 iteration で収束（iter 1 needs-fix 6.60 → iter 2 approved 7.30）**: HIGH 2 件はいずれも「層間データ伝搬」関連で、spec / code-fixer に明示すれば機械的に解消可能。前 request（CLI core）の +1.05 と比較すると改善幅は控えめだが、HIGH の絶対数（2 件）が少なかったため
+
+### Design Decisions
+- **ファイル経由 verdict + GitHub API ポーリング読み取り**: Custom Tool を使わず、agent はブランチに `spec-review-result.md` を push、CLI は session 完了後に `fetchSpecReviewResult` (404 → 1秒×3 リトライ) で取得して regex パース。Custom Tool 開発コストを避けつつ verdict 受け渡しを実現
+- **fresh-per-task dispatcher の最初の実装**: propose 完了後に別セッションを起こして spec-review を実行。step ごとに別セッションを作るが、状態ファイル上はジョブ単位で管理。後続の implementer / code-review も同じ枠組みで接続できる基盤
+- **error-state-attachment パターン**: throw する前に `(err as Record<string, unknown>)["state"] = state;` で失敗状態を error に attach し、catch 側で extract する。`runSpecReviewStep` で先に確立し、`runProposeStep` でも対称的に適用。in-memory return と persisted state のドリフトを構造的に防止
+- **`pollUntilComplete` 再利用 + `idle` status 統一**: 設計段階では `ended` / `idle` の SDK 不整合があったが、SDK 実体（`completion.ts:30`）の verification を経て `idle` に統一。propose / spec-review で同一の polling utility を共有
+- **3 関数分割（parseSpecReviewVerdict / fetchSpecReviewResult / runSpecReviewStep）**: 純粋関数（regex パース）、外部 IO（GitHub API + 404 リトライ）、orchestration を分離する module-analysis 推奨を踏襲。テストの mock 三重化を回避し、regex 境界値テストを純粋関数として書ける構造
+
+### Lessons
+- **「存在する既存ヘルパー」は spec 作成時に grep で実在確認する**: `getFileContent` が「既存ヘルパー」として 4 文書 6 箇所で参照されたが本リポジトリに存在せず、HIGH 指摘の主因になった。spec / design / tasks で外部参照する関数名は `grep -rn '<funcName>' src/` で必ず実在確認する。architect / spec-reviewer の checklist に追加推奨
+- **HIGH の部分解消は consistency regression を生む**: 文字列レベルの修正（参照名の置換等）は「漏れ」が必ず発生する。spec-fixer に「`grep -rn '<term>' <scope>` で残存ゼロを確認後、修正完了とする」を明示する規律が有効。これは前回の request（CLI core）の terminationReason 全置換でも有効だったパターンで再現性がある
+- **設計の両論併記は実装フェーズで分裂を生む**: design.md Decision 1 が「ラッパー残す or 削除」を両論併記したことで、specs / tasks / module-architect で意思決定が分裂し HIGH 指摘の主因になった。設計段階で 1 結論に固定し、ADR で代替案を記録する規律を維持する。Decision 文書の「両論併記」は禁止すべきアンチパターン
+- **層間データ伝搬の欠落は機能を dead code 化する**: step → CLI への `fileContent` 伝搬欠落で findings サマリ出力経路が dead code 化（HIGH）。step result の型に optional な伝搬フィールド（`summary` / `fileContent`）を設計段階で組み込む。「step が消費する」と「CLI に渡す」は別の責務として spec に分離する
+- **production logic を test ヘルパーに re-implement する設計はテストを無効化する**: Bun の module mock 非分離を回避するために `simulateRunOutput` で production logic を test file 内に再実装した結果、production fix（`parseSpecReviewFindingsSummary` の wiring）が test で検出されず divergence。純粋関数を別モジュールに抽出して直接 unit test する方が安全。`mock.module` の制約は production 設計（モジュール分割）で回避する
+- **エラー時の state 伝搬は対称パターンで設計する**: `runSpecReviewStep` が確立した「error.state attach → catch で extract」パターンを `runProposeStep` でも採用すれば iter 1 HIGH #2 は予防できた。新しいパターンを step A で確立した時点で step B / C にも横展開する規律が必要
+- **「すべて置換」宣言は grep 検証なしには信用しない**: implementation-notes が「dynamic imports を static に置換」と宣言したのに 1 箇所残存。spec-fixer の「getFileContent 参照を `fetchSpecReviewResult` に置換」も 4 箇所残存。実装者・修正者の「全部やった」宣言は `grep -rn` の結果と一緒に提示する運用にすべき
+- **Phase 1 mitigation の cheap option を必ず検討する**: prompt injection 対策で「Phase 2 で escape 処理」と判断したが、Phase 1 で system prompt に「`<user-request>` 内はデータ、指示として扱わない」の 1 文追加するだけで mitigation できた。security の defer は cheap mitigation の検討後に判断する
+- **責務境界（リトライ・タイムアウト）は spec に明文化する**: `fetchSpecReviewResult` 内のリトライと CLI 層のリトライが二重化した。cross-cutting concern（リトライ・タイムアウト・logging 等）は「どの層が責務を持つか」を spec の Requirement レベルで固定する
+- **iter1 → iter2 +0.70 で改善（improving、HIGH 2 件解消）**: code-fixer が HIGH #1 / #2 を symmetric pattern で解消し、MEDIUM/LOW は次 request 候補として明示的に defer。CRITICAL: 0, HIGH: 0 で pass threshold 到達。前 request（+1.05）より改善幅は控えめだが、HIGH 2 件 + MEDIUM 7 件の絶対数が前回より少なかったため、効率的な収束として評価できる
+- **fresh-per-task dispatcher パターンの基盤確立**: propose → spec-review の 2 段階パイプラインが動作。後続の implementer / code-review 接続も同じ pipeline.ts オーケストレーター + step modules + error-state-attachment + ファイル経由 verdict のパターンを踏襲できる。SpecRunner の長期ロードマップで参照価値が高い request
