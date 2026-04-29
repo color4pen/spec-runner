@@ -43,7 +43,7 @@ CLI は SHALL このスキーマを唯一の正として書き込み・読み込
 - **AND** `config.agent`（旧 単数形）は存在しない
 - **AND** `config.agents` の固定キー型（`propose` / `specReview` / `specFixer` のみを持つ型）ではなく、任意の StepName をキーとして許容する形である
 
-### Requirement: ロール解決はフォールバックなしの直引きである
+### Requirement: ロール解決はフォールバックチェーンに従う
 
 CLI は MUST `getAgentId(config, role: StepName)` ヘルパを提供する。解決順は以下:
 
@@ -68,6 +68,8 @@ CLI は MUST `getAgentId(config, role: StepName)` ヘルパを提供する。解
 - **WHEN** `config.agents["spec-fixer"]` が未設定
 - **THEN** `getAgentId(config, "spec-fixer")` は `CONFIG_INCOMPLETE` エラーを throw する
 
+## ADDED Requirements
+
 ### Requirement: config 書き込みは新形式のみを書き込む
 
 `specrunner init` が config を書き込む際、CLI は MUST `agents: Record<StepName, AgentRecord>` の新形式のみを書き込む。旧 `config.agent` フィールドは MUST 書き込まれない。
@@ -77,8 +79,6 @@ CLI は MUST `getAgentId(config, role: StepName)` ヘルパを提供する。解
 - **WHEN** `specrunner init` が propose Agent を新規作成し ID `agent_01x` を得る
 - **THEN** config 書き込み後、`config.agents.propose.agentId === "agent_01x"` が成立する
 - **AND** `config.agent` フィールドは存在しない（書き込みコードが触らない）
-
-## ADDED Requirements
 
 ### Requirement: ConfigStore は load 時に旧 schema を新 schema に migration する
 

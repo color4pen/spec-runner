@@ -23,7 +23,7 @@
 - **THEN** propose に対してのみ `createAgent` が呼ばれ、新 ID が `config.agents.propose.agentId` に書き込まれる
 - **AND** spec-review / spec-fixer の agentId は変化しない
 
-### Requirement: Agent 定義は Step が所有する `AgentDefinition` から派生する
+### Requirement: Agent 定義は CLI コードの source-of-truth から派生する
 
 各 Agent の `system_prompt`、`custom_tools`、`toolset`、`model` は MUST 該当 Step の `AgentDefinition`（`step.agent.system` / `step.agent.tools` / `step.agent.model`）から取得される。`AgentRegistry.hashOf(role)` が canonical JSON SHA-256 で `definitionHash` を計算し、config の `agents[role].definitionHash` と SHALL 比較する。
 
@@ -38,7 +38,7 @@
 - **THEN** その role に対して `client.updateAgent(agentId, def)` を実行し、新ハッシュと新 lastSyncedAt を `config.agents[role]` に書き込む
 - **AND** 他 role には影響しない
 
-### Requirement: Custom Tools は Step が所有する `AgentDefinition.tools` から派生する
+### Requirement: Custom Tools は registry 経由で Agent に登録される
 
 `specrunner init` における Agent 作成・更新時、`custom_tools` フィールドの値は MUST 該当 Step の `AgentDefinition.tools` 配列を直接渡す。手動で definition オブジェクトを別箇所に書き起こしては SHALL ならない。`tool-registry` のような中間グローバル registry は廃止される（既に PR #26 で D9 が完了）。
 
@@ -108,6 +108,8 @@ init 成功後の状態は MUST 以下を保証する:
 - **WHEN** spec-fixer Agent 作成リクエストを構築する
 - **THEN** `custom_tools` の値は `[]` であり、`register_branch` の文字列を含まない
 
+## ADDED Requirements
+
 ### Requirement: 各 Step Agent の system_prompt は Step が所有する `AgentDefinition.system` 由来である
 
 `specrunner init` は MUST 各 role の Agent の `system_prompt` を該当 Step の `step.agent.system` の戻り値で設定する。各 Step（propose / spec-review / spec-fixer）の system prompt は SHALL 互いに独立した文字列であり、grep して同じ文字列リテラルが他のロケーションに重複定義されていない。
@@ -117,8 +119,6 @@ init 成功後の状態は MUST 以下を保証する:
 - **WHEN** 各 role の Agent 作成リクエストを構築する
 - **THEN** `system_prompt` の値は該当 Step の `step.agent.system` 由来である
 - **AND** propose / spec-review / spec-fixer の system prompt は互いに異なる文字列である
-
-## ADDED Requirements
 
 ### Requirement: spec-review 専用 Agent を作成・更新する
 
@@ -140,10 +140,6 @@ init 成功後の状態は MUST 以下を保証する:
 - **AND** init 完了後の config に `agents["spec-review"].agentId` が新 ID で書き込まれている
 
 ## REMOVED Requirements
-
-### Requirement: config.agent.id を propose Agent ID と同期する（旧形式互換）
-**Reason**: 互換シム廃止。消費者は specrunner 単体であり、旧形式 `config.agent.id` フィールドの維持は不要。新 schema では `config.agents.propose.agentId` が唯一の正である。
-**Migration**: `ConfigStore.load()` が旧 schema を読み込んだ際に `agent.id` → `agents.propose.agentId` へ in-memory で詰め直す。`ConfigStore.save()` で新 schema として永続化されると `config.agent` フィールドは消える。以降は `config.agents[role].agentId` を直接参照する。
 
 ### Requirement: spec-fixer Agent の system_prompt は `buildSpecFixerSystemPrompt` 由来である
 **Reason**: system prompt の所有権が `SpecFixerStep.agent.system`（Step 同居）に移った。中間 helper 関数 `buildSpecFixerSystemPrompt` の存在自体は実装詳細として許容するが、spec 上の正は Step が所有する `AgentDefinition.system` 値である。
