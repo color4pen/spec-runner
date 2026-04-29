@@ -25,3 +25,4 @@
 | [ADR-0012-slug-delegation-and-branch-tracking](ADR-0012-slug-delegation-and-branch-tracking.md) | Slug 生成のエージェント委譲と Custom Tool によるブランチ名追跡 | proposed |
 | [ADR-20260427-cli-core-pipeline](ADR-20260427-cli-core-pipeline.md) | `specrunner run` propose ステップの構造的決定（polling primary / Custom Tool registry / terminationReason enum） | accepted |
 | [ADR-20260429-spec-review-pipeline](ADR-20260429-spec-review-pipeline.md) | Spec-review セッション接続（N-step `runPipeline` / fresh-per-task dispatcher / file-based verdict / `pollUntilComplete` 再利用） | accepted |
+| [ADR-20260429-positioning-vs-gsd-and-openspec](ADR-20260429-positioning-vs-gsd-and-openspec.md) | spec-runner = Anthropic 純正 stack の Argo Workflows 相当（openspec-workflow review/学習資産 × GSD fresh-per-task × ant native）。3 列 positioning / スケール耐性軸 / k8s ecosystem 対応 | accepted |
