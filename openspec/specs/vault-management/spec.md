@@ -1,3 +1,7 @@
+## Purpose
+
+Manage Anthropic Vault credentials for MCP server authentication.
+
 ## Requirements
 
 ### Requirement: Vault Provisioning

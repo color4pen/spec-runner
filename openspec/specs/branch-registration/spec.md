@@ -1,5 +1,8 @@
-## ADDED Requirements
+## Purpose
 
+Register the agent-reported branch name on the request record via the `register_branch` Custom Tool.
+
+## Requirements
 ### Requirement: register_branch Custom Tool Definition
 The system SHALL define a `register_branch` Custom Tool that the agent calls after creating a branch, reporting the slug and branch name to spec-runner.
 

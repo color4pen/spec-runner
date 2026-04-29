@@ -1,5 +1,8 @@
-## ADDED Requirements
+## Purpose
 
+Bind a request to a specific repository so all sessions for the request operate on that repo.
+
+## Requirements
 ### Requirement: Repository Registration
 The system SHALL register a repository in the `repositories` table when a user explicitly selects it from the registration UI, replacing the previous auto-registration on workspace access.
 
@@ -48,9 +51,3 @@ The system SHALL provide a lookup function to find a repository record by user I
 #### Scenario: Lookup non-existent repository
 - **WHEN** the system looks up a repository that does not exist for the given user
 - **THEN** it returns null (not an error), allowing the caller to decide how to handle
-
-## REMOVED Requirements
-
-### Requirement: Auto-register repository on workspace access
-**Reason**: Replaced by explicit registration from search UI. Auto-registration on workspace navigation is no longer the desired behavior; users must explicitly add repositories they want to manage.
-**Migration**: Remove the auto-registration logic from the repository workspace page. Users who had auto-registered repositories will see them in their list as `uninitialized` status. The `/repos/{owner}/{repo}` route SHALL return a 404-like state for non-registered repositories instead of auto-registering them.

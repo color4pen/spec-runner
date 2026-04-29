@@ -1,5 +1,8 @@
-## MODIFIED Requirements
+## Purpose
 
+Lifecycle management of sessions: create, retrieve, archive, list.
+
+## Requirements
 ### Requirement: Session Role Extension
 The session role enum SHALL include `'propose'` to support the propose workflow session.
 

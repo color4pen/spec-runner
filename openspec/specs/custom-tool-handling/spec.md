@@ -1,5 +1,8 @@
-## ADDED Requirements
+## Purpose
 
+Dispatch `requires_action` Custom Tool calls from sessions to registered handlers and return tool results.
+
+## Requirements
 ### Requirement: Custom Tool Event Detection
 The SSE stream route SHALL detect `session.status_idle` events with `stop_reason.type === 'requires_action'` and dispatch them to the Custom Tool handler.
 

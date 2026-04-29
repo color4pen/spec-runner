@@ -1,5 +1,8 @@
-## ADDED Requirements
+## Purpose
 
+Register a GitHub repository under the authenticated user's account.
+
+## Requirements
 ### Requirement: Repository Search
 The system SHALL provide a search interface for finding GitHub repositories to register, using the GitHub Search API.
 

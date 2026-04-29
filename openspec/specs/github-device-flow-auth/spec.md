@@ -1,5 +1,8 @@
-## ADDED Requirements
+## Purpose
 
+GitHub Device Flow OAuth for the CLI to obtain a personal access token.
+
+## Requirements
 ### Requirement: GitHub Device Flow OAuth でトークンを取得する
 
 `specrunner login` は MUST GitHub Device Flow（[OAuth 2.0 Device Authorization Grant](https://datatracker.ietf.org/doc/html/rfc8628)）で `repo` スコープのアクセストークンを取得する。フローの 3 ステップ（device code 取得 / ユーザー承認誘導 / token poll）を SHALL 順に実行する。

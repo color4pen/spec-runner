@@ -1,3 +1,7 @@
+## Purpose
+
+GitHub OAuth integration for the web app via Auth.js.
+
 ## Requirements
 
 ### Requirement: GitHub OAuth Login

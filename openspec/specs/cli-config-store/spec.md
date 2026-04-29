@@ -1,5 +1,8 @@
-## ADDED Requirements
+## Purpose
 
+Persist CLI authentication, agent IDs, and other config under the user's XDG config directory.
+
+## Requirements
 ### Requirement: 設定ファイルは固定パスに保存される
 
 設定ファイルは MUST `${XDG_CONFIG_HOME:-$HOME/.config}/specrunner/config.json` に保存される。CLI は SHALL このパス以外を config の正規ストアとして用いない。

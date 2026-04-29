@@ -1,5 +1,8 @@
-## ADDED Requirements
+## Purpose
 
+Parse `request.md` into a structured object (type, title, content, enabled options).
+
+## Requirements
 ### Requirement: request.md は YAML/Markdown ハイブリッド構造でパースされる
 
 request.md パーサーは MUST Markdown ファイルから以下の情報を抽出する: `type` (string、`Meta` 見出し配下の `- **type**: <value>` リスト項目から)、`title` (level-1 heading のテキスト)、`content` (Markdown 本文全体)、`enabled` (`ワークフローオプション` 見出し配下の `- **enabled**:` 配下のリスト項目を文字列配列として収集)。CLI は SHALL この抽出結果を構造化オブジェクトとして返す。

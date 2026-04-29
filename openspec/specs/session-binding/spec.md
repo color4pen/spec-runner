@@ -1,5 +1,8 @@
-## MODIFIED Requirements
+## Purpose
 
+Bind a session to a request so completion handlers can look up the request context.
+
+## Requirements
 ### Requirement: Session Creation with Binding
 The system SHALL record every new Managed Agents session in the `sessions` table, binding it to a request with a specified role.
 

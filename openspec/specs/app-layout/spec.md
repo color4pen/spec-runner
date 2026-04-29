@@ -1,5 +1,8 @@
-## MODIFIED Requirements
+## Purpose
 
+Layout structure of the workspace UI: sidebar request list and main content area.
+
+## Requirements
 ### Requirement: Workspace Page
 The system SHALL display a workspace page for a selected repository with a sidebar showing request list and main content area showing request detail.
 

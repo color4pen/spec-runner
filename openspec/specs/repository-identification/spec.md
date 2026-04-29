@@ -1,5 +1,8 @@
-## ADDED Requirements
+## Purpose
 
+Identify the target repository from the current working directory's git remote.
+
+## Requirements
 ### Requirement: cwd の git remote から owner/name を解決する
 
 CLI は MUST `git remote get-url origin` を実行し、出力 URL から `owner` と `name` を抽出する。SSH 形式（`git@github.com:owner/name.git`）と HTTPS 形式（`https://github.com/owner/name.git`、`.git` suffix の有無を問わない）の SHALL 両方をサポートする。

@@ -1,5 +1,8 @@
-## MODIFIED Requirements
+## Purpose
 
+Role-specific post-completion logic (branch verification, PR creation, request status transitions).
+
+## Requirements
 ### Requirement: Propose Session Completion Handling
 The session-completion-handler SHALL handle propose session completion by using the DB-stored `branch_name` when available, falling back to deterministic derivation.
 

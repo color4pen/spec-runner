@@ -1,3 +1,7 @@
+## Purpose
+
+SSE streaming of session events to the workspace UI in real time.
+
 ## Requirements
 
 ### Requirement: Send Messages to Session

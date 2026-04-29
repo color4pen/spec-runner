@@ -1,3 +1,7 @@
+## Purpose
+
+Run the bootstrap session that initializes openspec-workflow in a target repository.
+
 ## Requirements
 
 ### Requirement: Bootstrap Initiation

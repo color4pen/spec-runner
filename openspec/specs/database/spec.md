@@ -1,5 +1,8 @@
-## MODIFIED Requirements
+## Purpose
 
+SQLite + Drizzle ORM schema for repositories, requests, and sessions.
+
+## Requirements
 ### Requirement: Requests Table Schema Extension
 The `requests` table SHALL include `branch_name` and `base_branch` columns for storing agent-reported branch information.
 

@@ -1,5 +1,8 @@
-## ADDED Requirements
+## Purpose
 
+Custom Tool definition allowing the propose agent to report the branch it created back to specrunner.
+
+## Requirements
 ### Requirement: `register_branch` Custom Tool は固定スキーマで定義される
 
 `register_branch` ツールは MUST type `custom` で、SHALL 以下の固定スキーマで定義される:

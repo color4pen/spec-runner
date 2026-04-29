@@ -1,5 +1,8 @@
-## MODIFIED Requirements
+## Purpose
 
+Wrapper utilities around GitHub REST API for branches, file contents, and pull requests.
+
+## Requirements
 ### Requirement: Branch File Listing
 The github-api.ts module SHALL provide a function to list files in a directory on a specific branch.
 

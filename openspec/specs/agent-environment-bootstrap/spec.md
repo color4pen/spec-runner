@@ -1,5 +1,8 @@
-## ADDED Requirements
+## Purpose
 
+Idempotently create or reuse Anthropic Agent and Environment definitions during `specrunner init`.
+
+## Requirements
 ### Requirement: `specrunner init` は冪等に Agent と Environment を作成する
 
 `specrunner init` は MUST config に既存 Agent ID と Environment ID があればまず `retrieve` で存在を確認し、存在すれば SHALL 再利用する。存在しない場合のみ新規作成する。

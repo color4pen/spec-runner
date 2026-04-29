@@ -1,5 +1,8 @@
-## ADDED Requirements
+## Purpose
 
+Track bootstrap status (uninitialized / bootstrapping / pr_pending / ready) per repository.
+
+## Requirements
 ### Requirement: Bootstrap Status State Machine
 The system SHALL enforce a defined state machine for repository bootstrap status transitions.
 

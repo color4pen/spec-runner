@@ -1,5 +1,8 @@
-## ADDED Requirements
+## Purpose
 
+Detect session completion via SSE `end_turn` or polling `status: idle`.
+
+## Requirements
 ### Requirement: 完了検知はポーリングを主、SSE を補助とする
 
 セッション完了の判定は MUST `client.beta.sessions.retrieve()` のポーリング結果で `status === "idle"` かつ `stop_reason === "end_turn"` を観測したときに確定する。SSE の役割は SHALL Custom Tool イベント受信のみとする。

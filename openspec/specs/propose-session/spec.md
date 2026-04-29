@@ -1,5 +1,8 @@
-## MODIFIED Requirements
+## Purpose
 
+Run a propose session that produces a change folder on a feature branch.
+
+## Requirements
 ### Requirement: Propose Session Agent Configuration
 The system SHALL use a dedicated agent configuration for propose sessions, with a system prompt tailored to openspec-propose skill execution, and include the `register_branch` Custom Tool definition.
 

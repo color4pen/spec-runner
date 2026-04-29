@@ -1,3 +1,7 @@
+## Purpose
+
+Cancel an in-flight bootstrap, archive the session, and revert repository status.
+
 ## Requirements
 
 ### Requirement: Cancel Bootstrap from Bootstrapping State

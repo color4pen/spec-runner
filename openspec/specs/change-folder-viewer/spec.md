@@ -1,5 +1,8 @@
-## MODIFIED Requirements
+## Purpose
 
+Display change folder contents (proposal/design/tasks/specs) from a branch in the workspace UI.
+
+## Requirements
 ### Requirement: Change Folder Server Actions
 The Server Actions for change folder retrieval SHALL use the DB-stored `branch_name` when available, falling back to deterministic derivation.
 

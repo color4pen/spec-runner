@@ -1,5 +1,8 @@
-## ADDED Requirements
+## Purpose
 
+Browse change folder directories and files within the workspace UI.
+
+## Requirements
 ### Requirement: Directory Entry Expansion
 The system SHALL expand directory entries in the change folder viewer by fetching their contents from the GitHub Contents API, instead of attempting to read them as files.
 
