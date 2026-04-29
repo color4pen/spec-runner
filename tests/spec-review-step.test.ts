@@ -142,8 +142,9 @@ describe("TC-016: runSpecReviewStep — uses specReview.timeoutMs from config", 
       githubFetch: mockFetch,
     });
 
-    // Verify step completed and recorded a verdict
-    expect(result.steps?.["spec-review"]?.verdict).toBe("approved");
+    // Verify step completed and recorded a verdict (array format)
+    const lastResult = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
+    expect(lastResult?.verdict).toBe("approved");
   });
 });
 
@@ -171,7 +172,8 @@ describe("TC-017: runSpecReviewStep — treats status='idle' as complete", () =>
       githubFetch: mockFetch,
     });
 
-    expect(result.steps?.["spec-review"]?.verdict).toBe("approved");
+    const lastSpecReview = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
+    expect(lastSpecReview?.verdict).toBe("approved");
     expect(result.status).toBe("success");
   });
 });
@@ -324,7 +326,8 @@ describe("TC-021: runSpecReviewStep — escalation failsafe when verdict line ab
       githubFetch: mockFetch,
     });
 
-    expect(result.steps?.["spec-review"]?.verdict).toBe("escalation");
+    const lastSpecReview2 = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
+    expect(lastSpecReview2?.verdict).toBe("escalation");
     expect(result.status).toBe("success");
 
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
@@ -357,11 +360,14 @@ describe("TC-041: runSpecReviewStep — records session, verdict, findingsPath, 
       githubFetch: mockFetch,
     });
 
-    const stepResult = result.steps?.["spec-review"];
-    expect(stepResult).toBeDefined();
+    const stepResultArr = result.steps?.["spec-review"];
+    expect(stepResultArr).toBeDefined();
+    expect(Array.isArray(stepResultArr)).toBe(true);
+    const stepResult = stepResultArr?.[stepResultArr.length - 1];
     expect(stepResult?.session?.id).toBe(sessionId);
     expect(stepResult?.verdict).toBe("approved");
-    expect(stepResult?.findingsPath).toBe("openspec/changes/test-slug/spec-review-result.md");
+    // findingsPath now uses iteration-based naming: spec-review-result-001.md
+    expect(stepResult?.findingsPath).toBe("openspec/changes/test-slug/spec-review-result-001.md");
     expect(stepResult?.completedAt).toBeDefined();
     expect(stepResult?.error).toBeNull();
   });
@@ -413,9 +419,9 @@ describe("TC-042: runSpecReviewStep — session created without custom tools", (
   });
 });
 
-// TC-049: runSpecReviewStep — findingsPath format (should)
+// TC-049: runSpecReviewStep — findingsPath format (updated for iteration-based naming)
 describe("TC-049: runSpecReviewStep — findingsPath has correct format", () => {
-  it("records findingsPath as openspec/changes/<slug>/spec-review-result.md", async () => {
+  it("records findingsPath as openspec/changes/<slug>/spec-review-result-001.md for iter=1", async () => {
     const { runSpecReviewStep } = await import("../src/core/steps/spec-review.js");
     const jobState = await makeJobState();
     const slug = "2026-04-29-my-feature";
@@ -437,8 +443,9 @@ describe("TC-049: runSpecReviewStep — findingsPath has correct format", () => 
       githubFetch: mockFetch,
     });
 
-    expect(result.steps?.["spec-review"]?.findingsPath).toBe(
-      `openspec/changes/${slug}/spec-review-result.md`,
+    const lastStepResult = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
+    expect(lastStepResult?.findingsPath).toBe(
+      `openspec/changes/${slug}/spec-review-result-001.md`,
     );
   });
 });

@@ -1,6 +1,6 @@
 import { pollUntilComplete } from "../completion.js";
 import { appendHistory, updateJobState, failJobState, persistJobState } from "../../state/store.js";
-import { appendStepResult } from "../../state/schema.js";
+import { pushStepResult } from "../../state/helpers.js";
 import type { JobState, Verdict } from "../../state/schema.js";
 import { createSession } from "../../sdk/sessions.js";
 import { sendEvents } from "../../sdk/sessions.js";
@@ -9,10 +9,11 @@ import {
   githubTokenExpiredError,
   specReviewResultNotFoundError,
 } from "../../errors.js";
-import type { PipelineDeps } from "../pipeline.js";
+import type { PipelineDeps } from "../types.js";
 import {
   buildSpecReviewInitialMessage,
 } from "../../prompts/spec-review-system.js";
+import { getAgentId } from "../../config/getAgentId.js";
 
 /**
  * Parse the verdict from a spec-review-result.md file content.
@@ -29,7 +30,24 @@ export function parseSpecReviewVerdict(content: string): Verdict | null {
 }
 
 /**
- * Fetch the spec-review-result.md file from GitHub.
+ * Compute the iteration number for the next spec-review push.
+ * Returns state.steps["spec-review"]?.length + 1 or 1 if not set.
+ */
+function computeSpecReviewIteration(state: JobState): number {
+  return (state.steps?.["spec-review"]?.length ?? 0) + 1;
+}
+
+/**
+ * Build the findings file path for a given iteration.
+ * Format: openspec/changes/<slug>/spec-review-result-NNN.md (3-digit zero-padded)
+ */
+export function buildFindingsPath(slug: string, iteration: number): string {
+  const nnn = String(iteration).padStart(3, "0");
+  return `openspec/changes/${slug}/spec-review-result-${nnn}.md`;
+}
+
+/**
+ * Fetch the spec-review-result file from GitHub.
  * Returns file content as string, or null if not found after retries.
  * Throws SpecRunnerError(GITHUB_TOKEN_EXPIRED) on 401.
  *
@@ -40,6 +58,7 @@ export async function fetchSpecReviewResult(
   deps: PipelineDeps,
   slug: string,
   branch: string,
+  iteration: number,
 ): Promise<string | null> {
   const githubFetch = deps.githubFetch ?? fetch;
   const config = deps.config;
@@ -47,7 +66,7 @@ export async function fetchSpecReviewResult(
   const githubToken = config.github!.accessToken;
   const sleepFn = deps.sleepFn ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
 
-  const filePath = `openspec/changes/${slug}/spec-review-result.md`;
+  const filePath = buildFindingsPath(slug, iteration);
   const encodedPath = filePath.split("/").map(encodeURIComponent).join("/");
   const url = `https://api.github.com/repos/${repo.owner}/${repo.name}/contents/${encodedPath}?ref=${encodeURIComponent(branch)}`;
 
@@ -91,12 +110,13 @@ export async function fetchSpecReviewResult(
 
 /**
  * Run the spec-review step:
- * 1. Create a new session (no custom tools)
- * 2. Send initial message
- * 3. Poll until complete (using pollUntilComplete)
- * 4. Fetch spec-review-result.md from GitHub
- * 5. Parse verdict
- * 6. Update state
+ * 1. Compute iteration number from existing state
+ * 2. Create a new session (no custom tools)
+ * 3. Send initial message (including iteration-specific filename)
+ * 4. Poll until complete (using pollUntilComplete)
+ * 5. Fetch spec-review-result-NNN.md from GitHub
+ * 6. Parse verdict
+ * 7. Update state (using pushStepResult for array append)
  */
 export async function runSpecReviewStep(
   jobState: JobState,
@@ -105,13 +125,44 @@ export async function runSpecReviewStep(
   const { client, config, repo, slug } = deps;
   const branch = jobState.branch;
 
+  // Determine iteration number for this run
+  const iteration = computeSpecReviewIteration(jobState);
+  const findingsPath = buildFindingsPath(slug, iteration);
+
+  // Resolve agent ID (use propose agent for spec-review per design).
+  // If agent ID cannot be resolved, fail immediately — do not continue with an empty string.
+  let agentId: string;
+  try {
+    agentId = getAgentId(config, "propose");
+  } catch (err) {
+    const errCode = (err as { code?: string }).code ?? "CONFIG_INCOMPLETE";
+    const errMsg = (err as Error).message;
+    const errHint = (err as { hint?: string }).hint ?? "Run 'specrunner init' to configure agents.";
+    let state = await updateJobState(jobState, { step: "spec-review" });
+    state = await failJobState(state, {
+      code: errCode,
+      message: errMsg,
+      hint: errHint,
+    }, "spec-review-agent-id");
+    state = pushStepResult(state, "spec-review", {
+      session: null,
+      verdict: null,
+      findingsPath: null,
+      completedAt: new Date().toISOString(),
+      error: { code: errCode, message: errMsg, hint: errHint },
+    });
+    await persistJobState(state);
+    (err as Record<string, unknown>)["state"] = state;
+    throw err;
+  }
+
   // Record step transition
   let state = await updateJobState(jobState, { step: "spec-review" });
   state = await appendHistory(state, {
     ts: new Date().toISOString(),
     step: "step-transition",
     status: "ok",
-    message: "Transitioning to spec-review step",
+    message: `Transitioning to spec-review step (iteration ${iteration})`,
   });
 
   // 1. Create spec-review session (no custom tools)
@@ -119,14 +170,14 @@ export async function runSpecReviewStep(
     ts: new Date().toISOString(),
     step: "spec-review-session-create",
     status: "started",
-    message: "Creating spec-review session",
+    message: `Creating spec-review session (iteration ${iteration})`,
   });
 
   let sessionId: string;
   try {
     const repoUrl = `https://github.com/${repo.owner}/${repo.name}`;
     const session = await createSession(client, {
-      agent: config.agent!.id,
+      agent: { id: agentId, type: "agent" },
       environment_id: config.environment!.id,
       resources: [
         {
@@ -141,7 +192,7 @@ export async function runSpecReviewStep(
     state = await updateJobState(state, {
       session: {
         id: sessionId,
-        agentId: config.agent!.id,
+        agentId,
         environmentId: config.environment!.id,
       },
     });
@@ -158,16 +209,28 @@ export async function runSpecReviewStep(
       message: `Failed to create spec-review session: ${errMsg}`,
       hint: "Check your API key and try again.",
     }, "spec-review-session-create");
+
+    state = pushStepResult(state, "spec-review", {
+      session: null,
+      verdict: null,
+      findingsPath: null,
+      completedAt: new Date().toISOString(),
+      error: { code: "SESSION_CREATE_FAILED", message: `Failed to create spec-review session: ${errMsg}`, hint: "Check your API key and try again." },
+    });
+    await persistJobState(state);
     throw err;
   }
 
-  // 2. Send initial message
+  // 2. Send initial message (with iteration-specific filename embedded)
+  const specReviewResultFileName = `spec-review-result-${String(iteration).padStart(3, "0")}.md`;
   const initialMessage = buildSpecReviewInitialMessage({
     slug,
     repository: `${repo.owner}/${repo.name}`,
     requestType: state.request.type,
     enabled: deps.request.enabled,
     requestContent: deps.request.content,
+    iteration,
+    findingsPath,
   });
 
   try {
@@ -183,7 +246,7 @@ export async function runSpecReviewStep(
       ts: new Date().toISOString(),
       step: "spec-review-initial-message-sent",
       status: "ok",
-      message: "Initial message sent to spec-review session",
+      message: `Initial message sent to spec-review session (file: ${specReviewResultFileName})`,
     });
   } catch (err) {
     const errMsg = (err as Error).message;
@@ -192,6 +255,14 @@ export async function runSpecReviewStep(
       message: `Failed to send initial message: ${errMsg}`,
       hint: "Check your network connection.",
     });
+    state = pushStepResult(state, "spec-review", {
+      session: state.session,
+      verdict: null,
+      findingsPath: null,
+      completedAt: new Date().toISOString(),
+      error: { code: "SESSION_CREATE_FAILED", message: `Failed to send initial message: ${errMsg}`, hint: "Check your network connection." },
+    });
+    await persistJobState(state);
     throw err;
   }
 
@@ -233,7 +304,7 @@ export async function runSpecReviewStep(
     }
 
     state = await failJobState(state, { code, message, hint });
-    state = appendStepResult(state, "spec-review", {
+    state = pushStepResult(state, "spec-review", {
       session: state.session,
       verdict: null,
       findingsPath: null,
@@ -246,9 +317,9 @@ export async function runSpecReviewStep(
     throw err;
   }
 
-  // 4. Fetch spec-review-result.md from GitHub
+  // 4. Fetch spec-review-result-NNN.md from GitHub
   const effectiveBranch = branch ?? "main";
-  const fileContent = await fetchSpecReviewResult(deps, slug, effectiveBranch);
+  const fileContent = await fetchSpecReviewResult(deps, slug, effectiveBranch, iteration);
 
   if (fileContent === null) {
     const notFoundErr = specReviewResultNotFoundError(slug, effectiveBranch);
@@ -258,7 +329,7 @@ export async function runSpecReviewStep(
       message: notFoundErr.message,
       hint: notFoundErr.hint,
     });
-    state = appendStepResult(state, "spec-review", {
+    state = pushStepResult(state, "spec-review", {
       session: state.session,
       verdict: null,
       findingsPath: null,
@@ -272,7 +343,6 @@ export async function runSpecReviewStep(
   }
 
   // 5. Parse verdict
-  const findingsPath = `openspec/changes/${slug}/spec-review-result.md`;
   const verdict = parseSpecReviewVerdict(fileContent);
 
   if (verdict === null) {
@@ -285,7 +355,7 @@ export async function runSpecReviewStep(
   const finalVerdict: Verdict = verdict ?? "escalation";
 
   // 6. Record step result (fileContent propagated so CLI can display findings summary)
-  state = appendStepResult(state, "spec-review", {
+  state = pushStepResult(state, "spec-review", {
     session: state.session,
     verdict: finalVerdict,
     findingsPath,
@@ -298,7 +368,7 @@ export async function runSpecReviewStep(
     ts: new Date().toISOString(),
     step: "spec-review-verdict",
     status: "ok",
-    message: `Spec-review verdict: ${finalVerdict}`,
+    message: `Spec-review verdict: ${finalVerdict} (iteration ${iteration})`,
   });
 
   // Keep state.status as "success" regardless of verdict value

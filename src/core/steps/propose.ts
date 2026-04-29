@@ -1,17 +1,18 @@
 import { startProposeSession } from "../session.js";
 import { pollUntilComplete } from "../completion.js";
 import { appendHistory, updateJobState, failJobState, persistJobState } from "../../state/store.js";
-import { appendStepResult } from "../../state/schema.js";
 import type { JobState } from "../../state/schema.js";
+import { pushStepResult } from "../../state/helpers.js";
 import { createSession } from "../../sdk/sessions.js";
 import { stderrWrite } from "../../logger/stdout.js";
+import { getAgentId } from "../../config/getAgentId.js";
 import {
   branchNotRegisteredError,
   sessionTerminatedError,
   githubTokenExpiredError,
   changeFolderNotFoundError,
 } from "../../errors.js";
-import type { PipelineDeps } from "../pipeline.js";
+import type { PipelineDeps } from "../types.js";
 
 /**
  * Run the propose step: creates a session, streams events, polls for completion,
@@ -22,6 +23,9 @@ export async function runProposeStep(
   deps: PipelineDeps,
 ): Promise<JobState> {
   const { client, config, repo, request, slug } = deps;
+
+  // Resolve propose Agent ID
+  const proposeAgentId = getAgentId(config, "propose");
 
   // 1. Create session
   let state = await appendHistory(jobState, {
@@ -35,7 +39,7 @@ export async function runProposeStep(
   try {
     const repoUrl = `https://github.com/${repo.owner}/${repo.name}`;
     const session = await createSession(client, {
-      agent: config.agent!.id,
+      agent: { id: proposeAgentId, type: "agent" },
       environment_id: config.environment!.id,
       resources: [
         {
@@ -50,7 +54,7 @@ export async function runProposeStep(
     state = await updateJobState(state, {
       session: {
         id: sessionId,
-        agentId: config.agent!.id,
+        agentId: proposeAgentId,
         environmentId: config.environment!.id,
       },
       step: "events-stream-connected",
@@ -87,7 +91,7 @@ export async function runProposeStep(
   const ssePromise = startProposeSession({
     client,
     sessionId,
-    agentId: config.agent!.id,
+    agentId: proposeAgentId,
     environmentId: config.environment!.id,
     requestContent: request.content,
     onBranchRegistered: (branch) => {
@@ -130,7 +134,7 @@ export async function runProposeStep(
       message: "Session terminated by Anthropic",
     });
     // Record step result
-    state = appendStepResult(state, "propose", {
+    state = pushStepResult(state, "propose", {
       session: state.session,
       verdict: null,
       findingsPath: null,
@@ -176,7 +180,7 @@ export async function runProposeStep(
 
       state = await failJobState(state, { code, message, hint });
       // Record step result
-      state = appendStepResult(state, "propose", {
+      state = pushStepResult(state, "propose", {
         session: state.session,
         verdict: null,
         findingsPath: null,
@@ -230,7 +234,7 @@ export async function runProposeStep(
       hint: branchErr.hint,
     });
     // Record step result before throwing
-    state = appendStepResult(state, "propose", {
+    state = pushStepResult(state, "propose", {
       session: state.session,
       verdict: null,
       findingsPath: null,
@@ -373,7 +377,7 @@ export async function runProposeStep(
   });
 
   // Record propose step result
-  state = appendStepResult(state, "propose", {
+  state = pushStepResult(state, "propose", {
     session: state.session,
     verdict: null,
     findingsPath: null,

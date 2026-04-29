@@ -2,8 +2,14 @@
  * System prompt for the spec-review step.
  * The agent acts as both architect and spec-reviewer in a single session.
  * No custom tools — verdict is written to a file in the change folder.
+ *
+ * NOTE: Currently unused. spec-review reuses the propose Agent which already has
+ * its own system prompt. This constant is reserved for a future spec-review
+ * dedicated Agent. When wired up, the output path instruction below should use
+ * the iteration-specific path provided in the user message (e.g. spec-review-result-001.md),
+ * not the static "spec-review-result.md" shown here.
  */
-export const SPEC_REVIEW_SYSTEM_PROMPT = `You are a SpecRunner spec-reviewer agent. You play two roles simultaneously:
+const SPEC_REVIEW_SYSTEM_PROMPT = `You are a SpecRunner spec-reviewer agent. You play two roles simultaneously:
 1. **architect** — evaluate whether the proposed design is sound, feasible, and aligned with existing architecture
 2. **spec-reviewer** — verify that the specification is complete, consistent, and reviewable
 
@@ -11,7 +17,7 @@ Your task is to review the change folder and produce a verdict on the specificat
 
 ## Your Output
 
-Write your findings to: openspec/changes/<slug>/spec-review-result.md
+Write your findings to the path specified in the user message (e.g. openspec/changes/<slug>/spec-review-result-NNN.md).
 
 The file MUST contain a verdict line in this exact format:
 - **verdict**: <value>
@@ -45,7 +51,7 @@ Severity levels: CRITICAL, HIGH, MEDIUM, LOW
 - Write the verdict line BEFORE the findings table.
 - Use exactly the format shown above — the verdict line must start with \`- **verdict**:\` at the beginning of a line.
 - Findings must follow review-standards.md severity definitions.
-- Do not modify any source code or spec files other than writing spec-review-result.md.`;
+- Do not modify any source code or spec files other than writing the spec-review-result file.`;
 
 /**
  * Template for the initial user message sent to the spec-review session.
@@ -62,7 +68,7 @@ Enabled options: {{ENABLED}}
 </user-request>
 
 Review all spec files in the change folder (proposal.md, design.md, tasks.md, specs/). Write your verdict and findings to:
-openspec/changes/{{SLUG}}/spec-review-result.md
+{{FINDINGS_PATH}}
 
 The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escalation>\``;
 
@@ -72,10 +78,17 @@ export interface SpecReviewPromptInput {
   requestType: string;
   enabled?: string[];
   requestContent?: string;
+  /** Iteration number (1-origin). Used to compute the findings file name. Default: 1. */
+  iteration?: number;
+  /** Explicit findings path (overrides iteration-based computation). */
+  findingsPath?: string;
 }
 
 /**
  * Build the spec-review system prompt (static, no per-request injection needed).
+ *
+ * NOTE: Currently unused. Reserved for a future spec-review dedicated Agent.
+ * When wired up, pass this as the Agent's system prompt.
  */
 export function buildSpecReviewSystemPrompt(_input: SpecReviewPromptInput): string {
   return SPEC_REVIEW_SYSTEM_PROMPT;
@@ -90,10 +103,16 @@ export function buildSpecReviewInitialMessage(input: SpecReviewPromptInput): str
     : "none";
   const requestContent = input.requestContent ?? "(see change folder)";
 
+  // Compute findings path based on iteration
+  const iteration = input.iteration ?? 1;
+  const findingsPath = input.findingsPath
+    ?? `openspec/changes/${input.slug}/spec-review-result-${String(iteration).padStart(3, "0")}.md`;
+
   return SPEC_REVIEW_INITIAL_MESSAGE_TEMPLATE
     .replace(/{{SLUG}}/g, input.slug)
     .replace(/{{REPOSITORY}}/g, input.repository)
     .replace(/{{REQUEST_TYPE}}/g, input.requestType)
     .replace(/{{ENABLED}}/g, enabledStr)
-    .replace(/{{REQUEST_CONTENT}}/g, requestContent);
+    .replace(/{{REQUEST_CONTENT}}/g, requestContent)
+    .replace(/{{FINDINGS_PATH}}/g, findingsPath);
 }

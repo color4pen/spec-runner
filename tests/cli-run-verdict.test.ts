@@ -14,6 +14,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import type { JobState } from "../src/state/schema.js";
+import { getLatestStepResult } from "../src/state/helpers.js";
 
 let tempDir: string;
 let originalXdgConfigHome: string | undefined;
@@ -59,20 +60,26 @@ function makeSuccessState(verdict: "approved" | "needs-fix" | "escalation"): Job
     history: [],
     error: null,
     steps: {
-      "propose": {
-        session: { id: "sess_propose", agentId: "agent_001", environmentId: "env_001" },
-        verdict: null,
-        findingsPath: null,
-        completedAt: "2026-01-01",
-        error: null,
-      },
-      "spec-review": {
-        session: { id: "sess_spec", agentId: "agent_001", environmentId: "env_001" },
-        verdict,
-        findingsPath: "openspec/changes/request/spec-review-result.md",
-        completedAt: "2026-01-01",
-        error: null,
-      },
+      "propose": [
+        {
+          iteration: 1,
+          session: { id: "sess_propose", agentId: "agent_001", environmentId: "env_001" },
+          verdict: null,
+          findingsPath: null,
+          completedAt: "2026-01-01",
+          error: null,
+        },
+      ],
+      "spec-review": [
+        {
+          iteration: 1,
+          session: { id: "sess_spec", agentId: "agent_001", environmentId: "env_001" },
+          verdict,
+          findingsPath: "openspec/changes/request/spec-review-result.md",
+          completedAt: "2026-01-01",
+          error: null,
+        },
+      ],
     },
   };
 }
@@ -137,8 +144,8 @@ function simulateRunOutput(
     }
     exitCode = 1;
   } else {
-    // Output spec-review verdict
-    const specReviewResult = finalState.steps?.["spec-review"];
+    // Output spec-review verdict (use getLatestStepResult for array format)
+    const specReviewResult = getLatestStepResult(finalState, "spec-review");
     if (specReviewResult?.verdict) {
       const verdict = specReviewResult.verdict;
       process.stdout.write(`Spec review verdict: ${verdict}\n`);

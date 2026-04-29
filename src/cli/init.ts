@@ -4,7 +4,11 @@ import { createAgent, retrieveAgent, updateAgent } from "../sdk/agents.js";
 import { createEnvironment, retrieveEnvironment } from "../sdk/environments.js";
 import { loadConfig, saveConfig } from "../config/store.js";
 import { bootstrapTools } from "../core/tools/index.js";
-import { buildAgentDefinition, computeDefinitionHash } from "../core/agent-definition.js";
+import {
+  buildAgentDefinition,
+  buildSpecFixerAgentDefinition,
+  computeDefinitionHash,
+} from "../core/agent-definition.js";
 import { logInfo, logStep, logSuccess, logError, stderrWrite } from "../logger/stdout.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 
@@ -40,46 +44,87 @@ export async function runInit(options: {
 
   logInfo("specrunner init");
 
-  // Build agent definition
+  // Build agent definitions
   const agentDef = buildAgentDefinition();
   const definitionHash = computeDefinitionHash(agentDef);
+  const specFixerAgentDef = buildSpecFixerAgentDefinition();
+  const specFixerDefinitionHash = computeDefinitionHash(specFixerAgentDef);
 
-  // --- Agent step ---
+  // --- Propose Agent step ---
   let agentId: string;
-  let agentVersion: number | undefined;
 
-  if (existingConfig.agent?.id) {
-    // Try to retrieve existing agent
+  // Support legacy config.agent.id as the propose agent ID
+  const existingProposeId = existingConfig.agents?.propose?.id ?? existingConfig.agent?.id;
+  const existingProposeHash = existingConfig.agents?.propose?.definitionHash ?? existingConfig.agent?.definitionHash;
+
+  if (existingProposeId) {
+    // Try to retrieve existing propose agent
     try {
-      const existing = await retrieveAgent(client, existingConfig.agent.id);
-      agentVersion = existing.version;
+      const existing = await retrieveAgent(client, existingProposeId);
 
-      if (existingConfig.agent.definitionHash === definitionHash) {
-        logStep(`Agent unchanged (${existingConfig.agent.id})`);
-        agentId = existingConfig.agent.id;
+      if (existingProposeHash === definitionHash) {
+        logStep(`Propose Agent unchanged (${existingProposeId})`);
+        agentId = existingProposeId;
       } else {
-        logStep(`Agent definition changed — updating ${existingConfig.agent.id}...`);
-        await updateAgent(client, existingConfig.agent.id, {
+        logStep(`Propose Agent definition changed — updating ${existingProposeId}...`);
+        await updateAgent(client, existingProposeId, {
           version: existing.version,
           name: agentDef.name,
           system: agentDef.system,
           tools: agentDef.tools,
         });
-        agentId = existingConfig.agent.id;
-        logSuccess(`Agent updated (${agentId})`);
+        agentId = existingProposeId;
+        logSuccess(`Propose Agent updated (${agentId})`);
       }
     } catch (err: unknown) {
       const status = (err as { status?: number }).status;
       if (status === 404) {
-        logStep("Existing agent not found — creating new agent...");
+        logStep("Existing propose agent not found — creating new propose agent...");
         agentId = await createNewAgent(client, agentDef);
       } else {
         throw err;
       }
     }
   } else {
-    logStep("Creating agent...");
+    logStep("Creating propose agent...");
     agentId = await createNewAgent(client, agentDef);
+  }
+
+  // --- Spec-Fixer Agent step ---
+  let specFixerAgentId: string;
+  const existingSpecFixerId = existingConfig.agents?.specFixer?.id;
+  const existingSpecFixerHash = existingConfig.agents?.specFixer?.definitionHash;
+
+  if (existingSpecFixerId) {
+    try {
+      const existing = await retrieveAgent(client, existingSpecFixerId);
+
+      if (existingSpecFixerHash === specFixerDefinitionHash) {
+        logStep(`Spec-Fixer Agent unchanged (${existingSpecFixerId})`);
+        specFixerAgentId = existingSpecFixerId;
+      } else {
+        logStep(`Spec-Fixer Agent definition changed — updating ${existingSpecFixerId}...`);
+        await updateAgent(client, existingSpecFixerId, {
+          version: existing.version,
+          name: specFixerAgentDef.name,
+          system: specFixerAgentDef.system,
+          tools: specFixerAgentDef.tools,
+        });
+        specFixerAgentId = existingSpecFixerId;
+        logSuccess(`Spec-Fixer Agent updated (${specFixerAgentId})`);
+      }
+    } catch (err: unknown) {
+      const status = (err as { status?: number }).status;
+      if (status === 404) {
+        logStep("Existing spec-fixer agent not found — creating new spec-fixer agent...");
+        specFixerAgentId = await createNewSpecFixerAgent(client, specFixerAgentDef);
+      } else {
+        throw err;
+      }
+    }
+  } else {
+    logStep("Creating spec-fixer agent...");
+    specFixerAgentId = await createNewSpecFixerAgent(client, specFixerAgentDef);
   }
 
   // --- Environment step ---
@@ -125,10 +170,23 @@ export async function runInit(options: {
   const newConfig: SpecRunnerConfig = {
     version: 1,
     anthropic: { apiKey },
+    // Legacy field kept in sync with agents.propose for backward compatibility
     agent: {
       id: agentId,
       definitionHash,
       lastSyncedAt: now,
+    },
+    agents: {
+      propose: {
+        id: agentId,
+        definitionHash,
+        lastSyncedAt: now,
+      },
+      specFixer: {
+        id: specFixerAgentId,
+        definitionHash: specFixerDefinitionHash,
+        lastSyncedAt: now,
+      },
     },
     environment: {
       id: environmentId,
@@ -152,7 +210,21 @@ async function createNewAgent(
     system: agentDef.system,
     tools: agentDef.tools,
   });
-  logSuccess(`Agent created (${agent.id})`);
+  logSuccess(`Propose Agent created (${agent.id})`);
+  return agent.id;
+}
+
+async function createNewSpecFixerAgent(
+  client: Anthropic,
+  agentDef: ReturnType<typeof buildSpecFixerAgentDefinition>,
+): Promise<string> {
+  const agent = await createAgent(client, {
+    name: agentDef.name,
+    model: agentDef.model,
+    system: agentDef.system,
+    tools: agentDef.tools,
+  });
+  logSuccess(`Spec-Fixer Agent created (${agent.id})`);
   return agent.id;
 }
 

@@ -7,6 +7,7 @@ import { bootstrapTools } from "../core/tools/index.js";
 import { logInfo, logError } from "../logger/stdout.js";
 import { SpecRunnerError } from "../errors.js";
 import type { JobState } from "../state/schema.js";
+import { getLatestStepResult } from "../state/helpers.js";
 
 /**
  * Parse timeout flag value like "30m" or "300s" into milliseconds.
@@ -61,7 +62,7 @@ function parseSpecReviewFindingsSummary(
  * Output spec-review verdict information to stdout.
  */
 function outputSpecReviewVerdict(finalState: JobState, slug: string): void {
-  const specReviewResult = finalState.steps?.["spec-review"];
+  const specReviewResult = getLatestStepResult(finalState, "spec-review");
   if (!specReviewResult?.verdict) return;
 
   const verdict = specReviewResult.verdict;

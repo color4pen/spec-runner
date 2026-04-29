@@ -4,7 +4,7 @@
 
 export type JobStatus = "running" | "success" | "failed" | "terminated";
 
-export type StepName = "propose" | "spec-review";
+export type StepName = "propose" | "spec-review" | "spec-fixer";
 
 export type Verdict = "approved" | "needs-fix" | "escalation";
 
@@ -39,6 +39,8 @@ export interface ErrorInfo {
 }
 
 export interface StepResult {
+  /** 1-origin iteration number within the step. Auto-assigned by pushStepResult. */
+  iteration: number;
   session: SessionInfo | null;
   verdict: Verdict | null;
   findingsPath: string | null;
@@ -61,8 +63,8 @@ export interface JobState {
   branch: string | null;
   history: HistoryEntry[];
   error: ErrorInfo | null;
-  /** Step-level results journal. Optional for backward compat with v1 files. */
-  steps?: Record<string, StepResult>;
+  /** Step-level results journal (array per step for iteration tracking). Optional for backward compat with v1 files. */
+  steps?: Record<string, StepResult[]>;
 }
 
 export const MAX_HISTORY_SIZE = 100;
@@ -84,9 +86,34 @@ export function appendHistoryEntry(state: JobState, entry: HistoryEntry): JobSta
 }
 
 /**
+ * Normalize a steps record: convert any legacy object-form step results to arrays.
+ * This handles backward compatibility with pre-array-format state files.
+ */
+function normalizeSteps(steps: unknown): Record<string, StepResult[]> {
+  if (typeof steps !== "object" || steps === null) {
+    return {};
+  }
+  const result: Record<string, StepResult[]> = {};
+  for (const [key, value] of Object.entries(steps as Record<string, unknown>)) {
+    if (Array.isArray(value)) {
+      // Already array form — use as-is (ensure iteration field exists)
+      result[key] = (value as StepResult[]).map((item, idx) => {
+        if (item.iteration != null) return item;
+        return { ...item, iteration: idx + 1 };
+      });
+    } else if (typeof value === "object" && value !== null) {
+      // Legacy object form — wrap in array with iteration=1
+      result[key] = [{ iteration: 1, ...(value as Omit<StepResult, "iteration">) }];
+    }
+  }
+  return result;
+}
+
+/**
  * Validate that a raw parsed object is a valid JobState.
  * Returns the typed state or throws describing the invalid field.
  * Backward compat: missing `steps` field is filled with `{}`.
+ * Backward compat: steps entries that are plain objects are normalized to arrays.
  */
 export function validateJobState(raw: unknown): JobState {
   if (typeof raw !== "object" || raw === null) {
@@ -120,39 +147,9 @@ export function validateJobState(raw: unknown): JobState {
     throw new Error("Missing required field: history.");
   }
 
-  // Backward compat: fill missing steps field with empty object
-  if (obj["steps"] === undefined || obj["steps"] === null) {
-    obj["steps"] = {};
-  }
+  // Backward compat: fill missing steps field with empty object, and normalize legacy object-form steps
+  obj["steps"] = normalizeSteps(obj["steps"]);
 
   return raw as JobState;
 }
 
-/**
- * Append (merge-update) step result info into state.steps for the given step name.
- * Returns a new state object (pure transform — does not persist).
- */
-export function appendStepResult(
-  state: JobState,
-  stepName: StepName,
-  partial: Partial<StepResult>,
-): JobState {
-  const existing = state.steps?.[stepName] ?? {
-    session: null,
-    verdict: null,
-    findingsPath: null,
-    completedAt: null,
-    error: null,
-  };
-  return {
-    ...state,
-    steps: {
-      ...state.steps,
-      [stepName]: {
-        ...existing,
-        ...partial,
-      },
-    },
-    updatedAt: new Date().toISOString(),
-  };
-}

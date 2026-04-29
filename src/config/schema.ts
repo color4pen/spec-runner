@@ -31,19 +31,57 @@ export interface SpecReviewConfig {
   timeoutMs?: number;
 }
 
+export interface SpecFixerConfig {
+  /** Total timeout in milliseconds. Default: 600000 (10m) */
+  timeoutMs?: number;
+}
+
+/** Role-specific agent configuration entry */
+export interface RoleAgentConfig {
+  id: string;
+  definitionHash: string;
+  lastSyncedAt: string;
+}
+
+/** Per-role agent configuration (agents.{propose, specFixer, specReview}) */
+export interface AgentsConfig {
+  propose?: RoleAgentConfig;
+  specFixer?: RoleAgentConfig;
+  specReview?: RoleAgentConfig;
+}
+
+/** Pipeline-level settings */
+export interface PipelineConfig {
+  /**
+   * Maximum number of spec-review iterations (body execution count).
+   * Default: 2. Valid range: 1-10.
+   */
+  maxRetries?: number;
+}
+
 export interface SpecRunnerConfig {
   version: 1;
   anthropic: AnthropicConfig;
+  /**
+   * @deprecated Use `agents.propose` instead.
+   * Kept for backward compatibility with existing configs.
+   * Will be removed in a future clean-up request.
+   */
   agent?: AgentConfig;
+  agents?: AgentsConfig;
+  pipeline?: PipelineConfig;
   environment?: EnvironmentConfig;
   github?: GithubConfig;
   specReview?: SpecReviewConfig;
+  specFixer?: SpecFixerConfig;
 }
 
 export interface PartialSpecRunnerConfig {
   version?: number;
   anthropic?: Partial<AnthropicConfig>;
   agent?: Partial<AgentConfig>;
+  agents?: Partial<AgentsConfig>;
+  pipeline?: Partial<PipelineConfig>;
   environment?: Partial<EnvironmentConfig>;
   github?: Partial<GithubConfig>;
 }
@@ -51,6 +89,7 @@ export interface PartialSpecRunnerConfig {
 /**
  * Validate that the raw parsed config contains required fields.
  * Returns typed config or throws describing the missing field.
+ * Throws CONFIG_INVALID if pipeline.maxRetries is out of range (1-10).
  */
 export function validateConfig(raw: unknown): SpecRunnerConfig {
   if (typeof raw !== "object" || raw === null) {
@@ -68,6 +107,17 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
   const anthropic = obj["anthropic"] as Record<string, unknown>;
   if (typeof anthropic["apiKey"] !== "string" || anthropic["apiKey"].length === 0) {
     throw new Error("Missing required config field: anthropic.apiKey.");
+  }
+
+  // Validate pipeline.maxRetries if provided
+  if (obj["pipeline"] !== undefined && obj["pipeline"] !== null) {
+    const pipeline = obj["pipeline"] as Record<string, unknown>;
+    if (pipeline["maxRetries"] !== undefined) {
+      const maxRetries = pipeline["maxRetries"];
+      if (typeof maxRetries !== "number" || !Number.isInteger(maxRetries) || maxRetries < 1 || maxRetries > 10) {
+        throw new Error("CONFIG_INVALID: pipeline.maxRetries must be between 1 and 10.");
+      }
+    }
   }
 
   return raw as SpecRunnerConfig;

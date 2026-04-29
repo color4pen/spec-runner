@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { validateJobState, appendStepResult } from "../src/state/schema.js";
+import { validateJobState } from "../src/state/schema.js";
+import { pushStepResult } from "../src/state/helpers.js";
 import type { JobState } from "../src/state/schema.js";
 
 function makeMinimalV1State(): Record<string, unknown> {
@@ -48,21 +49,24 @@ describe("TC-023: validateJobState — throws when required field version is mis
   });
 });
 
-// TC-024: appendStepResult — step 情報を state.steps に正しくマージする
-describe("TC-024: appendStepResult — merges step result into state.steps", () => {
+// TC-024: pushStepResult — step 情報を state.steps に正しく追記する
+describe("TC-024: pushStepResult — appends step result into state.steps", () => {
   it("records all fields in state.steps['spec-review'] when called", () => {
     const state = validateJobState(makeMinimalV1State()) as JobState;
     const session = { id: "sess_001", agentId: "agent_001", environmentId: "env_001" };
     const now = "2026-04-29T00:00:00.000Z";
 
-    const updated = appendStepResult(state, "spec-review", {
+    const updated = pushStepResult(state, "spec-review", {
       session,
       verdict: "approved",
       findingsPath: "openspec/changes/test-slug/spec-review-result.md",
       completedAt: now,
+      error: null,
     });
 
-    expect(updated.steps?.["spec-review"]).toMatchObject({
+    // steps["spec-review"] is now an array; check the last element
+    const lastResult = updated.steps?.["spec-review"]?.[updated.steps["spec-review"]!.length - 1];
+    expect(lastResult).toMatchObject({
       session,
       verdict: "approved",
       findingsPath: "openspec/changes/test-slug/spec-review-result.md",
@@ -74,13 +78,19 @@ describe("TC-024: appendStepResult — merges step result into state.steps", () 
     const state = validateJobState(makeMinimalV1State()) as JobState;
     const original = JSON.stringify(state.steps);
 
-    appendStepResult(state, "spec-review", { verdict: "approved" });
+    pushStepResult(state, "spec-review", {
+      session: null,
+      verdict: "approved",
+      findingsPath: null,
+      completedAt: "2026-04-29T00:00:00.000Z",
+      error: null,
+    });
     expect(JSON.stringify(state.steps)).toBe(original);
   });
 
   it("preserves existing steps when adding a new one", () => {
     let state = validateJobState(makeMinimalV1State()) as JobState;
-    state = appendStepResult(state, "propose", {
+    state = pushStepResult(state, "propose", {
       session: { id: "sess_propose", agentId: "a", environmentId: "e" },
       verdict: null,
       findingsPath: null,
@@ -88,11 +98,16 @@ describe("TC-024: appendStepResult — merges step result into state.steps", () 
       error: null,
     });
 
-    state = appendStepResult(state, "spec-review", {
+    state = pushStepResult(state, "spec-review", {
+      session: null,
       verdict: "approved",
+      findingsPath: null,
+      completedAt: "2026-04-29T00:00:00.000Z",
+      error: null,
     });
 
     expect(state.steps?.["propose"]).toBeDefined();
-    expect(state.steps?.["spec-review"]?.verdict).toBe("approved");
+    const lastSpecReview = state.steps?.["spec-review"]?.[state.steps["spec-review"]!.length - 1];
+    expect(lastSpecReview?.verdict).toBe("approved");
   });
 });

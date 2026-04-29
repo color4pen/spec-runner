@@ -30,7 +30,7 @@ describe("TC-012: fetchSpecReviewResult — success on first try (200)", () => {
     });
     const deps = buildDeps({ githubFetch: mockFetch });
 
-    const result = await fetchSpecReviewResult(deps, "test-slug", "feat/test");
+    const result = await fetchSpecReviewResult(deps, "test-slug", "feat/test", 1);
 
     expect(result).toBe(fileContent);
     // No retries — called once
@@ -51,7 +51,7 @@ describe("TC-013: fetchSpecReviewResult — retries on 404, succeeds on 3rd atte
     const sleepFn = vi.fn().mockResolvedValue(undefined);
     const deps = buildDeps({ githubFetch: mockFetch, sleepFn });
 
-    const result = await fetchSpecReviewResult(deps, "test-slug", "feat/test");
+    const result = await fetchSpecReviewResult(deps, "test-slug", "feat/test", 1);
 
     expect(result).toBe(fileContent);
     // sleepFn called twice (before attempt 2 and attempt 3)
@@ -71,7 +71,7 @@ describe("TC-014: fetchSpecReviewResult — returns null after 3 retries exhaust
     const sleepFn = vi.fn().mockResolvedValue(undefined);
     const deps = buildDeps({ githubFetch: mockFetch, sleepFn });
 
-    const result = await fetchSpecReviewResult(deps, "test-slug", "feat/test");
+    const result = await fetchSpecReviewResult(deps, "test-slug", "feat/test", 1);
 
     expect(result).toBeNull();
     // 3 retries = 3 sleeps (before attempt 2, 3, 4)
@@ -91,7 +91,7 @@ describe("TC-015: fetchSpecReviewResult — throws GITHUB_TOKEN_EXPIRED on 401",
     const deps = buildDeps({ githubFetch: mockFetch });
 
     await expect(
-      fetchSpecReviewResult(deps, "test-slug", "feat/test"),
+      fetchSpecReviewResult(deps, "test-slug", "feat/test", 1),
     ).rejects.toMatchObject({ code: "GITHUB_TOKEN_EXPIRED" });
   });
 });

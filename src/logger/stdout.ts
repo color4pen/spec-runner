@@ -75,3 +75,11 @@ export function logDebug(message: string): void {
 export function stderrWrite(message: string): void {
   process.stderr.write(maskSensitive(message) + "\n");
 }
+
+/**
+ * Write raw message to stdout (without newline append).
+ * Used for iteration progress and pipeline summary lines.
+ */
+export function stdoutWrite(message: string): void {
+  process.stdout.write(message);
+}
