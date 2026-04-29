@@ -1,4 +1,18 @@
-## MODIFIED Requirements
+## REMOVED Requirements
+
+### Requirement: 状態ファイルは固定スキーマに従う
+**Reason**: Schema shape is superseded by `JobState.steps Schema is StepRun Array Per Step` below.
+**Migration**: Existing JobState files are normalized at load time by `JobStateStore.load()`. See `Backward Compatibility with Legacy Schemas`.
+
+### Requirement: `getLatestStepResult` は最新 iteration の StepResult を返す
+**Reason**: Replaced by `JobStateStore.appendStepRun` / `getLatestStepRun` returning `StepRun`.
+**Migration**: Callers SHALL invoke `JobStateStore.getLatestStepRun(stepName)` which returns the last `StepRun` in the per-step array.
+
+### Requirement: StepResult への push は iteration 番号を自動採番する
+**Reason**: Replaced by `appendStepRun` which auto-increments `attempt`.
+**Migration**: Callers SHALL invoke `JobStateStore.appendStepRun(state, stepName, partial)`; `attempt` is auto-assigned.
+
+## ADDED Requirements
 
 ### Requirement: JobState.steps Schema is StepRun Array Per Step
 `JobState.steps` SHALL be typed as `Record<StepName, StepRun[]>` where `StepRun` records a single execution attempt of a step.
