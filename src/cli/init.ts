@@ -1,22 +1,25 @@
-import type Anthropic from "@anthropic-ai/sdk";
 import { createAnthropicClient } from "../sdk/client.js";
-import { createAgent, retrieveAgent, updateAgent } from "../sdk/agents.js";
 import { createEnvironment, retrieveEnvironment } from "../sdk/environments.js";
 import { loadConfig, saveConfig } from "../config/store.js";
-import {
-  buildAgentDefinition,
-  buildSpecFixerAgentDefinition,
-  computeDefinitionHash,
-} from "../core/agent-definition.js";
+import { AgentRegistry, AgentSyncer } from "../core/agent/index.js";
+import type { SyncRoleResult } from "../core/agent/syncer.js";
+import type { AgentSyncerConfig } from "../core/agent/syncer.js";
+import type { AnthropicClient } from "../core/port/anthropic-client.js";
+import { AnthropicClientAdapter } from "../adapter/anthropic/index.js";
+import { ProposeStep } from "../core/step/propose.js";
+import { SpecReviewStep } from "../core/step/spec-review.js";
+import { SpecFixerStep } from "../core/step/spec-fixer.js";
 import { logInfo, logStep, logSuccess, logError, stderrWrite } from "../logger/stdout.js";
-import type { SpecRunnerConfig } from "../config/schema.js";
+import type { SpecRunnerConfig, AgentRecord } from "../config/schema.js";
+import type { StepName } from "../state/schema.js";
 
 const ENVIRONMENT_NAME = "specrunner-default";
 const ENVIRONMENT_PACKAGES_NPM = ["@fission-ai/openspec"];
 
 /**
  * Run the specrunner init command.
- * Creates or updates Agent + Environment, saves config.
+ * Uses AgentRegistry + AgentSyncer to sync all roles atomically.
+ * Creates or retrieves Environment after agent sync.
  */
 export async function runInit(options: {
   apiKey?: string;
@@ -28,7 +31,12 @@ export async function runInit(options: {
     process.exit(1);
   }
 
-  const client = createAnthropicClient(apiKey);
+  const rawSdk = createAnthropicClient(apiKey);
+
+  // Wrap the raw SDK in the canonical adapter so all agent operations go through the port.
+  // Tests mock createAnthropicClient via vi.mock("sdk/client.js"), so the returned rawSdk
+  // is already a mock object — AnthropicClientAdapter wraps it and the mock chain still works.
+  const agentClient: AnthropicClient = new AnthropicClientAdapter(rawSdk);
 
   // Load existing config if available
   let existingConfig: Partial<SpecRunnerConfig> = {};
@@ -40,87 +48,36 @@ export async function runInit(options: {
 
   logInfo("specrunner init");
 
-  // Build agent definitions
-  const agentDef = buildAgentDefinition();
-  const definitionHash = computeDefinitionHash(agentDef);
-  const specFixerAgentDef = buildSpecFixerAgentDefinition();
-  const specFixerDefinitionHash = computeDefinitionHash(specFixerAgentDef);
+  // Build AgentRegistry from all steps
+  const registry = AgentRegistry.fromSteps([ProposeStep, SpecReviewStep, SpecFixerStep]);
 
-  // --- Propose Agent step ---
-  let agentId: string;
-
-  // Support legacy config.agent.id as the propose agent ID
-  const existingProposeId = existingConfig.agents?.propose?.id ?? existingConfig.agent?.id;
-  const existingProposeHash = existingConfig.agents?.propose?.definitionHash ?? existingConfig.agent?.definitionHash;
-
-  if (existingProposeId) {
-    // Try to retrieve existing propose agent
-    try {
-      const existing = await retrieveAgent(client, existingProposeId);
-
-      if (existingProposeHash === definitionHash) {
-        logStep(`Propose Agent unchanged (${existingProposeId})`);
-        agentId = existingProposeId;
-      } else {
-        logStep(`Propose Agent definition changed — updating ${existingProposeId}...`);
-        await updateAgent(client, existingProposeId, {
-          version: existing.version,
-          name: agentDef.name,
-          system: agentDef.system,
-          tools: agentDef.tools,
-        });
-        agentId = existingProposeId;
-        logSuccess(`Propose Agent updated (${agentId})`);
+  // Build AgentSyncerConfig from existing loaded config
+  const storedConfig: AgentSyncerConfig = {
+    getStoredAgent(role: StepName) {
+      const record = existingConfig.agents?.[role];
+      // Return whenever agentId is set — even if definitionHash is empty (legacy migration).
+      // An empty hash is not equal to any real hash, so AgentSyncer will take the
+      // "hash differs → updateAgent" branch rather than leaking the existing agent ID.
+      if (record?.agentId) {
+        return { agentId: record.agentId, definitionHash: record.definitionHash ?? "" };
       }
-    } catch (err: unknown) {
-      const status = (err as { status?: number }).status;
-      if (status === 404) {
-        logStep("Existing propose agent not found — creating new propose agent...");
-        agentId = await createNewAgent(client, agentDef);
-      } else {
-        throw err;
-      }
+      return undefined;
+    },
+  };
+
+  // Run syncAll — atomically syncs all roles
+  const syncer = new AgentSyncer(agentClient, registry, storedConfig);
+  const syncResult = await syncer.syncAll();
+
+  // Log per-role action
+  for (const [role, result] of syncResult.results.entries()) {
+    if (result.action === "create") {
+      logSuccess(`Agent created for role '${role}' (${result.agentId})`);
+    } else if (result.action === "update") {
+      logSuccess(`Agent updated for role '${role}' (${result.agentId})`);
+    } else {
+      logStep(`Agent unchanged for role '${role}' (${result.agentId})`);
     }
-  } else {
-    logStep("Creating propose agent...");
-    agentId = await createNewAgent(client, agentDef);
-  }
-
-  // --- Spec-Fixer Agent step ---
-  let specFixerAgentId: string;
-  const existingSpecFixerId = existingConfig.agents?.specFixer?.id;
-  const existingSpecFixerHash = existingConfig.agents?.specFixer?.definitionHash;
-
-  if (existingSpecFixerId) {
-    try {
-      const existing = await retrieveAgent(client, existingSpecFixerId);
-
-      if (existingSpecFixerHash === specFixerDefinitionHash) {
-        logStep(`Spec-Fixer Agent unchanged (${existingSpecFixerId})`);
-        specFixerAgentId = existingSpecFixerId;
-      } else {
-        logStep(`Spec-Fixer Agent definition changed — updating ${existingSpecFixerId}...`);
-        await updateAgent(client, existingSpecFixerId, {
-          version: existing.version,
-          name: specFixerAgentDef.name,
-          system: specFixerAgentDef.system,
-          tools: specFixerAgentDef.tools,
-        });
-        specFixerAgentId = existingSpecFixerId;
-        logSuccess(`Spec-Fixer Agent updated (${specFixerAgentId})`);
-      }
-    } catch (err: unknown) {
-      const status = (err as { status?: number }).status;
-      if (status === 404) {
-        logStep("Existing spec-fixer agent not found — creating new spec-fixer agent...");
-        specFixerAgentId = await createNewSpecFixerAgent(client, specFixerAgentDef);
-      } else {
-        throw err;
-      }
-    }
-  } else {
-    logStep("Creating spec-fixer agent...");
-    specFixerAgentId = await createNewSpecFixerAgent(client, specFixerAgentDef);
   }
 
   // --- Environment step ---
@@ -128,14 +85,14 @@ export async function runInit(options: {
 
   if (existingConfig.environment?.id) {
     try {
-      await retrieveEnvironment(client, existingConfig.environment.id);
+      await retrieveEnvironment(rawSdk, existingConfig.environment.id);
       logStep(`Environment unchanged (${existingConfig.environment.id})`);
       environmentId = existingConfig.environment.id;
     } catch (err: unknown) {
       const status = (err as { status?: number }).status;
       if (status === 404) {
         logStep("Existing environment not found — creating new environment...");
-        environmentId = await createNewEnvironment(client);
+        environmentId = await createNewEnvironment(rawSdk);
       } else {
         throw err;
       }
@@ -143,52 +100,50 @@ export async function runInit(options: {
   } else {
     logStep("Creating environment...");
     try {
-      environmentId = await createNewEnvironment(client);
+      environmentId = await createNewEnvironment(rawSdk);
     } catch (envErr) {
-      // Rollback: try to archive the newly created agent
-      if (!existingConfig.agent?.id) {
-        stderrWrite(`Environment creation failed. Rolling back agent ${agentId}...`);
-        try {
-          await client.beta.agents.archive(agentId);
-          logStep("Agent rolled back.");
-        } catch (cleanupErr) {
-          stderrWrite(
-            `Failed to cleanup orphaned agent ${agentId}; please archive manually.`,
-          );
+      // Rollback: archive any newly created agents from this run
+      const createdAgents = [...syncResult.results.entries()]
+        .filter(([, r]) => r.action === "create");
+
+      if (createdAgents.length > 0) {
+        stderrWrite(`Environment creation failed. Rolling back ${createdAgents.length} agent(s)...`);
+        for (const [, result] of createdAgents) {
+          try {
+            await agentClient.archiveAgent(result.agentId);
+            logStep(`Agent rolled back (${result.agentId}).`);
+          } catch {
+            stderrWrite(`Failed to cleanup orphaned agent ${result.agentId}; please archive manually.`);
+          }
         }
       }
       throw envErr;
     }
   }
 
-  // --- Save config ---
+  // --- Save config (new canonical schema only) ---
   const now = new Date().toISOString();
+  const agents: Record<string, AgentRecord> = {};
+  for (const [role, result] of syncResult.results.entries()) {
+    agents[role] = {
+      agentId: result.agentId,
+      definitionHash: result.definitionHash,
+      lastSyncedAt: result.lastSyncedAt ?? now,
+    };
+  }
+
   const newConfig: SpecRunnerConfig = {
+    // Spread existing config first so that user-tuned fields (pipeline, specReview,
+    // specFixer, github, etc.) survive re-runs. init only owns: version, anthropic,
+    // agents, environment.
+    ...existingConfig,
     version: 1,
     anthropic: { apiKey },
-    // Legacy field kept in sync with agents.propose for backward compatibility
-    agent: {
-      id: agentId,
-      definitionHash,
-      lastSyncedAt: now,
-    },
-    agents: {
-      propose: {
-        id: agentId,
-        definitionHash,
-        lastSyncedAt: now,
-      },
-      specFixer: {
-        id: specFixerAgentId,
-        definitionHash: specFixerDefinitionHash,
-        lastSyncedAt: now,
-      },
-    },
+    agents,
     environment: {
       id: environmentId,
       lastSyncedAt: now,
     },
-    github: existingConfig.github,
   };
 
   await saveConfig(newConfig);
@@ -196,36 +151,8 @@ export async function runInit(options: {
   logInfo("Run 'specrunner login' to authenticate with GitHub.");
 }
 
-async function createNewAgent(
-  client: Anthropic,
-  agentDef: ReturnType<typeof buildAgentDefinition>,
-): Promise<string> {
-  const agent = await createAgent(client, {
-    name: agentDef.name,
-    model: agentDef.model,
-    system: agentDef.system,
-    tools: agentDef.tools,
-  });
-  logSuccess(`Propose Agent created (${agent.id})`);
-  return agent.id;
-}
-
-async function createNewSpecFixerAgent(
-  client: Anthropic,
-  agentDef: ReturnType<typeof buildSpecFixerAgentDefinition>,
-): Promise<string> {
-  const agent = await createAgent(client, {
-    name: agentDef.name,
-    model: agentDef.model,
-    system: agentDef.system,
-    tools: agentDef.tools,
-  });
-  logSuccess(`Spec-Fixer Agent created (${agent.id})`);
-  return agent.id;
-}
-
 async function createNewEnvironment(
-  client: Anthropic,
+  client: ReturnType<typeof createAnthropicClient>,
 ): Promise<string> {
   const environment = await createEnvironment(client, {
     name: ENVIRONMENT_NAME,
@@ -237,3 +164,6 @@ async function createNewEnvironment(
   logSuccess(`Environment created (${environment.id})`);
   return environment.id;
 }
+
+// Type-only export to satisfy unused variable lint
+export type { SyncRoleResult };

@@ -21,6 +21,7 @@ export async function runLogin(): Promise<void> {
     config = {
       version: 1,
       anthropic: { apiKey: "" },
+      agents: {},
     };
   }
 

@@ -9,7 +9,7 @@
  * the iteration-specific path provided in the user message (e.g. spec-review-result-001.md),
  * not the static "spec-review-result.md" shown here.
  */
-const SPEC_REVIEW_SYSTEM_PROMPT = `You are a SpecRunner spec-reviewer agent. You play two roles simultaneously:
+export const SPEC_REVIEW_SYSTEM_PROMPT = `You are a SpecRunner spec-reviewer agent. You play two roles simultaneously:
 1. **architect** — evaluate whether the proposed design is sound, feasible, and aligned with existing architecture
 2. **spec-reviewer** — verify that the specification is complete, consistent, and reviewable
 

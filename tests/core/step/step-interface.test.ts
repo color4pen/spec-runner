@@ -90,7 +90,11 @@ function makeMinimalDeps(clientOpts?: Parameters<typeof makeMockSessionClient>[0
     config: {
       version: 1 as const,
       anthropic: { apiKey: "sk-ant-test" },
-      agent: { id: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
+      agents: {
+        propose: { agentId: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
+        "spec-review": { agentId: "agent_spec_review", definitionHash: "sha256:def", lastSyncedAt: new Date().toISOString() },
+        "spec-fixer": { agentId: "agent_002", definitionHash: "sha256:xyz", lastSyncedAt: new Date().toISOString() },
+      },
       environment: { id: "env_001", lastSyncedAt: new Date().toISOString() },
       github: { accessToken: "ghp_test", tokenObtainedAt: new Date().toISOString(), scopes: ["repo"] },
     },
@@ -226,7 +230,13 @@ describe("TC-013: StepExecutor lifecycle events fire in correct order on success
     // Mock a step that succeeds without any I/O
     const mockStep = {
       name: "spec-review",
-      agent: { agentId: "agent_001" },
+      agent: {
+        name: "specrunner-spec-review",
+        role: "spec-review" as const,
+        model: "claude-sonnet-4-5",
+        system: "spec-review system",
+        tools: [],
+      },
       toolHandlers: undefined,
       buildMessage: () => "test message",
       resultFilePath: () => null, // no result file — skips file fetch
@@ -282,7 +292,13 @@ describe("TC-014: StepExecutor error path emits step:error and decorates excepti
 
     const mockStep = {
       name: "spec-fixer",
-      agent: { agentId: "agent_001" },
+      agent: {
+        name: "specrunner-spec-fixer",
+        role: "spec-fixer" as const,
+        model: "claude-sonnet-4-5",
+        system: "spec-fixer system",
+        tools: [],
+      },
       toolHandlers: undefined,
       buildMessage: () => "test message",
       resultFilePath: () => null,
@@ -294,7 +310,6 @@ describe("TC-014: StepExecutor error path emits step:error and decorates excepti
       pollStatus: "timeout",
       pollError: { code: "SESSION_TIMEOUT", message: "Timed out", hint: "" },
     });
-    deps.config.agents = { specFixer: { id: "agent_002", definitionHash: "hash", lastSyncedAt: new Date().toISOString() } } as PipelineDeps["config"]["agents"];
 
     let thrownErr: unknown;
     try {

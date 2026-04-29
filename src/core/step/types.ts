@@ -1,15 +1,10 @@
 import type { JobState } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
 import type { CustomToolHandler } from "../tools/types.js";
+import type { AgentDefinition } from "../agent/definition.js";
 
-/**
- * AgentDefinition describes the Anthropic Managed Agent used by a Step.
- * Minimal interface — fields required to configure and run a session.
- */
-export interface AgentDefinition {
-  /** The Anthropic agent ID (resolved at runtime from config). */
-  agentId: string;
-}
+// Re-export AgentDefinition for convenience
+export type { AgentDefinition };
 
 /**
  * Dependencies injected into Step.buildMessage.
@@ -32,12 +27,13 @@ export interface ParsedStepResult {
  * It holds NO execution state — StepExecutor owns the lifecycle.
  *
  * Design D2: plain TypeScript interface (not abstract class).
+ * Design D1: agent is a complete AgentDefinition (not a runtime placeholder).
  */
 export interface Step {
-  /** Canonical name of this step (e.g. "propose", "spec-review"). */
+  /** Canonical name of this step (e.g. "propose", "spec-review"). Must match agent.role. */
   name: string;
 
-  /** Agent definition used by this step. */
+  /** Full agent definition used by this step. Owned by the Step implementation. */
   agent: AgentDefinition;
 
   /**

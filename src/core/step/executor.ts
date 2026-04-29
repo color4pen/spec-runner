@@ -1,12 +1,11 @@
 import type { Step } from "./types.js";
-import type { JobState, Verdict } from "../../state/schema.js";
+import type { JobState, Verdict, StepName } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
 import type { GitHubClient } from "../port/github-client.js";
 import type { EventBus } from "../event/event-bus.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { pushStepResult } from "../../state/helpers.js";
 import { getAgentId } from "../../config/getAgentId.js";
-import type { AgentRole } from "../../config/getAgentId.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import {
   branchNotRegisteredError,
@@ -16,15 +15,6 @@ import {
   specReviewResultNotFoundError,
 } from "../../errors.js";
 import { buildFindingsPath, fetchSpecReviewResult } from "./spec-review.js";
-
-/**
- * Map from step name to AgentRole for config lookup.
- */
-const STEP_AGENT_ROLE: Record<string, AgentRole> = {
-  "propose": "propose",
-  "spec-review": "propose",  // spec-review reuses the propose agent
-  "spec-fixer": "specFixer",
-};
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -115,9 +105,8 @@ export class StepExecutor {
     const { client, config, repo, request, slug } = deps;
     const store = this.getStore(jobState.jobId);
 
-    // Resolve agent ID
-    const role = STEP_AGENT_ROLE[step.name] ?? "propose";
-    const agentId = getAgentId(config, role);
+    // Resolve agent ID directly from step.agent.role (no STEP_AGENT_ROLE lookup)
+    const agentId = getAgentId(config, step.agent.role as StepName);
 
     // 1. Create session
     let state = await store.appendHistory(jobState, {
@@ -627,12 +616,10 @@ export class StepExecutor {
     const { client, config, repo, slug } = deps;
     const store = this.getStore(jobState.jobId);
 
-    // Resolve agent ID
-    const role = STEP_AGENT_ROLE[step.name] ?? "propose";
-
+    // Resolve agent ID directly from step.agent.role (no STEP_AGENT_ROLE lookup)
     let agentId: string;
     try {
-      agentId = getAgentId(config, role);
+      agentId = getAgentId(config, step.agent.role as StepName);
     } catch (err) {
       const errCode = (err as { code?: string }).code ?? "CONFIG_INCOMPLETE";
       const errMsg = (err as Error).message;

@@ -4,7 +4,8 @@ import type { CustomToolContext, CustomToolResult } from "./types.js";
 /**
  * The register_branch custom tool.
  * Definition and handler are colocated in this single file.
- * This is the ONLY place in the codebase where "register_branch" appears.
+ * This is the canonical Tool definition; the toolHandlers map key in propose.ts
+ * and the SSE matcher in sse-stream.ts intentionally reference this name.
  *
  * The handler validates input and returns the branch via return value.
  * The caller (SSE dispatcher in session.ts) receives the branch via the

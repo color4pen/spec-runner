@@ -1,34 +1,23 @@
 import type { SpecRunnerConfig } from "./schema.js";
+import type { StepName } from "../state/schema.js";
 import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 
-export type AgentRole = "propose" | "specFixer" | "specReview";
-
 /**
- * Resolve an agent ID for a given role.
+ * Resolve an agent ID for a given role from the new canonical schema.
  *
- * Fallback chain:
- * 1. config.agents[role].id — new format, role-specific
- * 2. config.agent.id — legacy format, propose role only
- * 3. Throws CONFIG_INCOMPLETE if not found
- *
- * spec-fixer and specReview roles do NOT fall back to legacy config.agent.id.
+ * Reads from `config.agents[role].agentId` only.
+ * Legacy `config.agent.id` fallback has been removed (design.md D4).
+ * Throws CONFIG_INCOMPLETE if the role's entry is missing.
  */
-export function getAgentId(cfg: SpecRunnerConfig, role: AgentRole): string {
-  // Try new format first
-  const roleConfig = cfg.agents?.[role];
-  if (roleConfig?.id) {
-    return roleConfig.id;
+export function getAgentId(cfg: SpecRunnerConfig, role: StepName): string {
+  const record = cfg.agents?.[role];
+  if (record?.agentId) {
+    return record.agentId;
   }
 
-  // Legacy fallback — propose only
-  if (role === "propose" && cfg.agent?.id) {
-    return cfg.agent.id;
-  }
-
-  // Not found
   throw new SpecRunnerError(
     ERROR_CODES.CONFIG_INCOMPLETE,
-    "Run 'specrunner init' to create role-specific agents.",
+    `Run 'specrunner init' to create the ${role} agent.`,
     `Missing agent ID for role: ${role}.`,
   );
 }

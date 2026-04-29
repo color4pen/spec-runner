@@ -1,0 +1,64 @@
+/**
+ * AgentRegistry: pure aggregate of AgentDefinitions extracted from Step instances.
+ * No I/O — does not call Anthropic API.
+ *
+ * Design D2: fromSteps() is the only constructor.
+ * Duplicate roles throw at construction time to catch configuration errors early.
+ */
+import type { AgentDefinition } from "./definition.js";
+import type { Step } from "../step/types.js";
+import type { StepName } from "../../state/schema.js";
+import { hashObject } from "./hash.js";
+
+export class AgentRegistry {
+  private constructor(
+    private readonly defs: Map<StepName, AgentDefinition>,
+  ) {}
+
+  /**
+   * Build a registry from an array of Steps.
+   * Each Step must have a unique agent.role.
+   * Throws with "Duplicate agent role: <role>" if two Steps share a role.
+   */
+  static fromSteps(steps: Step[]): AgentRegistry {
+    const map = new Map<StepName, AgentDefinition>();
+    for (const step of steps) {
+      const def = step.agent;
+      const role = def.role as StepName;
+      if (map.has(role)) {
+        throw new Error(`Duplicate agent role: ${role}`);
+      }
+      map.set(role, def);
+    }
+    return new AgentRegistry(map);
+  }
+
+  /**
+   * Get the AgentDefinition for a given role.
+   * Returns undefined if the role is not registered.
+   */
+  get(role: StepName): AgentDefinition | undefined {
+    return this.defs.get(role);
+  }
+
+  /**
+   * Return all registered AgentDefinitions as an array.
+   * Order matches insertion order (fromSteps argument order).
+   */
+  list(): AgentDefinition[] {
+    return [...this.defs.values()];
+  }
+
+  /**
+   * Compute the canonical SHA-256 hash of a role's AgentDefinition.
+   * Deterministic: same definition → same hash every time.
+   * Throws with "Unknown agent role: <role>" if not registered.
+   */
+  hashOf(role: StepName): string {
+    const def = this.defs.get(role);
+    if (def === undefined) {
+      throw new Error(`Unknown agent role: ${role}`);
+    }
+    return hashObject(def);
+  }
+}

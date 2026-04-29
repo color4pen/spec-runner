@@ -2,16 +2,20 @@ import * as fs from "node:fs/promises";
 import { getConfigPath } from "../util/xdg.js";
 import { atomicWriteJson } from "../util/atomic-write.js";
 import { validateConfig } from "./schema.js";
-import type { SpecRunnerConfig } from "./schema.js";
+import type { SpecRunnerConfig, AgentRecord } from "./schema.js";
+import type { StepName } from "../state/schema.js";
 import { configMissingError, configIncompleteError } from "../errors.js";
+import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 import { stderrWrite } from "../logger/stdout.js";
+import { applyMigration } from "./migrate.js";
 
 const CONFIG_MODE = 0o600;
 const LOOSE_MODE_THRESHOLD = 0o007; // group/other readable bits
 
 /**
- * Load config from disk. Validates schema and warns about loose permissions.
- * Throws SpecRunnerError if config is missing or incomplete.
+ * Load config from disk. Applies migration (legacy/intermediate → new schema)
+ * and validates the result. Warns about loose permissions.
+ * Throws SpecRunnerError if config is missing or invalid.
  */
 export async function loadConfig(): Promise<SpecRunnerConfig> {
   const configPath = getConfigPath();
@@ -44,11 +48,27 @@ export async function loadConfig(): Promise<SpecRunnerConfig> {
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw configIncompleteError("JSON parse error");
+    throw new SpecRunnerError(
+      ERROR_CODES.CONFIG_INVALID,
+      "Delete the config and run 'specrunner init' again.",
+      "JSON parse error in config file.",
+    );
+  }
+
+  // Apply migration: legacy/intermediate → canonical new schema
+  let migrated: SpecRunnerConfig;
+  try {
+    migrated = applyMigration(parsed);
+  } catch (err: unknown) {
+    throw new SpecRunnerError(
+      ERROR_CODES.CONFIG_INVALID,
+      "Delete the config and run 'specrunner init' again.",
+      `Config migration failed: ${(err as Error).message}`,
+    );
   }
 
   try {
-    return validateConfig(parsed);
+    return validateConfig(migrated);
   } catch (err: unknown) {
     throw configIncompleteError((err as Error).message);
   }
@@ -56,26 +76,76 @@ export async function loadConfig(): Promise<SpecRunnerConfig> {
 
 /**
  * Save config to disk using atomic write. Enforces 0600 permissions.
+ * Writes only new canonical schema — legacy `agent` field is never written.
  */
 export async function saveConfig(cfg: SpecRunnerConfig): Promise<void> {
   const configPath = getConfigPath();
-  await atomicWriteJson(configPath, cfg, { mode: CONFIG_MODE });
+
+  // Remove legacy fields before saving
+  const toSave: Record<string, unknown> = { ...cfg };
+  delete toSave["agent"]; // never write legacy field
+
+  await atomicWriteJson(configPath, toSave, { mode: CONFIG_MODE });
 }
 
 /**
- * Update partial fields in the config. Reads current config (if exists) and merges.
+ * ConfigStore class implementation for use as a port.
+ * Wraps loadConfig/saveConfig with in-memory caching and getAgentId.
  */
-export async function updateConfig(
-  patch: Partial<SpecRunnerConfig>,
-): Promise<SpecRunnerConfig> {
-  let current: SpecRunnerConfig | null = null;
-  try {
-    current = await loadConfig();
-  } catch {
-    // Config may not exist yet; that's OK for partial updates
+export class FileConfigStore {
+  private cachedConfig: SpecRunnerConfig | undefined;
+
+  async load(): Promise<SpecRunnerConfig> {
+    this.cachedConfig = await loadConfig();
+    return this.cachedConfig;
   }
 
-  const merged = { ...(current ?? { version: 1 as const, anthropic: { apiKey: "" } }), ...patch };
-  await saveConfig(merged as SpecRunnerConfig);
-  return merged as SpecRunnerConfig;
+  async save(config: SpecRunnerConfig): Promise<void> {
+    this.cachedConfig = config;
+    await saveConfig(config);
+  }
+
+  /**
+   * Synchronously return agent ID for the given role.
+   * Throws CONFIG_INCOMPLETE if load() has not been called or role is missing.
+   */
+  getAgentId(role: StepName): string {
+    if (!this.cachedConfig) {
+      throw new SpecRunnerError(
+        ERROR_CODES.CONFIG_INCOMPLETE,
+        "Call ConfigStore.load() before getAgentId().",
+        "ConfigStore not initialized — load() must complete before getAgentId().",
+      );
+    }
+    const record = this.cachedConfig.agents?.[role];
+    if (record?.agentId) {
+      return record.agentId;
+    }
+    throw new SpecRunnerError(
+      ERROR_CODES.CONFIG_INCOMPLETE,
+      `Run 'specrunner init' to create the ${role} agent.`,
+      `Missing agent ID for role: ${role}.`,
+    );
+  }
+
+  /**
+   * Upsert an AgentRecord for the given role into in-memory config.
+   * Caller must call save() to persist.
+   */
+  async upsertAgent(role: StepName, record: AgentRecord): Promise<void> {
+    if (!this.cachedConfig) {
+      throw new SpecRunnerError(
+        ERROR_CODES.CONFIG_INCOMPLETE,
+        "Call ConfigStore.load() first.",
+        "ConfigStore not initialized.",
+      );
+    }
+    this.cachedConfig = {
+      ...this.cachedConfig,
+      agents: {
+        ...this.cachedConfig.agents,
+        [role]: record,
+      },
+    };
+  }
 }

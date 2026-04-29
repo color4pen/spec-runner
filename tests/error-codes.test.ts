@@ -105,7 +105,8 @@ describe("TC-025 (error-codes): CONFIG_INCOMPLETE code is preserved", () => {
     const configWithoutAgents = {
       version: 1 as const,
       anthropic: { apiKey: "sk-test" },
-      // No agent.id and no agents.propose — should throw CONFIG_INCOMPLETE
+      agents: {},
+      // No agents.propose — should throw CONFIG_INCOMPLETE
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
       github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] as string[] },
     };
@@ -177,7 +178,7 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
 
     const mockStep = (name: string): Step => ({
       name,
-      agent: { agentId: "" },
+      agent: { name: "test", role: name as any, model: "claude-sonnet-4-5", system: "", tools: [] },
       buildMessage: () => "",
       resultFilePath: () => null,
       parseResult: () => ({ verdict: null, findingsPath: null }),
@@ -201,7 +202,7 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
       config: {
         version: 1,
         anthropic: { apiKey: "sk-test" },
-        agent: { id: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" },
+        agents: { propose: { agentId: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" } },
         environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
         github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
       },

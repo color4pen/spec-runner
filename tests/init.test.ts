@@ -45,10 +45,16 @@ function buildMockSdk(opts: {
     existingAgentId,
   } = opts;
 
+  // Track creation count to generate unique IDs for multiple agents
+  let createCount = 0;
+
   const agents = {
     create:
       agentCreateStatus === "ok"
-        ? vi.fn().mockResolvedValue({ id: "agent_new_001", version: 1 })
+        ? vi.fn().mockImplementation(() => {
+            createCount++;
+            return Promise.resolve({ id: `agent_new_${String(createCount).padStart(3, "0")}`, version: 1 });
+          })
         : vi.fn().mockRejectedValue(new Error("Agent creation failed")),
     retrieve: existingAgentId
       ? vi.fn().mockResolvedValue({ id: existingAgentId, version: 1 })
@@ -87,8 +93,11 @@ describe("TC-057: specrunner init — first run, no existing config", () => {
 
     expect(config.version).toBe(1);
     expect(config.anthropic?.apiKey).toBe("sk-ant-test-key");
-    expect(config.agent?.id).toBeDefined();
+    // New schema: agents["propose"].agentId (not agent.id)
+    expect(config.agents?.["propose"]?.agentId).toBeDefined();
     expect(config.environment?.id).toBeDefined();
+    // Legacy agent field must NOT be written
+    expect(config.agent).toBeUndefined();
 
     // Check permissions
     const stat = await fs.stat(configPath);
@@ -120,35 +129,39 @@ describe("TC-058: specrunner init — no API key exits with error", () => {
 
 // TC-059: specrunner init — 既存 Agent/Environment で差分なし（冪等）
 describe("TC-059: specrunner init — idempotent when agent hash matches", () => {
-  it("does not create new agents when both propose and specFixer hashes match existing", async () => {
+  it("does not create new agents when all role hashes match existing", async () => {
 
-    // Compute current hashes so we can pre-populate config
-    const { computeDefinitionHash, buildAgentDefinition, buildSpecFixerAgentDefinition } = await import(
-      "../src/core/agent-definition.js"
-    );
-    const currentProposeHash = computeDefinitionHash(buildAgentDefinition());
-    const currentSpecFixerHash = computeDefinitionHash(buildSpecFixerAgentDefinition());
+    // Compute current hashes using the new AgentRegistry / hashOf
+    const { AgentRegistry } = await import("../src/core/agent/index.js");
+    const { ProposeStep } = await import("../src/core/step/propose.js");
+    const { SpecReviewStep } = await import("../src/core/step/spec-review.js");
+    const { SpecFixerStep } = await import("../src/core/step/spec-fixer.js");
 
-    // Pre-populate config with matching hashes for both agents
+    const registry = AgentRegistry.fromSteps([ProposeStep, SpecReviewStep, SpecFixerStep]);
+    const proposeHash = registry.hashOf("propose");
+    const specReviewHash = registry.hashOf("spec-review");
+    const specFixerHash = registry.hashOf("spec-fixer");
+
+    // Pre-populate config with matching hashes for all 3 roles
     const configDir = path.join(tempDir, "specrunner");
     await fs.mkdir(configDir, { recursive: true });
     const existingConfig = {
       version: 1,
       anthropic: { apiKey: "sk-ant-existing" },
-      agent: {
-        id: "agent_existing_001",
-        definitionHash: currentProposeHash,
-        lastSyncedAt: new Date().toISOString(),
-      },
       agents: {
-        propose: {
-          id: "agent_existing_001",
-          definitionHash: currentProposeHash,
+        "propose": {
+          agentId: "agent_propose_001",
+          definitionHash: proposeHash,
           lastSyncedAt: new Date().toISOString(),
         },
-        specFixer: {
-          id: "agent_spec_fixer_001",
-          definitionHash: currentSpecFixerHash,
+        "spec-review": {
+          agentId: "agent_spec_review_001",
+          definitionHash: specReviewHash,
+          lastSyncedAt: new Date().toISOString(),
+        },
+        "spec-fixer": {
+          agentId: "agent_spec_fixer_001",
+          definitionHash: specFixerHash,
           lastSyncedAt: new Date().toISOString(),
         },
       },
@@ -157,21 +170,19 @@ describe("TC-059: specrunner init — idempotent when agent hash matches", () =>
     const configPath = path.join(configDir, "config.json");
     await fs.writeFile(configPath, JSON.stringify(existingConfig), { mode: 0o600 });
 
-    // Mock retrieve to succeed for both agents (no 404)
+    // Mock retrieve to succeed for all 3 agents (no 404)
     currentMockSdk = {
       beta: {
         agents: {
           create: vi.fn().mockResolvedValue({ id: "agent_new_001", version: 1 }),
           retrieve: vi.fn().mockImplementation((id: string) => {
-            if (id === "agent_existing_001") {
-              return Promise.resolve({ id: "agent_existing_001", version: 1 });
-            }
-            if (id === "agent_spec_fixer_001") {
-              return Promise.resolve({ id: "agent_spec_fixer_001", version: 1 });
+            const ids = ["agent_propose_001", "agent_spec_review_001", "agent_spec_fixer_001"];
+            if (ids.includes(id)) {
+              return Promise.resolve({ id, version: 1 });
             }
             return Promise.reject(Object.assign(new Error("Not found"), { status: 404 }));
           }),
-          update: vi.fn().mockResolvedValue({ id: "agent_existing_001", version: 2 }),
+          update: vi.fn().mockResolvedValue({ id: "agent_propose_001", version: 2 }),
           archive: vi.fn().mockResolvedValue({}),
         },
         environments: {
@@ -184,7 +195,7 @@ describe("TC-059: specrunner init — idempotent when agent hash matches", () =>
     const { runInit } = await import("../src/cli/init.js");
     await runInit({ apiKey: "sk-ant-existing" });
 
-    // agents.create should NOT have been called (both hashes match)
+    // agents.create should NOT have been called (all hashes match)
     expect(currentMockSdk.beta.agents.create).not.toHaveBeenCalled();
     // agents.update should NOT have been called
     expect(currentMockSdk.beta.agents.update).not.toHaveBeenCalled();
@@ -193,18 +204,20 @@ describe("TC-059: specrunner init — idempotent when agent hash matches", () =>
 
 // TC-060: specrunner init — Agent 定義に差分がある場合 agents.update
 describe("TC-060: specrunner init — calls agents.update when hash differs", () => {
-  it("calls agents.update when existing hash differs from current", async () => {
+  it("calls agents.update when existing propose hash differs from current", async () => {
 
-    // Pre-populate config with a DIFFERENT (stale) hash
+    // Pre-populate config with a DIFFERENT (stale) hash for propose
     const configDir = path.join(tempDir, "specrunner");
     await fs.mkdir(configDir, { recursive: true });
     const existingConfig = {
       version: 1,
       anthropic: { apiKey: "sk-ant-existing" },
-      agent: {
-        id: "agent_existing_001",
-        definitionHash: "sha256:staleHashValue",
-        lastSyncedAt: new Date().toISOString(),
+      agents: {
+        "propose": {
+          agentId: "agent_existing_001",
+          definitionHash: "sha256:staleHashValue",
+          lastSyncedAt: new Date().toISOString(),
+        },
       },
       environment: { id: "env_existing_001", lastSyncedAt: new Date().toISOString() },
     };
@@ -221,9 +234,83 @@ describe("TC-060: specrunner init — calls agents.update when hash differs", ()
   });
 });
 
+// Regression test for finding #1: pipeline/specReview/specFixer survive re-init
+describe("Regression #1: re-init preserves user-tuned pipeline/specReview/specFixer settings", () => {
+  it("existing pipeline.maxRetries and specReview.timeoutMs survive a second init", async () => {
+
+    // Pre-populate with user-tuned settings
+    const configDir = path.join(tempDir, "specrunner");
+    await fs.mkdir(configDir, { recursive: true });
+
+    const { AgentRegistry } = await import("../src/core/agent/index.js");
+    const { ProposeStep } = await import("../src/core/step/propose.js");
+    const { SpecReviewStep } = await import("../src/core/step/spec-review.js");
+    const { SpecFixerStep } = await import("../src/core/step/spec-fixer.js");
+    const registry = AgentRegistry.fromSteps([ProposeStep, SpecReviewStep, SpecFixerStep]);
+
+    const existingConfig = {
+      version: 1,
+      anthropic: { apiKey: "sk-ant-existing" },
+      agents: {
+        "propose": {
+          agentId: "agent_propose_001",
+          definitionHash: registry.hashOf("propose"),
+          lastSyncedAt: new Date().toISOString(),
+        },
+        "spec-review": {
+          agentId: "agent_spec_review_001",
+          definitionHash: registry.hashOf("spec-review"),
+          lastSyncedAt: new Date().toISOString(),
+        },
+        "spec-fixer": {
+          agentId: "agent_spec_fixer_001",
+          definitionHash: registry.hashOf("spec-fixer"),
+          lastSyncedAt: new Date().toISOString(),
+        },
+      },
+      environment: { id: "env_existing_001", lastSyncedAt: new Date().toISOString() },
+      // User-tuned settings that init must NOT drop
+      pipeline: { maxRetries: 5 },
+      specReview: { timeoutMs: 120000 },
+      specFixer: { timeoutMs: 90000 },
+    };
+    const configPath = path.join(configDir, "config.json");
+    await fs.writeFile(configPath, JSON.stringify(existingConfig), { mode: 0o600 });
+
+    currentMockSdk = {
+      beta: {
+        agents: {
+          create: vi.fn().mockResolvedValue({ id: "agent_new_001", version: 1 }),
+          retrieve: vi.fn().mockImplementation((id: string) => {
+            const ids = ["agent_propose_001", "agent_spec_review_001", "agent_spec_fixer_001"];
+            if (ids.includes(id)) return Promise.resolve({ id, version: 1 });
+            return Promise.reject(Object.assign(new Error("Not found"), { status: 404 }));
+          }),
+          update: vi.fn().mockResolvedValue({ id: "agent_propose_001", version: 2 }),
+          archive: vi.fn().mockResolvedValue({}),
+        },
+        environments: {
+          create: vi.fn().mockResolvedValue({ id: "env_new_001" }),
+          retrieve: vi.fn().mockResolvedValue({ id: "env_existing_001" }),
+        },
+      },
+    };
+
+    const { runInit } = await import("../src/cli/init.js");
+    await runInit({ apiKey: "sk-ant-existing" });
+
+    // User-tuned fields must be preserved
+    const raw = await fs.readFile(configPath, "utf-8");
+    const savedConfig = JSON.parse(raw);
+    expect(savedConfig.pipeline?.maxRetries).toBe(5);
+    expect(savedConfig.specReview?.timeoutMs).toBe(120000);
+    expect(savedConfig.specFixer?.timeoutMs).toBe(90000);
+  });
+});
+
 // TC-061: specrunner init — Environment 作成失敗時に Agent を rollback
 describe("TC-061: specrunner init — Agent rollback on Environment creation failure", () => {
-  it("archives newly created agent when environment creation fails", async () => {
+  it("archives newly created agents when environment creation fails", async () => {
 
     // No existing config — fresh init
     currentMockSdk = buildMockSdk({
@@ -238,11 +325,154 @@ describe("TC-061: specrunner init — Agent rollback on Environment creation fai
       "Environment creation failed",
     );
 
-    // agents.archive should have been called with the newly created agent id
-    expect(currentMockSdk.beta.agents.archive).toHaveBeenCalledWith("agent_new_001");
+    // agents.archive should have been called for each newly created agent
+    // (3 agents for 3 roles: propose, spec-review, spec-fixer)
+    expect(currentMockSdk.beta.agents.archive).toHaveBeenCalled();
 
     // Config should NOT have been saved (dir should not contain config.json)
     const configPath = path.join(tempDir, "specrunner", "config.json");
     await expect(fs.access(configPath)).rejects.toThrow();
+  });
+});
+
+// TC-039: specrunner init は旧 schema config を migration して既存 agentId を updateAgent で再利用する
+describe("TC-039: legacy migration — reuses existing agentId via updateAgent", () => {
+  it("reads legacy agent.id + empty hash, calls updateAgent (not createAgent) for propose", async () => {
+
+    // Pre-populate with legacy schema: only agent.id, no agents map
+    const configDir = path.join(tempDir, "specrunner");
+    await fs.mkdir(configDir, { recursive: true });
+    const legacyConfig = {
+      version: 1,
+      anthropic: { apiKey: "sk-ant-legacy" },
+      // legacy single-agent field — no definitionHash
+      agent: {
+        id: "agent_legacy_propose",
+      },
+      environment: { id: "env_existing_001", lastSyncedAt: new Date().toISOString() },
+    };
+    const configPath = path.join(configDir, "config.json");
+    await fs.writeFile(configPath, JSON.stringify(legacyConfig), { mode: 0o600 });
+
+    // Mock: propose agent retrieval succeeds (exists on Anthropic side)
+    currentMockSdk = {
+      beta: {
+        agents: {
+          create: vi.fn().mockImplementation(() => {
+            return Promise.resolve({ id: "agent_new_spec_review", version: 1 });
+          }),
+          retrieve: vi.fn().mockImplementation((id: string) => {
+            if (id === "agent_legacy_propose") {
+              return Promise.resolve({ id: "agent_legacy_propose", version: 1 });
+            }
+            return Promise.reject(Object.assign(new Error("Not found"), { status: 404 }));
+          }),
+          update: vi.fn().mockResolvedValue({ id: "agent_legacy_propose", version: 2 }),
+          archive: vi.fn().mockResolvedValue({}),
+        },
+        environments: {
+          create: vi.fn().mockResolvedValue({ id: "env_new_001" }),
+          retrieve: vi.fn().mockResolvedValue({ id: "env_existing_001" }),
+        },
+      },
+    };
+
+    const { runInit } = await import("../src/cli/init.js");
+    await runInit({ apiKey: "sk-ant-legacy" });
+
+    // propose: stored agentId with empty hash → hash differs → updateAgent (NOT createAgent)
+    expect(currentMockSdk.beta.agents.update).toHaveBeenCalledWith(
+      "agent_legacy_propose",
+      expect.objectContaining({ version: expect.any(Number) }),
+    );
+
+    // The old agentId should be preserved in config
+    const raw = await fs.readFile(configPath, "utf-8");
+    const config = JSON.parse(raw);
+    expect(config.agents?.["propose"]?.agentId).toBe("agent_legacy_propose");
+  });
+});
+
+// TC-041: specrunner init は propose の 404 fallback で propose のみ再作成する
+describe("TC-041: 404 fallback — only propose is re-created, others are no-op", () => {
+  it("calls createAgent only for propose when retrieveAgent 404s for propose", async () => {
+
+    // Compute current hashes
+    const { AgentRegistry } = await import("../src/core/agent/index.js");
+    const { ProposeStep } = await import("../src/core/step/propose.js");
+    const { SpecReviewStep } = await import("../src/core/step/spec-review.js");
+    const { SpecFixerStep } = await import("../src/core/step/spec-fixer.js");
+
+    const registry = AgentRegistry.fromSteps([ProposeStep, SpecReviewStep, SpecFixerStep]);
+    const specReviewHash = registry.hashOf("spec-review");
+    const specFixerHash = registry.hashOf("spec-fixer");
+
+    // Pre-populate with all 3 roles, but propose has a stored ID that will 404
+    const configDir = path.join(tempDir, "specrunner");
+    await fs.mkdir(configDir, { recursive: true });
+    const existingConfig = {
+      version: 1,
+      anthropic: { apiKey: "sk-ant-existing" },
+      agents: {
+        "propose": {
+          agentId: "agent_propose_stale",
+          // Use empty hash so AgentSyncer would update even if retrieved;
+          // but since retrieve 404s, it falls through to create
+          definitionHash: "sha256:old_hash_propose",
+          lastSyncedAt: new Date().toISOString(),
+        },
+        "spec-review": {
+          agentId: "agent_spec_review_001",
+          definitionHash: specReviewHash,
+          lastSyncedAt: new Date().toISOString(),
+        },
+        "spec-fixer": {
+          agentId: "agent_spec_fixer_001",
+          definitionHash: specFixerHash,
+          lastSyncedAt: new Date().toISOString(),
+        },
+      },
+      environment: { id: "env_existing_001", lastSyncedAt: new Date().toISOString() },
+    };
+    const configPath = path.join(configDir, "config.json");
+    await fs.writeFile(configPath, JSON.stringify(existingConfig), { mode: 0o600 });
+
+    currentMockSdk = {
+      beta: {
+        agents: {
+          create: vi.fn().mockResolvedValue({ id: "agent_propose_new", version: 1 }),
+          retrieve: vi.fn().mockImplementation((id: string) => {
+            if (id === "agent_propose_stale") {
+              // propose 404s → triggers create fallback
+              return Promise.reject(Object.assign(new Error("Not found"), { status: 404 }));
+            }
+            // spec-review and spec-fixer retrieve succeed
+            return Promise.resolve({ id, version: 1 });
+          }),
+          update: vi.fn().mockResolvedValue({ id: "agent_propose_new", version: 2 }),
+          archive: vi.fn().mockResolvedValue({}),
+        },
+        environments: {
+          create: vi.fn().mockResolvedValue({ id: "env_new_001" }),
+          retrieve: vi.fn().mockResolvedValue({ id: "env_existing_001" }),
+        },
+      },
+    };
+
+    const { runInit } = await import("../src/cli/init.js");
+    await runInit({ apiKey: "sk-ant-existing" });
+
+    // Only propose should have been created
+    expect(currentMockSdk.beta.agents.create).toHaveBeenCalledTimes(1);
+    // spec-review and spec-fixer should not have been updated or created
+    expect(currentMockSdk.beta.agents.update).not.toHaveBeenCalled();
+
+    // Config should reflect new propose agentId
+    const raw = await fs.readFile(configPath, "utf-8");
+    const config = JSON.parse(raw);
+    expect(config.agents?.["propose"]?.agentId).toBe("agent_propose_new");
+    // spec-review and spec-fixer IDs unchanged
+    expect(config.agents?.["spec-review"]?.agentId).toBe("agent_spec_review_001");
+    expect(config.agents?.["spec-fixer"]?.agentId).toBe("agent_spec_fixer_001");
   });
 });

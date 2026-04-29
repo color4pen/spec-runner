@@ -1,0 +1,63 @@
+/**
+ * Core agent definition types.
+ * These types do NOT import from @anthropic-ai/sdk — adapter layer handles SDK mapping.
+ */
+import type { StepName } from "../../state/schema.js";
+
+/**
+ * ToolSpec for the Anthropic agent toolset (built-in tools like computer use).
+ */
+export interface AgentToolsetSpec {
+  readonly type: "agent_toolset_20260401";
+}
+
+/**
+ * ToolSpec for a custom tool defined by specrunner.
+ */
+export interface CustomToolSpec {
+  readonly type: "custom";
+  readonly name: string;
+  readonly description: string;
+  readonly input_schema: {
+    readonly type: "object";
+    readonly properties?: Record<string, unknown>;
+    readonly required?: string[];
+    readonly [key: string]: unknown;
+  };
+}
+
+/**
+ * Union of all supported tool spec types.
+ * Adapter layer maps ToolSpec → SDK Tool type.
+ */
+export type ToolSpec = AgentToolsetSpec | CustomToolSpec;
+
+/**
+ * Agent capability flags (reserved for Phase 2 implementation).
+ * Setting these fields in this request has no runtime effect.
+ */
+export interface AgentCapabilities {
+  readonly network?: boolean;
+  readonly gitWrite?: boolean;
+}
+
+/**
+ * Full definition of a Managed Agent associated with a Step.
+ * Each Step class owns one AgentDefinition — self-contained.
+ *
+ * Design D1: Step.agent is a complete AgentDefinition, not a runtime placeholder.
+ */
+export interface AgentDefinition {
+  /** Human-readable name on Anthropic (e.g. "specrunner-propose"). */
+  readonly name: string;
+  /** StepName this agent is associated with (kebab-case). */
+  readonly role: StepName;
+  /** Anthropic model ID. */
+  readonly model: string;
+  /** Full system prompt string. */
+  readonly system: string;
+  /** Tools available to the agent. */
+  readonly tools: ToolSpec[];
+  /** Capability flags (Phase 2 reserved). */
+  readonly capabilities?: AgentCapabilities;
+}

@@ -1,9 +1,28 @@
 import type { Step, StepDeps, ParsedStepResult } from "./types.js";
+import type { AgentDefinition } from "../agent/definition.js";
 import type { JobState, Verdict } from "../../state/schema.js";
-import { buildSpecReviewInitialMessage } from "../../prompts/spec-review-system.js";
+import { SPEC_REVIEW_SYSTEM_PROMPT, buildSpecReviewInitialMessage } from "../../prompts/spec-review-system.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { githubTokenExpiredError } from "../../errors.js";
 import type { PipelineDeps } from "../types.js";
+
+const SPEC_REVIEW_AGENT_MODEL = "claude-sonnet-4-5";
+
+/**
+ * Full AgentDefinition owned by SpecReviewStep.
+ * spec-review has its own dedicated Agent — does NOT reuse the propose Agent.
+ * tools = [] because spec-review only reads files and writes results (no custom tools).
+ * Design D5: STEP_AGENT_ROLE lookup removed; each Step owns its role directly.
+ */
+const specReviewAgentDefinition: AgentDefinition = {
+  name: "specrunner-spec-review",
+  role: "spec-review",
+  model: SPEC_REVIEW_AGENT_MODEL,
+  system: SPEC_REVIEW_SYSTEM_PROMPT,
+  tools: [
+    { type: "agent_toolset_20260401" },
+  ],
+};
 
 /**
  * Parse the verdict from a spec-review-result.md file content.
@@ -37,16 +56,14 @@ function computeSpecReviewIteration(state: JobState): number {
 /**
  * SpecReviewStep: implements the spec-review pipeline step as a plain Step object.
  *
+ * Has its own dedicated AgentDefinition (role: "spec-review").
  * No custom tool handlers — spec-review has no Custom Tools.
  * Verdict is parsed from a result file written to the branch by the agent.
  */
 export const SpecReviewStep: Step = {
   name: "spec-review",
 
-  agent: {
-    // Agent ID resolved at runtime from config via deps
-    agentId: "",
-  },
+  agent: specReviewAgentDefinition,
 
   // No custom tool handlers for spec-review
   toolHandlers: undefined,
@@ -143,4 +160,3 @@ export async function fetchSpecReviewResult(
 
   return null;
 }
-

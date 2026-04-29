@@ -1,14 +1,23 @@
 /**
  * Config schema and validator for specrunner CLI.
  * Uses hand-written validators (no zod) per design.md.
+ *
+ * Design D4: agents is Record<StepName, AgentRecord> — the single canonical map.
+ * Legacy `agent` (singular) and intermediate `agents.{propose,specFixer,specReview}` shapes
+ * are handled by migrate.ts at load time.
  */
+import type { StepName } from "../state/schema.js";
 
 export interface AnthropicConfig {
   apiKey: string;
 }
 
-export interface AgentConfig {
-  id: string;
+/**
+ * Per-role agent record stored in config.
+ * Note: field is `agentId` (not `id`) in the new canonical schema.
+ */
+export interface AgentRecord {
+  agentId: string;
   definitionHash: string;
   lastSyncedAt: string;
 }
@@ -36,20 +45,6 @@ export interface SpecFixerConfig {
   timeoutMs?: number;
 }
 
-/** Role-specific agent configuration entry */
-export interface RoleAgentConfig {
-  id: string;
-  definitionHash: string;
-  lastSyncedAt: string;
-}
-
-/** Per-role agent configuration (agents.{propose, specFixer, specReview}) */
-export interface AgentsConfig {
-  propose?: RoleAgentConfig;
-  specFixer?: RoleAgentConfig;
-  specReview?: RoleAgentConfig;
-}
-
 /** Pipeline-level settings */
 export interface PipelineConfig {
   /**
@@ -63,12 +58,11 @@ export interface SpecRunnerConfig {
   version: 1;
   anthropic: AnthropicConfig;
   /**
-   * @deprecated Use `agents.propose` instead.
-   * Kept for backward compatibility with existing configs.
-   * Will be removed in a future clean-up request.
+   * Canonical per-role agent map.
+   * Keys are StepNames (kebab-case: "propose", "spec-review", "spec-fixer").
+   * Populated by ConfigStore.load() after migration.
    */
-  agent?: AgentConfig;
-  agents?: AgentsConfig;
+  agents: Record<string, AgentRecord>;
   pipeline?: PipelineConfig;
   environment?: EnvironmentConfig;
   github?: GithubConfig;
@@ -76,18 +70,34 @@ export interface SpecRunnerConfig {
   specFixer?: SpecFixerConfig;
 }
 
-export interface PartialSpecRunnerConfig {
+/**
+ * Raw config as it may appear on disk — may contain legacy/intermediate fields.
+ * Used only for reading and migration; never written back.
+ */
+export interface RawConfig {
   version?: number;
   anthropic?: Partial<AnthropicConfig>;
-  agent?: Partial<AgentConfig>;
-  agents?: Partial<AgentsConfig>;
+  /** @deprecated Legacy single-agent format. Migrated to agents.propose at load time. */
+  agent?: {
+    id?: string;
+    definitionHash?: string;
+    lastSyncedAt?: string;
+  };
+  /**
+   * May be either old intermediate shape (camelCase keys) or new canonical shape (kebab-case).
+   * Normalized by migrate().
+   */
+  agents?: Record<string, unknown>;
   pipeline?: Partial<PipelineConfig>;
   environment?: Partial<EnvironmentConfig>;
   github?: Partial<GithubConfig>;
+  specReview?: Partial<SpecReviewConfig>;
+  specFixer?: Partial<SpecFixerConfig>;
 }
 
 /**
  * Validate that the raw parsed config contains required fields.
+ * Called AFTER migration — expects new canonical schema.
  * Returns typed config or throws describing the missing field.
  * Throws CONFIG_INVALID if pipeline.maxRetries is out of range (1-10).
  */
@@ -133,8 +143,8 @@ export function checkConfigComplete(
   if (!cfg.anthropic?.apiKey) {
     return { field: "anthropic.apiKey", hint: "Run 'specrunner init' first." };
   }
-  if (!cfg.agent?.id) {
-    return { field: "agent.id", hint: "Run 'specrunner init' first." };
+  if (!cfg.agents?.["propose"]?.agentId) {
+    return { field: "agents.propose.agentId", hint: "Run 'specrunner init' first." };
   }
   if (!cfg.environment?.id) {
     return { field: "environment.id", hint: "Run 'specrunner init' first." };
@@ -143,4 +153,17 @@ export function checkConfigComplete(
     return { field: "github.accessToken", hint: "Run 'specrunner login' first." };
   }
   return null;
+}
+
+/**
+ * Get the timeout for a step name from config.
+ */
+export function getTimeoutMs(stepName: StepName, cfg: SpecRunnerConfig): number {
+  if (stepName === "spec-review") {
+    return cfg.specReview?.timeoutMs ?? 600_000;
+  }
+  if (stepName === "spec-fixer") {
+    return cfg.specFixer?.timeoutMs ?? 600_000;
+  }
+  return 600_000;
 }

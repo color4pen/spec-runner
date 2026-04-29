@@ -1,7 +1,32 @@
 import type { Step, StepDeps, ParsedStepResult } from "./types.js";
+import type { AgentDefinition } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { registerBranchTool } from "../tools/register-branch.js";
-import { buildInitialMessage } from "../../prompts/propose-system.js";
+import { buildInitialMessage, PROPOSE_SYSTEM_PROMPT } from "../../prompts/propose-system.js";
+
+const PROPOSE_AGENT_MODEL = "claude-sonnet-4-5";
+
+/**
+ * Full AgentDefinition owned by ProposeStep.
+ * Self-contained: name, role, model, system, and tools are all declared here.
+ * Design D1: Step is the single source of truth for its agent definition.
+ */
+const proposeAgentDefinition: AgentDefinition = {
+  name: "specrunner-propose",
+  role: "propose",
+  model: PROPOSE_AGENT_MODEL,
+  system: PROPOSE_SYSTEM_PROMPT,
+  tools: [
+    { type: "agent_toolset_20260401" },
+    // register_branch is co-located in this file's toolHandlers below
+    {
+      type: "custom",
+      name: registerBranchTool.definition.name,
+      description: registerBranchTool.definition.description,
+      input_schema: registerBranchTool.definition.input_schema,
+    },
+  ],
+};
 
 /**
  * ProposeStep: implements the propose pipeline step as a plain Step object.
@@ -12,10 +37,7 @@ import { buildInitialMessage } from "../../prompts/propose-system.js";
 export const ProposeStep: Step = {
   name: "propose",
 
-  agent: {
-    // Agent ID is resolved at runtime from config via deps
-    agentId: "",
-  },
+  agent: proposeAgentDefinition,
 
   /**
    * register_branch handler is exclusively owned by ProposeStep.

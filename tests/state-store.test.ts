@@ -211,6 +211,7 @@ describe("TC-051: config atomic write and 0600 permission", () => {
       await saveConfig({
         version: 1,
         anthropic: { apiKey: "sk-ant-test" },
+        agents: {},
       });
 
       const configPath = path.join(tempDir, "specrunner", "config.json");

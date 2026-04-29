@@ -1,6 +1,25 @@
 import type { Step, StepDeps, ParsedStepResult } from "./types.js";
+import type { AgentDefinition } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { getLatestStepResult } from "../../state/helpers.js";
+import { SPEC_FIXER_SYSTEM_PROMPT } from "../../prompts/spec-fixer-system.js";
+
+const SPEC_FIXER_AGENT_MODEL = "claude-sonnet-4-5";
+
+/**
+ * Full AgentDefinition owned by SpecFixerStep.
+ * tools = [] — spec-fixer has no Custom Tools.
+ * Design D8: Tool spec ownership is co-located with the Step.
+ */
+const specFixerAgentDefinition: AgentDefinition = {
+  name: "specrunner-spec-fixer",
+  role: "spec-fixer",
+  model: SPEC_FIXER_AGENT_MODEL,
+  system: SPEC_FIXER_SYSTEM_PROMPT,
+  tools: [
+    { type: "agent_toolset_20260401" },
+  ],
+};
 
 /**
  * Build the initial user message for the spec-fixer session.
@@ -34,16 +53,14 @@ If any finding cannot be fixed, add a comment at the end of proposal.md or desig
 /**
  * SpecFixerStep: implements the spec-fixer pipeline step as a plain Step object.
  *
+ * Has its own dedicated AgentDefinition (role: "spec-fixer").
  * No custom tool handlers — spec-fixer has no Custom Tools.
  * No result file — spec-fixer completion is determined by polling.
  */
 export const SpecFixerStep: Step = {
   name: "spec-fixer",
 
-  agent: {
-    // Agent ID resolved at runtime from config via deps
-    agentId: "",
-  },
+  agent: specFixerAgentDefinition,
 
   // No custom tool handlers for spec-fixer
   toolHandlers: undefined,

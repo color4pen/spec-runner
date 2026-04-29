@@ -8,7 +8,7 @@ function buildDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     config: {
       version: 1,
       anthropic: { apiKey: "sk-test" },
-      agent: { id: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" },
+      agents: { propose: { agentId: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" } },
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
       github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
     },

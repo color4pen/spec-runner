@@ -68,7 +68,7 @@ function makeMinimalDeps(): PipelineDeps {
     config: {
       version: 1,
       anthropic: { apiKey: "sk-test" },
-      agent: { id: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" },
+      agents: { propose: { agentId: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" } },
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
       github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
     },
@@ -119,9 +119,9 @@ function buildMockPipeline(opts: {
   const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
 
   const steps = new Map<string, Step>([
-    ["propose",     { name: "propose",     agent: { agentId: "" }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-    ["spec-review", { name: "spec-review", agent: { agentId: "" }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-    ["spec-fixer",  { name: "spec-fixer",  agent: { agentId: "" }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["propose",     { name: "propose",     agent: { name: "test", role: "propose", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["spec-review", { name: "spec-review", agent: { name: "test", role: "spec-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["spec-fixer",  { name: "spec-fixer",  agent: { name: "test", role: "spec-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
   ]);
 
   const pipeline = new Pipeline({
@@ -262,9 +262,9 @@ describe("TC-063: Pipeline — loop exhaustion: SPEC_REVIEW_RETRIES_EXHAUSTED", 
     });
 
     const steps = new Map<string, Step>([
-      ["propose",     { name: "propose",     agent: { agentId: "" }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-      ["spec-review", { name: "spec-review", agent: { agentId: "" }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-      ["spec-fixer",  { name: "spec-fixer",  agent: { agentId: "" }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["propose",     { name: "propose",     agent: { name: "test", role: "propose", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["spec-review", { name: "spec-review", agent: { name: "test", role: "spec-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["spec-fixer",  { name: "spec-fixer",  agent: { name: "test", role: "spec-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ]);
 
     const events = new EventBus();

@@ -37,10 +37,10 @@ function buildConfig(overrides: Record<string, unknown> = {}) {
   return {
     version: 1 as const,
     anthropic: { apiKey: "sk-ant-test" },
-    agent: { id: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
     agents: {
-      propose: { id: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
-      specFixer: { id: "agent_spec_fixer", definitionHash: "sha256:def", lastSyncedAt: new Date().toISOString() },
+      propose: { agentId: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
+      "spec-review": { agentId: "agent_spec_review", definitionHash: "sha256:ghi", lastSyncedAt: new Date().toISOString() },
+      "spec-fixer": { agentId: "agent_spec_fixer", definitionHash: "sha256:def", lastSyncedAt: new Date().toISOString() },
     },
     pipeline: { maxRetries: 2 },
     environment: { id: "env_001", lastSyncedAt: new Date().toISOString() },

@@ -4,7 +4,12 @@ import * as path from "node:path";
 import * as os from "node:os";
 
 // Top-level mocks (vitest hoisting)
-vi.mock("node:child_process");
+vi.mock("node:child_process", () => ({
+  execSync: vi.fn(),
+  exec: vi.fn(),
+  execFile: vi.fn(),
+  spawn: vi.fn(),
+}));
 vi.mock("../src/sdk/client.js", () => ({
   createAnthropicClient: () => currentMockSdk,
 }));
