@@ -21,6 +21,8 @@ CLI は SHALL このスキーマを唯一の正として書き込み・読み込
 - **WHEN** spec-review step が完了した
 - **THEN** state.steps["spec-review"].verdict が `approved` / `needs-fix` / `escalation` のいずれかであり、findingsPath には `openspec/changes/<slug>/spec-review-result.md` が記録されている
 
+## ADDED Requirements
+
 ### Requirement: 状態ファイルの step フィールドは実行中 step を指す
 
 `state.step` は MUST 現在実行中の step 名を保持する。propose step 実行中は `"propose"`、spec-review step 実行中は `"spec-review"` である。step 完了後に runPipeline が次 step を起動する直前に SHALL `state.step` を更新する。

@@ -14,6 +14,8 @@
 - **WHEN** Agent が `register_branch` を呼ばずに idle+end_turn になる
 - **THEN** state.status は `failed` になり、`error.code = "BRANCH_NOT_REGISTERED"` を含み、`Branch was not registered by the agent.` を stderr に出力する。spec-review step は SHALL 起動されない
 
+## ADDED Requirements
+
 ### Requirement: propose は runPipeline 配下の最初の step として実装される
 
 propose 処理は MUST `src/core/steps/propose.ts` の `runProposeStep(state, deps)` として実装される。`src/core/pipeline.ts` の `runProposePipeline` は SHALL 削除する（内部 API のため後方互換要件なし）。`src/cli/run.ts` の call site は SHALL `runPipeline` を直接呼び出す形に置換される。

@@ -1,3 +1,8 @@
+## RENAMED Requirements
+
+- FROM: ### Requirement: `specrunner run <request.md>` は propose セッションを起動し完了まで監視する
+- TO: ### Requirement: `specrunner run <request.md>` は propose と spec-review セッションを直列で実行する
+
 ## MODIFIED Requirements
 
 ### Requirement: `specrunner run <request.md>` は propose と spec-review セッションを直列で実行する
