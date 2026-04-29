@@ -61,15 +61,6 @@ runPipeline は MUST 各 step 呼び出しごと、各 iteration ごとに `clie
 - **WHEN** spec-fixer step と loop プリミティブを実装する
 - **THEN** `src/core/steps/spec-fixer.ts`（`runSpecFixerStep`）と `src/core/loop.ts`（`runLoopUntil`）の 2 ファイルが存在する
 
-### Requirement: `PipelineDeps` の正規ロケーションは `src/core/types.ts` である
-
-`PipelineDeps` 型は MUST `src/core/types.ts` に定義される。`src/core/pipeline.ts`、`src/core/loop.ts`、`src/core/steps/*.ts` のすべては SHALL `import type { PipelineDeps } from "../types.js"` の形で参照する。`pipeline.ts` から直接 import する形は SHALL 採用しない。これにより `pipeline.ts` ↔ `loop.ts` の循環 import を構造的に防ぐ（module-architect decision 行 1 / module-analysis 2.2 と整合）。
-
-#### Scenario: 循環 import の排除
-
-- **WHEN** `src/core/loop.ts` を実装する
-- **THEN** `loop.ts` の import 行に `from "../pipeline.js"` は現れず、`PipelineDeps` は `from "../types.js"` または `from "./types.js"` 経由で参照される
-
 ### Requirement: runPipeline は state ファイルを single source of truth として扱う
 
 各 step は MUST 完了時に state ファイルへの persist を完了させる。runPipeline は SHALL step 間で state を in-memory に保持しつつ、各 step 完了後（同一 iter の中での spec-fixer 完了後・spec-review 完了後を含む）に `writeJobState(state)` を呼び出す。これにより `specrunner ps` がいつでも進捗を観測できる。
@@ -80,6 +71,15 @@ runPipeline は MUST 各 step 呼び出しごと、各 iteration ごとに `clie
 - **THEN** state ファイルには propose 完了の history と steps["propose"][0]、steps["spec-review"][0]（needs-fix）が記録されており、`specrunner ps` で確認可能である
 
 ## ADDED Requirements
+
+### Requirement: `PipelineDeps` の正規ロケーションは `src/core/types.ts` である
+
+`PipelineDeps` 型は MUST `src/core/types.ts` に定義される。`src/core/pipeline.ts`、`src/core/loop.ts`、`src/core/steps/*.ts` のすべては SHALL `import type { PipelineDeps } from "../types.js"` の形で参照する。`pipeline.ts` から直接 import する形は SHALL 採用しない。これにより `pipeline.ts` ↔ `loop.ts` の循環 import を構造的に防ぐ（module-architect decision 行 1 / module-analysis 2.2 と整合）。
+
+#### Scenario: 循環 import の排除
+
+- **WHEN** `src/core/loop.ts` を実装する
+- **THEN** `loop.ts` の import 行に `from "../pipeline.js"` は現れず、`PipelineDeps` は `from "../types.js"` または `from "./types.js"` 経由で参照される
 
 ### Requirement: runPipeline は spec-review needs-fix で spec-fixer → spec-review iteration loop を起動する
 

@@ -1,7 +1,6 @@
 ## Purpose
 
 Idempotently create or reuse Anthropic Agent and Environment definitions during `specrunner init`.
-
 ## Requirements
 ### Requirement: `specrunner init` は冪等に Agent と Environment を作成する
 
@@ -65,9 +64,28 @@ Agent 作成 → Environment 作成 の途中で失敗した場合、CLI は MUS
 
 ### Requirement: init 完了で Agent が動作するための前提を満たす
 
-init 成功後の状態は MUST 以下を保証する: (a) config の `agent.id` が retrieve 可能、(b) config の `environment.id` が retrieve 可能、(c) Agent の `custom_tools` に `register_branch` が含まれる、(d) Agent の `toolset.type` が `agent_toolset_20260401` である。これらは SHALL post-init の不変条件である。
+init 成功後の状態は MUST 以下を保証する: (a) `config.agents.propose.id` が retrieve 可能、(b) `config.agents.specFixer.id` が retrieve 可能、(c) `config.environment.id` が retrieve 可能、(d) propose Agent の `custom_tools` に `register_branch` が含まれ、`toolset.type` が `agent_toolset_20260401` である、(e) spec-fixer Agent の `custom_tools` が空配列であり、`toolset.type` が `agent_toolset_20260401` である、(f) `config.agent.id` も propose Agent の ID と同期した値で書かれている（旧形式互換）。これらは SHALL post-init の不変条件である。
 
 #### Scenario: post-init 検証
 
 - **WHEN** init が exit code 0 で終了する
-- **THEN** 上記 (a)-(d) のすべてが満たされる
+- **THEN** 上記 (a)-(f) のすべてが満たされる。(e) の `custom_tools` 検証において、Anthropic API の retrieve 結果が `custom_tools: []`、`null`、`undefined` のいずれを返した場合も「空」とみなし、`register_branch` の文字列が含まれないことのみを検証する（`=== []` による厳密比較は行わない）
+
+### Requirement: spec-fixer Agent は Custom Tools を持たない
+
+`specrunner init` は MUST spec-fixer Agent を作成・更新する際、`custom_tools` フィールドに **空配列** を渡す。`register_branch` を含む Custom Tool は SHALL 一切含めない。`toolset` は SHALL `agent_toolset_20260401`（標準ツール）のみとする。
+
+#### Scenario: spec-fixer Agent の custom_tools
+
+- **WHEN** spec-fixer Agent 作成リクエストを構築する
+- **THEN** `custom_tools` の値は `[]` であり、`register_branch` の文字列を含まない
+
+### Requirement: spec-fixer Agent の system_prompt は `buildSpecFixerSystemPrompt` 由来である
+
+`specrunner init` は MUST spec-fixer Agent の `system_prompt` を `buildSpecFixerSystemPrompt(input)` の戻り値で設定する。propose Agent の system_prompt とは独立した文字列とする。
+
+#### Scenario: 派生元の単一性
+
+- **WHEN** spec-fixer Agent 作成リクエストを構築する
+- **THEN** `system_prompt` の値は `buildSpecFixerSystemPrompt` 由来であり、ソースを grep して同じ文字列リテラルが他のロケーションに重複定義されていない
+
