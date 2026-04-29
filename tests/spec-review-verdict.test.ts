@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseSpecReviewVerdict } from "../src/core/steps/spec-review.js";
+import { parseSpecReviewVerdict } from "../src/core/step/spec-review.js";
 
 // TC-001: parseSpecReviewVerdict — approved を正常パース
 describe("TC-001: parseSpecReviewVerdict — approved", () => {

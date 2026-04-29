@@ -1,0 +1,242 @@
+/**
+ * Behavior invariance tests: CLI stdout format pins.
+ *
+ * TC-027: [iter N/M] format — approved verdict matches bit-for-bit
+ * TC-028: [iter N/M] format — needs-fix continuation matches bit-for-bit
+ * TC-029: [iter N/M] format — retries exhausted matches bit-for-bit
+ *
+ * These tests pin the exact stdout strings produced by Pipeline.runSpecReviewLoop
+ * to the legacy runLoopUntil format. Any change here is a behavior regression.
+ *
+ * Source: pipeline-orchestrator/spec.md — iteration progress format; tasks.md — 7.2
+ */
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { Pipeline } from "../src/core/pipeline/pipeline.js";
+import { STANDARD_TRANSITIONS } from "../src/core/pipeline/types.js";
+import { EventBus } from "../src/core/event/event-bus.js";
+import { StepExecutor } from "../src/core/step/executor.js";
+import type { Step } from "../src/core/step/types.js";
+import type { JobState, StepRun } from "../src/state/schema.js";
+import type { PipelineDeps } from "../src/core/types.js";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import * as os from "node:os";
+
+let tempDir: string;
+let originalXdgDataHome: string | undefined;
+
+beforeEach(async () => {
+  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "stdout-snapshot-test-"));
+  originalXdgDataHome = process.env["XDG_DATA_HOME"];
+  process.env["XDG_DATA_HOME"] = tempDir;
+  vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+  vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+});
+
+afterEach(async () => {
+  if (originalXdgDataHome !== undefined) {
+    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
+  } else {
+    delete process.env["XDG_DATA_HOME"];
+  }
+  await fs.rm(tempDir, { recursive: true, force: true });
+  vi.restoreAllMocks();
+});
+
+const LOOP_NAME = "spec-review";
+
+function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
+  return {
+    version: 1,
+    jobId: "stdout-snapshot-job",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    request: { path: "/req.md", title: "Test", type: "feature" },
+    repository: { owner: "testowner", name: "testrepo" },
+    session: null,
+    step: "propose",
+    status: "running",
+    branch: null,
+    history: [],
+    error: null,
+    steps: {},
+    ...overrides,
+  };
+}
+
+function makeMinimalDeps(): PipelineDeps {
+  return {
+    client: {} as PipelineDeps["client"],
+    config: {
+      version: 1,
+      anthropic: { apiKey: "sk-test" },
+      agent: { id: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" },
+      environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
+      github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
+    },
+    repo: { owner: "testowner", name: "testrepo" },
+    request: { type: "feature", title: "Test", content: "content", enabled: [] },
+    slug: "test-slug",
+    sleepFn: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
+function makeStepObject(name: string): Step {
+  return {
+    name,
+    agent: { agentId: "" },
+    buildMessage: () => "",
+    resultFilePath: () => null,
+    parseResult: () => ({ verdict: null, findingsPath: null }),
+  };
+}
+
+function makeSpecReviewState(base: JobState, verdict: "approved" | "needs-fix" | "escalation", iter: number): JobState {
+  return {
+    ...base,
+    status: "success",
+    steps: {
+      ...base.steps,
+      "spec-review": [
+        ...(base.steps?.["spec-review"] ?? []),
+        { attempt: iter, sessionId: null, outcome: { verdict, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" },
+      ],
+    },
+  };
+}
+
+function getCapturedStdout(): string[] {
+  return (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+    .flatMap((args: unknown[]) => String(args[0]).split("\n"))
+    .filter((line: string) => line.length > 0);
+}
+
+// TC-027: [iter N/M] format — approved verdict matches bit-for-bit
+describe("TC-027: stdout [iter N/M] — approved verdict line is bit-for-bit exact", () => {
+  it("emits '[iter 1/<max>] spec-review verdict: approved → done'", async () => {
+    const maxIterations = 3;
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+    const proposeResult: JobState = { ...state, status: "success", branch: "feat/test" };
+    const specReviewResult = makeSpecReviewState(proposeResult, "approved", 1);
+
+    const events = new EventBus();
+    const executeSpy = vi.fn().mockImplementation(async (step: Step) => {
+      if (step.name === "propose") return proposeResult;
+      if (step.name === "spec-review") return specReviewResult;
+      throw new Error(`Unexpected step: ${step.name}`);
+    });
+    const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
+
+    const pipeline = new Pipeline({
+      steps: new Map([
+        ["propose",     makeStepObject("propose")],
+        ["spec-review", makeStepObject("spec-review")],
+        ["spec-fixer",  makeStepObject("spec-fixer")],
+      ]),
+      transitions: STANDARD_TRANSITIONS,
+      maxIterations,
+      executor: mockExecutor,
+      events,
+      loopName: LOOP_NAME,
+    });
+
+    await pipeline.run("propose", state, deps);
+
+    const stdout = getCapturedStdout();
+    // Exact format pinned per pipeline.ts runSpecReviewLoop:
+    // - iteration start: [iter N/M] starting <loopName>
+    // - verdict: [iter N] <loopName> verdict: approved → done
+    expect(stdout).toContain(`[iter 1/${maxIterations}] starting ${LOOP_NAME}`);
+    expect(stdout).toContain(`[iter 1] ${LOOP_NAME} verdict: approved → done`);
+  });
+});
+
+// TC-028: [iter N/M] format — needs-fix continuation matches bit-for-bit
+describe("TC-028: stdout [iter N/M] — needs-fix continuation line is bit-for-bit exact", () => {
+  it("emits '[iter 1/2] spec-review verdict: needs-fix → spawning fixer' when needs-fix and iter < max", async () => {
+    const maxIterations = 2;
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+    const proposeResult: JobState = { ...state, status: "success", branch: "feat/test" };
+    const specReview1 = makeSpecReviewState(proposeResult, "needs-fix", 1);
+    const specFixerResult: JobState = { ...specReview1, step: "spec-fixer" };
+    const specReview2 = makeSpecReviewState(specFixerResult, "approved", 2);
+
+    const events = new EventBus();
+    let specReviewCall = 0;
+    const executeSpy = vi.fn().mockImplementation(async (step: Step) => {
+      if (step.name === "propose") return proposeResult;
+      if (step.name === "spec-fixer") return specFixerResult;
+      if (step.name === "spec-review") {
+        return specReviewCall++ === 0 ? specReview1 : specReview2;
+      }
+      throw new Error(`Unexpected step: ${step.name}`);
+    });
+    const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
+
+    const pipeline = new Pipeline({
+      steps: new Map([
+        ["propose",     makeStepObject("propose")],
+        ["spec-review", makeStepObject("spec-review")],
+        ["spec-fixer",  makeStepObject("spec-fixer")],
+      ]),
+      transitions: STANDARD_TRANSITIONS,
+      maxIterations,
+      executor: mockExecutor,
+      events,
+      loopName: LOOP_NAME,
+    });
+
+    await pipeline.run("propose", state, deps);
+
+    const stdout = getCapturedStdout();
+    // Exact format pinned per pipeline.ts runSpecReviewLoop:
+    // - [iter N] <loopName> verdict: needs-fix → spawning fixer
+    expect(stdout).toContain(`[iter 1] ${LOOP_NAME} verdict: needs-fix → spawning fixer`);
+  });
+});
+
+// TC-029: [iter N/M] format — retries exhausted matches bit-for-bit
+describe("TC-029: stdout [iter N/M] — retries exhausted line is bit-for-bit exact", () => {
+  it("emits '[iter 2/2] retries exhausted, escalating' when maxIterations reached with needs-fix", async () => {
+    const maxIterations = 2;
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+    const proposeResult: JobState = { ...state, status: "success", branch: "feat/test" };
+
+    let specReviewCall = 0;
+    const specReview1 = makeSpecReviewState(proposeResult, "needs-fix", 1);
+    const specReview2 = makeSpecReviewState(specReview1, "needs-fix", 2);
+
+    const events = new EventBus();
+    const executeSpy = vi.fn().mockImplementation(async (step: Step) => {
+      if (step.name === "propose") return proposeResult;
+      if (step.name === "spec-fixer") return { ...proposeResult };
+      if (step.name === "spec-review") {
+        return specReviewCall++ === 0 ? specReview1 : specReview2;
+      }
+      throw new Error(`Unexpected step: ${step.name}`);
+    });
+    const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
+
+    const pipeline = new Pipeline({
+      steps: new Map([
+        ["propose",     makeStepObject("propose")],
+        ["spec-review", makeStepObject("spec-review")],
+        ["spec-fixer",  makeStepObject("spec-fixer")],
+      ]),
+      transitions: STANDARD_TRANSITIONS,
+      maxIterations,
+      executor: mockExecutor,
+      events,
+      loopName: LOOP_NAME,
+    });
+
+    await pipeline.run("propose", state, deps);
+
+    const stdout = getCapturedStdout();
+    // Exact format pinned: [iter 2/2] retries exhausted, escalating
+    expect(stdout).toContain(`[iter ${maxIterations}/${maxIterations}] retries exhausted, escalating`);
+  });
+});

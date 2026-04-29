@@ -1,24 +1,20 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { registerCustomTool, getDefinitions, getHandler, resetRegistry } from "../src/core/tools/registry.js";
 import { registerBranchTool } from "../src/core/tools/register-branch.js";
-import { bootstrapTools } from "../src/core/tools/index.js";
 
 beforeEach(() => {
-  resetRegistry();
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 });
 
-// TC-016: register_branch が registry 経由で登録される
-describe("TC-016: register_branch registered via registry", () => {
-  it("getDefinitions includes register_branch and getHandler returns function", () => {
-    bootstrapTools();
+// TC-016: register_branch が ProposeStep.toolHandlers 経由で登録される
+describe("TC-016: register_branch registered via ProposeStep.toolHandlers", () => {
+  it("ProposeStep.toolHandlers includes register_branch and handler is function", async () => {
+    const { ProposeStep } = await import("../src/core/step/propose.js");
 
-    const definitions = getDefinitions();
-    const found = definitions.find((d) => d.name === "register_branch");
-    expect(found).toBeDefined();
-    expect(found?.name).toBe("register_branch");
+    const handlers = ProposeStep.toolHandlers;
+    expect(handlers).toBeDefined();
+    expect(handlers?.has("register_branch")).toBe(true);
 
-    const handler = getHandler("register_branch");
+    const handler = handlers?.get("register_branch");
     expect(typeof handler).toBe("function");
   });
 });
@@ -66,16 +62,18 @@ describe("TC-017: register_branch string only in register-branch.ts", () => {
   });
 });
 
-// TC-018: SSE dispatch も registry から取得する（grep check）
-describe("TC-018: SSE dispatch uses getHandler from registry", () => {
-  it("session.ts uses getHandler to resolve tool handlers", async () => {
+// TC-018: SSE dispatch が toolHandlers Map 経由で tool を解決する（grep check）
+describe("TC-018: SSE dispatch uses toolHandlers map from step co-location", () => {
+  it("session.ts uses toolHandlers?.get() to resolve tool handlers (D4)", async () => {
     const { readFile } = await import("node:fs/promises");
     const { fileURLToPath } = await import("node:url");
-    const sessionPath = fileURLToPath(new URL("../src/core/session.ts", import.meta.url));
-    const content = await readFile(sessionPath, "utf-8");
-    expect(content).toContain("getHandler(event.name)");
-    // Should not directly import handler from register-branch
-    expect(content).not.toContain('from "./tools/register-branch');
+    // SSE dispatch logic lives in the adapter's sse-stream.ts (session.ts delegates to SessionClient port)
+    const sseStreamPath = fileURLToPath(new URL("../src/adapter/anthropic/sse-stream.ts", import.meta.url));
+    const content = await readFile(sseStreamPath, "utf-8");
+    // D4: toolHandlers map takes precedence (global registry removed)
+    expect(content).toContain("deps.toolHandlers?.get(event.name)");
+    // Global registry is no longer used
+    expect(content).not.toContain("getHandler(event.name)");
   });
 });
 
@@ -143,10 +141,11 @@ describe("TC-023: register_branch definition is deterministic", () => {
 describe("TC-025: register_branch — custom_tool_result id mapping", () => {
   it("verifies session.ts sends matching custom_tool_use_id in result", async () => {
     // This verifies the implementation design via source inspection
+    // SSE dispatch logic lives in the adapter's sse-stream.ts (session.ts delegates to SessionClient port)
     const { readFile } = await import("node:fs/promises");
     const { fileURLToPath } = await import("node:url");
-    const sessionPath = fileURLToPath(new URL("../src/core/session.ts", import.meta.url));
-    const content = await readFile(sessionPath, "utf-8");
+    const sseStreamPath = fileURLToPath(new URL("../src/adapter/anthropic/sse-stream.ts", import.meta.url));
+    const content = await readFile(sseStreamPath, "utf-8");
     // Check that event.id is used as custom_tool_use_id
     expect(content).toContain("custom_tool_use_id: event.id");
   });

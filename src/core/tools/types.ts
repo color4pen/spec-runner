@@ -1,4 +1,18 @@
-import type { BetaManagedAgentsCustomToolParams } from "@anthropic-ai/sdk/resources/beta/agents/agents";
+/**
+ * Custom tool definition shape (matches Anthropic SDK BetaManagedAgentsCustomToolParams).
+ * Defined here without SDK import to keep core/ free of @anthropic-ai/sdk dependencies.
+ */
+export interface CustomToolDefinition {
+  type: "custom";
+  name: string;
+  description: string;
+  input_schema: {
+    type: "object";
+    properties?: Record<string, unknown>;
+    required?: string[];
+    [key: string]: unknown;
+  };
+}
 
 /**
  * Context passed to a custom tool handler.
@@ -25,7 +39,7 @@ export type CustomToolHandler = (
  * Use defineCustomTool() factory to create.
  */
 export interface CustomTool {
-  definition: BetaManagedAgentsCustomToolParams;
+  definition: CustomToolDefinition;
   handler: CustomToolHandler;
 }
 

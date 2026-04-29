@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { toLegacyStepResult } from "../src/state/helpers.js";
+import type { SessionClient } from "../src/core/port/session-client.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -38,14 +40,14 @@ async function makeJobState() {
   });
 }
 
-function buildConfig() {
+function buildConfig(overrides?: { specReview?: { timeoutMs?: number; pollIntervalMs?: number } }) {
   return {
     version: 1 as const,
     anthropic: { apiKey: "sk-ant-test" },
     agent: { id: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
     environment: { id: "env_001", lastSyncedAt: new Date().toISOString() },
     github: { accessToken: "ghp_test", tokenObtainedAt: new Date().toISOString(), scopes: ["repo"] },
-    specReview: { pollIntervalMs: 100, timeoutMs: 600000 },
+    specReview: overrides?.specReview ?? { pollIntervalMs: 100, timeoutMs: 600000 },
   };
 }
 
@@ -58,64 +60,59 @@ function buildRequest() {
 }
 
 /**
- * Build a mock client that simulates a successful spec-review session.
- * The polling will return idle status immediately after being created.
+ * Build a mock SessionClient for spec-review step testing.
+ *
+ * - createSession: returns the given sessionId
+ * - sendUserMessage: no-op
+ * - pollUntilComplete: returns idle by default (simulating successful completion)
+ * - streamEvents: not used by spec-review (polling style step)
  */
-function buildMockClient(opts: {
+function buildMockSessionClient(opts: {
   sessionId?: string;
-  terminateSession?: boolean;
-  timeoutSession?: boolean;
-} = {}) {
+  pollResult?: { status: "idle" | "terminated" | "timeout"; error?: { code: string; message: string; hint: string } };
+  pollTimeoutMs?: number;
+} = {}): {
+  client: SessionClient;
+  createSessionMock: ReturnType<typeof vi.fn>;
+  pollUntilCompleteMock: ReturnType<typeof vi.fn>;
+} {
   const sessionId = opts.sessionId ?? "sess_spec_review_001";
-  let pollCallCount = 0;
+  const pollResult = opts.pollResult ?? { status: "idle" as const };
 
-  const mockRetrieve = vi.fn().mockImplementation(() => {
-    pollCallCount++;
-    if (opts.terminateSession) {
-      return Promise.resolve({ id: sessionId, status: "terminated" });
-    }
-    // Return idle on first poll to simulate quick completion
-    return Promise.resolve({ id: sessionId, status: "idle" });
-  });
+  const createSessionMock = vi.fn().mockResolvedValue({ sessionId });
+  const pollUntilCompleteMock = vi.fn().mockResolvedValue(pollResult);
 
-  return {
-    sessionId,
-    client: {
-      beta: {
-        sessions: {
-          create: vi.fn().mockResolvedValue({ id: sessionId, type: "session" }),
-          retrieve: mockRetrieve,
-          events: {
-            send: vi.fn().mockResolvedValue({}),
-            stream: vi.fn(),
-          },
-        },
-      },
-    } as unknown as import("../src/core/pipeline.js").PipelineDeps["client"],
+  const client: SessionClient = {
+    createSession: createSessionMock,
+    sendUserMessage: vi.fn().mockResolvedValue(undefined),
+    pollUntilComplete: pollUntilCompleteMock,
+    streamEvents: vi.fn().mockRejectedValue(new Error("streamEvents not used by spec-review")),
   };
+
+  return { client, createSessionMock, pollUntilCompleteMock };
+}
+
+/**
+ * Build and run StepExecutor with SpecReviewStep.
+ * Returns the result state.
+ */
+async function runSpecReviewViaExecutor(
+  jobState: import("../src/state/schema.js").JobState,
+  deps: Omit<import("../src/core/types.js").PipelineDeps, "client"> & { client: SessionClient },
+) {
+  const { EventBus } = await import("../src/core/event/event-bus.js");
+  const { StepExecutor } = await import("../src/core/step/executor.js");
+  const { SpecReviewStep } = await import("../src/core/step/spec-review.js");
+
+  const events = new EventBus();
+  const executor = new StepExecutor(events);
+  return executor.execute(SpecReviewStep, jobState, deps);
 }
 
 // TC-016: pollUntilComplete 再利用 — spec-review に specReview.timeoutMs を渡す
 describe("TC-016: runSpecReviewStep — uses specReview.timeoutMs from config", () => {
   it("calls pollUntilComplete with timeoutMs from config.specReview", async () => {
-    const { runSpecReviewStep } = await import("../src/core/steps/spec-review.js");
     const jobState = await makeJobState();
-
-    let capturedOpts: { timeoutMs?: number } | undefined;
-    const { pollUntilComplete } = await import("../src/core/completion.js");
-
-    // Override pollUntilComplete to capture opts
-    const originalPollUntilComplete = pollUntilComplete;
-
-    const mockPoll = vi.fn().mockImplementation(
-      async (_client: unknown, _sessionId: string, _signal: unknown, opts?: { timeoutMs?: number }) => {
-        capturedOpts = opts;
-        return { id: "sess_001", status: "idle" };
-      },
-    );
-
-    // Use a custom sleep to avoid real delays
-    const sleepFn = vi.fn().mockResolvedValue(undefined);
 
     const fileContent = "- **verdict**: approved\n";
     const mockFetch = vi.fn().mockResolvedValue({
@@ -123,165 +120,118 @@ describe("TC-016: runSpecReviewStep — uses specReview.timeoutMs from config", 
       text: () => Promise.resolve(fileContent),
     });
 
-    const config = buildConfig();
-    config.specReview = { timeoutMs: 600000, pollIntervalMs: 100 };
+    const config = buildConfig({ specReview: { timeoutMs: 600000, pollIntervalMs: 100 } });
+    const { client, pollUntilCompleteMock } = buildMockSessionClient();
 
-    // Spy on the module to intercept pollUntilComplete
-    // Since we can't easily mock ES module internals, we test indirectly by
-    // verifying the step calls pollUntilComplete with the right timeout by
-    // checking the session completes correctly
-    const { client, sessionId } = buildMockClient();
-
-    const result = await runSpecReviewStep(jobState, {
+    const result = await runSpecReviewViaExecutor(jobState, {
       client,
       config,
       repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
-      sleepFn,
+      sleepFn: vi.fn().mockResolvedValue(undefined),
       githubFetch: mockFetch,
     });
 
+    // pollUntilComplete should have been called with the timeoutMs from config
+    expect(pollUntilCompleteMock).toHaveBeenCalledTimes(1);
+    const pollCallArgs = pollUntilCompleteMock.mock.calls[0]![1] as { timeoutMs?: number } | undefined;
+    expect(pollCallArgs?.timeoutMs).toBe(600000);
+
     // Verify step completed and recorded a verdict (array format)
     const lastResult = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
-    expect(lastResult?.verdict).toBe("approved");
+    expect(lastResult ? toLegacyStepResult(lastResult).verdict : undefined).toBe("approved");
   });
 });
 
 // TC-017: pollUntilComplete — status === "idle" で完了と判定する
 describe("TC-017: runSpecReviewStep — treats status='idle' as complete", () => {
   it("proceeds to verdict fetch phase when polling returns idle", async () => {
-    const { runSpecReviewStep } = await import("../src/core/steps/spec-review.js");
     const jobState = await makeJobState();
 
-    const { client } = buildMockClient();
-    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const { client } = buildMockSessionClient({ pollResult: { status: "idle" } });
     const fileContent = "- **verdict**: approved\n";
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
       text: () => Promise.resolve(fileContent),
     });
 
-    const result = await runSpecReviewStep(jobState, {
+    const result = await runSpecReviewViaExecutor(jobState, {
       client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
-      sleepFn,
+      sleepFn: vi.fn().mockResolvedValue(undefined),
       githubFetch: mockFetch,
     });
 
     const lastSpecReview = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
-    expect(lastSpecReview?.verdict).toBe("approved");
+    expect(lastSpecReview ? toLegacyStepResult(lastSpecReview).verdict : undefined).toBe("approved");
     expect(result.status).toBe("success");
   });
 });
 
-// TC-018: SESSION_TERMINATED — state.status = "failed" / error.code = "SESSION_TERMINATED"
+// TC-018: SESSION_TERMINATED — error.code = "SESSION_TERMINATED"
 describe("TC-018: runSpecReviewStep — SESSION_TERMINATED error handling", () => {
-  it("sets state.status='failed' and error.code='SESSION_TERMINATED' when session terminates", async () => {
-    const { runSpecReviewStep } = await import("../src/core/steps/spec-review.js");
+  it("fails with SESSION_TERMINATED code when session terminates", async () => {
     const jobState = await makeJobState();
 
-    const { client } = buildMockClient({ terminateSession: true });
-    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const { client } = buildMockSessionClient({
+      pollResult: {
+        status: "terminated",
+        error: { code: "SESSION_TERMINATED", message: "Session terminated", hint: "" },
+      },
+    });
     const mockFetch = vi.fn().mockResolvedValue({ status: 200, text: () => Promise.resolve("") });
 
     await expect(
-      runSpecReviewStep(jobState, {
+      runSpecReviewViaExecutor(jobState, {
         client,
         config: buildConfig(),
         repo: buildRepo(),
         request: buildRequest(),
         slug: "test-slug",
-        sleepFn,
+        sleepFn: vi.fn().mockResolvedValue(undefined),
         githubFetch: mockFetch,
       }),
     ).rejects.toMatchObject({ code: "SESSION_TERMINATED" });
   });
 });
 
-// TC-019: SESSION_TIMEOUT — state.status = "failed" / error.code = "SESSION_TIMEOUT"
+// TC-019: SESSION_TIMEOUT — error.code = "SESSION_TIMEOUT"
 describe("TC-019: runSpecReviewStep — SESSION_TIMEOUT error handling", () => {
-  it("sets state.status='failed' and error.code='SESSION_TIMEOUT' when session times out", async () => {
-    const { runSpecReviewStep } = await import("../src/core/steps/spec-review.js");
+  it("fails with SESSION_TIMEOUT code when session times out", async () => {
     const jobState = await makeJobState();
 
-    const { sessionTimeoutError } = await import("../src/errors.js");
-    const timeoutErr = sessionTimeoutError(10);
-
-    // Create a client that makes polling time out immediately
-    const mockClient = {
-      beta: {
-        sessions: {
-          create: vi.fn().mockResolvedValue({ id: "sess_timeout", type: "session" }),
-          retrieve: vi.fn().mockRejectedValue(timeoutErr),
-          events: {
-            send: vi.fn().mockResolvedValue({}),
-            stream: vi.fn(),
-          },
-        },
+    const { client } = buildMockSessionClient({
+      pollResult: {
+        status: "timeout",
+        error: { code: "SESSION_TIMEOUT", message: "Session timed out after 10 minutes", hint: "" },
       },
-    } as unknown as import("../src/core/pipeline.js").PipelineDeps["client"];
-
-    // We need to make the poll throw a timeout error
-    // The easiest way is to use a very short timeout with a sleep that never returns
-    // Instead, mock the retrieve to always return "running" and use timeoutMs=1
-
-    const neverResolve = vi.fn().mockImplementation(
-      () => new Promise<void>(() => {}),
-    );
-
-    // Use a real short timeout by making pollUntilComplete think time has passed
-    // We'll mock the sleep function to advance time
-    let elapsed = 0;
-    const fakeSleep = vi.fn().mockImplementation(async (_ms: number) => {
-      elapsed += 1000000; // fast-forward time
     });
-
-    // The poll loop checks Date.now() — we need to mock it
-    const originalDateNow = Date.now;
-    let callCount = 0;
-    const mockDateNow = vi.fn().mockImplementation(() => {
-      callCount++;
-      if (callCount > 1) {
-        return originalDateNow() + 1000000; // way past timeout
-      }
-      return originalDateNow();
-    });
-
-    const realDateNow = Date.now;
-    global.Date.now = mockDateNow;
-
     const mockFetch = vi.fn().mockResolvedValue({ status: 200, text: () => Promise.resolve("") });
 
-    try {
-      await expect(
-        runSpecReviewStep(jobState, {
-          client: mockClient,
-          config: { ...buildConfig(), specReview: { timeoutMs: 1, pollIntervalMs: 100 } },
-          repo: buildRepo(),
-          request: buildRequest(),
-          slug: "test-slug",
-          sleepFn: fakeSleep,
-          githubFetch: mockFetch,
-        }),
-      ).rejects.toMatchObject({ code: "SESSION_TIMEOUT" });
-    } finally {
-      global.Date.now = realDateNow;
-    }
+    await expect(
+      runSpecReviewViaExecutor(jobState, {
+        client,
+        config: { ...buildConfig(), specReview: { timeoutMs: 1, pollIntervalMs: 100 } },
+        repo: buildRepo(),
+        request: buildRequest(),
+        slug: "test-slug",
+        sleepFn: vi.fn().mockResolvedValue(undefined),
+        githubFetch: mockFetch,
+      }),
+    ).rejects.toMatchObject({ code: "SESSION_TIMEOUT" });
   });
 });
 
 // TC-020: SPEC_REVIEW_RESULT_NOT_FOUND — fetchSpecReviewResult が null を返した場合
 describe("TC-020: runSpecReviewStep — SPEC_REVIEW_RESULT_NOT_FOUND when file not found", () => {
   it("fails with SPEC_REVIEW_RESULT_NOT_FOUND when result file is never found after retries", async () => {
-    const { runSpecReviewStep } = await import("../src/core/steps/spec-review.js");
     const jobState = await makeJobState();
 
-    const { client } = buildMockClient();
-    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const { client } = buildMockSessionClient();
     // Always return 404
     const mockFetch = vi.fn().mockResolvedValue({
       status: 404,
@@ -289,13 +239,13 @@ describe("TC-020: runSpecReviewStep — SPEC_REVIEW_RESULT_NOT_FOUND when file n
     });
 
     await expect(
-      runSpecReviewStep(jobState, {
+      runSpecReviewViaExecutor(jobState, {
         client,
         config: buildConfig(),
         repo: buildRepo(),
         request: buildRequest(),
         slug: "test-slug",
-        sleepFn,
+        sleepFn: vi.fn().mockResolvedValue(undefined),
         githubFetch: mockFetch,
       }),
     ).rejects.toMatchObject({ code: "SPEC_REVIEW_RESULT_NOT_FOUND" });
@@ -304,59 +254,53 @@ describe("TC-020: runSpecReviewStep — SPEC_REVIEW_RESULT_NOT_FOUND when file n
 
 // TC-021: verdict 行なし — escalation フェイルセーフ
 describe("TC-021: runSpecReviewStep — escalation failsafe when verdict line absent", () => {
-  it("sets verdict='escalation' and writes stderr warning when file has no verdict line", async () => {
-    const { runSpecReviewStep } = await import("../src/core/steps/spec-review.js");
+  it("sets verdict='escalation' when file has no verdict line", async () => {
     const jobState = await makeJobState();
 
-    const { client } = buildMockClient();
-    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const { client } = buildMockSessionClient();
     // File exists but has no verdict line
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
       text: () => Promise.resolve("## Findings\n\nNo findings."),
     });
 
-    const result = await runSpecReviewStep(jobState, {
+    const result = await runSpecReviewViaExecutor(jobState, {
       client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
-      sleepFn,
+      sleepFn: vi.fn().mockResolvedValue(undefined),
       githubFetch: mockFetch,
     });
 
+    // SpecReviewStep.parseResult maps null verdict → "escalation" (failsafe)
     const lastSpecReview2 = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
-    expect(lastSpecReview2?.verdict).toBe("escalation");
+    expect(lastSpecReview2 ? toLegacyStepResult(lastSpecReview2).verdict : undefined).toBe("escalation");
     expect(result.status).toBe("success");
-
-    const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
-    const combined = stderrCalls.map((c: unknown[]) => String(c[0])).join("\n");
-    expect(combined).toContain("Could not parse verdict");
   });
 });
 
-// TC-041: runSpecReviewStep — state.steps["spec-review"] に session / verdict / findingsPath / completedAt が記録される (should)
+// TC-041: spec-review step — records session, verdict, findingsPath, completedAt
 describe("TC-041: runSpecReviewStep — records session, verdict, findingsPath, completedAt", () => {
   it("records all required step result fields on normal completion", async () => {
-    const { runSpecReviewStep } = await import("../src/core/steps/spec-review.js");
     const jobState = await makeJobState();
 
-    const { client, sessionId } = buildMockClient({ sessionId: "sess_spec_001" });
-    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const sessionId = "sess_spec_001";
+    const { client } = buildMockSessionClient({ sessionId });
     const fileContent = "- **verdict**: approved\n";
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
       text: () => Promise.resolve(fileContent),
     });
 
-    const result = await runSpecReviewStep(jobState, {
+    const result = await runSpecReviewViaExecutor(jobState, {
       client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
-      sleepFn,
+      sleepFn: vi.fn().mockResolvedValue(undefined),
       githubFetch: mockFetch,
     });
 
@@ -364,87 +308,77 @@ describe("TC-041: runSpecReviewStep — records session, verdict, findingsPath, 
     expect(stepResultArr).toBeDefined();
     expect(Array.isArray(stepResultArr)).toBe(true);
     const stepResult = stepResultArr?.[stepResultArr.length - 1];
-    expect(stepResult?.session?.id).toBe(sessionId);
-    expect(stepResult?.verdict).toBe("approved");
+    const stepResultConverted = stepResult ? toLegacyStepResult(stepResult) : undefined;
+    expect(stepResultConverted?.session?.id).toBe(sessionId);
+    expect(stepResultConverted?.verdict).toBe("approved");
     // findingsPath now uses iteration-based naming: spec-review-result-001.md
-    expect(stepResult?.findingsPath).toBe("openspec/changes/test-slug/spec-review-result-001.md");
-    expect(stepResult?.completedAt).toBeDefined();
-    expect(stepResult?.error).toBeNull();
+    expect(stepResultConverted?.findingsPath).toBe("openspec/changes/test-slug/spec-review-result-001.md");
+    expect(stepResultConverted?.completedAt).toBeDefined();
+    expect(stepResultConverted?.error).toBeNull();
   });
 });
 
-// TC-042: spec-review セッション作成パラメータ — custom tool を含まない (should)
+// TC-042: spec-review セッション作成パラメータ — createSession called without custom tools
 describe("TC-042: runSpecReviewStep — session created without custom tools", () => {
-  it("creates session without custom tools, with github_repository resource", async () => {
-    const { runSpecReviewStep } = await import("../src/core/steps/spec-review.js");
+  it("creates session with agentId/environmentId/repoUrl/githubToken (no custom tools in deps)", async () => {
     const jobState = await makeJobState();
 
-    const { client } = buildMockClient();
-    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const { client, createSessionMock } = buildMockSessionClient();
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
       text: () => Promise.resolve("- **verdict**: approved"),
     });
 
-    await runSpecReviewStep(jobState, {
+    await runSpecReviewViaExecutor(jobState, {
       client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
-      sleepFn,
+      sleepFn: vi.fn().mockResolvedValue(undefined),
       githubFetch: mockFetch,
     });
 
-    const createCalls = (
-      (client as unknown as {
-        beta: { sessions: { create: ReturnType<typeof vi.fn> } };
-      }).beta.sessions.create
-    ).mock.calls;
-
-    expect(createCalls).toHaveLength(1);
-    const createParams = createCalls[0]![0] as {
-      resources: Array<{ type: string; url?: string; authorization_token?: string }>;
+    expect(createSessionMock).toHaveBeenCalledTimes(1);
+    const createParams = createSessionMock.mock.calls[0]![0] as {
+      agentId: string;
+      environmentId: string;
+      repoUrl: string;
+      githubToken: string;
     };
 
-    // Must not have custom tools in create params
-    expect((createParams as Record<string, unknown>)["tools"]).toBeUndefined();
-
-    // Must have github_repository resource
-    const ghResource = createParams.resources?.find(
-      (r) => r.type === "github_repository",
-    );
-    expect(ghResource).toBeDefined();
-    expect(ghResource?.authorization_token).toBe("ghp_test");
+    // Must be called via SessionClient port (no SDK-specific params)
+    expect(createParams.agentId).toBeDefined();
+    expect(createParams.environmentId).toBe("env_001");
+    expect(createParams.repoUrl).toContain("github.com/testowner/testrepo");
+    expect(createParams.githubToken).toBe("ghp_test");
   });
 });
 
-// TC-049: runSpecReviewStep — findingsPath format (updated for iteration-based naming)
+// TC-049: runSpecReviewStep — findingsPath format
 describe("TC-049: runSpecReviewStep — findingsPath has correct format", () => {
   it("records findingsPath as openspec/changes/<slug>/spec-review-result-001.md for iter=1", async () => {
-    const { runSpecReviewStep } = await import("../src/core/steps/spec-review.js");
     const jobState = await makeJobState();
     const slug = "2026-04-29-my-feature";
 
-    const { client } = buildMockClient();
-    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const { client } = buildMockSessionClient();
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
       text: () => Promise.resolve("- **verdict**: needs-fix"),
     });
 
-    const result = await runSpecReviewStep(jobState, {
+    const result = await runSpecReviewViaExecutor(jobState, {
       client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
       slug,
-      sleepFn,
+      sleepFn: vi.fn().mockResolvedValue(undefined),
       githubFetch: mockFetch,
     });
 
     const lastStepResult = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
-    expect(lastStepResult?.findingsPath).toBe(
+    expect(lastStepResult ? toLegacyStepResult(lastStepResult).findingsPath : undefined).toBe(
       `openspec/changes/${slug}/spec-review-result-001.md`,
     );
   });

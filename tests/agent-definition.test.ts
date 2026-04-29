@@ -8,10 +8,6 @@ beforeEach(() => {
 // TC-070: Agent 定義ハッシュ — 同一定義は同一ハッシュ
 describe("TC-070: Agent definition hash — same definition produces same hash", () => {
   it("computeDefinitionHash returns identical hash on repeated calls", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     const { buildAgentDefinition, computeDefinitionHash } = await import(
       "../src/core/agent-definition.js"

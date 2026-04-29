@@ -1,4 +1,5 @@
-import type Anthropic from "@anthropic-ai/sdk";
+import type { SessionClient } from "./port/session-client.js";
+import type { GitHubClient } from "./port/github-client.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import type { OriginInfo } from "../git/remote.js";
 import type { ParsedRequest } from "../parser/request-md.js";
@@ -9,7 +10,7 @@ import type { ParsedRequest } from "../parser/request-md.js";
  * between pipeline.ts ↔ loop.ts ↔ steps/*.ts.
  */
 export interface PipelineDeps {
-  client: Anthropic;
+  client: SessionClient;
   config: SpecRunnerConfig;
   repo: OriginInfo;
   request: ParsedRequest;
@@ -17,6 +18,14 @@ export interface PipelineDeps {
   timeoutMs?: number;
   /** Injectable sleep for testing */
   sleepFn?: (ms: number) => Promise<void>;
-  /** Injectable fetch for GitHub API */
+  /**
+   * @deprecated Use githubClient instead.
+   * Injectable fetch for GitHub API (kept for backward compat with tests)
+   */
   githubFetch?: typeof fetch;
+  /**
+   * Optional GitHub client (port interface).
+   * When not provided, executor constructs one from githubFetch + config.github.accessToken.
+   */
+  githubClient?: GitHubClient;
 }

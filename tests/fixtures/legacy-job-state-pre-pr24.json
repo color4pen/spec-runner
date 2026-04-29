@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "jobId": "pre-pr24-job-id",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-02T00:00:00.000Z",
+  "request": {
+    "path": "/test/request.md",
+    "title": "Test Request",
+    "type": "new-feature"
+  },
+  "repository": {
+    "owner": "testowner",
+    "name": "testrepo"
+  },
+  "session": {
+    "id": "sess_pre_pr24",
+    "agentId": "agent_001",
+    "environmentId": "env_001"
+  },
+  "step": "success",
+  "status": "success",
+  "branch": "feat/2026-01-01-test-feature",
+  "history": [
+    {
+      "ts": "2026-01-01T00:00:00.000Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-01-01T00:01:00.000Z",
+      "step": "success",
+      "status": "ok",
+      "message": "Propose pipeline completed successfully"
+    }
+  ],
+  "error": null,
+  "steps": {
+    "propose": {
+      "sessionId": "s1",
+      "verdict": "approved",
+      "completedAt": "2026-01-01T00:05:00.000Z",
+      "findingsPath": null,
+      "error": null
+    }
+  }
+}

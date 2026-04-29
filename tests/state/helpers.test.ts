@@ -7,7 +7,7 @@
  * TC-047: verdict independence per iteration (should)
  */
 import { describe, it, expect } from "vitest";
-import { pushStepResult, getLatestStepResult } from "../../src/state/helpers.js";
+import { pushStepResult, getLatestStepResult, toLegacyStepResult } from "../../src/state/helpers.js";
 import type { JobState } from "../../src/state/schema.js";
 
 function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
@@ -47,8 +47,8 @@ describe("TC-020: pushStepResult — first push auto-assigns iteration=1", () =>
     const arr = updated.steps?.["spec-review"];
     expect(arr).toBeDefined();
     expect(arr?.length).toBe(1);
-    expect(arr?.[0]?.iteration).toBe(1);
-    expect(arr?.[0]?.verdict).toBe("approved");
+    expect(arr?.[0] ? toLegacyStepResult(arr[0]).iteration : undefined).toBe(1);
+    expect(arr?.[0] ? toLegacyStepResult(arr[0]).verdict : undefined).toBe("approved");
   });
 });
 
@@ -77,8 +77,8 @@ describe("TC-021: pushStepResult — second push auto-assigns iteration=2", () =
     const arr = state.steps?.["spec-review"];
     expect(arr).toBeDefined();
     expect(arr?.length).toBe(2);
-    expect(arr?.[1]?.iteration).toBe(2);
-    expect(arr?.[1]?.verdict).toBe("approved");
+    expect(arr?.[1] ? toLegacyStepResult(arr[1]).iteration : undefined).toBe(2);
+    expect(arr?.[1] ? toLegacyStepResult(arr[1]).verdict : undefined).toBe("approved");
   });
 });
 
@@ -142,8 +142,8 @@ describe("TC-047: verdict independence per iteration", () => {
     });
 
     const arr = state.steps?.["spec-review"];
-    expect(arr?.[0]?.verdict).toBe("needs-fix");
-    expect(arr?.[1]?.verdict).toBe("approved");
+    expect(arr?.[0] ? toLegacyStepResult(arr[0]).verdict : undefined).toBe("needs-fix");
+    expect(arr?.[1] ? toLegacyStepResult(arr[1]).verdict : undefined).toBe("approved");
   });
 
   it("does not mutate original state when pushing new result", () => {

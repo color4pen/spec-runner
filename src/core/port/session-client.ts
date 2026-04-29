@@ -1,0 +1,63 @@
+import type { CustomToolHandler } from "../tools/types.js";
+
+/**
+ * Port interface for interacting with an Anthropic Managed Agent session.
+ * Adapter (src/adapter/anthropic/) implements this; core never imports the adapter.
+ */
+export interface SessionClient {
+  /**
+   * Create a new managed agent session.
+   * Returns the session ID.
+   */
+  createSession(params: {
+    agentId: string;
+    environmentId: string;
+    repoUrl: string;
+    githubToken: string;
+  }): Promise<{ sessionId: string }>;
+
+  /**
+   * Send an initial user message to the session.
+   */
+  sendUserMessage(sessionId: string, text: string): Promise<void>;
+
+  /**
+   * Poll a session until it becomes idle (complete) or terminated/timeout.
+   * Uses exponential backoff with jitter.
+   *
+   * Returns status: idle = success, terminated = agent stopped, timeout = timed out.
+   */
+  pollUntilComplete(
+    sessionId: string,
+    opts?: {
+      timeoutMs?: number;
+      sleepFn?: (ms: number) => Promise<void>;
+      abortSignal?: AbortSignal;
+    },
+  ): Promise<{
+    status: "idle" | "terminated" | "timeout";
+    error?: { code: string; message: string; hint: string };
+  }>;
+
+  /**
+   * Connect via SSE, process events, and drive the session until it ends.
+   * Used by propose-style steps that need custom tool handling.
+   *
+   * Returns termination reason and any registered branch from tool callbacks.
+   */
+  streamEvents(
+    sessionId: string,
+    opts: {
+      requestContent: string;
+      toolHandlers?: Map<string, CustomToolHandler>;
+      onBranchRegistered?: (branch: string) => void;
+      onSseDisconnected?: () => void;
+      abortController?: AbortController;
+    },
+  ): Promise<{
+    sseDisconnected: boolean;
+    idleEndTurnDetected: boolean;
+    terminated: boolean;
+    terminationReason: "end_turn" | "terminated" | "sse_error" | "aborted" | "unknown";
+  }>;
+}

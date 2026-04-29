@@ -3,7 +3,6 @@ import { createAnthropicClient } from "../sdk/client.js";
 import { createAgent, retrieveAgent, updateAgent } from "../sdk/agents.js";
 import { createEnvironment, retrieveEnvironment } from "../sdk/environments.js";
 import { loadConfig, saveConfig } from "../config/store.js";
-import { bootstrapTools } from "../core/tools/index.js";
 import {
   buildAgentDefinition,
   buildSpecFixerAgentDefinition,
@@ -22,9 +21,6 @@ const ENVIRONMENT_PACKAGES_NPM = ["@fission-ai/openspec"];
 export async function runInit(options: {
   apiKey?: string;
 }): Promise<void> {
-  // Bootstrap tools (register all custom tools)
-  bootstrapTools();
-
   // Get API key
   const apiKey = options.apiKey ?? process.env["ANTHROPIC_API_KEY"];
   if (!apiKey) {

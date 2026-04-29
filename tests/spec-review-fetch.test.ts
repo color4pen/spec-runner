@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { fetchSpecReviewResult } from "../src/core/steps/spec-review.js";
+import { fetchSpecReviewResult } from "../src/core/step/spec-review.js";
 import type { PipelineDeps } from "../src/core/pipeline.js";
 
 function buildDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {

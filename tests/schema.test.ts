@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { validateJobState } from "../src/state/schema.js";
-import { pushStepResult } from "../src/state/helpers.js";
+import { pushStepResult, toLegacyStepResult } from "../src/state/helpers.js";
 import type { JobState } from "../src/state/schema.js";
 
 function makeMinimalV1State(): Record<string, unknown> {
@@ -64,13 +64,17 @@ describe("TC-024: pushStepResult — appends step result into state.steps", () =
       error: null,
     });
 
-    // steps["spec-review"] is now an array; check the last element
+    // steps["spec-review"] is now an array of StepRun; check the last element
     const lastResult = updated.steps?.["spec-review"]?.[updated.steps["spec-review"]!.length - 1];
     expect(lastResult).toMatchObject({
-      session,
-      verdict: "approved",
-      findingsPath: "openspec/changes/test-slug/spec-review-result.md",
-      completedAt: now,
+      attempt: 1,
+      sessionId: session.id,
+      outcome: {
+        verdict: "approved",
+        findingsPath: "openspec/changes/test-slug/spec-review-result.md",
+        error: null,
+      },
+      endedAt: now,
     });
   });
 
@@ -108,6 +112,6 @@ describe("TC-024: pushStepResult — appends step result into state.steps", () =
 
     expect(state.steps?.["propose"]).toBeDefined();
     const lastSpecReview = state.steps?.["spec-review"]?.[state.steps["spec-review"]!.length - 1];
-    expect(lastSpecReview?.verdict).toBe("approved");
+    expect(lastSpecReview ? toLegacyStepResult(lastSpecReview).verdict : undefined).toBe("approved");
   });
 });

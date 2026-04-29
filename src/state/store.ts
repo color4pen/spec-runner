@@ -3,8 +3,8 @@ import type { Dirent } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { getJobsDir, getJobStatePath } from "../util/xdg.js";
 import { atomicWriteJson } from "../util/atomic-write.js";
-import { validateJobState, appendHistoryEntry } from "./schema.js";
-import type { JobState, HistoryEntry, RequestInfo, RepositoryInfo, JobStatus, ErrorInfo } from "./schema.js";
+import { validateJobState } from "./schema.js";
+import type { JobState, RequestInfo, RepositoryInfo } from "./schema.js";
 import { stderrWrite } from "../logger/stdout.js";
 
 /**
@@ -44,6 +44,7 @@ export async function createJobState(params: {
 
 /**
  * Update job state fields and persist.
+ * @deprecated Use JobStateStore.update() instead.
  */
 export async function updateJobState(
   state: JobState,
@@ -59,19 +60,8 @@ export async function updateJobState(
 }
 
 /**
- * Append a history entry and persist.
- */
-export async function appendHistory(
-  state: JobState,
-  entry: HistoryEntry,
-): Promise<JobState> {
-  const updated = appendHistoryEntry(state, entry);
-  await persistJobState(updated);
-  return updated;
-}
-
-/**
  * Persist job state to disk atomically.
+ * @deprecated Use JobStateStore.persist() instead.
  */
 export async function persistJobState(state: JobState): Promise<void> {
   const filePath = getJobStatePath(state.jobId);
@@ -116,21 +106,3 @@ export async function listJobStates(): Promise<JobState[]> {
   return states;
 }
 
-/**
- * Mark a job as failed with error info.
- */
-export async function failJobState(
-  state: JobState,
-  errorInfo: ErrorInfo,
-  step?: string,
-): Promise<JobState> {
-  const updated: JobState = {
-    ...state,
-    status: "failed" as JobStatus,
-    updatedAt: new Date().toISOString(),
-    error: errorInfo,
-    step: step ?? state.step,
-  };
-  await persistJobState(updated);
-  return updated;
-}

@@ -62,22 +62,20 @@ function makeSuccessState(verdict: "approved" | "needs-fix" | "escalation"): Job
     steps: {
       "propose": [
         {
-          iteration: 1,
-          session: { id: "sess_propose", agentId: "agent_001", environmentId: "env_001" },
-          verdict: null,
-          findingsPath: null,
-          completedAt: "2026-01-01",
-          error: null,
+          attempt: 1,
+          sessionId: "sess_propose",
+          outcome: { verdict: null, findingsPath: null, error: null },
+          startedAt: "2026-01-01",
+          endedAt: "2026-01-01",
         },
       ],
       "spec-review": [
         {
-          iteration: 1,
-          session: { id: "sess_spec", agentId: "agent_001", environmentId: "env_001" },
-          verdict,
-          findingsPath: "openspec/changes/request/spec-review-result.md",
-          completedAt: "2026-01-01",
-          error: null,
+          attempt: 1,
+          sessionId: "sess_spec",
+          outcome: { verdict, findingsPath: "openspec/changes/request/spec-review-result.md", error: null },
+          startedAt: "2026-01-01",
+          endedAt: "2026-01-01",
         },
       ],
     },

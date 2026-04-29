@@ -5,6 +5,7 @@
  * TC-049: specrunner ps — reads legacy format in-memory, warns on stderr, does not write file (should)
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { toLegacyStepResult } from "../../src/state/helpers.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -81,9 +82,10 @@ describe("TC-019: validateJobState — normalizes legacy object steps to length-
     expect(specReviewArr?.length).toBe(1);
 
     const first = specReviewArr?.[0];
-    expect(first?.iteration).toBe(1);
-    expect(first?.verdict).toBe("approved");
-    expect(first?.findingsPath).toBe("openspec/changes/test/spec-review-result.md");
+    const firstConverted = first ? toLegacyStepResult(first) : undefined;
+    expect(firstConverted?.iteration).toBe(1);
+    expect(firstConverted?.verdict).toBe("approved");
+    expect(firstConverted?.findingsPath).toBe("openspec/changes/test/spec-review-result.md");
   });
 });
 
@@ -133,7 +135,8 @@ describe("TC-049: listJobStates — normalizes legacy format in-memory without r
     const specReviewArr = found?.steps?.["spec-review"];
     expect(Array.isArray(specReviewArr)).toBe(true);
     expect(specReviewArr?.length).toBe(1);
-    expect(specReviewArr?.[0]?.iteration).toBe(1);
+    const specReviewFirst = specReviewArr?.[0];
+    expect(specReviewFirst ? toLegacyStepResult(specReviewFirst).iteration : undefined).toBe(1);
 
     // File should NOT have been modified (read-only path)
     const afterContent = await fs.readFile(filePath, "utf-8");

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { getDefinitions } from "./tools/registry.js";
+import { registerBranchTool } from "./tools/register-branch.js";
 import { PROPOSE_SYSTEM_PROMPT } from "../prompts/propose-system.js";
 import { SPEC_FIXER_SYSTEM_PROMPT } from "../prompts/spec-fixer-system.js";
 
@@ -19,7 +19,8 @@ export function buildAgentDefinition() {
       {
         type: "agent_toolset_20260401" as const,
       },
-      ...getDefinitions(),
+      // Custom tools: register_branch is co-located with ProposeStep (D4)
+      registerBranchTool.definition,
     ],
   };
 }

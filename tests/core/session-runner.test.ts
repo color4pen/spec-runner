@@ -1,5 +1,5 @@
 /**
- * Unit tests for src/core/session-runner.ts
+ * Unit tests for src/adapter/anthropic/session-runner.ts
  * TC-051: runManagedAgentSession — session create → events.send → poll → idle (should)
  * TC-052: runManagedAgentSession — terminated → error.code=SESSION_TERMINATED (should)
  */
@@ -7,8 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { runManagedAgentSession } from "../../src/core/session-runner.js";
-import type { PipelineDeps } from "../../src/core/types.js";
+import { runManagedAgentSession } from "../../src/adapter/anthropic/session-runner.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -31,9 +30,14 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-function buildDeps(sessionStatus: "idle" | "terminated" = "idle"): PipelineDeps {
+/**
+ * Build a mock Anthropic client for session-runner tests.
+ * Adapter takes (client: Anthropic, input) directly.
+ */
+function buildMockClient(sessionStatus: "idle" | "terminated" = "idle") {
   const sessionId = "sess_managed_001";
   return {
+    sessionId,
     client: {
       beta: {
         sessions: {
@@ -45,17 +49,8 @@ function buildDeps(sessionStatus: "idle" | "terminated" = "idle"): PipelineDeps 
           },
         },
       },
-    } as unknown as PipelineDeps["client"],
-    config: {
-      version: 1,
-      anthropic: { apiKey: "sk-test" },
-      agent: { id: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" },
-      environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
-      github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
-    },
-    repo: { owner: "testowner", name: "testrepo" },
-    request: { type: "feature", title: "Test", content: "content", enabled: [] },
-    slug: "test-slug",
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any,
     sleepFn: vi.fn().mockResolvedValue(undefined),
   };
 }
@@ -63,9 +58,9 @@ function buildDeps(sessionStatus: "idle" | "terminated" = "idle"): PipelineDeps 
 // TC-051: runManagedAgentSession — session create → events.send → poll → idle
 describe("TC-051: runManagedAgentSession — idle completion returns {sessionId, status: 'idle'}", () => {
   it("calls sessions.create, events.send, and returns idle status", async () => {
-    const deps = buildDeps("idle");
+    const { client, sessionId, sleepFn } = buildMockClient("idle");
 
-    const result = await runManagedAgentSession(deps, {
+    const result = await runManagedAgentSession(client, {
       agentId: "agent_001",
       environmentId: "env_001",
       repo: { owner: "testowner", name: "testrepo" },
@@ -73,14 +68,15 @@ describe("TC-051: runManagedAgentSession — idle completion returns {sessionId,
       initialMessage: "Do the spec review.",
       timeoutMs: 60000,
       stepName: "spec-review",
+      sleepFn,
     });
 
-    expect(result.sessionId).toBe("sess_managed_001");
+    expect(result.sessionId).toBe(sessionId);
     expect(result.status).toBe("idle");
     expect(result.error).toBeUndefined();
 
     // Verify events.send was called once
-    const sendSpy = deps.client.beta.sessions.events?.send as ReturnType<typeof vi.fn>;
+    const sendSpy = client.beta.sessions.events?.send as ReturnType<typeof vi.fn>;
     expect(sendSpy).toHaveBeenCalledTimes(1);
   });
 });
@@ -88,9 +84,9 @@ describe("TC-051: runManagedAgentSession — idle completion returns {sessionId,
 // TC-052: runManagedAgentSession — terminated → error.code=SESSION_TERMINATED
 describe("TC-052: runManagedAgentSession — terminated session returns SESSION_TERMINATED error", () => {
   it("returns {status: 'terminated', error: {code: 'SESSION_TERMINATED'}} when session is terminated", async () => {
-    const deps = buildDeps("terminated");
+    const { client, sleepFn } = buildMockClient("terminated");
 
-    const result = await runManagedAgentSession(deps, {
+    const result = await runManagedAgentSession(client, {
       agentId: "agent_001",
       environmentId: "env_001",
       repo: { owner: "testowner", name: "testrepo" },
@@ -98,6 +94,7 @@ describe("TC-052: runManagedAgentSession — terminated session returns SESSION_
       initialMessage: "Do the spec review.",
       timeoutMs: 60000,
       stepName: "spec-review",
+      sleepFn,
     });
 
     expect(result.status).toBe("terminated");

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { toLegacyStepResult } from "../src/state/helpers.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -58,11 +59,11 @@ function buildRequest() {
 }
 
 /**
- * Build a mock client that supports multiple spec-review iterations.
+ * Build a mock SessionClient that supports multiple spec-review iterations.
  * Session order: sess1=propose, sess2=spec-fixer-1, sess3=spec-review-1,
  *                sess4=spec-fixer-2, sess5=spec-review-2, etc.
  *
- * For the simple cases (no spec-fixer needed), only 2 sessions are used.
+ * Implements the SessionClient port interface (not the raw Anthropic SDK).
  */
 function buildPipelineMockClient(opts: {
   proposeBranch?: string;
@@ -83,51 +84,36 @@ function buildPipelineMockClient(opts: {
     ],
   } = opts;
 
-  type MockEvent =
-    | { type: "agent.custom_tool_use"; id: string; name: string; input: Record<string, unknown> }
-    | { type: "session.status_idle"; stop_reason: { type: "end_turn" } }
-    | { type: "session.status_terminated" };
-
-  const proposeEvents: MockEvent[] = proposeFailure
-    ? [{ type: "session.status_terminated" }]
-    : [
-        {
-          type: "agent.custom_tool_use",
-          id: "ctu_001",
-          name: "register_branch",
-          input: { branch: proposeBranch },
-        },
-        { type: "session.status_idle", stop_reason: { type: "end_turn" } },
-      ];
-
-  async function* makeStream() {
-    for (const event of proposeEvents) {
-      yield event;
-    }
-  }
-
   let createCallCount = 0;
 
-  // Session retrieval always returns "idle" (spec-review and spec-fixer both complete normally)
   const client = {
-    beta: {
-      sessions: {
-        create: vi.fn().mockImplementation(() => {
-          const sessionId = sessionIds[createCallCount] ?? `sess_unknown_${createCallCount}`;
-          createCallCount++;
-          return Promise.resolve({ id: sessionId, type: "session" });
-        }),
-        retrieve: vi.fn().mockResolvedValue({
-          id: "sess_any",
-          status: "idle",
-          stop_reason: { type: "end_turn" },
-        }),
-        events: {
-          stream: vi.fn().mockReturnValue(makeStream()),
-          send: vi.fn().mockResolvedValue({}),
-        },
+    createSession: vi.fn().mockImplementation(() => {
+      const sessionId = sessionIds[createCallCount] ?? `sess_unknown_${createCallCount}`;
+      createCallCount++;
+      return Promise.resolve({ sessionId });
+    }),
+    sendUserMessage: vi.fn().mockResolvedValue(undefined),
+    pollUntilComplete: vi.fn().mockResolvedValue({ status: "idle" as const }),
+    streamEvents: vi.fn().mockImplementation(
+      (_sessionId: string, opts: { onBranchRegistered?: (b: string) => void }) => {
+        if (proposeFailure) {
+          return Promise.resolve({
+            sseDisconnected: false,
+            idleEndTurnDetected: false,
+            terminated: true,
+            terminationReason: "terminated" as const,
+          });
+        }
+        // Simulate register_branch tool call + end_turn
+        opts.onBranchRegistered?.(proposeBranch);
+        return Promise.resolve({
+          sseDisconnected: false,
+          idleEndTurnDetected: true,
+          terminated: false,
+          terminationReason: "end_turn" as const,
+        });
       },
-    },
+    ),
   };
 
   return {
@@ -172,10 +158,6 @@ function buildGithubFetch(
 // TC-010: runPipeline — iter=1 approved で spec-fixer を起動しない
 describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () => {
   it("returns status='success', steps['spec-review'] has 1 element with verdict=approved, no spec-fixer steps", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     const { runPipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
@@ -186,7 +168,7 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
     const githubFetch = buildGithubFetch(200, 200, ["approved"]);
 
     const result = await runPipeline(jobState, {
-      client: client as unknown as import("../src/core/pipeline.js").PipelineDeps["client"],
+      client: client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
@@ -202,13 +184,13 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
     expect(specReviewArr).toBeDefined();
     expect(specReviewArr?.length).toBe(1);
     const lastSpecReview = specReviewArr?.[specReviewArr.length - 1];
-    expect(lastSpecReview?.verdict).toBe("approved");
+    expect(lastSpecReview ? toLegacyStepResult(lastSpecReview).verdict : undefined).toBe("approved");
 
     // spec-fixer: not present
     expect(result.steps?.["spec-fixer"]).toBeUndefined();
 
     // Sessions: only propose (1) + spec-review (1) = 2 total
-    const createCalls = (client.beta.sessions.create as ReturnType<typeof vi.fn>).mock.calls;
+    const createCalls = (client.createSession as ReturnType<typeof vi.fn>).mock.calls;
     expect(createCalls.length).toBe(2);
   });
 });
@@ -216,10 +198,6 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
 // TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 approved
 describe("TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 approved", () => {
   it("returns status='success', spec-review has 2 entries, spec-fixer has 1 entry", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     const { runPipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
@@ -230,7 +208,7 @@ describe("TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 app
     const githubFetch = buildGithubFetch(200, 200, ["needs-fix", "approved"]);
 
     const result = await runPipeline(jobState, {
-      client: client as unknown as import("../src/core/pipeline.js").PipelineDeps["client"],
+      client: client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
@@ -245,8 +223,8 @@ describe("TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 app
     const specReviewArr = result.steps?.["spec-review"];
     expect(specReviewArr).toBeDefined();
     expect(specReviewArr?.length).toBe(2);
-    expect(specReviewArr?.[0]?.verdict).toBe("needs-fix");
-    expect(specReviewArr?.[1]?.verdict).toBe("approved");
+    expect(specReviewArr?.[0] ? toLegacyStepResult(specReviewArr[0]).verdict : undefined).toBe("needs-fix");
+    expect(specReviewArr?.[1] ? toLegacyStepResult(specReviewArr[1]).verdict : undefined).toBe("approved");
 
     // spec-fixer: 1 entry
     const specFixerArr = result.steps?.["spec-fixer"];
@@ -258,10 +236,6 @@ describe("TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 app
 // TC-012: runPipeline — retry 上限到達: escalation verdict + SPEC_REVIEW_RETRIES_EXHAUSTED
 describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RETRIES_EXHAUSTED", () => {
   it("sets error.code=SPEC_REVIEW_RETRIES_EXHAUSTED and escalation verdict on last spec-review", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     const { runPipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
@@ -273,7 +247,7 @@ describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RE
     const githubFetch = buildGithubFetch(200, 200, ["needs-fix", "needs-fix"]);
 
     const result = await runPipeline(jobState, {
-      client: client as unknown as import("../src/core/pipeline.js").PipelineDeps["client"],
+      client: client,
       config: buildConfig({ pipeline: { maxRetries: 2 } }),
       repo: buildRepo(),
       request: buildRequest(),
@@ -286,7 +260,8 @@ describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RE
     const specReviewArr = result.steps?.["spec-review"];
     expect(specReviewArr).toBeDefined();
     expect(specReviewArr?.length).toBe(2);
-    expect(specReviewArr?.[specReviewArr.length - 1]?.verdict).toBe("escalation");
+    const lastItem = specReviewArr?.[specReviewArr.length - 1];
+    expect(lastItem ? toLegacyStepResult(lastItem).verdict : undefined).toBe("escalation");
 
     // error code
     expect(result.error?.code).toBe("SPEC_REVIEW_RETRIES_EXHAUSTED");
@@ -299,10 +274,6 @@ describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RE
 // TC-013: runPipeline — iter=1 escalation で spec-fixer を起動しない
 describe("TC-013: runPipeline — escalation stops loop without invoking spec-fixer", () => {
   it("does not create spec-fixer steps when spec-review returns escalation", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     const { runPipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
@@ -311,7 +282,7 @@ describe("TC-013: runPipeline — escalation stops loop without invoking spec-fi
     const githubFetch = buildGithubFetch(200, 200, ["escalation"]);
 
     const result = await runPipeline(jobState, {
-      client: client as unknown as import("../src/core/pipeline.js").PipelineDeps["client"],
+      client: client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
@@ -326,11 +297,12 @@ describe("TC-013: runPipeline — escalation stops loop without invoking spec-fi
     // spec-review: 1 entry with escalation
     const specReviewArr = result.steps?.["spec-review"];
     expect(specReviewArr).toBeDefined();
-    const lastVerdict = specReviewArr?.[specReviewArr.length - 1]?.verdict;
+    const lastItem2 = specReviewArr?.[specReviewArr.length - 1];
+    const lastVerdict = lastItem2 ? toLegacyStepResult(lastItem2).verdict : undefined;
     expect(lastVerdict).toBe("escalation");
 
     // Only 2 sessions (propose + 1x spec-review)
-    const createCalls = (client.beta.sessions.create as ReturnType<typeof vi.fn>).mock.calls;
+    const createCalls = (client.createSession as ReturnType<typeof vi.fn>).mock.calls;
     expect(createCalls.length).toBe(2);
   });
 });
@@ -338,10 +310,6 @@ describe("TC-013: runPipeline — escalation stops loop without invoking spec-fi
 // TC-014: runPipeline — propose 失敗時に loop を起動しない
 describe("TC-014: runPipeline — spec-review loop skipped when propose fails", () => {
   it("does not create spec-review session when propose throws", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     const { runPipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
@@ -351,7 +319,7 @@ describe("TC-014: runPipeline — spec-review loop skipped when propose fails", 
     });
 
     const result = await runPipeline(jobState, {
-      client: client as unknown as import("../src/core/pipeline.js").PipelineDeps["client"],
+      client: client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
@@ -361,7 +329,7 @@ describe("TC-014: runPipeline — spec-review loop skipped when propose fails", 
     });
 
     // Only propose session was created
-    const createCalls = (client.beta.sessions.create as ReturnType<typeof vi.fn>).mock.calls;
+    const createCalls = (client.createSession as ReturnType<typeof vi.fn>).mock.calls;
     expect(createCalls.length).toBe(1);
 
     // result.status should be failed (propose failed)
@@ -372,10 +340,6 @@ describe("TC-014: runPipeline — spec-review loop skipped when propose fails", 
 // TC-015: runPipeline — 各 iteration でセッション ID が異なる (fresh-per-task)
 describe("TC-015: runPipeline — fresh session IDs per iteration", () => {
   it("spec-review iterations use different session IDs", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     const { runPipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
@@ -386,7 +350,7 @@ describe("TC-015: runPipeline — fresh session IDs per iteration", () => {
     const githubFetch = buildGithubFetch(200, 200, ["needs-fix", "approved"]);
 
     const result = await runPipeline(jobState, {
-      client: client as unknown as import("../src/core/pipeline.js").PipelineDeps["client"],
+      client: client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
@@ -399,8 +363,8 @@ describe("TC-015: runPipeline — fresh session IDs per iteration", () => {
     expect(specReviewArr).toBeDefined();
     expect(specReviewArr?.length).toBe(2);
 
-    const iter1SessionId = specReviewArr?.[0]?.session?.id;
-    const iter2SessionId = specReviewArr?.[1]?.session?.id;
+    const iter1SessionId = specReviewArr?.[0] ? toLegacyStepResult(specReviewArr[0]).session?.id : undefined;
+    const iter2SessionId = specReviewArr?.[1] ? toLegacyStepResult(specReviewArr[1]).session?.id : undefined;
 
     expect(iter1SessionId).toBeDefined();
     expect(iter2SessionId).toBeDefined();
@@ -411,10 +375,6 @@ describe("TC-015: runPipeline — fresh session IDs per iteration", () => {
 // TC-016: runPipeline — retries exhausted 時の stdout 出力
 describe("TC-016: runPipeline — stdout contains 'retries exhausted, escalating' when limit reached", () => {
   it("writes retries exhausted message to stdout", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     const { runPipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
@@ -431,7 +391,7 @@ describe("TC-016: runPipeline — stdout contains 'retries exhausted, escalating
     });
 
     await runPipeline(jobState, {
-      client: client as unknown as import("../src/core/pipeline.js").PipelineDeps["client"],
+      client: client,
       config: buildConfig({ pipeline: { maxRetries: 2 } }),
       repo: buildRepo(),
       request: buildRequest(),
@@ -448,10 +408,6 @@ describe("TC-016: runPipeline — stdout contains 'retries exhausted, escalating
 // TC-017: runPipeline — Pipeline finished サマリ行の出力
 describe("TC-017: runPipeline — Pipeline finished summary line in stdout", () => {
   it("outputs 'Pipeline finished' summary with iterations and verdict", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     const { runPipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
@@ -468,7 +424,7 @@ describe("TC-017: runPipeline — Pipeline finished summary line in stdout", () 
     });
 
     await runPipeline(jobState, {
-      client: client as unknown as import("../src/core/pipeline.js").PipelineDeps["client"],
+      client: client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
@@ -485,10 +441,6 @@ describe("TC-017: runPipeline — Pipeline finished summary line in stdout", () 
 // TC-018: runPipeline — needs-fix → approved のログ出力順 (should)
 describe("TC-018: runPipeline — stdout log order for needs-fix → approved path", () => {
   it("outputs iteration progress in correct order", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     const { runPipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
@@ -505,7 +457,7 @@ describe("TC-018: runPipeline — stdout log order for needs-fix → approved pa
     });
 
     await runPipeline(jobState, {
-      client: client as unknown as import("../src/core/pipeline.js").PipelineDeps["client"],
+      client: client,
       config: buildConfig({ pipeline: { maxRetries: 2 } }),
       repo: buildRepo(),
       request: buildRequest(),
@@ -539,10 +491,6 @@ describe("TC-018: runPipeline — stdout log order for needs-fix → approved pa
 // TC-050: state.step が loop 内で spec-fixer → spec-review へ更新される
 describe("TC-050: state.step updated: spec-fixer → spec-review within loop", () => {
   it("persisted state has step='spec-review' after spec-fixer completes", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     const { runPipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
@@ -553,7 +501,7 @@ describe("TC-050: state.step updated: spec-fixer → spec-review within loop", (
     const githubFetch = buildGithubFetch(200, 200, ["needs-fix", "approved"]);
 
     const result = await runPipeline(jobState, {
-      client: client as unknown as import("../src/core/pipeline.js").PipelineDeps["client"],
+      client: client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
@@ -583,10 +531,6 @@ describe("TC-050: state.step updated: spec-fixer → spec-review within loop", (
 // (Retained as persistence verification test)
 describe("TC-030: runPipeline — persistence: both propose and spec-review steps saved", () => {
   it("persists both propose and spec-review results in job state file", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     const { runPipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
@@ -597,7 +541,7 @@ describe("TC-030: runPipeline — persistence: both propose and spec-review step
     const stateFilePath = path.join(tempDir, "specrunner", "jobs", `${jobState.jobId}.json`);
 
     await runPipeline(jobState, {
-      client: client as unknown as import("../src/core/pipeline.js").PipelineDeps["client"],
+      client: client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),

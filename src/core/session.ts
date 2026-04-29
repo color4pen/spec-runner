@@ -1,20 +1,14 @@
-import type Anthropic from "@anthropic-ai/sdk";
-import {
-  streamEvents,
-  sendEvents,
-  isCustomToolUseEvent,
-  isStatusIdleEvent,
-  isStatusTerminatedEvent,
-  isEndTurnIdle,
-} from "../sdk/sessions.js";
-import { getHandler } from "./tools/registry.js";
-import { assertBreakAfterCompletion } from "./completion.js";
-import { buildInitialMessage } from "../prompts/propose-system.js";
-import { stderrWrite } from "../logger/stdout.js";
-import type { CustomToolContext } from "./tools/types.js";
+/**
+ * @deprecated Session logic is moving to src/adapter/anthropic/sse-stream.ts.
+ * This file is kept for backward-compatibility with tests that import startProposeSession.
+ *
+ * Uses the SessionClient port interface — no direct SDK calls.
+ */
+import type { SessionClient } from "./port/session-client.js";
+import type { CustomToolHandler } from "./tools/types.js";
 
 export interface SessionDeps {
-  client: Anthropic;
+  client: SessionClient;
   sessionId: string;
   agentId: string;
   environmentId: string;
@@ -22,6 +16,12 @@ export interface SessionDeps {
   onBranchRegistered?: (branch: string) => void;
   onSseDisconnected?: () => void;
   abortController?: AbortController;
+  /**
+   * Optional: per-step tool handlers map (D4 co-location).
+   * When provided, takes precedence over the global registry for tool dispatch.
+   * Falls back to global registry (getHandler) for backward compatibility.
+   */
+  toolHandlers?: Map<string, CustomToolHandler>;
 }
 
 export type TerminationReason =
@@ -41,107 +41,27 @@ export interface SessionResult {
 
 /**
  * Start the propose session over SSE.
- * Connects to SSE stream first, then sends initial message.
- * Handles custom_tool_use events and dispatches to registry handlers.
- * Breaks on idle+end_turn or terminated.
+ * Delegates to SessionClient.streamEvents which wraps all SSE logic.
  *
  * Returns result indicating whether SSE disconnected (fallback needed).
+ *
+ * @deprecated Use AnthropicSessionClient.streamEvents (via StepExecutor) instead.
  */
 export async function startProposeSession(deps: SessionDeps): Promise<SessionResult> {
-  const { client, sessionId, requestContent } = deps;
+  const { client, sessionId, requestContent, toolHandlers, onBranchRegistered, onSseDisconnected, abortController } = deps;
 
-  const ctx: CustomToolContext = { sessionId };
-
-  let sseDisconnected = false;
-  let idleEndTurnDetected = false;
-  let terminated = false;
-
-  // 1. Connect to SSE stream BEFORE sending initial message
-  let stream: Awaited<ReturnType<typeof streamEvents>>;
-  try {
-    stream = await streamEvents(client, sessionId);
-  } catch (err) {
-    sseDisconnected = true;
-    stderrWrite("SSE disconnected; falling back to polling.");
-    deps.onSseDisconnected?.();
-    return { sseDisconnected, idleEndTurnDetected, terminated, terminationReason: "sse_error" };
-  }
-
-  // 2. Send initial message
-  const initialMessage = buildInitialMessage(requestContent);
-  await sendEvents(client, sessionId, {
-    events: [
-      {
-        type: "user.message",
-        content: [{ type: "text", text: initialMessage }],
-      },
-    ],
+  const result = await client.streamEvents(sessionId, {
+    requestContent,
+    toolHandlers,
+    onBranchRegistered,
+    onSseDisconnected,
+    abortController,
   });
 
-  // 3. Process SSE events
-  let terminationReason: TerminationReason = "unknown";
-  try {
-    for await (const event of stream) {
-      // Check abort signal
-      if (deps.abortController?.signal.aborted) {
-        terminationReason = "aborted";
-        break;
-      }
-
-      if (isCustomToolUseEvent(event)) {
-        // Dispatch to registry handler
-        const handler = getHandler(event.name);
-        let result: { ok: boolean; [key: string]: unknown };
-
-        if (!handler) {
-          result = { ok: false, error: `Unknown tool: ${event.name}` };
-        } else {
-          const handlerResult = await handler(event.input, ctx);
-          result = handlerResult;
-
-          // If this is register_branch, notify callback
-          if (event.name === "register_branch" && result.ok && typeof result["branch"] === "string") {
-            deps.onBranchRegistered?.(result["branch"] as string);
-          }
-        }
-
-        // Send tool result back
-        await sendEvents(client, sessionId, {
-          events: [
-            {
-              type: "user.custom_tool_result",
-              custom_tool_use_id: event.id,
-              content: [
-                {
-                  type: "text",
-                  text: JSON.stringify(result),
-                },
-              ],
-            },
-          ],
-        });
-
-      } else if (isStatusIdleEvent(event)) {
-        if (isEndTurnIdle(event)) {
-          // CRITICAL: must break here (feedback_sse_break_after_completion)
-          assertBreakAfterCompletion(event);
-          idleEndTurnDetected = true;
-          terminationReason = "end_turn";
-          break;
-        }
-        // requires_action — continue waiting for more tool results
-      } else if (isStatusTerminatedEvent(event)) {
-        terminated = true;
-        terminationReason = "terminated";
-        break;
-      }
-    }
-  } catch (err) {
-    sseDisconnected = true;
-    terminationReason = "sse_error";
-    stderrWrite("SSE disconnected; falling back to polling.");
-    deps.onSseDisconnected?.();
-  }
-
-  return { sseDisconnected, idleEndTurnDetected, terminated, terminationReason };
+  return {
+    sseDisconnected: result.sseDisconnected,
+    idleEndTurnDetected: result.idleEndTurnDetected,
+    terminated: result.terminated,
+    terminationReason: result.terminationReason,
+  };
 }

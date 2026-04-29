@@ -74,10 +74,6 @@ function buildMockSdk(opts: {
 // TC-057: specrunner init — 初回実行（config 未作成）
 describe("TC-057: specrunner init — first run, no existing config", () => {
   it("creates Agent and Environment, saves config with 0600 permissions", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     currentMockSdk = buildMockSdk({});
 
@@ -125,10 +121,6 @@ describe("TC-058: specrunner init — no API key exits with error", () => {
 // TC-059: specrunner init — 既存 Agent/Environment で差分なし（冪等）
 describe("TC-059: specrunner init — idempotent when agent hash matches", () => {
   it("does not create new agents when both propose and specFixer hashes match existing", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     // Compute current hashes so we can pre-populate config
     const { computeDefinitionHash, buildAgentDefinition, buildSpecFixerAgentDefinition } = await import(
@@ -202,10 +194,6 @@ describe("TC-059: specrunner init — idempotent when agent hash matches", () =>
 // TC-060: specrunner init — Agent 定義に差分がある場合 agents.update
 describe("TC-060: specrunner init — calls agents.update when hash differs", () => {
   it("calls agents.update when existing hash differs from current", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     // Pre-populate config with a DIFFERENT (stale) hash
     const configDir = path.join(tempDir, "specrunner");
@@ -236,10 +224,6 @@ describe("TC-060: specrunner init — calls agents.update when hash differs", ()
 // TC-061: specrunner init — Environment 作成失敗時に Agent を rollback
 describe("TC-061: specrunner init — Agent rollback on Environment creation failure", () => {
   it("archives newly created agent when environment creation fails", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     // No existing config — fresh init
     currentMockSdk = buildMockSdk({

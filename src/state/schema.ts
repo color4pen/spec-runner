@@ -38,6 +38,36 @@ export interface ErrorInfo {
   hint: string;
 }
 
+// ---------------------------------------------------------------------------
+// StepRun — new schema (D1). Replaces StepResult[] in JobStateStore.
+// ---------------------------------------------------------------------------
+
+/**
+ * Outcome of a single step execution.
+ */
+export interface StepOutcome {
+  verdict: Verdict | null;
+  findingsPath: string | null;
+  /** Raw file content for the result file (e.g. spec-review-result.md). Optional. */
+  fileContent?: string | null;
+  error: ErrorInfo | null;
+}
+
+/**
+ * StepRun records a single execution attempt of a named step.
+ * Replaces StepResult[] for new state files.
+ */
+export interface StepRun {
+  /** 1-origin attempt number within this step. Auto-assigned. */
+  attempt: number;
+  sessionId: string | null;
+  outcome: StepOutcome;
+  /** ISO 8601 timestamp when this attempt started. */
+  startedAt: string;
+  /** ISO 8601 timestamp when this attempt ended. */
+  endedAt: string;
+}
+
 export interface StepResult {
   /** 1-origin iteration number within the step. Auto-assigned by pushStepResult. */
   iteration: number;
@@ -64,7 +94,7 @@ export interface JobState {
   history: HistoryEntry[];
   error: ErrorInfo | null;
   /** Step-level results journal (array per step for iteration tracking). Optional for backward compat with v1 files. */
-  steps?: Record<string, StepResult[]>;
+  steps?: Record<string, StepRun[]>;
 }
 
 export const MAX_HISTORY_SIZE = 100;
@@ -86,27 +116,71 @@ export function appendHistoryEntry(state: JobState, entry: HistoryEntry): JobSta
 }
 
 /**
- * Normalize a steps record: convert any legacy object-form step results to arrays.
- * This handles backward compatibility with pre-array-format state files.
+ * Normalize a steps record: convert any legacy format to StepRun[].
+ * Handles:
+ *   - Missing or null steps → {}
+ *   - Pre-array (plain object per step) → [StepRun]
+ *   - StepResult[] (iteration/session shape) → StepRun[]
+ *   - StepRun[] (current shape) → StepRun[] (passthrough)
  */
-function normalizeSteps(steps: unknown): Record<string, StepResult[]> {
+function normalizeSteps(steps: unknown): Record<string, StepRun[]> {
   if (typeof steps !== "object" || steps === null) {
     return {};
   }
-  const result: Record<string, StepResult[]> = {};
+  const result: Record<string, StepRun[]> = {};
+  const fallbackTs = new Date().toISOString();
+
   for (const [key, value] of Object.entries(steps as Record<string, unknown>)) {
-    if (Array.isArray(value)) {
-      // Already array form — use as-is (ensure iteration field exists)
-      result[key] = (value as StepResult[]).map((item, idx) => {
-        if (item.iteration != null) return item;
-        return { ...item, iteration: idx + 1 };
-      });
-    } else if (typeof value === "object" && value !== null) {
-      // Legacy object form — wrap in array with iteration=1
-      result[key] = [{ iteration: 1, ...(value as Omit<StepResult, "iteration">) }];
+    if (!Array.isArray(value)) {
+      if (typeof value === "object" && value !== null) {
+        // Pre-array: single plain object → wrap as StepRun with attempt=1
+        result[key] = [legacyObjectToStepRun(value as Record<string, unknown>, 1, fallbackTs)];
+      }
+      continue;
     }
+
+    // Array form: each element may be StepRun or legacy StepResult
+    result[key] = (value as unknown[]).map((item, idx) => {
+      if (typeof item !== "object" || item === null) return null;
+      const obj = item as Record<string, unknown>;
+      // StepRun has `attempt` + `outcome`; StepResult has `iteration` or `verdict` at top level
+      if ("attempt" in obj && "outcome" in obj) {
+        return obj as unknown as StepRun;
+      }
+      // Legacy StepResult shape
+      return legacyObjectToStepRun(obj, idx + 1, fallbackTs);
+    }).filter((r): r is StepRun => r !== null);
   }
   return result;
+}
+
+/**
+ * Convert a legacy StepResult-shaped plain object to StepRun.
+ */
+function legacyObjectToStepRun(
+  obj: Record<string, unknown>,
+  attempt: number,
+  fallbackTs: string,
+): StepRun {
+  const sessionId =
+    typeof obj["sessionId"] === "string"
+      ? obj["sessionId"]
+      : typeof obj["session"] === "object" && obj["session"] !== null
+        ? ((obj["session"] as Record<string, unknown>)["id"] as string | null) ?? null
+        : null;
+  const endedAt = (obj["completedAt"] as string | null) ?? fallbackTs;
+  return {
+    attempt,
+    sessionId,
+    outcome: {
+      verdict: (obj["verdict"] as StepRun["outcome"]["verdict"]) ?? null,
+      findingsPath: (obj["findingsPath"] as string | null) ?? null,
+      fileContent: (obj["fileContent"] as string | null) ?? null,
+      error: (obj["error"] as StepRun["outcome"]["error"]) ?? null,
+    },
+    startedAt: endedAt,
+    endedAt,
+  };
 }
 
 /**

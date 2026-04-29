@@ -1,9 +1,9 @@
 import * as path from "node:path";
 import { createAnthropicClient } from "../sdk/client.js";
+import { createAnthropicSessionClient } from "../adapter/anthropic/session-client.js";
 import { runPreflight } from "../core/preflight.js";
 import { createJobState } from "../state/store.js";
 import { runPipeline } from "../core/pipeline.js";
-import { bootstrapTools } from "../core/tools/index.js";
 import { logInfo, logError } from "../logger/stdout.js";
 import { SpecRunnerError } from "../errors.js";
 import type { JobState } from "../state/schema.js";
@@ -116,9 +116,6 @@ export async function runRunCore(
     }
   }
 
-  // Bootstrap tools
-  bootstrapTools();
-
   // Run fail-fast preflight checks
   let preflightResult: Awaited<ReturnType<typeof runPreflight>>;
   try {
@@ -134,7 +131,9 @@ export async function runRunCore(
   }
 
   const { config, repo, request } = preflightResult;
-  const client = createAnthropicClient(config.anthropic.apiKey);
+  // Composition root: create adapters and wire them into PipelineDeps
+  const anthropicClient = createAnthropicClient(config.anthropic.apiKey);
+  const client = createAnthropicSessionClient(anthropicClient);
 
   // Derive slug from request path (filename without extension)
   const slug = path.basename(absolutePath, ".md");

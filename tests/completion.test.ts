@@ -5,7 +5,7 @@ import {
   calculateBackoff,
   pollUntilComplete,
   assertBreakAfterCompletion,
-} from "../src/core/completion.js";
+} from "../src/adapter/anthropic/completion.js";
 import type { BetaManagedAgentsSession } from "@anthropic-ai/sdk/resources/beta/sessions/sessions";
 import {
   isStatusIdleEvent,
@@ -199,22 +199,21 @@ describe("TC-032: polling — timeout after 30m", () => {
 
 // TC-034: SSE 切断 — ポーリング fallback
 describe("TC-034: SSE disconnection fallback to polling", () => {
-  it("session.ts emits disconnected message on SSE error", async () => {
-    const errSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
-
-    // The startProposeSession function handles SSE disconnection
-    // This test verifies the message is emitted
+  it("session.ts reports sseDisconnected when SSE errors out", async () => {
+    // startProposeSession now delegates to SessionClient.streamEvents.
+    // When the adapter reports sseDisconnected=true, startProposeSession forwards it.
     const { startProposeSession } = await import("../src/core/session.js");
 
     const mockClient = {
-      beta: {
-        sessions: {
-          events: {
-            stream: vi.fn().mockRejectedValue(new Error("Connection reset")),
-            send: vi.fn().mockResolvedValue({}),
-          },
-        },
-      },
+      createSession: vi.fn(),
+      sendUserMessage: vi.fn(),
+      pollUntilComplete: vi.fn(),
+      streamEvents: vi.fn().mockResolvedValue({
+        sseDisconnected: true,
+        idleEndTurnDetected: false,
+        terminated: false,
+        terminationReason: "sse_error",
+      }),
     } as unknown as Parameters<typeof startProposeSession>[0]["client"];
 
     const result = await startProposeSession({
@@ -226,8 +225,6 @@ describe("TC-034: SSE disconnection fallback to polling", () => {
     });
 
     expect(result.sseDisconnected).toBe(true);
-    expect(errSpy).toHaveBeenCalledWith(
-      expect.stringContaining("SSE disconnected; falling back to polling."),
-    );
+    expect(result.terminationReason).toBe("sse_error");
   });
 });

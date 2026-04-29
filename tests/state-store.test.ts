@@ -5,7 +5,6 @@ import * as os from "node:os";
 import {
   createJobState,
   updateJobState,
-  appendHistory,
   listJobStates,
 } from "../src/state/store.js";
 import { appendHistoryEntry, MAX_HISTORY_SIZE } from "../src/state/schema.js";

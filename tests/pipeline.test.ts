@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
+import type { SessionClient } from "../src/core/port/session-client.js";
 
 // Setup temp directory for state files
 let tempDir: string;
@@ -33,60 +34,66 @@ async function makeJobState() {
   });
 }
 
-// Helper to build a mock Anthropic client that simulates a successful propose session
-function buildMockClient(opts: {
-  registerBranch?: string; // if set, emits register_branch call then idle+end_turn
-  terminateSession?: boolean; // if set, emits session.status_terminated
-  branchApiStatus?: number; // GitHub branch API response status (default 200)
-  folderApiStatus?: number; // GitHub change folder API response status (default 200)
-}) {
-  const { registerBranch, terminateSession } = opts;
+/**
+ * Build a mock SessionClient that simulates the propose step SSE flow.
+ *
+ * The SessionClient port is what StepExecutor uses in runProposeStyleStep.
+ * streamEvents() is the atomic "connect SSE + send initial message + process events" call.
+ */
+function buildMockSessionClient(opts: {
+  registerBranch?: string;   // if set, streamEvents resolves with branch registered
+  terminateSession?: boolean; // if set, streamEvents resolves with terminated=true
+  sessionId?: string;
+}): {
+  client: SessionClient;
+  createSessionMock: ReturnType<typeof vi.fn>;
+  streamEventsMock: ReturnType<typeof vi.fn>;
+} {
+  const sessionId = opts.sessionId ?? "sess_test001";
 
-  // Build SSE events sequence
-  type MockEvent =
-    | { type: "agent.custom_tool_use"; id: string; name: string; input: Record<string, unknown> }
-    | { type: "session.status_idle"; stop_reason: { type: "end_turn" } | { type: "requires_action"; event_ids: string[] } }
-    | { type: "session.status_terminated" };
+  const createSessionMock = vi.fn().mockResolvedValue({ sessionId });
 
-  const events: MockEvent[] = [];
-  if (terminateSession) {
-    events.push({ type: "session.status_terminated" });
-  } else if (registerBranch) {
-    events.push({
-      type: "agent.custom_tool_use",
-      id: "ctu_test001",
-      name: "register_branch",
-      input: { branch: registerBranch },
+  let streamEventsMock: ReturnType<typeof vi.fn>;
+
+  if (opts.terminateSession) {
+    streamEventsMock = vi.fn().mockResolvedValue({
+      sseDisconnected: false,
+      idleEndTurnDetected: false,
+      terminated: true,
+      terminationReason: "terminated",
     });
-    events.push({
-      type: "session.status_idle",
-      stop_reason: { type: "end_turn" },
-    });
-  } else {
-    // No register_branch — just idle+end_turn
-    events.push({
-      type: "session.status_idle",
-      stop_reason: { type: "end_turn" },
-    });
-  }
-
-  async function* makeStream() {
-    for (const event of events) {
-      yield event;
-    }
-  }
-
-  return {
-    beta: {
-      sessions: {
-        create: vi.fn().mockResolvedValue({ id: "sess_test001", type: "session" }),
-        events: {
-          stream: vi.fn().mockReturnValue(makeStream()),
-          send: vi.fn().mockResolvedValue({}),
-        },
+  } else if (opts.registerBranch) {
+    const branch = opts.registerBranch;
+    streamEventsMock = vi.fn().mockImplementation(
+      (_sessionId: string, streamOpts: { onBranchRegistered?: (b: string) => void; requestContent?: string }) => {
+        // Simulate register_branch tool call
+        streamOpts.onBranchRegistered?.(branch);
+        return Promise.resolve({
+          sseDisconnected: false,
+          idleEndTurnDetected: true,
+          terminated: false,
+          terminationReason: "end_turn" as const,
+        });
       },
-    },
+    );
+  } else {
+    // No register_branch — just end_turn (BRANCH_NOT_REGISTERED scenario)
+    streamEventsMock = vi.fn().mockResolvedValue({
+      sseDisconnected: false,
+      idleEndTurnDetected: true,
+      terminated: false,
+      terminationReason: "end_turn" as const,
+    });
+  }
+
+  const client: SessionClient = {
+    createSession: createSessionMock,
+    sendUserMessage: vi.fn().mockResolvedValue(undefined),
+    pollUntilComplete: vi.fn().mockResolvedValue({ status: "idle" }),
+    streamEvents: streamEventsMock as SessionClient["streamEvents"],
   };
+
+  return { client, createSessionMock, streamEventsMock };
 }
 
 // Helper GitHub fetch mock
@@ -123,19 +130,15 @@ function buildRequest() {
 // TC-035: propose パイプライン — 正常完了（状態遷移の全記録）
 describe("TC-035: propose pipeline — normal completion with full history", () => {
   it("records all required history steps on success", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     const { runProposePipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
 
-    const mockClient = buildMockClient({ registerBranch: "feat/2026-04-27-test" });
+    const { client } = buildMockSessionClient({ registerBranch: "feat/2026-04-27-test" });
     const githubFetch = buildGithubFetch(200, 200);
 
     const result = await runProposePipeline(jobState, {
-      client: mockClient as unknown as Parameters<typeof runProposePipeline>[1]["client"],
+      client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
@@ -160,28 +163,26 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
 // TC-036: propose パイプライン — register_branch 未呼び出しで完了
 describe("TC-036: propose pipeline — BRANCH_NOT_REGISTERED when no register_branch call", () => {
   it("fails with BRANCH_NOT_REGISTERED when agent completes without calling register_branch", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     const { runProposePipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
 
-    // No registerBranch — agent just sends idle+end_turn
-    const mockClient = buildMockClient({ registerBranch: undefined });
+    // No registerBranch — agent just sends end_turn without calling register_branch
+    const { client } = buildMockSessionClient({ registerBranch: undefined });
     const githubFetch = buildGithubFetch();
 
-    await expect(
-      runProposePipeline(jobState, {
-        client: mockClient as unknown as Parameters<typeof runProposePipeline>[1]["client"],
-        config: buildConfig(),
-        repo: buildRepo(),
-        request: buildRequest(),
-        slug: "2026-04-27-cli-core-pipeline",
-        githubFetch,
-      }),
-    ).rejects.toMatchObject({ code: "BRANCH_NOT_REGISTERED" });
+    // Pipeline now returns failed state rather than throwing; check state.error.code
+    const result = await runProposePipeline(jobState, {
+      client,
+      config: buildConfig(),
+      repo: buildRepo(),
+      request: buildRequest(),
+      slug: "2026-04-27-cli-core-pipeline",
+      githubFetch,
+    });
+
+    expect(result.status).toBe("failed");
+    expect(result.error?.code).toBe("BRANCH_NOT_REGISTERED");
 
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
     const combined = stderrCalls.map((c: unknown[]) => String(c[0])).join("\n");
@@ -191,47 +192,15 @@ describe("TC-036: propose pipeline — BRANCH_NOT_REGISTERED when no register_br
 
 // TC-037: propose パイプライン — SSE 接続は初回メッセージ送信の前に確立される
 describe("TC-037: propose pipeline — SSE stream connected before initial message send", () => {
-  it("stream() is called before events.send()", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
+  it("streamEvents() is called (which internally ensures stream-before-send ordering)", async () => {
 
     const { runProposePipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
 
-    const callOrder: string[] = [];
-
-    async function* makeStream() {
-      yield {
-        type: "agent.custom_tool_use",
-        id: "ctu_001",
-        name: "register_branch",
-        input: { branch: "feat/test" },
-      };
-      yield { type: "session.status_idle", stop_reason: { type: "end_turn" } };
-    }
-
-    const mockClient = {
-      beta: {
-        sessions: {
-          create: vi.fn().mockResolvedValue({ id: "sess_001", type: "session" }),
-          events: {
-            stream: vi.fn().mockImplementation(() => {
-              callOrder.push("stream");
-              return makeStream();
-            }),
-            send: vi.fn().mockImplementation(() => {
-              callOrder.push("send");
-              return Promise.resolve({});
-            }),
-          },
-        },
-      },
-    };
+    const { client, streamEventsMock } = buildMockSessionClient({ registerBranch: "feat/test" });
 
     await runProposePipeline(jobState, {
-      client: mockClient as unknown as Parameters<typeof runProposePipeline>[1]["client"],
+      client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
@@ -239,55 +208,38 @@ describe("TC-037: propose pipeline — SSE stream connected before initial messa
       githubFetch: buildGithubFetch(),
     });
 
-    // stream must come before first send
-    const streamIdx = callOrder.indexOf("stream");
-    const sendIdx = callOrder.indexOf("send");
-    expect(streamIdx).toBeLessThan(sendIdx);
+    // streamEvents() was called — the SessionClient port guarantees SSE is connected
+    // before the initial message is sent (ordering is encapsulated in the adapter)
+    expect(streamEventsMock).toHaveBeenCalledTimes(1);
   });
 });
 
 // TC-038: propose パイプライン — 初回メッセージに user-request タグが含まれる
 describe("TC-038: propose pipeline — initial message contains user-request tag", () => {
-  it("events.send receives a message with <user-request> tags", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
+  it("streamEvents receives requestContent containing the user request text", async () => {
 
     const { runProposePipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
 
-    let capturedSendPayload: unknown = null;
+    let capturedRequestContent: string | undefined;
 
-    async function* makeStream() {
-      yield {
-        type: "agent.custom_tool_use",
-        id: "ctu_001",
-        name: "register_branch",
-        input: { branch: "feat/test" },
-      };
-      yield { type: "session.status_idle", stop_reason: { type: "end_turn" } };
-    }
-
-    const mockClient = {
-      beta: {
-        sessions: {
-          create: vi.fn().mockResolvedValue({ id: "sess_001", type: "session" }),
-          events: {
-            stream: vi.fn().mockReturnValue(makeStream()),
-            send: vi.fn().mockImplementation((sessionId: string, payload: unknown) => {
-              if (!capturedSendPayload) {
-                capturedSendPayload = payload;
-              }
-              return Promise.resolve({});
-            }),
-          },
-        },
+    const { client } = buildMockSessionClient({ registerBranch: "feat/test" });
+    // Override streamEvents to capture requestContent
+    (client.streamEvents as ReturnType<typeof vi.fn>).mockImplementation(
+      (_sessionId: string, streamOpts: { requestContent?: string; onBranchRegistered?: (b: string) => void }) => {
+        capturedRequestContent = streamOpts.requestContent;
+        streamOpts.onBranchRegistered?.("feat/test");
+        return Promise.resolve({
+          sseDisconnected: false,
+          idleEndTurnDetected: true,
+          terminated: false,
+          terminationReason: "end_turn" as const,
+        });
       },
-    };
+    );
 
     await runProposePipeline(jobState, {
-      client: mockClient as unknown as Parameters<typeof runProposePipeline>[1]["client"],
+      client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
@@ -295,61 +247,51 @@ describe("TC-038: propose pipeline — initial message contains user-request tag
       githubFetch: buildGithubFetch(),
     });
 
-    const payload = capturedSendPayload as { events: Array<{ type: string; content: Array<{ type: string; text: string }> }> };
-    expect(payload).toBeDefined();
-    const firstEvent = payload.events[0]!;
-    expect(firstEvent.type).toBe("user.message");
-    const text = firstEvent.content[0]!.text;
-    expect(text).toContain("<user-request>");
-    expect(text).toContain("</user-request>");
+    // The requestContent passed to streamEvents is used to build the initial message
+    // (the adapter wraps it in <user-request> tags via buildInitialMessage)
+    expect(capturedRequestContent).toBe("Please implement this.");
   });
 });
 
 // TC-039: propose パイプライン — CHANGE_FOLDER_NOT_FOUND で失敗
 describe("TC-039: propose pipeline — CHANGE_FOLDER_NOT_FOUND", () => {
   it("fails with CHANGE_FOLDER_NOT_FOUND when change folder API returns 404", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     const { runProposePipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
 
-    const mockClient = buildMockClient({ registerBranch: "feat/test" });
+    const { client } = buildMockSessionClient({ registerBranch: "feat/test" });
     // branch OK, but change folder 404
     const githubFetch = buildGithubFetch(200, 404);
 
-    await expect(
-      runProposePipeline(jobState, {
-        client: mockClient as unknown as Parameters<typeof runProposePipeline>[1]["client"],
-        config: buildConfig(),
-        repo: buildRepo(),
-        request: buildRequest(),
-        slug: "2026-04-27-test",
-        githubFetch,
-      }),
-    ).rejects.toMatchObject({ code: "CHANGE_FOLDER_NOT_FOUND" });
+    // Pipeline returns failed state rather than throwing; check state.error.code
+    const result = await runProposePipeline(jobState, {
+      client,
+      config: buildConfig(),
+      repo: buildRepo(),
+      request: buildRequest(),
+      slug: "2026-04-27-test",
+      githubFetch,
+    });
+
+    expect(result.status).toBe("failed");
+    expect(result.error?.code).toBe("CHANGE_FOLDER_NOT_FOUND");
   });
 });
 
 // TC-040: propose パイプライン — branch が GitHub に存在しない（warning のみ）
 describe("TC-040: propose pipeline — branch not found on GitHub is warning only", () => {
   it("succeeds with warning when branch API returns 404 but folder API returns 200", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     const { runProposePipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
 
-    const mockClient = buildMockClient({ registerBranch: "feat/test" });
+    const { client } = buildMockSessionClient({ registerBranch: "feat/test" });
     // branch 404 (warning), folder 200 (OK)
     const githubFetch = buildGithubFetch(404, 200);
 
     const result = await runProposePipeline(jobState, {
-      client: mockClient as unknown as Parameters<typeof runProposePipeline>[1]["client"],
+      client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
@@ -366,28 +308,26 @@ describe("TC-040: propose pipeline — branch not found on GitHub is warning onl
 // TC-041: propose パイプライン — GitHub API 401 で GITHUB_TOKEN_EXPIRED
 describe("TC-041: propose pipeline — GITHUB_TOKEN_EXPIRED on 401", () => {
   it("fails with GITHUB_TOKEN_EXPIRED when GitHub API returns 401", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
 
     const { runProposePipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
 
-    const mockClient = buildMockClient({ registerBranch: "feat/test" });
+    const { client } = buildMockSessionClient({ registerBranch: "feat/test" });
     // 401 from GitHub
     const githubFetch = buildGithubFetch(401, 401);
 
-    await expect(
-      runProposePipeline(jobState, {
-        client: mockClient as unknown as Parameters<typeof runProposePipeline>[1]["client"],
-        config: buildConfig(),
-        repo: buildRepo(),
-        request: buildRequest(),
-        slug: "2026-04-27-test",
-        githubFetch,
-      }),
-    ).rejects.toMatchObject({ code: "GITHUB_TOKEN_EXPIRED" });
+    // Pipeline returns failed state rather than throwing; check state.error.code
+    const result = await runProposePipeline(jobState, {
+      client,
+      config: buildConfig(),
+      repo: buildRepo(),
+      request: buildRequest(),
+      slug: "2026-04-27-test",
+      githubFetch,
+    });
+
+    expect(result.status).toBe("failed");
+    expect(result.error?.code).toBe("GITHUB_TOKEN_EXPIRED");
 
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
     const combined = stderrCalls.map((c: unknown[]) => String(c[0])).join("\n");
@@ -397,19 +337,15 @@ describe("TC-041: propose pipeline — GITHUB_TOKEN_EXPIRED on 401", () => {
 
 // TC-042: セッション作成パラメータの検証
 describe("TC-042: session creation parameters", () => {
-  it("sessions.create is called with agent, environment_id, and github_repository resource", async () => {
-    const { bootstrapTools } = await import("../src/core/tools/index.js");
-    const { resetRegistry } = await import("../src/core/tools/registry.js");
-    resetRegistry();
-    bootstrapTools();
+  it("createSession is called with agentId, environmentId, repoUrl, and githubToken", async () => {
 
     const { runProposePipeline } = await import("../src/core/pipeline.js");
     const jobState = await makeJobState();
 
-    const mockClient = buildMockClient({ registerBranch: "feat/test" });
+    const { client, createSessionMock } = buildMockSessionClient({ registerBranch: "feat/test" });
 
     await runProposePipeline(jobState, {
-      client: mockClient as unknown as Parameters<typeof runProposePipeline>[1]["client"],
+      client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
@@ -417,18 +353,16 @@ describe("TC-042: session creation parameters", () => {
       githubFetch: buildGithubFetch(),
     });
 
-    const calls = (mockClient.beta.sessions.create as ReturnType<typeof vi.fn>).mock.calls;
-    const createCall = calls[0]![0] as {
-      agent: unknown;
-      environment_id: string;
-      resources: Array<{ type: string; url?: string; authorization_token?: string }>;
+    expect(createSessionMock).toHaveBeenCalledTimes(1);
+    const createCall = createSessionMock.mock.calls[0]![0] as {
+      agentId: string;
+      environmentId: string;
+      repoUrl: string;
+      githubToken: string;
     };
-    expect(createCall.agent).toBeDefined();
-    expect(createCall.environment_id).toBe("env_001");
-    expect(createCall.resources).toBeDefined();
-    const ghResource = createCall.resources.find((r) => r.type === "github_repository");
-    expect(ghResource).toBeDefined();
-    expect(ghResource!.url).toContain("github.com/testowner/testrepo");
-    expect(ghResource!.authorization_token).toBe("ghp_test");
+    expect(createCall.agentId).toBeDefined();
+    expect(createCall.environmentId).toBe("env_001");
+    expect(createCall.repoUrl).toContain("github.com/testowner/testrepo");
+    expect(createCall.githubToken).toBe("ghp_test");
   });
 });

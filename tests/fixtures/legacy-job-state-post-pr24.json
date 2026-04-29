@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "jobId": "post-pr24-job-id",
+  "createdAt": "2026-02-01T00:00:00.000Z",
+  "updatedAt": "2026-02-01T01:00:00.000Z",
+  "request": {
+    "path": "/test/request.md",
+    "title": "Test Request Post PR24",
+    "type": "refactoring"
+  },
+  "repository": {
+    "owner": "testowner",
+    "name": "testrepo"
+  },
+  "session": {
+    "id": "sess_post_pr24",
+    "agentId": "agent_001",
+    "environmentId": "env_001"
+  },
+  "step": "success",
+  "status": "success",
+  "branch": "feat/2026-02-01-test-refactor",
+  "history": [
+    {
+      "ts": "2026-02-01T00:00:00.000Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-02-01T01:00:00.000Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "Spec-review verdict: approved (iteration 2)"
+    }
+  ],
+  "error": null,
+  "steps": {
+    "propose": [
+      {
+        "iteration": 1,
+        "session": {
+          "id": "sess_propose_001",
+          "agentId": "agent_001",
+          "environmentId": "env_001"
+        },
+        "verdict": null,
+        "findingsPath": null,
+        "completedAt": "2026-02-01T00:10:00.000Z",
+        "error": null
+      }
+    ],
+    "spec-review": [
+      {
+        "iteration": 1,
+        "session": {
+          "id": "s1",
+          "agentId": "agent_001",
+          "environmentId": "env_001"
+        },
+        "verdict": "needs-fix",
+        "findingsPath": "openspec/changes/test/spec-review-result-001.md",
+        "completedAt": "2026-02-01T00:30:00.000Z",
+        "error": null
+      },
+      {
+        "iteration": 2,
+        "session": {
+          "id": "s2",
+          "agentId": "agent_001",
+          "environmentId": "env_001"
+        },
+        "verdict": "approved",
+        "findingsPath": "openspec/changes/test/spec-review-result-002.md",
+        "completedAt": "2026-02-01T01:00:00.000Z",
+        "error": null
+      }
+    ]
+  }
+}

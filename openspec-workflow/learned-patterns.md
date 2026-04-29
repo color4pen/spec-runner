@@ -1,6 +1,6 @@
 # Learned Patterns
 
-last-distilled: 2026-04-29 11:02
+last-distilled: 2026-04-29 18:52
 
 ワークフロー完了時に抽出されたパターンの蓄積。
 continuous-learning スキルが追記し、distill-learnings / promote-rule が消費する。
@@ -502,3 +502,59 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **iter1 → iter2 +0.35 で改善（improving、HIGH 3 件解消）**: code-fixer が HIGH 3 件すべてを「既存パターンへの統一」（symmetric error-handler / 純粋関数 / design D7 完全準拠）で解消し、MEDIUM/LOW 8 件中 7 件は deferred と明示。CRITICAL: 0, HIGH: 0, Total 7.80 で承認。**前 request 比で改善幅は控えめだが、HIGH の絶対数 3 件 + 残留が MEDIUM/LOW のみ**で効率的な収束として評価できる
 - **ADR 連鎖（cross-reference pattern）でアーキテクチャ判断の系譜を辿れる**: ADR-20260429-spec-fixer-iteration-loop.md は ADR-20260429-positioning-vs-gsd-and-openspec.md を Managed Agents 制約の出典として cite し、ADR-20260424-session-pipeline-design.md / ADR-20260427-cli-first-architecture.md も参照。**ADR を request 単位で生成し前 ADR を cite する運用**で、設計の系譜が辿れる構造になっている。長期ロードマップで参照価値が高い
 - **Pipeline 層 loop プリミティブは code-review iteration loop で再利用予定**: 本 request で確立した `runLoopUntil` + role-specific Agent + StepResult 配列化 + error-state-attachment + ファイル経由 verdict のパターンは、後続の implementer / code-review 接続でそのまま踏襲できる。**SpecRunner の長期ロードマップで参照価値が最も高い request の 1 つ**。次 request 候補は (a) implementer 接続, (b) code-review 接続（loop プリミティブ再利用）, (c) Step interface の汎用化リファクタ, (d) plateaued/regressing 検出による GAN 収束判定
+
+---
+
+## 2026-04-29 — Step 抽象化 + Pipeline 状態機械 — Argo 準拠リアーキテクチャ Phase 1
+
+**Type**: refactoring
+**Outcome**: completed (spec-review approved iter 3: 6.40 → 7.05 → 7.55, code-review approved iter 3: 5.95 → 7.05 → 7.40)
+**ADR**: ADR-20260429-step-abstraction-implementation.md（design ADR は ADR-20260429-step-and-agent-class-architecture.md、配置は ADR-20260429-module-architecture-style.md）
+**Depends-on**: PR #24 (spec-fixer-iteration-loop)
+
+### Review Patterns
+
+#### Spec Review (6.40 → 7.05 → 7.55, +1.15 over 2 iter, HIGH 4 → 1 → 0)
+- **module-architect の越境懸念は spec-review で必ず指摘される**: 8 共通化候補 (C1-C8) と 8 越境懸念 (L1-L8) を decisions/module-architect.md に書いただけでは spec/tasks に伝搬しない。前 request の lesson と同じ構造のパターンが再現。**モジュール越境懸念は Requirement または受け入れ基準として spec/tasks に下ろす**規律を継続適用
+- **delta spec の MODIFIED が既存 Requirement の構造変更を網羅していない**: `JobState.steps` を `Record<StepName, StepResult[]>` から `Record<StepName, StepRun[]>` に変更する際、既存 Requirement の Scenario への構造的影響を「Array-Compatibility Note」のような宣言型 section で明示する手法を継続適用
+- **spec-fixer iteration が 2 回で +1.15 改善**: 前 request の +2.00（1 iter）には及ばないが、HIGH 4 → 0 を 2 iter で達成。スコープが大きい refactoring では spec-review iter 数が増える傾向（68 tasks vs 前 request の比較的小規模）
+
+#### Code Review (5.95 → 7.05 → 7.40, +1.45 over 2 iter, HIGH 6 → 2 → 0)
+- **「新しい構造を作ったが旧構造を削除しきれていない」が 2 iter 連続で発生 (HIGH × 8)**: iter 1 で `runProposeStepLegacy`（370 LOC、`pipeline.ts` 内）が指摘され削除 → iter 2 で `runSpecReviewStep`（245 LOC）と `JobStateStore` が production 経路で使われていない問題が新たに HIGH として浮上。**refactoring request では「migration を完了させる」を受け入れ基準に明記しないと、新旧並存状態で停滞する**典型パターン
+- **ファイル名の重複（`pipeline.ts` vs `pipeline/pipeline.ts`、`agent-definition.ts` vs `agent/`）が directory-form ADR 違反として検出される (HIGH × 1, MEDIUM × 1)**: ADR-20260429-module-architecture-style D7 が directory-form を求めているのに、refactoring 過程で sibling file が残ると「2 つの真実源」になる。**directory-form への移行は「placeholder index.ts + sibling file」状態を許さず一括で実施**する規律
+- **transition table が宣言だけで実際の遷移を駆動していない (HIGH)**: `STANDARD_TRANSITIONS` を constructor で受け取って store するだけで、実際の `runInternal()` は phase 番号で if 連鎖していた。**「table-driven にする」要件は「table を read して dispatch する」まで含めて受け入れ基準に書く**規律
+- **SDK 境界の indirect re-export 経路が grep で漏れる (HIGH)**: 直接 `@anthropic-ai/sdk` import は禁止できても、`src/sdk/sessions.ts` のような中間層で SDK 型を re-export する経路が core 層から到達可能だった。**「core 層から SDK type に到達できない」をモジュール境界 verification で確認**する。`grep "from \"@anthropic-ai/sdk\""` だけでなく `grep "from \"\\.\\./sdk/\""` も含める
+- **`as any` キャストは legacy code path の症状である (HIGH)**: 3 箇所の `deps.client as any` は SessionClient port を bypass していたが、これは legacy code path（`runProposeStepLegacy` / `core/session.ts` 直 SDK 呼び出し）が残存していた結果。**`as any` を grep して 0 にする** ことが port 純度の verification として有効。前 request 群の lesson（fail-fast / 純粋関数パターン）と同種の規律
+- **structural typing による port の optional method 呼び出し (MEDIUM × 2 iter)**: `githubClient.verifyPath?.()` で port が宣言していない method を probe する pattern は、port を実装した複数 adapter のうち一部が持つ shape を core 層が知っている状態を作る。**port interface に method を declare して全 adapter に実装義務を課す**か、port が宣言する method の組み合わせで実装する。iter 2/3 でも未解消で次 request に deferred
+- **lifecycle 分岐をデータ存在で推論するアンチパターン (MEDIUM × 2 iter)**: `step.toolHandlers && step.toolHandlers.size > 0` で SSE/polling を切り替えるのは、データ存在を flag として誤用するパターン。**lifecycle のような実行戦略は明示的な discriminator field（`lifecycle: "sse" | "poll"`）で宣言**する規律。tool 有無と lifecycle はたまたま今は一致するが別 concern
+
+### Error Patterns
+- **verification は build-fixer 1 回で解消（48 TS errors → 0）**: iter 1 で `toLegacyStepResult` helper の不在 + `CustomToolDefinition` の型緩さで 48 個の TS error が出たが、build-fixer が `toLegacyStepResult` 追加 + `CustomToolDefinition` tightening の 1 回で全解消。**Schema migration を含む refactoring では型エラーが集中して出る**が、helper 追加 + 型 tightening で機械的に修正可能
+- **implementer が 4 回呼び出される（うち 1 回は timeout recovery）**: 70/70 tasks（README/manual を除く）を 4 回の implementer run で完了。スコープが大きい refactoring では implementer の context window を超えて分割実行になる前提。**70 tasks 規模の request は 4 implementer runs を予算として組む**
+- **既存 cli.test.ts の vitest API 失敗が pre-existing として scope 外扱い**: 1 fail / 1 error は cli.test.ts の vitest API（pre-existing）に起因。**verification の PASS 判定で「pre-existing failure を識別する」運用**が確立。本 request の scope 外として明示的に除外
+- **HIGH 6 → 2 → 0 の 3 iter 収束は前 request 比で iter 数が多い**: 前 request（spec-fixer-iteration-loop）は HIGH 3 → 0 を 2 iter で収束。**refactoring の HIGH は「migration の中途半端」が多く、iter ごとに新 HIGH が浮上しやすい**ため、iter 数が増える傾向
+
+### Design Decisions
+- **Step interface + StepExecutor + Pipeline class + transition table の 4 軸再構成 (D1, D2, D3, D7, D8, D9)**: ADR-20260429-step-and-agent-class-architecture の D1〜D10 のうち本 request では D1（Step interface）/ D2（StepExecutor class）/ D3（Pipeline class + transition table）/ D7（モジュール構造）/ D8a + D8b（JobStateStore class + StepRun[] schema）/ D9（Tool spec/handler 同居）を実装。D4〜D6（AgentRegistry / Config schema migration）は後続 request に分離
+- **JobStateStore class への persistence 集約 + StepRun[] schema 移行**: 関数群（persistJobState / appendHistory / failJobState / updateJobState）を class method として再構成。`StepResult[]` から `StepRun[]` (`attempt / sessionId / outcome / startedAt / endedAt`) へ schema 移行し、load 時に旧 schema を normalization。**「class API + 旧 free function deprecated shim」状態を 1 iter 以上残すと canonical path 違反として code-review HIGH を生む**
+- **Pipeline class + transition table（Argo 準拠の declarative 表現）**: `STANDARD_TRANSITIONS` を `{ step, on: Verdict, to: StepName | "end" | "escalate" }` 形式で宣言し、Pipeline.runInternal が table から next-state を lookup する state machine として実装。**inline if 連鎖を transition table に置換するのが Argo / Tekton からの転用の核心**。retry strategies / typed I/O / exit handlers 等の追加転用は後続 request
+- **EventBus 予約席（subscriber は v1 まで空）**: `step:start` / `step:complete` / `step:error` / `verdict:parsed` / `pipeline:start` / `pipeline:complete` / `pipeline:fail` を emit するが CLI 層では subscribe しない。**学習層（observation → instinct → rule の継承）の plug-in 点を後付けせず先に予約**しておく規律。後続 request の学習層実装で使う
+- **Tool spec/handler の Step 同居（global registry 廃止）**: `core/tools/registry.ts` の global registry を廃止し、Step が `toolHandlers?: Map<string, ToolHandler>` を所有。Custom Tool の spec と handler の対応がコードで明示される
+- **モジュール構造（Modular Monolith + Functional Core, Imperative Shell + Hexagonal-lite）**: `core/` `adapter/` `store/` `port/` の境界を ADR-20260429-module-architecture-style D4 に従って再編。core が依存できるのは `store/` `util/` `core/port/` のみ。SDK 直接依存は `adapter/anthropic/` 内に閉じる
+- **振る舞い不変の verification を「テスト + state file round-trip + stdout snapshot」で担保**: 168 tests → 214 tests への増加（test-case-generator が 55 cases 追加）でも全 PASS。state file の旧 schema 透過性は load → save → diff で確認。stdout snapshot で CLI 動作を pin。**refactoring の振る舞い不変は 3 軸で verification する**規律
+
+### Lessons
+- **refactoring request の HIGH の主因は「新旧並存」**: iter 1 の HIGH 6 件中 4 件、iter 2 の HIGH 2 件すべてが「新しい構造を作ったが旧を削除していない」パターン。`runProposeStepLegacy`（370 LOC）→ `runSpecReviewStep`（245 LOC）→ `JobStateStore` 未採用 と同種の指摘が 2 iter 連続で浮上。**refactoring の受け入れ基準には「migration を完了させる（旧コードを削除する）」を必ず含める**規律
+- **migration の完了判定は「production 経路から呼ばれているか」を grep で確認する**: 「class が exported されている」「test が通っている」だけでは canonical path への migration 完了とは言えない。**`grep -r <legacy_function> src/core/ src/cli/ src/adapter/` で 0 件を完了条件**にする。test 経由のみで残るなら test 側の migration 漏れ
+- **directory-form ADR の適用は sibling file を許さず一括移行する**: `pipeline.ts` + `pipeline/pipeline.ts`、`agent-definition.ts` + `agent/index.ts` の併存は ADR-module-architecture-style D7 違反。**「directory-form への移行は (a) ファイル移動 (b) sibling 削除 (c) import 更新 を 1 commit で完結」**する規律。placeholder index.ts は併存状態を生む典型アンチパターン
+- **transition table 等の declarative 表現は「読み取って dispatch する」まで含めて受け入れ基準に書く**: 宣言を constructor に store するだけでは「table-driven」とは言えない。**「declarative な X を導入する」要件は「X を read して dispatch する」「inline if が消える」まで含める**規律。Argo / Tekton inspired の declarative 表現を取り込む際の典型的見落としパターン
+- **port の structural typing leak は optional method 呼び出しで露呈する**: `client.verifyPath?.()` のような optional method probe は port 契約の外。**port が宣言する method のみ呼び出す（optional probe は禁止）**規律。port に追加するか、port が宣言する method の組み合わせで実装する。MEDIUM として 2 iter 残留したが次 request に deferred
+- **SDK 境界 verification は indirect re-export まで含める**: 直接 import の grep だけでは `src/sdk/sessions.ts` のような中間層を経由する経路を検出できない。**「core 層から SDK type に到達できない」を `grep "from \"\\.\\./sdk/\""` も含めて検証**する規律。Hexagonal architecture の port purity は transitive にも適用される
+- **`as any` キャスト数は legacy code path の指標**: core 層の `as any` 3 箇所はすべて legacy（SessionClient port 未経由）の症状で、legacy 削除と同時に消えた。**`grep -rn "as any" src/core/` で件数を verification の指標に追加**する規律。port purity が崩れる前兆として有効
+- **lifecycle 等の実行戦略はデータ存在で推論せず明示的 discriminator で宣言**: `step.toolHandlers && step.toolHandlers.size > 0` のような「データ有無を flag として誤用」パターンは、tool と lifecycle のような偶然一致する 2 つの concern を融合させる。**「2 つの concern が偶然一致するなら別フィールドで宣言」**する規律。MEDIUM 2 iter 残留したが次 request に deferred
+- **Schema migration は normalization layer + write canonical で旧 schema 透過性を担保**: `StepResult[]` → `StepRun[]` のような schema 変更は、load 時 normalization + write canonical schema + 旧サンプル round-trip 検証 の 3 点で振る舞い不変を確認。**「旧 schema の load 時に normalization する」を Requirement として spec に固定**する運用が継続して機能
+- **大規模 refactoring で implementer は 4 runs 必要（70 tasks 規模）**: 1 implementer run の context window を超える 70 tasks 規模では timeout recovery を含む 4 runs が予算の現実値。**70 tasks 以上の request は implementer 4 runs を予算想定**する規律
+- **iter1 → iter2 +1.10 → iter3 +0.35 で 3 iter 収束（improving、HIGH 6 → 2 → 0）**: code-fixer が iter 1 で legacy 5 HIGH を解消し、iter 2 で残存 2 HIGH（JobStateStore canonical path / runSpecReviewStep delete）を完全解消。**改善幅は前後 iter で逓減するが trend が improving 維持されれば 3 iter で approved 可能**。iter 4 を許可する budget も検討余地あり
+- **Argo / Tekton inspired 設計の本 request scope は「transition table の declarative 表現 + EventBus 予約席」のみ**: retry strategies / typed I/O / exit handlers 等の追加転用は後続 request に分離。**外部技術からの転用は scope を絞り、ADR で系譜を残しつつ段階的に拡張**する運用。ADR-20260429-cicd-architecture-inspirations が長期ロードマップを支える
+- **5 件の MEDIUM が next request に deferred で承認**: lifecycle discriminator / port verifyPath 宣言 / executor LOC duplication / deprecated session 削除 / agent dir form。**MEDIUM が 5 件残っても trend improving + HIGH 0 なら approved**。MEDIUM の中身は extension（lifecycle discriminator）/ port purity（verifyPath）/ executor refactor（LOC duplication）/ cleanup（deprecated session）/ directory form（agent）で、次 request の自然な scope を形成
+- **次 request 候補（後続）**: (a) AgentRegistry / Step lifecycle discriminator（D4 + D5、本 request scope 外）, (b) Config schema migration（D6 = `agents: Record<StepName, ...>` map）, (c) executor.ts の session-scaffolding extraction（MEDIUM #3）, (d) GitHubClient port の `verifyPath` 正式宣言（MEDIUM #2）, (e) `core/session.ts` + `sdk/sessions.ts` の最終削除（MEDIUM #4 + LOW #7）, (f) 学習層実装（EventBus subscriber、本 request の予約席を消費）

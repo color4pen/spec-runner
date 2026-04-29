@@ -1,7 +1,11 @@
+/**
+ * Moved from src/core/session-runner.ts.
+ * All @anthropic-ai/sdk imports are isolated in src/adapter/anthropic/.
+ */
+import type Anthropic from "@anthropic-ai/sdk";
+import { createSession, sendEvents } from "./sdk/sessions.js";
+import { stderrWrite } from "../../logger/stdout.js";
 import { pollUntilComplete } from "./completion.js";
-import { createSession, sendEvents } from "../sdk/sessions.js";
-import { stderrWrite } from "../logger/stdout.js";
-import type { PipelineDeps } from "./types.js";
 
 export interface ManagedAgentSessionInput {
   agentId: string;
@@ -11,6 +15,7 @@ export interface ManagedAgentSessionInput {
   initialMessage: string;
   timeoutMs: number;
   stepName: string;
+  sleepFn?: (ms: number) => Promise<void>;
 }
 
 export interface ManagedAgentSessionResult {
@@ -29,13 +34,11 @@ export interface ManagedAgentSessionResult {
  * Note: Does NOT call pushStepResult or writeJobState — that is the caller's responsibility.
  */
 export async function runManagedAgentSession(
-  deps: PipelineDeps,
+  client: Anthropic,
   input: ManagedAgentSessionInput,
 ): Promise<ManagedAgentSessionResult> {
-  const { client } = deps;
-  const { agentId, environmentId, repo, githubToken, initialMessage, timeoutMs, stepName } = input;
+  const { agentId, environmentId, repo, githubToken, initialMessage, timeoutMs, stepName, sleepFn } = input;
 
-  // 1. Create session
   const repoUrl = `https://github.com/${repo.owner}/${repo.name}`;
   let sessionId: string;
   try {
@@ -64,7 +67,6 @@ export async function runManagedAgentSession(
     };
   }
 
-  // 2. Send initial message
   try {
     await sendEvents(client, sessionId, {
       events: [
@@ -87,11 +89,10 @@ export async function runManagedAgentSession(
     };
   }
 
-  // 3. Poll until complete
   try {
     await pollUntilComplete(client, sessionId, undefined, {
       timeoutMs,
-      sleepFn: deps.sleepFn,
+      sleepFn,
     });
     return { sessionId, status: "idle" };
   } catch (err) {
