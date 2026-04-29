@@ -3,6 +3,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import type { SessionClient } from "../src/core/port/session-client.js";
+import type { GitHubClient } from "../src/core/port/github-client.js";
 
 // Setup temp directory for state files
 let tempDir: string;
@@ -96,17 +97,34 @@ function buildMockSessionClient(opts: {
   return { client, createSessionMock, streamEventsMock };
 }
 
-// Helper GitHub fetch mock
-function buildGithubFetch(branchStatus = 200, folderStatus = 200) {
-  return vi.fn().mockImplementation((url: string) => {
-    if (url.includes("/branches/")) {
-      return Promise.resolve({ status: branchStatus, ok: branchStatus < 400 });
-    }
-    if (url.includes("/contents/")) {
-      return Promise.resolve({ status: folderStatus, ok: folderStatus < 400 });
-    }
-    return Promise.resolve({ status: 200, ok: true });
-  });
+/**
+ * Build a mock GitHubClient (port interface) for propose-step tests.
+ *
+ * - branchFound=true → verifyBranch resolves true (200)
+ * - branchFound=false → verifyBranch resolves false (404 — warning only)
+ * - tokenExpired=true → verifyBranch throws GITHUB_TOKEN_EXPIRED
+ * - folderFound=true → getRawFile resolves non-null (folder exists)
+ * - folderFound=false → getRawFile resolves null (404 → CHANGE_FOLDER_NOT_FOUND)
+ */
+function buildMockGithubClient(opts: {
+  branchFound?: boolean;
+  folderFound?: boolean;
+  tokenExpired?: boolean;
+} = {}): GitHubClient {
+  const { branchFound = true, folderFound = true, tokenExpired = false } = opts;
+
+  return {
+    verifyBranch: vi.fn().mockImplementation(async () => {
+      if (tokenExpired) {
+        throw Object.assign(new Error("GitHub token expired."), { code: "GITHUB_TOKEN_EXPIRED" });
+      }
+      return branchFound;
+    }),
+    getRawFile: vi.fn().mockImplementation(async () => {
+      if (!folderFound) return null;
+      return "exists";
+    }),
+  };
 }
 
 function buildConfig() {
@@ -135,11 +153,11 @@ function buildRequest() {
 describe("TC-035: propose pipeline — normal completion with full history", () => {
   it("records all required history steps on success", async () => {
 
-    const { runProposePipeline } = await import("../src/core/pipeline.js");
+    const { runProposePipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     const { client } = buildMockSessionClient({ registerBranch: "feat/2026-04-27-test" });
-    const githubFetch = buildGithubFetch(200, 200);
+    const githubClient = buildMockGithubClient({ branchFound: true, folderFound: true });
 
     const result = await runProposePipeline(jobState, {
       client,
@@ -147,7 +165,7 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
       repo: buildRepo(),
       request: buildRequest(),
       slug: "2026-04-27-cli-core-pipeline",
-      githubFetch,
+      githubClient,
     });
 
     expect(result.status).toBe("success");
@@ -168,12 +186,12 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
 describe("TC-036: propose pipeline — BRANCH_NOT_REGISTERED when no register_branch call", () => {
   it("fails with BRANCH_NOT_REGISTERED when agent completes without calling register_branch", async () => {
 
-    const { runProposePipeline } = await import("../src/core/pipeline.js");
+    const { runProposePipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     // No registerBranch — agent just sends end_turn without calling register_branch
     const { client } = buildMockSessionClient({ registerBranch: undefined });
-    const githubFetch = buildGithubFetch();
+    const githubClient = buildMockGithubClient();
 
     // Pipeline now returns failed state rather than throwing; check state.error.code
     const result = await runProposePipeline(jobState, {
@@ -182,7 +200,7 @@ describe("TC-036: propose pipeline — BRANCH_NOT_REGISTERED when no register_br
       repo: buildRepo(),
       request: buildRequest(),
       slug: "2026-04-27-cli-core-pipeline",
-      githubFetch,
+      githubClient,
     });
 
     expect(result.status).toBe("failed");
@@ -198,7 +216,7 @@ describe("TC-036: propose pipeline — BRANCH_NOT_REGISTERED when no register_br
 describe("TC-037: propose pipeline — SSE stream connected before initial message send", () => {
   it("streamEvents() is called (which internally ensures stream-before-send ordering)", async () => {
 
-    const { runProposePipeline } = await import("../src/core/pipeline.js");
+    const { runProposePipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     const { client, streamEventsMock } = buildMockSessionClient({ registerBranch: "feat/test" });
@@ -209,7 +227,7 @@ describe("TC-037: propose pipeline — SSE stream connected before initial messa
       repo: buildRepo(),
       request: buildRequest(),
       slug: "2026-04-27-test",
-      githubFetch: buildGithubFetch(),
+      githubClient: buildMockGithubClient(),
     });
 
     // streamEvents() was called — the SessionClient port guarantees SSE is connected
@@ -222,7 +240,7 @@ describe("TC-037: propose pipeline — SSE stream connected before initial messa
 describe("TC-038: propose pipeline — initial message contains user-request tag", () => {
   it("streamEvents receives requestContent containing the user request text", async () => {
 
-    const { runProposePipeline } = await import("../src/core/pipeline.js");
+    const { runProposePipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     let capturedRequestContent: string | undefined;
@@ -248,7 +266,7 @@ describe("TC-038: propose pipeline — initial message contains user-request tag
       repo: buildRepo(),
       request: buildRequest(),
       slug: "2026-04-27-test",
-      githubFetch: buildGithubFetch(),
+      githubClient: buildMockGithubClient(),
     });
 
     // The requestContent passed to streamEvents is used to build the initial message
@@ -261,12 +279,12 @@ describe("TC-038: propose pipeline — initial message contains user-request tag
 describe("TC-039: propose pipeline — CHANGE_FOLDER_NOT_FOUND", () => {
   it("fails with CHANGE_FOLDER_NOT_FOUND when change folder API returns 404", async () => {
 
-    const { runProposePipeline } = await import("../src/core/pipeline.js");
+    const { runProposePipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     const { client } = buildMockSessionClient({ registerBranch: "feat/test" });
-    // branch OK, but change folder 404
-    const githubFetch = buildGithubFetch(200, 404);
+    // branch OK, but change folder 404 (folderFound=false)
+    const githubClient = buildMockGithubClient({ branchFound: true, folderFound: false });
 
     // Pipeline returns failed state rather than throwing; check state.error.code
     const result = await runProposePipeline(jobState, {
@@ -275,7 +293,7 @@ describe("TC-039: propose pipeline — CHANGE_FOLDER_NOT_FOUND", () => {
       repo: buildRepo(),
       request: buildRequest(),
       slug: "2026-04-27-test",
-      githubFetch,
+      githubClient,
     });
 
     expect(result.status).toBe("failed");
@@ -287,12 +305,12 @@ describe("TC-039: propose pipeline — CHANGE_FOLDER_NOT_FOUND", () => {
 describe("TC-040: propose pipeline — branch not found on GitHub is warning only", () => {
   it("succeeds with warning when branch API returns 404 but folder API returns 200", async () => {
 
-    const { runProposePipeline } = await import("../src/core/pipeline.js");
+    const { runProposePipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     const { client } = buildMockSessionClient({ registerBranch: "feat/test" });
-    // branch 404 (warning), folder 200 (OK)
-    const githubFetch = buildGithubFetch(404, 200);
+    // branch not found (warning), folder found (OK)
+    const githubClient = buildMockGithubClient({ branchFound: false, folderFound: true });
 
     const result = await runProposePipeline(jobState, {
       client,
@@ -300,7 +318,7 @@ describe("TC-040: propose pipeline — branch not found on GitHub is warning onl
       repo: buildRepo(),
       request: buildRequest(),
       slug: "2026-04-27-test",
-      githubFetch,
+      githubClient,
     });
 
     expect(result.status).toBe("success");
@@ -313,12 +331,12 @@ describe("TC-040: propose pipeline — branch not found on GitHub is warning onl
 describe("TC-041: propose pipeline — GITHUB_TOKEN_EXPIRED on 401", () => {
   it("fails with GITHUB_TOKEN_EXPIRED when GitHub API returns 401", async () => {
 
-    const { runProposePipeline } = await import("../src/core/pipeline.js");
+    const { runProposePipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     const { client } = buildMockSessionClient({ registerBranch: "feat/test" });
-    // 401 from GitHub
-    const githubFetch = buildGithubFetch(401, 401);
+    // 401 from GitHub — token expired
+    const githubClient = buildMockGithubClient({ tokenExpired: true });
 
     // Pipeline returns failed state rather than throwing; check state.error.code
     const result = await runProposePipeline(jobState, {
@@ -327,7 +345,7 @@ describe("TC-041: propose pipeline — GITHUB_TOKEN_EXPIRED on 401", () => {
       repo: buildRepo(),
       request: buildRequest(),
       slug: "2026-04-27-test",
-      githubFetch,
+      githubClient,
     });
 
     expect(result.status).toBe("failed");
@@ -343,7 +361,7 @@ describe("TC-041: propose pipeline — GITHUB_TOKEN_EXPIRED on 401", () => {
 describe("TC-042: session creation parameters", () => {
   it("createSession is called with agentId, environmentId, repoUrl, and githubToken", async () => {
 
-    const { runProposePipeline } = await import("../src/core/pipeline.js");
+    const { runProposePipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     const { client, createSessionMock } = buildMockSessionClient({ registerBranch: "feat/test" });
@@ -354,7 +372,7 @@ describe("TC-042: session creation parameters", () => {
       repo: buildRepo(),
       request: buildRequest(),
       slug: "2026-04-27-test",
-      githubFetch: buildGithubFetch(),
+      githubClient: buildMockGithubClient(),
     });
 
     expect(createSessionMock).toHaveBeenCalledTimes(1);

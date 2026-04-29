@@ -1,5 +1,6 @@
 import type { Step, StepDeps, ParsedStepResult } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
+import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { registerBranchTool } from "../tools/register-branch.js";
 import { buildInitialMessage, PROPOSE_SYSTEM_PROMPT } from "../../prompts/propose-system.js";
@@ -17,7 +18,7 @@ const proposeAgentDefinition: AgentDefinition = {
   model: PROPOSE_AGENT_MODEL,
   system: PROPOSE_SYSTEM_PROMPT,
   tools: [
-    { type: "agent_toolset_20260401" },
+    { type: AGENT_TOOLSET_TYPE },
     // register_branch is co-located in this file's toolHandlers below
     {
       type: "custom",

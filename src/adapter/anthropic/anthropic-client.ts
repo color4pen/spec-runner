@@ -8,13 +8,14 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { AnthropicClient, AgentData } from "../../core/port/anthropic-client.js";
 import type { AgentDefinition, ToolSpec } from "../../core/agent/definition.js";
+import { AGENT_TOOLSET_TYPE } from "../../core/agent/definition.js";
 
 /**
  * Convert a core ToolSpec to the SDK's tool parameter shape.
  * The SDK accepts both agent toolset and custom tool shapes.
  */
 function toSdkTool(spec: ToolSpec): Record<string, unknown> {
-  if (spec.type === "agent_toolset_20260401") {
+  if (spec.type === AGENT_TOOLSET_TYPE) {
     return { type: spec.type };
   }
   // custom tool

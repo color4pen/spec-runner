@@ -5,10 +5,16 @@
 import type { StepName } from "../../state/schema.js";
 
 /**
+ * Single source of truth for the Anthropic agent toolset type string.
+ * Use this constant wherever AgentToolsetSpec.type is referenced.
+ */
+export const AGENT_TOOLSET_TYPE = "agent_toolset_20260401" as const;
+
+/**
  * ToolSpec for the Anthropic agent toolset (built-in tools like computer use).
  */
 export interface AgentToolsetSpec {
-  readonly type: "agent_toolset_20260401";
+  readonly type: typeof AGENT_TOOLSET_TYPE;
 }
 
 /**

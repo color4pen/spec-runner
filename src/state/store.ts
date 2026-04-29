@@ -38,34 +38,9 @@ export async function createJobState(params: {
     error: null,
   };
 
-  await persistJobState(state);
-  return state;
-}
-
-/**
- * Update job state fields and persist.
- * @deprecated Use JobStateStore.update() instead.
- */
-export async function updateJobState(
-  state: JobState,
-  patch: Partial<Omit<JobState, "version" | "jobId" | "createdAt">>,
-): Promise<JobState> {
-  const updated: JobState = {
-    ...state,
-    ...patch,
-    updatedAt: new Date().toISOString(),
-  };
-  await persistJobState(updated);
-  return updated;
-}
-
-/**
- * Persist job state to disk atomically.
- * @deprecated Use JobStateStore.persist() instead.
- */
-export async function persistJobState(state: JobState): Promise<void> {
   const filePath = getJobStatePath(state.jobId);
   await atomicWriteJson(filePath, state);
+  return state;
 }
 
 /**
@@ -105,4 +80,3 @@ export async function listJobStates(): Promise<JobState[]> {
 
   return states;
 }
-

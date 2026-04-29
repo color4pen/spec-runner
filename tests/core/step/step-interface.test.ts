@@ -101,6 +101,10 @@ function makeMinimalDeps(clientOpts?: Parameters<typeof makeMockSessionClient>[0
     repo: { owner: "testowner", name: "testrepo" },
     request: { type: "new-feature", title: "Test", content: "Test request content", enabled: [] },
     slug: "2026-01-01-test",
+    githubClient: {
+      verifyBranch: vi.fn().mockResolvedValue(true),
+      getRawFile: vi.fn().mockResolvedValue("- **verdict**: approved"),
+    },
   };
 }
 

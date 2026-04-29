@@ -76,6 +76,10 @@ function makeMinimalDeps(): PipelineDeps {
     request: { type: "feature", title: "Test", content: "content", enabled: [] },
     slug: "test-slug",
     sleepFn: vi.fn().mockResolvedValue(undefined),
+    githubClient: {
+      verifyBranch: vi.fn().mockResolvedValue(true),
+      getRawFile: vi.fn().mockResolvedValue(null),
+    },
   };
 }
 

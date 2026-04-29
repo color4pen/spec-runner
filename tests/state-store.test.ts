@@ -4,9 +4,9 @@ import * as path from "node:path";
 import * as os from "node:os";
 import {
   createJobState,
-  updateJobState,
   listJobStates,
 } from "../src/state/store.js";
+import { JobStateStore } from "../src/store/job-state-store.js";
 import { appendHistoryEntry, MAX_HISTORY_SIZE } from "../src/state/schema.js";
 import type { JobState } from "../src/state/schema.js";
 
@@ -90,9 +90,11 @@ describe("TC-045: concurrent ps and write", () => {
 
     // Run concurrent reads and writes
     const reads = [listJobStates(), listJobStates()];
+    const store1 = new JobStateStore(s1.jobId);
+    const store2 = new JobStateStore(s2.jobId);
     const writes = [
-      updateJobState(s1, { status: "success" }),
-      updateJobState(s2, { branch: "feat/test" }),
+      store1.update(s1, { status: "success" }),
+      store2.update(s2, { branch: "feat/test" }),
     ];
 
     const [results] = await Promise.all([...reads, ...writes]);

@@ -18,14 +18,6 @@ export interface PipelineDeps {
   timeoutMs?: number;
   /** Injectable sleep for testing */
   sleepFn?: (ms: number) => Promise<void>;
-  /**
-   * @deprecated Use githubClient instead.
-   * Injectable fetch for GitHub API (kept for backward compat with tests)
-   */
-  githubFetch?: typeof fetch;
-  /**
-   * Optional GitHub client (port interface).
-   * When not provided, executor constructs one from githubFetch + config.github.accessToken.
-   */
-  githubClient?: GitHubClient;
+  /** GitHub client (port interface). Required for all pipeline steps. */
+  githubClient: GitHubClient;
 }

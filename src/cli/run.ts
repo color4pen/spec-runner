@@ -1,9 +1,10 @@
 import * as path from "node:path";
 import { createAnthropicClient } from "../sdk/client.js";
 import { createAnthropicSessionClient } from "../adapter/anthropic/session-client.js";
+import { createGitHubClient } from "../adapter/github/github-client.js";
 import { runPreflight } from "../core/preflight.js";
 import { createJobState } from "../state/store.js";
-import { runPipeline } from "../core/pipeline.js";
+import { runPipeline } from "../core/pipeline/index.js";
 import { logInfo, logError } from "../logger/stdout.js";
 import { SpecRunnerError } from "../errors.js";
 import type { JobState } from "../state/schema.js";
@@ -134,6 +135,7 @@ export async function runRunCore(
   // Composition root: create adapters and wire them into PipelineDeps
   const anthropicClient = createAnthropicClient(config.anthropic.apiKey);
   const client = createAnthropicSessionClient(anthropicClient);
+  const githubClient = createGitHubClient(fetch, config.github?.accessToken ?? "");
 
   // Derive slug from request path (filename without extension)
   const slug = path.basename(absolutePath, ".md");
@@ -162,6 +164,7 @@ export async function runRunCore(
       request,
       slug,
       timeoutMs,
+      githubClient,
     });
   } catch (err) {
     if (err instanceof SpecRunnerError) {

@@ -1,5 +1,6 @@
 import type { Step, StepDeps, ParsedStepResult } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
+import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { SPEC_FIXER_SYSTEM_PROMPT } from "../../prompts/spec-fixer-system.js";
@@ -17,7 +18,7 @@ const specFixerAgentDefinition: AgentDefinition = {
   model: SPEC_FIXER_AGENT_MODEL,
   system: SPEC_FIXER_SYSTEM_PROMPT,
   tools: [
-    { type: "agent_toolset_20260401" },
+    { type: AGENT_TOOLSET_TYPE },
   ],
 };
 

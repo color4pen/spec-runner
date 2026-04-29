@@ -151,6 +151,23 @@ describe("TC-045: AgentRegistry.list is idempotent", () => {
   });
 });
 
+// TC-NEW: fromSteps throws on step.name !== step.agent.role mismatch
+describe("AgentRegistry.fromSteps throws on step.name and agent.role mismatch", () => {
+  it("throws 'Step name and agent role mismatch' when step.name differs from agent.role", () => {
+    const mismatchedStep: Step = {
+      name: "propose" as StepName,
+      agent: makeAgentDef("spec-review"), // role = "spec-review" but name = "propose"
+      buildMessage: () => "",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: null, findingsPath: null }),
+    };
+
+    expect(() => AgentRegistry.fromSteps([mismatchedStep])).toThrow(
+      "Step name and agent role mismatch: name=propose, role=spec-review",
+    );
+  });
+});
+
 // TC-071: canonical JSON is key-sorted and compact
 describe("TC-071: hashOf canonical JSON is key-sorted and compact", () => {
   it("hash is lowercase hex string of 64 chars after sha256: prefix", () => {

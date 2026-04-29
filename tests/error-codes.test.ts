@@ -210,6 +210,10 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
       request: { type: "feature", title: "Test", content: "content", enabled: [] },
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient: {
+        verifyBranch: vi.fn().mockResolvedValue(true),
+        getRawFile: vi.fn().mockResolvedValue(null),
+      },
     });
 
     expect(result.error?.code).toBe("SPEC_REVIEW_RETRIES_EXHAUSTED");

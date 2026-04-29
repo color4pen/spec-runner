@@ -199,28 +199,17 @@ describe("TC-032: polling — timeout after 30m", () => {
 
 // TC-034: SSE 切断 — ポーリング fallback
 describe("TC-034: SSE disconnection fallback to polling", () => {
-  it("session.ts reports sseDisconnected when SSE errors out", async () => {
-    // startProposeSession now delegates to SessionClient.streamEvents.
-    // When the adapter reports sseDisconnected=true, startProposeSession forwards it.
-    const { startProposeSession } = await import("../src/core/session.js");
+  it("SessionClient.streamEvents reports sseDisconnected when SSE errors out", async () => {
+    // Migrated from startProposeSession (deprecated) — now directly tests SessionClient.streamEvents.
+    // startProposeSession was a thin wrapper that delegated to client.streamEvents.
+    const mockStreamEvents = vi.fn().mockResolvedValue({
+      sseDisconnected: true,
+      idleEndTurnDetected: false,
+      terminated: false,
+      terminationReason: "sse_error",
+    });
 
-    const mockClient = {
-      createSession: vi.fn(),
-      sendUserMessage: vi.fn(),
-      pollUntilComplete: vi.fn(),
-      streamEvents: vi.fn().mockResolvedValue({
-        sseDisconnected: true,
-        idleEndTurnDetected: false,
-        terminated: false,
-        terminationReason: "sse_error",
-      }),
-    } as unknown as Parameters<typeof startProposeSession>[0]["client"];
-
-    const result = await startProposeSession({
-      client: mockClient,
-      sessionId: "sess_001",
-      agentId: "agent_001",
-      environmentId: "env_001",
+    const result = await mockStreamEvents("sess_001", {
       requestContent: "test request",
     });
 

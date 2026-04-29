@@ -14,10 +14,13 @@ export function canonicalJson(obj: unknown): string {
   }
   const sorted = Object.keys(obj as Record<string, unknown>)
     .sort()
-    .map((key) => {
+    .reduce<string[]>((acc, key) => {
       const val = (obj as Record<string, unknown>)[key];
-      return JSON.stringify(key) + ":" + canonicalJson(val);
-    })
+      // Skip undefined values — { a: undefined } and {} must hash identically
+      if (val === undefined) return acc;
+      acc.push(JSON.stringify(key) + ":" + canonicalJson(val));
+      return acc;
+    }, [])
     .join(",");
   return "{" + sorted + "}";
 }

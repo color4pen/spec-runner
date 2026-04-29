@@ -1,10 +1,10 @@
 import type { Step, StepDeps, ParsedStepResult } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
+import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState, Verdict } from "../../state/schema.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT, buildSpecReviewInitialMessage } from "../../prompts/spec-review-system.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { githubTokenExpiredError } from "../../errors.js";
-import type { PipelineDeps } from "../types.js";
 
 const SPEC_REVIEW_AGENT_MODEL = "claude-sonnet-4-5";
 
@@ -20,7 +20,7 @@ const specReviewAgentDefinition: AgentDefinition = {
   model: SPEC_REVIEW_AGENT_MODEL,
   system: SPEC_REVIEW_SYSTEM_PROMPT,
   tools: [
-    { type: "agent_toolset_20260401" },
+    { type: AGENT_TOOLSET_TYPE },
   ],
 };
 
@@ -98,33 +98,41 @@ export const SpecReviewStep: Step = {
 };
 
 // ---------------------------------------------------------------------------
-// Fetch helper — used by StepExecutor as a legacy fallback when githubClient
-// is not provided in PipelineDeps.
+// Fetch helper — kept for direct testing via spec-review-fetch.test.ts
+// (TC-012/013/014/015). Not used by StepExecutor (uses githubClient.getRawFile).
 // ---------------------------------------------------------------------------
+
+/**
+ * Params for fetchSpecReviewResult.
+ * Decoupled from PipelineDeps to avoid dependency on the removed githubFetch field.
+ */
+export interface FetchSpecReviewResultParams {
+  githubFetch?: typeof fetch;
+  sleepFn?: (ms: number) => Promise<void>;
+  repo: { owner: string; name: string };
+  config: { github?: { accessToken: string } };
+}
 
 /**
  * Fetch the spec-review-result file from GitHub.
  * Returns file content as string, or null if not found after retries.
  * Throws SpecRunnerError(GITHUB_TOKEN_EXPIRED) on 401.
  *
- * Uses PipelineDeps.githubFetch directly (no getFileContent helper).
  * 404: retries up to 3 times with 1s interval.
  */
 export async function fetchSpecReviewResult(
-  deps: PipelineDeps,
+  params: FetchSpecReviewResultParams,
   slug: string,
   branch: string,
   iteration: number,
 ): Promise<string | null> {
-  const githubFetch = deps.githubFetch ?? fetch;
-  const config = deps.config;
-  const repo = deps.repo;
-  const githubToken = config.github!.accessToken;
-  const sleepFn = deps.sleepFn ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const githubFetch = params.githubFetch ?? fetch;
+  const githubToken = params.config.github!.accessToken;
+  const sleepFn = params.sleepFn ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
 
   const filePath = buildFindingsPath(slug, iteration);
   const encodedPath = filePath.split("/").map(encodeURIComponent).join("/");
-  const url = `https://api.github.com/repos/${repo.owner}/${repo.name}/contents/${encodedPath}?ref=${encodeURIComponent(branch)}`;
+  const url = `https://api.github.com/repos/${params.repo.owner}/${params.repo.name}/contents/${encodedPath}?ref=${encodeURIComponent(branch)}`;
 
   const MAX_RETRIES = 3;
 

@@ -24,7 +24,10 @@ export class AgentRegistry {
     const map = new Map<StepName, AgentDefinition>();
     for (const step of steps) {
       const def = step.agent;
-      const role = def.role as StepName;
+      if (step.name !== def.role) {
+        throw new Error(`Step name and agent role mismatch: name=${step.name}, role=${def.role}`);
+      }
+      const role = def.role;
       if (map.has(role)) {
         throw new Error(`Duplicate agent role: ${role}`);
       }

@@ -38,12 +38,14 @@ afterEach(async () => {
 });
 
 async function makePersistedJobState(steps: JobState["steps"] = {}): Promise<JobState> {
-  const { createJobState, updateJobState } = await import("../../../src/state/store.js");
+  const { createJobState } = await import("../../../src/state/store.js");
+  const { JobStateStore } = await import("../../../src/store/job-state-store.js");
   const state = await createJobState({
     request: { path: "/req.md", title: "Test", type: "feature" },
     repository: { owner: "testowner", name: "testrepo" },
   });
-  return updateJobState({
+  const store = new JobStateStore(state.jobId);
+  return store.update({
     ...state,
     step: "spec-review",
     status: "success",
@@ -88,10 +90,10 @@ function buildDeps(opts: {
     request: { type: "feature", title: "Test", content: "content", enabled: [] },
     slug: "test-slug",
     sleepFn: vi.fn().mockResolvedValue(undefined),
-    githubFetch: vi.fn().mockResolvedValue({
-      status: 200,
-      text: () => Promise.resolve(fileContent),
-    }),
+    githubClient: {
+      verifyBranch: vi.fn().mockResolvedValue(true),
+      getRawFile: vi.fn().mockResolvedValue(fileContent),
+    },
   };
 }
 

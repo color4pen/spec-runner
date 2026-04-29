@@ -3,6 +3,7 @@ import { toLegacyStepResult } from "../src/state/helpers.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
+import type { GitHubClient } from "../src/core/port/github-client.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -124,48 +125,53 @@ function buildPipelineMockClient(opts: {
 }
 
 /**
- * Build a github fetch mock that returns the correct verdict for each spec-review iteration.
- * Matches URLs containing "spec-review-result" (covers spec-review-result-001.md etc.)
+ * Build a mock GitHubClient (port interface) for pipeline integration tests.
+ *
+ * - verifyBranch: returns branchFound (default true)
+ * - getRawFile:
+ *   - spec-review-result-NNN.md → returns verdict content per specReviewVerdicts array
+ *   - change-folder probe (proposal.md) → returns "exists" if folderFound else null
  */
-function buildGithubFetch(
-  branchStatus = 200,
-  folderStatus = 200,
-  specReviewVerdicts: ("approved" | "needs-fix" | "escalation")[] = ["approved"],
-) {
+function buildMockGithubClient(opts: {
+  branchFound?: boolean;
+  folderFound?: boolean;
+  specReviewVerdicts?: ("approved" | "needs-fix" | "escalation")[];
+} = {}): GitHubClient {
+  const {
+    branchFound = true,
+    folderFound = true,
+    specReviewVerdicts = ["approved"],
+  } = opts;
+
   let specReviewCallCount = 0;
 
-  return vi.fn().mockImplementation((url: string) => {
-    if (url.includes("/branches/")) {
-      return Promise.resolve({ status: branchStatus, ok: branchStatus < 400 });
-    }
-    // Match spec-review-result-NNN.md files (new iteration-based naming)
-    if (url.includes("/contents/openspec") && url.includes("spec-review-result")) {
-      const verdict = specReviewVerdicts[specReviewCallCount] ?? specReviewVerdicts[specReviewVerdicts.length - 1]!;
-      specReviewCallCount++;
-      const fileContent = `- **verdict**: ${verdict}\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|---|---|---|---|---|\n| 1 | HIGH | completeness | tasks.md | Missing tests | Add tests |`;
-      return Promise.resolve({
-        status: 200,
-        text: () => Promise.resolve(fileContent),
-      });
-    }
-    if (url.includes("/contents/")) {
-      return Promise.resolve({ status: folderStatus, ok: folderStatus < 400 });
-    }
-    return Promise.resolve({ status: 200, ok: true });
-  });
+  return {
+    verifyBranch: vi.fn().mockResolvedValue(branchFound),
+    getRawFile: vi.fn().mockImplementation(async (_owner: string, _repo: string, _branch: string, filePath: string) => {
+      // Spec-review result file (e.g., spec-review-result-001.md)
+      if (filePath.includes("spec-review-result")) {
+        const verdict = specReviewVerdicts[specReviewCallCount] ?? specReviewVerdicts[specReviewVerdicts.length - 1]!;
+        specReviewCallCount++;
+        return `- **verdict**: ${verdict}\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|---|---|---|---|---|\n| 1 | HIGH | completeness | tasks.md | Missing tests | Add tests |`;
+      }
+      // Change folder probe (proposal.md or other path)
+      if (!folderFound) return null;
+      return "exists";
+    }),
+  };
 }
 
 // TC-010: runPipeline — iter=1 approved で spec-fixer を起動しない
 describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () => {
   it("returns status='success', steps['spec-review'] has 1 element with verdict=approved, no spec-fixer steps", async () => {
 
-    const { runPipeline } = await import("../src/core/pipeline.js");
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     const { client } = buildPipelineMockClient({
       specReviewVerdicts: ["approved"],
     });
-    const githubFetch = buildGithubFetch(200, 200, ["approved"]);
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
 
     const result = await runPipeline(jobState, {
       client: client,
@@ -174,7 +180,7 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubFetch,
+      githubClient,
     });
 
     expect(result.status).toBe("success");
@@ -199,13 +205,13 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
 describe("TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 approved", () => {
   it("returns status='success', spec-review has 2 entries, spec-fixer has 1 entry", async () => {
 
-    const { runPipeline } = await import("../src/core/pipeline.js");
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     const { client } = buildPipelineMockClient({
       specReviewVerdicts: ["needs-fix", "approved"],
     });
-    const githubFetch = buildGithubFetch(200, 200, ["needs-fix", "approved"]);
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["needs-fix", "approved"] });
 
     const result = await runPipeline(jobState, {
       client: client,
@@ -214,7 +220,7 @@ describe("TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 app
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubFetch,
+      githubClient,
     });
 
     expect(result.status).toBe("success");
@@ -237,14 +243,14 @@ describe("TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 app
 describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RETRIES_EXHAUSTED", () => {
   it("sets error.code=SPEC_REVIEW_RETRIES_EXHAUSTED and escalation verdict on last spec-review", async () => {
 
-    const { runPipeline } = await import("../src/core/pipeline.js");
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     // Both iterations return needs-fix
     const { client } = buildPipelineMockClient({
       specReviewVerdicts: ["needs-fix", "needs-fix"],
     });
-    const githubFetch = buildGithubFetch(200, 200, ["needs-fix", "needs-fix"]);
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["needs-fix", "needs-fix"] });
 
     const result = await runPipeline(jobState, {
       client: client,
@@ -253,7 +259,7 @@ describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RE
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubFetch,
+      githubClient,
     });
 
     // spec-review: 2 entries, last verdict is escalation (written by onExceeded)
@@ -275,11 +281,11 @@ describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RE
 describe("TC-013: runPipeline — escalation stops loop without invoking spec-fixer", () => {
   it("does not create spec-fixer steps when spec-review returns escalation", async () => {
 
-    const { runPipeline } = await import("../src/core/pipeline.js");
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     const { client } = buildPipelineMockClient({ specReviewVerdicts: ["escalation"] });
-    const githubFetch = buildGithubFetch(200, 200, ["escalation"]);
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["escalation"] });
 
     const result = await runPipeline(jobState, {
       client: client,
@@ -288,7 +294,7 @@ describe("TC-013: runPipeline — escalation stops loop without invoking spec-fi
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubFetch,
+      githubClient,
     });
 
     // spec-fixer not created
@@ -311,7 +317,7 @@ describe("TC-013: runPipeline — escalation stops loop without invoking spec-fi
 describe("TC-014: runPipeline — spec-review loop skipped when propose fails", () => {
   it("does not create spec-review session when propose throws", async () => {
 
-    const { runPipeline } = await import("../src/core/pipeline.js");
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     const { client } = buildPipelineMockClient({
@@ -325,7 +331,7 @@ describe("TC-014: runPipeline — spec-review loop skipped when propose fails", 
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubFetch: buildGithubFetch(),
+      githubClient: buildMockGithubClient(),
     });
 
     // Only propose session was created
@@ -341,13 +347,13 @@ describe("TC-014: runPipeline — spec-review loop skipped when propose fails", 
 describe("TC-015: runPipeline — fresh session IDs per iteration", () => {
   it("spec-review iterations use different session IDs", async () => {
 
-    const { runPipeline } = await import("../src/core/pipeline.js");
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     const { client, sessionIds } = buildPipelineMockClient({
       specReviewVerdicts: ["needs-fix", "approved"],
     });
-    const githubFetch = buildGithubFetch(200, 200, ["needs-fix", "approved"]);
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["needs-fix", "approved"] });
 
     const result = await runPipeline(jobState, {
       client: client,
@@ -356,7 +362,7 @@ describe("TC-015: runPipeline — fresh session IDs per iteration", () => {
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubFetch,
+      githubClient,
     });
 
     const specReviewArr = result.steps?.["spec-review"];
@@ -376,13 +382,13 @@ describe("TC-015: runPipeline — fresh session IDs per iteration", () => {
 describe("TC-016: runPipeline — stdout contains 'retries exhausted, escalating' when limit reached", () => {
   it("writes retries exhausted message to stdout", async () => {
 
-    const { runPipeline } = await import("../src/core/pipeline.js");
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     const { client } = buildPipelineMockClient({
       specReviewVerdicts: ["needs-fix", "needs-fix"],
     });
-    const githubFetch = buildGithubFetch(200, 200, ["needs-fix", "needs-fix"]);
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["needs-fix", "needs-fix"] });
 
     const stdoutLines: string[] = [];
     vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
@@ -397,7 +403,7 @@ describe("TC-016: runPipeline — stdout contains 'retries exhausted, escalating
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubFetch,
+      githubClient,
     });
 
     const stdout = stdoutLines.join("");
@@ -409,13 +415,13 @@ describe("TC-016: runPipeline — stdout contains 'retries exhausted, escalating
 describe("TC-017: runPipeline — Pipeline finished summary line in stdout", () => {
   it("outputs 'Pipeline finished' summary with iterations and verdict", async () => {
 
-    const { runPipeline } = await import("../src/core/pipeline.js");
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     const { client } = buildPipelineMockClient({
       specReviewVerdicts: ["needs-fix", "approved"],
     });
-    const githubFetch = buildGithubFetch(200, 200, ["needs-fix", "approved"]);
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["needs-fix", "approved"] });
 
     const stdoutLines: string[] = [];
     vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
@@ -430,7 +436,7 @@ describe("TC-017: runPipeline — Pipeline finished summary line in stdout", () 
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubFetch,
+      githubClient,
     });
 
     const stdout = stdoutLines.join("");
@@ -442,13 +448,13 @@ describe("TC-017: runPipeline — Pipeline finished summary line in stdout", () 
 describe("TC-018: runPipeline — stdout log order for needs-fix → approved path", () => {
   it("outputs iteration progress in correct order", async () => {
 
-    const { runPipeline } = await import("../src/core/pipeline.js");
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     const { client } = buildPipelineMockClient({
       specReviewVerdicts: ["needs-fix", "approved"],
     });
-    const githubFetch = buildGithubFetch(200, 200, ["needs-fix", "approved"]);
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["needs-fix", "approved"] });
 
     const stdoutLines: string[] = [];
     vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
@@ -463,7 +469,7 @@ describe("TC-018: runPipeline — stdout log order for needs-fix → approved pa
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubFetch,
+      githubClient,
     });
 
     const stdout = stdoutLines.join("");
@@ -492,13 +498,13 @@ describe("TC-018: runPipeline — stdout log order for needs-fix → approved pa
 describe("TC-050: state.step updated: spec-fixer → spec-review within loop", () => {
   it("persisted state has step='spec-review' after spec-fixer completes", async () => {
 
-    const { runPipeline } = await import("../src/core/pipeline.js");
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     const { client } = buildPipelineMockClient({
       specReviewVerdicts: ["needs-fix", "approved"],
     });
-    const githubFetch = buildGithubFetch(200, 200, ["needs-fix", "approved"]);
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["needs-fix", "approved"] });
 
     const result = await runPipeline(jobState, {
       client: client,
@@ -507,7 +513,7 @@ describe("TC-050: state.step updated: spec-fixer → spec-review within loop", (
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubFetch,
+      githubClient,
     });
 
     // Final state should be in spec-review step (last thing that ran)
@@ -532,11 +538,11 @@ describe("TC-050: state.step updated: spec-fixer → spec-review within loop", (
 describe("TC-030: runPipeline — persistence: both propose and spec-review steps saved", () => {
   it("persists both propose and spec-review results in job state file", async () => {
 
-    const { runPipeline } = await import("../src/core/pipeline.js");
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     const { client } = buildPipelineMockClient({ specReviewVerdicts: ["approved"] });
-    const githubFetch = buildGithubFetch(200, 200, ["approved"]);
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
 
     const stateFilePath = path.join(tempDir, "specrunner", "jobs", `${jobState.jobId}.json`);
 
@@ -547,7 +553,7 @@ describe("TC-030: runPipeline — persistence: both propose and spec-review step
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubFetch,
+      githubClient,
     });
 
     // Verify the final persisted state has both steps recorded

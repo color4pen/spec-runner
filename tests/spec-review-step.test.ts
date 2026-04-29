@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { toLegacyStepResult } from "../src/state/helpers.js";
 import type { SessionClient } from "../src/core/port/session-client.js";
+import type { GitHubClient } from "../src/core/port/github-client.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -32,8 +33,9 @@ async function makeJobState() {
     repository: { owner: "testowner", name: "testrepo" },
   });
   // Simulate propose step completed with a branch
-  const { updateJobState } = await import("../src/state/store.js");
-  return updateJobState(state, {
+  const { JobStateStore } = await import("../src/store/job-state-store.js");
+  const store = new JobStateStore(state.jobId);
+  return store.update(state, {
     branch: "feat/test-branch",
     status: "success",
     session: { id: "sess_propose", agentId: "agent_001", environmentId: "env_001" },
@@ -97,6 +99,17 @@ function buildMockSessionClient(opts: {
 }
 
 /**
+ * Build a mock GitHubClient for spec-review step tests.
+ * getRawFile returns the given fileContent (or null to simulate 404).
+ */
+function buildMockGithubClient(fileContent: string | null): GitHubClient {
+  return {
+    verifyBranch: vi.fn().mockResolvedValue(true),
+    getRawFile: vi.fn().mockResolvedValue(fileContent),
+  };
+}
+
+/**
  * Build and run StepExecutor with SpecReviewStep.
  * Returns the result state.
  */
@@ -119,11 +132,6 @@ describe("TC-016: runSpecReviewStep — uses specReview.timeoutMs from config", 
     const jobState = await makeJobState();
 
     const fileContent = "- **verdict**: approved\n";
-    const mockFetch = vi.fn().mockResolvedValue({
-      status: 200,
-      text: () => Promise.resolve(fileContent),
-    });
-
     const config = buildConfig({ specReview: { timeoutMs: 600000, pollIntervalMs: 100 } });
     const { client, pollUntilCompleteMock } = buildMockSessionClient();
 
@@ -134,7 +142,7 @@ describe("TC-016: runSpecReviewStep — uses specReview.timeoutMs from config", 
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubFetch: mockFetch,
+      githubClient: buildMockGithubClient(fileContent),
     });
 
     // pollUntilComplete should have been called with the timeoutMs from config
@@ -155,10 +163,6 @@ describe("TC-017: runSpecReviewStep — treats status='idle' as complete", () =>
 
     const { client } = buildMockSessionClient({ pollResult: { status: "idle" } });
     const fileContent = "- **verdict**: approved\n";
-    const mockFetch = vi.fn().mockResolvedValue({
-      status: 200,
-      text: () => Promise.resolve(fileContent),
-    });
 
     const result = await runSpecReviewViaExecutor(jobState, {
       client,
@@ -167,7 +171,7 @@ describe("TC-017: runSpecReviewStep — treats status='idle' as complete", () =>
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubFetch: mockFetch,
+      githubClient: buildMockGithubClient(fileContent),
     });
 
     const lastSpecReview = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
@@ -187,7 +191,6 @@ describe("TC-018: runSpecReviewStep — SESSION_TERMINATED error handling", () =
         error: { code: "SESSION_TERMINATED", message: "Session terminated", hint: "" },
       },
     });
-    const mockFetch = vi.fn().mockResolvedValue({ status: 200, text: () => Promise.resolve("") });
 
     await expect(
       runSpecReviewViaExecutor(jobState, {
@@ -197,7 +200,7 @@ describe("TC-018: runSpecReviewStep — SESSION_TERMINATED error handling", () =
         request: buildRequest(),
         slug: "test-slug",
         sleepFn: vi.fn().mockResolvedValue(undefined),
-        githubFetch: mockFetch,
+        githubClient: buildMockGithubClient(""),
       }),
     ).rejects.toMatchObject({ code: "SESSION_TERMINATED" });
   });
@@ -214,7 +217,6 @@ describe("TC-019: runSpecReviewStep — SESSION_TIMEOUT error handling", () => {
         error: { code: "SESSION_TIMEOUT", message: "Session timed out after 10 minutes", hint: "" },
       },
     });
-    const mockFetch = vi.fn().mockResolvedValue({ status: 200, text: () => Promise.resolve("") });
 
     await expect(
       runSpecReviewViaExecutor(jobState, {
@@ -224,7 +226,7 @@ describe("TC-019: runSpecReviewStep — SESSION_TIMEOUT error handling", () => {
         request: buildRequest(),
         slug: "test-slug",
         sleepFn: vi.fn().mockResolvedValue(undefined),
-        githubFetch: mockFetch,
+        githubClient: buildMockGithubClient(""),
       }),
     ).rejects.toMatchObject({ code: "SESSION_TIMEOUT" });
   });
@@ -236,11 +238,7 @@ describe("TC-020: runSpecReviewStep — SPEC_REVIEW_RESULT_NOT_FOUND when file n
     const jobState = await makeJobState();
 
     const { client } = buildMockSessionClient();
-    // Always return 404
-    const mockFetch = vi.fn().mockResolvedValue({
-      status: 404,
-      text: () => Promise.resolve(""),
-    });
+    // null simulates 404 — file not found after retries
 
     await expect(
       runSpecReviewViaExecutor(jobState, {
@@ -250,7 +248,7 @@ describe("TC-020: runSpecReviewStep — SPEC_REVIEW_RESULT_NOT_FOUND when file n
         request: buildRequest(),
         slug: "test-slug",
         sleepFn: vi.fn().mockResolvedValue(undefined),
-        githubFetch: mockFetch,
+        githubClient: buildMockGithubClient(null),
       }),
     ).rejects.toMatchObject({ code: "SPEC_REVIEW_RESULT_NOT_FOUND" });
   });
@@ -263,10 +261,6 @@ describe("TC-021: runSpecReviewStep — escalation failsafe when verdict line ab
 
     const { client } = buildMockSessionClient();
     // File exists but has no verdict line
-    const mockFetch = vi.fn().mockResolvedValue({
-      status: 200,
-      text: () => Promise.resolve("## Findings\n\nNo findings."),
-    });
 
     const result = await runSpecReviewViaExecutor(jobState, {
       client,
@@ -275,7 +269,7 @@ describe("TC-021: runSpecReviewStep — escalation failsafe when verdict line ab
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubFetch: mockFetch,
+      githubClient: buildMockGithubClient("## Findings\n\nNo findings."),
     });
 
     // SpecReviewStep.parseResult maps null verdict → "escalation" (failsafe)
@@ -293,10 +287,6 @@ describe("TC-041: runSpecReviewStep — records session, verdict, findingsPath, 
     const sessionId = "sess_spec_001";
     const { client } = buildMockSessionClient({ sessionId });
     const fileContent = "- **verdict**: approved\n";
-    const mockFetch = vi.fn().mockResolvedValue({
-      status: 200,
-      text: () => Promise.resolve(fileContent),
-    });
 
     const result = await runSpecReviewViaExecutor(jobState, {
       client,
@@ -305,7 +295,7 @@ describe("TC-041: runSpecReviewStep — records session, verdict, findingsPath, 
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubFetch: mockFetch,
+      githubClient: buildMockGithubClient(fileContent),
     });
 
     const stepResultArr = result.steps?.["spec-review"];
@@ -328,10 +318,6 @@ describe("TC-042: runSpecReviewStep — session created without custom tools", (
     const jobState = await makeJobState();
 
     const { client, createSessionMock } = buildMockSessionClient();
-    const mockFetch = vi.fn().mockResolvedValue({
-      status: 200,
-      text: () => Promise.resolve("- **verdict**: approved"),
-    });
 
     await runSpecReviewViaExecutor(jobState, {
       client,
@@ -340,7 +326,7 @@ describe("TC-042: runSpecReviewStep — session created without custom tools", (
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubFetch: mockFetch,
+      githubClient: buildMockGithubClient("- **verdict**: approved"),
     });
 
     expect(createSessionMock).toHaveBeenCalledTimes(1);
@@ -366,10 +352,6 @@ describe("TC-049: runSpecReviewStep — findingsPath has correct format", () => 
     const slug = "2026-04-29-my-feature";
 
     const { client } = buildMockSessionClient();
-    const mockFetch = vi.fn().mockResolvedValue({
-      status: 200,
-      text: () => Promise.resolve("- **verdict**: needs-fix"),
-    });
 
     const result = await runSpecReviewViaExecutor(jobState, {
       client,
@@ -378,7 +360,7 @@ describe("TC-049: runSpecReviewStep — findingsPath has correct format", () => 
       request: buildRequest(),
       slug,
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubFetch: mockFetch,
+      githubClient: buildMockGithubClient("- **verdict**: needs-fix"),
     });
 
     const lastStepResult = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];

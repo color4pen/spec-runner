@@ -1,20 +1,19 @@
+/**
+ * TC-012/013/014/015: Direct unit tests for fetchSpecReviewResult.
+ * These test the fetchSpecReviewResult helper directly (via raw fetch mock).
+ * These are NOT integration tests of the executor's production path, which
+ * uses githubClient.getRawFile exclusively.
+ */
 import { describe, it, expect, vi } from "vitest";
 import { fetchSpecReviewResult } from "../src/core/step/spec-review.js";
-import type { PipelineDeps } from "../src/core/pipeline.js";
+import type { FetchSpecReviewResultParams } from "../src/core/step/spec-review.js";
 
-function buildDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
+function buildDeps(overrides: Partial<FetchSpecReviewResultParams> = {}): FetchSpecReviewResultParams {
   return {
-    client: {} as PipelineDeps["client"],
     config: {
-      version: 1,
-      anthropic: { apiKey: "sk-test" },
-      agents: { propose: { agentId: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" } },
-      environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
-      github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
+      github: { accessToken: "ghp_test" },
     },
     repo: { owner: "testowner", name: "testrepo" },
-    request: { type: "feature", title: "Test", content: "content", enabled: [] },
-    slug: "2026-04-29-spec-review-pipeline",
     sleepFn: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };

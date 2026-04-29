@@ -1,17 +1,14 @@
-import type { JobState } from "../state/schema.js";
-import type { PipelineDeps } from "./types.js";
-import { getMaxRetries } from "../config/getAgentId.js";
-import { Pipeline } from "./pipeline/pipeline.js";
-import { STANDARD_TRANSITIONS } from "./pipeline/types.js";
-import type { Transition } from "./pipeline/types.js";
-import { EventBus } from "./event/event-bus.js";
-import { StepExecutor } from "./step/executor.js";
-import { ProposeStep } from "./step/propose.js";
-import { SpecReviewStep } from "./step/spec-review.js";
-import { SpecFixerStep } from "./step/spec-fixer.js";
-
-// Re-export PipelineDeps for backward compatibility with existing test imports
-export type { PipelineDeps };
+import type { JobState } from "../../state/schema.js";
+import type { PipelineDeps } from "../types.js";
+import { getMaxRetries } from "../../config/getAgentId.js";
+import { Pipeline } from "./pipeline.js";
+import { STANDARD_TRANSITIONS } from "./types.js";
+import type { Transition } from "./types.js";
+import { EventBus } from "../event/event-bus.js";
+import { StepExecutor } from "../step/executor.js";
+import { ProposeStep } from "../step/propose.js";
+import { SpecReviewStep } from "../step/spec-review.js";
+import { SpecFixerStep } from "../step/spec-fixer.js";
 
 /**
  * Run the full pipeline: propose → spec-review loop (with spec-fixer on needs-fix).
