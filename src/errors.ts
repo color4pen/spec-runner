@@ -33,6 +33,7 @@ export const ERROR_CODES = {
   SPEC_REVIEW_RESULT_NOT_FOUND: "SPEC_REVIEW_RESULT_NOT_FOUND",
   SPEC_REVIEW_RETRIES_EXHAUSTED: "SPEC_REVIEW_RETRIES_EXHAUSTED",
   SPEC_FIXER_NO_FINDINGS: "SPEC_FIXER_NO_FINDINGS",
+  BRANCH_NOT_SET: "BRANCH_NOT_SET",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -139,6 +140,14 @@ export function sessionCreateFailedError(detail: string): SpecRunnerError {
     ERROR_CODES.SESSION_CREATE_FAILED,
     "Check your API key and try again.",
     `Failed to create session: ${detail}`,
+  );
+}
+
+export function branchNotSetError(stepName: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.BRANCH_NOT_SET,
+    "Verify that propose ran successfully and called register_branch before this step.",
+    `state.branch is not set when entering '${stepName}'.`,
   );
 }
 

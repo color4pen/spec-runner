@@ -262,3 +262,15 @@ describe("TC-026: CodeFixerStep.buildMessage が前段 review-feedback 不在時
     expect(state.error).toBeNull();
   });
 });
+
+// Regression for workspace-mount-and-propose-boundary
+describe("CodeFixerStep.buildMessage — fail-fast on missing branch", () => {
+  it("throws BRANCH_NOT_SET when state.branch is null", () => {
+    const state = makeStateWithCodeReviewResult("my-change");
+    state.branch = null;
+    const deps = makeMinimalDeps("my-change");
+    expect(() => CodeFixerStep.buildMessage(state, deps)).toThrowError(
+      expect.objectContaining({ code: "BRANCH_NOT_SET" }),
+    );
+  });
+});

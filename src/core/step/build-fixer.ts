@@ -7,7 +7,7 @@ import type { StepDeps } from "./types.js";
 import { BUILD_FIXER_SYSTEM_PROMPT } from "../../prompts/build-fixer-system.js";
 import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { getLatestStepResult } from "../../state/helpers.js";
-import { SpecRunnerError } from "../../errors.js";
+import { SpecRunnerError, branchNotSetError } from "../../errors.js";
 
 const BUILD_FIXER_AGENT_MODEL = "claude-sonnet-4-5";
 
@@ -55,7 +55,8 @@ export const BuildFixerStep: AgentStep = {
   completionVerdict: "success",
 
   buildMessage(state: JobState, deps: StepDeps): string {
-    const branch = state.branch ?? "main";
+    if (!state.branch) throw branchNotSetError("build-fixer");
+    const branch = state.branch;
     const verificationResult = getLatestStepResult(state, "verification");
 
     // Pure function — must not mutate state.

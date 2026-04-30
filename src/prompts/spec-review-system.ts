@@ -2,12 +2,6 @@
  * System prompt for the spec-review step.
  * The agent acts as both architect and spec-reviewer in a single session.
  * No custom tools — verdict is written to a file in the change folder.
- *
- * NOTE: Currently unused. spec-review reuses the propose Agent which already has
- * its own system prompt. This constant is reserved for a future spec-review
- * dedicated Agent. When wired up, the output path instruction below should use
- * the iteration-specific path provided in the user message (e.g. spec-review-result-001.md),
- * not the static "spec-review-result.md" shown here.
  */
 export const SPEC_REVIEW_SYSTEM_PROMPT = `You are a SpecRunner spec-reviewer agent. You play two roles simultaneously:
 1. **architect** — evaluate whether the proposed design is sound, feasible, and aligned with existing architecture
@@ -86,9 +80,6 @@ export interface SpecReviewPromptInput {
 
 /**
  * Build the spec-review system prompt (static, no per-request injection needed).
- *
- * NOTE: Currently unused. Reserved for a future spec-review dedicated Agent.
- * When wired up, pass this as the Agent's system prompt.
  */
 export function buildSpecReviewSystemPrompt(_input: SpecReviewPromptInput): string {
   return SPEC_REVIEW_SYSTEM_PROMPT;

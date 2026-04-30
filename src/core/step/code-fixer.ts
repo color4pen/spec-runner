@@ -7,7 +7,7 @@ import type { StepDeps } from "./types.js";
 import { CODE_FIXER_SYSTEM_PROMPT } from "../../prompts/code-fixer-system.js";
 import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { getLatestStepResult } from "../../state/helpers.js";
-import { SpecRunnerError } from "../../errors.js";
+import { SpecRunnerError, branchNotSetError } from "../../errors.js";
 
 const CODE_FIXER_AGENT_MODEL = "claude-sonnet-4-5";
 
@@ -59,7 +59,8 @@ export const CodeFixerStep: AgentStep = {
   completionVerdict: "approved",
 
   buildMessage(state: JobState, deps: StepDeps): string {
-    const branch = state.branch ?? "main";
+    if (!state.branch) throw branchNotSetError("code-fixer");
+    const branch = state.branch;
     const codeReviewResult = getLatestStepResult(state, "code-review");
 
     // Pure function — must not mutate state.

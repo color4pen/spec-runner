@@ -6,6 +6,7 @@ import type { JobState } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
 import { IMPLEMENTER_SYSTEM_PROMPT } from "../../prompts/implementer-system.js";
 import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
+import { branchNotSetError } from "../../errors.js";
 
 const IMPLEMENTER_AGENT_MODEL = "claude-sonnet-4-5";
 
@@ -73,10 +74,10 @@ export const ImplementerStep: AgentStep = {
   completionVerdict: "success",
 
   buildMessage(state: JobState, deps: StepDeps): string {
-    const branch = state.branch ?? "main";
+    if (!state.branch) throw branchNotSetError("implementer");
     return buildImplementerInitialMessage({
       slug: deps.slug,
-      branch,
+      branch: state.branch,
       requestContent: deps.request.content,
     });
   },

@@ -200,3 +200,15 @@ describe("BuildFixerStep.completionVerdict", () => {
     expect(BuildFixerStep.completionVerdict).toBe("success");
   });
 });
+
+// Regression for workspace-mount-and-propose-boundary
+describe("BuildFixerStep.buildMessage — fail-fast on missing branch", () => {
+  it("throws BRANCH_NOT_SET when state.branch is null (checked before verification-result lookup)", () => {
+    const state = makeStateWithVerificationResult("my-change");
+    state.branch = null;
+    const deps = makeMinimalDeps("my-change");
+    expect(() => BuildFixerStep.buildMessage(state, deps)).toThrowError(
+      expect.objectContaining({ code: "BRANCH_NOT_SET" }),
+    );
+  });
+});

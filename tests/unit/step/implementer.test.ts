@@ -126,3 +126,15 @@ describe("ImplementerStep.completionVerdict", () => {
     expect(ImplementerStep.completionVerdict).toBe("success");
   });
 });
+
+// Regression for workspace-mount-and-propose-boundary:
+// no defensive `?? "main"` fallback; missing branch must fail-fast.
+describe("ImplementerStep.buildMessage — fail-fast on missing branch", () => {
+  it("throws BRANCH_NOT_SET when state.branch is null", () => {
+    const state = makeMinimalState({ branch: null });
+    const deps = makeMinimalDeps("my-change");
+    expect(() => ImplementerStep.buildMessage(state, deps)).toThrowError(
+      expect.objectContaining({ code: "BRANCH_NOT_SET" }),
+    );
+  });
+});

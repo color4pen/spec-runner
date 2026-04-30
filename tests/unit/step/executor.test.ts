@@ -202,3 +202,88 @@ describe("TC-031: spec-review Step does not use propose Agent ID", () => {
     );
   });
 });
+
+// Regression for workspace-mount-and-propose-boundary:
+// polling-style steps must mount the branch propose pushed to, not main.
+describe("StepExecutor — polling-style step propagates state.branch to createSession", () => {
+  it("passes branch: state.branch to client.createSession", async () => {
+    const events = new EventBus();
+    const executor = new StepExecutor(events);
+
+    const jobId = "branch-propagate-job";
+    const state = await setupJobState(jobId);
+    // setupJobState seeds state.branch = "feat/test"
+
+    const mockClient = makeMockSessionClient();
+    const createSessionSpy = mockClient.createSession as ReturnType<typeof vi.fn>;
+
+    const step: Step = {
+      kind: "agent",
+      name: "spec-review",
+      agent: makeAgentDef("spec-review"),
+      toolHandlers: undefined,
+      buildMessage: () => "review",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+
+    const deps: PipelineDeps = {
+      client: mockClient,
+      config: makeConfig(),
+      repo: { owner: "testowner", name: "testrepo" },
+      request: { type: "feature", title: "Test", slug: "test-slug", content: "content", enabled: [] },
+      slug: "test-slug",
+      githubClient: {
+        verifyBranch: vi.fn().mockResolvedValue(true),
+        getRawFile: vi.fn().mockResolvedValue(null),
+        verifyPath: vi.fn().mockResolvedValue(true),
+      },
+    };
+
+    await executor.execute(step, state, deps);
+
+    expect(createSessionSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ branch: "feat/test" }),
+    );
+  });
+
+  it("fails fast with BRANCH_NOT_SET when state.branch is null", async () => {
+    const events = new EventBus();
+    const executor = new StepExecutor(events);
+
+    const jobId = "branch-missing-job";
+    const state = await setupJobState(jobId);
+    state.branch = null;
+
+    const mockClient = makeMockSessionClient();
+    const createSessionSpy = mockClient.createSession as ReturnType<typeof vi.fn>;
+
+    const step: Step = {
+      kind: "agent",
+      name: "spec-review",
+      agent: makeAgentDef("spec-review"),
+      toolHandlers: undefined,
+      buildMessage: () => "review",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+
+    const deps: PipelineDeps = {
+      client: mockClient,
+      config: makeConfig(),
+      repo: { owner: "testowner", name: "testrepo" },
+      request: { type: "feature", title: "Test", slug: "test-slug", content: "content", enabled: [] },
+      slug: "test-slug",
+      githubClient: {
+        verifyBranch: vi.fn().mockResolvedValue(true),
+        getRawFile: vi.fn().mockResolvedValue(null),
+        verifyPath: vi.fn().mockResolvedValue(true),
+      },
+    };
+
+    await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
+      code: "BRANCH_NOT_SET",
+    });
+    expect(createSessionSpy).not.toHaveBeenCalled();
+  });
+});

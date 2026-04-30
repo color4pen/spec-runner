@@ -17,6 +17,7 @@ export class AnthropicSessionClient implements SessionClient {
     environmentId: string;
     repoUrl: string;
     githubToken: string;
+    branch?: string;
   }): Promise<{ sessionId: string }> {
     const session = await createSession(this.client, {
       agent: { id: params.agentId, type: "agent" },
@@ -26,6 +27,9 @@ export class AnthropicSessionClient implements SessionClient {
           type: "github_repository",
           url: params.repoUrl,
           authorization_token: params.githubToken,
+          ...(params.branch
+            ? { checkout: { type: "branch" as const, name: params.branch } }
+            : {}),
         },
       ],
     });

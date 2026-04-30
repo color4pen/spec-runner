@@ -6,6 +6,7 @@ import type { JobState } from "../../state/schema.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { SPEC_FIXER_SYSTEM_PROMPT } from "../../prompts/spec-fixer-system.js";
 import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
+import { branchNotSetError } from "../../errors.js";
 
 const SPEC_FIXER_AGENT_MODEL = "claude-sonnet-4-5";
 
@@ -69,12 +70,12 @@ export const SpecFixerStep: AgentStep = {
   toolHandlers: undefined,
 
   buildMessage(state: JobState, deps: StepDeps): string {
-    const branch = state.branch ?? "main";
+    if (!state.branch) throw branchNotSetError("spec-fixer");
     const specReviewResult = getLatestStepResult(state, "spec-review");
     const findingsPath = specReviewResult?.findingsPath ?? `openspec/changes/${deps.slug}/spec-review-result-001.md`;
     return buildSpecFixerInitialMessage({
       slug: deps.slug,
-      branch,
+      branch: state.branch,
       findingsPath,
     });
   },

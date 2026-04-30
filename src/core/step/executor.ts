@@ -10,6 +10,7 @@ import { getAgentId } from "../../config/getAgentId.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import {
   branchNotRegisteredError,
+  branchNotSetError,
   sessionTerminatedError,
   changeFolderNotFoundError,
   specReviewResultNotFoundError,
@@ -564,6 +565,18 @@ export class StepExecutor {
 
     const timeoutMs = this.getTimeoutMs(step.name, config);
 
+    // Polling-style steps run AFTER propose has registered a branch. The branch
+    // is the workspace mount target — without it, the workspace is mounted at
+    // main and the agent cannot see propose's change folder.
+    if (!state.branch) {
+      const branchErr = branchNotSetError(step.name);
+      const errorInfo = { code: branchErr.code, message: branchErr.message, hint: branchErr.hint };
+      state = recordFailedStepResult(state, step.name, errorInfo);
+      state = await store.fail(state, errorInfo, `${step.name}-session-create`);
+      await store.persist(state);
+      throwWrappedError(errorInfo, state);
+    }
+
     let sessionId: string;
     try {
       const repoUrl = `https://github.com/${repo.owner}/${repo.name}`;
@@ -572,6 +585,7 @@ export class StepExecutor {
         environmentId: config.environment!.id,
         repoUrl,
         githubToken: config.github!.accessToken,
+        branch: state.branch,
       });
       sessionId = sessionResult.sessionId;
     } catch (err) {
@@ -678,7 +692,9 @@ export class StepExecutor {
 
     if (resultFilePath !== null) {
       findingsPath = resultFilePath;
-      const effectiveBranch = state.branch ?? "main";
+      // state.branch is guaranteed by the pre-createSession guard above; the
+      // non-null assertion encodes that invariant.
+      const effectiveBranch = state.branch!;
 
       fileContent = await deps.githubClient.getRawFile(
         deps.repo.owner,

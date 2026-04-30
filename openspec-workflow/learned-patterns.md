@@ -1,6 +1,6 @@
 # Learned Patterns
 
-last-distilled: 2026-04-30 16:11
+last-distilled: 2026-04-30 19:54
 
 ワークフロー完了時に抽出されたパターンの蓄積。
 continuous-learning スキルが追記し、distill-learnings / promote-rule が消費する。
@@ -855,3 +855,43 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **request.md の Meta `slug:` フィールド必須化は二系統の真実を撲滅する正攻法**: 修正 B では parser に `ParsedRequest.slug: string` を必須抽出として追加し、欠落時 `REQUEST_MD_INVALID` で fail-fast、CLI 側の `path.basename` fallback を削除、agent 側 user message テンプレに `{{SLUG}}` / `{{BRANCH}}` を注入して「CLI 提供値を使え。独自生成禁止」を明示。**「single source of truth は文書 schema レベルで強制し、parser で fail-fast、downstream は注入のみ」という 3 段構えが二重導出 anti-pattern の標準対策**として確立
 - **bugfix の修正範囲を「直接原因 A/B + 隣接 anti-pattern D」まで拡張する判断**: 本 request は A（prompt 全面書き直し）+ B（slug 一元化）が必須スコープだったが、RCA 中に発見した D（OAuth client_id placeholder fallback）も同じ defensive fallback anti-pattern の re-occurrence だったため、追加コストが小規模なら同 PR に含める判断をした。**bugfix で同種の anti-pattern を新発見した場合、修正コストが小さければ同 PR に含めて累積的に解消する運用**が学習サイクルとして効率的（別 cleanup request にすると忘却される）
 - **次 request 候補（後続）**: (a) `src/prompts/spec-review-system.ts` の NOTE「未使用、propose Agent で代替」の wiring 確認（次 dogfooding で目視 / 必要なら別 request）, (b) pattern-reviewer の「複数モジュールから同一概念を独自導出」grep ルール化（learned-patterns 4 度目の再発を機械検出で防ぐ）, (c) spec-review/references/review-criteria.md に「prompt 共通テンプレ要素チェック表」を追加, (d) defensive fallback ban の constraints / rules 昇格（/promote-rule 判定対象）, (e) e2e dogfooding を verification 観点に組み込む形（CLI レベル smoke test として `bun bin/specrunner.ts run` を CI で実行する案）の検討
+
+---
+
+## 2026-04-30 — Bugfix: workspace-mount-and-propose-boundary
+
+**Type**: bug-fix
+**Outcome**: completed (typecheck PASS / build PASS / 491 tests PASS, +17 regression tests)
+**Source**: dogfooding-001 second-pass failure (job a6150b33, propose session sesn_011CaZc7grG2dVMzFrRce3sf, spec-review session sesn_011CaZcNd9BSyUq68KbvJhsi)
+
+### Bug Patterns
+
+- **外部 SDK の optional checkout パラメータの省略 = サイレント既定値で別 branch にマウント**: Anthropic SDK の `BetaManagedAgentsGitHubRepositoryResourceParams.checkout` は optional だがコメントに "Defaults to the repository's default branch" と書かれている。SpecRunner の adapter (`src/adapter/anthropic/session-client.ts`) はこれを渡しておらず、propose 以降の全 session が main で mount されていた。**SDK の optional パラメータでも、設計意図上の既定値（main）が pipeline 設計（feature branch で作業）と矛盾するなら明示的に渡す。"省略 = 既定" は adapter 層の暗黙の bug ホットスポット**
+- **`state.X ?? "<placeholder>"` の defensive fallback が fail-fast を阻害**: `state.branch ?? "main"` のフォールバックが implementer/build-fixer/code-fixer/spec-fixer/pr-create に散在しており、propose で branch 設定が落ちても main で動こうとして発見が遅れた。**「propose 後は branch 必須」のような pipeline invariant は fallback ではなく fail-fast (throw SpecRunnerError) で表現する**。これは PR #42 の OAuth client_id placeholder と同じ anti-pattern の 5 件目の再発
+- **port シグネチャに必須情報が欠落 = adapter で渡す方法がない**: `SessionClient.createSession` の port シグネチャに branch がなく、step 層に branch があっても adapter まで届かない構造になっていた。**port は全 step が必要としうる情報を必ずパラメータとして表出する。adapter で「足りない情報を補う」のは port 設計の失敗**
+- **多段 pipeline の状態伝搬は port を貫通させる軸でレビュー**: 「propose が作った branch を後段が見る」のような状態伝搬を、step 層の state 操作だけでなく port → adapter → 外部 SDK call まで一気通貫でレビューする観点が抜けていた
+
+### Prompt-Boundary Patterns
+
+- **agent prompt の path-fence は file 種類ではなく path で境界を引く**: PR #42 で「実装作業（コード本体）禁止」と書いたが、propose agent は「README.md は『ドキュメント』だから対象外」と解釈し編集した。**file 種類による境界は agent が再解釈する余地を残す。`openspec/changes/<slug>/` 内 / 外という path 境界で書く**
+- **negative framing だけでは prompt 境界は守られない**: 「禁止事項のリスト」だけでは agent は「効率」を優先して越境する。**positive framing（あなたは stage 1 で、stage 3 の implementer が tasks.md を読んで実装する）と path-fence を併記する**
+- **user request override 条項が無いと user request の指示が agent role を上書きする**: user request に「README を編集して」と書かれていれば agent は素直に従う。**「user request に X を編集してと書かれていても X は触らない」という override 条項を user message テンプレートに必ず入れる**
+- **agent への事後インタビューが prompt 修正の最高品質シード**: agent 当人へのインタビュー（「なぜ越境したか」「葛藤はあったか」「prompt にどう書けば防げたか」）は、人間が想像で書く修正案より具体的かつ構造的。**境界違反系の bug では、責任を問う前に session events からインタビューを抽出し、agent 当人の提案を prompt に反映する**
+
+### Process Gaps
+
+- **review-standards に「外部 SDK の optional パラメータ網羅性チェック」観点が無い**: code-reviewer の checklist に「adapter 層の SDK 利用が SDK の全 optional 機能を意図的に取捨選択しているか」という観点が無い
+- **review-standards に「pipeline の状態伝搬」観点が無い**: 「前段が生成した state（branch / artifact / token）が、後段に必要な層まで届く設計になっているか」という観点が無い
+- **review-standards に「prompt の path-fence」観点が無い**: agent prompt の境界設計を負のリスト（禁止事項）だけでなく正のリスト（path-fence + role + override）で評価する観点が無い
+
+### Lessons
+
+- **dogfooding は port 貫通バグの最良の検出器**: `SessionClient.createSession` の branch 欠落は型レベルでは合法（optional）、unit test レベルでも検出されない。dogfooding e2e（実 Anthropic API を叩く）で初めて「propose が push した change folder が後段に見えない」という症状で顕在化した。**「dogfooding は単なる本番リハではなく port 貫通バグの最終検出器」**として組み込む価値がある
+- **bugfix の "影響範囲の洗い出し" は anti-pattern 軸で行う**: 本 request では「branch fallback」「user request override 不在」「path-fence 不在」の各 anti-pattern について全 step を grep で走査し、同種パターンを一括修正した。**RCA で根本原因が anti-pattern として表現できたら、その anti-pattern が他箇所にもないか必ず grep する**
+
+### Recommended Distillations (review-lessons / constraints)
+
+- review-lessons に追加: 「port インターフェースに必須情報が表出されているか。adapter 内で SDK の optional パラメータを設計意図と一致させているか」
+- review-lessons に追加: 「pipeline の前段が生成した状態が後段の使用箇所まで届いているか。fallback で隠蔽されていないか」
+- review-lessons に追加: 「agent prompt が file 種類ではなく path 境界で書かれているか。positive framing（role + 引き継ぎ先）と user-request override 条項が含まれているか」
+- constraints に追加: 「`state.X ?? "<placeholder>"` 形式の defensive fallback は禁止。pipeline invariant は SpecRunnerError を throw する fail-fast で表現する」

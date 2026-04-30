@@ -16,6 +16,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { runPrCreate } from "../pr-create/runner.js";
 import { renderPrTitle, renderPrBody } from "../pr-create/body-template.js";
+import { branchNotSetError } from "../../errors.js";
 
 export const PrCreateStep: CliStep = {
   kind: "cli",
@@ -24,7 +25,8 @@ export const PrCreateStep: CliStep = {
   async run(state: JobState, deps: StepDeps): Promise<void> {
     const cwd = deps.cwd ?? process.cwd();
     const slug = deps.slug;
-    const branch = state.branch ?? "HEAD";
+    if (!state.branch) throw branchNotSetError("pr-create");
+    const branch = state.branch;
     const title = renderPrTitle(deps.request);
     const body = renderPrBody({ parsedRequest: deps.request, jobState: state, slug });
 

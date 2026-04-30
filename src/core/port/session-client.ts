@@ -14,6 +14,15 @@ export interface SessionClient {
     environmentId: string;
     repoUrl: string;
     githubToken: string;
+    /**
+     * Branch to check out when mounting the repository. When omitted the SDK
+     * defaults to the repository's default branch (main). Polling-style steps
+     * (spec-review / implementer / build-fixer / code-review / code-fixer /
+     * spec-fixer) MUST pass `state.branch` so they can see the change folder
+     * pushed by propose; otherwise their workspace is mounted at main and the
+     * pipeline halts (e.g. "change folder doesn't exist yet").
+     */
+    branch?: string;
   }): Promise<{ sessionId: string }>;
 
   /**
