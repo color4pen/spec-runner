@@ -12,13 +12,14 @@ export type StepName =
   | "verification"
   | "build-fixer"
   | "code-review"
-  | "code-fixer";
+  | "code-fixer"
+  | "pr-create";
 
 /**
- * AgentStepName excludes CLI-resident steps (verification) from StepName.
+ * AgentStepName excludes CLI-resident steps (verification, pr-create) from StepName.
  * Used to constrain AgentRegistry and config schema to agent-only roles.
  */
-export type AgentStepName = Exclude<StepName, "verification">;
+export type AgentStepName = Exclude<StepName, "verification" | "pr-create">;
 
 export type Verdict =
   | "approved"
@@ -101,6 +102,12 @@ export interface StepResult {
   fileContent?: string | null;
 }
 
+export interface PullRequestInfo {
+  url: string;
+  number: number;
+  createdAt: string;
+}
+
 export interface JobState {
   version: 1;
   jobId: string;
@@ -116,6 +123,8 @@ export interface JobState {
   error: ErrorInfo | null;
   /** Step-level results journal (array per step for iteration tracking). Optional for backward compat with v1 files. */
   steps?: Record<string, StepRun[]>;
+  /** PR info recorded after pr-create step succeeds. Optional for backward compat with legacy state files. */
+  pullRequest?: PullRequestInfo;
 }
 
 export const MAX_HISTORY_SIZE = 100;

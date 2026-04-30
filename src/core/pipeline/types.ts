@@ -72,9 +72,12 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: "build-fixer",  on: "success",    to: "verification" },
   { step: "build-fixer",  on: "error",      to: "escalate" },
   // --- code review loop ---
-  { step: "code-review",  on: "approved",   to: "end" },
+  { step: "code-review",  on: "approved",   to: "pr-create" },
   { step: "code-review",  on: "needs-fix",  to: "code-fixer" },
   { step: "code-review",  on: "escalation", to: "escalate" },
   { step: "code-fixer",   on: "approved",   to: "code-review" },
   { step: "code-fixer",   on: "error",      to: "escalate" },
+  // --- pr-create (single shot, no loop) ---
+  { step: "pr-create",    on: "success",    to: "end" },
+  { step: "pr-create",    on: "error",      to: "escalate" },
 ];

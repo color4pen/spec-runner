@@ -149,7 +149,8 @@ describe("TC-011: verification passed → code-review transition が存在する
 // TC-012 (new code-review transitions): TC-012 / TC-013 / TC-014 / TC-015 / TC-029
 describe("TC-012-015, TC-029: code-review / code-fixer transition rows", () => {
   const codeReviewEdges = [
-    { step: "code-review", on: "approved",   to: "end",         label: "TC-012: code-review approved → end" },
+    // TC-012: code-review approved now routes to pr-create (not end) — updated per pr-create-step spec
+    { step: "code-review", on: "approved",   to: "pr-create",   label: "TC-012: code-review approved → pr-create" },
     { step: "code-review", on: "needs-fix",  to: "code-fixer",  label: "TC-013: code-review needs-fix → code-fixer" },
     { step: "code-review", on: "escalation", to: "escalate",    label: "TC-015: code-review escalation → escalate" },
     { step: "code-fixer",  on: "approved",   to: "code-review", label: "TC-014: code-fixer approved → code-review" },
@@ -167,11 +168,13 @@ describe("TC-012-015, TC-029: code-review / code-fixer transition rows", () => {
 });
 
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
+// TC-022: STANDARD_TRANSITIONS テーブルが 22 行を持つ（19 + pr-create 3 行 = 22）
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 19 rows total (14 original - 1 modified + 6 new code-review/code-fixer = 19)", () => {
-    // 14 original rows, but verification --passed→ end replaced by --passed→ code-review
-    // + 5 new code-review/code-fixer rows = 19
-    expect(STANDARD_TRANSITIONS.length).toBe(19);
+  it("has 21 rows total (19 original + 2 new pr-create rows = 21)", () => {
+    // 19 rows (code-review loop included, code-review --approved→ end replaced with --approved→ pr-create)
+    // + 2 new pr-create rows (success→end, error→escalate)
+    // Note: tasks.md spec says 22 but the old "code-review --approved→ end" was removed so net is 21
+    expect(STANDARD_TRANSITIONS.length).toBe(21);
   });
 
   it("verification --passed→ end does NOT exist", () => {
@@ -179,6 +182,34 @@ describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された�
       (t) => t.step === "verification" && t.on === "passed" && t.to === "end",
     );
     expect(oldRow).toBeUndefined();
+  });
+
+  it("code-review --approved→ end does NOT exist (TC-021: regression guard)", () => {
+    const oldRow = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-review" && t.on === "approved" && t.to === "end",
+    );
+    expect(oldRow).toBeUndefined();
+  });
+
+  it("pr-create --success→ end exists (TC-019)", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "pr-create" && t.on === "success" && t.to === "end",
+    );
+    expect(row).toBeDefined();
+  });
+
+  it("pr-create --error→ escalate exists (TC-020)", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "pr-create" && t.on === "error" && t.to === "escalate",
+    );
+    expect(row).toBeDefined();
+  });
+
+  it("code-review --approved→ pr-create exists (TC-018)", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-review" && t.on === "approved" && t.to === "pr-create",
+    );
+    expect(row).toBeDefined();
   });
 });
 
@@ -436,5 +467,38 @@ describe("TC-024: runPipeline の loopNames に code-review が含まれる", ()
       (t) => t.step === "code-review" && t.on === "needs-fix" && t.to === "code-fixer",
     );
     expect(codeReviewNeedsFixToCodeFixer).toBeDefined();
+  });
+});
+
+// TC-023: loopNames — pr-create が loopNames に含まれない
+describe("TC-023: Pipeline loopNames — pr-create が loopNames に含まれない", () => {
+  it("run.ts の loopNames に pr-create が含まれない", async () => {
+    const fs = await import("node:fs/promises");
+    const source = await fs.readFile(
+      new URL("../../../../src/core/pipeline/run.ts", import.meta.url).pathname,
+      "utf-8",
+    );
+
+    // loopNames should include spec-review, verification, code-review
+    expect(source).toContain('"spec-review"');
+    expect(source).toContain('"verification"');
+    expect(source).toContain('"code-review"');
+
+    // loopNames array should NOT contain pr-create
+    const loopNamesMatch = /loopNames:\s*\[([^\]]+)\]/.exec(source);
+    expect(loopNamesMatch).not.toBeNull();
+    expect(loopNamesMatch![1]).not.toContain("pr-create");
+  });
+});
+
+// TC-024b: LOOP_ERROR_CODES — pr-create が含まれない
+describe("TC-024: LOOP_ERROR_CODES — pr-create が含まれない", () => {
+  it("LOOP_ERROR_CODES keys do not include pr-create", () => {
+    const keys = Object.keys(LOOP_ERROR_CODES);
+    expect(keys).toContain("spec-review");
+    expect(keys).toContain("verification");
+    expect(keys).toContain("code-review");
+    expect(keys).not.toContain("pr-create");
+    expect(keys).toHaveLength(3);
   });
 });

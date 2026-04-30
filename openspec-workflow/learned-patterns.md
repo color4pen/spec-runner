@@ -774,3 +774,50 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **integration test の receive criteria は「verdict が異なる 2 path を runPipeline で走らせる」を sentinel にする**: 受け入れ基準が unit-level transition table test だけだと branch collapse は検出できない。**「verification PASS + spec-review approved + code-review needs-fix → code-fixer → approved」のような verdict 値が分岐する end-to-end test を最低 1 件含める**規律。本 request では iter 2 で TC-060 / TC-061 が追加され、これが今後の review-loop 系 request の sentinel template として再利用可能
 - **fix commit の LOW carry-over は構造的に発生するが、3 回連続なら格上げか cleanup 別 PR を出す**: code-fixer は HIGH/MEDIUM のみを対象とする運用のため LOW は iter を跨いで持ち越される。「misleading comment」「buildMessage と system prompt の手順重複」のような stylistic LOW は **2 iter 連続で carry-over したら次 PR で cleanup commit を切る**運用判断が必要
 - **次 request 候補（後続）**: (a) PR 作成 step 追加（`code-review → approved → pr-create` への transition table 書き換え、本 request の `→ end` 終端を解消し self-hosting 完成形へ）, (b) verification-result.md の iteration 連番化 + iterNum 動的化（前 request からの carry-over、Priority HIGH）, (c) `STEP_TIMEOUTS` lookup table または `AgentStep.timeoutMs?` フィールド導入（前 request からの carry-over、Priority HIGH）, (d) executor.ts の sibling step 直接 import を禁止する grep test 追加（HIGH F1 / F5 の構造的再発防止）, (e) integration test の path matcher 規律化（substring match 禁止、`endsWith` / 正規表現を canonical にする lint）, (f) `specReviewResultNotFoundError` を `resultFileNotFoundError(slug, branch, expectedPath)` に rename + parameterize（iter 2 R1 regression の cleanup）, (g) carry-over LOW 3 件（misleading comment / buildMessage 手順重複 / verdict test 重複）の cleanup commit, (h) `code-review` の skip option を design 再検討（small change での review overhead 回避用途、現状は強制有効）
+
+---
+
+## 2026-04-30 — pr-create step 追加（self-host pipeline 完成形）
+
+**Type**: new-feature
+**Outcome**: completed (spec-review iter 2 approved 6.30 → 7.55 +1.25; code-review iter 1 approved 7.60 — 初回で pass threshold 通過)
+
+### Review Patterns
+
+#### Spec Review (6.30 → 7.55, +1.25)
+- **steps Map の登録先 file path 誤指定 (HIGH)**: 初版 tasks.md が `src/cli/run.ts` を編集対象として指定していたが、実際の steps Map は `src/core/pipeline/run.ts` にある。**「step 登録先」の file path は spec 段階で実装ツリーを確認して固定**する規律。tasks.md と実装層の path 乖離は implementer が誤った file を編集して pipeline に step が登録されない致命的バグを直接生む
+- **type-narrowing union 拡張時の Exclude 句更新漏れ (HIGH)**: `StepName` に `pr-create` を追加する際、`AgentStepName = Exclude<StepName, "verification">` の Exclude 句の追加更新（`| "pr-create"`）が初版 spec で漏れていた。**新 CLI step を導入する union 拡張は、`AgentStepName` のような派生 type の Exclude 句更新を独立 Requirement として明記**する規律。AgentRegistry が pr-create を agent として誤登録する事故を型レベルで封じる
+- **idempotent OPEN PR 検出を stderr 文言依存で行う初版設計 (HIGH)**: 初版 spec が `gh pr view` の stderr 文字列「no pull requests found」を grep して PR 不在を判定する形だった。**外部 CLI の文言変化に依存する判定ロジックは spec 段階で却下し、`gh pr list --json` 等の構造化出力で配列長判定する形に統一**する規律。stderr 文言は gh CLI のバージョン更新で sの変化が起き得る silent breaking
+- **既存 transition の「削除」が spec の delta 表現で曖昧化 (HIGH)**: 「`code-review approved → end` を削除し、`code-review approved → pr-create` を追加」という差分を初版 tasks.md が「追加」だけで書いていたため、削除指示が implementer に届かず両 transition が共存する non-deterministic な state machine になる risk。**transition の置換は「削除 + 追加」の 2 行を tasks.md / spec で必ず明記**する規律。`STANDARD_TRANSITIONS` の行数を Requirement として固定（本 request では 21 行）し、regression assertion をテストで担保
+- **PR body の verbatim 流し込みによる @mention / #issue ref の意図せぬ解釈 (MEDIUM, 後続 request 送り)**: request.md 由来文字列を verbatim で PR body に注入する設計のため、`@user` mention や `#1234` issue ref が GitHub に解釈される。社内運用では低リスクとして本 request では非対応合意。**PR body 等「外部サービスが解釈する markdown」を生成する step では template injection の sanitize 方針を design.md Risks に必ず明記**する規律
+- **result-file 書式が spec 段階で fixed schema 化されない (MEDIUM)**: `pr-create-result.md` の `## PR` セクションが「PR section listing url / number / branch / createdAt」のような自然言語記述で、bullet / table / key-value のいずれかが implementer 任意。**後続 step / fixer が parse する result-file は spec で「`- url: <URL>`」のような bullet 形式を Scenario 例で固定**する規律。verification-result.md は固定 schema で確立済みの先行例
+
+#### Code Review (7.60, 初回 approved)
+- **step 内の slug 推論が他 step の `deps.slug` 経路から乖離 (MEDIUM)**: `body-template.ts` 内で `jobState.request.path.split("/").slice(-2,-1)[0]` から slug を独自導出していたが、他の全 step は `deps.slug` を使用。pipeline の slug 取得経路に二系統の真実を導入する anti-pattern。**step 内で「pipeline 共通変数」を独自導出してはならず、`deps` 経由でしか参照しない**規律。fallback `"unknown"` も silently 不正 path を生成するため fail-fast で削除する形が望ましい
+- **tasks.md / test-cases.md の数値規定と実装の乖離 (MEDIUM)**: tasks.md §6.7 と TC-022 が `STANDARD_TRANSITIONS` を 22 行と規定、実装は 21 行（19 - 1 + 3 = 21）。implementer は implementation-notes.md L38 に算術不一致を明記しテストを 21 に合わせて整合化したが、archive 後に spec を読む人間が混乱する。**spec 段階で「行数」のような派生数値は計算式（base ± delta）で書く**規律。「19 行 - 1 行（削除）+ 3 行（追加）= 21 行」のように演算過程を spec に残せば iter 間の数値修正コストが減る
+- **tmpfile 名の `Date.now()` のみ構成 (LOW)**: 同 process 内並行実行で衝突する理論的可能性。pr-create は pipeline 内 1 回しか走らないため実害なしだが、`crypto.randomUUID()` / `fs.mkdtemp()` のほうが堅牢。**tempfile path は時刻ベースではなく UUID / mkdtemp ベースで生成**する規律
+- **test runner mismatch の落とし穴 (LOW)**: `bun test` で 36 件 fail（`vi.mock(..., async (importOriginal) => ...)` の hoisted importOriginal を bun:test が未対応）。本リポジトリの runner は vitest 固定（`bun run test` は通る）だが、`bun test` を直接叩いた reader が「テストが壊れている」と誤認するリスク。**test runner が vitest 固定の project では tests/README または CONTRIBUTING に明記**する規律
+
+### Error Patterns
+- **「既存 transition の削除」が spec delta から漏れる**: 「approved → end」のような既存 transition を「approved → pr-create」に置換する際、tasks.md が「追加」だけで書かれていると implementer が両方残す。spec-review が iter 1 で HIGH 検出した。**transition table の 1:1 置換は「OLD 行を削除、NEW 行を追加」の 2 アクションで spec / tasks に明示**する形がデファクト
+- **stderr 文言依存の brittle ロジック**: 初版 spec が `gh` CLI の `no pull requests found` 文字列を grep する形を提案したが、CLI バージョン更新で文言変化する silent risk。spec-review iter 1 で HIGH 検出 → JSON 配列長判定に書き換え。**外部 CLI の出力解析は構造化形式（`--json`、`--format json`）を canonical にする**規律
+- **iter 1 approved + threshold 7.0 通過は珍しい良好ケース**: 本 request は code-review iter 1 で 7.60 / approved 達成（CRITICAL=0, HIGH=0）。spec-review が iter 2 で HIGH 4 件をすべて解消したことが効いている。**spec-review で HIGH を残さず implementer に渡せると、code-review が初回で approved に届く確率が上がる**観測。逆に言えば spec-review iter 2 で HIGH 残置は code-review の iter コストを 1 つ増やす
+
+### Design Decisions
+- **`kind: "cli"` を採用（ADR D1）**: ADR-20260430-pr-create-step-design.md に記録。verification と同パターン。LLM コスト不要、retry 決定的、test 容易。gh CLI 失敗（rate limit / auth）は LLM でも fix できないため agent 化の価値なし。verification + pr-create の 2 つが CLI-resident step として確立
+- **冪等 OPEN PR 検出（ADR D2）**: `gh pr list --head <branch> --base <baseBranch> --state all --json url,number,state` で全 state を取得 → JSON 配列長 0 で不在判定。OPEN PR → state 記録して `existing-open` success / MERGED + CLOSED → escalation。stderr 文言依存禁止
+- **PR base branch は main 固定（ADR D3）**: config 経由の可変化は YAGNI として却下。実需が出てから対応。Sub-branch workflow が入る時に Invariant を明示更新する形
+- **PR body は request.md ベースの独立生成（ADR D4）**: commit messages 集約案を却下。理由は noise（fix-up / chore が混在）。request.md `## 背景` / `## 目的` + pipeline 実行サマリ（spec-review / verification / code-review の最終 verdict）から template + state で生成。LLM 不要
+- **失敗時 retry なし → 即 escalation（ADR D5）**: gh CLI 失敗（rate limit / auth / network）は人間判断を要するため自動 retry しない。pipeline transitions に `pr-create error → escalate` を追加
+- **`--body-file` 強制 + tempfile cleanup**: PR body が大きくなる可能性に備えて argv の ARG_MAX 制限を回避。`gh pr create --body-file <tempfile>` のみ許可、`--body <string>` を spec で禁止。tempfile cleanup は finally で必須
+
+### Lessons
+- **step 内の pipeline 変数は必ず `deps` 経由で取得する**: `body-template.ts` が独自に jobState から slug を導出していた MEDIUM 指摘は典型的な「2 つの真実」anti-pattern。**step は pipeline の共通変数（slug / branch / baseDir 等）を `deps` から受け取るのが規約。step 内での再導出は禁止**規律。fallback "unknown" のような silent default も削除して fail-fast にする
+- **transition 置換は「削除 + 追加」の 2 アクションで明示**: `code-review → approved → end` を `code-review → approved → pr-create` に置換するような spec delta は、「OLD 行削除 + NEW 行追加」の 2 つを tasks.md / spec で必ず分離して書く規律。「追加」だけだと両方残る non-deterministic state machine が生まれる
+- **派生数値は spec で計算式として書く**: 「STANDARD_TRANSITIONS を 22 行にする」のような派生数値は base ± delta の演算過程で書く。「19 行 - 1 行（code-review→end 削除）+ 3 行（pr-create 3 行追加）= 21 行」と spec に残せば、iter 間で数値が誤りでも算術検算で即修正できる。**spec 段階の数値規定は「結果値だけでなく算式」を併記**する規律
+- **type union 拡張時は派生 Exclude 句の更新を独立 Requirement に**: `StepName` に新 literal を追加する spec delta では、`AgentStepName = Exclude<StepName, ...>` のような派生 type の Exclude 句更新を**独立 Requirement として明記**する規律。type system の整合性を spec レベルで保証することで AgentRegistry への誤登録を型エラーで catch できる
+- **外部 CLI 出力解析は構造化形式（`--json` 等）を canonical にする**: `gh pr view` の stderr 文言「no pull requests found」を grep する初版設計は HIGH で却下された。**外部 CLI の出力解析は `--json` / `--format json` のような構造化形式を必須**規律。文言依存ロジックは CLI バージョン更新で silent breaking する
+- **PR body / 外部サービス向け markdown 生成は sanitize 方針を design Risks に明記**: `@mention` / `#issue-ref` / template injection は外部サービス（GitHub）が解釈する。本 request では verbatim 流し込みを許容したが、その判断を design.md Risks に明記する規律。「許容する」決定そのものが Risks に書かれていれば監査時に追跡可能で、後続 request で sanitize を入れる時の根拠にもなる
+- **spec-review の HIGH 残置は code-review iter コストを 1 つ増やす観測**: 本 request は spec-review iter 2 で HIGH 4 件すべて解消 → code-review iter 1 で approved（7.60）に到達。**spec-review で HIGH を完全に潰してから implementer に渡すと、code-review が初回で approved に届く確率が上がる**経験則。逆に spec-review iter 2 approved でも HIGH 残置がある場合、code-review iter 2 で同じ問題が再浮上するコストを覚悟する
+- **CLI-resident step の確立パターンが 2 例で固まった**: verification + pr-create で `kind: "cli"` step の design pattern が確立。条件は「LLM 不要 / retry 決定的 / 失敗時 LLM でも fix できない」。今後の CLI step 候補（npm publish / docker push / artifact upload 等）は本パターンを sentinel template として再利用可能
+- **次 request 候補（後続）**: (a) PR body の `@mention` / `#issue-ref` sanitize（本 request で verbatim 容認した分の後始末、Priority MEDIUM）, (b) `pr-create-result.md` の `## PR` セクション書式を spec で fixed schema 化（bullet list `- url: <URL>` 形式の確定、Priority MEDIUM）, (c) `body-template.ts` の slug 推論を `deps.slug` 経由に統一（MEDIUM Finding #1 の cleanup）, (d) tasks.md / test-cases.md の `STANDARD_TRANSITIONS` 行数 21 への訂正（spec と実装のドキュメント整合、MEDIUM Finding #2）, (e) tmpfile 名を `crypto.randomUUID()` ベースに変更（LOW）, (f) tests/README に「test runner は vitest 固定、`bun test` 不可」を明記（LOW Finding #6）, (g) PR base branch の config 可変化（ADR D3 で YAGNI 却下したが、sub-branch workflow が必要になった時の trigger）, (h) carry-over の前 request follow-up（verification-result.md iteration 連番化 / `STEP_TIMEOUTS` lookup table / executor.ts sibling import 禁止 grep test 等は引き続き未着手）

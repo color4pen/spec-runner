@@ -25,6 +25,27 @@ vi.mock("../src/core/verification/runner.js", () => ({
   }),
 }));
 
+// Mock the pr-create runner so pipeline-integration tests don't spawn real gh CLI.
+// PrCreateStep.run() calls runPrCreate() internally.
+// Default: returns "created" status and writes a minimal pr-create-result.md.
+vi.mock("../src/core/pr-create/runner.js", () => ({
+  runPrCreate: vi.fn().mockImplementation(async (input: { branch: string; baseBranch: string; title: string; body: string; cwd?: string }) => {
+    const cwd = input.cwd ?? process.cwd();
+    const slug = "test-slug"; // integration tests use this slug
+    const outputPath = `${cwd}/openspec/changes/${slug}/pr-create-result.md`;
+    const dir = outputPath.substring(0, outputPath.lastIndexOf("/"));
+    await import("node:fs/promises").then((fs) => fs.mkdir(dir, { recursive: true }));
+    await import("node:fs/promises").then((fs) =>
+      fs.writeFile(outputPath, `# pr-create Result — ${slug}\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/testowner/testrepo/pull/1\n- **Number**: 1\n`)
+    );
+    return {
+      status: "created" as const,
+      url: "https://github.com/testowner/testrepo/pull/1",
+      number: 1,
+    };
+  }),
+}));
+
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
 
@@ -568,9 +589,9 @@ describe("TC-050: state.step updated: spec-fixer → spec-review within loop", (
       githubClient,
     });
 
-    // After spec-review approved → implementer → verification → code-review → end.
-    // The final step in state is "code-review" (last step before pipeline ends with approved verdict).
-    expect(result.step).toBe("code-review");
+    // After spec-review approved → implementer → verification → code-review → pr-create → end.
+    // The final step in state is "pr-create" (last step before pipeline ends).
+    expect(result.step).toBe("pr-create");
 
     // history should contain step-transition entries
     const stepTransitions = result.history.filter(

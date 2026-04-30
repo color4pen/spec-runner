@@ -183,6 +183,16 @@ function buildMockPipeline(opts: {
     if (step.name === "code-fixer") {
       return currentState;
     }
+    if (step.name === "pr-create") {
+      // Default: pr-create succeeds
+      return {
+        ...currentState,
+        steps: {
+          ...currentState.steps,
+          "pr-create": [{ attempt: 1, sessionId: null, outcome: { verdict: "success" as const, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" }],
+        },
+      };
+    }
     throw new Error(`Unknown step: ${step.name}`);
   });
 
@@ -197,6 +207,7 @@ function buildMockPipeline(opts: {
     ["build-fixer",  { kind: "agent", name: "build-fixer",  agent: { name: "test", role: "build-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["code-review",  { kind: "agent", name: "code-review",  agent: { name: "test", role: "code-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => "openspec/changes/test/review-feedback-001.md", parseResult: () => ({ verdict: "approved" as const, findingsPath: null }) }],
     ["code-fixer",   { kind: "agent", name: "code-fixer",   agent: { name: "test", role: "code-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "approved", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["pr-create",    { kind: "cli",   name: "pr-create",    run: async () => {}, resultFilePath: () => "openspec/changes/test/pr-create-result.md", parseResult: () => ({ verdict: "success" as const, findingsPath: null }) }],
   ]);
 
   const pipeline = new Pipeline({
@@ -479,16 +490,19 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     expect(find("verification", "escalation")).toMatchObject({ to: "escalate" });
     expect(find("build-fixer",  "success")).toMatchObject({ to: "verification" });
     expect(find("build-fixer",  "error")).toMatchObject({ to: "escalate" });
-    // code-review loop rows
-    expect(find("code-review",  "approved")).toMatchObject({ to: "end" });
+    // code-review loop rows (code-review approved now routes to pr-create, not end)
+    expect(find("code-review",  "approved")).toMatchObject({ to: "pr-create" });
     expect(find("code-review",  "needs-fix")).toMatchObject({ to: "code-fixer" });
     expect(find("code-review",  "escalation")).toMatchObject({ to: "escalate" });
     expect(find("code-fixer",   "approved")).toMatchObject({ to: "code-review" });
     expect(find("code-fixer",   "error")).toMatchObject({ to: "escalate" });
+    // pr-create rows
+    expect(find("pr-create",    "success")).toMatchObject({ to: "end" });
+    expect(find("pr-create",    "error")).toMatchObject({ to: "escalate" });
   });
 
-  it("has exactly 19 transitions (14 original - 1 modified + 6 new code-review/code-fixer)", () => {
-    expect(STANDARD_TRANSITIONS).toHaveLength(19);
+  it("has exactly 21 transitions (19 original + 2 new pr-create rows)", () => {
+    expect(STANDARD_TRANSITIONS).toHaveLength(21);
   });
 });
 

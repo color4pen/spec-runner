@@ -15,6 +15,7 @@ import { VerificationStep } from "../step/verification.js";
 import { BuildFixerStep } from "../step/build-fixer.js";
 import { CodeReviewStep } from "../step/code-review.js";
 import { CodeFixerStep } from "../step/code-fixer.js";
+import { PrCreateStep } from "../step/pr-create.js";
 
 /**
  * Run the full pipeline: propose → spec-review loop (with spec-fixer on needs-fix).
@@ -46,6 +47,7 @@ export async function runPipeline(
     ["build-fixer",  BuildFixerStep],
     ["code-review",  CodeReviewStep],
     ["code-fixer",   CodeFixerStep],
+    ["pr-create",    PrCreateStep],
   ]);
 
   const pipeline = new Pipeline({

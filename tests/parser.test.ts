@@ -182,3 +182,74 @@ describe("enabled extraction", () => {
     expect(result.enabled).toContain("adr");
   });
 });
+
+// TC-029 (test-cases.md): request-md parser — 背景と目的の両方が存在する場合
+describe("TC-029: sections — 背景と目的の両方が存在する場合", () => {
+  it("sections.背景 and sections.目的 are extracted correctly", () => {
+    const content = `# My Feature
+
+## Meta
+
+- **type**: new-feature
+
+## 背景
+
+これは背景のテキストです。
+複数行もサポートする。
+
+## 目的
+
+これは目的のテキストです。
+
+## Other Section
+
+Other content.
+`;
+    const result = parseRequestMdContent(content);
+    expect(result.sections?.["背景"]).toBe("これは背景のテキストです。\n複数行もサポートする。");
+    expect(result.sections?.["目的"]).toBe("これは目的のテキストです。");
+  });
+});
+
+// TC-030 (test-cases.md): request-md parser — 目的が存在しない場合
+describe("TC-030: sections — 目的が存在しない場合", () => {
+  it("sections.背景 is set, sections.目的 is undefined, no error", () => {
+    const content = `# My Feature
+
+## Meta
+
+- **type**: new-feature
+
+## 背景
+
+背景テキスト。
+
+## Other Section
+
+Other content.
+`;
+    const result = parseRequestMdContent(content);
+    expect(result.sections?.["背景"]).toBe("背景テキスト。");
+    expect(result.sections?.["目的"]).toBeUndefined();
+  });
+});
+
+// sections — 両方不在の場合
+describe("sections — 背景と目的の両方が存在しない場合", () => {
+  it("sections is empty object (no error)", () => {
+    const content = `# My Feature
+
+## Meta
+
+- **type**: new-feature
+
+## Description
+
+Content.
+`;
+    const result = parseRequestMdContent(content);
+    // sections should exist but have no 背景 or 目的
+    expect(result.sections?.["背景"]).toBeUndefined();
+    expect(result.sections?.["目的"]).toBeUndefined();
+  });
+});

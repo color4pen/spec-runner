@@ -2,11 +2,20 @@ import * as fs from "node:fs/promises";
 import { requestMdInvalidError } from "../errors.js";
 import { stderrWrite } from "../logger/stdout.js";
 
+export interface ParsedRequestSections {
+  /** Content under ## 背景 heading, or undefined if heading not present. */
+  背景?: string;
+  /** Content under ## 目的 heading, or undefined if heading not present. */
+  目的?: string;
+}
+
 export interface ParsedRequest {
   type: string;
   title: string;
   content: string;
   enabled: string[];
+  /** Optional section extracts for PR body generation. */
+  sections?: ParsedRequestSections;
 }
 
 const ALLOWED_TYPES = [
@@ -84,7 +93,10 @@ export function parseRequestMdContent(
   // Extract enabled list from Workflow Options section
   const enabled = extractEnabled(lines);
 
-  return { type, title, content, enabled };
+  // Extract sections: 背景, 目的
+  const sections = extractSections(lines);
+
+  return { type, title, content, enabled, sections };
 }
 
 /**
@@ -163,4 +175,50 @@ function extractEnabled(lines: string[]): string[] {
   }
 
   return enabled;
+}
+
+/**
+ * Extract named sections (## 背景, ## 目的) from the document lines.
+ * Returns the body text under each heading (until the next ## heading or EOF).
+ * Headings not present → corresponding field is undefined.
+ */
+function extractSections(lines: string[]): ParsedRequestSections {
+  const targetHeadings = ["背景", "目的"] as const;
+  const result: ParsedRequestSections = {};
+
+  for (const heading of targetHeadings) {
+    const headingPattern = new RegExp(`^##\\s+${heading}\\s*$`);
+    let sectionStart = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line !== undefined && headingPattern.test(line.trimEnd())) {
+        sectionStart = i;
+        break;
+      }
+    }
+
+    if (sectionStart === -1) {
+      // Heading not present — leave field undefined
+      continue;
+    }
+
+    // Find end of section (next ## heading or EOF)
+    let sectionEnd = lines.length;
+    for (let i = sectionStart + 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (line !== undefined && /^##\s+/.test(line)) {
+        sectionEnd = i;
+        break;
+      }
+    }
+
+    const bodyLines = lines.slice(sectionStart + 1, sectionEnd);
+    // Trim leading/trailing blank lines
+    const body = bodyLines.join("\n").trim();
+    if (body.length > 0) {
+      result[heading] = body;
+    }
+  }
+
+  return result;
 }
