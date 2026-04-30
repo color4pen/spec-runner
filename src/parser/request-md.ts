@@ -12,6 +12,9 @@ export interface ParsedRequestSections {
 export interface ParsedRequest {
   type: string;
   title: string;
+  /** Canonical slug for this change — the single source of truth across the pipeline.
+   * Required in the Meta section as `- **slug**: <slug>`; missing → REQUEST_MD_INVALID. */
+  slug: string;
   content: string;
   enabled: string[];
   /** Optional section extracts for PR body generation. */
@@ -90,13 +93,31 @@ export function parseRequestMdContent(
     stderrWrite(`Warning: unknown request type '${type}'.`);
   }
 
+  // Extract slug from Meta section: "- **slug**: value"
+  // Required: missing slug → REQUEST_MD_INVALID. Single source of truth for the
+  // change identifier across the whole pipeline (executor / agent / change folder).
+  let slug: string | null = null;
+  const slugPattern = /^\s*-\s+\*\*slug\*\*:\s+(.+)$/;
+  for (const line of lines) {
+    const m = slugPattern.exec(line);
+    if (m?.[1]) {
+      slug = m[1].trim();
+      break;
+    }
+  }
+  if (slug === null || slug.length === 0) {
+    throw requestMdInvalidError(
+      `missing 'slug' in Meta section in ${filePath}`,
+    );
+  }
+
   // Extract enabled list from Workflow Options section
   const enabled = extractEnabled(lines);
 
   // Extract sections: 背景, 目的
   const sections = extractSections(lines);
 
-  return { type, title, content, enabled, sections };
+  return { type, title, slug, content, enabled, sections };
 }
 
 /**

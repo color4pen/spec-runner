@@ -65,7 +65,7 @@ function makeMinimalDeps(slug: string = "my-change"): StepDeps {
       github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
     },
     repo: { owner: "testowner", name: "testrepo" },
-    request: { type: "feature", title: "Test PR", content: "content", enabled: [], sections: {} },
+    request: { type: "feature", title: "Test PR", slug: "test-slug", content: "content", enabled: [], sections: {} },
     slug,
     sleepFn: vi.fn().mockResolvedValue(undefined),
     githubClient: {

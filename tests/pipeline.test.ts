@@ -149,7 +149,7 @@ function buildRepo() {
 }
 
 function buildRequest() {
-  return { type: "new-feature", title: "Test Request", content: "Please implement this.", enabled: [] };
+  return { type: "new-feature", title: "Test Request", slug: "test-request", content: "Please implement this.", enabled: [] };
 }
 
 // TC-035: propose パイプライン — 正常完了（状態遷移の全記録）

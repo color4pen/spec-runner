@@ -49,7 +49,7 @@ export const ProposeStep: AgentStep = {
   toolHandlers: new Map([["register_branch", registerBranchTool.handler]]),
 
   buildMessage(_state: JobState, deps: StepDeps): string {
-    return buildInitialMessage(deps.request.content);
+    return buildInitialMessage(deps.request.content, deps.slug);
   },
 
   resultFilePath(_state: JobState, _deps: StepDeps): string | null {

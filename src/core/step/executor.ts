@@ -240,6 +240,7 @@ export class StepExecutor {
 
     const ssePromise = client.streamEvents(sessionId, {
       requestContent: request.content,
+      slug,
       toolHandlers: step.toolHandlers,
       onBranchRegistered: (branch) => {
         registeredBranch = branch;

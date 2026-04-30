@@ -131,7 +131,7 @@ describe("TC-030: StepExecutor resolves agent ID via step.agent.role", () => {
       client: mockClient,
       config,
       repo: { owner: "testowner", name: "testrepo" },
-      request: { type: "feature", title: "Test", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "test-slug", content: "content", enabled: [] },
       slug: "2026-01-01-test",
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),
@@ -182,7 +182,7 @@ describe("TC-031: spec-review Step does not use propose Agent ID", () => {
       client: mockClient,
       config,
       repo: { owner: "testowner", name: "testrepo" },
-      request: { type: "feature", title: "Test", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "test-slug", content: "content", enabled: [] },
       slug: "2026-01-01-test",
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),

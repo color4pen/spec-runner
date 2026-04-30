@@ -1,6 +1,6 @@
 # Learned Patterns
 
-last-distilled: 2026-04-29 18:52
+last-distilled: 2026-04-30 16:11
 
 ワークフロー完了時に抽出されたパターンの蓄積。
 continuous-learning スキルが追記し、distill-learnings / promote-rule が消費する。
@@ -821,3 +821,37 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **spec-review の HIGH 残置は code-review iter コストを 1 つ増やす観測**: 本 request は spec-review iter 2 で HIGH 4 件すべて解消 → code-review iter 1 で approved（7.60）に到達。**spec-review で HIGH を完全に潰してから implementer に渡すと、code-review が初回で approved に届く確率が上がる**経験則。逆に spec-review iter 2 approved でも HIGH 残置がある場合、code-review iter 2 で同じ問題が再浮上するコストを覚悟する
 - **CLI-resident step の確立パターンが 2 例で固まった**: verification + pr-create で `kind: "cli"` step の design pattern が確立。条件は「LLM 不要 / retry 決定的 / 失敗時 LLM でも fix できない」。今後の CLI step 候補（npm publish / docker push / artifact upload 等）は本パターンを sentinel template として再利用可能
 - **次 request 候補（後続）**: (a) PR body の `@mention` / `#issue-ref` sanitize（本 request で verbatim 容認した分の後始末、Priority MEDIUM）, (b) `pr-create-result.md` の `## PR` セクション書式を spec で fixed schema 化（bullet list `- url: <URL>` 形式の確定、Priority MEDIUM）, (c) `body-template.ts` の slug 推論を `deps.slug` 経由に統一（MEDIUM Finding #1 の cleanup）, (d) tasks.md / test-cases.md の `STANDARD_TRANSITIONS` 行数 21 への訂正（spec と実装のドキュメント整合、MEDIUM Finding #2）, (e) tmpfile 名を `crypto.randomUUID()` ベースに変更（LOW）, (f) tests/README に「test runner は vitest 固定、`bun test` 不可」を明記（LOW Finding #6）, (g) PR base branch の config 可変化（ADR D3 で YAGNI 却下したが、sub-branch workflow が必要になった時の trigger）, (h) carry-over の前 request follow-up（verification-result.md iteration 連番化 / `STEP_TIMEOUTS` lookup table / executor.ts sibling import 禁止 grep test 等は引き続き未着手）
+
+---
+
+## 2026-04-30 — [BugFix] propose agent stub + slug 二重導出（dogfooding-001 e2e 失敗）
+
+**Type**: bug-fix
+**Severity**: normal
+**Root Cause**: `propose-system.ts` が PoC スタブのまま昇格していなかったため change folder 生成指示が欠落し、かつ slug 導出が executor 側（`run.ts:141` の `path.basename`）と agent 側（prompt 内の独自生成指示）の二系統で divergence していた
+
+### Bug Pattern
+
+- **症状**: dogfooding-001 e2e で propose step が `register_branch` のみ呼んで `end_turn`、`openspec/changes/{slug}/` change folder が生成されない状態で完了報告 → executor の change folder 存在検証（`src/core/step/executor.ts:399`）が `CHANGE_FOLDER_NOT_FOUND` で失敗 → escalate
+- **直接原因**: (A) `src/prompts/propose-system.ts` が PoC 期の最小実装（branch 名を register_branch で返すだけ）のまま、change folder 生成指示・commit+push 完了条件・workspace 前提・fresh-per-task・security guard が全欠落 / (B) slug が `src/cli/run.ts:141` の `path.basename(absolutePath, ".md")` と propose prompt 内の `feat/YYYY-MM-DD-short-description` 独自生成という二系統で導出されていた
+- **根本原因**: PR #40 の self-host pipeline 完成形整備で他 6 prompt（code-review / spec-fixer / implementer / build-fixer / code-fixer）は production 品質に昇格したが、propose-system.ts だけが横並び audit から漏れた。並行して executor 側の change folder 検証が PR #28→#40 で fail-fast 化された結果、prompt 不備が initial pipeline 完走で初めて顕在化。slug 二重導出は learned-patterns 内の **3 度目の re-occurrence**（前 2 回: 2026-04-16 phase-2 propose-utils, 2026-04-29 body-template.ts）
+
+### Process Gap
+
+- **検出すべきだったフェーズ**: spec-review（設計段階） + code-review（実装段階）の両方で検出可能だった
+- **観点の有無**:
+  - **slug 二重導出**: 観点あり（learned-patterns.md:202, :796, :815 に明確に存在）→ 見逃し。pattern-reviewer が enabled でなかったか / lessons の遡及反映が遅延 / 実装層の review が diff の正しさに閉じており「pipeline 全体の不変条件（決定的導出ソースの一意性）」を横断検証する観点が code-review checklist 化されていない
+  - **prompt 整備度の横並び audit**: 観点なし（ギャップ）。PR #40 で 7 つの prompt を同時整備した際、共通テンプレ要素（役割／workspace／output／完了条件／fresh-per-task／security）の充足率を横並び比較する観点が spec-review にない
+- **改善アクション**:
+  1. pattern-reviewer の必須チェックに「決定的導出のソースが単一か」を明示。grep の手がかりとして「`path.basename` の slug 導出」「agent prompt 内の独自 slug/branch 生成指示」を提示（review-lessons.md 追記対象）
+  2. spec-review checklist に「新規/既存 prompt がプロジェクト共通テンプレ要素（役割／workspace／output／完了条件／fresh-per-task／security）を満たすか」を追加（spec-review/references/review-criteria.md 追記対象）
+  3. `?? "<placeholder>"` の defensive fallback ban を constraints に昇格（learned-patterns.md:372, :492, :470 の累積 3 件以上の再発実績、本 request の OAuth client_id placeholder で 4 件目 → /promote-rule 判定対象）
+
+### Lessons
+
+- **prompt の「PoC スタブのまま昇格漏れ」は同時整備 PR の盲点**: PR #40 のような複数 prompt 同時整備では、目立たない 1 つが PoC のまま残るリスクが構造的に存在する。**N 個の prompt を同時整備する PR では「共通テンプレ要素チェック表」を PR description に必須化**し、各 prompt × 各要素の充足を chart で示す規律が再発防止に効く
+- **「決定的導出のソースは単一」は 3 度目の再発で構造的問題に格上げ**: pattern としての注意喚起は learned-patterns.md に 3 箇所書かれていたにもかかわらず再発した。**注意喚起だけでは防げず、機械的検出（pattern-reviewer の grep ルール / lint）に落とし込む段階に来ている**。具体的には「複数モジュールから同一概念（slug / branch / version 等）を独自導出する pattern」を ast-grep / regex で機械検出する追加 lint
+- **prompt の不備は executor が fail-fast 化された瞬間に顕在化する**: PoC 期の prompt スタブは「executor 側の検証が緩かった」ことで silent に動いていた。**downstream の検証が fail-fast 化される spec-change を入れる際は、upstream の prompt / agent 行動が新しい契約を満たすか確認する規律**が必要。本件では executor の `verifyChangeFolderViaPort()` 強化と prompt の change folder 生成指示が独立 PR で進み、両方が出会う dogfooding で初めて gap が顕在化した
+- **request.md の Meta `slug:` フィールド必須化は二系統の真実を撲滅する正攻法**: 修正 B では parser に `ParsedRequest.slug: string` を必須抽出として追加し、欠落時 `REQUEST_MD_INVALID` で fail-fast、CLI 側の `path.basename` fallback を削除、agent 側 user message テンプレに `{{SLUG}}` / `{{BRANCH}}` を注入して「CLI 提供値を使え。独自生成禁止」を明示。**「single source of truth は文書 schema レベルで強制し、parser で fail-fast、downstream は注入のみ」という 3 段構えが二重導出 anti-pattern の標準対策**として確立
+- **bugfix の修正範囲を「直接原因 A/B + 隣接 anti-pattern D」まで拡張する判断**: 本 request は A（prompt 全面書き直し）+ B（slug 一元化）が必須スコープだったが、RCA 中に発見した D（OAuth client_id placeholder fallback）も同じ defensive fallback anti-pattern の re-occurrence だったため、追加コストが小規模なら同 PR に含める判断をした。**bugfix で同種の anti-pattern を新発見した場合、修正コストが小さければ同 PR に含めて累積的に解消する運用**が学習サイクルとして効率的（別 cleanup request にすると忘却される）
+- **次 request 候補（後続）**: (a) `src/prompts/spec-review-system.ts` の NOTE「未使用、propose Agent で代替」の wiring 確認（次 dogfooding で目視 / 必要なら別 request）, (b) pattern-reviewer の「複数モジュールから同一概念を独自導出」grep ルール化（learned-patterns 4 度目の再発を機械検出で防ぐ）, (c) spec-review/references/review-criteria.md に「prompt 共通テンプレ要素チェック表」を追加, (d) defensive fallback ban の constraints / rules 昇格（/promote-rule 判定対象）, (e) e2e dogfooding を verification 観点に組み込む形（CLI レベル smoke test として `bun bin/specrunner.ts run` を CI で実行する案）の検討

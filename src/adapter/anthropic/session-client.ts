@@ -76,6 +76,8 @@ export class AnthropicSessionClient implements SessionClient {
     sessionId: string,
     opts: {
       requestContent: string;
+      slug: string;
+      branch?: string;
       toolHandlers?: Map<string, CustomToolHandler>;
       onBranchRegistered?: (branch: string) => void;
       onSseDisconnected?: () => void;
@@ -91,6 +93,8 @@ export class AnthropicSessionClient implements SessionClient {
       client: this.client,
       sessionId,
       requestContent: opts.requestContent,
+      slug: opts.slug,
+      branch: opts.branch,
       toolHandlers: opts.toolHandlers,
       onBranchRegistered: opts.onBranchRegistered,
       onSseDisconnected: opts.onSseDisconnected,

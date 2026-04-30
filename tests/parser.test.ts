@@ -14,6 +14,7 @@ describe("TC-001: parseRequestMd — full valid content", () => {
 ## Meta
 
 - **type**: new-feature
+- **slug**: my-feature-request
 - **status**: draft
 
 ## Workflow Options
@@ -41,6 +42,7 @@ describe("TC-002: enabled が空", () => {
 ## Meta
 
 - **type**: new-feature
+- **slug**: title
 
 ## Workflow Options
 
@@ -60,6 +62,7 @@ describe("TC-003: no workflow options section", () => {
 ## Meta
 
 - **type**: new-feature
+- **slug**: title
 
 ## Description
 
@@ -128,6 +131,47 @@ Content.
   });
 });
 
+// TC-006: slug が欠落 — fail-fast で REQUEST_MD_INVALID
+describe("TC-006: missing slug in Meta", () => {
+  it("throws REQUEST_MD_INVALID with 'missing slug in Meta section'", () => {
+    const content = `# Title
+
+## Meta
+
+- **type**: new-feature
+
+## Description
+
+Content.
+`;
+    expect(() => parseRequestMdContent(content)).toThrow(
+      "missing 'slug' in Meta section",
+    );
+  });
+
+  it("throws with code REQUEST_MD_INVALID when slug missing", () => {
+    const content = `# Title\n\n## Meta\n\n- **type**: new-feature\n`;
+    try {
+      parseRequestMdContent(content);
+      expect.fail("should have thrown");
+    } catch (err: unknown) {
+      expect((err as { code?: string }).code).toBe("REQUEST_MD_INVALID");
+    }
+  });
+
+  it("extracts slug when present", () => {
+    const content = `# Title
+
+## Meta
+
+- **type**: new-feature
+- **slug**: my-canonical-slug
+`;
+    const result = parseRequestMdContent(content);
+    expect(result.slug).toBe("my-canonical-slug");
+  });
+});
+
 // TC-007: parser は外部 npm 依存を使わない（static analysis via import check)
 describe("TC-007: parser has no external npm dependencies", () => {
   it("does not import external Markdown or SDK libraries", async () => {
@@ -153,6 +197,7 @@ describe("enabled extraction", () => {
 ## Meta
 
 - **type**: new-feature
+- **slug**: feature
 
 ## Workflow Options
 
@@ -170,6 +215,7 @@ describe("enabled extraction", () => {
 ## Meta
 
 - **type**: new-feature
+- **slug**: feature
 
 ## Workflow Options
 
@@ -191,6 +237,7 @@ describe("TC-029: sections — 背景と目的の両方が存在する場合", (
 ## Meta
 
 - **type**: new-feature
+- **slug**: my-feature
 
 ## 背景
 
@@ -219,6 +266,7 @@ describe("TC-030: sections — 目的が存在しない場合", () => {
 ## Meta
 
 - **type**: new-feature
+- **slug**: my-feature
 
 ## 背景
 
@@ -242,6 +290,7 @@ describe("sections — 背景と目的の両方が存在しない場合", () => 
 ## Meta
 
 - **type**: new-feature
+- **slug**: my-feature
 
 ## Description
 

@@ -1,12 +1,28 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   requestDeviceCode,
   pollAccessToken,
 } from "../src/auth/github-device.js";
+import { getGithubClientId } from "../src/auth/constants.js";
+
+let originalClientIdEnv: string | undefined;
 
 beforeEach(() => {
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+  // The Device Flow client_id is fail-fast required (no placeholder fallback).
+  // Tests provide a stub value; individual tests that exercise env-missing
+  // behavior delete it locally and restore via afterEach.
+  originalClientIdEnv = process.env["SPECRUNNER_GITHUB_CLIENT_ID"];
+  process.env["SPECRUNNER_GITHUB_CLIENT_ID"] = "Iv1.testdefault";
+});
+
+afterEach(() => {
+  if (originalClientIdEnv !== undefined) {
+    process.env["SPECRUNNER_GITHUB_CLIENT_ID"] = originalClientIdEnv;
+  } else {
+    delete process.env["SPECRUNNER_GITHUB_CLIENT_ID"];
+  }
 });
 
 // TC-075: authorization_pending — continues polling
@@ -115,6 +131,27 @@ describe("TC-078: access_denied — exits", () => {
     );
     expect(exitSpy).toHaveBeenCalledWith(1);
     exitSpy.mockRestore();
+  });
+});
+
+// TC-079b: SPECRUNNER_GITHUB_CLIENT_ID 未設定 — fail-fast
+describe("TC-079b: SPECRUNNER_GITHUB_CLIENT_ID missing — fail-fast", () => {
+  it("getGithubClientId throws GITHUB_CLIENT_ID_MISSING when env is absent", () => {
+    delete process.env["SPECRUNNER_GITHUB_CLIENT_ID"];
+    try {
+      getGithubClientId();
+      expect.fail("should have thrown");
+    } catch (err: unknown) {
+      expect((err as { code?: string }).code).toBe("GITHUB_CLIENT_ID_MISSING");
+      expect((err as Error).message).toContain("SPECRUNNER_GITHUB_CLIENT_ID");
+    }
+  });
+
+  it("getGithubClientId throws when env is empty string", () => {
+    process.env["SPECRUNNER_GITHUB_CLIENT_ID"] = "";
+    expect(() => getGithubClientId()).toThrow(
+      "SPECRUNNER_GITHUB_CLIENT_ID is not set",
+    );
   });
 });
 

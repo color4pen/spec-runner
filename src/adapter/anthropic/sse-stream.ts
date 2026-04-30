@@ -34,6 +34,11 @@ export interface SseStreamDeps {
   client: Anthropic;
   sessionId: string;
   requestContent: string;
+  /** Canonical slug — passed to buildInitialMessage so the agent uses the
+   * executor-provided value (single source of truth) rather than deriving its own. */
+  slug: string;
+  /** Branch name the agent should commit + push to. Defaults to `feat/{slug}`. */
+  branch?: string;
   toolHandlers?: Map<string, CustomToolHandler>;
   onBranchRegistered?: (branch: string) => void;
   onSseDisconnected?: () => void;
@@ -47,7 +52,7 @@ export interface SseStreamDeps {
  * Breaks on idle+end_turn or terminated.
  */
 export async function runSseStream(deps: SseStreamDeps): Promise<SseStreamResult> {
-  const { client, sessionId, requestContent } = deps;
+  const { client, sessionId, requestContent, slug, branch } = deps;
 
   const ctx: CustomToolContext = { sessionId };
 
@@ -65,7 +70,9 @@ export async function runSseStream(deps: SseStreamDeps): Promise<SseStreamResult
     return { sseDisconnected, idleEndTurnDetected, terminated, terminationReason: "sse_error" };
   }
 
-  const initialMessage = buildInitialMessage(requestContent);
+  const initialMessage = branch !== undefined
+    ? buildInitialMessage(requestContent, slug, branch)
+    : buildInitialMessage(requestContent, slug);
   await sendEvents(client, sessionId, {
     events: [
       {

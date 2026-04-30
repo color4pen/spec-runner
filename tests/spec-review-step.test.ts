@@ -62,7 +62,7 @@ function buildRepo() {
 }
 
 function buildRequest() {
-  return { type: "feature", title: "Test", content: "Do something", enabled: ["security-reviewer"] };
+  return { type: "feature", title: "Test", slug: "test", content: "Do something", enabled: ["security-reviewer"] };
 }
 
 /**

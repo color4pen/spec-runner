@@ -49,6 +49,13 @@ export interface SessionClient {
     sessionId: string,
     opts: {
       requestContent: string;
+      /** Canonical slug (single source of truth). Injected into the propose
+       * agent's initial message so the agent uses the executor-provided value
+       * verbatim rather than deriving its own. */
+      slug: string;
+      /** Branch name the agent should commit + push to. Defaults to `feat/{slug}`
+       * when omitted. The agent must NOT pick its own branch name. */
+      branch?: string;
       toolHandlers?: Map<string, CustomToolHandler>;
       onBranchRegistered?: (branch: string) => void;
       onSseDisconnected?: () => void;

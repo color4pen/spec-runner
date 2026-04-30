@@ -137,8 +137,10 @@ export async function runRunCore(
   const client = createAnthropicSessionClient(anthropicClient);
   const githubClient = createGitHubClient(fetch, config.github?.accessToken ?? "");
 
-  // Derive slug from request path (filename without extension)
-  const slug = path.basename(absolutePath, ".md");
+  // Slug is the canonical change identifier. It is the single source of truth
+  // (request.md `slug:` Meta field, validated by the parser). The agent receives
+  // it via the propose user message and must NOT generate its own.
+  const slug = request.slug;
 
   logInfo(`Starting propose pipeline for: ${request.title}`);
 
