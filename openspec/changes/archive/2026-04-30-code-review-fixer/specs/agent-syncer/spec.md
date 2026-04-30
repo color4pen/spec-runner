@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: AgentSyncer は per-role に Anthropic Agent を sync する (追加 Scenario)
+### Requirement: AgentSyncer は per-role に Anthropic Agent を sync する
 
 既存 Requirement「AgentSyncer は per-role に Anthropic Agent を sync する」に以下の Scenario を追加する。`AgentSyncer` のソースは MUST 無編集であり、registry が `code-review` / `code-fixer` を含むことで自動的に sync 対象に入ることを確認する。
 

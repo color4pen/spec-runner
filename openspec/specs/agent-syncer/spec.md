@@ -5,43 +5,17 @@ TBD - created by archiving change 2026-04-29-d4-d6-agent-migration. Update Purpo
 ## Requirements
 ### Requirement: AgentSyncer は per-role に Anthropic Agent を sync する
 
-`AgentSyncer` は MUST `AgentRegistry` の各 role に対して独立に retrieve / create / update / 404 fallback を実行する。`syncAll()` は SHALL 全 role の sync を試みた結果を `SyncResult` として返す。
+既存 Requirement「AgentSyncer は per-role に Anthropic Agent を sync する」に以下の Scenario を追加する。`AgentSyncer` のソースは MUST 無編集であり、registry が `code-review` / `code-fixer` を含むことで自動的に sync 対象に入ることを確認する。
 
-#### Scenario: 既存 Agent が definitionHash 一致 → no-op
+#### Scenario: code-review / code-fixer も同じ retrieve / create / update / 404 fallback ロジックで sync される
 
-- **GIVEN** config に `agents.propose.agentId = "agent_01x"` および `agents.propose.definitionHash = "abc123"` が存在
-- **AND** AgentRegistry の `hashOf("propose")` が `"abc123"` を返す
-- **AND** `AnthropicClient.retrieveAgent("agent_01x")` が成功する
+- **GIVEN** `AgentRegistry` に `code-review` および `code-fixer` の `AgentDefinition` が登録されている
+- **AND** config の `agents["code-review"]` および `agents["code-fixer"]` のエントリが存在しない（初回 init）
 - **WHEN** `AgentSyncer.syncAll()` を呼ぶ
-- **THEN** `client.createAgent` も `client.updateAgent` も呼ばれない
-- **AND** SyncResult の propose role は `{ agentId: "agent_01x", definitionHash: "abc123" }` を保持し、action 種別は `no-op` である
-
-#### Scenario: 既存 Agent が definitionHash 不一致 → update
-
-- **GIVEN** config に `agents.propose.agentId = "agent_01x"` および `agents.propose.definitionHash = "old_hash"` が存在
-- **AND** AgentRegistry の `hashOf("propose")` が `"new_hash"` を返す
-- **AND** `client.retrieveAgent("agent_01x")` が成功する
-- **WHEN** `AgentSyncer.syncAll()` を呼ぶ
-- **THEN** `client.updateAgent("agent_01x", def)` が 1 回だけ呼ばれる
-- **AND** config の `agents.propose.definitionHash` が `"new_hash"` に更新される
-- **AND** `agents.propose.agentId` は変わらず `"agent_01x"` のままである
-
-#### Scenario: agentId が config にあるが Anthropic 側で削除済（404 fallback）→ create
-
-- **GIVEN** config に `agents.propose.agentId = "agent_01x"` が存在
-- **AND** `client.retrieveAgent("agent_01x")` が 404 を throw する
-- **WHEN** `AgentSyncer.syncAll()` を呼ぶ
-- **THEN** `client.createAgent(def)` が 1 回呼ばれ、新 ID `"agent_02y"` を返す
-- **AND** config の `agents.propose.agentId` が `"agent_02y"` に更新される
-- **AND** SyncResult の propose role の action 種別は `create` である
-
-#### Scenario: 新規 role（config に entry なし）→ create
-
-- **GIVEN** config の `agents` に `"spec-review"` キーが存在しない
-- **AND** AgentRegistry に `"spec-review"` の AgentDefinition が登録されている
-- **WHEN** `AgentSyncer.syncAll()` を呼ぶ
-- **THEN** `client.createAgent(def)` が呼ばれ、新 ID `"agent_03z"` を返す
-- **AND** config の `agents["spec-review"]` が `{ agentId: "agent_03z", definitionHash: <hash>, lastSyncedAt: <ISO8601> }` で書き込まれる
+- **THEN** `code-review` / `code-fixer` の各 role に対して `client.createAgent` が 1 回ずつ呼ばれ、新 ID が返される
+- **AND** config の `agents["code-review"]` および `agents["code-fixer"]` が `{ agentId, definitionHash, lastSyncedAt }` で書き込まれる
+- **AND** SyncResult の対応 role の action 種別は `create` である
+- **AND** `AgentSyncer` のソースは変更されていない（`src/core/syncer/` の変更行 = 0）
 
 ### Requirement: AgentSyncer は idempotent である
 
