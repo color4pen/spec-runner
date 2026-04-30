@@ -1,3 +1,8 @@
+## RENAMED Requirements
+
+- FROM: ### Requirement: `specrunner` バイナリは 4 つのサブコマンドを提供する
+- TO: ### Requirement: `specrunner` バイナリは 5 つのサブコマンドを提供する
+
 ## MODIFIED Requirements
 
 ### Requirement: `specrunner` バイナリは 5 つのサブコマンドを提供する
