@@ -1,5 +1,6 @@
 import type { Step } from "../step/types.js";
 import type { Transition } from "./types.js";
+import { LOOP_ERROR_CODES } from "./types.js";
 import type { JobState, Verdict, StepRun } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
@@ -29,7 +30,10 @@ export class Pipeline {
   private readonly executor: StepExecutor;
   private readonly events: EventBus;
   /** Loop name for stdout progress output (matches legacy runLoopUntil output). */
+  /** Loop name for stdout progress output (matches legacy runLoopUntil output). */
   private readonly loopName: string;
+  /** All loop step names (loopName + additional loops). */
+  private readonly loopNames: string[];
 
   constructor(params: {
     steps: Map<string, Step>;
@@ -38,6 +42,7 @@ export class Pipeline {
     executor: StepExecutor;
     events: EventBus;
     loopName?: string;
+    loopNames?: string[];
   }) {
     this.steps = params.steps;
     this.transitions = params.transitions;
@@ -45,6 +50,7 @@ export class Pipeline {
     this.executor = params.executor;
     this.events = params.events;
     this.loopName = params.loopName ?? "spec-review";
+    this.loopNames = params.loopNames ?? [this.loopName];
   }
 
   /**
@@ -94,8 +100,9 @@ export class Pipeline {
   ): Promise<JobState> {
     let state = jobState;
     let currentStep = startStep;
-    let loopIter = 0;       // counts iterations of loopName
-    let prevLoopStep = "";  // last step before entering loopName (for history message)
+    // Per-loop iteration counters (supports multiple loops)
+    const loopIters = new Map<string, number>();
+    let prevLoopStep = "";  // last step before entering the primary loopName (for history message)
 
     while (true) {
       const step = this.steps.get(currentStep);
@@ -105,9 +112,16 @@ export class Pipeline {
 
       // --- Loop step entry bookkeeping ---
       const isLoopStep = currentStep === this.loopName;
-      if (isLoopStep) {
-        loopIter++;
-        stdoutWrite(`[iter ${loopIter}/${this.maxIterations}] starting ${this.loopName}\n`);
+      const isAnyLoopStep = this.loopNames.includes(currentStep);
+      if (isAnyLoopStep) {
+        const prevIter = loopIters.get(currentStep) ?? 0;
+        const newIter = prevIter + 1;
+        loopIters.set(currentStep, newIter);
+
+        if (isLoopStep) {
+          const loopIter = newIter;
+          stdoutWrite(`[iter ${loopIter}/${this.maxIterations}] starting ${this.loopName}\n`);
+        }
 
         // Append history: loop iteration started
         state = {
@@ -116,9 +130,9 @@ export class Pipeline {
             ...state.history,
             {
               ts: new Date().toISOString(),
-              step: this.loopName,
+              step: currentStep,
               status: "started" as const,
-              message: `${this.loopName} iteration ${loopIter} started`,
+              message: `${currentStep} iteration ${loopIters.get(currentStep)} started`,
             },
           ],
           updatedAt: new Date().toISOString(),
@@ -143,11 +157,12 @@ export class Pipeline {
 
       // --- Determine step outcome for transition lookup ---
       const outcome = this.getStepOutcome(state, stateBeforeExec, currentStep);
+      const loopIter = loopIters.get(currentStep) ?? 0;
 
       // --- Loop step exit bookkeeping ---
-      if (isLoopStep) {
+      if (isAnyLoopStep) {
         const verdict: Verdict | string = outcome;
-        const historyStatus = verdict === "approved"
+        const historyStatus = verdict === "approved" || verdict === "passed"
           ? ("ok" as const)
           : verdict === "escalation" || verdict === "error"
             ? ("error" as const)
@@ -159,9 +174,9 @@ export class Pipeline {
             ...state.history,
             {
               ts: new Date().toISOString(),
-              step: this.loopName,
+              step: currentStep,
               status: historyStatus,
-              message: `${this.loopName} iteration ${loopIter} completed with verdict: ${verdict}`,
+              message: `${currentStep} iteration ${loopIter} completed with verdict: ${verdict}`,
             },
           ],
           updatedAt: new Date().toISOString(),
@@ -176,7 +191,7 @@ export class Pipeline {
 
       // --- Terminal conditions ---
       if (nextStep === "end" || nextStep === "escalate") {
-        // Print loop verdict line for loop steps
+        // Print loop verdict line for primary loop steps
         if (isLoopStep) {
           if (outcome === "approved") {
             stdoutWrite(`[iter ${loopIter}] ${this.loopName} verdict: approved → done\n`);
@@ -196,21 +211,25 @@ export class Pipeline {
         break;
       }
 
-      // --- Check loop exhaustion before entering next loopName iteration ---
-      if (nextStep === this.loopName && loopIter >= this.maxIterations) {
-        // Print exhaustion message
-        stdoutWrite(`[iter ${loopIter}/${this.maxIterations}] retries exhausted, escalating\n`);
-        state = await this.handleExhausted(state);
+      // --- Check loop exhaustion before entering next loop iteration ---
+      // Check if we're about to enter a loop step that has reached its limit
+      if (this.loopNames.includes(nextStep as string)) {
+        const nextLoopIter = loopIters.get(nextStep as string) ?? 0;
+        if (nextLoopIter >= this.maxIterations) {
+          // Print exhaustion message
+          stdoutWrite(`[iter ${nextLoopIter}/${this.maxIterations}] retries exhausted, escalating\n`);
+          state = await this.handleExhausted(state, nextStep as string);
 
-        // Print final summary
-        if (this.steps.has("spec-review")) {
-          const specReviewResults = state.steps?.["spec-review"] ?? [];
-          const finalVerdict = getLatestStepResult(state, "spec-review")?.verdict ?? "escalation";
-          stdoutWrite(
-            `Pipeline finished: spec-review iterations=${specReviewResults.length}, final verdict=${finalVerdict}\n`,
-          );
+          // Print final summary if spec-review was in the pipeline
+          if (this.steps.has("spec-review")) {
+            const specReviewResults = state.steps?.["spec-review"] ?? [];
+            const finalVerdict = getLatestStepResult(state, "spec-review")?.verdict ?? "escalation";
+            stdoutWrite(
+              `Pipeline finished: spec-review iterations=${specReviewResults.length}, final verdict=${finalVerdict}\n`,
+            );
+          }
+          break;
         }
-        break;
       }
 
       // Print needs-fix transition message for loop steps
@@ -220,7 +239,7 @@ export class Pipeline {
 
       // --- Append transition history ---
       const fromMsg = prevLoopStep
-        ? `${prevLoopStep} complete → ${nextStep} (iter ${loopIter + (nextStep === this.loopName ? 1 : 0)})`
+        ? `${prevLoopStep} complete → ${nextStep} (iter ${(loopIters.get(this.loopName) ?? 0) + (nextStep === this.loopName ? 1 : 0)})`
         : `${currentStep} → ${nextStep}`;
       const transitionStore = new JobStateStore(state.jobId);
       state = await transitionStore.appendHistory(state, {
@@ -231,7 +250,7 @@ export class Pipeline {
       });
 
       prevLoopStep = isLoopStep ? currentStep : "";
-      currentStep = nextStep;
+      currentStep = nextStep as string;
     }
 
     return state;
@@ -242,9 +261,10 @@ export class Pipeline {
    *
    * The outcome is used to look up the transition. Convention:
    * - "error": step failed (state.status === "failed")
-   * - For propose (no verdict): "success" on completion
-   * - For spec-fixer (no verdict): "approved" on completion (always loops back to spec-review)
-   * - For spec-review: the verdict string from the latest step result
+   * - For steps with a recorded verdict: that verdict string
+   * - For steps with no verdict (resultFilePath null): uses step.completionVerdict
+   *   (defaults to "approved" if unset, preserving spec-fixer → spec-review loop)
+   * - Special case: "propose" uses the propose SSE path and gets "success" via completionVerdict
    */
   private getStepOutcome(
     state: JobState,
@@ -260,7 +280,13 @@ export class Pipeline {
       return verdict;
     }
 
-    // No verdict in step result: use step-specific default
+    // No verdict in step result: use the step's completionVerdict if available
+    const step = this.steps.get(stepName);
+    if (step && step.kind === "agent" && step.completionVerdict !== undefined) {
+      return step.completionVerdict;
+    }
+
+    // Legacy default: propose → "success", others → "approved"
     if (stepName === "propose") {
       return "success";
     }
@@ -270,34 +296,43 @@ export class Pipeline {
   }
 
   /**
-   * Handle loop exhaustion: sets SPEC_REVIEW_RETRIES_EXHAUSTED error.
-   * Mirrors the existing `onExceeded` callback in the legacy pipeline.ts.
+   * Handle loop exhaustion: sets the loop-specific error code from LOOP_ERROR_CODES.
+   * Derived from the exhaustedLoopName → LOOP_ERROR_CODES lookup (no hardcoded error strings).
+   * @param exhaustedLoopName - the name of the loop step that exhausted its retries
    */
-  private async handleExhausted(state: JobState): Promise<JobState> {
-    const specReviewResults = state.steps?.["spec-review"] ?? [];
+  private async handleExhausted(state: JobState, exhaustedLoopName: string = this.loopName): Promise<JobState> {
+    const loopResults = state.steps?.[exhaustedLoopName] ?? [];
     let updatedSteps = state.steps ?? {};
-    if (specReviewResults.length > 0) {
-      const lastIdx = specReviewResults.length - 1;
-      const lastResult = specReviewResults[lastIdx];
+    if (loopResults.length > 0) {
+      const lastIdx = loopResults.length - 1;
+      const lastResult = loopResults[lastIdx];
       if (lastResult) {
         const updatedResults: StepRun[] = [
-          ...specReviewResults.slice(0, lastIdx),
+          ...loopResults.slice(0, lastIdx),
           { ...lastResult, outcome: { ...("outcome" in lastResult ? lastResult.outcome : {}), verdict: "escalation" as const } } as StepRun,
         ];
-        updatedSteps = { ...updatedSteps, "spec-review": updatedResults };
+        updatedSteps = { ...updatedSteps, [exhaustedLoopName]: updatedResults };
       }
     }
-    const lastIteration = specReviewResults.length > 0
-      ? (specReviewResults[specReviewResults.length - 1] as StepRun).attempt ?? this.maxIterations
+    const lastIteration = loopResults.length > 0
+      ? (loopResults[loopResults.length - 1] as StepRun).attempt ?? this.maxIterations
       : this.maxIterations;
     const nnn = String(lastIteration).padStart(3, "0");
+
+    // Lookup error shape from LOOP_ERROR_CODES (no hardcode)
+    const errorShape = LOOP_ERROR_CODES[exhaustedLoopName] ?? {
+      code: `${exhaustedLoopName.toUpperCase().replace(/-/g, "_")}_RETRIES_EXHAUSTED`,
+      message: (n: number) => `${exhaustedLoopName} did not complete after ${n} iterations`,
+      hint: (_nnn: string) => `Review the ${exhaustedLoopName} results and fix manually.`,
+    };
+
     const updated: JobState = {
       ...state,
       steps: updatedSteps,
       error: {
-        code: "SPEC_REVIEW_RETRIES_EXHAUSTED",
-        message: `spec-review did not approve after ${this.maxIterations} iterations`,
-        hint: `Review spec-review-result-${nnn}.md and adjust the request manually.`,
+        code: errorShape.code,
+        message: errorShape.message(this.maxIterations),
+        hint: errorShape.hint(nnn),
       },
       updatedAt: new Date().toISOString(),
     };

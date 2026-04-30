@@ -9,7 +9,7 @@ import { AgentSyncer } from "../../../src/core/agent/syncer.js";
 import { AgentRegistry } from "../../../src/core/agent/registry.js";
 import type { AnthropicClient, AgentData } from "../../../src/core/port/anthropic-client.js";
 import type { AgentDefinition } from "../../../src/core/agent/definition.js";
-import type { Step } from "../../../src/core/step/types.js";
+import type { AgentStep } from "../../../src/core/step/types.js";
 import type { StepName } from "../../../src/state/schema.js";
 import type { AgentSyncerConfig } from "../../../src/core/agent/syncer.js";
 
@@ -23,8 +23,9 @@ function makeAgentDef(role: StepName): AgentDefinition {
   };
 }
 
-function makeStep(role: StepName): Step {
+function makeStep(role: StepName): AgentStep {
   return {
+    kind: "agent",
     name: role,
     agent: makeAgentDef(role),
     buildMessage: () => "",

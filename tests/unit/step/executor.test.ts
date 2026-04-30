@@ -117,6 +117,7 @@ describe("TC-030: StepExecutor resolves agent ID via step.agent.role", () => {
     const createSessionSpy = mockClient.createSession as ReturnType<typeof vi.fn>;
 
     const specReviewStep: Step = {
+      kind: "agent",
       name: "spec-review",
       agent: makeAgentDef("spec-review"),
       toolHandlers: undefined,
@@ -167,6 +168,7 @@ describe("TC-031: spec-review Step does not use propose Agent ID", () => {
     const createSessionSpy = mockClient.createSession as ReturnType<typeof vi.fn>;
 
     const specReviewStep: Step = {
+      kind: "agent",
       name: "spec-review",
       agent: makeAgentDef("spec-review"),
       toolHandlers: undefined,

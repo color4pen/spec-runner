@@ -23,41 +23,87 @@ export interface ParsedStepResult {
 }
 
 /**
- * Step is a pure declaration of a single pipeline step.
- * It holds NO execution state — StepExecutor owns the lifecycle.
- *
- * Design D2: plain TypeScript interface (not abstract class).
- * Design D1: agent is a complete AgentDefinition (not a runtime placeholder).
+ * NULL_PARSE_RESULT: shared constant for steps that have no file-based verdict.
+ * Used by propose, spec-fixer, implementer, and build-fixer.
  */
-export interface Step {
+export const NULL_PARSE_RESULT: ParsedStepResult = {
+  verdict: null,
+  findingsPath: null,
+  fileContent: null,
+};
+
+/**
+ * AgentStep: a pipeline step that uses a managed Anthropic agent session.
+ * kind: "agent" — StepExecutor creates and polls a session.
+ */
+export interface AgentStep {
+  kind: "agent";
   /** Canonical name of this step (e.g. "propose", "spec-review"). Must match agent.role. */
   name: string;
-
   /** Full agent definition used by this step. Owned by the Step implementation. */
   agent: AgentDefinition;
-
   /**
    * Custom tool handlers scoped to this step.
    * Key = tool name (e.g. "register_branch"), Value = handler function.
    * Optional — steps that have no custom tools omit this field.
    */
   toolHandlers?: Map<string, CustomToolHandler>;
-
   /**
    * Build the initial user message content for this step.
    * Pure function — no I/O allowed.
    */
   buildMessage(state: JobState, deps: StepDeps): string;
-
   /**
    * Compute the path of the result file written by the agent for this step.
    * Returns null if no result file is expected.
    */
   resultFilePath(state: JobState, deps: StepDeps): string | null;
+  /**
+   * Parse the result file content into a step outcome.
+   * Pure function — no I/O allowed.
+   */
+  parseResult(content: string, deps: StepDeps): ParsedStepResult;
 
+  /**
+   * Verdict to record when resultFilePath is null and the session completes successfully.
+   * Defaults to "approved" if omitted (preserves spec-fixer → spec-review loop behavior).
+   * Set to "success" for agent steps where completion = unconditional forward progress
+   * (e.g. implementer, build-fixer).
+   */
+  completionVerdict?: import("../../state/schema.js").Verdict;
+}
+
+/**
+ * CliStep: a pipeline step that runs directly without a managed agent session.
+ * kind: "cli" — StepExecutor calls step.run() and reads resultFilePath.
+ * No agent field — CLI-resident steps (like verification) have no associated Agent.
+ */
+export interface CliStep {
+  kind: "cli";
+  /** Canonical name of this step (e.g. "verification"). */
+  name: string;
+  /**
+   * Execute the CLI step (spawn processes, write result files, etc.).
+   * StepExecutor calls this instead of creating a session.
+   */
+  run(state: JobState, deps: StepDeps): Promise<void>;
+  /**
+   * Compute the path of the result file written by this step.
+   * Unlike AgentStep, this is non-null (CLI steps always produce a result file).
+   */
+  resultFilePath(state: JobState, deps: StepDeps): string;
   /**
    * Parse the result file content into a step outcome.
    * Pure function — no I/O allowed.
    */
   parseResult(content: string, deps: StepDeps): ParsedStepResult;
 }
+
+/**
+ * Step is a discriminated union of AgentStep and CliStep.
+ * Use step.kind to determine which variant you have.
+ *
+ * Design D1: explicit discriminator rather than null agent / name-based inference.
+ * Design D2: plain TypeScript interface (not abstract class).
+ */
+export type Step = AgentStep | CliStep;

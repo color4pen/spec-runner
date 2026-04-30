@@ -9,6 +9,8 @@ import { AnthropicClientAdapter } from "../adapter/anthropic/index.js";
 import { ProposeStep } from "../core/step/propose.js";
 import { SpecReviewStep } from "../core/step/spec-review.js";
 import { SpecFixerStep } from "../core/step/spec-fixer.js";
+import { ImplementerStep } from "../core/step/implementer.js";
+import { BuildFixerStep } from "../core/step/build-fixer.js";
 import { logInfo, logStep, logSuccess, logError, stderrWrite } from "../logger/stdout.js";
 import type { SpecRunnerConfig, AgentRecord } from "../config/schema.js";
 import type { StepName } from "../state/schema.js";
@@ -48,8 +50,8 @@ export async function runInit(options: {
 
   logInfo("specrunner init");
 
-  // Build AgentRegistry from all steps
-  const registry = AgentRegistry.fromSteps([ProposeStep, SpecReviewStep, SpecFixerStep]);
+  // Build AgentRegistry from all steps (VerificationStep is CLI-resident, not included)
+  const registry = AgentRegistry.fromSteps([ProposeStep, SpecReviewStep, SpecFixerStep, ImplementerStep, BuildFixerStep]);
 
   // Build AgentSyncerConfig from existing loaded config
   const storedConfig: AgentSyncerConfig = {

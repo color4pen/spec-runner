@@ -92,14 +92,39 @@ function buildMockPipeline(opts: {
   proposeResult: JobState | Error;
   specReviewResults?: Array<JobState | Error>;
   specFixerResults?: Array<JobState | Error>;
+  implementerResult?: JobState | Error;
+  verificationResults?: Array<JobState | Error>;
+  buildFixerResults?: Array<JobState | Error>;
   maxIterations?: number;
 }): { pipeline: Pipeline; events: EventBus; executeSpy: ReturnType<typeof vi.fn> } {
   const events = new EventBus();
 
   let specReviewCallCount = 0;
   let specFixerCallCount = 0;
+  let verificationCallCount = 0;
+  let buildFixerCallCount = 0;
 
-  const executeSpy = vi.fn().mockImplementation(async (step: Step) => {
+  // Default: implementer succeeds with "success" verdict recorded
+  const defaultImplementerResult = (base: JobState): JobState => ({
+    ...base,
+    status: "success",
+    steps: {
+      ...base.steps,
+      "implementer": [{ attempt: 1, sessionId: null, outcome: { verdict: "success" as const, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" }],
+    },
+  });
+
+  // Default: verification passes
+  const defaultVerificationResult = (base: JobState): JobState => ({
+    ...base,
+    status: "success",
+    steps: {
+      ...base.steps,
+      "verification": [...(base.steps?.["verification"] ?? []), { attempt: (base.steps?.["verification"]?.length ?? 0) + 1, sessionId: null, outcome: { verdict: "passed" as const, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" }],
+    },
+  });
+
+  const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
     if (step.name === "propose") {
       if (opts.proposeResult instanceof Error) throw opts.proposeResult;
       return opts.proposeResult;
@@ -118,15 +143,39 @@ function buildMockPipeline(opts: {
       if (result instanceof Error) throw result;
       return result;
     }
+    if (step.name === "implementer") {
+      if (opts.implementerResult instanceof Error) throw opts.implementerResult;
+      return opts.implementerResult ?? defaultImplementerResult(currentState);
+    }
+    if (step.name === "verification") {
+      const results = opts.verificationResults ?? [];
+      if (results.length > 0) {
+        const result = results[verificationCallCount] ?? results[results.length - 1];
+        verificationCallCount++;
+        if (result instanceof Error) throw result;
+        return result;
+      }
+      return defaultVerificationResult(currentState);
+    }
+    if (step.name === "build-fixer") {
+      const results = opts.buildFixerResults ?? [];
+      const result = results[buildFixerCallCount] ?? results[results.length - 1];
+      buildFixerCallCount++;
+      if (result instanceof Error) throw result;
+      return result ?? currentState;
+    }
     throw new Error(`Unknown step: ${step.name}`);
   });
 
   const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
 
   const steps = new Map<string, Step>([
-    ["propose",     { name: "propose",     agent: { name: "test", role: "propose", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-    ["spec-review", { name: "spec-review", agent: { name: "test", role: "spec-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-    ["spec-fixer",  { name: "spec-fixer",  agent: { name: "test", role: "spec-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["propose",      { kind: "agent", name: "propose",      agent: { name: "test", role: "propose", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["spec-review",  { kind: "agent", name: "spec-review",  agent: { name: "test", role: "spec-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["spec-fixer",   { kind: "agent", name: "spec-fixer",   agent: { name: "test", role: "spec-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["implementer",  { kind: "agent", name: "implementer",  agent: { name: "test", role: "implementer", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["verification", { kind: "cli",   name: "verification",  run: async () => {}, resultFilePath: () => "openspec/changes/test/verification-result.md", parseResult: () => ({ verdict: "passed" as const, findingsPath: null }) }],
+    ["build-fixer",  { kind: "agent", name: "build-fixer",  agent: { name: "test", role: "build-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
   ]);
 
   const pipeline = new Pipeline({
@@ -136,6 +185,7 @@ function buildMockPipeline(opts: {
     executor: mockExecutor,
     events,
     loopName: "spec-review",
+    loopNames: ["spec-review", "verification"],
   });
 
   return { pipeline, events, executeSpy };
@@ -267,9 +317,9 @@ describe("TC-063: Pipeline — loop exhaustion: SPEC_REVIEW_RETRIES_EXHAUSTED", 
     });
 
     const steps = new Map<string, Step>([
-      ["propose",     { name: "propose",     agent: { name: "test", role: "propose", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-      ["spec-review", { name: "spec-review", agent: { name: "test", role: "spec-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-      ["spec-fixer",  { name: "spec-fixer",  agent: { name: "test", role: "spec-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["propose",     { kind: "agent", name: "propose",     agent: { name: "test", role: "propose", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["spec-review", { kind: "agent", name: "spec-review", agent: { name: "test", role: "spec-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["spec-fixer",  { kind: "agent", name: "spec-fixer",  agent: { name: "test", role: "spec-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ]);
 
     const events = new EventBus();
@@ -384,27 +434,40 @@ describe("TC-066: Pipeline — lifecycle events emitted", () => {
 
 // TC-067: STANDARD_TRANSITIONS table — correct entries
 describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
-  it("contains all required transitions", () => {
+  it("contains all required spec-layer transitions", () => {
     const find = (step: string, on: string) =>
       STANDARD_TRANSITIONS.find((t) => t.step === step && t.on === on);
 
     expect(find("propose",     "success")).toMatchObject({ to: "spec-review" });
     expect(find("propose",     "error")).toMatchObject({ to: "escalate" });
-    expect(find("spec-review", "approved")).toMatchObject({ to: "end" });
+    expect(find("spec-review", "approved")).toMatchObject({ to: "implementer" });
     expect(find("spec-review", "needs-fix")).toMatchObject({ to: "spec-fixer" });
     expect(find("spec-review", "escalation")).toMatchObject({ to: "escalate" });
     expect(find("spec-fixer",  "approved")).toMatchObject({ to: "spec-review" });
     expect(find("spec-fixer",  "error")).toMatchObject({ to: "escalate" });
   });
 
-  it("has exactly 7 transitions", () => {
-    expect(STANDARD_TRANSITIONS).toHaveLength(7);
+  it("contains all required implementation-layer transitions (TC-012)", () => {
+    const find = (step: string, on: string) =>
+      STANDARD_TRANSITIONS.find((t) => t.step === step && t.on === on);
+
+    expect(find("implementer",  "success")).toMatchObject({ to: "verification" });
+    expect(find("implementer",  "error")).toMatchObject({ to: "escalate" });
+    expect(find("verification", "passed")).toMatchObject({ to: "end" });
+    expect(find("verification", "failed")).toMatchObject({ to: "build-fixer" });
+    expect(find("verification", "escalation")).toMatchObject({ to: "escalate" });
+    expect(find("build-fixer",  "success")).toMatchObject({ to: "verification" });
+    expect(find("build-fixer",  "error")).toMatchObject({ to: "escalate" });
+  });
+
+  it("has exactly 14 transitions", () => {
+    expect(STANDARD_TRANSITIONS).toHaveLength(14);
   });
 });
 
 // TC-068: Pipeline stdout — iter format matches legacy runLoopUntil
 describe("TC-068: Pipeline stdout — iter format bit-for-bit preserved", () => {
-  it("outputs [iter N/M] starting spec-review and verdict lines", async () => {
+  it("outputs [iter N/M] starting spec-review", async () => {
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
 
@@ -423,7 +486,9 @@ describe("TC-068: Pipeline stdout — iter format bit-for-bit preserved", () => 
       .map((c: unknown[]) => String(c[0]))
       .join("");
 
+    // spec-review still uses iter counter even though it routes to implementer now
     expect(stdout).toContain("[iter 1/3] starting spec-review");
-    expect(stdout).toContain("[iter 1] spec-review verdict: approved → done");
+    // Pipeline finished summary still appears (spec-review is in the pipeline)
+    expect(stdout).toContain("Pipeline finished: spec-review iterations=1");
   });
 });

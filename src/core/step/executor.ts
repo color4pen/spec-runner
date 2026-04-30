@@ -1,4 +1,5 @@
-import type { Step } from "./types.js";
+import * as path from "node:path";
+import type { Step, AgentStep, CliStep } from "./types.js";
 import type { JobState, Verdict } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
 import type { GitHubClient } from "../port/github-client.js";
@@ -70,13 +71,20 @@ export class StepExecutor {
 
   /**
    * Internal: run the step lifecycle, returning the updated state.
-   * Separate from execute() to cleanly separate event emission from core logic.
+   * Dispatches on step.kind — never on step name.
+   *
+   * kind === "cli": calls step.run(), reads resultFilePath, emits events.
+   * kind === "agent": creates session, polls, fetches result (propose-style or polling-style).
    */
   private async runStepInternal(
     step: Step,
     jobState: JobState,
     deps: PipelineDeps,
   ): Promise<JobState> {
+    if (step.kind === "cli") {
+      return this.runCliStep(step, jobState, deps);
+    }
+    // kind === "agent"
     if (step.toolHandlers && step.toolHandlers.size > 0) {
       return this.runProposeStyleStep(step, jobState, deps);
     } else {
@@ -100,11 +108,101 @@ export class StepExecutor {
   private storeCacheJobId: string | undefined;
 
   /**
+   * CLI step: runs step.run() directly (no session creation).
+   * Reads the result file after run() completes and parses verdict.
+   * Emits verdict:parsed with the parsed result (null → "escalation").
+   */
+  private async runCliStep(
+    step: CliStep,
+    jobState: JobState,
+    deps: PipelineDeps,
+  ): Promise<JobState> {
+    const store = this.getStore(jobState.jobId);
+    let state = await store.update(jobState, { step: step.name });
+    state = await store.appendHistory(state, {
+      ts: new Date().toISOString(),
+      step: "step-transition",
+      status: "ok",
+      message: `Transitioning to ${step.name} step`,
+    });
+
+    const completedAt = new Date().toISOString();
+
+    try {
+      await step.run(state, deps);
+    } catch (err) {
+      const errMsg = (err as Error).message;
+      const errorInfo = {
+        code: "CLI_STEP_FAILED",
+        message: `${step.name} failed: ${errMsg}`,
+        hint: `Check the ${step.name} output for details.`,
+      };
+      state = await store.fail(state, errorInfo, step.name);
+      state = recordFailedStepResult(state, step.name, errorInfo, {
+        completedAt,
+      });
+      await store.persist(state);
+      attachStateAndRethrow(err, state);
+    }
+
+    // Read the result file and parse verdict
+    const resultFilePath = step.resultFilePath(state, deps);
+    const findingsPath = resultFilePath;
+
+    // Read the result file from disk (not GitHub — CLI steps write locally)
+    let fileContent: string | null = null;
+    try {
+      const { readFile } = await import("node:fs/promises");
+      const cwd = deps.cwd ?? process.cwd();
+      fileContent = await readFile(
+        path.resolve(cwd, resultFilePath),
+        "utf-8",
+      );
+    } catch {
+      // File may not exist yet — treat as null verdict
+    }
+
+    let verdict: Verdict | null = null;
+    if (fileContent !== null) {
+      const parsed = step.parseResult(fileContent, deps);
+      verdict = parsed.verdict;
+    }
+
+    if (verdict === null) {
+      stderrWrite(`Warning: Could not parse verdict from ${findingsPath}. Treating as escalation.`);
+    }
+    verdict = verdict ?? "escalation";
+
+    this.events.emit("verdict:parsed", { step: step.name, outcome: { verdict } });
+
+    state = pushStepResult(state, step.name, {
+      session: null,
+      verdict: verdict as Verdict | null,
+      findingsPath,
+      fileContent,
+      completedAt,
+      error: null,
+    });
+
+    state = await store.appendHistory(state, {
+      ts: new Date().toISOString(),
+      step: `${step.name}-verdict`,
+      status: "ok",
+      message: `${step.name} verdict: ${verdict}`,
+    });
+
+    state = await store.update(state, { status: "success" });
+    await store.persist(state);
+
+    return state;
+  }
+
+  /**
    * Propose-style step: uses SSE with custom tool handling via SessionClient port.
    * Used by ProposeStep.
    */
   private async runProposeStyleStep(
-    step: Step,
+    step: AgentStep,
     jobState: JobState,
     deps: PipelineDeps,
   ): Promise<JobState> {
@@ -404,10 +502,10 @@ export class StepExecutor {
 
   /**
    * Polling-style step: uses SessionClient port for session management.
-   * Used by spec-review and spec-fixer.
+   * Used by spec-review, spec-fixer, implementer, and build-fixer.
    */
   private async runPollingStyleStep(
-    step: Step,
+    step: AgentStep,
     jobState: JobState,
     deps: PipelineDeps,
   ): Promise<JobState> {
@@ -439,8 +537,22 @@ export class StepExecutor {
       message: `Transitioning to ${step.name} step`,
     });
 
-    // Build initial message from step declaration
-    const initialMessage = step.buildMessage(state, deps);
+    // Build initial message from step declaration.
+    // buildMessage is a pure function — if it throws (e.g. BUILD_FIXER_NO_VERIFICATION_RESULT),
+    // halt here before creating a session.
+    let initialMessage: string;
+    try {
+      initialMessage = step.buildMessage(state, deps);
+    } catch (err) {
+      const errCode = (err as { code?: string }).code ?? "BUILD_MESSAGE_FAILED";
+      const errMsg = (err as Error).message;
+      const errHint = (err as { hint?: string }).hint ?? "Check step preconditions.";
+      const buildMsgErrorInfo = { code: errCode, message: errMsg, hint: errHint };
+      state = recordFailedStepResult(state, step.name, buildMsgErrorInfo);
+      state = await store.fail(state, buildMsgErrorInfo, `${step.name}-build-message`);
+      await store.persist(state);
+      attachStateAndRethrow(err, state);
+    }
 
     // 1. Create session
     state = await store.appendHistory(state, {
@@ -568,8 +680,8 @@ export class StepExecutor {
       findingsPath = resultFilePath;
       const effectiveBranch = state.branch ?? "main";
 
-      // Determine iteration for spec-review fetch
-      const iteration = (state.steps?.["spec-review"]?.length ?? 0);
+      // Determine iteration for result file fetch (use step-specific history length)
+      const iteration = (state.steps?.[step.name]?.length ?? 0);
 
       fileContent = await deps.githubClient.getRawFile(
         deps.repo.owner,

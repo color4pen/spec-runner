@@ -1,5 +1,6 @@
 import type { JobState } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
+import type { Step } from "../step/types.js";
 import { getMaxRetries } from "../../config/getAgentId.js";
 import { Pipeline } from "./pipeline.js";
 import { STANDARD_TRANSITIONS } from "./types.js";
@@ -9,6 +10,9 @@ import { StepExecutor } from "../step/executor.js";
 import { ProposeStep } from "../step/propose.js";
 import { SpecReviewStep } from "../step/spec-review.js";
 import { SpecFixerStep } from "../step/spec-fixer.js";
+import { ImplementerStep } from "../step/implementer.js";
+import { VerificationStep } from "../step/verification.js";
+import { BuildFixerStep } from "../step/build-fixer.js";
 
 /**
  * Run the full pipeline: propose → spec-review loop (with spec-fixer on needs-fix).
@@ -31,10 +35,13 @@ export async function runPipeline(
   const events = new EventBus();
   const executor = new StepExecutor(events);
 
-  const steps = new Map([
-    ["propose",     ProposeStep],
-    ["spec-review", SpecReviewStep],
-    ["spec-fixer",  SpecFixerStep],
+  const steps = new Map<string, Step>([
+    ["propose",      ProposeStep],
+    ["spec-review",  SpecReviewStep],
+    ["spec-fixer",   SpecFixerStep],
+    ["implementer",  ImplementerStep],
+    ["verification", VerificationStep],
+    ["build-fixer",  BuildFixerStep],
   ]);
 
   const pipeline = new Pipeline({
@@ -44,6 +51,7 @@ export async function runPipeline(
     executor,
     events,
     loopName: "spec-review",
+    loopNames: ["spec-review", "verification"],
   });
 
   return pipeline.run("propose", jobState, deps);

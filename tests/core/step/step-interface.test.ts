@@ -234,6 +234,7 @@ describe("TC-013: StepExecutor lifecycle events fire in correct order on success
 
     // Mock a step that succeeds without any I/O
     const mockStep = {
+      kind: "agent" as const,
       name: "spec-review",
       agent: {
         name: "specrunner-spec-review",
@@ -296,6 +297,7 @@ describe("TC-014: StepExecutor error path emits step:error and decorates excepti
     state.jobId = jobId;
 
     const mockStep = {
+      kind: "agent" as const,
       name: "spec-fixer",
       agent: {
         name: "specrunner-spec-fixer",

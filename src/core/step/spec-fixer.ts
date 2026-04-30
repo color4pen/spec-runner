@@ -1,9 +1,11 @@
-import type { Step, StepDeps, ParsedStepResult } from "./types.js";
+import type { AgentStep, StepDeps } from "./types.js";
+import { NULL_PARSE_RESULT } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { SPEC_FIXER_SYSTEM_PROMPT } from "../../prompts/spec-fixer-system.js";
+import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 
 const SPEC_FIXER_AGENT_MODEL = "claude-sonnet-4-5";
 
@@ -42,9 +44,8 @@ Findings file: ${findingsPath}
 Please:
 1. Read the findings file at ${findingsPath}
 2. For each finding, implement the fix described in the "How to Fix" column
-3. After fixing all findings you can address, commit your changes to branch '${branch}'
-4. Push the branch to the remote repository
-5. Do NOT modify the spec-review-result.md file itself
+3. ${buildGitPushInstruction(branch)}
+4. Do NOT modify the spec-review-result.md file itself
 
 If any finding cannot be fixed, add a comment at the end of proposal.md or design.md:
 <!-- spec-fixer-deferred: [finding number] [reason] -->
@@ -58,7 +59,8 @@ If any finding cannot be fixed, add a comment at the end of proposal.md or desig
  * No custom tool handlers — spec-fixer has no Custom Tools.
  * No result file — spec-fixer completion is determined by polling.
  */
-export const SpecFixerStep: Step = {
+export const SpecFixerStep: AgentStep = {
+  kind: "agent",
   name: "spec-fixer",
 
   agent: specFixerAgentDefinition,
@@ -82,12 +84,8 @@ export const SpecFixerStep: Step = {
     return null;
   },
 
-  parseResult(_content: string, _deps: StepDeps): ParsedStepResult {
+  parseResult(_content: string, _deps: StepDeps) {
     // spec-fixer has no file-based verdict
-    return {
-      verdict: null,
-      findingsPath: null,
-      fileContent: null,
-    };
+    return NULL_PARSE_RESULT;
   },
 };

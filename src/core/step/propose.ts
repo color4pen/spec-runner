@@ -1,4 +1,5 @@
-import type { Step, StepDeps, ParsedStepResult } from "./types.js";
+import type { AgentStep, StepDeps } from "./types.js";
+import { NULL_PARSE_RESULT } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
@@ -35,7 +36,8 @@ const proposeAgentDefinition: AgentDefinition = {
  * Owns the register_branch Custom Tool handler (co-located per D4).
  * No execution lifecycle here — StepExecutor owns that.
  */
-export const ProposeStep: Step = {
+export const ProposeStep: AgentStep = {
+  kind: "agent",
   name: "propose",
 
   agent: proposeAgentDefinition,
@@ -56,12 +58,8 @@ export const ProposeStep: Step = {
     return null;
   },
 
-  parseResult(_content: string, _deps: StepDeps): ParsedStepResult {
+  parseResult(_content: string, _deps: StepDeps) {
     // Propose has no file-based verdict — always returns null
-    return {
-      verdict: null,
-      findingsPath: null,
-      fileContent: null,
-    };
+    return NULL_PARSE_RESULT;
   },
 };

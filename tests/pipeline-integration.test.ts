@@ -5,6 +5,26 @@ import * as path from "node:path";
 import * as os from "node:os";
 import type { GitHubClient } from "../src/core/port/github-client.js";
 
+// Mock the verification runner so pipeline-integration tests don't spawn real processes.
+// VerificationStep.run() calls runVerification() internally.
+// Default: returns "passed" verdict and writes a minimal verification-result.md.
+vi.mock("../src/core/verification/runner.js", () => ({
+  runVerification: vi.fn().mockImplementation(async (slug: string, cwd: string = process.cwd()) => {
+    // Write a minimal verification-result.md so VerificationStep.parseResult can succeed
+    const outputPath = `${cwd}/openspec/changes/${slug}/verification-result.md`;
+    const dir = outputPath.substring(0, outputPath.lastIndexOf("/"));
+    await import("node:fs/promises").then((fs) => fs.mkdir(dir, { recursive: true }));
+    await import("node:fs/promises").then((fs) =>
+      fs.writeFile(outputPath, `# Verification Result — ${slug} — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n`)
+    );
+    return {
+      slug,
+      verdict: "passed" as const,
+      phases: [],
+    };
+  }),
+}));
+
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
 
@@ -42,6 +62,8 @@ function buildConfig(overrides: Record<string, unknown> = {}) {
       propose: { agentId: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
       "spec-review": { agentId: "agent_spec_review", definitionHash: "sha256:ghi", lastSyncedAt: new Date().toISOString() },
       "spec-fixer": { agentId: "agent_spec_fixer", definitionHash: "sha256:def", lastSyncedAt: new Date().toISOString() },
+      "implementer": { agentId: "implementer-agent-id", definitionHash: "sha256:imp", lastSyncedAt: new Date().toISOString() },
+      "build-fixer": { agentId: "build-fixer-agent-id", definitionHash: "sha256:bfx", lastSyncedAt: new Date().toISOString() },
     },
     pipeline: { maxRetries: 2 },
     environment: { id: "env_001", lastSyncedAt: new Date().toISOString() },
@@ -194,9 +216,15 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
     // spec-fixer: not present
     expect(result.steps?.["spec-fixer"]).toBeUndefined();
 
-    // Sessions: only propose (1) + spec-review (1) = 2 total
+    // After spec-review approved, pipeline continues: propose(1) + spec-review(1) + implementer(1) = 3 sessions
+    // VerificationStep is CLI (no session). Total = 3 createSession calls.
     const createCalls = (client.createSession as ReturnType<typeof vi.fn>).mock.calls;
-    expect(createCalls.length).toBe(2);
+    expect(createCalls.length).toBe(3);
+
+    // implementer should have run
+    expect(result.steps?.["implementer"]).toBeDefined();
+    // verification should have run
+    expect(result.steps?.["verification"]).toBeDefined();
   });
 });
 
@@ -235,6 +263,10 @@ describe("TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 app
     const specFixerArr = result.steps?.["spec-fixer"];
     expect(specFixerArr).toBeDefined();
     expect(specFixerArr?.length).toBe(1);
+
+    // After spec-review approved, pipeline continues through implementer → verification → end
+    expect(result.steps?.["implementer"]).toBeDefined();
+    expect(result.steps?.["verification"]).toBeDefined();
   });
 });
 
@@ -444,6 +476,10 @@ describe("TC-017: runPipeline — Pipeline finished summary line in stdout", () 
 });
 
 // TC-018: runPipeline — needs-fix → approved のログ出力順 (should)
+// Note: After spec-review approved, pipeline continues to implementer → verification → end.
+// "[iter N] spec-review verdict: approved → done" is only logged when the pipeline terminates
+// at spec-review (i.e., when nextStep is "end"). With the new flow, approved → implementer,
+// so that log line does not appear. Instead, the pipeline finishes after verification passes.
 describe("TC-018: runPipeline — stdout log order for needs-fix → approved path", () => {
   it("outputs iteration progress in correct order", async () => {
 
@@ -476,20 +512,19 @@ describe("TC-018: runPipeline — stdout log order for needs-fix → approved pa
     const iter1StartIdx = stdout.indexOf("[iter 1/2] starting spec-review");
     const iter1NeedsFixIdx = stdout.indexOf("[iter 1] spec-review verdict: needs-fix → spawning fixer");
     const iter2StartIdx = stdout.indexOf("[iter 2/2] starting spec-review");
-    const iter2ApprovedIdx = stdout.indexOf("[iter 2] spec-review verdict: approved → done");
+    // After approved, pipeline goes to implementer (not end), so "approved → done" is not logged.
+    // Instead, the pipeline summary is printed when verification completes.
     const finishedIdx = stdout.indexOf("Pipeline finished: spec-review iterations=2, final verdict=approved");
 
     expect(iter1StartIdx).toBeGreaterThanOrEqual(0);
     expect(iter1NeedsFixIdx).toBeGreaterThanOrEqual(0);
     expect(iter2StartIdx).toBeGreaterThanOrEqual(0);
-    expect(iter2ApprovedIdx).toBeGreaterThanOrEqual(0);
     expect(finishedIdx).toBeGreaterThanOrEqual(0);
 
     // Check ordering
     expect(iter1StartIdx).toBeLessThan(iter1NeedsFixIdx);
     expect(iter1NeedsFixIdx).toBeLessThan(iter2StartIdx);
-    expect(iter2StartIdx).toBeLessThan(iter2ApprovedIdx);
-    expect(iter2ApprovedIdx).toBeLessThan(finishedIdx);
+    expect(iter2StartIdx).toBeLessThan(finishedIdx);
   });
 });
 
@@ -515,8 +550,10 @@ describe("TC-050: state.step updated: spec-fixer → spec-review within loop", (
       githubClient,
     });
 
-    // Final state should be in spec-review step (last thing that ran)
-    expect(result.step).toBe("spec-review");
+    // After spec-review approved → implementer → verification → end.
+    // The final step in state is "verification" (last step before pipeline ends).
+    // (implementer transitions state.step, then verification transitions state.step)
+    expect(result.step).toBe("verification");
 
     // history should contain step-transition entries
     const stepTransitions = result.history.filter(

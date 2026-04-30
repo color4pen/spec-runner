@@ -92,6 +92,7 @@ function makeMinimalDeps(): PipelineDeps {
 
 function makeStepObject(name: string): Step {
   return {
+    kind: "agent",
     name,
     agent: {
       name: `specrunner-${name}`,
@@ -127,6 +128,10 @@ function getCapturedStdout(): string[] {
 }
 
 // TC-027: [iter N/M] format — approved verdict matches bit-for-bit
+// Note: STANDARD_TRANSITIONS routes spec-review approved → implementer (not end).
+// "[iter N] spec-review verdict: approved → done" is only emitted when the transition
+// is terminal (to "end" or "escalate"). This test uses a custom transition table that
+// terminates at spec-review approved to verify the exact stdout format.
 describe("TC-027: stdout [iter N/M] — approved verdict line is bit-for-bit exact", () => {
   it("emits '[iter 1/<max>] spec-review verdict: approved → done'", async () => {
     const maxIterations = 3;
@@ -143,13 +148,25 @@ describe("TC-027: stdout [iter N/M] — approved verdict line is bit-for-bit exa
     });
     const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
 
+    // Use a custom transition table that terminates at spec-review approved
+    // (to verify the exact stdout format without needing to mock implementer/verification)
+    const testTransitions = [
+      { step: "propose",     on: "success",    to: "spec-review" },
+      { step: "propose",     on: "error",      to: "escalate" },
+      { step: "spec-review", on: "approved",   to: "end" },       // terminal for this test
+      { step: "spec-review", on: "needs-fix",  to: "spec-fixer" },
+      { step: "spec-review", on: "escalation", to: "escalate" },
+      { step: "spec-fixer",  on: "approved",   to: "spec-review" },
+      { step: "spec-fixer",  on: "error",      to: "escalate" },
+    ];
+
     const pipeline = new Pipeline({
       steps: new Map([
         ["propose",     makeStepObject("propose")],
         ["spec-review", makeStepObject("spec-review")],
         ["spec-fixer",  makeStepObject("spec-fixer")],
       ]),
-      transitions: STANDARD_TRANSITIONS,
+      transitions: testTransitions,
       maxIterations,
       executor: mockExecutor,
       events,
@@ -190,13 +207,25 @@ describe("TC-028: stdout [iter N/M] — needs-fix continuation line is bit-for-b
     });
     const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
 
+    // Use a custom transition table that terminates at spec-review approved
+    // (to verify the exact stdout format without needing to mock implementer/verification)
+    const testTransitions = [
+      { step: "propose",     on: "success",    to: "spec-review" },
+      { step: "propose",     on: "error",      to: "escalate" },
+      { step: "spec-review", on: "approved",   to: "end" },       // terminal for this test
+      { step: "spec-review", on: "needs-fix",  to: "spec-fixer" },
+      { step: "spec-review", on: "escalation", to: "escalate" },
+      { step: "spec-fixer",  on: "approved",   to: "spec-review" },
+      { step: "spec-fixer",  on: "error",      to: "escalate" },
+    ];
+
     const pipeline = new Pipeline({
       steps: new Map([
         ["propose",     makeStepObject("propose")],
         ["spec-review", makeStepObject("spec-review")],
         ["spec-fixer",  makeStepObject("spec-fixer")],
       ]),
-      transitions: STANDARD_TRANSITIONS,
+      transitions: testTransitions,
       maxIterations,
       executor: mockExecutor,
       events,

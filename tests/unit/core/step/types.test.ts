@@ -1,0 +1,101 @@
+/**
+ * TC-010: NULL_PARSE_RESULT 定数の共有 — 4 step 適合性
+ */
+import { describe, it, expect } from "vitest";
+import { NULL_PARSE_RESULT } from "../../../../src/core/step/types.js";
+import { ProposeStep } from "../../../../src/core/step/propose.js";
+import { SpecFixerStep } from "../../../../src/core/step/spec-fixer.js";
+import { ImplementerStep } from "../../../../src/core/step/implementer.js";
+import { BuildFixerStep } from "../../../../src/core/step/build-fixer.js";
+import type { StepDeps } from "../../../../src/core/step/types.js";
+import type { JobState } from "../../../../src/state/schema.js";
+import { vi } from "vitest";
+
+function makeMinimalState(): JobState {
+  return {
+    version: 1,
+    jobId: "test-job",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    request: { path: "/req.md", title: "Test", type: "feature" },
+    repository: { owner: "testowner", name: "testrepo" },
+    session: null,
+    step: "init",
+    status: "running",
+    branch: "feat/test",
+    history: [],
+    error: null,
+    steps: {
+      // Give build-fixer a verification result so it doesn't set state.error
+      verification: [
+        {
+          attempt: 1,
+          sessionId: null,
+          outcome: {
+            verdict: "failed" as const,
+            findingsPath: "openspec/changes/test-slug/verification-result.md",
+            error: null,
+          },
+          startedAt: "2026-01-01",
+          endedAt: "2026-01-01",
+        },
+      ],
+    },
+  };
+}
+
+function makeMinimalDeps(): StepDeps {
+  return {
+    client: {} as StepDeps["client"],
+    config: {
+      version: 1,
+      anthropic: { apiKey: "sk-test" },
+      agents: {},
+      environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
+      github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
+    },
+    repo: { owner: "testowner", name: "testrepo" },
+    request: { type: "feature", title: "Test", content: "content", enabled: [] },
+    slug: "test-slug",
+    sleepFn: vi.fn().mockResolvedValue(undefined),
+    githubClient: {
+      verifyBranch: vi.fn().mockResolvedValue(true),
+      getRawFile: vi.fn().mockResolvedValue(null),
+      verifyPath: vi.fn().mockResolvedValue(true),
+    },
+  };
+}
+
+describe("TC-010: NULL_PARSE_RESULT 定数の共有 — 4 step 適合性", () => {
+  it("NULL_PARSE_RESULT の shape は { verdict: null, findingsPath: null, fileContent: null }", () => {
+    expect(NULL_PARSE_RESULT).toEqual({
+      verdict: null,
+      findingsPath: null,
+      fileContent: null,
+    });
+  });
+
+  it("ProposeStep.parseResult('any') は NULL_PARSE_RESULT と deep-equal", () => {
+    const deps = makeMinimalDeps();
+    const result = ProposeStep.parseResult("any content", deps);
+    expect(result).toEqual(NULL_PARSE_RESULT);
+  });
+
+  it("SpecFixerStep.parseResult('any') は NULL_PARSE_RESULT と deep-equal", () => {
+    const deps = makeMinimalDeps();
+    const result = SpecFixerStep.parseResult("any content", deps);
+    expect(result).toEqual(NULL_PARSE_RESULT);
+  });
+
+  it("ImplementerStep.parseResult('any') は NULL_PARSE_RESULT と deep-equal", () => {
+    const deps = makeMinimalDeps();
+    const result = ImplementerStep.parseResult("any content", deps);
+    expect(result).toEqual(NULL_PARSE_RESULT);
+  });
+
+  it("BuildFixerStep.parseResult('any') は NULL_PARSE_RESULT と deep-equal", () => {
+    const deps = makeMinimalDeps();
+    const result = BuildFixerStep.parseResult("any content", deps);
+    expect(result).toEqual(NULL_PARSE_RESULT);
+  });
+});

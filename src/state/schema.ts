@@ -4,9 +4,28 @@
 
 export type JobStatus = "running" | "success" | "failed" | "terminated";
 
-export type StepName = "propose" | "spec-review" | "spec-fixer";
+export type StepName =
+  | "propose"
+  | "spec-review"
+  | "spec-fixer"
+  | "implementer"
+  | "verification"
+  | "build-fixer";
 
-export type Verdict = "approved" | "needs-fix" | "escalation";
+/**
+ * AgentStepName excludes CLI-resident steps (verification) from StepName.
+ * Used to constrain AgentRegistry and config schema to agent-only roles.
+ */
+export type AgentStepName = Exclude<StepName, "verification">;
+
+export type Verdict =
+  | "approved"
+  | "needs-fix"
+  | "escalation"
+  | "passed"
+  | "failed"
+  | "success"
+  | "error";
 
 export interface HistoryEntry {
   ts: string;

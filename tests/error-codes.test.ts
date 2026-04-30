@@ -177,6 +177,7 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
     });
 
     const mockStep = (name: string): Step => ({
+      kind: "agent",
       name,
       agent: { name: "test", role: name as any, model: "claude-sonnet-4-5", system: "", tools: [] },
       buildMessage: () => "",

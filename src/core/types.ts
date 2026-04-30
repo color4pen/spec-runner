@@ -20,4 +20,6 @@ export interface PipelineDeps {
   sleepFn?: (ms: number) => Promise<void>;
   /** GitHub client (port interface). Required for all pipeline steps. */
   githubClient: GitHubClient;
+  /** Working directory for CLI steps (e.g. verification). Defaults to process.cwd(). */
+  cwd?: string;
 }

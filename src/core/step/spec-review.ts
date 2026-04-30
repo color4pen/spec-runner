@@ -1,4 +1,4 @@
-import type { Step, StepDeps, ParsedStepResult } from "./types.js";
+import type { AgentStep, StepDeps, ParsedStepResult } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState, Verdict } from "../../state/schema.js";
@@ -58,7 +58,8 @@ function computeSpecReviewIteration(state: JobState): number {
  * No custom tool handlers — spec-review has no Custom Tools.
  * Verdict is parsed from a result file written to the branch by the agent.
  */
-export const SpecReviewStep: Step = {
+export const SpecReviewStep: AgentStep = {
+  kind: "agent",
   name: "spec-review",
 
   agent: specReviewAgentDefinition,

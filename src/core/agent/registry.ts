@@ -6,7 +6,7 @@
  * Duplicate roles throw at construction time to catch configuration errors early.
  */
 import type { AgentDefinition } from "./definition.js";
-import type { Step } from "../step/types.js";
+import type { Step, AgentStep } from "../step/types.js";
 import type { StepName } from "../../state/schema.js";
 import { hashObject } from "./hash.js";
 
@@ -17,12 +17,15 @@ export class AgentRegistry {
 
   /**
    * Build a registry from an array of Steps.
-   * Each Step must have a unique agent.role.
+   * Only AgentSteps (kind === "agent") are included — CliSteps are skipped.
+   * Each included Step must have a unique agent.role.
    * Throws with "Duplicate agent role: <role>" if two Steps share a role.
    */
   static fromSteps(steps: Step[]): AgentRegistry {
     const map = new Map<StepName, AgentDefinition>();
-    for (const step of steps) {
+    // Filter to agent-only steps — CLI steps (like verification) have no agent
+    const agentSteps = steps.filter((s): s is AgentStep => s.kind === "agent");
+    for (const step of agentSteps) {
       const def = step.agent;
       if (step.name !== def.role) {
         throw new Error(`Step name and agent role mismatch: name=${step.name}, role=${def.role}`);

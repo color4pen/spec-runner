@@ -6,11 +6,12 @@
  * TC-027: hashOf is deterministic for same definition
  * TC-028: hashOf reacts to 1-char diff
  * TC-029: hashOf throws for unknown role
+ * TC-011: fromSteps は CLI step を除外してカウント 5
  */
 import { describe, it, expect } from "vitest";
 import { AgentRegistry } from "../../../src/core/agent/registry.js";
 import type { AgentDefinition } from "../../../src/core/agent/definition.js";
-import type { Step } from "../../../src/core/step/types.js";
+import type { AgentStep, CliStep } from "../../../src/core/step/types.js";
 import type { StepName } from "../../../src/state/schema.js";
 
 function makeAgentDef(role: StepName, system: string = "system prompt"): AgentDefinition {
@@ -23,8 +24,9 @@ function makeAgentDef(role: StepName, system: string = "system prompt"): AgentDe
   };
 }
 
-function makeStep(role: StepName, system?: string): Step {
+function makeStep(role: StepName, system?: string): AgentStep {
   return {
+    kind: "agent",
     name: role,
     agent: makeAgentDef(role, system),
     buildMessage: () => "",
@@ -154,7 +156,8 @@ describe("TC-045: AgentRegistry.list is idempotent", () => {
 // TC-NEW: fromSteps throws on step.name !== step.agent.role mismatch
 describe("AgentRegistry.fromSteps throws on step.name and agent.role mismatch", () => {
   it("throws 'Step name and agent role mismatch' when step.name differs from agent.role", () => {
-    const mismatchedStep: Step = {
+    const mismatchedStep: AgentStep = {
+      kind: "agent",
       name: "propose" as StepName,
       agent: makeAgentDef("spec-review"), // role = "spec-review" but name = "propose"
       buildMessage: () => "",
@@ -165,6 +168,54 @@ describe("AgentRegistry.fromSteps throws on step.name and agent.role mismatch", 
     expect(() => AgentRegistry.fromSteps([mismatchedStep])).toThrow(
       "Step name and agent role mismatch: name=propose, role=spec-review",
     );
+  });
+});
+
+// TC-011: AgentRegistry.fromSteps — CLI step を除外してカウント 5
+describe("TC-011: AgentRegistry.fromSteps — CLI step を除外してカウント 5", () => {
+  function makeCliStep(name: StepName): CliStep {
+    return {
+      kind: "cli",
+      name,
+      run: async () => {},
+      resultFilePath: () => `result-${name}.md`,
+      parseResult: () => ({ verdict: null, findingsPath: null }),
+    };
+  }
+
+  it("6 step 配列 (verification のみ CLI) → registry.list().length === 5", () => {
+    const propose = makeStep("propose");
+    const specReview = makeStep("spec-review");
+    const specFixer = makeStep("spec-fixer");
+    const implementer = makeStep("implementer");
+    const verification = makeCliStep("verification");
+    const buildFixer = makeStep("build-fixer");
+
+    const registry = AgentRegistry.fromSteps([propose, specReview, specFixer, implementer, verification, buildFixer]);
+
+    expect(registry.list().length).toBe(5);
+  });
+
+  it("registry.get('verification') は undefined", () => {
+    const propose = makeStep("propose");
+    const verification = makeCliStep("verification");
+
+    const registry = AgentRegistry.fromSteps([propose, verification]);
+
+    expect(registry.get("verification")).toBeUndefined();
+  });
+
+  it("registry.get('implementer') は ImplementerStep.agent を返す", () => {
+    const propose = makeStep("propose");
+    const specReview = makeStep("spec-review");
+    const specFixer = makeStep("spec-fixer");
+    const implementer = makeStep("implementer");
+    const verification = makeCliStep("verification");
+    const buildFixer = makeStep("build-fixer");
+
+    const registry = AgentRegistry.fromSteps([propose, specReview, specFixer, implementer, verification, buildFixer]);
+
+    expect(registry.get("implementer")).toEqual(implementer.agent);
   });
 });
 
