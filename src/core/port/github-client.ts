@@ -36,4 +36,14 @@ export interface GitHubClient {
    * in transient states where the folder exists but internal files are not yet present.
    */
   verifyPath(owner: string, repo: string, branch: string, path: string): Promise<boolean>;
+
+  /**
+   * Verify the current token and return its OAuth scopes.
+   * Makes GET /user with the configured token and reads the X-OAuth-Scopes header.
+   *
+   * - status 200 → token valid; scopes contain the granted OAuth scopes
+   * - status 401 → token invalid; scopes is []
+   * - 5xx / network error → throws (caller is responsible for timeout/error handling)
+   */
+  verifyTokenScopes(): Promise<{ status: number; scopes: string[] }>;
 }

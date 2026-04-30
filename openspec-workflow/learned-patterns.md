@@ -939,3 +939,52 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **subagent dispatch unavailable 環境での orchestrator 統合評価**: Task ツール利用不能環境では orchestrator が複数 reviewer 観点を統合保持するため、独立な見解の対立で finding を絞り込めない。**この場合 verdict は控えめに（HIGH を見逃さない方向）寄せ、iteration 数を多めに見積もる運用が安全**
 - **review-feedback / spec-review-result の append-and-fix iteration が機能している証拠**: spec-review (7.55→8.55, +1.00) / code-review (7.20→8.30, +1.10) で improving trend が両方 +0.30 を超え、HIGH を全消化。`improving` trend と HIGH=0 達成の両条件で approve に至る GAN feedback loop が想定通り収束した
 - **次 request 候補（後続）**: (a) post-merge dogfooding-002 で TC-019/TC-021（agent push 検証 / source code 不変検証）の通過確認を learned-patterns に記録, (b) `buildGitPushInstruction(undefined)` 許容で code-review.ts と spec-review-system.ts の inline fallback 文言を DRY 化（LOW Finding #1 by code-review iter2）, (c) `makeReviewStepStub` の tools shape を actual AgentDefinition と揃える test refactor（LOW Finding #2 by code-review iter2）, (d) spec.md `### Requirement:` 直後の blockquote 禁止規約の formatting lint / template 化, (e) ADR filename convention check を spec-review/references/review-criteria.md または proposal template に明文化
+
+---
+
+## 2026-04-30 — cli-doctor-command: Add `specrunner doctor` subcommand
+
+**Type**: new-feature
+**Outcome**: completed (spec-review iter2 approved 6.65 → 8.10 / +1.45 improving, code-review iter3 approved 7.05 → 7.45 → 7.90 / +0.85 improving cumulative, 619/619 tests PASS, 13/14 tasks done — 1 manual e2e dogfooding deferred)
+**Source**: CLI core 初の subcommand 追加。port パターン整合 / LLM 不在 deterministic 検証 / exit code 規約の三本柱で 18 check を実装
+
+### Review Patterns
+
+#### Spec Review (6.65 → 8.10, +1.45 improving)
+- **ADR filename 規約違反の再々発 (HIGH)**: design.md / tasks.md / request.md の 3 箇所で ADR filename を `{NNN}-external-dependency-policy.md` と書いており、`openspec-workflow/adr/README.md` の `ADR-YYYYMMDD-<タイトル>.md` 規約に違反。**learned-patterns L910 / L937 で既に 2 度記録された反復パターンが再発**。proposal template と spec-review/references/review-criteria.md への明文化（次 request 候補 (e)）が遅れたまま 3 度目を踏んだ — distill-learnings → checklist 反映の遅延が原因
+- **delta spec path drift (MEDIUM)**: request.md L152 が delta spec を `specs/cli/spec.md` と書き、proposal.md L40 は `specs/cli-commands/spec.md` と書いて表記揺れ。authoritative file（既存 capability 名）の grep を proposal 段階で行わず、author の memory 依存で書いたのが原因。**delta spec path は既存 `openspec/specs/<capability>/` を grep して capability 名を確定してから request.md / proposal.md / design.md / tasks.md の全箇所で揃える**
+- **implementer による ADR 二重生成リスク (MEDIUM)**: tasks.md 13.1 が implementer に「ADR を生成」と指示していたが、workflow option で adr が enabled のため Step 7 の adr-create skill が ADR を別途生成する。**implementer は ADR file を直接書かず、design.md / decisions/ に decision rationale を整備するに留める**という責務分担を design.md / tasks.md に明示する規律
+- **timeout 仕様の本文 / Risks 分散 (LOW)**: design.md D7 で「default 5s」と書きつつ Risks セクションで「openspec check のみ 30s」と例外を記述し、timeout 仕様が 2 箇所に分散。**仕様の数値（timeout / retry / threshold）は本文に表で一元化し、Risks は本文への参照に留める**
+
+#### Code Review (7.05 → 7.45 → 7.90, cumulative +0.85 improving 2 連続)
+- **MODIFIED Requirement の bin/ 未伝搬 (HIGH iter1)**: `cli-commands/spec.md` の MODIFIED Requirement「引数なしで実行された場合、stderr に USAGE を出力し exit 2」が `bin/specrunner.ts` に伝搬されておらず、既存の stdout + exit 0 動作が残っていた。implementer は MODIFIED Requirement の差分を bin/ entrypoint レベルまで遡及せず check 実装に集中していた。**MODIFIED Requirement は spec の文言を tasks.md に逐語コピーして「どの file の何行目が変わるか」を明記する規律**。あわせて `--help`/`-h`（stdout + exit 0）と空引数（stderr + exit 2）の分岐は entrypoint で持つことを spec scenario に書き分ける
+- **process globals leakage despite DoctorContext (MEDIUM iter1)**: `ctx.env["process_version"] ?? process.version` のような defensive fallback が core check に残存。env mock を注入したテストで偶発的に通過しただけで、production path は global 直叩き。**`ctx.X ?? <global>` 形式の fallback は禁止（feedback_request_md_external_constraints と同系統の anti-pattern）。port は必ず必須フィールドとして定義し populate は boundary（src/cli/doctor.ts）で行う**
+- **module-level mutable state の再導入 (MEDIUM iter1)**: `let _registry: AgentRegistry | null = null;` が definition-drift.ts で復活。constraints.md で既知の禁止パターンだが、cache の最適化のつもりで implementer が再導入。**「module-level mutable state 禁止」は constraints だけでなく code-reviewer の machine-checkable rule（grep `^let .* = null` in src/core/）として運用する**
+- **typecheck regression by code-fixer (HIGH iter2)**: code-fixer が iter1 fix で追加した TC-062/TC-063 で `.map((c) => c[0] as string)` を書き、TS7006 implicit-any でビルド/型チェックが exit 2 失敗。**code-fixer は fix 適用後に必ず typecheck + build を実行し、新規追加コード（特にテスト）の型エラーを潰してから手放す**。reviewer 環境（vitest run + typecheck）を fixer の検証ループに含める
+- **MEDIUM carryover: claimed-but-not-committed (iter1 → iter2)**: implementation-notes.md L116 で「`pr-create-result.md` を削除」と claim していたが git commit に反映されず、iter2 で working tree pollution が再観測された。**fixer が「修正済」と書いた項目は iteration 終了前に `git status` / `git diff main...HEAD --stat` で 1 件ずつ突合する。implementation-notes の claim と staged diff の対応を verification 工程に組み込む**
+- **tautology test pattern の検出 (LOW iter1)**: TC-079 が `AgentRegistry` の import 可否のみ確認する tautology だった（review-lessons.md で既知）。fixer が `AgentRegistry.prototype.hashOf` への spy で behavioral assertion に置換し解決。**「import-only test」「source-text grep test」は behavioral assertion に置換するルール**を testing カテゴリの machine-checkable rule に昇格できる
+- **VITEST env-var coupling (LOW iter2 carryover to iter3)**: `bin/specrunner.ts` の auto-invoke guard が `if (process.env["VITEST"] !== "true")` で test runner 名にカップリング。canonical Node idiom は `import.meta.url === pathToFileURL(process.argv[1]).href`。**entrypoint guard は framework-agnostic な ESM idiom を優先する**（次 request 候補に追加）
+
+### Error Patterns
+
+- **`bun test` が dist/*.test.js を runtime 不整合で拾う**: project の test runner は `vitest run`（`npm test`）であるべきだが、reviewer が `bun test` を素朴に実行すると ESM/CJS 不整合で失敗するノイズが出た。**verification skill は「project が宣言する test runner（package.json scripts.test）を invoke する」を rule 化済みだが、reviewer の手動確認時にも同じ規律を持つ**
+- **iter2 で fixer が typecheck 未実行**: iter1 fix の typecheck regression を iter2 で初検出した。**code-fixer の終了 condition に `typecheck PASS` を必須化**（既に verification skill にあるが fixer は invoke していなかった）
+- **claimed-but-not-committed**: 上述 MEDIUM carryover と同根。implementer / fixer の self-report と staged diff の突合が未自動化
+
+### Design Decisions
+
+- **18 check の deterministic 検証**: doctor は LLM を呼ばず、各 check は同期 / 非同期の純粋関数として `(ctx) => CheckResult` を返す。LLM の non-determinism を doctor から排除し、CI 利用に耐える exit code 契約（0 = pass, 1 = warn-only, 2 = fail / crash）を成立させた
+- **DoctorContext 拡張による global の boundary 押し出し**: `processVersion: string` / `platform: NodeJS.Platform` を `DoctorContext` に追加し、`src/cli/doctor.ts` で `process.version` / `process.platform` から populate。**core は `process.*` を一切参照しない不変条件を `grep "process\\." src/core/doctor/checks/**` で 0 件化して invariant 化**
+- **GitHubClient.verifyTokenScopes による port pattern 維持**: github-token-valid.ts は GitHubClient port 経由でのみ HTTP を発行。fetch 直叩きで core が HTTP 詳細を持つ anti-pattern を回避。Anthropic 側は `auth/anthropic-key-valid.ts` が `ctx.fetch` を直接使用しており **対称性の欠如**（review feedback iter1 #5）が次 request 候補 (b) として残存
+- **exit code 2 の発火層を bin/ doctor case 専用 try/catch に集約**: `runDoctor` 内で完結させず、`bin/specrunner.ts` の doctor case が `runDoctor` を try/catch して exit 2 を発する設計で spec の crash シナリオと整合。一般エラー（`main().catch`）の exit 1 と区別
+
+### Lessons
+
+- **ADR filename 規約違反は 3 度目の再発 — checklist 昇格を後回しにしない**: learned-patterns L910 / L937 / 本エントリと 3 度連続で記録。distill-learnings から spec-review/references/review-criteria.md への昇格と、proposal template の boilerplate（`openspec-workflow/adr/README.md` の grep 指示）への組込が pending のまま 3 度目を踏んだ。**「learned-patterns に 2 回以上現れた反復パターンは distill-learnings の次回実行で必ず checklist / criteria に昇格する」を運用ルール化**（promote-rule の昇格条件と整合）
+- **port pattern の対称性は code-review の固定観点にする**: GitHubClient だけ port 経由化し Anthropic は fetch 直叩きという**対称性の欠如**は架構の readability を下げる。**「同じ層の同種 client は port pattern の有無を揃える」を architecture カテゴリの review 観点に追加**
+- **fixer の終了 contract に typecheck を必須化**: code-fixer は fix を書いた後 `vitest run` のみで完了とせず、`bun run typecheck` / `bun run build` の exit 0 を確認してから手放す。**fixer prompt の終了条件 checklist に「typecheck PASS」「build PASS」を明記する**
+- **claimed-but-not-committed 検出は iteration 終了 hook で自動化する**: implementer / fixer が implementation-notes.md に書いた変更項目を、`git diff main...HEAD --stat` の出力と機械的に突合する verification step を入れる。**「テキストの claim と git の reality を毎 iteration の最後に diff る」**
+- **MODIFIED Requirement は spec の差分を tasks に逐語写経する**: 本 request では `cli-commands/spec.md` の MODIFIED Requirement（empty-args → stderr）が tasks.md に概要レベルでしか落ちておらず、implementer が bin/ entrypoint まで遡及しなかった。**ADDED より MODIFIED Requirement の方が伝搬漏れが起きやすい — tasks.md に MODIFIED の差分を逐語コピーし、影響 file を bullet で明記する**
+- **`grep "process\\." src/core/` を invariant test として常設する**: process globals leakage は今回の検出が良いタイミングだった。**「core は global を参照しない」を grep 系の invariant test として `tests/architecture/no-globals.test.ts` 等で固定化**する候補
+- **「import-only test」「source-text grep test」は behavioral assertion に置換**: review-lessons の既知パターンを再確認。tautology test を testing カテゴリの machine-checkable rule に昇格する候補
+- **次 request 候補（後続）**: (a) ADR filename convention check を `skills/spec-review/references/review-criteria.md` と `skills/openspec-propose` の template boilerplate に明文化（learned-patterns 3 度目を機に必達）, (b) `auth/anthropic-key-valid.ts` を AnthropicClient port の `verifyApiKey()` method 経由に切替え GitHubClient と対称化, (c) entrypoint guard を `import.meta.url === pathToFileURL(process.argv[1]).href` に置換し VITEST env-var coupling を解消, (d) `tests/architecture/no-globals.test.ts` 等で「core は `process.*` を参照しない」を grep 系 invariant test として固定化, (e) code-fixer skill の終了条件 checklist に「typecheck / build PASS」「implementation-notes の claim と staged diff の突合」を追記, (f) `bin/specrunner.ts` の doctor e2e（手動 manual task 13.4）を dogfooding-002 で消化し結果を learned-patterns に記録

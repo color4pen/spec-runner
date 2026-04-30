@@ -214,6 +214,7 @@ describe("TC-008: spec-review round-trip — resultFilePath and buildFindingsPat
         verifyBranch: vi.fn().mockResolvedValue(true),
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       },
     };
   }
@@ -294,6 +295,7 @@ describe("TC-009: code-review round-trip — resultFilePath and buildReviewFeedb
         verifyBranch: vi.fn().mockResolvedValue(true),
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       },
     };
   }
@@ -519,6 +521,7 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
         verifyBranch: vi.fn().mockResolvedValue(true),
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       },
     };
 
@@ -557,6 +560,7 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
         verifyBranch: vi.fn().mockResolvedValue(true),
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       },
     };
 
@@ -597,6 +601,7 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
         verifyBranch: vi.fn().mockResolvedValue(true),
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       },
     };
 
@@ -635,6 +640,7 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
         verifyBranch: vi.fn().mockResolvedValue(true),
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       },
     };
 

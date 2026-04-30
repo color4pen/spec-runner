@@ -215,6 +215,7 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
         verifyBranch: vi.fn().mockResolvedValue(true),
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       },
     });
 

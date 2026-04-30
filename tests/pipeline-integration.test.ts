@@ -217,6 +217,7 @@ function buildMockGithubClient(opts: {
       }
       return null;
     }),
+    verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
   };
 }
 

@@ -76,6 +76,40 @@ export class GitHubApiClient implements GitHubClient {
   }
 
   /**
+   * Verify the current token and return its OAuth scopes.
+   * - GET /user → reads X-OAuth-Scopes header
+   * - 200 → { status: 200, scopes: [...] }
+   * - 401 → { status: 401, scopes: [] }
+   * - 5xx / network error → propagates as thrown error
+   */
+  async verifyTokenScopes(): Promise<{ status: number; scopes: string[] }> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+
+    try {
+      const resp = await this.fetchFn("https://api.github.com/user", {
+        headers: {
+          Authorization: `token ${this.token}`,
+          Accept: "application/vnd.github.v3+json",
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+
+      const scopeHeader = resp.headers.get("X-OAuth-Scopes") ?? "";
+      const scopes = scopeHeader
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+
+      return { status: resp.status, scopes };
+    } catch (err) {
+      clearTimeout(timer);
+      throw err;
+    }
+  }
+
+  /**
    * Verify a folder/path exists in a repository.
    * - 200 → true
    * - 404 → false

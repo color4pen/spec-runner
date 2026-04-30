@@ -50,6 +50,7 @@ function makeMinimalDeps(slug: string = "my-change"): StepDeps {
       verifyBranch: vi.fn().mockResolvedValue(true),
       getRawFile: vi.fn().mockResolvedValue(null),
       verifyPath: vi.fn().mockResolvedValue(true),
+      verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
     },
   };
 }

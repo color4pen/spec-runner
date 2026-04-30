@@ -137,6 +137,7 @@ describe("TC-030: StepExecutor resolves agent ID via step.agent.role", () => {
         verifyBranch: vi.fn().mockResolvedValue(true),
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       },
     };
 
@@ -188,6 +189,7 @@ describe("TC-031: spec-review Step does not use propose Agent ID", () => {
         verifyBranch: vi.fn().mockResolvedValue(true),
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       },
     };
 
@@ -237,6 +239,7 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
         verifyBranch: vi.fn().mockResolvedValue(true),
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       },
     };
 
@@ -278,6 +281,7 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
         verifyBranch: vi.fn().mockResolvedValue(true),
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       },
     };
 
