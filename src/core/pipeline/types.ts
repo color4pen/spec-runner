@@ -36,6 +36,11 @@ export const LOOP_ERROR_CODES: Record<string, LoopErrorShape> = {
     message: (n) => `verification did not pass after ${n} iterations`,
     hint: (nnn) => `Review verification-result-${nnn}.md and fix the build errors manually.`,
   },
+  "code-review": {
+    code: "CODE_REVIEW_RETRIES_EXHAUSTED",
+    message: (n) => `code-review did not approve after ${n} iterations`,
+    hint: (nnn) => `Review review-feedback-${nnn}.md and address findings manually.`,
+  },
 };
 
 /**
@@ -61,9 +66,15 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: "spec-fixer",   on: "error",      to: "escalate" },
   { step: "implementer",  on: "success",    to: "verification" },
   { step: "implementer",  on: "error",      to: "escalate" },
-  { step: "verification", on: "passed",     to: "end" },
+  { step: "verification", on: "passed",     to: "code-review" },
   { step: "verification", on: "failed",     to: "build-fixer" },
   { step: "verification", on: "escalation", to: "escalate" },
   { step: "build-fixer",  on: "success",    to: "verification" },
   { step: "build-fixer",  on: "error",      to: "escalate" },
+  // --- code review loop ---
+  { step: "code-review",  on: "approved",   to: "end" },
+  { step: "code-review",  on: "needs-fix",  to: "code-fixer" },
+  { step: "code-review",  on: "escalation", to: "escalate" },
+  { step: "code-fixer",   on: "approved",   to: "code-review" },
+  { step: "code-fixer",   on: "error",      to: "escalate" },
 ];

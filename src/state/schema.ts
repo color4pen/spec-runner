@@ -10,7 +10,9 @@ export type StepName =
   | "spec-fixer"
   | "implementer"
   | "verification"
-  | "build-fixer";
+  | "build-fixer"
+  | "code-review"
+  | "code-fixer";
 
 /**
  * AgentStepName excludes CLI-resident steps (verification) from StepName.

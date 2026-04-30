@@ -106,13 +106,13 @@ function makeStepObject(name: string, kind: "agent" | "cli" = "agent"): Step {
   };
 }
 
-// TC-012: STANDARD_TRANSITIONS に 7 新エッジが含まれる
-describe("TC-012: STANDARD_TRANSITIONS に 7 新エッジが存在する", () => {
+// TC-012: STANDARD_TRANSITIONS に必要なエッジが含まれる
+describe("TC-012: STANDARD_TRANSITIONS に必要なエッジが存在する", () => {
   const requiredEdges = [
     { step: "spec-review",  on: "approved",   to: "implementer" },
     { step: "implementer",  on: "success",     to: "verification" },
     { step: "implementer",  on: "error",       to: "escalate" },
-    { step: "verification", on: "passed",      to: "end" },
+    { step: "verification", on: "passed",      to: "code-review" },
     { step: "verification", on: "failed",      to: "build-fixer" },
     { step: "verification", on: "escalation",  to: "escalate" },
     { step: "build-fixer",  on: "success",     to: "verification" },
@@ -127,6 +127,78 @@ describe("TC-012: STANDARD_TRANSITIONS に 7 新エッジが存在する", () =>
       expect(found).toBeDefined();
     });
   }
+});
+
+// TC-011: verification passed → code-review (新 transition)
+describe("TC-011: verification passed → code-review transition が存在する", () => {
+  it("STANDARD_TRANSITIONS has verification --passed→ code-review", () => {
+    const found = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "verification" && t.on === "passed" && t.to === "code-review",
+    );
+    expect(found).toBeDefined();
+  });
+
+  it("STANDARD_TRANSITIONS does NOT have verification --passed→ end (removed)", () => {
+    const found = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "verification" && t.on === "passed" && t.to === "end",
+    );
+    expect(found).toBeUndefined();
+  });
+});
+
+// TC-012 (new code-review transitions): TC-012 / TC-013 / TC-014 / TC-015 / TC-029
+describe("TC-012-015, TC-029: code-review / code-fixer transition rows", () => {
+  const codeReviewEdges = [
+    { step: "code-review", on: "approved",   to: "end",         label: "TC-012: code-review approved → end" },
+    { step: "code-review", on: "needs-fix",  to: "code-fixer",  label: "TC-013: code-review needs-fix → code-fixer" },
+    { step: "code-review", on: "escalation", to: "escalate",    label: "TC-015: code-review escalation → escalate" },
+    { step: "code-fixer",  on: "approved",   to: "code-review", label: "TC-014: code-fixer approved → code-review" },
+    { step: "code-fixer",  on: "error",      to: "escalate",    label: "TC-029: code-fixer error → escalate" },
+  ];
+
+  for (const edge of codeReviewEdges) {
+    it(`${edge.label}`, () => {
+      const found = STANDARD_TRANSITIONS.find(
+        (t) => t.step === edge.step && t.on === edge.on && t.to === edge.to,
+      );
+      expect(found).toBeDefined();
+    });
+  }
+});
+
+// TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
+describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
+  it("has 19 rows total (14 original - 1 modified + 6 new code-review/code-fixer = 19)", () => {
+    // 14 original rows, but verification --passed→ end replaced by --passed→ code-review
+    // + 5 new code-review/code-fixer rows = 19
+    expect(STANDARD_TRANSITIONS.length).toBe(19);
+  });
+
+  it("verification --passed→ end does NOT exist", () => {
+    const oldRow = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "verification" && t.on === "passed" && t.to === "end",
+    );
+    expect(oldRow).toBeUndefined();
+  });
+});
+
+// TC-016: LOOP_ERROR_CODES に code-review エントリが追加されている
+describe("TC-016: LOOP_ERROR_CODES に code-review エントリが追加されている", () => {
+  it("LOOP_ERROR_CODES['code-review'].code === 'CODE_REVIEW_RETRIES_EXHAUSTED'", () => {
+    const entry = LOOP_ERROR_CODES["code-review"];
+    expect(entry).toBeDefined();
+    expect(entry!.code).toBe("CODE_REVIEW_RETRIES_EXHAUSTED");
+  });
+
+  it("message(3) === 'code-review did not approve after 3 iterations'", () => {
+    const entry = LOOP_ERROR_CODES["code-review"];
+    expect(entry!.message(3)).toBe("code-review did not approve after 3 iterations");
+  });
+
+  it("hint('003') contains 'review-feedback-003.md'", () => {
+    const entry = LOOP_ERROR_CODES["code-review"];
+    expect(entry!.hint("003")).toContain("review-feedback-003.md");
+  });
 });
 
 // TC-013: LOOP_ERROR_CODES — spec-review cycle
@@ -252,5 +324,117 @@ describe("TC-015: verification ↔ build-fixer loop guard → VERIFICATION_RETRI
 
     expect(result.error?.code).toBe("VERIFICATION_RETRIES_EXHAUSTED");
     expect(result.error?.message).toContain("3");
+  });
+});
+
+// TC-017: code-review ↔ code-fixer サイクルが maxIterations に達すると CODE_REVIEW_RETRIES_EXHAUSTED で終了する
+describe("TC-017: code-review ↔ code-fixer loop guard → CODE_REVIEW_RETRIES_EXHAUSTED", () => {
+  it("code-review が 3 回 needs-fix → CODE_REVIEW_RETRIES_EXHAUSTED で escalation", async () => {
+    const maxIterations = 3;
+
+    const jobState = makeMinimalState("test-code-review-loop-guard");
+    await fs.mkdir(path.join(tempDir, "specrunner", "jobs"), { recursive: true });
+    await fs.writeFile(
+      path.join(tempDir, "specrunner", "jobs", `${jobState.jobId}.json`),
+      JSON.stringify(jobState),
+      "utf-8",
+    );
+
+    const events = new EventBus();
+    let codeReviewCallCount = 0;
+
+    const executeSpy = vi.fn().mockImplementation(async (step: Step, state: JobState): Promise<JobState> => {
+      if (step.name === "code-review") {
+        codeReviewCallCount++;
+        return {
+          ...state,
+          status: "success",
+          step: "code-review",
+          steps: {
+            ...state.steps,
+            "code-review": [
+              ...(state.steps?.["code-review"] ?? []),
+              {
+                attempt: codeReviewCallCount,
+                sessionId: null,
+                outcome: {
+                  verdict: "needs-fix" as const,
+                  findingsPath: `openspec/changes/test-slug/review-feedback-${String(codeReviewCallCount).padStart(3, "0")}.md`,
+                  error: null,
+                },
+                startedAt: new Date().toISOString(),
+                endedAt: new Date().toISOString(),
+              },
+            ],
+          },
+        };
+      }
+      if (step.name === "code-fixer") {
+        return {
+          ...state,
+          status: "success",
+          step: "code-fixer",
+          steps: {
+            ...state.steps,
+            "code-fixer": [
+              ...(state.steps?.["code-fixer"] ?? []),
+              {
+                attempt: 1,
+                sessionId: null,
+                outcome: { verdict: "approved" as const, findingsPath: null, error: null },
+                startedAt: new Date().toISOString(),
+                endedAt: new Date().toISOString(),
+              },
+            ],
+          },
+        };
+      }
+      throw new Error(`Unexpected step: ${step.name}`);
+    });
+    const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
+
+    const pipeline = new Pipeline({
+      steps: new Map([
+        ["code-review", makeStepObject("code-review")],
+        ["code-fixer",  makeStepObject("code-fixer")],
+      ]),
+      transitions: [
+        { step: "code-review", on: "approved",   to: "end" },
+        { step: "code-review", on: "needs-fix",  to: "code-fixer" },
+        { step: "code-review", on: "escalation", to: "escalate" },
+        { step: "code-fixer",  on: "approved",   to: "code-review" },
+        { step: "code-fixer",  on: "error",      to: "escalate" },
+      ],
+      maxIterations,
+      executor: mockExecutor,
+      events,
+      loopName: "code-review",
+      loopNames: ["code-review"],
+    });
+
+    const result = await pipeline.run("code-review", jobState, makeMinimalDeps());
+
+    expect(result.error?.code).toBe("CODE_REVIEW_RETRIES_EXHAUSTED");
+    expect(result.error?.message).toBe("code-review did not approve after 3 iterations");
+    // state.steps["code-review"] の末尾 verdict が "escalation" に書き換わる
+    const codeReviewSteps = result.steps?.["code-review"] ?? [];
+    const lastStep = codeReviewSteps[codeReviewSteps.length - 1];
+    expect(lastStep?.outcome?.verdict).toBe("escalation");
+  });
+});
+
+// TC-024: Pipeline.loopNames 既定値に "code-review" が含まれる (via run.ts)
+describe("TC-024: runPipeline の loopNames に code-review が含まれる", () => {
+  it("STANDARD_TRANSITIONS includes code-review as a loop step (code-fixer approved → code-review)", () => {
+    // Verify the loop structure is present in STANDARD_TRANSITIONS
+    const codeFixerToCodeReview = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-fixer" && t.on === "approved" && t.to === "code-review",
+    );
+    expect(codeFixerToCodeReview).toBeDefined();
+
+    const codeReviewNeedsFixToCodeFixer = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-review" && t.on === "needs-fix" && t.to === "code-fixer",
+    );
+    expect(codeReviewNeedsFixToCodeFixer).toBeDefined();
   });
 });

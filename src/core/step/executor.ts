@@ -14,7 +14,6 @@ import {
   changeFolderNotFoundError,
   specReviewResultNotFoundError,
 } from "../../errors.js";
-import { buildFindingsPath } from "./spec-review.js";
 import {
   createSessionWithHistory,
   recordFailedStepResult,
@@ -680,14 +679,11 @@ export class StepExecutor {
       findingsPath = resultFilePath;
       const effectiveBranch = state.branch ?? "main";
 
-      // Determine iteration for result file fetch (use step-specific history length)
-      const iteration = (state.steps?.[step.name]?.length ?? 0);
-
       fileContent = await deps.githubClient.getRawFile(
         deps.repo.owner,
         deps.repo.name,
         effectiveBranch,
-        buildFindingsPath(slug, iteration),
+        findingsPath,
         { sleepFn: deps.sleepFn },
       );
 

@@ -124,6 +124,19 @@ function buildMockPipeline(opts: {
     },
   });
 
+  // Default: code-review approves
+  const defaultCodeReviewResult = (base: JobState): JobState => ({
+    ...base,
+    status: "success",
+    steps: {
+      ...base.steps,
+      "code-review": [
+        ...(base.steps?.["code-review"] ?? []),
+        { attempt: (base.steps?.["code-review"]?.length ?? 0) + 1, sessionId: null, outcome: { verdict: "approved" as const, findingsPath: `openspec/changes/test-slug/review-feedback-001.md`, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" },
+      ],
+    },
+  });
+
   const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
     if (step.name === "propose") {
       if (opts.proposeResult instanceof Error) throw opts.proposeResult;
@@ -164,6 +177,12 @@ function buildMockPipeline(opts: {
       if (result instanceof Error) throw result;
       return result ?? currentState;
     }
+    if (step.name === "code-review") {
+      return defaultCodeReviewResult(currentState);
+    }
+    if (step.name === "code-fixer") {
+      return currentState;
+    }
     throw new Error(`Unknown step: ${step.name}`);
   });
 
@@ -176,6 +195,8 @@ function buildMockPipeline(opts: {
     ["implementer",  { kind: "agent", name: "implementer",  agent: { name: "test", role: "implementer", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["verification", { kind: "cli",   name: "verification",  run: async () => {}, resultFilePath: () => "openspec/changes/test/verification-result.md", parseResult: () => ({ verdict: "passed" as const, findingsPath: null }) }],
     ["build-fixer",  { kind: "agent", name: "build-fixer",  agent: { name: "test", role: "build-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["code-review",  { kind: "agent", name: "code-review",  agent: { name: "test", role: "code-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => "openspec/changes/test/review-feedback-001.md", parseResult: () => ({ verdict: "approved" as const, findingsPath: null }) }],
+    ["code-fixer",   { kind: "agent", name: "code-fixer",   agent: { name: "test", role: "code-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "approved", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
   ]);
 
   const pipeline = new Pipeline({
@@ -185,7 +206,7 @@ function buildMockPipeline(opts: {
     executor: mockExecutor,
     events,
     loopName: "spec-review",
-    loopNames: ["spec-review", "verification"],
+    loopNames: ["spec-review", "verification", "code-review"],
   });
 
   return { pipeline, events, executeSpy };
@@ -453,15 +474,21 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
 
     expect(find("implementer",  "success")).toMatchObject({ to: "verification" });
     expect(find("implementer",  "error")).toMatchObject({ to: "escalate" });
-    expect(find("verification", "passed")).toMatchObject({ to: "end" });
+    expect(find("verification", "passed")).toMatchObject({ to: "code-review" });
     expect(find("verification", "failed")).toMatchObject({ to: "build-fixer" });
     expect(find("verification", "escalation")).toMatchObject({ to: "escalate" });
     expect(find("build-fixer",  "success")).toMatchObject({ to: "verification" });
     expect(find("build-fixer",  "error")).toMatchObject({ to: "escalate" });
+    // code-review loop rows
+    expect(find("code-review",  "approved")).toMatchObject({ to: "end" });
+    expect(find("code-review",  "needs-fix")).toMatchObject({ to: "code-fixer" });
+    expect(find("code-review",  "escalation")).toMatchObject({ to: "escalate" });
+    expect(find("code-fixer",   "approved")).toMatchObject({ to: "code-review" });
+    expect(find("code-fixer",   "error")).toMatchObject({ to: "escalate" });
   });
 
-  it("has exactly 14 transitions", () => {
-    expect(STANDARD_TRANSITIONS).toHaveLength(14);
+  it("has exactly 19 transitions (14 original - 1 modified + 6 new code-review/code-fixer)", () => {
+    expect(STANDARD_TRANSITIONS).toHaveLength(19);
   });
 });
 

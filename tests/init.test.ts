@@ -138,16 +138,20 @@ describe("TC-059: specrunner init — idempotent when agent hash matches", () =>
     const { SpecFixerStep } = await import("../src/core/step/spec-fixer.js");
     const { ImplementerStep } = await import("../src/core/step/implementer.js");
     const { BuildFixerStep } = await import("../src/core/step/build-fixer.js");
+    const { CodeReviewStep } = await import("../src/core/step/code-review.js");
+    const { CodeFixerStep } = await import("../src/core/step/code-fixer.js");
 
-    // init.ts registers all 5 agent steps (VerificationStep is CLI-resident, excluded)
-    const registry = AgentRegistry.fromSteps([ProposeStep, SpecReviewStep, SpecFixerStep, ImplementerStep, BuildFixerStep]);
+    // init.ts registers all 7 agent steps (VerificationStep is CLI-resident, excluded)
+    const registry = AgentRegistry.fromSteps([ProposeStep, SpecReviewStep, SpecFixerStep, ImplementerStep, BuildFixerStep, CodeReviewStep, CodeFixerStep]);
     const proposeHash = registry.hashOf("propose");
     const specReviewHash = registry.hashOf("spec-review");
     const specFixerHash = registry.hashOf("spec-fixer");
     const implementerHash = registry.hashOf("implementer");
     const buildFixerHash = registry.hashOf("build-fixer");
+    const codeReviewHash = registry.hashOf("code-review");
+    const codeFixerHash = registry.hashOf("code-fixer");
 
-    // Pre-populate config with matching hashes for all 5 roles
+    // Pre-populate config with matching hashes for all 7 roles
     const configDir = path.join(tempDir, "specrunner");
     await fs.mkdir(configDir, { recursive: true });
     const existingConfig = {
@@ -179,13 +183,23 @@ describe("TC-059: specrunner init — idempotent when agent hash matches", () =>
           definitionHash: buildFixerHash,
           lastSyncedAt: new Date().toISOString(),
         },
+        "code-review": {
+          agentId: "agent_code_review_001",
+          definitionHash: codeReviewHash,
+          lastSyncedAt: new Date().toISOString(),
+        },
+        "code-fixer": {
+          agentId: "agent_code_fixer_001",
+          definitionHash: codeFixerHash,
+          lastSyncedAt: new Date().toISOString(),
+        },
       },
       environment: { id: "env_existing_001", lastSyncedAt: new Date().toISOString() },
     };
     const configPath = path.join(configDir, "config.json");
     await fs.writeFile(configPath, JSON.stringify(existingConfig), { mode: 0o600 });
 
-    // Mock retrieve to succeed for all 5 agents (no 404)
+    // Mock retrieve to succeed for all 7 agents (no 404)
     currentMockSdk = {
       beta: {
         agents: {
@@ -197,6 +211,8 @@ describe("TC-059: specrunner init — idempotent when agent hash matches", () =>
               "agent_spec_fixer_001",
               "agent_implementer_001",
               "agent_build_fixer_001",
+              "agent_code_review_001",
+              "agent_code_fixer_001",
             ];
             if (ids.includes(id)) {
               return Promise.resolve({ id, version: 1 });
@@ -436,21 +452,25 @@ describe("TC-039: legacy migration — reuses existing agentId via updateAgent",
 describe("TC-041: 404 fallback — only propose is re-created, others are no-op", () => {
   it("calls createAgent only for propose when retrieveAgent 404s for propose", async () => {
 
-    // Compute current hashes (all 5 agent steps that init.ts registers)
+    // Compute current hashes (all 7 agent steps that init.ts registers)
     const { AgentRegistry } = await import("../src/core/agent/index.js");
     const { ProposeStep } = await import("../src/core/step/propose.js");
     const { SpecReviewStep } = await import("../src/core/step/spec-review.js");
     const { SpecFixerStep } = await import("../src/core/step/spec-fixer.js");
     const { ImplementerStep } = await import("../src/core/step/implementer.js");
     const { BuildFixerStep } = await import("../src/core/step/build-fixer.js");
+    const { CodeReviewStep } = await import("../src/core/step/code-review.js");
+    const { CodeFixerStep } = await import("../src/core/step/code-fixer.js");
 
-    const registry = AgentRegistry.fromSteps([ProposeStep, SpecReviewStep, SpecFixerStep, ImplementerStep, BuildFixerStep]);
+    const registry = AgentRegistry.fromSteps([ProposeStep, SpecReviewStep, SpecFixerStep, ImplementerStep, BuildFixerStep, CodeReviewStep, CodeFixerStep]);
     const specReviewHash = registry.hashOf("spec-review");
     const specFixerHash = registry.hashOf("spec-fixer");
     const implementerHash = registry.hashOf("implementer");
     const buildFixerHash = registry.hashOf("build-fixer");
+    const codeReviewHash = registry.hashOf("code-review");
+    const codeFixerHash = registry.hashOf("code-fixer");
 
-    // Pre-populate with all 5 roles, but propose has a stored ID that will 404
+    // Pre-populate with all 7 roles, but propose has a stored ID that will 404
     const configDir = path.join(tempDir, "specrunner");
     await fs.mkdir(configDir, { recursive: true });
     const existingConfig = {
@@ -484,6 +504,16 @@ describe("TC-041: 404 fallback — only propose is re-created, others are no-op"
           definitionHash: buildFixerHash,
           lastSyncedAt: new Date().toISOString(),
         },
+        "code-review": {
+          agentId: "agent_code_review_001",
+          definitionHash: codeReviewHash,
+          lastSyncedAt: new Date().toISOString(),
+        },
+        "code-fixer": {
+          agentId: "agent_code_fixer_001",
+          definitionHash: codeFixerHash,
+          lastSyncedAt: new Date().toISOString(),
+        },
       },
       environment: { id: "env_existing_001", lastSyncedAt: new Date().toISOString() },
     };
@@ -499,7 +529,7 @@ describe("TC-041: 404 fallback — only propose is re-created, others are no-op"
               // propose 404s → triggers create fallback
               return Promise.reject(Object.assign(new Error("Not found"), { status: 404 }));
             }
-            // spec-review, spec-fixer, implementer, build-fixer all retrieve succeed
+            // all other agents retrieve succeed
             return Promise.resolve({ id, version: 1 });
           }),
           update: vi.fn().mockResolvedValue({ id: "agent_propose_new", version: 2 }),
@@ -517,7 +547,7 @@ describe("TC-041: 404 fallback — only propose is re-created, others are no-op"
 
     // Only propose should have been created
     expect(currentMockSdk.beta.agents.create).toHaveBeenCalledTimes(1);
-    // spec-review, spec-fixer, implementer, build-fixer should not have been updated or created
+    // all others should not have been updated or created
     expect(currentMockSdk.beta.agents.update).not.toHaveBeenCalled();
 
     // Config should reflect new propose agentId

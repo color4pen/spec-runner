@@ -64,6 +64,8 @@ function buildConfig(overrides: Record<string, unknown> = {}) {
       "spec-fixer": { agentId: "agent_spec_fixer", definitionHash: "sha256:def", lastSyncedAt: new Date().toISOString() },
       "implementer": { agentId: "implementer-agent-id", definitionHash: "sha256:imp", lastSyncedAt: new Date().toISOString() },
       "build-fixer": { agentId: "build-fixer-agent-id", definitionHash: "sha256:bfx", lastSyncedAt: new Date().toISOString() },
+      "code-review": { agentId: "code-review-agent-id", definitionHash: "sha256:crv", lastSyncedAt: new Date().toISOString() },
+      "code-fixer": { agentId: "code-fixer-agent-id", definitionHash: "sha256:cfx", lastSyncedAt: new Date().toISOString() },
     },
     pipeline: { maxRetries: 2 },
     environment: { id: "env_001", lastSyncedAt: new Date().toISOString() },
@@ -151,31 +153,46 @@ function buildPipelineMockClient(opts: {
  *
  * - verifyBranch: returns branchFound (default true)
  * - getRawFile:
- *   - spec-review-result-NNN.md → returns verdict content per specReviewVerdicts array
+ *   - openspec/changes/<slug>/spec-review-result-NNN.md → returns verdict content per specReviewVerdicts array
+ *   - openspec/changes/<slug>/review-feedback-NNN.md → returns verdict per codeReviewVerdicts array
  *   - change-folder probe (proposal.md) → returns "exists" if folderFound else null
+ *
+ * Uses endsWith matching so slug-prefix differences do not mask wrong paths.
  */
 function buildMockGithubClient(opts: {
   branchFound?: boolean;
   folderFound?: boolean;
   specReviewVerdicts?: ("approved" | "needs-fix" | "escalation")[];
+  codeReviewVerdicts?: ("approved" | "needs-fix" | "escalation")[];
+  /** @deprecated use codeReviewVerdicts */
+  codeReviewVerdict?: "approved" | "needs-fix" | "escalation";
 } = {}): GitHubClient {
   const {
     branchFound = true,
     folderFound = true,
     specReviewVerdicts = ["approved"],
+    codeReviewVerdict = "approved",
   } = opts;
+  const codeReviewVerdicts = opts.codeReviewVerdicts ?? [codeReviewVerdict];
 
   let specReviewCallCount = 0;
+  let codeReviewCallCount = 0;
 
   return {
     verifyBranch: vi.fn().mockResolvedValue(branchFound),
     verifyPath: vi.fn().mockResolvedValue(folderFound),
     getRawFile: vi.fn().mockImplementation(async (_owner: string, _repo: string, _branch: string, filePath: string) => {
-      // Spec-review result file (e.g., spec-review-result-001.md)
-      if (filePath.includes("spec-review-result")) {
+      // Spec-review result file: path ends with spec-review-result-NNN.md
+      if (/spec-review-result-\d{3}\.md$/.test(filePath)) {
         const verdict = specReviewVerdicts[specReviewCallCount] ?? specReviewVerdicts[specReviewVerdicts.length - 1]!;
         specReviewCallCount++;
         return `- **verdict**: ${verdict}\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|---|---|---|---|---|\n| 1 | HIGH | completeness | tasks.md | Missing tests | Add tests |`;
+      }
+      // Code-review feedback file: path ends with review-feedback-NNN.md
+      if (/review-feedback-\d{3}\.md$/.test(filePath)) {
+        const verdict = codeReviewVerdicts[codeReviewCallCount] ?? codeReviewVerdicts[codeReviewVerdicts.length - 1]!;
+        codeReviewCallCount++;
+        return `- **verdict**: ${verdict}\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|---|---|---|---|---|\n`;
       }
       return null;
     }),
@@ -216,10 +233,11 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
     // spec-fixer: not present
     expect(result.steps?.["spec-fixer"]).toBeUndefined();
 
-    // After spec-review approved, pipeline continues: propose(1) + spec-review(1) + implementer(1) = 3 sessions
-    // VerificationStep is CLI (no session). Total = 3 createSession calls.
+    // After spec-review approved, pipeline continues:
+    // propose(1) + spec-review(1) + implementer(1) + code-review(1) = 4 sessions
+    // VerificationStep is CLI (no session). Total = 4 createSession calls.
     const createCalls = (client.createSession as ReturnType<typeof vi.fn>).mock.calls;
-    expect(createCalls.length).toBe(3);
+    expect(createCalls.length).toBe(4);
 
     // implementer should have run
     expect(result.steps?.["implementer"]).toBeDefined();
@@ -550,10 +568,9 @@ describe("TC-050: state.step updated: spec-fixer → spec-review within loop", (
       githubClient,
     });
 
-    // After spec-review approved → implementer → verification → end.
-    // The final step in state is "verification" (last step before pipeline ends).
-    // (implementer transitions state.step, then verification transitions state.step)
-    expect(result.step).toBe("verification");
+    // After spec-review approved → implementer → verification → code-review → end.
+    // The final step in state is "code-review" (last step before pipeline ends with approved verdict).
+    expect(result.step).toBe("code-review");
 
     // history should contain step-transition entries
     const stepTransitions = result.history.filter(
@@ -566,6 +583,112 @@ describe("TC-050: state.step updated: spec-fixer → spec-review within loop", (
       (h) => h.message?.includes("spec-fixer"),
     );
     expect(specFixerHistory).toBe(true);
+  });
+});
+
+// TC-060: runPipeline — code-review needs-fix → code-fixer → code-review approved
+describe("TC-060: runPipeline — code-review needs-fix → code-fixer → code-review approved", () => {
+  it("returns status='success', code-review has 2 entries, code-fixer has 1 entry", async () => {
+
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+    const jobState = await makeJobState();
+
+    const { client } = buildPipelineMockClient({
+      specReviewVerdicts: ["approved"],
+      sessionIds: [
+        "sess_propose_001",
+        "sess_spec_review_001",
+        "sess_implementer_001",
+        "sess_code_review_001",
+        "sess_code_fixer_001",
+        "sess_code_review_002",
+      ],
+    });
+    const githubClient = buildMockGithubClient({
+      specReviewVerdicts: ["approved"],
+      codeReviewVerdicts: ["needs-fix", "approved"],
+    });
+
+    const result = await runPipeline(jobState, {
+      client: client,
+      config: buildConfig(),
+      repo: buildRepo(),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+    });
+
+    expect(result.status).toBe("success");
+
+    // code-review: 2 entries
+    const codeReviewArr = result.steps?.["code-review"];
+    expect(codeReviewArr).toBeDefined();
+    expect(codeReviewArr?.length).toBe(2);
+    expect(codeReviewArr?.[0] ? toLegacyStepResult(codeReviewArr[0]).verdict : undefined).toBe("needs-fix");
+    expect(codeReviewArr?.[1] ? toLegacyStepResult(codeReviewArr[1]).verdict : undefined).toBe("approved");
+
+    // code-fixer: 1 entry
+    const codeFixerArr = result.steps?.["code-fixer"];
+    expect(codeFixerArr).toBeDefined();
+    expect(codeFixerArr?.length).toBe(1);
+
+    // getRawFile must have been called with review-feedback-NNN.md paths (not spec-review-result)
+    const getRawFileCalls = (githubClient.getRawFile as ReturnType<typeof vi.fn>).mock.calls;
+    const codeReviewPaths = getRawFileCalls
+      .map((c: unknown[]) => c[3] as string)
+      .filter((p: string) => /review-feedback-\d{3}\.md$/.test(p));
+    expect(codeReviewPaths.length).toBe(2);
+    expect(codeReviewPaths[0]).toMatch(/review-feedback-\d{3}\.md$/);
+  });
+});
+
+// TC-061: runPipeline — code-review retries exhausted → CODE_REVIEW_RETRIES_EXHAUSTED
+describe("TC-061: runPipeline — code-review retries exhausted: escalation + CODE_REVIEW_RETRIES_EXHAUSTED", () => {
+  it("sets error.code=CODE_REVIEW_RETRIES_EXHAUSTED and escalation verdict on last code-review", async () => {
+
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+    const jobState = await makeJobState();
+
+    // Both code-review iterations return needs-fix
+    const { client } = buildPipelineMockClient({
+      specReviewVerdicts: ["approved"],
+      sessionIds: [
+        "sess_propose_001",
+        "sess_spec_review_001",
+        "sess_implementer_001",
+        "sess_code_review_001",
+        "sess_code_fixer_001",
+        "sess_code_review_002",
+      ],
+    });
+    const githubClient = buildMockGithubClient({
+      specReviewVerdicts: ["approved"],
+      codeReviewVerdicts: ["needs-fix", "needs-fix"],
+    });
+
+    const result = await runPipeline(jobState, {
+      client: client,
+      config: buildConfig({ pipeline: { maxRetries: 2 } }),
+      repo: buildRepo(),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+    });
+
+    // code-review: 2 entries, last verdict is escalation (written by onExceeded)
+    const codeReviewArr = result.steps?.["code-review"];
+    expect(codeReviewArr).toBeDefined();
+    expect(codeReviewArr?.length).toBe(2);
+    const lastItem = codeReviewArr?.[codeReviewArr.length - 1];
+    expect(lastItem ? toLegacyStepResult(lastItem).verdict : undefined).toBe("escalation");
+
+    // error code
+    expect(result.error?.code).toBe("CODE_REVIEW_RETRIES_EXHAUSTED");
+
+    // pipeline completes (status is success — pipeline ran to completion)
+    expect(result.status).toBe("success");
   });
 });
 

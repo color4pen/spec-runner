@@ -3,6 +3,7 @@ import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState, Verdict } from "../../state/schema.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT, buildSpecReviewInitialMessage } from "../../prompts/spec-review-system.js";
+import { parseReviewVerdict } from "../parser/review-verdict.js";
 
 const SPEC_REVIEW_AGENT_MODEL = "claude-sonnet-4-5";
 
@@ -24,15 +25,11 @@ const specReviewAgentDefinition: AgentDefinition = {
 
 /**
  * Parse the verdict from a spec-review-result.md file content.
+ * Delegates to the shared parseReviewVerdict helper (Design D5).
  * Returns the first matched verdict (first-write-wins).
  */
 export function parseSpecReviewVerdict(content: string): Verdict | null {
-  const regex = /^- \*\*verdict\*\*:\s*(approved|needs-fix|escalation)\s*$/m;
-  const match = regex.exec(content);
-  if (!match || !match[1]) {
-    return null;
-  }
-  return match[1] as Verdict;
+  return parseReviewVerdict(content);
 }
 
 /**
