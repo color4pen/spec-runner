@@ -11,6 +11,9 @@ const SPEC_REVIEW_AGENT_MODEL = "claude-sonnet-4-5";
  * Full AgentDefinition owned by SpecReviewStep.
  * spec-review has its own dedicated Agent — does NOT reuse the propose Agent.
  * tools = [] because spec-review only reads files and writes results (no custom tools).
+ * gitWrite: true — spec-review-result file is committed and pushed by the agent to origin.
+ * Source code remains read-only (enforced by prompt: "Do NOT modify any source files").
+ * Managed Agents require agent-driven push; orchestrator cannot access agent workspace.
  * Design D5: STEP_AGENT_ROLE lookup removed; each Step owns its role directly.
  */
 const specReviewAgentDefinition: AgentDefinition = {
@@ -21,6 +24,7 @@ const specReviewAgentDefinition: AgentDefinition = {
   tools: [
     { type: AGENT_TOOLSET_TYPE },
   ],
+  capabilities: { gitWrite: true },
 };
 
 /**
@@ -73,6 +77,7 @@ export const SpecReviewStep: AgentStep = {
       requestType: state.request.type,
       enabled: deps.request.enabled,
       requestContent: deps.request.content,
+      branch: state.branch ?? undefined,
       iteration,
       findingsPath,
     });

@@ -895,3 +895,47 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - review-lessons に追加: 「pipeline の前段が生成した状態が後段の使用箇所まで届いているか。fallback で隠蔽されていないか」
 - review-lessons に追加: 「agent prompt が file 種類ではなく path 境界で書かれているか。positive framing（role + 引き継ぎ先）と user-request override 条項が含まれているか」
 - constraints に追加: 「`state.X ?? "<placeholder>"` 形式の defensive fallback は禁止。pipeline invariant は SpecRunnerError を throw する fail-fast で表現する」
+
+---
+
+## 2026-04-30 — review-exit-contract: Unify review-side exit contract for Managed Agents
+
+**Type**: spec-change
+**Outcome**: completed (spec-review iter2 approved 8.55 / +1.00 improving, code-review iter2 approved 8.30 / +1.10 improving, 533/533 tests PASS)
+**Source**: dogfooding-001 で観測された review 系 step の 3 層 divergence（capability 宣言 / agent prompt / executor error hint）の構造的解消
+
+### Review Patterns
+
+#### Spec Review (7.55 → 8.55, +1.00 improving)
+- **ADR filename 規約の不整合 (HIGH)**: change folder 全体（proposal.md / design.md / tasks.md / spec.md）で ADR filename を `{NNN}-review-exit-contract-managed-agents.md` と書いていたが、`openspec-workflow/adr/README.md` の命名規約は `ADR-YYYYMMDD-<タイトル>.md`（既存 ADR 全件もこの規約）。**ADR filename を proposal で設計する前に必ず `openspec-workflow/adr/README.md` と既存 ADR 一覧を grep して命名規約を確認する**。NNN 形式と ADR-YYYYMMDD 形式は project ごとに異なるため、推測は禁止
+- **MUST 要求と tasks coverage の不整合 (HIGH)**: spec.md Requirement「Review system prompts SHALL include explicit commit/push instructions」は `buildGitPushInstruction(branch)` の embed を spec-review/code-review **両方**に要求するが、tasks.md は spec-review (4.3) のみ embed を指示し code-review 側は欠落。**spec の MUST / SHALL 文を tasks.md に項目単位で対応付けるカバレッジマトリクスを review で確認する**
+- **既存 capability との SSOT 不明示 (MEDIUM)**: 新規 `agent-output-contract` capability に追加した「`{step}-result-{NNN}.md` filename 規約」が、既存 `spec-review-session` capability の同種 Requirement と重複。SSOT がどちらかを明記しないと、後任が両方を編集する fragmentation のリスク。**delta spec で新規 Requirement を追加する際、既存 spec の関連 Requirement を grep して SSOT 関係を 1 段落で宣言する**
+- **hint 文言の指定不足 (MEDIUM)**: spec.md scenario が「commit + push 不足を疑うガイダンス」を要求するが、tasks には filename suffix と branch 名を含む hint としか指示がない。**dogfooding で観測した症状（書いたが push してない）を防ぐ guidance phrasing は、scenario と tasks の両方に明示する**
+
+#### Code Review (7.20 → 8.30, +1.10 improving)
+- **executor の off-by-one (HIGH)**: `executor.ts:709` で `const iteration = existingResults.length;` だがコメントは "+1"。実際の挙動は agent が書こうとした iteration より 1 少なく、`length=0` の場合 hint が `-000.md` を表示する — まさに本 request が直そうとしていた divergence が executor 側で再発。**round-trip invariant test を書くときは「修正対象の症状が他の layer に転位していないか」を含める**
+- **branch fallback の意味論誤り (MEDIUM)**: `state.branch ?? deps.slug` は slug を branch として agent に渡してしまう（slug=`review-exit-contract`、branch=`change/review-exit-contract`）。spec-review.ts は `?? undefined` で正しい既定動作を取っており**対称性が崩れる**。**意味論的に異なる値を `??` で fallback する anti-pattern は code-review の重点観点**
+- **round-trip test の axis 不足 (MEDIUM)**: TC-008/009 は `resultFilePath` ↔ `buildMessage` の 2 軸のみで、第 3 軸の executor error-hint iteration 計算を検証していなかった。**3 layer divergence を解消する spec-change の test は、修正対象の全 layer を round-trip 検証に含める。layer の enumeration を test design で明示する**
+
+### Error Patterns
+
+- **iteration 1 で fixer が必要なバグの再現位置**: spec-review HIGH 2 件は document 整合性（filename 規約 / MUST↔task）、code-review HIGH 1 件は executor の off-by-one 1 行バグ。いずれも iter1→iter2 で完全解消（all CRITICAL/HIGH cleared）
+- **subagent dispatch unavailable 環境**: 本 request では Task ツールが当環境で利用不能で、orchestrator が architect / spec-reviewer / pattern-reviewer / code-reviewer を統合的に評価。**subagent 不在環境では orchestrator が複数観点を統合的に保持する必要があり、verdict の独立性は犠牲になる**
+- **verification 安定**: build / typecheck / tests 全 phase PASS、lint script 未設定で SKIP（既知）。security-reviewer は enabled-absent で skip
+
+### Design Decisions
+
+- **review-side exit contract の 3 層整合**: capability 宣言 (`gitWrite: true`) / agent system prompt (commit + push 指示) / executor error hint (iteration 引数化) を新規 capability `agent-output-contract` で SSOT 化
+- **filename 規約の SSOT は agent-output-contract**: `{step}-result-{NNN}.md` の 3 桁ゼロ埋め規約は新規 capability が唯一の真実、既存 `spec-review-session` capability は cross-reference のみ。delta spec で新規 capability を作るときの SSOT 整理の標準形
+- **prompt 言語の整合**: implementer system prompt（既存日本語）への workflow context 追記は日本語で行う方針を design / spec / tasks の 3 箇所で明示。**LLM の指示遵守率を保つため、prompt 内の言語 mix を避ける**
+- **diff guard の責務分担**: 「git diff main...HEAD -- src/ の限定検出は code-review/spec-review session 内 prompt の運用契約に依存し、orchestrator 側 diff guard は本 request 範囲外」と Risks に明記。**capability は技術的可能性、prompt が運用契約を担う構造を保つ**
+
+### Lessons
+
+- **Multi-layer divergence の修正は全 layer を test の round-trip に明示的に enumerate する**: 本 request は dogfooding-001 の「3 層 divergence」を直す spec-change だったが、iter1 で executor 層の off-by-one が残存（HIGH）。修正対象を「最近編集した 2 layer」だけで round-trip test を書くと、編集していない layer の同種バグが検出されない。**「修正対象の全 layer を test の axis として明示的に書き出す」というレビュー観点を pattern-reviewer / code-reviewer の checklist に追加する価値がある**（test-cases.md の must シナリオを 3 軸以上の matrix で書く規律）
+- **OpenSpec spec.md formatting: blockquote insertion bug**: `### Requirement:` ヘッダ直後に `>` blockquote を挿入すると、validator が blockquote を Requirement の description として扱わず、SHALL/MUST 段落が「最初の段落」として認識されない。**`### Requirement:` の直後は SHALL/MUST 段落を最初に置き、補足 note は SHALL 段落の後に書く**。spec-fixer / implementer 用の formatting 規約として明文化する候補
+- **ADR filename convention check は proposal 設計時に必須**: 本 request は最初 `{NNN}-...md` 形式で書いていたが、project の `openspec-workflow/adr/README.md` は `ADR-YYYYMMDD-...md` 形式で全 ADR がこれに従う。**proposal で ADR filename を設計する前に `openspec-workflow/adr/README.md` と既存 ADR 一覧を grep する規律**を spec-review checklist / proposal template に追加。NNN は openspec の change folder 慣行で、ADR は別系統という project 固有の二系統 numbering を理解しておく
+- **SSOT 宣言は capability を新規追加する spec-change の標準工程**: 既存 capability と新規 capability で同種 Requirement が重複する場合、design.md / spec.md に「filename suffix 規約は agent-output-contract が SSOT、spec-review-session は cross-reference のみ」と 1 段落で宣言する。**delta spec で新規 Requirement を ADDED するときは、必ず既存 capability を grep して重複チェックし、SSOT 宣言を design に含める**
+- **subagent dispatch unavailable 環境での orchestrator 統合評価**: Task ツール利用不能環境では orchestrator が複数 reviewer 観点を統合保持するため、独立な見解の対立で finding を絞り込めない。**この場合 verdict は控えめに（HIGH を見逃さない方向）寄せ、iteration 数を多めに見積もる運用が安全**
+- **review-feedback / spec-review-result の append-and-fix iteration が機能している証拠**: spec-review (7.55→8.55, +1.00) / code-review (7.20→8.30, +1.10) で improving trend が両方 +0.30 を超え、HIGH を全消化。`improving` trend と HIGH=0 達成の両条件で approve に至る GAN feedback loop が想定通り収束した
+- **次 request 候補（後続）**: (a) post-merge dogfooding-002 で TC-019/TC-021（agent push 検証 / source code 不変検証）の通過確認を learned-patterns に記録, (b) `buildGitPushInstruction(undefined)` 許容で code-review.ts と spec-review-system.ts の inline fallback 文言を DRY 化（LOW Finding #1 by code-review iter2）, (c) `makeReviewStepStub` の tools shape を actual AgentDefinition と揃える test refactor（LOW Finding #2 by code-review iter2）, (d) spec.md `### Requirement:` 直後の blockquote 禁止規約の formatting lint / template 化, (e) ADR filename convention check を spec-review/references/review-criteria.md または proposal template に明文化

@@ -94,10 +94,10 @@ describe("TC-002: CodeReviewStep の agent.name / model / tools が仕様値と�
   });
 });
 
-// TC-003: no gitWrite
-describe("TC-003: CodeReviewStep は gitWrite capability を持たない（read-only）", () => {
-  it("step.agent.capabilities?.gitWrite is falsy or absent", () => {
-    expect(CodeReviewStep.agent.capabilities?.gitWrite).toBeFalsy();
+// TC-003: gitWrite: true (updated by review-exit-contract — Managed Agents require agent-driven push)
+describe("TC-003: CodeReviewStep は gitWrite: true capability を持つ（Managed Agents 制約）", () => {
+  it("step.agent.capabilities.gitWrite === true", () => {
+    expect(CodeReviewStep.agent.capabilities?.gitWrite).toBe(true);
   });
 });
 
@@ -183,15 +183,16 @@ describe("CodeReviewStep.buildMessage 内容検証", () => {
     expect(message).toContain("</user-request>");
   });
 
-  it("does not include commit or push instruction", () => {
+  it("includes commit and push instruction via buildGitPushInstruction", () => {
     const state = makeMinimalState({ steps: {} });
     const deps = makeMinimalDeps("my-slug");
     const message = CodeReviewStep.buildMessage(state, deps);
 
-    // Read-only reviewer should not commit/push
-    // message itself is a user instruction to the agent, but the agent's system prompt forbids it
-    // We just verify the message includes the read-only output instruction path
+    // review-exit-contract: code-review agent must commit + push result file
     expect(message).toContain("openspec/changes/my-slug/review-feedback-001.md");
+    // buildGitPushInstruction uses "Commit" (capital C) — case-insensitive check
+    expect(message.toLowerCase()).toContain("commit");
+    expect(message.toLowerCase()).toContain("push");
   });
 });
 

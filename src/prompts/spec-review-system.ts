@@ -1,3 +1,5 @@
+import { buildGitPushInstruction } from "./git-push-instruction.js";
+
 /**
  * System prompt for the spec-review step.
  * The agent acts as both architect and spec-reviewer in a single session.
@@ -39,13 +41,22 @@ After the verdict line, include a Findings section with a table:
 
 Severity levels: CRITICAL, HIGH, MEDIUM, LOW
 
+## Delivery
+
+After writing the verdict and findings to the result file:
+1. Commit the result file to the branch specified in the user message
+2. Push to origin
+3. Do NOT end_turn until the push is complete
+
+The orchestrator fetches the result file from GitHub — if you do not push, the executor will not find the file.
+
 ## Important Constraints
 
 - Do NOT propose fixes or rewrite spec sections. Your role is evaluation only.
 - Write the verdict line BEFORE the findings table.
 - Use exactly the format shown above — the verdict line must start with \`- **verdict**:\` at the beginning of a line.
 - Findings must follow review-standards.md severity definitions.
-- Do not modify any source code or spec files other than writing the spec-review-result file.`;
+- Do not modify any source code or spec files other than the spec-review-result file.`;
 
 /**
  * Template for the initial user message sent to the spec-review session.
@@ -64,7 +75,9 @@ Enabled options: {{ENABLED}}
 Review all spec files in the change folder (proposal.md, design.md, tasks.md, specs/). Write your verdict and findings to:
 {{FINDINGS_PATH}}
 
-The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escalation>\``;
+The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escalation>\`
+
+{{GIT_PUSH_INSTRUCTION}}`;
 
 export interface SpecReviewPromptInput {
   slug: string;
@@ -72,6 +85,8 @@ export interface SpecReviewPromptInput {
   requestType: string;
   enabled?: string[];
   requestContent?: string;
+  /** Branch to commit and push result file to. Required for push instruction. */
+  branch?: string;
   /** Iteration number (1-origin). Used to compute the findings file name. Default: 1. */
   iteration?: number;
   /** Explicit findings path (overrides iteration-based computation). */
@@ -99,11 +114,17 @@ export function buildSpecReviewInitialMessage(input: SpecReviewPromptInput): str
   const findingsPath = input.findingsPath
     ?? `openspec/changes/${input.slug}/spec-review-result-${String(iteration).padStart(3, "0")}.md`;
 
+  // Build git push instruction if branch is provided
+  const gitPushInstruction = input.branch
+    ? buildGitPushInstruction(input.branch)
+    : "After writing the result file, commit and push to the branch before ending your session.";
+
   return SPEC_REVIEW_INITIAL_MESSAGE_TEMPLATE
     .replace(/{{SLUG}}/g, input.slug)
     .replace(/{{REPOSITORY}}/g, input.repository)
     .replace(/{{REQUEST_TYPE}}/g, input.requestType)
     .replace(/{{ENABLED}}/g, enabledStr)
     .replace(/{{REQUEST_CONTENT}}/g, requestContent)
-    .replace(/{{FINDINGS_PATH}}/g, findingsPath);
+    .replace(/{{FINDINGS_PATH}}/g, findingsPath)
+    .replace(/{{GIT_PUSH_INSTRUCTION}}/g, gitPushInstruction);
 }

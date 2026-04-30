@@ -31,6 +31,7 @@ export const ERROR_CODES = {
   GITHUB_CLIENT_ID_MISSING: "GITHUB_CLIENT_ID_MISSING",
   SESSION_CREATE_FAILED: "SESSION_CREATE_FAILED",
   SPEC_REVIEW_RESULT_NOT_FOUND: "SPEC_REVIEW_RESULT_NOT_FOUND",
+  CODE_REVIEW_RESULT_NOT_FOUND: "CODE_REVIEW_RESULT_NOT_FOUND",
   SPEC_REVIEW_RETRIES_EXHAUSTED: "SPEC_REVIEW_RETRIES_EXHAUSTED",
   SPEC_FIXER_NO_FINDINGS: "SPEC_FIXER_NO_FINDINGS",
   BRANCH_NOT_SET: "BRANCH_NOT_SET",
@@ -151,10 +152,22 @@ export function branchNotSetError(stepName: string): SpecRunnerError {
   );
 }
 
-export function specReviewResultNotFoundError(slug: string, branch: string): SpecRunnerError {
+export function specReviewResultNotFoundError(slug: string, branch: string, iteration: number): SpecRunnerError {
+  const nnn = String(iteration).padStart(3, "0");
+  const filename = `spec-review-result-${nnn}.md`;
   return new SpecRunnerError(
     ERROR_CODES.SPEC_REVIEW_RESULT_NOT_FOUND,
-    `Ensure the spec-review agent wrote the result file to openspec/changes/${slug}/spec-review-result.md on branch '${branch}'.`,
+    `Ensure the spec-review agent wrote the result file to openspec/changes/${slug}/${filename} on branch '${branch}'. If the agent wrote the file but did not commit + push, re-run the step or check the agent session logs for git push errors.`,
     `Spec-review result file not found on branch '${branch}'.`,
+  );
+}
+
+export function codeReviewResultNotFoundError(slug: string, branch: string, iteration: number): SpecRunnerError {
+  const nnn = String(iteration).padStart(3, "0");
+  const filename = `review-feedback-${nnn}.md`;
+  return new SpecRunnerError(
+    ERROR_CODES.CODE_REVIEW_RESULT_NOT_FOUND,
+    `Ensure the code-review agent wrote the result file to openspec/changes/${slug}/${filename} on branch '${branch}'. If the agent wrote the file but did not commit + push, re-run the step or check the agent session logs for git push errors.`,
+    `Code-review result file not found on branch '${branch}'.`,
   );
 }

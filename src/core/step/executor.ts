@@ -14,6 +14,7 @@ import {
   sessionTerminatedError,
   changeFolderNotFoundError,
   specReviewResultNotFoundError,
+  codeReviewResultNotFoundError,
 } from "../../errors.js";
 import {
   createSessionWithHistory,
@@ -705,7 +706,12 @@ export class StepExecutor {
       );
 
       if (fileContent === null) {
-        const notFoundErr = specReviewResultNotFoundError(slug, effectiveBranch);
+        // Compute iteration for error hint: number of existing results + 1
+        const existingResults = state.steps?.[step.name] ?? [];
+        const iteration = existingResults.length + 1;
+        const notFoundErr = step.name === "code-review"
+          ? codeReviewResultNotFoundError(slug, effectiveBranch, iteration)
+          : specReviewResultNotFoundError(slug, effectiveBranch, iteration);
         stderrWrite(notFoundErr.message);
         const notFoundErrorInfo = { code: notFoundErr.code, message: notFoundErr.message, hint: notFoundErr.hint };
         state = await store.fail(state, notFoundErrorInfo);

@@ -3,6 +3,7 @@ import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../../prompts/code-review-system.js";
+import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { parseReviewVerdict } from "../parser/review-verdict.js";
 
 const CODE_REVIEW_AGENT_MODEL = "claude-sonnet-4-5";
@@ -25,7 +26,10 @@ function computeCodeReviewIteration(state: JobState): number {
 
 /**
  * Full AgentDefinition owned by CodeReviewStep.
- * read-only: no gitWrite capability — code-review only reads and writes a review file.
+ * gitWrite: true — review-feedback file is committed and pushed by the agent.
+ * Source code remains read-only (enforced by prompt: "Do NOT modify any source files").
+ * Note: openspec-workflow's reference implementation uses orchestrator commit (claude-code local),
+ * but Anthropic Managed Agents require agent-driven push. See ADR-20260430-review-exit-contract.
  */
 const codeReviewAgentDefinition: AgentDefinition = {
   name: "specrunner-code-review",
@@ -35,7 +39,7 @@ const codeReviewAgentDefinition: AgentDefinition = {
   tools: [
     { type: AGENT_TOOLSET_TYPE },
   ],
-  // No capabilities: gitWrite is intentionally absent (read-only reviewer)
+  capabilities: { gitWrite: true },
 };
 
 /**
@@ -43,10 +47,15 @@ const codeReviewAgentDefinition: AgentDefinition = {
  */
 function buildCodeReviewInitialMessage(opts: {
   slug: string;
+  branch: string | undefined;
   iteration: number;
   findingsPath: string;
   requestContent: string;
 }): string {
+  const gitInstruction = opts.branch
+    ? buildGitPushInstruction(opts.branch)
+    : "After writing the result file, commit and push to the branch before ending your session.";
+
   return `<user-request>
 Please perform a code review for the following change:
 
@@ -65,7 +74,9 @@ The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escal
 
 Original request:
 ${opts.requestContent}
-</user-request>`;
+</user-request>
+
+${gitInstruction}`;
 }
 
 /**
@@ -74,7 +85,7 @@ ${opts.requestContent}
  * Has its own dedicated AgentDefinition (role: "code-review").
  * No custom tool handlers — code-review uses the standard agent toolset.
  * Verdict is parsed from a review-feedback-NNN.md file written by the agent.
- * Design D6: separate Agent with dedicated system prompt (read-only, no gitWrite).
+ * Design D6: separate Agent with dedicated system prompt. Source code read-only; gitWrite for result file delivery.
  * Design D7: resultFilePath returns iteration-based path; parseResult delegates to parseReviewVerdict.
  */
 export const CodeReviewStep: AgentStep = {
@@ -90,6 +101,7 @@ export const CodeReviewStep: AgentStep = {
     const findingsPath = buildReviewFeedbackPath(deps.slug, iteration);
     return buildCodeReviewInitialMessage({
       slug: deps.slug,
+      branch: state.branch ?? undefined,
       iteration,
       findingsPath,
       requestContent: deps.request.content,
