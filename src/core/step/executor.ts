@@ -234,8 +234,9 @@ export class StepExecutor {
     );
     let state = sessionState;
 
-    // Track registered branch from SSE
+    // Track registered branch and slug from SSE
     let registeredBranch: string | null = null;
+    let registeredSlug: string | null = null;
 
     // 2. Start SSE session via SessionClient port
     const abortController = new AbortController();
@@ -246,6 +247,9 @@ export class StepExecutor {
       toolHandlers: step.toolHandlers,
       onBranchRegistered: (branch) => {
         registeredBranch = branch;
+      },
+      onSlugRegistered: (s) => {
+        registeredSlug = s;
       },
       onSseDisconnected: () => {
         // handled via sseResult.terminationReason
@@ -335,9 +339,13 @@ export class StepExecutor {
       abortController.abort();
     }
 
-    // 5. Handle branch registration
+    // 5. Handle branch registration (and optional slug)
     if (registeredBranch) {
-      state = await store.update(state, { branch: registeredBranch });
+      // Build updated request with slug if provided by handler
+      const updatedRequest = registeredSlug
+        ? { ...state.request, slug: registeredSlug }
+        : state.request;
+      state = await store.update(state, { branch: registeredBranch, request: updatedRequest });
       state = await store.appendHistory(state, {
         ts: new Date().toISOString(),
         step: "register-branch-received",

@@ -20,12 +20,11 @@ export type MoveRequestsDirResult =
  */
 export async function moveRequestsDir(params: {
   slug: string;
-  jobId: string;
   cwd: string;
   spawn: SpawnFn;
   fs: FinishFs;
 }): Promise<MoveRequestsDirResult> {
-  const { slug, jobId, cwd, spawn, fs } = params;
+  const { slug, cwd, spawn, fs } = params;
 
   const awaitingMergePath = path.join(
     "openspec-workflow", "requests", "awaiting-merge", slug,
@@ -62,8 +61,8 @@ export async function moveRequestsDir(params: {
       const escalation = formatEscalation({
         failedStep: "move-requests-dir",
         detectedState: `git mv failed (exit ${mvResult.exitCode})`,
-        recommendedAction: `Check git error: ${mvResult.stderr.trim()}. Then re-run: specrunner finish ${jobId}`,
-        resumeCommand: `specrunner finish ${jobId}`,
+        recommendedAction: `Check git error: ${mvResult.stderr.trim()}. Then re-run: specrunner finish ${slug}`,
+        resumeCommand: `specrunner finish ${slug}`,
       });
       return { ok: false, escalation, exitCode: 1 };
     }
@@ -93,8 +92,8 @@ export async function moveRequestsDir(params: {
     const escalation = formatEscalation({
       failedStep: "move-requests-dir",
       detectedState: `git commit failed (exit ${commitResult.exitCode})`,
-      recommendedAction: `Check git error: ${commitResult.stderr.trim()}. Then re-run: specrunner finish ${jobId}`,
-      resumeCommand: `specrunner finish ${jobId}`,
+      recommendedAction: `Check git error: ${commitResult.stderr.trim()}. Then re-run: specrunner finish ${slug}`,
+      resumeCommand: `specrunner finish ${slug}`,
     });
     return { ok: false, escalation, exitCode: 1 };
   }

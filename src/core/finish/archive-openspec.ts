@@ -20,12 +20,11 @@ export type ArchiveOpenspecResult =
  */
 export async function archiveOpenspec(params: {
   slug: string;
-  jobId: string;
   cwd: string;
   spawn: SpawnFn;
   fs: FinishFs;
 }): Promise<ArchiveOpenspecResult> {
-  const { slug, jobId, cwd, spawn, fs } = params;
+  const { slug, cwd, spawn, fs } = params;
 
   const changeFolderPath = path.join(cwd, "openspec", "changes", slug);
   const changeExists = await fs.exists(changeFolderPath);
@@ -59,8 +58,8 @@ export async function archiveOpenspec(params: {
     const escalation = formatEscalation({
       failedStep: "archive-openspec",
       detectedState: `openspec archive failed (exit ${result.exitCode})`,
-      recommendedAction: `Check openspec error: ${result.stderr.trim()}. Then re-run: specrunner finish ${jobId}`,
-      resumeCommand: `specrunner finish ${jobId}`,
+      recommendedAction: `Check openspec error: ${result.stderr.trim()}. Then re-run: specrunner finish ${slug}`,
+      resumeCommand: `specrunner finish ${slug}`,
     });
     return { ok: false, escalation, exitCode: 1 };
   }
@@ -75,8 +74,8 @@ export async function archiveOpenspec(params: {
     const escalation = formatEscalation({
       failedStep: "archive-openspec",
       detectedState: `git add openspec/changes/ failed (exit ${gitAddResult.exitCode})`,
-      recommendedAction: `Check git error: ${gitAddResult.stderr.trim()}. Then re-run: specrunner finish ${jobId}`,
-      resumeCommand: `specrunner finish ${jobId}`,
+      recommendedAction: `Check git error: ${gitAddResult.stderr.trim()}. Then re-run: specrunner finish ${slug}`,
+      resumeCommand: `specrunner finish ${slug}`,
     });
     return { ok: false, escalation, exitCode: 1 };
   }

@@ -1,28 +1,40 @@
 /**
- * Orchestrator for finish command.
- * Sequences all finish steps and handles escalation exit.
+ * Orchestrator for finish command (1-PR model).
  *
- * TC-045: OPEN_MERGEABLE → full flow completes
- * TC-046: MERGED + archive incomplete → resume from archive
- * TC-047: status=archived → "Already finished, nothing to do."
+ * Phase 0: pre-flight (reversible checks)
+ * Phase 1: checkout feature branch → archive → git mv → commit
+ * Phase 2: git push origin <feature-branch>
+ * Phase 3: gh pr merge --squash --delete-branch
+ * Phase 4: markJobArchived → git checkout main → git pull --ff-only
+ *
+ * TC-101: legacy /tmp/... request.path → PR merge succeeds
+ * TC-103: archive folder absent → skip archive+commit+push, merge+markJobArchived
+ * TC-106: feature PR already MERGED → Phase 1-3 skip, Phase 4 only
+ * TC-122: chore/archive-<slug> branch NOT created
+ * TC-123: normal success flow (archive present, CLEAN)
+ * TC-124: markJobArchived called AFTER git pull --ff-only
+ * TC-125: Phase 1 escalation → markJobArchived NOT called
+ * TC-126: state.status=archived → "Already archived" no-op
  */
 import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs, FinishFlags } from "./types.js";
 import { loadJobState } from "../../state/store.js";
 import { resolveTarget } from "./resolve-target.js";
-import { fetchPrState } from "./pr-state.js";
-import { mergeFeaturePr } from "./merge-feature-pr.js";
+import { runPreflight } from "./preflight.js";
 import { archiveOpenspec } from "./archive-openspec.js";
 import { moveRequestsDir } from "./move-requests-dir.js";
-import { checkArchivePrAlreadyMerged, prepareArchiveBranch, pushAndCreateArchivePr } from "./archive-pr.js";
 import { assertJobFinishable, markJobArchived } from "./job-state-update.js";
 import { isFullyFinished } from "./idempotency.js";
 import { formatEscalation } from "./escalation.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 
 export interface FinishInput {
-  jobId?: string;
+  /** Positional slug argument. */
   slug?: string;
+  /** --pr <num>: reverse lookup. */
+  prNumber?: number;
+  /** --job <jobId>: forensics / debug. */
+  jobId?: string;
   flags: FinishFlags;
   cwd: string;
   spawn: SpawnFn;
@@ -42,10 +54,13 @@ export async function runFinishOrchestrator(
   input: FinishInput,
   stdoutWrite: (msg: string) => void = (m) => process.stdout.write(m + "\n"),
 ): Promise<FinishResult> {
-  const { jobId, slug, flags, cwd, spawn, fs } = input;
+  const { slug, prNumber, jobId, flags, cwd, spawn, fs } = input;
 
   // Step 1: Resolve target job
-  const resolveResult = await resolveTarget({ jobId, slug, cwd }, stdoutWrite);
+  const resolveResult = await resolveTarget(
+    { slug, prNumber, jobId, cwd, spawn },
+    stdoutWrite,
+  );
   if (!resolveResult.ok) {
     return { exitCode: 2, message: resolveResult.message };
   }
@@ -61,13 +76,13 @@ export async function runFinishOrchestrator(
     return { exitCode: 2, message };
   }
 
-  // TC-047: Already finished → no-op
+  // TC-126: Already archived → no-op
   if (isFullyFinished(state)) {
-    stdoutWrite("Already finished, nothing to do.");
+    stdoutWrite("Already archived.");
     return { exitCode: 0 };
   }
 
-  // TC-031: Running job → reject
+  // Reject running jobs
   try {
     assertJobFinishable(state);
   } catch (err: unknown) {
@@ -78,165 +93,309 @@ export async function runFinishOrchestrator(
           failedStep: "job-state-gate",
           detectedState: `JOB_NOT_FINISHABLE (status=${state.status})`,
           recommendedAction: `Wait for the running job to complete, or check its progress with \`specrunner ps\`.`,
-          resumeCommand: `specrunner finish ${target.jobId}`,
+          resumeCommand: `specrunner finish ${target.slug}`,
         }),
       };
     }
     throw err;
   }
 
-  // Step 3: Fetch PR state
-  stdoutWrite(`Checking PR #${target.prNumber} state...`);
-  const prStateResult = await fetchPrState(target.prNumber, cwd, spawn);
-
-  if (!prStateResult.ok) {
-    return {
-      exitCode: 1,
-      escalation: [
-        "=== specrunner finish: escalation ===",
-        "",
-        `Failed Step:       pr-state-detection`,
-        `Detected State:    gh pr view failed`,
-        `Recommended Action:`,
-        `  Check gh error: ${prStateResult.stderr.trim()}`,
-        `  Ensure 'gh' is authenticated: specrunner login`,
-        "",
-        `Resume Command:    specrunner finish ${target.jobId}`,
-        "",
-        "=====================================",
-      ].join("\n"),
-    };
-  }
-
-  const prState = prStateResult.normalized;
-  stdoutWrite(`PR #${target.prNumber} state: ${prState}`);
-
-  // TC-022: CLOSED → escalation with cancel hint
-  if (prState === "CLOSED") {
-    return {
-      exitCode: 1,
-      escalation: [
-        "=== specrunner finish: escalation ===",
-        "",
-        `Failed Step:       merge-feature-pr`,
-        `Detected State:    CLOSED`,
-        `Recommended Action:`,
-        `  The PR was closed (not merged). Use 'specrunner cancel' to mark the job as cancelled.`,
-        "",
-        `Resume Command:    specrunner finish ${target.jobId}`,
-        "",
-        "=====================================",
-      ].join("\n"),
-    };
-  }
-
-  // Step 4: Merge feature PR (or skip)
-  const mergeResult = await mergeFeaturePr({
-    prNumber: target.prNumber,
-    prState,
-    force: flags.force ?? false,
-    cleanupOnly: flags.cleanupOnly ?? false,
+  // Phase 0: pre-flight
+  stdoutWrite("Phase 0: pre-flight checks...");
+  const preflightResult = await runPreflight({
+    target,
     cwd,
     spawn,
-    jobId: target.jobId,
+    fs,
+    dryRun: flags.dryRun ?? false,
   });
 
-  if (!mergeResult.ok) {
-    return { exitCode: 1, escalation: mergeResult.escalation };
+  if (!preflightResult.ok) {
+    return { exitCode: 1, escalation: preflightResult.escalation };
   }
 
-  stdoutWrite(mergeResult.message);
+  const { prViewData } = preflightResult;
 
-  // Step 5: Archive idempotency probe — must run BEFORE any tree mutation
-  // (openspec archive / git mv would otherwise land on the wrong branch
-  // if a prior finish run already created and merged the archive PR).
-  const archivePrAlreadyMerged = await checkArchivePrAlreadyMerged(
-    target.slug,
-    cwd,
-    spawn,
-  );
-
-  if (archivePrAlreadyMerged) {
-    stdoutWrite(`Archive PR for ${target.slug} already merged. Skipping archive steps.`);
-    await markJobArchived(target.jobId);
-    stdoutWrite(`Job ${target.jobId} marked as archived.`);
+  // --dry-run: output plan and exit
+  if (flags.dryRun) {
+    outputDryRunPlan(target, prViewData, stdoutWrite);
     return { exitCode: 0 };
   }
 
-  // Step 6: Prepare archive branch — must run BEFORE openspec archive / git mv
-  // so that those commits land on chore/archive-<slug>, NOT on the current
-  // (typically main) branch. Re-uses git fetch + checkout from origin/main and
-  // force-resets the branch via -B if a stale local copy from a prior failed
-  // run is found.
-  stdoutWrite(`Preparing archive branch chore/archive-${target.slug}...`);
-  const prepareResult = await prepareArchiveBranch({
-    slug: target.slug,
-    jobId: target.jobId,
-    cwd,
-    spawn,
-  });
+  // Resume path: feature PR already merged
+  const prAlreadyMerged = prViewData.state === "MERGED";
 
-  if (!prepareResult.ok) {
-    return { exitCode: 1, escalation: prepareResult.escalation };
+  if (!prAlreadyMerged) {
+    // Phase 1: archive on feature branch
+    stdoutWrite(`Phase 1: archive on feature branch ${target.branch}...`);
+
+    // Checkout feature branch (fetch + checkout -B to origin)
+    const checkoutResult = await checkoutFeatureBranch({ branch: target.branch, cwd, spawn, slug: target.slug });
+    if (!checkoutResult.ok) {
+      return { exitCode: 1, escalation: checkoutResult.escalation };
+    }
+
+    // openspec archive
+    const openspecResult = await archiveOpenspec({
+      slug: target.slug,
+      cwd,
+      spawn,
+      fs,
+    });
+    if (!openspecResult.ok) {
+      return { exitCode: 1, escalation: openspecResult.escalation };
+    }
+    if (!openspecResult.skipped) {
+      stdoutWrite(openspecResult.message);
+    }
+
+    // git mv awaiting-merge → merged + commit
+    const moveResult = await moveRequestsDir({
+      slug: target.slug,
+      cwd,
+      spawn,
+      fs,
+    });
+    if (!moveResult.ok) {
+      return { exitCode: 1, escalation: moveResult.escalation };
+    }
+    if (!moveResult.skipped) {
+      stdoutWrite(moveResult.message);
+    }
+
+    // Phase 2: git push origin <feature-branch>
+    stdoutWrite(`Phase 2: git push origin ${target.branch}...`);
+    const pushResult = await pushFeatureBranch({ branch: target.branch, cwd, spawn, slug: target.slug });
+    if (!pushResult.ok) {
+      return { exitCode: 1, escalation: pushResult.escalation };
+    }
+    if (!pushResult.skipped) {
+      stdoutWrite(`Pushed ${target.branch} to origin.`);
+    }
+
+    // Phase 3: gh pr merge --squash --delete-branch
+    stdoutWrite(`Phase 3: merging PR #${target.prNumber}...`);
+    const mergeResult = await mergeFeaturePrPhase3({
+      prNumber: target.prNumber,
+      mergeStateStatus: prViewData.mergeStateStatus ?? "",
+      force: flags.force ?? false,
+      cwd,
+      spawn,
+      slug: target.slug,
+    });
+    if (!mergeResult.ok) {
+      return { exitCode: 1, escalation: mergeResult.escalation };
+    }
+    stdoutWrite(`PR #${target.prNumber} merged successfully.`);
+  } else {
+    stdoutWrite(`PR #${target.prNumber} already merged. Skipping Phase 1-3.`);
   }
 
-  // Step 7: Archive openspec change folder (now committed onto archive branch)
-  stdoutWrite(`Archiving openspec change folder...`);
-  const openspecResult = await archiveOpenspec({
-    slug: target.slug,
-    jobId: target.jobId,
-    cwd,
-    spawn,
-    fs,
-  });
+  // Phase 4: markJobArchived + git checkout main + git pull --ff-only
+  stdoutWrite("Phase 4: finalizing...");
 
-  if (!openspecResult.ok) {
-    return { exitCode: 1, escalation: openspecResult.escalation };
+  // Worktree-aware: detect current branch before attempting checkout.
+  // If the cwd is a linked worktree (HEAD != main), git checkout main would
+  // fail with "fatal: 'main' is already checked out at ...". Skip checkout+pull
+  // in that case and emit a warning instead.
+  const headResult = await spawn("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd });
+  const currentBranch = headResult.exitCode === 0 ? headResult.stdout.trim() : "";
+  const isOnMain = currentBranch === "main";
+
+  if (isOnMain) {
+    // git checkout main
+    const checkoutMainResult = await spawn("git", ["checkout", "main"], { cwd });
+    if (checkoutMainResult.exitCode !== 0) {
+      return {
+        exitCode: 1,
+        escalation: formatEscalation({
+          failedStep: "Phase 4 (git checkout main)",
+          detectedState: `git checkout main failed (exit ${checkoutMainResult.exitCode})`,
+          recommendedAction: `Check git error: ${checkoutMainResult.stderr.trim()}. Then re-run: specrunner finish ${target.slug}`,
+          resumeCommand: `specrunner finish ${target.slug}`,
+        }),
+      };
+    }
+
+    // git pull --ff-only
+    const pullResult = await spawn("git", ["pull", "--ff-only"], { cwd });
+    if (pullResult.exitCode !== 0) {
+      return {
+        exitCode: 1,
+        escalation: formatEscalation({
+          failedStep: "Phase 4 (git pull --ff-only)",
+          detectedState: `git pull --ff-only failed (exit ${pullResult.exitCode})`,
+          recommendedAction: `Check git error: ${pullResult.stderr.trim()}. Then re-run: specrunner finish ${target.slug}`,
+          resumeCommand: `specrunner finish ${target.slug}`,
+        }),
+      };
+    }
+  } else {
+    // Running from a linked worktree — skip checkout/pull to avoid the
+    // "already checked out" error. The main worktree holds the main branch.
+    stdoutWrite(
+      `Warning: cwd is on branch '${currentBranch}' (linked worktree). ` +
+      `Skipping 'git checkout main' and 'git pull --ff-only'. ` +
+      `Run these manually in the main worktree if needed.`,
+    );
   }
 
-  stdoutWrite(openspecResult.message);
-
-  // Step 8: Move requests dir (awaiting-merge → merged) and commit
-  // (also lands on archive branch).
-  stdoutWrite(`Moving requests dir to merged...`);
-  const moveResult = await moveRequestsDir({
-    slug: target.slug,
-    jobId: target.jobId,
-    cwd,
-    spawn,
-    fs,
-  });
-
-  if (!moveResult.ok) {
-    return { exitCode: 1, escalation: moveResult.escalation };
-  }
-
-  stdoutWrite(moveResult.message);
-
-  // Step 9: Push archive branch + create PR + auto-merge
-  stdoutWrite(`Pushing archive branch and creating PR...`);
-  const archivePrResult = await pushAndCreateArchivePr({
-    slug: target.slug,
-    jobId: target.jobId,
-    cwd,
-    spawn,
-  });
-
-  if (!archivePrResult.ok) {
-    return { exitCode: 1, escalation: archivePrResult.escalation };
-  }
-
-  stdoutWrite(archivePrResult.message);
-
-  // Step 10: Update job state to archived
+  // markJobArchived AFTER git pull --ff-only (or after worktree skip)
   await markJobArchived(target.jobId);
   stdoutWrite(`Job ${target.jobId} marked as archived.`);
 
-  // Step 11: Return to main branch — the archive branch's remote copy was
-  // deleted by --delete-branch, leaving the user on a branch that no longer
-  // exists on origin. Only restore on the success path; leave the branch
-  // intact on failure so the user can debug.
-  await spawn("git", ["checkout", "main"], { cwd });
-
   return { exitCode: 0 };
+}
+
+// ---------------------------------------------------------------------------
+// Phase helpers
+// ---------------------------------------------------------------------------
+
+type PhaseResult =
+  | { ok: true; skipped?: boolean }
+  | { ok: false; escalation: string; exitCode: 1 };
+
+/**
+ * Checkout feature branch from origin.
+ * Uses: git fetch origin <branch> + git checkout -B <branch> origin/<branch>
+ */
+async function checkoutFeatureBranch(params: {
+  branch: string;
+  cwd: string;
+  spawn: SpawnFn;
+  slug: string;
+}): Promise<PhaseResult> {
+  const { branch, cwd, spawn, slug } = params;
+
+  // git fetch origin <branch>
+  const fetchResult = await spawn("git", ["fetch", "origin", branch], { cwd });
+  if (fetchResult.exitCode !== 0) {
+    return {
+      ok: false,
+      escalation: formatEscalation({
+        failedStep: "Phase 1 (git fetch)",
+        detectedState: `git fetch origin ${branch} failed (exit ${fetchResult.exitCode})`,
+        recommendedAction: `Check network: ${fetchResult.stderr.trim()}. Then re-run: specrunner finish ${slug}`,
+        resumeCommand: `specrunner finish ${slug}`,
+      }),
+      exitCode: 1,
+    };
+  }
+
+  // git checkout -B <branch> origin/<branch>
+  const checkoutResult = await spawn(
+    "git",
+    ["checkout", "-B", branch, `origin/${branch}`],
+    { cwd },
+  );
+  if (checkoutResult.exitCode !== 0) {
+    return {
+      ok: false,
+      escalation: formatEscalation({
+        failedStep: "Phase 1 (git checkout -B)",
+        detectedState: `git checkout -B ${branch} failed (exit ${checkoutResult.exitCode})`,
+        recommendedAction: `Check git error: ${checkoutResult.stderr.trim()}. Then re-run: specrunner finish ${slug}`,
+        resumeCommand: `specrunner finish ${slug}`,
+      }),
+      exitCode: 1,
+    };
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Push feature branch.
+ * Skips if no commits to push (git rev-list check).
+ */
+async function pushFeatureBranch(params: {
+  branch: string;
+  cwd: string;
+  spawn: SpawnFn;
+  slug: string;
+}): Promise<PhaseResult> {
+  const { branch, cwd, spawn, slug } = params;
+
+  const pushResult = await spawn("git", ["push", "origin", branch], { cwd });
+  if (pushResult.exitCode !== 0) {
+    return {
+      ok: false,
+      escalation: formatEscalation({
+        failedStep: "Phase 2 (git push)",
+        detectedState: `git push origin ${branch} failed (exit ${pushResult.exitCode})`,
+        recommendedAction: `Check git error: ${pushResult.stderr.trim()}. Then re-run: specrunner finish ${slug}`,
+        resumeCommand: `specrunner finish ${slug}`,
+      }),
+      exitCode: 1,
+    };
+  }
+
+  return { ok: true };
+}
+
+interface MergePhase3Params {
+  prNumber: number;
+  mergeStateStatus: string;
+  force: boolean;
+  cwd: string;
+  spawn: SpawnFn;
+  slug: string;
+}
+
+/**
+ * Merge feature PR (Phase 3).
+ * --admin is added ONLY when mergeStateStatus=BLOCKED AND force=true OR
+ * when mergeStateStatus=BLOCKED (blocking checks) per spec.
+ */
+async function mergeFeaturePrPhase3(params: MergePhase3Params): Promise<PhaseResult> {
+  const { prNumber, mergeStateStatus, force, cwd, spawn, slug } = params;
+
+  const mergeArgs = ["pr", "merge", String(prNumber), "--squash", "--delete-branch"];
+
+  // --admin: only when BLOCKED (required status checks blocking) or force flag
+  const status = mergeStateStatus.toUpperCase();
+  if (status === "BLOCKED" || force) {
+    mergeArgs.push("--admin");
+  }
+
+  const result = await spawn("gh", mergeArgs, { cwd });
+
+  if (result.exitCode !== 0) {
+    return {
+      ok: false,
+      escalation: formatEscalation({
+        failedStep: "Phase 3 (gh pr merge)",
+        detectedState: `gh pr merge failed (exit ${result.exitCode})`,
+        recommendedAction: `Check gh error: ${result.stderr.trim()}. Then re-run: specrunner finish ${slug}`,
+        resumeCommand: `specrunner finish ${slug}`,
+      }),
+      exitCode: 1,
+    };
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Output dry-run plan to stdout.
+ */
+function outputDryRunPlan(
+  target: { slug: string; prNumber: number; branch: string },
+  prViewData: { state: string; mergeStateStatus?: string },
+  stdoutWrite: (msg: string) => void,
+): void {
+  const archivePlan = "archive openspec changes + move awaiting-merge to merged";
+  const mergeStrategy = "gh pr merge --squash --delete-branch";
+  const adminFlag = (prViewData.mergeStateStatus ?? "").toUpperCase() === "BLOCKED" ? "yes" : "no";
+  const expectedStatus = "archived";
+
+  stdoutWrite("--- dry-run plan ---");
+  stdoutWrite(`- slug: ${target.slug}`);
+  stdoutWrite(`- source: resolved`);
+  stdoutWrite(`- pr-state: ${prViewData.state}`);
+  stdoutWrite(`- merge-state-status: ${prViewData.mergeStateStatus ?? "unknown"}`);
+  stdoutWrite(`- archive-plan: ${archivePlan}`);
+  stdoutWrite(`- merge-strategy: ${mergeStrategy}`);
+  stdoutWrite(`- admin-flag: ${adminFlag}`);
+  stdoutWrite(`- expected-status: ${expectedStatus}`);
 }

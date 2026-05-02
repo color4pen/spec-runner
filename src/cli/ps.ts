@@ -1,5 +1,6 @@
 import { listJobStates } from "../state/store.js";
 import type { JobState, JobStatus } from "../state/schema.js";
+import { getJobSlug } from "../state/job-slug.js";
 
 /**
  * Active statuses — excludes terminal/archived statuses.
@@ -35,6 +36,10 @@ export function truncate(str: string, maxLength: number): string {
 
 /**
  * Format a single job as a row.
+ * 6 columns: JOB_ID, SLUG, STEP, STATUS, BRANCH, AGE
+ *
+ * TC-110: SLUG column present
+ * TC-143: non-TTY TAB-separated SLUG column at index 1
  */
 export function formatJobRow(
   job: JobState,
@@ -42,6 +47,7 @@ export function formatJobRow(
   nowMs?: number,
 ): string {
   const jobIdShort = job.jobId.slice(0, 8);
+  const slug = getJobSlug(job);
   const step = job.step;
   const status = job.status;
   const branch = truncate(job.branch ?? "-", 40);
@@ -51,6 +57,7 @@ export function formatJobRow(
     // Fixed-width columns for TTY
     return [
       jobIdShort.padEnd(8),
+      slug.padEnd(30),
       step.padEnd(25),
       status.padEnd(12),
       branch.padEnd(40),
@@ -58,17 +65,28 @@ export function formatJobRow(
     ].join("  ");
   } else {
     // TAB-separated for non-TTY (pipes, scripts)
-    return [jobIdShort, step, status, branch, age].join("\t");
+    return [jobIdShort, slug, step, status, branch, age].join("\t");
   }
 }
 
 /**
  * Run the specrunner ps command.
  * @param opts.active - When true, only show jobs with active (running) status
+ * @param opts.all - When true, include archived jobs (default: archived hidden)
  */
-export async function runPs(opts: { active?: boolean } = {}): Promise<void> {
+export async function runPs(opts: { active?: boolean; all?: boolean } = {}): Promise<void> {
   const allJobs = await listJobStates();
-  const jobs = opts.active ? allJobs.filter((j) => ACTIVE_STATUSES.has(j.status)) : allJobs;
+
+  let jobs: typeof allJobs;
+  if (opts.active) {
+    jobs = allJobs.filter((j) => ACTIVE_STATUSES.has(j.status));
+  } else if (opts.all) {
+    // TC-110: --all includes archived
+    jobs = allJobs;
+  } else {
+    // TC-142: default — exclude archived
+    jobs = allJobs.filter((j) => j.status !== "archived");
+  }
 
   if (jobs.length === 0) {
     process.stdout.write("No jobs found.\n");
@@ -82,10 +100,11 @@ export async function runPs(opts: { active?: boolean } = {}): Promise<void> {
 
   const isTty = process.stdout.isTTY ?? false;
 
-  // Header
+  // Header — 6 columns: JOB_ID, SLUG, STEP, STATUS, BRANCH, AGE
   if (isTty) {
     const header = [
       "JOB_ID".padEnd(8),
+      "SLUG".padEnd(30),
       "STEP".padEnd(25),
       "STATUS".padEnd(12),
       "BRANCH".padEnd(40),
@@ -95,7 +114,7 @@ export async function runPs(opts: { active?: boolean } = {}): Promise<void> {
     process.stdout.write("-".repeat(header.length) + "\n");
   } else {
     process.stdout.write(
-      ["JOB_ID", "STEP", "STATUS", "BRANCH", "AGE"].join("\t") + "\n",
+      ["JOB_ID", "SLUG", "STEP", "STATUS", "BRANCH", "AGE"].join("\t") + "\n",
     );
   }
 

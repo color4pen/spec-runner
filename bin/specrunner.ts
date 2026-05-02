@@ -19,7 +19,7 @@ Commands:
   run <req.md>           Run propose pipeline for a request
   ps                     List all jobs
   doctor                 Diagnose environment / config / auth prerequisites
-  finish [jobId]         Merge PR and archive a completed job
+  finish [<slug>]        Squash-merge feature PR and archive (1-PR model)
 
 Options:
   --help, -h    Show this help message
@@ -32,27 +32,31 @@ Doctor Options:
 
 Ps Options:
   --active      Show only active (running) jobs
+  --all         Include archived jobs
 
 Finish Options:
-  --slug=<slug>     Resolve job by slug instead of jobId
+  <slug>            Resolve job by slug (first form, recommended)
+  --pr=<num>        Reverse-lookup slug via gh pr view <num>
+  --job=<jobId>     Direct job ID lookup (forensics / debug only)
+  --dry-run         Phase 0 pre-flight only, no destructive ops
   --force           Force merge even with failing checks (--admin)
-  --cleanup-only    Skip feature PR merge; run archive steps only
 `;
 
 export { USAGE };
 
-const FINISH_USAGE = `Usage: specrunner finish [jobId] [options]
+const FINISH_USAGE = `Usage: specrunner finish [<slug>] [options]
 
-Merge a feature PR and archive the completed job.
+Squash-merge feature PR and archive the completed job (1-PR model).
 
 Arguments:
-  jobId             Job ID to finish (optional if --slug is provided or
-                    exactly one awaiting-merge slug exists)
+  <slug>            Slug of the request to finish (recommended first form).
+                    If omitted, auto-detects from awaiting-merge/ directory.
 
 Options:
-  --slug=<slug>     Resolve job by slug instead of jobId
+  --pr=<num>        Reverse-lookup slug via PR number (gh pr view)
+  --job=<jobId>     Direct job ID lookup (forensics / debug only)
+  --dry-run         Phase 0 pre-flight only — no commits, pushes, or merges
   --force           Force merge even with failing checks (uses --admin)
-  --cleanup-only    Skip feature PR merge; run archive steps only
   --help, -h        Show this help message
 `;
 
@@ -101,7 +105,8 @@ export async function main(): Promise<void> {
 
     case "ps": {
       const activeFlag = args.includes("--active");
-      await runPs({ active: activeFlag });
+      const allFlag = args.includes("--all");
+      await runPs({ active: activeFlag, all: allFlag });
       break;
     }
 
@@ -125,15 +130,21 @@ export async function main(): Promise<void> {
       }
 
       // Parse flags
-      const slugFlag = finishArgs.find((a) => a.startsWith("--slug="));
-      const slug = slugFlag ? slugFlag.slice("--slug=".length) : undefined;
+      const prFlag = finishArgs.find((a) => a.startsWith("--pr="));
+      const prNumber = prFlag ? parseInt(prFlag.slice("--pr=".length), 10) : undefined;
+      const jobFlag = finishArgs.find((a) => a.startsWith("--job="));
+      const jobId = jobFlag ? jobFlag.slice("--job=".length) : undefined;
+      const dryRun = finishArgs.includes("--dry-run");
       const force = finishArgs.includes("--force");
-      const cleanupOnly = finishArgs.includes("--cleanup-only");
 
       // Detect unknown flags
-      const knownFlags = new Set(["--force", "--cleanup-only"]);
+      const knownFlags = new Set(["--force", "--dry-run"]);
       const unknownFlags = finishArgs.filter(
-        (a) => a.startsWith("--") && !knownFlags.has(a) && !a.startsWith("--slug="),
+        (a) =>
+          a.startsWith("--") &&
+          !knownFlags.has(a) &&
+          !a.startsWith("--pr=") &&
+          !a.startsWith("--job="),
       );
       if (unknownFlags.length > 0) {
         process.stderr.write(`Unknown flag(s): ${unknownFlags.join(", ")}\n\n`);
@@ -141,11 +152,13 @@ export async function main(): Promise<void> {
         process.exit(2);
       }
 
-      // jobId is first non-flag argument
-      const jobId = finishArgs.find((a) => !a.startsWith("--"));
+      // First non-flag argument is the slug (first form: specrunner finish <slug>)
+      const slug = finishArgs.find((a) => !a.startsWith("--"));
 
       try {
-        process.exit(await runFinish({ jobId, slug, force, cleanupOnly, cwd: process.cwd() }));
+        process.exit(
+          await runFinish({ slug, prNumber, jobId, dryRun, force, cwd: process.cwd() }),
+        );
       } catch (err: unknown) {
         process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);
         process.exit(1);

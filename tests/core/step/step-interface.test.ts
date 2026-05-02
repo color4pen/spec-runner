@@ -186,16 +186,10 @@ describe("TC-012: register_branch input_schema is unchanged after refactor", () 
     const definition = registerBranchTool.definition;
 
     expect(definition.name).toBe("register_branch");
-    expect(definition.input_schema).toEqual({
-      type: "object",
-      properties: {
-        branch: {
-          type: "string",
-          description: "The proposed branch name, e.g. feat/2026-04-27-my-feature. Must be non-empty.",
-        },
-      },
-      required: ["branch"],
-    });
+    // branch is required; slug is optional (added in finish-redesign)
+    expect(definition.input_schema.required).toEqual(["branch"]);
+    expect((definition.input_schema.properties?.branch as Record<string, unknown>)?.type).toBe("string");
+    expect((definition.input_schema.properties as Record<string, unknown>)?.["slug"]).toBeDefined();
   });
 
   it("ProposeStep.toolHandlers handler for register_branch returns the same definition as registerBranchTool", async () => {

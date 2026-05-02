@@ -2,7 +2,13 @@
 
 ## Status
 
-accepted
+superseded（2026-05-02）
+
+> **Superseded by**: `finish-redesign` request — 1-PR モデルへの転換（archive を feature branch に commit してから feature PR を merge）。新 ADR は Step 7 で生成予定。
+>
+> 本 ADR の **D1（archive PR 経由 / `chore/archive-<slug>` branch / `gh pr merge --auto`）** は dogfooding-006 で empty-diff archive PR / orphan branch / partial-failure resume 不整合を露呈し、構造的に廃止された。`createArchivePr` / `prepareArchiveBranch` / `pushAndCreateArchivePr` / `checkArchivePrAlreadyMerged` 関数群と `chore/archive-<slug>` branch、`merged/` 中間ディレクトリも廃止対象。
+>
+> **D2（gh CLI 継続）** / **D3（escalation philosophy）** / **D5（`archived` terminal state）** / **D6（入力解決の優先順位）** / **D7（PR 状態 6 種正規化）** / **D8（subprocess wrapper の再利用）** / **D9（`JobStatus` location）** は 1-PR モデルでも引き継がれる予定。**D4（`merged/` ディレクトリ）** は `awaiting-merge` → `merged` の 2 段遷移自体が 1-PR モデルでは不要になるため、新 ADR で再評価される。
 
 ## Context
 

@@ -4,28 +4,6 @@
 import type { SpawnFn } from "../../util/spawn.js";
 
 /**
- * Normalized PR state — 6 canonical states.
- * All mergeStateStatus variants from GitHub are mapped to these.
- */
-export type NormalizedPrState =
-  | "OPEN_MERGEABLE"
-  | "OPEN_BEHIND"
-  | "OPEN_CONFLICTS"
-  | "OPEN_CHECKS_FAILING"
-  | "MERGED"
-  | "CLOSED";
-
-/** All 6 normalized PR states (for exhaustive test verification) */
-export const ALL_NORMALIZED_PR_STATES: NormalizedPrState[] = [
-  "OPEN_MERGEABLE",
-  "OPEN_BEHIND",
-  "OPEN_CONFLICTS",
-  "OPEN_CHECKS_FAILING",
-  "MERGED",
-  "CLOSED",
-];
-
-/**
  * Resolved target from input resolution (jobId / --slug / awaiting-merge detection).
  */
 export interface ResolvedTarget {
@@ -61,5 +39,6 @@ export interface FinishContext {
  */
 export interface FinishFlags {
   force?: boolean;
-  cleanupOnly?: boolean;
+  /** dry-run: Phase 0 only, no destructive ops */
+  dryRun?: boolean;
 }

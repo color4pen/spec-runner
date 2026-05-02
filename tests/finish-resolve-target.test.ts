@@ -1,12 +1,15 @@
 /**
  * Tests for finish command: input resolution (resolveTarget).
  *
- * TC-001: jobId resolves state file
- * TC-002: --slug resolves single match
- * TC-003: --slug multiple matches → picks latest updatedAt + stdout warning
+ * TC-001: --job <jobId> resolves state file
+ * TC-002: <slug> positional resolves single match
+ * TC-003: <slug> multiple matches → picks latest updatedAt + stdout warning (TC-134)
  * TC-004: awaiting-merge 1 entry → auto-detect
  * TC-005: awaiting-merge 0 entries → exit code 2
  * TC-006: awaiting-merge 2+ entries → exit code 2
+ * TC-109: --pr <num> → headRefName → slug resolved
+ * TC-131: No request in awaiting-merge → escalation message
+ * TC-132: Multiple slugs in awaiting-merge → escalation with list
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
@@ -14,6 +17,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { createJobState } from "../src/state/store.js";
 import { resolveTarget } from "../src/core/finish/resolve-target.js";
+import type { SpawnFn } from "../src/util/spawn.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -37,7 +41,7 @@ afterEach(async () => {
 
 async function makeJobWithPr(slug: string, updatedAt?: string) {
   const state = await createJobState({
-    request: { path: `/openspec-workflow/requests/active/${slug}`, title: "Test", type: "new-feature" },
+    request: { path: `/openspec-workflow/requests/active/${slug}/request.md`, title: "Test", type: "new-feature", slug },
     repository: { owner: "user", name: "repo" },
   });
 
@@ -54,8 +58,8 @@ async function makeJobWithPr(slug: string, updatedAt?: string) {
   return { ...raw, jobId: state.jobId };
 }
 
-// TC-001
-describe("TC-001: jobId resolves state file", () => {
+// TC-001: --job resolves state file
+describe("TC-001: --job resolves state file", () => {
   it("returns correct prNumber, branch, slug from state file", async () => {
     const job = await makeJobWithPr("my-slug");
 
@@ -70,8 +74,8 @@ describe("TC-001: jobId resolves state file", () => {
   });
 });
 
-// TC-002
-describe("TC-002: --slug resolves single match", () => {
+// TC-002: <slug> positional resolves single match
+describe("TC-002: <slug> positional resolves single match", () => {
   it("returns the single matching state when slug matches", async () => {
     await makeJobWithPr("my-slug");
 
@@ -84,8 +88,8 @@ describe("TC-002: --slug resolves single match", () => {
   });
 });
 
-// TC-003
-describe("TC-003: --slug multiple matches → latest updatedAt, stdout warning", () => {
+// TC-003 / TC-134: <slug> multiple matches → latest updatedAt, stdout warning
+describe("TC-003 / TC-134: <slug> multiple matches → latest updatedAt, stdout warning", () => {
   it("picks most recently updated state and emits stdout warning", async () => {
     // Create two jobs with same slug, different updatedAt
     await makeJobWithPr("multi-slug", "2026-01-01T00:00:00.000Z");
@@ -99,12 +103,12 @@ describe("TC-003: --slug multiple matches → latest updatedAt, stdout warning",
 
     // Should pick the newer one
     expect(result.target.jobId).toBe(newer.jobId);
-    // Should have warning about multiple matches
-    expect(messages.some((m) => m.includes("Multiple jobs"))).toBe(true);
+    // Should have warning about multiple matches (TC-134: "Multiple states found for slug ...")
+    expect(messages.some((m) => m.includes("Multiple states found for slug"))).toBe(true);
   });
 });
 
-// TC-004
+// TC-004: awaiting-merge 1 entry → auto-detect
 describe("TC-004: awaiting-merge 1 entry → auto-detect", () => {
   it("auto-detects the single awaiting-merge slug", async () => {
     // Create the awaiting-merge dir with one slug
@@ -125,8 +129,8 @@ describe("TC-004: awaiting-merge 1 entry → auto-detect", () => {
   });
 });
 
-// TC-005
-describe("TC-005: awaiting-merge 0 entries → exit code 2", () => {
+// TC-005 / TC-131: awaiting-merge 0 entries → exit code 2
+describe("TC-005 / TC-131: awaiting-merge 0 entries → exit code 2", () => {
   it("returns exit code 2 when awaiting-merge is empty", async () => {
     // Create empty awaiting-merge dir
     const awaitingMergeDir = path.join(tempDir, "openspec-workflow", "requests", "awaiting-merge");
@@ -138,12 +142,13 @@ describe("TC-005: awaiting-merge 0 entries → exit code 2", () => {
     if (result.ok) return;
 
     expect(result.exitCode).toBe(2);
-    expect(result.message).toContain("No awaiting-merge");
+    // TC-131 message format
+    expect(result.message).toContain("No request found in awaiting-merge/");
   });
 });
 
-// TC-006
-describe("TC-006: awaiting-merge 2+ entries → exit code 2", () => {
+// TC-006 / TC-132: awaiting-merge 2+ entries → exit code 2
+describe("TC-006 / TC-132: awaiting-merge 2+ entries → exit code 2", () => {
   it("returns exit code 2 with slug list when multiple await-merge slugs", async () => {
     // Create two awaiting-merge dirs
     const base = path.join(tempDir, "openspec-workflow", "requests", "awaiting-merge");
@@ -156,8 +161,33 @@ describe("TC-006: awaiting-merge 2+ entries → exit code 2", () => {
     if (result.ok) return;
 
     expect(result.exitCode).toBe(2);
-    expect(result.message).toContain("Multiple awaiting-merge");
+    // TC-132 message format
+    expect(result.message).toContain("Multiple slugs in awaiting-merge/:");
     expect(result.message).toContain("slug-a");
     expect(result.message).toContain("slug-b");
+  });
+});
+
+// TC-109: --pr <num> → headRefName → slug resolved
+describe("TC-109: --pr <num> → headRefName → slug resolved", () => {
+  it("strips feat/ prefix from headRefName and resolves slug", async () => {
+    await makeJobWithPr("readme-status-section");
+
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "gh" && args[1] === "view" && args.includes("--json")) {
+        return Promise.resolve({
+          exitCode: 0,
+          stdout: JSON.stringify({ headRefName: "feat/readme-status-section" }),
+          stderr: "",
+        });
+      }
+      return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
+    });
+
+    const result = await resolveTarget({ prNumber: 48, cwd: tempDir, spawn });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.target.slug).toBe("readme-status-section");
   });
 });

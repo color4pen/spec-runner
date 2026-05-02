@@ -47,6 +47,10 @@ export interface RequestInfo {
   path: string;
   title: string;
   type: string;
+  /** Canonical slug for this request. Populated from pipeline-context.md at job start.
+   * null for legacy state files or non-canonical paths (e.g. /tmp/...).
+   * Optional for backward compat — absent in existing state files. */
+  slug?: string | null;
 }
 
 export interface RepositoryInfo {
@@ -237,6 +241,13 @@ export function validateJobState(raw: unknown): JobState {
   }
   if (typeof obj["request"] !== "object" || obj["request"] === null) {
     throw new Error("Missing required field: request.");
+  }
+  // Backward compat: slug field absent in legacy state files → default to null
+  {
+    const req = obj["request"] as Record<string, unknown>;
+    if (!("slug" in req)) {
+      req["slug"] = null;
+    }
   }
   if (typeof obj["repository"] !== "object" || obj["repository"] === null) {
     throw new Error("Missing required field: repository.");

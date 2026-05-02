@@ -4,6 +4,9 @@
  *
  * Design: exit code 0 (success/no-op), 1 (escalation/execution error), 2 (arg error).
  * No LLM involvement — purely deterministic.
+ *
+ * CLI input contract (B chapter):
+ *   specrunner finish [<slug>] [--pr=<num>] [--job=<jobId>] [--dry-run] [--force]
  */
 import * as nodeFsPromises from "node:fs/promises";
 import { spawnCommand } from "../util/spawn.js";
@@ -40,10 +43,16 @@ function buildRealFs(): FinishFs {
 }
 
 export interface RunFinishOptions {
-  jobId?: string;
+  /** Positional slug argument — first form (recommended). */
   slug?: string;
+  /** --pr=<num>: reverse-lookup via gh pr view. */
+  prNumber?: number;
+  /** --job=<jobId>: forensics / debug only. */
+  jobId?: string;
+  /** --dry-run: Phase 0 pre-flight only, no destructive ops. */
+  dryRun?: boolean;
+  /** --force: use --admin for blocked PRs. */
   force: boolean;
-  cleanupOnly: boolean;
   cwd: string;
 }
 
@@ -55,11 +64,12 @@ export interface RunFinishOptions {
 export async function runFinish(opts: RunFinishOptions): Promise<number> {
   const result = await runFinishOrchestrator(
     {
-      jobId: opts.jobId,
       slug: opts.slug,
+      prNumber: opts.prNumber,
+      jobId: opts.jobId,
       flags: {
         force: opts.force,
-        cleanupOnly: opts.cleanupOnly,
+        dryRun: opts.dryRun ?? false,
       },
       cwd: opts.cwd,
       spawn: spawnCommand,
@@ -73,7 +83,7 @@ export async function runFinish(opts: RunFinishOptions): Promise<number> {
   }
 
   if (result.exitCode === 1) {
-    process.stdout.write(result.escalation + "\n");
+    process.stderr.write(result.escalation + "\n");
     return 1;
   }
 

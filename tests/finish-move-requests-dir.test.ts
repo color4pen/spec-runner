@@ -36,7 +36,6 @@ function makeFs(awaitingExists: boolean, mergedExists: boolean): FinishFs {
 
 const BASE = {
   slug: "my-feature",
-  jobId: "test-job-id",
   cwd: "/repo",
 };
 

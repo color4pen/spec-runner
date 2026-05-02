@@ -10,6 +10,7 @@ import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 
 /**
  * Create a new job state file and persist it.
+ * request.slug defaults to null if not provided (backward compat for tests).
  */
 export async function createJobState(params: {
   request: RequestInfo;
@@ -22,7 +23,7 @@ export async function createJobState(params: {
     jobId,
     createdAt: now,
     updatedAt: now,
-    request: params.request,
+    request: { ...params.request, slug: params.request.slug !== undefined ? params.request.slug : null },
     repository: params.repository,
     session: null,
     step: "init",

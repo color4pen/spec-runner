@@ -84,6 +84,7 @@ export class AnthropicSessionClient implements SessionClient {
       branch?: string;
       toolHandlers?: Map<string, CustomToolHandler>;
       onBranchRegistered?: (branch: string) => void;
+      onSlugRegistered?: (slug: string) => void;
       onSseDisconnected?: () => void;
       abortController?: AbortController;
     },
@@ -101,6 +102,7 @@ export class AnthropicSessionClient implements SessionClient {
       branch: opts.branch,
       toolHandlers: opts.toolHandlers,
       onBranchRegistered: opts.onBranchRegistered,
+      onSlugRegistered: opts.onSlugRegistered,
       onSseDisconnected: opts.onSseDisconnected,
       abortController: opts.abortController,
     });

@@ -67,6 +67,8 @@ export interface SessionClient {
       branch?: string;
       toolHandlers?: Map<string, CustomToolHandler>;
       onBranchRegistered?: (branch: string) => void;
+      /** Called when register_branch handler returns a slug (optional). */
+      onSlugRegistered?: (slug: string) => void;
       onSseDisconnected?: () => void;
       abortController?: AbortController;
     },

@@ -29,7 +29,6 @@ function makeFs(overrides: Partial<FinishFs> = {}): FinishFs {
 
 const BASE = {
   slug: "my-feature",
-  jobId: "test-job-id",
   cwd: "/repo",
 };
 

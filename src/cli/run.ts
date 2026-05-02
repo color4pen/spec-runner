@@ -144,12 +144,20 @@ export async function runRunCore(
 
   logInfo(`Starting propose pipeline for: ${request.title}`);
 
+  // Derive slug for state: use canonical path detection.
+  // Canonical pattern: openspec-workflow/requests/{active,awaiting-merge}/<slug>/request.md
+  // Non-canonical (e.g. /tmp/...) → null
+  const CANONICAL_PATTERN = /openspec-workflow\/requests\/(?:active|awaiting-merge)\/([^/]+)\/[^/]+\.md$/;
+  const canonicalMatch = CANONICAL_PATTERN.exec(absolutePath);
+  const requestSlug: string | null = canonicalMatch ? (canonicalMatch[1] ?? null) : null;
+
   // Create job state
   const jobState = await createJobState({
     request: {
       path: absolutePath,
       title: request.title,
       type: request.type,
+      slug: requestSlug,
     },
     repository: { owner: repo.owner, name: repo.name },
   });

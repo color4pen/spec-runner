@@ -4,6 +4,8 @@
  * TC-032: JobStatus archived in state file → ps reads it correctly
  * TC-033: Existing state file with status=success → ps reads correctly
  * TC-034: specrunner ps --active excludes archived
+ * TC-110: specrunner ps --all shows SLUG column and archived jobs
+ * TC-143: non-TTY TAB-separated output has SLUG as second column
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
@@ -63,17 +65,30 @@ function makeBaseState(overrides: Partial<JobState> = {}): JobState {
 
 // TC-032
 describe("TC-032: archived state file → ps reads without crash", () => {
-  it("ps does not crash and shows archived status", async () => {
+  it("ps --all does not crash and shows archived status", async () => {
     await writeStateFile(makeBaseState({ status: "archived", jobId: "archived-job-001" }));
 
     // Should not throw
-    await expect(runPs()).resolves.toBeUndefined();
+    await expect(runPs({ all: true })).resolves.toBeUndefined();
 
     const output = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))
       .join("");
 
     expect(output).toContain("archived");
+  });
+
+  it("ps (no flags) hides archived jobs by default (TC-142)", async () => {
+    await writeStateFile(makeBaseState({ status: "archived", jobId: "archived-job-002" }));
+
+    await runPs();
+
+    const output = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+      .map((c: unknown[]) => String(c[0]))
+      .join("");
+
+    // archived-job-002 should NOT appear in default ps
+    expect(output).not.toContain("archived-job-002".slice(0, 8));
   });
 });
 
@@ -139,5 +154,90 @@ describe("TC-054: formatJobRow handles archived status", () => {
     const row = formatJobRow(state, false);
     expect(row).toBeTruthy();
     expect(row).toContain("archived");
+  });
+});
+
+// TC-110: specrunner ps --all shows SLUG column and archived jobs
+describe("TC-110: specrunner ps --all shows SLUG column and archived jobs", () => {
+  it("--all output contains SLUG header at position 2, archived job row, and SLUG value", async () => {
+    const archivedId = "eeeeeeee-0000-0000-0000-000000000001";
+    const successId = "ffffffff-0000-0000-0000-000000000001";
+
+    await writeStateFile(makeBaseState({
+      jobId: archivedId,
+      status: "archived",
+      branch: "feat/my-archived-feature",
+      request: { path: "openspec-workflow/requests/active/my-archived-feature/request.md", title: "T", type: "new-feature", slug: "my-archived-feature" },
+    }));
+    await writeStateFile(makeBaseState({
+      jobId: successId,
+      status: "success",
+      branch: "feat/active-job",
+      request: { path: "openspec-workflow/requests/active/active-job/request.md", title: "T", type: "new-feature", slug: "active-job" },
+    }));
+
+    await runPs({ all: true });
+
+    const allOutput = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+      .map((c: unknown[]) => String(c[0]))
+      .join("");
+
+    // SLUG header should appear (non-TTY since stdout is mocked/not a real TTY)
+    expect(allOutput).toContain("SLUG");
+    // Both jobs should appear
+    expect(allOutput).toContain("eeeeeeee");
+    expect(allOutput).toContain("ffffffff");
+    // archived status appears
+    expect(allOutput).toContain("archived");
+    // SLUG values appear
+    expect(allOutput).toContain("my-archived-feature");
+    expect(allOutput).toContain("active-job");
+  });
+});
+
+// TC-143: non-TTY TAB-separated output has SLUG as second column
+describe("TC-143: non-TTY TAB-separated output — SLUG is second column", () => {
+  it("header row second tab-delimited field is SLUG", async () => {
+    await writeStateFile(makeBaseState({
+      jobId: "aaaaaaaa-0000-0000-0000-000000000099",
+      status: "success",
+      branch: "feat/test-slug",
+      request: { path: "openspec-workflow/requests/active/test-slug/request.md", title: "T", type: "new-feature", slug: "test-slug" },
+    }));
+
+    // formatJobRow non-TTY (isTty=false) — validate header fields
+    const state = makeBaseState({
+      jobId: "aaaaaaaa-0000-0000-0000-000000000099",
+      status: "success",
+      branch: "feat/test-slug",
+      request: { path: "openspec-workflow/requests/active/test-slug/request.md", title: "T", type: "new-feature", slug: "test-slug" },
+    });
+    const row = formatJobRow(state, false);
+    const fields = row.split("\t");
+
+    // Non-TTY format: JOB_ID, SLUG, STEP, STATUS, BRANCH, AGE
+    expect(fields).toHaveLength(6);
+    expect(fields[0]).toBe("aaaaaaaa");  // JOB_ID 8 chars
+    expect(fields[1]).toBe("test-slug"); // SLUG is second column
+    expect(fields[3]).toBe("success");   // STATUS is fourth column
+  });
+
+  it("ps output header TAB-separated second field is SLUG", async () => {
+    await writeStateFile(makeBaseState({
+      jobId: "bbbbbbbb-0000-0000-0000-000000000099",
+      status: "success",
+    }));
+
+    await runPs();
+
+    const allOutput = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+      .map((c: unknown[]) => String(c[0]))
+      .join("");
+
+    // First line is the header
+    const lines = allOutput.split("\n").filter((l) => l.trim().length > 0);
+    const headerLine = lines[0] ?? "";
+    const headerFields = headerLine.split("\t");
+    expect(headerFields[1]).toBe("SLUG");
   });
 });

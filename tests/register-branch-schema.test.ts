@@ -1,19 +1,20 @@
 /**
- * TC-012 (this file): register_branch input_schema is byte-identical to pre-refactor definition.
+ * TC-012 (this file): register_branch input_schema has correct structure.
  *
- * Verifies that the refactor did not change the register_branch tool definition.
- * The input_schema JSON must be byte-for-byte identical to the canonical shape.
+ * Updated to reflect new slug field in input_schema (finish-redesign F chapter).
  *
- * Source: step-execution-architecture/spec.md — Scenario: input_schema for register_branch is unchanged;
- *         tasks.md — 7.4
+ * TC-127: slug explicit input → slug in result
+ * TC-128: slug omitted → derived from branch
+ * TC-146: definition is deterministic
  */
 import { describe, it, expect } from "vitest";
 import { registerBranchTool } from "../src/core/tools/register-branch.js";
 import { ProposeStep } from "../src/core/step/propose.js";
+import type { CustomToolContext } from "../src/core/tools/types.js";
 
 /**
- * The canonical input_schema for register_branch as defined pre-refactor.
- * This is the authoritative reference — do NOT change this object.
+ * The canonical input_schema for register_branch (post finish-redesign).
+ * branch is required; slug is optional.
  */
 const CANONICAL_INPUT_SCHEMA = {
   type: "object",
@@ -23,11 +24,17 @@ const CANONICAL_INPUT_SCHEMA = {
       description:
         "The proposed branch name, e.g. feat/2026-04-27-my-feature. Must be non-empty.",
     },
+    slug: {
+      type: "string",
+      description:
+        "Optional canonical slug for this request (e.g. my-feature). " +
+        "If omitted, derived from branch by stripping the prefix (feat/, fix/, etc.).",
+    },
   },
   required: ["branch"],
 } as const;
 
-// TC-012: register_branch input_schema byte-identical to pre-refactor
+// TC-012: register_branch input_schema structure
 describe("TC-012: register_branch input_schema is byte-identical to pre-refactor definition", () => {
   it("registerBranchTool.definition.input_schema matches canonical schema exactly", () => {
     const { input_schema } = registerBranchTool.definition;
@@ -52,7 +59,7 @@ describe("TC-012: register_branch input_schema is byte-identical to pre-refactor
     expect(typeof handler).toBe("function");
   });
 
-  it("input_schema.required is ['branch'] (no extra fields)", () => {
+  it("input_schema.required is ['branch'] (slug is optional)", () => {
     const { input_schema } = registerBranchTool.definition;
     expect(input_schema.required).toEqual(["branch"]);
   });
@@ -60,5 +67,82 @@ describe("TC-012: register_branch input_schema is byte-identical to pre-refactor
   it("input_schema.properties.branch.type is 'string'", () => {
     const { input_schema } = registerBranchTool.definition;
     expect((input_schema.properties?.branch as Record<string, unknown>)?.type).toBe("string");
+  });
+
+  it("input_schema.properties.slug.type is 'string'", () => {
+    const { input_schema } = registerBranchTool.definition;
+    expect((input_schema.properties as Record<string, unknown>)?.["slug"] as Record<string, unknown>)
+      .toBeDefined();
+  });
+});
+
+// TC-127: slug explicit input → slug in result
+type OkResult = { ok: true; [key: string]: unknown };
+
+describe("TC-127: register_branch — slug explicit input sets state.request.slug", () => {
+  it("returns ok:true with branch and slug when slug is explicitly provided", async () => {
+    const ctx: CustomToolContext = { sessionId: "test-session" };
+    const result = await registerBranchTool.handler(
+      { branch: "feat/readme-status-section", slug: "readme-status-section" },
+      ctx,
+    );
+    expect(result.ok).toBe(true);
+    const ok = result as OkResult;
+    expect(ok["branch"]).toBe("feat/readme-status-section");
+    expect(ok["slug"]).toBe("readme-status-section");
+  });
+
+  it("uses the explicit slug verbatim (no stripping)", async () => {
+    const ctx: CustomToolContext = { sessionId: "test-session" };
+    const result = await registerBranchTool.handler(
+      { branch: "feat/my-feature", slug: "custom-slug-override" },
+      ctx,
+    );
+    expect(result.ok).toBe(true);
+    const ok = result as OkResult;
+    expect(ok["slug"]).toBe("custom-slug-override");
+  });
+});
+
+// TC-128: slug omitted → derived from branch
+describe("TC-128: register_branch — slug omitted derives from branch prefix strip", () => {
+  it("derives slug from feat/ branch when slug is not provided", async () => {
+    const ctx: CustomToolContext = { sessionId: "test-session" };
+    const result = await registerBranchTool.handler(
+      { branch: "feat/readme-status-section" },
+      ctx,
+    );
+    expect(result.ok).toBe(true);
+    const ok = result as OkResult;
+    expect(ok["branch"]).toBe("feat/readme-status-section");
+    expect(ok["slug"]).toBe("readme-status-section");
+  });
+
+  it("derives slug from fix/ branch", async () => {
+    const ctx: CustomToolContext = { sessionId: "test-session" };
+    const result = await registerBranchTool.handler(
+      { branch: "fix/some-bug" },
+      ctx,
+    );
+    expect(result.ok).toBe(true);
+    const ok = result as OkResult;
+    expect(ok["slug"]).toBe("some-bug");
+  });
+
+  it("empty string slug is treated as absent — branch-derived", async () => {
+    const ctx: CustomToolContext = { sessionId: "test-session" };
+    const result = await registerBranchTool.handler(
+      { branch: "feat/readme-status-section", slug: "" },
+      ctx,
+    );
+    expect(result.ok).toBe(true);
+    const ok = result as OkResult;
+    expect(ok["slug"]).toBe("readme-status-section");
+  });
+
+  it("returns error for empty branch string", async () => {
+    const ctx: CustomToolContext = { sessionId: "test-session" };
+    const result = await registerBranchTool.handler({ branch: "" }, ctx);
+    expect(result.ok).toBe(false);
   });
 });
