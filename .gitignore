@@ -30,3 +30,6 @@ openspec-workflow/observations.jsonl
 
 # dogfooding logs
 docs/dogfooding/
+
+# pipeline-integration test fixture residue (mock writes to repo cwd; harmless but pollutes openspec list)
+openspec/changes/test-slug/

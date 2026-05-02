@@ -1,6 +1,6 @@
 # Learned Patterns
 
-last-distilled: 2026-05-01 09:32
+last-distilled: 2026-05-02 18:38
 
 ワークフロー完了時に抽出されたパターンの蓄積。
 continuous-learning スキルが追記し、distill-learnings / promote-rule が消費する。
@@ -1043,3 +1043,54 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **MEDIUM の半数以上が iter2 まで unchanged で approve に到達するパターン**: 本 request の MEDIUM 7 件は HIGH 解消 iter で部分対応 / 未対応のまま approve。**「MEDIUM 解消の優先度が iter を 1 増やすほど無い」のは現運用の構造**。spec の細部曖昧性は implementer / code-review で具体動作が固まることで実害が出ないケースが多い。**MEDIUM の継続的改善は post-approve の follow-up issue で trace する**運用が機能している（次 request 候補に列挙する）
 - **「post-merge」「blocked-but-acceptable」の tasks.md ラベリング運用は機能**: T11.5 (README) と T12.4 (dogfooding-006 E2E) を post-merge / blocked-but-acceptable と明示的に classify することで、code-review の Scenario Coverage / tasks coverage 判定が「未実装の must テスト」と「意図的に保留」を区別できた。**この 2 ラベルを tasks.md template に formal な status 値として組み込む候補**（`status: post-merge` / `status: blocked-but-acceptable`）
 - **次 request 候補（後続）**: (a) `archive-pr.ts` の `-b` then `-B` 2-call dance を `git checkout -B <branch> origin/main` 単発に simplify (code-review iter2 Finding #5), (b) `buildGhFailureMessage` の migration を完了し `src/core/pr-create/runner.ts:201` の local copy を削除して shared helper に統一 (code-review iter1/2 F#5 carry-over), (c) `isFeaturePrAlreadyMerged` の dead code を `mergeFeaturePr` の `prState === "MERGED"` inline check に置換または削除 (code-review iter1/2 F#6 carry-over), (d) `isAutoMergeUnavailable` の stderr substring grep を `gh repo view --json autoMergeAllowed` の proactive 判定に置換 (code-review iter1/2 F#7 carry-over), (e) `tests/finish-orchestrator.test.ts` に spawn 呼び出し順序の index assertion を追加（`["git", "checkout", "-b/-B", "chore/archive-…", "origin/main"]` < `["openspec", "archive", …]` < `["git", "mv", …]` < `["git", "push", …]`）と stale-branch fallback の `-B` 動作 unit test を追加 (code-review iter1/2 F#8 carry-over), (f) spec.md MEDIUM 7 件の解消（archive PR 4 状態の挙動 / safe default の Requirement 本文記載 / `--body-file` の spec ↔ tasks 整合 / `--slug` 解決の正規化規則 / 空 commit 時 skip / 両 dir 同時存在時 escalation / network call assertion 境界）を 1 つの spec-change で一括, (g) `formatEscalation` 経由でない escalation path の 0 件化を `grep "escalation:" src/core/` 系の architecture invariant test として固定化, (h) module-architect の `## Path correction notice` 出力を spec-fixer 起動条件にフックし tasks.md / spec.md の path 表記を upfront で揃える workflow step 追加, (i) tasks.md の `status: post-merge` / `status: blocked-but-acceptable` を formal label として template / coverage 計算に組み込む, (j) T12.4 dogfooding-006 で `specrunner finish` の E2E を消化し結果を learned-patterns に記録
+
+---
+
+## 2026-05-02 — [BugFix] openspec-drift-cleanup: cli-commands count 5↔6 drift と test-slug 残骸
+
+**Type**: bug-fix
+**Severity**: low
+**Root Cause**: PR #50 で count を 5→6 に上げる delta 漏れ → PR #51 の MODIFIED が "header not found" で archive fail → `--skip-specs` 迂回で main spec ↔ 実装 ↔ archived delta の三者乖離が固定化。並行して `tests/pipeline-integration.test.ts` の vi.mock が repo cwd に writeFile することで `openspec/changes/test-slug/` が test 実行のたび再生成され、`git add` 経由で main へ commit されていた。
+
+### Bug Pattern
+
+- **症状**:
+  - `openspec/specs/cli-commands/spec.md` の Requirement header / body / Scenario が `5 つのサブコマンド` のまま（実装は 6: init/login/run/ps/doctor/finish）
+  - `openspec/changes/test-slug/` (verification-result.md / pr-create-result.md) が main に残置され `openspec list` を汚染
+  - 今後 cli-commands spec の同 Requirement を MODIFY する PR が cascade で "header not found" archive fail
+- **直接原因**:
+  - spec ファイルの count 文字列が 5 のまま放置（人手で更新されていない）
+  - test-slug 残骸が `.gitignore` 不在のため `git add .` で巻き込まれた
+- **根本原因**:
+  - **(A) count delta の漏れ**: PR #50 (cli-doctor-command) で doctor を新 Requirement として追加した際、`5 つのサブコマンド` Requirement に doctor を加える MODIFIED delta（または RENAMED + MODIFIED）を併記しなかった。「count を含む既存 Requirement に新項目を追加する」場合 count update を delta で必ず一緒に書く規約が無い
+  - **(B) MODIFIED 単独で header 変更**: PR #51 (cli-finish-command) は archived spec のスナップショット (count=6) を前提に MODIFIED delta を書いたが、main spec はまだ count=5。MODIFIED 単独で header (`### Requirement: ...`) を変えると `openspec archive` の syncer が "header not found" で fail する。**RENAMED Requirements を併記する規約**が propose / spec-review に欠落
+  - **(C) `--skip-specs` 迂回の常態化**: archive 失敗時に `--skip-specs` で迂回すると drift を解消せず archive を完了させてしまい、main spec ↔ 実装 ↔ archived delta の三者乖離が固定化する。verification phase に `openspec validate <change>` がなく、迂回判断が個別オペレーションの裁量に任されている
+  - **(D) test mock が repo cwd へ書き込む**: `tests/pipeline-integration.test.ts:14, 35` の vi.mock が `process.cwd()` ベースで `openspec/changes/test-slug/` を writeFile するため、test 実行のたび自動再生成される。`.gitignore` が無いため `git add .` で commit に紛れ込む。**closure scope の関係で mock 内 `tempDir` 参照は hoist 問題があり**、`process.env["SPECRUNNER_TEST_CWD"]` 等で受け渡す必要があるため tempDir 化は別 request
+
+### Process Gap
+
+- **検出すべきだったフェーズ**:
+  - **spec-review**（PR #50 段階で「count 系 Requirement に新項目追加時は count update を delta に含める」観点があれば検出可能だった）
+  - **verification**（archive 前に `openspec validate <change>` を流せば PR #51 の "header not found" を事前検出可能だった）
+- **観点の有無**:
+  - spec-review: なし → ギャップ。`spec-review/references/review-criteria.md` に「Requirement header を MODIFY する場合は RENAMED Requirements を併記すること」「count を含む Requirement に項目追加する場合は count を必ず更新すること」の観点が未収録
+  - verification: なし → ギャップ。verification phase に `openspec validate <change>` チェックが未追加
+  - code-review: scope 外（spec の delta 整合性は code-review の責務外）
+  - rules: `.claude/rules/review-standards.md` は category/severity を定義するメタ規約のため、openspec 固有の delta 規約はここではなく spec-review 側が持つ
+- **改善アクション**（本 request スコープ外、別 request に deferred）:
+  - `openspec-workflow/skills/spec-review/references/review-criteria.md` に **RENAMED + MODIFIED 併用ルール** を追加: 「MODIFIED で header (`### Requirement: ...`) を変える場合は RENAMED Requirements を併記すること。MODIFIED 単独では openspec archive 時に `header not found` で fail する」
+  - 同 review-criteria に **count 整合性チェック** を追加: 「Requirement header / body / Scenario に count（数）を含む場合、新項目追加時は count を delta で必ず更新すること」
+  - `openspec-workflow/skills/verification` に **`openspec validate <change>` を archive 前 mandatory step** として追加。`--skip-specs` 迂回が必要なケースは CI で停止し、ユーザの明示判断を要求
+  - `openspec-workflow/skills/openspec-propose` の delta-spec template / boilerplate に「header 変更を伴うときは RENAMED + MODIFIED 必須」を明文化
+  - **本 cleanup の delta spec 自体が RENAMED + MODIFIED 併用の正例**として `openspec/changes/openspec-drift-cleanup/specs/cli-commands/spec.md` に残るため、後続 request で spec-review/verification 改善の参照例として活用できる
+  - `tests/pipeline-integration.test.ts` の mock を tempDir へ書くよう修正（応急策として `.gitignore` に `openspec/changes/test-slug/` を追加済み。根本対策は `process.env["SPECRUNNER_TEST_CWD"]` 等で受け渡し）
+
+### Lessons
+
+- **`--skip-specs` 迂回は drift を固定化する債務**: PR #51 で archive 失敗時に `--skip-specs` を使った瞬間に「main spec ↔ 実装 ↔ archived delta」の三者乖離が固定化し、後続 PR が cascade で同じエラーを踏む。**`--skip-specs` を使うときは drift cleanup request を同時に切る規律**を運用に組み込む。verification phase で `openspec validate <change>` を mandatory にすれば、迂回が発生する前に build を止められる
+- **MODIFIED 単独で header を変えるのは反パターン**: `### Requirement: ...` を delta MODIFIED で書き換えると `openspec archive` の syncer は古い header を main spec で見つけられず "header not found" で fail する。**header 変更には必ず `## RENAMED Requirements` を併記**する。spec-review checklist の machine-checkable rule にする候補（`grep "^### Requirement:" delta-spec.md` と main spec を突合し、RENAMED 不在で header 変更があれば fail）
+- **count を含む Requirement に項目追加するときは count update を delta で同時に書く**: 「5 つのサブコマンド」のような **数を本文に含む Requirement** に新項目を追加する場合、count を更新する MODIFIED delta（または RENAMED + MODIFIED）を必ず併記する。openspec の delta は header / body の文言一致で sync するため、count drift は cascade fail の起点になる。spec-review review-criteria に追加候補
+- **test の repo cwd 書き込みは `.gitignore` 防御 + tempDir 修正の二段階で潰す**: `tests/pipeline-integration.test.ts` の vi.mock が `process.cwd()` 配下に writeFile するため、test 実行のたびに `openspec/changes/test-slug/` が再生成され、`git add .` で commit に紛れ込んでいた。**応急策として `.gitignore` で commit 再発を防止**し、**根本策として mock を tempDir へ書く修正**を別 request で実施する。**「test が repo cwd を mutate しているか」を tests/architecture テストで grep 系 invariant にする候補**（`tests/architecture/no-cwd-writes.test.ts` 等）
+- **vi.mock の closure scope と hoist 問題**: vi.mock のファクトリは hoisting されるため、test 関数内で setup した `tempDir` 変数を mock 内で参照できない。回避策は (a) `process.env["SPECRUNNER_TEST_CWD"]` 経由で受け渡す、(b) mock を `vi.doMock` で test ごとに動的に切る、(c) factory 内で `os.tmpdir()` ベースに書く。**「mock が repo cwd へ書く」コードレビュー観点を review-lessons.md に追加候補**
+- **bug-fix request type は ADR / delta spec を残せる**: 本 request は spec / docs ファイル編集のみで src/ touch なしだが、bug-fix type を選んだことで `openspec/changes/openspec-drift-cleanup/` 配下に正しい RENAMED + MODIFIED 併用 delta が残り、後続 request の参照例になる。**「設計追加を含むなら bug-fix より spec-change」の原則** (memory: feedback_request_type_for_design_changes) に対する補足として、**「既存 spec の drift cleanup は spec 編集を伴う bug-fix」として bug-fix type で OK**（ADR 不要、delta spec のみで十分）と整理できる
+- **次 request 候補（後続、openspec-workflow 側の改善）**: (a) `spec-review/references/review-criteria.md` に「MODIFIED で header 変更時は RENAMED Requirements 併記」「count を含む Requirement に項目追加時は count update を delta に含める」の 2 観点を追加, (b) `openspec-workflow/skills/verification` に `openspec validate <change>` を archive 前 mandatory step として追加。`--skip-specs` 迂回が必要なケースは CI で停止しユーザ明示判断を要求, (c) `openspec-workflow/skills/openspec-propose` の delta-spec template に「header 変更時は RENAMED + MODIFIED 必須」を明文化, (d) `tests/pipeline-integration.test.ts:14,35` の vi.mock を tempDir へ書くよう修正（`process.env["SPECRUNNER_TEST_CWD"]` 受け渡し）, (e) `tests/architecture/no-cwd-writes.test.ts` で「test が repo cwd を mutate しない」を grep 系 invariant test として固定化, (f) `--skip-specs` を使った PR の自動検出 + drift cleanup request 自動起票 hook を `request-merge` skill に追加検討

@@ -1,6 +1,6 @@
 ## Purpose
 
-`specrunner` CLI のサブコマンド群（`init` / `login` / `run` / `ps`）の振る舞い・引数・終了コード・stdout/stderr 出力を定義する。
+`specrunner` CLI のサブコマンド群（`init` / `login` / `run` / `ps` / `doctor` / `finish`）の振る舞い・引数・終了コード・stdout/stderr 出力を定義する。
 ## Requirements
 ### Requirement: `specrunner init` は Agent と Environment を作成または同期する
 
@@ -114,24 +114,24 @@
 - **WHEN** propose は正常完了したが spec-review セッション完了後に `deps.githubClient.getRawFile` が adapter 内部リトライ後も null を返す
 - **THEN** state.status を `failed`、error.code を `SPEC_REVIEW_RESULT_NOT_FOUND` で記録し、stderr に `Spec-review result file not found on branch '<branch>'.` を出力し exit code 1 で終了する
 
-### Requirement: `specrunner` バイナリは 5 つのサブコマンドを提供する
+### Requirement: `specrunner` バイナリは 6 つのサブコマンドを提供する
 
-`specrunner` CLI は SHALL `init`、`login`、`run`、`ps`、`doctor` の 5 サブコマンドを提供する。引数なし、または不明なサブコマンドが渡された場合は usage を stderr に出力し、exit code 2 で MUST 終了する。usage 文字列には `doctor` の 1 行説明（例: `Diagnose environment / config / auth prerequisites`）を含む。
+`specrunner` CLI は SHALL `init`、`login`、`run`、`ps`、`doctor`、`finish` の 6 サブコマンドを提供する。引数なし、または不明なサブコマンドが渡された場合は usage を stderr に出力し、exit code 2 で MUST 終了する。usage 文字列には `doctor` の 1 行説明（例: `Diagnose environment / config / auth prerequisites`）と `finish` の 1 行説明（例: `Finalize a merged PR: archive openspec change and migrate request dir`）を含む。
 
 #### Scenario: 引数なしで実行された場合
 
 - **WHEN** ユーザーが `specrunner` をサブコマンドなしで実行する
-- **THEN** stderr に各サブコマンドの 1 行説明（init / login / run / ps / doctor）を含む usage を出力し、exit code 2 で終了する
+- **THEN** stderr に各サブコマンドの 1 行説明（init / login / run / ps / doctor / finish）を含む usage を出力し、exit code 2 で終了する
 
 #### Scenario: 不明なサブコマンドが渡された場合
 
 - **WHEN** ユーザーが `specrunner foobar` を実行する
-- **THEN** `Unknown command: foobar` を stderr に出し、5 サブコマンドの usage を続けて表示し、exit code 2 で終了する
+- **THEN** `Unknown command: foobar` を stderr に出し、6 サブコマンドの usage を続けて表示し、exit code 2 で終了する
 
 #### Scenario: `--help` または `-h` が渡された場合
 
 - **WHEN** ユーザーが `specrunner --help` を実行する
-- **THEN** stdout に 5 サブコマンド分の usage を出力し、exit code 0 で終了する
+- **THEN** stdout に 6 サブコマンド分の usage を出力し、exit code 0 で終了する
 
 ### Requirement: `specrunner doctor` は 7 カテゴリの環境前提条件を診断する
 
