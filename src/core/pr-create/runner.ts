@@ -6,10 +6,10 @@
  * Design D2: OPEN PR → existing-open (idempotent). MERGED/CLOSED → error (escalation).
  * Design D3: base branch is "main" (fixed in initial version).
  */
-import { spawn } from "node:child_process";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
+import { spawnCommand as _spawnCommand } from "../../util/spawn.js";
 
 export interface PrCreateInput {
   branch: string;
@@ -34,28 +34,14 @@ interface GhPrListEntry {
 
 /**
  * Spawn a command and collect stdout/stderr.
- * Resolves with { exitCode, stdout, stderr }.
+ * Thin wrapper over shared spawnCommand for backward compat within this module.
  */
 function spawnCommand(
   cmd: string,
   args: string[],
   cwd: string,
 ): Promise<{ exitCode: number | null; stdout: string; stderr: string }> {
-  return new Promise((resolve) => {
-    const proc = spawn(cmd, args, { cwd, shell: false });
-    let stdout = "";
-    let stderr = "";
-
-    proc.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString();
-    });
-    proc.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString();
-    });
-    proc.on("close", (code) => {
-      resolve({ exitCode: code, stdout, stderr });
-    });
-  });
+  return _spawnCommand(cmd, args, { cwd });
 }
 
 /**

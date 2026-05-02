@@ -2,7 +2,7 @@
  * Job state schema and types for specrunner state files.
  */
 
-export type JobStatus = "running" | "success" | "failed" | "terminated";
+export type JobStatus = "running" | "success" | "failed" | "terminated" | "archived";
 
 export type StepName =
   | "propose"

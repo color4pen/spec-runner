@@ -1,5 +1,11 @@
 import { listJobStates } from "../state/store.js";
-import type { JobState } from "../state/schema.js";
+import type { JobState, JobStatus } from "../state/schema.js";
+
+/**
+ * Active statuses — excludes terminal/archived statuses.
+ * When adding new statuses to JobStatus, update this set accordingly.
+ */
+const ACTIVE_STATUSES: Set<JobStatus> = new Set(["running"]);
 
 /**
  * Format a job age in human-readable form.
@@ -58,9 +64,11 @@ export function formatJobRow(
 
 /**
  * Run the specrunner ps command.
+ * @param opts.active - When true, only show jobs with active (running) status
  */
-export async function runPs(): Promise<void> {
-  const jobs = await listJobStates();
+export async function runPs(opts: { active?: boolean } = {}): Promise<void> {
+  const allJobs = await listJobStates();
+  const jobs = opts.active ? allJobs.filter((j) => ACTIVE_STATUSES.has(j.status)) : allJobs;
 
   if (jobs.length === 0) {
     process.stdout.write("No jobs found.\n");
