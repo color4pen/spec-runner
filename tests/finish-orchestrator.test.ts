@@ -49,7 +49,7 @@ async function makeJobWithPr(
 ) {
   const {
     status = "success",
-    requestPath = "openspec-workflow/requests/active/test-slug/request.md",
+    requestPath = "specrunner/requests/active/test-slug/request.md",
     slug = "test-slug",
   } = opts;
 
@@ -69,11 +69,11 @@ async function makeJobWithPr(
   return { jobId: state.jobId, slug: slug ?? "test-slug" };
 }
 
-function makeStubFs(opts: { changeFolderExists?: boolean; awaitingExists?: boolean } = {}): FinishFs {
-  const { changeFolderExists = false, awaitingExists = false } = opts;
+function makeStubFs(opts: { changeFolderExists?: boolean; activeExists?: boolean } = {}): FinishFs {
+  const { changeFolderExists = false, activeExists = false } = opts;
   return {
     exists: vi.fn().mockImplementation((p: string) => {
-      if (p.includes("awaiting-merge")) return Promise.resolve(awaitingExists);
+      if (p.includes("active")) return Promise.resolve(activeExists);
       if (p.includes("merged")) return Promise.resolve(false);
       // change folder
       return Promise.resolve(changeFolderExists);
@@ -274,8 +274,8 @@ describe("TC-103: archive folder absent → skip archive steps, merge+archive", 
       calls.push([cmd, [...args]]);
       const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn; return happySpawn(cmd, args, { cwd: "" });
     });
-    // No archive folder, no awaiting-merge
-    const stubFs = makeStubFs({ changeFolderExists: false, awaitingExists: false });
+    // No archive folder, no active
+    const stubFs = makeStubFs({ changeFolderExists: false, activeExists: false });
 
     const result = await runFinishOrchestrator(
       { slug: "test-slug", flags: {}, cwd: tempDir, spawn, fs: stubFs },

@@ -4,12 +4,12 @@
  * TC-001: --job <jobId> resolves state file
  * TC-002: <slug> positional resolves single match
  * TC-003: <slug> multiple matches → picks latest updatedAt + stdout warning (TC-134)
- * TC-004: awaiting-merge 1 entry → auto-detect
- * TC-005: awaiting-merge 0 entries → exit code 2
- * TC-006: awaiting-merge 2+ entries → exit code 2
+ * TC-004: active 1 entry → auto-detect
+ * TC-005: active 0 entries → exit code 2
+ * TC-006: active 2+ entries → exit code 2
  * TC-109: --pr <num> → headRefName → slug resolved
- * TC-131: No request in awaiting-merge → escalation message
- * TC-132: Multiple slugs in awaiting-merge → escalation with list
+ * TC-131: No request in active → escalation message
+ * TC-132: Multiple slugs in active → escalation with list
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
@@ -41,7 +41,7 @@ afterEach(async () => {
 
 async function makeJobWithPr(slug: string, updatedAt?: string) {
   const state = await createJobState({
-    request: { path: `/openspec-workflow/requests/active/${slug}/request.md`, title: "Test", type: "new-feature", slug },
+    request: { path: `/specrunner/requests/active/${slug}/request.md`, title: "Test", type: "new-feature", slug },
     repository: { owner: "user", name: "repo" },
   });
 
@@ -108,12 +108,12 @@ describe("TC-003 / TC-134: <slug> multiple matches → latest updatedAt, stdout 
   });
 });
 
-// TC-004: awaiting-merge 1 entry → auto-detect
-describe("TC-004: awaiting-merge 1 entry → auto-detect", () => {
-  it("auto-detects the single awaiting-merge slug", async () => {
-    // Create the awaiting-merge dir with one slug
-    const awaitingMergeDir = path.join(tempDir, "openspec-workflow", "requests", "awaiting-merge", "auto-slug");
-    await fs.mkdir(awaitingMergeDir, { recursive: true });
+// TC-004: active 1 entry → auto-detect
+describe("TC-004: active 1 entry → auto-detect", () => {
+  it("auto-detects the single active slug", async () => {
+    // Create the active dir with one slug
+    const activeDir = path.join(tempDir, "specrunner", "requests", "active", "auto-slug");
+    await fs.mkdir(activeDir, { recursive: true });
 
     // Create matching job state
     await makeJobWithPr("auto-slug");
@@ -129,12 +129,12 @@ describe("TC-004: awaiting-merge 1 entry → auto-detect", () => {
   });
 });
 
-// TC-005 / TC-131: awaiting-merge 0 entries → exit code 2
-describe("TC-005 / TC-131: awaiting-merge 0 entries → exit code 2", () => {
-  it("returns exit code 2 when awaiting-merge is empty", async () => {
-    // Create empty awaiting-merge dir
-    const awaitingMergeDir = path.join(tempDir, "openspec-workflow", "requests", "awaiting-merge");
-    await fs.mkdir(awaitingMergeDir, { recursive: true });
+// TC-005 / TC-131: active 0 entries → exit code 2
+describe("TC-005 / TC-131: active 0 entries → exit code 2", () => {
+  it("returns exit code 2 when active is empty", async () => {
+    // Create empty active dir
+    const activeDir = path.join(tempDir, "specrunner", "requests", "active");
+    await fs.mkdir(activeDir, { recursive: true });
 
     const result = await resolveTarget({ cwd: tempDir });
 
@@ -143,15 +143,15 @@ describe("TC-005 / TC-131: awaiting-merge 0 entries → exit code 2", () => {
 
     expect(result.exitCode).toBe(2);
     // TC-131 message format
-    expect(result.message).toContain("No request found in awaiting-merge/");
+    expect(result.message).toContain("No request found in active/");
   });
 });
 
-// TC-006 / TC-132: awaiting-merge 2+ entries → exit code 2
-describe("TC-006 / TC-132: awaiting-merge 2+ entries → exit code 2", () => {
-  it("returns exit code 2 with slug list when multiple await-merge slugs", async () => {
-    // Create two awaiting-merge dirs
-    const base = path.join(tempDir, "openspec-workflow", "requests", "awaiting-merge");
+// TC-006 / TC-132: active 2+ entries → exit code 2
+describe("TC-006 / TC-132: active 2+ entries → exit code 2", () => {
+  it("returns exit code 2 with slug list when multiple active slugs", async () => {
+    // Create two active dirs
+    const base = path.join(tempDir, "specrunner", "requests", "active");
     await fs.mkdir(path.join(base, "slug-a"), { recursive: true });
     await fs.mkdir(path.join(base, "slug-b"), { recursive: true });
 
@@ -162,7 +162,7 @@ describe("TC-006 / TC-132: awaiting-merge 2+ entries → exit code 2", () => {
 
     expect(result.exitCode).toBe(2);
     // TC-132 message format
-    expect(result.message).toContain("Multiple slugs in awaiting-merge/:");
+    expect(result.message).toContain("Multiple slugs in active/:");
     expect(result.message).toContain("slug-a");
     expect(result.message).toContain("slug-b");
   });

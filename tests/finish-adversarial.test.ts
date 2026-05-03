@@ -50,7 +50,7 @@ async function makeJobWithPr(opts: {
   const { status = "success", slug = "test-slug", requestPath } = opts;
   const state = await createJobState({
     request: {
-      path: requestPath ?? `openspec-workflow/requests/active/${slug}/request.md`,
+      path: requestPath ?? `specrunner/requests/active/${slug}/request.md`,
       title: "Test",
       type: "new-feature",
       slug,
@@ -245,7 +245,7 @@ describe("TC-120: pullRequest.number absent → escalation", () => {
   it("escalates with pr-create message when pullRequest is missing", async () => {
     // Create job WITHOUT pullRequest
     const state = await createJobState({
-      request: { path: "openspec-workflow/requests/active/test-slug/request.md", title: "T", type: "new-feature", slug: "test-slug" },
+      request: { path: "specrunner/requests/active/test-slug/request.md", title: "T", type: "new-feature", slug: "test-slug" },
       repository: { owner: "u", name: "r" },
     });
 

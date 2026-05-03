@@ -16,7 +16,7 @@ function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
     jobId: "test-job",
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
-    request: { path: "openspec-workflow/requests/active/pr-create-step/request.md", title: "Test", type: "feature" },
+    request: { path: "specrunner/requests/active/pr-create-step/request.md", title: "Test", type: "feature" },
     repository: { owner: "testowner", name: "testrepo" },
     session: null,
     step: "pr-create",

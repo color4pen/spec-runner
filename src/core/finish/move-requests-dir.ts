@@ -1,8 +1,8 @@
 /**
- * Move requests dir from awaiting-merge to merged and commit.
+ * Move requests dir from active to merged and commit.
  *
- * TC-027: git mv awaiting-merge/<slug> → merged/<slug>
- * TC-028: merged/ exists + awaiting-merge/ absent → skip (idempotent)
+ * TC-027: git mv active/<slug> → merged/<slug>
+ * TC-028: merged/ exists + active/ absent → skip (idempotent)
  * TC-044: no changes to commit → skip commit
  * TC-063: commit message = "chore: archive <slug>"
  */
@@ -16,7 +16,7 @@ export type MoveRequestsDirResult =
   | { ok: false; escalation: string; exitCode: 1 };
 
 /**
- * Move awaiting-merge/<slug> to merged/<slug> and commit.
+ * Move active/<slug> to merged/<slug> and commit.
  */
 export async function moveRequestsDir(params: {
   slug: string;
@@ -26,18 +26,18 @@ export async function moveRequestsDir(params: {
 }): Promise<MoveRequestsDirResult> {
   const { slug, cwd, spawn, fs } = params;
 
-  const awaitingMergePath = path.join(
-    "openspec-workflow", "requests", "awaiting-merge", slug,
+  const activePath = path.join(
+    "specrunner", "requests", "active", slug,
   );
   const mergedPath = path.join(
-    "openspec-workflow", "requests", "merged", slug,
+    "specrunner", "requests", "merged", slug,
   );
 
-  const awaitingExists = await fs.exists(path.join(cwd, awaitingMergePath));
+  const activeExists = await fs.exists(path.join(cwd, activePath));
   const mergedExists = await fs.exists(path.join(cwd, mergedPath));
 
   // Idempotent skip: already moved
-  if (mergedExists && !awaitingExists) {
+  if (mergedExists && !activeExists) {
     return {
       ok: true,
       skipped: true,
@@ -46,14 +46,14 @@ export async function moveRequestsDir(params: {
     };
   }
 
-  // Move if awaiting-merge exists
-  if (awaitingExists) {
+  // Move if active exists
+  if (activeExists) {
     // Ensure target parent dir exists
-    await fs.mkdir(path.join(cwd, "openspec-workflow", "requests", "merged"), { recursive: true });
+    await fs.mkdir(path.join(cwd, "specrunner", "requests", "merged"), { recursive: true });
 
     const mvResult = await spawn(
       "git",
-      ["mv", awaitingMergePath, mergedPath],
+      ["mv", activePath, mergedPath],
       { cwd },
     );
 
@@ -102,6 +102,6 @@ export async function moveRequestsDir(params: {
     ok: true,
     skipped: false,
     committed: true,
-    message: `Moved awaiting-merge/${slug} to merged/${slug} and committed.`,
+    message: `Moved active/${slug} to merged/${slug} and committed.`,
   };
 }

@@ -4,7 +4,7 @@
 import type { SpawnFn } from "../../util/spawn.js";
 
 /**
- * Resolved target from input resolution (jobId / --slug / awaiting-merge detection).
+ * Resolved target from input resolution (jobId / --slug / active detection).
  */
 export interface ResolvedTarget {
   jobId: string;

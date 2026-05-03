@@ -116,20 +116,13 @@ describe("TC-114: getJobSlug — all sources absent → empty string (no throw)"
 
 // TC-116 / TC-117: run.ts canonical path detection logic (tested via regex)
 describe("TC-116 / TC-117: canonical path detection (run.ts logic)", () => {
-  const CANONICAL_PATTERN = /openspec-workflow\/requests\/(?:active|awaiting-merge)\/([^/]+)\/[^/]+\.md$/;
+  const CANONICAL_PATTERN = /^.*\/specrunner\/requests\/active\/([^/]+)\/[^/]+\.md$/;
 
   it("TC-116: canonical active path → extracts slug", () => {
-    const path = "openspec-workflow/requests/active/readme-status-section/request.md";
+    const path = "/workspace/repo/specrunner/requests/active/my-feature/request.md";
     const m = CANONICAL_PATTERN.exec(path);
     expect(m).not.toBeNull();
-    expect(m?.[1]).toBe("readme-status-section");
-  });
-
-  it("TC-116: canonical awaiting-merge path → extracts slug", () => {
-    const path = "openspec-workflow/requests/awaiting-merge/finish-redesign/request.md";
-    const m = CANONICAL_PATTERN.exec(path);
-    expect(m).not.toBeNull();
-    expect(m?.[1]).toBe("finish-redesign");
+    expect(m?.[1]).toBe("my-feature");
   });
 
   it("TC-117: /tmp/... non-canonical path → no match → null slug", () => {

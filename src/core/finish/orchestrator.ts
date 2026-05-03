@@ -149,7 +149,7 @@ export async function runFinishOrchestrator(
       stdoutWrite(openspecResult.message);
     }
 
-    // git mv awaiting-merge → merged + commit
+    // git mv active → merged + commit
     const moveResult = await moveRequestsDir({
       slug: target.slug,
       cwd,
@@ -384,7 +384,7 @@ function outputDryRunPlan(
   prViewData: { state: string; mergeStateStatus?: string },
   stdoutWrite: (msg: string) => void,
 ): void {
-  const archivePlan = "archive openspec changes + move awaiting-merge to merged";
+  const archivePlan = "archive openspec changes + move active to merged";
   const mergeStrategy = "gh pr merge --squash --delete-branch";
   const adminFlag = (prViewData.mergeStateStatus ?? "").toUpperCase() === "BLOCKED" ? "yes" : "no";
   const expectedStatus = "archived";

@@ -167,13 +167,13 @@ describe("TC-110: specrunner ps --all shows SLUG column and archived jobs", () =
       jobId: archivedId,
       status: "archived",
       branch: "feat/my-archived-feature",
-      request: { path: "openspec-workflow/requests/active/my-archived-feature/request.md", title: "T", type: "new-feature", slug: "my-archived-feature" },
+      request: { path: "specrunner/requests/active/my-archived-feature/request.md", title: "T", type: "new-feature", slug: "my-archived-feature" },
     }));
     await writeStateFile(makeBaseState({
       jobId: successId,
       status: "success",
       branch: "feat/active-job",
-      request: { path: "openspec-workflow/requests/active/active-job/request.md", title: "T", type: "new-feature", slug: "active-job" },
+      request: { path: "specrunner/requests/active/active-job/request.md", title: "T", type: "new-feature", slug: "active-job" },
     }));
 
     await runPs({ all: true });
@@ -202,7 +202,7 @@ describe("TC-143: non-TTY TAB-separated output — SLUG is second column", () =>
       jobId: "aaaaaaaa-0000-0000-0000-000000000099",
       status: "success",
       branch: "feat/test-slug",
-      request: { path: "openspec-workflow/requests/active/test-slug/request.md", title: "T", type: "new-feature", slug: "test-slug" },
+      request: { path: "specrunner/requests/active/test-slug/request.md", title: "T", type: "new-feature", slug: "test-slug" },
     }));
 
     // formatJobRow non-TTY (isTty=false) — validate header fields
@@ -210,7 +210,7 @@ describe("TC-143: non-TTY TAB-separated output — SLUG is second column", () =>
       jobId: "aaaaaaaa-0000-0000-0000-000000000099",
       status: "success",
       branch: "feat/test-slug",
-      request: { path: "openspec-workflow/requests/active/test-slug/request.md", title: "T", type: "new-feature", slug: "test-slug" },
+      request: { path: "specrunner/requests/active/test-slug/request.md", title: "T", type: "new-feature", slug: "test-slug" },
     });
     const row = formatJobRow(state, false);
     const fields = row.split("\t");

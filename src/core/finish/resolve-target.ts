@@ -6,9 +6,9 @@
  *
  * TC-109: --pr <num> → gh pr view → headRefName → stripBranchPrefix → slug
  * TC-130: specrunner finish <slug> resolves state
- * TC-131: awaiting-merge 0 entries → escalation (exit 2)
- * TC-132: awaiting-merge 2+ entries → escalation (exit 2)
- * TC-133: cwd under awaiting-merge/<dir>/ → auto-detect
+ * TC-131: active 0 entries → escalation (exit 2)
+ * TC-132: active 2+ entries → escalation (exit 2)
+ * TC-133: cwd under active/<dir>/ → auto-detect
  * TC-134: multiple states for same slug → latest updatedAt chosen
  */
 import * as path from "node:path";
@@ -24,7 +24,7 @@ export interface ResolveTargetInput {
   prNumber?: number;
   /** --job <jobId>: direct job ID lookup (forensics / debug). */
   jobId?: string;
-  /** Base directory for awaiting-merge detection (defaults to cwd). */
+  /** Base directory for active detection (defaults to cwd). */
   cwd?: string;
   /** spawn function for gh CLI calls (required for --pr resolution). */
   spawn?: SpawnFn;
@@ -36,7 +36,7 @@ export type ResolveTargetResult =
 
 /**
  * Resolve the finish target from the given inputs.
- * Priority: slug → --pr → --job → awaiting-merge auto-detect.
+ * Priority: slug → --pr → --job → active auto-detect.
  */
 export async function resolveTarget(
   input: ResolveTargetInput,
@@ -57,7 +57,7 @@ export async function resolveTarget(
     return resolveByJobId(input.jobId, stdoutWrite);
   }
 
-  // 4. awaiting-merge dir auto-detection
+  // 4. active dir auto-detection
   return resolveByAutoDetect(input.cwd ?? process.cwd(), stdoutWrite);
 }
 
@@ -162,29 +162,29 @@ async function resolveByJobId(
 }
 
 /**
- * Auto-detect from awaiting-merge directory.
+ * Auto-detect from active directory.
  *
  * TC-131: 0 entries → escalation
  * TC-132: 2+ entries → escalation
- * TC-133: cwd under awaiting-merge/<dir>/ → auto-detect
+ * TC-133: cwd under active/<dir>/ → auto-detect
  */
 async function resolveByAutoDetect(
   cwd: string,
   stdoutWrite: (msg: string) => void,
 ): Promise<ResolveTargetResult> {
-  // TC-133: cwd itself is under awaiting-merge/<dir>/
+  // TC-133: cwd itself is under active/<dir>/
   const cwdSlug = detectSlugFromCwd(cwd);
   if (cwdSlug) {
     stdoutWrite(`Auto-detected slug from cwd: ${cwdSlug}`);
     return resolveBySlug(cwdSlug, cwd, stdoutWrite);
   }
 
-  const awaitingMergeDir = path.join(cwd, "openspec-workflow", "requests", "awaiting-merge");
+  const activeDir = path.join(cwd, "specrunner", "requests", "active");
 
   let entries: string[];
   try {
     const { readdir } = await import("node:fs/promises");
-    const dirents = await readdir(awaitingMergeDir, { withFileTypes: true });
+    const dirents = await readdir(activeDir, { withFileTypes: true });
     entries = dirents.filter((d) => d.isDirectory()).map((d) => d.name);
   } catch (err: unknown) {
     const code = (err as NodeJS.ErrnoException).code;
@@ -199,7 +199,7 @@ async function resolveByAutoDetect(
     return {
       ok: false,
       exitCode: 2,
-      message: "No request found in awaiting-merge/. Specify <slug>, --pr, or --job.",
+      message: "No request found in active/. Specify <slug>, --pr, or --job.",
     };
   }
 
@@ -207,22 +207,22 @@ async function resolveByAutoDetect(
     return {
       ok: false,
       exitCode: 2,
-      message: `Multiple slugs in awaiting-merge/: ${entries.join(", ")}. Specify <slug>, --pr, or --job.`,
+      message: `Multiple slugs in active/: ${entries.join(", ")}. Specify <slug>, --pr, or --job.`,
     };
   }
 
   // Exactly 1 slug — auto-detect
   const autoSlug = entries[0]!;
-  stdoutWrite(`Auto-detected awaiting-merge slug: ${autoSlug}`);
+  stdoutWrite(`Auto-detected active slug: ${autoSlug}`);
 
   return resolveBySlug(autoSlug, cwd, stdoutWrite);
 }
 
 /**
- * Detect slug from cwd if it's under openspec-workflow/requests/{active,awaiting-merge}/<slug>/.
+ * Detect slug from cwd if it's under specrunner/requests/active/<slug>/.
  */
 function detectSlugFromCwd(cwd: string): string | null {
-  const PATTERN = /openspec-workflow\/requests\/(?:active|awaiting-merge)\/([^/]+)(?:\/|$)/;
+  const PATTERN = /specrunner\/requests\/active\/([^/]+)(?:\/|$)/;
   const m = PATTERN.exec(cwd.replace(/\\/g, "/"));
   return m ? (m[1] ?? null) : null;
 }

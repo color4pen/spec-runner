@@ -1,8 +1,8 @@
 /**
  * Tests for finish command: requests dir move and commit.
  *
- * TC-027: git mv awaiting-merge → merged
- * TC-028: merged/ exists + awaiting-merge/ absent → skip
+ * TC-027: git mv active → merged
+ * TC-028: merged/ exists + active/ absent → skip
  * TC-044: no changes → skip commit
  * TC-063: commit message = "chore: archive <slug>"
  */
@@ -20,10 +20,10 @@ function makeSpawn(responses: Array<{ exitCode: number; stdout?: string; stderr?
   });
 }
 
-function makeFs(awaitingExists: boolean, mergedExists: boolean): FinishFs {
+function makeFs(activeExists: boolean, mergedExists: boolean): FinishFs {
   return {
     exists: vi.fn().mockImplementation((p: string) => {
-      if (p.includes("awaiting-merge")) return Promise.resolve(awaitingExists);
+      if (p.includes("active")) return Promise.resolve(activeExists);
       if (p.includes("merged")) return Promise.resolve(mergedExists);
       return Promise.resolve(false);
     }),
@@ -40,7 +40,7 @@ const BASE = {
 };
 
 // TC-027
-describe("TC-027: git mv awaiting-merge → merged", () => {
+describe("TC-027: git mv active → merged", () => {
   it("calls git mv with correct paths", async () => {
     const spawn = makeSpawn([
       { exitCode: 0 }, // git mv
@@ -59,13 +59,13 @@ describe("TC-027: git mv awaiting-merge → merged", () => {
     expect(mvCall).toBeDefined();
     const mvArgs = (mvCall as unknown[])[1] as string[];
     expect(mvArgs).toContain("mv");
-    expect(mvArgs.join(" ")).toContain("awaiting-merge/my-feature");
+    expect(mvArgs.join(" ")).toContain("active/my-feature");
     expect(mvArgs.join(" ")).toContain("merged/my-feature");
   });
 });
 
 // TC-028
-describe("TC-028: merged/ exists + awaiting-merge/ absent → skip", () => {
+describe("TC-028: merged/ exists + active/ absent → skip", () => {
   it("skips git mv when already moved", async () => {
     const spawn = makeSpawn([{ exitCode: 0 }]);
     const fs = makeFs(false, true);
