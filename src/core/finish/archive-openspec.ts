@@ -1,8 +1,10 @@
 /**
  * openspec archive step for finish command.
  *
- * TC-024: specs/ has .md files → openspec archive <slug>
+ * TC-024: specs/ has nested/flat .md files → openspec archive <slug>
  * TC-025: specs/ is empty → openspec archive <slug> --skip-specs
+ * TC-024b: specs/<name>/spec.md (nested) → openspec archive <slug>
+ * TC-024c: specs/*.md (flat fallback) → openspec archive <slug>
  * TC-026: change folder missing → skip entire step
  * TC-043: non-zero exit → escalation
  */
@@ -14,6 +16,48 @@ import { formatEscalation } from "./escalation.js";
 export type ArchiveOpenspecResult =
   | { ok: true; skipped: boolean; message: string }
   | { ok: false; escalation: string; exitCode: 1 };
+
+/**
+ * Check if a path points to a directory.
+ * Returns false if path doesn't exist or stat fails.
+ */
+async function isDirectory(filePath: string, fs: FinishFs): Promise<boolean> {
+  try {
+    const stats = await fs.stat(filePath);
+    return stats.isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Detect spec files in specs/ directory.
+ * Detection order: nested convention (specs/<name>/spec.md) first, then flat fallback (specs/*.md).
+ * Returns true if at least one spec file is detected.
+ */
+async function hasSpecFiles(specsPath: string, fs: FinishFs): Promise<boolean> {
+  try {
+    const entries = await fs.readdir(specsPath);
+
+    // Check nested convention: specs/<name>/spec.md
+    for (const entry of entries) {
+      const entryPath = path.join(specsPath, entry);
+      const isDirResult = await isDirectory(entryPath, fs);
+      if (isDirResult === true) {
+        const specFile = path.join(entryPath, "spec.md");
+        const exists = await fs.exists(specFile);
+        if (exists === true) {
+          return true;
+        }
+      }
+    }
+
+    // Flat fallback: specs/*.md
+    return entries.some((e) => e.endsWith(".md"));
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Archive openspec change folder via openspec CLI.
@@ -37,20 +81,13 @@ export async function archiveOpenspec(params: {
     };
   }
 
-  // Check for .md files in specs/ subfolder
+  // Check for spec files in specs/ subfolder
   const specsPath = path.join(changeFolderPath, "specs");
-  let hasSpecFiles = false;
-  try {
-    const specsEntries = await fs.readdir(specsPath);
-    hasSpecFiles = specsEntries.some((e) => e.endsWith(".md"));
-  } catch {
-    // specs/ doesn't exist or can't be read — treat as no spec files
-    hasSpecFiles = false;
-  }
+  const hasSpecFilesResult = await hasSpecFiles(specsPath, fs);
 
-  const archiveArgs = hasSpecFiles
-    ? ["archive", slug]
-    : ["archive", slug, "--skip-specs"];
+  const archiveArgs = hasSpecFilesResult
+    ? ["archive", slug, "--yes"]
+    : ["archive", slug, "--yes", "--skip-specs"];
 
   const result = await spawn("openspec", archiveArgs, { cwd });
 
@@ -80,7 +117,7 @@ export async function archiveOpenspec(params: {
     return { ok: false, escalation, exitCode: 1 };
   }
 
-  const withOrWithout = hasSpecFiles ? "with specs" : "without specs (--skip-specs)";
+  const withOrWithout = hasSpecFilesResult ? "with specs" : "without specs (--skip-specs)";
   return {
     ok: true,
     skipped: false,

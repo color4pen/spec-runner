@@ -28,6 +28,7 @@ function makeFs(activeExists: boolean, mergedExists: boolean): FinishFs {
       return Promise.resolve(false);
     }),
     readdir: vi.fn().mockResolvedValue([]),
+    stat: vi.fn().mockResolvedValue({ isDirectory: () => false }),
     mkdir: vi.fn().mockResolvedValue(undefined),
     writeFile: vi.fn().mockResolvedValue(undefined),
     unlink: vi.fn().mockResolvedValue(undefined),

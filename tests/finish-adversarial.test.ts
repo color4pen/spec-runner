@@ -72,6 +72,7 @@ function makeStubFs(changeFolderExists = false): FinishFs {
   return {
     exists: vi.fn().mockResolvedValue(changeFolderExists),
     readdir: vi.fn().mockResolvedValue([]),
+    stat: vi.fn().mockResolvedValue({ isDirectory: () => false }),
     mkdir: vi.fn().mockResolvedValue(undefined),
     writeFile: vi.fn().mockResolvedValue(undefined),
     unlink: vi.fn().mockResolvedValue(undefined),
@@ -186,6 +187,7 @@ describe("TC-107: openspec validate fail → escalation", () => {
         return Promise.resolve(false);
       }),
       readdir: vi.fn().mockResolvedValue([]),
+      stat: vi.fn().mockResolvedValue({ isDirectory: () => false }),
       mkdir: vi.fn().mockResolvedValue(undefined),
       writeFile: vi.fn().mockResolvedValue(undefined),
       unlink: vi.fn().mockResolvedValue(undefined),

@@ -30,6 +30,10 @@ function buildRealFs(): FinishFs {
       const dirents = await nodeFsPromises.readdir(p, { withFileTypes: true });
       return dirents.map((d) => d.name);
     },
+    stat: async (p: string) => {
+      const stats = await nodeFsPromises.stat(p);
+      return { isDirectory: () => stats.isDirectory() };
+    },
     mkdir: async (p: string, opts: { recursive: boolean }) => {
       await nodeFsPromises.mkdir(p, opts);
     },

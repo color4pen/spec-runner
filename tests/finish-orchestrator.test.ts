@@ -79,6 +79,7 @@ function makeStubFs(opts: { changeFolderExists?: boolean; activeExists?: boolean
       return Promise.resolve(changeFolderExists);
     }),
     readdir: vi.fn().mockResolvedValue([]),
+    stat: vi.fn().mockResolvedValue({ isDirectory: () => false }),
     mkdir: vi.fn().mockResolvedValue(undefined),
     writeFile: vi.fn().mockResolvedValue(undefined),
     unlink: vi.fn().mockResolvedValue(undefined),
@@ -147,7 +148,7 @@ describe("TC-123: 1-PR model normal success flow (archive present, CLEAN)", () =
   it("runs all 4 phases and exits 0", async () => {
     const { jobId } = await makeJobWithPr();
     const spawn = makeHappyPathSpawn("OPEN");
-    const stubFs = makeStubFs({ changeFolderExists: true, awaitingExists: true });
+    const stubFs = makeStubFs({ changeFolderExists: true, activeExists: true });
 
     const messages: string[] = [];
     const result = await runFinishOrchestrator(
