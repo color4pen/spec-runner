@@ -159,44 +159,46 @@ specrunner finish [<slug>] [--pr <num>] [--job <jobId>] [--dry-run]
 
 ### Requirement: `specrunner doctor` は 7 カテゴリの環境前提条件を診断する
 
-`specrunner doctor` は MUST 以下 7 カテゴリの check をすべて実行し、各 check の結果を `pass` / `warn` / `fail` のいずれかで判定する。
+`specrunner doctor` の `repo` カテゴリチェックは MUST 以下を検証する:
 
-| Category | 検証対象 |
-|----------|---------|
-| `runtime` | node version (>= 18)、bun version、git installed + version、openspec available（`npx openspec --version`） |
-| `config` | `~/.config/specrunner/config.json` 存在 + permission 0600（darwin / linux のみ。Windows では warn / skip 扱い）、`anthropic.apiKey` 存在、`github.accessToken` 存在 |
-| `env` | `SPECRUNNER_GITHUB_CLIENT_ID` 設定状況（warn — login 時のみ必須） |
-| `auth` | Anthropic API key 有効性（軽量 GET 200 確認）、GitHub token 有効性（`GET /user` 200 + scope に `repo` 含む） |
-| `repo` | cwd が git repository、`origin` remote が GitHub、`openspec/project.md` 存在、`openspec-workflow/requests/{active,awaiting-merge,merged,canceled}/` 構造存在（warn） |
-| `agents` | 7 agents（propose / spec-review / spec-fixer / implementer / build-fixer / code-review / code-fixer）が config に登録済み、environment ID 登録済み、agent definition drift 検出 |
-| `storage` | `~/.local/share/specrunner/jobs/` 書き込み可、古い job state file 数（情報のみ表示、100 超なら gc 推奨を warn） |
+- cwd が git repository であること
+- `origin` remote が GitHub を指していること
+- `openspec/project.md` が存在すること
+- `specrunner/requests/{active,merged}/` の 2 ディレクトリが存在すること（warn レベル、不在時も pass を妨げない）
 
-各 check は SHALL `DoctorCheck` interface（`{ name, category, required, check(ctx): Promise<DoctorResult> }`）に従い独立に export され、`DoctorContext` を mock することで単独で unit test 可能でなければならない。
+The workflow structure check SHALL verify that the following directories exist:
 
-#### Scenario: 全 check が成功する
+- `specrunner/requests/active/`
+- `specrunner/requests/merged/`
 
-- **WHEN** ユーザーが `specrunner doctor` を健全な環境で実行する
-- **THEN** 全カテゴリの check が `pass` または `warn` を返し、stdout にカテゴリ別の結果と `Summary: <N> pass, <M> warn, 0 fail` を表示し exit code 0 で終了する
+The check SHALL be implemented in `src/core/doctor/checks/repo/workflow-structure.ts` with:
 
-#### Scenario: 1 つ以上の check が fail する
+```typescript
+const REQUIRED_DIRS = ["active", "merged"] as const;
+```
 
-- **WHEN** `~/.config/specrunner/config.json` が存在しない状態で `specrunner doctor` を実行する
-- **THEN** config category の該当 check が `fail` を返し、stdout に該当 check の `[✗]` 表示と修復 hint（例: `Run 'specrunner init' first.`）を表示し、exit code 1 で終了する
+Path construction SHALL use `specrunner/requests/` as the base directory:
 
-#### Scenario: warn のみが発生する
+```typescript
+const fullPath = path.join(ctx.cwd, "specrunner", "requests", dir);
+```
 
-- **WHEN** `SPECRUNNER_GITHUB_CLIENT_ID` が未設定だが他は健全な状態で `specrunner doctor` を実行する
-- **THEN** env category の該当 check が `warn` を返し、stdout に `[!]` 表示で hint を併記し、`fail` が 0 のため exit code 0 で終了する
+The check SHALL return:
+- `pass` status with message `"specrunner/requests/ structure is complete"` when all directories exist
+- `warn` status with message `"specrunner/requests/ is missing dirs: ${missing.join(", ")}"` when directories are missing
+- hint: `"Create the missing directories manually."`
 
-#### Scenario: doctor 自身が予期せぬ例外で crash する
+#### Scenario: 全ての要求 dir が存在する
 
-- **WHEN** runner / formatter 内部で unhandled exception が発生する
-- **THEN** `bin/specrunner.ts` の `doctor` case が `runDoctor` を wrap する `try/catch` の catch 経路で `Fatal: <message>` を stderr に出力し、`process.exit(2)` を呼ぶ（exit 1 と区別する）
+- **WHEN** `specrunner/requests/active/` と `specrunner/requests/merged/` がともに存在する
+- **THEN** doctor の workflow-structure check は `pass` を返し、message は `"specrunner/requests/ structure is complete"`
 
-#### Scenario: agent definition drift 検出
+#### Scenario: 一部 dir が不在
 
-- **WHEN** config の `agents[role].definitionHash` が `src/prompts` の現在の system prompt から計算される hash と一致しない
-- **THEN** agents category の該当 check が `warn` を返し、message に `definition drifted` を含み、hint で `Run 'specrunner init --resync' to update agent definitions.` を表示する
+- **WHEN** `specrunner/requests/merged/` が不在
+- **THEN** doctor の workflow-structure check は `warn` を返し、message は `"specrunner/requests/ is missing dirs: merged"`、hint は `"Create the missing directories manually."`
+
+Note: The previous requirement for `openspec-workflow/requests/{active,awaiting-merge,merged,canceled}/` is superseded by this delta spec.
 
 ### Requirement: `specrunner doctor --json` は機械可読 JSON を stdout に出力する
 
