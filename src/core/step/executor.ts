@@ -15,6 +15,7 @@ import {
   changeFolderNotFoundError,
   specReviewResultNotFoundError,
   codeReviewResultNotFoundError,
+  noCommitDetectedError,
 } from "../../errors.js";
 import {
   createSessionWithHistory,
@@ -570,6 +571,17 @@ export class StepExecutor {
       throwWrappedError(errorInfo, state);
     }
 
+    // Snapshot branch HEAD SHA before the session for requiresCommit verification.
+    // Captured here (after the branch guard above) so state.branch is non-null.
+    let preSessionHeadSha: string | null = null;
+    if (step.requiresCommit) {
+      preSessionHeadSha = await deps.githubClient.getRefSha(
+        deps.repo.owner,
+        deps.repo.name,
+        state.branch!,
+      );
+    }
+
     let sessionId: string;
     try {
       const repoUrl = `https://github.com/${repo.owner}/${repo.name}`;
@@ -653,6 +665,41 @@ export class StepExecutor {
         environmentId: config.environment!.id,
       },
     });
+
+    // Verify branch HEAD advanced for steps that declare requiresCommit.
+    // Runs BEFORE the `${step.name}-completed` ok history append so that a
+    // failed step never leaves a "completed ok" event in history alongside
+    // the no-commit-detected error (which would confuse forensics / resume /
+    // any consumer that treats `-completed` as a success marker).
+    //
+    // This catches the failure mode where an agent ends its turn without
+    // committing + pushing — the session looks "complete" via idle but no
+    // changes ever reach origin. Independent of result-file verdict parsing.
+    if (step.requiresCommit) {
+      const postSessionHeadSha = await deps.githubClient.getRefSha(
+        deps.repo.owner,
+        deps.repo.name,
+        state.branch!,
+      );
+      if (postSessionHeadSha !== null && postSessionHeadSha === preSessionHeadSha) {
+        const noCommitErr = noCommitDetectedError(step.name, state.branch!);
+        const errorInfo = {
+          code: noCommitErr.code,
+          message: noCommitErr.message,
+          hint: noCommitErr.hint,
+        };
+        state = await store.appendHistory(state, {
+          ts: new Date().toISOString(),
+          step: `${step.name}-no-commit-detected`,
+          status: "error",
+          message: errorInfo.message,
+        });
+        await failStepWithError(store, state, step.name, errorInfo, {
+          session: { id: sessionId, agentId, environmentId: config.environment!.id },
+          completedAt,
+        });
+      }
+    }
 
     state = await store.appendHistory(state, {
       ts: completedAt,

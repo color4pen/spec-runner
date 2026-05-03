@@ -69,6 +69,8 @@ export const SpecFixerStep: AgentStep = {
   // No custom tool handlers for spec-fixer
   toolHandlers: undefined,
 
+  requiresCommit: true,
+
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError("spec-fixer");
     const specReviewResult = getLatestStepResult(state, "spec-review");

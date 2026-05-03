@@ -138,6 +138,7 @@ describe("TC-030: StepExecutor resolves agent ID via step.agent.role", () => {
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+      getRefSha: vi.fn().mockResolvedValue(null),
       },
     };
 
@@ -190,6 +191,7 @@ describe("TC-031: spec-review Step does not use propose Agent ID", () => {
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+      getRefSha: vi.fn().mockResolvedValue(null),
       },
     };
 
@@ -240,6 +242,7 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+      getRefSha: vi.fn().mockResolvedValue(null),
       },
     };
 
@@ -282,6 +285,7 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+      getRefSha: vi.fn().mockResolvedValue(null),
       },
     };
 
@@ -289,5 +293,191 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
       code: "BRANCH_NOT_SET",
     });
     expect(createSessionSpy).not.toHaveBeenCalled();
+  });
+});
+
+// requiresCommit: branch HEAD must advance during the session
+describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => {
+  it("throws NO_COMMIT_DETECTED when pre and post HEAD SHAs match", async () => {
+    const events = new EventBus();
+    const executor = new StepExecutor(events);
+
+    const state = await setupJobState("requires-commit-no-advance");
+    const mockClient = makeMockSessionClient();
+
+    const step: Step = {
+      kind: "agent",
+      name: "spec-fixer",
+      agent: makeAgentDef("spec-fixer"),
+      toolHandlers: undefined,
+      requiresCommit: true,
+      buildMessage: () => "fix",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+
+    const sameSha = "0123456789abcdef0123456789abcdef01234567";
+    const getRefShaSpy = vi
+      .fn<(owner: string, repo: string, branch: string) => Promise<string | null>>()
+      .mockResolvedValue(sameSha);
+    const deps: PipelineDeps = {
+      client: mockClient,
+      config: makeConfig(),
+      repo: { owner: "testowner", name: "testrepo" },
+      request: { type: "feature", title: "Test", slug: "test-slug", content: "content", enabled: [] },
+      slug: "test-slug",
+      githubClient: {
+        verifyBranch: vi.fn().mockResolvedValue(true),
+        getRawFile: vi.fn().mockResolvedValue(null),
+        verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+        getRefSha: getRefShaSpy,
+      },
+    };
+
+    await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
+      code: "NO_COMMIT_DETECTED",
+    });
+    // Called once before the session and once after
+    expect(getRefShaSpy).toHaveBeenCalledTimes(2);
+
+    // Regression guard for review finding #1: when NO_COMMIT_DETECTED fires,
+    // history must NOT contain a `${step.name}-completed` ok event.
+    // The HEAD verification runs BEFORE the completed-ok append so failed
+    // steps never leave a misleading "completed" marker for downstream
+    // consumers (forensics, resume, status aggregation).
+    const stateFile = path.join(tempDir, "specrunner", "jobs", "requires-commit-no-advance.json");
+    const persistedState = JSON.parse(await fs.readFile(stateFile, "utf-8")) as JobState;
+    const completedOkEvents = persistedState.history.filter(
+      (h) => h.step === "spec-fixer-completed" && h.status === "ok",
+    );
+    expect(completedOkEvents).toHaveLength(0);
+    const noCommitEvents = persistedState.history.filter(
+      (h) => h.step === "spec-fixer-no-commit-detected" && h.status === "error",
+    );
+    expect(noCommitEvents).toHaveLength(1);
+  });
+
+  it("passes when pre and post HEAD SHAs differ (branch advanced)", async () => {
+    const events = new EventBus();
+    const executor = new StepExecutor(events);
+
+    const state = await setupJobState("requires-commit-advanced");
+    const mockClient = makeMockSessionClient();
+
+    const step: Step = {
+      kind: "agent",
+      name: "spec-fixer",
+      agent: makeAgentDef("spec-fixer"),
+      toolHandlers: undefined,
+      requiresCommit: true,
+      buildMessage: () => "fix",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+
+    const getRefShaSpy = vi
+      .fn<(owner: string, repo: string, branch: string) => Promise<string | null>>()
+      .mockResolvedValueOnce("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+      .mockResolvedValueOnce("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+    const deps: PipelineDeps = {
+      client: mockClient,
+      config: makeConfig(),
+      repo: { owner: "testowner", name: "testrepo" },
+      request: { type: "feature", title: "Test", slug: "test-slug", content: "content", enabled: [] },
+      slug: "test-slug",
+      githubClient: {
+        verifyBranch: vi.fn().mockResolvedValue(true),
+        getRawFile: vi.fn().mockResolvedValue(null),
+        verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+        getRefSha: getRefShaSpy,
+      },
+    };
+
+    await expect(executor.execute(step, state, deps)).resolves.toBeDefined();
+    expect(getRefShaSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not call getRefSha when requiresCommit is false / undefined", async () => {
+    const events = new EventBus();
+    const executor = new StepExecutor(events);
+
+    const state = await setupJobState("requires-commit-disabled");
+    const mockClient = makeMockSessionClient();
+
+    const step: Step = {
+      kind: "agent",
+      name: "spec-review",
+      agent: makeAgentDef("spec-review"),
+      toolHandlers: undefined,
+      // requiresCommit omitted (default falsy)
+      buildMessage: () => "review",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+
+    const getRefShaSpy = vi
+      .fn<(owner: string, repo: string, branch: string) => Promise<string | null>>()
+      .mockResolvedValue("anything");
+    const deps: PipelineDeps = {
+      client: mockClient,
+      config: makeConfig(),
+      repo: { owner: "testowner", name: "testrepo" },
+      request: { type: "feature", title: "Test", slug: "test-slug", content: "content", enabled: [] },
+      slug: "test-slug",
+      githubClient: {
+        verifyBranch: vi.fn().mockResolvedValue(true),
+        getRawFile: vi.fn().mockResolvedValue(null),
+        verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+        getRefSha: getRefShaSpy,
+      },
+    };
+
+    await executor.execute(step, state, deps);
+    expect(getRefShaSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not throw when post-session getRefSha returns null (transient / branch absent)", async () => {
+    const events = new EventBus();
+    const executor = new StepExecutor(events);
+
+    const state = await setupJobState("requires-commit-transient");
+    const mockClient = makeMockSessionClient();
+
+    const step: Step = {
+      kind: "agent",
+      name: "spec-fixer",
+      agent: makeAgentDef("spec-fixer"),
+      toolHandlers: undefined,
+      requiresCommit: true,
+      buildMessage: () => "fix",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+
+    // pre returns a SHA; post returns null (branch was removed or transient API miss)
+    const getRefShaSpy = vi
+      .fn<(owner: string, repo: string, branch: string) => Promise<string | null>>()
+      .mockResolvedValueOnce("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+      .mockResolvedValueOnce(null);
+    const deps: PipelineDeps = {
+      client: mockClient,
+      config: makeConfig(),
+      repo: { owner: "testowner", name: "testrepo" },
+      request: { type: "feature", title: "Test", slug: "test-slug", content: "content", enabled: [] },
+      slug: "test-slug",
+      githubClient: {
+        verifyBranch: vi.fn().mockResolvedValue(true),
+        getRawFile: vi.fn().mockResolvedValue(null),
+        verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+        getRefSha: getRefShaSpy,
+      },
+    };
+
+    // Null post-SHA falls through (no NO_COMMIT_DETECTED) — only equal SHAs trigger
+    await expect(executor.execute(step, state, deps)).resolves.toBeDefined();
   });
 });

@@ -73,6 +73,8 @@ export const ImplementerStep: AgentStep = {
 
   completionVerdict: "success",
 
+  requiresCommit: true,
+
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError("implementer");
     return buildImplementerInitialMessage({

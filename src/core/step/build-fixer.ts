@@ -54,6 +54,8 @@ export const BuildFixerStep: AgentStep = {
 
   completionVerdict: "success",
 
+  requiresCommit: true,
+
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError("build-fixer");
     const branch = state.branch;

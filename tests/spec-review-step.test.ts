@@ -108,6 +108,7 @@ function buildMockGithubClient(fileContent: string | null): GitHubClient {
     getRawFile: vi.fn().mockResolvedValue(fileContent),
     verifyPath: vi.fn().mockResolvedValue(true),
     verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+      getRefSha: vi.fn().mockResolvedValue(null),
   };
 }
 

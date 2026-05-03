@@ -128,6 +128,7 @@ function buildMockGithubClient(opts: {
     }),
     getRawFile: vi.fn().mockResolvedValue(null),
     verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+      getRefSha: vi.fn().mockResolvedValue(null),
   };
 }
 

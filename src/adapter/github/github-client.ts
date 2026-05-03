@@ -117,6 +117,30 @@ export class GitHubApiClient implements GitHubClient {
    * - any other status (5xx 含む) → throws SpecRunnerError(GITHUB_API_ERROR)
    * - network error → propagates from fetchFn
    */
+  async getRefSha(owner: string, repo: string, branch: string): Promise<string | null> {
+    const url = `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${encodeURIComponent(branch)}`;
+    const resp = await this.fetchFn(url, {
+      headers: {
+        Authorization: `token ${this.token}`,
+        Accept: "application/vnd.github.v3+json",
+      },
+    });
+
+    if (resp.status === 200) {
+      const data = (await resp.json()) as { object?: { sha?: string } };
+      const sha = data?.object?.sha;
+      if (typeof sha !== "string" || sha.length === 0) {
+        throw githubApiError(resp.status, `getRefSha(${owner}/${repo}@${branch}): malformed response`);
+      }
+      return sha;
+    }
+    if (resp.status === 404) return null;
+    if (resp.status === 401) {
+      throw githubTokenExpiredError();
+    }
+    throw githubApiError(resp.status, `getRefSha(${owner}/${repo}@${branch})`);
+  }
+
   async verifyPath(owner: string, repo: string, branch: string, folderPath: string): Promise<boolean> {
     const encodedPath = folderPath.split("/").map(encodeURIComponent).join("/");
     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}?ref=${encodeURIComponent(branch)}`;

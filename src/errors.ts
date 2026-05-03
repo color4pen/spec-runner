@@ -40,6 +40,7 @@ export const ERROR_CODES = {
   AUTO_MERGE_UNAVAILABLE: "AUTO_MERGE_UNAVAILABLE",
   GH_SUBPROCESS_FAILED: "GH_SUBPROCESS_FAILED",
   GIT_SUBPROCESS_FAILED: "GIT_SUBPROCESS_FAILED",
+  NO_COMMIT_DETECTED: "NO_COMMIT_DETECTED",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -146,6 +147,14 @@ export function branchNotSetError(stepName: string): SpecRunnerError {
     ERROR_CODES.BRANCH_NOT_SET,
     "Verify that propose ran successfully and called register_branch before this step.",
     `state.branch is not set when entering '${stepName}'.`,
+  );
+}
+
+export function noCommitDetectedError(stepName: string, branch: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.NO_COMMIT_DETECTED,
+    `The agent likely forgot to commit + push, or completed without changes. Re-run the step or inspect the agent session log on Anthropic side. If the step legitimately produced no changes, this is a misconfiguration — set requiresCommit: false on the step.`,
+    `${stepName} session ended without advancing branch '${branch}': HEAD SHA was unchanged before and after the session.`,
   );
 }
 

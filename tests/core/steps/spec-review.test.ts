@@ -95,6 +95,7 @@ function buildDeps(opts: {
       getRawFile: vi.fn().mockResolvedValue(fileContent),
       verifyPath: vi.fn().mockResolvedValue(true),
       verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+      getRefSha: vi.fn().mockResolvedValue(null),
     },
   };
 }

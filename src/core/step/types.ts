@@ -71,6 +71,21 @@ export interface AgentStep {
    * (e.g. implementer, build-fixer).
    */
   completionVerdict?: import("../../state/schema.js").Verdict;
+
+  /**
+   * If true, StepExecutor verifies the branch HEAD SHA advanced during the session.
+   * The check fetches the remote HEAD before and after the session via GitHubClient;
+   * if the SHA is unchanged, the executor throws NO_COMMIT_DETECTED.
+   *
+   * Set to true on writing-agent steps (spec-fixer, implementer, build-fixer, code-fixer)
+   * where the agent's responsibility includes producing a commit + push. Leave false
+   * (or omit) on review-style steps that may legitimately produce no commit beyond
+   * the result file (which is verified separately via parseResult).
+   *
+   * This is a stopgap mechanical guard against the failure mode where an agent ends
+   * its turn without committing — bypassing the agent's prompt-following.
+   */
+  requiresCommit?: boolean;
 }
 
 /**

@@ -106,6 +106,7 @@ function makeMinimalDeps(clientOpts?: Parameters<typeof makeMockSessionClient>[0
       getRawFile: vi.fn().mockResolvedValue("- **verdict**: approved"),
       verifyPath: vi.fn().mockResolvedValue(true),
       verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+      getRefSha: vi.fn().mockResolvedValue(null),
     },
   };
 }

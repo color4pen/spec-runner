@@ -46,4 +46,20 @@ export interface GitHubClient {
    * - 5xx / network error → throws (caller is responsible for timeout/error handling)
    */
   verifyTokenScopes(): Promise<{ status: number; scopes: string[] }>;
+
+  /**
+   * Fetch the HEAD commit SHA of a branch reference.
+   *
+   * Calls GET /repos/{owner}/{repo}/git/refs/heads/{branch}.
+   *
+   * - 200 → returns the commit SHA string
+   * - 404 → returns null (branch does not exist)
+   * - 401 → throws SpecRunnerError(GITHUB_TOKEN_EXPIRED)
+   * - any other status → throws SpecRunnerError(GITHUB_API_ERROR)
+   *
+   * Used by the agent-commit-verification path to detect whether a writing
+   * agent (implementer / spec-fixer / build-fixer / code-fixer) actually
+   * advanced the branch HEAD during its session.
+   */
+  getRefSha(owner: string, repo: string, branch: string): Promise<string | null>;
 }
