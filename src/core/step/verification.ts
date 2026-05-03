@@ -2,6 +2,7 @@ import type { CliStep } from "./types.js";
 import type { JobState } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
 import { runVerification } from "../verification/runner.js";
+import { propagateVerificationResult } from "../verification/propagate.js";
 
 /**
  * VerificationStep: implements the verification pipeline step as a CLI-resident step.
@@ -11,6 +12,10 @@ import { runVerification } from "../verification/runner.js";
  * node:child_process.spawn, writes verification-result.md, then parseResult
  * extracts the verdict via regex.
  *
+ * After writing the result file locally, propagates it to the feature branch
+ * on origin via a temporary git worktree so build-fixer's managed agent
+ * workspace can read it on the next clone.
+ *
  * Design D1: explicit kind discriminator (not null-agent inference).
  * Design D2: no Anthropic session — entirely local.
  */
@@ -18,9 +23,27 @@ export const VerificationStep: CliStep = {
   kind: "cli",
   name: "verification",
 
-  async run(_state: JobState, deps: StepDeps): Promise<void> {
+  async run(state: JobState, deps: StepDeps): Promise<void> {
     const cwd = deps.cwd ?? process.cwd();
     await runVerification(deps.slug, cwd);
+
+    if (state.branch) {
+      const iteration = (state.steps?.["verification"]?.length ?? 0) + 1;
+      const result = await propagateVerificationResult({
+        slug: deps.slug,
+        branch: state.branch,
+        iteration,
+        cwd,
+      });
+      if (!result.ok) {
+        process.stderr.write(
+          `Warning: failed to propagate verification-result.md to branch ${state.branch}: ${result.error}\n`,
+        );
+        process.stderr.write(
+          `build-fixer (if invoked next) may not see the verification result and fall back to running tests itself.\n`,
+        );
+      }
+    }
   },
 
   resultFilePath(_state: JobState, deps: StepDeps): string {
