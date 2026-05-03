@@ -225,21 +225,22 @@ describe("applyMigration: throws CONFIG_INVALID on non-object", () => {
   });
 });
 
-// TC-010: top-level specFixer config preserved through migration (TC-010)
+// TC-010: specFixer config preserved through migration (TC-010)
+// Note: specFixer.timeoutMs was removed in remove-session-timeout.
+// The test now verifies that agent migration still works for specFixer role.
 describe("TC-010: top-level specFixer config preserved after migration", () => {
-  it("preserves top-level specFixer.timeoutMs after migration", () => {
+  it("migrates specFixer agent from camelCase to kebab-case", () => {
     const raw = {
       version: 1 as const,
       anthropic: { apiKey: "sk-test" },
       agents: {
         specFixer: { agentId: "agent_x", definitionHash: "abc", lastSyncedAt: "2026-04-29T00:00:00Z" },
       },
-      specFixer: { timeoutMs: 30000 },
     };
 
     const result = applyMigration(raw);
 
     expect(result.agents["spec-fixer"]).toBeDefined();
-    expect(result.specFixer?.timeoutMs).toBe(30000);
+    expect(result.agents["spec-fixer"]?.agentId).toBe("agent_x");
   });
 });

@@ -1,7 +1,7 @@
 # ADR-20260429: Spec-Review Pipeline — N-step オーケストレーターと fresh-per-task dispatcher の最初の実装
 
 **Date**: 2026-04-29
-**Status**: accepted
+**Status**: partially superseded — D4 / R2 の `pollUntilComplete({ timeoutMs })` と `SESSION_TIMEOUT` 関連は request `remove-session-timeout` で撤廃。session 終端は出口戦略（idle+end_turn / SSE disconnect / maxIterations / 手動 cancel）に一本化された。`pollUntilComplete` の再利用判断・ファイル経由 verdict 等の D1-D8 の他決定は accepted のまま有効。superseded by: `remove-session-timeout` への移行（ADR は Step 7 で生成）
 
 ## Context
 

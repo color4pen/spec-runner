@@ -31,20 +31,22 @@ export interface SessionClient {
   sendUserMessage(sessionId: string, text: string): Promise<void>;
 
   /**
-   * Poll a session until it becomes idle (complete) or terminated/timeout.
+   * Poll a session until it becomes idle (complete) or terminated.
    * Uses exponential backoff with jitter.
    *
-   * Returns status: idle = success, terminated = agent stopped, timeout = timed out.
+   * Wall-clock timeout has been removed (design D1). Termination relies on
+   * the Anthropic SDK's end_turn / terminated signals or manual cancel.
+   *
+   * Returns status: idle = success, terminated = agent stopped.
    */
   pollUntilComplete(
     sessionId: string,
     opts?: {
-      timeoutMs?: number;
       sleepFn?: (ms: number) => Promise<void>;
       abortSignal?: AbortSignal;
     },
   ): Promise<{
-    status: "idle" | "terminated" | "timeout";
+    status: "idle" | "terminated";
     error?: { code: string; message: string; hint: string };
   }>;
 

@@ -76,14 +76,28 @@ export async function loadConfig(): Promise<SpecRunnerConfig> {
 
 /**
  * Save config to disk using atomic write. Enforces 0600 permissions.
- * Writes only new canonical schema — legacy `agent` field is never written.
+ * Writes only new canonical schema — legacy fields are stripped.
+ * Design D3: silently ignore legacy timeout keys; do NOT write them back.
  */
 export async function saveConfig(cfg: SpecRunnerConfig): Promise<void> {
   const configPath = getConfigPath();
 
   // Remove legacy fields before saving
   const toSave: Record<string, unknown> = { ...cfg };
-  delete toSave["agent"]; // never write legacy field
+  delete toSave["agent"]; // never write legacy agent field
+  delete toSave["timeout"]; // removed in remove-session-timeout (D3)
+
+  // Strip legacy timeoutMs from specReview / specFixer (D3: silently ignore on write)
+  if (toSave["specReview"] && typeof toSave["specReview"] === "object") {
+    const specReview = { ...(toSave["specReview"] as Record<string, unknown>) };
+    delete specReview["timeoutMs"];
+    toSave["specReview"] = specReview;
+  }
+  if (toSave["specFixer"] && typeof toSave["specFixer"] === "object") {
+    const specFixer = { ...(toSave["specFixer"] as Record<string, unknown>) };
+    delete specFixer["timeoutMs"];
+    toSave["specFixer"] = specFixer;
+  }
 
   await atomicWriteJson(configPath, toSave, { mode: CONFIG_MODE });
 }

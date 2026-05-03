@@ -91,7 +91,7 @@ function buildConfig(overrides: Record<string, unknown> = {}) {
     pipeline: { maxRetries: 2 },
     environment: { id: "env_001", lastSyncedAt: new Date().toISOString() },
     github: { accessToken: "ghp_test", tokenObtainedAt: new Date().toISOString(), scopes: ["repo"] },
-    specReview: { pollIntervalMs: 100, timeoutMs: 600000 },
+    specReview: { pollIntervalMs: 100 },
     ...overrides,
   };
 }

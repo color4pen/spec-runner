@@ -15,7 +15,6 @@ export interface PipelineDeps {
   repo: OriginInfo;
   request: ParsedRequest;
   slug: string;
-  timeoutMs?: number;
   /** Injectable sleep for testing */
   sleepFn?: (ms: number) => Promise<void>;
   /** GitHub client (port interface). Required for all pipeline steps. */

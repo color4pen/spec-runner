@@ -23,7 +23,6 @@ export const ERROR_CODES = {
   NOT_GIT_REPO: "NOT_GIT_REPO",
   REMOTE_NOT_GITHUB: "REMOTE_NOT_GITHUB",
   REQUEST_MD_INVALID: "REQUEST_MD_INVALID",
-  SESSION_TIMEOUT: "SESSION_TIMEOUT",
   SESSION_TERMINATED: "SESSION_TERMINATED",
   BRANCH_NOT_REGISTERED: "BRANCH_NOT_REGISTERED",
   STATE_FILE_INVALID: "STATE_FILE_INVALID",
@@ -99,14 +98,6 @@ export function requestMdInvalidError(detail: string): SpecRunnerError {
     ERROR_CODES.REQUEST_MD_INVALID,
     `Check the YAML front-matter in the request.md file.`,
     detail,
-  );
-}
-
-export function sessionTimeoutError(minutes: number): SpecRunnerError {
-  return new SpecRunnerError(
-    ERROR_CODES.SESSION_TIMEOUT,
-    `Session exceeded ${minutes}m. Inspect with 'specrunner ps'.`,
-    `Session timed out after ${minutes}m.`,
   );
 }
 

@@ -271,11 +271,12 @@ describe("TC-060: specrunner init — calls agents.update when hash differs", ()
   });
 });
 
-// Regression test for finding #1: pipeline/specReview/specFixer survive re-init
-describe("Regression #1: re-init preserves user-tuned pipeline/specReview/specFixer settings", () => {
-  it("existing pipeline.maxRetries and specReview.timeoutMs survive a second init", async () => {
+// Regression test for finding #1: pipeline settings survive re-init
+// TC-012 (partial): ConfigStore.load reads old timeoutMs without error, and init preserves pipeline.maxRetries
+describe("Regression #1: re-init preserves user-tuned pipeline settings", () => {
+  it("existing pipeline.maxRetries survives a second init; old timeoutMs keys are silently ignored", async () => {
 
-    // Pre-populate with user-tuned settings
+    // Pre-populate with user-tuned settings including legacy timeoutMs (should be silently ignored)
     const configDir = path.join(tempDir, "specrunner");
     await fs.mkdir(configDir, { recursive: true });
 
@@ -320,7 +321,8 @@ describe("Regression #1: re-init preserves user-tuned pipeline/specReview/specFi
       environment: { id: "env_existing_001", lastSyncedAt: new Date().toISOString() },
       // User-tuned settings that init must NOT drop
       pipeline: { maxRetries: 5 },
-      specReview: { timeoutMs: 120000 },
+      // Legacy timeout fields — must be silently ignored (TC-012), NOT cause an error
+      specReview: { timeoutMs: 120000, pollIntervalMs: 100 },
       specFixer: { timeoutMs: 90000 },
     };
     const configPath = path.join(configDir, "config.json");
@@ -352,14 +354,16 @@ describe("Regression #1: re-init preserves user-tuned pipeline/specReview/specFi
     };
 
     const { runInit } = await import("../src/cli/init.js");
-    await runInit({ apiKey: "sk-ant-existing" });
+    // Should NOT throw even though specReview.timeoutMs is present in old config
+    await expect(runInit({ apiKey: "sk-ant-existing" })).resolves.not.toThrow();
 
-    // User-tuned fields must be preserved
+    // pipeline.maxRetries must be preserved
     const raw = await fs.readFile(configPath, "utf-8");
     const savedConfig = JSON.parse(raw);
     expect(savedConfig.pipeline?.maxRetries).toBe(5);
-    expect(savedConfig.specReview?.timeoutMs).toBe(120000);
-    expect(savedConfig.specFixer?.timeoutMs).toBe(90000);
+    // Legacy timeoutMs fields must NOT be written back to disk (TC-013 partial)
+    expect(savedConfig.specReview?.timeoutMs).toBeUndefined();
+    expect(savedConfig.specFixer?.timeoutMs).toBeUndefined();
   });
 });
 

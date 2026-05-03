@@ -36,14 +36,9 @@ export interface GithubConfig {
 export interface SpecReviewConfig {
   /** Polling interval in milliseconds. Default: 10000 (10s) */
   pollIntervalMs?: number;
-  /** Total timeout in milliseconds. Default: 600000 (10m) */
-  timeoutMs?: number;
 }
 
-export interface SpecFixerConfig {
-  /** Total timeout in milliseconds. Default: 600000 (10m) */
-  timeoutMs?: number;
-}
+export type SpecFixerConfig = Record<string, never>;
 
 /** Pipeline-level settings */
 export interface PipelineConfig {
@@ -155,15 +150,3 @@ export function checkConfigComplete(
   return null;
 }
 
-/**
- * Get the timeout for a step name from config.
- */
-export function getTimeoutMs(stepName: StepName, cfg: SpecRunnerConfig): number {
-  if (stepName === "spec-review") {
-    return cfg.specReview?.timeoutMs ?? 600_000;
-  }
-  if (stepName === "spec-fixer") {
-    return cfg.specFixer?.timeoutMs ?? 600_000;
-  }
-  return 600_000;
-}

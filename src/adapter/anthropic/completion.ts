@@ -6,16 +6,14 @@ import type Anthropic from "@anthropic-ai/sdk";
 import type { BetaManagedAgentsSession } from "@anthropic-ai/sdk/resources/beta/sessions/sessions";
 import { retrieveSession } from "./sdk/sessions.js";
 import { stderrWrite } from "../../logger/stdout.js";
-import { sessionTimeoutError, sessionTerminatedError } from "../../errors.js";
+import { sessionTerminatedError } from "../../errors.js";
 
-export const DEFAULT_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 export const INITIAL_INTERVAL_MS = 2000;
 export const MAX_INTERVAL_MS = 30000;
 export const BACKOFF_FACTOR = 1.5;
 export const JITTER_FACTOR = 0.2;
 
 export interface PollOptions {
-  timeoutMs?: number;
   /** Injectable sleep function (for testing) */
   sleepFn?: (ms: number) => Promise<void>;
 }
@@ -47,8 +45,9 @@ export function calculateBackoff(attempt: number, currentIntervalMs: number): nu
  * Poll a session until it becomes idle (complete) or terminated.
  * Uses exponential backoff with jitter.
  *
- * Throws SESSION_TIMEOUT if the timeout is exceeded.
  * Throws SESSION_TERMINATED if the session terminates.
+ * Wall-clock timeout has been removed (design D1). Session termination relies on
+ * the Anthropic SDK's end_turn / terminated signals or manual cancel.
  */
 export async function pollUntilComplete(
   client: Anthropic,
@@ -56,24 +55,15 @@ export async function pollUntilComplete(
   abortSignal?: AbortSignal,
   opts?: PollOptions,
 ): Promise<BetaManagedAgentsSession> {
-  const timeoutMs = opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const sleepFn =
     opts?.sleepFn ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
 
-  const startTime = Date.now();
   let intervalMs = INITIAL_INTERVAL_MS;
 
   while (true) {
     if (abortSignal?.aborted) {
       const session = await retrieveSession(client, sessionId);
       return session;
-    }
-
-    const elapsed = Date.now() - startTime;
-    if (elapsed >= timeoutMs) {
-      const minutes = Math.round(timeoutMs / 60000);
-      stderrWrite(`Session timed out after ${minutes}m.`);
-      throw sessionTimeoutError(minutes);
     }
 
     await sleepFn(intervalMs);

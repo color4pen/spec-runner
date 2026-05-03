@@ -102,7 +102,7 @@ type CliStep = {
 
 ### Known Design Debt
 
-- `getTimeoutMs` 内の `stepName === "spec-review"` / `"spec-fixer"` 分岐（`src/core/step/executor.ts:636-642`）は PR #31 後も残存する軽微な原則違反。verification step 追加時に同形の分岐を増やさず、本 ADR の `kind` discriminator を将来同箇所にも適用すべき
+- ~~`getTimeoutMs` 内の `stepName === "spec-review"` / `"spec-fixer"` 分岐（`src/core/step/executor.ts:636-642`）は PR #31 後も残存する軽微な原則違反。verification step 追加時に同形の分岐を増やさず、本 ADR の `kind` discriminator を将来同箇所にも適用すべき~~ — **resolved by request `remove-session-timeout`**: `getTimeoutMs` および session wall-clock timeout は完全撤廃された。session 終端は出口戦略（idle+end_turn / SSE disconnect / maxIterations / 手動 cancel）に一本化
 
 ## 関連 ADR
 

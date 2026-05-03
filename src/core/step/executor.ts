@@ -300,33 +300,19 @@ export class StepExecutor {
     if (needsPollingFallback) {
       stderrWrite("SSE disconnected; falling back to polling.");
       const pollResult = await client.pollUntilComplete(sessionId, {
-        timeoutMs: deps.timeoutMs,
         sleepFn: deps.sleepFn,
         abortSignal: abortController.signal,
       });
 
       if (pollResult.status !== "idle") {
-        const errorInfo = pollResult.error ?? {
-          code: pollResult.status === "timeout" ? "SESSION_TIMEOUT" : "SESSION_TERMINATED",
-          message: `Session ${pollResult.status}`,
-          hint: "",
-        };
+        const errorInfo = pollResult.error ?? sessionTerminatedError();
 
-        if (errorInfo.code === "SESSION_TERMINATED") {
-          state = await store.appendHistory(state, {
-            ts: new Date().toISOString(),
-            step: "session-terminated",
-            status: "error",
-            message: errorInfo.message,
-          });
-        } else {
-          state = await store.appendHistory(state, {
-            ts: new Date().toISOString(),
-            step: "session-timeout",
-            status: "error",
-            message: errorInfo.message,
-          });
-        }
+        state = await store.appendHistory(state, {
+          ts: new Date().toISOString(),
+          step: "session-terminated",
+          status: "error",
+          message: errorInfo.message,
+        });
         state = await store.fail(state, errorInfo, "session-poll");
         state = recordFailedStepResult(state, step.name, errorInfo, {
           session: state.session,
@@ -572,8 +558,6 @@ export class StepExecutor {
       message: `Creating ${step.name} session`,
     });
 
-    const timeoutMs = this.getTimeoutMs(step.name, config);
-
     // Polling-style steps run AFTER propose has registered a branch. The branch
     // is the workspace mount target — without it, the workspace is mounted at
     // main and the agent cannot see propose's change folder.
@@ -640,37 +624,21 @@ export class StepExecutor {
 
     // 3. Poll until complete
     const pollResult = await client.pollUntilComplete(sessionId, {
-      timeoutMs,
       sleepFn: deps.sleepFn,
     });
 
     const completedAt = new Date().toISOString();
 
     if (pollResult.status !== "idle") {
-      const errorInfo = pollResult.error ?? {
-        code: pollResult.status === "timeout" ? "SESSION_TIMEOUT" : "SESSION_TERMINATED",
-        message: `${step.name} session ${pollResult.status}`,
-        hint: "",
-      };
+      const errorInfo = pollResult.error ?? sessionTerminatedError();
 
-      if (errorInfo.code === "SESSION_TERMINATED") {
-        stderrWrite(`${step.name} session was terminated by Anthropic.`);
-        state = await store.appendHistory(state, {
-          ts: completedAt,
-          step: `${step.name}-terminated`,
-          status: "error",
-          message: errorInfo.message,
-        });
-      } else {
-        const minutes = Math.round(timeoutMs / 60000);
-        stderrWrite(`${step.name} session timed out after ${minutes} minutes.`);
-        state = await store.appendHistory(state, {
-          ts: completedAt,
-          step: `${step.name}-timeout`,
-          status: "error",
-          message: errorInfo.message,
-        });
-      }
+      stderrWrite(`${step.name} session was terminated by Anthropic.`);
+      state = await store.appendHistory(state, {
+        ts: completedAt,
+        step: `${step.name}-terminated`,
+        status: "error",
+        message: errorInfo.message,
+      });
 
       await failStepWithError(store, state, step.name, errorInfo, {
         session: { id: sessionId, agentId, environmentId: config.environment!.id },
@@ -768,16 +736,4 @@ export class StepExecutor {
     return state;
   }
 
-  /**
-   * Get the timeout for a given step from config.
-   */
-  private getTimeoutMs(stepName: string, config: import("../../config/schema.js").SpecRunnerConfig): number {
-    if (stepName === "spec-review") {
-      return config.specReview?.timeoutMs ?? 600_000;
-    }
-    if (stepName === "spec-fixer") {
-      return config.specFixer?.timeoutMs ?? 600_000;
-    }
-    return 600_000;
-  }
 }

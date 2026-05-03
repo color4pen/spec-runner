@@ -66,7 +66,6 @@ describe("TC-051: runManagedAgentSession — idle completion returns {sessionId,
       repo: { owner: "testowner", name: "testrepo" },
       githubToken: "ghp_test",
       initialMessage: "Do the spec review.",
-      timeoutMs: 60000,
       stepName: "spec-review",
       sleepFn,
     });
@@ -92,7 +91,6 @@ describe("TC-052: runManagedAgentSession — terminated session returns SESSION_
       repo: { owner: "testowner", name: "testrepo" },
       githubToken: "ghp_test",
       initialMessage: "Do the spec review.",
-      timeoutMs: 60000,
       stepName: "spec-review",
       sleepFn,
     });

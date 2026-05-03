@@ -6,6 +6,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { createSession, sendEvents } from "./sdk/sessions.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { pollUntilComplete } from "./completion.js";
+import { normalizeSessionError } from "./session-error.js";
 
 export interface ManagedAgentSessionInput {
   agentId: string;
@@ -13,14 +14,13 @@ export interface ManagedAgentSessionInput {
   repo: { owner: string; name: string };
   githubToken: string;
   initialMessage: string;
-  timeoutMs: number;
   stepName: string;
   sleepFn?: (ms: number) => Promise<void>;
 }
 
 export interface ManagedAgentSessionResult {
   sessionId: string;
-  status: "idle" | "terminated" | "timeout";
+  status: "idle" | "terminated";
   error?: { code: string; message: string; hint: string };
 }
 
@@ -29,7 +29,7 @@ export interface ManagedAgentSessionResult {
  * 1. Create session
  * 2. Send initial message
  * 3. Poll until complete
- * 4. Return result (idle / terminated / timeout)
+ * 4. Return result (idle / terminated)
  *
  * Note: Does NOT call pushStepResult or writeJobState — that is the caller's responsibility.
  */
@@ -37,7 +37,7 @@ export async function runManagedAgentSession(
   client: Anthropic,
   input: ManagedAgentSessionInput,
 ): Promise<ManagedAgentSessionResult> {
-  const { agentId, environmentId, repo, githubToken, initialMessage, timeoutMs, stepName, sleepFn } = input;
+  const { agentId, environmentId, repo, githubToken, initialMessage, stepName, sleepFn } = input;
 
   const repoUrl = `https://github.com/${repo.owner}/${repo.name}`;
   let sessionId: string;
@@ -91,30 +91,15 @@ export async function runManagedAgentSession(
 
   try {
     await pollUntilComplete(client, sessionId, undefined, {
-      timeoutMs,
       sleepFn,
     });
     return { sessionId, status: "idle" };
   } catch (err) {
-    const code = (err as { code?: string }).code ?? "SESSION_TIMEOUT";
-    const message = (err as Error).message;
-    const hint = (err as { hint?: string }).hint ?? "";
-
-    if (code === "SESSION_TERMINATED") {
-      stderrWrite(`${stepName} session was terminated by Anthropic.`);
-      return {
-        sessionId,
-        status: "terminated",
-        error: { code: "SESSION_TERMINATED", message, hint },
-      };
-    } else {
-      const minutes = Math.round(timeoutMs / 60000);
-      stderrWrite(`${stepName} session timed out after ${minutes} minutes.`);
-      return {
-        sessionId,
-        status: "timeout",
-        error: { code: "SESSION_TIMEOUT", message, hint },
-      };
-    }
+    stderrWrite(`${stepName} session was terminated by Anthropic.`);
+    return {
+      sessionId,
+      status: "terminated",
+      error: normalizeSessionError(err),
+    };
   }
 }

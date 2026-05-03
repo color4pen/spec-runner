@@ -265,6 +265,16 @@ export function validateJobState(raw: unknown): JobState {
   // Backward compat: fill missing steps field with empty object, and normalize legacy object-form steps
   obj["steps"] = normalizeSteps(obj["steps"]);
 
+  // Backward compat: on-read remap; mutates the parsed object so subsequent persists do not write SESSION_TIMEOUT.
+  // Design D2: old state files with error.code === "SESSION_TIMEOUT" are remapped on read.
+  if (
+    typeof obj["error"] === "object" &&
+    obj["error"] !== null &&
+    (obj["error"] as Record<string, unknown>)["code"] === "SESSION_TIMEOUT"
+  ) {
+    (obj["error"] as Record<string, unknown>)["code"] = "SESSION_TERMINATED";
+  }
+
   return raw as JobState;
 }
 

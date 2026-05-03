@@ -64,7 +64,7 @@ function makeMinimalState(): JobState {
  * Used by TC-013 (success path) and TC-014 (timeout path).
  */
 function makeMockSessionClient(opts: {
-  pollStatus?: "idle" | "timeout" | "terminated";
+  pollStatus?: "idle" | "terminated";
   pollError?: { code: string; message: string; hint: string };
 } = {}): PipelineDeps["client"] {
   const pollStatus = opts.pollStatus ?? "idle";
@@ -307,10 +307,10 @@ describe("TC-014: StepExecutor error path emits step:error and decorates excepti
       parseResult: () => ({ verdict: null, findingsPath: null, fileContent: null }),
     };
 
-    // deps with a mock SessionClient that returns timeout
+    // deps with a mock SessionClient that returns terminated (timeout removed in remove-session-timeout)
     const deps = makeMinimalDeps({
-      pollStatus: "timeout",
-      pollError: { code: "SESSION_TIMEOUT", message: "Timed out", hint: "" },
+      pollStatus: "terminated",
+      pollError: { code: "SESSION_TERMINATED", message: "Session terminated", hint: "" },
     });
 
     let thrownErr: unknown;

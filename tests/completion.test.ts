@@ -154,48 +154,9 @@ describe("TC-031: polling — terminated triggers failure", () => {
   });
 });
 
-// TC-032: ポーリング — タイムアウト（30 分超過）
-describe("TC-032: polling — timeout after 30m", () => {
-  it("throws SESSION_TIMEOUT after timeout", async () => {
-    const mockClient = {
-      beta: {
-        sessions: {
-          retrieve: vi.fn().mockResolvedValue(
-            makeSession({ status: "running" }),
-          ),
-        },
-      },
-    } as unknown as Parameters<typeof pollUntilComplete>[0];
-
-    // Use 100ms timeout so test doesn't take 30 min
-    let callCount = 0;
-    const sleepFn = vi.fn().mockImplementation(() => {
-      callCount++;
-      if (callCount >= 3) {
-        // Simulate elapsed time by moving to timeout
-        return Promise.resolve();
-      }
-      return Promise.resolve();
-    });
-
-    await expect(
-      pollUntilComplete(mockClient, "sess_001", undefined, {
-        timeoutMs: 50, // very short timeout
-        sleepFn,
-      }),
-    ).rejects.toThrow();
-
-    // The error should be SESSION_TIMEOUT
-    try {
-      await pollUntilComplete(mockClient, "sess_001", undefined, {
-        timeoutMs: 50,
-        sleepFn,
-      });
-    } catch (err: unknown) {
-      expect((err as { code?: string }).code).toBe("SESSION_TIMEOUT");
-    }
-  });
-});
+// TC-032 (removed): SESSION_TIMEOUT after 30m was removed in remove-session-timeout.
+// pollUntilComplete no longer has a wall-clock timeout (design D1).
+// The only terminal error from polling is SESSION_TERMINATED.
 
 // TC-034: SSE 切断 — ポーリング fallback
 describe("TC-034: SSE disconnection fallback to polling", () => {

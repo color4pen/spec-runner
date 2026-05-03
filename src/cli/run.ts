@@ -11,21 +11,6 @@ import type { JobState } from "../state/schema.js";
 import { getLatestStepResult } from "../state/helpers.js";
 
 /**
- * Parse timeout flag value like "30m" or "300s" into milliseconds.
- */
-export function parseTimeout(value: string): number {
-  const mMatch = /^(\d+)m$/.exec(value);
-  if (mMatch?.[1]) {
-    return parseInt(mMatch[1], 10) * 60 * 1000;
-  }
-  const sMatch = /^(\d+)s$/.exec(value);
-  if (sMatch?.[1]) {
-    return parseInt(sMatch[1], 10) * 1000;
-  }
-  throw new Error(`Invalid timeout format: ${value}. Use Nm or Ns (e.g., 30m, 300s)`);
-}
-
-/**
  * Parse spec-review findings summary from spec-review-result.md content.
  * Returns findings summary or null if not available. Best-effort — never throws.
  */
@@ -99,23 +84,11 @@ function outputSpecReviewVerdict(finalState: JobState, slug: string): void {
 export async function runRunCore(
   requestMdPath: string,
   options: {
-    timeout?: string;
     cwd?: string;
   },
 ): Promise<number> {
   const cwd = options.cwd ?? process.cwd();
   const absolutePath = path.resolve(cwd, requestMdPath);
-
-  // Parse timeout if provided
-  let timeoutMs: number | undefined;
-  if (options.timeout) {
-    try {
-      timeoutMs = parseTimeout(options.timeout);
-    } catch (err) {
-      logError((err as Error).message);
-      return 1;
-    }
-  }
 
   // Run fail-fast preflight checks
   let preflightResult: Awaited<ReturnType<typeof runPreflight>>;
@@ -173,7 +146,6 @@ export async function runRunCore(
       repo,
       request,
       slug,
-      timeoutMs,
       githubClient,
     });
   } catch (err) {
@@ -224,7 +196,6 @@ export async function runRunCore(
 export async function runRun(
   requestMdPath: string,
   options: {
-    timeout?: string;
     cwd?: string;
   },
 ): Promise<void> {

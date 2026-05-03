@@ -110,7 +110,7 @@ describe("TC-NEW-helpers-002: attachStateAndRethrow", () => {
 describe("TC-NEW-helpers-003: throwWrappedError", () => {
   it("throws an error with code, hint, and state attached", () => {
     const state = makeState();
-    const errorInfo: ErrorInfo = { code: "SESSION_TIMEOUT", message: "timed out", hint: "retry" };
+    const errorInfo: ErrorInfo = { code: "GENERIC_ERROR_CODE_FOR_TEST", message: "timed out", hint: "retry" };
 
     let caught: unknown;
     try {
@@ -122,7 +122,7 @@ describe("TC-NEW-helpers-003: throwWrappedError", () => {
     expect(caught).toBeDefined();
     const e = caught as Error & { code: string; hint: string; state: JobState };
     expect(e.message).toBe("timed out");
-    expect(e.code).toBe("SESSION_TIMEOUT");
+    expect(e.code).toBe("GENERIC_ERROR_CODE_FOR_TEST");
     expect(e.hint).toBe("retry");
     expect(e.state).toBe(state);
   });
@@ -137,7 +137,7 @@ describe("TC-NEW-helpers-004: failStepWithError", () => {
       repository: { owner: "o", name: "r" },
     });
     const store = new JobStateStore(state.jobId);
-    const errorInfo: ErrorInfo = { code: "SESSION_TIMEOUT", message: "timeout", hint: "retry" };
+    const errorInfo: ErrorInfo = { code: "GENERIC_ERROR_CODE_FOR_TEST", message: "timeout", hint: "retry" };
     const completedAt = new Date().toISOString();
 
     let caught: unknown;
@@ -149,9 +149,9 @@ describe("TC-NEW-helpers-004: failStepWithError", () => {
 
     expect(caught).toBeDefined();
     const e = caught as Error & { code: string; hint: string; state: JobState };
-    expect(e.code).toBe("SESSION_TIMEOUT");
+    expect(e.code).toBe("GENERIC_ERROR_CODE_FOR_TEST");
     expect(e.state.status).toBe("failed");
-    expect(e.state.error?.code).toBe("SESSION_TIMEOUT");
+    expect(e.state.error?.code).toBe("GENERIC_ERROR_CODE_FOR_TEST");
     expect(e.state.steps?.["spec-review"]?.length).toBe(1);
   });
 });

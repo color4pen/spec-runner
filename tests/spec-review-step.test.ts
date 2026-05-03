@@ -42,7 +42,7 @@ async function makeJobState() {
   });
 }
 
-function buildConfig(overrides?: { specReview?: { timeoutMs?: number; pollIntervalMs?: number } }) {
+function buildConfig(overrides?: { specReview?: { pollIntervalMs?: number } }) {
   return {
     version: 1 as const,
     anthropic: { apiKey: "sk-ant-test" },
@@ -53,7 +53,7 @@ function buildConfig(overrides?: { specReview?: { timeoutMs?: number; pollInterv
     },
     environment: { id: "env_001", lastSyncedAt: new Date().toISOString() },
     github: { accessToken: "ghp_test", tokenObtainedAt: new Date().toISOString(), scopes: ["repo"] },
-    specReview: overrides?.specReview ?? { pollIntervalMs: 100, timeoutMs: 600000 },
+    specReview: overrides?.specReview ?? { pollIntervalMs: 100 },
   };
 }
 
@@ -75,7 +75,7 @@ function buildRequest() {
  */
 function buildMockSessionClient(opts: {
   sessionId?: string;
-  pollResult?: { status: "idle" | "terminated" | "timeout"; error?: { code: string; message: string; hint: string } };
+  pollResult?: { status: "idle" | "terminated"; error?: { code: string; message: string; hint: string } };
   pollTimeoutMs?: number;
 } = {}): {
   client: SessionClient;
@@ -128,13 +128,13 @@ async function runSpecReviewViaExecutor(
   return executor.execute(SpecReviewStep, jobState, deps);
 }
 
-// TC-016: pollUntilComplete 再利用 — spec-review に specReview.timeoutMs を渡す
-describe("TC-016: runSpecReviewStep — uses specReview.timeoutMs from config", () => {
-  it("calls pollUntilComplete with timeoutMs from config.specReview", async () => {
+// TC-006: pollUntilComplete が timeoutMs なしで呼び出される
+describe("TC-006: runSpecReviewStep — pollUntilComplete is called without timeoutMs", () => {
+  it("calls pollUntilComplete without timeoutMs argument (wall-clock timeout removed)", async () => {
     const jobState = await makeJobState();
 
     const fileContent = "- **verdict**: approved\n";
-    const config = buildConfig({ specReview: { timeoutMs: 600000, pollIntervalMs: 100 } });
+    const config = buildConfig({ specReview: { pollIntervalMs: 100 } });
     const { client, pollUntilCompleteMock } = buildMockSessionClient();
 
     const result = await runSpecReviewViaExecutor(jobState, {
@@ -147,10 +147,10 @@ describe("TC-016: runSpecReviewStep — uses specReview.timeoutMs from config", 
       githubClient: buildMockGithubClient(fileContent),
     });
 
-    // pollUntilComplete should have been called with the timeoutMs from config
+    // pollUntilComplete should be called without timeoutMs
     expect(pollUntilCompleteMock).toHaveBeenCalledTimes(1);
     const pollCallArgs = pollUntilCompleteMock.mock.calls[0]![1] as { timeoutMs?: number } | undefined;
-    expect(pollCallArgs?.timeoutMs).toBe(600000);
+    expect(pollCallArgs?.timeoutMs).toBeUndefined();
 
     // Verify step completed and recorded a verdict (array format)
     const lastResult = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
@@ -208,31 +208,8 @@ describe("TC-018: runSpecReviewStep — SESSION_TERMINATED error handling", () =
   });
 });
 
-// TC-019: SESSION_TIMEOUT — error.code = "SESSION_TIMEOUT"
-describe("TC-019: runSpecReviewStep — SESSION_TIMEOUT error handling", () => {
-  it("fails with SESSION_TIMEOUT code when session times out", async () => {
-    const jobState = await makeJobState();
-
-    const { client } = buildMockSessionClient({
-      pollResult: {
-        status: "timeout",
-        error: { code: "SESSION_TIMEOUT", message: "Session timed out after 10 minutes", hint: "" },
-      },
-    });
-
-    await expect(
-      runSpecReviewViaExecutor(jobState, {
-        client,
-        config: { ...buildConfig(), specReview: { timeoutMs: 1, pollIntervalMs: 100 } },
-        repo: buildRepo(),
-        request: buildRequest(),
-        slug: "test-slug",
-        sleepFn: vi.fn().mockResolvedValue(undefined),
-        githubClient: buildMockGithubClient(""),
-      }),
-    ).rejects.toMatchObject({ code: "SESSION_TIMEOUT" });
-  });
-});
+// TC-019 (removed): SESSION_TIMEOUT handling removed in remove-session-timeout.
+// SESSION_TIMEOUT error code no longer exists. SESSION_TERMINATED is the only terminal error.
 
 // TC-020: SPEC_REVIEW_RESULT_NOT_FOUND — githubClient.getRawFile が null を返した場合
 describe("TC-020: runSpecReviewStep — SPEC_REVIEW_RESULT_NOT_FOUND when file not found", () => {

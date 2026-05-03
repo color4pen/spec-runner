@@ -1,11 +1,12 @@
 /**
  * Behavior invariance tests: error code preservation.
  *
- * TC-022 (this file): SESSION_TIMEOUT preserved
+ * TC-004 (this file): ERROR_CODES.SESSION_TIMEOUT does not exist (removed)
+ * TC-005 (this file): sessionTimeoutError helper does not exist (removed)
  * TC-023 (this file): SESSION_TERMINATED preserved
  * TC-024 (this file): BRANCH_NOT_REGISTERED preserved
  * TC-025 (this file): CONFIG_INCOMPLETE preserved
- * TC-026 (this file): All 5 named codes + STATE_FILE_INVALID preserved collectively
+ * TC-026 (this file): Named codes + STATE_FILE_INVALID preserved collectively
  *
  * Also asserts STATE_FILE_INVALID (review-feedback raised it).
  *
@@ -17,7 +18,6 @@ import * as path from "node:path";
 import * as os from "node:os";
 import {
   ERROR_CODES,
-  sessionTimeoutError,
   sessionTerminatedError,
   branchNotRegisteredError,
   stateFileInvalidError,
@@ -46,16 +46,21 @@ afterEach(async () => {
 });
 
 // -------------------------------------------------------------------------
-// TC-022: SESSION_TIMEOUT code preserved
+// TC-004: ERROR_CODES.SESSION_TIMEOUT が存在しない (remove-session-timeout 削除済み)
 // -------------------------------------------------------------------------
-describe("TC-022 (error-codes): SESSION_TIMEOUT code is preserved", () => {
-  it("sessionTimeoutError produces code === 'SESSION_TIMEOUT'", () => {
-    const err = sessionTimeoutError(10);
-    expect(err.code).toBe("SESSION_TIMEOUT");
+describe("TC-004: ERROR_CODES.SESSION_TIMEOUT は存在しない", () => {
+  it("ERROR_CODES に SESSION_TIMEOUT キーが含まれない", () => {
+    expect((ERROR_CODES as Record<string, unknown>)["SESSION_TIMEOUT"]).toBeUndefined();
   });
+});
 
-  it("ERROR_CODES.SESSION_TIMEOUT string value is 'SESSION_TIMEOUT'", () => {
-    expect(ERROR_CODES.SESSION_TIMEOUT).toBe("SESSION_TIMEOUT");
+// -------------------------------------------------------------------------
+// TC-005: sessionTimeoutError ヘルパーが存在しない (remove-session-timeout 削除済み)
+// -------------------------------------------------------------------------
+describe("TC-005: sessionTimeoutError ヘルパーはエクスポートされていない", () => {
+  it("errors モジュールから sessionTimeoutError がインポートできない（undefined になる）", async () => {
+    const errorsModule = await import("../src/errors.js");
+    expect((errorsModule as Record<string, unknown>)["sessionTimeoutError"]).toBeUndefined();
   });
 });
 
@@ -228,9 +233,8 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
     expect(err.code).toBe("STATE_FILE_INVALID");
   });
 
-  it("all 5 named codes are defined as string literals in ERROR_CODES", () => {
+  it("4 named codes are defined as string literals in ERROR_CODES (SESSION_TIMEOUT removed)", () => {
     const requiredCodes = [
-      "SESSION_TIMEOUT",
       "SESSION_TERMINATED",
       "BRANCH_NOT_REGISTERED",
       "SPEC_REVIEW_RETRIES_EXHAUSTED",

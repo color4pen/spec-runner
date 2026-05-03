@@ -24,9 +24,6 @@ Commands:
 Options:
   --help, -h    Show this help message
 
-Run Options:
-  --timeout=Nm  Set timeout (e.g., 30m, 300s)
-
 Doctor Options:
   --json        Output results as machine-readable JSON
 
@@ -95,11 +92,7 @@ export async function main(): Promise<void> {
         process.exit(2);
       }
 
-      // Parse flags
-      const timeoutFlag = args.find((a) => a.startsWith("--timeout="));
-      const timeout = timeoutFlag ? timeoutFlag.slice("--timeout=".length) : undefined;
-
-      await runRun(requestMd, { timeout });
+      await runRun(requestMd, {});
       break;
     }
 

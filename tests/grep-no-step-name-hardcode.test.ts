@@ -42,7 +42,7 @@ async function readFile(filePath: string): Promise<string> {
  * This test checks that no IF/SWITCH dispatch on step.name uses hardcoded literals.
  */
 describe("TC-003: executor.ts と executor-helpers.ts に step 名 hardcode がないことを検証", () => {
-  it("executor.ts に step 名 hardcode 分岐がない (getTimeoutMs 以外の dispatch 文)", async () => {
+  it("executor.ts に step 名 hardcode 分岐がない (dispatch 文)", async () => {
     const executorPath = path.join(STEP_DIR, "executor.ts");
     const content = await readFile(executorPath);
 

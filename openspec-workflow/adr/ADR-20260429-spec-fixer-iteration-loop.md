@@ -1,7 +1,7 @@
 # ADR-20260429: Spec-Fixer + Iteration Loop — Pipeline 層に loop プリミティブを確立し、role 別 Agent 分離で Managed Agents 制約を構造的に回避する
 
 **Date**: 2026-04-29
-**Status**: accepted
+**Status**: partially superseded — `runManagedAgentSession` の `timeoutMs` 引数は request `remove-session-timeout` で削除。session 終端は出口戦略（idle+end_turn / SSE disconnect / maxIterations / 手動 cancel）に一本化された。Pipeline loop プリミティブ確立 / role 別 Agent 分離 等の他決定は accepted のまま有効。superseded by: `remove-session-timeout` への移行（ADR は Step 7 で生成）
 
 ## Context
 

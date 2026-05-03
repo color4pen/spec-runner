@@ -26,7 +26,7 @@ import { PrCreateStep } from "../step/pr-create.js";
  *
  * Behavior invariants maintained:
  * - stdout `[iter N/M]` format is bit-for-bit unchanged
- * - Error codes: SESSION_TIMEOUT, SESSION_TERMINATED, BRANCH_NOT_REGISTERED,
+ * - Error codes: SESSION_TERMINATED, BRANCH_NOT_REGISTERED,
  *   SPEC_REVIEW_RETRIES_EXHAUSTED, CONFIG_INCOMPLETE
  */
 export async function runPipeline(

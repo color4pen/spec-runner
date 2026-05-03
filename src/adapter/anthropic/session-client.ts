@@ -8,6 +8,7 @@ import type { CustomToolHandler } from "../../core/tools/types.js";
 import { pollUntilComplete } from "./completion.js";
 import { runSseStream } from "./sse-stream.js";
 import { createSession, sendEvents } from "./sdk/sessions.js";
+import { normalizeSessionError } from "./session-error.js";
 
 export class AnthropicSessionClient implements SessionClient {
   constructor(private readonly client: Anthropic) {}
@@ -50,29 +51,20 @@ export class AnthropicSessionClient implements SessionClient {
   async pollUntilComplete(
     sessionId: string,
     opts?: {
-      timeoutMs?: number;
       sleepFn?: (ms: number) => Promise<void>;
       abortSignal?: AbortSignal;
     },
   ): Promise<{
-    status: "idle" | "terminated" | "timeout";
+    status: "idle" | "terminated";
     error?: { code: string; message: string; hint: string };
   }> {
     try {
       await pollUntilComplete(this.client, sessionId, opts?.abortSignal, {
-        timeoutMs: opts?.timeoutMs,
         sleepFn: opts?.sleepFn,
       });
       return { status: "idle" };
     } catch (err) {
-      const code = (err as { code?: string }).code ?? "SESSION_TIMEOUT";
-      const message = (err as Error).message;
-      const hint = (err as { hint?: string }).hint ?? "";
-
-      if (code === "SESSION_TERMINATED") {
-        return { status: "terminated", error: { code, message, hint } };
-      }
-      return { status: "timeout", error: { code, message, hint } };
+      return { status: "terminated", error: normalizeSessionError(err) };
     }
   }
 

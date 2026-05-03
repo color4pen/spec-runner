@@ -443,7 +443,7 @@ describe("TC-066: Pipeline — lifecycle events emitted", () => {
     const proposeResult: JobState = {
       ...state,
       status: "failed",
-      error: { code: "SESSION_TIMEOUT", message: "timeout", hint: "" },
+      error: { code: "SESSION_TERMINATED", message: "terminated", hint: "" },
     };
 
     const { pipeline, events } = buildMockPipeline({
