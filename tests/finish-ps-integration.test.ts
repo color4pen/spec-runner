@@ -55,7 +55,7 @@ function makeBaseState(overrides: Partial<JobState> = {}): JobState {
     repository: { owner: "user", name: "repo" },
     session: null,
     step: "pr-create",
-    status: "success",
+    status: "awaiting-merge",
     branch: "feat/test",
     history: [],
     error: null,
@@ -133,7 +133,7 @@ describe("TC-034: ps --active excludes archived", () => {
     const runningId = "cccccccc-0000-0000-0000-000000000001";
     const successId = "dddddddd-0000-0000-0000-000000000001";
     await writeStateFile(makeBaseState({ jobId: runningId, status: "running" }));
-    await writeStateFile(makeBaseState({ jobId: successId, status: "success" }));
+    await writeStateFile(makeBaseState({ jobId: successId, status: "awaiting-merge" }));
 
     await runPs({ active: true });
 
@@ -171,7 +171,7 @@ describe("TC-110: specrunner ps --all shows SLUG column and archived jobs", () =
     }));
     await writeStateFile(makeBaseState({
       jobId: successId,
-      status: "success",
+      status: "awaiting-merge",
       branch: "feat/active-job",
       request: { path: "specrunner/requests/active/active-job/request.md", title: "T", type: "new-feature", slug: "active-job" },
     }));
@@ -200,7 +200,7 @@ describe("TC-143: non-TTY TAB-separated output — SLUG is second column", () =>
   it("header row second tab-delimited field is SLUG", async () => {
     await writeStateFile(makeBaseState({
       jobId: "aaaaaaaa-0000-0000-0000-000000000099",
-      status: "success",
+      status: "awaiting-merge",
       branch: "feat/test-slug",
       request: { path: "specrunner/requests/active/test-slug/request.md", title: "T", type: "new-feature", slug: "test-slug" },
     }));
@@ -208,7 +208,7 @@ describe("TC-143: non-TTY TAB-separated output — SLUG is second column", () =>
     // formatJobRow non-TTY (isTty=false) — validate header fields
     const state = makeBaseState({
       jobId: "aaaaaaaa-0000-0000-0000-000000000099",
-      status: "success",
+      status: "awaiting-merge",
       branch: "feat/test-slug",
       request: { path: "specrunner/requests/active/test-slug/request.md", title: "T", type: "new-feature", slug: "test-slug" },
     });
@@ -219,13 +219,13 @@ describe("TC-143: non-TTY TAB-separated output — SLUG is second column", () =>
     expect(fields).toHaveLength(6);
     expect(fields[0]).toBe("aaaaaaaa");  // JOB_ID 8 chars
     expect(fields[1]).toBe("test-slug"); // SLUG is second column
-    expect(fields[3]).toBe("success");   // STATUS is fourth column
+    expect(fields[3]).toBe("awaiting-merge");   // STATUS is fourth column
   });
 
   it("ps output header TAB-separated second field is SLUG", async () => {
     await writeStateFile(makeBaseState({
       jobId: "bbbbbbbb-0000-0000-0000-000000000099",
-      status: "success",
+      status: "awaiting-merge",
     }));
 
     await runPs();

@@ -1,7 +1,7 @@
 /**
  * Tests for finish command: job state updates.
  *
- * TC-029: success → status: "archived" + history entry
+ * TC-029: awaiting-merge → status: "archived" + history entry
  * TC-030: escalation → state unchanged
  * TC-031: status=running → reject
  * TC-039: loadJobState ENOENT → JOB_NOT_FOUND
@@ -37,7 +37,7 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-async function makeJob(status: JobState["status"] = "success") {
+async function makeJob(status: JobState["status"] = "awaiting-merge") {
   const job = await createJobState({
     request: { path: "/test/request.md", title: "Test", type: "new-feature" },
     repository: { owner: "user", name: "repo" },
@@ -56,9 +56,9 @@ async function makeJob(status: JobState["status"] = "success") {
 }
 
 // TC-029
-describe("TC-029: success → status: archived + history entry", () => {
+describe("TC-029: awaiting-merge → status: archived + history entry", () => {
   it("marks job as archived and appends finish history entry", async () => {
-    const job = await makeJob("success");
+    const job = await makeJob("awaiting-merge");
 
     const updated = await markJobArchived(job.jobId);
 
@@ -72,11 +72,11 @@ describe("TC-029: success → status: archived + history entry", () => {
 // TC-030
 describe("TC-030: escalation → state unchanged", () => {
   it("state status remains unchanged when escalation occurs (no markJobArchived called)", async () => {
-    const job = await makeJob("success");
+    const job = await makeJob("awaiting-merge");
 
     // Simulate escalation by NOT calling markJobArchived
     const stateAfter = await loadJobState(job.jobId);
-    expect(stateAfter.status).toBe("success"); // unchanged
+    expect(stateAfter.status).toBe("awaiting-merge"); // unchanged
   });
 });
 
@@ -90,18 +90,52 @@ describe("TC-031: status=running → reject (JOB_NOT_FINISHABLE)", () => {
     expect(() => assertJobFinishable(state)).toThrow(/running/);
   });
 
-  it("does not throw for success status", async () => {
-    const job = await makeJob("success");
+  it("does not throw for awaiting-merge status", async () => {
+    const job = await makeJob("awaiting-merge");
     const state = await loadJobState(job.jobId);
 
     expect(() => assertJobFinishable(state)).not.toThrow();
   });
 
-  it("does not throw for failed status", async () => {
+  it("throws JOB_NOT_FINISHABLE for failed status", async () => {
     const job = await makeJob("failed");
     const state = await loadJobState(job.jobId);
 
+    expect(() => assertJobFinishable(state)).toThrow(SpecRunnerError);
+    expect(() => assertJobFinishable(state)).toThrow(/failed/);
+  });
+
+  it("throws JOB_NOT_FINISHABLE for terminated status", async () => {
+    const job = await makeJob("terminated");
+    const state = await loadJobState(job.jobId);
+
+    expect(() => assertJobFinishable(state)).toThrow(SpecRunnerError);
+    expect(() => assertJobFinishable(state)).toThrow(/terminated/);
+  });
+
+  it("does not throw for archived status (idempotent)", async () => {
+    const job = await makeJob("archived");
+    const state = await loadJobState(job.jobId);
+
     expect(() => assertJobFinishable(state)).not.toThrow();
+  });
+});
+
+// Backward compatibility: legacy status=success
+describe("Backward compatibility: legacy status=success", () => {
+  it("loads legacy success state as awaiting-merge", async () => {
+    const job = await makeJob("awaiting-merge");
+    const jobsDir = path.join(tempDir, "specrunner", "jobs");
+    const statePath = path.join(jobsDir, `${job.jobId}.json`);
+    
+    // Write legacy state with status="success"
+    const raw = JSON.parse(await fs.readFile(statePath, "utf-8"));
+    raw.status = "success";
+    await fs.writeFile(statePath, JSON.stringify(raw, null, 2));
+    
+    // Load and verify migration
+    const loaded = await loadJobState(job.jobId);
+    expect(loaded.status).toBe("awaiting-merge");
   });
 });
 
@@ -140,7 +174,7 @@ describe("TC-040: loadJobState parse failure → STATE_FILE_INVALID", () => {
 // TC-041
 describe("TC-041: updateJobState atomic write protocol", () => {
   it("writes via atomic tmp+rename (no .tmp files remain)", async () => {
-    const job = await makeJob("success");
+    const job = await makeJob("awaiting-merge");
 
     await updateJobState(job.jobId, (s) => ({ ...s, step: "updated-step" }));
 

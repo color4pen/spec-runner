@@ -173,7 +173,7 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
       githubClient,
     });
 
-    expect(result.status).toBe("success");
+    expect(result.status).toBe("awaiting-merge");
 
     const steps = result.history.map((h) => h.step);
     // Must contain all required steps
@@ -326,7 +326,7 @@ describe("TC-040: propose pipeline — branch not found on GitHub is warning onl
       githubClient,
     });
 
-    expect(result.status).toBe("success");
+    expect(result.status).toBe("awaiting-merge");
     const branchEntry = result.history.find((h) => h.step === "branch-verified");
     expect(branchEntry?.status).toBe("warning");
   });

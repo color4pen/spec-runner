@@ -154,7 +154,7 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
       steps: {},
     } as import("../src/state/schema.js").JobState;
 
-    const proposeResult = { ...state, status: "success" as const, branch: "feat/test" };
+    const proposeResult = { ...state, status: "running" as const, branch: "feat/test" };
 
     const events = new EventBus();
     let specReviewCall = 0;
@@ -169,7 +169,7 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
           : [{ iteration: 1, session: null, verdict: "needs-fix", findingsPath: null, completedAt: "2026-01-01", error: null }];
         return {
           ...proposeResult,
-          status: "success" as const,
+          status: "running" as const,
           steps: {
             "spec-review": [
               ...existingRuns,

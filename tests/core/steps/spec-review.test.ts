@@ -48,7 +48,7 @@ async function makePersistedJobState(steps: JobState["steps"] = {}): Promise<Job
   return store.update({
     ...state,
     step: "spec-review",
-    status: "success",
+    status: "running",
     branch: "feat/test-branch",
     session: null,
     steps: steps,

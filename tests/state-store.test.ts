@@ -93,7 +93,7 @@ describe("TC-045: concurrent ps and write", () => {
     const store1 = new JobStateStore(s1.jobId);
     const store2 = new JobStateStore(s2.jobId);
     const writes = [
-      store1.update(s1, { status: "success" }),
+      store1.update(s1, { status: "awaiting-merge" }),
       store2.update(s2, { branch: "feat/test" }),
     ];
 

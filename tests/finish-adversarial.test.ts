@@ -43,11 +43,11 @@ afterEach(async () => {
 });
 
 async function makeJobWithPr(opts: {
-  status?: "success" | "running" | "archived";
+  status?: "awaiting-merge" | "running" | "archived";
   slug?: string;
   requestPath?: string;
 } = {}) {
-  const { status = "success", slug = "test-slug", requestPath } = opts;
+  const { status = "awaiting-merge", slug = "test-slug", requestPath } = opts;
   const state = await createJobState({
     request: {
       path: requestPath ?? `specrunner/requests/active/${slug}/request.md`,

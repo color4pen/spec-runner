@@ -329,6 +329,7 @@ export class Pipeline {
     const updated: JobState = {
       ...state,
       steps: updatedSteps,
+      status: "failed",
       error: {
         code: errorShape.code,
         message: errorShape.message(this.maxIterations),

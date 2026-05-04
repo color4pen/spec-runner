@@ -112,7 +112,7 @@ function makeStepObject(name: string): Step {
 function makeSpecReviewState(base: JobState, verdict: "approved" | "needs-fix" | "escalation", iter: number): JobState {
   return {
     ...base,
-    status: "success",
+    status: "running",
     steps: {
       ...base.steps,
       "spec-review": [
@@ -139,7 +139,7 @@ describe("TC-027: stdout [iter N/M] — approved verdict line is bit-for-bit exa
     const maxIterations = 3;
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
-    const proposeResult: JobState = { ...state, status: "success", branch: "feat/test" };
+    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test" };
     const specReviewResult = makeSpecReviewState(proposeResult, "approved", 1);
 
     const events = new EventBus();
@@ -192,7 +192,7 @@ describe("TC-028: stdout [iter N/M] — needs-fix continuation line is bit-for-b
     const maxIterations = 2;
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
-    const proposeResult: JobState = { ...state, status: "success", branch: "feat/test" };
+    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test" };
     const specReview1 = makeSpecReviewState(proposeResult, "needs-fix", 1);
     const specFixerResult: JobState = { ...specReview1, step: "spec-fixer" };
     const specReview2 = makeSpecReviewState(specFixerResult, "approved", 2);
@@ -249,7 +249,7 @@ describe("TC-029: stdout [iter N/M] — retries exhausted line is bit-for-bit ex
     const maxIterations = 2;
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
-    const proposeResult: JobState = { ...state, status: "success", branch: "feat/test" };
+    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test" };
 
     let specReviewCall = 0;
     const specReview1 = makeSpecReviewState(proposeResult, "needs-fix", 1);

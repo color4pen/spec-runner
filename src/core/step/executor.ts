@@ -193,7 +193,6 @@ export class StepExecutor {
       message: `${step.name} verdict: ${verdict}`,
     });
 
-    state = await store.update(state, { status: "success" });
     await store.persist(state);
 
     return state;
@@ -408,13 +407,13 @@ export class StepExecutor {
       stderrWrite(`Warning: Could not verify change folder: ${(err as Error).message}`);
     }
 
-    // 8. Mark success + record step result
-    state = await store.update(state, { status: "success", step: "success" });
+    // 8. Mark awaiting-merge + record step result
+    state = await store.update(state, { status: "awaiting-merge", step: "success" });
     state = await store.appendHistory(state, {
       ts: new Date().toISOString(),
       step: "success",
       status: "ok",
-      message: "Propose pipeline completed successfully",
+      message: "Propose pipeline completed; awaiting merge",
     });
 
     state = pushStepResult(state, step.name, {
@@ -777,7 +776,6 @@ export class StepExecutor {
       });
     }
 
-    state = await store.update(state, { status: "success" });
     await store.persist(state);
 
     return state;

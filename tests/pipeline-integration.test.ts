@@ -224,7 +224,7 @@ function buildMockGithubClient(opts: {
 
 // TC-010: runPipeline — iter=1 approved で spec-fixer を起動しない
 describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () => {
-  it("returns status='success', steps['spec-review'] has 1 element with verdict=approved, no spec-fixer steps", async () => {
+  it("returns status='awaiting-merge', steps['spec-review'] has 1 element with verdict=approved, no spec-fixer steps", async () => {
 
     const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
@@ -244,7 +244,7 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
       githubClient,
     });
 
-    expect(result.status).toBe("success");
+    expect(result.status).toBe("awaiting-merge");
 
     // spec-review: length 1, verdict=approved
     const specReviewArr = result.steps?.["spec-review"];
@@ -271,7 +271,7 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
 
 // TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 approved
 describe("TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 approved", () => {
-  it("returns status='success', spec-review has 2 entries, spec-fixer has 1 entry", async () => {
+  it("returns status='awaiting-merge', spec-review has 2 entries, spec-fixer has 1 entry", async () => {
 
     const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
@@ -291,7 +291,7 @@ describe("TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 app
       githubClient,
     });
 
-    expect(result.status).toBe("success");
+    expect(result.status).toBe("awaiting-merge");
 
     // spec-review: 2 entries
     const specReviewArr = result.steps?.["spec-review"];
@@ -344,8 +344,8 @@ describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RE
     // error code
     expect(result.error?.code).toBe("SPEC_REVIEW_RETRIES_EXHAUSTED");
 
-    // pipeline completes (status is success — pipeline ran to completion)
-    expect(result.status).toBe("success");
+    // pipeline fails (status is failed — retries exhausted)
+    expect(result.status).toBe("failed");
   });
 });
 
@@ -611,7 +611,7 @@ describe("TC-050: state.step updated: spec-fixer → spec-review within loop", (
 
 // TC-060: runPipeline — code-review needs-fix → code-fixer → code-review approved
 describe("TC-060: runPipeline — code-review needs-fix → code-fixer → code-review approved", () => {
-  it("returns status='success', code-review has 2 entries, code-fixer has 1 entry", async () => {
+  it("returns status='awaiting-merge', code-review has 2 entries, code-fixer has 1 entry", async () => {
 
     const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
@@ -642,7 +642,7 @@ describe("TC-060: runPipeline — code-review needs-fix → code-fixer → code-
       githubClient,
     });
 
-    expect(result.status).toBe("success");
+    expect(result.status).toBe("awaiting-merge");
 
     // code-review: 2 entries
     const codeReviewArr = result.steps?.["code-review"];
@@ -710,8 +710,8 @@ describe("TC-061: runPipeline — code-review retries exhausted: escalation + CO
     // error code
     expect(result.error?.code).toBe("CODE_REVIEW_RETRIES_EXHAUSTED");
 
-    // pipeline completes (status is success — pipeline ran to completion)
-    expect(result.status).toBe("success");
+    // pipeline fails (status is failed — retries exhausted)
+    expect(result.status).toBe("failed");
   });
 });
 

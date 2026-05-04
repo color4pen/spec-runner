@@ -42,13 +42,13 @@ afterEach(async () => {
 
 async function makeJobWithPr(
   opts: {
-    status?: "success" | "running" | "archived" | "failed";
+    status?: "awaiting-merge" | "running" | "archived" | "failed";
     requestPath?: string;
     slug?: string | null;
   } = {},
 ) {
   const {
-    status = "success",
+    status = "awaiting-merge",
     requestPath = "specrunner/requests/active/test-slug/request.md",
     slug = "test-slug",
   } = opts;
@@ -233,7 +233,7 @@ describe("TC-126: state.status=archived → Already archived, no-op", () => {
 // TC-106: feature PR already MERGED → Phase 1-3 skip, Phase 4 only
 describe("TC-106: feature PR already MERGED → Phase 1-3 skip, Phase 4 only", () => {
   it("skips Phase 1-3 and calls markJobArchived", async () => {
-    const { jobId } = await makeJobWithPr({ status: "success" });
+    const { jobId } = await makeJobWithPr({ status: "awaiting-merge" });
     const calls: Array<[string, string[]]> = [];
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       calls.push([cmd, [...args]]);
@@ -269,7 +269,7 @@ describe("TC-106: feature PR already MERGED → Phase 1-3 skip, Phase 4 only", (
 // TC-103: archive folder absent → commit/push skip, only merge+markJobArchived
 describe("TC-103: archive folder absent → skip archive steps, merge+archive", () => {
   it("skips openspec archive, git mv, commit, but runs push+merge+Phase4", async () => {
-    const { jobId } = await makeJobWithPr({ status: "success" });
+    const { jobId } = await makeJobWithPr({ status: "awaiting-merge" });
     const calls: Array<[string, string[]]> = [];
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       calls.push([cmd, [...args]]);
@@ -296,7 +296,7 @@ describe("TC-103: archive folder absent → skip archive steps, merge+archive", 
 describe("TC-101: legacy /tmp/... request.path → finish succeeds", () => {
   it("getJobSlug uses branch fallback and Phase 0-4 complete", async () => {
     const { jobId } = await makeJobWithPr({
-      status: "success",
+      status: "awaiting-merge",
       requestPath: "/tmp/dogfooding-001-request.md",
       slug: null, // legacy: no slug in state
     });
@@ -315,7 +315,7 @@ describe("TC-101: legacy /tmp/... request.path → finish succeeds", () => {
 // TC-124: markJobArchived called AFTER git pull --ff-only
 describe("TC-124: markJobArchived called after git pull --ff-only", () => {
   it("pull happens before markJobArchived (via state check after each spawn)", async () => {
-    const { jobId } = await makeJobWithPr({ status: "success" });
+    const { jobId } = await makeJobWithPr({ status: "awaiting-merge" });
 
     const callOrder: string[] = [];
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
@@ -343,7 +343,7 @@ describe("TC-124: markJobArchived called after git pull --ff-only", () => {
 // TC-125: Phase 1 escalation → markJobArchived NOT called
 describe("TC-125: Phase 1 escalation → markJobArchived not called", () => {
   it("state.status remains success if Phase 1 fails", async () => {
-    const { jobId } = await makeJobWithPr({ status: "success" });
+    const { jobId } = await makeJobWithPr({ status: "awaiting-merge" });
 
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       // binary check OK
@@ -375,7 +375,7 @@ describe("TC-125: Phase 1 escalation → markJobArchived not called", () => {
     // State should NOT be archived
     const { loadJobState } = await import("../src/state/store.js");
     const finalState = await loadJobState(jobId);
-    expect(finalState.status).toBe("success");
+    expect(finalState.status).toBe("awaiting-merge");
   });
 });
 
@@ -399,7 +399,7 @@ describe("TC-047 / running job → exit 1", () => {
 // TC-108: --dry-run → no destructive spawns
 describe("TC-108: --dry-run → no destructive subprocess spawns", () => {
   it("exits 0, no commits/pushes/merges spawned", async () => {
-    const { jobId } = await makeJobWithPr({ status: "success" });
+    const { jobId } = await makeJobWithPr({ status: "awaiting-merge" });
     const calls: Array<[string, string[]]> = [];
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       calls.push([cmd, [...args]]);

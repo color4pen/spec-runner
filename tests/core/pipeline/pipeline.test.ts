@@ -109,7 +109,7 @@ function buildMockPipeline(opts: {
   // Default: implementer succeeds with "success" verdict recorded
   const defaultImplementerResult = (base: JobState): JobState => ({
     ...base,
-    status: "success",
+    status: "running",
     steps: {
       ...base.steps,
       "implementer": [{ attempt: 1, sessionId: null, outcome: { verdict: "success" as const, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" }],
@@ -119,7 +119,7 @@ function buildMockPipeline(opts: {
   // Default: verification passes
   const defaultVerificationResult = (base: JobState): JobState => ({
     ...base,
-    status: "success",
+    status: "running",
     steps: {
       ...base.steps,
       "verification": [...(base.steps?.["verification"] ?? []), { attempt: (base.steps?.["verification"]?.length ?? 0) + 1, sessionId: null, outcome: { verdict: "passed" as const, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" }],
@@ -129,7 +129,7 @@ function buildMockPipeline(opts: {
   // Default: code-review approves
   const defaultCodeReviewResult = (base: JobState): JobState => ({
     ...base,
-    status: "success",
+    status: "running",
     steps: {
       ...base.steps,
       "code-review": [
@@ -228,7 +228,7 @@ function buildMockPipeline(opts: {
 function makeSpecReviewState(state: JobState, verdict: "approved" | "needs-fix" | "escalation", iter: number): JobState {
   return {
     ...state,
-    status: "success",
+    status: "running",
     steps: {
       ...state.steps,
       "spec-review": [
@@ -245,7 +245,7 @@ describe("TC-060: Pipeline — propose success → spec-review approved: no fixe
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
 
-    const proposeResult: JobState = { ...state, status: "success", branch: "feat/test", step: "propose" };
+    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test", step: "propose" };
     const specReviewResult = makeSpecReviewState(proposeResult, "approved", 1);
 
     const { pipeline, executeSpy } = buildMockPipeline({
@@ -301,7 +301,7 @@ describe("TC-062: Pipeline — needs-fix → spec-fixer → spec-review approved
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
 
-    const proposeResult: JobState = { ...state, status: "success", branch: "feat/test" };
+    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test" };
     const specReview1 = makeSpecReviewState(proposeResult, "needs-fix", 1);
     const specFixerResult: JobState = { ...specReview1, step: "spec-fixer" };
     const specReview2 = makeSpecReviewState(specFixerResult, "approved", 2);
@@ -331,7 +331,7 @@ describe("TC-063: Pipeline — loop exhaustion: SPEC_REVIEW_RETRIES_EXHAUSTED", 
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
 
-    const proposeResult: JobState = { ...state, status: "success", branch: "feat/test" };
+    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test" };
 
     // All iterations return needs-fix
     let callCount = 0;
@@ -384,7 +384,7 @@ describe("TC-065: Pipeline — spec-review escalation halts without running fixe
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
 
-    const proposeResult: JobState = { ...state, status: "success", branch: "feat/test" };
+    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test" };
     const specReviewResult = makeSpecReviewState(proposeResult, "escalation", 1);
 
     const { pipeline, executeSpy } = buildMockPipeline({
@@ -416,7 +416,7 @@ describe("TC-066: Pipeline — lifecycle events emitted", () => {
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
 
-    const proposeResult: JobState = { ...state, status: "success", branch: "feat/test" };
+    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test" };
     const specReviewResult = makeSpecReviewState(proposeResult, "approved", 1);
 
     const { pipeline, events } = buildMockPipeline({
@@ -514,7 +514,7 @@ describe("TC-068: Pipeline stdout — iter format bit-for-bit preserved", () => 
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
 
-    const proposeResult: JobState = { ...state, status: "success", branch: "feat/test" };
+    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test" };
     const specReviewResult = makeSpecReviewState(proposeResult, "approved", 1);
 
     const { pipeline } = buildMockPipeline({

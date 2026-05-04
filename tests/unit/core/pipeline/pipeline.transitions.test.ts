@@ -293,7 +293,7 @@ describe("TC-015: verification ↔ build-fixer loop guard → VERIFICATION_RETRI
         verificationCallCount++;
         return {
           ...state,
-          status: "success",
+          status: "running",
           step: "verification",
           steps: {
             ...state.steps,
@@ -313,7 +313,7 @@ describe("TC-015: verification ↔ build-fixer loop guard → VERIFICATION_RETRI
       if (step.name === "build-fixer") {
         return {
           ...state,
-          status: "success",
+          status: "running",
           step: "build-fixer",
           steps: {
             ...state.steps,
@@ -381,7 +381,7 @@ describe("TC-017: code-review ↔ code-fixer loop guard → CODE_REVIEW_RETRIES_
         codeReviewCallCount++;
         return {
           ...state,
-          status: "success",
+          status: "running",
           step: "code-review",
           steps: {
             ...state.steps,
@@ -405,7 +405,7 @@ describe("TC-017: code-review ↔ code-fixer loop guard → CODE_REVIEW_RETRIES_
       if (step.name === "code-fixer") {
         return {
           ...state,
-          status: "success",
+          status: "running",
           step: "code-fixer",
           steps: {
             ...state.steps,

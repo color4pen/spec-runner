@@ -181,8 +181,8 @@ export async function runRunCore(
   // Output spec-review verdict
   outputSpecReviewVerdict(finalState, slug);
 
-  if (finalState.status === "success") {
-    logInfo(`Pipeline completed successfully. Branch: ${finalState.branch}`);
+  if (finalState.status === "awaiting-merge") {
+    logInfo(`Pipeline completed; awaiting merge. Branch: ${finalState.branch}`);
     return 0;
   } else {
     logError(`Pipeline failed: ${finalState.error?.message ?? "unknown error"}`);

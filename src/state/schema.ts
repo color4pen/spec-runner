@@ -2,7 +2,7 @@
  * Job state schema and types for specrunner state files.
  */
 
-export type JobStatus = "running" | "success" | "failed" | "terminated" | "archived";
+export type JobStatus = "running" | "awaiting-merge" | "failed" | "terminated" | "archived";
 
 export type StepName =
   | "propose"
@@ -273,6 +273,12 @@ export function validateJobState(raw: unknown): JobState {
     (obj["error"] as Record<string, unknown>)["code"] === "SESSION_TIMEOUT"
   ) {
     (obj["error"] as Record<string, unknown>)["code"] = "SESSION_TERMINATED";
+  }
+
+  // Backward compat: remap legacy status="success" to "awaiting-merge"
+  // TODO: Remove this migration after 2026-06 release
+  if (obj["status"] === "success") {
+    obj["status"] = "awaiting-merge";
   }
 
   return raw as JobState;

@@ -55,7 +55,7 @@ function makeSuccessState(verdict: "approved" | "needs-fix" | "escalation"): Job
     repository: { owner: "testowner", name: "testrepo" },
     session: { id: "sess_001", agentId: "agent_001", environmentId: "env_001" },
     step: "success",
-    status: "success",
+    status: "awaiting-merge",
     branch: "feat/test-branch",
     history: [],
     error: null,
@@ -162,7 +162,7 @@ function simulateRunOutput(
       }
     }
 
-    if (finalState.status === "success") {
+    if (finalState.status === "awaiting-merge") {
       exitCode = 0;
     } else {
       exitCode = 1;

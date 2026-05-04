@@ -37,7 +37,7 @@ async function makeJobState() {
   const store = new JobStateStore(state.jobId);
   return store.update(state, {
     branch: "feat/test-branch",
-    status: "success",
+    status: "running",
     session: { id: "sess_propose", agentId: "agent_001", environmentId: "env_001" },
   });
 }
@@ -179,7 +179,8 @@ describe("TC-017: runSpecReviewStep — treats status='idle' as complete", () =>
 
     const lastSpecReview = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
     expect(lastSpecReview ? toLegacyStepResult(lastSpecReview).verdict : undefined).toBe("approved");
-    expect(result.status).toBe("success");
+    // PR #72: spec-review is mid-pipeline; job-level status remains "running" after step completion.
+    expect(result.status).toBe("running");
   });
 });
 
@@ -255,7 +256,8 @@ describe("TC-021: runSpecReviewStep — escalation failsafe when verdict line ab
     // SpecReviewStep.parseResult maps null verdict → "escalation" (failsafe)
     const lastSpecReview2 = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
     expect(lastSpecReview2 ? toLegacyStepResult(lastSpecReview2).verdict : undefined).toBe("escalation");
-    expect(result.status).toBe("success");
+    // PR #72: spec-review is mid-pipeline; job-level status remains "running" after step completion.
+    expect(result.status).toBe("running");
   });
 });
 
