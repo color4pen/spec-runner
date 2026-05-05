@@ -1,20 +1,23 @@
 /**
  * TC-012 (this file): register_branch input_schema has correct structure.
+ * TC-019: register_branch input_schema is unchanged under managed runtime (TC-019)
  *
  * Updated to reflect new slug field in input_schema (finish-redesign F chapter).
+ * register_branch is now owned by src/adapter/managed-agent/tools/register-branch.ts
+ * per design D3 (design.md): it is managed-agent adapter specific.
  *
  * TC-127: slug explicit input → slug in result
  * TC-128: slug omitted → derived from branch
  * TC-146: definition is deterministic
  */
 import { describe, it, expect } from "vitest";
-import { registerBranchTool } from "../src/core/tools/register-branch.js";
-import { ProposeStep } from "../src/core/step/propose.js";
+import { registerBranchTool } from "../src/adapter/managed-agent/tools/register-branch.js";
 import type { CustomToolContext } from "../src/core/tools/types.js";
 
 /**
  * The canonical input_schema for register_branch (post finish-redesign).
  * branch is required; slug is optional.
+ * TC-019: this exact schema must be unchanged.
  */
 const CANONICAL_INPUT_SCHEMA = {
   type: "object",
@@ -34,8 +37,8 @@ const CANONICAL_INPUT_SCHEMA = {
   required: ["branch"],
 } as const;
 
-// TC-012: register_branch input_schema structure
-describe("TC-012: register_branch input_schema is byte-identical to pre-refactor definition", () => {
+// TC-012 / TC-019: register_branch input_schema structure
+describe("TC-012 / TC-019: register_branch input_schema is byte-identical to pre-refactor definition", () => {
   it("registerBranchTool.definition.input_schema matches canonical schema exactly", () => {
     const { input_schema } = registerBranchTool.definition;
     expect(JSON.stringify(input_schema)).toBe(JSON.stringify(CANONICAL_INPUT_SCHEMA));
@@ -47,16 +50,6 @@ describe("TC-012: register_branch input_schema is byte-identical to pre-refactor
 
   it("tool type is still 'custom'", () => {
     expect(registerBranchTool.definition.type).toBe("custom");
-  });
-
-  it("ProposeStep.toolHandlers contains 'register_branch' key", () => {
-    expect(ProposeStep.toolHandlers).toBeDefined();
-    expect(ProposeStep.toolHandlers!.has("register_branch")).toBe(true);
-  });
-
-  it("ProposeStep.toolHandlers 'register_branch' value is a function", () => {
-    const handler = ProposeStep.toolHandlers!.get("register_branch");
-    expect(typeof handler).toBe("function");
   });
 
   it("input_schema.required is ['branch'] (slug is optional)", () => {
@@ -73,6 +66,15 @@ describe("TC-012: register_branch input_schema is byte-identical to pre-refactor
     const { input_schema } = registerBranchTool.definition;
     expect((input_schema.properties as Record<string, unknown>)?.["slug"] as Record<string, unknown>)
       .toBeDefined();
+  });
+});
+
+// TC-016: register_branch file lives in managed-agent adapter
+describe("TC-016: register_branch file is in managed-agent adapter", () => {
+  it("registerBranchTool is importable from adapter/managed-agent/tools/register-branch", () => {
+    expect(registerBranchTool).toBeDefined();
+    expect(registerBranchTool.definition).toBeDefined();
+    expect(registerBranchTool.handler).toBeDefined();
   });
 });
 

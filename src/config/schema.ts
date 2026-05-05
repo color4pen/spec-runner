@@ -51,6 +51,18 @@ export interface PipelineConfig {
 
 export interface SpecRunnerConfig {
   version: 1;
+  /**
+   * Agent execution runtime.
+   * - "managed": Anthropic Managed Agents via SessionClient (default)
+   * - "local":   Claude Code SDK via subprocess invocation (no API key required)
+   *
+   * D7 (design.md): runtime field added to config. Default "managed" for backward compat.
+   */
+  runtime?: "managed" | "local";
+  /**
+   * Anthropic API config. Required for "managed" runtime.
+   * For "local" runtime, may be absent or contain an empty apiKey.
+   */
   anthropic: AnthropicConfig;
   /**
    * Canonical per-role agent map.
@@ -71,6 +83,8 @@ export interface SpecRunnerConfig {
  */
 export interface RawConfig {
   version?: number;
+  /** See SpecRunnerConfig.runtime */
+  runtime?: string; // may be any string — validated in validateConfig
   anthropic?: Partial<AnthropicConfig>;
   /** @deprecated Legacy single-agent format. Migrated to agents.propose at load time. */
   agent?: {
@@ -95,6 +109,9 @@ export interface RawConfig {
  * Called AFTER migration — expects new canonical schema.
  * Returns typed config or throws describing the missing field.
  * Throws CONFIG_INVALID if pipeline.maxRetries is out of range (1-10).
+ * Throws CONFIG_INVALID if runtime is not "managed" or "local".
+ *
+ * D7 (design.md): runtime === "local" skips apiKey validation.
  */
 export function validateConfig(raw: unknown): SpecRunnerConfig {
   if (typeof raw !== "object" || raw === null) {
@@ -106,12 +123,26 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
     throw new Error("Config version must be 1.");
   }
 
-  if (typeof obj["anthropic"] !== "object" || obj["anthropic"] === null) {
-    throw new Error("Missing required config field: anthropic.apiKey.");
+  // TC-034: reject invalid runtime values
+  const runtime = obj["runtime"];
+  if (runtime !== undefined && runtime !== "managed" && runtime !== "local") {
+    throw Object.assign(
+      new Error('CONFIG_INVALID: runtime must be "managed" or "local".'),
+      { code: "CONFIG_INVALID" },
+    );
   }
-  const anthropic = obj["anthropic"] as Record<string, unknown>;
-  if (typeof anthropic["apiKey"] !== "string" || anthropic["apiKey"].length === 0) {
-    throw new Error("Missing required config field: anthropic.apiKey.");
+
+  const isLocalRuntime = runtime === "local";
+
+  // TC-033: local runtime skips apiKey requirement
+  if (!isLocalRuntime) {
+    if (typeof obj["anthropic"] !== "object" || obj["anthropic"] === null) {
+      throw new Error("Missing required config field: anthropic.apiKey.");
+    }
+    const anthropic = obj["anthropic"] as Record<string, unknown>;
+    if (typeof anthropic["apiKey"] !== "string" || anthropic["apiKey"].length === 0) {
+      throw new Error("Missing required config field: anthropic.apiKey.");
+    }
   }
 
   // Validate pipeline.maxRetries if provided
@@ -131,19 +162,30 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
 /**
  * Check if config has all fields needed to run the pipeline.
  * Returns error message or null if complete.
+ *
+ * D7 (design.md): local runtime skips apiKey/agents/environment checks.
+ * TC-033: CONFIG_INCOMPLETE not raised for local runtime with missing apiKey.
+ * TC-052: local runtime allows missing spec-review agent ID.
  */
 export function checkConfigComplete(
   cfg: SpecRunnerConfig,
 ): { field: string; hint: string } | null {
-  if (!cfg.anthropic?.apiKey) {
-    return { field: "anthropic.apiKey", hint: "Run 'specrunner init' first." };
+  const isLocal = cfg.runtime === "local";
+
+  if (!isLocal) {
+    // managed mode: require apiKey, agents, and environment
+    if (!cfg.anthropic?.apiKey) {
+      return { field: "anthropic.apiKey", hint: "Run 'specrunner init' first." };
+    }
+    if (!cfg.agents?.["propose"]?.agentId) {
+      return { field: "agents.propose.agentId", hint: "Run 'specrunner init' first." };
+    }
+    if (!cfg.environment?.id) {
+      return { field: "environment.id", hint: "Run 'specrunner init' first." };
+    }
   }
-  if (!cfg.agents?.["propose"]?.agentId) {
-    return { field: "agents.propose.agentId", hint: "Run 'specrunner init' first." };
-  }
-  if (!cfg.environment?.id) {
-    return { field: "environment.id", hint: "Run 'specrunner init' first." };
-  }
+
+  // Both runtimes require GitHub token for PR creation (TC-041: local still requires login)
   if (!cfg.github?.accessToken) {
     return { field: "github.accessToken", hint: "Run 'specrunner login' first." };
   }

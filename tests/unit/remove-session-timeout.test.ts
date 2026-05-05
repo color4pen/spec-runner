@@ -46,7 +46,9 @@ describe("TC-007: StepExecutor.getTimeoutMs は存在しない", () => {
   it("StepExecutor クラスに getTimeoutMs メソッドがない", async () => {
     const { StepExecutor } = await import("../../src/core/step/executor.js");
     const { EventBus } = await import("../../src/core/event/event-bus.js");
-    const executor = new StepExecutor(new EventBus());
+    // Minimal mock AgentRunner for constructor — just tests method absence
+    const mockRunner = { run: async () => ({ completionReason: "success" as const, resultContent: null }) };
+    const executor = new StepExecutor(new EventBus(), mockRunner);
     // getTimeoutMs は private だったが削除済み — prototype にも存在しない
     expect((executor as unknown as Record<string, unknown>)["getTimeoutMs"]).toBeUndefined();
     expect((StepExecutor.prototype as unknown as Record<string, unknown>)["getTimeoutMs"]).toBeUndefined();
@@ -61,7 +63,7 @@ describe("TC-008: pollUntilComplete の timeout 分岐が存在しない", () =>
     // Static source analysis: verify no SESSION_TIMEOUT throw in completion.ts
     const completionPath = path.resolve(
       import.meta.dirname ?? __dirname,
-      "../../src/adapter/anthropic/completion.ts",
+      "../../src/adapter/managed-agent/completion.ts",
     );
     const content = await fs.readFile(completionPath, "utf-8");
     expect(content).not.toContain("SESSION_TIMEOUT");
@@ -90,7 +92,7 @@ describe("TC-010: session-runner.ts の timeoutMs と SESSION_TIMEOUT フォー�
   it("session-runner.ts のソースに timeoutMs と SESSION_TIMEOUT が含まれない", async () => {
     const runnerPath = path.resolve(
       import.meta.dirname ?? __dirname,
-      "../../src/adapter/anthropic/session-runner.ts",
+      "../../src/adapter/managed-agent/session-runner.ts",
     );
     const content = await fs.readFile(runnerPath, "utf-8");
     expect(content).not.toContain("timeoutMs");
@@ -98,7 +100,7 @@ describe("TC-010: session-runner.ts の timeoutMs と SESSION_TIMEOUT フォー�
   });
 
   it("ManagedAgentSessionInput 型に timeoutMs フィールドがない", async () => {
-    const { runManagedAgentSession } = await import("../../src/adapter/anthropic/session-runner.js");
+    const { runManagedAgentSession } = await import("../../src/adapter/managed-agent/session-runner.js");
     // Verify the function exists (not removed entirely — used by legacy callers if any)
     expect(typeof runManagedAgentSession).toBe("function");
   });
@@ -111,7 +113,7 @@ describe("TC-011: completion.ts の SESSION_TIMEOUT フォールバックと tim
   it("PollOptions 型に timeoutMs が存在しない", async () => {
     const completionPath = path.resolve(
       import.meta.dirname ?? __dirname,
-      "../../src/adapter/anthropic/completion.ts",
+      "../../src/adapter/managed-agent/completion.ts",
     );
     const content = await fs.readFile(completionPath, "utf-8");
     // PollOptions interface must not have timeoutMs
@@ -120,7 +122,7 @@ describe("TC-011: completion.ts の SESSION_TIMEOUT フォールバックと tim
 
   it("pollUntilComplete は AbortSignal による中断のみをサポートし timeout を throw しない", async () => {
     // Functional test: pollUntilComplete with immediate abort returns without timeout error
-    const { pollUntilComplete } = await import("../../src/adapter/anthropic/completion.js");
+    const { pollUntilComplete } = await import("../../src/adapter/managed-agent/completion.js");
 
     const mockClient = {
       beta: {

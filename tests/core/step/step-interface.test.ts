@@ -17,6 +17,7 @@ import { SpecReviewStep } from "../../../src/core/step/spec-review.js";
 import { SpecFixerStep } from "../../../src/core/step/spec-fixer.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
+import { createManagedAgentRunner } from "../../../src/adapter/managed-agent/agent-runner.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 
@@ -159,12 +160,13 @@ describe("TC-010: Step exposes agent definition directly", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-011: register_branch handler owned exclusively by ProposeStep
+// TC-011: register_branch handler is in managed-agent adapter (design D3)
+// ProposeStep no longer owns it — adapter injects it at runtime.
 // ---------------------------------------------------------------------------
-describe("TC-011: register_branch handler owned exclusively by ProposeStep", () => {
-  it("ProposeStep.toolHandlers.get('register_branch') returns a handler function", () => {
-    const handler = ProposeStep.toolHandlers?.get("register_branch");
-    expect(typeof handler).toBe("function");
+describe("TC-011: register_branch is in managed-agent adapter; ProposeStep toolHandlers undefined (design D3)", () => {
+  it("ProposeStep.toolHandlers is undefined (adapter injects register_branch)", () => {
+    // Design D3: ProposeStep is runtime-neutral. ManagedAgentRunner injects register_branch.
+    expect(ProposeStep.toolHandlers).toBeUndefined();
   });
 
   it("SpecReviewStep.toolHandlers does not contain register_branch", () => {
@@ -179,11 +181,12 @@ describe("TC-011: register_branch handler owned exclusively by ProposeStep", () 
 });
 
 // ---------------------------------------------------------------------------
-// TC-012: register_branch input_schema is unchanged after refactor
+// TC-012 / TC-019: register_branch input_schema is unchanged after refactor
+// TC-019: input_schema for register_branch is unchanged under managed runtime
 // ---------------------------------------------------------------------------
-describe("TC-012: register_branch input_schema is unchanged after refactor", () => {
-  it("input_schema matches pre-refactor definition exactly", async () => {
-    const { registerBranchTool } = await import("../../../src/core/tools/register-branch.js");
+describe("TC-012 / TC-019: register_branch input_schema is unchanged after refactor", () => {
+  it("input_schema matches pre-refactor definition exactly (now in adapter)", async () => {
+    const { registerBranchTool } = await import("../../../src/adapter/managed-agent/tools/register-branch.js");
     const definition = registerBranchTool.definition;
 
     expect(definition.name).toBe("register_branch");
@@ -191,13 +194,6 @@ describe("TC-012: register_branch input_schema is unchanged after refactor", () 
     expect(definition.input_schema.required).toEqual(["branch"]);
     expect((definition.input_schema.properties?.branch as Record<string, unknown>)?.type).toBe("string");
     expect((definition.input_schema.properties as Record<string, unknown>)?.["slug"]).toBeDefined();
-  });
-
-  it("ProposeStep.toolHandlers handler for register_branch returns the same definition as registerBranchTool", async () => {
-    const { registerBranchTool } = await import("../../../src/core/tools/register-branch.js");
-    // The handler in ProposeStep is exactly the registerBranchTool.handler
-    const handler = ProposeStep.toolHandlers?.get("register_branch");
-    expect(handler).toBe(registerBranchTool.handler);
   });
 });
 
@@ -213,8 +209,6 @@ describe("TC-013: StepExecutor lifecycle events fire in correct order on success
     events.on("verdict:parsed", () => emittedEvents.push("verdict:parsed"));
     events.on("step:complete", () => emittedEvents.push("step:complete"));
     events.on("step:error", () => emittedEvents.push("step:error"));
-
-    const executor = new StepExecutor(events);
 
     // Create a minimal state on disk
     const jobId = "tc013-job";
@@ -247,6 +241,12 @@ describe("TC-013: StepExecutor lifecycle events fire in correct order on success
 
     // deps with a mock SessionClient that returns idle
     const deps = makeMinimalDeps({ pollStatus: "idle" });
+    const runner = createManagedAgentRunner({
+      sessionClient: deps.client!,
+      githubClient: deps.githubClient,
+      repo: deps.repo,
+    });
+    const executor = new StepExecutor(events, runner);
 
     try {
       await executor.execute(mockStep, state, deps);
@@ -277,8 +277,6 @@ describe("TC-014: StepExecutor error path emits step:error and decorates excepti
     events.on("step:start", () => emittedEvents.push("step:start"));
     events.on("step:error", () => emittedEvents.push("step:error"));
     events.on("step:complete", () => emittedEvents.push("step:complete"));
-
-    const executor = new StepExecutor(events);
 
     // Create a minimal state on disk
     const jobId = "tc014-job";
@@ -313,6 +311,12 @@ describe("TC-014: StepExecutor error path emits step:error and decorates excepti
       pollStatus: "terminated",
       pollError: { code: "SESSION_TERMINATED", message: "Session terminated", hint: "" },
     });
+    const runner = createManagedAgentRunner({
+      sessionClient: deps.client!,
+      githubClient: deps.githubClient,
+      repo: deps.repo,
+    });
+    const executor = new StepExecutor(events, runner);
 
     let thrownErr: unknown;
     try {

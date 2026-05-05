@@ -1,5 +1,5 @@
 /**
- * Unit tests for src/adapter/anthropic/session-runner.ts
+ * Unit tests for src/adapter/managed-agent/session-runner.ts
  * TC-051: runManagedAgentSession — session create → events.send → poll → idle (should)
  * TC-052: runManagedAgentSession — terminated → error.code=SESSION_TERMINATED (should)
  */
@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { runManagedAgentSession } from "../../src/adapter/anthropic/session-runner.js";
+import { runManagedAgentSession } from "../../src/adapter/managed-agent/session-runner.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;

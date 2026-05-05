@@ -123,9 +123,15 @@ async function runSpecReviewViaExecutor(
   const { EventBus } = await import("../src/core/event/event-bus.js");
   const { StepExecutor } = await import("../src/core/step/executor.js");
   const { SpecReviewStep } = await import("../src/core/step/spec-review.js");
+  const { createManagedAgentRunner } = await import("../src/adapter/managed-agent/agent-runner.js");
 
   const events = new EventBus();
-  const executor = new StepExecutor(events);
+  const runner = createManagedAgentRunner({
+    sessionClient: deps.client,
+    githubClient: deps.githubClient,
+    repo: deps.repo,
+  });
+  const executor = new StepExecutor(events, runner);
   return executor.execute(SpecReviewStep, jobState, deps);
 }
 

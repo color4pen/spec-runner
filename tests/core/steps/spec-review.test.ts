@@ -14,6 +14,7 @@ import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
+import { createManagedAgentRunner } from "../../../src/adapter/managed-agent/agent-runner.js";
 import { SpecReviewStep } from "../../../src/core/step/spec-review.js";
 
 let tempDir: string;
@@ -102,7 +103,12 @@ function buildDeps(opts: {
 
 async function runStep(jobState: JobState, deps: PipelineDeps): Promise<JobState> {
   const events = new EventBus();
-  const executor = new StepExecutor(events);
+  const runner = createManagedAgentRunner({
+    sessionClient: deps.client!,
+    githubClient: deps.githubClient,
+    repo: deps.repo,
+  });
+  const executor = new StepExecutor(events, runner);
   return executor.execute(SpecReviewStep, jobState, deps);
 }
 

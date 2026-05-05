@@ -6,7 +6,7 @@
  * `checkout` option of the github_repository resource.
  */
 import { describe, it, expect, vi } from "vitest";
-import { AnthropicSessionClient } from "../../../../src/adapter/anthropic/session-client.js";
+import { AnthropicSessionClient } from "../../../../src/adapter/managed-agent/session-client.js";
 
 function makeFakeAnthropic(createSpy: ReturnType<typeof vi.fn>): unknown {
   return {

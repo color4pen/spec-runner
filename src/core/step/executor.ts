@@ -2,50 +2,36 @@ import * as path from "node:path";
 import type { Step, AgentStep, CliStep } from "./types.js";
 import type { JobState, Verdict } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
-import type { GitHubClient } from "../port/github-client.js";
 import type { EventBus } from "../event/event-bus.js";
+import type { AgentRunner } from "../port/agent-runner.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { pushStepResult } from "../../state/helpers.js";
-import { getAgentId } from "../../config/getAgentId.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import {
-  branchNotRegisteredError,
-  branchNotSetError,
-  sessionTerminatedError,
-  changeFolderNotFoundError,
-  specReviewResultNotFoundError,
-  codeReviewResultNotFoundError,
-  noCommitDetectedError,
-} from "../../errors.js";
-import {
-  createSessionWithHistory,
   recordFailedStepResult,
   attachStateAndRethrow,
-  throwWrappedError,
-  failStepWithError,
 } from "./executor-helpers.js";
+import type { ErrorInfo } from "../../state/schema.js";
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
- * It receives injected dependencies (EventBus) and drives the session lifecycle.
+ * Receives injected EventBus and AgentRunner (port interface).
+ * Delegates all agent session logic to the runner (Design D1).
  *
  * Design D3: StepExecutor is the executor; Step is the declaration.
+ * Design D5: verifyBranch / requiresCommit guard run inside the adapter (runner).
  */
 export class StepExecutor {
   constructor(
     private readonly events: EventBus,
+    private readonly runner: AgentRunner,
   ) {}
 
   /**
    * Execute a single step, driving the full I/O lifecycle:
    * 1. emit step:start
-   * 2. Create session and send initial message
-   * 3. Poll or SSE until complete
-   * 4. Fetch result file (if any)
-   * 5. Parse result
-   * 6. emit verdict:parsed
-   * 7. appendStepRun (via pushStepResult for backward compat)
-   * 8. emit step:complete or step:error
+   * 2. Delegate to CLI or Agent runner
+   * 3. emit step:complete or step:error
    *
    * Error semantics: on failure, attaches `err.state` and rethrows.
    */
@@ -76,7 +62,7 @@ export class StepExecutor {
    * Dispatches on step.kind — never on step name.
    *
    * kind === "cli": calls step.run(), reads resultFilePath, emits events.
-   * kind === "agent": creates session, polls, fetches result (propose-style or polling-style).
+   * kind === "agent": delegates to AgentRunner.run() (Design D1).
    */
   private async runStepInternal(
     step: Step,
@@ -86,12 +72,104 @@ export class StepExecutor {
     if (step.kind === "cli") {
       return this.runCliStep(step, jobState, deps);
     }
-    // kind === "agent"
-    if (step.toolHandlers && step.toolHandlers.size > 0) {
-      return this.runProposeStyleStep(step, jobState, deps);
-    } else {
-      return this.runPollingStyleStep(step, jobState, deps);
+    // kind === "agent" — delegate to AgentRunner port (Design D1)
+    return this.runAgentStep(step, jobState, deps);
+  }
+
+  /**
+   * Agent step: delegate to AgentRunner.run().
+   * The adapter handles session creation, SSE/polling, verification, and result fetching.
+   * Emits verdict:parsed and returns the updated state from the adapter.
+   *
+   * Design D1: StepExecutor calls runner.run(ctx) and processes the returned result.
+   */
+  private async runAgentStep(
+    step: AgentStep,
+    jobState: JobState,
+    deps: PipelineDeps,
+  ): Promise<JobState> {
+    const ctx = {
+      step,
+      state: jobState,
+      branch: jobState.branch ?? "",
+      slug: deps.slug,
+      cwd: deps.cwd ?? process.cwd(),
+      requestContent: deps.request.content,
+      config: deps.config,
+      emit: (event: string, payload: Record<string, unknown>) => {
+        // Forward adapter events to the event bus
+        this.events.emit(event as Parameters<EventBus["emit"]>[0], payload as never);
+      },
+    };
+
+    const result = await this.runner.run(ctx);
+
+    // Managed adapter attaches updated state as _updatedState internal extension
+    // (includes full history, step result, and verdict — adapter managed state itself).
+    const updatedState = (result as { _updatedState?: JobState })._updatedState;
+    if (updatedState) {
+      this.events.emit("verdict:parsed", {
+        step: step.name,
+        outcome: { verdict: updatedState.steps?.[step.name]?.at(-1)?.outcome?.verdict ?? null },
+      });
+      return updatedState;
     }
+
+    // Local runtime path: adapter returned only runtime-neutral AgentRunResult fields.
+    // Executor manages state persistence here (JobStateStore lifecycle).
+    const store = this.getStore(jobState.jobId);
+    const completedAt = new Date().toISOString();
+
+    if (result.completionReason !== "success") {
+      // Agent step failed — record error and rethrow
+      const err = result.error ?? new Error(`Agent step '${step.name}' failed`);
+      const errorInfo: ErrorInfo = {
+        code: (err as Error & { code?: string }).code ?? "AGENT_STEP_FAILED",
+        message: err.message,
+        hint: (err as Error & { hint?: string }).hint ?? "",
+      };
+      let state = recordFailedStepResult(jobState, step.name, errorInfo, { completedAt });
+      state = await store.fail(state, errorInfo, step.name);
+      await store.persist(state);
+      attachStateAndRethrow(err, state);
+    }
+
+    // Success path: parse verdict from resultContent, persist step result and history.
+    const resultFilePath = step.resultFilePath(jobState, deps);
+    const findingsPath = resultFilePath;
+
+    let verdict: Verdict | null = null;
+    if (result.resultContent !== null) {
+      const parsed = step.parseResult(result.resultContent, deps);
+      verdict = parsed.verdict;
+    }
+
+    if (verdict === null) {
+      stderrWrite(`Warning: Could not parse verdict from agent step '${step.name}'. Treating as escalation.`);
+    }
+    verdict = verdict ?? "escalation";
+
+    this.events.emit("verdict:parsed", { step: step.name, outcome: { verdict } });
+
+    let state = pushStepResult(jobState, step.name, {
+      session: null,
+      verdict: verdict as Verdict | null,
+      findingsPath,
+      fileContent: result.resultContent,
+      completedAt,
+      error: null,
+    });
+
+    state = await store.appendHistory(state, {
+      ts: new Date().toISOString(),
+      step: `${step.name}-verdict`,
+      status: "ok",
+      message: `${step.name} verdict: ${verdict}`,
+    });
+
+    await store.persist(state);
+
+    return state;
   }
 
   /**
@@ -197,588 +275,4 @@ export class StepExecutor {
 
     return state;
   }
-
-  /**
-   * Propose-style step: uses SSE with custom tool handling via SessionClient port.
-   * Used by ProposeStep.
-   */
-  private async runProposeStyleStep(
-    step: AgentStep,
-    jobState: JobState,
-    deps: PipelineDeps,
-  ): Promise<JobState> {
-    const { client, config, repo, request, slug } = deps;
-    const store = this.getStore(jobState.jobId);
-
-    // Resolve agent ID directly from step.agent.role (no STEP_AGENT_ROLE lookup)
-    const agentId = getAgentId(config, step.agent.role);
-
-    // 1. Create session
-    const repoUrl = `https://github.com/${repo.owner}/${repo.name}`;
-    const { state: sessionState, sessionId } = await createSessionWithHistory(
-      store,
-      jobState,
-      client,
-      {
-        agentId,
-        environmentId: config.environment!.id,
-        repoUrl,
-        githubToken: config.github!.accessToken,
-      },
-      {
-        stepLabel: "session-create",
-        errorCode: "SESSION_CREATE_FAILED",
-        errorMessageFmt: (msg) => `Failed to create session: ${msg}`,
-        errorHint: "Check your API key and try again.",
-      },
-    );
-    let state = sessionState;
-
-    // Track registered branch and slug from SSE
-    let registeredBranch: string | null = null;
-    let registeredSlug: string | null = null;
-
-    // 2. Start SSE session via SessionClient port
-    const abortController = new AbortController();
-
-    const ssePromise = client.streamEvents(sessionId, {
-      requestContent: request.content,
-      slug,
-      toolHandlers: step.toolHandlers,
-      onBranchRegistered: (branch) => {
-        registeredBranch = branch;
-      },
-      onSlugRegistered: (s) => {
-        registeredSlug = s;
-      },
-      onSseDisconnected: () => {
-        // handled via sseResult.terminationReason
-      },
-      abortController,
-    });
-
-    state = await store.appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "events-stream-connected",
-      status: "ok",
-      message: "SSE stream connected",
-    });
-
-    state = await store.appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "initial-message-sent",
-      status: "ok",
-      message: "Initial message sent to session",
-    });
-
-    // 3. Wait for SSE to complete
-    const sseResult = await ssePromise;
-
-    if (sseResult.terminated) {
-      const termErr = sessionTerminatedError();
-      const termErrorInfo = { code: termErr.code, message: termErr.message, hint: termErr.hint };
-      state = await store.fail(state, termErrorInfo);
-      state = await store.appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: "session-terminated",
-        status: "error",
-        message: "Session terminated by Anthropic",
-      });
-      state = recordFailedStepResult(state, step.name, termErrorInfo, {
-        session: state.session,
-        completedAt: new Date().toISOString(),
-      });
-      await store.persist(state);
-      attachStateAndRethrow(termErr, state);
-    }
-
-    // 4. Polling fallback if needed
-    const needsPollingFallback =
-      sseResult.terminationReason !== "end_turn" &&
-      sseResult.terminationReason !== "terminated";
-
-    if (needsPollingFallback) {
-      stderrWrite("SSE disconnected; falling back to polling.");
-      const pollResult = await client.pollUntilComplete(sessionId, {
-        sleepFn: deps.sleepFn,
-        abortSignal: abortController.signal,
-      });
-
-      if (pollResult.status !== "idle") {
-        const errorInfo = pollResult.error ?? sessionTerminatedError();
-
-        state = await store.appendHistory(state, {
-          ts: new Date().toISOString(),
-          step: "session-terminated",
-          status: "error",
-          message: errorInfo.message,
-        });
-        state = await store.fail(state, errorInfo, "session-poll");
-        state = recordFailedStepResult(state, step.name, errorInfo, {
-          session: state.session,
-          completedAt: new Date().toISOString(),
-        });
-        await store.persist(state);
-        throwWrappedError(errorInfo, state);
-      }
-    } else {
-      abortController.abort();
-    }
-
-    // 5. Handle branch registration (and optional slug)
-    if (registeredBranch) {
-      // Build updated request with slug if provided by handler
-      const updatedRequest = registeredSlug
-        ? { ...state.request, slug: registeredSlug }
-        : state.request;
-      state = await store.update(state, { branch: registeredBranch, request: updatedRequest });
-      state = await store.appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: "register-branch-received",
-        status: "ok",
-        message: registeredBranch,
-      });
-    }
-
-    const completionStatus = sseResult.terminationReason === "end_turn" ? "ok" : "warning";
-    state = await store.appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "idle-end-turn-detected",
-      status: completionStatus,
-      message: sseResult.terminationReason === "end_turn"
-        ? "Session completed via SSE idle+end_turn"
-        : "Session completed via polling fallback",
-    });
-
-    // 6. Verify branch registration
-    if (!registeredBranch) {
-      const branchErr = branchNotRegisteredError();
-      stderrWrite("Branch was not registered by the agent.");
-      state = await store.appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: "idle-end-turn-detected",
-        status: "error",
-        message: "register_branch was not called",
-      });
-      const branchErrorInfo = { code: branchErr.code, message: branchErr.message, hint: branchErr.hint };
-      state = await store.fail(state, branchErrorInfo);
-      state = recordFailedStepResult(state, step.name, branchErrorInfo, {
-        session: state.session,
-        completedAt: new Date().toISOString(),
-      });
-      await store.persist(state);
-      attachStateAndRethrow(branchErr, state);
-    }
-
-    // 7. GitHub verification (branch + change folder) via GitHubClient port
-    await this.verifyBranchViaPort(deps.githubClient, repo.owner, repo.name, registeredBranch, state, store)
-      .then((updated) => { state = updated; })
-      .catch(async (err) => {
-        if ((err as { code?: string }).code === "GITHUB_TOKEN_EXPIRED") {
-          stderrWrite("GitHub token expired. Run 'specrunner login' again.");
-          state = await store.fail(state, {
-            code: (err as { code: string }).code,
-            message: (err as Error).message,
-            hint: (err as { hint?: string }).hint ?? "",
-          });
-          attachStateAndRethrow(err, state);
-        }
-        stderrWrite(`Warning: Could not verify branch on GitHub: ${(err as Error).message}`);
-        state = await store.appendHistory(state, {
-          ts: new Date().toISOString(),
-          step: "branch-verified",
-          status: "warning",
-          message: `Branch verification failed: ${(err as Error).message}`,
-        });
-      });
-
-    try {
-      const changeFolderPath = `openspec/changes/${slug}`;
-      await this.verifyChangeFolderViaPort(
-        deps.githubClient, repo.owner, repo.name, registeredBranch, changeFolderPath, slug, state, store,
-      ).then((updated) => { state = updated; });
-    } catch (err) {
-      if (
-        (err as { code?: string }).code === "CHANGE_FOLDER_NOT_FOUND" ||
-        (err as { code?: string }).code === "GITHUB_TOKEN_EXPIRED"
-      ) {
-        throw err;
-      }
-      stderrWrite(`Warning: Could not verify change folder: ${(err as Error).message}`);
-    }
-
-    // 8. Mark awaiting-merge + record step result
-    state = await store.update(state, { status: "awaiting-merge", step: "success" });
-    state = await store.appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "success",
-      status: "ok",
-      message: "Propose pipeline completed; awaiting merge",
-    });
-
-    state = pushStepResult(state, step.name, {
-      session: state.session,
-      verdict: null,
-      findingsPath: null,
-      completedAt: new Date().toISOString(),
-      error: null,
-    });
-    await store.persist(state);
-
-    this.events.emit("verdict:parsed", { step: step.name, outcome: { verdict: null } });
-
-    return state;
-  }
-
-  /**
-   * Verify branch via GitHubClient port.
-   */
-  private async verifyBranchViaPort(
-    githubClient: GitHubClient,
-    owner: string,
-    repo: string,
-    branch: string,
-    state: JobState,
-    store: JobStateStore,
-  ): Promise<JobState> {
-    const branchExists = await githubClient.verifyBranch(owner, repo, branch);
-    if (!branchExists) {
-      stderrWrite(`Warning: Branch '${branch}' not found on GitHub yet.`);
-      return store.appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: "branch-verified",
-        status: "warning",
-        message: `Branch '${branch}' not found on GitHub`,
-      });
-    }
-    return store.appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "branch-verified",
-      status: "ok",
-      message: `Branch '${branch}' verified on GitHub`,
-    });
-  }
-
-  /**
-   * Verify change folder via GitHubClient port.
-   * Throws on CHANGE_FOLDER_NOT_FOUND or GITHUB_TOKEN_EXPIRED.
-   */
-  private async verifyChangeFolderViaPort(
-    githubClient: GitHubClient,
-    owner: string,
-    repo: string,
-    branch: string,
-    changeFolderPath: string,
-    slug: string,
-    state: JobState,
-    store: JobStateStore,
-  ): Promise<JobState> {
-    const folderExists = await githubClient.verifyPath(owner, repo, branch, changeFolderPath);
-
-    if (!folderExists) {
-      const folderErr = changeFolderNotFoundError(slug);
-      const newState = await store.appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: "change-folder-verified",
-        status: "error",
-        message: `Change folder not found: ${changeFolderPath}`,
-      });
-      const folderErrorInfo = { code: folderErr.code, message: folderErr.message, hint: folderErr.hint };
-      const failedState = await store.fail(newState, folderErrorInfo);
-      attachStateAndRethrow(folderErr, failedState);
-    }
-
-    return store.appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "change-folder-verified",
-      status: "ok",
-      message: `Change folder verified: ${changeFolderPath}`,
-    });
-  }
-
-  /**
-   * Polling-style step: uses SessionClient port for session management.
-   * Used by spec-review, spec-fixer, implementer, and build-fixer.
-   */
-  private async runPollingStyleStep(
-    step: AgentStep,
-    jobState: JobState,
-    deps: PipelineDeps,
-  ): Promise<JobState> {
-    const { client, config, repo, slug } = deps;
-    const store = this.getStore(jobState.jobId);
-
-    // Resolve agent ID directly from step.agent.role (no STEP_AGENT_ROLE lookup)
-    let agentId: string;
-    try {
-      agentId = getAgentId(config, step.agent.role);
-    } catch (err) {
-      const errCode = (err as { code?: string }).code ?? "CONFIG_INCOMPLETE";
-      const errMsg = (err as Error).message;
-      const errHint = (err as { hint?: string }).hint ?? "Run 'specrunner init' to configure agents.";
-      const agentIdErrorInfo = { code: errCode, message: errMsg, hint: errHint };
-      let state = await store.update(jobState, { step: step.name });
-      state = await store.fail(state, agentIdErrorInfo, `${step.name}-agent-id`);
-      state = recordFailedStepResult(state, step.name, agentIdErrorInfo);
-      await store.persist(state);
-      attachStateAndRethrow(err, state);
-    }
-
-    // Record step transition
-    let state = await store.update(jobState, { step: step.name });
-    state = await store.appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "step-transition",
-      status: "ok",
-      message: `Transitioning to ${step.name} step`,
-    });
-
-    // Build initial message from step declaration.
-    // buildMessage is a pure function — if it throws (e.g. BUILD_FIXER_NO_VERIFICATION_RESULT),
-    // halt here before creating a session.
-    let initialMessage: string;
-    try {
-      initialMessage = step.buildMessage(state, deps);
-    } catch (err) {
-      const errCode = (err as { code?: string }).code ?? "BUILD_MESSAGE_FAILED";
-      const errMsg = (err as Error).message;
-      const errHint = (err as { hint?: string }).hint ?? "Check step preconditions.";
-      const buildMsgErrorInfo = { code: errCode, message: errMsg, hint: errHint };
-      state = recordFailedStepResult(state, step.name, buildMsgErrorInfo);
-      state = await store.fail(state, buildMsgErrorInfo, `${step.name}-build-message`);
-      await store.persist(state);
-      attachStateAndRethrow(err, state);
-    }
-
-    // 1. Create session
-    state = await store.appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: `${step.name}-session-create`,
-      status: "started",
-      message: `Creating ${step.name} session`,
-    });
-
-    // Polling-style steps run AFTER propose has registered a branch. The branch
-    // is the workspace mount target — without it, the workspace is mounted at
-    // main and the agent cannot see propose's change folder.
-    if (!state.branch) {
-      const branchErr = branchNotSetError(step.name);
-      const errorInfo = { code: branchErr.code, message: branchErr.message, hint: branchErr.hint };
-      state = recordFailedStepResult(state, step.name, errorInfo);
-      state = await store.fail(state, errorInfo, `${step.name}-session-create`);
-      await store.persist(state);
-      throwWrappedError(errorInfo, state);
-    }
-
-    // Snapshot branch HEAD SHA before the session for requiresCommit verification.
-    // Captured here (after the branch guard above) so state.branch is non-null.
-    let preSessionHeadSha: string | null = null;
-    if (step.requiresCommit) {
-      preSessionHeadSha = await deps.githubClient.getRefSha(
-        deps.repo.owner,
-        deps.repo.name,
-        state.branch!,
-      );
-    }
-
-    let sessionId: string;
-    try {
-      const repoUrl = `https://github.com/${repo.owner}/${repo.name}`;
-      const sessionResult = await client.createSession({
-        agentId,
-        environmentId: config.environment!.id,
-        repoUrl,
-        githubToken: config.github!.accessToken,
-        branch: state.branch,
-      });
-      sessionId = sessionResult.sessionId;
-    } catch (err) {
-      const errMsg = (err as Error).message;
-      const errorInfo = {
-        code: "SESSION_CREATE_FAILED",
-        message: `Failed to create ${step.name} session: ${errMsg}`,
-        hint: "Check your API key and try again.",
-      };
-      state = await store.appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: `${step.name}-session-create`,
-        status: "error",
-        message: errorInfo.message,
-      });
-      state = recordFailedStepResult(state, step.name, errorInfo);
-      state = await store.fail(state, errorInfo, step.name);
-      await store.persist(state);
-      throwWrappedError(errorInfo, state);
-    }
-
-    // 2. Send initial message
-    try {
-      await client.sendUserMessage(sessionId, initialMessage);
-      state = await store.appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: `${step.name}-session-create`,
-        status: "ok",
-        message: sessionId,
-      });
-    } catch (err) {
-      const errMsg = (err as Error).message;
-      const errorInfo = {
-        code: "SESSION_CREATE_FAILED",
-        message: `Failed to send initial message to ${step.name} session: ${errMsg}`,
-        hint: "Check your network connection.",
-      };
-      state = recordFailedStepResult(state, step.name, errorInfo);
-      state = await store.fail(state, errorInfo, step.name);
-      await store.persist(state);
-      throwWrappedError(errorInfo, state);
-    }
-
-    // 3. Poll until complete
-    const pollResult = await client.pollUntilComplete(sessionId, {
-      sleepFn: deps.sleepFn,
-    });
-
-    const completedAt = new Date().toISOString();
-
-    if (pollResult.status !== "idle") {
-      const errorInfo = pollResult.error ?? sessionTerminatedError();
-
-      stderrWrite(`${step.name} session was terminated by Anthropic.`);
-      state = await store.appendHistory(state, {
-        ts: completedAt,
-        step: `${step.name}-terminated`,
-        status: "error",
-        message: errorInfo.message,
-      });
-
-      await failStepWithError(store, state, step.name, errorInfo, {
-        session: { id: sessionId, agentId, environmentId: config.environment!.id },
-        completedAt,
-      });
-    }
-
-    state = await store.update(state, {
-      session: {
-        id: sessionId,
-        agentId,
-        environmentId: config.environment!.id,
-      },
-    });
-
-    // Verify branch HEAD advanced for steps that declare requiresCommit.
-    // Runs BEFORE the `${step.name}-completed` ok history append so that a
-    // failed step never leaves a "completed ok" event in history alongside
-    // the no-commit-detected error (which would confuse forensics / resume /
-    // any consumer that treats `-completed` as a success marker).
-    //
-    // This catches the failure mode where an agent ends its turn without
-    // committing + pushing — the session looks "complete" via idle but no
-    // changes ever reach origin. Independent of result-file verdict parsing.
-    if (step.requiresCommit) {
-      const postSessionHeadSha = await deps.githubClient.getRefSha(
-        deps.repo.owner,
-        deps.repo.name,
-        state.branch!,
-      );
-      if (postSessionHeadSha !== null && postSessionHeadSha === preSessionHeadSha) {
-        const noCommitErr = noCommitDetectedError(step.name, state.branch!);
-        const errorInfo = {
-          code: noCommitErr.code,
-          message: noCommitErr.message,
-          hint: noCommitErr.hint,
-        };
-        state = await store.appendHistory(state, {
-          ts: new Date().toISOString(),
-          step: `${step.name}-no-commit-detected`,
-          status: "error",
-          message: errorInfo.message,
-        });
-        await failStepWithError(store, state, step.name, errorInfo, {
-          session: { id: sessionId, agentId, environmentId: config.environment!.id },
-          completedAt,
-        });
-      }
-    }
-
-    state = await store.appendHistory(state, {
-      ts: completedAt,
-      step: `${step.name}-completed`,
-      status: "ok",
-      message: `${step.name} session completed (${sessionId})`,
-    });
-
-    // 4. Fetch result file if the step has one
-    const resultFilePath = step.resultFilePath(state, deps);
-    let fileContent: string | null = null;
-    let findingsPath: string | null = null;
-    let verdict: Verdict | null = null;
-
-    if (resultFilePath !== null) {
-      findingsPath = resultFilePath;
-      // state.branch is guaranteed by the pre-createSession guard above; the
-      // non-null assertion encodes that invariant.
-      const effectiveBranch = state.branch!;
-
-      fileContent = await deps.githubClient.getRawFile(
-        deps.repo.owner,
-        deps.repo.name,
-        effectiveBranch,
-        findingsPath,
-        { sleepFn: deps.sleepFn },
-      );
-
-      if (fileContent === null) {
-        // Compute iteration for error hint: number of existing results + 1
-        const existingResults = state.steps?.[step.name] ?? [];
-        const iteration = existingResults.length + 1;
-        const notFoundErr = step.name === "code-review"
-          ? codeReviewResultNotFoundError(slug, effectiveBranch, iteration)
-          : specReviewResultNotFoundError(slug, effectiveBranch, iteration);
-        stderrWrite(notFoundErr.message);
-        const notFoundErrorInfo = { code: notFoundErr.code, message: notFoundErr.message, hint: notFoundErr.hint };
-        state = await store.fail(state, notFoundErrorInfo);
-        state = recordFailedStepResult(state, step.name, notFoundErrorInfo, {
-          session: state.session,
-          completedAt,
-        });
-        await store.persist(state);
-        attachStateAndRethrow(notFoundErr, state);
-      }
-
-      const parsed = step.parseResult(fileContent, deps);
-      verdict = parsed.verdict;
-
-      if (verdict === null) {
-        stderrWrite(`Warning: Could not parse verdict from ${findingsPath}. Treating as escalation.`);
-      }
-      verdict = verdict ?? "escalation";
-    }
-
-    // emit verdict:parsed
-    this.events.emit("verdict:parsed", { step: step.name, outcome: { verdict } });
-
-    // Record step result
-    state = pushStepResult(state, step.name, {
-      session: state.session,
-      verdict: verdict as Verdict | null,
-      findingsPath,
-      fileContent,
-      completedAt,
-      error: null,
-    });
-
-    if (verdict !== null) {
-      state = await store.appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: `${step.name}-verdict`,
-        status: "ok",
-        message: `${step.name} verdict: ${verdict}`,
-      });
-    }
-
-    await store.persist(state);
-
-    return state;
-  }
-
 }

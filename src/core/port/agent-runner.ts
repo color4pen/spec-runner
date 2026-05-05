@@ -1,0 +1,80 @@
+/**
+ * Port interface for executing an agent step.
+ *
+ * Design D1 (design.md): Single run() method — the adapter performs
+ * the complete agent lifecycle internally and returns a resolved result.
+ * StepExecutor only calls runner.run(ctx) and processes the returned result.
+ *
+ * Adapters:
+ *  - ManagedAgentRunner (src/adapter/managed-agent/agent-runner.ts)
+ *  - ClaudeCodeRunner   (src/adapter/claude-code/agent-runner.ts)
+ */
+import type { AgentStep } from "../step/types.js";
+import type { JobState } from "../../state/schema.js";
+import type { SpecRunnerConfig } from "../../config/schema.js";
+
+/**
+ * Context passed to AgentRunner.run() for each agent step execution.
+ * All fields are runtime-neutral — no SDK-specific types are included.
+ *
+ * TC-002: fields are step, state, branch, slug, cwd, requestContent, config, emit only.
+ */
+export interface AgentRunContext {
+  /** The step declaration (agent definition, buildMessage, resultFilePath, etc.) */
+  step: AgentStep;
+  /** Current job state (branch, session, history, etc.) */
+  state: JobState;
+  /** CLI-canonical branch name (e.g. "feat/<slug>"). This is the source of truth.
+   * Adapters use ctx.branch — not state.branch — as the canonical branch. */
+  branch: string;
+  /** Canonical slug for this request */
+  slug: string;
+  /** Working directory (worktree path) */
+  cwd: string;
+  /** Content of the request file (request.md / pipeline-context.md) */
+  requestContent: string;
+  /** Full pipeline config including runtime-specific settings */
+  config: SpecRunnerConfig;
+  /** Emit a domain event payload back to StepExecutor.
+   * Called by adapter for intermediate state updates (e.g. step progress). */
+  emit: (event: string, payload: Record<string, unknown>) => void;
+}
+
+/**
+ * Result returned by AgentRunner.run() after executing an agent step.
+ *
+ * TC-003: resultContent is fetched by the adapter via adapter-specific means.
+ */
+export interface AgentRunResult {
+  /** Outcome of the agent execution */
+  completionReason: "success" | "error" | "timeout";
+  /**
+   * Content of the result file read by the adapter.
+   * - managed: fetched from GitHub via GitHubClient.getRawFile()
+   * - local:   fetched from local fs via fs.readFile()
+   * null when resultFilePath is null or file could not be read.
+   */
+  resultContent: string | null;
+  /** Session ID for managed runtime (undefined for local) */
+  sessionId?: string;
+  /** Agent-reported branch (managed: from register_branch tool; local: from git) */
+  agentBranch?: string;
+  /** Error details when completionReason !== "success" */
+  error?: Error & { code?: string; hint?: string };
+}
+
+/**
+ * AgentRunner port: executes the full lifecycle of an agent step.
+ *
+ * Implementations must handle:
+ * - Session creation / communication
+ * - Polling or streaming until completion
+ * - Branch and path verification
+ * - Result file fetching
+ * - register_branch tool injection (managed only)
+ *
+ * TC-001: exactly one method — run().
+ */
+export interface AgentRunner {
+  run(context: AgentRunContext): Promise<AgentRunResult>;
+}

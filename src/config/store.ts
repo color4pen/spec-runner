@@ -70,6 +70,15 @@ export async function loadConfig(): Promise<SpecRunnerConfig> {
   try {
     return validateConfig(migrated);
   } catch (err: unknown) {
+    // TC-034: CONFIG_INVALID errors (e.g. invalid runtime value) propagate as CONFIG_INVALID
+    const code = (err as { code?: string }).code;
+    if (code === "CONFIG_INVALID") {
+      throw new SpecRunnerError(
+        ERROR_CODES.CONFIG_INVALID,
+        "Delete the config and run 'specrunner init' again.",
+        (err as Error).message,
+      );
+    }
     throw configIncompleteError((err as Error).message);
   }
 }

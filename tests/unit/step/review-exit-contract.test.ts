@@ -33,6 +33,7 @@ import type { AgentStep } from "../../../src/core/step/types.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
+import { createManagedAgentRunner } from "../../../src/adapter/managed-agent/agent-runner.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -495,10 +496,18 @@ function makeReviewStepStub(stepName: "spec-review" | "code-review", resultPath:
   };
 }
 
+function makeExecutorFromDeps(events: EventBus, deps: PipelineDeps): StepExecutor {
+  const runner = createManagedAgentRunner({
+    sessionClient: deps.client!,
+    githubClient: deps.githubClient,
+    repo: deps.repo,
+  });
+  return new StepExecutor(events, runner);
+}
+
 describe("TC-011: executor error-hint iteration — spec-review getRawFile failure", () => {
   it("with existingResults.length=0, hint contains spec-review-result-001.md", async () => {
     const events = new EventBus();
-    const executor = new StepExecutor(events);
     const state = await makeExecutorTestState("tc011-job-0", "spec-review", 0);
 
     const mockClient: PipelineDeps["client"] = {
@@ -524,10 +533,11 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
-      getRefSha: vi.fn().mockResolvedValue(null),
+        getRefSha: vi.fn().mockResolvedValue(null),
       },
     };
 
+    const executor = makeExecutorFromDeps(events, deps);
     const step = makeReviewStepStub("spec-review", "openspec/changes/my-slug/spec-review-result-001.md");
 
     await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
@@ -538,7 +548,6 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
 
   it("with existingResults.length=1, hint contains spec-review-result-002.md", async () => {
     const events = new EventBus();
-    const executor = new StepExecutor(events);
     const state = await makeExecutorTestState("tc011-job-1", "spec-review", 1);
 
     const mockClient: PipelineDeps["client"] = {
@@ -564,10 +573,11 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
-      getRefSha: vi.fn().mockResolvedValue(null),
+        getRefSha: vi.fn().mockResolvedValue(null),
       },
     };
 
+    const executor = makeExecutorFromDeps(events, deps);
     const step = makeReviewStepStub("spec-review", "openspec/changes/my-slug/spec-review-result-002.md");
 
     await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
@@ -580,7 +590,6 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
 describe("TC-012: executor error-hint iteration — code-review getRawFile failure", () => {
   it("with existingResults.length=0, hint contains review-feedback-001.md", async () => {
     const events = new EventBus();
-    const executor = new StepExecutor(events);
     const state = await makeExecutorTestState("tc012-job-0", "code-review", 0);
 
     const mockClient: PipelineDeps["client"] = {
@@ -606,10 +615,11 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
-      getRefSha: vi.fn().mockResolvedValue(null),
+        getRefSha: vi.fn().mockResolvedValue(null),
       },
     };
 
+    const executor = makeExecutorFromDeps(events, deps);
     const step = makeReviewStepStub("code-review", "openspec/changes/my-slug/review-feedback-001.md");
 
     await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
@@ -620,7 +630,6 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
 
   it("with existingResults.length=1, hint contains review-feedback-002.md", async () => {
     const events = new EventBus();
-    const executor = new StepExecutor(events);
     const state = await makeExecutorTestState("tc012-job-1", "code-review", 1);
 
     const mockClient: PipelineDeps["client"] = {
@@ -646,10 +655,11 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
-      getRefSha: vi.fn().mockResolvedValue(null),
+        getRefSha: vi.fn().mockResolvedValue(null),
       },
     };
 
+    const executor = makeExecutorFromDeps(events, deps);
     const step = makeReviewStepStub("code-review", "openspec/changes/my-slug/review-feedback-002.md");
 
     await expect(executor.execute(step, state, deps)).rejects.toMatchObject({

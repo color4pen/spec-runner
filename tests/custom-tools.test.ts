@@ -1,21 +1,23 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { registerBranchTool } from "../src/core/tools/register-branch.js";
+import { registerBranchTool } from "../src/adapter/managed-agent/tools/register-branch.js";
 
 beforeEach(() => {
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 });
 
-// TC-016: register_branch が ProposeStep.toolHandlers 経由で登録される
-describe("TC-016: register_branch registered via ProposeStep.toolHandlers", () => {
-  it("ProposeStep.toolHandlers includes register_branch and handler is function", async () => {
+// TC-016: register_branch が managed-agent adapter 配下にある (design D3)
+describe("TC-016: register_branch is in managed-agent adapter (design D3)", () => {
+  it("registerBranchTool is importable from adapter/managed-agent/tools/register-branch", () => {
+    // Design D3: register_branch moved from core/tools to adapter/managed-agent/tools
+    expect(registerBranchTool).toBeDefined();
+    expect(registerBranchTool.definition.name).toBe("register_branch");
+    expect(typeof registerBranchTool.handler).toBe("function");
+  });
+
+  it("ProposeStep.toolHandlers is undefined (adapter injects tools, not ProposeStep)", async () => {
     const { ProposeStep } = await import("../src/core/step/propose.js");
-
-    const handlers = ProposeStep.toolHandlers;
-    expect(handlers).toBeDefined();
-    expect(handlers?.has("register_branch")).toBe(true);
-
-    const handler = handlers?.get("register_branch");
-    expect(typeof handler).toBe("function");
+    // Design D3: ProposeStep is runtime-neutral — toolHandlers undefined, ManagedAgentRunner injects
+    expect(ProposeStep.toolHandlers).toBeUndefined();
   });
 });
 
@@ -68,7 +70,7 @@ describe("TC-018: SSE dispatch uses toolHandlers map from step co-location", () 
     const { readFile } = await import("node:fs/promises");
     const { fileURLToPath } = await import("node:url");
     // SSE dispatch logic lives in the adapter's sse-stream.ts (session.ts delegates to SessionClient port)
-    const sseStreamPath = fileURLToPath(new URL("../src/adapter/anthropic/sse-stream.ts", import.meta.url));
+    const sseStreamPath = fileURLToPath(new URL("../src/adapter/managed-agent/sse-stream.ts", import.meta.url));
     const content = await readFile(sseStreamPath, "utf-8");
     // D4: toolHandlers map takes precedence (global registry removed)
     expect(content).toContain("deps.toolHandlers?.get(event.name)");
@@ -144,7 +146,7 @@ describe("TC-025: register_branch — custom_tool_result id mapping", () => {
     // SSE dispatch logic lives in the adapter's sse-stream.ts (session.ts delegates to SessionClient port)
     const { readFile } = await import("node:fs/promises");
     const { fileURLToPath } = await import("node:url");
-    const sseStreamPath = fileURLToPath(new URL("../src/adapter/anthropic/sse-stream.ts", import.meta.url));
+    const sseStreamPath = fileURLToPath(new URL("../src/adapter/managed-agent/sse-stream.ts", import.meta.url));
     const content = await readFile(sseStreamPath, "utf-8");
     // Check that event.id is used as custom_tool_use_id
     expect(content).toContain("custom_tool_use_id: event.id");

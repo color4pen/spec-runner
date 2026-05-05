@@ -15,6 +15,7 @@
     "start": "node dist/cli.js"
   },
   "dependencies": {
+    "@anthropic-ai/claude-code": "^2.1.128",
     "@anthropic-ai/sdk": "^0.91.0"
   },
   "devDependencies": {

@@ -10,7 +10,12 @@ import type { ParsedRequest } from "../parser/request-md.js";
  * between pipeline.ts ↔ loop.ts ↔ steps/*.ts.
  */
 export interface PipelineDeps {
-  client: SessionClient;
+  /**
+   * Managed-agent session client. Required for "managed" runtime.
+   * Optional when runtime === "local" (ClaudeCodeRunner does not need it).
+   * Design D8: composition root injects the appropriate AgentRunner based on runtime config.
+   */
+  client?: SessionClient;
   config: SpecRunnerConfig;
   repo: OriginInfo;
   request: ParsedRequest;

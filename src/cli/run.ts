@@ -1,6 +1,6 @@
 import * as path from "node:path";
 import { createAnthropicClient } from "../sdk/client.js";
-import { createAnthropicSessionClient } from "../adapter/anthropic/session-client.js";
+import { createAnthropicSessionClient } from "../adapter/managed-agent/session-client.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { runPreflight } from "../core/preflight.js";
 import { createJobState } from "../state/store.js";
@@ -105,10 +105,16 @@ export async function runRunCore(
   }
 
   const { config, repo, request } = preflightResult;
-  // Composition root: create adapters and wire them into PipelineDeps
-  const anthropicClient = createAnthropicClient(config.anthropic.apiKey);
-  const client = createAnthropicSessionClient(anthropicClient);
   const githubClient = createGitHubClient(fetch, config.github?.accessToken ?? "");
+
+  // TC-036/TC-009/TC-035: composition root branches on config.runtime (Design D8).
+  // managed runtime: create SessionClient + ManagedAgentRunner
+  // local runtime:   create ClaudeCodeRunner, no SessionClient (TC-036: no API key needed)
+  let client: ReturnType<typeof createAnthropicSessionClient> | undefined;
+  if (config.runtime !== "local") {
+    const anthropicClient = createAnthropicClient(config.anthropic.apiKey);
+    client = createAnthropicSessionClient(anthropicClient);
+  }
 
   // Slug is the canonical change identifier. It is the single source of truth
   // (request.md `slug:` Meta field, validated by the parser). The agent receives
@@ -147,6 +153,7 @@ export async function runRunCore(
       request,
       slug,
       githubClient,
+      cwd,
     });
   } catch (err) {
     if (err instanceof SpecRunnerError) {

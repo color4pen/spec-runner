@@ -3,7 +3,6 @@ import { NULL_PARSE_RESULT } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
-import { registerBranchTool } from "../tools/register-branch.js";
 import { buildInitialMessage, PROPOSE_SYSTEM_PROMPT } from "../../prompts/propose-system.js";
 
 const PROPOSE_AGENT_MODEL = "claude-sonnet-4-5";
@@ -12,6 +11,10 @@ const PROPOSE_AGENT_MODEL = "claude-sonnet-4-5";
  * Full AgentDefinition owned by ProposeStep.
  * Self-contained: name, role, model, system, and tools are all declared here.
  * Design D1: Step is the single source of truth for its agent definition.
+ *
+ * Note: register_branch tool definition and handler are owned by ManagedAgentRunner
+ * (src/adapter/managed-agent/tools/register-branch.ts). The adapter injects the
+ * tool into the session at runtime (design D3). ProposeStep is runtime-neutral.
  */
 const proposeAgentDefinition: AgentDefinition = {
   name: "specrunner-propose",
@@ -20,20 +23,17 @@ const proposeAgentDefinition: AgentDefinition = {
   system: PROPOSE_SYSTEM_PROMPT,
   tools: [
     { type: AGENT_TOOLSET_TYPE },
-    // register_branch is co-located in this file's toolHandlers below
-    {
-      type: "custom",
-      name: registerBranchTool.definition.name,
-      description: registerBranchTool.definition.description,
-      input_schema: registerBranchTool.definition.input_schema,
-    },
+    // register_branch is injected by the adapter (ManagedAgentRunner / ClaudeCodeRunner)
+    // per design D3. ProposeStep does not declare it here to remain runtime-neutral.
   ],
 };
 
 /**
  * ProposeStep: implements the propose pipeline step as a plain Step object.
  *
- * Owns the register_branch Custom Tool handler (co-located per D4).
+ * The register_branch Custom Tool is injected by the managed-agent adapter
+ * (design D3). ProposeStep is runtime-neutral and does not import any adapter code.
+ *
  * No execution lifecycle here — StepExecutor owns that.
  */
 export const ProposeStep: AgentStep = {
@@ -42,11 +42,8 @@ export const ProposeStep: AgentStep = {
 
   agent: proposeAgentDefinition,
 
-  /**
-   * register_branch handler is exclusively owned by ProposeStep.
-   * spec-review and spec-fixer do NOT have this handler.
-   */
-  toolHandlers: new Map([["register_branch", registerBranchTool.handler]]),
+  // toolHandlers intentionally omitted: injection is the adapter's responsibility (design D3).
+  toolHandlers: undefined,
 
   buildMessage(_state: JobState, deps: StepDeps): string {
     return buildInitialMessage(deps.request.content, deps.slug);

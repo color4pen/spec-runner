@@ -4,9 +4,13 @@
  * TC-033: SpecReviewStep has spec-review dedicated AgentDefinition
  * TC-034: SpecFixerStep has dedicated AgentDefinition with tools=[]
  * TC-035: spec-review system prompt includes verdict/severity contract
- * TC-036: ProposeStep tools and toolHandlers 1:1 correspondence
+ * TC-036: ProposeStep tools and toolHandlers 1:1 correspondence (updated for D3)
  * TC-037: SpecReviewStep tools=[] so toolHandlers can be omitted
  * TC-047: AgentDefinition.role matches StepName (kebab-case)
+ *
+ * Design D3 update: ProposeStep is now runtime-neutral.
+ * - ProposeStep.toolHandlers is undefined (injection is done by ManagedAgentRunner)
+ * - ProposeStep.agent.tools does NOT contain register_branch (adapter injects it)
  */
 import { describe, it, expect } from "vitest";
 import { ProposeStep } from "../../../src/core/step/propose.js";
@@ -25,11 +29,12 @@ describe("TC-032: ProposeStep has complete AgentDefinition", () => {
     expect(ProposeStep.agent.system.length).toBeGreaterThan(0);
   });
 
-  it("tools contains register_branch ToolSpec", () => {
+  // Design D3: register_branch is now injected by ManagedAgentRunner, not declared in ProposeStep
+  it("ProposeStep.agent.tools does NOT contain register_branch (design D3: adapter injects it)", () => {
     const customTool = ProposeStep.agent.tools.find(
       (t) => t.type === "custom" && (t as { name?: string }).name === "register_branch",
     );
-    expect(customTool).toBeDefined();
+    expect(customTool).toBeUndefined();
   });
 
   it("does not have agentId placeholder field", () => {
@@ -102,18 +107,11 @@ describe("TC-035: spec-review system prompt includes verdict/severity definition
   });
 });
 
-// TC-036: ProposeStep tools and toolHandlers 1:1 correspondence
-describe("TC-036: ProposeStep tools and toolHandlers 1:1 correspondence", () => {
-  it("tools contains register_branch ToolSpec", () => {
-    const toolSpec = ProposeStep.agent.tools.find(
-      (t) => t.type === "custom" && (t as { name?: string }).name === "register_branch",
-    );
-    expect(toolSpec).toBeDefined();
-  });
-
-  it("toolHandlers.get('register_branch') is a function", () => {
-    const handler = ProposeStep.toolHandlers?.get("register_branch");
-    expect(typeof handler).toBe("function");
+// TC-036: ProposeStep runtime-neutral — toolHandlers undefined per design D3
+describe("TC-036: ProposeStep is runtime-neutral — toolHandlers is undefined (design D3)", () => {
+  it("ProposeStep.toolHandlers is undefined (adapter injects tools)", () => {
+    // Design D3: register_branch is injected by ManagedAgentRunner, not ProposeStep
+    expect(ProposeStep.toolHandlers).toBeUndefined();
   });
 });
 

@@ -7,6 +7,9 @@ import { STANDARD_TRANSITIONS } from "./types.js";
 import type { Transition } from "./types.js";
 import { EventBus } from "../event/event-bus.js";
 import { StepExecutor } from "../step/executor.js";
+import { createManagedAgentRunner } from "../../adapter/managed-agent/agent-runner.js";
+import { createClaudeCodeRunner } from "../../adapter/claude-code/agent-runner.js";
+import type { AgentRunner } from "../port/agent-runner.js";
 import { ProposeStep } from "../step/propose.js";
 import { SpecReviewStep } from "../step/spec-review.js";
 import { SpecFixerStep } from "../step/spec-fixer.js";
@@ -36,7 +39,25 @@ export async function runPipeline(
   const maxIterations = getMaxRetries(deps.config);
 
   const events = new EventBus();
-  const executor = new StepExecutor(events);
+
+  // Design D8: composition root branches on config.runtime.
+  // TC-035: managed → ManagedAgentRunner (SessionClient required)
+  // TC-036: local → ClaudeCodeRunner (no SessionClient)
+  let runner: AgentRunner;
+  if (deps.config.runtime === "local") {
+    runner = createClaudeCodeRunner({ cwd: deps.cwd });
+  } else {
+    if (!deps.client) {
+      throw new Error("PipelineDeps.client is required for managed runtime. Run 'specrunner init' first.");
+    }
+    runner = createManagedAgentRunner({
+      sessionClient: deps.client,
+      githubClient: deps.githubClient,
+      repo: deps.repo,
+    });
+  }
+
+  const executor = new StepExecutor(events, runner);
 
   const steps = new Map<string, Step>([
     ["propose",      ProposeStep],
@@ -79,7 +100,23 @@ export async function runProposePipeline(
   deps: PipelineDeps,
 ): Promise<JobState> {
   const events = new EventBus();
-  const executor = new StepExecutor(events);
+
+  // Design D8: composition root branches on config.runtime.
+  let proposeRunner: AgentRunner;
+  if (deps.config.runtime === "local") {
+    proposeRunner = createClaudeCodeRunner({ cwd: deps.cwd });
+  } else {
+    if (!deps.client) {
+      throw new Error("PipelineDeps.client is required for managed runtime. Run 'specrunner init' first.");
+    }
+    proposeRunner = createManagedAgentRunner({
+      sessionClient: deps.client,
+      githubClient: deps.githubClient,
+      repo: deps.repo,
+    });
+  }
+
+  const executor = new StepExecutor(events, proposeRunner);
 
   const steps = new Map([
     ["propose", ProposeStep],

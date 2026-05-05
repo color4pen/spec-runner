@@ -75,7 +75,20 @@ export async function main(): Promise<void> {
     case "init": {
       const apiKeyFlag = args.find((a) => a.startsWith("--api-key="));
       const apiKey = apiKeyFlag ? apiKeyFlag.slice("--api-key=".length) : undefined;
-      await runInit({ apiKey });
+      // TC-038 / TC-041: --runtime local skips AgentSyncer and apiKey prompt
+      const runtimeFlag = args.find((a) => a.startsWith("--runtime="));
+      let runtime: "managed" | "local" | undefined;
+      if (runtimeFlag) {
+        const runtimeValue = runtimeFlag.slice("--runtime=".length);
+        if (runtimeValue !== "managed" && runtimeValue !== "local") {
+          process.stderr.write(
+            `Unknown --runtime value: "${runtimeValue}". Valid values are "managed" or "local".\n`,
+          );
+          process.exit(2);
+        }
+        runtime = runtimeValue;
+      }
+      await runInit({ apiKey, runtime });
       break;
     }
 

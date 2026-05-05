@@ -9,11 +9,25 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
+import { createManagedAgentRunner } from "../../../src/adapter/managed-agent/agent-runner.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentDefinition } from "../../../src/core/agent/definition.js";
 import type { Step } from "../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
+
+/**
+ * Create a StepExecutor wired with a ManagedAgentRunner built from deps.
+ * Design D1: executor delegates agent step logic to runner.
+ */
+function makeExecutor(events: EventBus, deps: PipelineDeps): StepExecutor {
+  const runner = createManagedAgentRunner({
+    sessionClient: deps.client!,
+    githubClient: deps.githubClient,
+    repo: deps.repo,
+  });
+  return new StepExecutor(events, runner);
+}
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -108,13 +122,12 @@ async function setupJobState(jobId: string): Promise<JobState> {
 describe("TC-030: StepExecutor resolves agent ID via step.agent.role", () => {
   it("uses spec-review role to lookup config.agents['spec-review'].agentId", async () => {
     const events = new EventBus();
-    const executor = new StepExecutor(events);
 
     const jobId = "tc030-job";
     const state = await setupJobState(jobId);
 
     const mockClient = makeMockSessionClient();
-    const createSessionSpy = mockClient.createSession as ReturnType<typeof vi.fn>;
+    const createSessionSpy = mockClient!.createSession as ReturnType<typeof vi.fn>;
 
     const specReviewStep: Step = {
       kind: "agent",
@@ -138,10 +151,11 @@ describe("TC-030: StepExecutor resolves agent ID via step.agent.role", () => {
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
-      getRefSha: vi.fn().mockResolvedValue(null),
+        getRefSha: vi.fn().mockResolvedValue(null),
       },
     };
 
+    const executor = makeExecutor(events, deps);
     await executor.execute(specReviewStep, state, deps);
 
     // createSession should have been called with "agent_02y" (spec-review ID)
@@ -161,13 +175,12 @@ describe("TC-030: StepExecutor resolves agent ID via step.agent.role", () => {
 describe("TC-031: spec-review Step does not use propose Agent ID", () => {
   it("resolves agent_02y for spec-review, not agent_01x (propose)", async () => {
     const events = new EventBus();
-    const executor = new StepExecutor(events);
 
     const jobId = "tc031-job";
     const state = await setupJobState(jobId);
 
     const mockClient = makeMockSessionClient();
-    const createSessionSpy = mockClient.createSession as ReturnType<typeof vi.fn>;
+    const createSessionSpy = mockClient!.createSession as ReturnType<typeof vi.fn>;
 
     const specReviewStep: Step = {
       kind: "agent",
@@ -191,10 +204,11 @@ describe("TC-031: spec-review Step does not use propose Agent ID", () => {
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
-      getRefSha: vi.fn().mockResolvedValue(null),
+        getRefSha: vi.fn().mockResolvedValue(null),
       },
     };
 
+    const executor = makeExecutor(events, deps);
     await executor.execute(specReviewStep, state, deps);
 
     // Must use spec-review's agent ID, not propose's
@@ -212,14 +226,13 @@ describe("TC-031: spec-review Step does not use propose Agent ID", () => {
 describe("StepExecutor — polling-style step propagates state.branch to createSession", () => {
   it("passes branch: state.branch to client.createSession", async () => {
     const events = new EventBus();
-    const executor = new StepExecutor(events);
 
     const jobId = "branch-propagate-job";
     const state = await setupJobState(jobId);
     // setupJobState seeds state.branch = "feat/test"
 
     const mockClient = makeMockSessionClient();
-    const createSessionSpy = mockClient.createSession as ReturnType<typeof vi.fn>;
+    const createSessionSpy = mockClient!.createSession as ReturnType<typeof vi.fn>;
 
     const step: Step = {
       kind: "agent",
@@ -242,10 +255,11 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
-      getRefSha: vi.fn().mockResolvedValue(null),
+        getRefSha: vi.fn().mockResolvedValue(null),
       },
     };
 
+    const executor = makeExecutor(events, deps);
     await executor.execute(step, state, deps);
 
     expect(createSessionSpy).toHaveBeenCalledWith(
@@ -255,14 +269,13 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
 
   it("fails fast with BRANCH_NOT_SET when state.branch is null", async () => {
     const events = new EventBus();
-    const executor = new StepExecutor(events);
 
     const jobId = "branch-missing-job";
     const state = await setupJobState(jobId);
     state.branch = null;
 
     const mockClient = makeMockSessionClient();
-    const createSessionSpy = mockClient.createSession as ReturnType<typeof vi.fn>;
+    const createSessionSpy = mockClient!.createSession as ReturnType<typeof vi.fn>;
 
     const step: Step = {
       kind: "agent",
@@ -285,10 +298,11 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
         getRawFile: vi.fn().mockResolvedValue(null),
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
-      getRefSha: vi.fn().mockResolvedValue(null),
+        getRefSha: vi.fn().mockResolvedValue(null),
       },
     };
 
+    const executor = makeExecutor(events, deps);
     await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
       code: "BRANCH_NOT_SET",
     });
@@ -300,7 +314,6 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
 describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => {
   it("throws NO_COMMIT_DETECTED when pre and post HEAD SHAs match", async () => {
     const events = new EventBus();
-    const executor = new StepExecutor(events);
 
     const state = await setupJobState("requires-commit-no-advance");
     const mockClient = makeMockSessionClient();
@@ -335,6 +348,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
       },
     };
 
+    const executor = makeExecutor(events, deps);
     await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
       code: "NO_COMMIT_DETECTED",
     });
@@ -360,7 +374,6 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
 
   it("passes when pre and post HEAD SHAs differ (branch advanced)", async () => {
     const events = new EventBus();
-    const executor = new StepExecutor(events);
 
     const state = await setupJobState("requires-commit-advanced");
     const mockClient = makeMockSessionClient();
@@ -395,13 +408,13 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
       },
     };
 
+    const executor = makeExecutor(events, deps);
     await expect(executor.execute(step, state, deps)).resolves.toBeDefined();
     expect(getRefShaSpy).toHaveBeenCalledTimes(2);
   });
 
   it("does not call getRefSha when requiresCommit is false / undefined", async () => {
     const events = new EventBus();
-    const executor = new StepExecutor(events);
 
     const state = await setupJobState("requires-commit-disabled");
     const mockClient = makeMockSessionClient();
@@ -435,13 +448,13 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
       },
     };
 
+    const executor = makeExecutor(events, deps);
     await executor.execute(step, state, deps);
     expect(getRefShaSpy).not.toHaveBeenCalled();
   });
 
   it("does not throw when post-session getRefSha returns null (transient / branch absent)", async () => {
     const events = new EventBus();
-    const executor = new StepExecutor(events);
 
     const state = await setupJobState("requires-commit-transient");
     const mockClient = makeMockSessionClient();
@@ -477,6 +490,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
       },
     };
 
+    const executor = makeExecutor(events, deps);
     // Null post-SHA falls through (no NO_COMMIT_DETECTED) — only equal SHAs trigger
     await expect(executor.execute(step, state, deps)).resolves.toBeDefined();
   });

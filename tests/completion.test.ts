@@ -5,7 +5,7 @@ import {
   calculateBackoff,
   pollUntilComplete,
   assertBreakAfterCompletion,
-} from "../src/adapter/anthropic/completion.js";
+} from "../src/adapter/managed-agent/completion.js";
 import type { BetaManagedAgentsSession } from "@anthropic-ai/sdk/resources/beta/sessions/sessions";
 import {
   isStatusIdleEvent,

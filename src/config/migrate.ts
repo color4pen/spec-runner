@@ -94,6 +94,8 @@ export function migrateConfig(raw: RawConfig): Record<string, AgentRecord> {
  * Apply migration to a parsed raw config and return the canonical SpecRunnerConfig.
  * The `agent` legacy field is stripped.
  * Throws if the raw config is not a valid object (CONFIG_INVALID guard).
+ *
+ * TC-032: If runtime field is absent, default to "managed" (backward compat).
  */
 export function applyMigration(raw: unknown): SpecRunnerConfig {
   if (typeof raw !== "object" || raw === null) {
@@ -103,12 +105,22 @@ export function applyMigration(raw: unknown): SpecRunnerConfig {
   const rawConfig = raw as RawConfig;
   const migratedAgents = migrateConfig(rawConfig);
 
+  // D7 (design.md): normalize missing runtime field to "managed" for backward compat.
+  // TC-032: existing config without runtime → in-memory config.runtime === "managed"
+  const runtime: "managed" | "local" =
+    rawConfig.runtime === "local" ? "local" : "managed";
+
   // Build canonical config — strip `agent` legacy field
+  // For local runtime, anthropic may be absent — default to empty apiKey.
+  const anthropic: { apiKey: string } =
+    (rawConfig.anthropic as { apiKey: string } | undefined) ?? { apiKey: "" };
+
   const canonical: SpecRunnerConfig = {
     ...rawConfig as Record<string, unknown>,
+    runtime,
     agents: migratedAgents,
     version: (rawConfig.version as 1) ?? 1,
-    anthropic: rawConfig.anthropic as { apiKey: string },
+    anthropic,
   } as SpecRunnerConfig;
 
   // Remove legacy fields from the canonical object

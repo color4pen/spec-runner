@@ -1,6 +1,6 @@
-import { defineCustomTool } from "./types.js";
-import { stripBranchPrefix } from "../../state/job-slug.js";
-import type { CustomToolContext, CustomToolResult } from "./types.js";
+import { defineCustomTool } from "../../../core/tools/types.js";
+import { stripBranchPrefix } from "../../../state/job-slug.js";
+import type { CustomToolContext, CustomToolResult } from "../../../core/tools/types.js";
 
 /**
  * The register_branch custom tool.

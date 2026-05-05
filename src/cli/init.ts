@@ -5,7 +5,7 @@ import { AgentRegistry, AgentSyncer } from "../core/agent/index.js";
 import type { SyncRoleResult } from "../core/agent/syncer.js";
 import type { AgentSyncerConfig } from "../core/agent/syncer.js";
 import type { AnthropicClient } from "../core/port/anthropic-client.js";
-import { AnthropicClientAdapter } from "../adapter/anthropic/index.js";
+import { AnthropicClientAdapter } from "../adapter/managed-agent/index.js";
 import { ProposeStep } from "../core/step/propose.js";
 import { SpecReviewStep } from "../core/step/spec-review.js";
 import { SpecFixerStep } from "../core/step/spec-fixer.js";
@@ -24,10 +24,21 @@ const ENVIRONMENT_PACKAGES_NPM = ["@fission-ai/openspec"];
  * Run the specrunner init command.
  * Uses AgentRegistry + AgentSyncer to sync all roles atomically.
  * Creates or retrieves Environment after agent sync.
+ *
+ * TC-038/TC-041: runtime === "local" skips apiKey prompt, AgentSyncer, and Environment creation.
+ * TC-042: runtime === "local" generates no Anthropic API requests.
  */
 export async function runInit(options: {
   apiKey?: string;
+  runtime?: "managed" | "local";
 }): Promise<void> {
+  const runtime = options.runtime ?? "managed";
+
+  // TC-041: local runtime — skip apiKey requirement and agent sync entirely
+  if (runtime === "local") {
+    return runInitLocal();
+  }
+
   // Get API key
   const apiKey = options.apiKey ?? process.env["ANTHROPIC_API_KEY"];
   if (!apiKey) {
@@ -139,9 +150,10 @@ export async function runInit(options: {
   const newConfig: SpecRunnerConfig = {
     // Spread existing config first so that user-tuned fields (pipeline, specReview,
     // specFixer, github, etc.) survive re-runs. init only owns: version, anthropic,
-    // agents, environment.
+    // agents, environment, runtime.
     ...existingConfig,
     version: 1,
+    runtime: "managed", // TC-047: managed init persists runtime: "managed"
     anthropic: { apiKey },
     agents,
     environment: {
@@ -153,6 +165,39 @@ export async function runInit(options: {
   await saveConfig(newConfig);
   logSuccess("Config saved.");
   logInfo("Run 'specrunner login' to authenticate with GitHub.");
+}
+
+/**
+ * Local runtime init: write config with runtime: "local".
+ * No API key, no AgentSyncer, no Environment creation.
+ *
+ * TC-038: AgentSyncer.syncAll() is not called
+ * TC-041: apiKey not required
+ * TC-042: zero Anthropic API requests
+ */
+async function runInitLocal(): Promise<void> {
+  logInfo("specrunner init --runtime local");
+
+  // Load existing config (may not exist — that's OK for first run)
+  let existingConfig: Partial<SpecRunnerConfig> = {};
+  try {
+    existingConfig = await loadConfig();
+  } catch {
+    // No existing config — OK
+  }
+
+  const newConfig: SpecRunnerConfig = {
+    ...existingConfig,
+    version: 1,
+    runtime: "local",
+    // Preserve existing anthropic/github/etc. fields; default empty anthropic for local
+    anthropic: existingConfig.anthropic ?? { apiKey: "" },
+    agents: existingConfig.agents ?? {},
+  };
+
+  await saveConfig(newConfig);
+  logSuccess("Config saved with runtime: local.");
+  logInfo("Run 'specrunner login' to authenticate with GitHub (required for PR creation).");
 }
 
 async function createNewEnvironment(
