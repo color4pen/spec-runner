@@ -17,28 +17,19 @@ import * as os from "node:os";
 import { EventEmitter } from "node:events";
 import type { SpawnOptions, ChildProcess } from "node:child_process";
 import { ClaudeCodeRunner } from "../../../../src/adapter/claude-code/agent-runner.js";
-import type { SpawnFn } from "../../../../src/adapter/claude-code/agent-runner.js";
+import type { SpawnFn, QueryFn } from "../../../../src/adapter/claude-code/agent-runner.js";
 import type { AgentRunContext } from "../../../../src/core/port/agent-runner.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import type { AgentStep } from "../../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
 
 let tempDir: string;
-let originalClaudeBin: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "claude-code-runner-test-"));
-  originalClaudeBin = process.env["CLAUDE_BIN"];
-  // Set CLAUDE_BIN to a deterministic value (actual binary unused — spawn is injected)
-  process.env["CLAUDE_BIN"] = "/fake/claude";
 });
 
 afterEach(async () => {
-  if (originalClaudeBin !== undefined) {
-    process.env["CLAUDE_BIN"] = originalClaudeBin;
-  } else {
-    delete process.env["CLAUDE_BIN"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -91,117 +82,84 @@ function makeAgentStep(overrides: Partial<AgentStep> = {}): AgentStep {
 }
 
 /**
- * Create a fake EventEmitter-based child process that simulates a subprocess.
- * The process exits with the given code after stdin is closed.
+ * Create a mock query function that yields a success result message.
+ * Captures the params passed to query() for assertion.
  */
-function makeFakeChild(opts: {
-  exitCode?: number;
-  captureStdin?: (data: string) => void;
-  captureCwd?: (cwd: string) => void;
-  cwd?: string;
+function makeQueryFn(opts: {
+  captureParams?: (params: { prompt: string; options?: Record<string, unknown> }) => void;
+  result?: "success" | "error";
   sideEffect?: (cwd: string) => Promise<void> | void;
-}) {
-  const { exitCode = 0, captureStdin, captureCwd, cwd = "", sideEffect } = opts;
+} = {}): QueryFn {
+  const { captureParams, result = "success", sideEffect } = opts;
 
-  if (captureCwd) captureCwd(cwd);
+  return async function* mockQuery(params: { prompt: string; options?: Record<string, unknown> }) {
+    if (captureParams) captureParams(params);
 
-  const chunks: string[] = [];
+    const cwd = (params.options?.cwd as string) ?? "";
+    if (sideEffect) await sideEffect(cwd);
 
-  // Build fake stdin with custom write/end — cast through unknown to bypass strict overload checks
-  const stdinEmitter = new EventEmitter();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const stdinAny = stdinEmitter as any;
-  stdinAny.write = (data: Buffer | string, _enc?: unknown): boolean => {
-    chunks.push(typeof data === "string" ? data : data.toString());
-    return true;
-  };
-  stdinAny.end = (): void => {
-    const full = chunks.join("");
-    if (captureStdin) captureStdin(full);
-    Promise.resolve(sideEffect ? sideEffect(cwd) : undefined).then(() => {
-      procAny.emit("close", exitCode);
-    });
-  };
-
-  const procEmitter = new EventEmitter();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const procAny = procEmitter as any;
-  procAny.stdin = stdinAny;
-  procAny.stdout = new EventEmitter();
-  procAny.stderr = new EventEmitter();
-
-  return procEmitter as unknown as ChildProcess;
-}
-
-/**
- * Create a fake spawn function that simulates a subprocess using EventEmitter.
- * Uses ClaudeCodeRunner's _spawnFn injection to avoid module-level mock pollution
- * from other test files that mock node:child_process.
- */
-function makeSpawnFn(opts: {
-  exitCode?: number;
-  captureStdin?: (data: string) => void;
-  captureCwd?: (cwd: string) => void;
-  sideEffect?: (cwd: string) => Promise<void> | void;
-} = {}): SpawnFn {
-  const { exitCode = 0, captureStdin, captureCwd, sideEffect } = opts;
-
-  return vi.fn((bin: string, _args: string[], spawnOpts: SpawnOptions): ChildProcess => {
-    const cwd = (spawnOpts.cwd as string) ?? "";
-    return makeFakeChild({ exitCode, captureStdin, captureCwd, cwd, sideEffect });
-  });
+    if (result === "success") {
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 100,
+        duration_api_ms: 80,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0.01,
+        usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "test-uuid",
+        session_id: "test-session",
+      } as unknown;
+    } else {
+      yield {
+        type: "result" as const,
+        subtype: "error_during_execution" as const,
+        duration_ms: 100,
+        duration_api_ms: 80,
+        is_error: true,
+        num_turns: 1,
+        stop_reason: null,
+        total_cost_usd: 0.01,
+        usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        errors: ["test error"],
+        uuid: "test-uuid",
+        session_id: "test-session",
+      } as unknown;
+    }
+  } as QueryFn;
 }
 
 /**
  * Create a spawn function that simulates git behavior for requiresCommit tests.
- *
- * TC-028/TC-029 need to test git-based branch verification logic. Instead of
- * using real git (which would require bypassing module-level mocks from other test files),
- * we simulate git responses deterministically.
- *
- * gitResponses maps git argument patterns to simulated stdout/exitCode pairs:
- * - key: first git argument after "git" (e.g. "rev-parse", "branch")
- * - value: { stdout, exitCode }
  */
 function makeGitSimulatingSpawnFn(gitResponses: Record<string, { stdout: string; exitCode: number }>): SpawnFn {
-  const claudeBinPath = process.env["CLAUDE_BIN"] ?? "/fake/claude";
+  return (_bin: string, args: string[], spawnOpts: SpawnOptions): ChildProcess => {
+    const gitCmd = args[0] ?? "unknown";
+    const response = gitResponses[gitCmd] ?? { stdout: "", exitCode: 0 };
 
-  return (bin: string, args: string[], spawnOpts: SpawnOptions): ChildProcess => {
-    const cwd = (spawnOpts.cwd as string) ?? "";
+    const stdoutEm = new EventEmitter();
+    const procEm = new EventEmitter();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const procAny = procEm as any;
+    procAny.stdin = { write: () => true, end: () => {} };
+    procAny.stdout = stdoutEm;
+    procAny.stderr = new EventEmitter();
 
-    if (bin === claudeBinPath || bin === "claude") {
-      // Fake claude subprocess: exits 0, does nothing
-      return makeFakeChild({ exitCode: 0, cwd });
-    }
+    setImmediate(() => {
+      if (response.stdout) {
+        stdoutEm.emit("data", Buffer.from(response.stdout + "\n"));
+      }
+      procEm.emit("close", response.exitCode);
+    });
 
-    if (bin === "git") {
-      // Simulate git based on first arg (e.g. "rev-parse" or "branch")
-      const gitCmd = args[0] ?? "unknown";
-      const response = gitResponses[gitCmd] ?? { stdout: "", exitCode: 0 };
-
-      const stdoutEm = new EventEmitter();
-      const procEm = new EventEmitter();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const procAny = procEm as any;
-      procAny.stdin = { write: () => true, end: () => {} };
-      procAny.stdout = stdoutEm;
-      procAny.stderr = new EventEmitter();
-
-      // Emit data then close
-      setImmediate(() => {
-        if (response.stdout) {
-          stdoutEm.emit("data", Buffer.from(response.stdout + "\n"));
-        }
-        procEm.emit("close", response.exitCode);
-      });
-
-      return procEm as unknown as ChildProcess;
-    }
-
-    // Unknown binary — return a fake that errors
-    const proc = new EventEmitter() as unknown as ChildProcess;
-    setImmediate(() => proc.emit("close", 1));
-    return proc;
+    return procEm as unknown as ChildProcess;
   };
 }
 
@@ -211,13 +169,12 @@ function makeGitSimulatingSpawnFn(gitResponses: Record<string, { stdout: string;
 
 describe("TC-022: ClaudeCodeRunner implements AgentRunner interface", () => {
   it("ClaudeCodeRunner has a run() method", () => {
-    const runner = new ClaudeCodeRunner({ cwd: tempDir });
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: makeQueryFn() });
     expect(typeof runner.run).toBe("function");
   });
 
   it("ClaudeCodeRunner.run() accepts AgentRunContext and returns AgentRunResult", async () => {
-    const spawnFn = makeSpawnFn({ exitCode: 0 });
-    const runner = new ClaudeCodeRunner({ cwd: tempDir, _spawnFn: spawnFn });
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: makeQueryFn() });
     const state = makeJobState("tc022-job");
     const ctx: AgentRunContext = {
       step: makeAgentStep(),
@@ -237,20 +194,19 @@ describe("TC-022: ClaudeCodeRunner implements AgentRunner interface", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-023: query() receives ctx.cwd (subprocess invoked with cwd)
+// TC-023: query() receives ctx.cwd
 // ---------------------------------------------------------------------------
 
-describe("TC-023: ClaudeCodeRunner invokes subprocess with ctx.cwd", () => {
-  it("subprocess is called with the correct cwd", async () => {
-    let capturedCwd: string | undefined;
+describe("TC-023: ClaudeCodeRunner invokes query() with ctx.cwd", () => {
+  it("query() is called with the correct cwd", async () => {
+    let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
 
-    const spawnFn = makeSpawnFn({
-      exitCode: 0,
-      captureCwd: (cwd) => { capturedCwd = cwd; },
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { capturedParams = params; },
     });
 
     const worktreeCwd = tempDir;
-    const runner = new ClaudeCodeRunner({ cwd: worktreeCwd, _spawnFn: spawnFn });
+    const runner = new ClaudeCodeRunner({ cwd: worktreeCwd, _queryFn: queryFn });
     const state = makeJobState("tc023-job");
     const ctx: AgentRunContext = {
       step: makeAgentStep(),
@@ -265,12 +221,18 @@ describe("TC-023: ClaudeCodeRunner invokes subprocess with ctx.cwd", () => {
 
     await runner.run(ctx);
 
-    expect(capturedCwd).toBe(worktreeCwd);
+    expect(capturedParams).toBeDefined();
+    expect(capturedParams!.options?.cwd).toBe(worktreeCwd);
   });
 
-  it("spawn is called with the binary from CLAUDE_BIN env", async () => {
-    const spawnFn = makeSpawnFn({ exitCode: 0 });
-    const runner = new ClaudeCodeRunner({ cwd: tempDir, _spawnFn: spawnFn });
+  it("query() is called with allowedTools, permissionMode, maxTurns, and model", async () => {
+    let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { capturedParams = params; },
+    });
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const ctx: AgentRunContext = {
       step: makeAgentStep(),
       state: makeJobState(),
@@ -284,11 +246,10 @@ describe("TC-023: ClaudeCodeRunner invokes subprocess with ctx.cwd", () => {
 
     await runner.run(ctx);
 
-    expect(spawnFn).toHaveBeenCalledWith(
-      "/fake/claude",
-      expect.any(Array),
-      expect.objectContaining({ cwd: tempDir }),
-    );
+    expect(capturedParams!.options?.allowedTools).toEqual(["Read", "Edit", "Write", "Bash", "Grep", "Glob"]);
+    expect(capturedParams!.options?.permissionMode).toBe("bypassPermissions");
+    expect(capturedParams!.options?.maxTurns).toBe(30);
+    expect(capturedParams!.options?.model).toBe("claude-sonnet-4-5");
   });
 });
 
@@ -300,7 +261,6 @@ describe("TC-024: ClaudeCodeRunner does not import SessionClient or @anthropic-a
   it("claude-code/agent-runner.ts has no SessionClient import statement", async () => {
     const filePath = path.resolve(__dirname, "../../../../src/adapter/claude-code/agent-runner.ts");
     const content = await fs.readFile(filePath, "utf-8");
-    // Check for actual import lines (not comments)
     const importLines = content
       .split("\n")
       .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*"))
@@ -311,12 +271,21 @@ describe("TC-024: ClaudeCodeRunner does not import SessionClient or @anthropic-a
   it("claude-code/agent-runner.ts has no @anthropic-ai/sdk import statement", async () => {
     const filePath = path.resolve(__dirname, "../../../../src/adapter/claude-code/agent-runner.ts");
     const content = await fs.readFile(filePath, "utf-8");
-    // Check for actual import lines (not comments)
     const importLines = content
       .split("\n")
       .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*"))
       .filter((l) => /from\s+["']@anthropic-ai\/sdk/.test(l));
     expect(importLines).toHaveLength(0);
+  });
+
+  it("claude-code/agent-runner.ts imports from @anthropic-ai/claude-agent-sdk", async () => {
+    const filePath = path.resolve(__dirname, "../../../../src/adapter/claude-code/agent-runner.ts");
+    const content = await fs.readFile(filePath, "utf-8");
+    const importLines = content
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*"))
+      .filter((l) => /from\s+["']@anthropic-ai\/claude-agent-sdk/.test(l));
+    expect(importLines.length).toBeGreaterThan(0);
   });
 
   it("no file in src/adapter/claude-code/ has import statement for @anthropic-ai/sdk", async () => {
@@ -325,13 +294,11 @@ describe("TC-024: ClaudeCodeRunner does not import SessionClient or @anthropic-a
     for (const entry of entries) {
       if (entry.isFile() && entry.name.endsWith(".ts")) {
         const content = await fs.readFile(path.join(claudeCodeDir, entry.name), "utf-8");
-        // Check for actual import statements (not comments)
         const importLines = content
           .split("\n")
           .filter((line) => !line.trim().startsWith("//") && !line.trim().startsWith("*"))
           .filter((line) => /import\s+.*@anthropic-ai\/sdk/.test(line) || /from\s+["']@anthropic-ai\/sdk/.test(line));
         expect(importLines).toHaveLength(0);
-        // SessionClient should not be imported either
         const sessionClientImports = content
           .split("\n")
           .filter((line) => !line.trim().startsWith("//") && !line.trim().startsWith("*"))
@@ -347,13 +314,11 @@ describe("TC-024: ClaudeCodeRunner does not import SessionClient or @anthropic-a
 // ---------------------------------------------------------------------------
 
 describe("TC-025: ClaudeCodeRunner reads resultContent from fs (not GitHub API)", () => {
-  it("result file is read from local filesystem after subprocess completes", async () => {
+  it("result file is read from local filesystem after query completes", async () => {
     const resultRelPath = "openspec/changes/test-slug/spec-review-result-001.md";
     const expectedContent = "## Verdict\napproved";
 
-    // Side effect: create the result file in the cwd
-    const spawnFn = makeSpawnFn({
-      exitCode: 0,
+    const queryFn = makeQueryFn({
       sideEffect: async (cwd) => {
         const filePath = path.join(cwd, resultRelPath);
         await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -361,7 +326,7 @@ describe("TC-025: ClaudeCodeRunner reads resultContent from fs (not GitHub API)"
       },
     });
 
-    const runner = new ClaudeCodeRunner({ cwd: tempDir, _spawnFn: spawnFn });
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const state = makeJobState("tc025-job");
 
     const ctx: AgentRunContext = {
@@ -389,15 +354,14 @@ describe("TC-025: ClaudeCodeRunner reads resultContent from fs (not GitHub API)"
 // ---------------------------------------------------------------------------
 
 describe("TC-026: ClaudeCodeRunner additionalInstructions contains branch checkout", () => {
-  it("subprocess prompt includes 'git checkout -b feat/foo-bar'", async () => {
-    let capturedStdin = "";
+  it("query prompt includes 'git checkout -b feat/foo-bar'", async () => {
+    let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
 
-    const spawnFn = makeSpawnFn({
-      exitCode: 0,
-      captureStdin: (data) => { capturedStdin = data; },
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { capturedParams = params; },
     });
 
-    const runner = new ClaudeCodeRunner({ cwd: tempDir, _spawnFn: spawnFn });
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const state = makeJobState("tc026-job");
 
     const ctx: AgentRunContext = {
@@ -413,10 +377,8 @@ describe("TC-026: ClaudeCodeRunner additionalInstructions contains branch checko
 
     await runner.run(ctx);
 
-    // TC-026: prompt should mention the branch (git checkout -b feat/foo-bar)
-    expect(capturedStdin).toContain("feat/foo-bar");
-    // And no register_branch reference (TC-027)
-    expect(capturedStdin).not.toContain("register_branch");
+    expect(capturedParams!.prompt).toContain("feat/foo-bar");
+    expect(capturedParams!.prompt).not.toContain("register_branch");
   });
 });
 
@@ -432,7 +394,6 @@ describe("TC-027: ClaudeCodeRunner does not import register_branch", () => {
     for (const entry of entries) {
       if (entry.isFile() && entry.name.endsWith(".ts")) {
         const content = await fs.readFile(path.join(claudeCodeDir, entry.name), "utf-8");
-        // Check for imports — not comments
         const importLines = content
           .split("\n")
           .filter((line) => line.trim().startsWith("import") && line.includes("register_branch"));
@@ -448,24 +409,17 @@ describe("TC-027: ClaudeCodeRunner does not import register_branch", () => {
 
 describe("TC-028: ClaudeCodeRunner requiresCommit guard — branch not advanced", () => {
   it("returns completionReason='error' when branch HEAD did not advance", async () => {
-    // Simulate git responses:
-    // - rev-parse before: returns sha-abc123 (branch exists, has a commit)
-    // - branch --list: returns "feat/foo-bar" (branch exists)
-    // - rev-parse after: returns sha-abc123 (SAME sha → HEAD did not advance)
     const SHA = "sha-abc123deadbeef";
-    let revParseCallCount = 0;
 
     const gitResponses = {
       "rev-parse": { stdout: SHA, exitCode: 0 },
       "branch": { stdout: "  feat/foo-bar", exitCode: 0 },
     };
 
-    // We need rev-parse to be called twice (before and after), returning the same SHA
-    // makeGitSimulatingSpawnFn always returns the same response for each command key,
-    // so both pre-run and post-run rev-parse return the same SHA → HEAD did not advance
     const spawnFn = makeGitSimulatingSpawnFn(gitResponses);
+    const queryFn = makeQueryFn();
 
-    const runner = new ClaudeCodeRunner({ cwd: tempDir, _spawnFn: spawnFn });
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _spawnFn: spawnFn, _queryFn: queryFn });
     const state = makeJobState("tc028-job", "feat/foo-bar");
 
     const ctx: AgentRunContext = {
@@ -491,12 +445,8 @@ describe("TC-028: ClaudeCodeRunner requiresCommit guard — branch not advanced"
     };
 
     const result = await runner.run(ctx);
-    // TC-028: branch HEAD not advanced → error
     expect(result.completionReason).toBe("error");
     expect(result.error?.message).toMatch(/branch HEAD did not advance/);
-
-    // Suppress unused variable warning
-    void revParseCallCount;
   });
 });
 
@@ -506,17 +456,15 @@ describe("TC-028: ClaudeCodeRunner requiresCommit guard — branch not advanced"
 
 describe("TC-029: ClaudeCodeRunner requiresCommit — branch does not exist → error", () => {
   it("returns completionReason='error' when expected branch does not exist after run", async () => {
-    // Simulate git responses:
-    // - rev-parse before: returns a sha (branch appears to exist pre-run)
-    // - branch --list: returns "" (branch does NOT exist after run)
     const gitResponses = {
       "rev-parse": { stdout: "sha-abc123", exitCode: 0 },
-      "branch": { stdout: "", exitCode: 0 }, // empty output → branch not found
+      "branch": { stdout: "", exitCode: 0 },
     };
 
     const spawnFn = makeGitSimulatingSpawnFn(gitResponses);
+    const queryFn = makeQueryFn();
 
-    const runner = new ClaudeCodeRunner({ cwd: tempDir, _spawnFn: spawnFn });
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _spawnFn: spawnFn, _queryFn: queryFn });
     const state = makeJobState("tc029-job", "feat/foo-bar");
 
     const ctx: AgentRunContext = {
@@ -533,7 +481,7 @@ describe("TC-029: ClaudeCodeRunner requiresCommit — branch does not exist → 
         resultFilePath: () => null,
       }),
       state,
-      branch: "feat/foo-bar", // branch does not exist (simulated)
+      branch: "feat/foo-bar",
       slug: "foo-bar",
       cwd: tempDir,
       requestContent: "content",
@@ -542,10 +490,56 @@ describe("TC-029: ClaudeCodeRunner requiresCommit — branch does not exist → 
     };
 
     const result = await runner.run(ctx);
-    // TC-029: branch does not exist → error
     expect(result.completionReason).toBe("error");
     expect(result.error).toBeDefined();
-    // TC-029: no GitHub API calls (git only)
-    // Verified by the absence of any githubClient usage in ClaudeCodeRunner
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SDK query error handling
+// ---------------------------------------------------------------------------
+
+describe("ClaudeCodeRunner SDK query error handling", () => {
+  it("returns completionReason='error' when query result is error subtype", async () => {
+    const queryFn = makeQueryFn({ result: "error" });
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+    expect(result.completionReason).toBe("error");
+    expect(result.error?.code).toBe("CLAUDE_CODE_QUERY_FAILED");
+  });
+
+  it("returns completionReason='error' when query throws", async () => {
+    const queryFn: QueryFn = async function* () {
+      throw new Error("connection failed");
+    };
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+    expect(result.completionReason).toBe("error");
+    expect(result.error?.message).toContain("connection failed");
   });
 });

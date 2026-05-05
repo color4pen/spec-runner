@@ -13,10 +13,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { EventEmitter } from "node:events";
-import type { SpawnOptions, ChildProcess } from "node:child_process";
 import { ClaudeCodeRunner } from "../../../../src/adapter/claude-code/agent-runner.js";
-import type { SpawnFn } from "../../../../src/adapter/claude-code/agent-runner.js";
+import type { QueryFn } from "../../../../src/adapter/claude-code/agent-runner.js";
 import { StepExecutor } from "../../../../src/core/step/executor.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { JobState, StepRun } from "../../../../src/state/schema.js";
@@ -25,25 +23,17 @@ import type { AgentStep } from "../../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
 
 let tempDir: string;
-let originalClaudeBin: string | undefined;
 let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "claude-code-executor-integration-"));
-  originalClaudeBin = process.env["CLAUDE_BIN"];
   originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["CLAUDE_BIN"] = "/fake/claude";
   process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalClaudeBin !== undefined) {
-    process.env["CLAUDE_BIN"] = originalClaudeBin;
-  } else {
-    delete process.env["CLAUDE_BIN"];
-  }
   if (originalXdgDataHome !== undefined) {
     process.env["XDG_DATA_HOME"] = originalXdgDataHome;
   } else {
@@ -82,46 +72,60 @@ function makeConfig(): SpecRunnerConfig {
 }
 
 /**
- * Create a fake spawn function that:
- * - For the claude binary: writes a result file to cwd as a side effect, then exits 0
- * - For git: returns success no-op
+ * Create a mock query function that optionally writes a result file as a side effect.
  */
-function makeLocalSpawnFn(opts: {
+function makeLocalQueryFn(opts: {
   resultRelPath?: string;
   resultContent?: string;
-  exitCode?: number;
-}): SpawnFn {
-  const { resultRelPath, resultContent = "", exitCode = 0 } = opts;
+  error?: boolean;
+}): QueryFn {
+  const { resultRelPath, resultContent = "", error = false } = opts;
 
-  return (_bin: string, _args: string[], spawnOpts: SpawnOptions): ChildProcess => {
-    const cwd = (spawnOpts.cwd as string) ?? "";
+  return async function* mockQuery(params: { prompt: string; options?: Record<string, unknown> }) {
+    const cwd = (params.options?.cwd as string) ?? "";
 
-    const stdinEmitter = new EventEmitter();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const stdinAny = stdinEmitter as any;
-    stdinAny.write = (): boolean => true;
-    stdinAny.end = (): void => {
-      // Side effect: write result file if configured
-      const doWork = async (): Promise<void> => {
-        if (resultRelPath && resultContent) {
-          const filePath = path.join(cwd, resultRelPath);
-          await fs.mkdir(path.dirname(filePath), { recursive: true });
-          await fs.writeFile(filePath, resultContent, "utf-8");
-        }
-        procAny.emit("close", exitCode);
-      };
-      void doWork();
-    };
+    if (resultRelPath && resultContent) {
+      const filePath = path.join(cwd, resultRelPath);
+      await fs.mkdir(path.dirname(filePath), { recursive: true });
+      await fs.writeFile(filePath, resultContent, "utf-8");
+    }
 
-    const procEmitter = new EventEmitter();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const procAny = procEmitter as any;
-    procAny.stdin = stdinAny;
-    procAny.stdout = new EventEmitter();
-    procAny.stderr = new EventEmitter();
-
-    return procEmitter as unknown as ChildProcess;
-  };
+    if (error) {
+      yield {
+        type: "result" as const,
+        subtype: "error_during_execution" as const,
+        duration_ms: 100,
+        duration_api_ms: 80,
+        is_error: true,
+        num_turns: 1,
+        stop_reason: null,
+        total_cost_usd: 0.01,
+        usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        errors: ["test error"],
+        uuid: "test-uuid",
+        session_id: "test-session",
+      } as unknown;
+    } else {
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 100,
+        duration_api_ms: 80,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0.01,
+        usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "test-uuid",
+        session_id: "test-session",
+      } as unknown;
+    }
+  } as QueryFn;
 }
 
 async function seedJobState(jobId: string, state: JobState): Promise<void> {
@@ -143,8 +147,8 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
     const initialState = makeJobState(jobId);
     await seedJobState(jobId, initialState);
 
-    const spawnFn = makeLocalSpawnFn({ resultRelPath, resultContent });
-    const runner = new ClaudeCodeRunner({ cwd: tempDir, _spawnFn: spawnFn });
+    const queryFn = makeLocalQueryFn({ resultRelPath, resultContent });
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const events = new EventBus();
     const executor = new StepExecutor(events, runner);
 
@@ -197,27 +201,22 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
 
     const resultState = await executor.execute(step, initialState, deps);
 
-    // Assert state.steps["spec-review"] is populated with a step result
     const stepResults = resultState.steps?.["spec-review"];
     expect(stepResults).toBeDefined();
     expect(Array.isArray(stepResults)).toBe(true);
     expect(stepResults!.length).toBeGreaterThan(0);
 
     const lastResult = stepResults![stepResults!.length - 1] as StepRun;
-    // StepRun shape: outcome.verdict
     expect(lastResult.outcome.verdict).toBe("approved");
 
-    // Assert state.history has a verdict entry
     const verdictHistoryEntry = resultState.history.find(
       (h) => h.step === "spec-review-verdict" && h.status === "ok",
     );
     expect(verdictHistoryEntry).toBeDefined();
     expect(verdictHistoryEntry?.message).toContain("approved");
 
-    // Assert verdict:parsed event was emitted with correct verdict
     expect(verdictEvents).toContain("spec-review:approved");
 
-    // Assert state was persisted to disk
     const jobsDir = path.join(tempDir, "specrunner", "jobs");
     const persisted = JSON.parse(
       await fs.readFile(path.join(jobsDir, `${jobId}.json`), "utf-8"),
@@ -230,9 +229,8 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
     const initialState = makeJobState(jobId);
     await seedJobState(jobId, initialState);
 
-    // spawn exits with non-zero → ClaudeCodeRunner returns completionReason="error"
-    const spawnFn = makeLocalSpawnFn({ exitCode: 1 });
-    const runner = new ClaudeCodeRunner({ cwd: tempDir, _spawnFn: spawnFn });
+    const queryFn = makeLocalQueryFn({ error: true });
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const events = new EventBus();
     const executor = new StepExecutor(events, runner);
 
@@ -274,12 +272,10 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
       cwd: tempDir,
     };
 
-    // executor.execute should throw (attach state and rethrow)
     await expect(executor.execute(step, initialState, deps)).rejects.toMatchObject({
-      code: "CLAUDE_CODE_SUBPROCESS_FAILED",
+      code: "CLAUDE_CODE_QUERY_FAILED",
     });
 
-    // Persisted state should have a failed step result
     const jobsDir = path.join(tempDir, "specrunner", "jobs");
     const persisted = JSON.parse(
       await fs.readFile(path.join(jobsDir, `${jobId}.json`), "utf-8"),

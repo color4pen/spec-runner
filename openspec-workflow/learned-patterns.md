@@ -1,6 +1,6 @@
 # Learned Patterns
 
-last-distilled: 2026-05-05 15:12
+last-distilled: 2026-05-05 16:08
 
 ワークフロー完了時に抽出されたパターンの蓄積。
 continuous-learning スキルが追記し、distill-learnings / promote-rule が消費する。
@@ -1225,3 +1225,31 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **adapter 命名 rename (`anthropic/` → `managed-agent/`) が module-boundary の意味を強化**: SDK vendor 名から runtime model 名への rename で「adapter is named after its runtime model not its SDK」が architectural intent として明確化された。今後 adapter を増やす際の命名 convention に格上げ候補（OpenAI / Bedrock / Vertex などを SDK 名でなく runtime model 名で）
 - **request type の選択（new-feature）が ADR + delta spec を残す動機として正しく機能**: 本 request は new-feature として ADD-20260505-agent-runner-port-and-local-runtime.md と 8 spec files (agent-runner-port ADDED / managed-agent-runtime ADDED / claude-code-runtime ADDED / runtime-selection ADDED / cli-config-store MODIFIED / branch-registration MODIFIED / agent-syncer MODIFIED / module-boundary MODIFIED) を生成できた。bug-fix を選んでいたら ADR は残らず port abstraction の設計判断が消失していた。**「設計追加を含む変更は new-feature / spec-change を選ぶ」memory rule が今回も正しく駆動**
 - **次 request 候補（後続、本 request 由来）**: (a) AgentRunner port から `_updatedState` を撤廃し executor が常に state lifecycle を握る refactor (Option a) — port の純化で `as any` cast 群と executor 重複コードを同時解消, (b) `LocalStepDeps` discriminated union を導入し `ClaudeCodeRunner` の `undefined as any` cast 3 箇所を type-safe 化, (c) fix #4 / #6 の regression test を追加（`--runtime=manage` reject / ENOENT hint 検証）, (d) `ctx.branch` interpolation の slug/branch validation guard 追加（defense-in-depth）, (e) `tests/architecture/tc-references.test.ts` で「コード内 TC-XXX が test-cases.md と整合 + repo 全体 unique」を invariant test 化（finish-redesign で既に提案済 + 本 request で TC-146 collision 再発で根拠強化）, (f) `executor-helpers.ts` に `persistAgentStepResult` 共通 helper 抽出（runAgentStep local path と runCliStep の重複 50+ LOC 解消）, (g) module-architect の責務に「結合 boundary をまたぐ port には integration TC を必須化」を明文化, (h) code-fixer prompt に「observable behavior 変更を伴う fix は TC 追加を必須化」を明文化, (i) `runtime: "local"` 時の `SessionClient` / `AgentSyncer` 生成可否表現を spec で対称化（lazy-init 統一）, (j) `bun test` vs `vitest` の non-equivalence を constraints.md に明文化（canonical runner は vitest）
+
+---
+
+## 2026-05-05 — [BugFix] ClaudeCodeRunner が SDK query() ではなく subprocess を使用
+
+**Type**: bug-fix
+**Severity**: normal
+**Root Cause**: implementer が SDK パッケージ名を誤認し subprocess にフォールバック
+
+### Bug Pattern
+- 症状: `ClaudeCodeRunner` が `spawn("claude", ["--print", ...])` で CLI 子プロセスを起動。streaming なし、ツール制御なし、turn 制御なし
+- 直接原因: `@anthropic-ai/claude-code` SDK の `query()` ではなく `node:child_process` の `spawn` を使用
+- 根本原因: PR #80 の implementer が「SDK が環境にない」と誤判断。request.md に記載の `@anthropic-ai/claude-code` は CLI バイナリ配布パッケージであり `query()` を export しない。正しい SDK パッケージ名は `@anthropic-ai/claude-agent-sdk`
+
+### Process Gap
+- 検出すべきだったフェーズ: code-review
+- 観点の有無:
+  - code-review checklist: なかった → ギャップ（「設計文書で指定された外部 SDK の import を実際に使用しているか」の観点が不在）
+  - spec-review criteria: なかった → ギャップ（request.md のパッケージ名が実在する export と一致するかの検証が不在）
+  - .claude/rules/: なかった → ギャップ（SDK パッケージ名の正確性を検証するルールなし）
+- 改善アクション:
+  - code-review checklist に「設計で指定された SDK import が実装で使用されているか」チェック追加 (proposed)
+  - spec-review criteria に「request.md に記載の npm パッケージ名が実在し、指定 API を export するか」検証追加 (proposed)
+
+### Lessons
+- **request.md のパッケージ名が正確でないと implementer が迷走する**: 本件では `@anthropic-ai/claude-code`（CLI パッケージ）と `@anthropic-ai/claude-agent-sdk`（SDK パッケージ）が混同された。request.md 作成時に `npm info <pkg> exports` で実在確認する規律が必要
+- **implementer の「SDK が使えない」自己判断からの subprocess フォールバックは危険**: 設計で SDK 使用が明示されている場合、「使えない」と判断した時点で escalation すべき。黙ってフォールバックすると設計不整合が verification をすり抜ける
+- **code-review に「設計指定 SDK の実装一致」観点が不在だった**: 設計で `query()` 使用を要件にしていたが、実装が `spawn` に変わっていてもレビューで検出できなかった。architecture カテゴリの「仕様と実装の乖離」チェック強化が必要

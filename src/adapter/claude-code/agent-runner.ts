@@ -1,7 +1,7 @@
 /**
- * ClaudeCodeRunner: AgentRunner adapter for Claude Code CLI (local runtime).
+ * ClaudeCodeRunner: AgentRunner adapter for Claude Code SDK (local runtime).
  *
- * Implements AgentRunner port using subprocess invocation of the claude CLI binary.
+ * Implements AgentRunner port using @anthropic-ai/claude-agent-sdk query().
  * No SessionClient or @anthropic-ai/sdk import — fully isolated from managed adapter.
  *
  * Design D8 (design.md): composition root injects ClaudeCodeRunner when runtime === "local".
@@ -20,90 +20,25 @@
  */
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { spawn as nodeSpawn } from "node:child_process";
-import type { SpawnOptions, ChildProcess } from "node:child_process";
+import {
+  query as sdkQuery,
+  type SDKMessage,
+  type SDKResultMessage,
+} from "@anthropic-ai/claude-agent-sdk";
+import { gitExec, defaultSpawnFn, type SpawnFn } from "./git-exec.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../core/port/agent-runner.js";
 
-export type SpawnFn = (bin: string, args: string[], opts: SpawnOptions) => ChildProcess;
+export type { SpawnFn } from "./git-exec.js";
 
-/**
- * Invoke a binary with the given args using spawn, collecting stdout.
- * Resolves when the process exits with code 0; rejects otherwise.
- * stdin is written from opts.input if provided.
- */
-function runSubprocess(
-  spawnFn: SpawnFn,
-  bin: string,
-  args: string[],
-  opts: { cwd: string; input?: string },
-): Promise<{ stdout: string; stderr: string }> {
-  return new Promise((resolve, reject) => {
-    const child = spawnFn(bin, args, {
-      cwd: opts.cwd,
-      stdio: ["pipe", "pipe", "pipe"],
-    });
+export type QueryFn = (params: {
+  prompt: string;
+  options?: Record<string, unknown>;
+}) => AsyncGenerator<SDKMessage, void>;
 
-    let stdout = "";
-    let stderr = "";
-    child.stdout?.on("data", (chunk: Buffer) => { stdout += chunk.toString(); });
-    child.stderr?.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
-
-    child.on("error", (err) => reject(err));
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolve({ stdout, stderr });
-      } else {
-        reject(new Error(`${bin} exited with code ${code}: ${stderr.slice(0, 500)}`));
-      }
-    });
-
-    if (opts.input !== undefined) {
-      child.stdin?.write(opts.input, "utf-8");
-    }
-    child.stdin?.end();
-  });
-}
-
-/**
- * Find the claude CLI binary.
- * Resolves in order:
- * 1. CLAUDE_BIN env override
- * 2. System PATH (claude)
- */
-function resolveClaude(): string {
-  return process.env["CLAUDE_BIN"] ?? "claude";
-}
-
-/**
- * Run a git command in the given cwd and return stdout.
- * Returns null if the command fails (non-zero exit, branch not found, etc).
- *
- * Uses the injected spawnFn so that tests don't need a separate execFile injectable.
- */
-async function gitExec(
-  spawnFn: SpawnFn,
-  cwd: string,
-  args: string[],
-): Promise<string | null> {
-  try {
-    const { stdout } = await runSubprocess(spawnFn, "git", args, { cwd });
-    return stdout.trim();
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Build runtime-specific additionalInstructions for local Claude Code execution.
- *
- * TC-026: includes `git checkout -b <branch>` instruction
- * TC-027: no register_branch reference
- */
 function buildAdditionalInstructions(ctx: AgentRunContext): string {
   const { branch, slug, step } = ctx;
   const lines: string[] = [];
 
-  // Branch setup instruction (D9: adapter injects runtime-specific git ops)
   if (branch) {
     lines.push(
       `RUNTIME INSTRUCTIONS (local Claude Code mode):`,
@@ -115,7 +50,6 @@ function buildAdditionalInstructions(ctx: AgentRunContext): string {
     );
   }
 
-  // Step-specific instructions
   if (step.agent.role === "propose") {
     lines.push(
       `- For the propose step: create the branch ${branch}, make the initial commit with the openspec change folder, and push.`,
@@ -127,53 +61,36 @@ function buildAdditionalInstructions(ctx: AgentRunContext): string {
 }
 
 export interface ClaudeCodeRunnerDeps {
-  /** Working directory for Claude Code sessions (typically the git worktree root) */
   cwd?: string;
-  /**
-   * Override spawn function for testing.
-   * Production code uses node:child_process.spawn.
-   * Tests inject a mock to avoid real subprocess invocation, or inject the real spawn
-   * to run actual git commands in git-based tests (TC-028, TC-029).
-   */
   _spawnFn?: SpawnFn;
+  _queryFn?: QueryFn;
 }
 
 /**
- * ClaudeCodeRunner: implements AgentRunner for Claude Code CLI (local runtime).
- *
  * TC-022: implements AgentRunner interface
  * TC-024: does not import SessionClient or @anthropic-ai/sdk
  */
 export class ClaudeCodeRunner implements AgentRunner {
   private readonly defaultCwd: string;
   private readonly spawnFn: SpawnFn;
+  private readonly queryFn: QueryFn;
 
   constructor(deps: ClaudeCodeRunnerDeps = {}) {
     this.defaultCwd = deps.cwd ?? process.cwd();
-    this.spawnFn = deps._spawnFn ?? nodeSpawn;
+    this.spawnFn = deps._spawnFn ?? defaultSpawnFn;
+    this.queryFn = deps._queryFn ?? (sdkQuery as unknown as QueryFn);
   }
 
-  /**
-   * Execute the full Claude Code local lifecycle for one step.
-   *
-   * 1. Build prompt from step.buildMessage
-   * 2. Append runtime-specific additionalInstructions
-   * 3. Invoke claude CLI subprocess
-   * 4. Verify branch / requiresCommit (git-based)
-   * 5. Read result file from fs (not GitHub API)
-   * 6. Return AgentRunResult
-   */
   async run(ctx: AgentRunContext): Promise<AgentRunResult> {
     const cwd = ctx.cwd || this.defaultCwd;
     const step = ctx.step;
     const state = ctx.state;
 
-    // Build prompt
     const baseMessage = step.buildMessage(state, {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      client: undefined as any, // not needed for local runtime
+      client: undefined as any,
       config: ctx.config,
-      repo: { owner: "", name: "" }, // repo context from cwd for local
+      repo: { owner: "", name: "" },
       request: {
         type: "feature",
         title: "",
@@ -183,51 +100,65 @@ export class ClaudeCodeRunner implements AgentRunner {
       },
       slug: ctx.slug,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      githubClient: undefined as any, // not needed for local runtime
+      githubClient: undefined as any,
       cwd,
     });
 
-    // Append runtime-specific instructions (D9)
     const additionalInstructions = buildAdditionalInstructions(ctx);
     const fullPrompt = additionalInstructions
       ? `${baseMessage}\n\n${additionalInstructions}`
       : baseMessage;
 
-    // Snapshot branch HEAD SHA before invocation for requiresCommit check (design D5)
     let preRunHeadSha: string | null = null;
     if (step.requiresCommit && ctx.branch) {
       preRunHeadSha = await gitExec(this.spawnFn, cwd, ["rev-parse", ctx.branch]);
     }
 
-    // TC-023: invoke claude CLI subprocess with cwd, passing prompt via stdin
-    const claudeBin = resolveClaude();
+    // TC-023: invoke SDK query() with cwd, allowedTools, permissionMode, maxTurns
     try {
-      await runSubprocess(this.spawnFn, claudeBin, ["--print", "--output-format", "text"], {
-        cwd,
-        input: fullPrompt,
+      const messages = this.queryFn({
+        prompt: fullPrompt,
+        options: {
+          cwd,
+          allowedTools: ["Read", "Edit", "Write", "Bash", "Grep", "Glob"],
+          permissionMode: "bypassPermissions",
+          maxTurns: 30,
+          model: step.agent.model,
+        },
       });
+
+      let lastResult: SDKResultMessage | null = null;
+      for await (const message of messages) {
+        if (message.type === "result") {
+          lastResult = message as SDKResultMessage;
+        }
+      }
+
+      if (lastResult && lastResult.subtype !== "success") {
+        const errorResult = lastResult as SDKResultMessage & { errors?: string[] };
+        return {
+          completionReason: "error",
+          resultContent: null,
+          error: Object.assign(
+            new Error(`Claude Code SDK query failed: ${errorResult.subtype}`),
+            { code: "CLAUDE_CODE_QUERY_FAILED" },
+          ),
+        };
+      }
     } catch (err) {
-      const cause = err as Error & { code?: string };
-      const isEnoent = cause.code === "ENOENT";
-      const message = isEnoent
-        ? `Claude Code subprocess failed: ${cause.message}`
-        : `Claude Code subprocess failed: ${cause.message}`;
-      const hint = isEnoent
-        ? `claude CLI not found. Set CLAUDE_BIN env var or install @anthropic-ai/claude-code.`
-        : undefined;
+      const cause = err as Error;
       return {
         completionReason: "error",
         resultContent: null,
         error: Object.assign(
-          new Error(message),
-          { code: "CLAUDE_CODE_SUBPROCESS_FAILED", cause, hint },
+          new Error(`Claude Code SDK query failed: ${cause.message}`),
+          { code: "CLAUDE_CODE_QUERY_FAILED", cause },
         ),
       };
     }
 
     // TC-028: requiresCommit guard — verify branch advanced (D5)
     if (step.requiresCommit && ctx.branch) {
-      // TC-029: verify branch exists after agent run
       const branchExists = await gitExec(this.spawnFn, cwd, ["branch", "--list", ctx.branch]);
       if (!branchExists) {
         return {
@@ -282,7 +213,6 @@ export class ClaudeCodeRunner implements AgentRunner {
       try {
         resultContent = await fs.readFile(absolutePath, "utf-8");
       } catch {
-        // TC-055: result file not found → error
         return {
           completionReason: "error",
           resultContent: null,
@@ -301,9 +231,6 @@ export class ClaudeCodeRunner implements AgentRunner {
   }
 }
 
-/**
- * Factory function for creating ClaudeCodeRunner.
- */
 export function createClaudeCodeRunner(deps: ClaudeCodeRunnerDeps = {}): ClaudeCodeRunner {
   return new ClaudeCodeRunner(deps);
 }
