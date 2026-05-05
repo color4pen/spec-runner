@@ -142,6 +142,8 @@ export class StepExecutor {
     if (result.resultContent !== null) {
       const parsed = step.parseResult(result.resultContent, deps);
       verdict = parsed.verdict;
+    } else if (step.completionVerdict) {
+      verdict = step.completionVerdict;
     }
 
     if (verdict === null) {
