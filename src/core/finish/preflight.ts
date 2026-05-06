@@ -218,8 +218,15 @@ async function fetchPrViewWithRetry(params: {
       };
     }
 
-    // Check 4: UNKNOWN retry
+    // Check 4: UNKNOWN retry — but bypass for MERGED PRs.
+    // GitHub API returns mergeStateStatus=UNKNOWN for PRs in MERGED state.
+    // MERGED is an irreversible terminal state; merge-ability check is unnecessary.
+    // Design D4: check state === "MERGED" before entering the UNKNOWN retry loop.
     if ((parsed.mergeStateStatus ?? "").toUpperCase() === "UNKNOWN") {
+      if (parsed.state === "MERGED") {
+        // MERGED PR with UNKNOWN mergeStateStatus — bypass retry, return success immediately.
+        return { ok: true, data: parsed };
+      }
       if (attempt < UNKNOWN_RETRY_COUNT) {
         process.stdout.write(
           `Retrying check 4: mergeStateStatus was UNKNOWN (attempt ${attempt}/${UNKNOWN_RETRY_COUNT})...\n`,
@@ -258,3 +265,9 @@ async function fetchPrViewWithRetry(params: {
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+/**
+ * Exported for unit testing only.
+ * Allows tests to exercise the MERGED bypass and UNKNOWN retry logic in isolation.
+ */
+export { fetchPrViewWithRetry as fetchPrViewWithRetryForTest };

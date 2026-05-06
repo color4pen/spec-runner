@@ -1253,3 +1253,29 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **request.md のパッケージ名が正確でないと implementer が迷走する**: 本件では `@anthropic-ai/claude-code`（CLI パッケージ）と `@anthropic-ai/claude-agent-sdk`（SDK パッケージ）が混同された。request.md 作成時に `npm info <pkg> exports` で実在確認する規律が必要
 - **implementer の「SDK が使えない」自己判断からの subprocess フォールバックは危険**: 設計で SDK 使用が明示されている場合、「使えない」と判断した時点で escalation すべき。黙ってフォールバックすると設計不整合が verification をすり抜ける
 - **code-review に「設計指定 SDK の実装一致」観点が不在だった**: 設計で `query()` 使用を要件にしていたが、実装が `spawn` に変わっていてもレビューで検出できなかった。architecture カテゴリの「仕様と実装の乖離」チェック強化が必要
+
+## 2026-05-06 — Local runtime バグ修正 + finish preflight MERGED bypass
+
+**Type**: spec-change
+**Outcome**: completed
+
+### Review Patterns
+- **初回 code-review で approved（8.20/10）**: 4 件の要件すべてに対して正確な実装。CRITICAL/HIGH 指摘ゼロ。spec-review も初回 approved（8.05/10）。仕様記述の精度が実装品質に直結する好例
+- **regex の寛容性と厳密性のバランス**: review-verdict parser の regex 拡張で、design spec の `[-\s]*` を実装時に `(?:-\s*)?` に限定して markdown 区切り線への false positive を回避した。spec-review の LOW 指摘（finding #3）を実装で改善するフィードバックが機能した
+- **test-only export パターンの指摘（MEDIUM）**: `fetchPrViewWithRetryForTest` のような test-only export は public API surface を汚染する。`@internal` JSDoc タグか、`runPreflight` 経由のモックテストが推奨される
+- **unbalanced asterisks の regex（MEDIUM）**: `\*{0,2}` は `*verdict*:` のような不正な markdown にもマッチする。`(?:\*{2})?` で 0 or 2 に限定するか、意図的な tolerance として unit test で文書化すべき
+
+### Error Patterns
+- **エラー・リトライ・エスカレーションなし**: 全フェーズが一発通過。Build/TypeCheck/Test すべて PASS（827/827）。revert 後の clean な状態から仕様を正確に書いた結果
+
+### Design Decisions
+- **D1: setsBranch フラグ方式（step 名ハードコード排除）**: `step.name === "propose"` を避け、AgentStep interface に `setsBranch?: boolean` を追加。TC-003 との整合性を保ちつつ将来の拡張性を確保
+- **D2: completionVerdict fallback（local vs managed runtime の対称性）**: local runtime path で `resultContent === null` のときに step 宣言の completionVerdict を参照。managed runtime path（`_updatedState` 分岐）とは独立して動作
+- **D3: MERGED bypass の挿入位置**: UNKNOWN retry 分岐の先頭に `state === "MERGED"` 判定を配置。MERGED は不可逆終了状態なので merge 可能性チェック不要
+- **D4: finish-orchestrator mock の UNKNOWN 修正**: GitHub API が MERGED PR に UNKNOWN を返す実挙動を再現するため `mergeStateStatus: "MERGED"` → `"UNKNOWN"` に変更
+
+### Lessons
+- **応急処置を全テスト通さずに main に push するのは禁止**: PR #86, #87 の hotfix が TC-003 fail 状態を作り、dogfood の code-fixer が scope 外リファクタに走って PR #88 が汚染された。revert → 正規ワークフロー再実行で clean に修正できた
+- **request.md に教訓を明記すると pattern-reviewer が機能する**: request.md の「教訓（pattern-reviewer 参照用）」セクションが spec-review の pattern-reviewer agent に拾われ、review-lessons.md との整合確認が自動実行された
+- **spec-review の指摘を実装で改善するフィードバックは有効**: spec-review finding #3（`[-\s]*` の区切り線問題）を implementer が D5 で `(?:-\s*)?` に改善。設計→レビュー→実装の feedback loop が 1 iteration で収束
+- **delta spec と既存 spec の差分記述は正確にする**: `completionVerdict` は types.ts に既存で、新規追加は `setsBranch` のみ。delta spec で「追加」と書くと齟齬が生じる。「既存フィールドの利用を明文化」と区別する

@@ -142,6 +142,11 @@ export class StepExecutor {
     if (result.resultContent !== null) {
       const parsed = step.parseResult(result.resultContent, deps);
       verdict = parsed.verdict;
+    } else if (step.completionVerdict !== undefined) {
+      // Local runtime path: resultContent is null but step declares a completionVerdict.
+      // Use it as the verdict (e.g. propose, implementer, build-fixer).
+      // Design D1: fallback to completionVerdict avoids escalation for steps without result files.
+      verdict = step.completionVerdict;
     }
 
     if (verdict === null) {
@@ -166,6 +171,13 @@ export class StepExecutor {
       status: "ok",
       message: `${step.name} verdict: ${verdict}`,
     });
+
+    // setsBranch: if the step declares it sets the branch and state.branch is absent,
+    // derive and set state.branch now (local runtime path only).
+    // Design D2: declarative flag replaces step-name-based branch detection (TC-003 / TC-006).
+    if (step.setsBranch === true && !state.branch) {
+      state = { ...state, branch: `feat/${deps.slug}` };
+    }
 
     await store.persist(state);
 

@@ -86,6 +86,19 @@ export interface AgentStep {
    * its turn without committing — bypassing the agent's prompt-following.
    */
   requiresCommit?: boolean;
+
+  /**
+   * If true, StepExecutor sets state.branch after this step completes (local runtime path only).
+   * Used for steps that create the feature branch as a side effect of their execution
+   * (e.g., propose). The branch is set to `feat/${slug}` if state.branch is not already set.
+   *
+   * This flag replaces any step-name-based branch detection logic, enabling declarative
+   * branch setup without hardcoding step names in executor.ts (TC-006 / TC-003).
+   *
+   * Only applies when state.branch is absent at the time of step completion.
+   * If state.branch is already set, this flag has no effect.
+   */
+  setsBranch?: boolean;
 }
 
 /**

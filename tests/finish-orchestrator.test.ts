@@ -96,10 +96,12 @@ function makeHappyPathSpawn(prState: "OPEN" | "MERGED" = "OPEN"): SpawnFn {
     if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/gh", stderr: "" });
 
     // gh pr view (phase 0 preflight + check)
+    // TC-017: GitHub returns mergeStateStatus=UNKNOWN for MERGED PRs (real behavior).
+    // The MERGED bypass in preflight.ts handles this case and returns ok:true immediately.
     if (cmd === "gh" && args[1] === "view" && args.includes("--json")) {
       const out = {
         state: prState,
-        mergeStateStatus: "CLEAN",
+        mergeStateStatus: prState === "MERGED" ? "UNKNOWN" : "CLEAN",
         headRefName: "feat/test-slug",
       };
       return Promise.resolve({ exitCode: 0, stdout: JSON.stringify(out), stderr: "" });

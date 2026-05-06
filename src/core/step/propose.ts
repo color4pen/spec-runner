@@ -45,6 +45,14 @@ export const ProposeStep: AgentStep = {
   // toolHandlers intentionally omitted: injection is the adapter's responsibility (design D3).
   toolHandlers: undefined,
 
+  // completionVerdict: propose has no result file, so completion = unconditional success.
+  // Used by executor local runtime path when resultContent is null.
+  completionVerdict: "success",
+
+  // setsBranch: propose creates the feature branch; executor sets state.branch after completion.
+  // Design D2: declarative flag replaces step-name-based branch detection (TC-003 / TC-006).
+  setsBranch: true,
+
   buildMessage(_state: JobState, deps: StepDeps): string {
     return buildInitialMessage(deps.request.content, deps.slug);
   },
