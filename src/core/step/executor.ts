@@ -134,12 +134,6 @@ export class StepExecutor {
       attachStateAndRethrow(err, state);
     }
 
-    // Local runtime: update state.branch after propose (branch is CLI-determined INPUT)
-    if (step.name === "propose" && !jobState.branch) {
-      const canonicalBranch = `feat/${deps.slug}`;
-      jobState = { ...jobState, branch: canonicalBranch };
-    }
-
     // Success path: parse verdict from resultContent, persist step result and history.
     const resultFilePath = step.resultFilePath(jobState, deps);
     const findingsPath = resultFilePath;
@@ -148,8 +142,6 @@ export class StepExecutor {
     if (result.resultContent !== null) {
       const parsed = step.parseResult(result.resultContent, deps);
       verdict = parsed.verdict;
-    } else if (step.completionVerdict) {
-      verdict = step.completionVerdict;
     }
 
     if (verdict === null) {

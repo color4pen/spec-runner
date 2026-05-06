@@ -49,9 +49,9 @@ export const ProposeStep: AgentStep = {
     return buildInitialMessage(deps.request.content, deps.slug);
   },
 
-  completionVerdict: "success",
-
   resultFilePath(_state: JobState, _deps: StepDeps): string | null {
+    // Propose step does not produce a result file for verdict parsing
+    // (branch is registered via SSE tool call, not a file)
     return null;
   },
 

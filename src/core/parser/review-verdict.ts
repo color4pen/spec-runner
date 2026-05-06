@@ -10,16 +10,10 @@ import type { Verdict } from "../../state/schema.js";
  * @returns the matched Verdict or null if not found / invalid value
  */
 export function parseReviewVerdict(content: string): Verdict | null {
-  const patterns = [
-    /^- \*\*verdict\*\*:\s*(approved|needs-fix|escalation)\s*$/im,
-    /^\*\*[Vv]erdict\*\*:\s*(approved|needs-fix|escalation)\s*$/m,
-    /^[Vv]erdict:\s*(approved|needs-fix|escalation)\s*$/m,
-  ];
-  for (const regex of patterns) {
-    const match = regex.exec(content);
-    if (match?.[1]) {
-      return match[1] as Verdict;
-    }
+  const regex = /^- \*\*verdict\*\*:\s*(approved|needs-fix|escalation)\s*$/m;
+  const match = regex.exec(content);
+  if (!match || !match[1]) {
+    return null;
   }
-  return null;
+  return match[1] as Verdict;
 }
