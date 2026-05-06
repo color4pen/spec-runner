@@ -56,7 +56,6 @@ function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
 
 function makeMinimalDeps(slug: string = "my-change"): StepDeps {
   return {
-    client: {} as StepDeps["client"],
     config: {
       version: 1,
       anthropic: { apiKey: "sk-test" },
@@ -67,14 +66,6 @@ function makeMinimalDeps(slug: string = "my-change"): StepDeps {
     repo: { owner: "testowner", name: "testrepo" },
     request: { type: "feature", title: "Test PR", slug: "test-slug", content: "content", enabled: [], sections: {} },
     slug,
-    sleepFn: vi.fn().mockResolvedValue(undefined),
-    githubClient: {
-      verifyBranch: vi.fn().mockResolvedValue(true),
-      getRawFile: vi.fn().mockResolvedValue(null),
-      verifyPath: vi.fn().mockResolvedValue(true),
-      verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
-      getRefSha: vi.fn().mockResolvedValue(null),
-    },
     cwd: tempDir,
   };
 }

@@ -69,6 +69,10 @@ export const SpecFixerStep: AgentStep = {
   // No custom tool handlers for spec-fixer
   toolHandlers: undefined,
 
+  // completionVerdict: "approved" — spec-fixer has no result file; polling completion
+  // maps to "approved" (enabling spec-fixer → spec-review loop via transition table).
+  completionVerdict: "approved",
+
   requiresCommit: true,
 
   // maxTurns: spec-fixer applies findings mechanically; 25 covers multi-finding fix cycles.

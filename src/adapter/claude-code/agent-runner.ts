@@ -27,6 +27,7 @@ import {
 } from "@anthropic-ai/claude-agent-sdk";
 import { gitExec, defaultSpawnFn, type SpawnFn } from "./git-exec.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../core/port/agent-runner.js";
+import type { StepContext } from "../../core/types.js";
 
 export type { SpawnFn } from "./git-exec.js";
 
@@ -86,11 +87,11 @@ export class ClaudeCodeRunner implements AgentRunner {
     const step = ctx.step;
     const state = ctx.state;
 
-    const baseMessage = step.buildMessage(state, {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      client: undefined as any,
+    // TC-007: deps is StepContext — no client/githubClient needed
+    const stepCtx: StepContext = {
       config: ctx.config,
-      repo: { owner: "", name: "" },
+      slug: ctx.slug,
+      cwd,
       request: {
         type: "feature",
         title: "",
@@ -98,11 +99,9 @@ export class ClaudeCodeRunner implements AgentRunner {
         content: ctx.requestContent,
         enabled: [],
       },
-      slug: ctx.slug,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      githubClient: undefined as any,
-      cwd,
-    });
+      repo: { owner: "", name: "" },
+    };
+    const baseMessage = step.buildMessage(state, stepCtx);
 
     const additionalInstructions = buildAdditionalInstructions(ctx);
     const fullPrompt = additionalInstructions
@@ -187,23 +186,7 @@ export class ClaudeCodeRunner implements AgentRunner {
     }
 
     // TC-025: read result file from local fs (not GitHub API)
-    const resultFilePath = step.resultFilePath(state, {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      client: undefined as any,
-      config: ctx.config,
-      repo: { owner: "", name: "" },
-      request: {
-        type: "feature",
-        title: "",
-        slug: ctx.slug,
-        content: ctx.requestContent,
-        enabled: [],
-      },
-      slug: ctx.slug,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      githubClient: undefined as any,
-      cwd,
-    });
+    const resultFilePath = step.resultFilePath(state, stepCtx);
 
     let resultContent: string | null = null;
     if (resultFilePath !== null) {

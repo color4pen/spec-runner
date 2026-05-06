@@ -8,7 +8,7 @@
  * TC-005: CodeReviewStep.parseResult が共通 helper 経由で verdict を抽出する (must)
  * TC-036: CodeReviewStep.parseResult が verdict 行なしのコンテンツで escalation フォールバックする (could)
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { CodeReviewStep, buildReviewFeedbackPath } from "../../../src/core/step/code-review.js";
 import { NULL_PARSE_RESULT } from "../../../src/core/step/types.js";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/code-review-system.js";
@@ -37,7 +37,6 @@ function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
 
 function makeMinimalDeps(slug: string = "my-change"): StepDeps {
   return {
-    client: {} as StepDeps["client"],
     config: {
       version: 1,
       anthropic: { apiKey: "sk-test" },
@@ -48,14 +47,6 @@ function makeMinimalDeps(slug: string = "my-change"): StepDeps {
     repo: { owner: "testowner", name: "testrepo" },
     request: { type: "feature", title: "Test", slug: "test-slug", content: "Fix the code.", enabled: [] },
     slug,
-    sleepFn: vi.fn().mockResolvedValue(undefined),
-    githubClient: {
-      verifyBranch: vi.fn().mockResolvedValue(true),
-      getRawFile: vi.fn().mockResolvedValue(null),
-      verifyPath: vi.fn().mockResolvedValue(true),
-      verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
-      getRefSha: vi.fn().mockResolvedValue(null),
-    },
   };
 }
 

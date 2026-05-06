@@ -79,19 +79,35 @@ export class StepExecutor {
   /**
    * Agent step: delegate to AgentRunner.run().
    * The adapter handles session creation, SSE/polling, verification, and result fetching.
-   * Emits verdict:parsed and returns the updated state from the adapter.
+   * Executor is the sole state persistence authority (Design D3 stepcontext-type-separation).
    *
    * Design D1: StepExecutor calls runner.run(ctx) and processes the returned result.
+   * Design D4 (stepcontext-type-separation): store.update at top fixes specrunner ps step display.
+   * TC-012: store.update called before runner.run to update step name
+   * TC-013: no managed/local branch — single unified state management path
    */
   private async runAgentStep(
     step: AgentStep,
     jobState: JobState,
     deps: PipelineDeps,
   ): Promise<JobState> {
+    const store = this.getStore(jobState.jobId);
+
+    // TC-012: update step name before running so specrunner ps shows current step
+    let state = await store.update(jobState, { step: step.name });
+
+    // TC-017: step-start history entry
+    state = await store.appendHistory(state, {
+      ts: new Date().toISOString(),
+      step: `${step.name}-started`,
+      status: "started",
+      message: `Starting ${step.name} step`,
+    });
+
     const ctx = {
       step,
-      state: jobState,
-      branch: jobState.branch ?? "",
+      state,
+      branch: state.branch ?? "",
       slug: deps.slug,
       cwd: deps.cwd ?? process.cwd(),
       requestContent: deps.request.content,
@@ -102,40 +118,50 @@ export class StepExecutor {
       },
     };
 
-    const result = await this.runner.run(ctx);
-
-    // Managed adapter attaches updated state as _updatedState internal extension
-    // (includes full history, step result, and verdict — adapter managed state itself).
-    const updatedState = (result as { _updatedState?: JobState })._updatedState;
-    if (updatedState) {
-      this.events.emit("verdict:parsed", {
-        step: step.name,
-        outcome: { verdict: updatedState.steps?.[step.name]?.at(-1)?.outcome?.verdict ?? null },
-      });
-      return updatedState;
-    }
-
-    // Local runtime path: adapter returned only runtime-neutral AgentRunResult fields.
-    // Executor manages state persistence here (JobStateStore lifecycle).
-    const store = this.getStore(jobState.jobId);
     const completedAt = new Date().toISOString();
 
-    if (result.completionReason !== "success") {
+    // Runner may throw directly (e.g. BRANCH_NOT_REGISTERED, SESSION_TERMINATED)
+    // or return an error result. Both paths are normalized here.
+    const runResult = await this.runner.run(ctx).catch(async (thrownErr: unknown) => {
+      const err = thrownErr as Error & { code?: string; hint?: string };
+      const errorInfo: ErrorInfo = {
+        code: err.code ?? "AGENT_STEP_FAILED",
+        message: err.message,
+        hint: err.hint ?? "",
+      };
+      state = recordFailedStepResult(state, step.name, errorInfo, { completedAt });
+      state = await store.fail(state, errorInfo, step.name);
+      // Add error history entry for observability (replaces adapter-level history entries)
+      state = await store.appendHistory(state, {
+        ts: new Date().toISOString(),
+        step: `${step.name}-failed`,
+        status: "error",
+        message: `${step.name} failed: ${errorInfo.code} — ${errorInfo.message}`,
+      });
+      await store.persist(state);
+      attachStateAndRethrow(err, state);
+      // Never reached — attachStateAndRethrow always throws
+      return null as never;
+    });
+
+    if (runResult.completionReason !== "success") {
       // Agent step failed — record error and rethrow
-      const err = result.error ?? new Error(`Agent step '${step.name}' failed`);
+      const err = runResult.error ?? new Error(`Agent step '${step.name}' failed`);
       const errorInfo: ErrorInfo = {
         code: (err as Error & { code?: string }).code ?? "AGENT_STEP_FAILED",
         message: err.message,
         hint: (err as Error & { hint?: string }).hint ?? "",
       };
-      let state = recordFailedStepResult(jobState, step.name, errorInfo, { completedAt });
+      state = recordFailedStepResult(state, step.name, errorInfo, { completedAt });
       state = await store.fail(state, errorInfo, step.name);
       await store.persist(state);
       attachStateAndRethrow(err, state);
     }
 
+    const result = runResult;
+
     // Success path: parse verdict from resultContent, persist step result and history.
-    const resultFilePath = step.resultFilePath(jobState, deps);
+    const resultFilePath = step.resultFilePath(state, deps);
     const findingsPath = resultFilePath;
 
     let verdict: Verdict | null = null;
@@ -143,7 +169,7 @@ export class StepExecutor {
       const parsed = step.parseResult(result.resultContent, deps);
       verdict = parsed.verdict;
     } else if (step.completionVerdict !== undefined) {
-      // Local runtime path: resultContent is null but step declares a completionVerdict.
+      // resultContent is null but step declares a completionVerdict.
       // Use it as the verdict (e.g. propose, implementer, build-fixer).
       // Design D1: fallback to completionVerdict avoids escalation for steps without result files.
       verdict = step.completionVerdict;
@@ -156,8 +182,13 @@ export class StepExecutor {
 
     this.events.emit("verdict:parsed", { step: step.name, outcome: { verdict } });
 
-    let state = pushStepResult(jobState, step.name, {
-      session: null,
+    // TC-014: record sessionId from AgentRunResult in step result
+    const sessionEntry = result.sessionId
+      ? { id: result.sessionId, agentId: "", environmentId: "" }
+      : null;
+
+    state = pushStepResult(state, step.name, {
+      session: sessionEntry,
       verdict: verdict as Verdict | null,
       findingsPath,
       fileContent: result.resultContent,
@@ -165,6 +196,7 @@ export class StepExecutor {
       error: null,
     });
 
+    // TC-017: step-complete history entry
     state = await store.appendHistory(state, {
       ts: new Date().toISOString(),
       step: `${step.name}-verdict`,
@@ -172,8 +204,14 @@ export class StepExecutor {
       message: `${step.name} verdict: ${verdict}`,
     });
 
+    // TC-015: set state.branch from agentBranch if not already set
+    // Design D4 (stepcontext-type-separation): agentBranch from propose step
+    if (result.agentBranch && !state.branch) {
+      state = { ...state, branch: result.agentBranch };
+    }
+
     // setsBranch: if the step declares it sets the branch and state.branch is absent,
-    // derive and set state.branch now (local runtime path only).
+    // derive and set state.branch now.
     // Design D2: declarative flag replaces step-name-based branch detection (TC-003 / TC-006).
     if (step.setsBranch === true && !state.branch) {
       state = { ...state, branch: `feat/${deps.slug}` };

@@ -208,6 +208,14 @@ export class Pipeline {
             `Pipeline finished: spec-review iterations=${specReviewResults.length}, final verdict=${finalVerdict}\n`,
           );
         }
+
+        // Normal completion → awaiting-merge
+        if (nextStep === "end" && state.status === "running") {
+          state = { ...state, status: "awaiting-merge", updatedAt: new Date().toISOString() };
+          const endStore = new JobStateStore(state.jobId);
+          await endStore.persist(state);
+        }
+
         break;
       }
 

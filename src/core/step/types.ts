@@ -1,5 +1,5 @@
 import type { JobState } from "../../state/schema.js";
-import type { PipelineDeps } from "../types.js";
+import type { StepContext } from "../types.js";
 import type { CustomToolHandler } from "../tools/types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 
@@ -7,10 +7,13 @@ import type { AgentDefinition } from "../agent/definition.js";
 export type { AgentDefinition };
 
 /**
- * Dependencies injected into Step.buildMessage.
- * Identical to PipelineDeps for now; can narrow in the future.
+ * Dependencies injected into Step methods (buildMessage, resultFilePath, parseResult).
+ * Aliased to StepContext — the minimal set of fields Step implementations actually need.
+ *
+ * Design D2 (stepcontext-type-separation): StepDeps = StepContext (was PipelineDeps).
+ * Callers that pass PipelineDeps remain valid because PipelineDeps extends StepContext.
  */
-export type StepDeps = PipelineDeps;
+export type StepDeps = StepContext;
 
 /**
  * The outcome of a successful step execution, as returned by parseResult.

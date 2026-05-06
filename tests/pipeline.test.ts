@@ -176,14 +176,11 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
     expect(result.status).toBe("awaiting-merge");
 
     const steps = result.history.map((h) => h.step);
-    // Must contain all required steps
-    expect(steps).toContain("session-create");
-    expect(steps).toContain("events-stream-connected");
-    expect(steps).toContain("initial-message-sent");
-    expect(steps).toContain("register-branch-received");
-    expect(steps).toContain("idle-end-turn-detected");
-    expect(steps).toContain("branch-verified");
-    expect(steps).toContain("success");
+    // Executor adds step-start and step-complete entries (design D3 mitigation)
+    expect(steps).toContain("propose-started");
+    expect(steps).toContain("propose-verdict");
+    // branch from register_branch tool is recorded in state
+    expect(result.branch).toBe("feat/2026-04-27-test");
   });
 });
 
@@ -327,8 +324,10 @@ describe("TC-040: propose pipeline — branch not found on GitHub is warning onl
     });
 
     expect(result.status).toBe("awaiting-merge");
-    const branchEntry = result.history.find((h) => h.step === "branch-verified");
-    expect(branchEntry?.status).toBe("warning");
+    // Branch verification warning is logged to stderr (no longer a history entry)
+    const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
+    const combined = stderrCalls.map((c: unknown[]) => String(c[0])).join("\n");
+    expect(combined).toContain("Branch 'feat/test' not found on GitHub yet.");
   });
 });
 

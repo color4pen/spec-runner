@@ -5,7 +5,7 @@
  * TC-024: BuildFixerStep.resultFilePath と parseResult
  * TC-016: BUILD_FIXER_NO_VERIFICATION_RESULT error shape
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { BuildFixerStep, BUILD_FIXER_NO_VERIFICATION_RESULT } from "../../../src/core/step/build-fixer.js";
 import { NULL_PARSE_RESULT } from "../../../src/core/step/types.js";
 import { BUILD_FIXER_SYSTEM_PROMPT } from "../../../src/prompts/build-fixer-system.js";
@@ -54,7 +54,6 @@ function makeStateWithVerificationResult(slug: string): JobState {
 
 function makeMinimalDeps(slug: string = "my-change"): StepDeps {
   return {
-    client: {} as StepDeps["client"],
     config: {
       version: 1,
       anthropic: { apiKey: "sk-test" },
@@ -65,14 +64,6 @@ function makeMinimalDeps(slug: string = "my-change"): StepDeps {
     repo: { owner: "testowner", name: "testrepo" },
     request: { type: "feature", title: "Test", slug: "test-slug", content: "Fix build errors", enabled: [] },
     slug,
-    sleepFn: vi.fn().mockResolvedValue(undefined),
-    githubClient: {
-      verifyBranch: vi.fn().mockResolvedValue(true),
-      getRawFile: vi.fn().mockResolvedValue(null),
-      verifyPath: vi.fn().mockResolvedValue(true),
-      verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
-      getRefSha: vi.fn().mockResolvedValue(null),
-    },
   };
 }
 

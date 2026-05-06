@@ -5,7 +5,7 @@
  * TC-022: ImplementerStep.resultFilePath と parseResult
  * TC-010 (partial): NULL_PARSE_RESULT 共有 (implementer)
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { ImplementerStep } from "../../../src/core/step/implementer.js";
 import { NULL_PARSE_RESULT } from "../../../src/core/step/types.js";
 import { IMPLEMENTER_SYSTEM_PROMPT } from "../../../src/prompts/implementer-system.js";
@@ -34,7 +34,6 @@ function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
 
 function makeMinimalDeps(slug: string = "my-change"): StepDeps {
   return {
-    client: {} as StepDeps["client"],
     config: {
       version: 1,
       anthropic: { apiKey: "sk-test" },
@@ -45,14 +44,6 @@ function makeMinimalDeps(slug: string = "my-change"): StepDeps {
     repo: { owner: "testowner", name: "testrepo" },
     request: { type: "feature", title: "Test", slug: "test-slug", content: "Do something important", enabled: [] },
     slug,
-    sleepFn: vi.fn().mockResolvedValue(undefined),
-    githubClient: {
-      verifyBranch: vi.fn().mockResolvedValue(true),
-      getRawFile: vi.fn().mockResolvedValue(null),
-      verifyPath: vi.fn().mockResolvedValue(true),
-      verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
-      getRefSha: vi.fn().mockResolvedValue(null),
-    },
   };
 }
 

@@ -9,7 +9,7 @@
  * TC-025: CodeFixerStep.buildMessage が直近の review-feedback パスを埋め込む (should)
  * TC-026: CodeFixerStep.buildMessage が前段 review-feedback 不在時に CODE_FIXER_NO_REVIEW_RESULT を throw する (should)
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { CodeFixerStep, CODE_FIXER_NO_REVIEW_RESULT } from "../../../src/core/step/code-fixer.js";
 import { NULL_PARSE_RESULT } from "../../../src/core/step/types.js";
 import { CODE_FIXER_SYSTEM_PROMPT } from "../../../src/prompts/code-fixer-system.js";
@@ -59,7 +59,6 @@ function makeStateWithCodeReviewResult(slug: string, iteration: number = 2): Job
 
 function makeMinimalDeps(slug: string = "my-change"): StepDeps {
   return {
-    client: {} as StepDeps["client"],
     config: {
       version: 1,
       anthropic: { apiKey: "sk-test" },
@@ -70,14 +69,6 @@ function makeMinimalDeps(slug: string = "my-change"): StepDeps {
     repo: { owner: "testowner", name: "testrepo" },
     request: { type: "feature", title: "Test", slug: "test-slug", content: "Fix the code.", enabled: [] },
     slug,
-    sleepFn: vi.fn().mockResolvedValue(undefined),
-    githubClient: {
-      verifyBranch: vi.fn().mockResolvedValue(true),
-      getRawFile: vi.fn().mockResolvedValue(null),
-      verifyPath: vi.fn().mockResolvedValue(true),
-      verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
-      getRefSha: vi.fn().mockResolvedValue(null),
-    },
   };
 }
 

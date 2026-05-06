@@ -356,18 +356,19 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
     expect(getRefShaSpy).toHaveBeenCalledTimes(2);
 
     // Regression guard for review finding #1: when NO_COMMIT_DETECTED fires,
-    // history must NOT contain a `${step.name}-completed` ok event.
-    // The HEAD verification runs BEFORE the completed-ok append so failed
-    // steps never leave a misleading "completed" marker for downstream
+    // history must NOT contain a `${step.name}-verdict` ok event.
+    // The HEAD verification runs BEFORE the verdict append so failed
+    // steps never leave a misleading "verdict" marker for downstream
     // consumers (forensics, resume, status aggregation).
     const stateFile = path.join(tempDir, "specrunner", "jobs", "requires-commit-no-advance.json");
     const persistedState = JSON.parse(await fs.readFile(stateFile, "utf-8")) as JobState;
     const completedOkEvents = persistedState.history.filter(
-      (h) => h.step === "spec-fixer-completed" && h.status === "ok",
+      (h) => h.step === "spec-fixer-verdict" && h.status === "ok",
     );
     expect(completedOkEvents).toHaveLength(0);
+    // Executor adds a ${step.name}-failed history entry on error for observability
     const noCommitEvents = persistedState.history.filter(
-      (h) => h.step === "spec-fixer-no-commit-detected" && h.status === "error",
+      (h) => h.step === "spec-fixer-failed" && h.status === "error",
     );
     expect(noCommitEvents).toHaveLength(1);
   });

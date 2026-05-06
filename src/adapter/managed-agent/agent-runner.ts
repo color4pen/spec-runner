@@ -11,9 +11,13 @@
  *   fetchResult      — read result file from GitHub (design D2)
  *
  * Design D3: register_branch Custom Tool is injected by this adapter (not ProposeStep).
+ * Design D3 (stepcontext-type-separation): JobStateStore removed. State management is executor's responsibility.
  * Design D4: ctx.branch is the CLI-canonical branch; agent-reported branch is ignored.
  * Design D5: verifyBranch / requiresCommit guard run inside adapter (not executor).
  *
+ * TC-008: ManagedAgentRunner has no JobStateStore import
+ * TC-009: runProposeStyle returns AgentRunResult only (no _updatedState)
+ * TC-010: runPollingStyle returns AgentRunResult only (no _updatedState)
  * TC-013: ManagedAgentRunner implements AgentRunner interface (type-checked)
  * TC-014: constructor accepts sessionClient, githubClient, configStore deps
  * TC-018: register_branch is injected by adapter for propose role
@@ -26,14 +30,10 @@ import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../core/po
 import type { SessionClient } from "../../core/port/session-client.js";
 import type { GitHubClient } from "../../core/port/github-client.js";
 import type { JobState, ErrorInfo } from "../../state/schema.js";
-import { JobStateStore } from "../../store/job-state-store.js";
-import { pushStepResult } from "../../state/helpers.js";
+import type { StepContext } from "../../core/types.js";
 import {
-  recordFailedStepResult,
-  attachStateAndRethrow,
   throwWrappedError,
-  failStepWithError,
-  createSessionWithHistory,
+  attachStateAndRethrow,
 } from "../../core/step/executor-helpers.js";
 import { getAgentId } from "../../config/getAgentId.js";
 import { stderrWrite } from "../../logger/stdout.js";
@@ -77,18 +77,19 @@ export class ManagedAgentRunner implements AgentRunner {
    *
    * Dispatches to propose-style (SSE + custom tools) or polling-style
    * based on step.agent.role. Both share the verify + fetch stages.
+   *
+   * Design D3 (stepcontext-type-separation): No JobStateStore — returns AgentRunResult only.
    */
   async run(ctx: AgentRunContext): Promise<AgentRunResult> {
-    const store = new JobStateStore(ctx.state.jobId);
     const step = ctx.step;
 
     // Propose-style: uses SSE with custom tool handling
     if (step.agent.role === "propose") {
-      return this.runProposeStyle(ctx, store);
+      return this.runProposeStyle(ctx);
     }
 
     // Polling-style: creates session, sends message, polls until complete
-    return this.runPollingStyle(ctx, store);
+    return this.runPollingStyle(ctx);
   }
 
   // ---------------------------------------------------------------------------
@@ -101,42 +102,41 @@ export class ManagedAgentRunner implements AgentRunner {
    * 2. Stream SSE (with register_branch tool injected)
    * 3. Handle polling fallback
    * 4. Verify branch + change folder (design D5)
-   * 5. Return result
+   * 5. Return AgentRunResult
    *
+   * TC-009: returns AgentRunResult only (no _updatedState)
    * TC-018: register_branch is injected by adapter
    * TC-020: ctx.branch is embedded in streamEvents opts
    * TC-021: agent-reported branch != ctx.branch → warning, ctx.branch wins
    */
   private async runProposeStyle(
     ctx: AgentRunContext,
-    store: JobStateStore,
   ): Promise<AgentRunResult> {
-    const { config } = ctx;
+    const { config, state } = ctx;
     const step = ctx.step;
-    let state = ctx.state;
 
     const agentId = getAgentId(config, step.agent.role);
     const repoUrl = `https://github.com/${this.repo.owner}/${this.repo.name}`;
 
     // Stage 1: Create session
-    const { state: sessionState, sessionId } = await createSessionWithHistory(
-      store,
-      state,
-      this.sessionClient,
-      {
+    let sessionId: string;
+    try {
+      const sessionResult = await this.sessionClient.createSession({
         agentId,
         environmentId: config.environment!.id,
         repoUrl,
         githubToken: config.github!.accessToken,
-      },
-      {
-        stepLabel: "session-create",
-        errorCode: "SESSION_CREATE_FAILED",
-        errorMessageFmt: (msg) => `Failed to create session: ${msg}`,
-        errorHint: "Check your API key and try again.",
-      },
-    );
-    state = sessionState;
+      });
+      sessionId = sessionResult.sessionId;
+    } catch (err) {
+      const errMsg = (err as Error).message;
+      const errorInfo: ErrorInfo = {
+        code: "SESSION_CREATE_FAILED",
+        message: `Failed to create session: ${errMsg}`,
+        hint: "Check your API key and try again.",
+      };
+      throwWrappedError(errorInfo, state);
+    }
 
     // TC-021: track branch from register_branch tool call
     let registeredBranch: string | null = null;
@@ -153,7 +153,7 @@ export class ManagedAgentRunner implements AgentRunner {
     );
     toolHandlersWithBranchTool.set("register_branch", registerBranchTool.handler);
 
-    const ssePromise = this.sessionClient.streamEvents(sessionId, {
+    const ssePromise = this.sessionClient.streamEvents(sessionId!, {
       requestContent: ctx.requestContent,
       slug: ctx.slug,
       branch: ctx.branch || undefined, // TC-020: inject CLI-canonical branch hint (empty = not set yet for propose)
@@ -177,38 +177,15 @@ export class ManagedAgentRunner implements AgentRunner {
       abortController,
     });
 
-    state = await store.appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "events-stream-connected",
-      status: "ok",
-      message: "SSE stream connected",
-    });
-
-    state = await store.appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "initial-message-sent",
-      status: "ok",
-      message: "Initial message sent to session",
-    });
+    // Silence unused warning for registeredSlug — it may be used in future
+    void registeredSlug;
 
     const sseResult = await ssePromise;
 
     if (sseResult.terminated) {
       const termErr = sessionTerminatedError();
-      const termErrorInfo = { code: termErr.code, message: termErr.message, hint: termErr.hint };
-      state = await store.fail(state, termErrorInfo);
-      state = await store.appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: "session-terminated",
-        status: "error",
-        message: "Session terminated by Anthropic",
-      });
-      state = recordFailedStepResult(state, step.name, termErrorInfo, {
-        session: state.session,
-        completedAt: new Date().toISOString(),
-      });
-      await store.persist(state);
-      attachStateAndRethrow(termErr, state);
+      const termErrorInfo: ErrorInfo = { code: termErr.code, message: termErr.message, hint: termErr.hint };
+      attachStateAndRethrow(Object.assign(termErr, termErrorInfo), state);
     }
 
     // Stage 3: Polling fallback
@@ -218,102 +195,43 @@ export class ManagedAgentRunner implements AgentRunner {
 
     if (needsPollingFallback) {
       stderrWrite("SSE disconnected; falling back to polling.");
-      const pollResult = await this.sessionClient.pollUntilComplete(sessionId, {
+      const pollResult = await this.sessionClient.pollUntilComplete(sessionId!, {
         abortSignal: abortController.signal,
       });
 
       if (pollResult.status !== "idle") {
         const errorInfo = pollResult.error ?? sessionTerminatedError();
-        state = await store.appendHistory(state, {
-          ts: new Date().toISOString(),
-          step: "session-terminated",
-          status: "error",
-          message: errorInfo.message,
-        });
-        state = await store.fail(state, errorInfo, "session-poll");
-        state = recordFailedStepResult(state, step.name, errorInfo, {
-          session: state.session,
-          completedAt: new Date().toISOString(),
-        });
-        await store.persist(state);
         throwWrappedError(errorInfo, state);
       }
     } else {
       abortController.abort();
     }
 
-    // Handle branch registration (use ctx.branch as canonical)
-    if (registeredBranch) {
-      const updatedRequest = registeredSlug
-        ? { ...state.request, slug: registeredSlug }
-        : state.request;
-      state = await store.update(state, { branch: registeredBranch, request: updatedRequest });
-      state = await store.appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: "register-branch-received",
-        status: "ok",
-        message: registeredBranch,
-      });
-    }
-
-    const completionStatus = sseResult.terminationReason === "end_turn" ? "ok" : "warning";
-    state = await store.appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "idle-end-turn-detected",
-      status: completionStatus,
-      message: sseResult.terminationReason === "end_turn"
-        ? "Session completed via SSE idle+end_turn"
-        : "Session completed via polling fallback",
-    });
-
     // Stage 4a: Verify branch was registered
     if (!registeredBranch) {
       const branchErr = branchNotRegisteredError();
       stderrWrite("Branch was not registered by the agent.");
-      state = await store.appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: "idle-end-turn-detected",
-        status: "error",
-        message: "register_branch was not called",
-      });
-      const branchErrorInfo = { code: branchErr.code, message: branchErr.message, hint: branchErr.hint };
-      state = await store.fail(state, branchErrorInfo);
-      state = recordFailedStepResult(state, step.name, branchErrorInfo, {
-        session: state.session,
-        completedAt: new Date().toISOString(),
-      });
-      await store.persist(state);
-      attachStateAndRethrow(branchErr, state);
+      const branchErrorInfo: ErrorInfo = { code: branchErr.code, message: branchErr.message, hint: branchErr.hint };
+      attachStateAndRethrow(Object.assign(branchErr, branchErrorInfo), state);
     }
 
     // Stage 4b: GitHub verification (design D5)
     // TC-030: verify branch exists on GitHub
-    await this.verifyBranchViaPort(registeredBranch, state, store)
-      .then((updated) => { state = updated; })
-      .catch(async (err) => {
-        if ((err as { code?: string }).code === "GITHUB_TOKEN_EXPIRED") {
-          stderrWrite("GitHub token expired. Run 'specrunner login' again.");
-          state = await store.fail(state, {
-            code: (err as { code: string }).code,
-            message: (err as Error).message,
-            hint: (err as { hint?: string }).hint ?? "",
-          });
-          attachStateAndRethrow(err, state);
-        }
-        stderrWrite(`Warning: Could not verify branch on GitHub: ${(err as Error).message}`);
-        state = await store.appendHistory(state, {
-          ts: new Date().toISOString(),
-          step: "branch-verified",
-          status: "warning",
-          message: `Branch verification failed: ${(err as Error).message}`,
-        });
-      });
+    try {
+      await this.verifyBranchViaPort(registeredBranch!);
+    } catch (err) {
+      if ((err as { code?: string }).code === "GITHUB_TOKEN_EXPIRED") {
+        stderrWrite("GitHub token expired. Run 'specrunner login' again.");
+        throw err;
+      }
+      stderrWrite(`Warning: Could not verify branch on GitHub: ${(err as Error).message}`);
+    }
 
     try {
       const changeFolderPath = `openspec/changes/${ctx.slug}`;
       await this.verifyChangeFolderViaPort(
-        registeredBranch, changeFolderPath, ctx.slug, state, store,
-      ).then((updated) => { state = updated; });
+        registeredBranch!, changeFolderPath, ctx.slug,
+      );
     } catch (err) {
       if (
         (err as { code?: string }).code === "CHANGE_FOLDER_NOT_FOUND" ||
@@ -324,32 +242,14 @@ export class ManagedAgentRunner implements AgentRunner {
       stderrWrite(`Warning: Could not verify change folder: ${(err as Error).message}`);
     }
 
-    // Stage 5: Record step result (propose has no result file)
-    state = await store.update(state, { status: "awaiting-merge", step: "success" });
-    state = await store.appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "success",
-      status: "ok",
-      message: "Propose pipeline completed; awaiting merge",
-    });
-
-    state = pushStepResult(state, step.name, {
-      session: state.session,
-      verdict: null,
-      findingsPath: null,
-      completedAt: new Date().toISOString(),
-      error: null,
-    });
-    await store.persist(state);
-
     // Return success — no resultContent for propose (branch registered via tool)
+    // TC-009: no _updatedState field
     return {
       completionReason: "success",
       resultContent: null,
-      sessionId,
-      agentBranch: registeredBranch,
-      _updatedState: state,
-    } as AgentRunResult & { _updatedState: JobState };
+      sessionId: sessionId!,
+      agentBranch: registeredBranch!,
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -366,16 +266,15 @@ export class ManagedAgentRunner implements AgentRunner {
    * 6. requiresCommit guard (design D5 + module-analysis 4-E)
    * 7. Fetch result file
    *
+   * TC-010: returns AgentRunResult only (no _updatedState)
    * TC-015: equivalent to existing lifecycle
    * TC-031: result file not found → error
    */
   private async runPollingStyle(
     ctx: AgentRunContext,
-    store: JobStateStore,
   ): Promise<AgentRunResult> {
-    const { config } = ctx;
+    const { config, state } = ctx;
     const step = ctx.step;
-    let state = ctx.state;
 
     // Resolve agentId
     let agentId: string;
@@ -386,65 +285,40 @@ export class ManagedAgentRunner implements AgentRunner {
       const errMsg = (err as Error).message;
       const errHint = (err as { hint?: string }).hint ?? "Run 'specrunner init' to configure agents.";
       const agentIdErrorInfo: ErrorInfo = { code: errCode, message: errMsg, hint: errHint };
-      state = await store.update(state, { step: step.name });
-      state = await store.fail(state, agentIdErrorInfo, `${step.name}-agent-id`);
-      state = recordFailedStepResult(state, step.name, agentIdErrorInfo);
-      await store.persist(state);
-      attachStateAndRethrow(err, state);
+      throwWrappedError(agentIdErrorInfo, state);
     }
 
-    // Step transition
-    state = await store.update(state, { step: step.name });
-    state = await store.appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "step-transition",
-      status: "ok",
-      message: `Transitioning to ${step.name} step`,
-    });
-
     // Build initial message
+    // TC-007 (StepContext): deps only contains StepContext fields
+    const stepCtx: StepContext = {
+      config,
+      slug: ctx.slug,
+      cwd: ctx.cwd,
+      request: {
+        type: "feature",
+        title: "",
+        slug: ctx.slug,
+        content: ctx.requestContent,
+        enabled: [],
+      },
+      repo: this.repo,
+    };
+
     let initialMessage: string;
     try {
-      initialMessage = step.buildMessage(state, {
-        client: this.sessionClient as never, // PipelineDeps compat — not used
-        config,
-        repo: this.repo,
-        request: {
-          type: "feature",
-          title: "",
-          slug: ctx.slug,
-          content: ctx.requestContent,
-          enabled: [],
-        },
-        slug: ctx.slug,
-        githubClient: this.githubClient,
-        cwd: ctx.cwd,
-      });
+      initialMessage = step.buildMessage(state, stepCtx);
     } catch (err) {
       const errCode = (err as { code?: string }).code ?? "BUILD_MESSAGE_FAILED";
       const errMsg = (err as Error).message;
       const errHint = (err as { hint?: string }).hint ?? "Check step preconditions.";
       const buildMsgErrorInfo: ErrorInfo = { code: errCode, message: errMsg, hint: errHint };
-      state = recordFailedStepResult(state, step.name, buildMsgErrorInfo);
-      state = await store.fail(state, buildMsgErrorInfo, `${step.name}-build-message`);
-      await store.persist(state);
-      attachStateAndRethrow(err, state);
+      throwWrappedError(buildMsgErrorInfo, state);
     }
 
     // Branch guard
-    state = await store.appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: `${step.name}-session-create`,
-      status: "started",
-      message: `Creating ${step.name} session`,
-    });
-
     if (!state.branch) {
       const branchErr = branchNotSetError(step.name);
       const errorInfo: ErrorInfo = { code: branchErr.code, message: branchErr.message, hint: branchErr.hint };
-      state = recordFailedStepResult(state, step.name, errorInfo);
-      state = await store.fail(state, errorInfo, `${step.name}-session-create`);
-      await store.persist(state);
       throwWrappedError(errorInfo, state);
     }
 
@@ -463,7 +337,7 @@ export class ManagedAgentRunner implements AgentRunner {
     let sessionId: string;
     try {
       const sessionResult = await this.sessionClient.createSession({
-        agentId,
+        agentId: agentId!,
         environmentId: config.environment!.id,
         repoUrl,
         githubToken: config.github!.accessToken,
@@ -477,27 +351,12 @@ export class ManagedAgentRunner implements AgentRunner {
         message: `Failed to create ${step.name} session: ${errMsg}`,
         hint: "Check your API key and try again.",
       };
-      state = await store.appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: `${step.name}-session-create`,
-        status: "error",
-        message: errorInfo.message,
-      });
-      state = recordFailedStepResult(state, step.name, errorInfo);
-      state = await store.fail(state, errorInfo, step.name);
-      await store.persist(state);
       throwWrappedError(errorInfo, state);
     }
 
     // Send initial message
     try {
       await this.sessionClient.sendUserMessage(sessionId!, initialMessage!);
-      state = await store.appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: `${step.name}-session-create`,
-        status: "ok",
-        message: sessionId!,
-      });
     } catch (err) {
       const errMsg = (err as Error).message;
       const errorInfo: ErrorInfo = {
@@ -505,9 +364,6 @@ export class ManagedAgentRunner implements AgentRunner {
         message: `Failed to send initial message to ${step.name} session: ${errMsg}`,
         hint: "Check your network connection.",
       };
-      state = recordFailedStepResult(state, step.name, errorInfo);
-      state = await store.fail(state, errorInfo, step.name);
-      await store.persist(state);
       throwWrappedError(errorInfo, state);
     }
 
@@ -518,25 +374,8 @@ export class ManagedAgentRunner implements AgentRunner {
     if (pollResult.status !== "idle") {
       const errorInfo = pollResult.error ?? sessionTerminatedError();
       stderrWrite(`${step.name} session was terminated by Anthropic.`);
-      state = await store.appendHistory(state, {
-        ts: completedAt,
-        step: `${step.name}-terminated`,
-        status: "error",
-        message: errorInfo.message,
-      });
-      await failStepWithError(store, state, step.name, errorInfo, {
-        session: { id: sessionId!, agentId, environmentId: config.environment!.id },
-        completedAt,
-      });
+      throwWrappedError(errorInfo, state);
     }
-
-    state = await store.update(state, {
-      session: {
-        id: sessionId!,
-        agentId,
-        environmentId: config.environment!.id,
-      },
-    });
 
     // requiresCommit guard (design D5 + module-analysis 4-E)
     if (step.requiresCommit) {
@@ -552,48 +391,16 @@ export class ManagedAgentRunner implements AgentRunner {
           message: noCommitErr.message,
           hint: noCommitErr.hint,
         };
-        state = await store.appendHistory(state, {
-          ts: new Date().toISOString(),
-          step: `${step.name}-no-commit-detected`,
-          status: "error",
-          message: errorInfo.message,
-        });
-        await failStepWithError(store, state, step.name, errorInfo, {
-          session: { id: sessionId!, agentId, environmentId: config.environment!.id },
-          completedAt,
-        });
+        throwWrappedError(Object.assign(noCommitErr, errorInfo), state);
       }
     }
 
-    state = await store.appendHistory(state, {
-      ts: completedAt,
-      step: `${step.name}-completed`,
-      status: "ok",
-      message: `${step.name} session completed (${sessionId!})`,
-    });
-
     // Fetch result file (design D2)
-    const resultFilePath = step.resultFilePath(state, {
-      client: this.sessionClient as never,
-      config,
-      repo: this.repo,
-      request: {
-        type: "feature",
-        title: "",
-        slug: ctx.slug,
-        content: ctx.requestContent,
-        enabled: [],
-      },
-      slug: ctx.slug,
-      githubClient: this.githubClient,
-      cwd: ctx.cwd,
-    });
+    const resultFilePath = step.resultFilePath(state, stepCtx);
 
     let fileContent: string | null = null;
-    let findingsPath: string | null = null;
 
     if (resultFilePath !== null) {
-      findingsPath = resultFilePath;
       const effectiveBranch = state.branch!;
 
       // TC-031: managed adapter fetches result from GitHub
@@ -601,7 +408,7 @@ export class ManagedAgentRunner implements AgentRunner {
         this.repo.owner,
         this.repo.name,
         effectiveBranch,
-        findingsPath,
+        resultFilePath,
       );
 
       if (fileContent === null) {
@@ -612,63 +419,18 @@ export class ManagedAgentRunner implements AgentRunner {
           : specReviewResultNotFoundError(ctx.slug, effectiveBranch, iteration);
         stderrWrite(notFoundErr.message);
         const notFoundErrorInfo: ErrorInfo = { code: notFoundErr.code, message: notFoundErr.message, hint: notFoundErr.hint };
-        state = await store.fail(state, notFoundErrorInfo);
-        state = recordFailedStepResult(state, step.name, notFoundErrorInfo, {
-          session: state.session,
-          completedAt,
-        });
-        await store.persist(state);
-        attachStateAndRethrow(notFoundErr, state);
+        attachStateAndRethrow(Object.assign(notFoundErr, notFoundErrorInfo), state);
       }
     }
 
-    // Persist verdict and step result
-    const parsed = resultFilePath !== null && fileContent !== null
-      ? step.parseResult(fileContent!, {
-          client: this.sessionClient as never,
-          config,
-          repo: this.repo,
-          request: {
-            type: "feature",
-            title: "",
-            slug: ctx.slug,
-            content: ctx.requestContent,
-            enabled: [],
-          },
-          slug: ctx.slug,
-          githubClient: this.githubClient,
-          cwd: ctx.cwd,
-        })
-      : { verdict: null, findingsPath: null };
+    void completedAt; // used in error path above
 
-    const verdict = parsed.verdict;
-
-    state = pushStepResult(state, step.name, {
-      session: state.session,
-      verdict,
-      findingsPath,
-      fileContent,
-      completedAt,
-      error: null,
-    });
-
-    if (verdict !== null) {
-      state = await store.appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: `${step.name}-verdict`,
-        status: "ok",
-        message: `${step.name} verdict: ${verdict}`,
-      });
-    }
-
-    await store.persist(state);
-
+    // TC-010: return AgentRunResult only — no _updatedState
     return {
       completionReason: "success",
       resultContent: fileContent,
       sessionId: sessionId!,
-      _updatedState: state,
-    } as AgentRunResult & { _updatedState: JobState };
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -681,9 +443,7 @@ export class ManagedAgentRunner implements AgentRunner {
    */
   private async verifyBranchViaPort(
     branch: string,
-    state: JobState,
-    store: JobStateStore,
-  ): Promise<JobState> {
+  ): Promise<void> {
     const branchExists = await this.githubClient.verifyBranch(
       this.repo.owner,
       this.repo.name,
@@ -691,19 +451,7 @@ export class ManagedAgentRunner implements AgentRunner {
     );
     if (!branchExists) {
       stderrWrite(`Warning: Branch '${branch}' not found on GitHub yet.`);
-      return store.appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: "branch-verified",
-        status: "warning",
-        message: `Branch '${branch}' not found on GitHub`,
-      });
     }
-    return store.appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "branch-verified",
-      status: "ok",
-      message: `Branch '${branch}' verified on GitHub`,
-    });
   }
 
   /**
@@ -714,9 +462,7 @@ export class ManagedAgentRunner implements AgentRunner {
     branch: string,
     changeFolderPath: string,
     slug: string,
-    state: JobState,
-    store: JobStateStore,
-  ): Promise<JobState> {
+  ): Promise<void> {
     const folderExists = await this.githubClient.verifyPath(
       this.repo.owner,
       this.repo.name,
@@ -726,23 +472,12 @@ export class ManagedAgentRunner implements AgentRunner {
 
     if (!folderExists) {
       const folderErr = changeFolderNotFoundError(slug);
-      const newState = await store.appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: "change-folder-verified",
-        status: "error",
-        message: `Change folder not found: ${changeFolderPath}`,
+      throw Object.assign(folderErr, {
+        code: folderErr.code,
+        message: folderErr.message,
+        hint: folderErr.hint,
       });
-      const folderErrorInfo: ErrorInfo = { code: folderErr.code, message: folderErr.message, hint: folderErr.hint };
-      const failedState = await store.fail(newState, folderErrorInfo);
-      attachStateAndRethrow(folderErr, failedState);
     }
-
-    return store.appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: "change-folder-verified",
-      status: "ok",
-      message: `Change folder verified: ${changeFolderPath}`,
-    });
   }
 }
 

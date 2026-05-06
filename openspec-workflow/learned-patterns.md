@@ -1312,3 +1312,39 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **production code に change-slug を埋め込まない**: JSDoc やインラインコメントに `Design D3 (slug)` と書くと archive 後にリンク切れになる。設計の背景は ADR や archived change folder で追跡し、production code は generic なコメントにとどめる
 - **spec-review → spec-fixer の feedback loop が実装品質を底上げする**: 2 HIGH 指摘を spec-fixer が 1 iteration で解消し、後続の implementation + code-review が初回 approved。仕様段階で矛盾を潰す投資は実装リトライ削減で回収できる
 - **opusplan パターンの導入は model 選定の再現性を高める**: step の性質（設計 vs 実装）に応じた model 選択を type-level で宣言することで、暗黙のハードコードから明示的な設計判断に昇格した
+
+---
+
+## 2026-05-06 — StepContext 型分離 + _updatedState 責務重複の解消
+
+**Type**: refactoring
+**Outcome**: completed
+
+### Review Patterns
+
+#### Spec Review (8.40/10, 初回 approved)
+- **暗黙的な依存注入変更の明示化 (MEDIUM)**: StepExecutor のコンストラクタ依存が変更されたが delta spec に明記されていなかった。refactoring で依存グラフが変わる場合、delta spec の MODIFIED セクションに旧→新の依存リストを明示する。振る舞い不変の refactoring でも DI 変更は明示が必要
+- **実装先行の仕様追認パターンの記録 (MEDIUM)**: `resultFilePath(state, deps)` の deps パラメータは実装が先行して持っていたが spec に反映されていなかった。delta spec で既存実装との乖離を解消する場合、origin（実装先行）を注記すると spec の信頼性が上がる
+- **optional フィールドのフォールバック意味論 (LOW)**: `StepContext.cwd?: string` の省略時動作（`process.cwd()` フォールバック）が spec に未記載。interface の optional フィールドには「省略時はどうなるか」を spec に明記する規律が必要
+
+#### Code Review (8.20/10, 初回 approved)
+- **refactoring 後の dead code 検出 (MEDIUM x2)**: `completedAt` の未使用宣言、`createSessionWithHistory` / `failStepWithError` の呼び出し元消失。責務移動の refactoring では、移動元の関数・変数が dead code 化していないかの掃除が不十分になりやすい。「責務を移動したら、移動元の export を grep して呼び出し元ゼロの関数を削除」を checklist 化すべき
+- **completedAt タイミングの不正確さ (MEDIUM)**: `completedAt` を `runner.run()` 前に取得するため、agent session が長時間かかると実際の完了時刻と乖離する。executor が state 管理の唯一の権限者になったことで、既存の不正確さが顕在化した。タイムスタンプは「完了イベントの直前」で取得する原則
+- **non-null assertion の散在 (LOW)**: try-catch の制御フローで TypeScript が初期化を追跡できない場合の `!` assertion 6 箇所。型安全ではあるが、`throwWrappedError` の never 戻り値を活用すれば assertion 不要にできる
+
+### Error Patterns
+- **エラー・リトライ・エスカレーションなし**: 全フェーズが一発通過。Build/TypeCheck/Test すべて PASS（854/854）。spec-review も code-review も初回 approved。refactoring タイプで要件が明確（Issue #81 + 先行調査の design.md）な場合、pipeline の安定性が高い
+- **先行調査の設計成果物が iteration 削減に寄与**: ブランチ `feat/stepcontext-type-separation` の design.md（D1-D5）と tasks.md の Phase 分割が spec-review approved 済みで、本 request はそれを引き継いだ。設計が固まった状態で request-execute に入ると spec-review/code-review の iteration が最小化される
+
+### Design Decisions
+- **D1: PipelineDeps extends StepContext で後方互換維持**: Liskov 置換原則に基づく型階層。StepContext を新設し PipelineDeps がそれを extends する。既存コードは PipelineDeps をそのまま渡せるため破壊的変更なし
+- **D2: StepDeps alias 先変更で最小影響**: `type StepDeps = PipelineDeps` → `type StepDeps = StepContext` に変更するだけで、全 Step メソッドシグネチャの型が自動的に狭まる。alias パターンの活用で変更箇所を 1 行に集約
+- **D3: executor を state 管理の唯一の権限者に**: ManagedAgentRunner から JobStateStore 操作を全除去し、adapter の責務を「agent との通信のみ」に純化。executor の runAgentStep が step 開始/完了の state 更新を一元管理
+- **D4: _updatedState 廃止で managed/local 分岐を解消**: AgentRunResult に private extension field `_updatedState` を持たせる設計を撤廃。executor の managed/local if 分岐が消え、1 本道の state 管理パスが実現
+- **D5: completionVerdict の spec-fixer 追加**: spec 外の deviation だが implementation-notes.md に根拠記載。spec-fixer step に `completionVerdict: "approved"` を追加し、振る舞い不変を維持するために必要な変更として code-review が妥当と判断
+
+### Lessons
+- **refactoring の品質は事前設計の深さに比例する**: Issue #81 + dogfood で design.md（D1-D5）が確定済みだったため、request-execute の全フェーズが一発通過。spec-review 8.4、code-review 8.2 はいずれも初回 approved。先行調査で設計を固めてから request-execute に入るパターンが最も効率的
+- **責務移動後の dead code 掃除を忘れない**: ManagedAgentRunner から executor に責務を移動した後、移動元の `createSessionWithHistory` / `failStepWithError` が dead code として残存。refactoring では「移動元の export を grep して呼び出し元ゼロを確認」を実装完了チェックに含めるべき
+- **alias パターンは型の狭小化に有効**: `type StepDeps = StepContext` への alias 先変更で、全 Step メソッドが自動的に狭い型を受け取るようになった。TypeScript の type alias を活用すると、型の変更が波及する箇所を 1 行に集約できる
+- **adapter は通信のみ、state は orchestrator が管理**: ManagedAgentRunner が JobStateStore を操作していた設計は adapter の責務越境だった。adapter の責務を「外部サービスとの通信」に限定し、state 管理を orchestrator（executor）に一元化する原則は他の adapter にも適用可能

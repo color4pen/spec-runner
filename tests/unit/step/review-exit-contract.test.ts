@@ -199,7 +199,6 @@ describe("TC-008: spec-review round-trip — resultFilePath and buildFindingsPat
 
   function makeDeps(slug: string): StepDeps {
     return {
-      client: {} as StepDeps["client"],
       config: {
         version: 1,
         anthropic: { apiKey: "sk-test" },
@@ -210,14 +209,6 @@ describe("TC-008: spec-review round-trip — resultFilePath and buildFindingsPat
       repo: { owner: "testowner", name: "testrepo" },
       request: { type: "feature", title: "Test", slug, content: "content", enabled: [] },
       slug,
-      sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubClient: {
-        verifyBranch: vi.fn().mockResolvedValue(true),
-        getRawFile: vi.fn().mockResolvedValue(null),
-        verifyPath: vi.fn().mockResolvedValue(true),
-        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
-      getRefSha: vi.fn().mockResolvedValue(null),
-      },
     };
   }
 
@@ -281,7 +272,6 @@ describe("TC-009: code-review round-trip — resultFilePath and buildReviewFeedb
 
   function makeDeps(slug: string): StepDeps {
     return {
-      client: {} as StepDeps["client"],
       config: {
         version: 1,
         anthropic: { apiKey: "sk-test" },
@@ -292,14 +282,6 @@ describe("TC-009: code-review round-trip — resultFilePath and buildReviewFeedb
       repo: { owner: "testowner", name: "testrepo" },
       request: { type: "feature", title: "Test", slug, content: "content", enabled: [] },
       slug,
-      sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubClient: {
-        verifyBranch: vi.fn().mockResolvedValue(true),
-        getRawFile: vi.fn().mockResolvedValue(null),
-        verifyPath: vi.fn().mockResolvedValue(true),
-        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
-      getRefSha: vi.fn().mockResolvedValue(null),
-      },
     };
   }
 
