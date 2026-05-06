@@ -9,7 +9,7 @@ import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { SpecRunnerError, branchNotSetError } from "../../errors.js";
 
-const BUILD_FIXER_AGENT_MODEL = "claude-sonnet-4-5";
+const BUILD_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
 /** Error code when no verification result is available for build-fixer to reference. */
 export const BUILD_FIXER_NO_VERIFICATION_RESULT = "BUILD_FIXER_NO_VERIFICATION_RESULT";
@@ -55,6 +55,10 @@ export const BuildFixerStep: AgentStep = {
   completionVerdict: "success",
 
   requiresCommit: true,
+
+  // maxTurns: build-fixer iterates on compile/test errors; 35 covers complex fixes.
+  // Design D3 (propose-openspec-cli-and-step-model-config).
+  maxTurns: 35,
 
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError("build-fixer");

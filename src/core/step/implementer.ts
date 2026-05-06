@@ -8,7 +8,7 @@ import { IMPLEMENTER_SYSTEM_PROMPT } from "../../prompts/implementer-system.js";
 import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { branchNotSetError } from "../../errors.js";
 
-const IMPLEMENTER_AGENT_MODEL = "claude-sonnet-4-5";
+const IMPLEMENTER_AGENT_MODEL = "claude-sonnet-4-6";
 
 /**
  * Full AgentDefinition owned by ImplementerStep.
@@ -74,6 +74,10 @@ export const ImplementerStep: AgentStep = {
   completionVerdict: "success",
 
   requiresCommit: true,
+
+  // maxTurns: implementer handles complex multi-file tasks; 60 is the upper bound.
+  // Design D3 (propose-openspec-cli-and-step-model-config).
+  maxTurns: 60,
 
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError("implementer");

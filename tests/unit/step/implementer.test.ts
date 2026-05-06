@@ -63,9 +63,10 @@ describe("TC-021: ImplementerStep 構造検証", () => {
     expect(ImplementerStep.name).toBe("implementer");
   });
 
-  it("step.agent.role === 'implementer' かつ model === 'claude-sonnet-4-5'", () => {
+  it("step.agent.role === 'implementer' かつ model === 'claude-sonnet-4-6'", () => {
+    // TC-005: implementation/fixer steps use claude-sonnet-4-6 (opusplan pattern)
     expect(ImplementerStep.agent.role).toBe("implementer");
-    expect(ImplementerStep.agent.model).toBe("claude-sonnet-4-5");
+    expect(ImplementerStep.agent.model).toBe("claude-sonnet-4-6");
   });
 
   it("step.agent.capabilities.gitWrite === true", () => {

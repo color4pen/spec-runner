@@ -6,7 +6,7 @@ import { CODE_REVIEW_SYSTEM_PROMPT } from "../../prompts/code-review-system.js";
 import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { parseReviewVerdict } from "../parser/review-verdict.js";
 
-const CODE_REVIEW_AGENT_MODEL = "claude-sonnet-4-5";
+const CODE_REVIEW_AGENT_MODEL = "claude-opus-4-6[1m]";
 
 /**
  * Build the review-feedback file path for a given iteration.
@@ -95,6 +95,10 @@ export const CodeReviewStep: AgentStep = {
   agent: codeReviewAgentDefinition,
 
   toolHandlers: undefined,
+
+  // maxTurns: code-review reads diff + writes findings; 20 is sufficient.
+  // Design D3 (propose-openspec-cli-and-step-model-config).
+  maxTurns: 20,
 
   buildMessage(state: JobState, deps: StepDeps): string {
     const iteration = computeCodeReviewIteration(state);

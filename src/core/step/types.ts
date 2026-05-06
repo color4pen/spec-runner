@@ -88,6 +88,14 @@ export interface AgentStep {
   requiresCommit?: boolean;
 
   /**
+   * Maximum number of turns for the SDK query() call.
+   * When set, ClaudeCodeRunner passes this value as options.maxTurns to the SDK.
+   * When absent, the default of 30 is used.
+   * Design D3 (propose-openspec-cli-and-step-model-config): per-step maxTurns configuration.
+   */
+  maxTurns?: number;
+
+  /**
    * If true, StepExecutor sets state.branch after this step completes (local runtime path only).
    * Used for steps that create the feature branch as a side effect of their execution
    * (e.g., propose). The branch is set to `feat/${slug}` if state.branch is not already set.

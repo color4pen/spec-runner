@@ -1279,3 +1279,36 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **request.md に教訓を明記すると pattern-reviewer が機能する**: request.md の「教訓（pattern-reviewer 参照用）」セクションが spec-review の pattern-reviewer agent に拾われ、review-lessons.md との整合確認が自動実行された
 - **spec-review の指摘を実装で改善するフィードバックは有効**: spec-review finding #3（`[-\s]*` の区切り線問題）を implementer が D5 で `(?:-\s*)?` に改善。設計→レビュー→実装の feedback loop が 1 iteration で収束
 - **delta spec と既存 spec の差分記述は正確にする**: `completionVerdict` は types.ts に既存で、新規追加は `setsBranch` のみ。delta spec で「追加」と書くと齟齬が生じる。「既存フィールドの利用を明文化」と区別する
+
+## 2026-05-06 — propose step の openspec CLI 対応 + step ごとの model / maxTurns 設定
+
+**Type**: spec-change
+**Outcome**: completed
+
+### Review Patterns
+
+#### Spec Review (6.60 → 8.00, +1.40)
+- **no-op RENAMED ブロックが openspec validate を fail させる (HIGH)**: delta spec の `## RENAMED Requirements` で FROM = TO の同一文字列を宣言すると openspec validate がエラーを返す。RENAMED は実際の rename が発生した場合のみ使用すべき。propose agent が scaffold 時に不要な RENAMED を生成するパターンの再発防止が必要
+- **delta spec の MODIFIED 漏れで既存 Requirement と矛盾 (HIGH)**: opusplan パターンで model を変更する ADDED Requirement を追加したが、既存 Requirement の `agent.model` リテラル値（`claude-sonnet-4-5`）を MODIFIED していなかった。archive 後に矛盾した仕様が併存するリスク。delta spec で値を上書きする場合は既存 Requirement の MODIFIED が必須
+- **名称不統一の検出と scope 判断 (MEDIUM → LOW)**: `buildProposeMessage` vs `buildInitialMessage` の不統一は既存の問題であり本 change scope 外として LOW に降格。scope 外の既存問題は severity 降格して記録にとどめる判断が適切に機能した
+
+#### Code Review (8.45/10, 初回 approved)
+- **初回 approved で CRITICAL/HIGH ゼロ**: 仕様レビューで 2 HIGH を修正した後の実装は clean。spec-review → spec-fixer の iteration が実装品質に直結する好例
+- **pre-existing debt の記録 (MEDIUM)**: `StepDeps` の `client: undefined as any` は既存の技術的負債。新機能がこのパターンに依存する場合でも、悪化させていなければ MEDIUM で記録して将来の request に委ねる判断が適切
+- **change-slug 参照の JSDoc 陳腐化 (LOW x2)**: `// Design D3 (propose-openspec-cli-and-step-model-config)` のようなコメントは archive 後にリンク切れになる。production code のコメントには change-slug を含めず、generic な説明にすべき
+
+### Error Patterns
+- **エラー・リトライ・エスカレーションなし**: 全フェーズが一発通過（spec-review の 1 retry を除く）。Build/TypeCheck/Test すべて PASS（854/854）。verification は安定
+- **spec-review のみ 2 iteration**: spec-fixer が 2 HIGH を正確に修正し、MEDIUM 2 件を scope 外として適切にスキップ。spec-fixer の判断精度が高かった
+
+### Design Decisions
+- **D1: openspec CLI ワークフローの system prompt 統合**: propose agent の system prompt を全面書き換えし、`openspec new change` → `openspec status --json` → `openspec instructions` のフローを明示。既存の path-fence / セキュリティガードは維持
+- **D2: opusplan パターン（Opus で計画、Sonnet で実行）**: 設計/レビュー step に `claude-opus-4-6[1m]`、実装/修正 step に `claude-sonnet-4-6` を割り当て。MRCR v2 78.3% の長文理解力と SWE-bench 差 1.2pt のコスト効率のバランス
+- **D3: maxTurns の step 別設定**: `AgentStep` interface に `maxTurns?: number` を追加し、`ClaudeCodeRunner` が `step.maxTurns ?? 30` でフォールバック。propose 20 / implementer 60 の比率は turn 消費の実態に整合
+- **D4: buildInitialMessage シグネチャ維持**: 既存の `buildInitialMessage()` のインターフェースを変更せず、system prompt 側で openspec CLI フローを指示。呼び出し元への影響を最小化
+
+### Lessons
+- **delta spec の RENAMED / MODIFIED は厳密に運用する**: no-op RENAMED は openspec validate を壊し、MODIFIED 漏れは archive 後の仕様矛盾を固定化する。propose agent（または spec-fixer）が delta spec を生成する際、既存 Requirement のリテラル値を変更するなら MODIFIED を必ず宣言する規律が必要
+- **production code に change-slug を埋め込まない**: JSDoc やインラインコメントに `Design D3 (slug)` と書くと archive 後にリンク切れになる。設計の背景は ADR や archived change folder で追跡し、production code は generic なコメントにとどめる
+- **spec-review → spec-fixer の feedback loop が実装品質を底上げする**: 2 HIGH 指摘を spec-fixer が 1 iteration で解消し、後続の implementation + code-review が初回 approved。仕様段階で矛盾を潰す投資は実装リトライ削減で回収できる
+- **opusplan パターンの導入は model 選定の再現性を高める**: step の性質（設計 vs 実装）に応じた model 選択を type-level で宣言することで、暗黙のハードコードから明示的な設計判断に昇格した

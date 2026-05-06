@@ -122,7 +122,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           cwd,
           allowedTools: ["Read", "Edit", "Write", "Bash", "Grep", "Glob"],
           permissionMode: "bypassPermissions",
-          maxTurns: 30,
+          maxTurns: step.maxTurns ?? 30,
           model: step.agent.model,
         },
       });

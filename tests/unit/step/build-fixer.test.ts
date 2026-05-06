@@ -83,9 +83,10 @@ describe("TC-023: BuildFixerStep 構造検証", () => {
     expect(BuildFixerStep.name).toBe("build-fixer");
   });
 
-  it("step.agent.role === 'build-fixer' かつ model === 'claude-sonnet-4-5'", () => {
+  it("step.agent.role === 'build-fixer' かつ model === 'claude-sonnet-4-6'", () => {
+    // TC-005: implementation/fixer steps use claude-sonnet-4-6 (opusplan pattern)
     expect(BuildFixerStep.agent.role).toBe("build-fixer");
-    expect(BuildFixerStep.agent.model).toBe("claude-sonnet-4-5");
+    expect(BuildFixerStep.agent.model).toBe("claude-sonnet-4-6");
   });
 
   it("step.agent.capabilities.gitWrite === true", () => {

@@ -9,7 +9,7 @@ import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { SpecRunnerError, branchNotSetError } from "../../errors.js";
 
-const CODE_FIXER_AGENT_MODEL = "claude-sonnet-4-5";
+const CODE_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
 /** Error code when no code-review result is available for code-fixer to reference. */
 export const CODE_FIXER_NO_REVIEW_RESULT = "CODE_FIXER_NO_REVIEW_RESULT";
@@ -59,6 +59,10 @@ export const CodeFixerStep: AgentStep = {
   completionVerdict: "approved",
 
   requiresCommit: true,
+
+  // maxTurns: code-fixer applies review findings; 30 covers multi-finding fixes.
+  // Design D3 (propose-openspec-cli-and-step-model-config).
+  maxTurns: 30,
 
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError("code-fixer");

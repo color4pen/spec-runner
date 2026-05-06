@@ -8,7 +8,7 @@ import { SPEC_FIXER_SYSTEM_PROMPT } from "../../prompts/spec-fixer-system.js";
 import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { branchNotSetError } from "../../errors.js";
 
-const SPEC_FIXER_AGENT_MODEL = "claude-sonnet-4-5";
+const SPEC_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
 /**
  * Full AgentDefinition owned by SpecFixerStep.
@@ -70,6 +70,10 @@ export const SpecFixerStep: AgentStep = {
   toolHandlers: undefined,
 
   requiresCommit: true,
+
+  // maxTurns: spec-fixer applies findings mechanically; 25 covers multi-finding fix cycles.
+  // Design D3 (propose-openspec-cli-and-step-model-config).
+  maxTurns: 25,
 
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError("spec-fixer");

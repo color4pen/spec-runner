@@ -99,8 +99,9 @@ describe("TC-006: CodeFixerStep の kind / name / agent.role が AgentStep 規�
     expect(CodeFixerStep.agent.name).toBe("specrunner-code-fixer");
   });
 
-  it("step.agent.model === 'claude-sonnet-4-5'", () => {
-    expect(CodeFixerStep.agent.model).toBe("claude-sonnet-4-5");
+  it("step.agent.model === 'claude-sonnet-4-6'", () => {
+    // TC-005: implementation/fixer steps use claude-sonnet-4-6 (opusplan pattern)
+    expect(CodeFixerStep.agent.model).toBe("claude-sonnet-4-6");
   });
 
   it("step.agent.tools contains agent_toolset_20260401", () => {

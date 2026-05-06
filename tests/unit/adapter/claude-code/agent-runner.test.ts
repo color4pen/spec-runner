@@ -254,6 +254,62 @@ describe("TC-023: ClaudeCodeRunner invokes query() with ctx.cwd", () => {
 });
 
 // ---------------------------------------------------------------------------
+// TC-002: step.maxTurns undefined → default 30
+// TC-003: step.maxTurns set → uses that value
+// ---------------------------------------------------------------------------
+
+describe("TC-002/TC-003: ClaudeCodeRunner passes step.maxTurns to query() with fallback 30", () => {
+  it("TC-002: uses default maxTurns=30 when step.maxTurns is undefined", async () => {
+    let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { capturedParams = params; },
+    });
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep({ maxTurns: undefined }),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    expect(capturedParams!.options?.maxTurns).toBe(30);
+  });
+
+  it("TC-003: uses step.maxTurns=60 when step.maxTurns is set (ImplementerStep-like)", async () => {
+    let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { capturedParams = params; },
+    });
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep({ maxTurns: 60 }),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    expect(capturedParams!.options?.maxTurns).toBe(60);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
 // TC-024: ClaudeCodeRunner does not import SessionClient / @anthropic-ai/sdk
 // ---------------------------------------------------------------------------
 

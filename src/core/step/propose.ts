@@ -5,7 +5,7 @@ import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { buildInitialMessage, PROPOSE_SYSTEM_PROMPT } from "../../prompts/propose-system.js";
 
-const PROPOSE_AGENT_MODEL = "claude-sonnet-4-5";
+const PROPOSE_AGENT_MODEL = "claude-opus-4-6[1m]";
 
 /**
  * Full AgentDefinition owned by ProposeStep.
@@ -48,6 +48,10 @@ export const ProposeStep: AgentStep = {
   // completionVerdict: propose has no result file, so completion = unconditional success.
   // Used by executor local runtime path when resultContent is null.
   completionVerdict: "success",
+
+  // maxTurns: propose involves design exploration via openspec CLI; 20 is sufficient.
+  // Design D3 (propose-openspec-cli-and-step-model-config).
+  maxTurns: 20,
 
   // setsBranch: propose creates the feature branch; executor sets state.branch after completion.
   // Design D2: declarative flag replaces step-name-based branch detection (TC-003 / TC-006).

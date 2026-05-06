@@ -5,7 +5,7 @@ import type { JobState, Verdict } from "../../state/schema.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT, buildSpecReviewInitialMessage } from "../../prompts/spec-review-system.js";
 import { parseReviewVerdict } from "../parser/review-verdict.js";
 
-const SPEC_REVIEW_AGENT_MODEL = "claude-sonnet-4-5";
+const SPEC_REVIEW_AGENT_MODEL = "claude-opus-4-6[1m]";
 
 /**
  * Full AgentDefinition owned by SpecReviewStep.
@@ -67,6 +67,10 @@ export const SpecReviewStep: AgentStep = {
 
   // No custom tool handlers for spec-review
   toolHandlers: undefined,
+
+  // maxTurns: spec-review is read-heavy with focused judgment; 15 is sufficient.
+  // Design D3 (propose-openspec-cli-and-step-model-config).
+  maxTurns: 15,
 
   buildMessage(state: JobState, deps: StepDeps): string {
     const iteration = computeSpecReviewIteration(state);
