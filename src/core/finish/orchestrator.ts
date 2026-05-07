@@ -20,7 +20,11 @@ import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs, FinishFlags } from "./types.js";
 import { loadJobState, updateJobState } from "../../state/store.js";
 import { resolveTarget } from "./resolve-target.js";
-import { runPreflight, fetchPrViewWithRetryForTest as fetchPrViewWithRetry } from "./preflight.js";
+import {
+  runPreflight,
+  fetchPrViewWithRetryForTest as fetchPrViewWithRetry,
+  pollMergeStateAfterPushForTest as pollMergeStateAfterPush,
+} from "./preflight.js";
 import { archiveOpenspec } from "./archive-openspec.js";
 import { moveRequestsDir } from "./move-requests-dir.js";
 import { assertJobFinishable, markJobArchived } from "./job-state-update.js";
@@ -188,19 +192,18 @@ export async function runFinishOrchestrator(
       stdoutWrite(`Pushed ${target.branch} to origin.`);
     }
 
-    // Phase 2 post-push: wait for mergeStateStatus=CLEAN (Design D6)
-    // After a push, GitHub may briefly set mergeStateStatus=UNKNOWN while recalculating.
-    // Poll up to 3 times to avoid premature BLOCKED detection in Phase 3.
-    const postPushPrView = await fetchPrViewWithRetry({
+    // Phase 2 post-push: poll mergeStateStatus until CLEAN (Design D1)
+    // After push, GitHub recalculates mergeability asynchronously.
+    // Poll up to 5 times (3s interval) to wait for CLEAN.
+    // On exhaustion, proceed with current status — Phase 3 will attempt merge anyway.
+    const postPushPoll = await pollMergeStateAfterPush({
       prNumber: target.prNumber,
       cwd,
       spawn,
       slug: target.slug,
       sleepFn,
     });
-    const mergeStateAfterPush = postPushPrView.ok
-      ? (postPushPrView.data.mergeStateStatus ?? prViewData.mergeStateStatus ?? "")
-      : (prViewData.mergeStateStatus ?? "");
+    const mergeStateAfterPush = postPushPoll.mergeStateStatus || (prViewData.mergeStateStatus ?? "");
 
     // Phase 3: gh pr merge --squash --delete-branch
     stdoutWrite(`Phase 3: merging PR #${target.prNumber}...`);

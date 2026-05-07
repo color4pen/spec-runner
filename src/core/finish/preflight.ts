@@ -51,6 +51,9 @@ export interface PrViewData {
 const UNKNOWN_RETRY_COUNT = 3;
 const UNKNOWN_RETRY_DELAY_MS = 3000;
 
+const POST_PUSH_RETRY_COUNT = 5;
+const POST_PUSH_RETRY_DELAY_MS = 3000;
+
 /**
  * Run all Phase 0 preflight checks.
  */
@@ -339,6 +342,59 @@ async function fetchPrViewWithRetry(params: {
   };
 }
 
+/**
+ * Poll mergeStateStatus after Phase 2 push until CLEAN or retries exhausted.
+ *
+ * Unlike fetchPrViewWithRetry (Phase 0), this function:
+ * - Retries on ANY non-CLEAN status (not just UNKNOWN)
+ * - Does NOT escalate on exhaustion — returns current state for Phase 3 to attempt merge
+ */
+async function pollMergeStateAfterPush(params: {
+  prNumber: number;
+  cwd: string;
+  spawn: SpawnFn;
+  slug: string;
+  sleepFn?: (ms: number) => Promise<void>;
+}): Promise<{ mergeStateStatus: string }> {
+  const { prNumber, cwd, spawn, slug: _slug } = params;
+  const sleepImpl = params.sleepFn ?? sleep;
+
+  for (let attempt = 1; attempt <= POST_PUSH_RETRY_COUNT; attempt++) {
+    const result = await spawn(
+      "gh",
+      ["pr", "view", String(prNumber), "--json", "mergeStateStatus"],
+      { cwd },
+    );
+
+    if (result.exitCode !== 0) {
+      // gh pr view failed — return empty string so Phase 3 attempts merge without --admin
+      return { mergeStateStatus: "" };
+    }
+
+    let parsed: { mergeStateStatus?: string };
+    try {
+      parsed = JSON.parse(result.stdout.trim());
+    } catch {
+      return { mergeStateStatus: "" };
+    }
+
+    const status = (parsed.mergeStateStatus ?? "").toUpperCase();
+    if (status === "CLEAN") {
+      return { mergeStateStatus: status };
+    }
+
+    if (attempt < POST_PUSH_RETRY_COUNT) {
+      process.stdout.write(
+        `Post-push polling: mergeStateStatus=${status}, retrying (${attempt}/${POST_PUSH_RETRY_COUNT})...\n`,
+      );
+      await sleepImpl(POST_PUSH_RETRY_DELAY_MS);
+    }
+  }
+
+  // Exhausted — return empty string so Phase 3 attempts merge anyway (no escalation)
+  return { mergeStateStatus: "" };
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -434,3 +490,9 @@ async function restoreBranch(input: RestoreBranchInput): Promise<void> {
  * Allows tests to exercise the MERGED bypass and UNKNOWN retry logic in isolation.
  */
 export { fetchPrViewWithRetry as fetchPrViewWithRetryForTest };
+
+/**
+ * Exported for unit testing only.
+ * Allows tests to exercise post-push polling logic in isolation.
+ */
+export { pollMergeStateAfterPush as pollMergeStateAfterPushForTest };

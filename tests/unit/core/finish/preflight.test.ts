@@ -9,7 +9,11 @@
  * TC-CHECKOUT-4: validate 成功 → restore 失敗 → warning 出力のみ、{ ok: true }
  */
 import { describe, it, expect, vi } from "vitest";
-import { fetchPrViewWithRetryForTest, runPreflight } from "../../../../src/core/finish/preflight.js";
+import {
+  fetchPrViewWithRetryForTest,
+  pollMergeStateAfterPushForTest,
+  runPreflight,
+} from "../../../../src/core/finish/preflight.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
 import type { ResolvedTarget, FinishFs } from "../../../../src/core/finish/types.js";
 
@@ -507,5 +511,87 @@ describe("TC-WT-PRE-002: worktreePath set + validate fails → escalation", () =
     if (!result.ok) {
       expect(result.escalation).toContain("check 6");
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// pollMergeStateAfterPush — post-push polling
+// ---------------------------------------------------------------------------
+
+describe("pollMergeStateAfterPush", () => {
+  /**
+   * TC-POST-PUSH-001: 1 回目で CLEAN → 即座に返す（retry なし）
+   */
+  it("TC-POST-PUSH-001: returns immediately when mergeStateStatus is CLEAN", async () => {
+    const spawn = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      stdout: JSON.stringify({ mergeStateStatus: "CLEAN" }),
+      stderr: "",
+    });
+    const sleepFn = vi.fn();
+
+    const result = await pollMergeStateAfterPushForTest({
+      prNumber: 42,
+      cwd: "/tmp",
+      spawn,
+      slug: "test",
+      sleepFn,
+    });
+
+    expect(result.mergeStateStatus).toBe("CLEAN");
+    expect(sleepFn).not.toHaveBeenCalled();
+    expect(spawn).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * TC-POST-PUSH-002: BEHIND → BEHIND → CLEAN（2 回 retry で成功）
+   */
+  it("TC-POST-PUSH-002: retries on non-CLEAN and succeeds when CLEAN", async () => {
+    let call = 0;
+    const spawn = vi.fn().mockImplementation(() => {
+      call++;
+      const status = call < 3 ? "BEHIND" : "CLEAN";
+      return Promise.resolve({
+        exitCode: 0,
+        stdout: JSON.stringify({ mergeStateStatus: status }),
+        stderr: "",
+      });
+    });
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    const result = await pollMergeStateAfterPushForTest({
+      prNumber: 42,
+      cwd: "/tmp",
+      spawn,
+      slug: "test",
+      sleepFn,
+    });
+
+    expect(result.mergeStateStatus).toBe("CLEAN");
+    expect(sleepFn).toHaveBeenCalledTimes(2);
+  });
+
+  /**
+   * TC-POST-PUSH-003: 5 回全部 UNKNOWN → escalation せず空文字を返す
+   */
+  it("TC-POST-PUSH-003: returns empty string after exhausting retries (no escalation)", async () => {
+    const spawn = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      stdout: JSON.stringify({ mergeStateStatus: "UNKNOWN" }),
+      stderr: "",
+    });
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    const result = await pollMergeStateAfterPushForTest({
+      prNumber: 42,
+      cwd: "/tmp",
+      spawn,
+      slug: "test",
+      sleepFn,
+    });
+
+    expect(result.mergeStateStatus).toBe("");
+    expect(spawn).toHaveBeenCalledTimes(5);
+    expect(sleepFn).toHaveBeenCalledTimes(4); // sleep between attempts, not after last
   });
 });
