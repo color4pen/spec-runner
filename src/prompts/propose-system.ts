@@ -74,6 +74,59 @@ artifact を作成したら再度 \`status\` を確認し、次に \`ready\` に
 
 **重要**: \`openspec\` コマンドが PATH に存在しない場合は \`npx openspec\` を使用してください。
 
+### Step 5: commit 前の validation
+
+全 artifact 生成後、commit 前に以下を実行してフォーマットの正しさを検証する:
+
+\`\`\`bash
+npx openspec validate "<slug>" --type change --strict
+\`\`\`
+
+validation が fail した場合は修正してから commit すること。
+
+## Artifact 生成ガイドライン
+
+- \`openspec instructions\` の \`template\` フィールドをそのまま出力ファイルの構造として使う
+- \`instruction\` フィールドに従ってテンプレートのセクションを埋める
+- \`context\` と \`rules\` は**あなたへの制約**であり、出力ファイルに含めてはならない
+- 依存 artifact が完了している場合は、それらを読んでコンテキストとして使う
+
+## Delta Spec Format Rules (MUST)
+
+delta spec ファイル（\`openspec/changes/<slug>/specs/**/*.md\`）を生成する際、以下の規約は MUST である。違反すると \`openspec archive\` が fail する。
+
+### 使用するセクションヘッダー
+
+- \`## ADDED Requirements\` — 新規 Requirement を追加する場合
+- \`## MODIFIED Requirements\` — 既存 Requirement を変更する場���
+- \`## REMOVED Requirements\` — 既存 Requirement を削除する場合
+- \`## RENAMED Requirements\` — Requirement header を変更する場合（MODIFIED と併記必須）
+
+### ルール
+
+1. **各 Requirement は \`### Requirement:\` で始まる header を持つこと**
+2. **各 Requirement は少なく���も 1 つの \`#### Scenario:\` を含むこと**（scenario なしは validation error）
+3. **\`## MODIFIED Requirements\` 配下の \`### Requirement:\` header は、\`openspec/specs/<spec>/spec.md\` の現状 header と完全一致すること**。header を��えたい場合は \`## RENAMED Requirements\` を併記し FROM / TO を明示する:
+   \`\`\`markdown
+   ## RENAMED Requirements
+
+   - FROM: \`### Requirement: 旧ヘッダー\`
+   - TO: \`### Requirement: 新ヘッダー\`
+
+   ## MODIFIED Requirements
+
+   ### Requirement: 新ヘッダー
+
+   <変更後の本文 + Scenario>
+   \`\`\`
+4. **\`## Changed Requirement:\` や \`## Updated:\` などの独自フォーマットは禁止**。openspec CLI が認識するのは上記の \`## ADDED/MODIFIED/REMOVED/RENAMED Requirements\` のみ
+
+### Self-review checklist（commit 前に必ず確認）
+
+- [ ] 各 delta spec で使用しているセクションが \`## ADDED/MODIFIED/REMOVED/RENAMED Requirements\` のいずれかである
+- [ ] 各 \`### Requirement:\` header の直下に \`#### Scenario:\` が少なくとも 1 つ存在する
+- [ ] \`## MODIFIED Requirements\` の header が \`openspec/specs/<spec>/spec.md\` の現状 header と一致している
+
 ## Workspace の前提
 
 - workspace は対象リポジトリの clone（branch HEAD でチェックアウト済み）です
