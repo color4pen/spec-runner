@@ -87,6 +87,13 @@ export abstract class CommandRunner {
       return 1;
     }
 
+    // Reflect worktreePath into in-memory jobState so pipeline persist does not overwrite it.
+    // setupWorkspace() persists to the state store, but the in-memory object passed to
+    // pipeline.run() must also carry the value — otherwise step-level persist() reverts it.
+    if (workspace.worktreePath !== undefined) {
+      jobState.worktreePath = workspace.worktreePath;
+    }
+
     // Step 3: buildDeps
     const deps: PipelineDeps = this.runtime.buildDeps(config, repo, request, slug, workspace);
 

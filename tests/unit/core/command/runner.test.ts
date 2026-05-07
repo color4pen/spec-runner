@@ -79,6 +79,7 @@ function buildPrepareResult(overrides: Partial<PrepareResult> = {}): PrepareResu
 
 const NOOP_HANDLE = {} as unknown as CleanupHandle;
 const NOOP_WORKSPACE: WorkspaceContext = { cwd: "/worktree" };
+const WORKTREE_WORKSPACE: WorkspaceContext = { cwd: "/worktree", worktreePath: "/worktree" };
 
 function buildMockRuntime(opts: {
   finalState?: Partial<JobState>;
@@ -248,5 +249,35 @@ describe("TC-CR-005: awaiting-resume path returns 1", () => {
     const stdoutCalls = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls;
     const allOutput = [...stderrCalls, ...stdoutCalls].map((c) => String(c[0])).join("");
     expect(allOutput).toMatch(/resume|halted/i);
+  });
+});
+
+// TC-CR-006: worktreePath from setupWorkspace is reflected in jobState passed to pipeline
+describe("TC-CR-006: worktreePath from workspace is reflected in jobState passed to pipeline", () => {
+  it("pipeline receives jobState with worktreePath set by setupWorkspace", async () => {
+    const runtime = buildMockRuntime();
+    // Override setupWorkspace to return a workspace with worktreePath
+    (runtime.setupWorkspace as ReturnType<typeof vi.fn>).mockResolvedValue(WORKTREE_WORKSPACE);
+
+    const command = new TestCommand(runtime, buildPrepareResult());
+
+    const { createStandardPipeline } = await import("../../../../src/core/pipeline/index.js");
+    const pipelineRunSpy = vi.fn().mockResolvedValue({
+      version: 1, jobId: "test-job-id", createdAt: "", updatedAt: "",
+      request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
+      repository: { owner: "testowner", name: "testrepo" },
+      session: null, step: "pr-create", status: "awaiting-merge",
+      branch: "feat/test", history: [], error: null, steps: {},
+    });
+    (createStandardPipeline as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+      run: pipelineRunSpy,
+    });
+
+    await command.execute();
+
+    // Verify that pipeline.run() was called with jobState containing worktreePath
+    expect(pipelineRunSpy).toHaveBeenCalledTimes(1);
+    const passedJobState = pipelineRunSpy.mock.calls[0]![1];
+    expect(passedJobState.worktreePath).toBe("/worktree");
   });
 });
