@@ -13,6 +13,7 @@ import { getLatestStepResult } from "../state/helpers.js";
 import { EventBus } from "../core/event/event-bus.js";
 import { ProgressDisplay } from "./progress.js";
 import { createWorktreeManager } from "../core/worktree/manager.js";
+import { spawnCommand } from "../util/spawn.js";
 
 /**
  * Parse spec-review findings summary from spec-review-result.md content.
@@ -198,7 +199,7 @@ export async function runRunCore(
   const requestSlug: string | null = canonicalMatch ? (canonicalMatch[1] ?? null) : null;
 
   // Create job state
-  const jobState = await createJobState({
+  let jobState = await createJobState({
     request: {
       path: absolutePath,
       title: request.title,
@@ -230,13 +231,25 @@ export async function runRunCore(
     }
 
     // Record worktreePath in state before pipeline runs (enables crash recovery)
+    // Must also update in-memory jobState so pipeline persist() doesn't overwrite with null
     await updateJobState(jobState.jobId, (s) => ({ ...s, worktreePath }));
+    jobState = { ...jobState, worktreePath };
 
     // Copy request.md into the worktree so the agent can read it
     const relativeRequestPath = path.relative(cwd, absolutePath);
     const worktreeRequestPath = path.join(worktreePath, relativeRequestPath);
     await fs.mkdir(path.dirname(worktreeRequestPath), { recursive: true });
     await fs.cp(absolutePath, worktreeRequestPath);
+
+    // Stage the request file in the worktree so propose agent's first commit includes it.
+    // detached HEAD is fine — git add operates on the index regardless of HEAD attach state.
+    const gitAddResult = await spawnCommand("git", ["add", relativeRequestPath], { cwd: worktreePath });
+    if (gitAddResult.exitCode !== 0) {
+      process.stderr.write(`Error: Failed to stage request file: ${gitAddResult.stderr.trim()}\n`);
+      await manager.remove(worktreePath, cwd).catch(() => {});
+      await manager.prune(cwd).catch(() => {});
+      return 1;
+    }
 
     // Use worktree as cwd for the pipeline
     pipelineCwd = worktreePath;
