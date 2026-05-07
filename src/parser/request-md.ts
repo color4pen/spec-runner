@@ -1,6 +1,7 @@
 import * as fs from "node:fs/promises";
 import { requestMdInvalidError } from "../errors.js";
 import { stderrWrite } from "../logger/stdout.js";
+import { TYPE_CONFIG } from "../config/type-config.js";
 
 export interface ParsedRequestSections {
   /** Content under ## 背景 heading, or undefined if heading not present. */
@@ -21,19 +22,8 @@ export interface ParsedRequest {
   sections?: ParsedRequestSections;
 }
 
-const ALLOWED_TYPES = [
-  "new-feature",
-  "bug-fix",
-  "refactor",
-  "documentation",
-  "chore",
-  "improvement",
-] as const;
-
-type AllowedType = (typeof ALLOWED_TYPES)[number];
-
-function isAllowedType(t: string): t is AllowedType {
-  return (ALLOWED_TYPES as readonly string[]).includes(t);
+function isAllowedType(t: string): t is keyof typeof TYPE_CONFIG {
+  return t in TYPE_CONFIG;
 }
 
 /**

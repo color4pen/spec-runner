@@ -4,6 +4,7 @@ import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { buildInitialMessage, PROPOSE_SYSTEM_PROMPT } from "../../prompts/propose-system.js";
+import { getBranchPrefix } from "../../config/type-config.js";
 
 const PROPOSE_AGENT_MODEL = "claude-opus-4-6[1m]";
 
@@ -58,7 +59,8 @@ export const ProposeStep: AgentStep = {
   setsBranch: true,
 
   buildMessage(state: JobState, deps: StepDeps): string {
-    const branch = `feat/${deps.slug}-${state.jobId.slice(0, 8)}`;
+    const prefix = getBranchPrefix(deps.request.type);
+    const branch = `${prefix}${deps.slug}-${state.jobId.slice(0, 8)}`;
     return buildInitialMessage(deps.request.content, deps.slug, branch);
   },
 

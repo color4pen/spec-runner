@@ -4,6 +4,7 @@ import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState, Verdict } from "../../state/schema.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT, buildSpecReviewInitialMessage } from "../../prompts/spec-review-system.js";
 import { parseReviewVerdict } from "../parser/review-verdict.js";
+import { getSpecReviewMode } from "../../config/type-config.js";
 
 const SPEC_REVIEW_AGENT_MODEL = "claude-opus-4-6[1m]";
 
@@ -84,6 +85,7 @@ export const SpecReviewStep: AgentStep = {
       branch: state.branch ?? undefined,
       iteration,
       findingsPath,
+      specReviewMode: getSpecReviewMode(state.request.type),
     });
   },
 

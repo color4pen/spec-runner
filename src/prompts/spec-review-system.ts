@@ -68,6 +68,8 @@ Repository: {{REPOSITORY}}
 Request type: {{REQUEST_TYPE}}
 Enabled options: {{ENABLED}}
 
+{{SPEC_REVIEW_MODE}}
+
 <user-request>
 {{REQUEST_CONTENT}}
 </user-request>
@@ -91,6 +93,13 @@ export interface SpecReviewPromptInput {
   iteration?: number;
   /** Explicit findings path (overrides iteration-based computation). */
   findingsPath?: string;
+  /**
+   * Review scope mode for this request type.
+   * "full": includes security review (authentication, input validation, OWASP Top 10).
+   * "lightweight": architecture and specification review only; security review not required.
+   * Defaults to "full" when absent.
+   */
+  specReviewMode?: "full" | "lightweight";
 }
 
 /**
@@ -98,6 +107,16 @@ export interface SpecReviewPromptInput {
  */
 export function buildSpecReviewSystemPrompt(_input: SpecReviewPromptInput): string {
   return SPEC_REVIEW_SYSTEM_PROMPT;
+}
+
+/**
+ * Build the spec-review mode instruction line for the initial message.
+ */
+function buildSpecReviewModeInstruction(mode: "full" | "lightweight"): string {
+  if (mode === "lightweight") {
+    return "Review scope: Architecture and specification review only. Security review is not required for this request type.";
+  }
+  return "Review scope: Full review including security considerations (authentication, input validation, OWASP Top 10 where applicable).";
 }
 
 /**
@@ -119,11 +138,15 @@ export function buildSpecReviewInitialMessage(input: SpecReviewPromptInput): str
     ? buildGitPushInstruction(input.branch)
     : "After writing the result file, commit and push to the branch before ending your session.";
 
+  // Build spec-review mode instruction
+  const specReviewModeInstruction = buildSpecReviewModeInstruction(input.specReviewMode ?? "full");
+
   return SPEC_REVIEW_INITIAL_MESSAGE_TEMPLATE
     .replace(/{{SLUG}}/g, input.slug)
     .replace(/{{REPOSITORY}}/g, input.repository)
     .replace(/{{REQUEST_TYPE}}/g, input.requestType)
     .replace(/{{ENABLED}}/g, enabledStr)
+    .replace(/{{SPEC_REVIEW_MODE}}/g, specReviewModeInstruction)
     .replace(/{{REQUEST_CONTENT}}/g, requestContent)
     .replace(/{{FINDINGS_PATH}}/g, findingsPath)
     .replace(/{{GIT_PUSH_INSTRUCTION}}/g, gitPushInstruction);

@@ -12,9 +12,10 @@
  */
 import * as path from "node:path";
 import type { JobState } from "./schema.js";
+import { TYPE_CONFIG } from "../config/type-config.js";
 
-/** Known branch prefixes to strip when deriving a slug. */
-const BRANCH_PREFIXES = ["feat/", "fix/", "change/", "refactor/", "chore/"];
+/** Known branch prefixes to strip when deriving a slug. Derived from TYPE_CONFIG. */
+const BRANCH_PREFIXES = Object.values(TYPE_CONFIG).map((c) => c.branchPrefix);
 
 /**
  * Pattern matching a jobId suffix: hyphen followed by exactly 8 hex characters at end of string.

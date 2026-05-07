@@ -12,6 +12,7 @@ import {
   attachStateAndRethrow,
 } from "./executor-helpers.js";
 import type { ErrorInfo } from "../../state/schema.js";
+import { getBranchPrefix } from "../../config/type-config.js";
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -215,7 +216,8 @@ export class StepExecutor {
     // derive and set state.branch now.
     // Design D2: declarative flag replaces step-name-based branch detection (TC-003 / TC-006).
     if (step.setsBranch === true && !state.branch) {
-      state = { ...state, branch: `feat/${deps.slug}-${state.jobId.slice(0, 8)}` };
+      const prefix = getBranchPrefix(deps.request.type);
+      state = { ...state, branch: `${prefix}${deps.slug}-${state.jobId.slice(0, 8)}` };
     }
 
     await store.persist(state);

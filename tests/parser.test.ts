@@ -282,6 +282,67 @@ Other content.
   });
 });
 
+// TC-2.5: spec-change and refactoring parse without warning
+describe("TC-2.5: spec-change and refactoring — no warning on parse", () => {
+  it("parses type: spec-change without triggering unknown-type warning", () => {
+    const warnSpy = vi.spyOn(process.stderr, "write");
+    const content = `# Spec Change Request
+
+## Meta
+
+- **type**: spec-change
+- **slug**: my-spec-change
+
+## Description
+
+Some spec change.
+`;
+    const result = parseRequestMdContent(content);
+    expect(result.type).toBe("spec-change");
+    // stderrWrite should NOT have been called with unknown type warning
+    const calls = warnSpy.mock.calls.map((c) => String(c[0]));
+    expect(calls.some((msg) => msg.includes("unknown request type") && msg.includes("spec-change"))).toBe(false);
+  });
+
+  it("parses type: refactoring without triggering unknown-type warning", () => {
+    const warnSpy = vi.spyOn(process.stderr, "write");
+    const content = `# Refactoring Request
+
+## Meta
+
+- **type**: refactoring
+- **slug**: my-refactoring
+
+## Description
+
+Some refactoring.
+`;
+    const result = parseRequestMdContent(content);
+    expect(result.type).toBe("refactoring");
+    // stderrWrite should NOT have been called with unknown type warning
+    const calls = warnSpy.mock.calls.map((c) => String(c[0]));
+    expect(calls.some((msg) => msg.includes("unknown request type") && msg.includes("refactoring"))).toBe(false);
+  });
+
+  it("still warns for genuinely unknown types like 'improvement'", () => {
+    const warnSpy = vi.spyOn(process.stderr, "write");
+    const content = `# Some Request
+
+## Meta
+
+- **type**: improvement
+- **slug**: some-improvement
+
+## Description
+
+Some improvement.
+`;
+    parseRequestMdContent(content);
+    const calls = warnSpy.mock.calls.map((c) => String(c[0]));
+    expect(calls.some((msg) => msg.includes("unknown request type"))).toBe(true);
+  });
+});
+
 // sections — 両方不在の場合
 describe("sections — 背景と目的の両方が存在しない場合", () => {
   it("sections is empty object (no error)", () => {
