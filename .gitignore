@@ -22,8 +22,8 @@ npm-debug.log*
 .vscode/
 *.swp
 
-# Lock files (regenerate with bun install)
-bun.lock
+# pnpm (not used)
+pnpm-lock.yaml
 
 # runtime-rule-promotion の生ログ。instinct に蒸留した後は参照不要
 openspec-workflow/observations.jsonl
