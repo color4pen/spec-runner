@@ -10,6 +10,7 @@ import { runRun } from "../src/cli/run.js";
 import { runPs } from "../src/cli/ps.js";
 import { runDoctor } from "../src/cli/doctor.js";
 import { runFinish } from "../src/cli/finish.js";
+import { runRm } from "../src/cli/rm.js";
 
 const USAGE = `Usage: specrunner <command> [options]
 
@@ -20,6 +21,7 @@ Commands:
   ps                     List all jobs
   doctor                 Diagnose environment / config / auth prerequisites
   finish [<slug>]        Squash-merge feature PR and archive (1-PR model)
+  rm <jobId>             Remove a job (state file + cloud session)
 
 Options:
   --help, -h    Show this help message
@@ -37,6 +39,11 @@ Finish Options:
   --job=<jobId>     Direct job ID lookup (forensics / debug only)
   --dry-run         Phase 0 pre-flight only, no destructive ops
   --force           Force merge even with failing checks (--admin)
+
+Rm Options:
+  --force           Remove job regardless of status (bypass status gate)
+  --all-terminated  Remove all failed/terminated/archived jobs
+  --yes             Skip confirmation prompt (for --all-terminated)
 `;
 
 export { USAGE };
@@ -167,6 +174,37 @@ export async function main(): Promise<void> {
         process.exit(
           await runFinish({ slug, prNumber, jobId, dryRun, force, cwd: process.cwd() }),
         );
+      } catch (err: unknown) {
+        process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);
+        process.exit(1);
+      }
+      break;
+    }
+
+    case "rm": {
+      const rmArgs = args.slice(1);
+
+      // Parse flags
+      const force = rmArgs.includes("--force");
+      const allTerminated = rmArgs.includes("--all-terminated");
+      const yes = rmArgs.includes("--yes");
+
+      // Detect unknown flags
+      const knownRmFlags = new Set(["--force", "--all-terminated", "--yes"]);
+      const unknownRmFlags = rmArgs.filter(
+        (a) => a.startsWith("--") && !knownRmFlags.has(a),
+      );
+      if (unknownRmFlags.length > 0) {
+        process.stderr.write(`Unknown flag(s): ${unknownRmFlags.join(", ")}\n\n`);
+        process.stderr.write(USAGE);
+        process.exit(2);
+      }
+
+      // First non-flag argument is the jobId
+      const jobId = rmArgs.find((a) => !a.startsWith("--"));
+
+      try {
+        process.exit(await runRm({ jobId, force, allTerminated, yes }));
       } catch (err: unknown) {
         process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);
         process.exit(1);

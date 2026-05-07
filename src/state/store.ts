@@ -106,6 +106,24 @@ export async function updateJobState(
 }
 
 /**
+ * Delete a job state file by jobId.
+ * Idempotent: ENOENT is silently ignored.
+ * Other errors are propagated.
+ */
+export async function deleteJobState(jobId: string): Promise<void> {
+  const filePath = getJobStatePath(jobId);
+  try {
+    await fs.unlink(filePath);
+  } catch (err: unknown) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === "ENOENT") {
+      return; // already deleted — idempotent
+    }
+    throw err;
+  }
+}
+
+/**
  * List all valid job states from the jobs directory.
  * Skips malformed files and logs them to stderr.
  */
