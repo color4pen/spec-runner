@@ -7,8 +7,6 @@ import { STANDARD_TRANSITIONS } from "./types.js";
 import type { Transition } from "./types.js";
 import { EventBus } from "../event/event-bus.js";
 import { StepExecutor } from "../step/executor.js";
-import { createManagedAgentRunner } from "../../adapter/managed-agent/agent-runner.js";
-import { createClaudeCodeRunner } from "../../adapter/claude-code/agent-runner.js";
 import type { AgentRunner } from "../port/agent-runner.js";
 import { ProposeStep } from "../step/propose.js";
 import { SpecReviewStep } from "../step/spec-review.js";
@@ -31,19 +29,10 @@ export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): P
   const maxIterations = getMaxRetries(deps.config);
   const bus = events ?? new EventBus();
 
-  let runner: AgentRunner;
-  if (deps.config.runtime === "local") {
-    runner = createClaudeCodeRunner({ cwd: deps.cwd });
-  } else {
-    if (!deps.client) {
-      throw new Error("PipelineDeps.client is required for managed runtime. Run 'specrunner init' first.");
-    }
-    runner = createManagedAgentRunner({
-      sessionClient: deps.client,
-      githubClient: deps.githubClient,
-      repo: deps.repo,
-    });
-  }
+  // Design D8: runner is injected by RuntimeStrategy.buildDeps() — no runtime branch here.
+  const runner: AgentRunner = deps.runner ?? (() => {
+    throw new Error("PipelineDeps.runner is required. Use createRuntime().buildDeps() to construct PipelineDeps.");
+  })();
 
   const executor = new StepExecutor(bus, runner);
 
@@ -88,9 +77,6 @@ export async function runPipeline(
   events?: EventBus,
 ): Promise<JobState> {
   const bus = events ?? new EventBus();
-  // Design D8: composition root branches on config.runtime.
-  // TC-035: managed → ManagedAgentRunner (SessionClient required)
-  // TC-036: local → ClaudeCodeRunner (no SessionClient)
   const pipeline = createStandardPipeline(deps, bus);
   return pipeline.run("propose", jobState, deps);
 }
@@ -113,20 +99,10 @@ export async function runProposePipeline(
 ): Promise<JobState> {
   const bus = events ?? new EventBus();
 
-  // Design D8: composition root branches on config.runtime.
-  let proposeRunner: AgentRunner;
-  if (deps.config.runtime === "local") {
-    proposeRunner = createClaudeCodeRunner({ cwd: deps.cwd });
-  } else {
-    if (!deps.client) {
-      throw new Error("PipelineDeps.client is required for managed runtime. Run 'specrunner init' first.");
-    }
-    proposeRunner = createManagedAgentRunner({
-      sessionClient: deps.client,
-      githubClient: deps.githubClient,
-      repo: deps.repo,
-    });
-  }
+  // Design D8: runner is injected by RuntimeStrategy.buildDeps() — no runtime branch here.
+  const proposeRunner: AgentRunner = deps.runner ?? (() => {
+    throw new Error("PipelineDeps.runner is required. Use createRuntime().buildDeps() to construct PipelineDeps.");
+  })();
 
   const executor = new StepExecutor(bus, proposeRunner);
 

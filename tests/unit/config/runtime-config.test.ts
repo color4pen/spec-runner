@@ -186,12 +186,13 @@ describe("TC-035: managed runtime → ManagedAgentRunner created by composition 
 // ---------------------------------------------------------------------------
 
 describe("TC-036: local runtime → SessionClient not used", () => {
-  it("run.ts does not create SessionClient when config.runtime === 'local'", async () => {
-    // Verify via source inspection that the condition exists
-    const runPath = path.resolve(__dirname, "../../../src/cli/run.ts");
-    const content = await fs.readFile(runPath, "utf-8");
+  it("factory.ts is the single location of config.runtime branching", async () => {
+    // After session-lifecycle-extraction refactoring, all runtime branching is in factory.ts.
+    // Verify via source inspection that the factory contains the condition.
+    const factoryPath = path.resolve(__dirname, "../../../src/core/runtime/factory.ts");
+    const content = await fs.readFile(factoryPath, "utf-8");
 
-    // The composition root should check runtime and skip SessionClient creation
+    // The composition root should check runtime and skip SessionClient creation for local
     expect(content).toMatch(/runtime.*!==.*"local"|runtime.*===.*"local"/);
   });
 });

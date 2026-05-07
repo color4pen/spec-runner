@@ -1,5 +1,6 @@
 import type { SessionClient } from "./port/session-client.js";
 import type { GitHubClient } from "./port/github-client.js";
+import type { AgentRunner } from "./port/agent-runner.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import type { OriginInfo } from "../git/remote.js";
 import type { ParsedRequest } from "../parser/request-md.js";
@@ -35,10 +36,19 @@ export interface PipelineDeps extends StepContext {
    * Managed-agent session client. Required for "managed" runtime.
    * Optional when runtime === "local" (ClaudeCodeRunner does not need it).
    * Design D8: composition root injects the appropriate AgentRunner based on runtime config.
+   * Note: client is maintained for backward compatibility; after runner is added,
+   * pipeline steps use runner directly. client will be removed in a future cleanup request.
    */
   client?: SessionClient;
   /** Injectable sleep for testing */
   sleepFn?: (ms: number) => Promise<void>;
   /** GitHub client (port interface). Required for all pipeline steps. */
   githubClient: GitHubClient;
+  /**
+   * Pre-built AgentRunner injected by RuntimeStrategy.buildDeps().
+   * createStandardPipeline and runProposePipeline use this directly,
+   * eliminating the config.runtime branch in pipeline/run.ts.
+   * Design D8: runner replaces runtime-specific AgentRunner construction in pipeline.
+   */
+  runner?: AgentRunner;
 }

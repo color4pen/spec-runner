@@ -4,6 +4,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import type { GitHubClient } from "../src/core/port/github-client.js";
+import { createManagedAgentRunner } from "../src/adapter/managed-agent/agent-runner.js";
 
 // Mock the verification runner so pipeline-integration tests don't spawn real processes.
 // VerificationStep.run() calls runVerification() internally.
@@ -102,6 +103,17 @@ function buildRepo() {
 
 function buildRequest() {
   return { type: "feature", title: "Test", slug: "test", content: "Do something", enabled: [] };
+}
+
+/**
+ * Build a ManagedAgentRunner from client + githubClient for injection into PipelineDeps.runner.
+ * Required after Task 2.1: PipelineDeps.runner replaces runtime branching in pipeline/run.ts.
+ */
+function buildRunner(
+  client: ReturnType<typeof buildPipelineMockClient>["client"],
+  githubClient: GitHubClient,
+) {
+  return createManagedAgentRunner({ sessionClient: client, githubClient, repo: buildRepo() });
 }
 
 /**
@@ -242,6 +254,7 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -289,6 +302,7 @@ describe("TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 app
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -332,6 +346,7 @@ describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RE
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     // spec-review: 2 entries, last verdict is escalation (written by onExceeded)
@@ -367,6 +382,7 @@ describe("TC-013: runPipeline — escalation stops loop without invoking spec-fi
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     // spec-fixer not created
@@ -395,6 +411,7 @@ describe("TC-014: runPipeline — spec-review loop skipped when propose fails", 
     const { client } = buildPipelineMockClient({
       proposeFailure: true,
     });
+    const githubClient = buildMockGithubClient();
 
     const result = await runPipeline(jobState, {
       client: client,
@@ -403,7 +420,8 @@ describe("TC-014: runPipeline — spec-review loop skipped when propose fails", 
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubClient: buildMockGithubClient(),
+      githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     // Only propose session was created
@@ -435,6 +453,7 @@ describe("TC-015: runPipeline — fresh session IDs per iteration", () => {
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     const specReviewArr = result.steps?.["spec-review"];
@@ -476,6 +495,7 @@ describe("TC-016: runPipeline — stdout contains 'retries exhausted, escalating
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     const stdout = stdoutLines.join("");
@@ -509,6 +529,7 @@ describe("TC-017: runPipeline — Pipeline finished summary line in stdout", () 
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     const stdout = stdoutLines.join("");
@@ -546,6 +567,7 @@ describe("TC-018: runPipeline — stdout log order for needs-fix → approved pa
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     const stdout = stdoutLines.join("");
@@ -589,6 +611,7 @@ describe("TC-050: state.step updated: spec-fixer → spec-review within loop", (
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     // After spec-review approved → implementer → verification → code-review → pr-create → end.
@@ -640,6 +663,7 @@ describe("TC-060: runPipeline — code-review needs-fix → code-fixer → code-
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -698,6 +722,7 @@ describe("TC-061: runPipeline — code-review retries exhausted: escalation + CO
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     // code-review: 2 entries, last verdict is escalation (written by onExceeded)
@@ -736,6 +761,7 @@ describe("TC-030: runPipeline — persistence: both propose and spec-review step
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     // Verify the final persisted state has both steps recorded

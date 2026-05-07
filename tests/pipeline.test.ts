@@ -4,6 +4,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import type { SessionClient } from "../src/core/port/session-client.js";
 import type { GitHubClient } from "../src/core/port/github-client.js";
+import { createManagedAgentRunner } from "../src/adapter/managed-agent/agent-runner.js";
 
 // Setup temp directory for state files
 let tempDir: string;
@@ -154,6 +155,14 @@ function buildRequest() {
   return { type: "new-feature", title: "Test Request", slug: "test-request", content: "Please implement this.", enabled: [] };
 }
 
+/**
+ * Build a ManagedAgentRunner from client + githubClient for injection into PipelineDeps.runner.
+ * Required after Task 2.1: PipelineDeps.runner replaces runtime branching in pipeline/run.ts.
+ */
+function buildRunner(client: SessionClient, githubClient: GitHubClient) {
+  return createManagedAgentRunner({ sessionClient: client, githubClient, repo: buildRepo() });
+}
+
 // TC-035: propose パイプライン — 正常完了（状態遷移の全記録）
 describe("TC-035: propose pipeline — normal completion with full history", () => {
   it("records all required history steps on success", async () => {
@@ -171,6 +180,7 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
       request: buildRequest(),
       slug: "2026-04-27-cli-core-pipeline",
       githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -203,6 +213,7 @@ describe("TC-036: propose pipeline — BRANCH_NOT_REGISTERED when no register_br
       request: buildRequest(),
       slug: "2026-04-27-cli-core-pipeline",
       githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     expect(result.status).toBe("awaiting-resume");
@@ -222,6 +233,7 @@ describe("TC-037: propose pipeline — SSE stream connected before initial messa
     const jobState = await makeJobState();
 
     const { client, streamEventsMock } = buildMockSessionClient({ registerBranch: "feat/test" });
+    const githubClient = buildMockGithubClient();
 
     await runProposePipeline(jobState, {
       client,
@@ -229,7 +241,8 @@ describe("TC-037: propose pipeline — SSE stream connected before initial messa
       repo: buildRepo(),
       request: buildRequest(),
       slug: "2026-04-27-test",
-      githubClient: buildMockGithubClient(),
+      githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     // streamEvents() was called — the SessionClient port guarantees SSE is connected
@@ -262,13 +275,15 @@ describe("TC-038: propose pipeline — initial message contains user-request tag
       },
     );
 
+    const githubClient = buildMockGithubClient();
     await runProposePipeline(jobState, {
       client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
       slug: "2026-04-27-test",
-      githubClient: buildMockGithubClient(),
+      githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     // The requestContent passed to streamEvents is used to build the initial message
@@ -296,6 +311,7 @@ describe("TC-039: propose pipeline — CHANGE_FOLDER_NOT_FOUND", () => {
       request: buildRequest(),
       slug: "2026-04-27-test",
       githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     expect(result.status).toBe("awaiting-resume");
@@ -321,6 +337,7 @@ describe("TC-040: propose pipeline — branch not found on GitHub is warning onl
       request: buildRequest(),
       slug: "2026-04-27-test",
       githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -350,6 +367,7 @@ describe("TC-041: propose pipeline — GITHUB_TOKEN_EXPIRED on 401", () => {
       request: buildRequest(),
       slug: "2026-04-27-test",
       githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     expect(result.status).toBe("awaiting-resume");
@@ -369,6 +387,7 @@ describe("TC-042: session creation parameters", () => {
     const jobState = await makeJobState();
 
     const { client, createSessionMock } = buildMockSessionClient({ registerBranch: "feat/test" });
+    const githubClient = buildMockGithubClient();
 
     await runProposePipeline(jobState, {
       client,
@@ -376,7 +395,8 @@ describe("TC-042: session creation parameters", () => {
       repo: buildRepo(),
       request: buildRequest(),
       slug: "2026-04-27-test",
-      githubClient: buildMockGithubClient(),
+      githubClient,
+      runner: buildRunner(client, githubClient),
     });
 
     expect(createSessionMock).toHaveBeenCalledTimes(1);
