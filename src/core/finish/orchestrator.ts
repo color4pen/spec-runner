@@ -281,6 +281,16 @@ export async function runFinishOrchestrator(
     }
   }
 
+  // Delete feature branch (best-effort, after worktree is freed)
+  const localDelResult = await spawn("git", ["branch", "-D", target.branch], { cwd });
+  if (localDelResult.exitCode !== 0) {
+    process.stderr.write(`Warning: failed to delete local branch ${target.branch}\n`);
+  }
+  const remoteDelResult = await spawn("git", ["push", "origin", "--delete", target.branch], { cwd });
+  if (remoteDelResult.exitCode !== 0) {
+    process.stderr.write(`Warning: failed to delete remote branch ${target.branch}\n`);
+  }
+
   // markJobArchived AFTER Phase 4 operations
   await markJobArchived(target.jobId);
   stdoutWrite(`Job ${target.jobId} marked as archived.`);
@@ -391,7 +401,7 @@ interface MergePhase3Params {
 async function mergeFeaturePrPhase3(params: MergePhase3Params): Promise<PhaseResult> {
   const { prNumber, mergeStateStatus, force, cwd, spawn, slug } = params;
 
-  const mergeArgs = ["pr", "merge", String(prNumber), "--squash", "--delete-branch"];
+  const mergeArgs = ["pr", "merge", String(prNumber), "--squash"];
 
   // --admin: only when BLOCKED (required status checks blocking) or force flag
   const status = mergeStateStatus.toUpperCase();
@@ -426,7 +436,7 @@ function outputDryRunPlan(
   stdoutWrite: (msg: string) => void,
 ): void {
   const archivePlan = "archive openspec changes + move active to merged";
-  const mergeStrategy = "gh pr merge --squash --delete-branch";
+  const mergeStrategy = "gh pr merge --squash";
   const adminFlag = (prViewData.mergeStateStatus ?? "").toUpperCase() === "BLOCKED" ? "yes" : "no";
   const expectedStatus = "archived";
 

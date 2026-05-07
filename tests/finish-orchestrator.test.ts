@@ -136,6 +136,10 @@ function makeHappyPathSpawn(prState: "OPEN" | "MERGED" = "OPEN"): SpawnFn {
     }
     // git commit
     if (cmd === "git" && args[0] === "commit") return Promise.resolve({ exitCode: 0, stdout: "1 file changed", stderr: "" });
+    // git branch -D <branch> (Phase 4 branch deletion, best-effort)
+    if (cmd === "git" && args[0] === "branch" && args[1] === "-D") return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
+    // git push origin --delete <branch> (Phase 4 remote branch deletion, best-effort)
+    if (cmd === "git" && args[0] === "push" && args[1] === "origin" && args[2] === "--delete") return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
     // git push origin <branch>
     if (cmd === "git" && args[0] === "push") return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
     // gh pr merge (feature)
@@ -524,6 +528,93 @@ describe("TC-WT-FIN-002: worktreePath=null → managed mode checkout flow", () =
     // Phase 4: git pull --ff-only called (since rev-parse returns "main")
     const pullCalls = calls.filter(([c, a]) => c === "git" && a[0] === "pull");
     expect(pullCalls.length).toBeGreaterThan(0);
+  });
+});
+
+// TC-FIN-BD-001: Phase 3 merge command does NOT include --delete-branch
+describe("TC-FIN-BD-001: Phase 3 merge command excludes --delete-branch", () => {
+  it("gh pr merge args do not contain --delete-branch", async () => {
+    const { jobId } = await makeJobWithPr();
+    const calls: Array<[string, string[]]> = [];
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      calls.push([cmd, [...args]]);
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    const stubFs = makeStubFs({ changeFolderExists: false });
+
+    const result = await runFinishOrchestrator(
+      { slug: "test-slug", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+    );
+
+    expect(result.exitCode).toBe(0);
+    const mergeCalls = calls.filter(([c, a]) => c === "gh" && a[0] === "pr" && a[1] === "merge");
+    expect(mergeCalls.length).toBe(1);
+    expect(mergeCalls[0]![1]).not.toContain("--delete-branch");
+  });
+});
+
+// TC-FIN-BD-002: Phase 4 calls local + remote branch deletion
+describe("TC-FIN-BD-002: Phase 4 branch deletion commands are called", () => {
+  it("git branch -D and git push origin --delete are called in Phase 4", async () => {
+    const worktreePath = path.join(tempDir, ".git", "specrunner-worktrees", "test-slug-abcdef12");
+    const { jobId } = await makeJobWithPr({ worktreePath });
+
+    const mockManager = {
+      create: vi.fn(),
+      remove: vi.fn().mockResolvedValue(undefined),
+      prune: vi.fn().mockResolvedValue(undefined),
+    };
+
+    const calls: Array<[string, string[]]> = [];
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      calls.push([cmd, [...args]]);
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    const stubFs = makeStubFs({ changeFolderExists: false });
+
+    const result = await runFinishOrchestrator(
+      { slug: "test-slug", flags: {}, cwd: tempDir, spawn, fs: stubFs, worktreeManagerFn: () => mockManager },
+    );
+
+    expect(result.exitCode).toBe(0);
+    const branchDelCalls = calls.filter(([c, a]) => c === "git" && a[0] === "branch" && a[1] === "-D");
+    expect(branchDelCalls.length).toBe(1);
+    const remoteBranchDelCalls = calls.filter(([c, a]) => c === "git" && a[0] === "push" && a[2] === "--delete");
+    expect(remoteBranchDelCalls.length).toBe(1);
+  });
+});
+
+// TC-FIN-BD-003: branch deletion failure is best-effort (exit 0)
+describe("TC-FIN-BD-003: branch deletion failure does not cause escalation", () => {
+  it("exits 0 even when git branch -D and git push --delete both fail", async () => {
+    const worktreePath = path.join(tempDir, ".git", "specrunner-worktrees", "test-slug-abcdef12");
+    const { jobId } = await makeJobWithPr({ worktreePath });
+
+    const mockManager = {
+      create: vi.fn(),
+      remove: vi.fn().mockResolvedValue(undefined),
+      prune: vi.fn().mockResolvedValue(undefined),
+    };
+
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "git" && args[0] === "branch" && args[1] === "-D") {
+        return Promise.resolve({ exitCode: 1, stdout: "", stderr: "error: branch not found" });
+      }
+      if (cmd === "git" && args[0] === "push" && args[2] === "--delete") {
+        return Promise.resolve({ exitCode: 1, stdout: "", stderr: "error: remote ref not found" });
+      }
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    const stubFs = makeStubFs({ changeFolderExists: false });
+
+    const result = await runFinishOrchestrator(
+      { slug: "test-slug", flags: {}, cwd: tempDir, spawn, fs: stubFs, worktreeManagerFn: () => mockManager },
+    );
+
+    expect(result.exitCode).toBe(0);
   });
 });
 
