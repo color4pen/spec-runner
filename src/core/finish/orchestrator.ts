@@ -205,6 +205,19 @@ export async function runFinishOrchestrator(
     });
     const mergeStateAfterPush = postPushPoll.mergeStateStatus || (prViewData.mergeStateStatus ?? "");
 
+    // DIRTY = merge conflicts confirmed. Escalate before attempting merge.
+    if (mergeStateAfterPush === "DIRTY") {
+      return {
+        exitCode: 1,
+        escalation: formatEscalation({
+          failedStep: "Phase 3 guard (mergeStateStatus DIRTY)",
+          detectedState: "mergeStateStatus is DIRTY (merge conflicts exist)",
+          recommendedAction: `PR has merge conflicts (DIRTY). Rebase the feature branch onto main and re-run: specrunner finish ${target.slug}`,
+          resumeCommand: `specrunner finish ${target.slug}`,
+        }),
+      };
+    }
+
     // Phase 3: gh pr merge --squash --delete-branch
     stdoutWrite(`Phase 3: merging PR #${target.prNumber}...`);
     const mergeResult = await mergeFeaturePrPhase3({
@@ -246,7 +259,7 @@ export async function runFinishOrchestrator(
     const isOnMain = currentBranch === "main";
 
     if (isOnMain) {
-      // git checkout main
+      // TODO(base-branch): configurable base branch
       const checkoutMainResult = await spawn("git", ["checkout", "main"], { cwd });
       if (checkoutMainResult.exitCode !== 0) {
         return {

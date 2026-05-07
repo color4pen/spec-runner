@@ -69,7 +69,47 @@ describe("TC-WTM-001: create — happy path", () => {
     const cmds = spawn.calls.map((c) => `${c.cmd} ${c.args.join(" ")}`);
     expect(cmds[0]).toContain("git worktree add --detach");
     expect(cmds[0]).toContain("my-slug-abcdef12");
+    // No baseRef provided → uses HEAD
+    expect(cmds[0]).toContain("HEAD");
     expect(cmds[1]).toBe("bun install --frozen-lockfile");
+  });
+});
+
+// TC-WTM-008: create — baseRef argument
+describe("TC-WTM-008: create — baseRef argument", () => {
+  it("uses provided baseRef instead of HEAD when creating worktree", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 0 }, // git worktree add
+      { exitCode: 0 }, // bun install
+    ]);
+
+    const manager = createWorktreeManager(spawn);
+    await manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main");
+
+    const addCall = spawn.calls.find(
+      (c) => c.cmd === "git" && c.args.includes("add"),
+    );
+    expect(addCall).toBeDefined();
+    expect(addCall?.args).toContain("origin/main");
+    // HEAD should NOT appear in the worktree add args
+    expect(addCall?.args).not.toContain("HEAD");
+  });
+
+  it("uses HEAD when baseRef is omitted (backward compat)", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 0 }, // git worktree add
+      { exitCode: 0 }, // bun install
+    ]);
+
+    const manager = createWorktreeManager(spawn);
+    await manager.create("/repo", "slug", "aaaa1111");
+
+    const addCall = spawn.calls.find(
+      (c) => c.cmd === "git" && c.args.includes("add"),
+    );
+    expect(addCall).toBeDefined();
+    expect(addCall?.args).toContain("HEAD");
+    expect(addCall?.args).not.toContain("origin/main");
   });
 });
 

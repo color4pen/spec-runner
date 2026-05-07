@@ -19,11 +19,11 @@ import { spawnCommand } from "../../util/spawn.js";
 export interface WorktreeManager {
   /**
    * Create a worktree at .git/specrunner-worktrees/<slug>-<jobId-short>/.
-   * Uses --detach HEAD so branch creation happens inside the worktree.
+   * Uses --detach <baseRef> so the worktree starts from the specified ref.
    * Runs bun install --frozen-lockfile after creation.
    * Returns the worktree path.
    */
-  create(repoRoot: string, slug: string, jobId: string): Promise<string>;
+  create(repoRoot: string, slug: string, jobId: string, baseRef?: string): Promise<string>;
 
   /**
    * Remove a worktree: git worktree remove --force + rm -rf.
@@ -59,13 +59,15 @@ export function createWorktreeManager(spawnFn?: SpawnFn, rmFn?: RmFn): WorktreeM
     fs.rm(p, opts));
 
   return {
-    async create(repoRoot: string, slug: string, jobId: string): Promise<string> {
+    async create(repoRoot: string, slug: string, jobId: string, baseRef?: string): Promise<string> {
       const worktreePath = buildWorktreePath(repoRoot, slug, jobId);
+      // TODO(base-branch): configurable base branch
+      const ref = baseRef ?? "HEAD";
 
-      // git worktree add --detach <path> HEAD
+      // git worktree add --detach <path> <ref>
       const wtResult = await spawn(
         "git",
-        ["worktree", "add", "--detach", worktreePath, "HEAD"],
+        ["worktree", "add", "--detach", worktreePath, ref],
         { cwd: repoRoot },
       );
       if (wtResult.exitCode !== 0) {

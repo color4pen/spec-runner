@@ -594,4 +594,57 @@ describe("pollMergeStateAfterPush", () => {
     expect(spawn).toHaveBeenCalledTimes(5);
     expect(sleepFn).toHaveBeenCalledTimes(4); // sleep between attempts, not after last
   });
+
+  /**
+   * TC-POST-PUSH-004: DIRTY → 即座に打ち切り、retry なし
+   */
+  it("TC-POST-PUSH-004: returns DIRTY immediately without retrying", async () => {
+    const spawn = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      stdout: JSON.stringify({ mergeStateStatus: "DIRTY" }),
+      stderr: "",
+    });
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    const result = await pollMergeStateAfterPushForTest({
+      prNumber: 42,
+      cwd: "/tmp",
+      spawn,
+      slug: "test",
+      sleepFn,
+    });
+
+    expect(result.mergeStateStatus).toBe("DIRTY");
+    // Polled exactly once — no retries for DIRTY
+    expect(spawn).toHaveBeenCalledTimes(1);
+    expect(sleepFn).not.toHaveBeenCalled();
+  });
+
+  /**
+   * TC-POST-PUSH-005: BEHIND → BEHIND → CLEAN（BEHIND は打ち切らない）
+   */
+  it("TC-POST-PUSH-005: BEHIND is not treated as DIRTY, retries until CLEAN", async () => {
+    let call = 0;
+    const spawn = vi.fn().mockImplementation(() => {
+      call++;
+      const status = call < 3 ? "BEHIND" : "CLEAN";
+      return Promise.resolve({
+        exitCode: 0,
+        stdout: JSON.stringify({ mergeStateStatus: status }),
+        stderr: "",
+      });
+    });
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    const result = await pollMergeStateAfterPushForTest({
+      prNumber: 42,
+      cwd: "/tmp",
+      spawn,
+      slug: "test",
+      sleepFn,
+    });
+
+    expect(result.mergeStateStatus).toBe("CLEAN");
+    expect(call).toBe(3); // retried until CLEAN
+  });
 });

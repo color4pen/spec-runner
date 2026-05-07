@@ -586,6 +586,51 @@ describe("TC-FIN-BD-002: Phase 4 branch deletion commands are called", () => {
   });
 });
 
+// TC-DIRTY-001: DIRTY mergeStateStatus after push → escalation, no merge attempt
+describe("TC-DIRTY-001: DIRTY mergeStateStatus after push → escalation without merge", () => {
+  it("returns exitCode 1 escalation and does NOT call gh pr merge when DIRTY", async () => {
+    const { jobId } = await makeJobWithPr({ worktreePath: null });
+
+    const mergeCalls: string[][] = [];
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "gh" && args[1] === "merge") {
+        mergeCalls.push([...args]);
+      }
+      // gh pr view: Phase 0 returns CLEAN; post-push poll returns DIRTY
+      if (cmd === "gh" && args[1] === "view" && args.includes("--json")) {
+        // After push (poll), return DIRTY; otherwise CLEAN
+        const isPostPushPoll = args.length === 5 && !args.includes("state");
+        if (isPostPushPoll) {
+          return Promise.resolve({
+            exitCode: 0,
+            stdout: JSON.stringify({ mergeStateStatus: "DIRTY" }),
+            stderr: "",
+          });
+        }
+        return Promise.resolve({
+          exitCode: 0,
+          stdout: JSON.stringify({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug" }),
+          stderr: "",
+        });
+      }
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    const stubFs = makeStubFs({ changeFolderExists: false });
+
+    const result = await runFinishOrchestrator(
+      { slug: "test-slug", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+    );
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode !== 1) return;
+    expect(result.escalation).toContain("DIRTY");
+    expect(result.escalation).toContain("specrunner finish");
+    // merge must NOT have been called
+    expect(mergeCalls).toHaveLength(0);
+  });
+});
+
 // TC-FIN-BD-003: branch deletion failure is best-effort (exit 0)
 describe("TC-FIN-BD-003: branch deletion failure does not cause escalation", () => {
   it("exits 0 even when git branch -D and git push --delete both fail", async () => {

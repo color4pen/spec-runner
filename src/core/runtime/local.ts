@@ -17,6 +17,7 @@ import { createClaudeCodeRunner } from "../../adapter/claude-code/agent-runner.j
 import { createWorktreeManager } from "../worktree/manager.js";
 import { loadJobState, updateJobState } from "../../state/store.js";
 import { spawnCommand } from "../../util/spawn.js";
+import type { SpawnFn } from "../../util/spawn.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./strategy.js";
 
 // Internal structure stored inside CleanupHandle
@@ -41,6 +42,7 @@ export class LocalRuntime implements RuntimeStrategy {
   private readonly cwd: string;
   private readonly githubClient: GitHubClient;
   private readonly manager: ReturnType<typeof createWorktreeManager>;
+  private readonly spawnFn: SpawnFn;
 
   // Set by setupWorkspace(); used by buildDeps() and registerCleanup()
   private workspace: WorkspaceContext | null = null;
@@ -49,10 +51,12 @@ export class LocalRuntime implements RuntimeStrategy {
     cwd: string,
     githubClient: GitHubClient,
     manager?: ReturnType<typeof createWorktreeManager>,
+    spawnFn?: SpawnFn,
   ) {
     this.cwd = cwd;
     this.githubClient = githubClient;
     this.manager = manager ?? createWorktreeManager();
+    this.spawnFn = spawnFn ?? spawnCommand;
   }
 
   /**
@@ -94,8 +98,9 @@ export class LocalRuntime implements RuntimeStrategy {
         this.workspace = workspace;
         return workspace;
       } else {
-        // Worktree was deleted — create a new one
-        const newWorktreePath = await this.manager.create(this.cwd, slug, jobId);
+        // Worktree was deleted — create a new one (resume path: fetch already ran during original run)
+        // TODO(base-branch): configurable base branch
+        const newWorktreePath = await this.manager.create(this.cwd, slug, jobId, "origin/main");
         await updateJobState(jobId, (s) => ({ ...s, worktreePath: newWorktreePath }));
         const workspace: WorkspaceContext = {
           cwd: newWorktreePath,
@@ -107,8 +112,9 @@ export class LocalRuntime implements RuntimeStrategy {
     }
 
     if (existingWorktreePath === null) {
-      // Resume: no worktree recorded — create new one
-      const newWorktreePath = await this.manager.create(this.cwd, slug, jobId);
+      // Resume: no worktree recorded — create new one (fetch already ran during original run)
+      // TODO(base-branch): configurable base branch
+      const newWorktreePath = await this.manager.create(this.cwd, slug, jobId, "origin/main");
       await updateJobState(jobId, (s) => ({ ...s, worktreePath: newWorktreePath }));
       const workspace: WorkspaceContext = {
         cwd: newWorktreePath,
@@ -118,8 +124,29 @@ export class LocalRuntime implements RuntimeStrategy {
       return workspace;
     }
 
-    // Run path: create new worktree + copy request.md + git add
-    const worktreePath = await this.manager.create(this.cwd, slug, jobId);
+    // Run path: fetch origin to ensure freshness, then create new worktree from origin/main
+    const fetchResult = await this.spawnFn("git", ["fetch", "origin"], { cwd: this.cwd });
+    if (fetchResult.exitCode !== 0) {
+      throw new Error(`git fetch origin failed (exit ${fetchResult.exitCode}): ${fetchResult.stderr.trim()}`);
+    }
+
+    // Warn if local main is behind origin/main (informational — worktree uses origin/main so this is safe)
+    const behindResult = await this.spawnFn(
+      "git",
+      ["rev-list", "HEAD..origin/main", "--count"],
+      { cwd: this.cwd },
+    );
+    if (behindResult.exitCode === 0) {
+      const behind = parseInt(behindResult.stdout.trim(), 10);
+      if (!isNaN(behind) && behind > 0) {
+        process.stderr.write(
+          `Warning: local main is ${behind} commit(s) behind origin/main. Worktree will be created from origin/main.\n`,
+        );
+      }
+    }
+
+    // TODO(base-branch): configurable base branch
+    const worktreePath = await this.manager.create(this.cwd, slug, jobId, "origin/main");
 
     // Record worktreePath in state before pipeline runs (enables crash recovery)
     await updateJobState(jobId, (s) => ({ ...s, worktreePath }));
@@ -132,7 +159,7 @@ export class LocalRuntime implements RuntimeStrategy {
       await fs.cp(opts.requestFilePath, worktreeRequestPath);
 
       // Stage the request file in the worktree
-      const gitAddResult = await spawnCommand("git", ["add", relativeRequestPath], { cwd: worktreePath });
+      const gitAddResult = await this.spawnFn("git", ["add", relativeRequestPath], { cwd: worktreePath });
       if (gitAddResult.exitCode !== 0) {
         // Cleanup worktree before propagating error
         await this.manager.remove(worktreePath, this.cwd).catch(() => {});

@@ -35,7 +35,6 @@ afterEach(async () => {
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.clearAllMocks();
   vi.restoreAllMocks();
-  vi.resetModules();
 });
 
 function buildMockGitHubClient() {
@@ -65,6 +64,42 @@ function buildRepo() {
 
 function buildRequest() {
   return { type: "new-feature", title: "Test", slug: "test-slug", content: "content", enabled: [] };
+}
+
+// Helper: build a spawnFn mock for LocalRuntime (covers fetch + rev-list calls in run path)
+function buildMockSpawnFn(opts: {
+  fetchExitCode?: number;
+  fetchStderr?: string;
+  behindCount?: number;
+  behindExitCode?: number;
+} = {}) {
+  const {
+    fetchExitCode = 0,
+    fetchStderr = "",
+    behindCount = 0,
+    behindExitCode = 0,
+  } = opts;
+
+  const calls: Array<{ cmd: string; args: string[] }> = [];
+
+  const fn = vi.fn().mockImplementation(async (cmd: string, args: string[]) => {
+    calls.push({ cmd, args: [...args] });
+    // git fetch origin
+    if (cmd === "git" && args[0] === "fetch") {
+      return { exitCode: fetchExitCode, stdout: "", stderr: fetchStderr };
+    }
+    // git rev-list HEAD..origin/main --count
+    if (cmd === "git" && args[0] === "rev-list") {
+      return { exitCode: behindExitCode, stdout: `${behindCount}\n`, stderr: "" };
+    }
+    // git add (request file staging)
+    if (cmd === "git" && args[0] === "add") {
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }
+    return { exitCode: 0, stdout: "", stderr: "" };
+  });
+
+  return { spawnFn: fn as unknown as import("../../../../src/util/spawn.js").SpawnFn, calls };
 }
 
 // Helper: create a mock WorktreeManager
@@ -114,8 +149,9 @@ async function makeJobState(slug = "test-slug") {
 describe("TC-LR-001: setupWorkspace creates worktree for run command", () => {
   it("creates worktree and returns workspace with cwd = worktreePath", async () => {
     const { manager, createdPaths } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn();
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager);
+    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
 
     const jobState = await makeJobState();
 
@@ -126,6 +162,90 @@ describe("TC-LR-001: setupWorkspace creates worktree for run command", () => {
     expect(createdPaths.length).toBe(1);
     expect(workspace.cwd).toBe(createdPaths[0]);
     expect(workspace.worktreePath).toBe(createdPaths[0]);
+  });
+});
+
+// TC-LR-008: setupWorkspace(run) — calls fetch + passes origin/main as baseRef
+describe("TC-LR-008: setupWorkspace run path calls git fetch origin and uses origin/main as baseRef", () => {
+  it("calls git fetch origin before manager.create, and passes origin/main as baseRef", async () => {
+    const { manager, createdPaths } = buildMockManager();
+    const { spawnFn, calls } = buildMockSpawnFn({ behindCount: 0 });
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+
+    const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {});
+
+    // git fetch origin was called
+    const fetchCall = calls.find((c) => c.cmd === "git" && c.args[0] === "fetch");
+    expect(fetchCall).toBeDefined();
+    expect(fetchCall?.args).toContain("origin");
+
+    // manager.create was called with "origin/main" as baseRef
+    expect(createdPaths.length).toBe(1);
+    const createMock = manager.create as ReturnType<typeof vi.fn>;
+    const createCall = createMock.mock.calls[0];
+    expect(createCall?.[3]).toBe("origin/main");
+  });
+
+  it("throws when git fetch origin fails", async () => {
+    const { manager } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn({ fetchExitCode: 1, fetchStderr: "network unreachable" });
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+
+    const jobState = await makeJobState();
+    await expect(
+      runtime.setupWorkspace("test-slug", jobState.jobId, {}),
+    ).rejects.toThrow("git fetch origin failed");
+  });
+
+  it("emits warning to stderr when local main is behind origin/main", async () => {
+    const { manager } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn({ behindCount: 3 });
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+
+    const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {});
+
+    // stderr.write was spied in beforeEach; check it was called with behind warning
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const warningCalls = stderrMock.mock.calls as [string][];
+    const hasWarning = warningCalls.some(([msg]) =>
+      typeof msg === "string" && msg.includes("behind origin/main"),
+    );
+    expect(hasWarning).toBe(true);
+  });
+
+  it("does NOT emit warning when local main is up-to-date", async () => {
+    const { manager } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn({ behindCount: 0 });
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+
+    const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {});
+
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const warningCalls = stderrMock.mock.calls as [string][];
+    const hasBehindWarning = warningCalls.some(([msg]) =>
+      typeof msg === "string" && msg.includes("behind origin/main"),
+    );
+    expect(hasBehindWarning).toBe(false);
+  });
+
+  it("resume paths (existingWorktreePath=null) do NOT call git fetch origin", async () => {
+    const { manager } = buildMockManager();
+    const { spawnFn, calls } = buildMockSpawnFn();
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+
+    const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, { existingWorktreePath: null });
+
+    const fetchCalls = calls.filter((c) => c.cmd === "git" && c.args[0] === "fetch");
+    expect(fetchCalls).toHaveLength(0);
   });
 });
 

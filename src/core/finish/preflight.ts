@@ -383,6 +383,12 @@ async function pollMergeStateAfterPush(params: {
       return { mergeStateStatus: status };
     }
 
+    // DIRTY means merge conflicts exist — this is a confirmed state that won't resolve itself.
+    // Return immediately so the orchestrator can escalate without retrying.
+    if (status === "DIRTY") {
+      return { mergeStateStatus: status };
+    }
+
     if (attempt < POST_PUSH_RETRY_COUNT) {
       process.stdout.write(
         `Post-push polling: mergeStateStatus=${status}, retrying (${attempt}/${POST_PUSH_RETRY_COUNT})...\n`,
