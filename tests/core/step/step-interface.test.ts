@@ -3,8 +3,8 @@
  *
  * TC-009: Step implementation is stateless across invocations
  * TC-010: Step exposes agent definition without consulting global registry
- * TC-011: register_branch handler owned exclusively by ProposeStep
- * TC-012: register_branch input_schema is unchanged after refactor
+ * TC-011: register_branch tool removed (D4); ProposeStep toolHandlers undefined
+ * TC-012: register-branch.ts is fully removed (D4)
  * TC-013: StepExecutor lifecycle events fire in correct order on success
  * TC-014: StepExecutor error path emits step:error and decorates exception
  */
@@ -160,12 +160,10 @@ describe("TC-010: Step exposes agent definition directly", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-011: register_branch handler is in managed-agent adapter (design D3)
-// ProposeStep no longer owns it — adapter injects it at runtime.
+// TC-011: register_branch tool removed (D4); ProposeStep toolHandlers undefined
 // ---------------------------------------------------------------------------
-describe("TC-011: register_branch is in managed-agent adapter; ProposeStep toolHandlers undefined (design D3)", () => {
-  it("ProposeStep.toolHandlers is undefined (adapter injects register_branch)", () => {
-    // Design D3: ProposeStep is runtime-neutral. ManagedAgentRunner injects register_branch.
+describe("TC-011: register_branch tool removed (D4); ProposeStep toolHandlers undefined", () => {
+  it("ProposeStep.toolHandlers is undefined (no tool injection needed — D4)", () => {
     expect(ProposeStep.toolHandlers).toBeUndefined();
   });
 
@@ -181,19 +179,15 @@ describe("TC-011: register_branch is in managed-agent adapter; ProposeStep toolH
 });
 
 // ---------------------------------------------------------------------------
-// TC-012 / TC-019: register_branch input_schema is unchanged after refactor
-// TC-019: input_schema for register_branch is unchanged under managed runtime
+// TC-012: register_branch tool removed — no source file imports register-branch
 // ---------------------------------------------------------------------------
-describe("TC-012 / TC-019: register_branch input_schema is unchanged after refactor", () => {
-  it("input_schema matches pre-refactor definition exactly (now in adapter)", async () => {
-    const { registerBranchTool } = await import("../../../src/adapter/managed-agent/tools/register-branch.js");
-    const definition = registerBranchTool.definition;
-
-    expect(definition.name).toBe("register_branch");
-    // branch is required; slug is optional (added in finish-redesign)
-    expect(definition.input_schema.required).toEqual(["branch"]);
-    expect((definition.input_schema.properties?.branch as Record<string, unknown>)?.type).toBe("string");
-    expect((definition.input_schema.properties as Record<string, unknown>)?.["slug"]).toBeDefined();
+describe("TC-012: register-branch.ts is fully removed (D4)", () => {
+  it("register-branch.ts does not exist in managed-agent adapter tools dir", async () => {
+    const toolsDir = new URL("../../../src/adapter/managed-agent/tools", import.meta.url);
+    const { readdir } = await import("node:fs/promises");
+    const { fileURLToPath } = await import("node:url");
+    const files = await readdir(fileURLToPath(toolsDir));
+    expect(files.some((f) => f.includes("register-branch"))).toBe(false);
   });
 });
 

@@ -41,9 +41,12 @@ async function makeJobState() {
  *
  * The SessionClient port is what StepExecutor uses in runProposeStyleStep.
  * streamEvents() is the atomic "connect SSE + send initial message + process events" call.
+ *
+ * Note: register_branch tool removed (D4). Branch is pre-set by CLI before agent runs.
  */
 function buildMockSessionClient(opts: {
-  registerBranch?: string;   // if set, streamEvents resolves with branch registered
+  /** @deprecated kept for backward compat — no longer triggers onBranchRegistered */
+  registerBranch?: string;
   terminateSession?: boolean; // if set, streamEvents resolves with terminated=true
   sessionId?: string;
 }): {
@@ -64,12 +67,11 @@ function buildMockSessionClient(opts: {
       terminated: true,
       terminationReason: "terminated",
     });
-  } else if (opts.registerBranch) {
-    const branch = opts.registerBranch;
+  } else {
+    // Normal end_turn — branch is pre-set by CLI (no register_branch call needed)
     streamEventsMock = vi.fn().mockImplementation(
-      (_sessionId: string, streamOpts: { onBranchRegistered?: (b: string) => void; requestContent?: string }) => {
-        // Simulate register_branch tool call
-        streamOpts.onBranchRegistered?.(branch);
+      (_sessionId: string, streamOpts: { requestContent?: string }) => {
+        void streamOpts; // capture for tests that inspect it
         return Promise.resolve({
           sseDisconnected: false,
           idleEndTurnDetected: true,
@@ -78,14 +80,6 @@ function buildMockSessionClient(opts: {
         });
       },
     );
-  } else {
-    // No register_branch — just end_turn (BRANCH_NOT_REGISTERED scenario)
-    streamEventsMock = vi.fn().mockResolvedValue({
-      sseDisconnected: false,
-      idleEndTurnDetected: true,
-      terminated: false,
-      terminationReason: "end_turn" as const,
-    });
   }
 
   const client: SessionClient = {
@@ -169,6 +163,8 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
 
     const { runProposePipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
+    // Pre-set branch as CLI would (D3: branch set before pipeline runs)
+    jobState.branch = "feat/2026-04-27-test";
 
     const { client } = buildMockSessionClient({ registerBranch: "feat/2026-04-27-test" });
     const githubClient = buildMockGithubClient({ branchFound: true, folderFound: true });
@@ -189,39 +185,36 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
     // Executor adds step-start and step-complete entries (design D3 mitigation)
     expect(steps).toContain("propose-started");
     expect(steps).toContain("propose-verdict");
-    // branch from register_branch tool is recorded in state
+    // branch is pre-set by CLI before propose runs (D3)
     expect(result.branch).toBe("feat/2026-04-27-test");
   });
 });
 
-// TC-036: propose パイプライン — register_branch 未呼び出しで完了
-describe("TC-036: propose pipeline — BRANCH_NOT_REGISTERED when no register_branch call", () => {
-  it("fails with BRANCH_NOT_REGISTERED when agent completes without calling register_branch", async () => {
+// TC-036: propose パイプライン — pre-set branch used (register_branch removed in D4)
+describe("TC-036: propose pipeline — pre-set branch from CLI is used (D4)", () => {
+  it("uses state.branch pre-set by CLI even when streamEvents returns end_turn without tool call", async () => {
 
     const { runProposePipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
+    // Pre-set branch as CLI would (D4: branch is always set by CLI before propose)
+    jobState.branch = "feat/test-cli-branch-d4";
 
-    // No registerBranch — agent just sends end_turn without calling register_branch
-    const { client } = buildMockSessionClient({ registerBranch: undefined });
-    const githubClient = buildMockGithubClient();
+    const { client } = buildMockSessionClient({});
+    const githubClient = buildMockGithubClient({ branchFound: true, folderFound: true });
 
-    // Pipeline now returns failed state rather than throwing; check state.error.code
     const result = await runProposePipeline(jobState, {
       client,
       config: buildConfig(),
       repo: buildRepo(),
       request: buildRequest(),
-      slug: "2026-04-27-cli-core-pipeline",
+      slug: "test-cli-branch-d4",
       githubClient,
       runner: buildRunner(client, githubClient),
     });
 
-    expect(result.status).toBe("awaiting-resume");
-    expect(result.error?.code).toBe("BRANCH_NOT_REGISTERED");
-
-    const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
-    const combined = stderrCalls.map((c: unknown[]) => String(c[0])).join("\n");
-    expect(combined).toContain("Branch was not registered by the agent.");
+    // With branch pre-set, propose should succeed
+    expect(result.branch).toBe("feat/test-cli-branch-d4");
+    expect(result.status).toBe("awaiting-merge");
   });
 });
 
@@ -231,6 +224,7 @@ describe("TC-037: propose pipeline — SSE stream connected before initial messa
 
     const { runProposePipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
+    jobState.branch = "feat/test"; // pre-set by CLI (D3)
 
     const { client, streamEventsMock } = buildMockSessionClient({ registerBranch: "feat/test" });
     const githubClient = buildMockGithubClient();
@@ -257,15 +251,15 @@ describe("TC-038: propose pipeline — initial message contains user-request tag
 
     const { runProposePipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
+    jobState.branch = "feat/test"; // pre-set by CLI (D3)
 
     let capturedRequestContent: string | undefined;
 
     const { client } = buildMockSessionClient({ registerBranch: "feat/test" });
     // Override streamEvents to capture requestContent
     (client.streamEvents as ReturnType<typeof vi.fn>).mockImplementation(
-      (_sessionId: string, streamOpts: { requestContent?: string; onBranchRegistered?: (b: string) => void }) => {
+      (_sessionId: string, streamOpts: { requestContent?: string }) => {
         capturedRequestContent = streamOpts.requestContent;
-        streamOpts.onBranchRegistered?.("feat/test");
         return Promise.resolve({
           sseDisconnected: false,
           idleEndTurnDetected: true,
@@ -298,6 +292,7 @@ describe("TC-039: propose pipeline — CHANGE_FOLDER_NOT_FOUND", () => {
 
     const { runProposePipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
+    jobState.branch = "feat/test"; // pre-set by CLI (D3)
 
     const { client } = buildMockSessionClient({ registerBranch: "feat/test" });
     // branch OK, but change folder 404 (folderFound=false)
@@ -325,6 +320,7 @@ describe("TC-040: propose pipeline — branch not found on GitHub is warning onl
 
     const { runProposePipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
+    jobState.branch = "feat/test"; // pre-set by CLI (D3)
 
     const { client } = buildMockSessionClient({ registerBranch: "feat/test" });
     // branch not found (warning), folder found (OK)
@@ -344,7 +340,9 @@ describe("TC-040: propose pipeline — branch not found on GitHub is warning onl
     // Branch verification warning is logged to stderr (no longer a history entry)
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
     const combined = stderrCalls.map((c: unknown[]) => String(c[0])).join("\n");
-    expect(combined).toContain("Branch 'feat/test' not found on GitHub yet.");
+    // The warning message uses the effectiveBranch from ctx.branch or state.branch
+    const hasWarning = combined.includes("not found on GitHub yet.");
+    expect(hasWarning).toBe(true);
   });
 });
 
@@ -354,6 +352,7 @@ describe("TC-041: propose pipeline — GITHUB_TOKEN_EXPIRED on 401", () => {
 
     const { runProposePipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
+    jobState.branch = "feat/test"; // pre-set by CLI (D3)
 
     const { client } = buildMockSessionClient({ registerBranch: "feat/test" });
     // 401 from GitHub — token expired
@@ -386,6 +385,7 @@ describe("TC-042: session creation parameters", () => {
     const { runProposePipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
+    jobState.branch = "feat/test"; // pre-set by CLI (D3)
     const { client, createSessionMock } = buildMockSessionClient({ registerBranch: "feat/test" });
     const githubClient = buildMockGithubClient();
 

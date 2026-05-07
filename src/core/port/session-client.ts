@@ -54,7 +54,8 @@ export interface SessionClient {
    * Connect via SSE, process events, and drive the session until it ends.
    * Used by propose-style steps that need custom tool handling.
    *
-   * Returns termination reason and any registered branch from tool callbacks.
+   * Returns termination reason.
+   * Note: onBranchRegistered / onSlugRegistered removed (D4: register_branch tool deleted).
    */
   streamEvents(
     sessionId: string,
@@ -68,9 +69,6 @@ export interface SessionClient {
        * when omitted. The agent must NOT pick its own branch name. */
       branch?: string;
       toolHandlers?: Map<string, CustomToolHandler>;
-      onBranchRegistered?: (branch: string) => void;
-      /** Called when register_branch handler returns a slug (optional). */
-      onSlugRegistered?: (slug: string) => void;
       onSseDisconnected?: () => void;
       abortController?: AbortController;
     },

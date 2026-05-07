@@ -153,7 +153,7 @@ function buildPipelineMockClient(opts: {
     sendUserMessage: vi.fn().mockResolvedValue(undefined),
     pollUntilComplete: vi.fn().mockResolvedValue({ status: "idle" as const }),
     streamEvents: vi.fn().mockImplementation(
-      (_sessionId: string, opts: { onBranchRegistered?: (b: string) => void }) => {
+      (_sessionId: string) => {
         if (proposeFailure) {
           return Promise.resolve({
             sseDisconnected: false,
@@ -162,8 +162,7 @@ function buildPipelineMockClient(opts: {
             terminationReason: "terminated" as const,
           });
         }
-        // Simulate register_branch tool call + end_turn
-        opts.onBranchRegistered?.(proposeBranch);
+        // Branch is pre-set by CLI before propose runs (D4: register_branch removed)
         return Promise.resolve({
           sseDisconnected: false,
           idleEndTurnDetected: true,

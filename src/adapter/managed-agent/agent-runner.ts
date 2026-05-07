@@ -10,9 +10,8 @@
  *   verifyArtifacts  — branch/path existence check (design D5)
  *   fetchResult      — read result file from GitHub (design D2)
  *
- * Design D3: register_branch Custom Tool is injected by this adapter (not ProposeStep).
  * Design D3 (stepcontext-type-separation): JobStateStore removed. State management is executor's responsibility.
- * Design D4: ctx.branch is the CLI-canonical branch; agent-reported branch is ignored.
+ * Design D4: register_branch custom tool removed. Branch is created by CLI setupWorkspace() before agent runs.
  * Design D5: verifyBranch / requiresCommit guard run inside adapter (not executor).
  *
  * TC-008: ManagedAgentRunner has no JobStateStore import
@@ -20,9 +19,7 @@
  * TC-010: runPollingStyle returns AgentRunResult only (no _updatedState)
  * TC-013: ManagedAgentRunner implements AgentRunner interface (type-checked)
  * TC-014: constructor accepts sessionClient, githubClient, configStore deps
- * TC-018: register_branch is injected by adapter for propose role
  * TC-020: ctx.branch is included in the session prompt
- * TC-021: agent-reported branch mismatch triggers warning but ctx.branch wins
  * TC-030: ManagedAgentRunner.verifyBranch → error when branch not found (404)
  * TC-031: result file not found → error
  */
@@ -38,7 +35,6 @@ import {
 import { getAgentId } from "../../config/getAgentId.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import {
-  branchNotRegisteredError,
   branchNotSetError,
   sessionTerminatedError,
   changeFolderNotFoundError,
@@ -46,7 +42,6 @@ import {
   codeReviewResultNotFoundError,
   noCommitDetectedError,
 } from "../../errors.js";
-import { registerBranchTool } from "./tools/register-branch.js";
 
 export interface ManagedAgentRunnerDeps {
   sessionClient: SessionClient;
@@ -93,21 +88,22 @@ export class ManagedAgentRunner implements AgentRunner {
   }
 
   // ---------------------------------------------------------------------------
-  // Stage: Propose-style (SSE + register_branch tool injection)
+  // Stage: Propose-style (SSE)
   // ---------------------------------------------------------------------------
 
   /**
    * Propose-style execution:
    * 1. Create session
-   * 2. Stream SSE (with register_branch tool injected)
+   * 2. Stream SSE
    * 3. Handle polling fallback
-   * 4. Verify branch + change folder (design D5)
+   * 4. Verify change folder (design D5)
    * 5. Return AgentRunResult
    *
    * TC-009: returns AgentRunResult only (no _updatedState)
-   * TC-018: register_branch is injected by adapter
    * TC-020: ctx.branch is embedded in streamEvents opts
-   * TC-021: agent-reported branch != ctx.branch → warning, ctx.branch wins
+   *
+   * Note: register_branch tool removed (D4). Branch is set by CLI setupWorkspace()
+   * before propose runs, so agent does not need to register it.
    */
   private async runProposeStyle(
     ctx: AgentRunContext,
@@ -118,7 +114,7 @@ export class ManagedAgentRunner implements AgentRunner {
     const agentId = getAgentId(config, step.agent.role);
     const repoUrl = `https://github.com/${this.repo.owner}/${this.repo.name}`;
 
-    // Stage 1: Create session
+    // Stage 1: Create session (branch is already set in state by CLI)
     let sessionId: string;
     try {
       const sessionResult = await this.sessionClient.createSession({
@@ -126,6 +122,7 @@ export class ManagedAgentRunner implements AgentRunner {
         environmentId: config.environment!.id,
         repoUrl,
         githubToken: config.github!.accessToken,
+        branch: ctx.branch || undefined,
       });
       sessionId = sessionResult.sessionId;
     } catch (err) {
@@ -138,47 +135,24 @@ export class ManagedAgentRunner implements AgentRunner {
       throwWrappedError(errorInfo, state);
     }
 
-    // TC-021: track branch from register_branch tool call
-    let registeredBranch: string | null = null;
-    let registeredSlug: string | null = null;
-
-    // Stage 2: SSE stream with register_branch injected
-    // TC-018: ManagedAgentRunner injects register_branch into custom_tools
+    // Stage 2: SSE stream
     // TC-020: ctx.branch is passed as branch hint to streamEvents
     const abortController = new AbortController();
 
-    // Build toolHandlers map with register_branch injected by adapter (design D3)
-    const toolHandlersWithBranchTool = new Map(
+    const toolHandlers = new Map(
       step.toolHandlers ? [...step.toolHandlers.entries()] : [],
     );
-    toolHandlersWithBranchTool.set("register_branch", registerBranchTool.handler);
 
     const ssePromise = this.sessionClient.streamEvents(sessionId!, {
       requestContent: ctx.requestContent,
       slug: ctx.slug,
-      branch: ctx.branch || undefined, // TC-020: inject CLI-canonical branch hint (empty = not set yet for propose)
-      toolHandlers: toolHandlersWithBranchTool,
-      onBranchRegistered: (branch) => {
-        // TC-021: if a CLI-canonical branch was provided and the agent reports a different one,
-        // warn but use the agent-reported branch (for propose, ctx.branch is empty — agent creates branch).
-        if (ctx.branch && branch !== ctx.branch) {
-          stderrWrite(
-            `Warning: Agent reported branch '${branch}' differs from CLI canonical branch '${ctx.branch}'.`,
-          );
-        }
-        registeredBranch = branch; // use agent-reported branch (propose creates it)
-      },
-      onSlugRegistered: (s) => {
-        registeredSlug = s;
-      },
+      branch: ctx.branch || undefined,
+      toolHandlers,
       onSseDisconnected: () => {
         // handled via sseResult.terminationReason
       },
       abortController,
     });
-
-    // Silence unused warning for registeredSlug — it may be used in future
-    void registeredSlug;
 
     const sseResult = await ssePromise;
 
@@ -207,48 +181,42 @@ export class ManagedAgentRunner implements AgentRunner {
       abortController.abort();
     }
 
-    // Stage 4a: Verify branch was registered
-    if (!registeredBranch) {
-      const branchErr = branchNotRegisteredError();
-      stderrWrite("Branch was not registered by the agent.");
-      const branchErrorInfo: ErrorInfo = { code: branchErr.code, message: branchErr.message, hint: branchErr.hint };
-      attachStateAndRethrow(Object.assign(branchErr, branchErrorInfo), state);
-    }
+    // Stage 4: GitHub verification (design D5) — verify branch + change folder
+    const effectiveBranch = ctx.branch || state.branch;
 
-    // Stage 4b: GitHub verification (design D5)
-    // TC-030: verify branch exists on GitHub
-    try {
-      await this.verifyBranchViaPort(registeredBranch!);
-    } catch (err) {
-      if ((err as { code?: string }).code === "GITHUB_TOKEN_EXPIRED") {
-        stderrWrite("GitHub token expired. Run 'specrunner login' again.");
-        throw err;
+    if (effectiveBranch) {
+      try {
+        await this.verifyBranchViaPort(effectiveBranch);
+      } catch (err) {
+        if ((err as { code?: string }).code === "GITHUB_TOKEN_EXPIRED") {
+          stderrWrite("GitHub token expired. Run 'specrunner login' again.");
+          throw err;
+        }
+        stderrWrite(`Warning: Could not verify branch on GitHub: ${(err as Error).message}`);
       }
-      stderrWrite(`Warning: Could not verify branch on GitHub: ${(err as Error).message}`);
-    }
 
-    try {
-      const changeFolderPath = `openspec/changes/${ctx.slug}`;
-      await this.verifyChangeFolderViaPort(
-        registeredBranch!, changeFolderPath, ctx.slug,
-      );
-    } catch (err) {
-      if (
-        (err as { code?: string }).code === "CHANGE_FOLDER_NOT_FOUND" ||
-        (err as { code?: string }).code === "GITHUB_TOKEN_EXPIRED"
-      ) {
-        throw err;
+      try {
+        const changeFolderPath = `openspec/changes/${ctx.slug}`;
+        await this.verifyChangeFolderViaPort(
+          effectiveBranch, changeFolderPath, ctx.slug,
+        );
+      } catch (err) {
+        if (
+          (err as { code?: string }).code === "CHANGE_FOLDER_NOT_FOUND" ||
+          (err as { code?: string }).code === "GITHUB_TOKEN_EXPIRED"
+        ) {
+          throw err;
+        }
+        stderrWrite(`Warning: Could not verify change folder: ${(err as Error).message}`);
       }
-      stderrWrite(`Warning: Could not verify change folder: ${(err as Error).message}`);
     }
 
-    // Return success — no resultContent for propose (branch registered via tool)
+    // Return success — no resultContent for propose
     // TC-009: no _updatedState field
     return {
       completionReason: "success",
       resultContent: null,
       sessionId: sessionId!,
-      agentBranch: registeredBranch!,
     };
   }
 

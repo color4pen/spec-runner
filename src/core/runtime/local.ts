@@ -146,7 +146,9 @@ export class LocalRuntime implements RuntimeStrategy {
     }
 
     // TODO(base-branch): configurable base branch
-    const worktreePath = await this.manager.create(this.cwd, slug, jobId, "origin/main");
+    // Pass branchName so manager creates the branch in the worktree (D1)
+    const branchName = opts?.branchName;
+    const worktreePath = await this.manager.create(this.cwd, slug, jobId, "origin/main", branchName);
 
     // Record worktreePath in state before pipeline runs (enables crash recovery)
     await updateJobState(jobId, (s) => ({ ...s, worktreePath }));
@@ -166,11 +168,30 @@ export class LocalRuntime implements RuntimeStrategy {
         await this.manager.prune(this.cwd).catch(() => {});
         throw new Error(`Failed to stage request file: ${gitAddResult.stderr.trim()}`);
       }
+
+      // Commit request.md as the first commit on the feature branch (D2)
+      const gitCommitResult = await this.spawnFn(
+        "git",
+        ["commit", "-m", `add request.md for ${slug}`],
+        { cwd: worktreePath },
+      );
+      if (gitCommitResult.exitCode !== 0) {
+        // Cleanup worktree before propagating error
+        await this.manager.remove(worktreePath, this.cwd).catch(() => {});
+        await this.manager.prune(this.cwd).catch(() => {});
+        throw new Error(`Failed to commit request file: ${gitCommitResult.stderr.trim()}`);
+      }
+    }
+
+    // Record branchName in state so downstream steps can use it (D3)
+    if (branchName) {
+      await updateJobState(jobId, (s) => ({ ...s, branch: branchName }));
     }
 
     const workspace: WorkspaceContext = {
       cwd: worktreePath,
       worktreePath,
+      branch: branchName,
     };
     this.workspace = workspace;
     return workspace;

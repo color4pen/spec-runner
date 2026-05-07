@@ -94,6 +94,13 @@ export abstract class CommandRunner {
       jobState.worktreePath = workspace.worktreePath;
     }
 
+    // Reflect branch set by setupWorkspace() into in-memory jobState (D3).
+    // setupWorkspace() already persisted branch to the state store; mirror it in-memory
+    // so pipeline steps see the pre-set branch and setsBranch fallback is not triggered.
+    if (workspace.branch !== undefined && !jobState.branch) {
+      jobState.branch = workspace.branch;
+    }
+
     // Step 3: buildDeps
     const deps: PipelineDeps = this.runtime.buildDeps(config, repo, request, slug, workspace);
 

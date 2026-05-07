@@ -72,12 +72,16 @@ function buildMockSpawnFn(opts: {
   fetchStderr?: string;
   behindCount?: number;
   behindExitCode?: number;
+  commitExitCode?: number;
+  commitStderr?: string;
 } = {}) {
   const {
     fetchExitCode = 0,
     fetchStderr = "",
     behindCount = 0,
     behindExitCode = 0,
+    commitExitCode = 0,
+    commitStderr = "",
   } = opts;
 
   const calls: Array<{ cmd: string; args: string[] }> = [];
@@ -95,6 +99,10 @@ function buildMockSpawnFn(opts: {
     // git add (request file staging)
     if (cmd === "git" && args[0] === "add") {
       return { exitCode: 0, stdout: "", stderr: "" };
+    }
+    // git commit
+    if (cmd === "git" && args[0] === "commit") {
+      return { exitCode: commitExitCode, stdout: "", stderr: commitStderr };
     }
     return { exitCode: 0, stdout: "", stderr: "" };
   });
@@ -396,5 +404,106 @@ describe("TC-LR-007: buildDeps returns correct PipelineDeps", () => {
     expect(deps.cwd).toBe(workspace.cwd);
     expect(deps.githubClient).toBe(githubClient);
     expect(deps.slug).toBe("test-slug");
+  });
+});
+
+// TC-LR-009: setupWorkspace(run) passes branchName to manager.create()
+describe("TC-LR-009: setupWorkspace run path passes branchName to manager.create()", () => {
+  it("passes branchName to manager.create() when branchName is in opts", async () => {
+    const { manager } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn();
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+
+    const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {
+      branchName: "feat/test-slug-abcd1234",
+    });
+
+    const createMock = manager.create as ReturnType<typeof vi.fn>;
+    const createCall = createMock.mock.calls[0];
+    // branchName is the 5th argument (index 4)
+    expect(createCall?.[4]).toBe("feat/test-slug-abcd1234");
+  });
+
+  it("passes undefined branchName to manager.create() when branchName is absent (resume path compat)", async () => {
+    const { manager } = buildMockManager();
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime(tempDir, githubClient, manager);
+
+    const jobState = await makeJobState();
+    const existingPath = path.join(tempDir, "existing-worktree");
+    await fs.mkdir(existingPath, { recursive: true });
+
+    // Resume path — no branchName
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {
+      existingWorktreePath: existingPath,
+    });
+
+    // manager.create should NOT have been called in resume path
+    const createMock = manager.create as ReturnType<typeof vi.fn>;
+    expect(createMock.mock.calls.length).toBe(0);
+  });
+
+  it("workspace.branch is set when branchName is provided", async () => {
+    const { manager } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn();
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+
+    const jobState = await makeJobState();
+    const workspace = await runtime.setupWorkspace("test-slug", jobState.jobId, {
+      branchName: "feat/test-slug-abcd1234",
+    });
+
+    expect(workspace.branch).toBe("feat/test-slug-abcd1234");
+  });
+});
+
+// TC-LR-010: setupWorkspace(run) commits request.md when requestFilePath is provided
+describe("TC-LR-010: setupWorkspace run path commits request.md", () => {
+  it("calls git commit after git add when requestFilePath is provided", async () => {
+    const { manager } = buildMockManager();
+    const { spawnFn, calls } = buildMockSpawnFn();
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+
+    // Create a real request.md file in tempDir
+    const requestFile = path.join(tempDir, "request.md");
+    await fs.writeFile(requestFile, "# Test Request\nslug: test-slug\n");
+
+    const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {
+      requestFilePath: requestFile,
+      branchName: "feat/test-slug-abcd1234",
+    });
+
+    // git add should be called
+    const addCall = calls.find((c) => c.cmd === "git" && c.args[0] === "add");
+    expect(addCall).toBeDefined();
+
+    // git commit should be called after git add
+    const commitCall = calls.find((c) => c.cmd === "git" && c.args[0] === "commit");
+    expect(commitCall).toBeDefined();
+    expect(commitCall?.args).toContain("-m");
+    expect(commitCall?.args.join(" ")).toContain("test-slug");
+  });
+
+  it("throws when git commit fails", async () => {
+    const { manager } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn({ commitExitCode: 1, commitStderr: "nothing to commit" });
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+
+    const requestFile = path.join(tempDir, "request.md");
+    await fs.writeFile(requestFile, "# Test Request\n");
+
+    const jobState = await makeJobState();
+    await expect(
+      runtime.setupWorkspace("test-slug", jobState.jobId, {
+        requestFilePath: requestFile,
+        branchName: "feat/test-slug-abcd1234",
+      }),
+    ).rejects.toThrow("Failed to commit request file");
   });
 });

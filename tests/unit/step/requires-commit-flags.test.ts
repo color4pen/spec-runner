@@ -47,7 +47,7 @@ describe("requiresCommit flag — review and propose steps stay opt-out", () => 
     expect(CodeReviewStep.requiresCommit).toBeFalsy();
   });
 
-  it("ProposeStep.requiresCommit is falsy (gated by register_branch + change folder verification)", () => {
+  it("ProposeStep.requiresCommit is falsy (change folder verification gates completion)", () => {
     expect(ProposeStep.requiresCommit).toBeFalsy();
   });
 });

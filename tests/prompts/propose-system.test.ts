@@ -9,7 +9,7 @@
  * TC-008: PROPOSE_SYSTEM_PROMPT に openspec status --json の指示が含まれる (must)
  * TC-009: PROPOSE_SYSTEM_PROMPT に openspec instructions の指示が含まれる (must)
  * TC-010: PROPOSE_SYSTEM_PROMPT に path-fence の記述が維持されている (must)
- * TC-011: PROPOSE_SYSTEM_PROMPT に完了条件（commit + push + register_branch）が維持されている (must)
+ * TC-011: PROPOSE_SYSTEM_PROMPT に完了条件（commit + push）が維持されている (must)
  * TC-012: PROPOSE_INITIAL_MESSAGE_TEMPLATE が slug と branch を注入する構造を維持する (must)
  */
 import { describe, it, expect } from "vitest";
@@ -102,8 +102,8 @@ describe("TC-010: path-fence is maintained in PROPOSE_SYSTEM_PROMPT", () => {
   });
 });
 
-// TC-011: completion conditions maintained
-describe("TC-011: commit + push + register_branch completion conditions maintained", () => {
+// TC-011: completion conditions maintained (commit + push; register_branch removed in D4)
+describe("TC-011: commit + push completion conditions maintained", () => {
   it("contains commit instruction", () => {
     expect(PROPOSE_SYSTEM_PROMPT.toLowerCase()).toContain("commit");
   });
@@ -112,8 +112,9 @@ describe("TC-011: commit + push + register_branch completion conditions maintain
     expect(PROPOSE_SYSTEM_PROMPT.toLowerCase()).toContain("push");
   });
 
-  it("contains register_branch instruction", () => {
-    expect(PROPOSE_SYSTEM_PROMPT).toContain("register_branch");
+  it("does NOT contain register_branch instruction (removed in D4)", () => {
+    // Branch is created by CLI before agent runs — agent does not call register_branch
+    expect(PROPOSE_SYSTEM_PROMPT).not.toContain("register_branch");
   });
 });
 

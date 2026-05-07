@@ -13,9 +13,8 @@ const PROPOSE_AGENT_MODEL = "claude-opus-4-6[1m]";
  * Self-contained: name, role, model, system, and tools are all declared here.
  * Design D1: Step is the single source of truth for its agent definition.
  *
- * Note: register_branch tool definition and handler are owned by ManagedAgentRunner
- * (src/adapter/managed-agent/tools/register-branch.ts). The adapter injects the
- * tool into the session at runtime (design D3). ProposeStep is runtime-neutral.
+ * Note: register_branch tool has been removed (design D4).
+ * Branch is created by CLI setupWorkspace() before the agent runs.
  */
 const proposeAgentDefinition: AgentDefinition = {
   name: "specrunner-propose",
@@ -24,16 +23,14 @@ const proposeAgentDefinition: AgentDefinition = {
   system: PROPOSE_SYSTEM_PROMPT,
   tools: [
     { type: AGENT_TOOLSET_TYPE },
-    // register_branch is injected by the adapter (ManagedAgentRunner / ClaudeCodeRunner)
-    // per design D3. ProposeStep does not declare it here to remain runtime-neutral.
   ],
 };
 
 /**
  * ProposeStep: implements the propose pipeline step as a plain Step object.
  *
- * The register_branch Custom Tool is injected by the managed-agent adapter
- * (design D3). ProposeStep is runtime-neutral and does not import any adapter code.
+ * Branch is created by CLI setupWorkspace() before the agent runs (design D4).
+ * ProposeStep is runtime-neutral and does not import any adapter code.
  *
  * No execution lifecycle here — StepExecutor owns that.
  */
@@ -59,8 +56,11 @@ export const ProposeStep: AgentStep = {
   setsBranch: true,
 
   buildMessage(state: JobState, deps: StepDeps): string {
-    const prefix = getBranchPrefix(deps.request.type);
-    const branch = `${prefix}${deps.slug}-${state.jobId.slice(0, 8)}`;
+    // Use state.branch if already set by CLI (setupWorkspace early recording, D3).
+    // Fall back to computing from type/slug/jobId for backward compatibility.
+    const branch = state.branch
+      ? state.branch
+      : `${getBranchPrefix(deps.request.type)}${deps.slug}-${state.jobId.slice(0, 8)}`;
     return buildInitialMessage(deps.request.content, deps.slug, branch);
   },
 

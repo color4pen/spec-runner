@@ -40,8 +40,6 @@ export interface SseStreamDeps {
   /** Branch name the agent should commit + push to. Defaults to `feat/{slug}`. */
   branch?: string;
   toolHandlers?: Map<string, CustomToolHandler>;
-  onBranchRegistered?: (branch: string) => void;
-  onSlugRegistered?: (slug: string) => void;
   onSseDisconnected?: () => void;
   abortController?: AbortController;
 }
@@ -100,14 +98,6 @@ export async function runSseStream(deps: SseStreamDeps): Promise<SseStreamResult
         } else {
           const handlerResult = await handler(event.input, ctx);
           result = handlerResult;
-
-          if (event.name === "register_branch" && result.ok && typeof result["branch"] === "string") {
-            deps.onBranchRegistered?.(result["branch"] as string);
-            // Also propagate slug if returned by handler
-            if (typeof result["slug"] === "string" && result["slug"]) {
-              deps.onSlugRegistered?.(result["slug"] as string);
-            }
-          }
         }
 
         await sendEvents(client, sessionId, {

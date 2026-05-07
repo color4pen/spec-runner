@@ -37,6 +37,10 @@ export interface WorkspaceOptions {
   existingWorktreePath?: string | null;
   /** Run: path of the request.md file to copy into the new worktree */
   requestFilePath?: string;
+  /** Run: pre-computed branch name for the new worktree (local: -b flag; managed: checkout -b) */
+  branchName?: string;
+  /** Run: request type for branch prefix computation (used by ManagedRuntime if branchName absent) */
+  requestType?: string;
 }
 
 /**
@@ -49,6 +53,8 @@ export interface WorkspaceContext {
   cwd: string;
   /** Local worktree path (local runtime only; undefined for managed) */
   worktreePath?: string;
+  /** Branch name created during setupWorkspace (set when branchName was provided) */
+  branch?: string;
 }
 
 /**

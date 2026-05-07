@@ -39,24 +39,16 @@ export type QueryFn = (params: {
 }) => AsyncGenerator<SDKMessage, void>;
 
 function buildAdditionalInstructions(ctx: AgentRunContext): string {
-  const { branch, slug, step } = ctx;
+  const { branch, slug } = ctx;
   const lines: string[] = [];
 
   if (branch) {
     lines.push(
       `RUNTIME INSTRUCTIONS (local Claude Code mode):`,
       `- You are running locally in the repository worktree at: ${ctx.cwd}`,
-      `- Work on branch: ${branch}`,
-      `- If the branch does not exist yet, create it: git checkout -b ${branch}`,
+      `- Work on branch: ${branch} (already created by the CLI — do not create it again)`,
       `- After completing the task, commit all changes and push: git push origin ${branch}`,
       `- Slug for this request: ${slug}`,
-    );
-  }
-
-  if (step.agent.role === "propose") {
-    lines.push(
-      `- For the propose step: create the branch ${branch}, make the initial commit with the openspec change folder, and push.`,
-      `- Do NOT call register_branch — the branch name is already known (${branch}).`,
     );
   }
 

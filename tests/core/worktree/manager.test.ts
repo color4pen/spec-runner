@@ -210,6 +210,46 @@ describe("TC-WTM-005: prune", () => {
   });
 });
 
+// TC-WTM-009: create — branchName specified → uses -b flag
+describe("TC-WTM-009: create — branchName specified uses -b flag", () => {
+  it("passes -b <branchName> when branchName is provided", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 0 }, // git worktree add
+      { exitCode: 0 }, // bun install
+    ]);
+
+    const manager = createWorktreeManager(spawn);
+    await manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main", "feat/my-feature-abcdef12");
+
+    const addCall = spawn.calls.find(
+      (c) => c.cmd === "git" && c.args.includes("add"),
+    );
+    expect(addCall).toBeDefined();
+    expect(addCall?.args).toContain("-b");
+    expect(addCall?.args).toContain("feat/my-feature-abcdef12");
+    // --detach should NOT appear
+    expect(addCall?.args).not.toContain("--detach");
+  });
+
+  it("uses --detach when branchName is omitted (backward compat)", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 0 }, // git worktree add
+      { exitCode: 0 }, // bun install
+    ]);
+
+    const manager = createWorktreeManager(spawn);
+    await manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main");
+
+    const addCall = spawn.calls.find(
+      (c) => c.cmd === "git" && c.args.includes("add"),
+    );
+    expect(addCall).toBeDefined();
+    expect(addCall?.args).toContain("--detach");
+    // -b should NOT appear
+    expect(addCall?.args).not.toContain("-b");
+  });
+});
+
 // TC-WTM-007: worktreePath in JobState — backward compat
 describe("TC-WTM-007: JobState worktreePath backward compat", () => {
   it("validateJobState accepts state without worktreePath", async () => {

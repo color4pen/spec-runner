@@ -4,12 +4,12 @@
  * TC-013: ManagedAgentRunner implements AgentRunner interface
  * TC-014: ManagedAgentRunner constructor receives correct deps
  * TC-015: ManagedAgentRunner.run() is semantically equivalent to existing lifecycle
- * TC-016: register_branch file is in managed-agent adapter
- * TC-017: core does not reference register_branch
- * TC-018: ManagedAgentRunner injects register_branch for propose role
- * TC-019: register_branch input_schema is unchanged
+ * TC-016: register_branch tool removed (D4) — file no longer exists
+ * TC-017: no source file imports register-branch module
+ * TC-018: propose role does not inject register_branch (D4: tool removed)
+ * TC-019: register_branch tool removed — adapter does not import it
  * TC-020: prompt includes ctx.branch
- * TC-021: agent-reported branch mismatch → warning, ctx.branch preserved
+ * TC-021: propose uses pre-set ctx.branch from CLI (D4)
  * TC-030: verifyBranch 404 → error
  * TC-031: result file not found → error
  */
@@ -221,14 +221,15 @@ describe("TC-015: ManagedAgentRunner.run() is equivalent to existing lifecycle",
 });
 
 // ---------------------------------------------------------------------------
-// TC-016: register_branch file is in managed-agent adapter
+// TC-016: register_branch tool has been removed (D4)
 // ---------------------------------------------------------------------------
 
-describe("TC-016: register_branch file is in managed-agent adapter", () => {
-  it("register-branch.ts is importable from adapter/managed-agent/tools/", async () => {
-    const { registerBranchTool } = await import("../../../../src/adapter/managed-agent/tools/register-branch.js");
-    expect(registerBranchTool).toBeDefined();
-    expect(registerBranchTool.definition.name).toBe("register_branch");
+describe("TC-016: register_branch tool removed (D4)", () => {
+  it("register-branch.ts does NOT exist in adapter/managed-agent/tools/", async () => {
+    const toolsDir = path.resolve(__dirname, "../../../../src/adapter/managed-agent/tools");
+    const files = await fs.readdir(toolsDir);
+    const hasBranchTool = files.some((f) => f.includes("register-branch"));
+    expect(hasBranchTool).toBe(false);
   });
 
   it("register_branch does NOT exist in src/core/tools/ (only types.ts remains)", async () => {
@@ -240,10 +241,10 @@ describe("TC-016: register_branch file is in managed-agent adapter", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-017: core does not import or call register_branch (no code-level dependency)
+// TC-017: no file in src imports register-branch module
 // ---------------------------------------------------------------------------
 
-describe("TC-017: core does not import or call register_branch as code", () => {
+describe("TC-017: no source file imports register-branch (removed in D4)", () => {
   it("no file in src/core/ imports register-branch module", async () => {
     const coreDir = path.resolve(__dirname, "../../../../src/core");
 
@@ -256,7 +257,6 @@ describe("TC-017: core does not import or call register_branch as code", () => {
           matches.push(...(await scanDir(full)));
         } else if (entry.isFile() && entry.name.endsWith(".ts")) {
           const content = await fs.readFile(full, "utf-8");
-          // Check for actual imports of register-branch, not comment references
           const importPattern = /from\s+["'][^"']*register-branch["']/;
           if (importPattern.test(content)) {
             matches.push(full);
@@ -270,8 +270,8 @@ describe("TC-017: core does not import or call register_branch as code", () => {
     expect(matches).toHaveLength(0);
   });
 
-  it("no file in src/core/ imports registerBranchTool symbol", async () => {
-    const coreDir = path.resolve(__dirname, "../../../../src/core");
+  it("no file in src/adapter/ imports register-branch module", async () => {
+    const adapterDir = path.resolve(__dirname, "../../../../src/adapter");
 
     async function scanDir(dir: string): Promise<string[]> {
       const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -282,8 +282,8 @@ describe("TC-017: core does not import or call register_branch as code", () => {
           matches.push(...(await scanDir(full)));
         } else if (entry.isFile() && entry.name.endsWith(".ts")) {
           const content = await fs.readFile(full, "utf-8");
-          // Check for actual import of registerBranchTool (not a comment)
-          if (/import\s+.*registerBranchTool/.test(content)) {
+          const importPattern = /from\s+["'][^"']*register-branch["']/;
+          if (importPattern.test(content)) {
             matches.push(full);
           }
         }
@@ -291,23 +291,22 @@ describe("TC-017: core does not import or call register_branch as code", () => {
       return matches;
     }
 
-    const matches = await scanDir(coreDir);
+    const matches = await scanDir(adapterDir);
     expect(matches).toHaveLength(0);
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-018: ManagedAgentRunner injects register_branch for propose role
+// TC-018: propose role — no register_branch in toolHandlers (D4)
 // ---------------------------------------------------------------------------
 
-describe("TC-018: ManagedAgentRunner injects register_branch for propose role", () => {
-  it("for propose role: streamEvents is called with toolHandlers including register_branch", async () => {
+describe("TC-018: propose role — register_branch not in toolHandlers (D4: tool removed)", () => {
+  it("for propose role: streamEvents is called WITHOUT register_branch in toolHandlers", async () => {
     const jobId = "tc018-job";
-    const state = makeJobState(jobId, ""); // propose: branch starts empty
+    const state = makeJobState(jobId, "feat/test-slug-tc018abc");
 
     await persistState(state);
 
-    // Capture toolHandlers passed to streamEvents
     let capturedToolHandlers: Map<string, unknown> | undefined;
 
     const sessionClient: SessionClient = {
@@ -343,7 +342,7 @@ describe("TC-018: ManagedAgentRunner injects register_branch for propose role", 
         system: "propose system",
         tools: [],
       },
-      toolHandlers: undefined, // ProposeStep does not inject register_branch (design D3)
+      toolHandlers: undefined,
       buildMessage: () => "propose message",
       resultFilePath: () => null,
       parseResult: () => ({ verdict: null, findingsPath: null }),
@@ -352,7 +351,7 @@ describe("TC-018: ManagedAgentRunner injects register_branch for propose role", 
     const ctx: AgentRunContext = {
       step: proposeStep,
       state,
-      branch: "feat/test",
+      branch: "feat/test-slug-tc018abc",
       slug: "test-slug",
       cwd: tempDir,
       requestContent: "request content",
@@ -360,38 +359,32 @@ describe("TC-018: ManagedAgentRunner injects register_branch for propose role", 
       emit: vi.fn(),
     };
 
-    // This will fail at verifyBranch / register_branch not called,
-    // but we just want to check toolHandlers — catch any error
     try {
       await runner.run(ctx);
     } catch {
-      // Expected — propose may throw if register_branch not called
+      // May throw during verification
     }
 
-    // TC-018: register_branch must be in toolHandlers (injected by adapter)
+    // TC-018 (updated): register_branch must NOT be in toolHandlers (tool removed in D4)
     expect(capturedToolHandlers).toBeDefined();
-    expect(capturedToolHandlers?.has("register_branch")).toBe(true);
+    expect(capturedToolHandlers?.has("register_branch")).toBe(false);
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-019: register_branch input_schema is unchanged (snapshot)
+// TC-019: register_branch tool removed — adapter does not import it
 // ---------------------------------------------------------------------------
 
-describe("TC-019: register_branch input_schema is unchanged", () => {
-  it("input_schema matches canonical expected shape", async () => {
-    const { registerBranchTool } = await import("../../../../src/adapter/managed-agent/tools/register-branch.js");
-    const { input_schema } = registerBranchTool.definition;
-
-    expect(input_schema.type).toBe("object");
-    expect(input_schema.required).toEqual(["branch"]);
-    expect((input_schema.properties as Record<string, unknown>)["branch"]).toBeDefined();
-    expect((input_schema.properties as Record<string, unknown>)["slug"]).toBeDefined();
+describe("TC-019: register_branch tool removed (D4)", () => {
+  it("ManagedAgentRunner source does not import from register-branch", async () => {
+    const agentRunnerPath = path.resolve(__dirname, "../../../../src/adapter/managed-agent/agent-runner.ts");
+    const content = await fs.readFile(agentRunnerPath, "utf-8");
+    expect(content).not.toMatch(/from.*register-branch/);
   });
 
-  it("tool name is 'register_branch'", async () => {
-    const { registerBranchTool } = await import("../../../../src/adapter/managed-agent/tools/register-branch.js");
-    expect(registerBranchTool.definition.name).toBe("register_branch");
+  it("PROPOSE_SYSTEM_PROMPT does not contain register_branch instruction", async () => {
+    const { PROPOSE_SYSTEM_PROMPT } = await import("../../../../src/prompts/propose-system.js");
+    expect(PROPOSE_SYSTEM_PROMPT).not.toContain("register_branch");
   });
 });
 
@@ -459,38 +452,29 @@ describe("TC-020: ManagedAgentRunner includes ctx.branch in prompt", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-021: agent-reported branch mismatch → warning, ctx.branch preserved
+// TC-021: ctx.branch is pre-set by CLI (D4 — register_branch removed)
 // ---------------------------------------------------------------------------
 
-describe("TC-021: agent-reported branch mismatch → warning, ctx.branch wins", () => {
-  it("warning is written to stderr when register_branch reports different branch", async () => {
-    // This is tested via the mismatch detection in ManagedAgentRunner.
-    // We verify the onBranchRegistered callback triggers warning when branches differ.
-    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
-
+describe("TC-021: propose uses pre-set ctx.branch from CLI (D4)", () => {
+  it("createSession is called with ctx.branch when branch is pre-set", async () => {
     const jobId = "tc021-job";
-    const state = makeJobState(jobId, "");
+    const state = makeJobState(jobId, "feat/foo-bar-tc021abc");
     await persistState(state);
 
-    // Simulate: ctx.branch = "feat/foo-bar", agent reports "feat/other"
-    let onBranchRegisteredCallback: ((b: string) => void) | undefined;
+    let capturedBranchInSession: string | undefined;
 
     const sessionClient: SessionClient = {
-      createSession: vi.fn().mockResolvedValue({ sessionId: "sess_021" }),
+      createSession: vi.fn().mockImplementation((params: { branch?: string }) => {
+        capturedBranchInSession = params.branch;
+        return Promise.resolve({ sessionId: "sess_021" });
+      }),
       sendUserMessage: vi.fn().mockResolvedValue(undefined),
       pollUntilComplete: vi.fn().mockResolvedValue({ status: "idle" }),
-      streamEvents: vi.fn().mockImplementation((_sid, opts: { onBranchRegistered?: (b: string) => void }) => {
-        onBranchRegisteredCallback = opts.onBranchRegistered;
-        // Simulate register_branch callback with different branch
-        if (onBranchRegisteredCallback) {
-          onBranchRegisteredCallback("feat/other");
-        }
-        return Promise.resolve({
-          sseDisconnected: false,
-          idleEndTurnDetected: true,
-          terminated: false,
-          terminationReason: "end_turn" as const,
-        });
+      streamEvents: vi.fn().mockResolvedValue({
+        sseDisconnected: false,
+        idleEndTurnDetected: true,
+        terminated: false,
+        terminationReason: "end_turn" as const,
       }),
     };
 
@@ -514,7 +498,7 @@ describe("TC-021: agent-reported branch mismatch → warning, ctx.branch wins", 
       await runner.run({
         step: proposeStep,
         state,
-        branch: "feat/foo-bar", // ctx.branch is canonical
+        branch: "feat/foo-bar-tc021abc",
         slug: "foo-bar",
         cwd: tempDir,
         requestContent: "content",
@@ -522,14 +506,11 @@ describe("TC-021: agent-reported branch mismatch → warning, ctx.branch wins", 
         emit: vi.fn(),
       });
     } catch {
-      // May throw if register_branch not recognized as having branch
+      // May throw during verification
     }
 
-    // Warning should have been written
-    const warningWritten = stderrSpy.mock.calls.some(
-      ([msg]) => typeof msg === "string" && msg.includes("feat/other") && msg.includes("feat/foo-bar"),
-    );
-    expect(warningWritten).toBe(true);
+    // TC-021 (updated): session is created with the pre-set CLI branch
+    expect(capturedBranchInSession).toBe("feat/foo-bar-tc021abc");
   });
 });
 

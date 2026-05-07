@@ -11,6 +11,7 @@ import { createJobState } from "../../state/store.js";
 import { logInfo, setVerbose } from "../../logger/stdout.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../runtime/strategy.js";
+import { getBranchPrefix } from "../../config/type-config.js";
 
 export interface PipelineRunOptions {
   cwd?: string;
@@ -64,6 +65,10 @@ export class PipelineRunCommand extends CommandRunner {
 
     logInfo(`Job ID: ${jobState.jobId}`);
 
+    // Compute branchName: CLI creates the branch before the agent runs
+    const branchPrefix = getBranchPrefix(request.type);
+    const branchName = `${branchPrefix}${slug}-${jobState.jobId.slice(0, 8)}`;
+
     return {
       jobState,
       startStep: "propose",
@@ -72,7 +77,11 @@ export class PipelineRunCommand extends CommandRunner {
       repo,
       slug,
       verbose,
-      workspaceOpts: { requestFilePath: this.absolutePath },
+      workspaceOpts: {
+        requestFilePath: this.absolutePath,
+        branchName,
+        requestType: request.type,
+      },
     };
   }
 }

@@ -552,8 +552,8 @@ describe("TC-025: ClaudeCodeRunner reads resultContent from fs (not GitHub API)"
 // TC-026: additionalInstructions contains branch checkout instruction
 // ---------------------------------------------------------------------------
 
-describe("TC-026: ClaudeCodeRunner additionalInstructions contains branch checkout", () => {
-  it("query prompt includes 'git checkout -b feat/foo-bar'", async () => {
+describe("TC-026: ClaudeCodeRunner additionalInstructions contains branch info (D4: already created by CLI)", () => {
+  it("query prompt includes branch name and does not contain register_branch", async () => {
     let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
 
     const queryFn = makeQueryFn({
