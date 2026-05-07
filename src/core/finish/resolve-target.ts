@@ -13,7 +13,7 @@
  */
 import * as path from "node:path";
 import { listJobStates, loadJobState } from "../../state/store.js";
-import { getJobSlug, stripBranchPrefix } from "../../state/job-slug.js";
+import { getJobSlug, stripBranchPrefix, stripJobIdSuffix } from "../../state/job-slug.js";
 import type { ResolvedTarget } from "./types.js";
 import type { SpawnFn } from "../../util/spawn.js";
 
@@ -131,7 +131,7 @@ async function resolveByPrNumber(
   }
 
   const headRef = parsed.headRefName ?? "";
-  const slug = stripBranchPrefix(headRef);
+  const slug = stripJobIdSuffix(stripBranchPrefix(headRef));
 
   if (!slug) {
     return {

@@ -148,3 +148,27 @@ describe("TC-128: register_branch — slug omitted derives from branch prefix st
     expect(result.ok).toBe(false);
   });
 });
+
+// register_branch — jobId-suffixed branch slug derivation
+describe("register_branch — jobId-suffixed branch slug derivation", () => {
+  it("derives slug from suffixed branch: feat/my-feature-abcd1234 → my-feature", async () => {
+    const ctx: CustomToolContext = { sessionId: "test-session" };
+    const result = await registerBranchTool.handler(
+      { branch: "feat/my-feature-abcd1234" },
+      ctx,
+    );
+    expect(result.ok).toBe(true);
+    const ok = result as OkResult;
+    expect(ok["slug"]).toBe("my-feature");
+  });
+  it("explicit slug overrides suffixed branch derivation", async () => {
+    const ctx: CustomToolContext = { sessionId: "test-session" };
+    const result = await registerBranchTool.handler(
+      { branch: "feat/my-feature-abcd1234", slug: "my-feature" },
+      ctx,
+    );
+    expect(result.ok).toBe(true);
+    const ok = result as OkResult;
+    expect(ok["slug"]).toBe("my-feature");
+  });
+});

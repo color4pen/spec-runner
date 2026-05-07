@@ -214,7 +214,7 @@ export class StepExecutor {
     // derive and set state.branch now.
     // Design D2: declarative flag replaces step-name-based branch detection (TC-003 / TC-006).
     if (step.setsBranch === true && !state.branch) {
-      state = { ...state, branch: `feat/${deps.slug}` };
+      state = { ...state, branch: `feat/${deps.slug}-${state.jobId.slice(0, 8)}` };
     }
 
     await store.persist(state);

@@ -57,8 +57,9 @@ export const ProposeStep: AgentStep = {
   // Design D2: declarative flag replaces step-name-based branch detection (TC-003 / TC-006).
   setsBranch: true,
 
-  buildMessage(_state: JobState, deps: StepDeps): string {
-    return buildInitialMessage(deps.request.content, deps.slug);
+  buildMessage(state: JobState, deps: StepDeps): string {
+    const branch = `feat/${deps.slug}-${state.jobId.slice(0, 8)}`;
+    return buildInitialMessage(deps.request.content, deps.slug, branch);
   },
 
   resultFilePath(_state: JobState, _deps: StepDeps): string | null {

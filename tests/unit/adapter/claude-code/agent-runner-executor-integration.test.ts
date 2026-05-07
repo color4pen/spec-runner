@@ -485,7 +485,7 @@ describe("TC-003 (behavior): completionVerdict is NOT used when resultContent is
 // ---------------------------------------------------------------------------
 
 describe("TC-004: setsBranch flag — state.branch set after propose step completes", () => {
-  it("sets state.branch to feat/${slug} when setsBranch:true and jobState.branch is absent", async () => {
+  it("sets state.branch to feat/${slug}-${jobId[0..7]} when setsBranch:true and jobState.branch is absent", async () => {
     const jobId = "tc004-sets-branch-job";
     const initialState = makeJobState(jobId);
     initialState.branch = null; // no branch
@@ -532,7 +532,9 @@ describe("TC-004: setsBranch flag — state.branch set after propose step comple
 
     const resultState = await executor.execute(step, initialState, deps);
 
-    expect(resultState.branch).toBe("feat/my-feature-slug");
+    // New format: feat/<slug>-<jobId first 8 chars>
+    // jobId = "tc004-sets-branch-job" → first 8 = "tc004-se"
+    expect(resultState.branch).toBe("feat/my-feature-slug-tc004-se");
   });
 });
 

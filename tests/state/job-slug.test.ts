@@ -11,7 +11,7 @@
  * TC-118: legacy state file (no slug field) → load succeeds, slug=null, getJobSlug works
  */
 import { describe, it, expect } from "vitest";
-import { getJobSlug, stripBranchPrefix } from "../../src/state/job-slug.js";
+import { getJobSlug, stripBranchPrefix, stripJobIdSuffix } from "../../src/state/job-slug.js";
 import { validateJobState } from "../../src/state/schema.js";
 import type { JobState } from "../../src/state/schema.js";
 
@@ -129,6 +129,43 @@ describe("TC-116 / TC-117: canonical path detection (run.ts logic)", () => {
     const path = "/tmp/dogfooding-001-request.md";
     const m = CANONICAL_PATTERN.exec(path);
     expect(m).toBeNull();
+  });
+});
+
+// stripJobIdSuffix: strips 8-char hex suffix
+describe("stripJobIdSuffix", () => {
+  it("strips 8-char hex suffix: abolish-success-status-45e9e720 → abolish-success-status", () => {
+    expect(stripJobIdSuffix("abolish-success-status-45e9e720")).toBe("abolish-success-status");
+  });
+  it("no-op when no hex suffix: my-feature → my-feature", () => {
+    expect(stripJobIdSuffix("my-feature")).toBe("my-feature");
+  });
+  it("no-op when suffix is not hex: my-feature-zzzzzzzz → my-feature-zzzzzzzz", () => {
+    expect(stripJobIdSuffix("my-feature-zzzzzzzz")).toBe("my-feature-zzzzzzzz");
+  });
+  it("no-op when suffix is too short: my-feature-45e9e72 → my-feature-45e9e72", () => {
+    expect(stripJobIdSuffix("my-feature-45e9e72")).toBe("my-feature-45e9e72");
+  });
+  it("no-op when suffix is too long: my-feature-45e9e7201 → my-feature-45e9e7201", () => {
+    expect(stripJobIdSuffix("my-feature-45e9e7201")).toBe("my-feature-45e9e7201");
+  });
+  it("handles slug with hyphens: my-cool-feature-abcd1234 → my-cool-feature", () => {
+    expect(stripJobIdSuffix("my-cool-feature-abcd1234")).toBe("my-cool-feature");
+  });
+  it("empty string → empty string", () => {
+    expect(stripJobIdSuffix("")).toBe("");
+  });
+});
+
+// getJobSlug with jobId-suffixed branch
+describe("getJobSlug with jobId-suffixed branch", () => {
+  it("branch feat/my-feature-abcd1234 → slug my-feature", () => {
+    const state = makeMinimalState({ slug: null, branch: "feat/my-feature-abcd1234" });
+    expect(getJobSlug(state)).toBe("my-feature");
+  });
+  it("explicit slug takes priority over suffixed branch", () => {
+    const state = makeMinimalState({ slug: "my-feature", branch: "feat/my-feature-abcd1234" });
+    expect(getJobSlug(state)).toBe("my-feature");
   });
 });
 

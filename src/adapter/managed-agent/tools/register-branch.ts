@@ -1,5 +1,5 @@
 import { defineCustomTool } from "../../../core/tools/types.js";
-import { stripBranchPrefix } from "../../../state/job-slug.js";
+import { stripBranchPrefix, stripJobIdSuffix } from "../../../state/job-slug.js";
 import type { CustomToolContext, CustomToolResult } from "../../../core/tools/types.js";
 
 /**
@@ -67,8 +67,8 @@ export const registerBranchTool = defineCustomTool({
     if (typeof inputSlug === "string" && inputSlug.trim().length > 0) {
       resolvedSlug = inputSlug.trim();
     } else {
-      // TC-128: derive from branch via stripBranchPrefix
-      resolvedSlug = stripBranchPrefix(trimmedBranch);
+      // TC-128: derive from branch via stripBranchPrefix + stripJobIdSuffix
+      resolvedSlug = stripJobIdSuffix(stripBranchPrefix(trimmedBranch));
     }
 
     // Return the validated branch and slug via return value.

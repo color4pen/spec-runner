@@ -17,6 +17,26 @@ import type { JobState } from "./schema.js";
 const BRANCH_PREFIXES = ["feat/", "fix/", "change/", "refactor/", "chore/"];
 
 /**
+ * Pattern matching a jobId suffix: hyphen followed by exactly 8 hex characters at end of string.
+ * Used to strip the jobId suffix from a branch-derived slug.
+ */
+const JOB_ID_SUFFIX_PATTERN = /-[0-9a-f]{8}$/;
+
+/**
+ * Strip a jobId suffix (e.g. "-45e9e720") from a branch-derived slug.
+ * Only strips if the suffix matches exactly 8 lowercase hex characters.
+ * No-op if no suffix matches.
+ *
+ * Examples:
+ *   "abolish-success-status-45e9e720" → "abolish-success-status"
+ *   "my-feature"                      → "my-feature"
+ *   "my-feature-zzzzzzzz"             → "my-feature-zzzzzzzz"  (not hex)
+ */
+export function stripJobIdSuffix(branchSlug: string): string {
+  return branchSlug.replace(JOB_ID_SUFFIX_PATTERN, "");
+}
+
+/**
  * Strip a known branch prefix from a branch name.
  * Returns the stripped string, or the original string if no prefix matched.
  *
@@ -51,9 +71,9 @@ export function getJobSlug(state: JobState): string {
     return state.request.slug;
   }
 
-  // 2. Branch with prefix strip
+  // 2. Branch with prefix strip + jobId suffix strip
   if (state.branch) {
-    const stripped = stripBranchPrefix(state.branch);
+    const stripped = stripJobIdSuffix(stripBranchPrefix(state.branch));
     if (stripped) return stripped;
   }
 
