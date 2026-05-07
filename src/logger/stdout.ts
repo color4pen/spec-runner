@@ -3,6 +3,25 @@
  * Handles progress display, stderr logging, and automatic masking of sensitive values.
  */
 
+/** Module-level verbose flag. Set via setVerbose() at process startup. */
+let verbose = false;
+
+/**
+ * Set the global verbose flag.
+ * When verbose=false (default), logWarn calls are suppressed.
+ * Call setVerbose(true) when --verbose flag is passed.
+ */
+export function setVerbose(v: boolean): void {
+  verbose = v;
+}
+
+/**
+ * Return current verbose state.
+ */
+export function isVerbose(): boolean {
+  return verbose;
+}
+
 const MASK_PATTERNS: RegExp[] = [
   /\bsk-ant-[A-Za-z0-9_-]+/g,
   /\bgho_[A-Za-z0-9]+/g,
@@ -48,8 +67,10 @@ export function logSuccess(message: string): void {
 
 /**
  * Log a warning message to stderr.
+ * Suppressed when verbose=false (default). Use setVerbose(true) to enable.
  */
 export function logWarn(message: string): void {
+  if (!verbose) return;
   process.stderr.write("Warning: " + maskSensitive(message) + "\n");
 }
 

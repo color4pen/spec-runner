@@ -35,10 +35,11 @@ import { PrCreateStep } from "../step/pr-create.js";
 export async function runPipeline(
   jobState: JobState,
   deps: PipelineDeps,
+  events?: EventBus,
 ): Promise<JobState> {
   const maxIterations = getMaxRetries(deps.config);
 
-  const events = new EventBus();
+  const bus = events ?? new EventBus();
 
   // Design D8: composition root branches on config.runtime.
   // TC-035: managed → ManagedAgentRunner (SessionClient required)
@@ -57,7 +58,7 @@ export async function runPipeline(
     });
   }
 
-  const executor = new StepExecutor(events, runner);
+  const executor = new StepExecutor(bus, runner);
 
   const steps = new Map<string, Step>([
     ["propose",      ProposeStep],
@@ -76,7 +77,7 @@ export async function runPipeline(
     transitions: STANDARD_TRANSITIONS,
     maxIterations,
     executor,
-    events,
+    events: bus,
     loopName: "spec-review",
     loopNames: ["spec-review", "verification", "code-review"],
   });
@@ -98,8 +99,9 @@ export async function runPipeline(
 export async function runProposePipeline(
   jobState: JobState,
   deps: PipelineDeps,
+  events?: EventBus,
 ): Promise<JobState> {
-  const events = new EventBus();
+  const bus = events ?? new EventBus();
 
   // Design D8: composition root branches on config.runtime.
   let proposeRunner: AgentRunner;
@@ -116,7 +118,7 @@ export async function runProposePipeline(
     });
   }
 
-  const executor = new StepExecutor(events, proposeRunner);
+  const executor = new StepExecutor(bus, proposeRunner);
 
   const steps = new Map([
     ["propose", ProposeStep],
@@ -133,7 +135,7 @@ export async function runProposePipeline(
     transitions: proposeOnlyTransitions,
     maxIterations: 1,
     executor,
-    events,
+    events: bus,
     loopName: "propose",
   });
 

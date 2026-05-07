@@ -16,7 +16,7 @@ const USAGE = `Usage: specrunner <command> [options]
 Commands:
   init                   Create or update Anthropic Agent and Environment
   login                  Authenticate with GitHub via Device Flow
-  run <req.md>           Run propose pipeline for a request
+  run <req.md> [--verbose]  Run propose pipeline for a request
   ps                     List all jobs
   doctor                 Diagnose environment / config / auth prerequisites
   finish [<slug>]        Squash-merge feature PR and archive (1-PR model)
@@ -98,14 +98,16 @@ export async function main(): Promise<void> {
     }
 
     case "run": {
-      const requestMd = args[1];
+      const runArgs = args.slice(1);
+      const verbose = runArgs.includes("--verbose");
+      const requestMd = runArgs.find((a) => !a.startsWith("--"));
       if (!requestMd) {
         process.stderr.write("Error: specrunner run requires a <request.md> path.\n");
         process.stderr.write(USAGE);
         process.exit(2);
       }
 
-      await runRun(requestMd, {});
+      await runRun(requestMd, { verbose });
       break;
     }
 

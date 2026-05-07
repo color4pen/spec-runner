@@ -5,10 +5,12 @@ import { createGitHubClient } from "../adapter/github/github-client.js";
 import { runPreflight } from "../core/preflight.js";
 import { createJobState } from "../state/store.js";
 import { runPipeline } from "../core/pipeline/index.js";
-import { logInfo, logError } from "../logger/stdout.js";
+import { logInfo, logError, setVerbose } from "../logger/stdout.js";
 import { SpecRunnerError } from "../errors.js";
 import type { JobState } from "../state/schema.js";
 import { getLatestStepResult } from "../state/helpers.js";
+import { EventBus } from "../core/event/event-bus.js";
+import { ProgressDisplay } from "./progress.js";
 
 /**
  * Parse spec-review findings summary from spec-review-result.md content.
@@ -85,8 +87,10 @@ export async function runRunCore(
   requestMdPath: string,
   options: {
     cwd?: string;
+    verbose?: boolean;
   },
 ): Promise<number> {
+  setVerbose(options.verbose ?? false);
   const cwd = options.cwd ?? process.cwd();
   const absolutePath = path.resolve(cwd, requestMdPath);
 
@@ -143,18 +147,26 @@ export async function runRunCore(
 
   logInfo(`Job ID: ${jobState.jobId}`);
 
+  // Set up EventBus and ProgressDisplay for step transition output
+  const events = new EventBus();
+  new ProgressDisplay(events, { verbose: options.verbose ?? false, slug });
+
   // Run pipeline
   let finalState: JobState;
   try {
-    finalState = await runPipeline(jobState, {
-      client,
-      config,
-      repo,
-      request,
-      slug,
-      githubClient,
-      cwd,
-    });
+    finalState = await runPipeline(
+      jobState,
+      {
+        client,
+        config,
+        repo,
+        request,
+        slug,
+        githubClient,
+        cwd,
+      },
+      events,
+    );
   } catch (err) {
     if (err instanceof SpecRunnerError) {
       if (err.code === "SPEC_REVIEW_RESULT_NOT_FOUND") {
@@ -204,6 +216,7 @@ export async function runRun(
   requestMdPath: string,
   options: {
     cwd?: string;
+    verbose?: boolean;
   },
 ): Promise<void> {
   const exitCode = await runRunCore(requestMdPath, options);
