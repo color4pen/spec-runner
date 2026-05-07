@@ -100,33 +100,65 @@ export async function runPreflight(input: PreflightInput): Promise<PreflightResu
 
   const prViewData = prViewResult.data;
 
-  // Check 5: openspec/changes/<slug>/ existence (warning only)
-  const changeFolderPath = path.join(cwd, "openspec", "changes", target.slug);
-  const changeFolderExists = await fs.exists(changeFolderPath);
-  if (!changeFolderExists) {
-    process.stderr.write(
-      `Warning: openspec/changes/${target.slug}/ not found. Archive steps will be skipped.\n`,
-    );
+  // T3: Guard against empty target.branch
+  if (!target.branch) {
+    return {
+      ok: false,
+      escalation: formatEscalation({
+        failedStep: "Phase 0 (branch checkout for validation)",
+        detectedState: "target.branch is empty",
+        recommendedAction:
+          "state.branch が未設定です。pipeline が正常に完走していない可能性があります。",
+        resumeCommand: `specrunner finish ${target.slug}`,
+      }),
+    };
   }
 
-  // Check 6: openspec validate (only if change folder exists)
-  if (changeFolderExists) {
-    const validateResult = await spawn(
-      "openspec",
-      ["validate", target.slug, "--strict"],
-      { cwd },
-    );
-    if (validateResult.exitCode !== 0) {
-      return {
-        ok: false,
-        escalation: formatEscalation({
-          failedStep: "Phase 0 check 6 (openspec validate)",
-          detectedState: `openspec validate ${target.slug} failed (exit ${validateResult.exitCode})`,
-          recommendedAction: `Fix spec validation errors:\n${validateResult.stderr.trim()}\n  Then re-run: specrunner finish ${target.slug}`,
-          resumeCommand: `specrunner finish ${target.slug}`,
-        }),
-      };
+  // Checkout feature branch for validation (Check 5+6)
+  const checkoutResult = await checkoutForValidation({ branch: target.branch, cwd, spawn });
+  if (!checkoutResult.ok) {
+    return { ok: false, escalation: checkoutResult.escalation };
+  }
+
+  let validationError: PreflightResult | null = null;
+  try {
+    // Check 5: openspec/changes/<slug>/ existence (warning only)
+    const changeFolderPath = path.join(cwd, "openspec", "changes", target.slug);
+    const changeFolderExists = await fs.exists(changeFolderPath);
+    if (!changeFolderExists) {
+      process.stderr.write(
+        `Warning: openspec/changes/${target.slug}/ not found. Archive steps will be skipped.\n`,
+      );
     }
+
+    // Check 6: openspec validate (only if change folder AND specs/ subdirectory exist)
+    // Delta-less changes (bug-fix etc.) have no specs/ — validate would fail with "no deltas found".
+    const specsFolderPath = path.join(changeFolderPath, "specs");
+    const specsFolderExists = changeFolderExists && await fs.exists(specsFolderPath);
+    if (specsFolderExists) {
+      const validateResult = await spawn(
+        "openspec",
+        ["validate", target.slug],
+        { cwd },
+      );
+      if (validateResult.exitCode !== 0) {
+        validationError = {
+          ok: false,
+          escalation: formatEscalation({
+            failedStep: "Phase 0 check 6 (openspec validate)",
+            detectedState: `openspec validate ${target.slug} failed (exit ${validateResult.exitCode})`,
+            recommendedAction: `Fix spec validation errors:\n${validateResult.stderr.trim()}\n  Then re-run: specrunner finish ${target.slug}`,
+            resumeCommand: `specrunner finish ${target.slug}`,
+          }),
+        };
+      }
+    }
+  } finally {
+    await restoreBranch({ originalBranch: checkoutResult.originalBranch, cwd, spawn });
+  }
+
+  if (validationError) {
+    return validationError;
   }
 
   // Check 8: unpushed commits on feature branch (warning only)
@@ -264,6 +296,92 @@ async function fetchPrViewWithRetry(params: {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// ---------------------------------------------------------------------------
+// Branch checkout helpers (T1)
+// ---------------------------------------------------------------------------
+
+interface CheckoutForValidationInput {
+  branch: string;
+  cwd: string;
+  spawn: SpawnFn;
+}
+
+type CheckoutForValidationResult =
+  | { ok: true; originalBranch: string }
+  | { ok: false; escalation: string };
+
+/**
+ * Record the current branch, fetch the feature branch, and check it out.
+ * Used before Check 5+6 so that openspec validate runs in the feature branch.
+ */
+async function checkoutForValidation(
+  input: CheckoutForValidationInput,
+): Promise<CheckoutForValidationResult> {
+  const { branch, cwd, spawn } = input;
+
+  // Get current branch name
+  const revParseResult = await spawn("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd });
+  if (revParseResult.exitCode !== 0) {
+    return {
+      ok: false,
+      escalation: formatEscalation({
+        failedStep: "Phase 0 (branch checkout for validation)",
+        detectedState: `git rev-parse --abbrev-ref HEAD failed: ${revParseResult.stderr.trim()}`,
+        recommendedAction: "git コマンドが正常に動作しているか確認してください。",
+        resumeCommand: "specrunner finish",
+      }),
+    };
+  }
+  const originalBranch = revParseResult.stdout.trim();
+
+  // Fetch the feature branch from remote (best-effort; ignore failures)
+  await spawn("git", ["fetch", "origin", branch], { cwd });
+
+  // Try to checkout the feature branch
+  const checkoutResult = await spawn("git", ["checkout", branch], { cwd });
+  if (checkoutResult.exitCode !== 0) {
+    // Attempt to create a local tracking branch (managed mode)
+    const checkoutBResult = await spawn(
+      "git",
+      ["checkout", "-b", branch, `origin/${branch}`],
+      { cwd },
+    );
+    if (checkoutBResult.exitCode !== 0) {
+      return {
+        ok: false,
+        escalation: formatEscalation({
+          failedStep: "Phase 0 (branch checkout for validation)",
+          detectedState: `git checkout ${branch} failed: ${checkoutBResult.stderr.trim()}`,
+          recommendedAction: `feature branch への checkout に失敗しました。branch "${branch}" が存在するか確認してください。`,
+          resumeCommand: "specrunner finish",
+        }),
+      };
+    }
+  }
+
+  return { ok: true, originalBranch };
+}
+
+interface RestoreBranchInput {
+  originalBranch: string;
+  cwd: string;
+  spawn: SpawnFn;
+}
+
+/**
+ * Restore the previously recorded branch.
+ * Failures are reported as warnings only (not escalation).
+ */
+async function restoreBranch(input: RestoreBranchInput): Promise<void> {
+  const { originalBranch, cwd, spawn } = input;
+  const result = await spawn("git", ["checkout", originalBranch], { cwd });
+  if (result.exitCode !== 0) {
+    process.stderr.write(
+      `Warning: failed to restore branch "${originalBranch}": ${result.stderr.trim()}\n`,
+    );
+  }
 }
 
 /**

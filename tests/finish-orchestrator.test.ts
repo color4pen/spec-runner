@@ -415,12 +415,16 @@ describe("TC-108: --dry-run → no destructive subprocess spawns", () => {
 
     expect(result.exitCode).toBe(0);
 
+    // Phase 0 now includes git checkout <feature-branch> + restore, which are
+    // acceptable in dry-run (temporary and reverted). We guard against Phase 1-4
+    // operations only: archive, commit, push, merge, checkout -B (Phase 1 reset),
+    // and pull (Phase 4 fast-forward).
     const DESTRUCTIVE = [
       (cmd: string, args: string[]) => cmd === "openspec" && args[0] === "archive",
       (cmd: string, args: string[]) => cmd === "git" && args[0] === "commit",
       (cmd: string, args: string[]) => cmd === "git" && args[0] === "push",
       (cmd: string, args: string[]) => cmd === "gh" && args[1] === "merge",
-      (cmd: string, args: string[]) => cmd === "git" && args[0] === "checkout" && (args[1] === "main" || args[1] === "-B"),
+      (cmd: string, args: string[]) => cmd === "git" && args[0] === "checkout" && args[1] === "-B",
       (cmd: string, args: string[]) => cmd === "git" && args[0] === "pull",
     ];
     const destructiveCalls = calls.filter(([cmd, args]) =>
