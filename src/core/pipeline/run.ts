@@ -21,29 +21,16 @@ import { CodeFixerStep } from "../step/code-fixer.js";
 import { PrCreateStep } from "../step/pr-create.js";
 
 /**
- * Run the full pipeline: propose → spec-review loop (with spec-fixer on needs-fix).
+ * Construct the standard Pipeline with all steps and transitions.
+ * Extracted so that resume.ts can call pipeline.run(startStep, ...) directly.
  *
- * This is a thin wrapper that constructs the Pipeline class with the standard
- * transition table and calls pipeline.run(). The function signature is preserved
- * bit-for-bit so existing callers (CLI) work unchanged.
- *
- * Behavior invariants maintained:
- * - stdout `[iter N/M]` format is bit-for-bit unchanged
- * - Error codes: SESSION_TERMINATED, BRANCH_NOT_REGISTERED,
- *   SPEC_REVIEW_RETRIES_EXHAUSTED, CONFIG_INCOMPLETE
+ * @param deps - pipeline dependencies (config, runtime, etc.)
+ * @param events - optional EventBus (creates a new one if not provided)
  */
-export async function runPipeline(
-  jobState: JobState,
-  deps: PipelineDeps,
-  events?: EventBus,
-): Promise<JobState> {
+export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): Pipeline {
   const maxIterations = getMaxRetries(deps.config);
-
   const bus = events ?? new EventBus();
 
-  // Design D8: composition root branches on config.runtime.
-  // TC-035: managed → ManagedAgentRunner (SessionClient required)
-  // TC-036: local → ClaudeCodeRunner (no SessionClient)
   let runner: AgentRunner;
   if (deps.config.runtime === "local") {
     runner = createClaudeCodeRunner({ cwd: deps.cwd });
@@ -72,7 +59,7 @@ export async function runPipeline(
     ["pr-create",    PrCreateStep],
   ]);
 
-  const pipeline = new Pipeline({
+  return new Pipeline({
     steps,
     transitions: STANDARD_TRANSITIONS,
     maxIterations,
@@ -81,7 +68,30 @@ export async function runPipeline(
     loopName: "spec-review",
     loopNames: ["spec-review", "verification", "code-review"],
   });
+}
 
+/**
+ * Run the full pipeline: propose → spec-review loop (with spec-fixer on needs-fix).
+ *
+ * This is a thin wrapper that constructs the Pipeline class with the standard
+ * transition table and calls pipeline.run(). The function signature is preserved
+ * bit-for-bit so existing callers (CLI) work unchanged.
+ *
+ * Behavior invariants maintained:
+ * - stdout `[iter N/M]` format is bit-for-bit unchanged
+ * - Error codes: SESSION_TERMINATED, BRANCH_NOT_REGISTERED,
+ *   SPEC_REVIEW_RETRIES_EXHAUSTED, CONFIG_INCOMPLETE
+ */
+export async function runPipeline(
+  jobState: JobState,
+  deps: PipelineDeps,
+  events?: EventBus,
+): Promise<JobState> {
+  const bus = events ?? new EventBus();
+  // Design D8: composition root branches on config.runtime.
+  // TC-035: managed → ManagedAgentRunner (SessionClient required)
+  // TC-036: local → ClaudeCodeRunner (no SessionClient)
+  const pipeline = createStandardPipeline(deps, bus);
   return pipeline.run("propose", jobState, deps);
 }
 

@@ -11,6 +11,7 @@ import { runPs } from "../src/cli/ps.js";
 import { runDoctor } from "../src/cli/doctor.js";
 import { runFinish } from "../src/cli/finish.js";
 import { runRm } from "../src/cli/rm.js";
+import { runResume } from "../src/cli/resume.js";
 
 const USAGE = `Usage: specrunner <command> [options]
 
@@ -22,6 +23,7 @@ Commands:
   doctor                 Diagnose environment / config / auth prerequisites
   finish [<slug>]        Squash-merge feature PR and archive (1-PR model)
   rm <jobId>             Remove a job (state file + cloud session)
+  resume <slug>          Resume a halted (awaiting-resume) job
 
 Options:
   --help, -h    Show this help message
@@ -44,6 +46,12 @@ Rm Options:
   --force           Remove job regardless of status (bypass status gate)
   --all-terminated  Remove all failed/terminated/archived jobs
   --yes             Skip confirmation prompt (for --all-terminated)
+
+Resume Options:
+  <slug>            Slug of the job to resume (required)
+  --from=<role>     Override resume step: critic | fixer | creator
+  --force           Resume even if consecutive escalations detected or status is not awaiting-resume
+  --verbose         Enable verbose output
 `;
 
 export { USAGE };
@@ -205,6 +213,61 @@ export async function main(): Promise<void> {
 
       try {
         process.exit(await runRm({ jobId, force, allTerminated, yes }));
+      } catch (err: unknown) {
+        process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);
+        process.exit(1);
+      }
+      break;
+    }
+
+    case "resume": {
+      const resumeArgs = args.slice(1);
+
+      // First non-flag argument is the slug
+      const resumeSlug = resumeArgs.find((a) => !a.startsWith("--"));
+      if (!resumeSlug) {
+        process.stderr.write("Error: specrunner resume requires a <slug> argument.\n");
+        process.stderr.write(USAGE);
+        process.exit(2);
+      }
+
+      // Parse --from=<value> flag
+      const fromFlag = resumeArgs.find((a) => a.startsWith("--from="));
+      let fromValue: string | undefined;
+      if (fromFlag) {
+        fromValue = fromFlag.slice("--from=".length);
+        if (fromValue !== "critic" && fromValue !== "fixer" && fromValue !== "creator") {
+          process.stderr.write(
+            `Error: Invalid --from value: "${fromValue}". Valid values are: critic, fixer, creator.\n`,
+          );
+          process.exit(2);
+        }
+      }
+
+      const resumeForce = resumeArgs.includes("--force");
+      const resumeVerbose = resumeArgs.includes("--verbose");
+
+      // Detect unknown flags
+      const knownResumeFlags = new Set(["--force", "--verbose"]);
+      const unknownResumeFlags = resumeArgs.filter(
+        (a) =>
+          a.startsWith("--") &&
+          !knownResumeFlags.has(a) &&
+          !a.startsWith("--from="),
+      );
+      if (unknownResumeFlags.length > 0) {
+        process.stderr.write(`Unknown flag(s): ${unknownResumeFlags.join(", ")}\n\n`);
+        process.stderr.write(USAGE);
+        process.exit(2);
+      }
+
+      try {
+        await runResume(resumeSlug, {
+          from: fromValue,
+          force: resumeForce,
+          verbose: resumeVerbose,
+          cwd: process.cwd(),
+        });
       } catch (err: unknown) {
         process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);
         process.exit(1);

@@ -105,7 +105,7 @@ function outputPipelineThrowError(err: unknown, branch: string | null | undefine
  * onFailure is called before any failure return for cleanup (local runtime only).
  * On success (awaiting-merge), onFailure is NOT called — finish handles worktree cleanup.
  */
-async function handlePostPipelineState(
+export async function handlePostPipelineState(
   finalState: JobState,
   slug: string,
   onFailure?: () => Promise<void>,
