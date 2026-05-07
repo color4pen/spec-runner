@@ -227,6 +227,11 @@ describe("TC-015: ManagedAgentRunner.run() is equivalent to existing lifecycle",
 describe("TC-016: register_branch tool removed (D4)", () => {
   it("register-branch.ts does NOT exist in adapter/managed-agent/tools/", async () => {
     const toolsDir = path.resolve(__dirname, "../../../../src/adapter/managed-agent/tools");
+    try {
+      await fs.access(toolsDir);
+    } catch {
+      return; // directory doesn't exist → register-branch.ts can't exist
+    }
     const files = await fs.readdir(toolsDir);
     const hasBranchTool = files.some((f) => f.includes("register-branch"));
     expect(hasBranchTool).toBe(false);

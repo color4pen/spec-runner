@@ -184,9 +184,15 @@ describe("TC-011: register_branch tool removed (D4); ProposeStep toolHandlers un
 describe("TC-012: register-branch.ts is fully removed (D4)", () => {
   it("register-branch.ts does not exist in managed-agent adapter tools dir", async () => {
     const toolsDir = new URL("../../../src/adapter/managed-agent/tools", import.meta.url);
-    const { readdir } = await import("node:fs/promises");
+    const { readdir, access } = await import("node:fs/promises");
     const { fileURLToPath } = await import("node:url");
-    const files = await readdir(fileURLToPath(toolsDir));
+    const dirPath = fileURLToPath(toolsDir);
+    try {
+      await access(dirPath);
+    } catch {
+      return; // directory doesn't exist → register-branch.ts can't exist
+    }
+    const files = await readdir(dirPath);
     expect(files.some((f) => f.includes("register-branch"))).toBe(false);
   });
 });
