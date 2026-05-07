@@ -1,9 +1,10 @@
 import * as path from "node:path";
+import * as fs from "node:fs/promises";
 import { createAnthropicClient } from "../sdk/client.js";
 import { createAnthropicSessionClient } from "../adapter/managed-agent/session-client.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { runPreflight } from "../core/preflight.js";
-import { createJobState } from "../state/store.js";
+import { createJobState, updateJobState } from "../state/store.js";
 import { runPipeline } from "../core/pipeline/index.js";
 import { logInfo, logError, setVerbose } from "../logger/stdout.js";
 import { SpecRunnerError } from "../errors.js";
@@ -11,6 +12,7 @@ import type { JobState } from "../state/schema.js";
 import { getLatestStepResult } from "../state/helpers.js";
 import { EventBus } from "../core/event/event-bus.js";
 import { ProgressDisplay } from "./progress.js";
+import { createWorktreeManager } from "../core/worktree/manager.js";
 
 /**
  * Parse spec-review findings summary from spec-review-result.md content.
@@ -76,6 +78,59 @@ function outputSpecReviewVerdict(finalState: JobState, slug: string): void {
       process.stdout.write(`Findings at: ${specReviewResult.findingsPath}\n`);
     }
   }
+}
+
+/**
+ * Output error from a thrown pipeline exception to stderr.
+ */
+function outputPipelineThrowError(err: unknown, branch: string | null | undefined): void {
+  if (err instanceof SpecRunnerError) {
+    if (err.code === "SPEC_REVIEW_RESULT_NOT_FOUND") {
+      process.stderr.write(
+        `Error: Spec-review result file not found on branch '${branch ?? "unknown"}'.\n`,
+      );
+      if (err.hint) process.stderr.write(`Hint: ${err.hint}\n`);
+    } else {
+      process.stderr.write(`Error: ${err.message}\n`);
+      if (err.hint) process.stderr.write(`Hint: ${err.hint}\n`);
+    }
+  } else {
+    process.stderr.write(`Error: ${(err as Error).message}\n`);
+  }
+}
+
+/**
+ * Handle post-pipeline state: check soft-errors, output verdict, compute exit code.
+ * onFailure is called before any failure return for cleanup (local runtime only).
+ * On success (awaiting-merge), onFailure is NOT called — finish handles worktree cleanup.
+ */
+async function handlePostPipelineState(
+  finalState: JobState,
+  slug: string,
+  onFailure?: () => Promise<void>,
+): Promise<number> {
+  if (finalState.error?.code === "SPEC_REVIEW_RESULT_NOT_FOUND") {
+    await onFailure?.();
+    const branch = finalState.branch ?? "unknown";
+    process.stderr.write(
+      `Error: Spec-review result file not found on branch '${branch}'.\n`,
+    );
+    if (finalState.error.hint) {
+      process.stderr.write(`Hint: ${finalState.error.hint}\n`);
+    }
+    return 1;
+  }
+
+  outputSpecReviewVerdict(finalState, slug);
+
+  if (finalState.status === "awaiting-merge") {
+    logInfo(`Pipeline completed; awaiting merge. Branch: ${finalState.branch}`);
+    return 0;
+  }
+
+  await onFailure?.();
+  logError(`Pipeline failed: ${finalState.error?.message ?? "unknown error"}`);
+  return 1;
 }
 
 /**
@@ -151,7 +206,90 @@ export async function runRunCore(
   const events = new EventBus();
   new ProgressDisplay(events, { verbose: options.verbose ?? false, slug });
 
-  // Run pipeline
+  // Phase 2 (Design D3): local runtime gets a persistent worktree for isolation.
+  // main cwd is never modified; pipeline runs entirely inside the worktree.
+  let worktreePath: string | null = null;
+  let pipelineCwd = cwd;
+
+  if (config.runtime === "local") {
+    const manager = createWorktreeManager();
+    try {
+      worktreePath = await manager.create(cwd, slug, jobState.jobId);
+    } catch (err) {
+      process.stderr.write(`Error: Failed to create worktree: ${(err as Error).message}\n`);
+      process.stderr.write(`Hint: Ensure git is available and the repo has no uncommitted changes blocking worktree creation.\n`);
+      return 1;
+    }
+
+    // Record worktreePath in state before pipeline runs (enables crash recovery)
+    await updateJobState(jobState.jobId, (s) => ({ ...s, worktreePath }));
+
+    // Copy request.md into the worktree so the agent can read it
+    const relativeRequestPath = path.relative(cwd, absolutePath);
+    const worktreeRequestPath = path.join(worktreePath, relativeRequestPath);
+    await fs.mkdir(path.dirname(worktreeRequestPath), { recursive: true });
+    await fs.cp(absolutePath, worktreeRequestPath);
+
+    // Use worktree as cwd for the pipeline
+    pipelineCwd = worktreePath;
+
+    // Best-effort cleanup for all failure paths (Design D3: remove on failure).
+    // On success the worktree is left for finish to operate in — finish cleans it up.
+    const cleanupWorktreeOnFailure = async (): Promise<void> => {
+      try {
+        await manager.remove(worktreePath!, cwd);
+        await manager.prune(cwd);
+        await updateJobState(jobState.jobId, (s) => ({ ...s, worktreePath: null }));
+      } catch {
+        // Best-effort; state file (layer 2) + prune (layer 3) handle residuals
+      }
+    };
+
+    // 3-layer cleanup: signal handler (layer 1)
+    const signalCleanup = async (): Promise<void> => {
+      try {
+        await manager.remove(worktreePath!, cwd);
+        await manager.prune(cwd);
+      } catch {
+        // Best-effort cleanup; state file (layer 2) + prune (layer 3) will handle residuals
+      }
+      process.exit(130); // 128 + SIGINT(2)
+    };
+    process.on("SIGINT", signalCleanup);
+    process.on("SIGTERM", signalCleanup);
+
+    // Run pipeline inside worktree
+    let finalState: JobState;
+    try {
+      finalState = await runPipeline(
+        jobState,
+        {
+          client,
+          config,
+          repo,
+          request,
+          slug,
+          githubClient,
+          cwd: pipelineCwd,
+        },
+        events,
+      );
+    } catch (err) {
+      await cleanupWorktreeOnFailure();
+      process.off("SIGINT", signalCleanup);
+      process.off("SIGTERM", signalCleanup);
+      outputPipelineThrowError(err, jobState.branch);
+      return 1;
+    }
+
+    // Deregister signal handlers — pipeline completed (success or soft-error)
+    process.off("SIGINT", signalCleanup);
+    process.off("SIGTERM", signalCleanup);
+
+    return handlePostPipelineState(finalState, slug, cleanupWorktreeOnFailure);
+  }
+
+  // managed runtime path (no worktree)
   let finalState: JobState;
   try {
     finalState = await runPipeline(
@@ -163,50 +301,16 @@ export async function runRunCore(
         request,
         slug,
         githubClient,
-        cwd,
+        cwd: pipelineCwd,
       },
       events,
     );
   } catch (err) {
-    if (err instanceof SpecRunnerError) {
-      if (err.code === "SPEC_REVIEW_RESULT_NOT_FOUND") {
-        const branch = jobState.branch ?? "unknown";
-        process.stderr.write(
-          `Error: Spec-review result file not found on branch '${branch}'.\n`,
-        );
-        if (err.hint) process.stderr.write(`Hint: ${err.hint}\n`);
-        return 1;
-      }
-      process.stderr.write(`Error: ${err.message}\n`);
-      if (err.hint) process.stderr.write(`Hint: ${err.hint}\n`);
-    } else {
-      process.stderr.write(`Error: ${(err as Error).message}\n`);
-    }
+    outputPipelineThrowError(err, jobState.branch);
     return 1;
   }
 
-  // Check for SPEC_REVIEW_RESULT_NOT_FOUND in returned state
-  if (finalState.error?.code === "SPEC_REVIEW_RESULT_NOT_FOUND") {
-    const branch = finalState.branch ?? "unknown";
-    process.stderr.write(
-      `Error: Spec-review result file not found on branch '${branch}'.\n`,
-    );
-    if (finalState.error.hint) {
-      process.stderr.write(`Hint: ${finalState.error.hint}\n`);
-    }
-    return 1;
-  }
-
-  // Output spec-review verdict
-  outputSpecReviewVerdict(finalState, slug);
-
-  if (finalState.status === "awaiting-merge") {
-    logInfo(`Pipeline completed; awaiting merge. Branch: ${finalState.branch}`);
-    return 0;
-  } else {
-    logError(`Pipeline failed: ${finalState.error?.message ?? "unknown error"}`);
-    return 1;
-  }
+  return handlePostPipelineState(finalState, slug);
 }
 
 /**

@@ -9,6 +9,9 @@
  * TC-124: markJobArchived called AFTER git pull --ff-only
  * TC-125: Phase 1 escalation → markJobArchived NOT called
  * TC-126: state.status=archived → "Already archived" no-op
+ * TC-WT-FIN-001: worktreePath set → Phase 1 no checkout, Phase 4 worktree remove
+ * TC-WT-FIN-002: worktreePath=null → existing checkout flow (managed mode)
+ * TC-WT-FIN-003: Phase 4 worktree remove is called
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as nodefs from "node:fs/promises";
@@ -45,12 +48,14 @@ async function makeJobWithPr(
     status?: "awaiting-merge" | "running" | "archived" | "failed";
     requestPath?: string;
     slug?: string | null;
+    worktreePath?: string | null;
   } = {},
 ) {
   const {
     status = "awaiting-merge",
     requestPath = "specrunner/requests/active/test-slug/request.md",
     slug = "test-slug",
+    worktreePath = undefined,
   } = opts;
 
   const state = await createJobState({
@@ -64,6 +69,9 @@ async function makeJobWithPr(
   raw.status = status;
   raw.pullRequest = { url: "https://github.com/user/repo/pull/42", number: 42, createdAt: "2026-01-01" };
   raw.branch = "feat/test-slug";
+  if (worktreePath !== undefined) {
+    raw.worktreePath = worktreePath;
+  }
   await nodefs.writeFile(statePath, JSON.stringify(raw, null, 2));
 
   return { jobId: state.jobId, slug: slug ?? "test-slug" };
@@ -431,5 +439,128 @@ describe("TC-108: --dry-run → no destructive subprocess spawns", () => {
       DESTRUCTIVE.some((fn) => fn(cmd, args)),
     );
     expect(destructiveCalls).toHaveLength(0);
+  });
+});
+
+// TC-WT-FIN-001: worktreePath set → Phase 1 no checkout, Phase 4 calls worktree remove
+describe("TC-WT-FIN-001: worktreePath set → local runtime finish path", () => {
+  it("skips checkout in Phase 1, calls worktree remove in Phase 4", async () => {
+    const worktreePath = path.join(tempDir, ".git", "specrunner-worktrees", "test-slug-abcdef12");
+    const { jobId } = await makeJobWithPr({ worktreePath });
+
+    const removeCalls: string[] = [];
+    const pruneCalls: string[] = [];
+    const mockManager = {
+      create: vi.fn(),
+      remove: vi.fn().mockImplementation((p: string) => { removeCalls.push(p); return Promise.resolve(); }),
+      prune: vi.fn().mockImplementation((p: string) => { pruneCalls.push(p); return Promise.resolve(); }),
+    };
+
+    const calls: Array<[string, string[]]> = [];
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      calls.push([cmd, [...args]]);
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    const stubFs = makeStubFs({ changeFolderExists: false });
+
+    const messages: string[] = [];
+    const result = await runFinishOrchestrator(
+      {
+        slug: "test-slug",
+        flags: {},
+        cwd: tempDir,
+        spawn,
+        fs: stubFs,
+        worktreeManagerFn: () => mockManager,
+      },
+      (m) => messages.push(m),
+    );
+
+    expect(result.exitCode).toBe(0);
+
+    // Phase 1: no git checkout -B (worktree path used instead)
+    const checkoutBCalls = calls.filter(([c, a]) => c === "git" && a[0] === "checkout" && a[1] === "-B");
+    expect(checkoutBCalls).toHaveLength(0);
+
+    // Phase 1: no git fetch (for feature branch checkout — managed mode only)
+    // Note: git fetch may be called for other reasons, but not for feature branch checkout
+    const fetchCalls = calls.filter(([c, a]) => c === "git" && a[0] === "fetch" && a.includes("feat/test-slug"));
+    expect(fetchCalls).toHaveLength(0);
+
+    // Phase 4: worktree remove was called with the correct path
+    expect(removeCalls).toContain(worktreePath);
+    expect(pruneCalls).toContain(tempDir);
+
+    // Phase 4: no git checkout main / git pull (main cwd is already clean)
+    const pullCalls = calls.filter(([c, a]) => c === "git" && a[0] === "pull");
+    expect(pullCalls).toHaveLength(0);
+  });
+});
+
+// TC-WT-FIN-002: worktreePath=null → managed mode, existing checkout flow
+describe("TC-WT-FIN-002: worktreePath=null → managed mode checkout flow", () => {
+  it("uses checkoutFeatureBranch in Phase 1 and git pull in Phase 4", async () => {
+    const { jobId } = await makeJobWithPr({ worktreePath: null });
+
+    const calls: Array<[string, string[]]> = [];
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      calls.push([cmd, [...args]]);
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    const stubFs = makeStubFs({ changeFolderExists: false });
+
+    const result = await runFinishOrchestrator(
+      { slug: "test-slug", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+    );
+
+    expect(result.exitCode).toBe(0);
+
+    // Phase 1: git fetch called for feature branch checkout
+    const fetchCalls = calls.filter(([c, a]) => c === "git" && a[0] === "fetch");
+    expect(fetchCalls.length).toBeGreaterThan(0);
+
+    // Phase 4: git pull --ff-only called (since rev-parse returns "main")
+    const pullCalls = calls.filter(([c, a]) => c === "git" && a[0] === "pull");
+    expect(pullCalls.length).toBeGreaterThan(0);
+  });
+});
+
+// TC-WT-FIN-003: Phase 4 worktree remove is called before markJobArchived
+describe("TC-WT-FIN-003: Phase 4 worktree remove is called", () => {
+  it("worktree is removed and state.worktreePath set to null after finish", async () => {
+    const worktreePath = path.join(tempDir, ".git", "specrunner-worktrees", "test-slug-abcdef12");
+    const { jobId } = await makeJobWithPr({ worktreePath });
+
+    const removeOrder: string[] = [];
+    const mockManager = {
+      create: vi.fn(),
+      remove: vi.fn().mockImplementation(async (p: string) => { removeOrder.push(`remove:${p}`); }),
+      prune: vi.fn().mockImplementation(async (p: string) => { removeOrder.push(`prune:${p}`); }),
+    };
+
+    const spawn = makeHappyPathSpawn("OPEN");
+    const stubFs = makeStubFs({ changeFolderExists: false });
+
+    const result = await runFinishOrchestrator({
+      slug: "test-slug",
+      flags: {},
+      cwd: tempDir,
+      spawn,
+      fs: stubFs,
+      worktreeManagerFn: () => mockManager,
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    // Verify worktree was removed
+    expect(removeOrder.some((e) => e.startsWith("remove:"))).toBe(true);
+
+    // Verify state has worktreePath=null after finish
+    const { loadJobState } = await import("../src/state/store.js");
+    const finalState = await loadJobState(jobId);
+    expect(finalState.status).toBe("archived");
+    expect(finalState.worktreePath).toBeNull();
   });
 });

@@ -414,3 +414,98 @@ describe("TC-CHECKOUT-4: validate success → restore fail → warning only, ok:
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// worktreePath path — Check 5+6 runs in worktree, no checkout needed
+// ---------------------------------------------------------------------------
+
+const WORKTREE_TARGET: ResolvedTarget = {
+  ...BASE_TARGET,
+  worktreePath: "/repo/.git/specrunner-worktrees/test-slug-abcdef12",
+};
+
+/**
+ * TC-WT-PRE-001: worktreePath set → no git checkout/restore, validate uses worktreePath as cwd
+ */
+describe("TC-WT-PRE-001: worktreePath set → no checkout, validate uses worktree cwd", () => {
+  it("skips branch checkout and runs openspec validate in worktreePath", async () => {
+    const spawnCalls: Array<{ cmd: string; args: string[]; cwd: string }> = [];
+
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[], opts: { cwd: string }) => {
+      spawnCalls.push({ cmd, args: [...args], cwd: opts.cwd });
+      if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/x", stderr: "" });
+      if (cmd === "gh" && args[0] === "pr") {
+        return Promise.resolve({
+          exitCode: 0,
+          stdout: JSON.stringify({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug" }),
+          stderr: "",
+        });
+      }
+      if (cmd === "openspec" && args[0] === "validate") {
+        return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
+      }
+      if (cmd === "git" && args[0] === "rev-list") {
+        return Promise.resolve({ exitCode: 0, stdout: "0\n", stderr: "" });
+      }
+      return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
+    });
+
+    const result = await runPreflight({
+      target: WORKTREE_TARGET,
+      cwd: "/main-cwd",
+      spawn,
+      fs: makeFs(true),
+      dryRun: false,
+    });
+
+    expect(result.ok).toBe(true);
+
+    // No git checkout (no branch switching)
+    const checkoutCalls = spawnCalls.filter((c) => c.cmd === "git" && c.args[0] === "checkout");
+    expect(checkoutCalls).toHaveLength(0);
+
+    // No git rev-parse (branch name lookup not needed)
+    const revParseCalls = spawnCalls.filter((c) => c.cmd === "git" && c.args[0] === "rev-parse");
+    expect(revParseCalls).toHaveLength(0);
+
+    // openspec validate called in worktreePath
+    const validateCalls = spawnCalls.filter((c) => c.cmd === "openspec" && c.args[0] === "validate");
+    expect(validateCalls.length).toBeGreaterThan(0);
+    expect(validateCalls[0]?.cwd).toBe(WORKTREE_TARGET.worktreePath);
+  });
+});
+
+/**
+ * TC-WT-PRE-002: worktreePath set + validate fails → escalation (no restore needed)
+ */
+describe("TC-WT-PRE-002: worktreePath set + validate fails → escalation", () => {
+  it("returns escalation when openspec validate fails in worktree path", async () => {
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/x", stderr: "" });
+      if (cmd === "gh" && args[0] === "pr") {
+        return Promise.resolve({
+          exitCode: 0,
+          stdout: JSON.stringify({ state: "OPEN", mergeStateStatus: "CLEAN" }),
+          stderr: "",
+        });
+      }
+      if (cmd === "openspec" && args[0] === "validate") {
+        return Promise.resolve({ exitCode: 1, stdout: "", stderr: "validation error" });
+      }
+      return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
+    });
+
+    const result = await runPreflight({
+      target: WORKTREE_TARGET,
+      cwd: "/main-cwd",
+      spawn,
+      fs: makeFs(true),
+      dryRun: false,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.escalation).toContain("check 6");
+    }
+  });
+});

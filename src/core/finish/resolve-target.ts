@@ -256,6 +256,7 @@ function buildResolvedTarget(
       prUrl,
       branch,
       slug,
+      worktreePath: state.worktreePath ?? null,
     },
   };
 }

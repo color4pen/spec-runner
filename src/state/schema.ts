@@ -142,6 +142,12 @@ export interface JobState {
   steps?: Record<string, StepRun[]>;
   /** PR info recorded after pr-create step succeeds. Optional for backward compat with legacy state files. */
   pullRequest?: PullRequestInfo;
+  /**
+   * Path to the persistent git worktree created for this job (local runtime only).
+   * Set at job start; cleared to null on finish.
+   * Optional for backward compat — absent in legacy state files → treated as undefined.
+   */
+  worktreePath?: string | null;
 }
 
 export const MAX_HISTORY_SIZE = 100;
@@ -277,6 +283,9 @@ export function validateJobState(raw: unknown): JobState {
 
   // Backward compat: fill missing steps field with empty object, and normalize legacy object-form steps
   obj["steps"] = normalizeSteps(obj["steps"]);
+
+  // Backward compat: worktreePath absent in legacy state files → treated as undefined (not an error)
+  // No validation needed: the field is optional and null/string/undefined are all valid values.
 
   // Backward compat: on-read remap; mutates the parsed object so subsequent persists do not write SESSION_TIMEOUT.
   // Design D2: old state files with error.code === "SESSION_TIMEOUT" are remapped on read.

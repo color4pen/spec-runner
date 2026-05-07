@@ -18,15 +18,16 @@
  */
 import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs, FinishFlags } from "./types.js";
-import { loadJobState } from "../../state/store.js";
+import { loadJobState, updateJobState } from "../../state/store.js";
 import { resolveTarget } from "./resolve-target.js";
-import { runPreflight } from "./preflight.js";
+import { runPreflight, fetchPrViewWithRetryForTest as fetchPrViewWithRetry } from "./preflight.js";
 import { archiveOpenspec } from "./archive-openspec.js";
 import { moveRequestsDir } from "./move-requests-dir.js";
 import { assertJobFinishable, markJobArchived } from "./job-state-update.js";
 import { isFullyFinished } from "./idempotency.js";
 import { formatEscalation } from "./escalation.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
+import { createWorktreeManager } from "../worktree/manager.js";
 
 export interface FinishInput {
   /** Positional slug argument. */
@@ -39,6 +40,10 @@ export interface FinishInput {
   cwd: string;
   spawn: SpawnFn;
   fs: FinishFs;
+  /** Injectable sleep for testing (defaults to real setTimeout-based sleep). */
+  sleepFn?: (ms: number) => Promise<void>;
+  /** Injectable WorktreeManager for testing (defaults to createWorktreeManager()). */
+  worktreeManagerFn?: () => import("../worktree/manager.js").WorktreeManager;
 }
 
 export type FinishResult =
@@ -54,7 +59,7 @@ export async function runFinishOrchestrator(
   input: FinishInput,
   stdoutWrite: (msg: string) => void = (m) => process.stdout.write(m + "\n"),
 ): Promise<FinishResult> {
-  const { slug, prNumber, jobId, flags, cwd, spawn, fs } = input;
+  const { slug, prNumber, jobId, flags, cwd, spawn, fs, sleepFn, worktreeManagerFn } = input;
 
   // Step 1: Resolve target job
   const resolveResult = await resolveTarget(
@@ -108,6 +113,7 @@ export async function runFinishOrchestrator(
     spawn,
     fs,
     dryRun: flags.dryRun ?? false,
+    sleepFn,
   });
 
   if (!preflightResult.ok) {
@@ -125,20 +131,29 @@ export async function runFinishOrchestrator(
   // Resume path: feature PR already merged
   const prAlreadyMerged = prViewData.state === "MERGED";
 
+  // Design D6: Phase 1 operations run in worktree (if available) or main cwd (after checkout).
+  // operationCwd is the directory where archive / git mv / commit / push run.
+  const operationCwd = target.worktreePath ?? null;
+
   if (!prAlreadyMerged) {
     // Phase 1: archive on feature branch
     stdoutWrite(`Phase 1: archive on feature branch ${target.branch}...`);
 
-    // Checkout feature branch (fetch + checkout -B to origin)
-    const checkoutResult = await checkoutFeatureBranch({ branch: target.branch, cwd, spawn, slug: target.slug });
-    if (!checkoutResult.ok) {
-      return { exitCode: 1, escalation: checkoutResult.escalation };
+    // If no worktree path, checkout feature branch in main cwd (managed mode / crash recovery)
+    if (!operationCwd) {
+      const checkoutResult = await checkoutFeatureBranch({ branch: target.branch, cwd, spawn, slug: target.slug });
+      if (!checkoutResult.ok) {
+        return { exitCode: 1, escalation: checkoutResult.escalation };
+      }
     }
+
+    // Determine the directory to use for archive / git mv / push
+    const archiveCwd = operationCwd ?? cwd;
 
     // openspec archive
     const openspecResult = await archiveOpenspec({
       slug: target.slug,
-      cwd,
+      cwd: archiveCwd,
       spawn,
       fs,
     });
@@ -152,7 +167,7 @@ export async function runFinishOrchestrator(
     // git mv active → merged + commit
     const moveResult = await moveRequestsDir({
       slug: target.slug,
-      cwd,
+      cwd: archiveCwd,
       spawn,
       fs,
     });
@@ -165,7 +180,7 @@ export async function runFinishOrchestrator(
 
     // Phase 2: git push origin <feature-branch>
     stdoutWrite(`Phase 2: git push origin ${target.branch}...`);
-    const pushResult = await pushFeatureBranch({ branch: target.branch, cwd, spawn, slug: target.slug });
+    const pushResult = await pushFeatureBranch({ branch: target.branch, cwd: archiveCwd, spawn, slug: target.slug });
     if (!pushResult.ok) {
       return { exitCode: 1, escalation: pushResult.escalation };
     }
@@ -173,11 +188,25 @@ export async function runFinishOrchestrator(
       stdoutWrite(`Pushed ${target.branch} to origin.`);
     }
 
+    // Phase 2 post-push: wait for mergeStateStatus=CLEAN (Design D6)
+    // After a push, GitHub may briefly set mergeStateStatus=UNKNOWN while recalculating.
+    // Poll up to 3 times to avoid premature BLOCKED detection in Phase 3.
+    const postPushPrView = await fetchPrViewWithRetry({
+      prNumber: target.prNumber,
+      cwd,
+      spawn,
+      slug: target.slug,
+      sleepFn,
+    });
+    const mergeStateAfterPush = postPushPrView.ok
+      ? (postPushPrView.data.mergeStateStatus ?? prViewData.mergeStateStatus ?? "")
+      : (prViewData.mergeStateStatus ?? "");
+
     // Phase 3: gh pr merge --squash --delete-branch
     stdoutWrite(`Phase 3: merging PR #${target.prNumber}...`);
     const mergeResult = await mergeFeaturePrPhase3({
       prNumber: target.prNumber,
-      mergeStateStatus: prViewData.mergeStateStatus ?? "",
+      mergeStateStatus: mergeStateAfterPush,
       force: flags.force ?? false,
       cwd,
       spawn,
@@ -191,56 +220,68 @@ export async function runFinishOrchestrator(
     stdoutWrite(`PR #${target.prNumber} already merged. Skipping Phase 1-3.`);
   }
 
-  // Phase 4: markJobArchived + git checkout main + git pull --ff-only
+  // Phase 4: worktree cleanup (local runtime) + markJobArchived + git checkout/pull (managed only)
   stdoutWrite("Phase 4: finalizing...");
 
-  // Worktree-aware: detect current branch before attempting checkout.
-  // If the cwd is a linked worktree (HEAD != main), git checkout main would
-  // fail with "fatal: 'main' is already checked out at ...". Skip checkout+pull
-  // in that case and emit a warning instead.
-  const headResult = await spawn("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd });
-  const currentBranch = headResult.exitCode === 0 ? headResult.stdout.trim() : "";
-  const isOnMain = currentBranch === "main";
-
-  if (isOnMain) {
-    // git checkout main
-    const checkoutMainResult = await spawn("git", ["checkout", "main"], { cwd });
-    if (checkoutMainResult.exitCode !== 0) {
-      return {
-        exitCode: 1,
-        escalation: formatEscalation({
-          failedStep: "Phase 4 (git checkout main)",
-          detectedState: `git checkout main failed (exit ${checkoutMainResult.exitCode})`,
-          recommendedAction: `Check git error: ${checkoutMainResult.stderr.trim()}. Then re-run: specrunner finish ${target.slug}`,
-          resumeCommand: `specrunner finish ${target.slug}`,
-        }),
-      };
+  if (operationCwd) {
+    // Local runtime: remove the job worktree and update state
+    const manager = worktreeManagerFn ? worktreeManagerFn() : createWorktreeManager();
+    try {
+      await manager.remove(operationCwd, cwd);
+      await manager.prune(cwd);
+    } catch {
+      // Best-effort: don't fail finish if worktree cleanup fails
+      process.stderr.write(`Warning: failed to remove worktree at ${operationCwd}. Run 'git worktree prune' manually.\n`);
     }
-
-    // git pull --ff-only
-    const pullResult = await spawn("git", ["pull", "--ff-only"], { cwd });
-    if (pullResult.exitCode !== 0) {
-      return {
-        exitCode: 1,
-        escalation: formatEscalation({
-          failedStep: "Phase 4 (git pull --ff-only)",
-          detectedState: `git pull --ff-only failed (exit ${pullResult.exitCode})`,
-          recommendedAction: `Check git error: ${pullResult.stderr.trim()}. Then re-run: specrunner finish ${target.slug}`,
-          resumeCommand: `specrunner finish ${target.slug}`,
-        }),
-      };
-    }
+    // Clear worktreePath in state
+    await updateJobState(target.jobId, (s) => ({ ...s, worktreePath: null }));
+    // main cwd is clean — no checkout/pull needed
   } else {
-    // Running from a linked worktree — skip checkout/pull to avoid the
-    // "already checked out" error. The main worktree holds the main branch.
-    stdoutWrite(
-      `Warning: cwd is on branch '${currentBranch}' (linked worktree). ` +
-      `Skipping 'git checkout main' and 'git pull --ff-only'. ` +
-      `Run these manually in the main worktree if needed.`,
-    );
+    // Managed mode / no worktree: checkout main + pull
+    const headResult = await spawn("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd });
+    const currentBranch = headResult.exitCode === 0 ? headResult.stdout.trim() : "";
+    const isOnMain = currentBranch === "main";
+
+    if (isOnMain) {
+      // git checkout main
+      const checkoutMainResult = await spawn("git", ["checkout", "main"], { cwd });
+      if (checkoutMainResult.exitCode !== 0) {
+        return {
+          exitCode: 1,
+          escalation: formatEscalation({
+            failedStep: "Phase 4 (git checkout main)",
+            detectedState: `git checkout main failed (exit ${checkoutMainResult.exitCode})`,
+            recommendedAction: `Check git error: ${checkoutMainResult.stderr.trim()}. Then re-run: specrunner finish ${target.slug}`,
+            resumeCommand: `specrunner finish ${target.slug}`,
+          }),
+        };
+      }
+
+      // git pull --ff-only
+      const pullResult = await spawn("git", ["pull", "--ff-only"], { cwd });
+      if (pullResult.exitCode !== 0) {
+        return {
+          exitCode: 1,
+          escalation: formatEscalation({
+            failedStep: "Phase 4 (git pull --ff-only)",
+            detectedState: `git pull --ff-only failed (exit ${pullResult.exitCode})`,
+            recommendedAction: `Check git error: ${pullResult.stderr.trim()}. Then re-run: specrunner finish ${target.slug}`,
+            resumeCommand: `specrunner finish ${target.slug}`,
+          }),
+        };
+      }
+    } else {
+      // Running from a linked worktree — skip checkout/pull to avoid the
+      // "already checked out" error. The main worktree holds the main branch.
+      stdoutWrite(
+        `Warning: cwd is on branch '${currentBranch}' (linked worktree). ` +
+        `Skipping 'git checkout main' and 'git pull --ff-only'. ` +
+        `Run these manually in the main worktree if needed.`,
+      );
+    }
   }
 
-  // markJobArchived AFTER git pull --ff-only (or after worktree skip)
+  // markJobArchived AFTER Phase 4 operations
   await markJobArchived(target.jobId);
   stdoutWrite(`Job ${target.jobId} marked as archived.`);
 

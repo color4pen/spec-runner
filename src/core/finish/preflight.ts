@@ -100,65 +100,61 @@ export async function runPreflight(input: PreflightInput): Promise<PreflightResu
 
   const prViewData = prViewResult.data;
 
-  // T3: Guard against empty target.branch
-  if (!target.branch) {
-    return {
-      ok: false,
-      escalation: formatEscalation({
-        failedStep: "Phase 0 (branch checkout for validation)",
-        detectedState: "target.branch is empty",
-        recommendedAction:
-          "state.branch が未設定です。pipeline が正常に完走していない可能性があります。",
-        resumeCommand: `specrunner finish ${target.slug}`,
-      }),
-    };
-  }
+  // Design D6: Check 5+6 branch on worktreePath.
+  // If worktreePath is set, the worktree IS already on the feature branch — no checkout needed.
+  // If worktreePath is null (managed mode / crash recovery), use existing checkout flow.
 
-  // Checkout feature branch for validation (Check 5+6)
-  const checkoutResult = await checkoutForValidation({ branch: target.branch, cwd, spawn });
-  if (!checkoutResult.ok) {
-    return { ok: false, escalation: checkoutResult.escalation };
-  }
+  if (target.worktreePath) {
+    // Local runtime with worktree: run checks directly in the worktree
+    const validationResult = await runChecks5and6({
+      slug: target.slug,
+      checkCwd: target.worktreePath,
+      spawn,
+      fs,
+    });
+    if (!validationResult.ok) {
+      return { ok: false, escalation: validationResult.escalation };
+    }
+  } else {
+    // Managed mode / crash recovery: existing checkout flow
 
-  let validationError: PreflightResult | null = null;
-  try {
-    // Check 5: openspec/changes/<slug>/ existence (warning only)
-    const changeFolderPath = path.join(cwd, "openspec", "changes", target.slug);
-    const changeFolderExists = await fs.exists(changeFolderPath);
-    if (!changeFolderExists) {
-      process.stderr.write(
-        `Warning: openspec/changes/${target.slug}/ not found. Archive steps will be skipped.\n`,
-      );
+    // T3: Guard against empty target.branch
+    if (!target.branch) {
+      return {
+        ok: false,
+        escalation: formatEscalation({
+          failedStep: "Phase 0 (branch checkout for validation)",
+          detectedState: "target.branch is empty",
+          recommendedAction:
+            "state.branch が未設定です。pipeline が正常に完走していない可能性があります。",
+          resumeCommand: `specrunner finish ${target.slug}`,
+        }),
+      };
     }
 
-    // Check 6: openspec validate (only if change folder AND specs/ subdirectory exist)
-    // Delta-less changes (bug-fix etc.) have no specs/ — validate would fail with "no deltas found".
-    const specsFolderPath = path.join(changeFolderPath, "specs");
-    const specsFolderExists = changeFolderExists && await fs.exists(specsFolderPath);
-    if (specsFolderExists) {
-      const validateResult = await spawn(
-        "openspec",
-        ["validate", target.slug],
-        { cwd },
-      );
-      if (validateResult.exitCode !== 0) {
-        validationError = {
-          ok: false,
-          escalation: formatEscalation({
-            failedStep: "Phase 0 check 6 (openspec validate)",
-            detectedState: `openspec validate ${target.slug} failed (exit ${validateResult.exitCode})`,
-            recommendedAction: `Fix spec validation errors:\n${validateResult.stderr.trim()}\n  Then re-run: specrunner finish ${target.slug}`,
-            resumeCommand: `specrunner finish ${target.slug}`,
-          }),
-        };
+    const checkoutResult = await checkoutForValidation({ branch: target.branch, cwd, spawn });
+    if (!checkoutResult.ok) {
+      return { ok: false, escalation: checkoutResult.escalation };
+    }
+
+    let validationError: PreflightResult | null = null;
+    try {
+      const innerResult = await runChecks5and6({
+        slug: target.slug,
+        checkCwd: cwd,
+        spawn,
+        fs,
+      });
+      if (!innerResult.ok) {
+        validationError = { ok: false, escalation: innerResult.escalation };
       }
+    } finally {
+      await restoreBranch({ originalBranch: checkoutResult.originalBranch, cwd, spawn });
     }
-  } finally {
-    await restoreBranch({ originalBranch: checkoutResult.originalBranch, cwd, spawn });
-  }
 
-  if (validationError) {
-    return validationError;
+    if (validationError) {
+      return validationError;
+    }
   }
 
   // Check 8: unpushed commits on feature branch (warning only)
@@ -184,6 +180,55 @@ export async function runPreflight(input: PreflightInput): Promise<PreflightResu
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Check 5+6 helper (shared by worktree and checkout paths)
+// ---------------------------------------------------------------------------
+
+type Checks5and6Result = { ok: true } | { ok: false; escalation: string };
+
+/**
+ * Run Check 5 (openspec/changes existence) and Check 6 (openspec validate).
+ * checkCwd is either the job worktree path or the main cwd (after checkout).
+ */
+async function runChecks5and6(params: {
+  slug: string;
+  checkCwd: string;
+  spawn: SpawnFn;
+  fs: FinishFs;
+}): Promise<Checks5and6Result> {
+  const { slug, checkCwd, spawn, fs } = params;
+
+  // Check 5: openspec/changes/<slug>/ existence (warning only)
+  const changeFolderPath = path.join(checkCwd, "openspec", "changes", slug);
+  const changeFolderExists = await fs.exists(changeFolderPath);
+  if (!changeFolderExists) {
+    process.stderr.write(
+      `Warning: openspec/changes/${slug}/ not found. Archive steps will be skipped.\n`,
+    );
+  }
+
+  // Check 6: openspec validate (only if change folder AND specs/ subdirectory exist)
+  // Delta-less changes (bug-fix etc.) have no specs/ — validate would fail with "no deltas found".
+  const specsFolderPath = path.join(changeFolderPath, "specs");
+  const specsFolderExists = changeFolderExists && (await fs.exists(specsFolderPath));
+  if (specsFolderExists) {
+    const validateResult = await spawn("openspec", ["validate", slug], { cwd: checkCwd });
+    if (validateResult.exitCode !== 0) {
+      return {
+        ok: false,
+        escalation: formatEscalation({
+          failedStep: "Phase 0 check 6 (openspec validate)",
+          detectedState: `openspec validate ${slug} failed (exit ${validateResult.exitCode})`,
+          recommendedAction: `Fix spec validation errors:\n${validateResult.stderr.trim()}\n  Then re-run: specrunner finish ${slug}`,
+          resumeCommand: `specrunner finish ${slug}`,
+        }),
+      };
+    }
+  }
+
+  return { ok: true };
+}
 
 type BinaryCheckResult = { ok: true } | { ok: false; missing: string };
 

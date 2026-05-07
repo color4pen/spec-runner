@@ -12,6 +12,11 @@ export interface ResolvedTarget {
   prUrl: string;
   branch: string;
   slug: string;
+  /**
+   * Path to the persistent job worktree (local runtime only).
+   * null for managed mode or crash recovery without a worktree.
+   */
+  worktreePath?: string | null;
 }
 
 /**
