@@ -1348,3 +1348,38 @@ continuous-learning スキルが追記し、distill-learnings / promote-rule が
 - **責務移動後の dead code 掃除を忘れない**: ManagedAgentRunner から executor に責務を移動した後、移動元の `createSessionWithHistory` / `failStepWithError` が dead code として残存。refactoring では「移動元の export を grep して呼び出し元ゼロを確認」を実装完了チェックに含めるべき
 - **alias パターンは型の狭小化に有効**: `type StepDeps = StepContext` への alias 先変更で、全 Step メソッドが自動的に狭い型を受け取るようになった。TypeScript の type alias を活用すると、型の変更が波及する箇所を 1 行に集約できる
 - **adapter は通信のみ、state は orchestrator が管理**: ManagedAgentRunner が JobStateStore を操作していた設計は adapter の責務越境だった。adapter の責務を「外部サービスとの通信」に限定し、state 管理を orchestrator（executor）に一元化する原則は他の adapter にも適用可能
+
+---
+
+## 2026-05-07 — Step 実行パラメータの config.json 外出し
+
+**Type**: new-feature
+**Outcome**: completed (spec-review approved iter 2, code-review approved iter 1)
+
+### Review Patterns
+
+#### Spec Review (6.95 → 8.05, +1.10)
+- **input validation の spec 欠落 (HIGH)**: steps config に maxTurns/model/timeoutMs の型・範囲検証が未定義だった。既存 validateConfig() が pipeline.maxRetries で同種の検証を行っている前例がある以上、新しい config セクションにも同等の validation を spec に定義しなければ completeness が不足する。「既存パターンがあるフィールドに新しいセクションを追加したら、validation scenario もセットで追加」が原則
+- **runtime 別挙動の未定義 (MEDIUM)**: managed runtime 時に config.steps が設定された場合の挙動が spec に不在。既存 spec が runtime 別の分岐を明確に定義しているパターンがあり（apiKey 省略、agents 省略等）、新セクションにも同じ分岐定義が必要。warning 出力ではなく NOTE レベルの明記を選択（managed runtime で steps を設定するユーザーは稀であり noise 回避）
+
+#### Code Review (8.35, iter 1 approved)
+- **integration テストの層不足 (MEDIUM)**: unit テストで解決ロジックを検証していたが、SDK options に timeoutMs が含まれないことを agent-runner 側の integration テストで検証していなかった。「unit で正しく解決」と「integration で正しく適用」は別の検証層
+- **validateConfig の膨張 (MEDIUM)**: steps バリデーションブロックが 55 行あり pipeline.maxRetries の validation と構造的に重複。ヘルパー関数への分離候補だが LOW priority
+- **request.md と実装の型定義乖離 (LOW)**: request.md では StepConfigMap の各 step 名を明示的に列挙していたが、実装は Record<string, StepExecutionConfig | undefined> を採用。design.md D1 の判断に基づく意図的 deviation だが、request.md との差異は記録すべき
+
+### Error Patterns
+- **エラー・リトライ・エスカレーションなし（実装以降）**: spec-review は iter 1 needs-fix → spec-fixer → iter 2 approved。code-review は iter 1 で approved。Build/TypeCheck/Test（879/879）すべて PASS。spec-review の iteration は validation spec 追加で解消し、code-review には波及しなかった
+- **spec-fixer による修正が実装品質を底上げ**: spec-review HIGH #1（validation 未定義）が spec-fixer で解消された結果、implementer が validation を実装し、code-review で validation の指摘が出なかった。spec 段階で品質要件を固める効果が実装段階に波及するパターン
+
+### Design Decisions
+- **D1: Record ベースの StepConfigMap**: step 名の追加時に型変更不要。explicit union は step 追加のたびに型と spec 両方の修正が必要で保守コストが高い。typo のサイレント無視リスクは受容（将来 doctor で検証可能）
+- **D2: getStepExecutionConfig を純粋関数として step-config.ts に配置**: 既存パターン getMaxRetries(config) と同構造。テスタビリティが高く、Step オブジェクト自体を config-agnostic に保つ
+- **D3: 4 段階解決チェーン（step-level > defaults > stepDefaults > SDK default）**: specificity の降順。CSS cascade に類似した mental model で直感的
+- **D4: null vs undefined の明示的区別**: null = unlimited（fallback 停止）、undefined = 次の優先度へ fallback。JSON では null と key 不在が区別可能
+- **D5: timeoutMs は config に用意するが SDK には渡さない**: SDK 未対応のため resolved value を返すだけで使用しない。将来の自前 guard 実装時に config 変更なしで有効化可能
+
+### Lessons
+- **既存 validation パターンがあるセクションには同等の validation を**: pipeline.maxRetries で validateConfig が型・範囲チェックを行っている前例があったため、steps セクションにも同じ検証が必要だった。spec-review が既存コードとの一貫性からこの欠落を検出し、spec-fixer で追加。新しい config セクション追加時は「既存セクションの validation パターンを確認し、同等の検証を仕様に含める」をデフォルトとすべき
+- **runtime 別分岐は新セクション追加時に忘れやすい**: 既存 spec が runtime 別の挙動を定義しているにもかかわらず、新セクション（steps）でその分岐が漏れた。config に新セクションを追加する際は「runtime: managed / local それぞれでの挙動」を仕様チェックリストに含めるべき
+- **spec 段階の品質投資は実装段階の iteration を削減する**: spec-review で validation を追加したことで、implementer が validation を実装し、code-review で validation 関連の HIGH/CRITICAL が出なかった。spec の完成度と code-review の iteration 数は逆相関する
+- **純粋関数 + 既存パターン踏襲は初回 approved の要因**: getStepExecutionConfig を getMaxRetries と同構造の純粋関数にしたことで、code-review 8.35 初回 approved。既存のコードベースに馴染むパターンを選択することが review スコアの安定化に寄与する

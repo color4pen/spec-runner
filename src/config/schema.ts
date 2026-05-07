@@ -8,6 +8,32 @@
  */
 import type { StepName } from "../state/schema.js";
 
+/**
+ * Per-step execution config: model, maxTurns, timeoutMs.
+ * All fields are optional — missing fields fall back to the next priority level.
+ *
+ * maxTurns: null = unlimited (do not pass maxTurns to SDK)
+ * maxTurns: undefined = not set at this priority level, fall back to next
+ * timeoutMs: null = no timeout
+ */
+export interface StepExecutionConfig {
+  model?: string;
+  maxTurns?: number | null;
+  timeoutMs?: number | null;
+}
+
+/**
+ * Map of step names to per-step execution config.
+ * `defaults` applies to all steps not explicitly overridden.
+ * Other keys are step names (kebab-case: "implementer", "spec-review", etc.)
+ *
+ * D1 (design.md): Record-based to avoid type changes when new steps are added.
+ */
+export interface StepConfigMap {
+  defaults?: StepExecutionConfig;
+  [stepName: string]: StepExecutionConfig | undefined;
+}
+
 export interface AnthropicConfig {
   apiKey: string;
 }
@@ -75,6 +101,15 @@ export interface SpecRunnerConfig {
   github?: GithubConfig;
   specReview?: SpecReviewConfig;
   specFixer?: SpecFixerConfig;
+  /**
+   * Per-step execution config: model, maxTurns, timeoutMs.
+   * Effective only for local runtime (ClaudeCodeRunner).
+   * ManagedAgentRunner ignores this field.
+   *
+   * D1 (design.md): steps is optional for backward compatibility.
+   * Steps section absent = use step definition hardcoded values.
+   */
+  steps?: StepConfigMap;
 }
 
 /**
@@ -102,6 +137,8 @@ export interface RawConfig {
   github?: Partial<GithubConfig>;
   specReview?: Partial<SpecReviewConfig>;
   specFixer?: Partial<SpecFixerConfig>;
+  /** Per-step execution config — passed through as-is. Validated in validateConfig(). */
+  steps?: Record<string, unknown>;
 }
 
 /**
@@ -152,6 +189,65 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
       const maxRetries = pipeline["maxRetries"];
       if (typeof maxRetries !== "number" || !Number.isInteger(maxRetries) || maxRetries < 1 || maxRetries > 10) {
         throw new Error("CONFIG_INVALID: pipeline.maxRetries must be between 1 and 10.");
+      }
+    }
+  }
+
+  // Validate steps section if provided
+  // TC-013/TC-014/TC-015/TC-016: validate maxTurns (number>=1 | null), model (non-empty string), timeoutMs (number>=1 | null)
+  if (obj["steps"] !== undefined && obj["steps"] !== null) {
+    if (typeof obj["steps"] !== "object") {
+      throw Object.assign(
+        new Error("CONFIG_INVALID: steps must be an object."),
+        { code: "CONFIG_INVALID" },
+      );
+    }
+    const stepsObj = obj["steps"] as Record<string, unknown>;
+    for (const [stepKey, stepVal] of Object.entries(stepsObj)) {
+      if (stepVal === undefined || stepVal === null) continue;
+      if (typeof stepVal !== "object") {
+        throw Object.assign(
+          new Error(`CONFIG_INVALID: steps.${stepKey} must be an object.`),
+          { code: "CONFIG_INVALID" },
+        );
+      }
+      const stepCfg = stepVal as Record<string, unknown>;
+
+      // Validate maxTurns: must be number >= 1 or null (not 0, not negative, not string)
+      if (stepCfg["maxTurns"] !== undefined) {
+        const maxTurns = stepCfg["maxTurns"];
+        if (maxTurns !== null) {
+          if (typeof maxTurns !== "number" || !Number.isInteger(maxTurns) || maxTurns < 1) {
+            throw Object.assign(
+              new Error(`CONFIG_INVALID: steps.${stepKey}.maxTurns must be a positive integer or null.`),
+              { code: "CONFIG_INVALID" },
+            );
+          }
+        }
+      }
+
+      // Validate model: must be non-empty string if provided
+      if (stepCfg["model"] !== undefined) {
+        const model = stepCfg["model"];
+        if (typeof model !== "string" || model.length === 0) {
+          throw Object.assign(
+            new Error(`CONFIG_INVALID: steps.${stepKey}.model must be a non-empty string.`),
+            { code: "CONFIG_INVALID" },
+          );
+        }
+      }
+
+      // Validate timeoutMs: must be number >= 1 or null (not 0, not negative)
+      if (stepCfg["timeoutMs"] !== undefined) {
+        const timeoutMs = stepCfg["timeoutMs"];
+        if (timeoutMs !== null) {
+          if (typeof timeoutMs !== "number" || !Number.isInteger(timeoutMs) || timeoutMs < 1) {
+            throw Object.assign(
+              new Error(`CONFIG_INVALID: steps.${stepKey}.timeoutMs must be a positive integer or null.`),
+              { code: "CONFIG_INVALID" },
+            );
+          }
+        }
       }
     }
   }

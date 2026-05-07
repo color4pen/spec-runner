@@ -193,6 +193,16 @@ async function runInitLocal(): Promise<void> {
     // Preserve existing anthropic/github/etc. fields; default empty anthropic for local
     anthropic: existingConfig.anthropic ?? { apiKey: "" },
     agents: existingConfig.agents ?? {},
+    // TC-010: add steps.defaults if not already present
+    // TC-011: do not overwrite existing steps config
+    // D4 (design.md): null = unlimited for maxTurns; null = no timeout for timeoutMs
+    steps: existingConfig.steps ?? {
+      defaults: {
+        model: "claude-sonnet-4-6",
+        maxTurns: null,
+        timeoutMs: null,
+      },
+    },
   };
 
   await saveConfig(newConfig);

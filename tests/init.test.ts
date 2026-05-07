@@ -565,3 +565,55 @@ describe("TC-041: 404 fallback — only propose is re-created, others are no-op"
     expect(config.agents?.["build-fixer"]?.agentId).toBe("agent_build_fixer_001");
   });
 });
+
+// TC-010: init で steps セクションなしの config に steps.defaults が追加される
+describe("TC-010: specrunner init --runtime=local で steps.defaults が追加される", () => {
+  it("steps フィールドがない config に steps.defaults を追加する", async () => {
+    // No existing config — fresh init (local)
+    const { runInit } = await import("../src/cli/init.js");
+    await runInit({ runtime: "local" });
+
+    const configPath = path.join(tempDir, "specrunner", "config.json");
+    const raw = await fs.readFile(configPath, "utf-8");
+    const config = JSON.parse(raw);
+
+    expect(config.steps).toBeDefined();
+    expect(config.steps.defaults).toBeDefined();
+    expect(config.steps.defaults.model).toBe("claude-sonnet-4-6");
+    expect(config.steps.defaults.maxTurns).toBeNull();
+    expect(config.steps.defaults.timeoutMs).toBeNull();
+  });
+});
+
+// TC-011: init で既存の steps がある場合は上書きされない
+describe("TC-011: specrunner init --runtime=local で既存の steps は上書きされない", () => {
+  it("steps.defaults.maxTurns: 90 がある既存 config を保持する", async () => {
+    // Pre-populate config with custom steps
+    const configDir = path.join(tempDir, "specrunner");
+    await fs.mkdir(configDir, { recursive: true });
+    const existingConfig = {
+      version: 1,
+      runtime: "local",
+      anthropic: { apiKey: "" },
+      agents: {},
+      steps: {
+        defaults: {
+          maxTurns: 90,
+          model: "claude-haiku-3",
+        },
+      },
+    };
+    const configPath = path.join(configDir, "config.json");
+    await fs.writeFile(configPath, JSON.stringify(existingConfig), { mode: 0o600 });
+
+    const { runInit } = await import("../src/cli/init.js");
+    await runInit({ runtime: "local" });
+
+    const raw = await fs.readFile(configPath, "utf-8");
+    const config = JSON.parse(raw);
+
+    // Existing steps must NOT be overwritten
+    expect(config.steps.defaults.maxTurns).toBe(90);
+    expect(config.steps.defaults.model).toBe("claude-haiku-3");
+  });
+});

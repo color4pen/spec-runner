@@ -225,13 +225,14 @@ describe("TC-023: ClaudeCodeRunner invokes query() with ctx.cwd", () => {
     expect(capturedParams!.options?.cwd).toBe(worktreeCwd);
   });
 
-  it("query() is called with allowedTools, permissionMode, maxTurns, and model", async () => {
+  it("query() is called with allowedTools, permissionMode, and model (maxTurns from config resolution)", async () => {
     let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
 
     const queryFn = makeQueryFn({
       captureParams: (params) => { capturedParams = params; },
     });
 
+    // step.maxTurns is undefined, config has no steps → maxTurns resolves to null → omitted from options
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const ctx: AgentRunContext = {
       step: makeAgentStep(),
@@ -248,18 +249,23 @@ describe("TC-023: ClaudeCodeRunner invokes query() with ctx.cwd", () => {
 
     expect(capturedParams!.options?.allowedTools).toEqual(["Read", "Edit", "Write", "Bash", "Grep", "Glob"]);
     expect(capturedParams!.options?.permissionMode).toBe("bypassPermissions");
-    expect(capturedParams!.options?.maxTurns).toBe(30);
+    // model comes from step.agent.model via stepDefaults resolution
     expect(capturedParams!.options?.model).toBe("claude-sonnet-4-5");
+    // maxTurns is absent because step.maxTurns=undefined, config has no steps → null → unlimited
+    expect(capturedParams!.options?.maxTurns).toBeUndefined();
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-002: step.maxTurns undefined → default 30
-// TC-003: step.maxTurns set → uses that value
+// TC-008: steps セクションなしで既存動作が維持される（後方互換）
+// TC-006: maxTurns: null のとき SDK query() に maxTurns を渡さない
+// TC-007: maxTurns に数値が設定されているとき SDK query() に数値が渡される
+// TC-012: 既存の step.maxTurns ?? 30 フォールバックが削除されている
+// TC-020: ClaudeCodeRunner が解決済みの model を SDK に渡す
 // ---------------------------------------------------------------------------
 
-describe("TC-002/TC-003: ClaudeCodeRunner passes step.maxTurns to query() with fallback 30", () => {
-  it("TC-002: uses default maxTurns=30 when step.maxTurns is undefined", async () => {
+describe("TC-008: config.steps なしで既存動作が維持される（後方互換）", () => {
+  it("step.maxTurns=undefined かつ config.steps なし → maxTurns は SDK options に含まれない（unlimited）", async () => {
     let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
 
     const queryFn = makeQueryFn({
@@ -268,22 +274,27 @@ describe("TC-002/TC-003: ClaudeCodeRunner passes step.maxTurns to query() with f
 
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const ctx: AgentRunContext = {
+      // step.maxTurns is undefined — config has no steps → resolves to null → omitted
       step: makeAgentStep({ maxTurns: undefined }),
       state: makeJobState(),
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
       requestContent: "content",
-      config: makeConfig(),
+      config: makeConfig(), // no steps field
       emit: vi.fn(),
     };
 
     await runner.run(ctx);
 
-    expect(capturedParams!.options?.maxTurns).toBe(30);
+    // No error — step ran successfully
+    // maxTurns is omitted (unlimited) when stepDefaults.maxTurns is undefined → null
+    expect(capturedParams!.options?.maxTurns).toBeUndefined();
+    // model comes from step.agent.model
+    expect(capturedParams!.options?.model).toBe("claude-sonnet-4-5");
   });
 
-  it("TC-003: uses step.maxTurns=60 when step.maxTurns is set (ImplementerStep-like)", async () => {
+  it("step.maxTurns=60 かつ config.steps なし → maxTurns: 60 が渡される", async () => {
     let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
 
     const queryFn = makeQueryFn({
@@ -306,7 +317,139 @@ describe("TC-002/TC-003: ClaudeCodeRunner passes step.maxTurns to query() with f
 
     expect(capturedParams!.options?.maxTurns).toBe(60);
   });
+});
 
+describe("TC-006: maxTurns: null のとき SDK query() に maxTurns を渡さない", () => {
+  it("config.steps.defaults.maxTurns: null → options.maxTurns は undefined（省略）", async () => {
+    let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { capturedParams = params; },
+    });
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const config: SpecRunnerConfig = {
+      ...makeConfig(),
+      steps: {
+        defaults: { maxTurns: null },
+      },
+    };
+    const ctx: AgentRunContext = {
+      step: makeAgentStep({ maxTurns: 30 }),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config,
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    // maxTurns: null in config → omit from SDK options
+    expect(capturedParams!.options?.maxTurns).toBeUndefined();
+  });
+});
+
+describe("TC-007: maxTurns に数値が設定されているとき SDK query() に数値が渡される", () => {
+  it("config.steps.defaults.maxTurns: 60 → options.maxTurns: 60", async () => {
+    let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { capturedParams = params; },
+    });
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const config: SpecRunnerConfig = {
+      ...makeConfig(),
+      steps: {
+        defaults: { maxTurns: 60 },
+      },
+    };
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config,
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    expect(capturedParams!.options?.maxTurns).toBe(60);
+  });
+});
+
+describe("TC-012: 既存の step.maxTurns ?? 30 フォールバックが削除されている", () => {
+  it("config.steps.defaults.maxTurns: null かつ step.maxTurns: 60 → SDK に maxTurns が渡されない（config が優先）", async () => {
+    let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { capturedParams = params; },
+    });
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const config: SpecRunnerConfig = {
+      ...makeConfig(),
+      steps: {
+        defaults: { maxTurns: null },
+      },
+    };
+    const ctx: AgentRunContext = {
+      // step.maxTurns: 60 exists, but config.defaults.maxTurns: null takes precedence
+      step: makeAgentStep({ maxTurns: 60 }),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config,
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    // config.defaults.maxTurns: null overrides step.maxTurns: 60
+    // maxTurns is omitted from SDK options (unlimited)
+    expect(capturedParams!.options?.maxTurns).toBeUndefined();
+  });
+});
+
+describe("TC-020: ClaudeCodeRunner が解決済みの model を SDK に渡す", () => {
+  it("config.steps.defaults.model: 'claude-opus-4' → step 定義の model より優先される", async () => {
+    let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { capturedParams = params; },
+    });
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const config: SpecRunnerConfig = {
+      ...makeConfig(),
+      steps: {
+        defaults: { model: "claude-opus-4" },
+      },
+    };
+    const ctx: AgentRunContext = {
+      // step.agent.model is "claude-sonnet-4-5" but config overrides to "claude-opus-4"
+      step: makeAgentStep(),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config,
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    expect(capturedParams!.options?.model).toBe("claude-opus-4");
+  });
 });
 
 // ---------------------------------------------------------------------------

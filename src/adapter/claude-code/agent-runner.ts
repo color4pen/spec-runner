@@ -28,6 +28,7 @@ import {
 import { gitExec, defaultSpawnFn, type SpawnFn } from "./git-exec.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../core/port/agent-runner.js";
 import type { StepContext } from "../../core/types.js";
+import { getStepExecutionConfig } from "../../config/step-config.js";
 
 export type { SpawnFn } from "./git-exec.js";
 
@@ -113,6 +114,18 @@ export class ClaudeCodeRunner implements AgentRunner {
       preRunHeadSha = await gitExec(this.spawnFn, cwd, ["rev-parse", ctx.branch]);
     }
 
+    // Resolve execution config: step-level > config defaults > step hardcoded > SDK default
+    // D2/D3 (design.md): getStepExecutionConfig() resolves model, maxTurns, timeoutMs
+    const resolvedConfig = getStepExecutionConfig(ctx.config, step.name, {
+      model: step.agent.model,
+      maxTurns: step.maxTurns,
+    });
+
+    // TC-006/TC-007: maxTurns: null → omit maxTurns from options (unlimited)
+    // TC-012: step.maxTurns ?? 30 fallback is replaced by getStepExecutionConfig resolution chain
+    const maxTurnsOption: Record<string, unknown> =
+      resolvedConfig.maxTurns !== null ? { maxTurns: resolvedConfig.maxTurns } : {};
+
     // TC-023: invoke SDK query() with cwd, allowedTools, permissionMode, maxTurns
     try {
       const messages = this.queryFn({
@@ -121,8 +134,8 @@ export class ClaudeCodeRunner implements AgentRunner {
           cwd,
           allowedTools: ["Read", "Edit", "Write", "Bash", "Grep", "Glob"],
           permissionMode: "bypassPermissions",
-          maxTurns: step.maxTurns ?? 30,
-          model: step.agent.model,
+          ...maxTurnsOption,
+          model: resolvedConfig.model,
         },
       });
 
