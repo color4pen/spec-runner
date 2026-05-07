@@ -2,7 +2,7 @@
  * Job state schema and types for specrunner state files.
  */
 
-export type JobStatus = "running" | "awaiting-merge" | "failed" | "terminated" | "archived";
+export type JobStatus = "running" | "awaiting-resume" | "awaiting-merge" | "failed" | "terminated" | "archived" | "canceled";
 
 import type { ModelUsage } from "../core/port/model-usage.js";
 /**
@@ -69,6 +69,12 @@ export interface ErrorInfo {
   code: string;
   message: string;
   hint: string;
+}
+
+export interface ResumePoint {
+  step: StepName;
+  reason: string;
+  iterationsExhausted: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -148,6 +154,7 @@ export interface JobState {
    * Optional for backward compat — absent in legacy state files → treated as undefined.
    */
   worktreePath?: string | null;
+  resumePoint?: ResumePoint | null;
 }
 
 export const MAX_HISTORY_SIZE = 100;
@@ -301,6 +308,21 @@ export function validateJobState(raw: unknown): JobState {
   // TODO: Remove this migration after 2026-06 release
   if (obj["status"] === "success") {
     obj["status"] = "awaiting-merge";
+  }
+
+  // Validate status is a known value
+  const VALID_STATUSES: Set<string> = new Set([
+    "running", "awaiting-resume", "awaiting-merge", "failed", "terminated", "archived", "canceled",
+  ]);
+  if (!VALID_STATUSES.has(obj["status"] as string)) {
+    throw new Error(`Invalid status: ${obj["status"] as string}`);
+  }
+
+  // Validate resumePoint when present (backward compat: absence is OK)
+  if ("resumePoint" in obj && obj["resumePoint"] !== null && obj["resumePoint"] !== undefined) {
+    if (typeof obj["resumePoint"] !== "object") {
+      throw new Error("resumePoint must be an object when present.");
+    }
   }
 
   return raw as JobState;

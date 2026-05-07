@@ -115,3 +115,58 @@ describe("TC-024: pushStepResult — appends step result into state.steps", () =
     expect(lastSpecReview ? toLegacyStepResult(lastSpecReview).verdict : undefined).toBe("approved");
   });
 });
+
+// TC-NEW-01: validateJobState — unknown status は reject される
+describe("TC-NEW-01: validateJobState — unknown status を reject する", () => {
+  it("throws when status is an unknown value", () => {
+    const raw = makeMinimalV1State();
+    (raw as Record<string, unknown>)["status"] = "unknown-status";
+
+    expect(() => validateJobState(raw)).toThrow(/Invalid status/);
+  });
+
+  it("does not throw for awaiting-resume status", () => {
+    const raw = makeMinimalV1State();
+    (raw as Record<string, unknown>)["status"] = "awaiting-resume";
+
+    expect(() => validateJobState(raw)).not.toThrow();
+  });
+
+  it("does not throw for canceled status", () => {
+    const raw = makeMinimalV1State();
+    (raw as Record<string, unknown>)["status"] = "canceled";
+
+    expect(() => validateJobState(raw)).not.toThrow();
+  });
+});
+
+// TC-NEW-02: validateJobState — resumePoint の型検証
+describe("TC-NEW-02: validateJobState — resumePoint type validation", () => {
+  it("does not throw when resumePoint is absent", () => {
+    const raw = makeMinimalV1State();
+    // No resumePoint field
+    expect(() => validateJobState(raw)).not.toThrow();
+  });
+
+  it("does not throw when resumePoint is null", () => {
+    const raw = makeMinimalV1State();
+    (raw as Record<string, unknown>)["resumePoint"] = null;
+    expect(() => validateJobState(raw)).not.toThrow();
+  });
+
+  it("does not throw when resumePoint is a valid object", () => {
+    const raw = makeMinimalV1State();
+    (raw as Record<string, unknown>)["resumePoint"] = {
+      step: "code-review",
+      reason: "escalation",
+      iterationsExhausted: 3,
+    };
+    expect(() => validateJobState(raw)).not.toThrow();
+  });
+
+  it("throws when resumePoint is a non-null non-object", () => {
+    const raw = makeMinimalV1State();
+    (raw as Record<string, unknown>)["resumePoint"] = "invalid-string";
+    expect(() => validateJobState(raw)).toThrow(/resumePoint must be an object/);
+  });
+});

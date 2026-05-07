@@ -195,6 +195,61 @@ describe("TC-110: specrunner ps --all shows SLUG column and archived jobs", () =
   });
 });
 
+// TC-NEW-07: ps ACTIVE_STATUSES — awaiting-resume が active として表示される
+describe("TC-NEW-07: ps --active includes awaiting-resume", () => {
+  it("--active flag shows awaiting-resume jobs", async () => {
+    const awaitingResumeId = "11111111-0000-0000-0000-000000000001";
+    const archivedId = "22222222-0000-0000-0000-000000000001";
+    await writeStateFile(makeBaseState({ jobId: awaitingResumeId, status: "awaiting-resume" as JobState["status"] }));
+    await writeStateFile(makeBaseState({ jobId: archivedId, status: "archived" }));
+
+    await runPs({ active: true });
+
+    const output = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+      .map((c: unknown[]) => String(c[0]))
+      .join("");
+
+    expect(output).toContain("11111111"); // awaiting-resume job should appear
+    expect(output).not.toContain("22222222"); // archived should not appear
+  });
+});
+
+// TC-NEW-08: ps stale detection — 古い running job に (stale?) が付く
+describe("TC-NEW-08: ps stale detection", () => {
+  it("adds (stale?) to running jobs with updatedAt > 1 hour ago", () => {
+    const staleUpdatedAt = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(); // 2 hours ago
+    const state = makeBaseState({
+      status: "running",
+      updatedAt: staleUpdatedAt,
+    });
+    const row = formatJobRow(state, false, Date.now());
+
+    expect(row).toContain("stale?");
+  });
+
+  it("does NOT add (stale?) to recently updated running jobs", () => {
+    const recentUpdatedAt = new Date(Date.now() - 30 * 60 * 1000).toISOString(); // 30 min ago
+    const state = makeBaseState({
+      status: "running",
+      updatedAt: recentUpdatedAt,
+    });
+    const row = formatJobRow(state, false, Date.now());
+
+    expect(row).not.toContain("stale?");
+  });
+
+  it("does NOT add (stale?) to awaiting-resume jobs regardless of age", () => {
+    const oldUpdatedAt = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // 24 hours ago
+    const state = makeBaseState({
+      status: "awaiting-resume" as JobState["status"],
+      updatedAt: oldUpdatedAt,
+    });
+    const row = formatJobRow(state, false, Date.now());
+
+    expect(row).not.toContain("stale?");
+  });
+});
+
 // TC-143: non-TTY TAB-separated output has SLUG as second column
 describe("TC-143: non-TTY TAB-separated output — SLUG is second column", () => {
   it("header row second tab-delimited field is SLUG", async () => {

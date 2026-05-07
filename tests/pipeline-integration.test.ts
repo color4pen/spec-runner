@@ -344,8 +344,8 @@ describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RE
     // error code
     expect(result.error?.code).toBe("SPEC_REVIEW_RETRIES_EXHAUSTED");
 
-    // pipeline fails (status is failed — retries exhausted)
-    expect(result.status).toBe("failed");
+    // pipeline halts at awaiting-resume (retries exhausted)
+    expect(result.status).toBe("awaiting-resume");
   });
 });
 
@@ -710,8 +710,8 @@ describe("TC-061: runPipeline — code-review retries exhausted: escalation + CO
     // error code
     expect(result.error?.code).toBe("CODE_REVIEW_RETRIES_EXHAUSTED");
 
-    // pipeline fails (status is failed — retries exhausted)
-    expect(result.status).toBe("failed");
+    // pipeline halts at awaiting-resume (retries exhausted)
+    expect(result.status).toBe("awaiting-resume");
   });
 });
 

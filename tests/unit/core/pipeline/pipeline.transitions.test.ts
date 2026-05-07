@@ -504,3 +504,204 @@ describe("TC-024: LOOP_ERROR_CODES — pr-create が含まれない", () => {
     expect(keys).toHaveLength(3);
   });
 });
+
+// TC-NEW-05: handleExhausted → status が awaiting-resume になり resumePoint が設定される
+describe("TC-NEW-05: handleExhausted → status: awaiting-resume + resumePoint", () => {
+  it("loop exhaustion sets status to awaiting-resume with resumePoint", async () => {
+    const maxIterations = 2;
+    const jobState = makeMinimalState("test-exhausted-resume");
+    await fs.mkdir(path.join(tempDir, "specrunner", "jobs"), { recursive: true });
+    await fs.writeFile(
+      path.join(tempDir, "specrunner", "jobs", `${jobState.jobId}.json`),
+      JSON.stringify(jobState),
+      "utf-8",
+    );
+
+    const events = new EventBus();
+    let callCount = 0;
+
+    const executeSpy = vi.fn().mockImplementation(async (step: Step, state: JobState): Promise<JobState> => {
+      if (step.name === "spec-review") {
+        callCount++;
+        return {
+          ...state,
+          status: "running",
+          step: "spec-review",
+          steps: {
+            ...state.steps,
+            "spec-review": [
+              ...(state.steps?.["spec-review"] ?? []),
+              {
+                attempt: callCount,
+                sessionId: null,
+                outcome: { verdict: "needs-fix" as const, findingsPath: null, error: null },
+                startedAt: new Date().toISOString(),
+                endedAt: new Date().toISOString(),
+              },
+            ],
+          },
+        };
+      }
+      if (step.name === "spec-fixer") {
+        return {
+          ...state,
+          status: "running",
+          step: "spec-fixer",
+          steps: {
+            ...state.steps,
+            "spec-fixer": [
+              ...(state.steps?.["spec-fixer"] ?? []),
+              {
+                attempt: 1,
+                sessionId: null,
+                outcome: { verdict: "approved" as const, findingsPath: null, error: null },
+                startedAt: new Date().toISOString(),
+                endedAt: new Date().toISOString(),
+              },
+            ],
+          },
+        };
+      }
+      throw new Error(`Unexpected step: ${step.name}`);
+    });
+    const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
+
+    const pipeline = new Pipeline({
+      steps: new Map([
+        ["spec-review", makeStepObject("spec-review")],
+        ["spec-fixer", makeStepObject("spec-fixer")],
+      ]),
+      transitions: [
+        { step: "spec-review", on: "approved",  to: "end" },
+        { step: "spec-review", on: "needs-fix", to: "spec-fixer" },
+        { step: "spec-review", on: "escalation", to: "escalate" },
+        { step: "spec-fixer",  on: "approved",  to: "spec-review" },
+        { step: "spec-fixer",  on: "error",     to: "escalate" },
+      ],
+      maxIterations,
+      executor: mockExecutor,
+      events,
+      loopName: "spec-review",
+      loopNames: ["spec-review"],
+    });
+
+    const result = await pipeline.run("spec-review", jobState, makeMinimalDeps());
+
+    expect(result.status).toBe("awaiting-resume");
+    expect(result.resumePoint).toBeDefined();
+    expect(result.resumePoint?.step).toBe("spec-review");
+    expect(result.resumePoint?.iterationsExhausted).toBe(maxIterations);
+  });
+});
+
+// TC-NEW-06: Pipeline escalate terminal → awaiting-resume に遷移する
+describe("TC-NEW-06: Pipeline escalate terminal → status: awaiting-resume", () => {
+  it("escalation verdict results in awaiting-resume status", async () => {
+    const maxIterations = 3;
+    const jobState = makeMinimalState("test-escalate-resume");
+    await fs.mkdir(path.join(tempDir, "specrunner", "jobs"), { recursive: true });
+    await fs.writeFile(
+      path.join(tempDir, "specrunner", "jobs", `${jobState.jobId}.json`),
+      JSON.stringify(jobState),
+      "utf-8",
+    );
+
+    const events = new EventBus();
+
+    const executeSpy = vi.fn().mockImplementation(async (step: Step, state: JobState): Promise<JobState> => {
+      if (step.name === "spec-review") {
+        return {
+          ...state,
+          status: "running",
+          step: "spec-review",
+          steps: {
+            ...state.steps,
+            "spec-review": [
+              ...(state.steps?.["spec-review"] ?? []),
+              {
+                attempt: 1,
+                sessionId: null,
+                outcome: { verdict: "escalation" as const, findingsPath: null, error: null },
+                startedAt: new Date().toISOString(),
+                endedAt: new Date().toISOString(),
+              },
+            ],
+          },
+        };
+      }
+      throw new Error(`Unexpected step: ${step.name}`);
+    });
+    const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
+
+    const pipeline = new Pipeline({
+      steps: new Map([
+        ["spec-review", makeStepObject("spec-review")],
+      ]),
+      transitions: [
+        { step: "spec-review", on: "approved",   to: "end" },
+        { step: "spec-review", on: "needs-fix",  to: "escalate" },
+        { step: "spec-review", on: "escalation", to: "escalate" },
+      ],
+      maxIterations,
+      executor: mockExecutor,
+      events,
+      loopName: "spec-review",
+      loopNames: ["spec-review"],
+    });
+
+    const result = await pipeline.run("spec-review", jobState, makeMinimalDeps());
+
+    expect(result.status).toBe("awaiting-resume");
+    expect(result.resumePoint).toBeDefined();
+    expect(result.resumePoint?.step).toBe("spec-review");
+  });
+
+  it("fatal error code keeps status as failed", async () => {
+    const maxIterations = 3;
+    const jobState = makeMinimalState("test-fatal-error");
+    await fs.mkdir(path.join(tempDir, "specrunner", "jobs"), { recursive: true });
+    await fs.writeFile(
+      path.join(tempDir, "specrunner", "jobs", `${jobState.jobId}.json`),
+      JSON.stringify(jobState),
+      "utf-8",
+    );
+
+    const events = new EventBus();
+
+    // Executor throws a fatal error
+    const executeSpy = vi.fn().mockImplementation(async (_step: Step, state: JobState): Promise<JobState> => {
+      const failedState: JobState = {
+        ...state,
+        status: "failed",
+        error: { code: "SESSION_CREATE_FAILED", message: "Session create failed", hint: "Check API key" },
+      };
+      const err = new Error("Session create failed") as Error & { state?: JobState };
+      err.state = failedState;
+      throw err;
+    });
+    const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
+
+    const pipeline = new Pipeline({
+      steps: new Map([
+        ["propose", makeStepObject("propose")],
+      ]),
+      transitions: [
+        { step: "propose", on: "success", to: "end" },
+        { step: "propose", on: "error",   to: "escalate" },
+      ],
+      maxIterations,
+      executor: mockExecutor,
+      events,
+      loopName: "spec-review",
+      loopNames: ["spec-review"],
+    });
+
+    const result = await pipeline.run("propose", jobState, makeMinimalDeps());
+
+    // Fatal error → status stays "failed"
+    expect(result.status).toBe("failed");
+    expect(result.error?.code).toBe("SESSION_CREATE_FAILED");
+    // resumePoint should NOT be set for fatal errors
+    expect(result.resumePoint).toBeUndefined();
+  });
+});

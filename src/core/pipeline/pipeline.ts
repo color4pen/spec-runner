@@ -1,13 +1,21 @@
 import type { Step } from "../step/types.js";
 import type { Transition } from "./types.js";
 import { LOOP_ERROR_CODES } from "./types.js";
-import type { JobState, Verdict, StepRun } from "../../state/schema.js";
+import type { JobState, Verdict, StepRun, StepName } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import { StepExecutor } from "../step/executor.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { stdoutWrite } from "../../logger/stdout.js";
+
+/** Error codes that indicate truly fatal pipeline failures (not resumable). */
+const FATAL_ERROR_CODES: Set<string> = new Set([
+  "SESSION_CREATE_FAILED",
+  "CONFIG_MISSING",
+  "CONFIG_INCOMPLETE",
+  "CONFIG_INVALID",
+]);
 
 /**
  * Pipeline: state machine driven by a declarative Transition table.
@@ -216,6 +224,22 @@ export class Pipeline {
           await endStore.persist(state);
         }
 
+        // Escalation → awaiting-resume (unless fatal error)
+        if (nextStep === "escalate" && (state.status !== "failed" || !FATAL_ERROR_CODES.has(state.error?.code ?? ""))) {
+          state = {
+            ...state,
+            status: "awaiting-resume",
+            resumePoint: {
+              step: currentStep as StepName,
+              reason: state.error?.message ?? `${currentStep} escalated`,
+              iterationsExhausted: loopIters.get(currentStep) ?? 0,
+            },
+            updatedAt: new Date().toISOString(),
+          };
+          const escalateStore = new JobStateStore(state.jobId);
+          await escalateStore.persist(state);
+        }
+
         break;
       }
 
@@ -337,7 +361,12 @@ export class Pipeline {
     const updated: JobState = {
       ...state,
       steps: updatedSteps,
-      status: "failed",
+      status: "awaiting-resume",
+      resumePoint: {
+        step: exhaustedLoopName as StepName,
+        reason: errorShape.message(this.maxIterations),
+        iterationsExhausted: this.maxIterations,
+      },
       error: {
         code: errorShape.code,
         message: errorShape.message(this.maxIterations),

@@ -291,7 +291,7 @@ describe("TC-061: Pipeline — propose non-success → skip spec-review", () => 
 
     const specReviewCalls = executeSpy.mock.calls.filter(([step]) => step.name === "spec-review");
     expect(specReviewCalls).toHaveLength(0);
-    expect(result.status).toBe("failed");
+    expect(result.status).toBe("awaiting-resume");
   });
 });
 

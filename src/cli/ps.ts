@@ -6,7 +6,7 @@ import { getJobSlug } from "../state/job-slug.js";
  * Active statuses — excludes terminal/archived statuses.
  * When adding new statuses to JobStatus, update this set accordingly.
  */
-const ACTIVE_STATUSES: Set<JobStatus> = new Set(["running"]);
+const ACTIVE_STATUSES: Set<JobStatus> = new Set(["running", "awaiting-resume"]);
 
 /**
  * Format a job age in human-readable form.
@@ -34,6 +34,9 @@ export function truncate(str: string, maxLength: number): string {
   return str.slice(0, maxLength - 3) + "...";
 }
 
+/** Jobs with status "running" but not updated for this long are marked stale. */
+const STALE_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour
+
 /**
  * Format a single job as a row.
  * 6 columns: JOB_ID, SLUG, STEP, STATUS, BRANCH, AGE
@@ -49,7 +52,8 @@ export function formatJobRow(
   const jobIdShort = job.jobId.slice(0, 8);
   const slug = getJobSlug(job);
   const step = job.step;
-  const status = job.status;
+  const isStale = job.status === "running" && ((nowMs ?? Date.now()) - new Date(job.updatedAt).getTime()) > STALE_THRESHOLD_MS;
+  const status = isStale ? "running (stale?)" : job.status;
   const branch = truncate(job.branch ?? "-", 40);
   const age = formatAge(job.createdAt, nowMs);
 

@@ -4,11 +4,11 @@ import { createAnthropicClient } from "../sdk/client.js";
 import { createAnthropicSessionClient } from "../adapter/managed-agent/session-client.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { runPreflight } from "../core/preflight.js";
-import { createJobState, updateJobState } from "../state/store.js";
+import { createJobState, updateJobState, loadJobState } from "../state/store.js";
 import { runPipeline } from "../core/pipeline/index.js";
 import { logInfo, logError, setVerbose } from "../logger/stdout.js";
 import { SpecRunnerError } from "../errors.js";
-import type { JobState } from "../state/schema.js";
+import type { JobState, StepName } from "../state/schema.js";
 import { getLatestStepResult } from "../state/helpers.js";
 import { EventBus } from "../core/event/event-bus.js";
 import { ProgressDisplay } from "./progress.js";
@@ -128,6 +128,14 @@ async function handlePostPipelineState(
     return 0;
   }
 
+  if (finalState.status === "awaiting-resume") {
+    await onFailure?.();
+    const rp = finalState.resumePoint;
+    logError(`Pipeline halted at step '${rp?.step ?? "unknown"}': ${rp?.reason ?? "escalation"}`);
+    logInfo("Run 'specrunner resume' to continue from the halted step.");
+    return 1;
+  }
+
   await onFailure?.();
   logError(`Pipeline failed: ${finalState.error?.message ?? "unknown error"}`);
   return 1;
@@ -236,6 +244,11 @@ export async function runRunCore(
     // Best-effort cleanup for all failure paths (Design D3: remove on failure).
     // On success the worktree is left for finish to operate in — finish cleans it up.
     const cleanupWorktreeOnFailure = async (): Promise<void> => {
+      // Check if job is awaiting-resume — if so, keep worktree for resume
+      try {
+        const currentState = await loadJobState(jobState.jobId);
+        if (currentState?.status === "awaiting-resume") return;
+      } catch { /* proceed with cleanup */ }
       try {
         await manager.remove(worktreePath!, cwd);
         await manager.prune(cwd);
@@ -248,10 +261,18 @@ export async function runRunCore(
     // 3-layer cleanup: signal handler (layer 1)
     const signalCleanup = async (): Promise<void> => {
       try {
-        await manager.remove(worktreePath!, cwd);
-        await manager.prune(cwd);
+        await updateJobState(jobState.jobId, (s) => ({
+          ...s,
+          status: "awaiting-resume" as const,
+          resumePoint: {
+            step: s.step as StepName,
+            reason: "Interrupted by signal",
+            iterationsExhausted: 0,
+          },
+          updatedAt: new Date().toISOString(),
+        }));
       } catch {
-        // Best-effort cleanup; state file (layer 2) + prune (layer 3) will handle residuals
+        // Best-effort persist; state file (layer 2) handles residuals
       }
       process.exit(130); // 128 + SIGINT(2)
     };

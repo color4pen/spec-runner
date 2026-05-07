@@ -171,6 +171,28 @@ describe("TC-040: loadJobState parse failure → STATE_FILE_INVALID", () => {
   });
 });
 
+// TC-NEW-03: assertJobFinishable — awaiting-resume → resume 案内エラー
+describe("TC-NEW-03: assertJobFinishable — awaiting-resume → resume hint", () => {
+  it("throws JOB_NOT_FINISHABLE with resume hint for awaiting-resume status", async () => {
+    const job = await makeJob("awaiting-resume" as JobState["status"]);
+    const state = await loadJobState(job.jobId);
+
+    expect(() => assertJobFinishable(state)).toThrow(SpecRunnerError);
+    expect(() => assertJobFinishable(state)).toThrow(/awaiting-resume/);
+  });
+});
+
+// TC-NEW-04: assertJobFinishable — canceled → 操作不要エラー
+describe("TC-NEW-04: assertJobFinishable — canceled → no action needed", () => {
+  it("throws JOB_NOT_FINISHABLE with no-action hint for canceled status", async () => {
+    const job = await makeJob("canceled" as JobState["status"]);
+    const state = await loadJobState(job.jobId);
+
+    expect(() => assertJobFinishable(state)).toThrow(SpecRunnerError);
+    expect(() => assertJobFinishable(state)).toThrow(/canceled/);
+  });
+});
+
 // TC-041
 describe("TC-041: updateJobState atomic write protocol", () => {
   it("writes via atomic tmp+rename (no .tmp files remain)", async () => {

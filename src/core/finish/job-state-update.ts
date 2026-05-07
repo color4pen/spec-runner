@@ -15,27 +15,43 @@ import type { JobState } from "../../state/schema.js";
  * TC-031: status=running → error
  */
 export function assertJobFinishable(state: JobState): void {
-  if (state.status === "archived") {
-    // Idempotent: already archived (TC-126)
-    return;
+  switch (state.status) {
+    case "archived":
+      // Idempotent: already archived (TC-126)
+      return;
+    case "awaiting-merge":
+      // Happy path: pipeline complete, ready to finish
+      return;
+    case "running":
+      throw new SpecRunnerError(
+        ERROR_CODES.JOB_NOT_FINISHABLE,
+        "Wait for the running job to complete before finishing.",
+        `Cannot finish job ${state.jobId}: status is 'running'. The job is still in progress.`,
+      );
+    case "awaiting-resume":
+      throw new SpecRunnerError(
+        ERROR_CODES.JOB_NOT_FINISHABLE,
+        "Run 'specrunner resume' to continue the halted job before finishing.",
+        `Cannot finish job ${state.jobId}: status is 'awaiting-resume'.`,
+      );
+    case "canceled":
+      throw new SpecRunnerError(
+        ERROR_CODES.JOB_NOT_FINISHABLE,
+        "Job is already canceled. No action needed.",
+        `Cannot finish job ${state.jobId}: status is 'canceled'.`,
+      );
+    case "failed":
+    case "terminated":
+      throw new SpecRunnerError(
+        ERROR_CODES.JOB_NOT_FINISHABLE,
+        "Use 'specrunner cancel' to clean up failed or terminated jobs.",
+        `Cannot finish job ${state.jobId}: status is '${state.status}'. Finish is only for successfully completed pipelines.`,
+      );
+    default: {
+      const _exhaustive: never = state.status;
+      throw new Error(`Unknown status: ${_exhaustive}`);
+    }
   }
-  if (state.status === "awaiting-merge") {
-    // Happy path: pipeline complete, ready to finish
-    return;
-  }
-  if (state.status === "running") {
-    throw new SpecRunnerError(
-      ERROR_CODES.JOB_NOT_FINISHABLE,
-      "Wait for the running job to complete before finishing.",
-      `Cannot finish job ${state.jobId}: status is 'running'. The job is still in progress.`,
-    );
-  }
-  // failed or terminated
-  throw new SpecRunnerError(
-    ERROR_CODES.JOB_NOT_FINISHABLE,
-    "Use 'specrunner cancel' to clean up failed or terminated jobs.",
-    `Cannot finish job ${state.jobId}: status is '${state.status}'. Finish is only for successfully completed pipelines.`,
-  );
 }
 
 /**

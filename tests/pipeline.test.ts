@@ -205,7 +205,7 @@ describe("TC-036: propose pipeline — BRANCH_NOT_REGISTERED when no register_br
       githubClient,
     });
 
-    expect(result.status).toBe("failed");
+    expect(result.status).toBe("awaiting-resume");
     expect(result.error?.code).toBe("BRANCH_NOT_REGISTERED");
 
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
@@ -298,7 +298,7 @@ describe("TC-039: propose pipeline — CHANGE_FOLDER_NOT_FOUND", () => {
       githubClient,
     });
 
-    expect(result.status).toBe("failed");
+    expect(result.status).toBe("awaiting-resume");
     expect(result.error?.code).toBe("CHANGE_FOLDER_NOT_FOUND");
   });
 });
@@ -352,7 +352,7 @@ describe("TC-041: propose pipeline — GITHUB_TOKEN_EXPIRED on 401", () => {
       githubClient,
     });
 
-    expect(result.status).toBe("failed");
+    expect(result.status).toBe("awaiting-resume");
     expect(result.error?.code).toBe("GITHUB_TOKEN_EXPIRED");
 
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
