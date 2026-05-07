@@ -24,9 +24,10 @@ import {
   query as sdkQuery,
   type SDKMessage,
   type SDKResultMessage,
+  type SDKResultSuccess,
 } from "@anthropic-ai/claude-agent-sdk";
 import { gitExec, defaultSpawnFn, type SpawnFn } from "./git-exec.js";
-import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../core/port/agent-runner.js";
+import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from "../../core/port/agent-runner.js";
 import type { StepContext } from "../../core/types.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
 
@@ -127,6 +128,8 @@ export class ClaudeCodeRunner implements AgentRunner {
       resolvedConfig.maxTurns !== null ? { maxTurns: resolvedConfig.maxTurns } : {};
 
     // TC-023: invoke SDK query() with cwd, allowedTools, permissionMode, maxTurns
+    let extractedModelUsage: Record<string, ModelUsage> | undefined;
+
     try {
       const messages = this.queryFn({
         prompt: fullPrompt,
@@ -156,6 +159,24 @@ export class ClaudeCodeRunner implements AgentRunner {
             { code: "CLAUDE_CODE_QUERY_FAILED" },
           ),
         };
+      }
+
+      // Extract modelUsage from the success result for recording in step state
+      if (lastResult && lastResult.subtype === "success") {
+        const successResult = lastResult as SDKResultSuccess;
+        const rawUsage = successResult.modelUsage;
+        if (rawUsage && typeof rawUsage === "object" && Object.keys(rawUsage).length > 0) {
+          const mappedUsage: Record<string, ModelUsage> = {};
+          for (const [model, usage] of Object.entries(rawUsage)) {
+            mappedUsage[model] = {
+              inputTokens: usage.inputTokens,
+              outputTokens: usage.outputTokens,
+              cacheReadInputTokens: usage.cacheReadInputTokens,
+              cacheCreationInputTokens: usage.cacheCreationInputTokens,
+            };
+          }
+          extractedModelUsage = mappedUsage;
+        }
       }
     } catch (err) {
       const cause = err as Error;
@@ -223,6 +244,7 @@ export class ClaudeCodeRunner implements AgentRunner {
     return {
       completionReason: "success",
       resultContent,
+      modelUsage: extractedModelUsage,
     };
   }
 }

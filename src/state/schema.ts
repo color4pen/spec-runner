@@ -4,6 +4,13 @@
 
 export type JobStatus = "running" | "awaiting-merge" | "failed" | "terminated" | "archived";
 
+import type { ModelUsage } from "../core/port/model-usage.js";
+/**
+ * Re-export from canonical location in the port layer.
+ * Both the port layer and state layer reference this single definition.
+ */
+export type { ModelUsage } from "../core/port/model-usage.js";
+
 export type StepName =
   | "propose"
   | "spec-review"
@@ -92,6 +99,12 @@ export interface StepRun {
   startedAt: string;
   /** ISO 8601 timestamp when this attempt ended. */
   endedAt: string;
+  /**
+   * Per-model token usage from the agent run.
+   * Keys are model names (e.g. "claude-opus-4-6").
+   * Only present for ClaudeCodeRunner steps; absent for ManagedAgentRunner and CLI steps.
+   */
+  modelUsage?: Record<string, ModelUsage>;
 }
 
 export interface StepResult {

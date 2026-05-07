@@ -160,4 +160,43 @@ describe("TC-047: verdict independence per iteration", () => {
 
     expect(JSON.stringify(state.steps)).toBe(originalJson);
   });
+
+  it("stores modelUsage in StepRun when provided", () => {
+    const state = makeMinimalState();
+    const modelUsage = {
+      "claude-opus-4-6": {
+        inputTokens: 200,
+        outputTokens: 100,
+        cacheReadInputTokens: 10,
+        cacheCreationInputTokens: 5,
+      },
+    };
+
+    const updated = pushStepResult(state, "implementer", {
+      session: null,
+      verdict: "success",
+      findingsPath: null,
+      completedAt: "2026-05-07T00:00:00.000Z",
+      error: null,
+      modelUsage,
+    });
+
+    const run = updated.steps?.["implementer"]?.[0];
+    expect(run?.modelUsage).toEqual(modelUsage);
+  });
+
+  it("omits modelUsage from StepRun when not provided", () => {
+    const state = makeMinimalState();
+
+    const updated = pushStepResult(state, "implementer", {
+      session: null,
+      verdict: "success",
+      findingsPath: null,
+      completedAt: "2026-05-07T00:00:00.000Z",
+      error: null,
+    });
+
+    const run = updated.steps?.["implementer"]?.[0];
+    expect(run).not.toHaveProperty("modelUsage");
+  });
 });

@@ -1,4 +1,4 @@
-import type { JobState, StepResult, StepRun } from "./schema.js";
+import type { JobState, StepResult, StepRun, ModelUsage } from "./schema.js";
 
 /**
  * Convert a StepRun to StepResult shape (legacy view).
@@ -57,6 +57,11 @@ export interface StepResultInput {
   completedAt?: string | null;
   error: import("./schema.js").ErrorInfo | null;
   fileContent?: string | null;
+  /**
+   * Per-model token usage from the agent run.
+   * Only present for ClaudeCodeRunner steps; absent for ManagedAgentRunner and CLI steps.
+   */
+  modelUsage?: Record<string, ModelUsage>;
 }
 
 /**
@@ -86,6 +91,7 @@ export function pushStepResult(
     },
     startedAt: now,
     endedAt: now,
+    ...(partial.modelUsage !== undefined ? { modelUsage: partial.modelUsage } : {}),
   };
   return {
     ...state,

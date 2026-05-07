@@ -13,6 +13,9 @@ import type { AgentStep } from "../step/types.js";
 import type { JobState } from "../../state/schema.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 
+import type { ModelUsage } from "./model-usage.js";
+export type { ModelUsage } from "./model-usage.js";
+
 /**
  * Context passed to AgentRunner.run() for each agent step execution.
  * All fields are runtime-neutral — no SDK-specific types are included.
@@ -61,6 +64,12 @@ export interface AgentRunResult {
   agentBranch?: string;
   /** Error details when completionReason !== "success" */
   error?: Error & { code?: string; hint?: string };
+  /**
+   * Per-model token usage from the agent run.
+   * Keys are model names (e.g. "claude-opus-4-6").
+   * Only populated by ClaudeCodeRunner (SDK provides this); ManagedAgentRunner leaves it undefined.
+   */
+  modelUsage?: Record<string, ModelUsage>;
 }
 
 /**

@@ -742,3 +742,121 @@ describe("ClaudeCodeRunner SDK query error handling", () => {
     expect(result.error?.message).toContain("connection failed");
   });
 });
+
+// ---------------------------------------------------------------------------
+// modelUsage propagation
+// ---------------------------------------------------------------------------
+
+describe("ClaudeCodeRunner modelUsage propagation", () => {
+  it("returns modelUsage from SDK success result", async () => {
+    const queryFn: QueryFn = async function* () {
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 100,
+        duration_api_ms: 80,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0.05,
+        usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {
+          "claude-opus-4-6": {
+            inputTokens: 200,
+            outputTokens: 100,
+            cacheReadInputTokens: 10,
+            cacheCreationInputTokens: 5,
+            webSearchRequests: 0,
+            costUSD: 0.04,
+            contextWindow: 200000,
+            maxOutputTokens: 32000,
+          },
+          "claude-haiku-3-5": {
+            inputTokens: 50,
+            outputTokens: 20,
+            cacheReadInputTokens: 0,
+            cacheCreationInputTokens: 0,
+            webSearchRequests: 0,
+            costUSD: 0.01,
+            contextWindow: 200000,
+            maxOutputTokens: 8192,
+          },
+        },
+        permission_denials: [],
+        uuid: "test-uuid",
+        session_id: "test-session",
+      } as unknown;
+    } as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+    expect(result.completionReason).toBe("success");
+    expect(result.modelUsage).toBeDefined();
+    expect(result.modelUsage?.["claude-opus-4-6"]).toEqual({
+      inputTokens: 200,
+      outputTokens: 100,
+      cacheReadInputTokens: 10,
+      cacheCreationInputTokens: 5,
+    });
+    expect(result.modelUsage?.["claude-haiku-3-5"]).toEqual({
+      inputTokens: 50,
+      outputTokens: 20,
+      cacheReadInputTokens: 0,
+      cacheCreationInputTokens: 0,
+    });
+  });
+
+  it("returns undefined modelUsage when SDK result has empty modelUsage", async () => {
+    const queryFn = makeQueryFn({ result: "success" }); // makeQueryFn uses modelUsage: {}
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+    expect(result.completionReason).toBe("success");
+    // Empty modelUsage {} is treated as absent — no value to record in state.
+    expect(result.modelUsage).toBeUndefined();
+  });
+
+  it("does not include modelUsage on error path", async () => {
+    const queryFn = makeQueryFn({ result: "error" });
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+    expect(result.completionReason).toBe("error");
+    expect(result.modelUsage).toBeUndefined();
+  });
+});

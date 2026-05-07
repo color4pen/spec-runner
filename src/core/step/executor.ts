@@ -194,6 +194,7 @@ export class StepExecutor {
       fileContent: result.resultContent,
       completedAt,
       error: null,
+      modelUsage: result.modelUsage,
     });
 
     // TC-017: step-complete history entry
