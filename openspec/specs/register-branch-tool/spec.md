@@ -28,36 +28,19 @@ slug は省略可能な optional field である。SpecRunner の deterministic 
 
 ### Requirement: ハンドラは last-write-wins で冪等に動作する
 
-`register_branch` のハンドラは MUST 同一 session 内で複数回呼ばれた場合、毎回 state.branch を入力値で上書きする。slug が input に含まれている場合は同時に MUST `state.request.slug` も入力値で上書きする。slug が省略された場合は handler 側で `branch` から prefix（`feat/` `fix/` `change/` `refactor/` `chore/`）を strip した残部を slug として SHALL 導出し、`state.request.slug` に設定する。strip 結果が空文字列の場合は `state.request.slug` を `null` のまま残す。
+`register_branch` のハンドラは MUST 同一 session 内で複数回呼ばれた場合、毎回 state.branch を入力値で上書きする。slug が input に含まれている場合は同時に MUST `state.request.slug` も入力値で上書きする。slug が省略された場合は handler 側で `branch` から prefix（`feat/` `fix/` `change/` `refactor/` `chore/`）を strip し、さらに末尾の jobId suffix（`/-[0-9a-f]{8}$/` にマッチする部分）を strip した結果を slug として SHALL 導出し、`state.request.slug` に設定する。strip 結果が空文字列の場合は `state.request.slug` を `null` のまま残す。
 
 Agent には SHALL 常に `{ ok: true, branch: <input>, slug: <resolved-slug> }` を返す。
 
-slug input が空文字列または string 型以外で渡された場合は MUST `state.request.slug` へ書き込まず、branch から導出した値を使用する（導出不可の場合は `null` のまま残す）。この validation は slug が明示的に渡された場合にも適用される（空文字列 slug を canonical に書き込むことを防ぐ）。
+#### Scenario: 1 回呼び出し（slug 省略・jobId-suffixed branch から導出）
 
-#### Scenario: 1 回呼び出し（slug 明示）
+- **WHEN** ハンドラが `{ branch: "feat/my-feature-abcd1234" }` のみで呼ばれる
+- **THEN** handler が prefix `feat/` を strip し、さらに jobId suffix `-abcd1234` を strip して `my-feature` を導出し state.request.slug に設定、戻り値が `{ ok: true, branch: "feat/my-feature-abcd1234", slug: "my-feature" }` になる
 
-- **WHEN** ハンドラが `{ branch: "feat/readme-status-section", slug: "readme-status-section" }` で呼ばれる
-- **THEN** state.branch が `feat/readme-status-section`、state.request.slug が `readme-status-section` になり、戻り値が `{ ok: true, branch: "feat/readme-status-section", slug: "readme-status-section" }` になる
-
-#### Scenario: 1 回呼び出し（slug 省略・branch から導出）
+#### Scenario: 1 回呼び出し（slug 省略・suffix なし branch — 後方互換）
 
 - **WHEN** ハンドラが `{ branch: "feat/readme-status-section" }` のみで呼ばれる（後方互換）
-- **THEN** state.branch が `feat/readme-status-section`、handler が prefix `feat/` を strip して `readme-status-section` を導出し state.request.slug に設定、戻り値が `{ ok: true, branch: "feat/readme-status-section", slug: "readme-status-section" }` になる
-
-#### Scenario: 連続 2 回呼び出し
-
-- **WHEN** ハンドラが `{ branch: "a", slug: "x" }` → `{ branch: "b", slug: "y" }` で連続呼び出しされる
-- **THEN** 最終 state.branch が `b`、state.request.slug が `y` になり、両回ともエラーは発生しない
-
-#### Scenario: prefix が無い branch で slug 省略
-
-- **WHEN** ハンドラが `{ branch: "main-something" }` で呼ばれる（既知 prefix が無い）
-- **THEN** strip 不可なため state.branch が `main-something`、state.request.slug は `main-something` 全体になる（fallback として branch そのまま採用）
-
-#### Scenario: 空文字列 slug が渡された場合は branch から導出
-
-- **WHEN** ハンドラが `{ branch: "feat/readme-status-section", slug: "" }` で呼ばれる（slug が空文字列）
-- **THEN** 空文字列 slug は state.request.slug に書き込まれず、handler が `feat/` prefix を strip して `readme-status-section` を導出し state.request.slug に設定する。戻り値は `{ ok: true, branch: "feat/readme-status-section", slug: "readme-status-section" }` になる
+- **THEN** state.branch が `feat/readme-status-section`、handler が prefix `feat/` を strip、jobId suffix strip が no-op、`readme-status-section` を導出し state.request.slug に設定、戻り値が `{ ok: true, branch: "feat/readme-status-section", slug: "readme-status-section" }` になる
 
 ### Requirement: definition と handler は同一モジュールに colocate される
 
