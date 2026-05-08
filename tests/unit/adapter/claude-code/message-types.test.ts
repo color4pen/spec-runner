@@ -3,9 +3,17 @@
  *
  * TC-MT-001: isResultMessage() returns true for valid result messages
  * TC-MT-002: isResultMessage() returns false for non-result objects
+ * TC-MT-003: isStreamEvent() type guard
+ * TC-MT-004: isTextDelta() type guard
+ * TC-MT-005: isToolUseSummary() type guard
  */
 import { describe, it, expect } from "vitest";
-import { isResultMessage } from "../../../../src/adapter/claude-code/message-types.js";
+import {
+  isResultMessage,
+  isStreamEvent,
+  isTextDelta,
+  isToolUseSummary,
+} from "../../../../src/adapter/claude-code/message-types.js";
 
 describe("TC-MT-001: isResultMessage() with valid result messages", () => {
   it("returns true for a success result message with result field", () => {
@@ -57,5 +65,134 @@ describe("TC-MT-002: isResultMessage() with non-result values", () => {
 
   it("returns false for an array", () => {
     expect(isResultMessage([])).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MT-003: isStreamEvent()
+// ---------------------------------------------------------------------------
+
+describe("TC-MT-003: isStreamEvent() type guard", () => {
+  it("returns true for a valid stream_event with event object", () => {
+    const msg = {
+      type: "stream_event",
+      event: { type: "content_block_delta", delta: { type: "text_delta", text: "hi" } },
+    };
+    expect(isStreamEvent(msg)).toBe(true);
+  });
+
+  it("returns false when type is not stream_event", () => {
+    expect(isStreamEvent({ type: "assistant", event: {} })).toBe(false);
+    expect(isStreamEvent({ type: "result", event: {} })).toBe(false);
+  });
+
+  it("returns false when event property is missing", () => {
+    expect(isStreamEvent({ type: "stream_event" })).toBe(false);
+  });
+
+  it("returns false when event is not an object", () => {
+    expect(isStreamEvent({ type: "stream_event", event: "string" })).toBe(false);
+    expect(isStreamEvent({ type: "stream_event", event: null })).toBe(false);
+    expect(isStreamEvent({ type: "stream_event", event: 42 })).toBe(false);
+  });
+
+  it("returns false for null/non-objects", () => {
+    expect(isStreamEvent(null)).toBe(false);
+    expect(isStreamEvent("stream_event")).toBe(false);
+    expect(isStreamEvent(undefined)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MT-004: isTextDelta()
+// ---------------------------------------------------------------------------
+
+describe("TC-MT-004: isTextDelta() type guard", () => {
+  it("returns true for a valid text_delta stream event", () => {
+    const msg = {
+      type: "stream_event",
+      event: {
+        type: "content_block_delta",
+        delta: { type: "text_delta", text: "Hello!" },
+      },
+    };
+    expect(isTextDelta(msg)).toBe(true);
+  });
+
+  it("returns false when event.type is not content_block_delta", () => {
+    const msg = {
+      type: "stream_event",
+      event: { type: "content_block_start", content_block: {} },
+    };
+    expect(isTextDelta(msg)).toBe(false);
+  });
+
+  it("returns false when delta.type is not text_delta", () => {
+    const msg = {
+      type: "stream_event",
+      event: {
+        type: "content_block_delta",
+        delta: { type: "input_json_delta", partial_json: "{" },
+      },
+    };
+    expect(isTextDelta(msg)).toBe(false);
+  });
+
+  it("returns false when delta.text is not a string", () => {
+    const msg = {
+      type: "stream_event",
+      event: {
+        type: "content_block_delta",
+        delta: { type: "text_delta", text: 42 },
+      },
+    };
+    expect(isTextDelta(msg)).toBe(false);
+  });
+
+  it("returns false when delta is null", () => {
+    const msg = {
+      type: "stream_event",
+      event: { type: "content_block_delta", delta: null },
+    };
+    expect(isTextDelta(msg)).toBe(false);
+  });
+
+  it("returns false for non-stream-event messages", () => {
+    expect(isTextDelta({ type: "result", subtype: "success" })).toBe(false);
+    expect(isTextDelta(null)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MT-005: isToolUseSummary()
+// ---------------------------------------------------------------------------
+
+describe("TC-MT-005: isToolUseSummary() type guard", () => {
+  it("returns true for a valid tool_use_summary with string summary", () => {
+    expect(isToolUseSummary({ type: "tool_use_summary", summary: "Read: src/foo.ts" })).toBe(true);
+  });
+
+  it("returns true for empty string summary", () => {
+    expect(isToolUseSummary({ type: "tool_use_summary", summary: "" })).toBe(true);
+  });
+
+  it("returns false when type is not tool_use_summary", () => {
+    expect(isToolUseSummary({ type: "result", summary: "foo" })).toBe(false);
+    expect(isToolUseSummary({ type: "stream_event", summary: "foo" })).toBe(false);
+  });
+
+  it("returns false when summary is missing", () => {
+    expect(isToolUseSummary({ type: "tool_use_summary" })).toBe(false);
+  });
+
+  it("returns false when summary is not a string", () => {
+    expect(isToolUseSummary({ type: "tool_use_summary", summary: 42 })).toBe(false);
+    expect(isToolUseSummary({ type: "tool_use_summary", summary: null })).toBe(false);
+  });
+
+  it("returns false for null/non-objects", () => {
+    expect(isToolUseSummary(null)).toBe(false);
+    expect(isToolUseSummary("tool_use_summary")).toBe(false);
+    expect(isToolUseSummary(undefined)).toBe(false);
   });
 });

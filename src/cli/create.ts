@@ -1,11 +1,14 @@
 /**
  * CLI facade for the `specrunner create` command.
- * Handles repo resolution + bootstrap, then delegates to executeCreate().
+ * Handles repo resolution + bootstrap, then delegates to:
+ *   - executeCreate()        when --no-llm is set (scaffold template)
+ *   - executeCreateDialog()  otherwise (interactive REPL, default)
  */
 import { getOriginInfo } from "../git/remote.js";
 import { bootstrap } from "./bootstrap.js";
 import { slugify } from "../util/slugify.js";
 import { executeCreate } from "../core/command/create.js";
+import { executeCreateDialog } from "../core/command/create-dialog.js";
 import { SpecRunnerError } from "../errors.js";
 
 export interface CreateOptions {
@@ -57,15 +60,30 @@ export async function runCreate(
     process.exit(1);
   }
 
-  const exitCode = await executeCreate({
-    description,
-    type,
-    slug,
-    cwd,
-    noLlm,
-    run,
-    runtime,
-  });
+  let exitCode: number;
+
+  if (noLlm) {
+    // --no-llm: use scaffold template (non-interactive, existing path)
+    exitCode = await executeCreate({
+      description,
+      type,
+      slug,
+      cwd,
+      noLlm: true,
+      run,
+      runtime,
+    });
+  } else {
+    // Default: interactive REPL
+    // TODO: --run flag is ignored in interactive mode; add post-dialog run support in a future change
+    exitCode = await executeCreateDialog({
+      description,
+      type,
+      slug,
+      cwd,
+      runtime,
+    });
+  }
 
   if (exitCode !== 0) {
     process.exit(exitCode);
