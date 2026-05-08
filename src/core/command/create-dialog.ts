@@ -33,6 +33,7 @@ import type { RuntimeStrategy, QueryOptions } from "../runtime/strategy.js";
 import { LocalRuntime } from "../runtime/local.js";
 import { SpecRunnerError } from "../../errors.js";
 import { runRunCore } from "../../cli/run.js";
+import { createSpinner } from "../../cli/spinner.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -166,6 +167,69 @@ export async function finalize(
 }
 
 // ---------------------------------------------------------------------------
+// consumeStream — streaming I/O for one query() call
+// ---------------------------------------------------------------------------
+
+interface StreamConsumerResult {
+  textBuffer: string;
+  hasAssistantMessage: boolean;
+  sessionId: string | undefined;
+}
+
+/**
+ * Consume all SDK messages from a single query() call, handling I/O side-effects:
+ *   - text_delta: stop spinner, write text to stdout, accumulate in textBuffer
+ *   - tool_use_summary: stop spinner, write "[tool] summary" to stderr
+ *   - assistant message: stop spinner, write newline, call onAssistantComplete callback
+ *   - result message: capture session_id and break
+ *
+ * The spinner is NOT restarted after tool_use_summary (chatter prevention).
+ * The try/finally ensures spinner.stop() is called even on exception.
+ */
+async function consumeStream(
+  messages: AsyncGenerator<unknown>,
+  spinner: { start(): void; stop(): void },
+  onAssistantComplete: (textBuffer: string) => Promise<void>,
+): Promise<StreamConsumerResult> {
+  let textBuffer = "";
+  let hasAssistantMessage = false;
+  let sessionId: string | undefined;
+  let assistantTurnProcessed = false;
+
+  try {
+    for await (const msg of messages) {
+      if (isStreamEvent(msg) && isTextDelta(msg)) {
+        spinner.stop();
+        const text = msg.event.delta.text;
+        process.stdout.write(text);
+        textBuffer += text;
+      } else if (isToolUseSummary(msg)) {
+        spinner.stop();
+        process.stderr.write(`\n[tool] ${msg.summary}\n`);
+      } else if (
+        !assistantTurnProcessed &&
+        typeof msg === "object" &&
+        msg !== null &&
+        (msg as Record<string, unknown>)["type"] === "assistant"
+      ) {
+        assistantTurnProcessed = true;
+        hasAssistantMessage = true;
+        spinner.stop();
+        process.stdout.write("\n");
+        await onAssistantComplete(textBuffer);
+      } else if (isResultMessage(msg)) {
+        sessionId = (msg as Record<string, unknown>)["session_id"] as string | undefined;
+        break;
+      }
+    }
+  } finally {
+    spinner.stop();
+  }
+
+  return { textBuffer, hasAssistantMessage, sessionId };
+}
+
+// ---------------------------------------------------------------------------
 // Phase 2: processAssistantTurn — handles a single completed assistant turn
 // ---------------------------------------------------------------------------
 
@@ -194,9 +258,8 @@ interface AssistantTurnResult {
  *   - One "assistant" message when the LLM turn completes
  *   - One "result" message at the very end (contains session_id)
  *
- * We iterate all messages to capture session_id from the result, while performing
- * user interaction (slug confirmation, FINAL_DRAFT confirmation) after the "assistant"
- * message. The generator is exhausted before returning so session_id is always captured.
+ * Streaming I/O is delegated to consumeStream(). This function focuses on
+ * control flow: slug detection, FINAL_DRAFT detection, and user confirmation.
  */
 async function processAssistantTurn(
   messages: AsyncGenerator<unknown>,
@@ -211,113 +274,100 @@ async function processAssistantTurn(
     onDraftDetected?: (content: string) => Promise<void>;
   },
 ): Promise<AssistantTurnResult> {
-  let textBuffer = "";
   let finalDraftContent: string | null = null;
   let slug = params.currentSlug;
   let collisionFeedback: string | null = null;
   let userConfirmed = false;
-  let hasAssistantMessage = false;
-  let sessionId: string | undefined;
   let slugProposalTurnCount = params.slugProposalTurnCount;
-  // Flag: user interaction (rl.question) has been done after the assistant turn
-  let assistantTurnProcessed = false;
 
-  for await (const msg of messages) {
-    if (isStreamEvent(msg) && isTextDelta(msg)) {
-      // Real-time streaming of text deltas
-      const text = msg.event.delta.text;
-      process.stdout.write(text);
-      textBuffer += text;
-    } else if (isToolUseSummary(msg)) {
-      // Tool execution status
-      process.stderr.write(`\n[tool] ${msg.summary}\n`);
-    } else if (
-      !assistantTurnProcessed &&
-      typeof msg === "object" &&
-      msg !== null &&
-      (msg as Record<string, unknown>)["type"] === "assistant"
-    ) {
-      // LLM response complete for this turn — perform user interaction
-      // Do NOT break; continue iterating to capture the result message
-      assistantTurnProcessed = true;
-      hasAssistantMessage = true;
-      process.stdout.write("\n");
+  // Task 3.1: Create spinner instance
+  const spinner = createSpinner();
 
-      // Slug proposal detection (D2/D3)
-      if (slug === undefined) {
-        slugProposalTurnCount++;
+  // onAssistantComplete: control flow for slug detection / FINAL_DRAFT / user confirmation
+  const onAssistantComplete = async (textBuffer: string): Promise<void> => {
+    // Slug proposal detection (D2/D3)
+    if (slug === undefined) {
+      slugProposalTurnCount++;
 
-        const proposed = detectSlugProposal(textBuffer);
-        if (proposed !== null) {
-          // Validate the proposed slug
-          const normalized = slugify(proposed);
-          let slugValid = normalized === proposed && proposed.length <= 50;
+      const proposed = detectSlugProposal(textBuffer);
+      if (proposed !== null) {
+        // Validate the proposed slug
+        const normalized = slugify(proposed);
+        let slugValid = normalized === proposed && proposed.length <= 50;
 
-          if (slugValid) {
-            // Collision check
-            try {
-              await checkSlugCollision(params.cwd, proposed);
-            } catch {
-              slugValid = false;
-              process.stderr.write(`\nslug '${proposed}' はすでに使用されています。\n`);
-              collisionFeedback = `slug '${proposed}' はすでに使用されています。別の slug を <!-- SLUG_PROPOSAL: xxx --> 形式で提案してください。`;
-              // Continue iterating to capture result message (session_id)
-              continue;
-            }
+        if (slugValid) {
+          // Collision check
+          try {
+            await checkSlugCollision(params.cwd, proposed);
+          } catch {
+            slugValid = false;
+            process.stderr.write(`\nslug '${proposed}' はすでに使用されています。\n`);
+            collisionFeedback = `slug '${proposed}' はすでに使用されています。別の slug を <!-- SLUG_PROPOSAL: xxx --> 形式で提案してください。`;
+            return; // skip FINAL_DRAFT detection
           }
+        }
 
-          if (slugValid) {
-            const answer = await params.rl.question(
-              `\nslug: ${proposed} で良いですか？ [y/N] `,
-            );
-            if (answer.trim().toLowerCase() === "y") {
-              slug = proposed;
-              process.stderr.write(`slug を確定しました: ${slug}\n`);
-            }
-            // Continue iterating to capture result message
-            continue;
-          } else {
-            // Invalid slug format
-            process.stderr.write(
-              `\n提案された slug '${proposed}' は無効です（kebab-case、50 文字以内）。別の slug を提案してください。\n`,
-            );
-            // Continue iterating to capture result message
-            continue;
+        if (slugValid) {
+          const answer = await params.rl.question(
+            `\nslug: ${proposed} で良いですか？ [y/N] `,
+          );
+          if (answer.trim().toLowerCase() === "y") {
+            slug = proposed;
+            process.stderr.write(`slug を確定しました: ${slug}\n`);
           }
-        } else if (slugProposalTurnCount >= params.MAX_SLUG_PROPOSAL_TURNS) {
-          // Fallback: auto-generate slug from description
-          slug = slugify(params.description);
-          process.stderr.write(`\nslug を自動生成しました: ${slug}\n`);
+          return; // skip FINAL_DRAFT detection
+        } else {
+          // Invalid slug format
+          process.stderr.write(
+            `\n提案された slug '${proposed}' は無効です（kebab-case、50 文字以内）。別の slug を提案してください。\n`,
+          );
+          return; // skip FINAL_DRAFT detection
         }
+      } else if (slugProposalTurnCount >= params.MAX_SLUG_PROPOSAL_TURNS) {
+        // Fallback: auto-generate slug from description
+        slug = slugify(params.description);
+        process.stderr.write(`\nslug を自動生成しました: ${slug}\n`);
+        // Fall through to FINAL_DRAFT detection
       }
-
-      const { detected, content } = detectCompletion(textBuffer);
-
-      if (detected) {
-        finalDraftContent = content;
-
-        // Persist draft on each FINAL_DRAFT detection
-        if (params.onDraftDetected !== undefined) {
-          await params.onDraftDetected(content);
-        }
-
-        // Ask user for confirmation
-        const answer = await params.rl.question(
-          "\nこの内容で request.md を書き出しますか？ [y/N] ",
-        );
-
-        if (answer.trim().toLowerCase() === "y") {
-          userConfirmed = true;
-        }
-      }
-
-      // Continue iterating to capture result message (session_id)
-    } else if (isResultMessage(msg)) {
-      // Session result — capture session_id
-      sessionId = (msg as Record<string, unknown>)["session_id"] as string | undefined;
-      break;
+      // else: no proposal yet, fall through (slug remains undefined)
     }
-  }
+
+    const { detected, content } = detectCompletion(textBuffer);
+
+    if (detected) {
+      finalDraftContent = content;
+
+      // Persist draft on each FINAL_DRAFT detection
+      if (params.onDraftDetected !== undefined) {
+        await params.onDraftDetected(content);
+      }
+
+      // Task 4.1: Show draft file path when slug is known
+      if (slug !== undefined) {
+        process.stderr.write(
+          `\nrequest.md を作成しました: specrunner/requests/draft/${slug}/request.md\n`,
+        );
+      }
+
+      // Ask user for confirmation
+      const answer = await params.rl.question(
+        "\nこの内容で request.md を書き出しますか？ [y/N] ",
+      );
+
+      if (answer.trim().toLowerCase() === "y") {
+        userConfirmed = true;
+      }
+    }
+  };
+
+  // Task 3.2: Start spinner before consumeStream (query() already called, waiting for first event)
+  spinner.start();
+
+  const { textBuffer, hasAssistantMessage, sessionId } = await consumeStream(
+    messages,
+    spinner,
+    onAssistantComplete,
+  );
 
   return {
     textBuffer,

@@ -485,3 +485,155 @@ describe("TC-CD-013: dialog loop — exit input saves draft and breaks", () => {
     expect(loaded?.content).toContain("test-feature");
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-CD-015: consumeStream — text_delta written to stdout
+// ---------------------------------------------------------------------------
+
+describe("TC-CD-015: consumeStream — text_delta written to stdout", () => {
+  it("writes text delta content to stdout during streaming", async () => {
+    async function* mockQueryFn(_params: { prompt: string | AsyncIterable<unknown>; options?: Record<string, unknown> }) {
+      yield {
+        type: "stream_event",
+        event: {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: "Hello streaming world" },
+        },
+      };
+      yield { type: "result", subtype: "success", session_id: "s-cd-015" };
+    }
+
+    const runtime = new LocalRuntime({
+      cwd: tempDir,
+      githubClient: buildMockGitHubClient(),
+      queryFn: mockQueryFn as unknown as QueryFn,
+    });
+
+    await executeCreateDialog({
+      description: "test feature",
+      type: "new-feature",
+      slug: "test-feature",
+      cwd: tempDir,
+      runtime,
+    });
+
+    const stdoutMock = process.stdout.write as ReturnType<typeof vi.fn>;
+    const output = stdoutMock.mock.calls.map((c: unknown[]) => c[0] as string).join("");
+    expect(output).toContain("Hello streaming world");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-CD-016: consumeStream — tool_use_summary written to stderr
+// ---------------------------------------------------------------------------
+
+describe("TC-CD-016: consumeStream — tool_use_summary written to stderr", () => {
+  it("writes [tool] summary line to stderr on tool_use_summary", async () => {
+    async function* mockQueryFn(_params: { prompt: string | AsyncIterable<unknown>; options?: Record<string, unknown> }) {
+      yield { type: "tool_use_summary", summary: "Read: src/foo.ts" };
+      yield { type: "result", subtype: "success", session_id: "s-cd-016" };
+    }
+
+    const runtime = new LocalRuntime({
+      cwd: tempDir,
+      githubClient: buildMockGitHubClient(),
+      queryFn: mockQueryFn as unknown as QueryFn,
+    });
+
+    await executeCreateDialog({
+      description: "test feature",
+      type: "new-feature",
+      slug: "test-feature",
+      cwd: tempDir,
+      runtime,
+    });
+
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const output = stderrMock.mock.calls.map((c: unknown[]) => c[0] as string).join("");
+    expect(output).toContain("[tool] Read: src/foo.ts");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-CD-017: consumeStream — FINAL_DRAFT detection shows draft path in stderr
+// ---------------------------------------------------------------------------
+
+describe("TC-CD-017: consumeStream — FINAL_DRAFT detection shows draft path in stderr", () => {
+  it("writes draft file path to stderr when FINAL_DRAFT is detected", async () => {
+    // "N" = don't finalize; "exit" = quit the loop
+    mockAnswerQueue.push("N", "exit");
+
+    const draftContent = buildValidRequestMd({ type: "new-feature", slug: "test-feature" });
+
+    async function* mockQueryFn(_params: { prompt: string | AsyncIterable<unknown>; options?: Record<string, unknown> }) {
+      yield {
+        type: "stream_event",
+        event: {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: `<!-- FINAL_DRAFT -->\n${draftContent}` },
+        },
+      };
+      yield { type: "assistant" };
+      // No result message — generator ends naturally
+    }
+
+    const runtime = new LocalRuntime({
+      cwd: tempDir,
+      githubClient: buildMockGitHubClient(),
+      queryFn: mockQueryFn as unknown as QueryFn,
+    });
+
+    await executeCreateDialog({
+      description: "test feature",
+      type: "new-feature",
+      slug: "test-feature",
+      cwd: tempDir,
+      runtime,
+    });
+
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const output = stderrMock.mock.calls.map((c: unknown[]) => c[0] as string).join("");
+    expect(output).toContain("specrunner/requests/draft/test-feature/request.md");
+  });
+
+  it("skips draft path display when slug is not yet known", async () => {
+    // slug is unknown (not passed in params), no SLUG_PROPOSAL in the LLM text
+    // On turn 1: slug is undefined → path display is skipped
+    // Answer queue: "N" (decline finalize), "exit" (quit loop)
+    mockAnswerQueue.push("N", "exit");
+
+    const draftContent = buildValidRequestMd({ type: "new-feature", slug: "auto-slug" });
+
+    async function* mockQueryFn(_params: { prompt: string | AsyncIterable<unknown>; options?: Record<string, unknown> }) {
+      // No SLUG_PROPOSAL marker in the text — slug stays unknown on turn 1
+      yield {
+        type: "stream_event",
+        event: {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: `<!-- FINAL_DRAFT -->\n${draftContent}` },
+        },
+      };
+      yield { type: "assistant" };
+      // No result message — generator ends naturally after first turn
+    }
+
+    const runtime = new LocalRuntime({
+      cwd: tempDir,
+      githubClient: buildMockGitHubClient(),
+      queryFn: mockQueryFn as unknown as QueryFn,
+    });
+
+    // Do NOT pass slug — slug is unknown at start
+    await executeCreateDialog({
+      description: "auto slug",
+      type: "new-feature",
+      cwd: tempDir,
+      runtime,
+    });
+
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const output = stderrMock.mock.calls.map((c: unknown[]) => c[0] as string).join("");
+    // Should NOT contain draft path (slug was undefined when FINAL_DRAFT was detected on turn 1)
+    expect(output).not.toContain("specrunner/requests/draft/");
+  });
+});
