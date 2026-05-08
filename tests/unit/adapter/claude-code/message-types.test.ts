@@ -12,7 +12,6 @@ import {
   isResultMessage,
   isStreamEvent,
   isTextDelta,
-  isToolUseStart,
 } from "../../../../src/adapter/claude-code/message-types.js";
 
 describe("TC-MT-001: isResultMessage() with valid result messages", () => {
@@ -163,88 +162,3 @@ describe("TC-MT-004: isTextDelta() type guard", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// TC-MT-005: isToolUseStart()
-// ---------------------------------------------------------------------------
-
-describe("TC-MT-005: isToolUseStart() type guard", () => {
-  it("returns true for a valid content_block_start with tool_use", () => {
-    const msg = {
-      type: "stream_event",
-      event: {
-        type: "content_block_start",
-        content_block: { type: "tool_use", name: "Read" },
-      },
-    };
-    expect(isToolUseStart(msg)).toBe(true);
-  });
-
-  it("returns true for empty string name", () => {
-    const msg = {
-      type: "stream_event",
-      event: {
-        type: "content_block_start",
-        content_block: { type: "tool_use", name: "" },
-      },
-    };
-    expect(isToolUseStart(msg)).toBe(true);
-  });
-
-  it("returns false when content_block.type is not tool_use", () => {
-    const msg = {
-      type: "stream_event",
-      event: {
-        type: "content_block_start",
-        content_block: { type: "text", text: "hello" },
-      },
-    };
-    expect(isToolUseStart(msg)).toBe(false);
-  });
-
-  it("returns false when content_block.name is missing", () => {
-    const msg = {
-      type: "stream_event",
-      event: {
-        type: "content_block_start",
-        content_block: { type: "tool_use" },
-      },
-    };
-    expect(isToolUseStart(msg)).toBe(false);
-  });
-
-  it("returns false when content_block.name is not a string", () => {
-    const msg = {
-      type: "stream_event",
-      event: {
-        type: "content_block_start",
-        content_block: { type: "tool_use", name: 42 },
-      },
-    };
-    expect(isToolUseStart(msg)).toBe(false);
-  });
-
-  it("returns false when event.type is not content_block_start", () => {
-    const msg = {
-      type: "stream_event",
-      event: {
-        type: "content_block_delta",
-        delta: { type: "text_delta", text: "hi" },
-      },
-    };
-    expect(isToolUseStart(msg)).toBe(false);
-  });
-
-  it("returns false when content_block is null", () => {
-    const msg = {
-      type: "stream_event",
-      event: { type: "content_block_start", content_block: null },
-    };
-    expect(isToolUseStart(msg)).toBe(false);
-  });
-
-  it("returns false for non-stream-event messages", () => {
-    expect(isToolUseStart({ type: "result", subtype: "success" })).toBe(false);
-    expect(isToolUseStart(null)).toBe(false);
-    expect(isToolUseStart(undefined)).toBe(false);
-  });
-});

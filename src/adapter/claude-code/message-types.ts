@@ -61,28 +61,3 @@ export function isTextDelta(
     typeof (delta as Record<string, unknown>)["text"] === "string"
   );
 }
-
-/**
- * Type guard for a tool_use content_block_start within a stream_event.
- * Checks: event.type === "content_block_start" && event.content_block.type === "tool_use".
- * Narrows to a shape where event.content_block.name is a string.
- */
-export function isToolUseStart(
-  v: unknown,
-): v is {
-  type: "stream_event";
-  event: {
-    type: "content_block_start";
-    content_block: { type: "tool_use"; name: string };
-  };
-} {
-  if (!isStreamEvent(v)) return false;
-  const event = v.event;
-  if (event["type"] !== "content_block_start") return false;
-  const cb = event["content_block"];
-  if (typeof cb !== "object" || cb === null) return false;
-  return (
-    (cb as Record<string, unknown>)["type"] === "tool_use" &&
-    typeof (cb as Record<string, unknown>)["name"] === "string"
-  );
-}

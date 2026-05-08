@@ -12,7 +12,7 @@ import { runDoctor } from "../src/cli/doctor.js";
 import { runFinish } from "../src/cli/finish.js";
 import { runRm } from "../src/cli/rm.js";
 import { runResume } from "../src/cli/resume.js";
-import { runCreate } from "../src/cli/create.js";
+import { executeTemplate, executeValidate } from "../src/core/command/request.js";
 
 const USAGE = `Usage: specrunner <command> [options]
 
@@ -20,7 +20,8 @@ Commands:
   init                   Create or update Anthropic Agent and Environment
   login                  Authenticate with GitHub via Device Flow
   run <req.md> [--verbose]  Run propose pipeline for a request
-  create "<description>" Create a new request.md from a description
+  request template [--type <type>]  Print a scaffold request.md template to stdout
+  request validate <file>           Validate a request.md file
   ps                     List all jobs
   doctor                 Diagnose environment / config / auth prerequisites
   finish [<slug>]        Squash-merge feature PR and archive (1-PR model)
@@ -30,12 +31,9 @@ Commands:
 Options:
   --help, -h    Show this help message
 
-Create Options:
-  "<description>"   Description of the change (required)
-  --type <type>     Request type (default: new-feature)
-  --slug <slug>     Slug override (default: derived from description)
-  --no-llm          Use scaffold template instead of LLM
-  --run             Run the pipeline after creating the request
+Request Options:
+  template [--type <type>]  Request type (default: new-feature)
+  validate <file>           Path to request.md file to validate
 
 Doctor Options:
   --json        Output results as machine-readable JSON
@@ -135,69 +133,41 @@ export async function main(): Promise<void> {
       break;
     }
 
-    case "create": {
-      const createArgs = args.slice(1);
+    case "request": {
+      const requestArgs = args.slice(1);
+      const subcommand = requestArgs[0];
 
-      // First non-flag argument is the description (optional when --resume is set)
-      const description = createArgs.find((a) => !a.startsWith("--"));
-
-      // Parse --type <type>
-      const typeFlag = createArgs.find((a) => a.startsWith("--type="));
-      let createType: string | undefined;
-      if (typeFlag) {
-        createType = typeFlag.slice("--type=".length);
-      } else {
-        const typeIdx = createArgs.indexOf("--type");
-        if (typeIdx !== -1 && createArgs[typeIdx + 1] && !createArgs[typeIdx + 1]!.startsWith("--")) {
-          createType = createArgs[typeIdx + 1];
+      if (subcommand === "template") {
+        // Parse --type flag
+        const typeFlag = requestArgs.find((a) => a.startsWith("--type="));
+        let requestType = "new-feature";
+        if (typeFlag) {
+          requestType = typeFlag.slice("--type=".length);
+        } else {
+          const typeIdx = requestArgs.indexOf("--type");
+          if (typeIdx !== -1 && requestArgs[typeIdx + 1] && !requestArgs[typeIdx + 1]!.startsWith("--")) {
+            requestType = requestArgs[typeIdx + 1]!;
+          }
         }
-      }
-
-      // Parse --slug <slug>
-      const slugFlag = createArgs.find((a) => a.startsWith("--slug="));
-      let createSlug: string | undefined;
-      if (slugFlag) {
-        createSlug = slugFlag.slice("--slug=".length);
-      } else {
-        const slugIdx = createArgs.indexOf("--slug");
-        if (slugIdx !== -1 && createArgs[slugIdx + 1] && !createArgs[slugIdx + 1]!.startsWith("--")) {
-          createSlug = createArgs[slugIdx + 1];
+        process.exit(executeTemplate(requestType));
+      } else if (subcommand === "validate") {
+        const filePath = requestArgs[1];
+        if (!filePath) {
+          process.stderr.write("Error: specrunner request validate requires a <file> argument.\n");
+          process.stderr.write("Usage: specrunner request validate <file>\n");
+          process.exit(2);
         }
-      }
-
-      // Parse --resume <slug> / --resume=<slug>
-      const resumeEqFlag = createArgs.find((a) => a.startsWith("--resume="));
-      let createResume: string | undefined;
-      if (resumeEqFlag) {
-        createResume = resumeEqFlag.slice("--resume=".length);
+        process.exit(await executeValidate(filePath));
       } else {
-        const resumeIdx = createArgs.indexOf("--resume");
-        if (resumeIdx !== -1 && createArgs[resumeIdx + 1] && !createArgs[resumeIdx + 1]!.startsWith("--")) {
-          createResume = createArgs[resumeIdx + 1];
-        }
-      }
-
-      const noLlm = createArgs.includes("--no-llm");
-      const createRun = createArgs.includes("--run");
-
-      // description is optional when --resume is provided (validated in runCreate)
-      if (!description && !createResume) {
         process.stderr.write(
-          'Error: specrunner create requires a <description> argument.\n' +
-          'Usage: specrunner create "<description>" [--type <type>] [--slug <slug>] [--no-llm] [--run]\n' +
-          '       specrunner create --resume <slug>\n',
+          subcommand
+            ? `Unknown request subcommand: ${subcommand}\n\n`
+            : "Error: specrunner request requires a subcommand.\n\n",
         );
+        process.stderr.write("Usage: specrunner request template [--type <type>]\n");
+        process.stderr.write("       specrunner request validate <file>\n");
         process.exit(2);
       }
-
-      await runCreate(description, {
-        type: createType,
-        slug: createSlug,
-        noLlm,
-        run: createRun,
-        cwd: process.cwd(),
-        resume: createResume,
-      });
       break;
     }
 
