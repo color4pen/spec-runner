@@ -18,10 +18,11 @@ export const BUILD_FIXER_SYSTEM_PROMPT = `あなたは build-fixer です。veri
 
 ## 修正手順
 
-1. verification-result.md を読み込む（failed phase のエラーログを確認）
-2. エラーの原因を特定し、最小限の機械的修正を行う
-3. 修正が完了したら branch に commit + push する
-4. push が完了するまで session を終了しないこと
+1. 初期メッセージに **Verification Failures** セクションがある場合は、そのエラー出力を最初に確認する（ファイルを開く前に修正方針を立てられる）
+2. verification-result.md を読み込む（failed phase のエラーログを確認）
+3. エラーの原因を特定し、最小限の機械的修正を行う
+4. 修正が完了したら branch に commit + push する
+5. push が完了するまで session を終了しないこと
 
 ## 重要な注意
 

@@ -32,7 +32,7 @@ function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
   };
 }
 
-function makeStateWithVerificationResult(slug: string): JobState {
+function makeStateWithVerificationResult(slug: string, fileContent?: string | null): JobState {
   return makeMinimalState({
     steps: {
       verification: [
@@ -42,6 +42,7 @@ function makeStateWithVerificationResult(slug: string): JobState {
           outcome: {
             verdict: "failed",
             findingsPath: `openspec/changes/${slug}/verification-result.md`,
+            fileContent: fileContent !== undefined ? fileContent : null,
             error: null,
           },
           startedAt: "2026-01-01T00:00:00.000Z",
@@ -50,6 +51,29 @@ function makeStateWithVerificationResult(slug: string): JobState {
       ],
     },
   });
+}
+
+/** Build a minimal verification-result.md string with a single failed phase. */
+function buildVerificationResultMd(phaseName: string, exitCode: number, output: string): string {
+  const lines: string[] = [
+    `# Verification Result — test-slug — iter 1`,
+    "",
+    "## Verdict: failed",
+    "",
+    "## Phase Results",
+    "",
+    "| # | Phase | Status | Duration | Exit Code |",
+    "|---|-------|--------|----------|-----------|",
+    `| 1 | ${phaseName} | failed | 1.0s | ${exitCode} |`,
+    "",
+    `## Phase: ${phaseName}`,
+    "",
+    "```",
+    output || "(no output)",
+    "```",
+    "",
+  ];
+  return lines.join("\n");
 }
 
 function makeMinimalDeps(slug: string = "my-change"): StepDeps {
@@ -192,6 +216,105 @@ describe("BuildFixerStep.buildMessage 内容検証", () => {
 describe("BuildFixerStep.completionVerdict", () => {
   it("completionVerdict === 'success'", () => {
     expect(BuildFixerStep.completionVerdict).toBe("success");
+  });
+});
+
+// TC-NEW-1: buildMessage with fileContent containing failures
+describe("BuildFixerStep.buildMessage — fileContent あり（失敗フェーズあり）", () => {
+  it("初期メッセージに Verification Failures セクションとエラー出力が含まれる", () => {
+    const fileContent = buildVerificationResultMd(
+      "typecheck",
+      1,
+      "src/core/step/propose.ts:42 - error TS2345: Argument of type ...",
+    );
+    const state = makeStateWithVerificationResult("my-change", fileContent);
+    const deps = makeMinimalDeps("my-change");
+    const message = BuildFixerStep.buildMessage(state, deps);
+
+    expect(message).toContain("## Verification Failures");
+    expect(message).toContain("**Failed phase**: typecheck");
+    expect(message).toContain("**Exit code**: 1");
+    expect(message).toContain("error TS2345");
+    expect(message).toContain("### Error output");
+  });
+
+  it("findingsPath への参照も維持されている（フォールバック）", () => {
+    const fileContent = buildVerificationResultMd("typecheck", 1, "error TS2345");
+    const state = makeStateWithVerificationResult("my-change", fileContent);
+    const deps = makeMinimalDeps("my-change");
+    const message = BuildFixerStep.buildMessage(state, deps);
+
+    expect(message).toContain("verification-result.md");
+  });
+});
+
+// TC-NEW-2: buildMessage with fileContent but no failures
+describe("BuildFixerStep.buildMessage — fileContent あり（失敗フェーズなし）", () => {
+  it("パース結果が空配列の場合 Verification Failures セクションが追加されない", () => {
+    // All phases passed — no failed rows in Phase Results table
+    const allPassedContent = [
+      "# Verification Result — my-change — iter 1",
+      "",
+      "## Verdict: passed",
+      "",
+      "## Phase Results",
+      "",
+      "| # | Phase | Status | Duration | Exit Code |",
+      "|---|-------|--------|----------|-----------|",
+      "| 1 | build | passed | 1.0s | 0 |",
+      "",
+      "## Phase: build",
+      "",
+      "```",
+      "Build succeeded",
+      "```",
+      "",
+    ].join("\n");
+
+    const state = makeStateWithVerificationResult("my-change", allPassedContent);
+    const deps = makeMinimalDeps("my-change");
+    const message = BuildFixerStep.buildMessage(state, deps);
+
+    expect(message).not.toContain("## Verification Failures");
+  });
+});
+
+// TC-NEW-3: buildMessage with no fileContent (null/undefined)
+describe("BuildFixerStep.buildMessage — fileContent が null/undefined", () => {
+  it("fileContent=null → Verification Failures セクションなし、findingsPath 参照のみ", () => {
+    const state = makeStateWithVerificationResult("my-change", null);
+    const deps = makeMinimalDeps("my-change");
+    const message = BuildFixerStep.buildMessage(state, deps);
+
+    expect(message).not.toContain("## Verification Failures");
+    expect(message).toContain("verification-result.md");
+  });
+
+  it("fileContent=undefined (旧 state) → Verification Failures セクションなし、findingsPath 参照のみ", () => {
+    // Simulate old state where fileContent field is absent
+    const state = makeMinimalState({
+      steps: {
+        verification: [
+          {
+            attempt: 1,
+            sessionId: null,
+            outcome: {
+              verdict: "failed",
+              findingsPath: "openspec/changes/my-change/verification-result.md",
+              // fileContent field omitted (undefined)
+              error: null,
+            },
+            startedAt: "2026-01-01T00:00:00.000Z",
+            endedAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+      },
+    });
+    const deps = makeMinimalDeps("my-change");
+    const message = BuildFixerStep.buildMessage(state, deps);
+
+    expect(message).not.toContain("## Verification Failures");
+    expect(message).toContain("verification-result.md");
   });
 });
 

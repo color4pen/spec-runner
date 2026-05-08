@@ -8,6 +8,7 @@ import { BUILD_FIXER_SYSTEM_PROMPT } from "../../prompts/build-fixer-system.js";
 import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { SpecRunnerError, branchNotSetError } from "../../errors.js";
+import { extractVerificationFailures } from "../verification/parse-result.js";
 
 const BUILD_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -77,13 +78,16 @@ export const BuildFixerStep: AgentStep = {
 
     const findingsPath = verificationResult.findingsPath;
 
+    // Build the inline failure context from fileContent when available.
+    const failureSection = buildFailureSection(verificationResult.fileContent);
+
     return `<user-request>
 You are the build-fixer for the following change:
 
 Change folder: openspec/changes/${deps.slug}
 Branch: ${branch}
 Verification result: ${findingsPath}
-
+${failureSection}
 Please:
 1. Read the verification result at ${findingsPath}
 2. Identify all failed phases and their error logs
@@ -105,3 +109,38 @@ ${deps.request.content}
     return NULL_PARSE_RESULT;
   },
 };
+
+/**
+ * Build the "## Verification Failures" section for the build-fixer initial message.
+ *
+ * When fileContent is available, extracts failed phases and their error output inline
+ * so the agent can start fixing immediately without an extra file read turn.
+ *
+ * Returns an empty string when fileContent is null/undefined (fallback to findingsPath only).
+ * Returns an empty string when no failures are found in fileContent.
+ */
+function buildFailureSection(fileContent: string | null | undefined): string {
+  if (!fileContent) {
+    return "";
+  }
+
+  const failures = extractVerificationFailures(fileContent);
+  if (failures.length === 0) {
+    return "";
+  }
+
+  const lines: string[] = ["", "## Verification Failures", ""];
+
+  for (const failure of failures) {
+    lines.push(`- **Failed phase**: ${failure.phase}`);
+    lines.push(`- **Exit code**: ${failure.exitCode}`);
+    lines.push("");
+    lines.push("### Error output");
+    lines.push("```");
+    lines.push(failure.output);
+    lines.push("```");
+    lines.push("");
+  }
+
+  return lines.join("\n");
+}
