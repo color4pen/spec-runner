@@ -78,7 +78,30 @@ export class Pipeline {
       return result;
     } catch (err) {
       const errState = (err as Record<string, unknown>)["state"] as JobState | undefined;
-      const finalState = errState ?? jobState;
+      let finalState = errState ?? jobState;
+
+      // Last-resort safety net: if state is still "running" after an unhandled throw,
+      // transition to awaiting-resume so the job is resumable (not stuck).
+      if (finalState.status === "running") {
+        const store = new JobStateStore(finalState.jobId);
+        finalState = {
+          ...finalState,
+          status: "awaiting-resume",
+          resumePoint: {
+            step: (finalState.step ?? "propose") as StepName,
+            reason: (err as Error).message ?? String(err),
+            iterationsExhausted: 0,
+          },
+          error: {
+            code: "PIPELINE_UNHANDLED_ERROR",
+            message: (err as Error).message ?? String(err),
+            hint: "",
+          },
+          updatedAt: new Date().toISOString(),
+        };
+        await store.persist(finalState);
+      }
+
       this.events.emit("pipeline:fail", {
         state: finalState,
         reason: (err as Error).message,
@@ -155,8 +178,17 @@ export class Pipeline {
         const errWithState = err as { state?: JobState };
         if (errWithState.state) {
           state = errWithState.state;
+        } else {
+          // Safety net: executor threw without attaching state.
+          // Mark as failed so getStepOutcome() returns "error" and
+          // the transition table routes to "escalate" → awaiting-resume.
+          const store = new JobStateStore(state.jobId);
+          state = await store.fail(state, {
+            code: "UNEXPECTED_STEP_ERROR",
+            message: (err as Error).message ?? String(err),
+            hint: "",
+          }, currentStep);
         }
-        // state.status will be "failed" — outcome detection below handles it
       }
 
       // Persist state after each step for crash resilience

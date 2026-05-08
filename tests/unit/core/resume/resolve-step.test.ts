@@ -94,3 +94,79 @@ describe("resolveResumeStep - null resumePoint with fallbackStep", () => {
     expect(resolveResumeStep("critic", null, "unknown-step")).toBe("code-review");
   });
 });
+
+// T4.1: crash (iterationsExhausted=0) → resumePoint.step から再開 (要件 9)
+describe("T4.1: resolveResumeStep - crash (iterationsExhausted=0) → restart from resumePoint.step", () => {
+  it("implementer crash (iterationsExhausted=0) → implementer", () => {
+    expect(resolveResumeStep(undefined, { step: "implementer", reason: "crash", iterationsExhausted: 0 })).toBe("implementer");
+  });
+
+  it("propose crash (iterationsExhausted=0) → propose", () => {
+    expect(resolveResumeStep(undefined, { step: "propose", reason: "crash", iterationsExhausted: 0 })).toBe("propose");
+  });
+
+  it("verification crash (iterationsExhausted=0) → verification", () => {
+    expect(resolveResumeStep(undefined, { step: "verification", reason: "crash", iterationsExhausted: 0 })).toBe("verification");
+  });
+
+  it("spec-review crash (iterationsExhausted=0) → spec-review (crash, not exhaustion)", () => {
+    expect(resolveResumeStep(undefined, { step: "spec-review", reason: "crash", iterationsExhausted: 0 })).toBe("spec-review");
+  });
+
+  it("code-review crash (iterationsExhausted=0) → code-review (crash, not exhaustion)", () => {
+    expect(resolveResumeStep(undefined, { step: "code-review", reason: "crash", iterationsExhausted: 0 })).toBe("code-review");
+  });
+});
+
+// T4.2: review exhaustion (iterationsExhausted>0, reviewer step) → fixer (要件 10)
+describe("T4.2: resolveResumeStep - review exhaustion (iterationsExhausted>0, reviewer) → fixer", () => {
+  it("spec-review exhausted (iterationsExhausted=3) → spec-fixer", () => {
+    expect(resolveResumeStep(undefined, { step: "spec-review", reason: "exhausted", iterationsExhausted: 3 })).toBe("spec-fixer");
+  });
+
+  it("code-review exhausted (iterationsExhausted=3) → code-fixer", () => {
+    expect(resolveResumeStep(undefined, { step: "code-review", reason: "exhausted", iterationsExhausted: 3 })).toBe("code-fixer");
+  });
+
+  it("spec-review exhausted (iterationsExhausted=1) → spec-fixer", () => {
+    expect(resolveResumeStep(undefined, { step: "spec-review", reason: "exhausted", iterationsExhausted: 1 })).toBe("spec-fixer");
+  });
+});
+
+// T4.3: non-reviewer step + iterationsExhausted>0 → resumePoint.step (crash 扱い)
+describe("T4.3: resolveResumeStep - non-reviewer + iterationsExhausted>0 → resumePoint.step", () => {
+  it("verification exhausted (iterationsExhausted=3) → verification (not a reviewer)", () => {
+    expect(resolveResumeStep(undefined, { step: "verification", reason: "exhausted", iterationsExhausted: 3 })).toBe("verification");
+  });
+
+  it("implementer exhausted (iterationsExhausted=2) → implementer (not a reviewer)", () => {
+    expect(resolveResumeStep(undefined, { step: "implementer", reason: "exhausted", iterationsExhausted: 2 })).toBe("implementer");
+  });
+
+  it("build-fixer exhausted (iterationsExhausted=1) → build-fixer (not a reviewer)", () => {
+    expect(resolveResumeStep(undefined, { step: "build-fixer", reason: "exhausted", iterationsExhausted: 1 })).toBe("build-fixer");
+  });
+});
+
+// T4.4: --from 指定時は --from が最優先 (要件 11)
+describe("T4.4: resolveResumeStep - --from specified → role-based mapping takes priority", () => {
+  it("--from creator + code-review exhausted → implementer (creator role wins)", () => {
+    expect(resolveResumeStep("creator", { step: "code-review", reason: "exhausted", iterationsExhausted: 3 })).toBe("implementer");
+  });
+
+  it("--from fixer + implementer crash → code-fixer (fixer role wins)", () => {
+    expect(resolveResumeStep("fixer", { step: "implementer", reason: "crash", iterationsExhausted: 0 })).toBe("code-fixer");
+  });
+
+  it("--from critic + implementer crash → code-review (critic role wins)", () => {
+    expect(resolveResumeStep("critic", { step: "implementer", reason: "crash", iterationsExhausted: 0 })).toBe("code-review");
+  });
+
+  it("--from creator + spec-review exhausted → propose (creator role, spec phase)", () => {
+    expect(resolveResumeStep("creator", { step: "spec-review", reason: "exhausted", iterationsExhausted: 3 })).toBe("propose");
+  });
+
+  it("--from fixer + spec-review crash (iterationsExhausted=0) → spec-fixer (fixer role wins)", () => {
+    expect(resolveResumeStep("fixer", { step: "spec-review", reason: "crash", iterationsExhausted: 0 })).toBe("spec-fixer");
+  });
+});
