@@ -20,11 +20,9 @@ import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs, FinishFlags } from "./types.js";
 import { loadJobState, updateJobState } from "../../state/store.js";
 import { resolveTarget } from "./resolve-target.js";
-import {
-  runPreflight,
-  fetchPrViewWithRetryForTest as fetchPrViewWithRetry,
-  pollMergeStateAfterPushForTest as pollMergeStateAfterPush,
-} from "./preflight.js";
+import { runPreflight } from "./preflight.js";
+import { fetchPrViewWithRetry, pollMergeStateAfterPush } from "./pr-status.js";
+import { spawnOrEscalate } from "./spawn-helper.js";
 import { archiveOpenspec } from "./archive-openspec.js";
 import { moveRequestsDir } from "./move-requests-dir.js";
 import { assertJobFinishable, markJobArchived } from "./job-state-update.js";
@@ -261,31 +259,30 @@ export async function runFinishOrchestrator(
     const isOnMain = currentBranch === baseBranch;
 
     if (isOnMain) {
-      const checkoutMainResult = await spawn("git", ["checkout", baseBranch], { cwd });
-      if (checkoutMainResult.exitCode !== 0) {
-        return {
-          exitCode: 1,
-          escalation: formatEscalation({
-            failedStep: `Phase 4 (git checkout ${baseBranch})`,
-            detectedState: `git checkout ${baseBranch} failed (exit ${checkoutMainResult.exitCode})`,
-            recommendedAction: `Check git error: ${checkoutMainResult.stderr.trim()}. Then re-run: specrunner finish ${target.slug}`,
-            resumeCommand: `specrunner finish ${target.slug}`,
-          }),
-        };
+      // git checkout <baseBranch>
+      const checkoutMainResult = await spawnOrEscalate({
+        spawn,
+        cmd: "git",
+        args: ["checkout", baseBranch],
+        cwd,
+        failedStep: `Phase 4 (git checkout ${baseBranch})`,
+        resumeCommand: `specrunner finish ${target.slug}`,
+      });
+      if (!checkoutMainResult.ok) {
+        return { exitCode: 1, escalation: checkoutMainResult.escalation };
       }
 
       // git pull --ff-only
-      const pullResult = await spawn("git", ["pull", "--ff-only"], { cwd });
-      if (pullResult.exitCode !== 0) {
-        return {
-          exitCode: 1,
-          escalation: formatEscalation({
-            failedStep: "Phase 4 (git pull --ff-only)",
-            detectedState: `git pull --ff-only failed (exit ${pullResult.exitCode})`,
-            recommendedAction: `Check git error: ${pullResult.stderr.trim()}. Then re-run: specrunner finish ${target.slug}`,
-            resumeCommand: `specrunner finish ${target.slug}`,
-          }),
-        };
+      const pullResult = await spawnOrEscalate({
+        spawn,
+        cmd: "git",
+        args: ["pull", "--ff-only"],
+        cwd,
+        failedStep: "Phase 4 (git pull --ff-only)",
+        resumeCommand: `specrunner finish ${target.slug}`,
+      });
+      if (!pullResult.ok) {
+        return { exitCode: 1, escalation: pullResult.escalation };
       }
     } else {
       // Running from a linked worktree — skip checkout/pull to avoid the
@@ -336,37 +333,29 @@ async function checkoutFeatureBranch(params: {
   const { branch, cwd, spawn, slug } = params;
 
   // git fetch origin <branch>
-  const fetchResult = await spawn("git", ["fetch", "origin", branch], { cwd });
-  if (fetchResult.exitCode !== 0) {
-    return {
-      ok: false,
-      escalation: formatEscalation({
-        failedStep: "Phase 1 (git fetch)",
-        detectedState: `git fetch origin ${branch} failed (exit ${fetchResult.exitCode})`,
-        recommendedAction: `Check network: ${fetchResult.stderr.trim()}. Then re-run: specrunner finish ${slug}`,
-        resumeCommand: `specrunner finish ${slug}`,
-      }),
-      exitCode: 1,
-    };
+  const fetchResult = await spawnOrEscalate({
+    spawn,
+    cmd: "git",
+    args: ["fetch", "origin", branch],
+    cwd,
+    failedStep: "Phase 1 (git fetch)",
+    resumeCommand: `specrunner finish ${slug}`,
+  });
+  if (!fetchResult.ok) {
+    return { ok: false, escalation: fetchResult.escalation, exitCode: 1 };
   }
 
   // git checkout -B <branch> origin/<branch>
-  const checkoutResult = await spawn(
-    "git",
-    ["checkout", "-B", branch, `origin/${branch}`],
-    { cwd },
-  );
-  if (checkoutResult.exitCode !== 0) {
-    return {
-      ok: false,
-      escalation: formatEscalation({
-        failedStep: "Phase 1 (git checkout -B)",
-        detectedState: `git checkout -B ${branch} failed (exit ${checkoutResult.exitCode})`,
-        recommendedAction: `Check git error: ${checkoutResult.stderr.trim()}. Then re-run: specrunner finish ${slug}`,
-        resumeCommand: `specrunner finish ${slug}`,
-      }),
-      exitCode: 1,
-    };
+  const checkoutResult = await spawnOrEscalate({
+    spawn,
+    cmd: "git",
+    args: ["checkout", "-B", branch, `origin/${branch}`],
+    cwd,
+    failedStep: "Phase 1 (git checkout -B)",
+    resumeCommand: `specrunner finish ${slug}`,
+  });
+  if (!checkoutResult.ok) {
+    return { ok: false, escalation: checkoutResult.escalation, exitCode: 1 };
   }
 
   return { ok: true };
@@ -384,18 +373,16 @@ async function pushFeatureBranch(params: {
 }): Promise<PhaseResult> {
   const { branch, cwd, spawn, slug } = params;
 
-  const pushResult = await spawn("git", ["push", "origin", branch], { cwd });
-  if (pushResult.exitCode !== 0) {
-    return {
-      ok: false,
-      escalation: formatEscalation({
-        failedStep: "Phase 2 (git push)",
-        detectedState: `git push origin ${branch} failed (exit ${pushResult.exitCode})`,
-        recommendedAction: `Check git error: ${pushResult.stderr.trim()}. Then re-run: specrunner finish ${slug}`,
-        resumeCommand: `specrunner finish ${slug}`,
-      }),
-      exitCode: 1,
-    };
+  const pushResult = await spawnOrEscalate({
+    spawn,
+    cmd: "git",
+    args: ["push", "origin", branch],
+    cwd,
+    failedStep: "Phase 2 (git push)",
+    resumeCommand: `specrunner finish ${slug}`,
+  });
+  if (!pushResult.ok) {
+    return { ok: false, escalation: pushResult.escalation, exitCode: 1 };
   }
 
   return { ok: true };
@@ -426,19 +413,16 @@ async function mergeFeaturePrPhase3(params: MergePhase3Params): Promise<PhaseRes
     mergeArgs.push("--admin");
   }
 
-  const result = await spawn("gh", mergeArgs, { cwd });
-
-  if (result.exitCode !== 0) {
-    return {
-      ok: false,
-      escalation: formatEscalation({
-        failedStep: "Phase 3 (gh pr merge)",
-        detectedState: `gh pr merge failed (exit ${result.exitCode})`,
-        recommendedAction: `Check gh error: ${result.stderr.trim()}. Then re-run: specrunner finish ${slug}`,
-        resumeCommand: `specrunner finish ${slug}`,
-      }),
-      exitCode: 1,
-    };
+  const mergeResult = await spawnOrEscalate({
+    spawn,
+    cmd: "gh",
+    args: mergeArgs,
+    cwd,
+    failedStep: "Phase 3 (gh pr merge)",
+    resumeCommand: `specrunner finish ${slug}`,
+  });
+  if (!mergeResult.ok) {
+    return { ok: false, escalation: mergeResult.escalation, exitCode: 1 };
   }
 
   return { ok: true };

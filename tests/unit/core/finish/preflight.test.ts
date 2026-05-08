@@ -9,11 +9,11 @@
  * TC-CHECKOUT-4: validate 成功 → restore 失敗 → warning 出力のみ、{ ok: true }
  */
 import { describe, it, expect, vi } from "vitest";
+import { runPreflight } from "../../../../src/core/finish/preflight.js";
 import {
-  fetchPrViewWithRetryForTest,
-  pollMergeStateAfterPushForTest,
-  runPreflight,
-} from "../../../../src/core/finish/preflight.js";
+  fetchPrViewWithRetry,
+  pollMergeStateAfterPush,
+} from "../../../../src/core/finish/pr-status.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
 import type { ResolvedTarget, FinishFs } from "../../../../src/core/finish/types.js";
 
@@ -43,7 +43,7 @@ describe("TC-013: preflight MERGED bypass — MERGED + UNKNOWN → immediate suc
 
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 
-    const result = await fetchPrViewWithRetryForTest({
+    const result = await fetchPrViewWithRetry({
       prNumber: 42,
       cwd: "/tmp",
       spawn,
@@ -74,7 +74,7 @@ describe("TC-013: preflight MERGED bypass — MERGED + UNKNOWN → immediate suc
       }),
     );
 
-    const result = await fetchPrViewWithRetryForTest({
+    const result = await fetchPrViewWithRetry({
       prNumber: 99,
       cwd: "/tmp",
       spawn,
@@ -117,7 +117,7 @@ describe("TC-014: preflight MERGED bypass — OPEN + UNKNOWN → retry logic run
 
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 
-    const result = await fetchPrViewWithRetryForTest({
+    const result = await fetchPrViewWithRetry({
       prNumber: 42,
       cwd: "/tmp",
       spawn,
@@ -154,7 +154,7 @@ describe("TC-014: preflight MERGED bypass — OPEN + UNKNOWN → retry logic run
 
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 
-    const result = await fetchPrViewWithRetryForTest({
+    const result = await fetchPrViewWithRetry({
       prNumber: 42,
       cwd: "/tmp",
       spawn,
@@ -360,11 +360,6 @@ describe("TC-CHECKOUT-3: checkout fail → escalation (no validate, no restore)"
 describe("TC-CHECKOUT-4: validate success → restore fail → warning only, ok:true", () => {
   it("returns ok:true even when restore fails, writing a warning to stderr", async () => {
     const stderrWrites: string[] = [];
-    const originalStderrWrite = process.stderr.write.bind(process.stderr);
-    process.stderr.write = vi.fn().mockImplementation((msg: string) => {
-      stderrWrites.push(msg);
-      return true;
-    });
 
     let checkoutCount = 0;
 
@@ -400,22 +395,24 @@ describe("TC-CHECKOUT-4: validate success → restore fail → warning only, ok:
       return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
     });
 
-    try {
-      const result = await runPreflight({
-        target: BASE_TARGET,
-        cwd: "/tmp",
-        spawn,
-        fs: makeFs(true),
-        dryRun: false,
-      });
+    // Use warnFn DI to capture warnings instead of patching process.stderr.write
+    const warnFn = vi.fn().mockImplementation((msg: string) => {
+      stderrWrites.push(msg);
+    });
 
-      expect(result.ok).toBe(true);
-      // A warning should have been written to stderr
-      const hasWarning = stderrWrites.some((msg) => msg.toLowerCase().includes("warning"));
-      expect(hasWarning).toBe(true);
-    } finally {
-      process.stderr.write = originalStderrWrite;
-    }
+    const result = await runPreflight({
+      target: BASE_TARGET,
+      cwd: "/tmp",
+      spawn,
+      fs: makeFs(true),
+      dryRun: false,
+      warnFn,
+    });
+
+    expect(result.ok).toBe(true);
+    // A warning should have been written via warnFn
+    const hasWarning = stderrWrites.some((msg) => msg.toLowerCase().includes("warning"));
+    expect(hasWarning).toBe(true);
   });
 });
 
@@ -530,7 +527,7 @@ describe("pollMergeStateAfterPush", () => {
     });
     const sleepFn = vi.fn();
 
-    const result = await pollMergeStateAfterPushForTest({
+    const result = await pollMergeStateAfterPush({
       prNumber: 42,
       cwd: "/tmp",
       spawn,
@@ -559,7 +556,7 @@ describe("pollMergeStateAfterPush", () => {
     });
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 
-    const result = await pollMergeStateAfterPushForTest({
+    const result = await pollMergeStateAfterPush({
       prNumber: 42,
       cwd: "/tmp",
       spawn,
@@ -582,7 +579,7 @@ describe("pollMergeStateAfterPush", () => {
     });
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 
-    const result = await pollMergeStateAfterPushForTest({
+    const result = await pollMergeStateAfterPush({
       prNumber: 42,
       cwd: "/tmp",
       spawn,
@@ -606,7 +603,7 @@ describe("pollMergeStateAfterPush", () => {
     });
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 
-    const result = await pollMergeStateAfterPushForTest({
+    const result = await pollMergeStateAfterPush({
       prNumber: 42,
       cwd: "/tmp",
       spawn,
@@ -636,7 +633,7 @@ describe("pollMergeStateAfterPush", () => {
     });
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 
-    const result = await pollMergeStateAfterPushForTest({
+    const result = await pollMergeStateAfterPush({
       prNumber: 42,
       cwd: "/tmp",
       spawn,

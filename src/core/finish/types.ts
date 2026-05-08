@@ -4,6 +4,16 @@
 import type { SpawnFn } from "../../util/spawn.js";
 
 /**
+ * Data returned from gh pr view for the feature PR.
+ * Shared between preflight.ts and pr-status.ts.
+ */
+export interface PrViewData {
+  state: string;
+  mergeStateStatus?: string;
+  headRefName?: string;
+}
+
+/**
  * Resolved target from input resolution (jobId / --slug / active detection).
  */
 export interface ResolvedTarget {

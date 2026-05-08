@@ -1,0 +1,180 @@
+/**
+ * PR status fetching and polling for the finish command.
+ *
+ * Responsibilities:
+ *   - fetchPrViewWithRetry: Check 3+4 (gh pr view + UNKNOWN retry)
+ *   - pollMergeStateAfterPush: Phase 2 post-push mergeStateStatus polling
+ */
+import type { SpawnFn } from "../../util/spawn.js";
+import type { PrViewData } from "./types.js";
+import { formatEscalation } from "./escalation.js";
+
+export type { PrViewData };
+
+export type PrViewFetchResult =
+  | { ok: true; data: PrViewData }
+  | { ok: false; escalation: string };
+
+const UNKNOWN_RETRY_COUNT = 3;
+const UNKNOWN_RETRY_DELAY_MS = 3000;
+
+const POST_PUSH_RETRY_COUNT = 5;
+const POST_PUSH_RETRY_DELAY_MS = 3000;
+
+/**
+ * Fetch PR view from gh CLI with retry on UNKNOWN mergeStateStatus.
+ * Implements Check 3 (gh pr view success) and Check 4 (UNKNOWN retry).
+ *
+ * Bypass: MERGED PRs with UNKNOWN mergeStateStatus return success immediately
+ * (GitHub always returns UNKNOWN for MERGED PRs — merge-ability check is moot).
+ */
+export async function fetchPrViewWithRetry(params: {
+  prNumber: number;
+  cwd: string;
+  spawn: SpawnFn;
+  slug: string;
+  sleepFn?: (ms: number) => Promise<void>;
+}): Promise<PrViewFetchResult> {
+  const { prNumber, cwd, spawn, slug } = params;
+  const sleepImpl = params.sleepFn ?? sleep;
+
+  for (let attempt = 1; attempt <= UNKNOWN_RETRY_COUNT; attempt++) {
+    // Check 3: gh pr view
+    const result = await spawn(
+      "gh",
+      ["pr", "view", String(prNumber), "--json", "state,mergeStateStatus,headRefName"],
+      { cwd },
+    );
+
+    if (result.exitCode !== 0) {
+      return {
+        ok: false,
+        escalation: formatEscalation({
+          failedStep: "Phase 0 check 3 (gh pr view)",
+          detectedState: `gh pr view ${prNumber} failed (exit ${result.exitCode})`,
+          recommendedAction: `Check gh authentication: specrunner login. Error: ${result.stderr.trim()}`,
+          resumeCommand: `specrunner finish ${slug}`,
+        }),
+      };
+    }
+
+    let parsed: PrViewData;
+    try {
+      parsed = JSON.parse(result.stdout.trim()) as PrViewData;
+    } catch {
+      return {
+        ok: false,
+        escalation: formatEscalation({
+          failedStep: "Phase 0 check 3 (gh pr view parse)",
+          detectedState: `Failed to parse gh pr view output`,
+          recommendedAction: `Check gh CLI version. Output was: ${result.stdout.slice(0, 200)}`,
+          resumeCommand: `specrunner finish ${slug}`,
+        }),
+      };
+    }
+
+    // Check 4: UNKNOWN retry — but bypass for MERGED PRs.
+    // GitHub API returns mergeStateStatus=UNKNOWN for PRs in MERGED state.
+    // MERGED is an irreversible terminal state; merge-ability check is unnecessary.
+    if ((parsed.mergeStateStatus ?? "").toUpperCase() === "UNKNOWN") {
+      if (parsed.state === "MERGED") {
+        // MERGED PR with UNKNOWN mergeStateStatus — bypass retry, return success immediately.
+        return { ok: true, data: parsed };
+      }
+      if (attempt < UNKNOWN_RETRY_COUNT) {
+        process.stdout.write(
+          `Retrying check 4: mergeStateStatus was UNKNOWN (attempt ${attempt}/${UNKNOWN_RETRY_COUNT})...\n`,
+        );
+        await sleepImpl(UNKNOWN_RETRY_DELAY_MS);
+        continue;
+      }
+      // All retries exhausted
+      return {
+        ok: false,
+        escalation: formatEscalation({
+          failedStep: "Phase 0 check 4 (mergeStateStatus UNKNOWN)",
+          detectedState: `mergeStateStatus is UNKNOWN after ${UNKNOWN_RETRY_COUNT} retries`,
+          recommendedAction:
+            `GitHub's merge state is still computing. Wait a moment and re-run:\n  specrunner finish ${slug}`,
+          resumeCommand: `specrunner finish ${slug}`,
+        }),
+      };
+    }
+
+    return { ok: true, data: parsed };
+  }
+
+  // Unreachable, but TypeScript needs this
+  return {
+    ok: false,
+    escalation: formatEscalation({
+      failedStep: "Phase 0 check 4 (mergeStateStatus UNKNOWN)",
+      detectedState: `mergeStateStatus is UNKNOWN after ${UNKNOWN_RETRY_COUNT} retries`,
+      recommendedAction: `Wait a moment and re-run: specrunner finish ${slug}`,
+      resumeCommand: `specrunner finish ${slug}`,
+    }),
+  };
+}
+
+/**
+ * Poll mergeStateStatus after Phase 2 push until CLEAN or retries exhausted.
+ *
+ * Unlike fetchPrViewWithRetry (Phase 0), this function:
+ * - Retries on ANY non-CLEAN status (not just UNKNOWN)
+ * - Does NOT escalate on exhaustion — returns current state for Phase 3 to attempt merge
+ */
+export async function pollMergeStateAfterPush(params: {
+  prNumber: number;
+  cwd: string;
+  spawn: SpawnFn;
+  slug: string;
+  sleepFn?: (ms: number) => Promise<void>;
+}): Promise<{ mergeStateStatus: string }> {
+  const { prNumber, cwd, spawn, slug: _slug } = params;
+  const sleepImpl = params.sleepFn ?? sleep;
+
+  for (let attempt = 1; attempt <= POST_PUSH_RETRY_COUNT; attempt++) {
+    const result = await spawn(
+      "gh",
+      ["pr", "view", String(prNumber), "--json", "mergeStateStatus"],
+      { cwd },
+    );
+
+    if (result.exitCode !== 0) {
+      // gh pr view failed — return empty string so Phase 3 attempts merge without --admin
+      return { mergeStateStatus: "" };
+    }
+
+    let parsed: { mergeStateStatus?: string };
+    try {
+      parsed = JSON.parse(result.stdout.trim());
+    } catch {
+      return { mergeStateStatus: "" };
+    }
+
+    const status = (parsed.mergeStateStatus ?? "").toUpperCase();
+    if (status === "CLEAN") {
+      return { mergeStateStatus: status };
+    }
+
+    // DIRTY means merge conflicts exist — this is a confirmed state that won't resolve itself.
+    // Return immediately so the orchestrator can escalate without retrying.
+    if (status === "DIRTY") {
+      return { mergeStateStatus: status };
+    }
+
+    if (attempt < POST_PUSH_RETRY_COUNT) {
+      process.stdout.write(
+        `Post-push polling: mergeStateStatus=${status}, retrying (${attempt}/${POST_PUSH_RETRY_COUNT})...\n`,
+      );
+      await sleepImpl(POST_PUSH_RETRY_DELAY_MS);
+    }
+  }
+
+  // Exhausted — return empty string so Phase 3 attempts merge anyway (no escalation)
+  return { mergeStateStatus: "" };
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
