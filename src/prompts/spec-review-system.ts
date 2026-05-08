@@ -114,7 +114,19 @@ export function buildSpecReviewSystemPrompt(_input: SpecReviewPromptInput): stri
  */
 function buildSpecReviewModeInstruction(mode: "full" | "lightweight"): string {
   if (mode === "lightweight") {
-    return "Review scope: Architecture and specification review only. Security review is not required for this request type.";
+    return `Review scope: Lightweight review — this is a behavior-preserving change.
+
+Verify (review normally):
+- architecture: design patterns, responsibility separation, dependency direction
+- correctness: logic, boundary conditions, edge cases
+
+Simplify (reduced scope):
+- completeness: verify task decomposition coverage only. Requirements coverage is not applicable for behavior-preserving changes.
+- consistency: skip cross-referencing with existing specs. No spec changes are expected.
+
+Skip (do not review):
+- feasibility: effort estimation is not required for refactoring/chore.
+- security: not required for this request type.`;
   }
   return "Review scope: Full review including security considerations (authentication, input validation, OWASP Top 10 where applicable).";
 }

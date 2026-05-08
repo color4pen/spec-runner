@@ -111,9 +111,10 @@ export class ClaudeCodeRunner implements AgentRunner {
 
     // Resolve execution config: step-level > config defaults > step hardcoded > SDK default
     // D2/D3 (design.md): getStepExecutionConfig() resolves model, maxTurns, timeoutMs
+    const dynamicMaxTurns = step.getMaxTurns?.(state);
     const resolvedConfig = getStepExecutionConfig(ctx.config, step.name, {
       model: step.agent.model,
-      maxTurns: step.maxTurns,
+      maxTurns: dynamicMaxTurns ?? step.maxTurns,
     });
 
     // TC-006/TC-007: maxTurns: null → omit maxTurns from options (unlimited)

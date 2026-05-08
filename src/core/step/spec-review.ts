@@ -73,6 +73,11 @@ export const SpecReviewStep: AgentStep = {
   // Design D3 (propose-openspec-cli-and-step-model-config).
   maxTurns: 15,
 
+  getMaxTurns(state: JobState): number | undefined {
+    const mode = getSpecReviewMode(state.request.type);
+    return mode === "lightweight" ? 10 : undefined;
+  },
+
   buildMessage(state: JobState, deps: StepDeps): string {
     const iteration = computeSpecReviewIteration(state);
     const findingsPath = buildFindingsPath(deps.slug, iteration);

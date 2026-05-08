@@ -99,6 +99,14 @@ export interface AgentStep {
   maxTurns?: number;
 
   /**
+   * Compute maxTurns dynamically based on runtime state.
+   * When defined and returns a number, this value is used as the step-level
+   * default (priority 3 in the resolution chain) instead of step.maxTurns.
+   * When undefined or returns undefined, step.maxTurns is used as fallback.
+   */
+  getMaxTurns?(state: JobState): number | undefined;
+
+  /**
    * If true, StepExecutor sets state.branch after this step completes (local runtime path only).
    * Used for steps that create the feature branch as a side effect of their execution
    * (e.g., propose). The branch is set to `feat/${slug}` if state.branch is not already set.
