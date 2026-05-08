@@ -14,7 +14,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { LocalRuntime } from "../../../../src/core/runtime/local.js";
-import type { QueryFn, SdkQueryFn } from "../../../../src/adapter/claude-code/agent-runner.js";
+import type { QueryFn } from "../../../../src/adapter/claude-code/agent-runner.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -658,72 +658,3 @@ describe("TC-LR-013: query() passthroughs sessionId/continue/resume/includeParti
   });
 });
 
-// TC-LR-014: queryInteractive() returns Query object from sdkQueryFn
-describe("TC-LR-014: queryInteractive() returns Query object from sdkQueryFn", () => {
-  it("returns the Query object (sdkQueryFn return value) without iterating it", () => {
-    const githubClient = buildMockGitHubClient();
-
-    // Mock Query object with methods that should be preserved
-    const mockQuery = {
-      interrupt: vi.fn().mockResolvedValue(undefined),
-      streamInput: vi.fn().mockResolvedValue(undefined),
-      [Symbol.asyncIterator]: vi.fn(),
-      next: vi.fn(),
-      return: vi.fn(),
-      throw: vi.fn(),
-    };
-
-    const mockSdkQueryFn = vi.fn().mockReturnValue(mockQuery);
-
-    const runtime = new LocalRuntime({
-      cwd: tempDir,
-      githubClient,
-      sdkQueryFn: mockSdkQueryFn as unknown as SdkQueryFn,
-    });
-
-    async function* mockPrompt() {
-      yield { type: "user" as const, message: { role: "user" as const, content: "hello" }, parent_tool_use_id: null };
-    }
-
-    // Call queryInteractive — should return Query object directly without for-await
-    const result = runtime.queryInteractive(mockPrompt());
-
-    expect(result).toBe(mockQuery);
-    expect(result.interrupt).toBeDefined();
-    expect(mockSdkQueryFn).toHaveBeenCalledTimes(1);
-    // The prompt passed to sdkQueryFn should be the async iterable
-    const callArgs = mockSdkQueryFn.mock.calls[0] as [{ prompt: AsyncIterable<unknown>; options?: Record<string, unknown> }];
-    expect(callArgs[0]).toHaveProperty("prompt");
-    expect(callArgs[0]).toHaveProperty("options");
-  });
-
-  it("passes buildSdkOptions result to sdkQueryFn", () => {
-    const githubClient = buildMockGitHubClient();
-    let capturedOptions: Record<string, unknown> | undefined;
-
-    const mockQuery = { interrupt: vi.fn(), [Symbol.asyncIterator]: vi.fn(), next: vi.fn(), return: vi.fn(), throw: vi.fn() };
-    const mockSdkQueryFn = vi.fn().mockImplementation(
-      (params: { prompt: AsyncIterable<unknown>; options?: Record<string, unknown> }) => {
-        capturedOptions = params.options;
-        return mockQuery;
-      },
-    );
-
-    const runtime = new LocalRuntime({
-      cwd: tempDir,
-      githubClient,
-      sdkQueryFn: mockSdkQueryFn as unknown as SdkQueryFn,
-    });
-
-    async function* mockPrompt() { yield; }
-
-    runtime.queryInteractive(mockPrompt() as AsyncIterable<never>, {
-      sessionId: "interactive-session",
-      model: "claude-opus-4-6",
-    });
-
-    expect(capturedOptions?.["sessionId"]).toBe("interactive-session");
-    expect(capturedOptions?.["model"]).toBe("claude-opus-4-6");
-    expect(capturedOptions?.["permissionMode"]).toBe("bypassPermissions");
-  });
-});

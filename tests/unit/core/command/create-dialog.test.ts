@@ -5,12 +5,11 @@
  * TC-CD-002: detectCompletion — marker present, extracts content
  * TC-CD-003: detectCompletion — marker with no content after it
  * TC-CD-004: detectCompletion — empty string
- * TC-CD-005: createPromptGenerator — initial message + user input + exit
- * TC-CD-006: createPromptGenerator — exit without draft saves nothing
- * TC-CD-007: createPromptGenerator — exit with draft calls onExit
- * TC-CD-008: hasQueryInteractive — true for runtime with method
- * TC-CD-009: hasQueryInteractive — false for runtime without method
  * TC-CD-010: streaming display — text_deltas written to stdout
+ * TC-CD-011: dialog loop — first turn calls query with systemPrompt; no resume
+ * TC-CD-012: dialog loop — second turn calls query with resume: sessionId; no systemPrompt
+ * TC-CD-013: dialog loop — exit/quit saves draft and breaks
+ * TC-CD-014: executeCreateDialog — ManagedRuntime error (non-LocalRuntime)
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
@@ -19,15 +18,33 @@ import * as os from "node:os";
 
 import {
   detectCompletion,
-  createPromptGenerator,
-  hasQueryInteractive,
+  isLocalRuntime,
   finalize,
   executeCreateDialog,
 } from "../../../../src/core/command/create-dialog.js";
-import type { DialogParams, ReadlineInterface } from "../../../../src/core/command/create-dialog.js";
+import type { DialogParams } from "../../../../src/core/command/create-dialog.js";
 import { isTextDelta, isStreamEvent, isToolUseSummary } from "../../../../src/adapter/claude-code/message-types.js";
 import type { RuntimeStrategy } from "../../../../src/core/runtime/strategy.js";
-import type { SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
+import { LocalRuntime } from "../../../../src/core/runtime/local.js";
+import type { QueryFn } from "../../../../src/adapter/claude-code/agent-runner.js";
+
+// ---------------------------------------------------------------------------
+// readline mock — controls question() responses for dialog loop tests
+// ---------------------------------------------------------------------------
+
+// Mutable queue of answers; each test populates this before executeCreateDialog
+const mockAnswerQueue: string[] = [];
+
+vi.mock("readline/promises", () => ({
+  createInterface: () => ({
+    question: vi.fn().mockImplementation(() => {
+      const answer = mockAnswerQueue.shift() ?? "";
+      return Promise.resolve(answer);
+    }),
+    close: vi.fn(),
+    on: vi.fn(),
+  }),
+}));
 
 // ---------------------------------------------------------------------------
 // TC-CD-001 – TC-CD-004: detectCompletion
@@ -87,152 +104,6 @@ describe("TC-CD-004: detectCompletion — empty string", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-CD-005 – TC-CD-007: createPromptGenerator
-// ---------------------------------------------------------------------------
-
-function buildMockRl(answers: string[]): ReadlineInterface {
-  let idx = 0;
-  return {
-    question: vi.fn().mockImplementation(() => {
-      const answer = answers[idx++] ?? "";
-      return Promise.resolve(answer);
-    }),
-    close: vi.fn(),
-  };
-}
-
-function buildInitialMessage(content = "initial user message"): SDKUserMessage {
-  return {
-    type: "user",
-    message: { role: "user", content },
-    parent_tool_use_id: null,
-  };
-}
-
-describe("TC-CD-005: createPromptGenerator — initial message + user input + exit", () => {
-  it("yields initial message first, then user inputs, stops on exit", async () => {
-    const rl = buildMockRl(["first input", "second input", "exit"]);
-    const onExit = vi.fn().mockResolvedValue(undefined);
-    const initial = buildInitialMessage("describe the feature");
-
-    const gen = createPromptGenerator({
-      initialMessage: initial,
-      rl,
-      getLatestDraft: () => null,
-      onExit,
-      getPendingMessage: () => null,
-    });
-
-    const messages: SDKUserMessage[] = [];
-    for await (const msg of gen) {
-      messages.push(msg);
-    }
-
-    // Should yield: initial + "first input" + "second input" (exit stops without yielding)
-    expect(messages).toHaveLength(3);
-    expect(messages[0]).toEqual(initial);
-    expect(messages[1]!.message.content).toBe("first input");
-    expect(messages[2]!.message.content).toBe("second input");
-  });
-
-  it("stops on 'quit' as well", async () => {
-    const rl = buildMockRl(["some input", "quit"]);
-    const onExit = vi.fn().mockResolvedValue(undefined);
-
-    const gen = createPromptGenerator({
-      initialMessage: buildInitialMessage(),
-      rl,
-      getLatestDraft: () => null,
-      onExit,
-      getPendingMessage: () => null,
-    });
-
-    const messages: SDKUserMessage[] = [];
-    for await (const msg of gen) {
-      messages.push(msg);
-    }
-
-    // initial + "some input"; "quit" stops the generator
-    expect(messages).toHaveLength(2);
-  });
-});
-
-describe("TC-CD-006: createPromptGenerator — exit without draft", () => {
-  it("calls onExit with null when no draft content is available", async () => {
-    const rl = buildMockRl(["exit"]);
-    const onExit = vi.fn().mockResolvedValue(undefined);
-
-    const gen = createPromptGenerator({
-      initialMessage: buildInitialMessage(),
-      rl,
-      getLatestDraft: () => null,
-      onExit,
-      getPendingMessage: () => null,
-    });
-
-    // Consume the generator
-    for await (const _ of gen) { /* consume */ }
-
-    expect(onExit).toHaveBeenCalledWith(null);
-  });
-});
-
-describe("TC-CD-007: createPromptGenerator — exit with draft calls onExit", () => {
-  it("calls onExit with the latest draft content", async () => {
-    const rl = buildMockRl(["exit"]);
-    const onExit = vi.fn().mockResolvedValue(undefined);
-    const latestDraft = "# My Feature\n\nSome draft content";
-
-    const gen = createPromptGenerator({
-      initialMessage: buildInitialMessage(),
-      rl,
-      getLatestDraft: () => latestDraft,
-      onExit,
-      getPendingMessage: () => null,
-    });
-
-    for await (const _ of gen) { /* consume */ }
-
-    expect(onExit).toHaveBeenCalledWith(latestDraft);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-CD-008 – TC-CD-009: hasQueryInteractive
-// ---------------------------------------------------------------------------
-
-describe("TC-CD-008: hasQueryInteractive — true when method exists", () => {
-  it("returns true for a runtime with queryInteractive method", () => {
-    const runtimeWithInteractive = {
-      query: vi.fn(),
-      queryInteractive: vi.fn(),
-      createAgentRunner: vi.fn(),
-      setupWorkspace: vi.fn(),
-      buildDeps: vi.fn(),
-      registerCleanup: vi.fn(),
-      teardown: vi.fn(),
-    };
-
-    expect(hasQueryInteractive(runtimeWithInteractive as unknown as RuntimeStrategy)).toBe(true);
-  });
-});
-
-describe("TC-CD-009: hasQueryInteractive — false when method absent", () => {
-  it("returns false for a runtime without queryInteractive method", () => {
-    const runtimeWithout = {
-      query: vi.fn(),
-      createAgentRunner: vi.fn(),
-      setupWorkspace: vi.fn(),
-      buildDeps: vi.fn(),
-      registerCleanup: vi.fn(),
-      teardown: vi.fn(),
-    };
-
-    expect(hasQueryInteractive(runtimeWithout as unknown as RuntimeStrategy)).toBe(false);
-  });
-});
-
-// ---------------------------------------------------------------------------
 // TC-CD-010: streaming display (isTextDelta extraction)
 // ---------------------------------------------------------------------------
 
@@ -286,12 +157,15 @@ beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "create-dialog-test-"));
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+  // Clear answer queue before each test
+  mockAnswerQueue.length = 0;
 });
 
 afterEach(async () => {
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.clearAllMocks();
   vi.restoreAllMocks();
+  mockAnswerQueue.length = 0;
 });
 
 function buildValidRequestMd(opts: { title?: string; type?: string; slug?: string } = {}): string {
@@ -397,11 +271,41 @@ describe("finalize()", () => {
 });
 
 // ---------------------------------------------------------------------------
-// executeCreateDialog — routing tests
+// isLocalRuntime guard
 // ---------------------------------------------------------------------------
 
-describe("executeCreateDialog — ManagedRuntime error", () => {
-  it("returns 1 and writes error when runtime lacks queryInteractive", async () => {
+describe("isLocalRuntime", () => {
+  it("returns true for a LocalRuntime instance", () => {
+    const githubClient = {
+      verifyBranch: vi.fn(),
+      verifyPath: vi.fn(),
+      getRawFile: vi.fn(),
+      verifyTokenScopes: vi.fn(),
+      getRefSha: vi.fn(),
+    };
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient });
+    expect(isLocalRuntime(runtime)).toBe(true);
+  });
+
+  it("returns false for a plain object (ManagedRuntime-like mock)", () => {
+    const mockRuntime = {
+      query: vi.fn(),
+      createAgentRunner: vi.fn(),
+      setupWorkspace: vi.fn(),
+      buildDeps: vi.fn(),
+      registerCleanup: vi.fn(),
+      teardown: vi.fn(),
+    };
+    expect(isLocalRuntime(mockRuntime as unknown as RuntimeStrategy)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-CD-014: executeCreateDialog — non-LocalRuntime error
+// ---------------------------------------------------------------------------
+
+describe("TC-CD-014: executeCreateDialog — non-LocalRuntime error", () => {
+  it("returns 1 and writes error when runtime is not a LocalRuntime instance", async () => {
     const runtime = {
       query: vi.fn(),
       createAgentRunner: vi.fn(),
@@ -409,7 +313,6 @@ describe("executeCreateDialog — ManagedRuntime error", () => {
       buildDeps: vi.fn(),
       registerCleanup: vi.fn(),
       teardown: vi.fn(),
-      // NOTE: no queryInteractive
     } as unknown as RuntimeStrategy;
 
     const exitCode = await executeCreateDialog({
@@ -424,5 +327,161 @@ describe("executeCreateDialog — ManagedRuntime error", () => {
     const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
     const errOutput = stderrMock.mock.calls.map((c: unknown[]) => c[0]).join("");
     expect(errOutput).toContain("Interactive mode requires local runtime");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Helper: build mock github client for LocalRuntime
+// ---------------------------------------------------------------------------
+
+function buildMockGitHubClient() {
+  return {
+    verifyBranch: vi.fn(),
+    verifyPath: vi.fn(),
+    getRawFile: vi.fn(),
+    verifyTokenScopes: vi.fn(),
+    getRefSha: vi.fn(),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// TC-CD-011: dialog loop — first turn calls query with systemPrompt; no resume
+// ---------------------------------------------------------------------------
+
+describe("TC-CD-011: dialog loop — first turn calls query with systemPrompt and no resume", () => {
+  it("first query call includes systemPrompt, no resume, no continue", async () => {
+    const capturedCalls: Array<{ prompt: string; opts: Record<string, unknown> }> = [];
+
+    async function* mockQueryFn(params: { prompt: string | AsyncIterable<unknown>; options?: Record<string, unknown> }) {
+      capturedCalls.push({
+        prompt: params.prompt as string,
+        opts: params.options ?? {},
+      });
+      // Emit result message to end the session
+      yield { type: "result", subtype: "success", session_id: "sdk-session-001" };
+    }
+
+    const runtime = new LocalRuntime({
+      cwd: tempDir,
+      githubClient: buildMockGitHubClient(),
+      queryFn: mockQueryFn as unknown as QueryFn,
+    });
+
+    await executeCreateDialog({
+      description: "test feature",
+      type: "new-feature",
+      slug: "test-feature",
+      cwd: tempDir,
+      runtime,
+    });
+
+    // First call should include systemPrompt and NOT include resume or continue
+    expect(capturedCalls.length).toBeGreaterThanOrEqual(1);
+    const firstCall = capturedCalls[0]!;
+    expect(firstCall.opts["systemPrompt"]).toBeDefined();
+    expect(firstCall.opts["resume"]).toBeUndefined();
+    expect(firstCall.opts["continue"]).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-CD-012: dialog loop — second turn uses resume: sessionId; no systemPrompt
+// ---------------------------------------------------------------------------
+
+describe("TC-CD-012: dialog loop — second turn uses resume: sessionId; no systemPrompt", () => {
+  it("second query call uses resume: sessionId and excludes systemPrompt", async () => {
+    const capturedCalls: Array<{ prompt: string; opts: Record<string, unknown> }> = [];
+    let callCount = 0;
+
+    // Set up answer queue: first "> " prompt gets user input; then "exit"
+    mockAnswerQueue.push("please refine the draft", "exit");
+
+    async function* mockQueryFn(params: { prompt: string | AsyncIterable<unknown>; options?: Record<string, unknown> }) {
+      callCount++;
+      capturedCalls.push({
+        prompt: params.prompt as string,
+        opts: params.options ?? {},
+      });
+      if (callCount === 1) {
+        // First turn: emit assistant message then result with session_id
+        yield { type: "assistant", content: "Let me help you with that." };
+        yield { type: "result", subtype: "success", session_id: "sdk-session-002" };
+      } else {
+        // Second turn: just end
+        yield { type: "result", subtype: "success", session_id: "sdk-session-002" };
+      }
+    }
+
+    const runtime = new LocalRuntime({
+      cwd: tempDir,
+      githubClient: buildMockGitHubClient(),
+      queryFn: mockQueryFn as unknown as QueryFn,
+    });
+
+    await executeCreateDialog({
+      description: "test feature",
+      type: "new-feature",
+      slug: "test-feature",
+      cwd: tempDir,
+      runtime,
+    });
+
+    // Second call should use resume: sdkSessionId and NOT include systemPrompt
+    expect(capturedCalls.length).toBeGreaterThanOrEqual(2);
+    const secondCall = capturedCalls[1]!;
+    expect(secondCall.opts["resume"]).toBe("sdk-session-002");
+    expect(secondCall.opts["systemPrompt"]).toBeUndefined();
+    expect(secondCall.opts["continue"]).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-CD-013: dialog loop — exit/quit saves draft and breaks
+// ---------------------------------------------------------------------------
+
+describe("TC-CD-013: dialog loop — exit input saves draft and breaks", () => {
+  it("saves draft when user types exit after FINAL_DRAFT is detected", async () => {
+    // Set up answer queue:
+    // 1. "N" response to "この内容で request.md を書き出しますか？ [y/N] " (don't finalize)
+    // 2. "exit" response to "> " (exit the loop)
+    mockAnswerQueue.push("N", "exit");
+
+    const draftContent = buildValidRequestMd({ type: "new-feature", slug: "test-feature" });
+
+    async function* mockQueryFn(_params: { prompt: string | AsyncIterable<unknown>; options?: Record<string, unknown> }) {
+      // emit an assistant turn with a FINAL_DRAFT
+      yield {
+        type: "stream_event",
+        event: {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: `<!-- FINAL_DRAFT -->\n${draftContent}` },
+        },
+      };
+      yield { type: "assistant" };
+      // Don't emit result — the user will answer questions and then exit
+    }
+
+    const runtime = new LocalRuntime({
+      cwd: tempDir,
+      githubClient: buildMockGitHubClient(),
+      queryFn: mockQueryFn as unknown as QueryFn,
+    });
+
+    const exitCode = await executeCreateDialog({
+      description: "test feature",
+      type: "new-feature",
+      slug: "test-feature",
+      cwd: tempDir,
+      runtime,
+    });
+
+    // Should exit cleanly
+    expect(exitCode).toBe(0);
+
+    // Draft file should have been saved (draft was detected)
+    const { loadDraft } = await import("../../../../src/state/draft-store.js");
+    const loaded = await loadDraft(tempDir, "test-feature");
+    expect(loaded).not.toBeNull();
+    expect(loaded?.content).toContain("test-feature");
   });
 });

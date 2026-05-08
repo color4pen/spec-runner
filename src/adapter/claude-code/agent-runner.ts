@@ -22,7 +22,6 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import {
   query as sdkQuery,
-  type Query,
   type SDKMessage,
   type SDKResultMessage,
   type SDKResultSuccess,
@@ -38,15 +37,6 @@ export type QueryFn = (params: {
   prompt: string | AsyncIterable<unknown>;
   options?: Record<string, unknown>;
 }) => AsyncGenerator<unknown, void>;
-
-/**
- * SDK-level query function that accepts an AsyncIterable prompt and returns a Query object.
- * Used by LocalRuntime.queryInteractive() — not part of RuntimeStrategy interface.
- */
-export type SdkQueryFn = (params: {
-  prompt: AsyncIterable<unknown>;
-  options?: Record<string, unknown>;
-}) => Query;
 
 function buildAdditionalInstructions(ctx: AgentRunContext): string {
   const { branch, slug } = ctx;

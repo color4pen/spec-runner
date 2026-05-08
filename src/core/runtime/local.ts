@@ -13,8 +13,8 @@ import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { OriginInfo } from "../../git/remote.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { StepName } from "../../state/schema.js";
-import { createClaudeCodeRunner, type QueryFn, type SdkQueryFn } from "../../adapter/claude-code/agent-runner.js";
-import { query as sdkQuery, type Query, type SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
+import { createClaudeCodeRunner, type QueryFn } from "../../adapter/claude-code/agent-runner.js";
+import { query as sdkQuery } from "@anthropic-ai/claude-agent-sdk";
 import { createWorktreeManager } from "../worktree/manager.js";
 import { loadJobState, updateJobState } from "../../state/store.js";
 import { spawnCommand } from "../../util/spawn.js";
@@ -45,7 +45,6 @@ export interface LocalRuntimeOptions {
   manager?: ReturnType<typeof createWorktreeManager>;
   spawnFn?: SpawnFn;
   queryFn?: QueryFn;
-  sdkQueryFn?: SdkQueryFn;
 }
 
 export class LocalRuntime implements RuntimeStrategy {
@@ -54,7 +53,6 @@ export class LocalRuntime implements RuntimeStrategy {
   private readonly manager: ReturnType<typeof createWorktreeManager>;
   private readonly spawnFn: SpawnFn;
   private readonly queryFn: QueryFn;
-  private readonly sdkQueryFn: SdkQueryFn;
 
   // Set by setupWorkspace(); used by buildDeps() and registerCleanup()
   private workspace: WorkspaceContext | null = null;
@@ -73,7 +71,6 @@ export class LocalRuntime implements RuntimeStrategy {
       this.manager = manager ?? createWorktreeManager();
       this.spawnFn = spawnFn ?? spawnCommand;
       this.queryFn = queryFn ?? (sdkQuery as unknown as QueryFn);
-      this.sdkQueryFn = sdkQuery as unknown as SdkQueryFn;
     } else {
       // Named options constructor
       const opts = cwdOrOpts;
@@ -82,7 +79,6 @@ export class LocalRuntime implements RuntimeStrategy {
       this.manager = opts.manager ?? createWorktreeManager();
       this.spawnFn = opts.spawnFn ?? spawnCommand;
       this.queryFn = opts.queryFn ?? (sdkQuery as unknown as QueryFn);
-      this.sdkQueryFn = opts.sdkQueryFn ?? (sdkQuery as unknown as SdkQueryFn);
     }
   }
 
@@ -119,18 +115,6 @@ export class LocalRuntime implements RuntimeStrategy {
     for await (const message of messages) {
       yield message;
     }
-  }
-
-  /**
-   * Query the LLM with a streaming AsyncIterable prompt and return the SDK Query object.
-   * LocalRuntime-specific — not part of RuntimeStrategy interface.
-   * Caller gets full access to Query methods (interrupt, streamInput, etc.).
-   */
-  queryInteractive(prompt: AsyncIterable<SDKUserMessage>, opts?: QueryOptions): Query {
-    return this.sdkQueryFn({
-      prompt: prompt as AsyncIterable<unknown>,
-      options: this.buildSdkOptions(opts),
-    });
   }
 
   createAgentRunner(): AgentRunner {

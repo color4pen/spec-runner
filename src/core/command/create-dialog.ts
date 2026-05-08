@@ -2,19 +2,21 @@
  * executeCreateDialog: interactive REPL for the `specrunner create` command.
  *
  * 4-phase structure (CommandRunner is NOT used — dialog is non-deterministic):
- *   1. initSession   — DynamicContext + patterns + system prompt + queryInteractive()
- *   2. dialogLoop    — for await SDK messages; stream text_deltas; detect FINAL_DRAFT
+ *   1. initSession   — DynamicContext + patterns + system prompt
+ *   2. dialogLoop    — while loop; each turn calls runtime.query(); stream text_deltas; detect FINAL_DRAFT
  *   3. detectCompletion — pure function: find <!-- FINAL_DRAFT --> marker in buffer
  *   4. finalize      — write request.md + validate + output path + delete draft
  *
- * Design D7: queryInteractive() is LocalRuntime-specific.
- * Uses hasQueryInteractive() type guard; exits with code 1 for ManagedRuntime.
+ * Design D1: while loop with runtime.query() per turn.
+ * Design D2: session_id explicitly tracked; 2nd+ turns use resume: sessionId.
+ * Design D3: systemPrompt only on first query.
+ * Design D5: executeCreateDialog is LocalRuntime-specific.
+ * Uses instanceof LocalRuntime guard; exits with code 1 for ManagedRuntime.
  */
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { randomUUID } from "node:crypto";
 import { createInterface } from "readline/promises";
-import type { SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import { slugify, checkSlugCollision } from "../../util/slugify.js";
 import { collectDynamicContext } from "../../git/dynamic-context.js";
 import { collectRequestPatterns } from "../../context/request-patterns.js";
@@ -24,10 +26,11 @@ import {
   buildResumeInitialMessage,
 } from "../../prompts/create-dialog.js";
 import { parseRequestMdContent } from "../../parser/request-md.js";
-import { isStreamEvent, isTextDelta, isToolUseSummary } from "../../adapter/claude-code/message-types.js";
+import { isStreamEvent, isTextDelta, isToolUseSummary, isResultMessage } from "../../adapter/claude-code/message-types.js";
 import { saveDraft, deleteDraft } from "../../state/draft-store.js";
 import type { DraftState } from "../../state/draft-store.js";
 import type { RuntimeStrategy, QueryOptions } from "../runtime/strategy.js";
+import { LocalRuntime } from "../runtime/local.js";
 import { SpecRunnerError } from "../../errors.js";
 import { runRunCore } from "../../cli/run.js";
 
@@ -45,34 +48,16 @@ export interface DialogParams {
   resume?: { content: string; state: DraftState };
 }
 
-/** Minimal interface for the readline-like object used in createPromptGenerator. */
-export interface ReadlineInterface {
-  question(prompt: string): Promise<string>;
-  close(): void;
-}
-
-/** Minimal interface for a runtime that supports interactive queries. */
-interface RuntimeWithQueryInteractive extends RuntimeStrategy {
-  queryInteractive(
-    prompt: AsyncIterable<SDKUserMessage>,
-    opts?: QueryOptions,
-  ): AsyncIterable<unknown>;
-}
-
 // ---------------------------------------------------------------------------
-// D7: hasQueryInteractive type guard
+// D5: isLocalRuntime guard
 // ---------------------------------------------------------------------------
 
 /**
- * Check whether the given runtime supports interactive (streaming generator) queries.
- * LocalRuntime implements queryInteractive(); ManagedRuntime does not.
+ * Check whether the given runtime is a LocalRuntime.
+ * Interactive REPL requires LocalRuntime; ManagedRuntime's query() is a no-op.
  */
-export function hasQueryInteractive(
-  runtime: RuntimeStrategy,
-): runtime is RuntimeWithQueryInteractive {
-  return (
-    typeof (runtime as RuntimeWithQueryInteractive).queryInteractive === "function"
-  );
+export function isLocalRuntime(runtime: RuntimeStrategy): runtime is LocalRuntime {
+  return runtime instanceof LocalRuntime;
 }
 
 // ---------------------------------------------------------------------------
@@ -110,53 +95,6 @@ export function detectSlugProposal(text: string): string | null {
     lastMatch = match[1] ?? null;
   }
   return lastMatch;
-}
-
-// ---------------------------------------------------------------------------
-// Phase 1 helper: createPromptGenerator (D2)
-// ---------------------------------------------------------------------------
-
-/**
- * Async generator that feeds user messages to the SDK.
- *
- * - Yields the initial message immediately.
- * - Then loops: shows "> " prompt, reads user input, yields as SDKUserMessage.
- * - On "exit" / "quit": saves the latest draft (if any) and returns.
- *
- * @param initialMessage     - First user message (description + context).
- * @param rl                 - readline interface for user input.
- * @param getLatestDraft     - Returns current draft content; may be null before first FINAL_DRAFT.
- * @param onExit             - Called with draft content when user exits; used for persistence.
- */
-export async function* createPromptGenerator(params: {
-  initialMessage: SDKUserMessage;
-  rl: ReadlineInterface;
-  getLatestDraft: () => string | null;
-  onExit: (content: string | null) => Promise<void>;
-  getPendingMessage: () => string | null;
-}): AsyncGenerator<SDKUserMessage> {
-  const { initialMessage, rl, getLatestDraft, onExit, getPendingMessage } = params;
-
-  // Phase 1: yield the initial context message
-  yield initialMessage;
-
-  // Phase 2: user input loop
-  while (true) {
-    const pending = getPendingMessage();
-    const input = pending ?? await rl.question("> ");
-
-    if (input.trim() === "exit" || input.trim() === "quit") {
-      // Save latest draft before exiting
-      await onExit(getLatestDraft());
-      return;
-    }
-
-    yield {
-      type: "user",
-      message: { role: "user", content: input },
-      parent_tool_use_id: null,
-    };
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -228,6 +166,171 @@ export async function finalize(
 }
 
 // ---------------------------------------------------------------------------
+// Phase 2: processAssistantTurn — handles a single completed assistant turn
+// ---------------------------------------------------------------------------
+
+interface AssistantTurnResult {
+  /** The text accumulated during this turn */
+  textBuffer: string;
+  /** If FINAL_DRAFT was detected, the draft content; otherwise null */
+  finalDraftContent: string | null;
+  /** If a slug was proposed and validated, the new slug; otherwise unchanged */
+  slug: string | undefined;
+  /** If a slug collision message should be sent next turn */
+  collisionFeedback: string | null;
+  /** If user confirmed the draft (answered "y") */
+  userConfirmed: boolean;
+  /** True if an "assistant" type message was received (i.e., the LLM completed a turn) */
+  hasAssistantMessage: boolean;
+  /** session_id from result message, if received */
+  sessionId: string | undefined;
+}
+
+/**
+ * Process all SDK messages for one query() call.
+ *
+ * A single query() call emits:
+ *   - stream_event messages (text deltas, tool events) during generation
+ *   - One "assistant" message when the LLM turn completes
+ *   - One "result" message at the very end (contains session_id)
+ *
+ * We iterate all messages to capture session_id from the result, while performing
+ * user interaction (slug confirmation, FINAL_DRAFT confirmation) after the "assistant"
+ * message. The generator is exhausted before returning so session_id is always captured.
+ */
+async function processAssistantTurn(
+  messages: AsyncGenerator<unknown>,
+  params: {
+    currentSlug: string | undefined;
+    slugAlreadyKnown: boolean;
+    slugProposalTurnCount: number;
+    MAX_SLUG_PROPOSAL_TURNS: number;
+    description: string;
+    cwd: string;
+    rl: { question(prompt: string): Promise<string>; close(): void };
+    onDraftDetected?: (content: string) => Promise<void>;
+  },
+): Promise<AssistantTurnResult> {
+  let textBuffer = "";
+  let finalDraftContent: string | null = null;
+  let slug = params.currentSlug;
+  let collisionFeedback: string | null = null;
+  let userConfirmed = false;
+  let hasAssistantMessage = false;
+  let sessionId: string | undefined;
+  let slugProposalTurnCount = params.slugProposalTurnCount;
+  // Flag: user interaction (rl.question) has been done after the assistant turn
+  let assistantTurnProcessed = false;
+
+  for await (const msg of messages) {
+    if (isStreamEvent(msg) && isTextDelta(msg)) {
+      // Real-time streaming of text deltas
+      const text = msg.event.delta.text;
+      process.stdout.write(text);
+      textBuffer += text;
+    } else if (isToolUseSummary(msg)) {
+      // Tool execution status
+      process.stderr.write(`\n[tool] ${msg.summary}\n`);
+    } else if (
+      !assistantTurnProcessed &&
+      typeof msg === "object" &&
+      msg !== null &&
+      (msg as Record<string, unknown>)["type"] === "assistant"
+    ) {
+      // LLM response complete for this turn — perform user interaction
+      // Do NOT break; continue iterating to capture the result message
+      assistantTurnProcessed = true;
+      hasAssistantMessage = true;
+      process.stdout.write("\n");
+
+      // Slug proposal detection (D2/D3)
+      if (slug === undefined) {
+        slugProposalTurnCount++;
+
+        const proposed = detectSlugProposal(textBuffer);
+        if (proposed !== null) {
+          // Validate the proposed slug
+          const normalized = slugify(proposed);
+          let slugValid = normalized === proposed && proposed.length <= 50;
+
+          if (slugValid) {
+            // Collision check
+            try {
+              await checkSlugCollision(params.cwd, proposed);
+            } catch {
+              slugValid = false;
+              process.stderr.write(`\nslug '${proposed}' はすでに使用されています。\n`);
+              collisionFeedback = `slug '${proposed}' はすでに使用されています。別の slug を <!-- SLUG_PROPOSAL: xxx --> 形式で提案してください。`;
+              // Continue iterating to capture result message (session_id)
+              continue;
+            }
+          }
+
+          if (slugValid) {
+            const answer = await params.rl.question(
+              `\nslug: ${proposed} で良いですか？ [y/N] `,
+            );
+            if (answer.trim().toLowerCase() === "y") {
+              slug = proposed;
+              process.stderr.write(`slug を確定しました: ${slug}\n`);
+            }
+            // Continue iterating to capture result message
+            continue;
+          } else {
+            // Invalid slug format
+            process.stderr.write(
+              `\n提案された slug '${proposed}' は無効です（kebab-case、50 文字以内）。別の slug を提案してください。\n`,
+            );
+            // Continue iterating to capture result message
+            continue;
+          }
+        } else if (slugProposalTurnCount >= params.MAX_SLUG_PROPOSAL_TURNS) {
+          // Fallback: auto-generate slug from description
+          slug = slugify(params.description);
+          process.stderr.write(`\nslug を自動生成しました: ${slug}\n`);
+        }
+      }
+
+      const { detected, content } = detectCompletion(textBuffer);
+
+      if (detected) {
+        finalDraftContent = content;
+
+        // Persist draft on each FINAL_DRAFT detection
+        if (params.onDraftDetected !== undefined) {
+          await params.onDraftDetected(content);
+        }
+
+        // Ask user for confirmation
+        const answer = await params.rl.question(
+          "\nこの内容で request.md を書き出しますか？ [y/N] ",
+        );
+
+        if (answer.trim().toLowerCase() === "y") {
+          userConfirmed = true;
+        }
+      }
+
+      // Continue iterating to capture result message (session_id)
+    } else if (isResultMessage(msg)) {
+      // Session result — capture session_id
+      sessionId = (msg as Record<string, unknown>)["session_id"] as string | undefined;
+      break;
+    }
+  }
+
+  return {
+    textBuffer,
+    finalDraftContent,
+    slug,
+    collisionFeedback,
+    userConfirmed,
+    hasAssistantMessage,
+    sessionId,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Phase 1: initSession + Phase 2: dialogLoop + entrypoint
 // ---------------------------------------------------------------------------
 
@@ -238,8 +341,8 @@ export async function finalize(
 export async function executeCreateDialog(params: DialogParams): Promise<number> {
   const { description, type, cwd, runtime, resume } = params;
 
-  // D7: Check for LocalRuntime capability
-  if (!hasQueryInteractive(runtime)) {
+  // D5: Check for LocalRuntime capability
+  if (!isLocalRuntime(runtime)) {
     process.stderr.write("Error: Interactive mode requires local runtime.\n");
     process.stderr.write(
       "Hint: Run with a local runtime configuration or use --no-llm for scaffold mode.\n",
@@ -284,17 +387,11 @@ export async function executeCreateDialog(params: DialogParams): Promise<number>
   const systemPrompt = buildDialogSystemPrompt({ needSlugProposal });
 
   // Session metadata for draft persistence
-  const sessionId = randomUUID();
+  const draftSessionId = randomUUID();
   const createdAt = new Date().toISOString();
 
-  // Shared state: latest FINAL_DRAFT content + pending auto-message for LLM feedback
+  // Shared state: latest FINAL_DRAFT content
   const dialogState = { latestDraftContent: null as string | null };
-  let pendingAutoMessage: string | null = null;
-  const getPendingMessage = (): string | null => {
-    const msg = pendingAutoMessage;
-    pendingAutoMessage = null;
-    return msg;
-  };
 
   // Readline interface
   const rl = createInterface({ input: process.stdin, output: process.stdout });
@@ -303,7 +400,7 @@ export async function executeCreateDialog(params: DialogParams): Promise<number>
   const sigintHandler = () => {
     if (currentSlug !== undefined && dialogState.latestDraftContent !== null) {
       const draftState: DraftState = {
-        sessionId,
+        sessionId: draftSessionId,
         slug: currentSlug,
         type,
         description,
@@ -323,11 +420,28 @@ export async function executeCreateDialog(params: DialogParams): Promise<number>
   };
   process.on("SIGINT", sigintHandler);
 
+  // onDraftDetected callback: persist draft when FINAL_DRAFT detected
+  const onDraftDetected = async (content: string): Promise<void> => {
+    dialogState.latestDraftContent = content;
+    if (currentSlug !== undefined) {
+      const draftState: DraftState = {
+        sessionId: draftSessionId,
+        slug: currentSlug,
+        type,
+        description,
+        createdAt,
+        updatedAt: new Date().toISOString(),
+      };
+      await saveDraft(cwd, currentSlug, content, draftState);
+    }
+  };
+
   // onExit callback: save draft when user types exit/quit
-  const onExit = async (content: string | null): Promise<void> => {
+  const onExit = async (): Promise<void> => {
+    const content = dialogState.latestDraftContent;
     if (content !== null && currentSlug !== undefined) {
       const draftState: DraftState = {
-        sessionId,
+        sessionId: draftSessionId,
         slug: currentSlug,
         type,
         description,
@@ -344,7 +458,7 @@ export async function executeCreateDialog(params: DialogParams): Promise<number>
     if (currentSlug !== undefined && dialogState.latestDraftContent !== null) {
       // best-effort, fire-and-forget
       const draftState: DraftState = {
-        sessionId,
+        sessionId: draftSessionId,
         slug: currentSlug,
         type,
         description,
@@ -358,230 +472,115 @@ export async function executeCreateDialog(params: DialogParams): Promise<number>
   });
 
   let finalizeContent: string | null = null;
+  // Track the SDK session_id for multi-turn resume
+  let sdkSessionId: string | undefined;
+  let isFirstTurn = true;
 
   try {
-    // Determine initial SDK message and query
-    let query: AsyncIterable<unknown>;
+    // Determine initial prompt text
+    let nextPrompt: string;
 
     if (resume !== undefined) {
       // Resume mode: show previous draft content to user
       process.stderr.write(`\n--- 前回の下書き ---\n${resume.content}\n--- ここまで ---\n\n`);
 
-      // Hot resume attempt
-      let hotResumeQuery: AsyncIterable<unknown> | null = null;
       if (resume.state.sessionId) {
-        try {
-          // For hot resume, we use a generator that re-enters the existing session
-          const hotRl = rl;
-          const hotDialogState = dialogState;
-          const hotOnExit = onExit;
-          async function* hotResumeGenerator(): AsyncGenerator<SDKUserMessage> {
-            // Yield a minimal message to re-enter the session
-            yield {
-              type: "user",
-              message: { role: "user", content: "(セッション再開)" },
-              parent_tool_use_id: null,
-            };
-            // Then normal user input loop
-            while (true) {
-              const input = await hotRl.question("> ");
-              if (input.trim() === "exit" || input.trim() === "quit") {
-                await hotOnExit(hotDialogState.latestDraftContent);
-                return;
-              }
-              yield {
-                type: "user",
-                message: { role: "user", content: input },
-                parent_tool_use_id: null,
-              };
-            }
-          }
-
-          hotResumeQuery = runtime.queryInteractive(hotResumeGenerator(), {
-            resume: resume.state.sessionId,
-            systemPrompt,
-            cwd,
-            allowedTools: ["Read", "Grep", "Glob"],
-            includePartialMessages: true,
-          });
-        } catch {
-          process.stderr.write("セッションを復旧できなかったため新規開始します\n");
-        }
-      }
-
-      if (hotResumeQuery !== null) {
-        query = hotResumeQuery;
+        // Hot resume: re-enter the existing SDK session with a short prompt
+        // D6: use resume: sessionId (not continue: true) for explicit session management
+        nextPrompt = "(セッション再開)";
+        // Use the stored session ID for hot resume
+        sdkSessionId = resume.state.sessionId;
+        isFirstTurn = false; // hot resume: not first turn (no systemPrompt)
       } else {
         // Cold start: inject previous draft into initial message
-        const coldInitialText = buildResumeInitialMessage(resume.content, resume.state);
-        const coldInitialMsg: SDKUserMessage = {
-          type: "user",
-          message: { role: "user", content: coldInitialText },
-          parent_tool_use_id: null,
-        };
-
-        const coldGenerator = createPromptGenerator({
-          initialMessage: coldInitialMsg,
-          rl,
-          getLatestDraft: () => dialogState.latestDraftContent,
-          onExit,
-          getPendingMessage,
-        });
-
-        query = runtime.queryInteractive(coldGenerator, {
-          systemPrompt,
-          cwd,
-          allowedTools: ["Read", "Grep", "Glob"],
-          includePartialMessages: true,
-        });
+        nextPrompt = buildResumeInitialMessage(resume.content, resume.state);
+        isFirstTurn = true; // cold start: first query (systemPrompt included)
       }
     } else {
       // Normal (non-resume) mode
-      const initialUserText = buildDialogInitialMessage({
+      nextPrompt = buildDialogInitialMessage({
         description,
         type,
         slug: currentSlug,
         dynamicContext,
         patterns,
       });
+      isFirstTurn = true;
+    }
 
-      const initialSDKMessage: SDKUserMessage = {
-        type: "user",
-        message: { role: "user", content: initialUserText },
-        parent_tool_use_id: null,
-      };
-
-      const generator = createPromptGenerator({
-        initialMessage: initialSDKMessage,
-        rl,
-        getLatestDraft: () => dialogState.latestDraftContent,
-        onExit,
-        getPendingMessage,
-      });
-
-      query = runtime.queryInteractive(generator, {
-        systemPrompt,
+    // Dialog loop: each iteration is one LLM turn
+    while (true) {
+      // Build QueryOptions for this turn
+      const queryOpts: QueryOptions = {
         cwd,
         allowedTools: ["Read", "Grep", "Glob"],
         includePartialMessages: true,
+      };
+
+      if (isFirstTurn) {
+        // First turn: include systemPrompt; no resume/continue
+        queryOpts.systemPrompt = systemPrompt;
+      } else if (sdkSessionId !== undefined) {
+        // Subsequent turns: resume with explicit session_id
+        // D2: continue and resume are mutually exclusive — use resume only
+        queryOpts.resume = sdkSessionId;
+      }
+
+      // Execute this turn
+      const messages = runtime.query(nextPrompt, queryOpts) as AsyncGenerator<unknown>;
+
+      const turnResult = await processAssistantTurn(messages, {
+        currentSlug,
+        slugAlreadyKnown,
+        slugProposalTurnCount,
+        MAX_SLUG_PROPOSAL_TURNS,
+        description,
+        cwd,
+        rl,
+        onDraftDetected,
       });
-    }
 
-    // Dialog loop: process SDK messages
-    let textBuffer = "";
+      // Update state from turn result
+      currentSlug = turnResult.slug;
+      slugProposalTurnCount = slugProposalTurnCount + 1;
 
-    for await (const msg of query) {
-      if (isStreamEvent(msg) && isTextDelta(msg)) {
-        // Real-time streaming of text deltas
-        const text = msg.event.delta.text;
-        process.stdout.write(text);
-        textBuffer += text;
-      } else if (isToolUseSummary(msg)) {
-        // Tool execution status
-        process.stderr.write(`\n[tool] ${msg.summary}\n`);
-      } else if (
-        typeof msg === "object" &&
-        msg !== null &&
-        (msg as Record<string, unknown>)["type"] === "assistant"
-      ) {
-        // LLM response complete for this turn
-        process.stdout.write("\n");
+      // Capture session_id from result message (first occurrence)
+      // In the new architecture, every query() call ends with a result message,
+      // so sessionEnded=true is normal. We use sessionId for the next turn's resume.
+      if (turnResult.sessionId !== undefined) {
+        sdkSessionId = turnResult.sessionId;
+      }
 
-        // Slug proposal detection (D2/D3)
-        if (currentSlug === undefined) {
-          slugProposalTurnCount++;
+      // After first turn, all subsequent turns are not "first"
+      isFirstTurn = false;
 
-          const proposed = detectSlugProposal(textBuffer);
-          if (proposed !== null) {
-            // Validate the proposed slug
-            const normalized = slugify(proposed);
-            let slugValid = normalized === proposed && proposed.length <= 50;
-
-            if (slugValid) {
-              // Collision check
-              try {
-                await checkSlugCollision(cwd, proposed);
-              } catch {
-                slugValid = false;
-                process.stderr.write(`\nslug '${proposed}' はすでに使用されています。\n`);
-                pendingAutoMessage = `slug '${proposed}' はすでに使用されています。別の slug を <!-- SLUG_PROPOSAL: xxx --> 形式で提案してください。`;
-                textBuffer = "";
-                continue;
-              }
-            }
-
-            if (slugValid) {
-              const answer = await rl.question(
-                `\nslug: ${proposed} で良いですか？ [y/N] `,
-              );
-              if (answer.trim().toLowerCase() === "y") {
-                currentSlug = proposed;
-                process.stderr.write(`slug を確定しました: ${currentSlug}\n`);
-                textBuffer = "";
-                continue;
-              } else {
-                // User rejected: continue (LLM will propose another in next turn)
-                textBuffer = "";
-                continue;
-              }
-            } else {
-              // Invalid slug format
-              process.stderr.write(
-                `\n提案された slug '${proposed}' は無効です（kebab-case、50 文字以内）。別の slug を提案してください。\n`,
-              );
-              textBuffer = "";
-              continue;
-            }
-          } else if (slugProposalTurnCount >= MAX_SLUG_PROPOSAL_TURNS) {
-            // Fallback: auto-generate slug from description
-            currentSlug = slugify(description);
-            process.stderr.write(`\nslug を自動生成しました: ${currentSlug}\n`);
-          }
-        }
-
-        const { detected, content } = detectCompletion(textBuffer);
-
-        if (detected) {
-          // Update shared draft state
-          dialogState.latestDraftContent = content;
-
-          // Persist draft on each FINAL_DRAFT detection (only if slug is confirmed)
-          if (currentSlug !== undefined) {
-            const draftState: DraftState = {
-              sessionId,
-              slug: currentSlug,
-              type,
-              description,
-              createdAt,
-              updatedAt: new Date().toISOString(),
-            };
-            await saveDraft(cwd, currentSlug, content, draftState);
-          }
-
-          // Ask user for confirmation
-          const answer = await rl.question(
-            "\nこの内容で request.md を書き出しますか？ [y/N] ",
-          );
-
-          if (answer.trim().toLowerCase() === "y") {
-            finalizeContent = content;
-            break; // Exit the for-await loop; SDK session ends via generator termination
-          }
-
-          // Continue: reset buffer; generator will ask for next user input
-          textBuffer = "";
-        } else {
-          // Normal response (no FINAL_DRAFT) — just reset buffer
-          textBuffer = "";
-        }
-      } else if (
-        typeof msg === "object" &&
-        msg !== null &&
-        (msg as Record<string, unknown>)["type"] === "result"
-      ) {
-        // Session ended (generator returned)
+      // If user confirmed FINAL_DRAFT, finalize and exit
+      if (turnResult.userConfirmed && turnResult.finalDraftContent !== null) {
+        finalizeContent = turnResult.finalDraftContent;
         break;
       }
+
+      // If collision feedback, send it as the next turn's prompt (no user input needed)
+      if (turnResult.collisionFeedback !== null) {
+        nextPrompt = turnResult.collisionFeedback;
+        continue;
+      }
+
+      // If no assistant message was received (e.g., SDK returned immediately with only a result),
+      // treat it as an unexpected termination and stop.
+      if (!turnResult.hasAssistantMessage) {
+        // No LLM content was generated; stop the dialog
+        break;
+      }
+
+      // Get next user input (after assistant turn)
+      const input = await rl.question("> ");
+      if (input.trim() === "exit" || input.trim() === "quit") {
+        await onExit();
+        break;
+      }
+
+      nextPrompt = input;
     }
   } finally {
     rl.close();
@@ -622,6 +621,6 @@ export async function executeCreateDialog(params: DialogParams): Promise<number>
     return 0;
   }
 
-  // Exited via exit/quit (draft already saved by generator's onExit) or session ended
+  // Exited via exit/quit (draft already saved by onExit) or session ended
   return 0;
 }

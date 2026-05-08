@@ -28,7 +28,8 @@ import { buildDialogSystemPrompt, buildResumeInitialMessage } from "../../../../
 import { saveDraft } from "../../../../src/state/draft-store.js";
 import type { DraftState } from "../../../../src/state/draft-store.js";
 import { slugify } from "../../../../src/util/slugify.js";
-import type { RuntimeStrategy } from "../../../../src/core/runtime/strategy.js";
+import { LocalRuntime } from "../../../../src/core/runtime/local.js";
+import type { QueryFn } from "../../../../src/adapter/claude-code/agent-runner.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -314,135 +315,101 @@ describe("TC-PR-012: --no-llm functional after 1-shot cleanup", () => {
 // TC-PR-005 & TC-PR-006: --resume hot resume and cold start
 // ---------------------------------------------------------------------------
 
-describe("TC-PR-005: --resume hot resume — queryInteractive called with resume: sessionId", () => {
-  it("passes sessionId as resume option to queryInteractive when sessionId is present", async () => {
+function buildMockGitHubClient() {
+  return {
+    verifyBranch: vi.fn(),
+    verifyPath: vi.fn(),
+    getRawFile: vi.fn(),
+    verifyTokenScopes: vi.fn(),
+    getRefSha: vi.fn(),
+  };
+}
+
+describe("TC-PR-005: --resume hot resume — query called with resume: sessionId (no systemPrompt)", () => {
+  it("passes sessionId as resume option to query when sessionId is present (hot resume)", async () => {
     const sessionId = "test-session-abc-123";
     const draftState = buildDraftState({ sessionId, slug: "my-feature" });
     const draftContent = buildValidRequestMd();
 
-    // Save draft first so slug collision check finds the draft directory
+    // Save draft first
     await saveDraft(tempDir, "my-feature", draftContent, draftState);
 
-    let capturedOptions: Record<string, unknown> | undefined;
+    const capturedCalls: Array<{ prompt: string; opts: Record<string, unknown> }> = [];
 
-    const mockRuntime = {
-      query: vi.fn(),
-      queryInteractive: vi.fn().mockImplementation(
-        async function* (_gen: unknown, opts: Record<string, unknown>) {
-          capturedOptions = opts;
-          yield { type: "result" };
-        }
-      ),
-      createAgentRunner: vi.fn(),
-      setupWorkspace: vi.fn(),
-      buildDeps: vi.fn(),
-      registerCleanup: vi.fn(),
-      teardown: vi.fn(),
-    } as unknown as RuntimeStrategy;
+    async function* mockQueryFn(params: { prompt: string | AsyncIterable<unknown>; options?: Record<string, unknown> }) {
+      capturedCalls.push({
+        prompt: params.prompt as string,
+        opts: params.options ?? {},
+      });
+      // Hot resume: emit result to end the session immediately
+      yield { type: "result", subtype: "success", session_id: sessionId };
+    }
 
-    // We need to setup the active directory to NOT exist (so collision check passes for slug-from-draft)
-    // But the resume path should NOT check collision against the slug being resumed
-    // Actually looking at the code: on resume, initialSlug = resume?.state.slug = "my-feature"
-    // checkSlugCollision checks active/ - since we haven't put anything there, it passes
+    const runtime = new LocalRuntime({
+      cwd: tempDir,
+      githubClient: buildMockGitHubClient(),
+      queryFn: mockQueryFn as unknown as QueryFn,
+    });
 
     await executeCreateDialog({
       description: "My feature",
       type: "new-feature",
       slug: "my-feature",
       cwd: tempDir,
-      runtime: mockRuntime,
+      runtime,
       resume: { content: draftContent, state: draftState },
     });
 
-    expect(mockRuntime.queryInteractive).toHaveBeenCalled();
-    expect(capturedOptions?.["resume"]).toBe(sessionId);
+    // First (hot resume) call: should have resume: sessionId and NO systemPrompt
+    expect(capturedCalls.length).toBeGreaterThanOrEqual(1);
+    const firstCall = capturedCalls[0]!;
+    expect(firstCall.opts["resume"]).toBe(sessionId);
+    expect(firstCall.opts["systemPrompt"]).toBeUndefined();
+    // Hot resume prompt
+    expect(firstCall.prompt).toBe("(セッション再開)");
   });
 });
 
-describe("TC-PR-006: --resume cold start — SDK error → new session + stderr notification", () => {
-  it("falls back to cold start when SDK throws synchronously during hot resume call", async () => {
-    const sessionId = "expired-session-id";
-    const draftState = buildDraftState({ sessionId, slug: "my-feature" });
-    const draftContent = buildValidRequestMd();
-
-    let callCount = 0;
-    const mockRuntime = {
-      query: vi.fn(),
-      queryInteractive: vi.fn().mockImplementation(
-        (_gen: unknown, opts: Record<string, unknown>) => {
-          callCount++;
-          if (callCount === 1 && opts["resume"]) {
-            // First call with resume option: simulate SDK error (synchronous throw)
-            throw new Error("Session expired or not found");
-          }
-          // Second call (cold start): return async iterable
-          return (async function* () {
-            yield { type: "result" };
-          })();
-        }
-      ),
-      createAgentRunner: vi.fn(),
-      setupWorkspace: vi.fn(),
-      buildDeps: vi.fn(),
-      registerCleanup: vi.fn(),
-      teardown: vi.fn(),
-    } as unknown as RuntimeStrategy;
-
-    await executeCreateDialog({
-      description: "My feature",
-      type: "new-feature",
-      slug: "my-feature",
-      cwd: tempDir,
-      runtime: mockRuntime,
-      resume: { content: draftContent, state: draftState },
-    });
-
-    // The cold start message should appear in stderr
-    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
-    const stderrOutput = stderrMock.mock.calls.map((c: unknown[]) => c[0]).join("");
-    expect(stderrOutput).toContain("セッションを復旧できなかったため新規開始します");
-
-    // Two calls: first hot resume (throws), second cold start
-    expect(mockRuntime.queryInteractive).toHaveBeenCalledTimes(2);
-  });
-
-  it("cold start sends draft content in the initial message", async () => {
-    // No sessionId → goes directly to cold start (no hot resume attempt)
+describe("TC-PR-006: --resume cold start — no sessionId → new session with draft in prompt", () => {
+  it("cold start sends draft content in the initial prompt (no sessionId)", async () => {
+    // No sessionId → goes directly to cold start
     const draftState = buildDraftState({ sessionId: "", slug: "my-feature" });
     const draftContent = buildValidRequestMd();
 
-    let firstMessage: unknown | undefined;
-    const mockRuntime = {
-      query: vi.fn(),
-      queryInteractive: vi.fn().mockImplementation(
-        async function* (gen: AsyncIterable<unknown>) {
-          // Capture first message from the generator without consuming more
-          const iter = gen[Symbol.asyncIterator]();
-          const first = await iter.next();
-          firstMessage = first.value;
-          // Stop after first message
-          yield { type: "result" };
-        }
-      ),
-      createAgentRunner: vi.fn(),
-      setupWorkspace: vi.fn(),
-      buildDeps: vi.fn(),
-      registerCleanup: vi.fn(),
-      teardown: vi.fn(),
-    } as unknown as RuntimeStrategy;
+    const capturedCalls: Array<{ prompt: string; opts: Record<string, unknown> }> = [];
+
+    async function* mockQueryFn(params: { prompt: string | AsyncIterable<unknown>; options?: Record<string, unknown> }) {
+      capturedCalls.push({
+        prompt: params.prompt as string,
+        opts: params.options ?? {},
+      });
+      yield { type: "result", subtype: "success", session_id: "new-cold-session" };
+    }
+
+    const runtime = new LocalRuntime({
+      cwd: tempDir,
+      githubClient: buildMockGitHubClient(),
+      queryFn: mockQueryFn as unknown as QueryFn,
+    });
 
     await executeCreateDialog({
       description: "My feature",
       type: "new-feature",
       slug: "my-feature",
       cwd: tempDir,
-      runtime: mockRuntime,
+      runtime,
       resume: { content: draftContent, state: draftState },
     });
 
-    // First message should contain the draft content
-    const firstMsg = firstMessage as { message?: { content?: string } };
-    expect(firstMsg?.message?.content).toContain(draftContent);
+    // Cold start: first call should have systemPrompt (it's the first query)
+    expect(capturedCalls.length).toBeGreaterThanOrEqual(1);
+    const firstCall = capturedCalls[0]!;
+    // Cold start uses systemPrompt (first turn)
+    expect(firstCall.opts["systemPrompt"]).toBeDefined();
+    // Cold start uses buildResumeInitialMessage which contains draft content
+    expect(firstCall.prompt).toContain(draftContent);
+    // No resume option on cold start
+    expect(firstCall.opts["resume"]).toBeUndefined();
   });
 });
 
