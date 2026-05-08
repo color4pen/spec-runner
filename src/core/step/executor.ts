@@ -1,6 +1,6 @@
 import * as path from "node:path";
 import type { Step, AgentStep, CliStep } from "./types.js";
-import type { JobState, Verdict } from "../../state/schema.js";
+import type { JobState, Verdict, ModelUsage } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import type { AgentRunner } from "../port/agent-runner.js";
@@ -58,13 +58,7 @@ export class StepExecutor {
     }
   }
 
-  /**
-   * Internal: run the step lifecycle, returning the updated state.
-   * Dispatches on step.kind — never on step name.
-   *
-   * kind === "cli": calls step.run(), reads resultFilePath, emits events.
-   * kind === "agent": delegates to AgentRunner.run() (Design D1).
-   */
+  /** Dispatch to CLI or Agent runner based on step.kind. Never dispatch on name. */
   private async runStepInternal(
     step: Step,
     jobState: JobState,
@@ -78,14 +72,8 @@ export class StepExecutor {
   }
 
   /**
-   * Agent step: delegate to AgentRunner.run().
-   * The adapter handles session creation, SSE/polling, verification, and result fetching.
-   * Executor is the sole state persistence authority (Design D3 stepcontext-type-separation).
-   *
-   * Design D1: StepExecutor calls runner.run(ctx) and processes the returned result.
-   * Design D4 (stepcontext-type-separation): store.update at top fixes specrunner ps step display.
-   * TC-012: store.update called before runner.run to update step name
-   * TC-013: no managed/local branch — single unified state management path
+   * Agent step: delegate to AgentRunner.run(). Executor owns all state persistence.
+   * TC-012: store.update before runner.run so `specrunner ps` shows current step.
    */
   private async runAgentStep(
     step: AgentStep,
@@ -93,11 +81,7 @@ export class StepExecutor {
     deps: PipelineDeps,
   ): Promise<JobState> {
     const store = this.getStore(jobState.jobId);
-
-    // TC-012: update step name before running so specrunner ps shows current step
     let state = await store.update(jobState, { step: step.name });
-
-    // TC-017: step-start history entry
     state = await store.appendHistory(state, {
       ts: new Date().toISOString(),
       step: `${step.name}-started`,
@@ -121,9 +105,6 @@ export class StepExecutor {
     };
 
     const completedAt = new Date().toISOString();
-
-    // Runner may throw directly (e.g. BRANCH_NOT_REGISTERED, SESSION_TERMINATED)
-    // or return an error result. Both paths are normalized here.
     const runResult = await this.runner.run(ctx).catch(async (thrownErr: unknown) => {
       const err = thrownErr as Error & { code?: string; hint?: string };
       const errorInfo: ErrorInfo = {
@@ -133,7 +114,6 @@ export class StepExecutor {
       };
       state = recordFailedStepResult(state, step.name, errorInfo, { completedAt });
       state = await store.fail(state, errorInfo, step.name);
-      // Add error history entry for observability (replaces adapter-level history entries)
       state = await store.appendHistory(state, {
         ts: new Date().toISOString(),
         step: `${step.name}-failed`,
@@ -160,70 +140,11 @@ export class StepExecutor {
       attachStateAndRethrow(err, state);
     }
 
-    const result = runResult;
-
-    // Success path: parse verdict from resultContent, persist step result and history.
-    const resultFilePath = step.resultFilePath(state, deps);
-    const findingsPath = resultFilePath;
-
-    let verdict: Verdict | null = null;
-    if (result.resultContent !== null) {
-      const parsed = step.parseResult(result.resultContent, deps);
-      verdict = parsed.verdict;
-    } else if (step.completionVerdict !== undefined) {
-      // resultContent is null but step declares a completionVerdict.
-      // Use it as the verdict (e.g. propose, implementer, build-fixer).
-      // Design D1: fallback to completionVerdict avoids escalation for steps without result files.
-      verdict = step.completionVerdict;
-    }
-
-    if (verdict === null) {
-      stderrWrite(`Warning: Could not parse verdict from agent step '${step.name}'. Treating as escalation.`);
-    }
-    verdict = verdict ?? "escalation";
-
-    this.events.emit("verdict:parsed", { step: step.name, outcome: { verdict } });
-
-    // TC-014: record sessionId from AgentRunResult in step result
-    const sessionEntry = result.sessionId
-      ? { id: result.sessionId, agentId: "", environmentId: "" }
-      : null;
-
-    state = pushStepResult(state, step.name, {
-      session: sessionEntry,
-      verdict: verdict as Verdict | null,
-      findingsPath,
-      fileContent: result.resultContent,
-      completedAt,
-      error: null,
-      modelUsage: result.modelUsage,
+    return this.finalizeStep(step, state, deps, runResult.resultContent, completedAt, {
+      sessionId: runResult.sessionId,
+      agentBranch: runResult.agentBranch,
+      modelUsage: runResult.modelUsage,
     });
-
-    // TC-017: step-complete history entry
-    state = await store.appendHistory(state, {
-      ts: new Date().toISOString(),
-      step: `${step.name}-verdict`,
-      status: "ok",
-      message: `${step.name} verdict: ${verdict}`,
-    });
-
-    // TC-015: set state.branch from agentBranch if not already set
-    // Design D4 (stepcontext-type-separation): agentBranch from propose step
-    if (result.agentBranch && !state.branch) {
-      state = { ...state, branch: result.agentBranch };
-    }
-
-    // setsBranch: if the step declares it sets the branch and state.branch is absent,
-    // derive and set state.branch now.
-    // Design D2: declarative flag replaces step-name-based branch detection (TC-003 / TC-006).
-    if (step.setsBranch === true && !state.branch) {
-      const prefix = getBranchPrefix(deps.request.type);
-      state = { ...state, branch: `${prefix}${deps.slug}-${state.jobId.slice(0, 8)}` };
-    }
-
-    await store.persist(state);
-
-    return state;
   }
 
   /**
@@ -241,11 +162,7 @@ export class StepExecutor {
   private storeCache: JobStateStore | undefined;
   private storeCacheJobId: string | undefined;
 
-  /**
-   * CLI step: runs step.run() directly (no session creation).
-   * Reads the result file after run() completes and parses verdict.
-   * Emits verdict:parsed with the parsed result (null → "escalation").
-   */
+  /** CLI step: run directly (no session), read result file, delegate to finalizeStep. */
   private async runCliStep(
     step: CliStep,
     jobState: JobState,
@@ -279,11 +196,8 @@ export class StepExecutor {
       attachStateAndRethrow(err, state);
     }
 
-    // Read the result file and parse verdict
-    const resultFilePath = step.resultFilePath(state, deps);
-    const findingsPath = resultFilePath;
-
     // Read the result file from disk (not GitHub — CLI steps write locally)
+    const resultFilePath = step.resultFilePath(state, deps);
     let fileContent: string | null = null;
     try {
       const { readFile } = await import("node:fs/promises");
@@ -296,37 +210,61 @@ export class StepExecutor {
       // File may not exist yet — treat as null verdict
     }
 
-    let verdict: Verdict | null = null;
-    if (fileContent !== null) {
-      const parsed = step.parseResult(fileContent, deps);
-      verdict = parsed.verdict;
-    }
+    return this.finalizeStep(step, state, deps, fileContent, completedAt);
+  }
 
+  /** Shared success path: parse verdict, persist result, set branch, and emit events. */
+  private async finalizeStep(
+    step: Step,
+    state: JobState,
+    deps: PipelineDeps,
+    resultContent: string | null,
+    completedAt: string,
+    agentResult?: {
+      sessionId?: string;
+      agentBranch?: string;
+      modelUsage?: Record<string, ModelUsage>;
+    },
+  ): Promise<JobState> {
+    const store = this.getStore(state.jobId);
+    const findingsPath = step.resultFilePath(state, deps);
+    let verdict: Verdict | null = null;
+    if (resultContent !== null) {
+      verdict = step.parseResult(resultContent, deps).verdict;
+    } else if ("completionVerdict" in step) {
+      verdict = (step as { completionVerdict?: Verdict | null }).completionVerdict ?? null;
+    }
     if (verdict === null) {
-      stderrWrite(`Warning: Could not parse verdict from ${findingsPath}. Treating as escalation.`);
+      stderrWrite(`Warning: Could not parse verdict from ${step.kind} step '${step.name}'. Treating as escalation.`);
     }
     verdict = verdict ?? "escalation";
-
     this.events.emit("verdict:parsed", { step: step.name, outcome: { verdict } });
-
+    const sessionEntry = agentResult?.sessionId
+      ? { id: agentResult.sessionId, agentId: "", environmentId: "" }
+      : null;
     state = pushStepResult(state, step.name, {
-      session: null,
+      session: sessionEntry,
       verdict: verdict as Verdict | null,
       findingsPath,
-      fileContent,
+      fileContent: resultContent,
       completedAt,
       error: null,
+      modelUsage: agentResult?.modelUsage,
     });
-
     state = await store.appendHistory(state, {
       ts: new Date().toISOString(),
       step: `${step.name}-verdict`,
       status: "ok",
       message: `${step.name} verdict: ${verdict}`,
     });
-
+    if (agentResult?.agentBranch && !state.branch) {
+      state = { ...state, branch: agentResult.agentBranch };
+    }
+    if ("setsBranch" in step && (step as { setsBranch?: boolean }).setsBranch === true && !state.branch) {
+      const prefix = getBranchPrefix(deps.request.type);
+      state = { ...state, branch: `${prefix}${deps.slug}-${state.jobId.slice(0, 8)}` };
+    }
     await store.persist(state);
-
     return state;
   }
 }
