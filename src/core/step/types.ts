@@ -2,6 +2,8 @@ import type { JobState } from "../../state/schema.js";
 import type { StepContext } from "../types.js";
 import type { CustomToolHandler } from "../tools/types.js";
 import type { AgentDefinition } from "../agent/definition.js";
+import type { ReviewScores } from "../parser/review-scores.js";
+import type { FindingSeverityCounts } from "../parser/review-findings.js";
 
 // Re-export AgentDefinition for convenience
 export type { AgentDefinition };
@@ -23,7 +25,18 @@ export interface ParsedStepResult {
   verdict: import("../../state/schema.js").Verdict | null;
   findingsPath: string | null;
   fileContent?: string | null;
+  /**
+   * Structured scores extracted from the agent's review output.
+   * Only set by CodeReviewStep when the agent outputs a Scores table.
+   * Optional — other steps leave this undefined.
+   *
+   * D2: scores is optional; existing steps are unaffected.
+   */
+  scores?: ReviewScores & Pick<FindingSeverityCounts, "critical" | "high">;
 }
+
+// Re-export for convenience so consumers don't need to import from parser directly.
+export type { ReviewScores, FindingSeverityCounts };
 
 /**
  * NULL_PARSE_RESULT: shared constant for steps that have no file-based verdict.

@@ -54,12 +54,27 @@ Write your findings to the specified \`review-feedback-NNN.md\` file. The file M
 |---|----------|----------|------|-------------|------------|
 | 1 | HIGH | correctness | src/foo.ts:42 | Description | Fix approach |
 
+## Scores
+
+| Category | Score | Weight |
+|----------|-------|--------|
+| correctness | 8 | 0.30 |
+| security | 9 | 0.25 |
+| architecture | 7 | 0.15 |
+| performance | 8 | 0.10 |
+| maintainability | 7 | 0.10 |
+| testing | 6 | 0.10 |
+
+- **total**: 7.8
+
 ## Summary
 
 <1-3 sentences>
 \`\`\`
 
 The verdict line MUST be exactly: \`- **verdict**: <value>\` at the start of a line.
+
+The Scores table MUST include all 6 categories with the weights shown above. The **total** is the weighted sum: Σ(score × weight). Scores range from 1 (critical issues) to 10 (exemplary). A total ≥ 7.0 with no CRITICAL or HIGH findings is required for **approved**.
 
 ## Constraints
 
