@@ -120,6 +120,7 @@ describe("TC-CD-005: createPromptGenerator — initial message + user input + ex
       rl,
       getLatestDraft: () => null,
       onExit,
+      getPendingMessage: () => null,
     });
 
     const messages: SDKUserMessage[] = [];
@@ -143,6 +144,7 @@ describe("TC-CD-005: createPromptGenerator — initial message + user input + ex
       rl,
       getLatestDraft: () => null,
       onExit,
+      getPendingMessage: () => null,
     });
 
     const messages: SDKUserMessage[] = [];
@@ -165,6 +167,7 @@ describe("TC-CD-006: createPromptGenerator — exit without draft", () => {
       rl,
       getLatestDraft: () => null,
       onExit,
+      getPendingMessage: () => null,
     });
 
     // Consume the generator
@@ -185,6 +188,7 @@ describe("TC-CD-007: createPromptGenerator — exit with draft calls onExit", ()
       rl,
       getLatestDraft: () => latestDraft,
       onExit,
+      getPendingMessage: () => null,
     });
 
     for await (const _ of gen) { /* consume */ }
@@ -335,16 +339,26 @@ function buildDialogParams(overrides: Partial<DialogParams> = {}): DialogParams 
 }
 
 describe("finalize()", () => {
-  it("writes request.md to active/ and returns 0 on valid content", async () => {
+  it("writes request.md to active/ and returns exitCode 0 on valid content", async () => {
     const content = buildValidRequestMd({ type: "new-feature", slug: "my-feature" });
     const params = buildDialogParams();
 
-    const exitCode = await finalize(content, params);
+    const result = await finalize(content, params);
 
-    expect(exitCode).toBe(0);
+    expect(result.exitCode).toBe(0);
     const expectedPath = path.join(tempDir, "specrunner", "requests", "active", "my-feature", "request.md");
     const written = await fs.readFile(expectedPath, "utf-8");
     expect(written).toBe(content);
+  });
+
+  it("returns requestMdPath on success", async () => {
+    const content = buildValidRequestMd({ type: "new-feature", slug: "my-feature" });
+    const result = await finalize(content, buildDialogParams());
+
+    expect(result.exitCode).toBe(0);
+    expect(result.requestMdPath).toBeDefined();
+    expect(result.requestMdPath).toContain("my-feature");
+    expect(result.requestMdPath).toContain("request.md");
   });
 
   it("outputs the written path to stdout", async () => {
@@ -357,28 +371,28 @@ describe("finalize()", () => {
     expect(output).toContain("request.md");
   });
 
-  it("returns 1 when type does not match", async () => {
+  it("returns exitCode 1 when type does not match", async () => {
     const content = buildValidRequestMd({ type: "bug-fix", slug: "my-feature" });
     const params = buildDialogParams({ type: "new-feature" });
 
-    const exitCode = await finalize(content, params);
-    expect(exitCode).toBe(1);
+    const result = await finalize(content, params);
+    expect(result.exitCode).toBe(1);
   });
 
-  it("returns 1 when slug does not match", async () => {
+  it("returns exitCode 1 when slug does not match", async () => {
     const content = buildValidRequestMd({ type: "new-feature", slug: "wrong-slug" });
     const params = buildDialogParams({ slug: "my-feature" });
 
-    const exitCode = await finalize(content, params);
-    expect(exitCode).toBe(1);
+    const result = await finalize(content, params);
+    expect(result.exitCode).toBe(1);
   });
 
-  it("returns 1 when content is not valid request.md", async () => {
+  it("returns exitCode 1 when content is not valid request.md", async () => {
     const content = "Not a valid request.md file";
     const params = buildDialogParams();
 
-    const exitCode = await finalize(content, params);
-    expect(exitCode).toBe(1);
+    const result = await finalize(content, params);
+    expect(result.exitCode).toBe(1);
   });
 });
 

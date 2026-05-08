@@ -138,15 +138,8 @@ export async function main(): Promise<void> {
     case "create": {
       const createArgs = args.slice(1);
 
-      // First non-flag argument is the description (required)
+      // First non-flag argument is the description (optional when --resume is set)
       const description = createArgs.find((a) => !a.startsWith("--"));
-      if (!description) {
-        process.stderr.write(
-          'Error: specrunner create requires a <description> argument.\n' +
-          'Usage: specrunner create "<description>" [--type <type>] [--slug <slug>] [--no-llm] [--run]\n',
-        );
-        process.exit(2);
-      }
 
       // Parse --type <type>
       const typeFlag = createArgs.find((a) => a.startsWith("--type="));
@@ -172,8 +165,30 @@ export async function main(): Promise<void> {
         }
       }
 
+      // Parse --resume <slug> / --resume=<slug>
+      const resumeEqFlag = createArgs.find((a) => a.startsWith("--resume="));
+      let createResume: string | undefined;
+      if (resumeEqFlag) {
+        createResume = resumeEqFlag.slice("--resume=".length);
+      } else {
+        const resumeIdx = createArgs.indexOf("--resume");
+        if (resumeIdx !== -1 && createArgs[resumeIdx + 1] && !createArgs[resumeIdx + 1]!.startsWith("--")) {
+          createResume = createArgs[resumeIdx + 1];
+        }
+      }
+
       const noLlm = createArgs.includes("--no-llm");
       const createRun = createArgs.includes("--run");
+
+      // description is optional when --resume is provided (validated in runCreate)
+      if (!description && !createResume) {
+        process.stderr.write(
+          'Error: specrunner create requires a <description> argument.\n' +
+          'Usage: specrunner create "<description>" [--type <type>] [--slug <slug>] [--no-llm] [--run]\n' +
+          '       specrunner create --resume <slug>\n',
+        );
+        process.exit(2);
+      }
 
       await runCreate(description, {
         type: createType,
@@ -181,6 +196,7 @@ export async function main(): Promise<void> {
         noLlm,
         run: createRun,
         cwd: process.cwd(),
+        resume: createResume,
       });
       break;
     }

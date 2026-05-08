@@ -89,6 +89,16 @@ export interface RuntimeStrategy {
   query(prompt: string, opts?: QueryOptions): AsyncGenerator<unknown>;
 
   /**
+   * Interactive query — streams SDK messages for a user-message AsyncIterable.
+   * Implemented by LocalRuntime only; absent on ManagedRuntime.
+   * Use hasQueryInteractive() type guard before calling.
+   */
+  queryInteractive?(
+    prompt: AsyncIterable<unknown>,
+    opts?: QueryOptions,
+  ): AsyncIterable<unknown>;
+
+  /**
    * Return an AgentRunner wrapping query() for use in pipeline steps.
    */
   createAgentRunner(): AgentRunner;

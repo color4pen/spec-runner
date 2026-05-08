@@ -2,31 +2,28 @@
  * executeCreate: core logic for the `specrunner create` command.
  *
  * Flow:
- *   slug → collision check → DynamicContext → request patterns → LLM query
- *   → extract content → write request.md → validate → output path → optional run
+ *   --no-llm: slug → collision check → scaffold template → write → validate → output path
+ *   default:  delegate to executeCreateDialog() (interactive REPL)
  */
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { checkSlugCollision } from "../../util/slugify.js";
-import { collectDynamicContext } from "../../git/dynamic-context.js";
-import { collectRequestPatterns } from "../../context/request-patterns.js";
-import { buildCreateSystemPrompt, buildCreateUserMessage } from "../../prompts/create-system.js";
 import { parseRequestMdContent } from "../../parser/request-md.js";
 import { runRunCore } from "../../cli/run.js";
+import { executeCreateDialog } from "./create-dialog.js";
 import type { RuntimeStrategy } from "../runtime/strategy.js";
+import type { DraftState } from "../../state/draft-store.js";
 import { SpecRunnerError } from "../../errors.js";
-import { isResultMessage } from "../../adapter/claude-code/message-types.js";
-
-export { isResultMessage };
 
 export interface CreateParams {
   description: string;
   type: string;
-  slug: string;
+  slug?: string;
   cwd: string;
   noLlm: boolean;
   run: boolean;
   runtime: RuntimeStrategy;
+  resume?: { content: string; state: DraftState };
 }
 
 /**
@@ -73,123 +70,27 @@ TBD
 }
 
 /**
- * Extract valid request.md content from a stream of LLM messages.
- *
- * 3-tier fallback:
- *   1. Parse whole response with parseRequestMdContent → return as-is if valid
- *   2. Extract ```markdown ... ``` or ``` ... ``` block → parse → return block content if valid
- *   3. Throw error
- */
-export async function extractRequestContent(
-  messages: AsyncGenerator<unknown>,
-): Promise<string> {
-  let rawResult: string | null = null;
-
-  for await (const msg of messages) {
-    if (isResultMessage(msg) && typeof msg.result === "string") {
-      rawResult = msg.result;
-    }
-  }
-
-  if (rawResult === null) {
-    throw new SpecRunnerError(
-      "CREATE_NO_RESULT",
-      "The LLM did not return a result message. Try again or use --no-llm.",
-      "LLM query returned no result message.",
-    );
-  }
-
-  // Tier 1: Try to parse the whole response
-  try {
-    parseRequestMdContent(rawResult, "<llm-response>");
-    return rawResult;
-  } catch {
-    // Fall through to tier 2
-  }
-
-  // Tier 2: Extract ```markdown ... ``` or ``` ... ``` block
-  const codeBlockPattern = /```(?:markdown)?\n([\s\S]*?)```/;
-  const match = codeBlockPattern.exec(rawResult);
-  if (match?.[1]) {
-    const extracted = match[1];
-    try {
-      parseRequestMdContent(extracted, "<extracted-block>");
-      return extracted;
-    } catch {
-      // Fall through to tier 3
-    }
-  }
-
-  // Tier 3: Error
-  throw new SpecRunnerError(
-    "CREATE_INVALID_RESPONSE",
-    "The LLM response could not be parsed as a valid request.md. Try again or use --no-llm.",
-    "Failed to extract valid request.md content from LLM response.",
-  );
-}
-
-/**
  * Execute the create command.
  * Returns 0 on success, 1 on error.
+ *
+ * --no-llm: scaffold template mode (non-interactive)
+ * default:  delegates to executeCreateDialog() (interactive REPL)
  */
 export async function executeCreate(params: CreateParams): Promise<number> {
-  const { description, type, slug, cwd, noLlm, run, runtime } = params;
-
-  // Step a: Check for slug collision
-  try {
-    await checkSlugCollision(cwd, slug);
-  } catch (err) {
-    if (err instanceof SpecRunnerError) {
-      process.stderr.write(`Error: ${err.message}\n`);
-      process.stderr.write(`Hint: ${err.hint}\n`);
-    } else {
-      process.stderr.write(`Error: ${(err as Error).message}\n`);
-    }
-    return 1;
-  }
-
-  const requestDir = path.join(cwd, "specrunner", "requests", "active", slug);
-  const requestMdPath = path.join(requestDir, "request.md");
-
-  let content: string;
+  const { description, type, cwd, noLlm, run, runtime, resume } = params;
 
   if (noLlm) {
-    // Step b: --no-llm mode — use scaffold template
-    content = buildScaffoldTemplate({ title: description, type, slug });
-  } else {
-    // Step c: Collect DynamicContext
-    const dynamicContext = await collectDynamicContext(cwd, "main");
-
-    // Step d: Collect request patterns
-    const patterns = await collectRequestPatterns(cwd, type);
-
-    // Step e: Build prompts
-    const systemPrompt = buildCreateSystemPrompt();
-    const userMessage = buildCreateUserMessage({
-      description,
-      type,
-      slug,
-      dynamicContext,
-      patterns,
-    });
-
-    // Step f: Query LLM
-    let messages: AsyncGenerator<unknown>;
-    try {
-      messages = runtime.query(userMessage, {
-        systemPrompt,
-        cwd,
-        model: "claude-opus-4-6",
-        allowedTools: ["Read", "Grep", "Glob"],
-      });
-    } catch (err) {
-      process.stderr.write(`Error: LLM query failed: ${(err as Error).message}\n`);
+    // --no-llm mode: use scaffold template directly
+    // slug is required for --no-llm mode; fall back to resume slug if available
+    const slug = params.slug ?? resume?.state.slug;
+    if (!slug) {
+      process.stderr.write("Error: --no-llm mode requires a --slug argument.\n");
       return 1;
     }
 
-    // Step g: Extract content
+    // Step a: Check for slug collision
     try {
-      content = await extractRequestContent(messages);
+      await checkSlugCollision(cwd, slug);
     } catch (err) {
       if (err instanceof SpecRunnerError) {
         process.stderr.write(`Error: ${err.message}\n`);
@@ -199,50 +100,66 @@ export async function executeCreate(params: CreateParams): Promise<number> {
       }
       return 1;
     }
-  }
 
-  // Step h: Write request.md
-  try {
-    await fs.mkdir(requestDir, { recursive: true });
-    await fs.writeFile(requestMdPath, content, "utf-8");
-  } catch (err) {
-    process.stderr.write(`Error: Failed to write request.md: ${(err as Error).message}\n`);
-    return 1;
-  }
+    const requestDir = path.join(cwd, "specrunner", "requests", "active", slug);
+    const requestMdPath = path.join(requestDir, "request.md");
 
-  // Step i: Validate with parseRequestMdContent
-  // Also check that type/slug match the input params (spec-review finding #2)
-  try {
-    const parsed = parseRequestMdContent(content, requestMdPath);
-    if (parsed.type !== type) {
-      process.stderr.write(
-        `Error: Generated request.md has type '${parsed.type}' but expected '${type}'.\n`,
-      );
+    // Step b: --no-llm mode — use scaffold template
+    const content = buildScaffoldTemplate({ title: description, type, slug });
+
+    // Step c: Write request.md
+    try {
+      await fs.mkdir(requestDir, { recursive: true });
+      await fs.writeFile(requestMdPath, content, "utf-8");
+    } catch (err) {
+      process.stderr.write(`Error: Failed to write request.md: ${(err as Error).message}\n`);
       return 1;
     }
-    if (parsed.slug !== slug) {
-      process.stderr.write(
-        `Error: Generated request.md has slug '${parsed.slug}' but expected '${slug}'.\n`,
-      );
+
+    // Step d: Validate with parseRequestMdContent
+    try {
+      const parsed = parseRequestMdContent(content, requestMdPath);
+      if (parsed.type !== type) {
+        process.stderr.write(
+          `Error: Generated request.md has type '${parsed.type}' but expected '${type}'.\n`,
+        );
+        return 1;
+      }
+      if (parsed.slug !== slug) {
+        process.stderr.write(
+          `Error: Generated request.md has slug '${parsed.slug}' but expected '${slug}'.\n`,
+        );
+        return 1;
+      }
+    } catch (err) {
+      if (err instanceof SpecRunnerError) {
+        process.stderr.write(`Error: Generated request.md is invalid: ${err.message}\n`);
+        process.stderr.write(`Hint: ${err.hint}\n`);
+      } else {
+        process.stderr.write(`Error: Generated request.md is invalid: ${(err as Error).message}\n`);
+      }
       return 1;
     }
-  } catch (err) {
-    if (err instanceof SpecRunnerError) {
-      process.stderr.write(`Error: Generated request.md is invalid: ${err.message}\n`);
-      process.stderr.write(`Hint: ${err.hint}\n`);
-    } else {
-      process.stderr.write(`Error: Generated request.md is invalid: ${(err as Error).message}\n`);
+
+    // Step e: Output path
+    process.stdout.write(`${requestMdPath}\n`);
+
+    // Step f: Run pipeline if --run
+    if (run) {
+      return await runRunCore(requestMdPath, { cwd });
     }
-    return 1;
+
+    return 0;
   }
 
-  // Step j: Output path
-  process.stdout.write(`${requestMdPath}\n`);
-
-  // Step k: Run pipeline if --run
-  if (run) {
-    return await runRunCore(requestMdPath, { cwd });
-  }
-
-  return 0;
+  // Default: delegate to interactive dialog
+  return executeCreateDialog({
+    description,
+    type,
+    slug: params.slug,
+    cwd,
+    runtime,
+    run,
+    resume,
+  });
 }
