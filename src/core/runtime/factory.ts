@@ -29,7 +29,7 @@ export function createRuntime(
   repo: OriginInfo,
 ): RuntimeStrategy {
   if (config.runtime === "local") {
-    return new LocalRuntime(cwd, githubClient);
+    return new LocalRuntime({ cwd, githubClient });
   }
 
   // Managed runtime: create Anthropic + SessionClient

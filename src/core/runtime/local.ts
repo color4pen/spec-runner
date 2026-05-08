@@ -13,7 +13,8 @@ import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { OriginInfo } from "../../git/remote.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { StepName } from "../../state/schema.js";
-import { createClaudeCodeRunner } from "../../adapter/claude-code/agent-runner.js";
+import { createClaudeCodeRunner, type QueryFn } from "../../adapter/claude-code/agent-runner.js";
+import { query as sdkQuery } from "@anthropic-ai/claude-agent-sdk";
 import { createWorktreeManager } from "../worktree/manager.js";
 import { loadJobState, updateJobState } from "../../state/store.js";
 import { spawnCommand } from "../../util/spawn.js";
@@ -38,33 +39,68 @@ function getInternals(handle: CleanupHandle): LocalCleanupInternals {
   return handle as unknown as LocalCleanupInternals;
 }
 
+export interface LocalRuntimeOptions {
+  cwd: string;
+  githubClient: GitHubClient;
+  manager?: ReturnType<typeof createWorktreeManager>;
+  spawnFn?: SpawnFn;
+  queryFn?: QueryFn;
+}
+
 export class LocalRuntime implements RuntimeStrategy {
   private readonly cwd: string;
   private readonly githubClient: GitHubClient;
   private readonly manager: ReturnType<typeof createWorktreeManager>;
   private readonly spawnFn: SpawnFn;
+  private readonly queryFn: QueryFn;
 
   // Set by setupWorkspace(); used by buildDeps() and registerCleanup()
   private workspace: WorkspaceContext | null = null;
 
   constructor(
-    cwd: string,
-    githubClient: GitHubClient,
+    cwdOrOpts: string | LocalRuntimeOptions,
+    githubClient?: GitHubClient,
     manager?: ReturnType<typeof createWorktreeManager>,
     spawnFn?: SpawnFn,
+    queryFn?: QueryFn,
   ) {
-    this.cwd = cwd;
-    this.githubClient = githubClient;
-    this.manager = manager ?? createWorktreeManager();
-    this.spawnFn = spawnFn ?? spawnCommand;
+    if (typeof cwdOrOpts === "string") {
+      // Legacy positional constructor (backward compatibility)
+      this.cwd = cwdOrOpts;
+      this.githubClient = githubClient!;
+      this.manager = manager ?? createWorktreeManager();
+      this.spawnFn = spawnFn ?? spawnCommand;
+      this.queryFn = queryFn ?? (sdkQuery as unknown as QueryFn);
+    } else {
+      // Named options constructor
+      const opts = cwdOrOpts;
+      this.cwd = opts.cwd;
+      this.githubClient = opts.githubClient;
+      this.manager = opts.manager ?? createWorktreeManager();
+      this.spawnFn = opts.spawnFn ?? spawnCommand;
+      this.queryFn = opts.queryFn ?? (sdkQuery as unknown as QueryFn);
+    }
   }
 
   /**
-   * Minimal implementation — future dialog use.
-   * For now just yields nothing (async generator placeholder).
+   * Query the LLM with a prompt and yield result messages.
+   * Uses sdkQuery (or injected queryFn for tests) with read-only tools by default.
    */
-  async *query(_prompt: string, _opts?: QueryOptions): AsyncGenerator<unknown> {
-    // Local dialog not yet implemented; placeholder for RuntimeStrategy contract
+  async *query(prompt: string, opts?: QueryOptions): AsyncGenerator<unknown> {
+    const messages = this.queryFn({
+      prompt,
+      options: {
+        cwd: opts?.cwd ?? this.cwd,
+        allowedTools: opts?.allowedTools ?? ["Read", "Grep", "Glob"],
+        permissionMode: "bypassPermissions",
+        model: opts?.model,
+        systemPrompt: opts?.systemPrompt,
+      },
+    });
+
+    for await (const message of messages) {
+      yield message;
+    }
   }
 
   createAgentRunner(): AgentRunner {

@@ -460,6 +460,96 @@ describe("TC-LR-009: setupWorkspace run path passes branchName to manager.create
   });
 });
 
+// TC-LR-011: Named options constructor
+describe("TC-LR-011: Named options constructor", () => {
+  it("accepts named options object", () => {
+    const githubClient = buildMockGitHubClient();
+    const { manager } = buildMockManager();
+    // Should not throw
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager });
+    expect(runtime).toBeDefined();
+  });
+
+  it("named options and positional constructor produce equivalent runtimes", async () => {
+    const githubClient = buildMockGitHubClient();
+    const { manager: manager1 } = buildMockManager();
+    const { manager: manager2 } = buildMockManager();
+    const { spawnFn: spawnFn1 } = buildMockSpawnFn();
+    const { spawnFn: spawnFn2 } = buildMockSpawnFn();
+
+    const positional = new LocalRuntime(tempDir, githubClient, manager1, spawnFn1);
+    const named = new LocalRuntime({ cwd: tempDir, githubClient, manager: manager2, spawnFn: spawnFn2 });
+
+    // Both should be instanceOf LocalRuntime
+    expect(positional).toBeInstanceOf(LocalRuntime);
+    expect(named).toBeInstanceOf(LocalRuntime);
+  });
+});
+
+// TC-LR-012: query() method
+describe("TC-LR-012: query() yields messages from queryFn", () => {
+  it("yields messages from the injected queryFn", async () => {
+    const githubClient = buildMockGitHubClient();
+
+    // Build a mock queryFn that yields two messages
+    const mockMessages = [
+      { type: "text", content: "hello" },
+      { type: "result", subtype: "success", result: "# My Request\n\n## Meta\n\n- **type**: new-feature\n- **slug**: my-request\n" },
+    ];
+
+    async function* mockQueryFn(_params: unknown) {
+      for (const msg of mockMessages) {
+        yield msg;
+      }
+    }
+
+    const runtime = new LocalRuntime({
+      cwd: tempDir,
+      githubClient,
+      queryFn: mockQueryFn as unknown as import("../../../../src/adapter/claude-code/agent-runner.js").QueryFn,
+    });
+
+    const results: unknown[] = [];
+    for await (const msg of runtime.query("test prompt")) {
+      results.push(msg);
+    }
+
+    expect(results).toHaveLength(2);
+    expect(results[0]).toEqual({ type: "text", content: "hello" });
+    expect(results[1]).toEqual({ type: "result", subtype: "success", result: expect.any(String) });
+  });
+
+  it("passes systemPrompt and model from QueryOptions to queryFn", async () => {
+    const githubClient = buildMockGitHubClient();
+
+    let capturedOptions: Record<string, unknown> | undefined;
+
+    async function* mockQueryFn(params: { prompt: string; options?: Record<string, unknown> }) {
+      capturedOptions = params.options;
+      yield { type: "result", subtype: "success", result: "" };
+    }
+
+    const runtime = new LocalRuntime({
+      cwd: tempDir,
+      githubClient,
+      queryFn: mockQueryFn as unknown as import("../../../../src/adapter/claude-code/agent-runner.js").QueryFn,
+    });
+
+    for await (const _msg of runtime.query("test", {
+      systemPrompt: "You are helpful",
+      model: "sonnet",
+      allowedTools: ["Read"],
+    })) {
+      // consume
+    }
+
+    expect(capturedOptions?.["systemPrompt"]).toBe("You are helpful");
+    expect(capturedOptions?.["model"]).toBe("sonnet");
+    expect(capturedOptions?.["allowedTools"]).toEqual(["Read"]);
+    expect(capturedOptions?.["permissionMode"]).toBe("bypassPermissions");
+  });
+});
+
 // TC-LR-010: setupWorkspace(run) commits request.md when requestFilePath is provided
 describe("TC-LR-010: setupWorkspace run path commits request.md", () => {
   it("calls git commit after git add when requestFilePath is provided", async () => {

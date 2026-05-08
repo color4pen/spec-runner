@@ -25,6 +25,8 @@ export interface QueryOptions {
   cwd?: string;
   maxTurns?: number;
   systemPrompt?: string;
+  model?: string;
+  allowedTools?: string[];
 }
 
 /**

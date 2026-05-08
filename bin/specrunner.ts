@@ -12,6 +12,7 @@ import { runDoctor } from "../src/cli/doctor.js";
 import { runFinish } from "../src/cli/finish.js";
 import { runRm } from "../src/cli/rm.js";
 import { runResume } from "../src/cli/resume.js";
+import { runCreate } from "../src/cli/create.js";
 
 const USAGE = `Usage: specrunner <command> [options]
 
@@ -19,6 +20,7 @@ Commands:
   init                   Create or update Anthropic Agent and Environment
   login                  Authenticate with GitHub via Device Flow
   run <req.md> [--verbose]  Run propose pipeline for a request
+  create "<description>" Create a new request.md from a description
   ps                     List all jobs
   doctor                 Diagnose environment / config / auth prerequisites
   finish [<slug>]        Squash-merge feature PR and archive (1-PR model)
@@ -27,6 +29,13 @@ Commands:
 
 Options:
   --help, -h    Show this help message
+
+Create Options:
+  "<description>"   Description of the change (required)
+  --type <type>     Request type (default: new-feature)
+  --slug <slug>     Slug override (default: derived from description)
+  --no-llm          Use scaffold template instead of LLM
+  --run             Run the pipeline after creating the request
 
 Doctor Options:
   --json        Output results as machine-readable JSON
@@ -123,6 +132,56 @@ export async function main(): Promise<void> {
       }
 
       await runRun(requestMd, { verbose });
+      break;
+    }
+
+    case "create": {
+      const createArgs = args.slice(1);
+
+      // First non-flag argument is the description (required)
+      const description = createArgs.find((a) => !a.startsWith("--"));
+      if (!description) {
+        process.stderr.write(
+          'Error: specrunner create requires a <description> argument.\n' +
+          'Usage: specrunner create "<description>" [--type <type>] [--slug <slug>] [--no-llm] [--run]\n',
+        );
+        process.exit(2);
+      }
+
+      // Parse --type <type>
+      const typeFlag = createArgs.find((a) => a.startsWith("--type="));
+      let createType: string | undefined;
+      if (typeFlag) {
+        createType = typeFlag.slice("--type=".length);
+      } else {
+        const typeIdx = createArgs.indexOf("--type");
+        if (typeIdx !== -1 && createArgs[typeIdx + 1] && !createArgs[typeIdx + 1]!.startsWith("--")) {
+          createType = createArgs[typeIdx + 1];
+        }
+      }
+
+      // Parse --slug <slug>
+      const slugFlag = createArgs.find((a) => a.startsWith("--slug="));
+      let createSlug: string | undefined;
+      if (slugFlag) {
+        createSlug = slugFlag.slice("--slug=".length);
+      } else {
+        const slugIdx = createArgs.indexOf("--slug");
+        if (slugIdx !== -1 && createArgs[slugIdx + 1] && !createArgs[slugIdx + 1]!.startsWith("--")) {
+          createSlug = createArgs[slugIdx + 1];
+        }
+      }
+
+      const noLlm = createArgs.includes("--no-llm");
+      const createRun = createArgs.includes("--run");
+
+      await runCreate(description, {
+        type: createType,
+        slug: createSlug,
+        noLlm,
+        run: createRun,
+        cwd: process.cwd(),
+      });
       break;
     }
 
