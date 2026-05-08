@@ -12,6 +12,7 @@
 import type { AgentStep } from "../step/types.js";
 import type { JobState } from "../../state/schema.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
+import type { DynamicContext } from "../../git/dynamic-context.js";
 
 import type { ModelUsage } from "./model-usage.js";
 export type { ModelUsage } from "./model-usage.js";
@@ -41,6 +42,8 @@ export interface AgentRunContext {
   /** Emit a domain event payload back to StepExecutor.
    * Called by adapter for intermediate state updates (e.g. step progress). */
   emit: (event: string, payload: Record<string, unknown>) => void;
+  /** Dynamic repository context collected at pipeline start. Optional for backward compat. */
+  dynamicContext?: DynamicContext;
 }
 
 /**

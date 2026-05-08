@@ -113,6 +113,7 @@ export class StepExecutor {
       cwd: deps.cwd ?? process.cwd(),
       requestContent: deps.request.content,
       config: deps.config,
+      dynamicContext: deps.dynamicContext,
       emit: (event: string, payload: Record<string, unknown>) => {
         // Forward adapter events to the event bus
         this.events.emit(event as Parameters<EventBus["emit"]>[0], payload as never);

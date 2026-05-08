@@ -4,6 +4,7 @@ import type { AgentRunner } from "./port/agent-runner.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import type { OriginInfo } from "../git/remote.js";
 import type { ParsedRequest } from "../parser/request-md.js";
+import type { DynamicContext } from "../git/dynamic-context.js";
 
 /**
  * Minimal context required by Step methods (buildMessage, resultFilePath, parseResult).
@@ -21,6 +22,8 @@ export interface StepContext {
   cwd?: string;
   request: ParsedRequest;
   repo: OriginInfo;
+  /** Dynamic repository context injected at pipeline start. Optional for backward compat. */
+  dynamicContext?: DynamicContext;
 }
 
 /**

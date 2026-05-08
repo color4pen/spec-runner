@@ -2,6 +2,7 @@ import type { AgentStep, StepDeps, ParsedStepResult } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
+import type { DynamicContext } from "../../git/dynamic-context.js";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../../prompts/code-review-system.js";
 import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { parseReviewVerdict } from "../parser/review-verdict.js";
@@ -44,17 +45,26 @@ const codeReviewAgentDefinition: AgentDefinition = {
 
 /**
  * Build the initial user message for the code-review session.
+ *
+ * When dynamicContext is provided and has diffStat, it is included as a
+ * pre-computed context section so the agent doesn't need to run git commands
+ * to understand the overall change scope.
  */
-function buildCodeReviewInitialMessage(opts: {
+export function buildCodeReviewInitialMessage(opts: {
   slug: string;
   branch: string | undefined;
   iteration: number;
   findingsPath: string;
   requestContent: string;
+  dynamicContext?: DynamicContext;
 }): string {
   const gitInstruction = opts.branch
     ? buildGitPushInstruction(opts.branch)
     : "After writing the result file, commit and push to the branch before ending your session.";
+
+  const contextSection = opts.dynamicContext?.diffStat
+    ? `\n\n## Branch Context\n\n### Diff stat (main..HEAD)\n\n\`\`\`\n${opts.dynamicContext.diffStat}\n\`\`\``
+    : "";
 
   return `<user-request>
 Please perform a code review for the following change:
@@ -74,7 +84,7 @@ The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escal
 
 Original request:
 ${opts.requestContent}
-</user-request>
+</user-request>${contextSection}
 
 ${gitInstruction}`;
 }
@@ -109,6 +119,7 @@ export const CodeReviewStep: AgentStep = {
       iteration,
       findingsPath,
       requestContent: deps.request.content,
+      dynamicContext: deps.dynamicContext,
     });
   },
 

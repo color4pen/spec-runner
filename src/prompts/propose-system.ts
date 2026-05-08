@@ -220,14 +220,44 @@ Even if the user request below explicitly says "edit README.md", "update the sou
  *
  * The branch name follows the convention \`feat/{slug}\` and is also passed
  * here so the agent does not have to derive it.
+ *
+ * When dynamicContext is provided, specsList and changesList are appended as
+ * a repository context section so the agent has an up-to-date overview without
+ * having to discover this information itself.
  */
 export function buildInitialMessage(
   requestContent: string,
   slug: string,
   branch: string = `feat/${slug}`,
+  dynamicContext?: { specsList?: string[]; changesList?: string[] },
 ): string {
-  return PROPOSE_INITIAL_MESSAGE_TEMPLATE
+  let base = PROPOSE_INITIAL_MESSAGE_TEMPLATE
     .replaceAll("{{SLUG}}", slug)
     .replaceAll("{{BRANCH}}", branch)
     .replace("{{REQUEST_CONTENT}}", requestContent);
+
+  if (dynamicContext) {
+    const sections: string[] = [];
+
+    if (dynamicContext.specsList && dynamicContext.specsList.length > 0) {
+      sections.push(
+        `## Repository Context\n\n### Existing Specs (openspec/specs/)\n\n${dynamicContext.specsList.map((s) => `- ${s}`).join("\n")}`,
+      );
+    }
+
+    if (dynamicContext.changesList && dynamicContext.changesList.length > 0) {
+      const changesSectionHeader = sections.length > 0
+        ? "### Active Changes (openspec/changes/)"
+        : "## Repository Context\n\n### Active Changes (openspec/changes/)";
+      sections.push(
+        `${changesSectionHeader}\n\n${dynamicContext.changesList.map((c) => `- ${c}`).join("\n")}`,
+      );
+    }
+
+    if (sections.length > 0) {
+      base = `${base}\n\n${sections.join("\n\n")}`;
+    }
+  }
+
+  return base;
 }

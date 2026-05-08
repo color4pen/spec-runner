@@ -4,6 +4,7 @@ import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
+import type { DynamicContext } from "../../git/dynamic-context.js";
 import { IMPLEMENTER_SYSTEM_PROMPT } from "../../prompts/implementer-system.js";
 import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { branchNotSetError } from "../../errors.js";
@@ -30,13 +31,30 @@ const implementerAgentDefinition: AgentDefinition = {
 
 /**
  * Build the initial user message for the implementer session.
+ *
+ * When dynamicContext is provided and has gitLog or diffStat, a branch context
+ * section is prepended so the agent understands what has already been done on
+ * the branch without having to run git commands itself.
  */
-function buildImplementerInitialMessage(opts: {
+export function buildImplementerInitialMessage(opts: {
   slug: string;
   branch: string;
   requestContent: string;
+  dynamicContext?: DynamicContext;
 }): string {
-  const { slug, branch, requestContent } = opts;
+  const { slug, branch, requestContent, dynamicContext } = opts;
+
+  const contextLines: string[] = [];
+  if (dynamicContext?.gitLog) {
+    contextLines.push(`## Branch Context\n\n### Recent commits (main..HEAD)\n\n\`\`\`\n${dynamicContext.gitLog}\n\`\`\``);
+  }
+  if (dynamicContext?.diffStat) {
+    contextLines.push(`### Diff stat (main..HEAD)\n\n\`\`\`\n${dynamicContext.diffStat}\n\`\`\``);
+  }
+  const contextSection = contextLines.length > 0
+    ? `\n\n${contextLines.join("\n\n")}`
+    : "";
+
   return `<user-request>
 You are the implementer for the following change:
 
@@ -52,7 +70,7 @@ Please:
 
 Original request:
 ${requestContent}
-</user-request>`;
+</user-request>${contextSection}`;
 }
 
 /**
@@ -85,6 +103,7 @@ export const ImplementerStep: AgentStep = {
       slug: deps.slug,
       branch: state.branch,
       requestContent: deps.request.content,
+      dynamicContext: deps.dynamicContext,
     });
   },
 

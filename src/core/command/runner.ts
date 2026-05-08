@@ -32,6 +32,7 @@ import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { OriginInfo } from "../../git/remote.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { PipelineDeps } from "../types.js";
+import { collectDynamicContext } from "../../git/dynamic-context.js";
 
 // ---------------------------------------------------------------------------
 // PrepareResult
@@ -103,6 +104,17 @@ export abstract class CommandRunner {
 
     // Step 3: buildDeps
     const deps: PipelineDeps = this.runtime.buildDeps(config, repo, request, slug, workspace);
+
+    // Step 3b: collect dynamic context and attach to deps (once per run, not per-step)
+    // collectDynamicContext never throws — failures return empty fields.
+    try {
+      deps.dynamicContext = await collectDynamicContext(
+        workspace.cwd,
+        jobState.branch ?? "main",
+      );
+    } catch {
+      // Swallow any unexpected error — pipeline must not be blocked
+    }
 
     // Step 4: registerCleanup
     const handle: CleanupHandle = this.runtime.registerCleanup(jobState.jobId, startStep);

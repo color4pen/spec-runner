@@ -1,0 +1,107 @@
+/**
+ * DynamicContext: collects per-run repository context for injection into agent prompts.
+ *
+ * Provides git log, diff stat, specs list, and changes list so agents do not
+ * need to discover this information themselves each run.
+ *
+ * Design constraint: do NOT import from src/adapter/ — this is a core utility.
+ * Uses node:child_process execFile directly (not git-exec.ts).
+ */
+import { execFile as nodeExecFile } from "node:child_process";
+import { promisify } from "node:util";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+
+const execFileAsync = promisify(nodeExecFile);
+
+/**
+ * Dynamic context collected at the start of each pipeline run.
+ * All fields are optional-by-fallback: git failures return empty strings/arrays.
+ */
+export interface DynamicContext {
+  /** Commits on current branch not yet in main (git log main..HEAD --oneline -n 20) */
+  gitLog: string;
+  /** Diff stat between main and HEAD (git diff main..HEAD --stat) */
+  diffStat: string;
+  /** Subdirectory names under openspec/specs/ (each spec lives in openspec/specs/<name>/spec.md) */
+  specsList: string[];
+  /** Directories under openspec/changes/ (excluding "archive") */
+  changesList: string[];
+}
+
+/**
+ * Run a git command and return trimmed stdout.
+ * Returns null on any error (non-zero exit, no git binary, etc.).
+ */
+async function runGit(cwd: string, args: string[]): Promise<string | null> {
+  try {
+    const { stdout } = await execFileAsync("git", args, { cwd });
+    return stdout.trim();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Collect dynamic repository context for a pipeline run.
+ *
+ * @param cwd - Working directory (worktree path)
+ * @param branch - Current branch name (used to derive log/diff relative to main)
+ * @returns DynamicContext with all fields populated; falls back to empty on failure.
+ *
+ * This function NEVER throws — all failures are swallowed and return empty values.
+ */
+export async function collectDynamicContext(
+  cwd: string,
+  _branch: string,
+): Promise<DynamicContext> {
+  // Collect all fields in parallel; individual failures fall back gracefully.
+  const [gitLogRaw, diffStatRaw, specsList, changesList] = await Promise.all([
+    runGit(cwd, ["log", "main..HEAD", "--oneline", "-n", "20"]),
+    runGit(cwd, ["diff", "main..HEAD", "--stat"]),
+    collectSpecsList(cwd),
+    collectChangesList(cwd),
+  ]);
+
+  return {
+    gitLog: gitLogRaw ?? "",
+    diffStat: diffStatRaw ?? "",
+    specsList,
+    changesList,
+  };
+}
+
+/**
+ * Collect subdirectory names under openspec/specs/.
+ * Each spec lives in a named subdirectory (openspec/specs/<name>/spec.md).
+ * Returns empty array when directory does not exist or read fails.
+ */
+async function collectSpecsList(cwd: string): Promise<string[]> {
+  const specsDir = path.join(cwd, "openspec", "specs");
+  try {
+    const entries = await fs.readdir(specsDir, { withFileTypes: true });
+    return entries
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Collect directories under openspec/changes/ excluding "archive".
+ * Returns empty array when directory does not exist or read fails.
+ */
+async function collectChangesList(cwd: string): Promise<string[]> {
+  const changesDir = path.join(cwd, "openspec", "changes");
+  try {
+    const entries = await fs.readdir(changesDir, { withFileTypes: true });
+    return entries
+      .filter((e) => e.isDirectory() && e.name !== "archive")
+      .map((e) => e.name)
+      .sort();
+  } catch {
+    return [];
+  }
+}

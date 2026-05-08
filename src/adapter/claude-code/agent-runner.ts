@@ -94,6 +94,7 @@ export class ClaudeCodeRunner implements AgentRunner {
         enabled: [],
       },
       repo: { owner: "", name: "" },
+      dynamicContext: ctx.dynamicContext,
     };
     const baseMessage = step.buildMessage(state, stepCtx);
 

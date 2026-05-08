@@ -270,6 +270,7 @@ export class ManagedAgentRunner implements AgentRunner {
         enabled: [],
       },
       repo: this.repo,
+      dynamicContext: ctx.dynamicContext,
     };
 
     let initialMessage: string;
