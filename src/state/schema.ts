@@ -15,6 +15,7 @@ export type StepName =
   | "propose"
   | "spec-review"
   | "spec-fixer"
+  | "test-case-gen"
   | "implementer"
   | "verification"
   | "build-fixer"

@@ -84,6 +84,7 @@ function buildConfig(overrides: Record<string, unknown> = {}) {
       propose: { agentId: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
       "spec-review": { agentId: "agent_spec_review", definitionHash: "sha256:ghi", lastSyncedAt: new Date().toISOString() },
       "spec-fixer": { agentId: "agent_spec_fixer", definitionHash: "sha256:def", lastSyncedAt: new Date().toISOString() },
+      "test-case-gen": { agentId: "test-case-gen-agent-id", definitionHash: "sha256:tcg", lastSyncedAt: new Date().toISOString() },
       "implementer": { agentId: "implementer-agent-id", definitionHash: "sha256:imp", lastSyncedAt: new Date().toISOString() },
       "build-fixer": { agentId: "build-fixer-agent-id", definitionHash: "sha256:bfx", lastSyncedAt: new Date().toISOString() },
       "code-review": { agentId: "code-review-agent-id", definitionHash: "sha256:crv", lastSyncedAt: new Date().toISOString() },
@@ -269,10 +270,10 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
     expect(result.steps?.["spec-fixer"]).toBeUndefined();
 
     // After spec-review approved, pipeline continues:
-    // propose(1) + spec-review(1) + implementer(1) + code-review(1) = 4 sessions
-    // VerificationStep is CLI (no session). Total = 4 createSession calls.
+    // propose(1) + spec-review(1) + test-case-gen(1) + implementer(1) + code-review(1) = 5 sessions
+    // VerificationStep is CLI (no session). Total = 5 createSession calls.
     const createCalls = (client.createSession as ReturnType<typeof vi.fn>).mock.calls;
-    expect(createCalls.length).toBe(4);
+    expect(createCalls.length).toBe(5);
 
     // implementer should have run
     expect(result.steps?.["implementer"]).toBeDefined();

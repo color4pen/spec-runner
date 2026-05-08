@@ -17,6 +17,7 @@ import { BuildFixerStep } from "../step/build-fixer.js";
 import { CodeReviewStep } from "../step/code-review.js";
 import { CodeFixerStep } from "../step/code-fixer.js";
 import { PrCreateStep } from "../step/pr-create.js";
+import { TestCaseGenStep } from "../step/test-case-gen.js";
 
 /**
  * Construct the standard Pipeline with all steps and transitions.
@@ -38,9 +39,10 @@ export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): P
 
   const steps = new Map<string, Step>([
     ["propose",      ProposeStep],
-    ["spec-review",  SpecReviewStep],
-    ["spec-fixer",   SpecFixerStep],
-    ["implementer",  ImplementerStep],
+    ["spec-review",    SpecReviewStep],
+    ["spec-fixer",     SpecFixerStep],
+    ["test-case-gen",  TestCaseGenStep],
+    ["implementer",    ImplementerStep],
     ["verification", VerificationStep],
     ["build-fixer",  BuildFixerStep],
     ["code-review",  CodeReviewStep],

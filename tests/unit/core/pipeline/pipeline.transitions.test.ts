@@ -111,7 +111,9 @@ function makeStepObject(name: string, kind: "agent" | "cli" = "agent"): Step {
 // TC-012: STANDARD_TRANSITIONS に必要なエッジが含まれる
 describe("TC-012: STANDARD_TRANSITIONS に必要なエッジが存在する", () => {
   const requiredEdges = [
-    { step: "spec-review",  on: "approved",   to: "implementer" },
+    { step: "spec-review",   on: "approved",   to: "test-case-gen" },
+    { step: "test-case-gen", on: "success",    to: "implementer" },
+    { step: "test-case-gen", on: "error",      to: "escalate" },
     { step: "implementer",  on: "success",     to: "verification" },
     { step: "implementer",  on: "error",       to: "escalate" },
     { step: "verification", on: "passed",      to: "code-review" },
@@ -170,13 +172,13 @@ describe("TC-012-015, TC-029: code-review / code-fixer transition rows", () => {
 });
 
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
-// TC-022: STANDARD_TRANSITIONS テーブルが 22 行を持つ（19 + pr-create 3 行 = 22）
+// TC-022: STANDARD_TRANSITIONS テーブルが 23 行を持つ（21 + test-case-gen 2 行 = 23）
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 21 rows total (19 original + 2 new pr-create rows = 21)", () => {
-    // 19 rows (code-review loop included, code-review --approved→ end replaced with --approved→ pr-create)
-    // + 2 new pr-create rows (success→end, error→escalate)
-    // Note: tasks.md spec says 22 but the old "code-review --approved→ end" was removed so net is 21
-    expect(STANDARD_TRANSITIONS.length).toBe(21);
+  it("has 23 rows total (21 original + 2 new test-case-gen rows = 23)", () => {
+    // 21 rows (including pr-create rows)
+    // + 2 new test-case-gen rows (success→implementer, error→escalate)
+    // spec-review --approved→ implementer replaced with --approved→ test-case-gen (net = 23)
+    expect(STANDARD_TRANSITIONS.length).toBe(23);
   });
 
   it("verification --passed→ end does NOT exist", () => {

@@ -158,6 +158,16 @@ function buildMockPipeline(opts: {
       if (result instanceof Error) throw result;
       return result;
     }
+    if (step.name === "test-case-gen") {
+      // Default: test-case-gen succeeds (completionVerdict: success)
+      return {
+        ...currentState,
+        steps: {
+          ...currentState.steps,
+          "test-case-gen": [{ attempt: 1, sessionId: null, outcome: { verdict: "success" as const, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" }],
+        },
+      };
+    }
     if (step.name === "implementer") {
       if (opts.implementerResult instanceof Error) throw opts.implementerResult;
       return opts.implementerResult ?? defaultImplementerResult(currentState);
@@ -204,6 +214,7 @@ function buildMockPipeline(opts: {
     ["propose",      { kind: "agent", name: "propose",      agent: { name: "test", role: "propose", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["spec-review",  { kind: "agent", name: "spec-review",  agent: { name: "test", role: "spec-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["spec-fixer",   { kind: "agent", name: "spec-fixer",   agent: { name: "test", role: "spec-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["test-case-gen", { kind: "agent", name: "test-case-gen", agent: { name: "test", role: "test-case-gen", model: "claude-sonnet-4-6", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["implementer",  { kind: "agent", name: "implementer",  agent: { name: "test", role: "implementer", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["verification", { kind: "cli",   name: "verification",  run: async () => {}, resultFilePath: () => "openspec/changes/test/verification-result.md", parseResult: () => ({ verdict: "passed" as const, findingsPath: null }) }],
     ["build-fixer",  { kind: "agent", name: "build-fixer",  agent: { name: "test", role: "build-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
@@ -472,13 +483,15 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     const find = (step: string, on: string) =>
       STANDARD_TRANSITIONS.find((t) => t.step === step && t.on === on);
 
-    expect(find("propose",     "success")).toMatchObject({ to: "spec-review" });
-    expect(find("propose",     "error")).toMatchObject({ to: "escalate" });
-    expect(find("spec-review", "approved")).toMatchObject({ to: "implementer" });
-    expect(find("spec-review", "needs-fix")).toMatchObject({ to: "spec-fixer" });
-    expect(find("spec-review", "escalation")).toMatchObject({ to: "escalate" });
-    expect(find("spec-fixer",  "approved")).toMatchObject({ to: "spec-review" });
-    expect(find("spec-fixer",  "error")).toMatchObject({ to: "escalate" });
+    expect(find("propose",       "success")).toMatchObject({ to: "spec-review" });
+    expect(find("propose",       "error")).toMatchObject({ to: "escalate" });
+    expect(find("spec-review",   "approved")).toMatchObject({ to: "test-case-gen" });
+    expect(find("spec-review",   "needs-fix")).toMatchObject({ to: "spec-fixer" });
+    expect(find("spec-review",   "escalation")).toMatchObject({ to: "escalate" });
+    expect(find("spec-fixer",    "approved")).toMatchObject({ to: "spec-review" });
+    expect(find("spec-fixer",    "error")).toMatchObject({ to: "escalate" });
+    expect(find("test-case-gen", "success")).toMatchObject({ to: "implementer" });
+    expect(find("test-case-gen", "error")).toMatchObject({ to: "escalate" });
   });
 
   it("contains all required implementation-layer transitions (TC-012)", () => {
@@ -503,8 +516,8 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     expect(find("pr-create",    "error")).toMatchObject({ to: "escalate" });
   });
 
-  it("has exactly 21 transitions (19 original + 2 new pr-create rows)", () => {
-    expect(STANDARD_TRANSITIONS).toHaveLength(21);
+  it("has exactly 23 transitions (21 original + 2 new test-case-gen rows)", () => {
+    expect(STANDARD_TRANSITIONS).toHaveLength(23);
   });
 });
 

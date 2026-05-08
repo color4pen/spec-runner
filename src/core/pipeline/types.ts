@@ -59,7 +59,9 @@ export const LOOP_ERROR_CODES: Record<string, LoopErrorShape> = {
 export const STANDARD_TRANSITIONS: Transition[] = [
   { step: "propose",      on: "success",    to: "spec-review" },
   { step: "propose",      on: "error",      to: "escalate" },
-  { step: "spec-review",  on: "approved",   to: "implementer" },
+  { step: "spec-review",  on: "approved",   to: "test-case-gen" },
+  { step: "test-case-gen", on: "success",  to: "implementer" },
+  { step: "test-case-gen", on: "error",    to: "escalate" },
   { step: "spec-review",  on: "needs-fix",  to: "spec-fixer" },
   { step: "spec-review",  on: "escalation", to: "escalate" },
   { step: "spec-fixer",   on: "approved",   to: "spec-review" },
