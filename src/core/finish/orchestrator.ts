@@ -17,7 +17,8 @@
  * TC-126: state.status=archived → "Already archived" no-op
  */
 import type { SpawnFn } from "../../util/spawn.js";
-import type { FinishFs, FinishFlags } from "./types.js";
+import type { FinishFs, FinishFlags, ResolvedTarget, PrViewData } from "./types.js";
+import type { WorktreeManager } from "../worktree/manager.js";
 import { loadJobState, updateJobState } from "../../state/store.js";
 import { resolveTarget } from "./resolve-target.js";
 import { runPreflight } from "./preflight.js";
@@ -65,18 +66,10 @@ export async function runFinishOrchestrator(
 ): Promise<FinishResult> {
   const { slug, prNumber, jobId, baseBranch, flags, cwd, spawn, fs, sleepFn, worktreeManagerFn } = input;
 
-  // Step 1: Resolve target job
-  const resolveResult = await resolveTarget(
-    { slug, prNumber, jobId, cwd, spawn },
-    stdoutWrite,
-  );
-  if (!resolveResult.ok) {
-    return { exitCode: 2, message: resolveResult.message };
-  }
-
+  const resolveResult = await resolveTarget({ slug, prNumber, jobId, cwd, spawn }, stdoutWrite);
+  if (!resolveResult.ok) return { exitCode: 2, message: resolveResult.message };
   const target = resolveResult.target;
 
-  // Step 2: Load job state and check eligibility
   let state;
   try {
     state = await loadJobState(target.jobId);
@@ -91,39 +84,24 @@ export async function runFinishOrchestrator(
     return { exitCode: 0 };
   }
 
-  // Reject running jobs
   try {
     assertJobFinishable(state);
   } catch (err: unknown) {
     if (err instanceof SpecRunnerError && err.code === ERROR_CODES.JOB_NOT_FINISHABLE) {
-      return {
-        exitCode: 1,
-        escalation: formatEscalation({
-          failedStep: "job-state-gate",
-          detectedState: `JOB_NOT_FINISHABLE (status=${state.status})`,
-          recommendedAction: `Wait for the running job to complete, or check its progress with \`specrunner ps\`.`,
-          resumeCommand: `specrunner finish ${target.slug}`,
-        }),
-      };
+      return { exitCode: 1, escalation: formatEscalation({
+        failedStep: "job-state-gate",
+        detectedState: `JOB_NOT_FINISHABLE (status=${state.status})`,
+        recommendedAction: `Wait for the running job to complete, or check its progress with \`specrunner ps\`.`,
+        resumeCommand: `specrunner finish ${target.slug}`,
+      }) };
     }
     throw err;
   }
 
   // Phase 0: pre-flight
   stdoutWrite("Phase 0: pre-flight checks...");
-  const preflightResult = await runPreflight({
-    target,
-    cwd,
-    spawn,
-    fs,
-    dryRun: flags.dryRun ?? false,
-    sleepFn,
-  });
-
-  if (!preflightResult.ok) {
-    return { exitCode: 1, escalation: preflightResult.escalation };
-  }
-
+  const preflightResult = await runPreflight({ target, cwd, spawn, fs, dryRun: flags.dryRun ?? false, sleepFn });
+  if (!preflightResult.ok) return { exitCode: 1, escalation: preflightResult.escalation };
   const { prViewData } = preflightResult;
 
   // --dry-run: output plan and exit
@@ -132,112 +110,146 @@ export async function runFinishOrchestrator(
     return { exitCode: 0 };
   }
 
-  // Resume path: feature PR already merged
   const prAlreadyMerged = prViewData.state === "MERGED";
-
-  // Design D6: Phase 1 operations run in worktree (if available) or main cwd (after checkout).
-  // operationCwd is the directory where archive / git mv / commit / push run.
   const operationCwd = target.worktreePath ?? null;
 
   if (!prAlreadyMerged) {
-    // Phase 1: archive on feature branch
     stdoutWrite(`Phase 1: archive on feature branch ${target.branch}...`);
+    const p1 = await runPhase1Archive({ target, operationCwd, cwd, spawn, fs, stdoutWrite });
+    if (!p1.ok) return { exitCode: 1, escalation: p1.escalation };
 
-    // If no worktree path, checkout feature branch in main cwd (managed mode / crash recovery)
-    if (!operationCwd) {
-      const checkoutResult = await checkoutFeatureBranch({ branch: target.branch, cwd, spawn, slug: target.slug });
-      if (!checkoutResult.ok) {
-        return { exitCode: 1, escalation: checkoutResult.escalation };
-      }
-    }
-
-    // Determine the directory to use for archive / git mv / push
-    const archiveCwd = operationCwd ?? cwd;
-
-    // openspec archive
-    const openspecResult = await archiveOpenspec({
-      slug: target.slug,
-      cwd: archiveCwd,
-      spawn,
-      fs,
-    });
-    if (!openspecResult.ok) {
-      return { exitCode: 1, escalation: openspecResult.escalation };
-    }
-    if (!openspecResult.skipped) {
-      stdoutWrite(openspecResult.message);
-    }
-
-    // git mv active → merged + commit
-    const moveResult = await moveRequestsDir({
-      slug: target.slug,
-      cwd: archiveCwd,
-      spawn,
-      fs,
-    });
-    if (!moveResult.ok) {
-      return { exitCode: 1, escalation: moveResult.escalation };
-    }
-    if (!moveResult.skipped) {
-      stdoutWrite(moveResult.message);
-    }
-
-    // Phase 2: git push origin <feature-branch>
     stdoutWrite(`Phase 2: git push origin ${target.branch}...`);
-    const pushResult = await pushFeatureBranch({ branch: target.branch, cwd: archiveCwd, spawn, slug: target.slug });
-    if (!pushResult.ok) {
-      return { exitCode: 1, escalation: pushResult.escalation };
-    }
-    if (!pushResult.skipped) {
-      stdoutWrite(`Pushed ${target.branch} to origin.`);
-    }
+    const p2 = await runPhase2Push({ target, operationCwd, cwd, spawn, baseBranch, prViewData, stdoutWrite, sleepFn });
+    if (!p2.ok) return { exitCode: 1, escalation: p2.escalation };
 
-    // Phase 2 post-push: poll mergeStateStatus until CLEAN (Design D1)
-    // After push, GitHub recalculates mergeability asynchronously.
-    // Poll up to 5 times (3s interval) to wait for CLEAN.
-    // On exhaustion, proceed with current status — Phase 3 will attempt merge anyway.
-    const postPushPoll = await pollMergeStateAfterPush({
-      prNumber: target.prNumber,
-      cwd,
-      spawn,
-      slug: target.slug,
-      sleepFn,
-    });
-    const mergeStateAfterPush = postPushPoll.mergeStateStatus || (prViewData.mergeStateStatus ?? "");
-
-    // DIRTY = merge conflicts confirmed. Escalate before attempting merge.
-    if (mergeStateAfterPush === "DIRTY") {
-      return {
-        exitCode: 1,
-        escalation: formatEscalation({
-          failedStep: "Phase 3 guard (mergeStateStatus DIRTY)",
-          detectedState: "mergeStateStatus is DIRTY (merge conflicts exist)",
-          recommendedAction: `PR has merge conflicts (DIRTY). Rebase the feature branch onto ${baseBranch} and re-run: specrunner finish ${target.slug}`,
-          resumeCommand: `specrunner finish ${target.slug}`,
-        }),
-      };
-    }
-
-    // Phase 3: gh pr merge --squash --delete-branch
     stdoutWrite(`Phase 3: merging PR #${target.prNumber}...`);
     const mergeResult = await mergeFeaturePrPhase3({
       prNumber: target.prNumber,
-      mergeStateStatus: mergeStateAfterPush,
+      mergeStateStatus: p2.mergeStateAfterPush,
       force: flags.force ?? false,
       cwd,
       spawn,
       slug: target.slug,
     });
-    if (!mergeResult.ok) {
-      return { exitCode: 1, escalation: mergeResult.escalation };
-    }
+    if (!mergeResult.ok) return { exitCode: 1, escalation: mergeResult.escalation };
     stdoutWrite(`PR #${target.prNumber} merged successfully.`);
   } else {
     stdoutWrite(`PR #${target.prNumber} already merged. Skipping Phase 1-3.`);
   }
 
-  // Phase 4: worktree cleanup (local runtime) + markJobArchived + git checkout/pull (managed only)
   stdoutWrite("Phase 4: finalizing...");
+  const p4 = await runPhase4Finalize({ target, operationCwd, cwd, spawn, baseBranch, worktreeManagerFn, stdoutWrite });
+  if (!p4.ok) return { exitCode: 1, escalation: p4.escalation };
+
+  return { exitCode: 0 };
+}
+
+// ---------------------------------------------------------------------------
+// Phase helpers
+// ---------------------------------------------------------------------------
+
+type PhaseResult =
+  | { ok: true; skipped?: boolean }
+  | { ok: false; escalation: string; exitCode: 1 };
+
+type Phase2Result =
+  | { ok: true; mergeStateAfterPush: string }
+  | { ok: false; escalation: string; exitCode: 1 };
+
+/**
+ * Phase 1: checkout feature branch (if needed) → archive → git mv → commit.
+ */
+async function runPhase1Archive(params: {
+  target: ResolvedTarget;
+  operationCwd: string | null;
+  cwd: string;
+  spawn: SpawnFn;
+  fs: FinishFs;
+  stdoutWrite: (msg: string) => void;
+}): Promise<PhaseResult> {
+  const { target, operationCwd, cwd, spawn, fs, stdoutWrite } = params;
+
+  // If no worktree path, checkout feature branch in main cwd (managed mode / crash recovery)
+  if (!operationCwd) {
+    const checkoutResult = await checkoutFeatureBranch({ branch: target.branch, cwd, spawn, slug: target.slug });
+    if (!checkoutResult.ok) return { ok: false, escalation: checkoutResult.escalation, exitCode: 1 };
+  }
+
+  const archiveCwd = operationCwd ?? cwd;
+
+  // openspec archive
+  const openspecResult = await archiveOpenspec({ slug: target.slug, cwd: archiveCwd, spawn, fs });
+  if (!openspecResult.ok) return { ok: false, escalation: openspecResult.escalation, exitCode: 1 };
+  if (!openspecResult.skipped) stdoutWrite(openspecResult.message);
+
+  // git mv active → merged + commit
+  const moveResult = await moveRequestsDir({ slug: target.slug, cwd: archiveCwd, spawn, fs });
+  if (!moveResult.ok) return { ok: false, escalation: moveResult.escalation, exitCode: 1 };
+  if (!moveResult.skipped) stdoutWrite(moveResult.message);
+
+  return { ok: true };
+}
+
+/**
+ * Phase 2: git push origin <feature-branch> + poll mergeStateStatus.
+ */
+async function runPhase2Push(params: {
+  target: ResolvedTarget;
+  operationCwd: string | null;
+  cwd: string;
+  spawn: SpawnFn;
+  baseBranch: string;
+  prViewData: PrViewData;
+  stdoutWrite: (msg: string) => void;
+  sleepFn?: (ms: number) => Promise<void>;
+}): Promise<Phase2Result> {
+  const { target, operationCwd, cwd, spawn, baseBranch, prViewData, stdoutWrite, sleepFn } = params;
+  const archiveCwd = operationCwd ?? cwd;
+
+  const pushResult = await pushFeatureBranch({ branch: target.branch, cwd: archiveCwd, spawn, slug: target.slug });
+  if (!pushResult.ok) return { ok: false, escalation: pushResult.escalation, exitCode: 1 };
+  if (!pushResult.skipped) stdoutWrite(`Pushed ${target.branch} to origin.`);
+
+  // Phase 2 post-push: poll mergeStateStatus until CLEAN (Design D1)
+  const postPushPoll = await pollMergeStateAfterPush({
+    prNumber: target.prNumber,
+    cwd,
+    spawn,
+    slug: target.slug,
+    sleepFn,
+  });
+  const mergeStateAfterPush = postPushPoll.mergeStateStatus || (prViewData.mergeStateStatus ?? "");
+
+  // DIRTY = merge conflicts confirmed. Escalate before attempting merge.
+  if (mergeStateAfterPush === "DIRTY") {
+    return {
+      ok: false,
+      escalation: formatEscalation({
+        failedStep: "Phase 3 guard (mergeStateStatus DIRTY)",
+        detectedState: "mergeStateStatus is DIRTY (merge conflicts exist)",
+        recommendedAction: `PR has merge conflicts (DIRTY). Rebase the feature branch onto ${baseBranch} and re-run: specrunner finish ${target.slug}`,
+        resumeCommand: `specrunner finish ${target.slug}`,
+      }),
+      exitCode: 1,
+    };
+  }
+
+  return { ok: true, mergeStateAfterPush };
+}
+
+/**
+ * Phase 4: worktree cleanup / markJobArchived / git checkout+pull / branch deletion.
+ */
+async function runPhase4Finalize(params: {
+  target: ResolvedTarget;
+  operationCwd: string | null;
+  cwd: string;
+  spawn: SpawnFn;
+  baseBranch: string;
+  worktreeManagerFn?: () => WorktreeManager;
+  stdoutWrite: (msg: string) => void;
+}): Promise<PhaseResult> {
+  const { target, operationCwd, cwd, spawn, baseBranch, worktreeManagerFn, stdoutWrite } = params;
 
   if (operationCwd) {
     // Local runtime: remove the job worktree and update state
@@ -259,7 +271,6 @@ export async function runFinishOrchestrator(
     const isOnMain = currentBranch === baseBranch;
 
     if (isOnMain) {
-      // git checkout <baseBranch>
       const checkoutMainResult = await spawnOrEscalate({
         spawn,
         cmd: "git",
@@ -268,11 +279,8 @@ export async function runFinishOrchestrator(
         failedStep: `Phase 4 (git checkout ${baseBranch})`,
         resumeCommand: `specrunner finish ${target.slug}`,
       });
-      if (!checkoutMainResult.ok) {
-        return { exitCode: 1, escalation: checkoutMainResult.escalation };
-      }
+      if (!checkoutMainResult.ok) return { ok: false, escalation: checkoutMainResult.escalation, exitCode: 1 };
 
-      // git pull --ff-only
       const pullResult = await spawnOrEscalate({
         spawn,
         cmd: "git",
@@ -281,9 +289,7 @@ export async function runFinishOrchestrator(
         failedStep: "Phase 4 (git pull --ff-only)",
         resumeCommand: `specrunner finish ${target.slug}`,
       });
-      if (!pullResult.ok) {
-        return { exitCode: 1, escalation: pullResult.escalation };
-      }
+      if (!pullResult.ok) return { ok: false, escalation: pullResult.escalation, exitCode: 1 };
     } else {
       // Running from a linked worktree — skip checkout/pull to avoid the
       // "already checked out" error. The main worktree holds the main branch.
@@ -309,16 +315,8 @@ export async function runFinishOrchestrator(
   await markJobArchived(target.jobId);
   stdoutWrite(`Job ${target.jobId} marked as archived.`);
 
-  return { exitCode: 0 };
+  return { ok: true };
 }
-
-// ---------------------------------------------------------------------------
-// Phase helpers
-// ---------------------------------------------------------------------------
-
-type PhaseResult =
-  | { ok: true; skipped?: boolean }
-  | { ok: false; escalation: string; exitCode: 1 };
 
 /**
  * Checkout feature branch from origin.
