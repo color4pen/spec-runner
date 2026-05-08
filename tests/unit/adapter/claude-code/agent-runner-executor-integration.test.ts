@@ -178,6 +178,7 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
         type: "feature",
         title: "Integration Test",
         slug: "integration-test",
+        baseBranch: "main",
         content: "test content",
         enabled: [],
       },
@@ -257,6 +258,7 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
         type: "feature",
         title: "Integration Test",
         slug: "integration-test",
+        baseBranch: "main",
         content: "test content",
         enabled: [],
       },
@@ -327,7 +329,7 @@ describe("TC-001: completionVerdict fallback — resultContent null + completion
     const config = makeConfig();
     const deps: PipelineDeps = {
       config,
-      request: { type: "feature", title: "Test", slug: "tc001-slug", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "tc001-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "tc001-slug",
       repo: { owner: "testowner", name: "testrepo" },
       githubClient: {
@@ -393,7 +395,7 @@ describe("TC-002: completionVerdict fallback — resultContent null + completion
     const config = makeConfig();
     const deps: PipelineDeps = {
       config,
-      request: { type: "feature", title: "Test", slug: "tc002-slug", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "tc002-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "tc002-slug",
       repo: { owner: "testowner", name: "testrepo" },
       githubClient: {
@@ -457,7 +459,7 @@ describe("TC-003 (behavior): completionVerdict is NOT used when resultContent is
     const config = makeConfig();
     const deps: PipelineDeps = {
       config,
-      request: { type: "feature", title: "Test", slug: "tc003-slug", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "tc003-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "tc003-slug",
       repo: { owner: "testowner", name: "testrepo" },
       githubClient: {
@@ -517,7 +519,7 @@ describe("TC-004: setsBranch flag — state.branch set after propose step comple
     const config = makeConfig();
     const deps: PipelineDeps = {
       config,
-      request: { type: "feature", title: "Test", slug: "my-feature-slug", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "my-feature-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "my-feature-slug",
       repo: { owner: "testowner", name: "testrepo" },
       githubClient: {
@@ -576,7 +578,7 @@ describe("TC-005: setsBranch flag — does not overwrite existing state.branch",
     const config = makeConfig();
     const deps: PipelineDeps = {
       config,
-      request: { type: "feature", title: "Test", slug: "different-slug", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "different-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "different-slug",
       repo: { owner: "testowner", name: "testrepo" },
       githubClient: {

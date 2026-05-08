@@ -4,7 +4,7 @@
  *
  * Design D1: kind=cli, no LLM involvement.
  * Design D2: OPEN PR → existing-open (idempotent). MERGED/CLOSED → error (escalation).
- * Design D3: base branch is "main" (fixed in initial version).
+ * Design D3: base branch is sourced from ParsedRequest.baseBranch.
  */
 import * as fs from "node:fs/promises";
 import * as os from "node:os";

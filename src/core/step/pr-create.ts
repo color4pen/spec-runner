@@ -32,7 +32,7 @@ export const PrCreateStep: CliStep = {
 
     const result = await runPrCreate({
       branch,
-      baseBranch: "main",
+      baseBranch: deps.request.baseBranch,
       title,
       body,
       cwd,

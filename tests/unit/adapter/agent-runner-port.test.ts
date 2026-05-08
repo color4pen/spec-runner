@@ -100,7 +100,7 @@ function makeMinimalDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
   return {
     config: makeMinimalConfig(),
     repo: { owner: "testowner", name: "testrepo" },
-    request: { type: "feature", title: "Test", slug: "test-slug", content: "content", enabled: [] },
+    request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
     slug: "test-slug",
     githubClient: {
       verifyBranch: vi.fn().mockResolvedValue(true),

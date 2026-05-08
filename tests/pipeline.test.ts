@@ -146,7 +146,7 @@ function buildRepo() {
 }
 
 function buildRequest() {
-  return { type: "new-feature", title: "Test Request", slug: "test-request", content: "Please implement this.", enabled: [] };
+  return { type: "new-feature", title: "Test Request", slug: "test-request", baseBranch: "main", content: "Please implement this.", enabled: [] };
 }
 
 /**

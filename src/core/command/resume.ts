@@ -193,7 +193,10 @@ export class ResumeCommand extends CommandRunner {
       repo,
       slug: this.slug,
       verbose,
-      workspaceOpts: { existingWorktreePath: updatedState.worktreePath ?? null },
+      workspaceOpts: {
+        existingWorktreePath: updatedState.worktreePath ?? null,
+        baseBranch: request.baseBranch,
+      },
     };
   }
 }

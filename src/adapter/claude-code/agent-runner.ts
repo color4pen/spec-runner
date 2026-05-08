@@ -90,6 +90,7 @@ export class ClaudeCodeRunner implements AgentRunner {
         type: "feature",
         title: "",
         slug: ctx.slug,
+        baseBranch: "main",
         content: ctx.requestContent,
         enabled: [],
       },

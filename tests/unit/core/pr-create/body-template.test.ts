@@ -34,6 +34,7 @@ function makeParsedRequest(overrides: Partial<ParsedRequest> = {}): ParsedReques
     type: "new-feature",
     title: "pr-create step 追加（self-host pipeline 完成形）",
     slug: "pr-create-step",
+    baseBranch: "main",
     content: "# pr-create step\n\n## Meta\n- **type**: new-feature\n- **slug**: pr-create-step\n",
     enabled: [],
     sections: {

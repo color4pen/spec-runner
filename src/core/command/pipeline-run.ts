@@ -81,6 +81,7 @@ export class PipelineRunCommand extends CommandRunner {
         requestFilePath: this.absolutePath,
         branchName,
         requestType: request.type,
+        baseBranch: request.baseBranch,
       },
     };
   }

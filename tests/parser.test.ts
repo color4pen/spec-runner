@@ -15,6 +15,7 @@ describe("TC-001: parseRequestMd — full valid content", () => {
 
 - **type**: new-feature
 - **slug**: my-feature-request
+- **base-branch**: main
 - **status**: draft
 
 ## Workflow Options
@@ -43,6 +44,7 @@ describe("TC-002: enabled が空", () => {
 
 - **type**: new-feature
 - **slug**: title
+- **base-branch**: main
 
 ## Workflow Options
 
@@ -63,6 +65,7 @@ describe("TC-003: no workflow options section", () => {
 
 - **type**: new-feature
 - **slug**: title
+- **base-branch**: main
 
 ## Description
 
@@ -166,6 +169,7 @@ Content.
 
 - **type**: new-feature
 - **slug**: my-canonical-slug
+- **base-branch**: main
 `;
     const result = parseRequestMdContent(content);
     expect(result.slug).toBe("my-canonical-slug");
@@ -198,6 +202,7 @@ describe("enabled extraction", () => {
 
 - **type**: new-feature
 - **slug**: feature
+- **base-branch**: main
 
 ## Workflow Options
 
@@ -216,6 +221,7 @@ describe("enabled extraction", () => {
 
 - **type**: new-feature
 - **slug**: feature
+- **base-branch**: main
 
 ## Workflow Options
 
@@ -238,6 +244,7 @@ describe("TC-029: sections — 背景と目的の両方が存在する場合", (
 
 - **type**: new-feature
 - **slug**: my-feature
+- **base-branch**: main
 
 ## 背景
 
@@ -267,6 +274,7 @@ describe("TC-030: sections — 目的が存在しない場合", () => {
 
 - **type**: new-feature
 - **slug**: my-feature
+- **base-branch**: main
 
 ## 背景
 
@@ -292,6 +300,7 @@ describe("TC-2.5: spec-change and refactoring — no warning on parse", () => {
 
 - **type**: spec-change
 - **slug**: my-spec-change
+- **base-branch**: main
 
 ## Description
 
@@ -312,6 +321,7 @@ Some spec change.
 
 - **type**: refactoring
 - **slug**: my-refactoring
+- **base-branch**: main
 
 ## Description
 
@@ -332,6 +342,7 @@ Some refactoring.
 
 - **type**: improvement
 - **slug**: some-improvement
+- **base-branch**: main
 
 ## Description
 
@@ -340,6 +351,65 @@ Some improvement.
     parseRequestMdContent(content);
     const calls = warnSpy.mock.calls.map((c) => String(c[0]));
     expect(calls.some((msg) => msg.includes("unknown request type"))).toBe(true);
+  });
+});
+
+// TC-BB-001: base-branch が欠落 — fail-fast で REQUEST_MD_INVALID
+describe("TC-BB-001: missing base-branch in Meta", () => {
+  it("throws REQUEST_MD_INVALID with 'missing base-branch in Meta section'", () => {
+    const content = `# Title
+
+## Meta
+
+- **type**: new-feature
+- **slug**: my-slug
+
+## Description
+
+Content.
+`;
+    expect(() => parseRequestMdContent(content)).toThrow(
+      "missing 'base-branch' in Meta section",
+    );
+  });
+
+  it("throws with code REQUEST_MD_INVALID when base-branch missing", () => {
+    const content = `# Title\n\n## Meta\n\n- **type**: new-feature\n- **slug**: my-slug\n`;
+    try {
+      parseRequestMdContent(content);
+      expect.fail("should have thrown");
+    } catch (err: unknown) {
+      expect((err as { code?: string }).code).toBe("REQUEST_MD_INVALID");
+    }
+  });
+});
+
+// TC-BB-002: base-branch が master — ParsedRequest.baseBranch === "master"
+describe("TC-BB-002: base-branch: master", () => {
+  it("extracts baseBranch as 'master' when specified", () => {
+    const content = `# Title
+
+## Meta
+
+- **type**: new-feature
+- **slug**: my-slug
+- **base-branch**: master
+`;
+    const result = parseRequestMdContent(content);
+    expect(result.baseBranch).toBe("master");
+  });
+
+  it("extracts baseBranch as 'main' for standard case", () => {
+    const content = `# Title
+
+## Meta
+
+- **type**: new-feature
+- **slug**: my-slug
+- **base-branch**: main
+`;
+    const result = parseRequestMdContent(content);
+    expect(result.baseBranch).toBe("main");
   });
 });
 
@@ -352,6 +422,7 @@ describe("sections — 背景と目的の両方が存在しない場合", () => 
 
 - **type**: new-feature
 - **slug**: my-feature
+- **base-branch**: main
 
 ## Description
 

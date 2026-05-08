@@ -266,6 +266,7 @@ export class ManagedAgentRunner implements AgentRunner {
         type: "feature",
         title: "",
         slug: ctx.slug,
+        baseBranch: "main",
         content: ctx.requestContent,
         enabled: [],
       },

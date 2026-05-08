@@ -149,7 +149,7 @@ describe("TC-105: gh pr view auth failure → escalation, merge not executed", (
     const stubFs = makeStubFs(false);
 
     const result = await runFinishOrchestrator(
-      { slug, flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug, baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
     );
 
     expect(result.exitCode).toBe(1);
@@ -194,7 +194,7 @@ describe("TC-107: openspec validate fail → escalation", () => {
     };
 
     const result = await runFinishOrchestrator(
-      { slug, flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug, baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
     );
 
     expect(result.exitCode).toBe(1);
@@ -255,7 +255,7 @@ describe("TC-120: pullRequest.number absent → escalation", () => {
     const stubFs = makeStubFs(false);
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
     );
 
     // Should fail with arg error (exit 2) because pr-create not done
@@ -278,7 +278,7 @@ describe("TC-121: gh binary missing → escalation", () => {
     const stubFs = makeStubFs(false);
 
     const result = await runFinishOrchestrator(
-      { slug, flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug, baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
     );
 
     expect(result.exitCode).toBe(1);
@@ -305,7 +305,7 @@ describe("TC-129: --dry-run + Phase 0 fail → exit 1, no destructive ops", () =
     const stubFs = makeStubFs(false);
 
     const result = await runFinishOrchestrator(
-      { slug, flags: { dryRun: true }, cwd: tempDir, spawn, fs: stubFs },
+      { slug, baseBranch: "main", flags: { dryRun: true }, cwd: tempDir, spawn, fs: stubFs },
     );
 
     expect(result.exitCode).toBe(1);

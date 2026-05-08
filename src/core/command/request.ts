@@ -24,6 +24,7 @@ export function buildScaffoldTemplate(params: {
 
 - **type**: ${type}
 - **slug**: ${slug}
+- **base-branch**: main
 
 ## 背景
 

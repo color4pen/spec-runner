@@ -127,6 +127,8 @@ export class LocalRuntime implements RuntimeStrategy {
     jobId: string,
     opts?: WorkspaceOptions,
   ): Promise<WorkspaceContext> {
+    const baseBranch = opts?.baseBranch ?? "main";
+    const remoteBaseRef = `origin/${baseBranch}`;
     const existingWorktreePath = opts?.existingWorktreePath;
 
     if (existingWorktreePath !== undefined && existingWorktreePath !== null) {
@@ -149,8 +151,7 @@ export class LocalRuntime implements RuntimeStrategy {
         return workspace;
       } else {
         // Worktree was deleted — create a new one (resume path: fetch already ran during original run)
-        // TODO(base-branch): configurable base branch
-        const newWorktreePath = await this.manager.create(this.cwd, slug, jobId, "origin/main");
+        const newWorktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef);
         await updateJobState(jobId, (s) => ({ ...s, worktreePath: newWorktreePath }));
         const workspace: WorkspaceContext = {
           cwd: newWorktreePath,
@@ -163,8 +164,7 @@ export class LocalRuntime implements RuntimeStrategy {
 
     if (existingWorktreePath === null) {
       // Resume: no worktree recorded — create new one (fetch already ran during original run)
-      // TODO(base-branch): configurable base branch
-      const newWorktreePath = await this.manager.create(this.cwd, slug, jobId, "origin/main");
+      const newWorktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef);
       await updateJobState(jobId, (s) => ({ ...s, worktreePath: newWorktreePath }));
       const workspace: WorkspaceContext = {
         cwd: newWorktreePath,
@@ -180,25 +180,24 @@ export class LocalRuntime implements RuntimeStrategy {
       throw new Error(`git fetch origin failed (exit ${fetchResult.exitCode}): ${fetchResult.stderr.trim()}`);
     }
 
-    // Warn if local main is behind origin/main (informational — worktree uses origin/main so this is safe)
+    // Warn if local base branch is behind remote (informational — worktree uses remoteBaseRef so this is safe)
     const behindResult = await this.spawnFn(
       "git",
-      ["rev-list", "HEAD..origin/main", "--count"],
+      ["rev-list", `HEAD..${remoteBaseRef}`, "--count"],
       { cwd: this.cwd },
     );
     if (behindResult.exitCode === 0) {
       const behind = parseInt(behindResult.stdout.trim(), 10);
       if (!isNaN(behind) && behind > 0) {
         process.stderr.write(
-          `Warning: local main is ${behind} commit(s) behind origin/main. Worktree will be created from origin/main.\n`,
+          `Warning: local ${baseBranch} is ${behind} commit(s) behind ${remoteBaseRef}. Worktree will be created from ${remoteBaseRef}.\n`,
         );
       }
     }
 
-    // TODO(base-branch): configurable base branch
     // Pass branchName so manager creates the branch in the worktree (D1)
     const branchName = opts?.branchName;
-    const worktreePath = await this.manager.create(this.cwd, slug, jobId, "origin/main", branchName);
+    const worktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef, branchName);
 
     // Record worktreePath in state before pipeline runs (enables crash recovery)
     await updateJobState(jobId, (s) => ({ ...s, worktreePath }));

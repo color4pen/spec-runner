@@ -47,6 +47,8 @@ export interface WorkspaceOptions {
   branchName?: string;
   /** Run: request type for branch prefix computation (used by ManagedRuntime if branchName absent) */
   requestType?: string;
+  /** Base branch for worktree creation (e.g. "main" or "master"). Defaults to "main" if omitted. */
+  baseBranch?: string;
 }
 
 /**

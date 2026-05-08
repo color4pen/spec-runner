@@ -44,7 +44,7 @@ function buildRepo() {
 }
 
 function buildRequest() {
-  return { type: "new-feature", title: "Test", slug: "test-slug", content: "content", enabled: [] };
+  return { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] };
 }
 
 // TC-MR-001: setupWorkspace is a no-op

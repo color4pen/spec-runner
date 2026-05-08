@@ -16,6 +16,9 @@ export interface ParsedRequest {
   /** Canonical slug for this change — the single source of truth across the pipeline.
    * Required in the Meta section as `- **slug**: <slug>`; missing → REQUEST_MD_INVALID. */
   slug: string;
+  /** Base branch for diff/worktree/PR operations (e.g. "main" or "master").
+   * Required in the Meta section as `- **base-branch**: <value>`; missing → REQUEST_MD_INVALID. */
+  baseBranch: string;
   content: string;
   enabled: string[];
   /** Optional section extracts for PR body generation. */
@@ -101,13 +104,30 @@ export function parseRequestMdContent(
     );
   }
 
+  // Extract base-branch from Meta section: "- **base-branch**: value"
+  // Required: missing base-branch → REQUEST_MD_INVALID.
+  let baseBranch: string | null = null;
+  const baseBranchPattern = /^\s*-\s+\*\*base-branch\*\*:\s+(.+)$/;
+  for (const line of lines) {
+    const m = baseBranchPattern.exec(line);
+    if (m?.[1]) {
+      baseBranch = m[1].trim();
+      break;
+    }
+  }
+  if (baseBranch === null || baseBranch.length === 0) {
+    throw requestMdInvalidError(
+      `missing 'base-branch' in Meta section in ${filePath}`,
+    );
+  }
+
   // Extract enabled list from Workflow Options section
   const enabled = extractEnabled(lines);
 
   // Extract sections: 背景, 目的
   const sections = extractSections(lines);
 
-  return { type, title, slug, content, enabled, sections };
+  return { type, title, slug, baseBranch, content, enabled, sections };
 }
 
 /**

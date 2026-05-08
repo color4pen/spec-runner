@@ -19,9 +19,9 @@ const execFileAsync = promisify(nodeExecFile);
  * All fields are optional-by-fallback: git failures return empty strings/arrays.
  */
 export interface DynamicContext {
-  /** Commits on current branch not yet in main (git log main..HEAD --oneline -n 20) */
+  /** Commits on current branch not yet in base branch (git log baseBranch..HEAD --oneline -n 20) */
   gitLog: string;
-  /** Diff stat between main and HEAD (git diff main..HEAD --stat) */
+  /** Diff stat between base branch and HEAD (git diff baseBranch..HEAD --stat) */
   diffStat: string;
   /** Subdirectory names under openspec/specs/ (each spec lives in openspec/specs/<name>/spec.md) */
   specsList: string[];
@@ -46,19 +46,19 @@ async function runGit(cwd: string, args: string[]): Promise<string | null> {
  * Collect dynamic repository context for a pipeline run.
  *
  * @param cwd - Working directory (worktree path)
- * @param branch - Current branch name (used to derive log/diff relative to main)
+ * @param baseBranch - Base branch name for log/diff comparison (e.g. "main" or "master")
  * @returns DynamicContext with all fields populated; falls back to empty on failure.
  *
  * This function NEVER throws — all failures are swallowed and return empty values.
  */
 export async function collectDynamicContext(
   cwd: string,
-  _branch: string,
+  baseBranch: string,
 ): Promise<DynamicContext> {
   // Collect all fields in parallel; individual failures fall back gracefully.
   const [gitLogRaw, diffStatRaw, specsList, changesList] = await Promise.all([
-    runGit(cwd, ["log", "main..HEAD", "--oneline", "-n", "20"]),
-    runGit(cwd, ["diff", "main..HEAD", "--stat"]),
+    runGit(cwd, ["log", `${baseBranch}..HEAD`, "--oneline", "-n", "20"]),
+    runGit(cwd, ["diff", `${baseBranch}..HEAD`, "--stat"]),
     collectSpecsList(cwd),
     collectChangesList(cwd),
   ]);

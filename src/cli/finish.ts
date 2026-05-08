@@ -9,9 +9,11 @@
  *   specrunner finish [<slug>] [--pr=<num>] [--job=<jobId>] [--dry-run] [--force]
  */
 import * as nodeFsPromises from "node:fs/promises";
+import * as path from "node:path";
 import { spawnCommand } from "../util/spawn.js";
 import { runFinishOrchestrator } from "../core/finish/orchestrator.js";
 import type { FinishFs } from "../core/finish/types.js";
+import { parseRequestMd } from "../parser/request-md.js";
 
 /**
  * Build a FinishFs from real fs modules.
@@ -66,11 +68,24 @@ export interface RunFinishOptions {
  * Caller (bin/specrunner.ts) is responsible for process.exit().
  */
 export async function runFinish(opts: RunFinishOptions): Promise<number> {
+  // Resolve baseBranch from request.md if slug is available
+  let baseBranch = "main"; // fallback for slug-less paths (--pr, --job)
+  if (opts.slug) {
+    try {
+      const requestMdPath = path.join(opts.cwd, "openspec", "changes", opts.slug, "request.md");
+      const parsed = await parseRequestMd(requestMdPath);
+      baseBranch = parsed.baseBranch;
+    } catch {
+      // request.md not found or parse error — use fallback
+    }
+  }
+
   const result = await runFinishOrchestrator(
     {
       slug: opts.slug,
       prNumber: opts.prNumber,
       jobId: opts.jobId,
+      baseBranch,
       flags: {
         force: opts.force,
         dryRun: opts.dryRun ?? false,

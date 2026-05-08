@@ -40,6 +40,8 @@ export interface FinishInput {
   prNumber?: number;
   /** --job <jobId>: forensics / debug. */
   jobId?: string;
+  /** Base branch name (e.g. "main" or "master"). */
+  baseBranch: string;
   flags: FinishFlags;
   cwd: string;
   spawn: SpawnFn;
@@ -63,7 +65,7 @@ export async function runFinishOrchestrator(
   input: FinishInput,
   stdoutWrite: (msg: string) => void = (m) => process.stdout.write(m + "\n"),
 ): Promise<FinishResult> {
-  const { slug, prNumber, jobId, flags, cwd, spawn, fs, sleepFn, worktreeManagerFn } = input;
+  const { slug, prNumber, jobId, baseBranch, flags, cwd, spawn, fs, sleepFn, worktreeManagerFn } = input;
 
   // Step 1: Resolve target job
   const resolveResult = await resolveTarget(
@@ -212,7 +214,7 @@ export async function runFinishOrchestrator(
         escalation: formatEscalation({
           failedStep: "Phase 3 guard (mergeStateStatus DIRTY)",
           detectedState: "mergeStateStatus is DIRTY (merge conflicts exist)",
-          recommendedAction: `PR has merge conflicts (DIRTY). Rebase the feature branch onto main and re-run: specrunner finish ${target.slug}`,
+          recommendedAction: `PR has merge conflicts (DIRTY). Rebase the feature branch onto ${baseBranch} and re-run: specrunner finish ${target.slug}`,
           resumeCommand: `specrunner finish ${target.slug}`,
         }),
       };
@@ -256,17 +258,16 @@ export async function runFinishOrchestrator(
     // Managed mode / no worktree: checkout main + pull
     const headResult = await spawn("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd });
     const currentBranch = headResult.exitCode === 0 ? headResult.stdout.trim() : "";
-    const isOnMain = currentBranch === "main";
+    const isOnMain = currentBranch === baseBranch;
 
     if (isOnMain) {
-      // TODO(base-branch): configurable base branch
-      const checkoutMainResult = await spawn("git", ["checkout", "main"], { cwd });
+      const checkoutMainResult = await spawn("git", ["checkout", baseBranch], { cwd });
       if (checkoutMainResult.exitCode !== 0) {
         return {
           exitCode: 1,
           escalation: formatEscalation({
-            failedStep: "Phase 4 (git checkout main)",
-            detectedState: `git checkout main failed (exit ${checkoutMainResult.exitCode})`,
+            failedStep: `Phase 4 (git checkout ${baseBranch})`,
+            detectedState: `git checkout ${baseBranch} failed (exit ${checkoutMainResult.exitCode})`,
             recommendedAction: `Check git error: ${checkoutMainResult.stderr.trim()}. Then re-run: specrunner finish ${target.slug}`,
             resumeCommand: `specrunner finish ${target.slug}`,
           }),
@@ -291,7 +292,7 @@ export async function runFinishOrchestrator(
       // "already checked out" error. The main worktree holds the main branch.
       stdoutWrite(
         `Warning: cwd is on branch '${currentBranch}' (linked worktree). ` +
-        `Skipping 'git checkout main' and 'git pull --ff-only'. ` +
+        `Skipping 'git checkout ${baseBranch}' and 'git pull --ff-only'. ` +
         `Run these manually in the main worktree if needed.`,
       );
     }

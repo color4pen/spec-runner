@@ -64,7 +64,7 @@ function buildRepo() {
 }
 
 function buildRequest() {
-  return { type: "new-feature", title: "Test", slug: "test-slug", content: "content", enabled: [] };
+  return { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] };
 }
 
 // Helper: build a spawnFn mock for LocalRuntime (covers fetch + rev-list calls in run path)

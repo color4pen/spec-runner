@@ -62,7 +62,7 @@ function makeMinimalDeps(slug: string = "my-change"): StepDeps {
       github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
     },
     repo: { owner: "testowner", name: "testrepo" },
-    request: { type: "feature", title: "Test", slug: "test-slug", content: "Fix build errors", enabled: [] },
+    request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "Fix build errors", enabled: [] },
     slug,
   };
 }

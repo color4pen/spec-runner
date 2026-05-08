@@ -110,7 +110,7 @@ export abstract class CommandRunner {
     try {
       deps.dynamicContext = await collectDynamicContext(
         workspace.cwd,
-        jobState.branch ?? "main",
+        request.baseBranch,
       );
     } catch {
       // Swallow any unexpected error — pipeline must not be blocked

@@ -62,7 +62,6 @@ export function createWorktreeManager(spawnFn?: SpawnFn, rmFn?: RmFn): WorktreeM
   return {
     async create(repoRoot: string, slug: string, jobId: string, baseRef?: string, branchName?: string): Promise<string> {
       const worktreePath = buildWorktreePath(repoRoot, slug, jobId);
-      // TODO(base-branch): configurable base branch
       const ref = baseRef ?? "HEAD";
 
       // git worktree add [-b <branchName> | --detach] <path> <ref>

@@ -207,7 +207,7 @@ describe("TC-008: spec-review round-trip — resultFilePath and buildFindingsPat
         github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
       },
       repo: { owner: "testowner", name: "testrepo" },
-      request: { type: "feature", title: "Test", slug, content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug, baseBranch: "main", content: "content", enabled: [] },
       slug,
     };
   }
@@ -280,7 +280,7 @@ describe("TC-009: code-review round-trip — resultFilePath and buildReviewFeedb
         github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
       },
       repo: { owner: "testowner", name: "testrepo" },
-      request: { type: "feature", title: "Test", slug, content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug, baseBranch: "main", content: "content", enabled: [] },
       slug,
     };
   }
@@ -508,7 +508,7 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
       client: mockClient,
       config: makeExecutorTestConfig(),
       repo: { owner: "testowner", name: "testrepo" },
-      request: { type: "feature", title: "Test", slug: "my-slug", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "my-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "my-slug",
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),
@@ -548,7 +548,7 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
       client: mockClient,
       config: makeExecutorTestConfig(),
       repo: { owner: "testowner", name: "testrepo" },
-      request: { type: "feature", title: "Test", slug: "my-slug", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "my-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "my-slug",
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),
@@ -590,7 +590,7 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
       client: mockClient,
       config: makeExecutorTestConfig(),
       repo: { owner: "testowner", name: "testrepo" },
-      request: { type: "feature", title: "Test", slug: "my-slug", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "my-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "my-slug",
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),
@@ -630,7 +630,7 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
       client: mockClient,
       config: makeExecutorTestConfig(),
       repo: { owner: "testowner", name: "testrepo" },
-      request: { type: "feature", title: "Test", slug: "my-slug", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "my-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "my-slug",
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),

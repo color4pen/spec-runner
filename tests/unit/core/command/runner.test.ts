@@ -62,7 +62,7 @@ function buildPrepareResult(overrides: Partial<PrepareResult> = {}): PrepareResu
   return {
     jobState: buildJobState(),
     startStep: "propose",
-    request: { type: "new-feature", title: "Test", slug: "test-slug", content: "test", enabled: [] },
+    request: { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "test", enabled: [] },
     config: {
       version: 1,
       runtime: "local",
@@ -99,7 +99,7 @@ function buildMockRuntime(opts: {
       client: undefined,
       config: { version: 1, anthropic: { apiKey: "" }, agents: {} },
       repo: { owner: "testowner", name: "testrepo" },
-      request: { type: "new-feature", title: "Test", slug: "test-slug", content: "test", enabled: [] },
+      request: { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "test", enabled: [] },
       slug: "test-slug",
       githubClient: {},
       cwd: "/worktree",

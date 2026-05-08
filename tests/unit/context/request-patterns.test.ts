@@ -20,6 +20,7 @@ function buildRequestMd(opts: {
 
 - **type**: ${opts.type}
 - **slug**: ${opts.slug}
+- **base-branch**: main
 
 ## 背景
 

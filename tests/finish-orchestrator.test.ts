@@ -168,6 +168,7 @@ describe("TC-123: 1-PR model normal success flow (archive present, CLEAN)", () =
     const result = await runFinishOrchestrator(
       {
         slug: "test-slug",
+        baseBranch: "main",
         flags: { force: false, dryRun: false },
         cwd: tempDir,
         spawn,
@@ -196,7 +197,8 @@ describe("TC-123: 1-PR model normal success flow (archive present, CLEAN)", () =
 
     await runFinishOrchestrator({
       slug: "test-slug",
-      flags: {},
+      baseBranch: "main",
+        flags: {},
       cwd: tempDir,
       spawn,
       fs: stubFs,
@@ -224,6 +226,7 @@ describe("TC-126: state.status=archived → Already archived, no-op", () => {
     const result = await runFinishOrchestrator(
       {
         slug: "test-slug",
+        baseBranch: "main",
         flags: {},
         cwd: tempDir,
         spawn,
@@ -259,6 +262,7 @@ describe("TC-106: feature PR already MERGED → Phase 1-3 skip, Phase 4 only", (
     const result = await runFinishOrchestrator(
       {
         slug: "test-slug",
+        baseBranch: "main",
         flags: {},
         cwd: tempDir,
         spawn,
@@ -293,7 +297,7 @@ describe("TC-103: archive folder absent → skip archive steps, merge+archive", 
     const stubFs = makeStubFs({ changeFolderExists: false, activeExists: false });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
     );
 
     expect(result.exitCode).toBe(0);
@@ -319,7 +323,7 @@ describe("TC-101: legacy /tmp/... request.path → finish succeeds", () => {
     const stubFs = makeStubFs({ changeFolderExists: false });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
     );
 
     expect(result.exitCode).toBe(0);
@@ -342,7 +346,7 @@ describe("TC-124: markJobArchived called after git pull --ff-only", () => {
     const stubFs = makeStubFs({ changeFolderExists: false });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
     );
 
     expect(result.exitCode).toBe(0);
@@ -381,7 +385,7 @@ describe("TC-125: Phase 1 escalation → markJobArchived not called", () => {
     const stubFs = makeStubFs({ changeFolderExists: true });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
     );
 
     expect(result.exitCode).toBe(1);
@@ -401,7 +405,7 @@ describe("TC-047 / running job → exit 1", () => {
     const stubFs = makeStubFs();
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
     );
 
     expect(result.exitCode).toBe(1);
@@ -422,7 +426,7 @@ describe("TC-108: --dry-run → no destructive subprocess spawns", () => {
     const stubFs = makeStubFs({ changeFolderExists: true });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", flags: { dryRun: true }, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: { dryRun: true }, cwd: tempDir, spawn, fs: stubFs },
     );
 
     expect(result.exitCode).toBe(0);
@@ -472,6 +476,7 @@ describe("TC-WT-FIN-001: worktreePath set → local runtime finish path", () => 
     const result = await runFinishOrchestrator(
       {
         slug: "test-slug",
+        baseBranch: "main",
         flags: {},
         cwd: tempDir,
         spawn,
@@ -516,7 +521,7 @@ describe("TC-WT-FIN-002: worktreePath=null → managed mode checkout flow", () =
     const stubFs = makeStubFs({ changeFolderExists: false });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
     );
 
     expect(result.exitCode).toBe(0);
@@ -544,7 +549,7 @@ describe("TC-FIN-BD-001: Phase 3 merge command excludes --delete-branch", () => 
     const stubFs = makeStubFs({ changeFolderExists: false });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
     );
 
     expect(result.exitCode).toBe(0);
@@ -575,7 +580,7 @@ describe("TC-FIN-BD-002: Phase 4 branch deletion commands are called", () => {
     const stubFs = makeStubFs({ changeFolderExists: false });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", flags: {}, cwd: tempDir, spawn, fs: stubFs, worktreeManagerFn: () => mockManager },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, worktreeManagerFn: () => mockManager },
     );
 
     expect(result.exitCode).toBe(0);
@@ -619,7 +624,7 @@ describe("TC-DIRTY-001: DIRTY mergeStateStatus after push → escalation without
     const stubFs = makeStubFs({ changeFolderExists: false });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
     );
 
     expect(result.exitCode).toBe(1);
@@ -656,7 +661,7 @@ describe("TC-FIN-BD-003: branch deletion failure does not cause escalation", () 
     const stubFs = makeStubFs({ changeFolderExists: false });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", flags: {}, cwd: tempDir, spawn, fs: stubFs, worktreeManagerFn: () => mockManager },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, worktreeManagerFn: () => mockManager },
     );
 
     expect(result.exitCode).toBe(0);
@@ -681,7 +686,8 @@ describe("TC-WT-FIN-003: Phase 4 worktree remove is called", () => {
 
     const result = await runFinishOrchestrator({
       slug: "test-slug",
-      flags: {},
+      baseBranch: "main",
+        flags: {},
       cwd: tempDir,
       spawn,
       fs: stubFs,
