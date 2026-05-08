@@ -169,6 +169,9 @@ async function handleResult(finalState: JobState, slug: string): Promise<number>
   outputSpecReviewVerdict(finalState, slug);
 
   if (finalState.status === "awaiting-merge") {
+    if (finalState.pullRequest?.url) {
+      logInfo(`PR: ${finalState.pullRequest.url}`);
+    }
     logInfo(`Pipeline completed; awaiting merge. Branch: ${finalState.branch}`);
     return 0;
   }

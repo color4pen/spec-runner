@@ -252,8 +252,54 @@ describe("TC-CR-005: awaiting-resume path returns 1", () => {
   });
 });
 
-// TC-CR-006: worktreePath from setupWorkspace is reflected in jobState passed to pipeline
-describe("TC-CR-006: worktreePath from workspace is reflected in jobState passed to pipeline", () => {
+// TC-CR-006: awaiting-merge with pullRequest.url → PR URL output before branch line
+describe("TC-CR-006: awaiting-merge with pullRequest.url outputs PR URL", () => {
+  it("outputs PR URL line before branch line when pullRequest.url is set", async () => {
+    const runtime = buildMockRuntime();
+    const command = new TestCommand(runtime, buildPrepareResult());
+
+    const { createStandardPipeline } = await import("../../../../src/core/pipeline/index.js");
+    (createStandardPipeline as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+      run: vi.fn().mockResolvedValue({
+        version: 1, jobId: "test-job-id", createdAt: "", updatedAt: "",
+        request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
+        repository: { owner: "testowner", name: "testrepo" },
+        session: null, step: "pr-create", status: "awaiting-merge",
+        branch: "feat/test", history: [], error: null, steps: {},
+        pullRequest: { url: "https://github.com/owner/repo/pull/42", number: 42 },
+      }),
+    });
+
+    const exitCode = await command.execute();
+
+    expect(exitCode).toBe(0);
+    const stdoutCalls = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allOutput = stdoutCalls.map((c) => String(c[0])).join("");
+    expect(allOutput).toContain("https://github.com/owner/repo/pull/42");
+    expect(allOutput).toContain("PR:");
+  });
+});
+
+// TC-CR-007: awaiting-merge without pullRequest → branch line only, no PR URL
+describe("TC-CR-007: awaiting-merge without pullRequest outputs branch line only", () => {
+  it("outputs branch line only (no PR URL) when pullRequest is undefined", async () => {
+    const runtime = buildMockRuntime();
+    const command = new TestCommand(runtime, buildPrepareResult());
+
+    // Default pipeline mock returns state without pullRequest — no need to override
+    const exitCode = await command.execute();
+
+    expect(exitCode).toBe(0);
+    const stdoutCalls = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allOutput = stdoutCalls.map((c) => String(c[0])).join("");
+    expect(allOutput).toContain("feat/test");
+    expect(allOutput).not.toContain("PR:");
+  });
+});
+
+// TC-CR-008: worktreePath from setupWorkspace is reflected in jobState passed to pipeline
+
+describe("TC-CR-008: worktreePath from workspace is reflected in jobState passed to pipeline", () => {
   it("pipeline receives jobState with worktreePath set by setupWorkspace", async () => {
     const runtime = buildMockRuntime();
     // Override setupWorkspace to return a workspace with worktreePath
