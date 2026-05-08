@@ -15,6 +15,9 @@ import { parseRequestMdContent } from "../../parser/request-md.js";
 import { runRunCore } from "../../cli/run.js";
 import type { RuntimeStrategy } from "../runtime/strategy.js";
 import { SpecRunnerError } from "../../errors.js";
+import { isResultMessage } from "../../adapter/claude-code/message-types.js";
+
+export { isResultMessage };
 
 export interface CreateParams {
   description: string;
@@ -24,22 +27,6 @@ export interface CreateParams {
   noLlm: boolean;
   run: boolean;
   runtime: RuntimeStrategy;
-}
-
-/**
- * Type guard for SDK result messages.
- * Avoids direct dependency on adapter-layer SDKMessage types.
- */
-export function isResultMessage(
-  v: unknown,
-): v is { type: "result"; subtype: string; result?: string } {
-  return (
-    typeof v === "object" &&
-    v !== null &&
-    "type" in v &&
-    (v as Record<string, unknown>)["type"] === "result" &&
-    "subtype" in v
-  );
 }
 
 /**

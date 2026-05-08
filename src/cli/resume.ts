@@ -1,9 +1,7 @@
-import { createGitHubClient } from "../adapter/github/github-client.js";
-import { loadConfig } from "../config/store.js";
 import { SpecRunnerError } from "../errors.js";
 import { setVerbose } from "../logger/stdout.js";
 import { resolveJobStateBySlug } from "../core/resume/resolve-job.js";
-import { createRuntime } from "../core/runtime/index.js";
+import { bootstrap } from "./bootstrap.js";
 import { ResumeCommand } from "../core/command/resume.js";
 
 export interface ResumeOptions {
@@ -17,9 +15,14 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
   setVerbose(options.verbose ?? false);
   const cwd = options.cwd ?? process.cwd();
 
-  let config: Awaited<ReturnType<typeof loadConfig>>;
+  const state = await resolveJobStateBySlug(slug);
+  const repo = state
+    ? { owner: state.repository.owner, name: state.repository.name }
+    : { owner: "", name: "" };
+
+  let runtime: Awaited<ReturnType<typeof bootstrap>>["runtime"];
   try {
-    config = await loadConfig();
+    ({ runtime } = await bootstrap(cwd, repo));
   } catch (err) {
     const e = err as Error & { hint?: string };
     process.stderr.write(`Error: ${e.message}\n`);
@@ -27,13 +30,6 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
     return 1;
   }
 
-  const state = await resolveJobStateBySlug(slug);
-  const repo = state
-    ? { owner: state.repository.owner, name: state.repository.name }
-    : { owner: "", name: "" };
-
-  const githubClient = createGitHubClient(fetch, config.github?.accessToken ?? "");
-  const runtime = createRuntime(config, cwd, githubClient, repo);
   try {
     return await new ResumeCommand(runtime, slug, options).execute();
   } catch (err) {

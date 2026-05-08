@@ -22,6 +22,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import {
   query as sdkQuery,
+  type Query,
   type SDKMessage,
   type SDKResultMessage,
   type SDKResultSuccess,
@@ -34,9 +35,18 @@ import { getStepExecutionConfig } from "../../config/step-config.js";
 export type { SpawnFn } from "./git-exec.js";
 
 export type QueryFn = (params: {
-  prompt: string;
+  prompt: string | AsyncIterable<unknown>;
   options?: Record<string, unknown>;
-}) => AsyncGenerator<SDKMessage, void>;
+}) => AsyncGenerator<unknown, void>;
+
+/**
+ * SDK-level query function that accepts an AsyncIterable prompt and returns a Query object.
+ * Used by LocalRuntime.queryInteractive() — not part of RuntimeStrategy interface.
+ */
+export type SdkQueryFn = (params: {
+  prompt: AsyncIterable<unknown>;
+  options?: Record<string, unknown>;
+}) => Query;
 
 function buildAdditionalInstructions(ctx: AgentRunContext): string {
   const { branch, slug } = ctx;
@@ -136,7 +146,7 @@ export class ClaudeCodeRunner implements AgentRunner {
       });
 
       let lastResult: SDKResultMessage | null = null;
-      for await (const message of messages) {
+      for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
         if (message.type === "result") {
           lastResult = message as SDKResultMessage;
         }

@@ -19,7 +19,6 @@ import type { ParsedRequest } from "../../parser/request-md.js";
 
 /**
  * Options for agent query execution.
- * Kept minimal — dialog use will add fields in a future request.
  */
 export interface QueryOptions {
   cwd?: string;
@@ -27,6 +26,11 @@ export interface QueryOptions {
   systemPrompt?: string;
   model?: string;
   allowedTools?: string[];
+  // Session / dialog options (LocalRuntime only — passed through to SDK Options)
+  sessionId?: string;
+  continue?: boolean;
+  resume?: string;
+  includePartialMessages?: boolean;
 }
 
 /**

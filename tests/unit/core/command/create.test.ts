@@ -16,8 +16,8 @@ import {
   buildScaffoldTemplate,
   extractRequestContent,
   executeCreate,
-  isResultMessage,
 } from "../../../../src/core/command/create.js";
+import { isResultMessage } from "../../../../src/adapter/claude-code/message-types.js";
 import { parseRequestMdContent } from "../../../../src/parser/request-md.js";
 
 // Helpers
