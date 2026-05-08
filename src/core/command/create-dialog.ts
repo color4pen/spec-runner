@@ -26,7 +26,7 @@ import {
   buildResumeInitialMessage,
 } from "../../prompts/create-dialog.js";
 import { parseRequestMdContent } from "../../parser/request-md.js";
-import { isStreamEvent, isTextDelta, isToolUseSummary, isResultMessage } from "../../adapter/claude-code/message-types.js";
+import { isStreamEvent, isTextDelta, isToolUseStart, isResultMessage } from "../../adapter/claude-code/message-types.js";
 import { saveDraft, deleteDraft } from "../../state/draft-store.js";
 import type { DraftState } from "../../state/draft-store.js";
 import type { RuntimeStrategy, QueryOptions } from "../runtime/strategy.js";
@@ -179,11 +179,11 @@ interface StreamConsumerResult {
 /**
  * Consume all SDK messages from a single query() call, handling I/O side-effects:
  *   - text_delta: stop spinner, write text to stdout, accumulate in textBuffer
- *   - tool_use_summary: stop spinner, write "[tool] summary" to stderr
+ *   - content_block_start (tool_use): stop spinner, write "[tool] name" to stderr
  *   - assistant message: stop spinner, write newline, call onAssistantComplete callback
  *   - result message: capture session_id and break
  *
- * The spinner is NOT restarted after tool_use_summary (chatter prevention).
+ * The spinner is NOT restarted after tool_use display (chatter prevention).
  * The try/finally ensures spinner.stop() is called even on exception.
  */
 async function consumeStream(
@@ -203,9 +203,9 @@ async function consumeStream(
         const text = msg.event.delta.text;
         process.stdout.write(text);
         textBuffer += text;
-      } else if (isToolUseSummary(msg)) {
+      } else if (isToolUseStart(msg)) {
         spinner.stop();
-        process.stderr.write(`\n[tool] ${msg.summary}\n`);
+        process.stderr.write(`\n[tool] ${msg.event.content_block.name}\n`);
       } else if (
         !assistantTurnProcessed &&
         typeof msg === "object" &&

@@ -5,14 +5,14 @@
  * TC-MT-002: isResultMessage() returns false for non-result objects
  * TC-MT-003: isStreamEvent() type guard
  * TC-MT-004: isTextDelta() type guard
- * TC-MT-005: isToolUseSummary() type guard
+ * TC-MT-005: isToolUseStart() type guard
  */
 import { describe, it, expect } from "vitest";
 import {
   isResultMessage,
   isStreamEvent,
   isTextDelta,
-  isToolUseSummary,
+  isToolUseStart,
 } from "../../../../src/adapter/claude-code/message-types.js";
 
 describe("TC-MT-001: isResultMessage() with valid result messages", () => {
@@ -164,35 +164,87 @@ describe("TC-MT-004: isTextDelta() type guard", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-MT-005: isToolUseSummary()
+// TC-MT-005: isToolUseStart()
 // ---------------------------------------------------------------------------
 
-describe("TC-MT-005: isToolUseSummary() type guard", () => {
-  it("returns true for a valid tool_use_summary with string summary", () => {
-    expect(isToolUseSummary({ type: "tool_use_summary", summary: "Read: src/foo.ts" })).toBe(true);
+describe("TC-MT-005: isToolUseStart() type guard", () => {
+  it("returns true for a valid content_block_start with tool_use", () => {
+    const msg = {
+      type: "stream_event",
+      event: {
+        type: "content_block_start",
+        content_block: { type: "tool_use", name: "Read" },
+      },
+    };
+    expect(isToolUseStart(msg)).toBe(true);
   });
 
-  it("returns true for empty string summary", () => {
-    expect(isToolUseSummary({ type: "tool_use_summary", summary: "" })).toBe(true);
+  it("returns true for empty string name", () => {
+    const msg = {
+      type: "stream_event",
+      event: {
+        type: "content_block_start",
+        content_block: { type: "tool_use", name: "" },
+      },
+    };
+    expect(isToolUseStart(msg)).toBe(true);
   });
 
-  it("returns false when type is not tool_use_summary", () => {
-    expect(isToolUseSummary({ type: "result", summary: "foo" })).toBe(false);
-    expect(isToolUseSummary({ type: "stream_event", summary: "foo" })).toBe(false);
+  it("returns false when content_block.type is not tool_use", () => {
+    const msg = {
+      type: "stream_event",
+      event: {
+        type: "content_block_start",
+        content_block: { type: "text", text: "hello" },
+      },
+    };
+    expect(isToolUseStart(msg)).toBe(false);
   });
 
-  it("returns false when summary is missing", () => {
-    expect(isToolUseSummary({ type: "tool_use_summary" })).toBe(false);
+  it("returns false when content_block.name is missing", () => {
+    const msg = {
+      type: "stream_event",
+      event: {
+        type: "content_block_start",
+        content_block: { type: "tool_use" },
+      },
+    };
+    expect(isToolUseStart(msg)).toBe(false);
   });
 
-  it("returns false when summary is not a string", () => {
-    expect(isToolUseSummary({ type: "tool_use_summary", summary: 42 })).toBe(false);
-    expect(isToolUseSummary({ type: "tool_use_summary", summary: null })).toBe(false);
+  it("returns false when content_block.name is not a string", () => {
+    const msg = {
+      type: "stream_event",
+      event: {
+        type: "content_block_start",
+        content_block: { type: "tool_use", name: 42 },
+      },
+    };
+    expect(isToolUseStart(msg)).toBe(false);
   });
 
-  it("returns false for null/non-objects", () => {
-    expect(isToolUseSummary(null)).toBe(false);
-    expect(isToolUseSummary("tool_use_summary")).toBe(false);
-    expect(isToolUseSummary(undefined)).toBe(false);
+  it("returns false when event.type is not content_block_start", () => {
+    const msg = {
+      type: "stream_event",
+      event: {
+        type: "content_block_delta",
+        delta: { type: "text_delta", text: "hi" },
+      },
+    };
+    expect(isToolUseStart(msg)).toBe(false);
+  });
+
+  it("returns false when content_block is null", () => {
+    const msg = {
+      type: "stream_event",
+      event: { type: "content_block_start", content_block: null },
+    };
+    expect(isToolUseStart(msg)).toBe(false);
+  });
+
+  it("returns false for non-stream-event messages", () => {
+    expect(isToolUseStart({ type: "result", subtype: "success" })).toBe(false);
+    expect(isToolUseStart(null)).toBe(false);
+    expect(isToolUseStart(undefined)).toBe(false);
   });
 });

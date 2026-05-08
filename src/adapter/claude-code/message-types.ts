@@ -63,16 +63,26 @@ export function isTextDelta(
 }
 
 /**
- * Type guard for tool_use_summary messages.
- * These are emitted by the SDK to summarise tool calls during an agent turn.
+ * Type guard for a tool_use content_block_start within a stream_event.
+ * Checks: event.type === "content_block_start" && event.content_block.type === "tool_use".
+ * Narrows to a shape where event.content_block.name is a string.
  */
-export function isToolUseSummary(
+export function isToolUseStart(
   v: unknown,
-): v is { type: "tool_use_summary"; summary: string } {
+): v is {
+  type: "stream_event";
+  event: {
+    type: "content_block_start";
+    content_block: { type: "tool_use"; name: string };
+  };
+} {
+  if (!isStreamEvent(v)) return false;
+  const event = v.event;
+  if (event["type"] !== "content_block_start") return false;
+  const cb = event["content_block"];
+  if (typeof cb !== "object" || cb === null) return false;
   return (
-    typeof v === "object" &&
-    v !== null &&
-    (v as Record<string, unknown>)["type"] === "tool_use_summary" &&
-    typeof (v as Record<string, unknown>)["summary"] === "string"
+    (cb as Record<string, unknown>)["type"] === "tool_use" &&
+    typeof (cb as Record<string, unknown>)["name"] === "string"
   );
 }

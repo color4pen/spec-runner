@@ -23,7 +23,7 @@ import {
   executeCreateDialog,
 } from "../../../../src/core/command/create-dialog.js";
 import type { DialogParams } from "../../../../src/core/command/create-dialog.js";
-import { isTextDelta, isStreamEvent, isToolUseSummary } from "../../../../src/adapter/claude-code/message-types.js";
+import { isTextDelta, isStreamEvent, isToolUseStart } from "../../../../src/adapter/claude-code/message-types.js";
 import type { RuntimeStrategy } from "../../../../src/core/runtime/strategy.js";
 import { LocalRuntime } from "../../../../src/core/runtime/local.js";
 import type { QueryFn } from "../../../../src/adapter/claude-code/agent-runner.js";
@@ -135,15 +135,21 @@ describe("TC-CD-010: streaming display — text_delta extraction", () => {
     expect(isTextDelta(inputJsonDelta)).toBe(false);
   });
 
-  it("isToolUseSummary identifies tool_use_summary messages", () => {
-    const toolSummary = { type: "tool_use_summary", summary: "Read: src/foo.ts" };
-    expect(isToolUseSummary(toolSummary)).toBe(true);
+  it("isToolUseStart identifies content_block_start tool_use messages", () => {
+    const toolStart = {
+      type: "stream_event",
+      event: {
+        type: "content_block_start",
+        content_block: { type: "tool_use", name: "Read" },
+      },
+    };
+    expect(isToolUseStart(toolStart)).toBe(true);
   });
 
-  it("isToolUseSummary rejects non-summary messages", () => {
-    expect(isToolUseSummary({ type: "stream_event" })).toBe(false);
-    expect(isToolUseSummary({ type: "tool_use_summary" })).toBe(false); // missing summary field
-    expect(isToolUseSummary(null)).toBe(false);
+  it("isToolUseStart rejects non-tool-use messages", () => {
+    expect(isToolUseStart({ type: "stream_event", event: { type: "content_block_delta" } })).toBe(false);
+    expect(isToolUseStart({ type: "result", subtype: "success" })).toBe(false);
+    expect(isToolUseStart(null)).toBe(false);
   });
 });
 
@@ -524,13 +530,19 @@ describe("TC-CD-015: consumeStream — text_delta written to stdout", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-CD-016: consumeStream — tool_use_summary written to stderr
+// TC-CD-016: consumeStream — tool_use content_block_start written to stderr
 // ---------------------------------------------------------------------------
 
-describe("TC-CD-016: consumeStream — tool_use_summary written to stderr", () => {
-  it("writes [tool] summary line to stderr on tool_use_summary", async () => {
+describe("TC-CD-016: consumeStream — tool_use content_block_start written to stderr", () => {
+  it("writes [tool] name to stderr on content_block_start tool_use", async () => {
     async function* mockQueryFn(_params: { prompt: string | AsyncIterable<unknown>; options?: Record<string, unknown> }) {
-      yield { type: "tool_use_summary", summary: "Read: src/foo.ts" };
+      yield {
+        type: "stream_event",
+        event: {
+          type: "content_block_start",
+          content_block: { type: "tool_use", name: "Read" },
+        },
+      };
       yield { type: "result", subtype: "success", session_id: "s-cd-016" };
     }
 
@@ -550,7 +562,7 @@ describe("TC-CD-016: consumeStream — tool_use_summary written to stderr", () =
 
     const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
     const output = stderrMock.mock.calls.map((c: unknown[]) => c[0] as string).join("");
-    expect(output).toContain("[tool] Read: src/foo.ts");
+    expect(output).toContain("[tool] Read");
   });
 });
 
