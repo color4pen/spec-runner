@@ -6,7 +6,7 @@
  * TC-106: feature PR already MERGED → Phase 1-3 skip, Phase 4 only
  * TC-122: chore/archive-<slug> branch NOT created
  * TC-123: normal success (archive present, CLEAN)
- * TC-124: markJobArchived called AFTER git pull --ff-only
+ * TC-124: markJobArchived called AFTER Phase 3 merge (BEFORE Phase 4 cleanup)
  * TC-125: Phase 1 escalation → markJobArchived NOT called
  * TC-126: state.status=archived → "Already archived" no-op
  * TC-WT-FIN-001: worktreePath set → Phase 1 no checkout, Phase 4 worktree remove
@@ -330,19 +330,23 @@ describe("TC-101: legacy /tmp/... request.path → finish succeeds", () => {
   });
 });
 
-// TC-124: markJobArchived called AFTER git pull --ff-only
-describe("TC-124: markJobArchived called after git pull --ff-only", () => {
-  it("pull happens before markJobArchived (via state check after each spawn)", async () => {
+// TC-124: markJobArchived called AFTER Phase 3 merge (BEFORE Phase 4 cleanup)
+describe("TC-124: markJobArchived called after Phase 3 merge (before Phase 4)", () => {
+  it("state is archived before git pull executes", async () => {
     const { jobId } = await makeJobWithPr({ status: "awaiting-merge" });
 
     const callOrder: string[] = [];
-    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
-      if (cmd === "git" && args[0] === "pull") callOrder.push("git-pull");
-      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn; return happySpawn(cmd, args, { cwd: "" });
-    });
-
-    // After orchestrator runs, check state was updated to archived
     const { loadJobState } = await import("../src/state/store.js");
+
+    const spawn: SpawnFn = vi.fn().mockImplementation(async (cmd: string, args: string[]) => {
+      if (cmd === "git" && args[0] === "pull") {
+        // At the point git pull is called, state should already be archived
+        const stateAtPull = await loadJobState(jobId);
+        callOrder.push(`git-pull:status=${stateAtPull.status}`);
+      }
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
     const stubFs = makeStubFs({ changeFolderExists: false });
 
     const result = await runFinishOrchestrator(
@@ -350,11 +354,7 @@ describe("TC-124: markJobArchived called after git pull --ff-only", () => {
     );
 
     expect(result.exitCode).toBe(0);
-    // git pull should have been called
-    expect(callOrder).toContain("git-pull");
-    // State should be archived after successful orchestration
-    const finalState = await loadJobState(jobId);
-    expect(finalState.status).toBe("archived");
+    expect(callOrder).toContain("git-pull:status=archived");
   });
 });
 
@@ -536,6 +536,38 @@ describe("TC-WT-FIN-002: worktreePath=null → managed mode checkout flow", () =
   });
 });
 
+// TC-FIN-P4-FAIL-001: Phase 4 worktree remove failure → state=archived, exit 0
+describe("TC-FIN-P4-FAIL-001: Phase 4 worktree remove failure → state=archived, exit 0", () => {
+  it("state is archived even if worktree remove throws", async () => {
+    const worktreePath = path.join(tempDir, ".git", "specrunner-worktrees", "test-slug-abcdef12");
+    const { jobId } = await makeJobWithPr({ worktreePath });
+
+    const mockManager = {
+      create: vi.fn(),
+      remove: vi.fn().mockRejectedValue(new Error("worktree remove failed")),
+      prune: vi.fn().mockResolvedValue(undefined),
+    };
+
+    const spawn = makeHappyPathSpawn("OPEN");
+    const stubFs = makeStubFs({ changeFolderExists: false });
+
+    const result = await runFinishOrchestrator({
+      slug: "test-slug",
+      baseBranch: "main",
+      flags: {},
+      cwd: tempDir,
+      spawn,
+      fs: stubFs,
+      worktreeManagerFn: () => mockManager,
+    });
+
+    expect(result.exitCode).toBe(0);
+    const { loadJobState } = await import("../src/state/store.js");
+    const finalState = await loadJobState(jobId);
+    expect(finalState.status).toBe("archived");
+  });
+});
+
 // TC-FIN-BD-001: Phase 3 merge command does NOT include --delete-branch
 describe("TC-FIN-BD-001: Phase 3 merge command excludes --delete-branch", () => {
   it("gh pr merge args do not contain --delete-branch", async () => {
@@ -668,7 +700,7 @@ describe("TC-FIN-BD-003: branch deletion failure does not cause escalation", () 
   });
 });
 
-// TC-WT-FIN-003: Phase 4 worktree remove is called before markJobArchived
+// TC-WT-FIN-003: Phase 4 worktree remove is called (state already archived before cleanup)
 describe("TC-WT-FIN-003: Phase 4 worktree remove is called", () => {
   it("worktree is removed and state.worktreePath set to null after finish", async () => {
     const worktreePath = path.join(tempDir, ".git", "specrunner-worktrees", "test-slug-abcdef12");
