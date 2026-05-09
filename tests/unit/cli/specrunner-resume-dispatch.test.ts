@@ -17,6 +17,11 @@ vi.mock("../../../src/cli/resume.js", () => ({
   runResume: vi.fn().mockResolvedValue(undefined),
 }));
 
+// Mock detectWorktree so worktree guard does not block dispatch tests
+vi.mock("../../../src/core/worktree/detection.js", () => ({
+  detectWorktree: vi.fn().mockResolvedValue({ isWorktree: false }),
+}));
+
 // Mock all other CLI commands to avoid side effects
 vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn() }));
 vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn() }));

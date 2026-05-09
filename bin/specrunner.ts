@@ -6,6 +6,8 @@
 
 import { COMMANDS, USAGE, FINISH_USAGE } from "../src/cli/command-registry.js";
 import { parseFlags, FlagParseError } from "../src/cli/flag-parser.js";
+import { detectWorktree } from "../src/core/worktree/detection.js";
+import { SpecRunnerError, worktreeGuardError } from "../src/errors.js";
 
 export { USAGE, FINISH_USAGE };
 
@@ -59,8 +61,18 @@ export async function main(): Promise<void> {
   }
 
   // Normal command dispatch
+  const WORKTREE_GUARDED_COMMANDS = new Set(["run", "finish", "resume"]);
+
   try {
     const parsed = parseFlags(args.slice(1), entry.flags, entry.positional);
+
+    if (WORKTREE_GUARDED_COMMANDS.has(command)) {
+      const detection = await detectWorktree(process.cwd());
+      if (detection.isWorktree) {
+        throw worktreeGuardError(command, detection.mainWorktreePath ?? process.cwd());
+      }
+    }
+
     await entry.handler(parsed);
   } catch (e) {
     if (e instanceof FlagParseError) {
@@ -68,6 +80,11 @@ export async function main(): Promise<void> {
       if (entry.usage) process.stderr.write(entry.usage);
       else process.stderr.write(USAGE);
       process.exit(2);
+    }
+    if (e instanceof SpecRunnerError) {
+      process.stderr.write(`Error: ${e.message}\n`);
+      process.stderr.write(`Hint: ${e.hint}\n`);
+      process.exit(1);
     }
     process.stderr.write(`Fatal: ${e instanceof Error ? e.message : String(e)}\n`);
     process.exit(1);
