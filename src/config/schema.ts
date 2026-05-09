@@ -237,13 +237,13 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
         }
       }
 
-      // Validate timeoutMs: must be number >= 1 or null (not 0, not negative)
+      // Validate timeoutMs: must be number >= 0 or null (0 = disable timeout, negative = invalid)
       if (stepCfg["timeoutMs"] !== undefined) {
         const timeoutMs = stepCfg["timeoutMs"];
         if (timeoutMs !== null) {
-          if (typeof timeoutMs !== "number" || !Number.isInteger(timeoutMs) || timeoutMs < 1) {
+          if (typeof timeoutMs !== "number" || !Number.isInteger(timeoutMs) || timeoutMs < 0) {
             throw Object.assign(
-              new Error(`CONFIG_INVALID: steps.${stepKey}.timeoutMs must be a positive integer or null.`),
+              new Error(`CONFIG_INVALID: steps.${stepKey}.timeoutMs must be a non-negative integer or null.`),
               { code: "CONFIG_INVALID" },
             );
           }

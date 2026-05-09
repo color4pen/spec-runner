@@ -14,8 +14,15 @@
  * TC-013: maxTurns: 0 → CONFIG_INVALID
  * TC-014: maxTurns: -1 → CONFIG_INVALID
  * TC-015: model: "" → CONFIG_INVALID
- * TC-016: timeoutMs: 0 → CONFIG_INVALID
+ * TC-016r: timeoutMs: 0 → 有効値として通過する（タイムアウト無効）
+ * TC-020: timeoutMs: -1 → CONFIG_INVALID
+ * TC-021: step 固有の timeoutMs: 0 → 有効値として通過する
+ * TC-022: step 固有の timeoutMs: -5 → CONFIG_INVALID
  * TC-023: maxTurns: "unlimited" (string) → CONFIG_INVALID
+ * TC-024: getStepExecutionConfig — timeoutMs: 0 が 0 のまま解決される
+ * TC-025: getStepExecutionConfig — step 固有 timeoutMs: 0 が defaults の正数より優先される
+ * TC-030: validateConfig — timeoutMs エラーメッセージに "non-negative" が含まれる
+ * TC-031: validateConfig — timeoutMs: 1 は下限として有効
  *
  * TC-017: timeoutMs が解決されるが SDK options に含まれない (ResolvedStepConfig に含まれる)
  */
@@ -280,10 +287,37 @@ describe("TC-015: validateConfig — steps.defaults.model: '' は CONFIG_INVALID
   });
 });
 
-describe("TC-016: validateConfig — steps.defaults.timeoutMs: 0 は CONFIG_INVALID", () => {
-  it("timeoutMs: 0 でバリデーションエラーが返される", () => {
+describe("TC-016r: validateConfig — steps.defaults.timeoutMs: 0 は有効値として通過する", () => {
+  it("timeoutMs: 0 でバリデーションエラーが発生しない（タイムアウト無効）", () => {
     const raw = makeMinimalRawConfig({
       steps: { defaults: { timeoutMs: 0 } },
+    });
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+});
+
+describe("TC-020: validateConfig — steps.defaults.timeoutMs: -1 は CONFIG_INVALID", () => {
+  it("timeoutMs: -1 でバリデーションエラーが返される", () => {
+    const raw = makeMinimalRawConfig({
+      steps: { defaults: { timeoutMs: -1 } },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+  });
+});
+
+describe("TC-021: validateConfig — steps.implementer.timeoutMs: 0 は有効値として通過する", () => {
+  it("step 固有の timeoutMs: 0 でバリデーションエラーが発生しない", () => {
+    const raw = makeMinimalRawConfig({
+      steps: { implementer: { timeoutMs: 0 } },
+    });
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+});
+
+describe("TC-022: validateConfig — steps.implementer.timeoutMs: -5 は CONFIG_INVALID", () => {
+  it("step 固有の timeoutMs: -5 でバリデーションエラーが返される", () => {
+    const raw = makeMinimalRawConfig({
+      steps: { implementer: { timeoutMs: -5 } },
     });
     expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
   });
@@ -295,6 +329,73 @@ describe("TC-023: validateConfig — steps.defaults.maxTurns: 'unlimited' は CO
       steps: { defaults: { maxTurns: "unlimited" } },
     });
     expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-024: getStepExecutionConfig — timeoutMs: 0 が 0 のまま解決される
+// ---------------------------------------------------------------------------
+
+describe("TC-024: getStepExecutionConfig — defaults.timeoutMs: 0 が 0 として解決される", () => {
+  it("resolved.timeoutMs === 0 (null や DEFAULT にならない)", () => {
+    const config = makeBaseConfig({
+      steps: {
+        defaults: { timeoutMs: 0 },
+      },
+    });
+
+    const resolved = getStepExecutionConfig(config, "implementer", {
+      model: "claude-haiku-3",
+    });
+
+    expect(resolved.timeoutMs).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-025: getStepExecutionConfig — step 固有 timeoutMs: 0 が defaults の正数より優先される
+// ---------------------------------------------------------------------------
+
+describe("TC-025: getStepExecutionConfig — step 固有 timeoutMs: 0 が defaults の正数より優先される", () => {
+  it("resolved.timeoutMs === 0 (defaults の 600000 に fallback しない)", () => {
+    const config = makeBaseConfig({
+      steps: {
+        defaults: { timeoutMs: 600000 },
+        implementer: { timeoutMs: 0 },
+      },
+    });
+
+    const resolved = getStepExecutionConfig(config, "implementer", {
+      model: "claude-haiku-3",
+    });
+
+    expect(resolved.timeoutMs).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-030: validateConfig — timeoutMs エラーメッセージに "non-negative" が含まれる
+// ---------------------------------------------------------------------------
+
+describe("TC-030: validateConfig — timeoutMs: -1 のエラーメッセージに non-negative が含まれる", () => {
+  it("エラーメッセージに 'non-negative' が含まれる", () => {
+    const raw = makeMinimalRawConfig({
+      steps: { defaults: { timeoutMs: -1 } },
+    });
+    expect(() => validateConfig(raw)).toThrow(/non-negative/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-031: validateConfig — timeoutMs: 1 は下限として有効
+// ---------------------------------------------------------------------------
+
+describe("TC-031: validateConfig — steps.defaults.timeoutMs: 1 は下限として有効", () => {
+  it("timeoutMs: 1 でバリデーションエラーが発生しない", () => {
+    const raw = makeMinimalRawConfig({
+      steps: { defaults: { timeoutMs: 1 } },
+    });
+    expect(() => validateConfig(raw)).not.toThrow();
   });
 });
 

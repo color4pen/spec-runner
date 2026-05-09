@@ -17,7 +17,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { ManagedAgentRunner } from "../../../../src/adapter/managed-agent/agent-runner.js";
+import { ManagedAgentRunner, resolveTimeoutMs } from "../../../../src/adapter/managed-agent/agent-runner.js";
 import type { AgentRunContext } from "../../../../src/core/port/agent-runner.js";
 import type { SessionClient } from "../../../../src/core/port/session-client.js";
 import type { GitHubClient } from "../../../../src/core/port/github-client.js";
@@ -551,6 +551,35 @@ describe("TC-030: ManagedAgentRunner.verifyBranch — branch not found → warni
     // Should not throw — verifyBranch failure is non-fatal (warning only)
     const result = await runner.run(ctx);
     expect(result.completionReason).toBe("success");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-026/TC-027: resolveTimeoutMs — 0 → null (SSE fallback path + direct poll path)
+// TC-028: resolveTimeoutMs — null → DEFAULT_POLL_TIMEOUT_MS
+// TC-029: resolveTimeoutMs — 正数はそのまま
+// TC-032: resolveTimeoutMs — 未設定(null) → DEFAULT_POLL_TIMEOUT_MS
+// ---------------------------------------------------------------------------
+
+describe("resolveTimeoutMs — 0 → null (TC-026/TC-027: タイムアウト無効)", () => {
+  it("timeoutMs: 0 は null に変換される（pollUntilComplete にタイムアウトなしで渡す）", () => {
+    expect(resolveTimeoutMs(0)).toBeNull();
+  });
+});
+
+describe("resolveTimeoutMs — null → DEFAULT_POLL_TIMEOUT_MS (TC-028/TC-032)", () => {
+  it("timeoutMs: null は DEFAULT_POLL_TIMEOUT_MS (900000ms) にフォールバックする", () => {
+    expect(resolveTimeoutMs(null)).toBe(900_000);
+  });
+});
+
+describe("resolveTimeoutMs — 正数はそのまま (TC-029)", () => {
+  it("timeoutMs: 30000 は 30000 のまま渡される", () => {
+    expect(resolveTimeoutMs(30000)).toBe(30000);
+  });
+
+  it("timeoutMs: 1 は 1 のまま渡される（下限境界値）", () => {
+    expect(resolveTimeoutMs(1)).toBe(1);
   });
 });
 
