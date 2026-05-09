@@ -1,3 +1,15 @@
+# Tasks: update-project-md
+
+## Task 1: [x] openspec/project.md を現行アーキテクチャに全面書き換え
+
+- **file**: `openspec/project.md`
+- **action**: 全面置換
+
+### 書き換え後の内容
+
+以下の内容で `openspec/project.md` を置換する:
+
+```markdown
 # SpecRunner
 
 request.md を投入すると PR が返る AI CI/CD ランナー（CLI ツール）。
@@ -87,3 +99,17 @@ openspec/
 docs/
 └── adr/              # Architecture Decision Records
 ```
+```
+
+### 注意事項
+
+- package.json の dependencies に `octokit` は存在しない（request.md の要件に記載があるが、実際の依存には含まれない）。GitHub API は adapter/github/ で直接 REST 呼び出しまたは `gh` CLI 経由で実行している。実態に合わせて octokit は記載しない
+- nested markdown code fence に注意: project.md 内の Directory Structure は code block なので、ファイル全体を Write ツールで書き出すこと（Edit ツールでの部分置換は fenced block の境界で壊れるリスクがある）
+
+## Verification
+
+```bash
+bun run typecheck && bun run test
+```
+
+ドキュメントのみの変更のため、既存テストが green であれば OK。
