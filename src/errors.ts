@@ -43,6 +43,7 @@ export const ERROR_CODES = {
   NO_COMMIT_DETECTED: "NO_COMMIT_DETECTED",
   WORKTREE_GUARD: "WORKTREE_GUARD",
   AMBIGUOUS_JOB_ID: "AMBIGUOUS_JOB_ID",
+  POLL_TIMEOUT: "POLL_TIMEOUT",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -184,6 +185,15 @@ export function specReviewResultNotFoundError(slug: string, branch: string, iter
     ERROR_CODES.SPEC_REVIEW_RESULT_NOT_FOUND,
     `Ensure the spec-review agent wrote the result file to openspec/changes/${slug}/${filename} on branch '${branch}'. If the agent wrote the file but did not commit + push, re-run the step or check the agent session logs for git push errors.`,
     `Spec-review result file not found on branch '${branch}'.`,
+  );
+}
+
+export function pollTimeoutError(sessionId: string, elapsedMs: number): SpecRunnerError {
+  const elapsedSec = Math.round(elapsedMs / 1000);
+  return new SpecRunnerError(
+    ERROR_CODES.POLL_TIMEOUT,
+    "Session may still be running on Anthropic side. Use 'specrunner resume' to retry or 'specrunner cancel' to abort.",
+    `Session '${sessionId}' did not complete within ${elapsedSec}s (${elapsedMs}ms).`,
   );
 }
 

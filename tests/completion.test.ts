@@ -5,6 +5,7 @@ import {
   calculateBackoff,
   pollUntilComplete,
   assertBreakAfterCompletion,
+  DEFAULT_POLL_TIMEOUT_MS,
 } from "../src/adapter/managed-agent/completion.js";
 import type { BetaManagedAgentsSession } from "@anthropic-ai/sdk/resources/beta/sessions/sessions";
 import {
@@ -157,6 +158,59 @@ describe("TC-031: polling — terminated triggers failure", () => {
 // TC-032 (removed): SESSION_TIMEOUT after 30m was removed in remove-session-timeout.
 // pollUntilComplete no longer has a wall-clock timeout (design D1).
 // The only terminal error from polling is SESSION_TERMINATED.
+
+// TC-POLL-TIMEOUT: pollUntilComplete が timeoutMs 超過で PollTimeoutError を throw する
+describe("TC-POLL-TIMEOUT: pollUntilComplete timeoutMs", () => {
+  it("throws POLL_TIMEOUT when timeoutMs is exceeded", async () => {
+    const mockClient = {
+      beta: {
+        sessions: {
+          // Session stays "running" indefinitely
+          retrieve: vi.fn().mockResolvedValue(
+            makeSession({ status: "running" }),
+          ),
+        },
+      },
+    } as unknown as Parameters<typeof pollUntilComplete>[0];
+
+    // sleepFn delays longer than the timeout (50ms sleep, 1ms timeout)
+    const sleepFn = vi.fn().mockImplementation(
+      () => new Promise<void>((resolve) => setTimeout(resolve, 50)),
+    );
+
+    await expect(
+      pollUntilComplete(mockClient, "sess_timeout", undefined, {
+        sleepFn,
+        timeoutMs: 1,
+      }),
+    ).rejects.toMatchObject({ code: "POLL_TIMEOUT" });
+  });
+
+  it("does not time out when timeoutMs is not provided", async () => {
+    const mockClient = {
+      beta: {
+        sessions: {
+          retrieve: vi.fn().mockResolvedValue(
+            makeSession({ status: "idle" }),
+          ),
+        },
+      },
+    } as unknown as Parameters<typeof pollUntilComplete>[0];
+
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    // Should resolve without throwing — no timeoutMs means no timeout
+    const result = await pollUntilComplete(mockClient, "sess_no_timeout", undefined, {
+      sleepFn,
+    });
+
+    expect(result.status).toBe("idle");
+  });
+
+  it("DEFAULT_POLL_TIMEOUT_MS is 900000 (15 minutes)", () => {
+    expect(DEFAULT_POLL_TIMEOUT_MS).toBe(900_000);
+  });
+});
 
 // TC-034: SSE 切断 — ポーリング fallback
 describe("TC-034: SSE disconnection fallback to polling", () => {

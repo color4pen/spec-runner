@@ -126,6 +126,31 @@ export class StepExecutor {
       return null as never;
     });
 
+    if (runResult.completionReason === "timeout") {
+      // Poll timeout — transition to awaiting-resume (not a hard failure)
+      const err = runResult.error ?? new Error(`Agent step '${step.name}' timed out`);
+      const errorInfo: ErrorInfo = {
+        code: (err as Error & { code?: string }).code ?? "POLL_TIMEOUT",
+        message: err.message,
+        hint: (err as Error & { hint?: string }).hint ?? "",
+      };
+      state = recordFailedStepResult(state, step.name, errorInfo, { completedAt });
+      state = {
+        ...state,
+        status: "awaiting-resume" as const,
+        resumePoint: { step: step.name as import("../../state/schema.js").StepName, reason: "timeout", iterationsExhausted: 0 },
+        error: errorInfo,
+      };
+      state = await store.appendHistory(state, {
+        ts: new Date().toISOString(),
+        step: `${step.name}-timeout`,
+        status: "error",
+        message: `${step.name} timed out: ${errorInfo.message}`,
+      });
+      await store.persist(state);
+      attachStateAndRethrow(err, state);
+    }
+
     if (runResult.completionReason !== "success") {
       // Agent step failed — record error and rethrow
       const err = runResult.error ?? new Error(`Agent step '${step.name}' failed`);

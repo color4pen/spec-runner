@@ -53,6 +53,7 @@ export class AnthropicSessionClient implements SessionClient {
     opts?: {
       sleepFn?: (ms: number) => Promise<void>;
       abortSignal?: AbortSignal;
+      timeoutMs?: number;
     },
   ): Promise<{
     status: "idle" | "terminated";
@@ -61,6 +62,7 @@ export class AnthropicSessionClient implements SessionClient {
     try {
       await pollUntilComplete(this.client, sessionId, opts?.abortSignal, {
         sleepFn: opts?.sleepFn,
+        timeoutMs: opts?.timeoutMs,
       });
       return { status: "idle" };
     } catch (err) {

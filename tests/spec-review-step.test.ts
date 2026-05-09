@@ -135,9 +135,9 @@ async function runSpecReviewViaExecutor(
   return executor.execute(SpecReviewStep, jobState, deps);
 }
 
-// TC-006: pollUntilComplete が timeoutMs なしで呼び出される
-describe("TC-006: runSpecReviewStep — pollUntilComplete is called without timeoutMs", () => {
-  it("calls pollUntilComplete without timeoutMs argument (wall-clock timeout removed)", async () => {
+// TC-006: pollUntilComplete が timeoutMs（デフォルト 15 分）付きで呼び出される
+describe("TC-006: runSpecReviewStep — pollUntilComplete is called with default timeoutMs", () => {
+  it("calls pollUntilComplete with default timeoutMs (900000ms = 15 minutes)", async () => {
     const jobState = await makeJobState();
 
     const fileContent = "- **verdict**: approved\n";
@@ -154,10 +154,10 @@ describe("TC-006: runSpecReviewStep — pollUntilComplete is called without time
       githubClient: buildMockGithubClient(fileContent),
     });
 
-    // pollUntilComplete should be called without timeoutMs
+    // pollUntilComplete should be called with the default timeoutMs (900000ms)
     expect(pollUntilCompleteMock).toHaveBeenCalledTimes(1);
     const pollCallArgs = pollUntilCompleteMock.mock.calls[0]![1] as { timeoutMs?: number } | undefined;
-    expect(pollCallArgs?.timeoutMs).toBeUndefined();
+    expect(pollCallArgs?.timeoutMs).toBe(900_000);
 
     // Verify step completed and recorded a verdict (array format)
     const lastResult = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];

@@ -6,16 +6,20 @@ import type Anthropic from "@anthropic-ai/sdk";
 import type { BetaManagedAgentsSession } from "@anthropic-ai/sdk/resources/beta/sessions/sessions";
 import { retrieveSession } from "./sdk/sessions.js";
 import { stderrWrite } from "../../logger/stdout.js";
-import { sessionTerminatedError } from "../../errors.js";
+import { sessionTerminatedError, pollTimeoutError } from "../../errors.js";
 
 export const INITIAL_INTERVAL_MS = 2000;
 export const MAX_INTERVAL_MS = 30000;
 export const BACKOFF_FACTOR = 1.5;
 export const JITTER_FACTOR = 0.2;
+export const DEFAULT_POLL_TIMEOUT_MS = 900_000;
 
 export interface PollOptions {
   /** Injectable sleep function (for testing) */
   sleepFn?: (ms: number) => Promise<void>;
+  /** Wall-clock timeout in milliseconds. Throws PollTimeoutError when exceeded.
+   * Defaults to no timeout when omitted (null/undefined). */
+  timeoutMs?: number;
 }
 
 /**
@@ -46,8 +50,7 @@ export function calculateBackoff(attempt: number, currentIntervalMs: number): nu
  * Uses exponential backoff with jitter.
  *
  * Throws SESSION_TERMINATED if the session terminates.
- * Wall-clock timeout has been removed (design D1). Session termination relies on
- * the Anthropic SDK's end_turn / terminated signals or manual cancel.
+ * Throws PollTimeoutError if opts.timeoutMs is set and the wall-clock deadline is exceeded.
  */
 export async function pollUntilComplete(
   client: Anthropic,
@@ -58,6 +61,9 @@ export async function pollUntilComplete(
   const sleepFn =
     opts?.sleepFn ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
 
+  const deadline = opts?.timeoutMs != null ? Date.now() + opts.timeoutMs : null;
+  const startTime = Date.now();
+
   let intervalMs = INITIAL_INTERVAL_MS;
 
   while (true) {
@@ -67,6 +73,10 @@ export async function pollUntilComplete(
     }
 
     await sleepFn(intervalMs);
+
+    if (deadline != null && Date.now() >= deadline) {
+      throw pollTimeoutError(sessionId, Date.now() - startTime);
+    }
 
     if (abortSignal?.aborted) {
       const session = await retrieveSession(client, sessionId);

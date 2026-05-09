@@ -72,14 +72,14 @@ describe("TC-008: pollUntilComplete の timeout 分岐が存在しない", () =>
     expect(content).not.toContain("elapsed >= timeoutMs");
   });
 
-  it("SessionClient port の pollUntilComplete 型定義に timeoutMs がない", async () => {
-    // Type-level check: the port interface source must not reference timeoutMs
+  it("SessionClient port の pollUntilComplete に SESSION_TIMEOUT が存在しない", async () => {
+    // Type-level check: the port interface source must not reference SESSION_TIMEOUT
     const portPath = path.resolve(
       import.meta.dirname ?? __dirname,
       "../../src/core/port/session-client.ts",
     );
     const content = await fs.readFile(portPath, "utf-8");
-    expect(content).not.toContain("timeoutMs");
+    expect(content).not.toContain("SESSION_TIMEOUT");
     // timeout status variant removed
     expect(content).not.toContain('"timeout"');
   });
@@ -110,14 +110,14 @@ describe("TC-010: session-runner.ts の timeoutMs と SESSION_TIMEOUT フォー�
 // TC-011: completion.ts の SESSION_TIMEOUT フォールバックと timeoutMs が削除されている
 // ---------------------------------------------------------------------------
 describe("TC-011: completion.ts の SESSION_TIMEOUT フォールバックと timeoutMs 関連コードが削除済み", () => {
-  it("PollOptions 型に timeoutMs が存在しない", async () => {
+  it("completion.ts に SESSION_TIMEOUT が存在しない", async () => {
     const completionPath = path.resolve(
       import.meta.dirname ?? __dirname,
       "../../src/adapter/managed-agent/completion.ts",
     );
     const content = await fs.readFile(completionPath, "utf-8");
-    // PollOptions interface must not have timeoutMs
-    expect(content).not.toContain("timeoutMs");
+    // SESSION_TIMEOUT must not appear in completion.ts (POLL_TIMEOUT is the new code)
+    expect(content).not.toContain("SESSION_TIMEOUT");
   });
 
   it("pollUntilComplete は AbortSignal による中断のみをサポートし timeout を throw しない", async () => {

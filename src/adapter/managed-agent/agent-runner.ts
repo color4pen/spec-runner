@@ -33,6 +33,8 @@ import {
   attachStateAndRethrow,
 } from "../../core/step/executor-helpers.js";
 import { getAgentId } from "../../config/getAgentId.js";
+import { getStepExecutionConfig } from "../../config/step-config.js";
+import { DEFAULT_POLL_TIMEOUT_MS } from "./completion.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import {
   branchNotSetError,
@@ -169,11 +171,22 @@ export class ManagedAgentRunner implements AgentRunner {
 
     if (needsPollingFallback) {
       stderrWrite("SSE disconnected; falling back to polling.");
+      // Resolve wall-clock timeout from step config for polling fallback
+      const resolvedConfig = getStepExecutionConfig(config, step.name, { model: step.agent.model });
+      const timeoutMs = resolvedConfig.timeoutMs ?? DEFAULT_POLL_TIMEOUT_MS;
+
       const pollResult = await this.sessionClient.pollUntilComplete(sessionId!, {
         abortSignal: abortController.signal,
+        timeoutMs,
       });
 
       if (pollResult.status !== "idle") {
+        if (pollResult.error?.code === "POLL_TIMEOUT") {
+          const timeoutErr = new Error(pollResult.error.message) as Error & { code: string; hint: string };
+          timeoutErr.code = pollResult.error.code;
+          timeoutErr.hint = pollResult.error.hint;
+          return { completionReason: "timeout", resultContent: null, sessionId: sessionId!, error: timeoutErr };
+        }
         const errorInfo = pollResult.error ?? sessionTerminatedError();
         throwWrappedError(errorInfo, state);
       }
@@ -337,11 +350,21 @@ export class ManagedAgentRunner implements AgentRunner {
       throwWrappedError(errorInfo, state);
     }
 
+    // Resolve wall-clock timeout from step config
+    const resolvedConfig = getStepExecutionConfig(config, step.name, { model: step.agent.model });
+    const timeoutMs = resolvedConfig.timeoutMs ?? DEFAULT_POLL_TIMEOUT_MS;
+
     // Poll until complete
-    const pollResult = await this.sessionClient.pollUntilComplete(sessionId!);
+    const pollResult = await this.sessionClient.pollUntilComplete(sessionId!, { timeoutMs });
     const completedAt = new Date().toISOString();
 
     if (pollResult.status !== "idle") {
+      if (pollResult.error?.code === "POLL_TIMEOUT") {
+        const timeoutErr = new Error(pollResult.error.message) as Error & { code: string; hint: string };
+        timeoutErr.code = pollResult.error.code;
+        timeoutErr.hint = pollResult.error.hint;
+        return { completionReason: "timeout", resultContent: null, sessionId: sessionId!, error: timeoutErr };
+      }
       const errorInfo = pollResult.error ?? sessionTerminatedError();
       stderrWrite(`${step.name} session was terminated by Anthropic.`);
       throwWrappedError(errorInfo, state);

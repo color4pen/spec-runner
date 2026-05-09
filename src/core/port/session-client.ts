@@ -34,16 +34,16 @@ export interface SessionClient {
    * Poll a session until it becomes idle (complete) or terminated.
    * Uses exponential backoff with jitter.
    *
-   * Wall-clock timeout has been removed (design D1). Termination relies on
-   * the Anthropic SDK's end_turn / terminated signals or manual cancel.
-   *
    * Returns status: idle = success, terminated = agent stopped.
+   * If timeoutMs is set and the wall-clock deadline is exceeded, returns status "terminated"
+   * with error.code === "POLL_TIMEOUT".
    */
   pollUntilComplete(
     sessionId: string,
     opts?: {
       sleepFn?: (ms: number) => Promise<void>;
       abortSignal?: AbortSignal;
+      timeoutMs?: number;
     },
   ): Promise<{
     status: "idle" | "terminated";
