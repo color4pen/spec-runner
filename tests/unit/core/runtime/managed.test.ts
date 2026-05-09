@@ -74,9 +74,9 @@ describe("TC-MR-002: createAgentRunner returns ManagedAgentRunner", () => {
   });
 });
 
-// TC-MR-003: registerCleanup / teardown are no-ops
-describe("TC-MR-003: registerCleanup and teardown are no-ops", () => {
-  it("registerCleanup returns a handle and teardown does nothing", async () => {
+// TC-MR-003: registerCleanup adds signal handlers; teardown removes them
+describe("TC-MR-003: registerCleanup adds signal handlers and teardown removes them", () => {
+  it("registerCleanup increases SIGINT listener count; teardown restores it", async () => {
     const sessionClient = buildMockSessionClient();
     const githubClient = buildMockGitHubClient();
     const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo());
@@ -85,11 +85,26 @@ describe("TC-MR-003: registerCleanup and teardown are no-ops", () => {
     const handle = runtime.registerCleanup("job-123", "propose");
     const listenersAfterRegister = process.listenerCount("SIGINT");
 
-    // No signal handlers added
-    expect(listenersAfterRegister).toBe(listenersBefore);
+    // Signal handler was added
+    expect(listenersAfterRegister).toBe(listenersBefore + 1);
 
-    // teardown is a no-op — no throws
+    // teardown removes signal handlers — no throws, count restored
     await expect(runtime.teardown(handle, "failed")).resolves.toBeUndefined();
+    expect(process.listenerCount("SIGINT")).toBe(listenersBefore);
+  });
+
+  it("registerCleanup increases SIGTERM listener count; teardown restores it", async () => {
+    const sessionClient = buildMockSessionClient();
+    const githubClient = buildMockGitHubClient();
+    const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo());
+
+    const listenersBefore = process.listenerCount("SIGTERM");
+    const handle = runtime.registerCleanup("job-123", "propose");
+
+    expect(process.listenerCount("SIGTERM")).toBe(listenersBefore + 1);
+
+    await runtime.teardown(handle, "awaiting-resume");
+    expect(process.listenerCount("SIGTERM")).toBe(listenersBefore);
   });
 });
 

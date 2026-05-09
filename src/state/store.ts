@@ -28,6 +28,7 @@ export async function createJobState(params: {
     session: null,
     step: "init",
     status: "running",
+    pid: process.pid,
     branch: null,
     history: [
       {

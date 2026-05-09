@@ -87,6 +87,7 @@ export class Pipeline {
         finalState = {
           ...finalState,
           status: "awaiting-resume",
+          pid: null,
           resumePoint: {
             step: (finalState.step ?? "propose") as StepName,
             reason: (err as Error).message ?? String(err),

@@ -295,6 +295,7 @@ export class LocalRuntime implements RuntimeStrategy {
         await updateJobState(jobId, (s) => ({
           ...s,
           status: "awaiting-resume" as const,
+          pid: null,
           resumePoint: {
             step: startStep as StepName,
             reason: "Interrupted by signal",

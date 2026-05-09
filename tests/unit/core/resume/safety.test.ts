@@ -15,7 +15,7 @@
  *   - updatedAt exactly threshold → false (boundary: not strictly greater)
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { checkConsecutiveEscalations, checkStaleState } from "../../../../src/core/resume/safety.js";
+import { checkConsecutiveEscalations, checkStaleState, isProcessAlive, isStaleRunning } from "../../../../src/core/resume/safety.js";
 import type { JobState, StepRun } from "../../../../src/state/schema.js";
 
 function makeBaseState(overrides: Partial<JobState> = {}): JobState {
@@ -214,5 +214,81 @@ describe("checkStaleState", () => {
     const twoHoursAgo = new Date(now.getTime() - 7200000).toISOString();
     const state = makeBaseState({ updatedAt: twoHoursAgo });
     expect(checkStaleState(state, 3600000)).toBe(true);
+  });
+});
+
+describe("isProcessAlive", () => {
+  it("returns true for the current process PID", () => {
+    expect(isProcessAlive(process.pid)).toBe(true);
+  });
+
+  it("returns false for a PID that does not exist (999999)", () => {
+    // PID 999999 is extremely unlikely to exist
+    expect(isProcessAlive(999999)).toBe(false);
+  });
+
+  it("returns false for invalid PID 0", () => {
+    // PID 0 sends signal to the process group; treat as invalid → false
+    expect(isProcessAlive(0)).toBe(false);
+  });
+
+  it("returns false for negative PID", () => {
+    expect(isProcessAlive(-1)).toBe(false);
+  });
+});
+
+describe("isStaleRunning", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function makeRunningState(overrides: Partial<JobState> = {}): JobState {
+    return makeBaseState({ status: "running", ...overrides });
+  }
+
+  it("returns false when status is not 'running'", () => {
+    const state = makeBaseState({ status: "awaiting-resume" });
+    expect(isStaleRunning(state)).toBe(false);
+  });
+
+  it("returns false when status is 'running' and pid is the current process (alive)", () => {
+    const state = makeRunningState({ pid: process.pid });
+    expect(isStaleRunning(state)).toBe(false);
+  });
+
+  it("returns true when status is 'running' and pid does not exist (dead process)", () => {
+    const state = makeRunningState({ pid: 999999 });
+    expect(isStaleRunning(state)).toBe(true);
+  });
+
+  it("returns true when status is 'running', no pid, and updatedAt is 16 minutes ago", () => {
+    vi.useFakeTimers();
+    const now = new Date("2026-01-02T12:00:00.000Z");
+    vi.setSystemTime(now);
+
+    const sixteenMinutesAgo = new Date(now.getTime() - 16 * 60 * 1000).toISOString();
+    const state = makeRunningState({ pid: undefined, updatedAt: sixteenMinutesAgo });
+    expect(isStaleRunning(state)).toBe(true);
+  });
+
+  it("returns false when status is 'running', no pid, and updatedAt is 5 minutes ago", () => {
+    vi.useFakeTimers();
+    const now = new Date("2026-01-02T12:00:00.000Z");
+    vi.setSystemTime(now);
+
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString();
+    const state = makeRunningState({ pid: undefined, updatedAt: fiveMinutesAgo });
+    expect(isStaleRunning(state)).toBe(false);
+  });
+
+  it("returns false when status is 'running', no pid, and updatedAt is exactly 15 minutes ago (boundary)", () => {
+    vi.useFakeTimers();
+    const now = new Date("2026-01-02T12:00:00.000Z");
+    vi.setSystemTime(now);
+
+    const exactly15MinutesAgo = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
+    const state = makeRunningState({ pid: undefined, updatedAt: exactly15MinutesAgo });
+    // Boundary: elapsed === threshold, not strictly greater → false
+    expect(isStaleRunning(state)).toBe(false);
   });
 });

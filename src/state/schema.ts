@@ -156,6 +156,8 @@ export interface JobState {
    */
   worktreePath?: string | null;
   resumePoint?: ResumePoint | null;
+  /** PID of the process that set status to "running". Optional for backward compat. */
+  pid?: number | null;
 }
 
 export const MAX_HISTORY_SIZE = 100;

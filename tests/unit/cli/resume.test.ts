@@ -147,16 +147,38 @@ describe("TC-RESUME-001: happy path awaiting-resume", () => {
   });
 });
 
-// TC-RESUME-002: status gate — non-awaiting-resume rejected without --force
-describe("TC-RESUME-002: status gate rejection", () => {
-  it("returns exit code 1 for 'failed' status without --force", async () => {
-    await makeAwaitingResumeJob("my-slug", { status: "failed", resumePoint: null });
+// TC-RESUME-002: status gate — terminal statuses rejected; failed/terminated now allowed
+describe("TC-RESUME-002: status gate rejection for terminal statuses", () => {
+  it("returns exit code 1 for 'archived' status (no valid transition to running)", async () => {
+    await makeAwaitingResumeJob("my-slug", { status: "archived", resumePoint: null });
 
     const { runResumeCore } = await import("../../../src/cli/resume.js");
     const exitCode = await runResumeCore("my-slug", {});
     expect(exitCode).toBe(1);
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
-    expect(stderrCalls.some((args) => String(args[0]).includes("awaiting-resume"))).toBe(true);
+    expect(stderrCalls.some((args) => String(args[0]).includes("cannot transition to"))).toBe(true);
+  });
+
+  it("returns exit code 0 for 'failed' status (allowed by VALID_TRANSITIONS)", async () => {
+    await makeAwaitingResumeJob("failed-slug", {
+      status: "failed",
+      resumePoint: { step: "code-review", reason: "test failure", iterationsExhausted: 1 },
+    });
+
+    const { runResumeCore } = await import("../../../src/cli/resume.js");
+    const exitCode = await runResumeCore("failed-slug", {});
+    expect(exitCode).toBe(0);
+  });
+
+  it("returns exit code 0 for 'terminated' status (allowed by VALID_TRANSITIONS)", async () => {
+    await makeAwaitingResumeJob("terminated-slug", {
+      status: "terminated",
+      resumePoint: { step: "code-review", reason: "terminated", iterationsExhausted: 0 },
+    });
+
+    const { runResumeCore } = await import("../../../src/cli/resume.js");
+    const exitCode = await runResumeCore("terminated-slug", {});
+    expect(exitCode).toBe(0);
   });
 });
 

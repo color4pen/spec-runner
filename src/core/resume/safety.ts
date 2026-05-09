@@ -1,6 +1,47 @@
 import type { JobState } from "../../state/schema.js";
 
 /**
+ * Check if a process with the given PID is alive.
+ *
+ * Uses `process.kill(pid, 0)` as a probe (sends no signal):
+ * - No exception → process exists → true
+ * - EPERM → process exists but we lack permission → true (not stale)
+ * - ESRCH → process not found → false (stale)
+ * - Other errors → false (safe-side: treat as stale)
+ */
+export function isProcessAlive(pid: number): boolean {
+  if (pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException).code === "EPERM") {
+      return true; // process exists but no permission
+    }
+    return false; // ESRCH or other error → stale
+  }
+}
+
+const STALE_RUNNING_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
+
+/**
+ * Determine if a "running" job state is orphaned (the runner process is dead).
+ *
+ * Returns false for any non-"running" status.
+ * PID probe path: checks whether the recorded PID is alive.
+ * Fallback path (no PID): compares updatedAt against a 15-minute threshold.
+ */
+export function isStaleRunning(state: JobState): boolean {
+  if (state.status !== "running") return false;
+  if (state.pid != null) {
+    return !isProcessAlive(state.pid);
+  }
+  // Fallback: no PID recorded (legacy state file)
+  const elapsed = Date.now() - new Date(state.updatedAt).getTime();
+  return elapsed > STALE_RUNNING_THRESHOLD_MS;
+}
+
+/**
  * Check whether a step has escalated consecutively N or more times.
  *
  * Scans the tail of state.steps[stepName], up to `threshold` entries.

@@ -14,13 +14,12 @@ import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { OriginInfo } from "../../git/remote.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import { createManagedAgentRunner } from "../../adapter/managed-agent/agent-runner.js";
-import { updateJobState } from "../../state/store.js";
+import { updateJobState, loadJobState } from "../../state/store.js";
+import { transitionJob } from "../../state/lifecycle.js";
+import type { StepName } from "../../state/schema.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { spawnCommand } from "../../util/spawn.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./strategy.js";
-
-// Empty opaque handle for managed runtime (no-op)
-const MANAGED_NOOP_HANDLE = {} as unknown as CleanupHandle;
 
 export class ManagedRuntime implements RuntimeStrategy {
   private readonly spawnFn: SpawnFn;
@@ -155,12 +154,40 @@ export class ManagedRuntime implements RuntimeStrategy {
     };
   }
 
-  registerCleanup(_jobId: string, _startStep: string): CleanupHandle {
-    // Managed runtime: no signal handlers or worktree cleanup needed
-    return MANAGED_NOOP_HANDLE;
+  registerCleanup(jobId: string, startStep: string): CleanupHandle {
+    const signalCleanup = async (): Promise<void> => {
+      try {
+        const current = await loadJobState(jobId);
+        const { state: updated } = transitionJob(current, "awaiting-resume", {
+          trigger: "signal-handler",
+          reason: "Interrupted by signal",
+          patch: {
+            pid: null,
+            resumePoint: {
+              step: startStep as StepName,
+              reason: "Interrupted by signal",
+              iterationsExhausted: 0,
+            },
+          },
+        });
+        await updateJobState(jobId, () => updated);
+      } catch {
+        // Best-effort persist
+      }
+      process.exit(130);
+    };
+
+    process.on("SIGINT", signalCleanup);
+    process.on("SIGTERM", signalCleanup);
+
+    return { __signalCleanup: signalCleanup } as unknown as CleanupHandle;
   }
 
-  async teardown(_handle: CleanupHandle, _finalStatus: string): Promise<void> {
-    // Managed runtime: no-op
+  async teardown(handle: CleanupHandle, _finalStatus: string): Promise<void> {
+    const internals = handle as unknown as { __signalCleanup?: () => void };
+    if (internals.__signalCleanup) {
+      process.off("SIGINT", internals.__signalCleanup);
+      process.off("SIGTERM", internals.__signalCleanup);
+    }
   }
 }

@@ -12,7 +12,8 @@ import type { JobState, StepName } from "../../state/schema.js";
 import { parseRequestMd } from "../../parser/request-md.js";
 import { resolveJobStateBySlug } from "../resume/resolve-job.js";
 import { resolveResumeStep } from "../resume/resolve-step.js";
-import { checkConsecutiveEscalations, checkStaleState } from "../resume/safety.js";
+import { checkConsecutiveEscalations, checkStaleState, isStaleRunning } from "../resume/safety.js";
+import { canTransition, transitionJob } from "../../state/lifecycle.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../runtime/strategy.js";
 
@@ -92,21 +93,33 @@ export class ResumeCommand extends CommandRunner {
       throw new PrepareError(2, "Failed to resolve job");
     }
 
-    // Status gate: "running" is always rejected (double-execution prevention)
+    // Status gate: stale detection for "running" state
     if (state.status === "running") {
-      process.stderr.write(
-        `Error: Job '${this.slug}' is currently running. Cannot resume a running job.\n`,
-      );
-      throw new PrepareError(1, "Job is running");
+      if (isStaleRunning(state)) {
+        // Orphaned running state — transition to awaiting-resume and continue
+        const { state: recovered } = transitionJob(state, "awaiting-resume", {
+          trigger: "stale-detection",
+          reason: "Process not running",
+          patch: { pid: null },
+        });
+        state = await updateJobState(state.jobId, () => recovered);
+        process.stderr.write(
+          `Warning: Job '${this.slug}' was running but the process is no longer alive. Recovering.\n`,
+        );
+      } else {
+        process.stderr.write(
+          `Error: Job '${this.slug}' is currently running. Cannot resume a running job.\n`,
+        );
+        throw new PrepareError(1, "Job is running");
+      }
     }
 
-    if (state.status !== "awaiting-resume") {
-      if (!this.options.force) {
-        process.stderr.write(
-          `Error: Job '${this.slug}' has status '${state.status}', not 'awaiting-resume'. Use --force to override.\n`,
-        );
-        throw new PrepareError(1, "Job not awaiting-resume");
-      }
+    // Status gate: reject if transition to "running" is not allowed
+    if (!canTransition(state.status, "running")) {
+      process.stderr.write(
+        `Error: Job '${this.slug}' has status '${state.status}', cannot transition to 'running'.\n`,
+      );
+      throw new PrepareError(1, `Cannot resume from status '${state.status}'`);
     }
 
     // Safety checks
@@ -161,16 +174,14 @@ export class ResumeCommand extends CommandRunner {
     }
 
     // State preparation: transition to "running"
-    let updatedState: JobState = {
-      ...state,
-      status: "running",
-      error: null,
-      resumePoint: null,
-      updatedAt: new Date().toISOString(),
-    };
-
+    let updatedState: JobState;
     try {
-      updatedState = await updateJobState(state.jobId, () => updatedState);
+      const { state: transitioned } = transitionJob(state, "running", {
+        trigger: "resume",
+        reason: `Resuming from step '${startStep}'`,
+        patch: { error: null, resumePoint: null, pid: process.pid },
+      });
+      updatedState = await updateJobState(state.jobId, () => transitioned);
     } catch (err) {
       process.stderr.write(`Error: Failed to update job state: ${(err as Error).message}\n`);
       throw new PrepareError(1, "Failed to update state");
