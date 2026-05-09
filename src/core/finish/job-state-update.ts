@@ -5,7 +5,7 @@
  * TC-030: escalation → state unchanged
  * TC-031: status=running → reject (JOB_NOT_FINISHABLE)
  */
-import { updateJobState } from "../../state/store.js";
+import { JobStateStore } from "../../store/job-state-store.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import type { JobState } from "../../state/schema.js";
 import { canTransition, transitionJob } from "../../state/lifecycle.js";
@@ -38,15 +38,16 @@ export function assertJobFinishable(state: JobState): void {
 /**
  * Mark the job as archived using transitionJob for lifecycle consistency.
  * TC-029: transitions status → "archived" and appends history
- * TC-083: atomic write protocol via updateJobState → atomicWriteJson
+ * TC-083: atomic write protocol via JobStateStore → atomicWriteJson
  */
 export async function markJobArchived(jobId: string): Promise<JobState> {
-  return updateJobState(jobId, (state) => {
-    const { state: updated, noop } = transitionJob(state, "archived", {
-      trigger: "finish",
-      reason: "PR merged",
-    });
-    if (noop) return state; // 既に archived → 変更なし
-    return updated;
+  const store = new JobStateStore(jobId);
+  const current = await store.load();
+  const { state: updated, noop } = transitionJob(current as JobState, "archived", {
+    trigger: "finish",
+    reason: "PR merged",
   });
+  if (noop) return current as JobState; // 既に archived → 変更なし
+  await store.persist(updated);
+  return updated;
 }

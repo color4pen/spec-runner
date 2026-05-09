@@ -19,7 +19,7 @@
 import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs, FinishFlags, ResolvedTarget, PrViewData } from "./types.js";
 import type { WorktreeManager } from "../worktree/manager.js";
-import { loadJobState, updateJobState } from "../../state/store.js";
+import { JobStateStore } from "../../store/job-state-store.js";
 import { resolveTarget } from "./resolve-target.js";
 import { runPreflight } from "./preflight.js";
 import { fetchPrViewWithRetry, pollMergeStateAfterPush } from "./pr-status.js";
@@ -72,7 +72,8 @@ export async function runFinishOrchestrator(
 
   let state;
   try {
-    state = await loadJobState(target.jobId);
+    const store = new JobStateStore(target.jobId);
+    state = await store.load();
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return { exitCode: 2, message };
@@ -269,7 +270,9 @@ async function runPhase4Finalize(params: {
     }
     // Clear worktreePath in state (best-effort — state is already archived)
     try {
-      await updateJobState(target.jobId, (s) => ({ ...s, worktreePath: null }));
+      const store = new JobStateStore(target.jobId);
+      const current = await store.load();
+      await store.persist({ ...current, worktreePath: null });
     } catch {
       process.stderr.write(`Warning: failed to clear worktreePath for job ${target.jobId}.\n`);
     }

@@ -5,7 +5,7 @@
  * start step, and transitions job to "running" status.
  */
 import { loadConfig } from "../../config/store.js";
-import { updateJobState, loadJobState, resolveJobId } from "../../state/store.js";
+import { JobStateStore } from "../../store/job-state-store.js";
 import { logInfo, setVerbose } from "../../logger/stdout.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
@@ -73,7 +73,7 @@ export class ResumeCommand extends CommandRunner {
         // Slug not found — try resolving as short Job ID prefix
         let fullId: string;
         try {
-          fullId = await resolveJobId(this.slug);
+          fullId = await JobStateStore.resolveId(this.slug);
         } catch (err) {
           if (err instanceof SpecRunnerError) {
             process.stderr.write(`Error: ${err.message}\n`);
@@ -83,7 +83,7 @@ export class ResumeCommand extends CommandRunner {
           }
           throw new PrepareError(1, "Job not found");
         }
-        state = await loadJobState(fullId);
+        state = (await new JobStateStore(fullId).load()) as JobState;
       } else {
         state = resolved;
       }
@@ -102,7 +102,8 @@ export class ResumeCommand extends CommandRunner {
           reason: "Process not running",
           patch: { pid: null },
         });
-        state = await updateJobState(state.jobId, () => recovered);
+        await new JobStateStore(state.jobId).persist(recovered);
+        state = recovered;
         process.stderr.write(
           `Warning: Job '${this.slug}' was running but the process is no longer alive. Recovering.\n`,
         );
@@ -181,7 +182,8 @@ export class ResumeCommand extends CommandRunner {
         reason: `Resuming from step '${startStep}'`,
         patch: { error: null, resumePoint: null, pid: process.pid },
       });
-      updatedState = await updateJobState(state.jobId, () => transitioned);
+      await new JobStateStore(state.jobId).persist(transitioned);
+      updatedState = transitioned;
     } catch (err) {
       process.stderr.write(`Error: Failed to update job state: ${(err as Error).message}\n`);
       throw new PrepareError(1, "Failed to update state");
