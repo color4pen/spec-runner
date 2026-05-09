@@ -43,12 +43,7 @@ export const PrCreateStep: CliStep = {
     await fs.mkdir(resultFileDir, { recursive: true });
 
     if (result.status === "created" || result.status === "existing-open") {
-      // Record PR info in state (mutation — StepExecutor will persist this)
-      state.pullRequest = {
-        url: result.url,
-        number: result.number,
-        createdAt: new Date().toISOString(),
-      };
+      const createdAt = new Date().toISOString();
 
       const content = [
         `# pr-create Result — ${slug}`,
@@ -59,6 +54,7 @@ export const PrCreateStep: CliStep = {
         "",
         `- **URL**: ${result.url}`,
         `- **Number**: ${result.number}`,
+        `- **CreatedAt**: ${createdAt}`,
         `- **Action**: ${result.status === "created" ? "created" : "existing-open (idempotent)"}`,
         "",
       ].join("\n");
@@ -92,7 +88,19 @@ export const PrCreateStep: CliStep = {
     const match = /^## Status: (success|failed)$/m.exec(content);
     const status = match?.[1];
     if (status === "success") {
-      return { verdict: "success" as const, findingsPath: null };
+      const urlMatch = /\*\*URL\*\*: (.+)$/m.exec(content);
+      const numberMatch = /\*\*Number\*\*: (\d+)$/m.exec(content);
+      const createdAtMatch = /\*\*CreatedAt\*\*: (.+)$/m.exec(content);
+      const url = urlMatch?.[1]?.trim();
+      const number = numberMatch?.[1] ? parseInt(numberMatch[1], 10) : undefined;
+      const createdAt = createdAtMatch?.[1]?.trim();
+      return {
+        verdict: "success" as const,
+        findingsPath: null,
+        ...(url && number && createdAt
+          ? { pullRequest: { url, number, createdAt } }
+          : {}),
+      };
     }
     if (status === "failed") {
       return { verdict: "error" as const, findingsPath: null };

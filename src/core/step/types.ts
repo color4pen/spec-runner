@@ -33,6 +33,11 @@ export interface ParsedStepResult {
    * D2: scores is optional; existing steps are unaffected.
    */
   scores?: ReviewScores & Pick<FindingSeverityCounts, "critical" | "high">;
+  /**
+   * PR info extracted by PrCreateStep. Other steps leave this undefined.
+   * StepExecutor.finalizeStep() reflects this into state.pullRequest when present.
+   */
+  pullRequest?: { url: string; number: number; createdAt: string };
 }
 
 // Re-export for convenience so consumers don't need to import from parser directly.

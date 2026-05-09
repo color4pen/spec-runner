@@ -229,8 +229,10 @@ export class StepExecutor {
     const store = this.getStore(state.jobId);
     const findingsPath = step.resultFilePath(state, deps);
     let verdict: Verdict | null = null;
+    let parsed: import("./types.js").ParsedStepResult | null = null;
     if (resultContent !== null) {
-      verdict = step.parseResult(resultContent, deps).verdict;
+      parsed = step.parseResult(resultContent, deps);
+      verdict = parsed.verdict;
     } else if ("completionVerdict" in step) {
       verdict = (step as { completionVerdict?: Verdict | null }).completionVerdict ?? null;
     }
@@ -263,6 +265,9 @@ export class StepExecutor {
     if ("setsBranch" in step && (step as { setsBranch?: boolean }).setsBranch === true && !state.branch) {
       const prefix = getBranchPrefix(deps.request.type);
       state = { ...state, branch: `${prefix}${deps.slug}-${state.jobId.slice(0, 8)}` };
+    }
+    if (parsed?.pullRequest) {
+      state = { ...state, pullRequest: parsed.pullRequest };
     }
     await store.persist(state);
     return state;

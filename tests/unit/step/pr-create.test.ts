@@ -6,11 +6,14 @@
  * TC-010: PrCreateStep.parseResult — success を verdict "success" にマップする
  * TC-011: PrCreateStep.parseResult — failed を verdict "error" にマップする
  * TC-012: PrCreateStep.parseResult — Status 行なしで verdict null を返す
- * TC-013: PrCreateStep.run — PR 作成成功時に pullRequest を JobState に記録する
+ * TC-013: PrCreateStep.run — PR 作成成功時に state.pullRequest を変更せず parseResult で返す
  * TC-014: PrCreateStep.run — 失敗時に pullRequest を変更しない
- * TC-015: PrCreateStep.run — 既存 OPEN PR 検出時に pullRequest を記録して success を返す
- * TC-016: pr-create-result.md — 成功時のファイル構造
+ * TC-015: PrCreateStep.run — 既存 OPEN PR 検出時に state.pullRequest を変更せず parseResult で返す
+ * TC-016: pr-create-result.md — 成功時のファイル構造（createdAt 含む）
  * TC-017: pr-create-result.md — 失敗時のファイル構造
+ * TC-018: PrCreateStep.parseResult — success 時に pullRequest を返す
+ * TC-019: PrCreateStep.parseResult — failed 時に pullRequest を返さない
+ * TC-020: PrCreateStep.parseResult — URL/Number/CreatedAt が欠落した場合に pullRequest を返さない
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
@@ -109,7 +112,7 @@ describe("TC-010: PrCreateStep.parseResult — success を verdict 'success' に
   it("returns verdict='success' for '## Status: success'", async () => {
     const { PrCreateStep } = await import("../../../src/core/step/pr-create.js");
     const deps = makeMinimalDeps();
-    const content = "# pr-create Result\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/owner/repo/pull/42\n";
+    const content = "# pr-create Result\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/owner/repo/pull/42\n- **Number**: 42\n- **CreatedAt**: 2026-01-01T00:00:00.000Z\n";
     const result = PrCreateStep.parseResult(content, deps);
     expect(result.verdict).toBe("success");
   });
@@ -137,9 +140,9 @@ describe("TC-012: PrCreateStep.parseResult — Status 行なしで verdict null 
   });
 });
 
-// TC-013: PrCreateStep.run — PR 作成成功時に pullRequest を JobState に記録する
-describe("TC-013: PrCreateStep.run — PR 作成成功時に pullRequest を JobState に記録する", () => {
-  it("sets state.pullRequest with url, number, and ISO createdAt", async () => {
+// TC-013: PrCreateStep.run — PR 作成成功時に state.pullRequest を変更せず、parseResult で返す
+describe("TC-013: PrCreateStep.run — PR 作成成功時に state.pullRequest を変更しない", () => {
+  it("does NOT mutate state.pullRequest after run() (mutation removed)", async () => {
     const { PrCreateStep } = await import("../../../src/core/step/pr-create.js");
     const { runPrCreate } = await import("../../../src/core/pr-create/runner.js");
     vi.mocked(runPrCreate).mockResolvedValue({
@@ -151,15 +154,37 @@ describe("TC-013: PrCreateStep.run — PR 作成成功時に pullRequest を Job
     const state = makeMinimalState();
     const deps = makeMinimalDeps("pr-create-step");
 
-    // Create the directory structure
     await fs.mkdir(path.join(tempDir, "openspec", "changes", "pr-create-step"), { recursive: true });
 
     await PrCreateStep.run(state, deps);
 
-    expect(state.pullRequest).toBeDefined();
-    expect(state.pullRequest?.url).toBe("https://github.com/owner/repo/pull/42");
-    expect(state.pullRequest?.number).toBe(42);
-    expect(state.pullRequest?.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    // state.pullRequest must NOT be set by run() — mutation is gone
+    expect(state.pullRequest).toBeUndefined();
+  });
+
+  it("parseResult extracts pullRequest from the result file written by run()", async () => {
+    const { PrCreateStep } = await import("../../../src/core/step/pr-create.js");
+    const { runPrCreate } = await import("../../../src/core/pr-create/runner.js");
+    vi.mocked(runPrCreate).mockResolvedValue({
+      status: "created",
+      url: "https://github.com/owner/repo/pull/42",
+      number: 42,
+    });
+
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps("pr-create-step");
+
+    await fs.mkdir(path.join(tempDir, "openspec", "changes", "pr-create-step"), { recursive: true });
+    await PrCreateStep.run(state, deps);
+
+    const resultPath = path.join(tempDir, "openspec", "changes", "pr-create-step", "pr-create-result.md");
+    const content = await fs.readFile(resultPath, "utf-8");
+    const parsed = PrCreateStep.parseResult(content, deps);
+
+    expect(parsed.pullRequest).toBeDefined();
+    expect(parsed.pullRequest?.url).toBe("https://github.com/owner/repo/pull/42");
+    expect(parsed.pullRequest?.number).toBe(42);
+    expect(parsed.pullRequest?.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   it("result file contains ## Status: success and PR URL", async () => {
@@ -228,9 +253,9 @@ describe("TC-014: PrCreateStep.run — 失敗時に pullRequest を変更しな�
   });
 });
 
-// TC-015: PrCreateStep.run — 既存 OPEN PR 検出時に pullRequest を記録して success を返す
-describe("TC-015: PrCreateStep.run — 既存 OPEN PR 検出時に pullRequest を記録して success を返す", () => {
-  it("sets state.pullRequest and writes success result file for existing-open", async () => {
+// TC-015: PrCreateStep.run — 既存 OPEN PR 検出時に state.pullRequest を変更せず parseResult で返す
+describe("TC-015: PrCreateStep.run — 既存 OPEN PR 検出時に state.pullRequest を変更しない", () => {
+  it("does NOT mutate state.pullRequest for existing-open (mutation removed)", async () => {
     const { PrCreateStep } = await import("../../../src/core/step/pr-create.js");
     const { runPrCreate } = await import("../../../src/core/pr-create/runner.js");
     vi.mocked(runPrCreate).mockResolvedValue({
@@ -245,11 +270,180 @@ describe("TC-015: PrCreateStep.run — 既存 OPEN PR 検出時に pullRequest �
     await fs.mkdir(path.join(tempDir, "openspec", "changes", "pr-create-step"), { recursive: true });
     await PrCreateStep.run(state, deps);
 
-    expect(state.pullRequest?.url).toBe("https://github.com/owner/repo/pull/12");
-    expect(state.pullRequest?.number).toBe(12);
+    // state.pullRequest must NOT be set by run() — mutation is gone
+    expect(state.pullRequest).toBeUndefined();
+  });
+
+  it("parseResult extracts pullRequest for existing-open from the result file", async () => {
+    const { PrCreateStep } = await import("../../../src/core/step/pr-create.js");
+    const { runPrCreate } = await import("../../../src/core/pr-create/runner.js");
+    vi.mocked(runPrCreate).mockResolvedValue({
+      status: "existing-open",
+      url: "https://github.com/owner/repo/pull/12",
+      number: 12,
+    });
+
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps("pr-create-step");
+
+    await fs.mkdir(path.join(tempDir, "openspec", "changes", "pr-create-step"), { recursive: true });
+    await PrCreateStep.run(state, deps);
+
+    const resultPath = path.join(tempDir, "openspec", "changes", "pr-create-step", "pr-create-result.md");
+    const content = await fs.readFile(resultPath, "utf-8");
+    const parsed = PrCreateStep.parseResult(content, deps);
+
+    expect(parsed.pullRequest?.url).toBe("https://github.com/owner/repo/pull/12");
+    expect(parsed.pullRequest?.number).toBe(12);
+
+    expect(content).toContain("## Status: success");
+  });
+});
+
+// TC-016: pr-create-result.md — 成功時のファイル構造（createdAt 含む）
+describe("TC-016: pr-create-result.md — 成功時のファイル構造", () => {
+  it("result file includes CreatedAt line", async () => {
+    const { PrCreateStep } = await import("../../../src/core/step/pr-create.js");
+    const { runPrCreate } = await import("../../../src/core/pr-create/runner.js");
+    vi.mocked(runPrCreate).mockResolvedValue({
+      status: "created",
+      url: "https://github.com/owner/repo/pull/99",
+      number: 99,
+    });
+
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps("pr-create-step");
+
+    await fs.mkdir(path.join(tempDir, "openspec", "changes", "pr-create-step"), { recursive: true });
+    await PrCreateStep.run(state, deps);
 
     const resultPath = path.join(tempDir, "openspec", "changes", "pr-create-step", "pr-create-result.md");
     const content = await fs.readFile(resultPath, "utf-8");
     expect(content).toContain("## Status: success");
+    expect(content).toContain("**URL**:");
+    expect(content).toContain("**Number**:");
+    expect(content).toContain("**CreatedAt**:");
+    expect(content).toContain("**Action**:");
+  });
+});
+
+// TC-017: pr-create-result.md — 失敗時のファイル構造
+describe("TC-017: pr-create-result.md — 失敗時のファイル構造", () => {
+  it("result file for failure has Status: failed section", async () => {
+    const { PrCreateStep } = await import("../../../src/core/step/pr-create.js");
+    const { runPrCreate } = await import("../../../src/core/pr-create/runner.js");
+    vi.mocked(runPrCreate).mockResolvedValue({
+      status: "error",
+      reason: "gh-failure",
+      message: "timeout",
+    });
+
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps("pr-create-step");
+
+    await fs.mkdir(path.join(tempDir, "openspec", "changes", "pr-create-step"), { recursive: true });
+    await PrCreateStep.run(state, deps);
+
+    const resultPath = path.join(tempDir, "openspec", "changes", "pr-create-step", "pr-create-result.md");
+    const content = await fs.readFile(resultPath, "utf-8");
+    expect(content).toContain("## Status: failed");
+    expect(content).toContain("gh-failure");
+    expect(content).toContain("timeout");
+  });
+});
+
+// TC-018: PrCreateStep.parseResult — success 時に pullRequest を返す
+describe("TC-018: PrCreateStep.parseResult — success 時に pullRequest を返す", () => {
+  it("returns pullRequest with url, number, createdAt on success", async () => {
+    const { PrCreateStep } = await import("../../../src/core/step/pr-create.js");
+    const deps = makeMinimalDeps();
+    const content = [
+      "# pr-create Result — my-change",
+      "",
+      "## Status: success",
+      "",
+      "## PR",
+      "",
+      "- **URL**: https://github.com/owner/repo/pull/77",
+      "- **Number**: 77",
+      "- **CreatedAt**: 2026-05-09T12:00:00.000Z",
+      "- **Action**: created",
+      "",
+    ].join("\n");
+
+    const result = PrCreateStep.parseResult(content, deps);
+    expect(result.verdict).toBe("success");
+    expect(result.pullRequest).toBeDefined();
+    expect(result.pullRequest?.url).toBe("https://github.com/owner/repo/pull/77");
+    expect(result.pullRequest?.number).toBe(77);
+    expect(result.pullRequest?.createdAt).toBe("2026-05-09T12:00:00.000Z");
+  });
+});
+
+// TC-019: PrCreateStep.parseResult — failed 時に pullRequest を返さない
+describe("TC-019: PrCreateStep.parseResult — failed 時に pullRequest を返さない", () => {
+  it("returns no pullRequest on failed status", async () => {
+    const { PrCreateStep } = await import("../../../src/core/step/pr-create.js");
+    const deps = makeMinimalDeps();
+    const content = [
+      "# pr-create Result — my-change",
+      "",
+      "## Status: failed",
+      "",
+      "## Detail",
+      "",
+      "- **Reason**: gh-failure",
+      "- **Message**: auth expired",
+      "",
+    ].join("\n");
+
+    const result = PrCreateStep.parseResult(content, deps);
+    expect(result.verdict).toBe("error");
+    expect(result.pullRequest).toBeUndefined();
+  });
+});
+
+// TC-020: PrCreateStep.parseResult — URL/Number/CreatedAt が欠落した場合に pullRequest を返さない
+describe("TC-020: PrCreateStep.parseResult — フィールド欠落時に pullRequest を返さない (defensive parsing)", () => {
+  it("returns no pullRequest when URL is missing", async () => {
+    const { PrCreateStep } = await import("../../../src/core/step/pr-create.js");
+    const deps = makeMinimalDeps();
+    const content = [
+      "## Status: success",
+      "",
+      "- **Number**: 42",
+      "- **CreatedAt**: 2026-05-09T12:00:00.000Z",
+    ].join("\n");
+    const result = PrCreateStep.parseResult(content, deps);
+    expect(result.verdict).toBe("success");
+    expect(result.pullRequest).toBeUndefined();
+  });
+
+  it("returns no pullRequest when Number is missing", async () => {
+    const { PrCreateStep } = await import("../../../src/core/step/pr-create.js");
+    const deps = makeMinimalDeps();
+    const content = [
+      "## Status: success",
+      "",
+      "- **URL**: https://github.com/owner/repo/pull/42",
+      "- **CreatedAt**: 2026-05-09T12:00:00.000Z",
+    ].join("\n");
+    const result = PrCreateStep.parseResult(content, deps);
+    expect(result.verdict).toBe("success");
+    expect(result.pullRequest).toBeUndefined();
+  });
+
+  it("returns no pullRequest when CreatedAt is missing", async () => {
+    const { PrCreateStep } = await import("../../../src/core/step/pr-create.js");
+    const deps = makeMinimalDeps();
+    const content = [
+      "## Status: success",
+      "",
+      "- **URL**: https://github.com/owner/repo/pull/42",
+      "- **Number**: 42",
+    ].join("\n");
+    const result = PrCreateStep.parseResult(content, deps);
+    expect(result.verdict).toBe("success");
+    expect(result.pullRequest).toBeUndefined();
   });
 });
