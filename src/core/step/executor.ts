@@ -13,6 +13,7 @@ import {
 } from "./executor-helpers.js";
 import type { ErrorInfo } from "../../state/schema.js";
 import { getBranchPrefix } from "../../config/type-config.js";
+import { transitionJob } from "../../state/lifecycle.js";
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -135,12 +136,15 @@ export class StepExecutor {
         hint: (err as Error & { hint?: string }).hint ?? "",
       };
       state = recordFailedStepResult(state, step.name, errorInfo, { completedAt });
-      state = {
-        ...state,
-        status: "awaiting-resume" as const,
-        resumePoint: { step: step.name as import("../../state/schema.js").StepName, reason: "timeout", iterationsExhausted: 0 },
-        error: errorInfo,
-      };
+      const { state: timeoutState } = transitionJob(state, "awaiting-resume", {
+        trigger: "executor",
+        reason: "timeout",
+        patch: {
+          resumePoint: { step: step.name as import("../../state/schema.js").StepName, reason: "timeout", iterationsExhausted: 0 },
+          error: errorInfo,
+        },
+      });
+      state = timeoutState;
       state = await store.appendHistory(state, {
         ts: new Date().toISOString(),
         step: `${step.name}-timeout`,

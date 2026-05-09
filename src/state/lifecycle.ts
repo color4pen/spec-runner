@@ -37,7 +37,7 @@ export const VALID_TRANSITIONS: ReadonlyMap<JobStatus, ReadonlySet<JobStatus>> =
   ["running",         new Set(["awaiting-resume", "awaiting-merge", "failed", "terminated"])],
   ["awaiting-resume", new Set(["running", "canceled"])],
   ["awaiting-merge",  new Set(["archived"])],
-  ["failed",          new Set(["running", "canceled"])],
+  ["failed",          new Set(["running", "canceled", "awaiting-resume"])],
   ["terminated",      new Set(["running", "canceled"])],
   ["archived",        new Set()],
   ["canceled",        new Set()],

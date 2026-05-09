@@ -2,11 +2,13 @@ import type { Step } from "../step/types.js";
 import type { Transition } from "./types.js";
 import { LOOP_ERROR_CODES } from "./types.js";
 import type { JobState, Verdict, StepRun, StepName } from "../../state/schema.js";
+import { appendHistoryEntry } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import { StepExecutor } from "../step/executor.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { JobStateStore } from "../../store/job-state-store.js";
+import { transitionJob } from "../../state/lifecycle.js";
 import { stdoutWrite } from "../../logger/stdout.js";
 
 /** Error codes that indicate truly fatal pipeline failures (not resumable). */
@@ -84,22 +86,24 @@ export class Pipeline {
       // transition to awaiting-resume so the job is resumable (not stuck).
       if (finalState.status === "running") {
         const store = new JobStateStore(finalState.jobId);
-        finalState = {
-          ...finalState,
-          status: "awaiting-resume",
-          pid: null,
-          resumePoint: {
-            step: (finalState.step ?? "propose") as StepName,
-            reason: (err as Error).message ?? String(err),
-            iterationsExhausted: 0,
+        const { state: resumeState } = transitionJob(finalState, "awaiting-resume", {
+          trigger: "pipeline",
+          reason: (err as Error).message ?? String(err),
+          patch: {
+            pid: null,
+            resumePoint: {
+              step: (finalState.step ?? "propose") as StepName,
+              reason: (err as Error).message ?? String(err),
+              iterationsExhausted: 0,
+            },
+            error: {
+              code: "PIPELINE_UNHANDLED_ERROR",
+              message: (err as Error).message ?? String(err),
+              hint: "",
+            },
           },
-          error: {
-            code: "PIPELINE_UNHANDLED_ERROR",
-            message: (err as Error).message ?? String(err),
-            hint: "",
-          },
-          updatedAt: new Date().toISOString(),
-        };
+        });
+        finalState = resumeState;
         await store.persist(finalState);
       }
 
@@ -156,19 +160,12 @@ export class Pipeline {
         }
 
         // Append history: loop iteration started
-        state = {
-          ...state,
-          history: [
-            ...state.history,
-            {
-              ts: new Date().toISOString(),
-              step: currentStep,
-              status: "started" as const,
-              message: `${currentStep} iteration ${loopIters.get(currentStep)} started`,
-            },
-          ],
-          updatedAt: new Date().toISOString(),
-        };
+        state = appendHistoryEntry(state, {
+          ts: new Date().toISOString(),
+          step: currentStep,
+          status: "started" as const,
+          message: `${currentStep} iteration ${loopIters.get(currentStep)} started`,
+        });
       }
 
       // --- Execute the step ---
@@ -209,19 +206,12 @@ export class Pipeline {
             ? ("error" as const)
             : ("warning" as const);
 
-        state = {
-          ...state,
-          history: [
-            ...state.history,
-            {
-              ts: new Date().toISOString(),
-              step: currentStep,
-              status: historyStatus,
-              message: `${currentStep} iteration ${loopIter} completed with verdict: ${verdict}`,
-            },
-          ],
-          updatedAt: new Date().toISOString(),
-        };
+        state = appendHistoryEntry(state, {
+          ts: new Date().toISOString(),
+          step: currentStep,
+          status: historyStatus,
+          message: `${currentStep} iteration ${loopIter} completed with verdict: ${verdict}`,
+        });
       }
 
       // --- Look up next step from transition table ---
@@ -252,23 +242,29 @@ export class Pipeline {
 
         // Normal completion → awaiting-merge
         if (nextStep === "end" && state.status === "running") {
-          state = { ...state, status: "awaiting-merge", updatedAt: new Date().toISOString() };
+          const { state: mergeState } = transitionJob(state, "awaiting-merge", {
+            trigger: "pipeline",
+            reason: "pipeline complete",
+          });
+          state = mergeState;
           const endStore = new JobStateStore(state.jobId);
           await endStore.persist(state);
         }
 
         // Escalation → awaiting-resume (unless fatal error)
         if (nextStep === "escalate" && (state.status !== "failed" || !FATAL_ERROR_CODES.has(state.error?.code ?? ""))) {
-          state = {
-            ...state,
-            status: "awaiting-resume",
-            resumePoint: {
-              step: currentStep as StepName,
-              reason: state.error?.message ?? `${currentStep} escalated`,
-              iterationsExhausted: loopIters.get(currentStep) ?? 0,
+          const { state: escalateState } = transitionJob(state, "awaiting-resume", {
+            trigger: "pipeline",
+            reason: state.error?.message ?? `${currentStep} escalated`,
+            patch: {
+              resumePoint: {
+                step: currentStep as StepName,
+                reason: state.error?.message ?? `${currentStep} escalated`,
+                iterationsExhausted: loopIters.get(currentStep) ?? 0,
+              },
             },
-            updatedAt: new Date().toISOString(),
-          };
+          });
+          state = escalateState;
           const escalateStore = new JobStateStore(state.jobId);
           await escalateStore.persist(state);
         }
@@ -391,24 +387,25 @@ export class Pipeline {
       hint: (_nnn: string) => `Review the ${exhaustedLoopName} results and fix manually.`,
     };
 
-    const updated: JobState = {
-      ...state,
-      steps: updatedSteps,
-      status: "awaiting-resume",
-      resumePoint: {
-        step: exhaustedLoopName as StepName,
-        reason: errorShape.message(this.maxIterations),
-        iterationsExhausted: this.maxIterations,
+    const stateWithSteps = { ...state, steps: updatedSteps };
+    const { state: exhaustedState } = transitionJob(stateWithSteps, "awaiting-resume", {
+      trigger: "pipeline",
+      reason: errorShape.message(this.maxIterations),
+      patch: {
+        resumePoint: {
+          step: exhaustedLoopName as StepName,
+          reason: errorShape.message(this.maxIterations),
+          iterationsExhausted: this.maxIterations,
+        },
+        error: {
+          code: errorShape.code,
+          message: errorShape.message(this.maxIterations),
+          hint: errorShape.hint(nnn),
+        },
       },
-      error: {
-        code: errorShape.code,
-        message: errorShape.message(this.maxIterations),
-        hint: errorShape.hint(nnn),
-      },
-      updatedAt: new Date().toISOString(),
-    };
-    const exhaustedStore = new JobStateStore(updated.jobId);
-    await exhaustedStore.persist(updated);
-    return updated;
+    });
+    const exhaustedStore = new JobStateStore(exhaustedState.jobId);
+    await exhaustedStore.persist(exhaustedState);
+    return exhaustedState;
   }
 }
