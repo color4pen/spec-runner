@@ -27,7 +27,7 @@ import { spawnOrEscalate } from "./spawn-helper.js";
 import { archiveOpenspec } from "./archive-openspec.js";
 import { moveRequestsDir } from "./move-requests-dir.js";
 import { assertJobFinishable, markJobArchived } from "./job-state-update.js";
-import { isFullyFinished } from "./idempotency.js";
+import { TERMINAL_STATUSES } from "../../state/lifecycle.js";
 import { formatEscalation } from "./escalation.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import { createWorktreeManager } from "../worktree/manager.js";
@@ -78,9 +78,9 @@ export async function runFinishOrchestrator(
     return { exitCode: 2, message };
   }
 
-  // TC-126: Already archived → no-op
-  if (isFullyFinished(state)) {
-    stdoutWrite("Already archived.");
+  // TC-126: Already finished (archived or canceled) → no-op
+  if (TERMINAL_STATUSES.has(state.status)) {
+    stdoutWrite(`Already finished (${state.status}).`);
     return { exitCode: 0 };
   }
 

@@ -236,7 +236,7 @@ describe("TC-126: state.status=archived → Already archived, no-op", () => {
     );
 
     expect(result.exitCode).toBe(0);
-    expect(messages.some((m) => m.toLowerCase().includes("already archived"))).toBe(true);
+    expect(messages.some((m) => m.toLowerCase().includes("already finished"))).toBe(true);
     // No destructive ops
     const calls = (spawn as ReturnType<typeof vi.fn>).mock.calls as [string, string[]][];
     const destructiveCalls = calls.filter(([cmd, args]) =>

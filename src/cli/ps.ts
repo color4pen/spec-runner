@@ -1,12 +1,7 @@
 import { listJobStates } from "../state/store.js";
 import type { JobState, JobStatus } from "../state/schema.js";
 import { getJobSlug } from "../state/job-slug.js";
-
-/**
- * Active statuses — excludes terminal/archived statuses.
- * When adding new statuses to JobStatus, update this set accordingly.
- */
-const ACTIVE_STATUSES: Set<JobStatus> = new Set(["running", "awaiting-resume"]);
+import { ACTIVE_STATUSES } from "../state/lifecycle.js";
 
 /**
  * Format a job age in human-readable form.
