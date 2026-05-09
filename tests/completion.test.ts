@@ -11,7 +11,7 @@ import {
   isStatusIdleEvent,
   isEndTurnIdle,
   isStatusTerminatedEvent,
-} from "../src/sdk/sessions.js";
+} from "../src/adapter/managed-agent/sdk/sessions.js";
 import type {
   BetaManagedAgentsStreamSessionEvents,
   BetaManagedAgentsSessionStatusIdleEvent,

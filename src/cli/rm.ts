@@ -8,7 +8,7 @@
  *   specrunner rm --all-terminated [--yes]
  */
 import { loadConfig } from "../config/store.js";
-import { createAnthropicClient } from "../sdk/client.js";
+import { createAnthropicClient } from "../adapter/managed-agent/client.js";
 import { removeSingleJob, removeAllTerminated } from "../core/rm/runner.js";
 import { SpecRunnerError } from "../errors.js";
 

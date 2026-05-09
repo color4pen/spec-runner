@@ -1,5 +1,5 @@
-import { createAnthropicClient } from "../sdk/client.js";
-import { createEnvironment, retrieveEnvironment } from "../sdk/environments.js";
+import { createAnthropicClient } from "../adapter/managed-agent/client.js";
+import { createEnvironment, retrieveEnvironment } from "../adapter/managed-agent/environments.js";
 import { loadConfig, saveConfig } from "../config/store.js";
 import { AgentRegistry, AgentSyncer } from "../core/agent/index.js";
 import type { SyncRoleResult } from "../core/agent/syncer.js";

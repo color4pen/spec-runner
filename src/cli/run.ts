@@ -1,5 +1,7 @@
 import * as path from "node:path";
 import { createGitHubClient } from "../adapter/github/github-client.js";
+import { createAnthropicClient } from "../adapter/managed-agent/client.js";
+import { createAnthropicSessionClient } from "../adapter/managed-agent/session-client.js";
 import { runPreflight } from "../core/preflight.js";
 import { setVerbose } from "../logger/stdout.js";
 import { SpecRunnerError } from "../errors.js";
@@ -29,7 +31,11 @@ export async function runRunCore(
 
   const { config, repo } = preflightResult;
   const githubClient = createGitHubClient(fetch, config.github?.accessToken ?? "");
-  const runtime = createRuntime(config, cwd, githubClient, repo);
+  const sessionClient =
+    config.runtime !== "local" && config.anthropic?.apiKey
+      ? createAnthropicSessionClient(createAnthropicClient(config.anthropic.apiKey))
+      : undefined;
+  const runtime = createRuntime(config, cwd, githubClient, repo, sessionClient);
   try {
     return await new PipelineRunCommand(runtime, absolutePath, preflightResult, options).execute();
   } catch (err) {

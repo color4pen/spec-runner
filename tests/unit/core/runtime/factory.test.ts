@@ -9,14 +9,14 @@ import { describe, it, expect, vi } from "vitest";
 import { LocalRuntime } from "../../../../src/core/runtime/local.js";
 import { ManagedRuntime } from "../../../../src/core/runtime/managed.js";
 
-// Mock external dependencies that would create real API clients
-vi.mock("../../../../src/sdk/client.js", () => ({
-  createAnthropicClient: vi.fn().mockReturnValue({}),
-}));
-
-vi.mock("../../../../src/adapter/managed-agent/session-client.js", () => ({
-  createAnthropicSessionClient: vi.fn().mockReturnValue({}),
-}));
+function buildMockSessionClient() {
+  return {
+    createSession: vi.fn(),
+    sendUserMessage: vi.fn(),
+    pollUntilComplete: vi.fn(),
+    streamEvents: vi.fn(),
+  };
+}
 
 function buildLocalConfig() {
   return {
@@ -59,7 +59,8 @@ describe("TC-RT-002: createRuntime returns ManagedRuntime when runtime !== 'loca
     const { createRuntime } = await import("../../../../src/core/runtime/factory.js");
     const githubClient = buildMockGithubClient();
     const config = { ...buildManagedConfig(), runtime: "managed" as const };
-    const runtime = createRuntime(config, "/repo", githubClient, repo);
+    const sessionClient = buildMockSessionClient();
+    const runtime = createRuntime(config, "/repo", githubClient, repo, sessionClient);
     expect(runtime).toBeInstanceOf(ManagedRuntime);
   });
 });
@@ -70,7 +71,8 @@ describe("TC-RT-003: createRuntime defaults to ManagedRuntime when runtime is un
     const { createRuntime } = await import("../../../../src/core/runtime/factory.js");
     const githubClient = buildMockGithubClient();
     const config = buildManagedConfig(); // no runtime field
-    const runtime = createRuntime(config, "/repo", githubClient, repo);
+    const sessionClient = buildMockSessionClient();
+    const runtime = createRuntime(config, "/repo", githubClient, repo, sessionClient);
     expect(runtime).toBeInstanceOf(ManagedRuntime);
   });
 });

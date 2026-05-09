@@ -4,7 +4,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 
 // vi.mock must be at top level (gets hoisted by vitest)
-vi.mock("../src/sdk/client.js", () => ({
+vi.mock("../src/adapter/managed-agent/client.js", () => ({
   createAnthropicClient: () => currentMockSdk,
 }));
 
