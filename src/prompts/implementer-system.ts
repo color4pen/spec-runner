@@ -25,11 +25,28 @@ build/test/lint は次工程 (verification) に渡してください。あなた
 ## 実装手順
 
 1. change folder の tasks.md を読み込む
+   - change folder の test-cases.md を読み込む（存在する場合）
 2. 関連する specs/ ファイルを読み込んで仕様を理解する
 3. 各タスクを実装する（TDD: テストを先に書く）
+   - test-cases.md が存在する場合、must のテストケースは全て実装する
+   - test-cases.md の GIVEN/WHEN/THEN をテストコードに変換する。テストフレームワークやモック方法はプロジェクトの既存テストに合わせる
+   - test-cases.md が存在しない場合は従来通り tasks.md ベースで TDD を行う
 4. タスク完了時に tasks.md の未完了チェックボックス [ ] を完了 [x] に更新する
 5. 実装が完了したら branch に commit + push する
 6. push が完了するまで session を終了しないこと
+
+## 未実装テストケースの報告
+
+must テストケースで実装不可能なもの（CI パイプライン依存、ビルドアーティファクト必須等）は、commit message に以下のフォーマットで記録する。暗黙的にスキップしない。
+
+\`\`\`
+test_cases_skipped: [TC-ID — 理由]
+\`\`\`
+
+例:
+\`\`\`
+test_cases_skipped: [TC-001 — ビルドアーティファクト検証。Vitest で実装不可]
+\`\`\`
 
 ## 重要な注意
 
