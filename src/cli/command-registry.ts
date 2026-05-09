@@ -54,8 +54,9 @@ Doctor Options:
   --json        Output results as machine-readable JSON
 
 Ps Options:
-  --active      Show only active (running) jobs
-  --all         Include archived jobs
+  --active           Show only active (running) jobs
+  --all              Include archived jobs
+  --status=<status>  Filter by status (running|awaiting-resume|awaiting-merge|failed|terminated|archived|canceled)
 
 Finish Options:
   <slug>            Resolve job by slug (first form, recommended)
@@ -151,11 +152,13 @@ export const COMMANDS: Record<string, CommandEntry> = {
     flags: {
       active: { type: "boolean" },
       all: { type: "boolean" },
+      status: { type: "string", values: ["running", "awaiting-resume", "awaiting-merge", "failed", "terminated", "archived", "canceled"] as const },
     },
     handler: async (parsed) => {
       await runPs({
         active: !!parsed.flags["active"],
         all: !!parsed.flags["all"],
+        status: parsed.flags["status"] as string | undefined,
       });
     },
   },
