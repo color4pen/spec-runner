@@ -7,6 +7,10 @@
  * TC-004: STANDARD_TRANSITIONS has spec-review:approved → test-case-gen
  * TC-005: STANDARD_TRANSITIONS has test-case-gen:success → implementer
  * TC-006: STANDARD_TRANSITIONS has test-case-gen:error → escalate
+ * TC-007: TEST_CASE_GEN_SYSTEM_PROMPT contains required section keywords
+ * TC-008: buildMessage includes <must-areas> when enabled is non-empty
+ * TC-009: buildMessage omits <must-areas> when enabled is empty
+ * TC-010: buildMessage includes proposal.md read instruction
  */
 import { describe, it, expect } from "vitest";
 import { TestCaseGenStep } from "../src/core/step/test-case-gen.js";
@@ -196,5 +200,80 @@ describe("TC-006: STANDARD_TRANSITIONS に test-case-gen:error → escalate が�
       (t) => t.step === "test-case-gen" && t.on === "error" && t.to === "escalate",
     );
     expect(found).toBeDefined();
+  });
+});
+
+// TC-007: TEST_CASE_GEN_SYSTEM_PROMPT に必須セクションキーワードが含まれる
+describe("TC-007: TEST_CASE_GEN_SYSTEM_PROMPT 内容検証", () => {
+  it("Category キーワードが含まれる", () => {
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("Category");
+  });
+
+  it("Source キーワードが含まれる", () => {
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("Source");
+  });
+
+  it("Summary キーワードが含まれる", () => {
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("Summary");
+  });
+
+  it("blocked_reasons キーワードが含まれる", () => {
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("blocked_reasons");
+  });
+
+  it("must-areas キーワードが含まれる", () => {
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("must-areas");
+  });
+
+  it("Result キーワードが含まれる", () => {
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("Result");
+  });
+});
+
+// TC-008: buildMessage — enabled 非空時に <must-areas> が含まれる
+describe("TC-008: buildMessage — enabled 非空時に <must-areas> が含まれる", () => {
+  it("enabled: ['security'] の場合 <must-areas> セクションが含まれる", () => {
+    const state = makeMinimalState({ branch: "feat/my-change" });
+    const deps = makeMinimalDeps("my-change");
+    deps.request.enabled = ["security"];
+    const message = TestCaseGenStep.buildMessage(state, deps);
+
+    expect(message).toContain("<must-areas>");
+    expect(message).toContain("security");
+    expect(message).toContain("</must-areas>");
+  });
+
+  it("複数 enabled の場合 <must-areas> にカンマ区切りで含まれる", () => {
+    const state = makeMinimalState({ branch: "feat/my-change" });
+    const deps = makeMinimalDeps("my-change");
+    deps.request.enabled = ["security", "performance"];
+    const message = TestCaseGenStep.buildMessage(state, deps);
+
+    expect(message).toContain("<must-areas>");
+    expect(message).toContain("security, performance");
+    expect(message).toContain("</must-areas>");
+  });
+});
+
+// TC-009: buildMessage — enabled 空配列時に <must-areas> が含まれない
+describe("TC-009: buildMessage — enabled 空配列時に <must-areas> が含まれない", () => {
+  it("enabled: [] の場合 <must-areas> セクションが含まれない", () => {
+    const state = makeMinimalState({ branch: "feat/my-change" });
+    const deps = makeMinimalDeps("my-change");
+    const message = TestCaseGenStep.buildMessage(state, deps);
+
+    expect(message).not.toContain("<must-areas>");
+    expect(message).not.toContain("</must-areas>");
+  });
+});
+
+// TC-010: buildMessage に proposal.md 読み取り指示が含まれる
+describe("TC-010: buildMessage — proposal.md 読み取り指示が含まれる", () => {
+  it("message に proposal.md が含まれる", () => {
+    const state = makeMinimalState({ branch: "feat/my-change" });
+    const deps = makeMinimalDeps("my-change");
+    const message = TestCaseGenStep.buildMessage(state, deps);
+
+    expect(message).toContain("proposal.md");
   });
 });

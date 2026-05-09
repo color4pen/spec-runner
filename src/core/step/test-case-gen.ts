@@ -60,6 +60,7 @@ export const TestCaseGenStep: AgentStep = {
       slug: deps.slug,
       branch: state.branch,
       requestContent: deps.request.content,
+      enabled: deps.request.enabled,
     });
   },
 
