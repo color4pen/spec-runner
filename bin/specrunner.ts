@@ -1,83 +1,13 @@
 #!/usr/bin/env node
 /**
  * specrunner CLI entrypoint.
- * Dispatches to init / login / run / ps subcommands.
+ * Registry-based dispatch — no switch/case.
  */
 
-import { runInit } from "../src/cli/init.js";
-import { runLogin } from "../src/cli/login.js";
-import { runRun } from "../src/cli/run.js";
-import { runPs } from "../src/cli/ps.js";
-import { runDoctor } from "../src/cli/doctor.js";
-import { runFinish } from "../src/cli/finish.js";
-import { runRm } from "../src/cli/rm.js";
-import { runResume } from "../src/cli/resume.js";
-import { executeTemplate, executeValidate } from "../src/core/command/request.js";
+import { COMMANDS, USAGE, FINISH_USAGE } from "../src/cli/command-registry.js";
+import { parseFlags, FlagParseError } from "../src/cli/flag-parser.js";
 
-const USAGE = `Usage: specrunner <command> [options]
-
-Commands:
-  init                   Create or update Anthropic Agent and Environment
-  login                  Authenticate with GitHub via Device Flow
-  run <req.md> [--verbose]  Run propose pipeline for a request
-  request template [--type <type>]  Print a scaffold request.md template to stdout
-  request validate <file>           Validate a request.md file
-  ps                     List all jobs
-  doctor                 Diagnose environment / config / auth prerequisites
-  finish [<slug>]        Squash-merge feature PR and archive (1-PR model)
-  rm <jobId>             Remove a job (state file + cloud session)
-  resume <slug>          Resume a halted (awaiting-resume) job
-
-Options:
-  --help, -h    Show this help message
-
-Request Options:
-  template [--type <type>]  Request type (default: new-feature)
-  validate <file>           Path to request.md file to validate
-
-Doctor Options:
-  --json        Output results as machine-readable JSON
-
-Ps Options:
-  --active      Show only active (running) jobs
-  --all         Include archived jobs
-
-Finish Options:
-  <slug>            Resolve job by slug (first form, recommended)
-  --pr=<num>        Reverse-lookup slug via gh pr view <num>
-  --job=<jobId>     Direct job ID lookup (forensics / debug only)
-  --dry-run         Phase 0 pre-flight only, no destructive ops
-  --force           Force merge even with failing checks (--admin)
-
-Rm Options:
-  --force           Remove job regardless of status (bypass status gate)
-  --all-terminated  Remove all failed/terminated/archived jobs
-  --yes             Skip confirmation prompt (for --all-terminated)
-
-Resume Options:
-  <slug>            Slug of the job to resume (required)
-  --from=<role>     Override resume step: critic | fixer | creator
-  --force           Resume even if consecutive escalations detected or status is not awaiting-resume
-  --verbose         Enable verbose output
-`;
-
-export { USAGE };
-
-const FINISH_USAGE = `Usage: specrunner finish [<slug>] [options]
-
-Squash-merge feature PR and archive the completed job (1-PR model).
-
-Arguments:
-  <slug>            Slug of the request to finish (recommended first form).
-                    If omitted, auto-detects from awaiting-merge/ directory.
-
-Options:
-  --pr=<num>        Reverse-lookup slug via PR number (gh pr view)
-  --job=<jobId>     Direct job ID lookup (forensics / debug only)
-  --dry-run         Phase 0 pre-flight only — no commits, pushes, or merges
-  --force           Force merge even with failing checks (uses --admin)
-  --help, -h        Show this help message
-`;
+export { USAGE, FINISH_USAGE };
 
 export async function main(): Promise<void> {
   const args = process.argv.slice(2);
@@ -93,238 +23,54 @@ export async function main(): Promise<void> {
     process.exit(2);
   }
 
-  switch (command) {
-    case "init": {
-      const apiKeyFlag = args.find((a) => a.startsWith("--api-key="));
-      const apiKey = apiKeyFlag ? apiKeyFlag.slice("--api-key=".length) : undefined;
-      // TC-038 / TC-041: --runtime local skips AgentSyncer and apiKey prompt
-      const runtimeFlag = args.find((a) => a.startsWith("--runtime="));
-      let runtime: "managed" | "local" | undefined;
-      if (runtimeFlag) {
-        const runtimeValue = runtimeFlag.slice("--runtime=".length);
-        if (runtimeValue !== "managed" && runtimeValue !== "local") {
-          process.stderr.write(
-            `Unknown --runtime value: "${runtimeValue}". Valid values are "managed" or "local".\n`,
-          );
-          process.exit(2);
-        }
-        runtime = runtimeValue;
-      }
-      await runInit({ apiKey, runtime });
-      break;
-    }
+  const entry = COMMANDS[command];
+  if (!entry) {
+    process.stderr.write(`Unknown command: ${command}\n\n`);
+    process.stderr.write(USAGE);
+    process.exit(2);
+  }
 
-    case "login": {
-      await runLogin();
-      break;
-    }
-
-    case "run": {
-      const runArgs = args.slice(1);
-      const verbose = runArgs.includes("--verbose");
-      const requestMd = runArgs.find((a) => !a.startsWith("--"));
-      if (!requestMd) {
-        process.stderr.write("Error: specrunner run requires a <request.md> path.\n");
-        process.stderr.write(USAGE);
-        process.exit(2);
-      }
-
-      await runRun(requestMd, { verbose });
-      break;
-    }
-
-    case "request": {
-      const requestArgs = args.slice(1);
-      const subcommand = requestArgs[0];
-
-      if (subcommand === "template") {
-        // Parse --type flag
-        const typeFlag = requestArgs.find((a) => a.startsWith("--type="));
-        let requestType = "new-feature";
-        if (typeFlag) {
-          requestType = typeFlag.slice("--type=".length);
-        } else {
-          const typeIdx = requestArgs.indexOf("--type");
-          if (typeIdx !== -1 && requestArgs[typeIdx + 1] && !requestArgs[typeIdx + 1]!.startsWith("--")) {
-            requestType = requestArgs[typeIdx + 1]!;
-          }
-        }
-        process.exit(executeTemplate(requestType));
-      } else if (subcommand === "validate") {
-        const filePath = requestArgs[1];
-        if (!filePath) {
-          process.stderr.write("Error: specrunner request validate requires a <file> argument.\n");
-          process.stderr.write("Usage: specrunner request validate <file>\n");
-          process.exit(2);
-        }
-        process.exit(await executeValidate(filePath));
-      } else {
-        process.stderr.write(
-          subcommand
-            ? `Unknown request subcommand: ${subcommand}\n\n`
-            : "Error: specrunner request requires a subcommand.\n\n",
-        );
-        process.stderr.write("Usage: specrunner request template [--type <type>]\n");
-        process.stderr.write("       specrunner request validate <file>\n");
-        process.exit(2);
-      }
-      break;
-    }
-
-    case "ps": {
-      const activeFlag = args.includes("--active");
-      const allFlag = args.includes("--all");
-      await runPs({ active: activeFlag, all: allFlag });
-      break;
-    }
-
-    case "doctor": {
-      const jsonFlag = args.includes("--json");
-      try {
-        process.exit(await runDoctor({ json: jsonFlag }));
-      } catch (err: unknown) {
-        process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);
-        process.exit(2);
-      }
-      break;
-    }
-
-    case "finish": {
-      const finishArgs = args.slice(1);
-
-      if (finishArgs.includes("--help") || finishArgs.includes("-h")) {
-        process.stdout.write(FINISH_USAGE);
-        process.exit(0);
-      }
-
-      // Parse flags
-      const prFlag = finishArgs.find((a) => a.startsWith("--pr="));
-      const prNumber = prFlag ? parseInt(prFlag.slice("--pr=".length), 10) : undefined;
-      const jobFlag = finishArgs.find((a) => a.startsWith("--job="));
-      const jobId = jobFlag ? jobFlag.slice("--job=".length) : undefined;
-      const dryRun = finishArgs.includes("--dry-run");
-      const force = finishArgs.includes("--force");
-
-      // Detect unknown flags
-      const knownFlags = new Set(["--force", "--dry-run"]);
-      const unknownFlags = finishArgs.filter(
-        (a) =>
-          a.startsWith("--") &&
-          !knownFlags.has(a) &&
-          !a.startsWith("--pr=") &&
-          !a.startsWith("--job="),
+  // Subcommand dispatch (e.g. request template / request validate)
+  if ("subcommands" in entry) {
+    const sub = args[1];
+    const subDef = sub ? entry.subcommands[sub] : undefined;
+    if (!subDef) {
+      process.stderr.write(
+        sub
+          ? `Unknown request subcommand: ${sub}\n\n`
+          : "Error: specrunner request requires a subcommand.\n\n",
       );
-      if (unknownFlags.length > 0) {
-        process.stderr.write(`Unknown flag(s): ${unknownFlags.join(", ")}\n\n`);
-        process.stderr.write(FINISH_USAGE);
-        process.exit(2);
-      }
-
-      // First non-flag argument is the slug (first form: specrunner finish <slug>)
-      const slug = finishArgs.find((a) => !a.startsWith("--"));
-
-      try {
-        process.exit(
-          await runFinish({ slug, prNumber, jobId, dryRun, force, cwd: process.cwd() }),
-        );
-      } catch (err: unknown) {
-        process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);
-        process.exit(1);
-      }
-      break;
-    }
-
-    case "rm": {
-      const rmArgs = args.slice(1);
-
-      // Parse flags
-      const force = rmArgs.includes("--force");
-      const allTerminated = rmArgs.includes("--all-terminated");
-      const yes = rmArgs.includes("--yes");
-
-      // Detect unknown flags
-      const knownRmFlags = new Set(["--force", "--all-terminated", "--yes"]);
-      const unknownRmFlags = rmArgs.filter(
-        (a) => a.startsWith("--") && !knownRmFlags.has(a),
-      );
-      if (unknownRmFlags.length > 0) {
-        process.stderr.write(`Unknown flag(s): ${unknownRmFlags.join(", ")}\n\n`);
-        process.stderr.write(USAGE);
-        process.exit(2);
-      }
-
-      // First non-flag argument is the jobId
-      const jobId = rmArgs.find((a) => !a.startsWith("--"));
-
-      try {
-        process.exit(await runRm({ jobId, force, allTerminated, yes }));
-      } catch (err: unknown) {
-        process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);
-        process.exit(1);
-      }
-      break;
-    }
-
-    case "resume": {
-      const resumeArgs = args.slice(1);
-
-      // First non-flag argument is the slug
-      const resumeSlug = resumeArgs.find((a) => !a.startsWith("--"));
-      if (!resumeSlug) {
-        process.stderr.write("Error: specrunner resume requires a <slug> argument.\n");
-        process.stderr.write(USAGE);
-        process.exit(2);
-      }
-
-      // Parse --from=<value> flag
-      const fromFlag = resumeArgs.find((a) => a.startsWith("--from="));
-      let fromValue: string | undefined;
-      if (fromFlag) {
-        fromValue = fromFlag.slice("--from=".length);
-        if (fromValue !== "critic" && fromValue !== "fixer" && fromValue !== "creator") {
-          process.stderr.write(
-            `Error: Invalid --from value: "${fromValue}". Valid values are: critic, fixer, creator.\n`,
-          );
-          process.exit(2);
-        }
-      }
-
-      const resumeForce = resumeArgs.includes("--force");
-      const resumeVerbose = resumeArgs.includes("--verbose");
-
-      // Detect unknown flags
-      const knownResumeFlags = new Set(["--force", "--verbose"]);
-      const unknownResumeFlags = resumeArgs.filter(
-        (a) =>
-          a.startsWith("--") &&
-          !knownResumeFlags.has(a) &&
-          !a.startsWith("--from="),
-      );
-      if (unknownResumeFlags.length > 0) {
-        process.stderr.write(`Unknown flag(s): ${unknownResumeFlags.join(", ")}\n\n`);
-        process.stderr.write(USAGE);
-        process.exit(2);
-      }
-
-      try {
-        await runResume(resumeSlug, {
-          from: fromValue,
-          force: resumeForce,
-          verbose: resumeVerbose,
-          cwd: process.cwd(),
-        });
-      } catch (err: unknown) {
-        process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);
-        process.exit(1);
-      }
-      break;
-    }
-
-    default: {
-      process.stderr.write(`Unknown command: ${command}\n\n`);
-      process.stderr.write(USAGE);
+      process.stderr.write("Usage: specrunner request template [--type <type>]\n");
+      process.stderr.write("       specrunner request validate <file>\n");
       process.exit(2);
     }
+    try {
+      const parsed = parseFlags(args.slice(2), subDef.flags, subDef.positional);
+      await subDef.handler(parsed);
+    } catch (e) {
+      if (e instanceof FlagParseError) {
+        process.stderr.write(e.message + "\n");
+        process.exit(2);
+      }
+      process.stderr.write(`Fatal: ${e instanceof Error ? e.message : String(e)}\n`);
+      process.exit(1);
+    }
+    return;
+  }
+
+  // Normal command dispatch
+  try {
+    const parsed = parseFlags(args.slice(1), entry.flags, entry.positional);
+    await entry.handler(parsed);
+  } catch (e) {
+    if (e instanceof FlagParseError) {
+      process.stderr.write(e.message + "\n");
+      if (entry.usage) process.stderr.write(entry.usage);
+      else process.stderr.write(USAGE);
+      process.exit(2);
+    }
+    process.stderr.write(`Fatal: ${e instanceof Error ? e.message : String(e)}\n`);
+    process.exit(1);
   }
 }
 

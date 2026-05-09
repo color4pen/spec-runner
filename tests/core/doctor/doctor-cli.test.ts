@@ -87,13 +87,12 @@ describe("runDoctor exit codes", () => {
   });
 });
 
-describe("bin/specrunner.ts USAGE string", () => {
-  // TC-054
+describe("USAGE string (command-registry.ts)", () => {
+  // TC-054: USAGE is now defined in src/cli/command-registry.ts
   it("USAGE string contains 'doctor' with description", async () => {
-    // Read the file source to verify the USAGE string
     const { readFileSync } = await import("node:fs");
     const src = readFileSync(
-      new URL("../../../bin/specrunner.ts", import.meta.url).pathname,
+      new URL("../../../src/cli/command-registry.ts", import.meta.url).pathname,
       "utf-8",
     );
     expect(src).toContain("doctor");
