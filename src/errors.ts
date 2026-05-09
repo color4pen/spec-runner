@@ -44,6 +44,9 @@ export const ERROR_CODES = {
   WORKTREE_GUARD: "WORKTREE_GUARD",
   AMBIGUOUS_JOB_ID: "AMBIGUOUS_JOB_ID",
   POLL_TIMEOUT: "POLL_TIMEOUT",
+  SESSION_RETRIES_EXHAUSTED: "SESSION_RETRIES_EXHAUSTED",
+  SESSION_REQUIRES_ACTION: "SESSION_REQUIRES_ACTION",
+  SESSION_RESCHEDULING_EXHAUSTED: "SESSION_RESCHEDULING_EXHAUSTED",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -204,5 +207,29 @@ export function codeReviewResultNotFoundError(slug: string, branch: string, iter
     ERROR_CODES.CODE_REVIEW_RESULT_NOT_FOUND,
     `Ensure the code-review agent wrote the result file to openspec/changes/${slug}/${filename} on branch '${branch}'. If the agent wrote the file but did not commit + push, re-run the step or check the agent session logs for git push errors.`,
     `Code-review result file not found on branch '${branch}'.`,
+  );
+}
+
+export function sessionRetriesExhaustedError(sessionId: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.SESSION_RETRIES_EXHAUSTED,
+    "The SDK exhausted its retry budget. Check session logs on the Anthropic dashboard.",
+    `Session ${sessionId} ended with retries_exhausted.`,
+  );
+}
+
+export function sessionRequiresActionError(sessionId: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.SESSION_REQUIRES_ACTION,
+    "The session requires user action that spec-runner does not support. Check session logs on the Anthropic dashboard.",
+    `Session ${sessionId} is idle with requires_action (unexpected in spec-runner).`,
+  );
+}
+
+export function sessionReschedulingExhaustedError(sessionId: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.SESSION_RESCHEDULING_EXHAUSTED,
+    "The session has been rescheduling too many times. This indicates a persistent infrastructure issue.",
+    `Session ${sessionId} exceeded rescheduling limit.`,
   );
 }

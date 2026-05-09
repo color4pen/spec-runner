@@ -9,7 +9,11 @@ import {
   isCustomToolUseEvent,
   isStatusIdleEvent,
   isStatusTerminatedEvent,
+  isStatusRescheduledEvent,
+  isSessionErrorEvent,
+  isSessionDeletedEvent,
   isEndTurnIdle,
+  isRetryStatusRetrying,
 } from "./sdk/sessions.js";
 import { assertBreakAfterCompletion } from "./completion.js";
 import { buildInitialMessage } from "../../prompts/propose-system.js";
@@ -21,6 +25,10 @@ export type TerminationReason =
   | "terminated"
   | "sse_error"
   | "aborted"
+  | "requires_action"
+  | "retries_exhausted"
+  | "session_error"
+  | "session_deleted"
   | "unknown";
 
 export interface SseStreamResult {
@@ -121,10 +129,45 @@ export async function runSseStream(deps: SseStreamDeps): Promise<SseStreamResult
           terminationReason = "end_turn";
           break;
         }
+        // idle but not end_turn: requires_action or retries_exhausted
+        // Both are error conditions for spec-runner
+        const stopType = event.stop_reason.type;
+        if (stopType === "requires_action") {
+          stderrWrite("Session idle with requires_action (unexpected in spec-runner).");
+          terminated = true;
+          terminationReason = "requires_action";
+          break;
+        }
+        if (stopType === "retries_exhausted") {
+          stderrWrite("Session idle with retries_exhausted (unrecoverable).");
+          terminated = true;
+          terminationReason = "retries_exhausted";
+          break;
+        }
+        // Unknown future stop_reason — log and continue
+        stderrWrite(`Session idle with unknown stop_reason: ${stopType}. Continuing.`);
       } else if (isStatusTerminatedEvent(event)) {
         terminated = true;
         terminationReason = "terminated";
         break;
+      } else if (isSessionErrorEvent(event)) {
+        if (isRetryStatusRetrying(event.error)) {
+          stderrWrite(`Session error (${event.error.type}), SDK retrying. Continuing.`);
+          // SDK is auto-retrying; continue listening
+        } else {
+          stderrWrite(`Session error (${event.error.type}), retry_status: ${event.error.retry_status.type}. Stopping.`);
+          terminated = true;
+          terminationReason = "session_error";
+          break;
+        }
+      } else if (isSessionDeletedEvent(event)) {
+        stderrWrite("Session deleted (unrecoverable).");
+        terminated = true;
+        terminationReason = "session_deleted";
+        break;
+      } else if (isStatusRescheduledEvent(event)) {
+        stderrWrite("Session rescheduled (error recovery in progress). Continuing.");
+        // SDK is recovering; continue listening
       }
     }
   } catch (err) {

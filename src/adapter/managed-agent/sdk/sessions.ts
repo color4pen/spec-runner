@@ -22,6 +22,9 @@ export type {
   BetaManagedAgentsSessionEndTurn,
   BetaManagedAgentsSessionRequiresAction,
   EventSendParams,
+  BetaManagedAgentsSessionStatusRescheduledEvent,
+  BetaManagedAgentsSessionErrorEvent,
+  BetaManagedAgentsSessionDeletedEvent,
 } from "@anthropic-ai/sdk/resources/beta/sessions/events";
 
 import type {
@@ -29,6 +32,9 @@ import type {
   BetaManagedAgentsAgentCustomToolUseEvent,
   BetaManagedAgentsSessionStatusIdleEvent,
   BetaManagedAgentsSessionStatusTerminatedEvent,
+  BetaManagedAgentsSessionStatusRescheduledEvent,
+  BetaManagedAgentsSessionErrorEvent,
+  BetaManagedAgentsSessionDeletedEvent,
 } from "@anthropic-ai/sdk/resources/beta/sessions/events";
 
 import type { BetaManagedAgentsSession } from "@anthropic-ai/sdk/resources/beta/sessions/sessions";
@@ -116,4 +122,62 @@ export function isStatusTerminatedEvent(
  */
 export function isEndTurnIdle(event: BetaManagedAgentsSessionStatusIdleEvent): boolean {
   return event.stop_reason.type === "end_turn";
+}
+
+/**
+ * Narrowing helper: check if event is a session status rescheduled event.
+ */
+export function isStatusRescheduledEvent(
+  e: BetaManagedAgentsStreamSessionEvents,
+): e is BetaManagedAgentsSessionStatusRescheduledEvent {
+  return e.type === "session.status_rescheduled";
+}
+
+/**
+ * Narrowing helper: check if event is a session error event.
+ */
+export function isSessionErrorEvent(
+  e: BetaManagedAgentsStreamSessionEvents,
+): e is BetaManagedAgentsSessionErrorEvent {
+  return e.type === "session.error";
+}
+
+/**
+ * Narrowing helper: check if event is a session deleted event.
+ */
+export function isSessionDeletedEvent(
+  e: BetaManagedAgentsStreamSessionEvents,
+): e is BetaManagedAgentsSessionDeletedEvent {
+  return e.type === "session.deleted";
+}
+
+/**
+ * Check if a session error's retry_status indicates the server is retrying.
+ * When true, the client should wait and continue listening.
+ *
+ * `error` is typed as `BetaManagedAgentsSessionErrorEvent["error"]`, a union of
+ * `BetaManagedAgentsUnknownError | BetaManagedAgentsBillingError | ...`.
+ * All variants share a `retry_status` discriminated union:
+ * `RetryStatusRetrying | RetryStatusExhausted | RetryStatusTerminal`.
+ * This function narrows to the `{ type: "retrying" }` case.
+ */
+export function isRetryStatusRetrying(
+  error: BetaManagedAgentsSessionErrorEvent["error"],
+): boolean {
+  return error.retry_status.type === "retrying";
+}
+
+/**
+ * List session events (paginated), ordered most-recent-first.
+ * Used by polling to inspect the latest idle stop_reason.
+ *
+ * Passing `order: "desc"` ensures the first yielded event is the newest,
+ * so `getIdleStopReason` can return immediately on the first idle event
+ * without scanning all pages.
+ */
+export async function listEvents(
+  client: Anthropic,
+  sessionId: string,
+) {
+  return client.beta.sessions.events.list(sessionId, { order: "desc" });
 }

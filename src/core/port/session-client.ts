@@ -76,6 +76,6 @@ export interface SessionClient {
     sseDisconnected: boolean;
     idleEndTurnDetected: boolean;
     terminated: boolean;
-    terminationReason: "end_turn" | "terminated" | "sse_error" | "aborted" | "unknown";
+    terminationReason: "end_turn" | "terminated" | "sse_error" | "aborted" | "requires_action" | "retries_exhausted" | "session_error" | "session_deleted" | "unknown";
   }>;
 }
