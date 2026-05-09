@@ -5,7 +5,7 @@
  * start step, and transitions job to "running" status.
  */
 import { loadConfig } from "../../config/store.js";
-import { updateJobState } from "../../state/store.js";
+import { updateJobState, loadJobState, resolveJobId } from "../../state/store.js";
 import { logInfo, setVerbose } from "../../logger/stdout.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
@@ -64,17 +64,28 @@ export class ResumeCommand extends CommandRunner {
     setVerbose(verbose);
     const cwd = this.options.cwd ?? process.cwd();
 
-    // Resolve job state by slug
+    // Resolve job state by slug, with short Job ID fallback
     let state: JobState;
     try {
       const resolved = await resolveJobStateBySlug(this.slug);
       if (resolved === null) {
-        process.stderr.write(
-          `Error: No job found with slug '${this.slug}'. Run 'specrunner ps' to see available jobs.\n`,
-        );
-        throw new PrepareError(2, "Job not found");
+        // Slug not found — try resolving as short Job ID prefix
+        let fullId: string;
+        try {
+          fullId = await resolveJobId(this.slug);
+        } catch (err) {
+          if (err instanceof SpecRunnerError) {
+            process.stderr.write(`Error: ${err.message}\n`);
+            if (err.hint) process.stderr.write(`Hint: ${err.hint}\n`);
+          } else {
+            process.stderr.write(`Error: ${(err as Error).message}\n`);
+          }
+          throw new PrepareError(1, "Job not found");
+        }
+        state = await loadJobState(fullId);
+      } else {
+        state = resolved;
       }
-      state = resolved;
     } catch (err) {
       if (err instanceof PrepareError) throw err;
       process.stderr.write(`Error: ${(err as Error).message}\n`);

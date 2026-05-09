@@ -42,6 +42,7 @@ export const ERROR_CODES = {
   GIT_SUBPROCESS_FAILED: "GIT_SUBPROCESS_FAILED",
   NO_COMMIT_DETECTED: "NO_COMMIT_DETECTED",
   WORKTREE_GUARD: "WORKTREE_GUARD",
+  AMBIGUOUS_JOB_ID: "AMBIGUOUS_JOB_ID",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -164,6 +165,15 @@ export function worktreeGuardError(command: string, mainPath: string): SpecRunne
     ERROR_CODES.WORKTREE_GUARD,
     `Run from the main worktree: cd ${mainPath}`,
     "This command cannot be run from inside a worktree.",
+  );
+}
+
+export function ambiguousJobIdError(prefix: string, matchingJobIds: string[]): SpecRunnerError {
+  const candidates = matchingJobIds.join("\n  ");
+  return new SpecRunnerError(
+    ERROR_CODES.AMBIGUOUS_JOB_ID,
+    `Matching job IDs:\n  ${candidates}`,
+    `Ambiguous job ID prefix '${prefix}' matches ${matchingJobIds.length} jobs. Use a longer prefix or the full UUID.`,
   );
 }
 

@@ -10,6 +10,7 @@
 import { loadConfig } from "../config/store.js";
 import { createAnthropicClient } from "../adapter/managed-agent/client.js";
 import { removeSingleJob, removeAllTerminated } from "../core/rm/runner.js";
+import { resolveJobId } from "../state/store.js";
 import { SpecRunnerError } from "../errors.js";
 
 export interface RunRmOptions {
@@ -67,9 +68,22 @@ export async function runRm(opts: RunRmOptions): Promise<number> {
     return result.exitCode;
   }
 
-  // Single job removal
+  // Single job removal — resolve short ID to full UUID first
+  let resolvedJobId: string;
+  try {
+    resolvedJobId = await resolveJobId(jobId!);
+  } catch (err: unknown) {
+    if (err instanceof SpecRunnerError) {
+      process.stderr.write(`Error: ${err.message}\n`);
+      if (err.hint) process.stderr.write(`Hint: ${err.hint}\n`);
+    } else {
+      process.stderr.write(`Error: ${(err as Error).message}\n`);
+    }
+    return 1;
+  }
+
   const result = await removeSingleJob({
-    jobId: jobId!,
+    jobId: resolvedJobId,
     force,
     config,
     anthropicClient,

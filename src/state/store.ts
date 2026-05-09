@@ -6,7 +6,7 @@ import { atomicWriteJson } from "../util/atomic-write.js";
 import { validateJobState } from "./schema.js";
 import type { JobState, RequestInfo, RepositoryInfo } from "./schema.js";
 import { stderrWrite } from "../logger/stdout.js";
-import { SpecRunnerError, ERROR_CODES } from "../errors.js";
+import { SpecRunnerError, ERROR_CODES, ambiguousJobIdError } from "../errors.js";
 
 /**
  * Create a new job state file and persist it.
@@ -121,6 +121,39 @@ export async function deleteJobState(jobId: string): Promise<void> {
     }
     throw err;
   }
+}
+
+/**
+ * Resolve a full job UUID from a prefix (short ID) or full UUID.
+ *
+ * - Full UUID (36 chars): returned as-is without calling listJobStates.
+ * - Short prefix: calls listJobStates() and filters by startsWith(prefix).
+ *   - 0 matches: throws JOB_NOT_FOUND
+ *   - 1 match: returns the full UUID
+ *   - 2+ matches: throws AMBIGUOUS_JOB_ID with candidate list in hint
+ */
+export async function resolveJobId(prefix: string): Promise<string> {
+  // Full UUID v4 is exactly 36 characters (8-4-4-4-12 + 4 hyphens)
+  if (prefix.length === 36) {
+    return prefix;
+  }
+
+  const states = await listJobStates();
+  const matches = states.filter((s) => s.jobId.startsWith(prefix));
+
+  if (matches.length === 0) {
+    throw new SpecRunnerError(
+      ERROR_CODES.JOB_NOT_FOUND,
+      "Run 'specrunner ps' to list available job IDs.",
+      `Job not found: no job ID starts with '${prefix}'`,
+    );
+  }
+
+  if (matches.length === 1) {
+    return matches[0]!.jobId;
+  }
+
+  throw ambiguousJobIdError(prefix, matches.map((s) => s.jobId));
 }
 
 /**

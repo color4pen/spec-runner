@@ -275,13 +275,15 @@ describe("TC-RESUME-009: stale state warning", () => {
   });
 });
 
-// TC-RESUME-010: slug not found → exit 2
+// TC-RESUME-010: slug not found → falls back to resolveJobId → exit 1 (JOB_NOT_FOUND)
+// Updated: now falls back to short Job ID resolution when slug not found.
+// When both slug and Job ID prefix fail, exit code is 1 (not 2).
 describe("TC-RESUME-010: slug not found", () => {
-  it("returns exit code 2 when no job found with given slug", async () => {
+  it("returns exit code 1 when no job found with given slug or job ID prefix", async () => {
     const { runResumeCore } = await import("../../../src/cli/resume.js");
     const exitCode = await runResumeCore("nonexistent-slug", {});
-    expect(exitCode).toBe(2);
+    expect(exitCode).toBe(1);
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
-    expect(stderrCalls.some((args) => String(args[0]).includes("No job found"))).toBe(true);
+    expect(stderrCalls.some((args) => String(args[0]).includes("Job not found"))).toBe(true);
   });
 });
