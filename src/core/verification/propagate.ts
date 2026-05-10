@@ -16,6 +16,7 @@
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
 import { spawnCommand, type SpawnFn } from "../../util/spawn.js";
+import { verificationResultPath } from "../../util/paths.js";
 
 export interface PropagateResult {
   ok: boolean;
@@ -24,7 +25,7 @@ export interface PropagateResult {
 }
 
 const VERIFICATION_RESULT_REL_PATH = (slug: string): string =>
-  path.posix.join("openspec", "changes", slug, "verification-result.md");
+  verificationResultPath(slug);
 
 export async function propagateVerificationResult(params: {
   slug: string;
@@ -37,7 +38,7 @@ export async function propagateVerificationResult(params: {
   const { slug, branch, iteration, cwd } = params;
 
   // Verify the source file exists in cwd (the job worktree)
-  const sourceFile = path.join(cwd, "openspec", "changes", slug, "verification-result.md");
+  const sourceFile = path.join(cwd, verificationResultPath(slug));
   try {
     await fs.access(sourceFile);
   } catch {

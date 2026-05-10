@@ -34,6 +34,7 @@ import type { PipelineDeps } from "../../../src/core/types.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
 import { createManagedAgentRunner } from "../../../src/adapter/managed-agent/agent-runner.js";
+import { specReviewResultPath, reviewFeedbackPath, changeFolderPath } from "../../../src/util/paths.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -55,7 +56,7 @@ describe("TC-001: specReviewResultNotFoundError — iteration=1 suffix and guida
 
   it("hint contains the change folder path", () => {
     const err = specReviewResultNotFoundError("readme-status-section", "feat/readme-status-section", 1);
-    expect(err.hint).toContain("openspec/changes/readme-status-section/spec-review-result-001.md");
+    expect(err.hint).toContain(specReviewResultPath("readme-status-section", 1));
   });
 
   it("hint contains commit+push guidance", () => {
@@ -104,7 +105,7 @@ describe("TC-004: codeReviewResultNotFoundError — iteration=3 suffix and guida
 
   it("hint contains the change folder path", () => {
     const err = codeReviewResultNotFoundError("some-slug", "feat/some-slug", 3);
-    expect(err.hint).toContain("openspec/changes/some-slug/review-feedback-003.md");
+    expect(err.hint).toContain(reviewFeedbackPath("some-slug", 3));
   });
 
   it("hint contains commit+push guidance", () => {
@@ -189,7 +190,7 @@ describe("TC-008: spec-review round-trip — resultFilePath and buildFindingsPat
         "spec-review": Array.from({ length: existingSpecReviewCount }, (_, i) => ({
           attempt: i + 1,
           sessionId: null,
-          outcome: { verdict: "needs-fix" as const, findingsPath: `openspec/changes/my-slug/spec-review-result-${String(i + 1).padStart(3, "0")}.md`, error: null },
+          outcome: { verdict: "needs-fix" as const, findingsPath: specReviewResultPath("my-slug", i + 1), error: null },
           startedAt: "2026-01-01T00:00:00.000Z",
           endedAt: "2026-01-01T00:00:00.000Z",
         })),
@@ -218,7 +219,7 @@ describe("TC-008: spec-review round-trip — resultFilePath and buildFindingsPat
     const resultPath = SpecReviewStep.resultFilePath(state, deps);
     const expectedPath = buildFindingsPath("my-slug", 1);
     expect(resultPath).toBe(expectedPath);
-    expect(resultPath).toBe("openspec/changes/my-slug/spec-review-result-001.md");
+    expect(resultPath).toBe(specReviewResultPath("my-slug", 1));
   });
 
   it("resultFilePath(state, deps) for iteration 2 equals buildFindingsPath(slug, 2)", () => {
@@ -227,7 +228,7 @@ describe("TC-008: spec-review round-trip — resultFilePath and buildFindingsPat
     const resultPath = SpecReviewStep.resultFilePath(state, deps);
     const expectedPath = buildFindingsPath("my-slug", 2);
     expect(resultPath).toBe(expectedPath);
-    expect(resultPath).toBe("openspec/changes/my-slug/spec-review-result-002.md");
+    expect(resultPath).toBe(specReviewResultPath("my-slug", 2));
   });
 
   it("buildMessage includes the same filename as resultFilePath", () => {
@@ -262,7 +263,7 @@ describe("TC-009: code-review round-trip — resultFilePath and buildReviewFeedb
         "code-review": Array.from({ length: existingCodeReviewCount }, (_, i) => ({
           attempt: i + 1,
           sessionId: null,
-          outcome: { verdict: "needs-fix" as const, findingsPath: `openspec/changes/my-slug/review-feedback-${String(i + 1).padStart(3, "0")}.md`, error: null },
+          outcome: { verdict: "needs-fix" as const, findingsPath: reviewFeedbackPath("my-slug", i + 1), error: null },
           startedAt: "2026-01-01T00:00:00.000Z",
           endedAt: "2026-01-01T00:00:00.000Z",
         })),
@@ -291,7 +292,7 @@ describe("TC-009: code-review round-trip — resultFilePath and buildReviewFeedb
     const resultPath = CodeReviewStep.resultFilePath(state, deps);
     const expectedPath = buildReviewFeedbackPath("my-slug", 1);
     expect(resultPath).toBe(expectedPath);
-    expect(resultPath).toBe("openspec/changes/my-slug/review-feedback-001.md");
+    expect(resultPath).toBe(reviewFeedbackPath("my-slug", 1));
   });
 
   it("resultFilePath(state, deps) for iteration 2 equals buildReviewFeedbackPath(slug, 2)", () => {
@@ -300,7 +301,7 @@ describe("TC-009: code-review round-trip — resultFilePath and buildReviewFeedb
     const resultPath = CodeReviewStep.resultFilePath(state, deps);
     const expectedPath = buildReviewFeedbackPath("my-slug", 2);
     expect(resultPath).toBe(expectedPath);
-    expect(resultPath).toBe("openspec/changes/my-slug/review-feedback-002.md");
+    expect(resultPath).toBe(reviewFeedbackPath("my-slug", 2));
   });
 
   it("buildMessage includes the same filename as resultFilePath", () => {
@@ -431,7 +432,7 @@ async function makeExecutorTestState(
     sessionId: null,
     outcome: {
       verdict: "needs-fix" as const,
-      findingsPath: `openspec/changes/my-slug/step-result-${String(i + 1).padStart(3, "0")}.md`,
+      findingsPath: `${changeFolderPath("my-slug")}/step-result-${String(i + 1).padStart(3, "0")}.md`,
       error: null,
     },
     startedAt: "2026-01-01T00:00:00.000Z",
@@ -520,7 +521,7 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
     };
 
     const executor = makeExecutorFromDeps(events, deps);
-    const step = makeReviewStepStub("spec-review", "openspec/changes/my-slug/spec-review-result-001.md");
+    const step = makeReviewStepStub("spec-review", specReviewResultPath("my-slug", 1));
 
     await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
       code: "SPEC_REVIEW_RESULT_NOT_FOUND",
@@ -560,7 +561,7 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
     };
 
     const executor = makeExecutorFromDeps(events, deps);
-    const step = makeReviewStepStub("spec-review", "openspec/changes/my-slug/spec-review-result-002.md");
+    const step = makeReviewStepStub("spec-review", specReviewResultPath("my-slug", 2));
 
     await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
       code: "SPEC_REVIEW_RESULT_NOT_FOUND",
@@ -602,7 +603,7 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
     };
 
     const executor = makeExecutorFromDeps(events, deps);
-    const step = makeReviewStepStub("code-review", "openspec/changes/my-slug/review-feedback-001.md");
+    const step = makeReviewStepStub("code-review", reviewFeedbackPath("my-slug", 1));
 
     await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
       code: "CODE_REVIEW_RESULT_NOT_FOUND",
@@ -642,7 +643,7 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
     };
 
     const executor = makeExecutorFromDeps(events, deps);
-    const step = makeReviewStepStub("code-review", "openspec/changes/my-slug/review-feedback-002.md");
+    const step = makeReviewStepStub("code-review", reviewFeedbackPath("my-slug", 2));
 
     await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
       code: "CODE_REVIEW_RESULT_NOT_FOUND",

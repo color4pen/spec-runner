@@ -21,6 +21,7 @@ import type { PipelineDeps } from "../../../src/core/types.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
+import { changeFolderPath, reviewFeedbackPath, verificationResultPath, prCreateResultPath } from "../../../src/util/paths.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -134,7 +135,7 @@ function buildMockPipeline(opts: {
       ...base.steps,
       "code-review": [
         ...(base.steps?.["code-review"] ?? []),
-        { attempt: (base.steps?.["code-review"]?.length ?? 0) + 1, sessionId: null, outcome: { verdict: "approved" as const, findingsPath: `openspec/changes/test-slug/review-feedback-001.md`, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" },
+        { attempt: (base.steps?.["code-review"]?.length ?? 0) + 1, sessionId: null, outcome: { verdict: "approved" as const, findingsPath: reviewFeedbackPath("test-slug", 1), error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" },
       ],
     },
   });
@@ -216,11 +217,11 @@ function buildMockPipeline(opts: {
     ["spec-fixer",   { kind: "agent", name: "spec-fixer",   agent: { name: "test", role: "spec-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["test-case-gen", { kind: "agent", name: "test-case-gen", agent: { name: "test", role: "test-case-gen", model: "claude-sonnet-4-6", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["implementer",  { kind: "agent", name: "implementer",  agent: { name: "test", role: "implementer", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-    ["verification", { kind: "cli",   name: "verification",  run: async () => {}, resultFilePath: () => "openspec/changes/test/verification-result.md", parseResult: () => ({ verdict: "passed" as const, findingsPath: null }) }],
+    ["verification", { kind: "cli",   name: "verification",  run: async () => {}, resultFilePath: () => verificationResultPath("test"), parseResult: () => ({ verdict: "passed" as const, findingsPath: null }) }],
     ["build-fixer",  { kind: "agent", name: "build-fixer",  agent: { name: "test", role: "build-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-    ["code-review",  { kind: "agent", name: "code-review",  agent: { name: "test", role: "code-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => "openspec/changes/test/review-feedback-001.md", parseResult: () => ({ verdict: "approved" as const, findingsPath: null }) }],
+    ["code-review",  { kind: "agent", name: "code-review",  agent: { name: "test", role: "code-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => reviewFeedbackPath("test", 1), parseResult: () => ({ verdict: "approved" as const, findingsPath: null }) }],
     ["code-fixer",   { kind: "agent", name: "code-fixer",   agent: { name: "test", role: "code-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "approved", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-    ["pr-create",    { kind: "cli",   name: "pr-create",    run: async () => {}, resultFilePath: () => "openspec/changes/test/pr-create-result.md", parseResult: () => ({ verdict: "success" as const, findingsPath: null }) }],
+    ["pr-create",    { kind: "cli",   name: "pr-create",    run: async () => {}, resultFilePath: () => prCreateResultPath("test"), parseResult: () => ({ verdict: "success" as const, findingsPath: null }) }],
   ]);
 
   const pipeline = new Pipeline({

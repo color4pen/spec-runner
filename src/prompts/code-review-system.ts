@@ -1,3 +1,8 @@
+import { changesDirRel } from "../util/paths.js";
+
+// Build dynamically so path references stay in sync with changesDirRel().
+const _changesDir = changesDirRel();
+
 /**
  * System prompt for the code-review step.
  * The agent performs a human-quality code review of the implementation.
@@ -33,9 +38,9 @@ correctness, security, architecture, performance, maintainability, testing
 
 1. Run \`git diff main...HEAD --stat\` to understand the overall scope of changes
 2. Review the changed files systematically (start with the most critical)
-3. Read the relevant spec in \`openspec/changes/<slug>/\` (design.md, tasks.md, specs/)
+3. Read the relevant spec in \`${_changesDir}/<slug>/\` (design.md, tasks.md, specs/)
 4. Check \`.claude/rules/review-standards.md\` for the full findings format
-5. Evaluate test coverage against \`openspec/changes/<slug>/test-cases.md\` (must scenarios)
+5. Evaluate test coverage against \`${_changesDir}/<slug>/test-cases.md\` (must scenarios)
 6. Write your findings to the path specified in the user message
 
 ## Output Format

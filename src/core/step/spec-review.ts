@@ -5,6 +5,7 @@ import type { JobState, Verdict } from "../../state/schema.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT, buildSpecReviewInitialMessage } from "../../prompts/spec-review-system.js";
 import { parseReviewVerdict } from "../parser/review-verdict.js";
 import { getSpecReviewMode } from "../../config/type-config.js";
+import { specReviewResultPath } from "../../util/paths.js";
 
 const SPEC_REVIEW_AGENT_MODEL = "claude-opus-4-6[1m]";
 
@@ -39,11 +40,11 @@ export function parseSpecReviewVerdict(content: string): Verdict | null {
 
 /**
  * Build the findings file path for a given iteration.
- * Format: openspec/changes/<slug>/spec-review-result-NNN.md (3-digit zero-padded)
+ * Delegates to specReviewResultPath from util/paths.ts.
+ * Re-exported here for backward compatibility with callers that import from this module.
  */
 export function buildFindingsPath(slug: string, iteration: number): string {
-  const nnn = String(iteration).padStart(3, "0");
-  return `openspec/changes/${slug}/spec-review-result-${nnn}.md`;
+  return specReviewResultPath(slug, iteration);
 }
 
 /**

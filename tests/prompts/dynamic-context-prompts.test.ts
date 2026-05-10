@@ -13,6 +13,7 @@ import { buildInitialMessage } from "../../src/prompts/propose-system.js";
 import { buildImplementerInitialMessage } from "../../src/core/step/implementer.js";
 import { buildCodeReviewInitialMessage } from "../../src/core/step/code-review.js";
 import type { DynamicContext } from "../../src/git/dynamic-context.js";
+import { reviewFeedbackPath } from "../../src/util/paths.js";
 
 const FULL_CONTEXT: DynamicContext = {
   gitLog: "abc1234 feat: add context injection\ndef5678 fix: typo",
@@ -162,7 +163,7 @@ describe("TC-DC-009: buildCodeReviewInitialMessage includes diffStat when dynami
       slug: "my-slug",
       branch: "feat/my-slug",
       iteration: 1,
-      findingsPath: "openspec/changes/my-slug/review-feedback-001.md",
+      findingsPath: reviewFeedbackPath("my-slug", 1),
       requestContent: "request body",
       dynamicContext: FULL_CONTEXT,
     });
@@ -175,7 +176,7 @@ describe("TC-DC-009: buildCodeReviewInitialMessage includes diffStat when dynami
       slug: "my-slug",
       branch: "feat/my-slug",
       iteration: 1,
-      findingsPath: "openspec/changes/my-slug/review-feedback-001.md",
+      findingsPath: reviewFeedbackPath("my-slug", 1),
       requestContent: "request body",
       dynamicContext: FULL_CONTEXT,
     });
@@ -187,7 +188,7 @@ describe("TC-DC-009: buildCodeReviewInitialMessage includes diffStat when dynami
       slug: "my-slug",
       branch: "feat/my-slug",
       iteration: 1,
-      findingsPath: "openspec/changes/my-slug/review-feedback-001.md",
+      findingsPath: reviewFeedbackPath("my-slug", 1),
       requestContent: "original request here",
       dynamicContext: FULL_CONTEXT,
     });
@@ -203,7 +204,7 @@ describe("TC-DC-010: buildCodeReviewInitialMessage works without dynamicContext 
       slug: "my-slug",
       branch: "feat/my-slug",
       iteration: 1,
-      findingsPath: "openspec/changes/my-slug/review-feedback-001.md",
+      findingsPath: reviewFeedbackPath("my-slug", 1),
       requestContent: "request body",
     });
     expect(msg).toContain("my-slug");
@@ -216,7 +217,7 @@ describe("TC-DC-010: buildCodeReviewInitialMessage works without dynamicContext 
       slug: "my-slug",
       branch: "feat/my-slug",
       iteration: 1,
-      findingsPath: "openspec/changes/my-slug/review-feedback-001.md",
+      findingsPath: reviewFeedbackPath("my-slug", 1),
       requestContent: "request body",
     });
     expect(msg).not.toContain("Branch Context");
@@ -227,7 +228,7 @@ describe("TC-DC-010: buildCodeReviewInitialMessage works without dynamicContext 
       slug: "my-slug",
       branch: "feat/my-slug",
       iteration: 1,
-      findingsPath: "openspec/changes/my-slug/review-feedback-001.md",
+      findingsPath: reviewFeedbackPath("my-slug", 1),
       requestContent: "request body",
       dynamicContext: { gitLog: "", diffStat: "", specsList: [], changesList: [] },
     });

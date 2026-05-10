@@ -20,6 +20,7 @@ import { EventBus } from "../../../src/core/event/event-bus.js";
 import { createManagedAgentRunner } from "../../../src/adapter/managed-agent/agent-runner.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
+import { specReviewResultPath } from "../../../src/util/paths.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -125,7 +126,7 @@ describe("TC-009: Step implementation is stateless across invocations", () => {
   });
 
   it("SpecFixerStep.buildMessage produces identical output on two identical calls", () => {
-    const state = { ...makeMinimalState(), steps: { "spec-review": [{ attempt: 1, sessionId: null, outcome: { verdict: "needs-fix" as const, findingsPath: "openspec/changes/test/spec-review-result-001.md", error: null }, startedAt: "2026-01-01T00:00:00.000Z", endedAt: "2026-01-01T00:00:00.000Z" }] } };
+    const state = { ...makeMinimalState(), steps: { "spec-review": [{ attempt: 1, sessionId: null, outcome: { verdict: "needs-fix" as const, findingsPath: specReviewResultPath("test", 1), error: null }, startedAt: "2026-01-01T00:00:00.000Z", endedAt: "2026-01-01T00:00:00.000Z" }] } };
     const deps = makeMinimalDeps();
     const msg1 = SpecFixerStep.buildMessage(state, deps);
     const msg2 = SpecFixerStep.buildMessage(state, deps);

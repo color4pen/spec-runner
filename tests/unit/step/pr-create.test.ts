@@ -21,6 +21,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import type { JobState } from "../../../src/state/schema.js";
 import type { StepDeps } from "../../../src/core/step/types.js";
+import { changeFolderPath, prCreateResultPath } from "../../../src/util/paths.js";
 
 // Mock the runner so we don't spawn real processes
 vi.mock("../../../src/core/pr-create/runner.js", () => ({
@@ -103,7 +104,7 @@ describe("TC-009: PrCreateStep.resultFilePath — slug から正しいパスを�
     const state = makeMinimalState();
     const deps = makeMinimalDeps("pr-create-step");
     const filePath = PrCreateStep.resultFilePath(state, deps);
-    expect(filePath).toBe("openspec/changes/pr-create-step/pr-create-result.md");
+    expect(filePath).toBe(prCreateResultPath("pr-create-step"));
   });
 });
 
@@ -154,7 +155,7 @@ describe("TC-013: PrCreateStep.run — PR 作成成功時に state.pullRequest �
     const state = makeMinimalState();
     const deps = makeMinimalDeps("pr-create-step");
 
-    await fs.mkdir(path.join(tempDir, "openspec", "changes", "pr-create-step"), { recursive: true });
+    await fs.mkdir(path.join(tempDir, changeFolderPath("pr-create-step")), { recursive: true });
 
     await PrCreateStep.run(state, deps);
 
@@ -174,10 +175,10 @@ describe("TC-013: PrCreateStep.run — PR 作成成功時に state.pullRequest �
     const state = makeMinimalState();
     const deps = makeMinimalDeps("pr-create-step");
 
-    await fs.mkdir(path.join(tempDir, "openspec", "changes", "pr-create-step"), { recursive: true });
+    await fs.mkdir(path.join(tempDir, changeFolderPath("pr-create-step")), { recursive: true });
     await PrCreateStep.run(state, deps);
 
-    const resultPath = path.join(tempDir, "openspec", "changes", "pr-create-step", "pr-create-result.md");
+    const resultPath = path.join(tempDir, prCreateResultPath("pr-create-step"));
     const content = await fs.readFile(resultPath, "utf-8");
     const parsed = PrCreateStep.parseResult(content, deps);
 
@@ -199,10 +200,10 @@ describe("TC-013: PrCreateStep.run — PR 作成成功時に state.pullRequest �
     const state = makeMinimalState();
     const deps = makeMinimalDeps("pr-create-step");
 
-    await fs.mkdir(path.join(tempDir, "openspec", "changes", "pr-create-step"), { recursive: true });
+    await fs.mkdir(path.join(tempDir, changeFolderPath("pr-create-step")), { recursive: true });
     await PrCreateStep.run(state, deps);
 
-    const resultPath = path.join(tempDir, "openspec", "changes", "pr-create-step", "pr-create-result.md");
+    const resultPath = path.join(tempDir, prCreateResultPath("pr-create-step"));
     const content = await fs.readFile(resultPath, "utf-8");
     expect(content).toContain("## Status: success");
     expect(content).toContain("https://github.com/owner/repo/pull/42");
@@ -224,7 +225,7 @@ describe("TC-014: PrCreateStep.run — 失敗時に pullRequest を変更しな�
     const state = makeMinimalState();
     const deps = makeMinimalDeps("pr-create-step");
 
-    await fs.mkdir(path.join(tempDir, "openspec", "changes", "pr-create-step"), { recursive: true });
+    await fs.mkdir(path.join(tempDir, changeFolderPath("pr-create-step")), { recursive: true });
     await PrCreateStep.run(state, deps);
 
     expect(state.pullRequest).toBeUndefined();
@@ -242,10 +243,10 @@ describe("TC-014: PrCreateStep.run — 失敗時に pullRequest を変更しな�
     const state = makeMinimalState();
     const deps = makeMinimalDeps("pr-create-step");
 
-    await fs.mkdir(path.join(tempDir, "openspec", "changes", "pr-create-step"), { recursive: true });
+    await fs.mkdir(path.join(tempDir, changeFolderPath("pr-create-step")), { recursive: true });
     await PrCreateStep.run(state, deps);
 
-    const resultPath = path.join(tempDir, "openspec", "changes", "pr-create-step", "pr-create-result.md");
+    const resultPath = path.join(tempDir, prCreateResultPath("pr-create-step"));
     const content = await fs.readFile(resultPath, "utf-8");
     expect(content).toContain("## Status: failed");
     expect(content).toContain("gh-failure");
@@ -267,7 +268,7 @@ describe("TC-015: PrCreateStep.run — 既存 OPEN PR 検出時に state.pullReq
     const state = makeMinimalState();
     const deps = makeMinimalDeps("pr-create-step");
 
-    await fs.mkdir(path.join(tempDir, "openspec", "changes", "pr-create-step"), { recursive: true });
+    await fs.mkdir(path.join(tempDir, changeFolderPath("pr-create-step")), { recursive: true });
     await PrCreateStep.run(state, deps);
 
     // state.pullRequest must NOT be set by run() — mutation is gone
@@ -286,10 +287,10 @@ describe("TC-015: PrCreateStep.run — 既存 OPEN PR 検出時に state.pullReq
     const state = makeMinimalState();
     const deps = makeMinimalDeps("pr-create-step");
 
-    await fs.mkdir(path.join(tempDir, "openspec", "changes", "pr-create-step"), { recursive: true });
+    await fs.mkdir(path.join(tempDir, changeFolderPath("pr-create-step")), { recursive: true });
     await PrCreateStep.run(state, deps);
 
-    const resultPath = path.join(tempDir, "openspec", "changes", "pr-create-step", "pr-create-result.md");
+    const resultPath = path.join(tempDir, prCreateResultPath("pr-create-step"));
     const content = await fs.readFile(resultPath, "utf-8");
     const parsed = PrCreateStep.parseResult(content, deps);
 
@@ -314,10 +315,10 @@ describe("TC-016: pr-create-result.md — 成功時のファイル構造", () =>
     const state = makeMinimalState();
     const deps = makeMinimalDeps("pr-create-step");
 
-    await fs.mkdir(path.join(tempDir, "openspec", "changes", "pr-create-step"), { recursive: true });
+    await fs.mkdir(path.join(tempDir, changeFolderPath("pr-create-step")), { recursive: true });
     await PrCreateStep.run(state, deps);
 
-    const resultPath = path.join(tempDir, "openspec", "changes", "pr-create-step", "pr-create-result.md");
+    const resultPath = path.join(tempDir, prCreateResultPath("pr-create-step"));
     const content = await fs.readFile(resultPath, "utf-8");
     expect(content).toContain("## Status: success");
     expect(content).toContain("**URL**:");
@@ -341,10 +342,10 @@ describe("TC-017: pr-create-result.md — 失敗時のファイル構造", () =>
     const state = makeMinimalState();
     const deps = makeMinimalDeps("pr-create-step");
 
-    await fs.mkdir(path.join(tempDir, "openspec", "changes", "pr-create-step"), { recursive: true });
+    await fs.mkdir(path.join(tempDir, changeFolderPath("pr-create-step")), { recursive: true });
     await PrCreateStep.run(state, deps);
 
-    const resultPath = path.join(tempDir, "openspec", "changes", "pr-create-step", "pr-create-result.md");
+    const resultPath = path.join(tempDir, prCreateResultPath("pr-create-step"));
     const content = await fs.readFile(resultPath, "utf-8");
     expect(content).toContain("## Status: failed");
     expect(content).toContain("gh-failure");

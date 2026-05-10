@@ -14,6 +14,7 @@ import { spawnCommand } from "../util/spawn.js";
 import { runFinishOrchestrator } from "../core/finish/orchestrator.js";
 import type { FinishFs } from "../core/finish/types.js";
 import { parseRequestMd } from "../parser/request-md.js";
+import { requestMdPath } from "../util/paths.js";
 
 /**
  * Build a FinishFs from real fs modules.
@@ -72,8 +73,8 @@ export async function runFinish(opts: RunFinishOptions): Promise<number> {
   let baseBranch = "main"; // fallback for slug-less paths (--pr, --job)
   if (opts.slug) {
     try {
-      const requestMdPath = path.join(opts.cwd, "openspec", "changes", opts.slug, "request.md");
-      const parsed = await parseRequestMd(requestMdPath);
+      const requestMdAbsPath = path.join(opts.cwd, requestMdPath(opts.slug));
+      const parsed = await parseRequestMd(requestMdAbsPath);
       baseBranch = parsed.baseBranch;
     } catch {
       // request.md not found or parse error — use fallback

@@ -10,6 +10,7 @@ import { describe, it, expect } from "vitest";
 import { VerificationStep } from "../../../src/core/step/verification.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { StepDeps } from "../../../src/core/step/types.js";
+import { verificationResultPath } from "../../../src/util/paths.js";
 
 function makeMinimalState(): JobState {
   return {
@@ -108,6 +109,6 @@ describe("VerificationStep.resultFilePath", () => {
     const deps = makeMinimalDeps("my-change");
     const filePath = VerificationStep.resultFilePath(state, deps);
 
-    expect(filePath).toBe("openspec/changes/my-change/verification-result.md");
+    expect(filePath).toBe(verificationResultPath("my-change"));
   });
 });

@@ -12,6 +12,7 @@ import { BUILD_FIXER_SYSTEM_PROMPT } from "../../../src/prompts/build-fixer-syst
 import { AGENT_TOOLSET_TYPE } from "../../../src/core/agent/definition.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { StepDeps } from "../../../src/core/step/types.js";
+import { verificationResultPath, changeFolderPath } from "../../../src/util/paths.js";
 
 function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
   return {
@@ -41,7 +42,7 @@ function makeStateWithVerificationResult(slug: string, fileContent?: string | nu
           sessionId: null,
           outcome: {
             verdict: "failed",
-            findingsPath: `openspec/changes/${slug}/verification-result.md`,
+            findingsPath: verificationResultPath(slug),
             fileContent: fileContent !== undefined ? fileContent : null,
             error: null,
           },
@@ -192,7 +193,7 @@ describe("BuildFixerStep.buildMessage 内容検証", () => {
     const deps = makeMinimalDeps("my-change");
     const message = BuildFixerStep.buildMessage(state, deps);
 
-    expect(message).toContain("openspec/changes/my-change");
+    expect(message).toContain(changeFolderPath("my-change"));
     expect(message).toContain("verification-result.md");
     expect(message).toContain("feat/my-change");
     // buildGitPushInstruction uses "Commit" (capital) — case-insensitive check
@@ -300,7 +301,7 @@ describe("BuildFixerStep.buildMessage — fileContent が null/undefined", () =>
             sessionId: null,
             outcome: {
               verdict: "failed",
-              findingsPath: "openspec/changes/my-change/verification-result.md",
+              findingsPath: verificationResultPath("my-change"),
               // fileContent field omitted (undefined)
               error: null,
             },

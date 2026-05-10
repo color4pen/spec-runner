@@ -7,6 +7,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { PHASE_NAMES, PHASE_SCRIPTS } from "./phases.js";
 import type { PhaseName } from "./phases.js";
+import { verificationResultPath } from "../../util/paths.js";
 
 /** Result for a single verification phase. */
 export interface PhaseResult {
@@ -217,7 +218,7 @@ export async function runVerification(
   };
 
   // Write result file
-  const outputPath = path.join(cwd, "openspec", "changes", slug, "verification-result.md");
+  const outputPath = path.join(cwd, verificationResultPath(slug));
   await writeVerificationResult(result, outputPath);
 
   return result;

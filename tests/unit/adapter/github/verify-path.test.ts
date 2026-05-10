@@ -9,11 +9,12 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { GitHubApiClient } from "../../../../src/adapter/github/github-client.js";
+import { changeFolderPath } from "../../../../src/util/paths.js";
 
 const OWNER = "testowner";
 const REPO = "testrepo";
 const BRANCH = "feat/test";
-const FOLDER_PATH = "openspec/changes/test-slug";
+const FOLDER_PATH = changeFolderPath("test-slug");
 
 function buildClient(mockFetch: typeof fetch): GitHubApiClient {
   return new GitHubApiClient(mockFetch, "ghp_test");

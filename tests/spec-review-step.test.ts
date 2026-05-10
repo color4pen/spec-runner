@@ -5,6 +5,7 @@ import type { GitHubClient } from "../src/core/port/github-client.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
+import { specReviewResultPath } from "../src/util/paths.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -294,7 +295,7 @@ describe("TC-041: runSpecReviewStep — records session, verdict, findingsPath, 
     expect(stepResultConverted?.session?.id).toBe(sessionId);
     expect(stepResultConverted?.verdict).toBe("approved");
     // findingsPath now uses iteration-based naming: spec-review-result-001.md
-    expect(stepResultConverted?.findingsPath).toBe("openspec/changes/test-slug/spec-review-result-001.md");
+    expect(stepResultConverted?.findingsPath).toBe(specReviewResultPath("test-slug", 1));
     expect(stepResultConverted?.completedAt).toBeDefined();
     expect(stepResultConverted?.error).toBeNull();
   });
@@ -335,7 +336,7 @@ describe("TC-042: runSpecReviewStep — session created without custom tools", (
 
 // TC-049: runSpecReviewStep — findingsPath format
 describe("TC-049: runSpecReviewStep — findingsPath has correct format", () => {
-  it("records findingsPath as openspec/changes/<slug>/spec-review-result-001.md for iter=1", async () => {
+  it("records findingsPath as specReviewResultPath(slug, 1) for iter=1", async () => {
     const jobState = await makeJobState();
     const slug = "2026-04-29-my-feature";
 
@@ -353,7 +354,7 @@ describe("TC-049: runSpecReviewStep — findingsPath has correct format", () => 
 
     const lastStepResult = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
     expect(lastStepResult ? toLegacyStepResult(lastStepResult).findingsPath : undefined).toBe(
-      `openspec/changes/${slug}/spec-review-result-001.md`,
+      specReviewResultPath(slug, 1),
     );
   });
 });

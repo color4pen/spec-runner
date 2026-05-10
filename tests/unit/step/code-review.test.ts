@@ -15,6 +15,7 @@ import { CODE_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/code-review-syst
 import { AGENT_TOOLSET_TYPE } from "../../../src/core/agent/definition.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { StepDeps } from "../../../src/core/step/types.js";
+import { reviewFeedbackPath, changeFolderPath } from "../../../src/util/paths.js";
 
 function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
   return {
@@ -102,7 +103,7 @@ describe("TC-004: CodeReviewStep.resultFilePath が zero-padded 3 桁の iterati
     const deps = makeMinimalDeps("my-slug");
     const result = CodeReviewStep.resultFilePath(state, deps);
     expect(result).toContain("review-feedback-001.md");
-    expect(result).toContain("openspec/changes/my-slug/");
+    expect(result).toContain(`${changeFolderPath("my-slug")}/`);
   });
 
   it("returns review-feedback-002.md for second iteration", () => {
@@ -112,7 +113,7 @@ describe("TC-004: CodeReviewStep.resultFilePath が zero-padded 3 桁の iterati
           {
             attempt: 1,
             sessionId: null,
-            outcome: { verdict: "needs-fix", findingsPath: "openspec/changes/my-slug/review-feedback-001.md", error: null },
+            outcome: { verdict: "needs-fix", findingsPath: reviewFeedbackPath("my-slug", 1), error: null },
             startedAt: "2026-01-01T00:00:00.000Z",
             endedAt: "2026-01-01T00:00:00.000Z",
           },
@@ -124,9 +125,9 @@ describe("TC-004: CodeReviewStep.resultFilePath が zero-padded 3 桁の iterati
     expect(result).toContain("review-feedback-002.md");
   });
 
-  it("buildReviewFeedbackPath produces zero-padded path", () => {
-    expect(buildReviewFeedbackPath("my-slug", 1)).toBe("openspec/changes/my-slug/review-feedback-001.md");
-    expect(buildReviewFeedbackPath("my-slug", 10)).toBe("openspec/changes/my-slug/review-feedback-010.md");
+  it("buildReviewFeedbackPath produces zero-padded path — TC-013: must match reviewFeedbackPath", () => {
+    expect(buildReviewFeedbackPath("my-slug", 1)).toBe(reviewFeedbackPath("my-slug", 1));
+    expect(buildReviewFeedbackPath("my-slug", 10)).toBe(reviewFeedbackPath("my-slug", 10));
   });
 });
 
@@ -183,7 +184,7 @@ describe("CodeReviewStep.buildMessage 内容検証", () => {
     const message = CodeReviewStep.buildMessage(state, deps);
 
     // review-exit-contract: code-review agent must commit + push result file
-    expect(message).toContain("openspec/changes/my-slug/review-feedback-001.md");
+    expect(message).toContain(reviewFeedbackPath("my-slug", 1));
     // buildGitPushInstruction uses "Commit" (capital C) — case-insensitive check
     expect(message.toLowerCase()).toContain("commit");
     expect(message.toLowerCase()).toContain("push");

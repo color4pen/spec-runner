@@ -14,6 +14,7 @@ import { describe, it, expect, vi } from "vitest";
 import { archiveOpenspec } from "../src/core/finish/archive-openspec.js";
 import type { SpawnFn } from "../src/util/spawn.js";
 import type { FinishFs } from "../src/core/finish/types.js";
+import { changeFolderPath } from "../src/util/paths.js";
 
 function makeSpawn(exitCode: number, stdout = "", stderr = ""): SpawnFn {
   // Both openspec archive and the subsequent git add return the same exit code.
@@ -36,7 +37,7 @@ function makeNestedSpecsFs(specNames: string[]): FinishFs {
   return {
     exists: vi.fn().mockImplementation((path: string) => {
       // Change folder exists
-      if (path.includes("openspec/changes/my-feature")) return Promise.resolve(true);
+      if (path.includes(changeFolderPath("my-feature"))) return Promise.resolve(true);
       // Nested spec.md files exist
       for (const name of specNames) {
         if (path.endsWith(`/${name}/spec.md`)) return Promise.resolve(true);
@@ -66,7 +67,7 @@ function makeFlatSpecsFs(fileNames: string[]): FinishFs {
   return {
     exists: vi.fn().mockImplementation((path: string) => {
       // Change folder exists
-      if (path.includes("openspec/changes/my-feature")) return Promise.resolve(true);
+      if (path.includes(changeFolderPath("my-feature"))) return Promise.resolve(true);
       return Promise.resolve(false);
     }),
     readdir: vi.fn().mockImplementation((path: string) => {
@@ -184,7 +185,7 @@ describe("TC-025b: directory without spec.md → openspec archive with --skip-sp
     const fs = makeFs({
       exists: vi.fn().mockImplementation((path: string) => {
         // Change folder exists (but not child paths)
-        if (path === "/repo/openspec/changes/my-feature") return Promise.resolve(true);
+        if (path === `/repo/${changeFolderPath("my-feature")}`) return Promise.resolve(true);
         // spec.md doesn't exist in any directory
         if (path.endsWith("/spec.md")) return Promise.resolve(false);
         return Promise.resolve(false);
@@ -215,7 +216,7 @@ describe("TC-025c: mixed (1 valid nested + 1 empty dir) → no --skip-specs", ()
     const spawn = makeSpawn(0);
     const fs: FinishFs = {
       exists: vi.fn().mockImplementation((path: string) => {
-        if (path.includes("openspec/changes/my-feature")) return Promise.resolve(true);
+        if (path.includes(changeFolderPath("my-feature"))) return Promise.resolve(true);
         if (path.endsWith("/valid-spec/spec.md")) return Promise.resolve(true);
         if (path.endsWith("/empty-dir/spec.md")) return Promise.resolve(false);
         return Promise.resolve(false);

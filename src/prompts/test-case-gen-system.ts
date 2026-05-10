@@ -1,4 +1,8 @@
 import { buildGitPushInstruction } from "./git-push-instruction.js";
+import { changesDirRel, changeFolderPath } from "../util/paths.js";
+
+// Build dynamically so path references stay in sync with changesDirRel().
+const _changesDir = changesDirRel();
 
 /**
  * System prompt for the test-case-gen step.
@@ -15,7 +19,7 @@ and produce a test-cases.md file that describes the test scenarios for implement
 ## Your Output
 
 Write your test scenarios to the path specified in the user message
-(openspec/changes/<slug>/test-cases.md).
+(${_changesDir}/<slug>/test-cases.md).
 
 ## Test Case Format
 
@@ -167,7 +171,7 @@ export interface TestCaseGenMessageInput {
  */
 export function buildTestCaseGenInitialMessage(opts: TestCaseGenMessageInput): string {
   const { slug, branch, requestContent, enabled } = opts;
-  const changeFolder = `openspec/changes/${slug}`;
+  const changeFolder = changeFolderPath(slug);
   const outputPath = `${changeFolder}/test-cases.md`;
 
   const mustAreasSection = enabled.length > 0

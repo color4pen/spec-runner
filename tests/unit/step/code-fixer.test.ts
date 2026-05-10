@@ -16,6 +16,7 @@ import { CODE_FIXER_SYSTEM_PROMPT } from "../../../src/prompts/code-fixer-system
 import { AGENT_TOOLSET_TYPE } from "../../../src/core/agent/definition.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { StepDeps } from "../../../src/core/step/types.js";
+import { reviewFeedbackPath, changeFolderPath } from "../../../src/util/paths.js";
 
 function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
   return {
@@ -37,7 +38,7 @@ function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
 }
 
 function makeStateWithCodeReviewResult(slug: string, iteration: number = 2): JobState {
-  const findingsPath = `openspec/changes/${slug}/review-feedback-${String(iteration).padStart(3, "0")}.md`;
+  const findingsPath = reviewFeedbackPath(slug, iteration);
   return makeMinimalState({
     steps: {
       "code-review": [
@@ -183,7 +184,7 @@ describe("TC-025: CodeFixerStep.buildMessage が直近の review-feedback パス
     const state = makeStateWithCodeReviewResult("my-change", 1);
     const deps = makeMinimalDeps("my-change");
     const message = CodeFixerStep.buildMessage(state, deps);
-    expect(message).toContain("openspec/changes/my-change");
+    expect(message).toContain(changeFolderPath("my-change"));
     expect(message).toContain("feat/my-change");
   });
 });

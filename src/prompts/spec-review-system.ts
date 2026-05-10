@@ -1,4 +1,8 @@
 import { buildGitPushInstruction } from "./git-push-instruction.js";
+import { changesDirRel, specReviewResultPath } from "../util/paths.js";
+
+// Build dynamically so path references stay in sync with changesDirRel().
+const _changesDir = changesDirRel();
 
 /**
  * System prompt for the spec-review step.
@@ -13,7 +17,7 @@ Your task is to review the change folder and produce a verdict on the specificat
 
 ## Your Output
 
-Write your findings to the path specified in the user message (e.g. openspec/changes/<slug>/spec-review-result-NNN.md).
+Write your findings to the path specified in the user message (e.g. ${_changesDir}/<slug>/spec-review-result-NNN.md).
 
 The file MUST contain a verdict line in this exact format:
 - **verdict**: <value>
@@ -37,7 +41,7 @@ After the verdict line, include a Findings section with a table:
 
 | # | Severity | Category | File | Description | How to Fix |
 |---|----------|----------|------|-------------|------------|
-| 1 | HIGH | completeness | openspec/changes/<slug>/tasks.md:10 | Missing error handling spec | Add error codes for each failure mode |
+| 1 | HIGH | completeness | ${_changesDir}/<slug>/tasks.md:10 | Missing error handling spec | Add error codes for each failure mode |
 
 Severity levels: CRITICAL, HIGH, MEDIUM, LOW
 
@@ -63,7 +67,7 @@ The orchestrator fetches the result file from GitHub — if you do not push, the
  */
 export const SPEC_REVIEW_INITIAL_MESSAGE_TEMPLATE = `Please review the following change folder specification and produce a verdict.
 
-Change folder: openspec/changes/{{SLUG}}
+Change folder: ${_changesDir}/{{SLUG}}
 Repository: {{REPOSITORY}}
 Request type: {{REQUEST_TYPE}}
 Enabled options: {{ENABLED}}
@@ -143,7 +147,7 @@ export function buildSpecReviewInitialMessage(input: SpecReviewPromptInput): str
   // Compute findings path based on iteration
   const iteration = input.iteration ?? 1;
   const findingsPath = input.findingsPath
-    ?? `openspec/changes/${input.slug}/spec-review-result-${String(iteration).padStart(3, "0")}.md`;
+    ?? specReviewResultPath(input.slug, iteration);
 
   // Build git push instruction if branch is provided
   const gitPushInstruction = input.branch

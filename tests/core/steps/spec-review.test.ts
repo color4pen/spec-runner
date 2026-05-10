@@ -10,6 +10,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { buildFindingsPath } from "../../../src/core/step/spec-review.js";
 import { toLegacyStepResult } from "../../../src/state/helpers.js";
+import { specReviewResultPath } from "../../../src/util/paths.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
@@ -124,7 +125,7 @@ describe("TC-044: spec-review step — iter=1 and iter=2 have different findings
     // Check iter=1 findings path
     const specReviewArr = state2.steps?.["spec-review"];
     expect(specReviewArr?.length).toBe(1);
-    expect(specReviewArr?.[0] ? toLegacyStepResult(specReviewArr[0]).findingsPath : undefined).toBe("openspec/changes/test-slug/spec-review-result-001.md");
+    expect(specReviewArr?.[0] ? toLegacyStepResult(specReviewArr[0]).findingsPath : undefined).toBe(specReviewResultPath("test-slug", 1));
 
     // iter=2: state with existing spec-review step from iter=1
     const deps2 = buildDeps({ sessionId: "sess_002", verdict: "approved" });
@@ -132,7 +133,7 @@ describe("TC-044: spec-review step — iter=1 and iter=2 have different findings
 
     const specReviewArr2 = state3.steps?.["spec-review"];
     expect(specReviewArr2?.length).toBe(2);
-    expect(specReviewArr2?.[1] ? toLegacyStepResult(specReviewArr2[1]).findingsPath : undefined).toBe("openspec/changes/test-slug/spec-review-result-002.md");
+    expect(specReviewArr2?.[1] ? toLegacyStepResult(specReviewArr2[1]).findingsPath : undefined).toBe(specReviewResultPath("test-slug", 2));
   });
 });
 
@@ -145,7 +146,7 @@ describe("TC-045: spec-review step — iter=2 initial message contains spec-revi
         {
           attempt: 1,
           sessionId: null,
-          outcome: { verdict: "needs-fix" as const, findingsPath: "openspec/changes/test-slug/spec-review-result-001.md", error: null },
+          outcome: { verdict: "needs-fix" as const, findingsPath: specReviewResultPath("test-slug", 1), error: null },
           startedAt: "2026-01-01T00:00:00.000Z",
           endedAt: "2026-01-01T00:00:00.000Z",
         },
@@ -197,13 +198,13 @@ describe("TC-046: spec-review step — result appended as array via pushStepResu
   });
 });
 
-// Verify buildFindingsPath helper
+// Verify buildFindingsPath helper — TC-012: must match specReviewResultPath
 describe("buildFindingsPath — filename format", () => {
   it("produces spec-review-result-001.md for iteration=1", () => {
-    expect(buildFindingsPath("my-slug", 1)).toBe("openspec/changes/my-slug/spec-review-result-001.md");
+    expect(buildFindingsPath("my-slug", 1)).toBe(specReviewResultPath("my-slug", 1));
   });
 
   it("produces spec-review-result-010.md for iteration=10", () => {
-    expect(buildFindingsPath("my-slug", 10)).toBe("openspec/changes/my-slug/spec-review-result-010.md");
+    expect(buildFindingsPath("my-slug", 10)).toBe(specReviewResultPath("my-slug", 10));
   });
 });

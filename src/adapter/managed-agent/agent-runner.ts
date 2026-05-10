@@ -44,6 +44,7 @@ import {
   codeReviewResultNotFoundError,
   noCommitDetectedError,
 } from "../../errors.js";
+import { changeFolderPath } from "../../util/paths.js";
 
 /**
  * Resolve wall-clock timeout for polling.
@@ -223,9 +224,9 @@ export class ManagedAgentRunner implements AgentRunner {
       }
 
       try {
-        const changeFolderPath = `openspec/changes/${ctx.slug}`;
+        const changeFolderRelPath = changeFolderPath(ctx.slug);
         await this.verifyChangeFolderViaPort(
-          effectiveBranch, changeFolderPath, ctx.slug,
+          effectiveBranch, changeFolderRelPath, ctx.slug,
         );
       } catch (err) {
         if (

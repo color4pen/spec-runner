@@ -8,6 +8,7 @@ import { CODE_FIXER_SYSTEM_PROMPT } from "../../prompts/code-fixer-system.js";
 import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { SpecRunnerError, branchNotSetError } from "../../errors.js";
+import { changeFolderPath } from "../../util/paths.js";
 
 const CODE_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -74,7 +75,7 @@ export const CodeFixerStep: AgentStep = {
     if (!codeReviewResult || !codeReviewResult.findingsPath) {
       throw new SpecRunnerError(
         CODE_FIXER_NO_REVIEW_RESULT,
-        `Ensure code-review step produced openspec/changes/${deps.slug}/review-feedback-NNN.md before invoking code-fixer.`,
+        `Ensure code-review step produced ${changeFolderPath(deps.slug)}/review-feedback-NNN.md before invoking code-fixer.`,
         "code-fixer requires code-review result but none found",
       );
     }
@@ -84,7 +85,7 @@ export const CodeFixerStep: AgentStep = {
     return `<user-request>
 You are the code-fixer for the following change:
 
-Change folder: openspec/changes/${deps.slug}
+Change folder: ${changeFolderPath(deps.slug)}
 Branch: ${branch}
 Review feedback: ${findingsPath}
 

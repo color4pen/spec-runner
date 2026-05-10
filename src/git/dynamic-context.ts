@@ -11,6 +11,7 @@ import { execFile as nodeExecFile } from "node:child_process";
 import { promisify } from "node:util";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { specsDirRel, changesDirRel } from "../util/paths.js";
 
 const execFileAsync = promisify(nodeExecFile);
 
@@ -77,7 +78,7 @@ export async function collectDynamicContext(
  * Returns empty array when directory does not exist or read fails.
  */
 async function collectSpecsList(cwd: string): Promise<string[]> {
-  const specsDir = path.join(cwd, "openspec", "specs");
+  const specsDir = path.join(cwd, specsDirRel());
   try {
     const entries = await fs.readdir(specsDir, { withFileTypes: true });
     return entries
@@ -94,7 +95,7 @@ async function collectSpecsList(cwd: string): Promise<string[]> {
  * Returns empty array when directory does not exist or read fails.
  */
 async function collectChangesList(cwd: string): Promise<string[]> {
-  const changesDir = path.join(cwd, "openspec", "changes");
+  const changesDir = path.join(cwd, changesDirRel());
   try {
     const entries = await fs.readdir(changesDir, { withFileTypes: true });
     return entries

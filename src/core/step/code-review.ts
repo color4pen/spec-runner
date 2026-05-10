@@ -11,6 +11,7 @@ import { parseReviewScores } from "../parser/review-scores.js";
 import type { ReviewScores } from "../parser/review-scores.js";
 import { parseFindingSeverityCounts } from "../parser/review-findings.js";
 import type { FindingSeverityCounts } from "../parser/review-findings.js";
+import { reviewFeedbackPath, changeFolderPath } from "../../util/paths.js";
 
 const CODE_REVIEW_AGENT_MODEL = "claude-opus-4-6[1m]";
 
@@ -60,11 +61,11 @@ function determineVerdict(
 
 /**
  * Build the review-feedback file path for a given iteration.
- * Format: openspec/changes/<slug>/review-feedback-NNN.md (3-digit zero-padded)
+ * Delegates to reviewFeedbackPath from util/paths.ts.
+ * Re-exported here for backward compatibility with callers that import from this module.
  */
 export function buildReviewFeedbackPath(slug: string, iteration: number): string {
-  const nnn = String(iteration).padStart(3, "0");
-  return `openspec/changes/${slug}/review-feedback-${nnn}.md`;
+  return reviewFeedbackPath(slug, iteration);
 }
 
 /**
@@ -118,15 +119,15 @@ export function buildCodeReviewInitialMessage(opts: {
   return `<user-request>
 Please perform a code review for the following change:
 
-Change folder: openspec/changes/${opts.slug}
+Change folder: ${changeFolderPath(opts.slug)}
 Iteration: ${opts.iteration}
 
 Steps:
 1. Run \`git diff main...HEAD --stat\` to understand the scope of changes
 2. Review the implementation files changed in this branch
-3. Read the spec in openspec/changes/${opts.slug}/ (design.md, tasks.md)
+3. Read the spec in ${changeFolderPath(opts.slug)}/ (design.md, tasks.md)
 4. Read .claude/rules/review-standards.md for the findings format and severity definitions
-5. Check test coverage against openspec/changes/${opts.slug}/test-cases.md (must scenarios)
+5. Check test coverage against ${changeFolderPath(opts.slug)}/test-cases.md (must scenarios)
 6. Write your findings and verdict to: ${opts.findingsPath}
 
 The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escalation>\`

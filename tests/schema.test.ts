@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { validateJobState } from "../src/state/schema.js";
 import { pushStepResult, toLegacyStepResult } from "../src/state/helpers.js";
 import type { JobState } from "../src/state/schema.js";
+import { changeFolderPath } from "../src/util/paths.js";
 
 function makeMinimalV1State(): Record<string, unknown> {
   return {
@@ -59,7 +60,7 @@ describe("TC-024: pushStepResult — appends step result into state.steps", () =
     const updated = pushStepResult(state, "spec-review", {
       session,
       verdict: "approved",
-      findingsPath: "openspec/changes/test-slug/spec-review-result.md",
+      findingsPath: `${changeFolderPath("test-slug")}/spec-review-result.md`,
       completedAt: now,
       error: null,
     });
@@ -71,7 +72,7 @@ describe("TC-024: pushStepResult — appends step result into state.steps", () =
       sessionId: session.id,
       outcome: {
         verdict: "approved",
-        findingsPath: "openspec/changes/test-slug/spec-review-result.md",
+        findingsPath: `${changeFolderPath("test-slug")}/spec-review-result.md`,
         error: null,
       },
       endedAt: now,

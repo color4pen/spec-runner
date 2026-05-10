@@ -7,6 +7,7 @@
  */
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { JobState, StepRun } from "../../state/schema.js";
+import { specReviewResultPath, verificationResultPath, reviewFeedbackPath, changeFolderPath } from "../../util/paths.js";
 
 /**
  * Render the PR title from the request.md H1 heading.
@@ -64,17 +65,17 @@ export function renderPrBody(params: {
     {
       name: "spec-review",
       stepKey: "spec-review",
-      resultPathTemplate: (slug, n) => `openspec/changes/${slug}/spec-review-result-${String(n).padStart(3, "0")}.md`,
+      resultPathTemplate: (slug, n) => specReviewResultPath(slug, n),
     },
     {
       name: "verification",
       stepKey: "verification",
-      resultPathTemplate: (slug, _n) => `openspec/changes/${slug}/verification-result.md`,
+      resultPathTemplate: (slug, _n) => verificationResultPath(slug),
     },
     {
       name: "code-review",
       stepKey: "code-review",
-      resultPathTemplate: (slug, n) => `openspec/changes/${slug}/review-feedback-${String(n).padStart(3, "0")}.md`,
+      resultPathTemplate: (slug, n) => reviewFeedbackPath(slug, n),
     },
   ];
 
@@ -103,14 +104,14 @@ export function renderPrBody(params: {
   if (verificationRuns.length > 0) {
     const lastVerification = verificationRuns[verificationRuns.length - 1]!;
     const verificationPath = lastVerification.outcome.findingsPath
-      ?? `openspec/changes/${slug}/verification-result.md`;
+      ?? verificationResultPath(slug);
     sections.push(`- [ ] Review verification results: \`${verificationPath}\``);
   } else {
     sections.push("- [ ] Run verification and confirm all tests pass.");
   }
 
   // Add test cases reference if there's a test-cases file
-  sections.push(`- [ ] Confirm must test cases in \`openspec/changes/${slug}/test-cases.md\` are covered.`);
+  sections.push(`- [ ] Confirm must test cases in \`${changeFolderPath(slug)}/test-cases.md\` are covered.`);
 
   // --- Signature ---
   sections.push("🤖 Generated with SpecRunner");

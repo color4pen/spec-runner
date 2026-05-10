@@ -5,6 +5,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { buildSpecFixerSystemPrompt } from "../../src/prompts/spec-fixer-system.js";
+import { specReviewResultPath } from "../../src/util/paths.js";
 
 // TC-028: spec-fixer Agent — system_prompt が buildSpecFixerSystemPrompt 由来のキーワードを含む
 describe("TC-028: buildSpecFixerSystemPrompt — contains required keywords", () => {
@@ -48,7 +49,7 @@ describe("buildSpecFixerSystemPrompt — prompt stability", () => {
     const prompt2 = buildSpecFixerSystemPrompt({
       slug: "test-slug",
       branch: "feat/test",
-      findingsPath: "openspec/changes/test/spec-review-result-001.md",
+      findingsPath: specReviewResultPath("test", 1),
     });
     expect(prompt1).toBe(prompt2);
   });

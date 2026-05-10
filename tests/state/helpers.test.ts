@@ -9,6 +9,7 @@
 import { describe, it, expect } from "vitest";
 import { pushStepResult, getLatestStepResult, toLegacyStepResult } from "../../src/state/helpers.js";
 import type { JobState } from "../../src/state/schema.js";
+import { specReviewResultPath } from "../../src/util/paths.js";
 
 function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
   return {
@@ -61,7 +62,7 @@ describe("TC-021: pushStepResult — second push auto-assigns iteration=2", () =
     state = pushStepResult(state, "spec-review", {
       session: null,
       verdict: "needs-fix",
-      findingsPath: "openspec/changes/test/spec-review-result-001.md",
+      findingsPath: specReviewResultPath("test", 1),
       completedAt: now,
       error: null,
     });
@@ -69,7 +70,7 @@ describe("TC-021: pushStepResult — second push auto-assigns iteration=2", () =
     state = pushStepResult(state, "spec-review", {
       session: null,
       verdict: "approved",
-      findingsPath: "openspec/changes/test/spec-review-result-002.md",
+      findingsPath: specReviewResultPath("test", 2),
       completedAt: now,
       error: null,
     });

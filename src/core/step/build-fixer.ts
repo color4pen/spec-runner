@@ -9,6 +9,7 @@ import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { SpecRunnerError, branchNotSetError } from "../../errors.js";
 import { extractVerificationFailures } from "../verification/parse-result.js";
+import { changeFolderPath } from "../../util/paths.js";
 
 const BUILD_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -71,7 +72,7 @@ export const BuildFixerStep: AgentStep = {
     if (!verificationResult || !verificationResult.findingsPath) {
       throw new SpecRunnerError(
         BUILD_FIXER_NO_VERIFICATION_RESULT,
-        `Ensure verification step produced openspec/changes/${deps.slug}/verification-result.md before invoking build-fixer.`,
+        `Ensure verification step produced ${changeFolderPath(deps.slug)}/verification-result.md before invoking build-fixer.`,
         "build-fixer requires verification result but none found",
       );
     }
@@ -84,7 +85,7 @@ export const BuildFixerStep: AgentStep = {
     return `<user-request>
 You are the build-fixer for the following change:
 
-Change folder: openspec/changes/${deps.slug}
+Change folder: ${changeFolderPath(deps.slug)}
 Branch: ${branch}
 Verification result: ${findingsPath}
 ${failureSection}

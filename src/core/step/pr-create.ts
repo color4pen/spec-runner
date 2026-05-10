@@ -17,6 +17,7 @@ import * as path from "node:path";
 import { runPrCreate } from "../pr-create/runner.js";
 import { renderPrTitle, renderPrBody } from "../pr-create/body-template.js";
 import { branchNotSetError } from "../../errors.js";
+import { prCreateResultPath } from "../../util/paths.js";
 
 export const PrCreateStep: CliStep = {
   kind: "cli",
@@ -80,7 +81,7 @@ export const PrCreateStep: CliStep = {
 
   resultFilePath(state: JobState, deps: StepDeps): string {
     void state; // unused — result path is purely slug-based
-    return `openspec/changes/${deps.slug}/pr-create-result.md`;
+    return prCreateResultPath(deps.slug);
   },
 
   parseResult(content: string, deps: StepDeps) {

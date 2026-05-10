@@ -17,6 +17,7 @@ import type { PipelineDeps } from "../../../../src/core/types.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
+import { changeFolderPath, verificationResultPath, reviewFeedbackPath } from "../../../../src/util/paths.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -87,7 +88,7 @@ function makeStepObject(name: string, kind: "agent" | "cli" = "agent"): Step {
       kind: "cli",
       name,
       run: vi.fn().mockResolvedValue(undefined),
-      resultFilePath: () => `openspec/changes/test-slug/${name}-result.md`,
+      resultFilePath: () => `${changeFolderPath("test-slug")}/${name}-result.md`,
       parseResult: () => ({ verdict: "passed" as const, findingsPath: null }),
     };
   }
@@ -304,7 +305,7 @@ describe("TC-015: verification ↔ build-fixer loop guard → VERIFICATION_RETRI
               {
                 attempt: verificationCallCount,
                 sessionId: null,
-                outcome: { verdict: "failed" as const, findingsPath: `openspec/changes/test-slug/verification-result.md`, error: null },
+                outcome: { verdict: "failed" as const, findingsPath: verificationResultPath("test-slug"), error: null },
                 startedAt: new Date().toISOString(),
                 endedAt: new Date().toISOString(),
               },
@@ -394,7 +395,7 @@ describe("TC-017: code-review ↔ code-fixer loop guard → CODE_REVIEW_RETRIES_
                 sessionId: null,
                 outcome: {
                   verdict: "needs-fix" as const,
-                  findingsPath: `openspec/changes/test-slug/review-feedback-${String(codeReviewCallCount).padStart(3, "0")}.md`,
+                  findingsPath: reviewFeedbackPath("test-slug", codeReviewCallCount),
                   error: null,
                 },
                 startedAt: new Date().toISOString(),

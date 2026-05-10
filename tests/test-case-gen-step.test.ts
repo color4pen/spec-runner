@@ -18,6 +18,7 @@ import { NULL_PARSE_RESULT } from "../src/core/step/types.js";
 import { TEST_CASE_GEN_SYSTEM_PROMPT } from "../src/prompts/test-case-gen-system.js";
 import { AGENT_TOOLSET_TYPE } from "../src/core/agent/definition.js";
 import { STANDARD_TRANSITIONS } from "../src/core/pipeline/types.js";
+import { changeFolderPath } from "../src/util/paths.js";
 import type { JobState } from "../src/state/schema.js";
 import type { StepDeps } from "../src/core/step/types.js";
 
@@ -105,7 +106,7 @@ describe("TC-001: TestCaseGenStep.buildMessage 内容検証", () => {
     const deps = makeMinimalDeps("my-change");
     const message = TestCaseGenStep.buildMessage(state, deps);
 
-    expect(message).toContain("openspec/changes/my-change");
+    expect(message).toContain(changeFolderPath("my-change"));
     expect(message).toContain("design.md");
     expect(message).toContain("tasks.md");
     expect(message).toContain("test-cases.md");

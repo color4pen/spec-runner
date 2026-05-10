@@ -13,11 +13,12 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { GitHubApiClient } from "../../../../src/adapter/github/github-client.js";
+import { specReviewResultPath } from "../../../../src/util/paths.js";
 
 const OWNER = "testowner";
 const REPO = "testrepo";
 const BRANCH = "feat/test";
-const FILE_PATH = "openspec/changes/test-slug/spec-review-result-001.md";
+const FILE_PATH = specReviewResultPath("test-slug", 1);
 
 function buildClient(mockFetch: typeof fetch): GitHubApiClient {
   return new GitHubApiClient(mockFetch, "ghp_test");

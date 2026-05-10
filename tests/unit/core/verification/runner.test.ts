@@ -14,6 +14,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import * as childProcess from "node:child_process";
 import { EventEmitter } from "node:events";
+import { verificationResultPath } from "../../../../src/util/paths.js";
 
 // We mock child_process.spawn so no actual processes are spawned.
 vi.mock("node:child_process", () => ({
@@ -211,7 +212,7 @@ describe("TC-041: verification-result.md 構造検証", () => {
     const { runVerification } = await import("../../../../src/core/verification/runner.js");
     await runVerification("my-change", tempDir);
 
-    const resultPath = path.join(tempDir, "openspec", "changes", "my-change", "verification-result.md");
+    const resultPath = path.join(tempDir, verificationResultPath("my-change"));
     const content = await fs.readFile(resultPath, "utf-8");
     const lines = content.split("\n");
 

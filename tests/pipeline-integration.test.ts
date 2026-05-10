@@ -5,6 +5,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import type { GitHubClient } from "../src/core/port/github-client.js";
 import { createManagedAgentRunner } from "../src/adapter/managed-agent/agent-runner.js";
+import { verificationResultPath, prCreateResultPath } from "../src/util/paths.js";
 
 // Mock the verification runner so pipeline-integration tests don't spawn real processes.
 // VerificationStep.run() calls runVerification() internally.
@@ -12,7 +13,7 @@ import { createManagedAgentRunner } from "../src/adapter/managed-agent/agent-run
 vi.mock("../src/core/verification/runner.js", () => ({
   runVerification: vi.fn().mockImplementation(async (slug: string, cwd: string = process.cwd()) => {
     // Write a minimal verification-result.md so VerificationStep.parseResult can succeed
-    const outputPath = `${cwd}/openspec/changes/${slug}/verification-result.md`;
+    const outputPath = `${cwd}/${verificationResultPath(slug)}`;
     const dir = outputPath.substring(0, outputPath.lastIndexOf("/"));
     await import("node:fs/promises").then((fs) => fs.mkdir(dir, { recursive: true }));
     await import("node:fs/promises").then((fs) =>
@@ -33,7 +34,7 @@ vi.mock("../src/core/pr-create/runner.js", () => ({
   runPrCreate: vi.fn().mockImplementation(async (input: { branch: string; baseBranch: string; title: string; body: string; cwd?: string }) => {
     const cwd = input.cwd ?? process.cwd();
     const slug = "test-slug"; // integration tests use this slug
-    const outputPath = `${cwd}/openspec/changes/${slug}/pr-create-result.md`;
+    const outputPath = `${cwd}/${prCreateResultPath(slug)}`;
     const dir = outputPath.substring(0, outputPath.lastIndexOf("/"));
     await import("node:fs/promises").then((fs) => fs.mkdir(dir, { recursive: true }));
     await import("node:fs/promises").then((fs) =>
@@ -186,8 +187,8 @@ function buildPipelineMockClient(opts: {
  *
  * - verifyBranch: returns branchFound (default true)
  * - getRawFile:
- *   - openspec/changes/<slug>/spec-review-result-NNN.md → returns verdict content per specReviewVerdicts array
- *   - openspec/changes/<slug>/review-feedback-NNN.md → returns verdict per codeReviewVerdicts array
+ *   - {changeFolderPath(slug)}/spec-review-result-NNN.md → returns verdict content per specReviewVerdicts array
+ *   - {changeFolderPath(slug)}/review-feedback-NNN.md → returns verdict per codeReviewVerdicts array
  *   - change-folder probe (proposal.md) → returns "exists" if folderFound else null
  *
  * Uses endsWith matching so slug-prefix differences do not mask wrong paths.

@@ -12,6 +12,7 @@ import * as path from "node:path";
 import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs } from "./types.js";
 import { formatEscalation } from "./escalation.js";
+import { changeFolderPath, changesDirRel } from "../../util/paths.js";
 
 export type ArchiveOpenspecResult =
   | { ok: true; skipped: boolean; message: string }
@@ -70,19 +71,19 @@ export async function archiveOpenspec(params: {
 }): Promise<ArchiveOpenspecResult> {
   const { slug, cwd, spawn, fs } = params;
 
-  const changeFolderPath = path.join(cwd, "openspec", "changes", slug);
-  const changeExists = await fs.exists(changeFolderPath);
+  const changeFolderAbsPath = path.join(cwd, changeFolderPath(slug));
+  const changeExists = await fs.exists(changeFolderAbsPath);
 
   if (!changeExists) {
     return {
       ok: true,
       skipped: true,
-      message: `openspec/changes/${slug}/ not found — skipping openspec archive.`,
+      message: `${changeFolderPath(slug)}/ not found — skipping openspec archive.`,
     };
   }
 
   // Check for spec files in specs/ subfolder
-  const specsPath = path.join(changeFolderPath, "specs");
+  const specsPath = path.join(changeFolderAbsPath, "specs");
   const hasSpecFilesResult = await hasSpecFiles(specsPath, fs);
 
   const archiveArgs = hasSpecFilesResult
@@ -105,12 +106,12 @@ export async function archiveOpenspec(params: {
   // openspec/changes/<slug>/ and the new openspec/changes/archive/<date>-<slug>/
   // directory (created by openspec archive) are both included in the commit
   // that move-requests-dir will produce.
-  const gitAddResult = await spawn("git", ["add", "openspec/changes/"], { cwd });
+  const gitAddResult = await spawn("git", ["add", `${changesDirRel()}/`], { cwd });
 
   if (gitAddResult.exitCode !== 0) {
     const escalation = formatEscalation({
       failedStep: "archive-openspec",
-      detectedState: `git add openspec/changes/ failed (exit ${gitAddResult.exitCode})`,
+      detectedState: `git add ${changesDirRel()}/ failed (exit ${gitAddResult.exitCode})`,
       recommendedAction: `Check git error: ${gitAddResult.stderr.trim()}. Then re-run: specrunner finish ${slug}`,
       resumeCommand: `specrunner finish ${slug}`,
     });

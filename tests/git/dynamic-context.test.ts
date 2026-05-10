@@ -10,6 +10,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
+import { changesDirRel, specsDirRel } from "../../src/util/paths.js";
 
 let tempDir: string;
 
@@ -83,7 +84,7 @@ describe("TC-DC-003: empty arrays when openspec dirs don't exist", () => {
 // ---------------------------------------------------------------------------
 describe("TC-DC-004: changesList excludes archive directory", () => {
   it("filters out the 'archive' directory from changesList", async () => {
-    const changesDir = path.join(tempDir, "openspec", "changes");
+    const changesDir = path.join(tempDir, changesDirRel());
     await fs.mkdir(changesDir, { recursive: true });
     await fs.mkdir(path.join(changesDir, "archive"));
     await fs.mkdir(path.join(changesDir, "my-feature"));
@@ -98,7 +99,7 @@ describe("TC-DC-004: changesList excludes archive directory", () => {
   });
 
   it("returns only non-archive directories sorted alphabetically", async () => {
-    const changesDir = path.join(tempDir, "openspec", "changes");
+    const changesDir = path.join(tempDir, changesDirRel());
     await fs.mkdir(changesDir, { recursive: true });
     await fs.mkdir(path.join(changesDir, "archive"));
     await fs.mkdir(path.join(changesDir, "z-feature"));
@@ -116,7 +117,7 @@ describe("TC-DC-004: changesList excludes archive directory", () => {
 // ---------------------------------------------------------------------------
 describe("specsList returns subdirectory names from openspec/specs/", () => {
   it("returns subdirectory names sorted alphabetically", async () => {
-    const specsDir = path.join(tempDir, "openspec", "specs");
+    const specsDir = path.join(tempDir, specsDirRel());
     await fs.mkdir(specsDir, { recursive: true });
     // Real structure: each spec is a named subdirectory containing spec.md
     await fs.mkdir(path.join(specsDir, "pipeline-orchestrator"));
@@ -131,7 +132,7 @@ describe("specsList returns subdirectory names from openspec/specs/", () => {
   });
 
   it("does not include loose files at the specs/ root", async () => {
-    const specsDir = path.join(tempDir, "openspec", "specs");
+    const specsDir = path.join(tempDir, specsDirRel());
     await fs.mkdir(specsDir, { recursive: true });
     await fs.mkdir(path.join(specsDir, "my-spec"));
     await fs.writeFile(path.join(specsDir, "my-spec", "spec.md"), "# My Spec");

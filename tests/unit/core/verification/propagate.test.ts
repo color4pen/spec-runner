@@ -10,6 +10,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { propagateVerificationResult } from "../../../../src/core/verification/propagate.js";
 import type { SpawnFn, SpawnResult } from "../../../../src/util/spawn.js";
+import { changeFolderPath, verificationResultPath } from "../../../../src/util/paths.js";
 
 function makeSpawn(
   responses: Array<Partial<SpawnResult>>,
@@ -32,7 +33,7 @@ beforeEach(async () => {
   cwd = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-verify-test-"));
   // Create a verification-result.md so the propagate step can find it
   const slug = "my-change";
-  const dir = path.join(cwd, "openspec", "changes", slug);
+  const dir = path.join(cwd, changeFolderPath(slug));
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(
     path.join(dir, "verification-result.md"),
@@ -64,7 +65,7 @@ describe("propagateVerificationResult — happy path", () => {
 
     expect(result).toEqual({ ok: true });
     const cmds = spawn.calls.map((c) => `${c.cmd} ${c.args.join(" ")}`);
-    expect(cmds[0]).toBe("git add openspec/changes/my-change/verification-result.md");
+    expect(cmds[0]).toBe(`git add ${verificationResultPath("my-change")}`);
     expect(cmds[1]).toBe("git diff --cached --quiet");
     expect(cmds[2]).toContain("git commit -m chore: verification result for my-change (iter 1)");
     expect(cmds[3]).toBe("git push origin feat/test");
@@ -83,7 +84,7 @@ describe("propagateVerificationResult — source file missing", () => {
     const spawn = makeSpawn([]);
 
     // Remove the source file
-    await fs.rm(path.join(cwd, "openspec", "changes", "my-change", "verification-result.md"));
+    await fs.rm(path.join(cwd, verificationResultPath("my-change")));
 
     const result = await propagateVerificationResult({
       slug: "my-change",

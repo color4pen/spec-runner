@@ -29,6 +29,7 @@ import type { FinishFs, ResolvedTarget, PrViewData } from "./types.js";
 import { formatEscalation } from "./escalation.js";
 import { fetchPrViewWithRetry } from "./pr-status.js";
 import { checkoutForValidation, restoreBranch } from "./branch-checkout.js";
+import { changeFolderPath } from "../../util/paths.js";
 
 export type { PrViewData };
 
@@ -200,17 +201,17 @@ async function runChecks5and6(params: {
   const { slug, checkCwd, spawn, fs, warnFn } = params;
 
   // Check 5: openspec/changes/<slug>/ existence (warning only)
-  const changeFolderPath = path.join(checkCwd, "openspec", "changes", slug);
-  const changeFolderExists = await fs.exists(changeFolderPath);
+  const changeFolderAbsPath = path.join(checkCwd, changeFolderPath(slug));
+  const changeFolderExists = await fs.exists(changeFolderAbsPath);
   if (!changeFolderExists) {
     warnFn(
-      `Warning: openspec/changes/${slug}/ not found. Archive steps will be skipped.\n`,
+      `Warning: ${changeFolderPath(slug)}/ not found. Archive steps will be skipped.\n`,
     );
   }
 
   // Check 6: openspec validate (only if change folder AND specs/ subdirectory exist)
   // Delta-less changes (bug-fix etc.) have no specs/ — validate would fail with "no deltas found".
-  const specsFolderPath = path.join(changeFolderPath, "specs");
+  const specsFolderPath = path.join(changeFolderAbsPath, "specs");
   const specsFolderExists = changeFolderExists && (await fs.exists(specsFolderPath));
   if (specsFolderExists) {
     // Run openspec validate; on failure build a custom escalation that includes stderr output.

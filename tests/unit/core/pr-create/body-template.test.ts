@@ -9,6 +9,7 @@ import { describe, it, expect } from "vitest";
 import { renderPrTitle, renderPrBody } from "../../../../src/core/pr-create/body-template.js";
 import type { ParsedRequest } from "../../../../src/parser/request-md.js";
 import type { JobState } from "../../../../src/state/schema.js";
+import { specReviewResultPath, verificationResultPath, reviewFeedbackPath } from "../../../../src/util/paths.js";
 
 function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
   return {
@@ -70,9 +71,9 @@ describe("TC-033: renderPrBody â€” Summary / Workflow / Test plan / signature ã‚
     const parsedRequest = makeParsedRequest();
     const jobState = makeMinimalState({
       steps: {
-        "spec-review": [makeStepRun("approved", 1, "openspec/changes/pr-create-step/spec-review-result-001.md")],
-        "verification": [makeStepRun("passed", 1, "openspec/changes/pr-create-step/verification-result.md")],
-        "code-review": [makeStepRun("approved", 1, "openspec/changes/pr-create-step/review-feedback-001.md")],
+        "spec-review": [makeStepRun("approved", 1, specReviewResultPath("pr-create-step", 1))],
+        "verification": [makeStepRun("passed", 1, verificationResultPath("pr-create-step"))],
+        "code-review": [makeStepRun("approved", 1, reviewFeedbackPath("pr-create-step", 1))],
       },
     });
 

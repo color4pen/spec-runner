@@ -3,6 +3,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { NULL_PARSE_RESULT } from "../../../../src/core/step/types.js";
+import { verificationResultPath } from "../../../../src/util/paths.js";
 import { ProposeStep } from "../../../../src/core/step/propose.js";
 import { SpecFixerStep } from "../../../../src/core/step/spec-fixer.js";
 import { ImplementerStep } from "../../../../src/core/step/implementer.js";
@@ -32,7 +33,7 @@ function makeMinimalState(): JobState {
           sessionId: null,
           outcome: {
             verdict: "failed" as const,
-            findingsPath: "openspec/changes/test-slug/verification-result.md",
+            findingsPath: verificationResultPath("test-slug"),
             error: null,
           },
           startedAt: "2026-01-01",

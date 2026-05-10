@@ -21,6 +21,7 @@ import type { JobState, StepRun } from "../../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { AgentStep } from "../../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
+import { specReviewResultPath, changeFolderPath } from "../../../../src/util/paths.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -141,7 +142,7 @@ async function seedJobState(jobId: string, state: JobState): Promise<void> {
 describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propagation", () => {
   it("state.steps['spec-review'] and state.history are populated after successful local-runtime agent step", async () => {
     const jobId = "tc146-integration-job";
-    const resultRelPath = "openspec/changes/integration-test/spec-review-result-001.md";
+    const resultRelPath = specReviewResultPath("integration-test", 1);
     const resultContent = "**Verdict**: approved\n";
 
     const initialState = makeJobState(jobId);
@@ -425,7 +426,7 @@ describe("TC-002: completionVerdict fallback — resultContent null + completion
 describe("TC-003 (behavior): completionVerdict is NOT used when resultContent is non-null", () => {
   it("parses verdict from resultContent, ignoring completionVerdict", async () => {
     const jobId = "tc003-behavior-job";
-    const resultRelPath = "openspec/changes/tc003-slug/review-result-001.md";
+    const resultRelPath = `${changeFolderPath("tc003-slug")}/review-result-001.md`;
     const resultContent = "- **verdict**: needs-fix\n";
 
     const initialState = makeJobState(jobId);

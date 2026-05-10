@@ -15,6 +15,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import type { JobState } from "../src/state/schema.js";
 import { getLatestStepResult } from "../src/state/helpers.js";
+import { changeFolderPath } from "../src/util/paths.js";
 
 let tempDir: string;
 let originalXdgConfigHome: string | undefined;
@@ -73,7 +74,7 @@ function makeSuccessState(verdict: "approved" | "needs-fix" | "escalation"): Job
         {
           attempt: 1,
           sessionId: "sess_spec",
-          outcome: { verdict, findingsPath: "openspec/changes/request/spec-review-result.md", error: null },
+          outcome: { verdict, findingsPath: `${changeFolderPath("request")}/spec-review-result.md`, error: null },
           startedAt: "2026-01-01",
           endedAt: "2026-01-01",
         },
@@ -150,7 +151,7 @@ function simulateRunOutput(
 
       if (verdict === "needs-fix") {
         process.stdout.write(
-          `Review findings at: ${specReviewResult.findingsPath ?? "openspec/changes/" + slug + "/spec-review-result.md"}\n`,
+          `Review findings at: ${specReviewResult.findingsPath ?? `${changeFolderPath(slug)}/spec-review-result.md`}\n`,
         );
       } else if (verdict === "escalation") {
         process.stdout.write(

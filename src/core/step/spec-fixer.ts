@@ -7,6 +7,7 @@ import { getLatestStepResult } from "../../state/helpers.js";
 import { SPEC_FIXER_SYSTEM_PROMPT } from "../../prompts/spec-fixer-system.js";
 import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { branchNotSetError } from "../../errors.js";
+import { changeFolderPath, specReviewResultPath } from "../../util/paths.js";
 
 const SPEC_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -38,7 +39,7 @@ function buildSpecFixerInitialMessage(opts: {
   return `<user-request>
 You are the spec-fixer for the following change:
 
-Change folder: openspec/changes/${slug}
+Change folder: ${changeFolderPath(slug)}
 Branch: ${branch}
 Findings file: ${findingsPath}
 
@@ -82,7 +83,7 @@ export const SpecFixerStep: AgentStep = {
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError("spec-fixer");
     const specReviewResult = getLatestStepResult(state, "spec-review");
-    const findingsPath = specReviewResult?.findingsPath ?? `openspec/changes/${deps.slug}/spec-review-result-001.md`;
+    const findingsPath = specReviewResult?.findingsPath ?? specReviewResultPath(deps.slug, 1);
     return buildSpecFixerInitialMessage({
       slug: deps.slug,
       branch: state.branch,

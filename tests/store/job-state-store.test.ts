@@ -17,6 +17,7 @@ import * as os from "node:os";
 import { JobStateStore } from "../../src/store/job-state-store.js";
 import type { NormalizedJobState } from "../../src/store/job-state-store.js";
 import type { StepRun } from "../../src/state/schema.js";
+import { specReviewResultPath } from "../../src/util/paths.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -143,7 +144,7 @@ describe("TC-002: post-PR24 StepResult[] → StepRun[] normalization", () => {
             iteration: 1,
             session: { id: "s1", agentId: "agent_001", environmentId: "env_001" },
             verdict: "needs-fix",
-            findingsPath: "openspec/changes/test/spec-review-result-001.md",
+            findingsPath: specReviewResultPath("test", 1),
             completedAt: "2026-02-01T00:30:00.000Z",
             error: null,
           },
@@ -151,7 +152,7 @@ describe("TC-002: post-PR24 StepResult[] → StepRun[] normalization", () => {
             iteration: 2,
             session: { id: "s2", agentId: "agent_001", environmentId: "env_001" },
             verdict: "approved",
-            findingsPath: "openspec/changes/test/spec-review-result-002.md",
+            findingsPath: specReviewResultPath("test", 2),
             completedAt: "2026-02-01T01:00:00.000Z",
             error: null,
           },

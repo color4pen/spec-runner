@@ -1,3 +1,5 @@
+import { specReviewResultPath, reviewFeedbackPath } from "./util/paths.js";
+
 /**
  * Named error class for specrunner CLI.
  * Each error carries a machine-readable code and a human-readable hint for the user.
@@ -182,11 +184,10 @@ export function ambiguousJobIdError(prefix: string, matchingJobIds: string[]): S
 }
 
 export function specReviewResultNotFoundError(slug: string, branch: string, iteration: number): SpecRunnerError {
-  const nnn = String(iteration).padStart(3, "0");
-  const filename = `spec-review-result-${nnn}.md`;
+  const resultPath = specReviewResultPath(slug, iteration);
   return new SpecRunnerError(
     ERROR_CODES.SPEC_REVIEW_RESULT_NOT_FOUND,
-    `Ensure the spec-review agent wrote the result file to openspec/changes/${slug}/${filename} on branch '${branch}'. If the agent wrote the file but did not commit + push, re-run the step or check the agent session logs for git push errors.`,
+    `Ensure the spec-review agent wrote the result file to ${resultPath} on branch '${branch}'. If the agent wrote the file but did not commit + push, re-run the step or check the agent session logs for git push errors.`,
     `Spec-review result file not found on branch '${branch}'.`,
   );
 }
@@ -201,11 +202,10 @@ export function pollTimeoutError(sessionId: string, elapsedMs: number): SpecRunn
 }
 
 export function codeReviewResultNotFoundError(slug: string, branch: string, iteration: number): SpecRunnerError {
-  const nnn = String(iteration).padStart(3, "0");
-  const filename = `review-feedback-${nnn}.md`;
+  const feedbackPath = reviewFeedbackPath(slug, iteration);
   return new SpecRunnerError(
     ERROR_CODES.CODE_REVIEW_RESULT_NOT_FOUND,
-    `Ensure the code-review agent wrote the result file to openspec/changes/${slug}/${filename} on branch '${branch}'. If the agent wrote the file but did not commit + push, re-run the step or check the agent session logs for git push errors.`,
+    `Ensure the code-review agent wrote the result file to ${feedbackPath} on branch '${branch}'. If the agent wrote the file but did not commit + push, re-run the step or check the agent session logs for git push errors.`,
     `Code-review result file not found on branch '${branch}'.`,
   );
 }

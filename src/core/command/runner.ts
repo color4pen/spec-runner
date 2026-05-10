@@ -33,6 +33,7 @@ import type { OriginInfo } from "../../git/remote.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { PipelineDeps } from "../types.js";
 import { collectDynamicContext } from "../../git/dynamic-context.js";
+import { specReviewResultPath } from "../../util/paths.js";
 
 // ---------------------------------------------------------------------------
 // PrepareResult
@@ -242,7 +243,7 @@ function outputSpecReviewVerdict(finalState: JobState, slug: string): void {
       }
     }
     process.stdout.write(
-      `Review findings at: ${specReviewResult.findingsPath ?? "openspec/changes/" + slug + "/spec-review-result.md"}\n`,
+      `Review findings at: ${specReviewResult.findingsPath ?? specReviewResultPath(slug, 1)}\n`,
     );
   } else if (verdict === "escalation") {
     process.stdout.write(

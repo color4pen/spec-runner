@@ -22,6 +22,7 @@ import type { AgentRunContext } from "../../../../src/core/port/agent-runner.js"
 import type { JobState } from "../../../../src/state/schema.js";
 import type { AgentStep } from "../../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
+import { specReviewResultPath } from "../../../../src/util/paths.js";
 
 let tempDir: string;
 
@@ -514,7 +515,7 @@ describe("TC-024: ClaudeCodeRunner does not import SessionClient or @anthropic-a
 
 describe("TC-025: ClaudeCodeRunner reads resultContent from fs (not GitHub API)", () => {
   it("result file is read from local filesystem after query completes", async () => {
-    const resultRelPath = "openspec/changes/test-slug/spec-review-result-001.md";
+    const resultRelPath = specReviewResultPath("test-slug", 1);
     const expectedContent = "## Verdict\napproved";
 
     const queryFn = makeQueryFn({

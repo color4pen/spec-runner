@@ -3,6 +3,7 @@ import type { JobState } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
 import { runVerification } from "../verification/runner.js";
 import { propagateVerificationResult } from "../verification/propagate.js";
+import { verificationResultPath } from "../../util/paths.js";
 
 const stderrWrite = (msg: string): void => {
   process.stderr.write(msg);
@@ -57,13 +58,13 @@ export const VerificationStep: CliStep = {
   },
 
   resultFilePath(_state: JobState, deps: StepDeps): string {
-    return `openspec/changes/${deps.slug}/verification-result.md`;
+    return verificationResultPath(deps.slug);
   },
 
   parseResult(content: string, deps: StepDeps) {
     const match = /^## Verdict: (passed|failed)$/m.exec(content);
     const verdict = match?.[1] as "passed" | "failed" | undefined;
-    const findingsPath = `openspec/changes/${deps.slug}/verification-result.md`;
+    const findingsPath = verificationResultPath(deps.slug);
     return {
       verdict: verdict ?? null,
       findingsPath,

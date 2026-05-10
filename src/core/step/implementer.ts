@@ -8,6 +8,7 @@ import type { DynamicContext } from "../../git/dynamic-context.js";
 import { IMPLEMENTER_SYSTEM_PROMPT } from "../../prompts/implementer-system.js";
 import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { branchNotSetError } from "../../errors.js";
+import { changeFolderPath } from "../../util/paths.js";
 
 const IMPLEMENTER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -58,11 +59,11 @@ export function buildImplementerInitialMessage(opts: {
   return `<user-request>
 You are the implementer for the following change:
 
-Change folder: openspec/changes/${slug}
+Change folder: ${changeFolderPath(slug)}
 Branch: ${branch}
 
 Please:
-1. Read openspec/changes/${slug}/tasks.md to understand what needs to be implemented
+1. Read ${changeFolderPath(slug)}/tasks.md to understand what needs to be implemented
 2. Read the relevant specs/ files for detailed specifications
 3. Implement all tasks in tasks.md (TDD: write tests first where applicable)
 4. Update tasks.md: mark completed tasks with [x]

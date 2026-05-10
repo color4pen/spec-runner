@@ -12,6 +12,7 @@ import { IMPLEMENTER_SYSTEM_PROMPT } from "../../../src/prompts/implementer-syst
 import { AGENT_TOOLSET_TYPE } from "../../../src/core/agent/definition.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { StepDeps } from "../../../src/core/step/types.js";
+import { changeFolderPath } from "../../../src/util/paths.js";
 
 function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
   return {
@@ -102,7 +103,7 @@ describe("ImplementerStep.buildMessage 内容検証", () => {
     const deps = makeMinimalDeps("my-change");
     const message = ImplementerStep.buildMessage(state, deps);
 
-    expect(message).toContain("openspec/changes/my-change");
+    expect(message).toContain(changeFolderPath("my-change"));
     expect(message).toContain("tasks.md");
     expect(message).toContain("specs/");
     expect(message).toContain("feat/my-change");

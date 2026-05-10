@@ -24,6 +24,7 @@ import type { GitHubClient } from "../../../../src/core/port/github-client.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import type { AgentStep } from "../../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
+import { specReviewResultPath } from "../../../../src/util/paths.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -205,7 +206,7 @@ describe("TC-015: ManagedAgentRunner.run() is equivalent to existing lifecycle",
 
     const ctx = makeCtx(
       {
-        step: makePollingStyleStep("spec-review", "spec-review", "openspec/changes/test-slug/spec-review-result-001.md"),
+        step: makePollingStyleStep("spec-review", "spec-review", specReviewResultPath("test-slug", 1)),
         state,
       },
       jobId,
@@ -606,7 +607,7 @@ describe("TC-031: managed adapter result file not found → error", () => {
     // Step has a resultFilePath (expects a file to exist)
     const ctx = makeCtx(
       {
-        step: makePollingStyleStep("spec-review", "spec-review", "openspec/changes/test-slug/spec-review-result-001.md"),
+        step: makePollingStyleStep("spec-review", "spec-review", specReviewResultPath("test-slug", 1)),
         state,
       },
       jobId,

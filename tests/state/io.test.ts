@@ -9,6 +9,7 @@ import { toLegacyStepResult } from "../../src/state/helpers.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
+import { changeFolderPath } from "../../src/util/paths.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -67,7 +68,7 @@ describe("TC-019: validateJobState — normalizes legacy object steps to length-
         "spec-review": {
           session: { id: "sess_001", agentId: "agent_001", environmentId: "env_001" },
           verdict: "approved",
-          findingsPath: "openspec/changes/test/spec-review-result.md",
+          findingsPath: `${changeFolderPath("test")}/spec-review-result.md`,
           completedAt: "2026-01-01T00:00:00.000Z",
           error: null,
         },
@@ -85,7 +86,7 @@ describe("TC-019: validateJobState — normalizes legacy object steps to length-
     const firstConverted = first ? toLegacyStepResult(first) : undefined;
     expect(firstConverted?.iteration).toBe(1);
     expect(firstConverted?.verdict).toBe("approved");
-    expect(firstConverted?.findingsPath).toBe("openspec/changes/test/spec-review-result.md");
+    expect(firstConverted?.findingsPath).toBe(`${changeFolderPath("test")}/spec-review-result.md`);
   });
 });
 
