@@ -1,7 +1,7 @@
 /**
  * Unit tests for dynamic context injection in buildMessage functions.
  *
- * TC-DC-005: propose buildInitialMessage includes specsList and changesList when dynamicContext present
+ * TC-DC-005: propose buildInitialMessage includes changesList when dynamicContext present
  * TC-DC-006: propose buildInitialMessage works without dynamicContext (backward compat)
  * TC-DC-007: implementer buildImplementerInitialMessage includes gitLog and diffStat when dynamicContext present
  * TC-DC-008: implementer buildImplementerInitialMessage works without dynamicContext (backward compat)
@@ -18,7 +18,6 @@ import { reviewFeedbackPath } from "../../src/util/paths.js";
 const FULL_CONTEXT: DynamicContext = {
   gitLog: "abc1234 feat: add context injection\ndef5678 fix: typo",
   diffStat: " src/git/dynamic-context.ts | 80 +++\n 1 file changed, 80 insertions(+)",
-  specsList: ["agent.md", "pipeline.md"],
   changesList: ["dynamic-context-injection", "other-feature"],
 };
 
@@ -26,12 +25,6 @@ const FULL_CONTEXT: DynamicContext = {
 // TC-DC-005 & 006: propose buildInitialMessage
 // ---------------------------------------------------------------------------
 describe("TC-DC-005: buildInitialMessage includes repo context when dynamicContext provided", () => {
-  it("includes specsList entries in the message", () => {
-    const msg = buildInitialMessage("request body", "my-slug", "feat/my-slug", FULL_CONTEXT);
-    expect(msg).toContain("agent.md");
-    expect(msg).toContain("pipeline.md");
-  });
-
   it("includes changesList entries in the message", () => {
     const msg = buildInitialMessage("request body", "my-slug", "feat/my-slug", FULL_CONTEXT);
     expect(msg).toContain("dynamic-context-injection");
@@ -64,9 +57,8 @@ describe("TC-DC-006: buildInitialMessage works without dynamicContext (backward 
     expect(msg).not.toContain("Repository Context");
   });
 
-  it("does not include Repository Context when specsList and changesList are empty", () => {
+  it("does not include Repository Context when changesList is empty", () => {
     const msg = buildInitialMessage("request body", "my-slug", "feat/my-slug", {
-      specsList: [],
       changesList: [],
     });
     expect(msg).not.toContain("Repository Context");
@@ -148,7 +140,7 @@ describe("TC-DC-008: buildImplementerInitialMessage works without dynamicContext
       slug: "my-slug",
       branch: "feat/my-slug",
       requestContent: "request body",
-      dynamicContext: { gitLog: "", diffStat: "", specsList: [], changesList: [] },
+      dynamicContext: { gitLog: "", diffStat: "", changesList: [] },
     });
     expect(msg).not.toContain("Branch Context");
   });
@@ -230,7 +222,7 @@ describe("TC-DC-010: buildCodeReviewInitialMessage works without dynamicContext 
       iteration: 1,
       findingsPath: reviewFeedbackPath("my-slug", 1),
       requestContent: "request body",
-      dynamicContext: { gitLog: "", diffStat: "", specsList: [], changesList: [] },
+      dynamicContext: { gitLog: "", diffStat: "", changesList: [] },
     });
     expect(msg).not.toContain("Branch Context");
   });

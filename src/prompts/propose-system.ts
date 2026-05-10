@@ -1,8 +1,7 @@
-import { changesDirRel, specsDirRel, changeFolderPath } from "../util/paths.js";
+import { changesDirRel, changeFolderPath } from "../util/paths.js";
 
 // Build dynamically so path references stay in sync with path utility functions.
 const _changesDir = changesDirRel();
-const _specsDir = specsDirRel();
 
 /**
  * System prompt for the propose step.
@@ -88,7 +87,7 @@ delta spec ファイル（\`${_changesDir}/<slug>/specs/**/*.md\`）を生成す
 1. **各 Requirement は \`### Requirement:\` で始まる header を持つこと**
 2. **各 Requirement は少なくとも 1 つの \`#### Scenario:\` を含むこと**（scenario なしは validation error）
    - **MODIFIED Requirements にも最低 1 つの Scenario が必須である。** Scenario は「差分の説明文」や「変更概要」ではなく、変更後のシステムの振る舞いを Given/When/Then 形式で具体的に記述すること。LLM は MODIFIED を「差分の説明」と解釈してシナリオを省略しやすいが、これは validation error になるため必ず含めること。
-3. **\`## MODIFIED Requirements\` 配下の \`### Requirement:\` header は、\`${_specsDir}/<spec>/spec.md\` の現状 header と完全一致すること**。header を変えたい場合は \`## RENAMED Requirements\` を併記し FROM / TO を明示する:
+3. **\`## MODIFIED Requirements\` 配下の \`### Requirement:\` header は、変更前の元の header と完全一致すること**。header を変えたい場合は \`## RENAMED Requirements\` を併記し FROM / TO を明示する:
    \`\`\`markdown
    ## RENAMED Requirements
 
@@ -114,14 +113,14 @@ delta spec ファイル（\`${_changesDir}/<slug>/specs/**/*.md\`）を生成す
 
 - delta spec は \`${_changesDir}/<slug>/specs/<capability-name>/spec.md\` に配置すること
 - \`specs/<name>.delta.md\` 等のフラットファイルは禁止
-- \`<capability-name>\` は \`${_specsDir}/\` 配下の既存ディレクトリ名と一致すること（新規 capability の場合は design.md で宣言した名前を使用）
+- \`<capability-name>\` は design.md で宣言した名前を使用すること
 
 ### Self-review checklist（commit 前に必ず確認）
 
 - [ ] 各 delta spec で使用しているセクションが \`## ADDED/MODIFIED/REMOVED/RENAMED Requirements\` のいずれかである
 - [ ] 各 \`### Requirement:\` header の直下に \`#### Scenario:\` が少なくとも 1 つ存在する
 - [ ] \`## MODIFIED Requirements\` 配下の各 Requirement にも \`#### Scenario:\` が存在し、変更後の振る舞いを Given/When/Then で記述している（差分説明文や変更概要ではない）
-- [ ] \`## MODIFIED Requirements\` の header が \`${_specsDir}/<spec>/spec.md\` の現状 header と一致している
+- [ ] \`## MODIFIED Requirements\` の header が変更前の元の header と一致している
 - [ ] delta spec のファイルパスが \`specs/<capability-name>/spec.md\` の形式である（フラットファイルでない）
 - [ ] 各 Requirement 本文に英語の \`SHALL\` または \`MUST\` が含まれている
 - [ ] \`### Requirement:\` header と最初の \`#### Scenario:\` の間にコードブロックがない
@@ -212,15 +211,15 @@ Even if the user request below explicitly says "edit README.md", "update the sou
  * The branch name follows the convention \`feat/{slug}\` and is also passed
  * here so the agent does not have to derive it.
  *
- * When dynamicContext is provided, specsList and changesList are appended as
- * a repository context section so the agent has an up-to-date overview without
- * having to discover this information itself.
+ * When dynamicContext is provided, changesList is appended as a repository
+ * context section so the agent has an up-to-date overview without having to
+ * discover this information itself.
  */
 export function buildInitialMessage(
   requestContent: string,
   slug: string,
   branch: string = `feat/${slug}`,
-  dynamicContext?: { specsList?: string[]; changesList?: string[] },
+  dynamicContext?: { changesList?: string[] },
 ): string {
   let base = PROPOSE_INITIAL_MESSAGE_TEMPLATE
     .replaceAll("{{SLUG}}", slug)
@@ -230,18 +229,9 @@ export function buildInitialMessage(
   if (dynamicContext) {
     const sections: string[] = [];
 
-    if (dynamicContext.specsList && dynamicContext.specsList.length > 0) {
-      sections.push(
-        `## Repository Context\n\n### Existing Specs (${_specsDir}/)\n\n${dynamicContext.specsList.map((s) => `- ${s}`).join("\n")}`,
-      );
-    }
-
     if (dynamicContext.changesList && dynamicContext.changesList.length > 0) {
-      const changesSectionHeader = sections.length > 0
-        ? `### Active Changes (${_changesDir}/)`
-        : `## Repository Context\n\n### Active Changes (${_changesDir}/)`;
       sections.push(
-        `${changesSectionHeader}\n\n${dynamicContext.changesList.map((c) => `- ${c}`).join("\n")}`,
+        `## Repository Context\n\n### Active Changes (${_changesDir}/)\n\n${dynamicContext.changesList.map((c) => `- ${c}`).join("\n")}`,
       );
     }
 

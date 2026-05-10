@@ -13,12 +13,6 @@
 const CHANGES_DIR = "specrunner/changes";
 
 /**
- * Base directory for all specs.
- * R3 で廃止予定。collectSpecsList() で空配列固定済み。
- */
-const SPECS_DIR = "openspec/specs";
-
-/**
  * Returns the relative path to the change folder for the given slug.
  * Example: changeFolderPath("my-change") → "specrunner/changes/my-change"
  */
@@ -76,12 +70,4 @@ export function requestMdPath(slug: string): string {
  */
 export function changesDirRel(): string {
   return CHANGES_DIR;
-}
-
-/**
- * Returns the relative path to the specs directory (no trailing slash).
- * Example: specsDirRel() → "openspec/specs"
- */
-export function specsDirRel(): string {
-  return SPECS_DIR;
 }

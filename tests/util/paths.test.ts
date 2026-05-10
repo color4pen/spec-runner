@@ -7,7 +7,6 @@ import {
   prCreateResultPath,
   requestMdPath,
   changesDirRel,
-  specsDirRel,
 } from "../../src/util/paths.js";
 
 describe("changeFolderPath", () => {
@@ -97,9 +96,3 @@ describe("changesDirRel", () => {
   });
 });
 
-describe("specsDirRel", () => {
-  // TC-008
-  it("returns the specs directory path", () => {
-    expect(specsDirRel()).toBe("openspec/specs");
-  });
-});

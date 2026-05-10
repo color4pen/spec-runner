@@ -3,14 +3,14 @@
  *
  * TC-DC-001: collectDynamicContext returns correct types on success
  * TC-DC-002: collectDynamicContext falls back to empty strings/arrays on git failure
- * TC-DC-003: collectDynamicContext returns empty arrays when openspec dirs don't exist
+ * TC-DC-003: collectDynamicContext returns empty array when specrunner/changes/ doesn't exist
  * TC-DC-004: changesList excludes "archive" directory
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { changesDirRel, specsDirRel } from "../../src/util/paths.js";
+import { changesDirRel } from "../../src/util/paths.js";
 
 let tempDir: string;
 
@@ -29,18 +29,17 @@ afterEach(async () => {
 // TC-DC-001: Success path — git commands return data and dirs exist
 // ---------------------------------------------------------------------------
 describe("TC-DC-001: collectDynamicContext returns correct types on success", () => {
-  it("returns correct interface shape (all 4 fields)", async () => {
-    // Use a real temp dir (no openspec dirs) with real git — fallback to empty is fine
+  it("returns correct interface shape (gitLog, diffStat, changesList)", async () => {
+    // Use a real temp dir (no specrunner dirs) with real git — fallback to empty is fine
     const { collectDynamicContext } = await import("../../src/git/dynamic-context.js");
     const ctx = await collectDynamicContext(tempDir, "main");
 
     expect(ctx).toHaveProperty("gitLog");
     expect(ctx).toHaveProperty("diffStat");
-    expect(ctx).toHaveProperty("specsList");
+    expect(ctx).not.toHaveProperty("specsList");
     expect(ctx).toHaveProperty("changesList");
     expect(typeof ctx.gitLog).toBe("string");
     expect(typeof ctx.diffStat).toBe("string");
-    expect(Array.isArray(ctx.specsList)).toBe(true);
     expect(Array.isArray(ctx.changesList)).toBe(true);
   });
 });
@@ -66,16 +65,9 @@ describe("TC-DC-002: collectDynamicContext falls back on git failure", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-DC-003: specsList always returns empty array (baseline spec deprecated)
+// TC-DC-003: changesList falls back to empty when specrunner/changes/ doesn't exist
 // ---------------------------------------------------------------------------
-describe("TC-DC-003: specsList is always empty (baseline spec deprecated)", () => {
-  it("returns empty specsList always", async () => {
-    const { collectDynamicContext } = await import("../../src/git/dynamic-context.js");
-    const ctx = await collectDynamicContext(tempDir, "main");
-
-    expect(ctx.specsList).toEqual([]);
-  });
-
+describe("TC-DC-003: changesList is empty when specrunner/changes/ does not exist", () => {
   it("returns empty changesList when specrunner/changes/ does not exist", async () => {
     // tempDir has no specrunner directory
     const { collectDynamicContext } = await import("../../src/git/dynamic-context.js");
@@ -118,22 +110,3 @@ describe("TC-DC-004: changesList excludes archive directory", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Additional: specsList always returns [] (baseline spec is deprecated)
-// ---------------------------------------------------------------------------
-describe("specsList always returns [] regardless of openspec/specs/ content", () => {
-  it("returns empty array even when openspec/specs/ directories exist", async () => {
-    const specsDir = path.join(tempDir, specsDirRel());
-    await fs.mkdir(specsDir, { recursive: true });
-    await fs.mkdir(path.join(specsDir, "pipeline-orchestrator"));
-    await fs.writeFile(path.join(specsDir, "pipeline-orchestrator", "spec.md"), "# Pipeline");
-    await fs.mkdir(path.join(specsDir, "agent-definition"));
-    await fs.writeFile(path.join(specsDir, "agent-definition", "spec.md"), "# Agent");
-
-    const { collectDynamicContext } = await import("../../src/git/dynamic-context.js");
-    const ctx = await collectDynamicContext(tempDir, "main");
-
-    // specsList is always empty — baseline spec is deprecated
-    expect(ctx.specsList).toEqual([]);
-  });
-});

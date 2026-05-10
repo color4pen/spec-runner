@@ -11,7 +11,7 @@ import { execFile as nodeExecFile } from "node:child_process";
 import { promisify } from "node:util";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { specsDirRel, changesDirRel } from "../util/paths.js";
+import { changesDirRel } from "../util/paths.js";
 
 const execFileAsync = promisify(nodeExecFile);
 
@@ -24,8 +24,6 @@ export interface DynamicContext {
   gitLog: string;
   /** Diff stat between base branch and HEAD (git diff baseBranch..HEAD --stat) */
   diffStat: string;
-  /** Subdirectory names under specrunner/specs/ (deprecated — baseline specs removed in R3) */
-  specsList: string[];
   /** Directories under specrunner/changes/ (excluding "archive") */
   changesList: string[];
 }
@@ -57,34 +55,21 @@ export async function collectDynamicContext(
   baseBranch: string,
 ): Promise<DynamicContext> {
   // Collect all fields in parallel; individual failures fall back gracefully.
-  const [gitLogRaw, diffStatRaw, specsList, changesList] = await Promise.all([
+  const [gitLogRaw, diffStatRaw, changesList] = await Promise.all([
     runGit(cwd, ["log", `${baseBranch}..HEAD`, "--oneline", "-n", "20"]),
     runGit(cwd, ["diff", `${baseBranch}..HEAD`, "--stat"]),
-    collectSpecsList(cwd),
     collectChangesList(cwd),
   ]);
 
   return {
     gitLog: gitLogRaw ?? "",
     diffStat: diffStatRaw ?? "",
-    specsList,
     changesList,
   };
 }
 
 /**
- * Collect subdirectory names under openspec/specs/.
- *
- * @deprecated baseline spec は消費者不在のため廃止。R3 で関数自体を削除予定。
- * Returns empty array always (openspec/specs/ baseline specs are no longer consumed).
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function collectSpecsList(_cwd: string): Promise<string[]> {
-  return [];
-}
-
-/**
- * Collect directories under openspec/changes/ excluding "archive".
+ * Collect directories under specrunner/changes/ excluding "archive".
  * Returns empty array when directory does not exist or read fails.
  */
 async function collectChangesList(cwd: string): Promise<string[]> {
