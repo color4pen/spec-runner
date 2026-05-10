@@ -199,7 +199,7 @@ const BASE_TARGET: ResolvedTarget = {
 describe("TC-CHECKOUT-1: checkout success → validate success → restore success → ok:true", () => {
   it("returns ok:true and restores the original branch", async () => {
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
-      // Check 7: which binaries
+      // Check 6: which binaries
       if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/which", stderr: "" });
       // Check 3+4: gh pr view
       if (cmd === "gh" && args[0] === "pr") {
@@ -221,11 +221,7 @@ describe("TC-CHECKOUT-1: checkout success → validate success → restore succe
       if (cmd === "git" && args[0] === "checkout") {
         return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
       }
-      // openspec validate → success
-      if (cmd === "openspec" && args[0] === "validate") {
-        return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
-      }
-      // Check 8: git rev-list
+      // Check 7: git rev-list
       if (cmd === "git" && args[0] === "rev-list") {
         return Promise.resolve({ exitCode: 0, stdout: "0\n", stderr: "" });
       }
@@ -257,61 +253,10 @@ describe("TC-CHECKOUT-1: checkout success → validate success → restore succe
 });
 
 /**
- * TC-CHECKOUT-2: checkout 成功 → validate 失敗 → restore 実行 → escalation
- */
-describe("TC-CHECKOUT-2: checkout success → validate fail → restore → escalation", () => {
-  it("returns escalation and still restores the original branch", async () => {
-    const checkoutCalls: string[] = [];
-
-    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
-      if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/x", stderr: "" });
-      if (cmd === "gh" && args[0] === "pr") {
-        return Promise.resolve({
-          exitCode: 0,
-          stdout: JSON.stringify({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug" }),
-          stderr: "",
-        });
-      }
-      if (cmd === "git" && args[0] === "rev-parse") {
-        return Promise.resolve({ exitCode: 0, stdout: "main\n", stderr: "" });
-      }
-      if (cmd === "git" && args[0] === "fetch") {
-        return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
-      }
-      if (cmd === "git" && args[0] === "checkout") {
-        checkoutCalls.push(args[1] as string);
-        return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
-      }
-      if (cmd === "openspec" && args[0] === "validate") {
-        return Promise.resolve({ exitCode: 1, stdout: "", stderr: "Unknown item 'test-slug'" });
-      }
-      return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
-    });
-
-    const result = await runPreflight({
-      target: BASE_TARGET,
-      cwd: "/tmp",
-      spawn,
-      fs: makeFs(true),
-      dryRun: false,
-    });
-
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.escalation).toContain("check 6");
-    }
-    // Restore must have been called
-    expect(checkoutCalls).toContain("main");
-  });
-});
-
-/**
  * TC-CHECKOUT-3: checkout 失敗 → escalation (validate 未実行、restore 不要)
  */
-describe("TC-CHECKOUT-3: checkout fail → escalation (no validate, no restore)", () => {
-  it("escalates without calling openspec validate", async () => {
-    let validateCalled = false;
-
+describe("TC-CHECKOUT-3: checkout fail → escalation (no restore)", () => {
+  it("escalates when git checkout fails", async () => {
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/x", stderr: "" });
       if (cmd === "gh" && args[0] === "pr") {
@@ -331,10 +276,6 @@ describe("TC-CHECKOUT-3: checkout fail → escalation (no validate, no restore)"
       if (cmd === "git" && args[0] === "checkout") {
         return Promise.resolve({ exitCode: 1, stdout: "", stderr: "error: pathspec not found" });
       }
-      if (cmd === "openspec" && args[0] === "validate") {
-        validateCalled = true;
-        return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
-      }
       return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
     });
 
@@ -350,7 +291,6 @@ describe("TC-CHECKOUT-3: checkout fail → escalation (no validate, no restore)"
     if (!result.ok) {
       expect(result.escalation).toContain("branch checkout");
     }
-    expect(validateCalled).toBe(false);
   });
 });
 
@@ -386,9 +326,6 @@ describe("TC-CHECKOUT-4: validate success → restore fail → warning only, ok:
         }
         return Promise.resolve({ exitCode: 1, stdout: "", stderr: "error: restore failed" });
       }
-      if (cmd === "openspec" && args[0] === "validate") {
-        return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
-      }
       if (cmd === "git" && args[0] === "rev-list") {
         return Promise.resolve({ exitCode: 0, stdout: "0\n", stderr: "" });
       }
@@ -417,7 +354,7 @@ describe("TC-CHECKOUT-4: validate success → restore fail → warning only, ok:
 });
 
 // ---------------------------------------------------------------------------
-// worktreePath path — Check 5+6 runs in worktree, no checkout needed
+// worktreePath path — Check 5 runs in worktree, no checkout needed
 // ---------------------------------------------------------------------------
 
 const WORKTREE_TARGET: ResolvedTarget = {
@@ -426,10 +363,10 @@ const WORKTREE_TARGET: ResolvedTarget = {
 };
 
 /**
- * TC-WT-PRE-001: worktreePath set → no git checkout/restore, validate uses worktreePath as cwd
+ * TC-WT-PRE-001: worktreePath set → no git checkout/restore, Check 5 uses worktreePath
  */
-describe("TC-WT-PRE-001: worktreePath set → no checkout, validate uses worktree cwd", () => {
-  it("skips branch checkout and runs openspec validate in worktreePath", async () => {
+describe("TC-WT-PRE-001: worktreePath set → no checkout needed", () => {
+  it("skips branch checkout and runs Check 5 in worktreePath", async () => {
     const spawnCalls: Array<{ cmd: string; args: string[]; cwd: string }> = [];
 
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[], opts: { cwd: string }) => {
@@ -441,9 +378,6 @@ describe("TC-WT-PRE-001: worktreePath set → no checkout, validate uses worktre
           stdout: JSON.stringify({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug" }),
           stderr: "",
         });
-      }
-      if (cmd === "openspec" && args[0] === "validate") {
-        return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
       }
       if (cmd === "git" && args[0] === "rev-list") {
         return Promise.resolve({ exitCode: 0, stdout: "0\n", stderr: "" });
@@ -468,46 +402,6 @@ describe("TC-WT-PRE-001: worktreePath set → no checkout, validate uses worktre
     // No git rev-parse (branch name lookup not needed)
     const revParseCalls = spawnCalls.filter((c) => c.cmd === "git" && c.args[0] === "rev-parse");
     expect(revParseCalls).toHaveLength(0);
-
-    // openspec validate called in worktreePath
-    const validateCalls = spawnCalls.filter((c) => c.cmd === "openspec" && c.args[0] === "validate");
-    expect(validateCalls.length).toBeGreaterThan(0);
-    expect(validateCalls[0]?.cwd).toBe(WORKTREE_TARGET.worktreePath);
-  });
-});
-
-/**
- * TC-WT-PRE-002: worktreePath set + validate fails → escalation (no restore needed)
- */
-describe("TC-WT-PRE-002: worktreePath set + validate fails → escalation", () => {
-  it("returns escalation when openspec validate fails in worktree path", async () => {
-    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
-      if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/x", stderr: "" });
-      if (cmd === "gh" && args[0] === "pr") {
-        return Promise.resolve({
-          exitCode: 0,
-          stdout: JSON.stringify({ state: "OPEN", mergeStateStatus: "CLEAN" }),
-          stderr: "",
-        });
-      }
-      if (cmd === "openspec" && args[0] === "validate") {
-        return Promise.resolve({ exitCode: 1, stdout: "", stderr: "validation error" });
-      }
-      return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
-    });
-
-    const result = await runPreflight({
-      target: WORKTREE_TARGET,
-      cwd: "/main-cwd",
-      spawn,
-      fs: makeFs(true),
-      dryRun: false,
-    });
-
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.escalation).toContain("check 6");
-    }
   });
 });
 

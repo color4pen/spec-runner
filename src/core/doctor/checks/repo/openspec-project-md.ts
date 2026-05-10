@@ -8,7 +8,7 @@ import type { DoctorCheck, DoctorContext } from "../../types.js";
 export const openspecProjectMdCheck: DoctorCheck = {
   name: "openspec-project-md",
   category: "repo",
-  required: true,
+  required: false,
 
   async check(ctx: DoctorContext) {
     const projectMdPath = path.join(ctx.cwd, "openspec", "project.md");
@@ -22,9 +22,9 @@ export const openspecProjectMdCheck: DoctorCheck = {
     }
 
     return {
-      status: "fail",
+      status: "warn",
       message: `openspec/project.md not found in ${ctx.cwd}`,
-      hint: "Run 'openspec init' in the project root to initialize openspec.",
+      hint: "openspec/project.md is optional. It was used by the openspec CLI which is no longer required.",
     };
   },
 };

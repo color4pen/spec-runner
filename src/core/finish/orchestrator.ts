@@ -2,7 +2,7 @@
  * Orchestrator for finish command (1-PR model).
  *
  * Phase 0: pre-flight (reversible checks)
- * Phase 1: checkout feature branch → archive → git mv → commit
+ * Phase 1: checkout feature branch → archive change folder → git mv → commit
  * Phase 2: git push origin <feature-branch>
  * Phase 3: gh pr merge --squash --delete-branch
  * Phase 4: git checkout main → git pull --ff-only (best-effort cleanup)
@@ -24,7 +24,7 @@ import { resolveTarget } from "./resolve-target.js";
 import { runPreflight } from "./preflight.js";
 import { fetchPrViewWithRetry, pollMergeStateAfterPush } from "./pr-status.js";
 import { spawnOrEscalate } from "./spawn-helper.js";
-import { archiveOpenspec } from "./archive-openspec.js";
+import { archiveChangeFolder } from "./archive-change-folder.js";
 import { moveRequestsDir } from "./move-requests-dir.js";
 import { assertJobFinishable, markJobArchived } from "./job-state-update.js";
 import { TERMINAL_STATUSES } from "../../state/lifecycle.js";
@@ -163,7 +163,7 @@ type Phase2Result =
   | { ok: false; escalation: string; exitCode: 1 };
 
 /**
- * Phase 1: checkout feature branch (if needed) → archive → git mv → commit.
+ * Phase 1: checkout feature branch (if needed) → archive change folder → git mv requests → commit.
  */
 async function runPhase1Archive(params: {
   target: ResolvedTarget;
@@ -183,10 +183,10 @@ async function runPhase1Archive(params: {
 
   const archiveCwd = operationCwd ?? cwd;
 
-  // openspec archive
-  const openspecResult = await archiveOpenspec({ slug: target.slug, cwd: archiveCwd, spawn, fs });
-  if (!openspecResult.ok) return { ok: false, escalation: openspecResult.escalation, exitCode: 1 };
-  if (!openspecResult.skipped) stdoutWrite(openspecResult.message);
+  // archive change folder (specrunner/changes/<slug>/ → specrunner/changes/archive/<slug>/)
+  const archiveResult = await archiveChangeFolder({ slug: target.slug, cwd: archiveCwd, spawn, fs });
+  if (!archiveResult.ok) return { ok: false, escalation: archiveResult.escalation, exitCode: 1 };
+  if (!archiveResult.skipped) stdoutWrite(archiveResult.message);
 
   // git mv active → merged + commit
   const moveResult = await moveRequestsDir({ slug: target.slug, cwd: archiveCwd, spawn, fs });
@@ -433,7 +433,7 @@ function outputDryRunPlan(
   prViewData: { state: string; mergeStateStatus?: string },
   stdoutWrite: (msg: string) => void,
 ): void {
-  const archivePlan = "archive openspec changes + move active to merged";
+  const archivePlan = "archive change folder + move active to merged";
   const mergeStrategy = "gh pr merge --squash";
   const adminFlag = (prViewData.mergeStateStatus ?? "").toUpperCase() === "BLOCKED" ? "yes" : "no";
   const expectedStatus = "archived";

@@ -18,7 +18,7 @@ import type { SpecRunnerConfig, AgentRecord } from "../config/schema.js";
 import type { StepName } from "../state/schema.js";
 
 const ENVIRONMENT_NAME = "specrunner-default";
-const ENVIRONMENT_PACKAGES_NPM = ["@fission-ai/openspec"];
+const ENVIRONMENT_PACKAGES_NPM: string[] = [];
 
 /**
  * Run the specrunner init command.

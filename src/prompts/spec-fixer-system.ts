@@ -25,7 +25,7 @@ export const SPEC_FIXER_SYSTEM_PROMPT = `あなたは spec-fixer です。spec-r
 
 ## 修正不能な findings の扱い
 
-修正できない finding がある場合は、proposal.md または design.md の末尾に以下の形式でメモを残してください：
+修正できない finding がある場合は、design.md の末尾に以下の形式でメモを残してください：
 
 \`\`\`
 <!-- spec-fixer-deferred: [finding番号] [理由] -->

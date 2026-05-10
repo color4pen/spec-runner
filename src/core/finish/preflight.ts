@@ -2,21 +2,19 @@
  * Phase 0 pre-flight checks for finish command.
  *
  * All checks run before any destructive operation.
- * Destructive ops: openspec archive / git commit / git push / gh pr merge
+ * Destructive ops: git commit / git push / gh pr merge
  *
  * Checks:
  *   1. slug resolved (validated by resolveTarget)
  *   2. state.pullRequest.number exists
  *   3. gh pr view success + state           → pr-status.ts
  *   4. mergeStateStatus=UNKNOWN → 3-second × 3-retry → pr-status.ts
- *   5. openspec/changes/<slug>/ existence (warning, not escalation)
- *   6. openspec validate <slug> dry-run (if change folder exists)
- *   7. gh / git / openspec binaries available
- *   8. feature branch unpushed commits (warning only)
+ *   5. specrunner/changes/<slug>/ existence (warning, not escalation)
+ *   6. gh / git binaries available
+ *   7. feature branch unpushed commits (warning only)
  *
  * TC-104: UNKNOWN → CLEAN after 1 retry → success
  * TC-105: gh pr view auth failure → escalation
- * TC-107: openspec validate fail → escalation
  * TC-108: --dry-run → Phase 0 only, 0 destructive spawns
  * TC-119: UNKNOWN × 3 → escalation
  * TC-120: pullRequest.number absent → escalation
@@ -70,13 +68,13 @@ export async function runPreflight(input: PreflightInput): Promise<PreflightResu
     };
   }
 
-  // Check 7: binary availability (gh, git, openspec)
-  const binaryCheck = await checkBinaries(["gh", "git", "openspec"], spawn, cwd);
+  // Check 6: binary availability (gh, git)
+  const binaryCheck = await checkBinaries(["gh", "git"], spawn, cwd);
   if (!binaryCheck.ok) {
     return {
       ok: false,
       escalation: formatEscalation({
-        failedStep: "Phase 0 check 7 (binary check)",
+        failedStep: "Phase 0 check 6 (binary check)",
         detectedState: `Binary not found: ${binaryCheck.missing}`,
         recommendedAction: `Binary not found: ${binaryCheck.missing}. Run 'specrunner doctor'.`,
         resumeCommand: `specrunner finish ${target.slug}`,
@@ -99,16 +97,15 @@ export async function runPreflight(input: PreflightInput): Promise<PreflightResu
 
   const prViewData = prViewResult.data;
 
-  // Design D6: Check 5+6 branch on worktreePath.
+  // Design D6: Check 5 branch on worktreePath.
   // If worktreePath is set, the worktree IS already on the feature branch — no checkout needed.
   // If worktreePath is null (managed mode / crash recovery), use existing checkout flow.
 
   if (target.worktreePath) {
     // Local runtime with worktree: run checks directly in the worktree
-    const validationResult = await runChecks5and6({
+    const validationResult = await runCheck5({
       slug: target.slug,
       checkCwd: target.worktreePath,
-      spawn,
       fs,
       warnFn: warn,
     });
@@ -139,10 +136,9 @@ export async function runPreflight(input: PreflightInput): Promise<PreflightResu
 
     let validationError: PreflightResult | null = null;
     try {
-      const innerResult = await runChecks5and6({
+      const innerResult = await runCheck5({
         slug: target.slug,
         checkCwd: cwd,
-        spawn,
         fs,
         warnFn: warn,
       });
@@ -163,7 +159,7 @@ export async function runPreflight(input: PreflightInput): Promise<PreflightResu
     }
   }
 
-  // Check 8: unpushed commits on feature branch (warning only)
+  // Check 7: unpushed commits on feature branch (warning only)
   if (!dryRun) {
     const unpushedResult = await spawn(
       "git",
@@ -182,51 +178,30 @@ export async function runPreflight(input: PreflightInput): Promise<PreflightResu
 }
 
 // ---------------------------------------------------------------------------
-// Check 5+6 helper (shared by worktree and checkout paths)
+// Check 5 helper (shared by worktree and checkout paths)
 // ---------------------------------------------------------------------------
 
-type Checks5and6Result = { ok: true } | { ok: false; escalation: string };
+type Check5Result = { ok: true } | { ok: false; escalation: string };
 
 /**
- * Run Check 5 (openspec/changes existence) and Check 6 (openspec validate).
+ * Run Check 5 (specrunner/changes/<slug>/ existence warning).
  * checkCwd is either the job worktree path or the main cwd (after checkout).
  */
-async function runChecks5and6(params: {
+async function runCheck5(params: {
   slug: string;
   checkCwd: string;
-  spawn: SpawnFn;
   fs: FinishFs;
   warnFn: (msg: string) => void;
-}): Promise<Checks5and6Result> {
-  const { slug, checkCwd, spawn, fs, warnFn } = params;
+}): Promise<Check5Result> {
+  const { slug, checkCwd, fs, warnFn } = params;
 
-  // Check 5: openspec/changes/<slug>/ existence (warning only)
+  // Check 5: specrunner/changes/<slug>/ existence (warning only)
   const changeFolderAbsPath = path.join(checkCwd, changeFolderPath(slug));
   const changeFolderExists = await fs.exists(changeFolderAbsPath);
   if (!changeFolderExists) {
     warnFn(
       `Warning: ${changeFolderPath(slug)}/ not found. Archive steps will be skipped.\n`,
     );
-  }
-
-  // Check 6: openspec validate (only if change folder AND specs/ subdirectory exist)
-  // Delta-less changes (bug-fix etc.) have no specs/ — validate would fail with "no deltas found".
-  const specsFolderPath = path.join(changeFolderAbsPath, "specs");
-  const specsFolderExists = changeFolderExists && (await fs.exists(specsFolderPath));
-  if (specsFolderExists) {
-    // Run openspec validate; on failure build a custom escalation that includes stderr output.
-    const validateSpawnResult = await spawn("openspec", ["validate", slug], { cwd: checkCwd });
-    if (validateSpawnResult.exitCode !== 0) {
-      return {
-        ok: false,
-        escalation: formatEscalation({
-          failedStep: "Phase 0 check 6 (openspec validate)",
-          detectedState: `openspec validate ${slug} failed (exit ${validateSpawnResult.exitCode})`,
-          recommendedAction: `Fix spec validation errors:\n${validateSpawnResult.stderr.trim()}\n  Then re-run: specrunner finish ${slug}`,
-          resumeCommand: `specrunner finish ${slug}`,
-        }),
-      };
-    }
   }
 
   return { ok: true };

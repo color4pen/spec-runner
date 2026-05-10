@@ -19,6 +19,7 @@ import { createWorktreeManager } from "../worktree/manager.js";
 import { loadJobState, updateJobState } from "../../state/store.js";
 import { spawnCommand } from "../../util/spawn.js";
 import type { SpawnFn } from "../../util/spawn.js";
+import { changeFolderPath } from "../../util/paths.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./strategy.js";
 
 // Internal structure stored inside CleanupHandle
@@ -218,7 +219,25 @@ export class LocalRuntime implements RuntimeStrategy {
         throw new Error(`Failed to stage request file: ${gitAddResult.stderr.trim()}`);
       }
 
-      // Commit request.md as the first commit on the feature branch (D2)
+      // Also copy request.md into the change folder so agents can find it alongside design.md / tasks.md
+      const changeFolderRequestPath = path.join(worktreePath, changeFolderPath(slug), "request.md");
+      await fs.mkdir(path.dirname(changeFolderRequestPath), { recursive: true });
+      await fs.cp(opts.requestFilePath, changeFolderRequestPath);
+
+      // Stage the change folder request.md as well
+      const gitAddChangeFolderResult = await this.spawnFn(
+        "git",
+        ["add", path.join(changeFolderPath(slug), "request.md")],
+        { cwd: worktreePath },
+      );
+      if (gitAddChangeFolderResult.exitCode !== 0) {
+        // Non-fatal: log warning but don't fail setup
+        process.stderr.write(
+          `Warning: failed to stage change folder request.md: ${gitAddChangeFolderResult.stderr.trim()}\n`,
+        );
+      }
+
+      // Commit request.md (both locations) as the first commit on the feature branch (D2)
       const gitCommitResult = await this.spawnFn(
         "git",
         ["commit", "-m", `add request.md for ${slug}`],

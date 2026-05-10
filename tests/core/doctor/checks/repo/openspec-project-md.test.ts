@@ -1,6 +1,6 @@
 /**
  * TC-029: openspec/project.md exists → pass
- * TC-030: openspec/project.md not found → fail
+ * TC-030: openspec/project.md not found → warn (required: false)
  */
 import { describe, it, expect, vi } from "vitest";
 import { openspecProjectMdCheck } from "../../../../../src/core/doctor/checks/repo/openspec-project-md.js";
@@ -16,10 +16,11 @@ describe("openspecProjectMdCheck", () => {
   });
 
   // TC-030
-  it("returns fail when openspec/project.md does not exist", async () => {
+  it("returns warn when openspec/project.md does not exist (required: false)", async () => {
     const fs = buildMockFs({ existsSync: vi.fn().mockReturnValue(false) });
     const ctx = buildMockContext({ fs, cwd: "/fake/repo" });
     const result = await openspecProjectMdCheck.check(ctx);
-    expect(result.status).toBe("fail");
+    expect(result.status).toBe("warn");
+    expect(openspecProjectMdCheck.required).toBe(false);
   });
 });

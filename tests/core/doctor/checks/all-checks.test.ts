@@ -7,8 +7,8 @@ import { allChecks } from "../../../../src/core/doctor/checks/index.js";
 
 describe("allChecks", () => {
   // TC-068
-  it("contains at least 18 checks", () => {
-    expect(allChecks.length).toBeGreaterThanOrEqual(18);
+  it("contains at least 17 checks", () => {
+    expect(allChecks.length).toBeGreaterThanOrEqual(17);
   });
 
   it("covers all 7 categories", () => {

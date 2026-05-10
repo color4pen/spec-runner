@@ -19,6 +19,7 @@ import { transitionJob } from "../../state/lifecycle.js";
 import type { StepName } from "../../state/schema.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { spawnCommand } from "../../util/spawn.js";
+import { changeFolderPath } from "../../util/paths.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./strategy.js";
 
 export class ManagedRuntime implements RuntimeStrategy {
@@ -96,7 +97,7 @@ export class ManagedRuntime implements RuntimeStrategy {
         await fs.cp(opts.requestFilePath, destPath);
       }
 
-      // git add
+      // git add request file
       const gitAddResult = await this.spawnFn(
         "git",
         ["add", relativeRequestPath],
@@ -104,6 +105,24 @@ export class ManagedRuntime implements RuntimeStrategy {
       );
       if (gitAddResult.exitCode !== 0) {
         throw new Error(`Failed to stage request file: ${gitAddResult.stderr.trim()}`);
+      }
+
+      // Also copy request.md into the change folder so agents can find it alongside design.md / tasks.md
+      const changeFolderRequestPath = path.join(this.cwd, changeFolderPath(slug), "request.md");
+      await fs.mkdir(path.dirname(changeFolderRequestPath), { recursive: true });
+      await fs.cp(opts.requestFilePath, changeFolderRequestPath);
+
+      // git add change folder request.md
+      const gitAddChangeFolderResult = await this.spawnFn(
+        "git",
+        ["add", path.join(changeFolderPath(slug), "request.md")],
+        { cwd: this.cwd },
+      );
+      if (gitAddChangeFolderResult.exitCode !== 0) {
+        // Non-fatal: log warning but don't fail setup
+        process.stderr.write(
+          `Warning: failed to stage change folder request.md: ${gitAddChangeFolderResult.stderr.trim()}\n`,
+        );
       }
 
       // git commit

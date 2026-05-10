@@ -1,5 +1,5 @@
 /**
- * Aggregated list of all 18 DoctorChecks.
+ * Aggregated list of all 17 DoctorChecks.
  * Execution order: runtime → config → env → auth → repo → agents → storage.
  */
 import type { DoctorCheck } from "../types.js";
@@ -8,7 +8,6 @@ import type { DoctorCheck } from "../types.js";
 import { nodeVersionCheck } from "./runtime/node.js";
 import { bunVersionCheck } from "./runtime/bun.js";
 import { gitVersionCheck } from "./runtime/git.js";
-import { openspecCheck } from "./runtime/openspec.js";
 
 // Config
 import { configFileExistsCheck } from "./config/file-exists.js";
@@ -38,11 +37,10 @@ import { jobsWritableCheck } from "./storage/jobs-writable.js";
 import { oldStateFilesCheck } from "./storage/old-state-files.js";
 
 export const allChecks: DoctorCheck[] = [
-  // Runtime (4)
+  // Runtime (3)
   nodeVersionCheck,
   bunVersionCheck,
   gitVersionCheck,
-  openspecCheck,
   // Config (3)
   configFileExistsCheck,
   anthropicKeyPresentCheck,
@@ -71,7 +69,6 @@ export {
   nodeVersionCheck,
   bunVersionCheck,
   gitVersionCheck,
-  openspecCheck,
   configFileExistsCheck,
   anthropicKeyPresentCheck,
   githubTokenPresentCheck,

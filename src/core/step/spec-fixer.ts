@@ -49,7 +49,7 @@ Please:
 3. ${buildGitPushInstruction(branch)}
 4. Do NOT modify the spec-review-result.md file itself
 
-If any finding cannot be fixed, add a comment at the end of proposal.md or design.md:
+If any finding cannot be fixed, add a comment at the end of design.md:
 <!-- spec-fixer-deferred: [finding number] [reason] -->
 </user-request>`;
 }

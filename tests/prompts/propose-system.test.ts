@@ -2,12 +2,12 @@
  * Unit tests for src/prompts/propose-system.ts
  *
  * Regression for the dogfooding-001 second-pass bug where the propose agent
- * edited README.md (a file outside `openspec/changes/<slug>/`) because the
+ * edited README.md (a file outside `specrunner/changes/<slug>/`) because the
  * prompt's negative-only framing did not draw the boundary by path.
  *
- * TC-007: PROPOSE_SYSTEM_PROMPT に openspec new change コマンドの指示が含まれる (must)
- * TC-008: PROPOSE_SYSTEM_PROMPT に openspec status --json の指示が含まれる (must)
- * TC-009: PROPOSE_SYSTEM_PROMPT に openspec instructions の指示が含まれる (must)
+ * TC-007: PROPOSE_SYSTEM_PROMPT に openspec CLI の指示が含まれない (must)
+ * TC-008: PROPOSE_SYSTEM_PROMPT に design.md の artifact 指示が含まれる (must)
+ * TC-009: PROPOSE_SYSTEM_PROMPT に tasks.md の artifact 指示が含まれる (must)
  * TC-010: PROPOSE_SYSTEM_PROMPT に path-fence の記述が維持されている (must)
  * TC-011: PROPOSE_SYSTEM_PROMPT に完了条件（commit + push）が維持されている (must)
  * TC-012: PROPOSE_INITIAL_MESSAGE_TEMPLATE が slug と branch を注入する構造を維持する (must)
@@ -38,8 +38,8 @@ describe("propose system prompt — CRITICAL BOUNDARY (path-fence)", () => {
     expect(PROPOSE_SYSTEM_PROMPT).toContain("CRITICAL BOUNDARY");
   });
 
-  it("forbids modifying files outside openspec/changes/<slug>/", () => {
-    expect(PROPOSE_SYSTEM_PROMPT).toMatch(/outside.*openspec\/changes/);
+  it("forbids modifying files outside specrunner/changes/<slug>/", () => {
+    expect(PROPOSE_SYSTEM_PROMPT).toMatch(/outside.*specrunner\/changes/);
   });
 
   it("explicitly names README.md as forbidden", () => {
@@ -73,32 +73,39 @@ describe("propose initial message — user-request override clause", () => {
   });
 });
 
-// TC-007: PROPOSE_SYSTEM_PROMPT に openspec new change コマンドの指示が含まれる
-describe("TC-007: openspec new change command is described in PROPOSE_SYSTEM_PROMPT", () => {
-  it("contains 'openspec new change' instruction", () => {
-    expect(PROPOSE_SYSTEM_PROMPT).toContain("openspec new change");
+// TC-007: PROPOSE_SYSTEM_PROMPT に openspec CLI の指示が含まれない
+describe("TC-007: openspec CLI commands are NOT in PROPOSE_SYSTEM_PROMPT", () => {
+  it("does not contain 'npx openspec' instruction", () => {
+    expect(PROPOSE_SYSTEM_PROMPT).not.toContain("npx openspec");
+  });
+
+  it("does not contain 'openspec new change' instruction", () => {
+    expect(PROPOSE_SYSTEM_PROMPT).not.toContain("openspec new change");
+  });
+
+  it("does not contain 'openspec status' instruction", () => {
+    expect(PROPOSE_SYSTEM_PROMPT).not.toContain("openspec status");
   });
 });
 
-// TC-008: PROPOSE_SYSTEM_PROMPT に openspec status --json の指示が含まれる
-describe("TC-008: openspec status --json is described in PROPOSE_SYSTEM_PROMPT", () => {
-  it("contains 'openspec status' with --json flag instruction", () => {
-    expect(PROPOSE_SYSTEM_PROMPT).toContain("openspec status");
-    expect(PROPOSE_SYSTEM_PROMPT).toContain("--json");
+// TC-008: PROPOSE_SYSTEM_PROMPT に design.md の artifact 指示が含まれる
+describe("TC-008: design.md artifact is specified in PROPOSE_SYSTEM_PROMPT", () => {
+  it("contains 'design.md' artifact reference", () => {
+    expect(PROPOSE_SYSTEM_PROMPT).toContain("design.md");
   });
 });
 
-// TC-009: PROPOSE_SYSTEM_PROMPT に openspec instructions の指示が含まれる
-describe("TC-009: openspec instructions command is described in PROPOSE_SYSTEM_PROMPT", () => {
-  it("contains 'openspec instructions' instruction", () => {
-    expect(PROPOSE_SYSTEM_PROMPT).toContain("openspec instructions");
+// TC-009: PROPOSE_SYSTEM_PROMPT に tasks.md の artifact 指示が含まれる
+describe("TC-009: tasks.md artifact is specified in PROPOSE_SYSTEM_PROMPT", () => {
+  it("contains 'tasks.md' artifact reference", () => {
+    expect(PROPOSE_SYSTEM_PROMPT).toContain("tasks.md");
   });
 });
 
 // TC-010: path-fence maintained
 describe("TC-010: path-fence is maintained in PROPOSE_SYSTEM_PROMPT", () => {
-  it("contains reference to openspec/changes/<slug>/ boundary", () => {
-    expect(PROPOSE_SYSTEM_PROMPT).toMatch(/openspec\/changes.*slug/);
+  it("contains reference to specrunner/changes/<slug>/ boundary", () => {
+    expect(PROPOSE_SYSTEM_PROMPT).toMatch(/specrunner\/changes.*slug/);
   });
 });
 
@@ -116,6 +123,10 @@ describe("TC-011: commit + push completion conditions maintained", () => {
     // Branch is created by CLI before agent runs — agent does not call register_branch
     expect(PROPOSE_SYSTEM_PROMPT).not.toContain("register_branch");
   });
+
+  it("does NOT contain proposal.md reference", () => {
+    expect(PROPOSE_SYSTEM_PROMPT).not.toContain("proposal.md");
+  });
 });
 
 // TC-012: PROPOSE_INITIAL_MESSAGE_TEMPLATE slug/branch injection
@@ -130,5 +141,9 @@ describe("TC-012: PROPOSE_INITIAL_MESSAGE_TEMPLATE maintains slug and branch inj
     expect(msg).toContain("test-slug");
     expect(msg).toContain("change/test-slug");
     expect(msg).toContain("req-content");
+  });
+
+  it("PROPOSE_INITIAL_MESSAGE_TEMPLATE does not mention proposal.md", () => {
+    expect(PROPOSE_INITIAL_MESSAGE_TEMPLATE).not.toContain("proposal.md");
   });
 });

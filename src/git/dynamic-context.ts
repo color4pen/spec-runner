@@ -24,9 +24,9 @@ export interface DynamicContext {
   gitLog: string;
   /** Diff stat between base branch and HEAD (git diff baseBranch..HEAD --stat) */
   diffStat: string;
-  /** Subdirectory names under openspec/specs/ (each spec lives in openspec/specs/<name>/spec.md) */
+  /** Subdirectory names under specrunner/specs/ (deprecated — baseline specs removed in R3) */
   specsList: string[];
-  /** Directories under openspec/changes/ (excluding "archive") */
+  /** Directories under specrunner/changes/ (excluding "archive") */
   changesList: string[];
 }
 
@@ -74,20 +74,13 @@ export async function collectDynamicContext(
 
 /**
  * Collect subdirectory names under openspec/specs/.
- * Each spec lives in a named subdirectory (openspec/specs/<name>/spec.md).
- * Returns empty array when directory does not exist or read fails.
+ *
+ * @deprecated baseline spec は消費者不在のため廃止。R3 で関数自体を削除予定。
+ * Returns empty array always (openspec/specs/ baseline specs are no longer consumed).
  */
-async function collectSpecsList(cwd: string): Promise<string[]> {
-  const specsDir = path.join(cwd, specsDirRel());
-  try {
-    const entries = await fs.readdir(specsDir, { withFileTypes: true });
-    return entries
-      .filter((e) => e.isDirectory())
-      .map((e) => e.name)
-      .sort();
-  } catch {
-    return [];
-  }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function collectSpecsList(_cwd: string): Promise<string[]> {
+  return [];
 }
 
 /**

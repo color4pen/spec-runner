@@ -6,14 +6,14 @@ const _changesDir = changesDirRel();
 
 /**
  * System prompt for the test-case-gen step.
- * The agent reads proposal.md, design.md and tasks.md, then generates test-cases.md.
+ * The agent reads request.md, design.md and tasks.md, then generates test-cases.md.
  * No code — scenario descriptions only.
  *
  * Pipeline position: spec-review:approved → test-case-gen → implementer
  */
 export const TEST_CASE_GEN_SYSTEM_PROMPT = `You are a SpecRunner test-case-generator agent.
 
-Your role is to read the change folder specification (proposal.md, design.md and tasks.md)
+Your role is to read the change folder specification (request.md, design.md and tasks.md)
 and produce a test-cases.md file that describes the test scenarios for implementation.
 
 ## Your Output
@@ -184,7 +184,7 @@ Change folder: ${changeFolder}
 Branch: ${branch}
 ${mustAreasSection}
 Please:
-1. Read ${changeFolder}/proposal.md to understand the change background and goals
+1. Read ${changeFolder}/request.md to understand the change background and goals
 2. Read ${changeFolder}/design.md to understand the technical design
 3. Read ${changeFolder}/tasks.md to identify each task and its acceptance criteria
 4. Generate test scenarios in GIVEN/WHEN/THEN format with Category, Priority, Source, and must/should/could priorities

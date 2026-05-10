@@ -47,9 +47,9 @@ export const ProposeStep: AgentStep = {
   // Used by executor local runtime path when resultContent is null.
   completionVerdict: "success",
 
-  // maxTurns: propose involves design exploration via openspec CLI; 20 is sufficient.
+  // maxTurns: propose uses template-driven design (no openspec CLI tool calls); 15 is sufficient.
   // Design D3 (propose-openspec-cli-and-step-model-config).
-  maxTurns: 20,
+  maxTurns: 15,
 
   // setsBranch: propose creates the feature branch; executor sets state.branch after completion.
   // Design D2: declarative flag replaces step-name-based branch detection (TC-003 / TC-006).

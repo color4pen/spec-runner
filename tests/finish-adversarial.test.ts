@@ -3,7 +3,6 @@
  *
  * TC-104: mergeStateStatus=UNKNOWN → CLEAN after 1 retry → success
  * TC-105: gh pr view auth failure → escalation, merge not executed
- * TC-107: openspec validate fail → escalation, merge not executed
  * TC-119: UNKNOWN × 3 → escalation after all retries
  * TC-120: pullRequest.number absent → escalation
  * TC-121: gh binary missing → escalation
@@ -96,7 +95,6 @@ describe("TC-104: mergeStateStatus UNKNOWN → CLEAN after 1 retry → success",
     let callCount = 0;
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/x", stderr: "" });
-      if (cmd === "openspec" && args[0] === "validate") return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
       if (cmd === "git" && args[0] === "rev-list") return Promise.resolve({ exitCode: 0, stdout: "0", stderr: "" });
       if (cmd === "gh" && args[1] === "view") {
         callCount++;
@@ -159,59 +157,11 @@ describe("TC-105: gh pr view auth failure → escalation, merge not executed", (
   });
 });
 
-// TC-107: openspec validate fail → escalation, merge not executed
-describe("TC-107: openspec validate fail → escalation", () => {
-  it("escalates when openspec validate exits non-zero", async () => {
-    const { jobId, slug } = await makeJobWithPr();
-    const calls: Array<[string, string[]]> = [];
-    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
-      calls.push([cmd, [...args]]);
-      if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/x", stderr: "" });
-      if (cmd === "gh" && args[1] === "view") {
-        return Promise.resolve({
-          exitCode: 0,
-          stdout: JSON.stringify({ state: "OPEN", mergeStateStatus: "CLEAN" }),
-          stderr: "",
-        });
-      }
-      if (cmd === "openspec" && args[0] === "validate") {
-        return Promise.resolve({ exitCode: 1, stdout: "", stderr: "validation failed: header not found" });
-      }
-      if (cmd === "git" && args[0] === "rev-list") return Promise.resolve({ exitCode: 0, stdout: "0", stderr: "" });
-      return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
-    });
-    // Change folder exists so validate runs
-    const stubFs: FinishFs = {
-      exists: vi.fn().mockImplementation((p: string) => {
-        if (p.includes("openspec/changes")) return Promise.resolve(true);
-        return Promise.resolve(false);
-      }),
-      readdir: vi.fn().mockResolvedValue([]),
-      stat: vi.fn().mockResolvedValue({ isDirectory: () => false }),
-      mkdir: vi.fn().mockResolvedValue(undefined),
-      writeFile: vi.fn().mockResolvedValue(undefined),
-      unlink: vi.fn().mockResolvedValue(undefined),
-    };
-
-    const result = await runFinishOrchestrator(
-      { slug, baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
-    );
-
-    expect(result.exitCode).toBe(1);
-    if (result.exitCode !== 1) return;
-    expect(result.escalation).toContain("Phase 0 check 6");
-    // merge should not be called
-    const mergeCalls = calls.filter(([c, a]) => c === "gh" && a[1] === "merge");
-    expect(mergeCalls).toHaveLength(0);
-  });
-});
-
 // TC-119: UNKNOWN × 3 → escalation
 describe("TC-119: mergeStateStatus UNKNOWN × 3 → escalation after all retries", () => {
   it("escalates after 3 UNKNOWN results", async () => {
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/x", stderr: "" });
-      if (cmd === "openspec" && args[0] === "validate") return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
       if (cmd === "git" && args[0] === "rev-list") return Promise.resolve({ exitCode: 0, stdout: "0", stderr: "" });
       if (cmd === "gh" && args[1] === "view") {
         return Promise.resolve({
@@ -313,7 +263,6 @@ describe("TC-129: --dry-run + Phase 0 fail → exit 1, no destructive ops", () =
     const DESTRUCTIVE = [
       (cmd: string, args: string[]) => cmd === "git" && ["commit", "push"].includes(args[0] ?? ""),
       (cmd: string, args: string[]) => cmd === "gh" && args[1] === "merge",
-      (cmd: string, args: string[]) => cmd === "openspec" && args[0] === "archive",
     ];
     const destructiveCalls = calls.filter(([cmd, args]) =>
       DESTRUCTIVE.some((fn) => fn(cmd, args)),

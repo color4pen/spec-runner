@@ -6,7 +6,7 @@
  * parseResult extracts the verdict via regex.
  *
  * Design D1: kind=cli (not kind=agent).
- * Design D5: resultFilePath → openspec/changes/<slug>/pr-create-result.md
+ * Design D5: resultFilePath → specrunner/changes/<slug>/pr-create-result.md
  * Design D6: failure → escalation (no retry loop).
  */
 import type { CliStep } from "./types.js";

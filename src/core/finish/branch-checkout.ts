@@ -21,7 +21,7 @@ export type CheckoutForValidationResult =
 
 /**
  * Record the current branch, fetch the feature branch, and check it out.
- * Used before Check 5+6 so that openspec validate runs in the feature branch.
+ * Used before Check 5 so that preflight runs in the feature branch.
  */
 export async function checkoutForValidation(
   input: CheckoutForValidationInput,

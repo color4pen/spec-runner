@@ -78,7 +78,7 @@ Enabled options: {{ENABLED}}
 {{REQUEST_CONTENT}}
 </user-request>
 
-Review all spec files in the change folder (proposal.md, design.md, tasks.md, specs/). Write your verdict and findings to:
+Review all spec files in the change folder (request.md, design.md, tasks.md, specs/). Write your verdict and findings to:
 {{FINDINGS_PATH}}
 
 The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escalation>\`

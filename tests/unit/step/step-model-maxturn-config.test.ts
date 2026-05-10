@@ -73,8 +73,8 @@ describe("TC-005: Implementation/fixer steps use claude-sonnet-4-6 model (opuspl
 
 // TC-006: 各 step の maxTurns が設計値と一致する
 describe("TC-006: Per-step maxTurns values match design specification", () => {
-  it("ProposeStep.maxTurns === 20", () => {
-    expect(ProposeStep.maxTurns).toBe(20);
+  it("ProposeStep.maxTurns === 15", () => {
+    expect(ProposeStep.maxTurns).toBe(15);
   });
 
   it("SpecReviewStep.maxTurns === 15", () => {

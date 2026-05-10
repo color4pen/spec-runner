@@ -1,5 +1,5 @@
 /**
- * Path utility functions for openspec change folder and related paths.
+ * Path utility functions for specrunner change folder and related paths.
  *
  * All functions return relative paths (no leading slash, no cwd prefix).
  * Callers that need absolute paths should use: path.join(cwd, changeFolderPath(slug))
@@ -10,14 +10,17 @@
  */
 
 /** Base directory for all changes. */
-const CHANGES_DIR = "openspec/changes";
+const CHANGES_DIR = "specrunner/changes";
 
-/** Base directory for all specs. */
+/**
+ * Base directory for all specs.
+ * R3 で廃止予定。collectSpecsList() で空配列固定済み。
+ */
 const SPECS_DIR = "openspec/specs";
 
 /**
  * Returns the relative path to the change folder for the given slug.
- * Example: changeFolderPath("my-change") → "openspec/changes/my-change"
+ * Example: changeFolderPath("my-change") → "specrunner/changes/my-change"
  */
 export function changeFolderPath(slug: string): string {
   return `${CHANGES_DIR}/${slug}`;
@@ -26,7 +29,7 @@ export function changeFolderPath(slug: string): string {
 /**
  * Returns the relative path to the spec-review result file for the given slug and iteration.
  * Iteration is zero-padded to 3 digits.
- * Example: specReviewResultPath("my-change", 1) → "openspec/changes/my-change/spec-review-result-001.md"
+ * Example: specReviewResultPath("my-change", 1) → "specrunner/changes/my-change/spec-review-result-001.md"
  */
 export function specReviewResultPath(slug: string, iteration: number): string {
   const nnn = String(iteration).padStart(3, "0");
@@ -36,7 +39,7 @@ export function specReviewResultPath(slug: string, iteration: number): string {
 /**
  * Returns the relative path to the review feedback file for the given slug and iteration.
  * Iteration is zero-padded to 3 digits.
- * Example: reviewFeedbackPath("my-change", 2) → "openspec/changes/my-change/review-feedback-002.md"
+ * Example: reviewFeedbackPath("my-change", 2) → "specrunner/changes/my-change/review-feedback-002.md"
  */
 export function reviewFeedbackPath(slug: string, iteration: number): string {
   const nnn = String(iteration).padStart(3, "0");
@@ -45,7 +48,7 @@ export function reviewFeedbackPath(slug: string, iteration: number): string {
 
 /**
  * Returns the relative path to the verification result file for the given slug.
- * Example: verificationResultPath("my-change") → "openspec/changes/my-change/verification-result.md"
+ * Example: verificationResultPath("my-change") → "specrunner/changes/my-change/verification-result.md"
  */
 export function verificationResultPath(slug: string): string {
   return `${CHANGES_DIR}/${slug}/verification-result.md`;
@@ -53,7 +56,7 @@ export function verificationResultPath(slug: string): string {
 
 /**
  * Returns the relative path to the pr-create result file for the given slug.
- * Example: prCreateResultPath("my-change") → "openspec/changes/my-change/pr-create-result.md"
+ * Example: prCreateResultPath("my-change") → "specrunner/changes/my-change/pr-create-result.md"
  */
 export function prCreateResultPath(slug: string): string {
   return `${CHANGES_DIR}/${slug}/pr-create-result.md`;
@@ -61,7 +64,7 @@ export function prCreateResultPath(slug: string): string {
 
 /**
  * Returns the relative path to the request.md file for the given slug.
- * Example: requestMdPath("my-change") → "openspec/changes/my-change/request.md"
+ * Example: requestMdPath("my-change") → "specrunner/changes/my-change/request.md"
  */
 export function requestMdPath(slug: string): string {
   return `${CHANGES_DIR}/${slug}/request.md`;
@@ -69,7 +72,7 @@ export function requestMdPath(slug: string): string {
 
 /**
  * Returns the relative path to the changes directory (no trailing slash).
- * Example: changesDirRel() → "openspec/changes"
+ * Example: changesDirRel() → "specrunner/changes"
  */
 export function changesDirRel(): string {
   return CHANGES_DIR;

@@ -66,15 +66,21 @@ describe("TC-DC-002: collectDynamicContext falls back on git failure", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-DC-003: openspec dirs don't exist — empty arrays
+// TC-DC-003: specsList always returns empty array (baseline spec deprecated)
 // ---------------------------------------------------------------------------
-describe("TC-DC-003: empty arrays when openspec dirs don't exist", () => {
-  it("returns empty specsList when openspec/specs/ does not exist", async () => {
-    // tempDir has no openspec directory
+describe("TC-DC-003: specsList is always empty (baseline spec deprecated)", () => {
+  it("returns empty specsList always", async () => {
     const { collectDynamicContext } = await import("../../src/git/dynamic-context.js");
     const ctx = await collectDynamicContext(tempDir, "main");
 
     expect(ctx.specsList).toEqual([]);
+  });
+
+  it("returns empty changesList when specrunner/changes/ does not exist", async () => {
+    // tempDir has no specrunner directory
+    const { collectDynamicContext } = await import("../../src/git/dynamic-context.js");
+    const ctx = await collectDynamicContext(tempDir, "main");
+
     expect(ctx.changesList).toEqual([]);
   });
 });
@@ -113,13 +119,12 @@ describe("TC-DC-004: changesList excludes archive directory", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Additional: specsList returns subdirectory names (real structure: openspec/specs/<name>/spec.md)
+// Additional: specsList always returns [] (baseline spec is deprecated)
 // ---------------------------------------------------------------------------
-describe("specsList returns subdirectory names from openspec/specs/", () => {
-  it("returns subdirectory names sorted alphabetically", async () => {
+describe("specsList always returns [] regardless of openspec/specs/ content", () => {
+  it("returns empty array even when openspec/specs/ directories exist", async () => {
     const specsDir = path.join(tempDir, specsDirRel());
     await fs.mkdir(specsDir, { recursive: true });
-    // Real structure: each spec is a named subdirectory containing spec.md
     await fs.mkdir(path.join(specsDir, "pipeline-orchestrator"));
     await fs.writeFile(path.join(specsDir, "pipeline-orchestrator", "spec.md"), "# Pipeline");
     await fs.mkdir(path.join(specsDir, "agent-definition"));
@@ -128,21 +133,7 @@ describe("specsList returns subdirectory names from openspec/specs/", () => {
     const { collectDynamicContext } = await import("../../src/git/dynamic-context.js");
     const ctx = await collectDynamicContext(tempDir, "main");
 
-    expect(ctx.specsList).toEqual(["agent-definition", "pipeline-orchestrator"]);
-  });
-
-  it("does not include loose files at the specs/ root", async () => {
-    const specsDir = path.join(tempDir, specsDirRel());
-    await fs.mkdir(specsDir, { recursive: true });
-    await fs.mkdir(path.join(specsDir, "my-spec"));
-    await fs.writeFile(path.join(specsDir, "my-spec", "spec.md"), "# My Spec");
-    // A stray file at the root should not appear in specsList
-    await fs.writeFile(path.join(specsDir, "stray.md"), "stray");
-
-    const { collectDynamicContext } = await import("../../src/git/dynamic-context.js");
-    const ctx = await collectDynamicContext(tempDir, "main");
-
-    expect(ctx.specsList).toEqual(["my-spec"]);
-    expect(ctx.specsList).not.toContain("stray.md");
+    // specsList is always empty — baseline spec is deprecated
+    expect(ctx.specsList).toEqual([]);
   });
 });
