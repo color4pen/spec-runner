@@ -63,6 +63,47 @@ describe("slugify", () => {
   it("TC-SL-005c: returns 'untitled' for string with only Japanese", () => {
     expect(slugify("日本語のみ")).toBe("untitled");
   });
+
+  it("TC-SL-007: generates meaningful slug from ASCII parts of Japanese-mixed description", () => {
+    expect(slugify("pipeline完了時にPR URLをstdoutに表示する")).toBe("pipeline-pr-url-stdout");
+  });
+
+  it("TC-SL-008: slug is 50 characters or less for Japanese-mixed input", () => {
+    const result = slugify("very-long" + "日本語".repeat(10) + "description-that-is-long-enough-to-exceed-limit");
+    expect(result.length).toBeLessThanOrEqual(50);
+  });
+
+  it("TC-SL-009: Japanese acts as word boundary between ASCII tokens", () => {
+    expect(slugify("foo日本語bar")).toBe("foo-bar");
+  });
+
+  it("TC-SL-010: Japanese only returns untitled", () => {
+    expect(slugify("あいうえお")).toBe("untitled");
+  });
+
+  it("TC-SL-011: single ASCII char surrounded by non-ASCII returns that char", () => {
+    expect(slugify("日本a語")).toBe("a");
+  });
+
+  it("TC-SL-012: multiple non-ASCII blocks each become one hyphen", () => {
+    expect(slugify("start日本語middle漢字end")).toBe("start-middle-end");
+  });
+
+  it("TC-SL-013: no trailing hyphen after truncation with Japanese-mixed input", () => {
+    const result = slugify("abc日本語".repeat(20));
+    expect(result.endsWith("-")).toBe(false);
+    expect(result.length).toBeLessThanOrEqual(50);
+  });
+
+  it("TC-SL-014: empty string returns untitled", () => {
+    expect(slugify("")).toBe("untitled");
+  });
+
+  it("TC-SL-015: custom maxLength works with Japanese-mixed input", () => {
+    const result = slugify("hello日本語world", 5);
+    expect(result.length).toBeLessThanOrEqual(5);
+    expect(result.endsWith("-")).toBe(false);
+  });
 });
 
 describe("checkSlugCollision", () => {

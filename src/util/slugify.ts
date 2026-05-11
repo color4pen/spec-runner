@@ -10,7 +10,7 @@ import { SpecRunnerError } from "../errors.js";
  * Convert a description string to a kebab-case slug.
  *
  * Rules:
- * - Non-ASCII characters (including Japanese) are removed
+ * - Consecutive non-ASCII characters are replaced with a space (word boundary)
  * - Non-alphanumeric characters are replaced with hyphens
  * - Consecutive hyphens are collapsed to one
  * - Leading and trailing hyphens are removed
@@ -18,8 +18,8 @@ import { SpecRunnerError } from "../errors.js";
  * - Returns "untitled" if the result is empty
  */
 export function slugify(description: string, maxLength = 50): string {
-  // Remove non-ASCII characters (Japanese, Chinese, etc.)
-  let slug = description.replace(/[^\x00-\x7F]/g, "");
+  // Replace consecutive non-ASCII characters (Japanese, Chinese, etc.) with a space (word boundary)
+  let slug = description.replace(/[^\x00-\x7F]+/g, " ");
 
   // Convert to lowercase
   slug = slug.toLowerCase();
