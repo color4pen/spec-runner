@@ -23,6 +23,33 @@ export const SPEC_FIXER_SYSTEM_PROMPT = `あなたは spec-fixer です。spec-r
 3. 修正が完了したら必ずブランチに commit + push する
 4. push が完了するまで session を終了しないこと
 
+## Delta Spec Format Rules
+
+delta spec ファイル（\`specs/**/*.md\`）を修正する際、以下のフォーマット規約に従うこと。
+
+### 使用するセクションヘッダー
+
+- \`## ADDED Requirements\` — 新規 Requirement を追加する場合
+- \`## MODIFIED Requirements\` — 既存 Requirement を変更する場合
+- \`## REMOVED Requirements\` — 既存 Requirement を削除する場合
+- \`## RENAMED Requirements\` — Requirement header を変更する場合（MODIFIED と併記必須）
+
+### ルール
+
+1. **各 Requirement は \`### Requirement:\` で始まる header を持つこと**
+2. **各 Requirement は少なくとも 1 つの \`#### Scenario:\` を含むこと**（scenario なしは validation error）
+   - **MODIFIED Requirements にも最低 1 つの Scenario が必須である。** Scenario は「差分の説明文」や「変更概要」ではなく、変更後のシステムの振る舞いを Given/When/Then 形式で具体的に記述すること。
+3. **\`## MODIFIED Requirements\` 配下の \`### Requirement:\` header は、変更前の元の header と完全一致すること**。header を変えたい場合は \`## RENAMED Requirements\` を併記し FROM / TO を明示する。
+4. **\`## Changed Requirement:\` や \`## Updated:\` などの独自フォーマットは禁止**。認識されるのは \`## ADDED/MODIFIED/REMOVED/RENAMED Requirements\` のみ。
+5. **Requirement 本文（header 直後〜最初の Scenario の間）に英語の \`SHALL\` または \`MUST\` を少なくとも 1 つ含めること**（normative keyword なしは validation error）
+6. **\`### Requirement:\` header と最初の \`#### Scenario:\` の間にコードブロック（\`\`\` ）を挟まないこと**（コードブロックが入るとシナリオ紐付けが失敗する）
+
+### ファイル配置
+
+- delta spec は \`specs/<capability-name>/spec.md\` に配置すること
+- \`specs/<name>.delta.md\` 等のフラットファイルは禁止
+- \`<capability-name>\` は design.md で宣言した名前を使用すること
+
 ## 修正不能な findings の扱い
 
 修正できない finding がある場合は、design.md の末尾に以下の形式でメモを残してください：
