@@ -897,6 +897,176 @@ describe("TC-016: ClaudeCodeRunner injects <project-context> when ctx.projectCon
   });
 });
 
+// ---------------------------------------------------------------------------
+// TC-032: timeoutMs triggers abort and returns timeout result
+// TC-033: timeoutMs null means no timeout (default behavior)
+// TC-034: step-level timeoutMs overrides defaults
+// TC-035: timeoutMs: 0 disables timeout
+// ---------------------------------------------------------------------------
+
+describe("TC-032: timeoutMs triggers abort and returns timeout result", () => {
+  it("returns completionReason='timeout' and error.code='STEP_TIMEOUT' when step exceeds timeoutMs", async () => {
+    // queryFn that waits 200ms and throws if aborted (simulating real SDK behavior)
+    const slowQueryFn: QueryFn = async function* (params: { prompt: string; options?: Record<string, unknown> }) {
+      const abortCtrl = params.options?.["abortController"] as AbortController | undefined;
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(resolve, 200);
+        if (abortCtrl) {
+          abortCtrl.signal.addEventListener("abort", () => {
+            clearTimeout(timer);
+            const err = new Error("AbortError");
+            (err as { name: string }).name = "AbortError";
+            reject(err);
+          }, { once: true });
+        }
+      });
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 200,
+        duration_api_ms: 180,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0.01,
+        usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "test-uuid",
+        session_id: "test-session",
+      } as unknown;
+    } as QueryFn;
+
+    const config: SpecRunnerConfig = {
+      ...makeConfig(),
+      steps: {
+        defaults: { timeoutMs: 50 },
+      },
+    };
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: slowQueryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc032-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config,
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+    expect(result.completionReason).toBe("timeout");
+    expect((result.error as { code?: string })?.code).toBe("STEP_TIMEOUT");
+  });
+});
+
+describe("TC-033: timeoutMs null means no timeout (default behavior)", () => {
+  it("returns completionReason='success' when no timeout is configured", async () => {
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: makeQueryFn() });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc033-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(), // no steps → timeoutMs resolves to null
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+    expect(result.completionReason).toBe("success");
+  });
+});
+
+describe("TC-034: step-level timeoutMs overrides defaults", () => {
+  it("uses step-level timeoutMs (5000ms) over defaults (50ms) — step completes in 100ms without timeout", async () => {
+    // queryFn that takes 100ms and respects abort — longer than defaults (50ms) but shorter than step-level (5000ms)
+    const mediumQueryFn: QueryFn = async function* (params: { prompt: string; options?: Record<string, unknown> }) {
+      const abortCtrl = params.options?.["abortController"] as AbortController | undefined;
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(resolve, 100);
+        if (abortCtrl) {
+          abortCtrl.signal.addEventListener("abort", () => {
+            clearTimeout(timer);
+            const err = new Error("AbortError");
+            (err as { name: string }).name = "AbortError";
+            reject(err);
+          }, { once: true });
+        }
+      });
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 100,
+        duration_api_ms: 90,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0.01,
+        usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "test-uuid",
+        session_id: "test-session",
+      } as unknown;
+    } as QueryFn;
+
+    const config: SpecRunnerConfig = {
+      ...makeConfig(),
+      steps: {
+        defaults: { timeoutMs: 50 },
+        "spec-review": { timeoutMs: 5000 },
+      },
+    };
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: mediumQueryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep({ name: "spec-review" }),
+      state: makeJobState("tc034-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config,
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+    expect(result.completionReason).toBe("success");
+  });
+});
+
+describe("TC-035: timeoutMs: 0 disables timeout", () => {
+  it("returns completionReason='success' when timeoutMs is 0 (timeout disabled)", async () => {
+    const config: SpecRunnerConfig = {
+      ...makeConfig(),
+      steps: {
+        defaults: { timeoutMs: 0 },
+      },
+    };
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: makeQueryFn() });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc035-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config,
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+    expect(result.completionReason).toBe("success");
+  });
+});
+
 describe("TC-017: ClaudeCodeRunner omits <project-context> when ctx.projectContext is undefined", () => {
   it("prompt does not include <project-context> tag when projectContext is absent", async () => {
     let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
@@ -922,5 +1092,43 @@ describe("TC-017: ClaudeCodeRunner omits <project-context> when ctx.projectConte
 
     expect(capturedParams).toBeDefined();
     expect(capturedParams!.prompt).not.toContain("<project-context>");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-041: Non-timeout error is not misclassified as timeout (ClaudeCodeRunner)
+// ---------------------------------------------------------------------------
+
+describe("TC-041: Non-timeout error is not misclassified as timeout (ClaudeCodeRunner)", () => {
+  it("returns completionReason='error' when queryFn throws non-abort error with timeoutMs configured", async () => {
+    // queryFn that throws a regular error immediately (not an AbortError)
+    const queryFn: QueryFn = async function* () {
+      throw new Error("immediate non-abort error");
+    } as QueryFn;
+
+    const config: SpecRunnerConfig = {
+      ...makeConfig(),
+      steps: {
+        defaults: { timeoutMs: 5000 },
+      },
+    };
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc041-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config,
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+    // The error must NOT be classified as timeout even though timeoutMs is configured
+    expect(result.completionReason).not.toBe("timeout");
+    expect(result.completionReason).toBe("error");
+    expect((result.error as { code?: string })?.code).toBe("CLAUDE_CODE_QUERY_FAILED");
   });
 });

@@ -46,20 +46,6 @@ import {
 } from "../../errors.js";
 import { changeFolderPath } from "../../util/paths.js";
 
-/**
- * Resolve wall-clock timeout for polling.
- *
- * - 0       → null (taイムアウト無効: config で明示的に無効化)
- * - null    → DEFAULT_POLL_TIMEOUT_MS (未設定: ハードコードデフォルト 15 分)
- * - positive → そのまま
- *
- * Design D2 (design.md): 0 → null の変換は消費側 agent-runner.ts の責務。
- */
-export function resolveTimeoutMs(configuredTimeoutMs: number | null): number | null {
-  if (configuredTimeoutMs === 0) return null;
-  return configuredTimeoutMs ?? DEFAULT_POLL_TIMEOUT_MS;
-}
-
 export interface ManagedAgentRunnerDeps {
   sessionClient: SessionClient;
   githubClient: GitHubClient;
@@ -191,8 +177,11 @@ export class ManagedAgentRunner implements AgentRunner {
     if (needsPollingFallback) {
       stderrWrite("SSE disconnected; falling back to polling.");
       // Resolve wall-clock timeout from step config for polling fallback
-      const resolvedConfig = getStepExecutionConfig(config, step.name, { model: step.agent.model });
-      const timeoutMs = resolveTimeoutMs(resolvedConfig.timeoutMs);
+      const resolvedConfig = getStepExecutionConfig(config, step.name, {
+        model: step.agent.model,
+        timeoutMs: DEFAULT_POLL_TIMEOUT_MS,
+      });
+      const timeoutMs = resolvedConfig.timeoutMs === 0 ? null : resolvedConfig.timeoutMs;
 
       const pollResult = await this.sessionClient.pollUntilComplete(sessionId!, {
         abortSignal: abortController.signal,
@@ -381,8 +370,11 @@ export class ManagedAgentRunner implements AgentRunner {
     }
 
     // Resolve wall-clock timeout from step config
-    const resolvedConfig = getStepExecutionConfig(config, step.name, { model: step.agent.model });
-    const timeoutMs = resolveTimeoutMs(resolvedConfig.timeoutMs);
+    const resolvedConfig = getStepExecutionConfig(config, step.name, {
+      model: step.agent.model,
+      timeoutMs: DEFAULT_POLL_TIMEOUT_MS,
+    });
+    const timeoutMs = resolvedConfig.timeoutMs === 0 ? null : resolvedConfig.timeoutMs;
 
     // Poll until complete
     const pollResult = await this.sessionClient.pollUntilComplete(sessionId!, { timeoutMs: timeoutMs ?? undefined });

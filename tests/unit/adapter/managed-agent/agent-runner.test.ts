@@ -17,7 +17,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { ManagedAgentRunner, resolveTimeoutMs } from "../../../../src/adapter/managed-agent/agent-runner.js";
+import { ManagedAgentRunner } from "../../../../src/adapter/managed-agent/agent-runner.js";
+import { DEFAULT_POLL_TIMEOUT_MS } from "../../../../src/adapter/managed-agent/completion.js";
 import type { AgentRunContext } from "../../../../src/core/port/agent-runner.js";
 import type { SessionClient } from "../../../../src/core/port/session-client.js";
 import type { GitHubClient } from "../../../../src/core/port/github-client.js";
@@ -556,35 +557,6 @@ describe("TC-030: ManagedAgentRunner.verifyBranch — branch not found → warni
 });
 
 // ---------------------------------------------------------------------------
-// TC-026/TC-027: resolveTimeoutMs — 0 → null (SSE fallback path + direct poll path)
-// TC-028: resolveTimeoutMs — null → DEFAULT_POLL_TIMEOUT_MS
-// TC-029: resolveTimeoutMs — 正数はそのまま
-// TC-032: resolveTimeoutMs — 未設定(null) → DEFAULT_POLL_TIMEOUT_MS
-// ---------------------------------------------------------------------------
-
-describe("resolveTimeoutMs — 0 → null (TC-026/TC-027: タイムアウト無効)", () => {
-  it("timeoutMs: 0 は null に変換される（pollUntilComplete にタイムアウトなしで渡す）", () => {
-    expect(resolveTimeoutMs(0)).toBeNull();
-  });
-});
-
-describe("resolveTimeoutMs — null → DEFAULT_POLL_TIMEOUT_MS (TC-028/TC-032)", () => {
-  it("timeoutMs: null は DEFAULT_POLL_TIMEOUT_MS (900000ms) にフォールバックする", () => {
-    expect(resolveTimeoutMs(null)).toBe(900_000);
-  });
-});
-
-describe("resolveTimeoutMs — 正数はそのまま (TC-029)", () => {
-  it("timeoutMs: 30000 は 30000 のまま渡される", () => {
-    expect(resolveTimeoutMs(30000)).toBe(30000);
-  });
-
-  it("timeoutMs: 1 は 1 のまま渡される（下限境界値）", () => {
-    expect(resolveTimeoutMs(1)).toBe(1);
-  });
-});
-
-// ---------------------------------------------------------------------------
 // TC-018/TC-019 (test-cases.md): projectContext injection — polling-style
 // TC-018: ctx.projectContext set → initialMessage includes <project-context>
 // TC-019: ctx.projectContext undefined → initialMessage unchanged (no <project-context>)
@@ -797,5 +769,141 @@ describe("TC-031: managed adapter result file not found → error", () => {
     await expect(runner.run(ctx)).rejects.toMatchObject({
       code: expect.stringMatching(/NOT_FOUND|RESULT_FILE/),
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-036: defaults.timeoutMs applied when no step-level override (ManagedAgentRunner)
+// ---------------------------------------------------------------------------
+
+describe("TC-036: ManagedAgentRunner — defaults.timeoutMs applied when no step-level override", () => {
+  it("pollUntilComplete is called with timeoutMs from config.steps.defaults", async () => {
+    const jobId = "tc036-job";
+    const state = makeJobState(jobId);
+    await persistState(state);
+
+    const sessionClient = makeMockSessionClient();
+    const pollSpy = sessionClient.pollUntilComplete as ReturnType<typeof vi.fn>;
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+    });
+
+    const config = makeConfig({
+      steps: {
+        defaults: { timeoutMs: 600000 },
+      },
+    });
+
+    const ctx = makeCtx({ state, config }, jobId);
+    await runner.run(ctx);
+
+    expect(pollSpy).toHaveBeenCalledTimes(1);
+    expect(pollSpy.mock.calls[0]![1]).toMatchObject({ timeoutMs: 600000 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-037: step-level timeoutMs overrides defaults in ManagedAgentRunner
+// ---------------------------------------------------------------------------
+
+describe("TC-037: ManagedAgentRunner — step-level timeoutMs overrides defaults", () => {
+  it("pollUntilComplete is called with step-level timeoutMs (not defaults)", async () => {
+    const jobId = "tc037-job";
+    const state = makeJobState(jobId);
+    await persistState(state);
+
+    const sessionClient = makeMockSessionClient();
+    const pollSpy = sessionClient.pollUntilComplete as ReturnType<typeof vi.fn>;
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+    });
+
+    const config = makeConfig({
+      steps: {
+        defaults: { timeoutMs: 600000 },
+        implementer: { timeoutMs: 300000 },
+      },
+    });
+
+    // Use "implementer" step — has a step-level timeoutMs override
+    const implementerStep = makePollingStyleStep("implementer", "implementer");
+    const ctx = makeCtx({ state, config, step: implementerStep }, jobId);
+    await runner.run(ctx);
+
+    expect(pollSpy).toHaveBeenCalledTimes(1);
+    expect(pollSpy.mock.calls[0]![1]).toMatchObject({ timeoutMs: 300000 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-038: resolveTimeoutMs removed — stepDefaults provides fallback for ManagedAgentRunner
+// ---------------------------------------------------------------------------
+
+describe("TC-038: resolveTimeoutMs removed — stepDefaults provides DEFAULT_POLL_TIMEOUT_MS fallback", () => {
+  it("no timeoutMs in config → pollUntilComplete called with DEFAULT_POLL_TIMEOUT_MS", async () => {
+    const jobId = "tc038-job";
+    const state = makeJobState(jobId);
+    await persistState(state);
+
+    const sessionClient = makeMockSessionClient();
+    const pollSpy = sessionClient.pollUntilComplete as ReturnType<typeof vi.fn>;
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+    });
+
+    // makeCtx uses makeConfig() which has no steps field → falls back to stepDefaults
+    const ctx = makeCtx({ state }, jobId);
+    await runner.run(ctx);
+
+    expect(pollSpy).toHaveBeenCalledTimes(1);
+    expect(pollSpy.mock.calls[0]![1]).toMatchObject({ timeoutMs: DEFAULT_POLL_TIMEOUT_MS });
+  });
+
+  it("resolveTimeoutMs function does not exist in managed-agent/agent-runner.ts", async () => {
+    const agentRunnerPath = path.resolve(
+      __dirname,
+      "../../../../src/adapter/managed-agent/agent-runner.ts",
+    );
+    const content = await fs.readFile(agentRunnerPath, "utf-8");
+    expect(content).not.toMatch(/resolveTimeoutMs/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-040: No steps config → ManagedAgentRunner preserves DEFAULT_POLL_TIMEOUT_MS
+// ---------------------------------------------------------------------------
+
+describe("TC-040: No steps config → ManagedAgentRunner uses DEFAULT_POLL_TIMEOUT_MS (no regression)", () => {
+  it("minimal config with no steps → pollUntilComplete called with DEFAULT_POLL_TIMEOUT_MS", async () => {
+    const jobId = "tc040-job";
+    const state = makeJobState(jobId);
+    await persistState(state);
+
+    const sessionClient = makeMockSessionClient();
+    const pollSpy = sessionClient.pollUntilComplete as ReturnType<typeof vi.fn>;
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+    });
+
+    // makeCtx uses makeConfig() which has no `steps` key — minimal config
+    const ctx = makeCtx({ state }, jobId);
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(pollSpy).toHaveBeenCalledTimes(1);
+    // With no config.steps, stepDefaults.timeoutMs = DEFAULT_POLL_TIMEOUT_MS is the fallback
+    expect(pollSpy.mock.calls[0]![1]).toMatchObject({ timeoutMs: DEFAULT_POLL_TIMEOUT_MS });
   });
 });

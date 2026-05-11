@@ -140,6 +140,13 @@ export class ClaudeCodeRunner implements AgentRunner {
     // TC-023: invoke SDK query() with cwd, allowedTools, permissionMode, maxTurns
     let extractedModelUsage: Record<string, ModelUsage> | undefined;
 
+    // Set up wall-clock timeout via AbortController
+    const abortController = new AbortController();
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    if (resolvedConfig.timeoutMs !== null && resolvedConfig.timeoutMs > 0) {
+      timeoutId = setTimeout(() => abortController.abort(), resolvedConfig.timeoutMs);
+    }
+
     try {
       const messages = this.queryFn({
         prompt: fullPrompt,
@@ -149,6 +156,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           permissionMode: "bypassPermissions",
           ...maxTurnsOption,
           model: resolvedConfig.model,
+          abortController,
         },
       });
 
@@ -189,6 +197,17 @@ export class ClaudeCodeRunner implements AgentRunner {
         }
       }
     } catch (err) {
+      if (abortController.signal.aborted && timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+        return {
+          completionReason: "timeout",
+          resultContent: null,
+          error: Object.assign(
+            new Error(`Step '${step.name}' timed out after ${resolvedConfig.timeoutMs}ms`),
+            { code: "STEP_TIMEOUT" },
+          ),
+        };
+      }
       const cause = err as Error;
       return {
         completionReason: "error",
@@ -198,6 +217,8 @@ export class ClaudeCodeRunner implements AgentRunner {
           { code: "CLAUDE_CODE_QUERY_FAILED", cause },
         ),
       };
+    } finally {
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
     }
 
     // TC-028: requiresCommit guard — verify branch advanced (D5)
