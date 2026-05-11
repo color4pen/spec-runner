@@ -5,6 +5,9 @@
  * TC-DC-002: collectDynamicContext falls back to empty strings/arrays on git failure
  * TC-DC-003: collectDynamicContext returns empty array when specrunner/changes/ doesn't exist
  * TC-DC-004: changesList excludes "archive" directory
+ *
+ * TC-001 (add-spec-review-baseline-check): DynamicContext has baselineSpecs field (optional)
+ * TC-002 (add-spec-review-baseline-check): collectDynamicContext does not set baselineSpecs
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
@@ -38,6 +41,23 @@ describe("TC-DC-001: collectDynamicContext returns correct types on success", ()
     expect(ctx).toHaveProperty("diffStat");
     expect(ctx).not.toHaveProperty("specsList");
     expect(ctx).toHaveProperty("changesList");
+    expect(typeof ctx.gitLog).toBe("string");
+    expect(typeof ctx.diffStat).toBe("string");
+    expect(Array.isArray(ctx.changesList)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-002 (add-spec-review-baseline-check): collectDynamicContext does not set baselineSpecs
+// ---------------------------------------------------------------------------
+describe("TC-002: collectDynamicContext does not populate baselineSpecs", () => {
+  it("baselineSpecs is undefined in result from collectDynamicContext", async () => {
+    const { collectDynamicContext } = await import("../../src/git/dynamic-context.js");
+    const ctx = await collectDynamicContext(tempDir, "main");
+
+    // baselineSpecs is optional — collectDynamicContext never sets it
+    expect(ctx.baselineSpecs).toBeUndefined();
+    // Existing fields are still present
     expect(typeof ctx.gitLog).toBe("string");
     expect(typeof ctx.diffStat).toBe("string");
     expect(Array.isArray(ctx.changesList)).toBe(true);

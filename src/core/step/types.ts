@@ -4,6 +4,7 @@ import type { CustomToolHandler } from "../tools/types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import type { ReviewScores } from "../parser/review-scores.js";
 import type { FindingSeverityCounts } from "../parser/review-findings.js";
+import type { DynamicContext } from "../../git/dynamic-context.js";
 
 // Re-export AgentDefinition for convenience
 export type { AgentDefinition };
@@ -136,6 +137,17 @@ export interface AgentStep {
    * If state.branch is already set, this flag has no effect.
    */
   setsBranch?: boolean;
+
+  /**
+   * Enrich dynamic context with step-specific data before buildMessage is called.
+   * Async — I/O is allowed (unlike buildMessage which is pure).
+   * Returns a new DynamicContext with additional fields populated.
+   * When absent, adapter skips enrichment and uses the original dynamicContext as-is.
+   *
+   * Design D1 (add-spec-review-baseline-check): optional hook for I/O-heavy context
+   * preparation that cannot be done inside buildMessage (pure function constraint).
+   */
+  enrichContext?(dynamicContext: DynamicContext, cwd: string, slug: string): Promise<DynamicContext>;
 }
 
 /**

@@ -82,7 +82,7 @@ export class ClaudeCodeRunner implements AgentRunner {
     const state = ctx.state;
 
     // TC-007: deps is StepContext — no client/githubClient needed
-    const stepCtx: StepContext = {
+    let stepCtx: StepContext = {
       config: ctx.config,
       slug: ctx.slug,
       cwd,
@@ -97,6 +97,14 @@ export class ClaudeCodeRunner implements AgentRunner {
       repo: { owner: "", name: "" },
       dynamicContext: ctx.dynamicContext,
     };
+
+    // D3 (add-spec-review-baseline-check): call enrichContext before buildMessage.
+    // Errors propagate — no catch here (StepExecutor handles error lifecycle).
+    if (step.enrichContext) {
+      const enriched = await step.enrichContext(stepCtx.dynamicContext!, cwd, ctx.slug);
+      stepCtx = { ...stepCtx, dynamicContext: enriched };
+    }
+
     const baseMessage = step.buildMessage(state, stepCtx);
 
     const additionalInstructions = buildAdditionalInstructions(ctx);

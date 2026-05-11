@@ -3,87 +3,29 @@
 ## Purpose
 TBD - created by archiving change 2026-04-29-step-abstraction-refactor. Update Purpose after archive.
 ## Requirements
+
 ### Requirement: Step is a Declarative Interface
 
-A pipeline step SHALL be expressed as a value implementing the `Step` interface. The interface SHALL be a discriminated union with a `kind` field separating two execution strategies:
-
-- `kind: "agent"` — the step delegates to a Managed Agents session (existing behavior)
-- `kind: "cli"` — the step runs entirely inside the SpecRunner CLI process without any Anthropic session
-
-The `Step` union SHALL have the shape:
+The `AgentStep` type definition SHALL include the optional `enrichContext` method in addition to its existing fields:
 
 ```ts
-type Step = AgentStep | CliStep;
-
 type AgentStep = {
   kind: "agent";
   name: StepName;
-  agent: AgentDefinition;       // complete AgentDefinition (name, role, model, system, tools, capabilities)
-  maxTurns?: number;            // SDK query() maxTurns override (default: 30)
+  agent: AgentDefinition;
+  maxTurns?: number;
   toolHandlers?: Map<string, ToolHandler>;
   buildMessage(state: JobState, deps: StepDeps): string;
   resultFilePath(state: JobState): string | null;
   parseResult(content: string): StepOutcome;
-  completionVerdict?: Verdict;  // verdict when resultFilePath is null and session completes
-  setsBranch?: boolean;         // if true, executor sets state.branch after successful completion
-};
-
-type CliStep = {
-  kind: "cli";
-  name: StepName;
-  resultFilePath(state: JobState): string;
-  parseResult(content: string): StepOutcome;
-  run(state: JobState, deps: StepDeps): Promise<void>;  // direct CLI execution
+  completionVerdict?: Verdict;
+  setsBranch?: boolean;
+  /** Optional pre-buildMessage hook. Async; I/O is allowed. Returns enriched DynamicContext. */
+  enrichContext?(dynamicContext: DynamicContext, cwd: string, slug: string): Promise<DynamicContext>;
 };
 ```
 
-`StepDeps` is an alias for `StepContext` (the minimal interface containing `config`, `slug`, `cwd?`, `request`, `repo`). Step methods SHALL NOT receive `PipelineDeps` directly.
-
-`Step` implementations SHALL NOT manage I/O lifecycle (session creation, polling, persistence, event emission). Lifecycle is the responsibility of `StepExecutor`.
-
-`AgentStep` implementations MUST own the full `AgentDefinition` value (system prompt, model, tools). The Anthropic agent ID itself is resolved at runtime from `ConfigStore` keyed by `step.agent.role`.
-
-`CliStep` implementations MUST NOT have an `agent` field. The lifecycle distinction is governed solely by the `kind` discriminator (no implicit data-presence inference).
-
-`AgentStep.completionVerdict` is an optional field declaring the verdict to record when `resultFilePath` returns `null` and the session (or local runtime execution) completes successfully. If omitted, the default behavior depends on the runtime path (see StepExecutor requirement).
-
-`AgentStep.setsBranch` is an optional boolean flag. When `true`, `StepExecutor` SHALL set `state.branch` after successful completion of the step in the local runtime path, provided `state.branch` is not already set. The branch name SHALL be derived as `feat/${slug}`. This flag replaces any step-name-based branch detection logic (e.g., `if (step.name === "propose")`).
-
-#### Scenario: Step implementation is stateless
-- **WHEN** the same `Step` instance is used to execute the same step twice with identical inputs
-- **THEN** `buildMessage` (agent) / `run` (cli) / `resultFilePath` / `parseResult` produce identical outputs
-- **AND** the `Step` instance does not accumulate state between invocations
-
-#### Scenario: AgentStep exposes its agent definition
-- **WHEN** `StepExecutor` needs to bind the step to a Managed Agent
-- **THEN** it reads `step.agent` directly to obtain the full `AgentDefinition`
-- **AND** it resolves the runtime Anthropic agent ID via `ConfigStore.getAgentId(step.agent.role)`
-- **AND** it does NOT consult any global agent registry from inside `StepExecutor`
-- **AND** it does NOT consult a `STEP_AGENT_ROLE` lookup table or any equivalent intermediate map
-
-#### Scenario: AgentStep.agent is a complete AgentDefinition
-- **GIVEN** any concrete `AgentStep` implementation (e.g., `ProposeStep`, `SpecReviewStep`, `SpecFixerStep`, `ImplementerStep`, `BuildFixerStep`)
-- **WHEN** `step.agent` is inspected at runtime
-- **THEN** the value contains `name`, `role`, `model`, `system`, and `tools` fields populated by the step itself
-- **AND** the value does NOT contain a `agentId` placeholder field
-
-#### Scenario: AgentStep declares maxTurns
-- **GIVEN** any concrete `AgentStep` implementation
-- **WHEN** `step.maxTurns` is inspected at runtime
-- **THEN** the value is a positive integer or undefined (in which case the executor uses 30 as default)
-
-#### Scenario: CliStep has no agent field
-- **GIVEN** a concrete `CliStep` implementation (e.g., `VerificationStep`)
-- **WHEN** `step` is inspected at runtime
-- **THEN** `step.kind === "cli"`
-- **AND** the value does NOT have an `agent` property
-- **AND** the value has a `run(state, deps): Promise<void>` method
-
-#### Scenario: ProposeStep declares setsBranch and completionVerdict
-- **GIVEN** the `ProposeStep` instance exported from `src/core/step/propose.ts`
-- **WHEN** `step` is inspected at runtime
-- **THEN** `step.setsBranch === true`
-- **AND** `step.completionVerdict === "success"`
+All existing fields and semantics are unchanged. `enrichContext` is optional — existing `AgentStep` implementations that do not define it continue to work without modification.
 
 ### Requirement: Custom Tool Spec and Handler Co-located With Step
 
@@ -564,3 +506,33 @@ When `step.setsBranch === true` and `state.branch` is absent after step completi
 - **THEN** the branch parameter is `"feat/my-feature-abcdef01"`
 - **AND** the slug parameter is `"my-feature"` (unchanged)
 
+### Requirement: AgentStep declares optional enrichContext for pre-buildMessage context enrichment
+
+`AgentStep` interface SHALL include an optional `enrichContext` method with the signature:
+
+```ts
+enrichContext?(dynamicContext: DynamicContext, cwd: string, slug: string): Promise<DynamicContext>;
+```
+
+This method is async and MAY perform I/O (unlike `buildMessage` which is pure). When defined, the adapter SHALL call `enrichContext` before `buildMessage` and replace `stepCtx.dynamicContext` with the returned value. When absent, the adapter SHALL skip enrichment and use the original `dynamicContext` as-is.
+
+`enrichContext` SHALL NOT modify the input `dynamicContext` — it SHALL return a new object (spread + additional fields).
+
+#### Scenario: enrichContext is called before buildMessage in ClaudeCodeRunner
+
+- **WHEN** `ClaudeCodeRunner.run(ctx)` executes an `AgentStep` with `enrichContext` defined
+- **THEN** `step.enrichContext(dynamicContext, cwd, slug)` is called before `step.buildMessage(state, stepCtx)`
+- **AND** `stepCtx.dynamicContext` is replaced with the returned value
+
+#### Scenario: enrichContext is called before buildMessage in ManagedAgentRunner
+
+- **WHEN** `ManagedAgentRunner.runPollingStyle()` executes an `AgentStep` with `enrichContext` defined
+- **THEN** `step.enrichContext(dynamicContext, cwd, slug)` is called before `step.buildMessage(state, stepCtx)`
+- **AND** `stepCtx.dynamicContext` is replaced with the returned value
+
+#### Scenario: enrichContext absent does not affect existing behavior
+
+- **GIVEN** an `AgentStep` without `enrichContext` (e.g., `ProposeStep`, `ImplementerStep`)
+- **WHEN** the adapter executes the step
+- **THEN** `buildMessage` receives the original `dynamicContext` unchanged
+- **AND** no additional I/O is performed

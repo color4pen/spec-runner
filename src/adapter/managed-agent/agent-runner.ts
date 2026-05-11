@@ -286,7 +286,7 @@ export class ManagedAgentRunner implements AgentRunner {
 
     // Build initial message
     // TC-007 (StepContext): deps only contains StepContext fields
-    const stepCtx: StepContext = {
+    let stepCtx: StepContext = {
       config,
       slug: ctx.slug,
       cwd: ctx.cwd,
@@ -301,6 +301,13 @@ export class ManagedAgentRunner implements AgentRunner {
       repo: this.repo,
       dynamicContext: ctx.dynamicContext,
     };
+
+    // D3 (add-spec-review-baseline-check): call enrichContext before buildMessage.
+    // Errors propagate — no catch here (StepExecutor handles error lifecycle).
+    if (step.enrichContext) {
+      const enriched = await step.enrichContext(stepCtx.dynamicContext!, ctx.cwd, ctx.slug);
+      stepCtx = { ...stepCtx, dynamicContext: enriched };
+    }
 
     let initialMessage: string;
     try {

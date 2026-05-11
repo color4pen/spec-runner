@@ -1,11 +1,14 @@
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import type { AgentStep, StepDeps, ParsedStepResult } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState, Verdict } from "../../state/schema.js";
+import type { DynamicContext } from "../../git/dynamic-context.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT, buildSpecReviewInitialMessage } from "../../prompts/spec-review-system.js";
 import { parseReviewVerdict } from "../parser/review-verdict.js";
 import { getSpecReviewMode } from "../../config/type-config.js";
-import { specReviewResultPath } from "../../util/paths.js";
+import { specReviewResultPath, changeFolderPath, baselineSpecPath } from "../../util/paths.js";
 
 const SPEC_REVIEW_AGENT_MODEL = "claude-opus-4-6[1m]";
 
@@ -79,6 +82,29 @@ export const SpecReviewStep: AgentStep = {
     return mode === "lightweight" ? 10 : undefined;
   },
 
+  async enrichContext(dynamicContext: DynamicContext, cwd: string, slug: string): Promise<DynamicContext> {
+    const specsDir = path.join(cwd, changeFolderPath(slug), "specs");
+    try {
+      const entries = await fs.readdir(specsDir, { withFileTypes: true });
+      const capabilities = entries.filter(e => e.isDirectory()).map(e => e.name);
+      if (capabilities.length === 0) return dynamicContext;
+
+      const baselineSpecs: Record<string, string> = {};
+      for (const cap of capabilities) {
+        const baselinePath = path.join(cwd, baselineSpecPath(cap));
+        try {
+          baselineSpecs[cap] = await fs.readFile(baselinePath, "utf-8");
+        } catch {
+          // baseline が存在しない capability（新規）はスキップ
+        }
+      }
+      return { ...dynamicContext, baselineSpecs };
+    } catch {
+      // specs/ ディレクトリが存在しない場合はそのまま返す
+      return dynamicContext;
+    }
+  },
+
   buildMessage(state: JobState, deps: StepDeps): string {
     const iteration = computeSpecReviewIteration(state);
     const findingsPath = buildFindingsPath(deps.slug, iteration);
@@ -92,6 +118,7 @@ export const SpecReviewStep: AgentStep = {
       iteration,
       findingsPath,
       specReviewMode: getSpecReviewMode(state.request.type),
+      baselineSpecs: deps.dynamicContext?.baselineSpecs,
     });
   },
 
