@@ -1,4 +1,5 @@
 import { changesDirRel, changeFolderPath } from "../util/paths.js";
+import type { DynamicContext } from "../git/dynamic-context.js";
 
 // Build dynamically so path references stay in sync with path utility functions.
 const _changesDir = changesDirRel();
@@ -160,6 +161,12 @@ Files you MUST NOT touch:
 
 The boundary is by **path**, not by file type. \`README.md\` is forbidden because it lives outside \`${_changesDir}/<slug>/\`, not because of any classification of "documentation". A README under \`${_changesDir}/<slug>/README.md\` would be allowed; one at the repo root is not. **No exceptions, including for "efficiency" or "completing the change in one pass".**
 
+## Baseline Spec 参照
+
+\`specrunner/specs/\` 配下の baseline spec の Read は許可する（path-fence の「編集禁止」には該当しない）。
+delta spec（MODIFIED / REMOVED）を書く前に、対応する baseline spec を Read して既存 Requirement を把握すること。
+initial message に specIndex テーブルが含まれている場合は、それを手がかりに関連する baseline spec を特定する。
+
 ## 禁止事項
 
 - 実装作業（コード本体の編集）— implementer の役割です
@@ -230,7 +237,7 @@ export function buildInitialMessage(
   requestContent: string,
   slug: string,
   branch: string = `feat/${slug}`,
-  dynamicContext?: { changesList?: string[] },
+  dynamicContext?: DynamicContext,
 ): string {
   let base = PROPOSE_INITIAL_MESSAGE_TEMPLATE
     .replaceAll("{{SLUG}}", slug)
@@ -238,16 +245,25 @@ export function buildInitialMessage(
     .replace("{{REQUEST_CONTENT}}", requestContent);
 
   if (dynamicContext) {
-    const sections: string[] = [];
+    const repoContextSections: string[] = [];
 
     if (dynamicContext.changesList && dynamicContext.changesList.length > 0) {
-      sections.push(
-        `## Repository Context\n\n### Active Changes (${_changesDir}/)\n\n${dynamicContext.changesList.map((c) => `- ${c}`).join("\n")}`,
+      repoContextSections.push(
+        `### Active Changes (${_changesDir}/)\n\n${dynamicContext.changesList.map((c) => `- ${c}`).join("\n")}`,
       );
     }
 
-    if (sections.length > 0) {
-      base = `${base}\n\n${sections.join("\n\n")}`;
+    if (dynamicContext.specIndex && dynamicContext.specIndex.length > 0) {
+      const tableRows = dynamicContext.specIndex
+        .map((e) => `| ${e.capability} | ${e.purpose} | ${e.requirementCount} |`)
+        .join("\n");
+      repoContextSections.push(
+        `### Baseline Specs (specrunner/specs/)\n\n| Capability | Purpose | Requirements |\n|------------|---------|-------------|\n${tableRows}`,
+      );
+    }
+
+    if (repoContextSections.length > 0) {
+      base = `${base}\n\n## Repository Context\n\n${repoContextSections.join("\n\n")}`;
     }
   }
 

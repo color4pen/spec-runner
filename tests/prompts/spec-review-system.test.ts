@@ -32,7 +32,7 @@ describe("TC-003: AgentStep interface has optional enrichContext", () => {
   it("enrichContext signature accepts dynamicContext, cwd, slug and returns Promise<DynamicContext>", async () => {
     // This test verifies the method is callable with the expected signature.
     // We use a temp directory that has no specs/ subdirectory, so it returns dynamicContext as-is.
-    const dynamicContext: DynamicContext = { gitLog: "log", diffStat: "stat", changesList: [] };
+    const dynamicContext: DynamicContext = { gitLog: "log", diffStat: "stat", changesList: [], specIndex: [] };
     const result = await SpecReviewStep.enrichContext!(dynamicContext, "/nonexistent-cwd", "test-slug");
     expect(result).toEqual(dynamicContext);
   });
@@ -209,6 +209,7 @@ describe("TC-021: SpecReviewStep.buildMessage passes baselineSpecs from dynamicC
         gitLog: "",
         diffStat: "",
         changesList: [],
+        specIndex: [],
         baselineSpecs,
       },
     };
@@ -251,6 +252,7 @@ describe("TC-021: SpecReviewStep.buildMessage passes baselineSpecs from dynamicC
         gitLog: "",
         diffStat: "",
         changesList: [],
+        specIndex: [],
         // no baselineSpecs
       },
     };
@@ -298,6 +300,7 @@ describe("TC-010: SpecReviewStep.enrichContext returns dynamicContext unchanged 
       gitLog: "abc",
       diffStat: "def",
       changesList: ["some-change"],
+      specIndex: [],
     };
 
     // Using a cwd path where specrunner/changes/test-slug/specs/ does not exist
