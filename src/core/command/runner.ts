@@ -23,6 +23,7 @@
 import { logInfo, logError } from "../../logger/stdout.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
+import { JobStateStore } from "../../store/job-state-store.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { EventBus } from "../event/event-bus.js";
 import { ProgressDisplay } from "../../cli/progress.js";
@@ -85,6 +86,12 @@ export abstract class CommandRunner {
     try {
       workspace = await this.runtime.setupWorkspace(slug, jobState.jobId, workspaceOpts);
     } catch (err) {
+      const store = new JobStateStore(jobState.jobId);
+      await store.fail(jobState, {
+        code: "WORKSPACE_SETUP_FAILED",
+        message: (err as Error).message,
+        hint: "",
+      }, "init");
       process.stderr.write(`Error: Failed to set up workspace: ${(err as Error).message}\n`);
       return 1;
     }
@@ -104,21 +111,34 @@ export abstract class CommandRunner {
     }
 
     // Step 3: buildDeps
-    const deps: PipelineDeps = this.runtime.buildDeps(config, repo, request, slug, workspace);
-
-    // Step 3b: collect dynamic context and attach to deps (once per run, not per-step)
-    // collectDynamicContext never throws — failures return empty fields.
-    try {
-      deps.dynamicContext = await collectDynamicContext(
-        workspace.cwd,
-        request.baseBranch,
-      );
-    } catch {
-      // Swallow any unexpected error — pipeline must not be blocked
-    }
-
+    let deps: PipelineDeps;
     // Step 4: registerCleanup
-    const handle: CleanupHandle = this.runtime.registerCleanup(jobState.jobId, startStep);
+    let handle: CleanupHandle;
+    try {
+      deps = this.runtime.buildDeps(config, repo, request, slug, workspace);
+
+      // Step 3b: collect dynamic context and attach to deps (once per run, not per-step)
+      // collectDynamicContext never throws — failures return empty fields.
+      try {
+        deps.dynamicContext = await collectDynamicContext(
+          workspace.cwd,
+          request.baseBranch,
+        );
+      } catch {
+        // Swallow any unexpected error — pipeline must not be blocked
+      }
+
+      handle = this.runtime.registerCleanup(jobState.jobId, startStep);
+    } catch (err) {
+      const store = new JobStateStore(jobState.jobId);
+      await store.fail(jobState, {
+        code: "INIT_FAILED",
+        message: (err as Error).message,
+        hint: "",
+      }, "init");
+      process.stderr.write(`Error: ${(err as Error).message}\n`);
+      return 1;
+    }
 
     // Step 5: runPipeline
     let finalState: JobState;
@@ -126,6 +146,18 @@ export abstract class CommandRunner {
       const pipeline = createStandardPipeline(deps, events);
       finalState = await pipeline.run(startStep, jobState, deps);
     } catch (err) {
+      // Defensive: if pipeline safety net did not transition state, mark as failed
+      try {
+        const store = new JobStateStore(jobState.jobId);
+        const diskState = await store.load();
+        if (diskState.status === "running") {
+          await store.fail(diskState as JobState, {
+            code: "PIPELINE_UNHANDLED_ERROR",
+            message: (err as Error).message,
+            hint: "",
+          }, jobState.step);
+        }
+      } catch { /* best-effort — don't mask original error */ }
       outputPipelineThrowError(err, jobState.branch);
       await this.runtime.teardown(handle, "error");
       return 1;

@@ -16,6 +16,7 @@ import type { PrepareResult } from "../../../../src/core/command/runner.js";
 import type { RuntimeStrategy, WorkspaceContext, CleanupHandle } from "../../../../src/core/runtime/strategy.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
+import { JobStateStore } from "../../../../src/store/job-state-store.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -298,7 +299,6 @@ describe("TC-CR-007: awaiting-merge without pullRequest outputs branch line only
 });
 
 // TC-CR-008: worktreePath from setupWorkspace is reflected in jobState passed to pipeline
-
 describe("TC-CR-008: worktreePath from workspace is reflected in jobState passed to pipeline", () => {
   it("pipeline receives jobState with worktreePath set by setupWorkspace", async () => {
     const runtime = buildMockRuntime();
@@ -325,5 +325,84 @@ describe("TC-CR-008: worktreePath from workspace is reflected in jobState passed
     expect(pipelineRunSpy).toHaveBeenCalledTimes(1);
     const passedJobState = pipelineRunSpy.mock.calls[0]![1];
     expect(passedJobState.worktreePath).toBe("/worktree");
+  });
+});
+
+// TC-CR-009: setupWorkspace failure marks job as failed
+describe("TC-CR-009: setupWorkspace failure marks job status as failed on disk", () => {
+  it("persists status=failed with WORKSPACE_SETUP_FAILED when setupWorkspace throws", async () => {
+    const realJobState = await JobStateStore.create({
+      request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
+      repository: { owner: "testowner", name: "testrepo" },
+    });
+
+    const runtime = buildMockRuntime({ setupThrow: new Error("worktree failed") });
+    const command = new TestCommand(runtime, buildPrepareResult({ jobState: realJobState }));
+
+    const exitCode = await command.execute();
+
+    expect(exitCode).toBe(1);
+
+    const store = new JobStateStore(realJobState.jobId);
+    const diskState = await store.load();
+    expect(diskState.status).toBe("failed");
+    expect(diskState.error?.code).toBe("WORKSPACE_SETUP_FAILED");
+  });
+});
+
+// TC-CR-010: pipeline throw with running state marks job as failed
+describe("TC-CR-010: pipeline throw with running disk state marks job as failed", () => {
+  it("persists status=failed with PIPELINE_UNHANDLED_ERROR when pipeline throws and state is still running", async () => {
+    const realJobState = await JobStateStore.create({
+      request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
+      repository: { owner: "testowner", name: "testrepo" },
+    });
+
+    const runtime = buildMockRuntime();
+    const command = new TestCommand(runtime, buildPrepareResult({ jobState: realJobState }));
+
+    const { createStandardPipeline } = await import("../../../../src/core/pipeline/index.js");
+    (createStandardPipeline as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+      run: vi.fn().mockRejectedValue(new Error("Pipeline crashed unexpectedly")),
+    });
+
+    const exitCode = await command.execute();
+
+    expect(exitCode).toBe(1);
+
+    const store = new JobStateStore(realJobState.jobId);
+    const diskState = await store.load();
+    expect(diskState.status).toBe("failed");
+    expect(diskState.error?.code).toBe("PIPELINE_UNHANDLED_ERROR");
+  });
+});
+
+// TC-CR-011: pipeline throw with awaiting-resume state (safety net already fired) does not overwrite
+describe("TC-CR-011: pipeline throw with awaiting-resume state does not overwrite to failed", () => {
+  it("leaves status=awaiting-resume unchanged when pipeline safety net already transitioned state", async () => {
+    const realJobState = await JobStateStore.create({
+      request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
+      repository: { owner: "testowner", name: "testrepo" },
+    });
+
+    const store = new JobStateStore(realJobState.jobId);
+    const runtime = buildMockRuntime();
+    const command = new TestCommand(runtime, buildPrepareResult({ jobState: realJobState }));
+
+    const { createStandardPipeline } = await import("../../../../src/core/pipeline/index.js");
+    (createStandardPipeline as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+      run: vi.fn().mockImplementation(async () => {
+        // Simulate pipeline safety net: transition state to awaiting-resume before throwing
+        await store.update(realJobState, { status: "awaiting-resume" });
+        throw new Error("Unhandled pipeline error");
+      }),
+    });
+
+    const exitCode = await command.execute();
+
+    expect(exitCode).toBe(1);
+
+    const diskState = await store.load();
+    expect(diskState.status).toBe("awaiting-resume");
   });
 });
