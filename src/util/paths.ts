@@ -90,3 +90,11 @@ export function specsDirRel(): string {
 export function baselineSpecPath(capability: string): string {
   return `${SPECS_DIR}/${capability}/spec.md`;
 }
+
+/**
+ * Returns the relative path to the project-level context file.
+ * Example: projectMdPath() → "specrunner/project.md"
+ */
+export function projectMdPath(): string {
+  return "specrunner/project.md";
+}

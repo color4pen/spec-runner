@@ -15,6 +15,7 @@ import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentDefinition } from "../../../src/core/agent/definition.js";
 import type { Step } from "../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
+import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
 
 /**
  * Create a StepExecutor wired with a ManagedAgentRunner built from deps.
@@ -494,5 +495,263 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
     const executor = makeExecutor(events, deps);
     // Null post-SHA falls through (no NO_COMMIT_DETECTED) — only equal SHAs trigger
     await expect(executor.execute(step, state, deps)).resolves.toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-007 to TC-015: projectContext injection into AgentRunContext
+// ---------------------------------------------------------------------------
+
+describe("TC-007 to TC-010: allowlist steps set ctx.projectContext from specrunner/project.md", () => {
+  let cwdWithProjectMd: string;
+  const PROJECT_MD_CONTENT = "# Project Context\nStack: TypeScript\n";
+
+  beforeEach(async () => {
+    cwdWithProjectMd = await fs.mkdtemp(path.join(os.tmpdir(), "executor-project-ctx-"));
+    await fs.mkdir(path.join(cwdWithProjectMd, "specrunner"), { recursive: true });
+    await fs.writeFile(
+      path.join(cwdWithProjectMd, "specrunner", "project.md"),
+      PROJECT_MD_CONTENT,
+      "utf-8",
+    );
+  });
+
+  afterEach(async () => {
+    await fs.rm(cwdWithProjectMd, { recursive: true, force: true });
+  });
+
+  /** Minimal AgentRunner mock that captures ctx and returns success. */
+  function makeCapturingRunner(): {
+    runner: AgentRunner;
+    captured: { ctx: AgentRunContext | undefined };
+  } {
+    const captured: { ctx: AgentRunContext | undefined } = { ctx: undefined };
+    const runner: AgentRunner = {
+      async run(ctx: AgentRunContext): Promise<AgentRunResult> {
+        captured.ctx = ctx;
+        return { completionReason: "success", resultContent: null };
+      },
+    };
+    return { runner, captured };
+  }
+
+  function makeStepNamed(name: string): Step {
+    return {
+      kind: "agent" as const,
+      name,
+      agent: {
+        name: `specrunner-${name}`,
+        role: name as "propose",
+        model: "claude-sonnet-4-5",
+        system: `system for ${name}`,
+        tools: [],
+      },
+      toolHandlers: undefined,
+      buildMessage: () => `message for ${name}`,
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+  }
+
+  function makeDepsWithCwd(cwd: string): PipelineDeps {
+    return {
+      config: makeConfig(),
+      repo: { owner: "testowner", name: "testrepo" },
+      request: {
+        type: "feature",
+        title: "Test",
+        slug: "test-slug",
+        baseBranch: "main",
+        content: "content",
+        enabled: [],
+      },
+      slug: "test-slug",
+      cwd,
+      githubClient: {
+        verifyBranch: vi.fn().mockResolvedValue(true),
+        getRawFile: vi.fn().mockResolvedValue(null),
+        verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+        getRefSha: vi.fn().mockResolvedValue(null),
+      },
+    };
+  }
+
+  const ALLOWLIST_STEPS = ["propose", "spec-review", "implementer", "code-review"] as const;
+
+  ALLOWLIST_STEPS.forEach((stepName) => {
+    it(`step '${stepName}' → ctx.projectContext is set from specrunner/project.md`, async () => {
+      const { runner, captured } = makeCapturingRunner();
+      const events = new EventBus();
+      const executor = new StepExecutor(events, runner);
+      const state = makeMinimalState(`tc-allowlist-${stepName}`);
+      const deps = makeDepsWithCwd(cwdWithProjectMd);
+      const step = makeStepNamed(stepName);
+
+      await executor.execute(step, state, deps);
+
+      expect(captured.ctx).toBeDefined();
+      expect(captured.ctx!.projectContext).toBe(PROJECT_MD_CONTENT);
+    });
+  });
+});
+
+describe("TC-011 to TC-014: non-allowlist steps — ctx.projectContext is undefined", () => {
+  let cwdWithProjectMd: string;
+  const PROJECT_MD_CONTENT = "# Project Context\nStack: TypeScript\n";
+
+  beforeEach(async () => {
+    cwdWithProjectMd = await fs.mkdtemp(path.join(os.tmpdir(), "executor-project-ctx-"));
+    await fs.mkdir(path.join(cwdWithProjectMd, "specrunner"), { recursive: true });
+    await fs.writeFile(
+      path.join(cwdWithProjectMd, "specrunner", "project.md"),
+      PROJECT_MD_CONTENT,
+      "utf-8",
+    );
+  });
+
+  afterEach(async () => {
+    await fs.rm(cwdWithProjectMd, { recursive: true, force: true });
+  });
+
+  function makeCapturingRunner(): {
+    runner: AgentRunner;
+    captured: { ctx: AgentRunContext | undefined };
+  } {
+    const captured: { ctx: AgentRunContext | undefined } = { ctx: undefined };
+    const runner: AgentRunner = {
+      async run(ctx: AgentRunContext): Promise<AgentRunResult> {
+        captured.ctx = ctx;
+        return { completionReason: "success", resultContent: null };
+      },
+    };
+    return { runner, captured };
+  }
+
+  function makeStepNamed(name: string): Step {
+    return {
+      kind: "agent" as const,
+      name,
+      agent: {
+        name: `specrunner-${name}`,
+        role: name as "propose",
+        model: "claude-sonnet-4-5",
+        system: `system for ${name}`,
+        tools: [],
+      },
+      toolHandlers: undefined,
+      buildMessage: () => `message for ${name}`,
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+  }
+
+  function makeDepsWithCwd(cwd: string): PipelineDeps {
+    return {
+      config: makeConfig(),
+      repo: { owner: "testowner", name: "testrepo" },
+      request: {
+        type: "feature",
+        title: "Test",
+        slug: "test-slug",
+        baseBranch: "main",
+        content: "content",
+        enabled: [],
+      },
+      slug: "test-slug",
+      cwd,
+      githubClient: {
+        verifyBranch: vi.fn().mockResolvedValue(true),
+        getRawFile: vi.fn().mockResolvedValue(null),
+        verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+        getRefSha: vi.fn().mockResolvedValue(null),
+      },
+    };
+  }
+
+  const NON_ALLOWLIST_STEPS = ["spec-fixer", "build-fixer", "code-fixer", "test-case-gen"] as const;
+
+  NON_ALLOWLIST_STEPS.forEach((stepName) => {
+    it(`step '${stepName}' → ctx.projectContext is undefined (file exists but step excluded)`, async () => {
+      const { runner, captured } = makeCapturingRunner();
+      const events = new EventBus();
+      const executor = new StepExecutor(events, runner);
+      const state = makeMinimalState(`tc-nonlist-${stepName}`);
+      const deps = makeDepsWithCwd(cwdWithProjectMd);
+      const step = makeStepNamed(stepName);
+
+      await executor.execute(step, state, deps);
+
+      expect(captured.ctx).toBeDefined();
+      expect(captured.ctx!.projectContext).toBeUndefined();
+    });
+  });
+});
+
+describe("TC-015: specrunner/project.md not found — no error, ctx.projectContext is undefined", () => {
+  function makeCapturingRunner(): {
+    runner: AgentRunner;
+    captured: { ctx: AgentRunContext | undefined };
+  } {
+    const captured: { ctx: AgentRunContext | undefined } = { ctx: undefined };
+    const runner: AgentRunner = {
+      async run(ctx: AgentRunContext): Promise<AgentRunResult> {
+        captured.ctx = ctx;
+        return { completionReason: "success", resultContent: null };
+      },
+    };
+    return { runner, captured };
+  }
+
+  it("propose step with missing specrunner/project.md → no exception, projectContext undefined", async () => {
+    const { runner, captured } = makeCapturingRunner();
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner);
+
+    // Use a temp dir without specrunner/project.md
+    const cwdWithout = await fs.mkdtemp(path.join(os.tmpdir(), "executor-no-ctx-"));
+    try {
+      const state = makeMinimalState("tc015-no-project-md");
+      const deps: PipelineDeps = {
+        config: makeConfig(),
+        repo: { owner: "testowner", name: "testrepo" },
+        request: {
+          type: "feature",
+          title: "Test",
+          slug: "test-slug",
+          baseBranch: "main",
+          content: "content",
+          enabled: [],
+        },
+        slug: "test-slug",
+        cwd: cwdWithout,
+        githubClient: {
+          verifyBranch: vi.fn().mockResolvedValue(true),
+          getRawFile: vi.fn().mockResolvedValue(null),
+          verifyPath: vi.fn().mockResolvedValue(true),
+          verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+          getRefSha: vi.fn().mockResolvedValue(null),
+        },
+      };
+
+      const step: Step = {
+        kind: "agent" as const,
+        name: "propose",
+        agent: { name: "specrunner-propose", role: "propose", model: "claude-sonnet-4-5", system: "propose", tools: [] },
+        toolHandlers: undefined,
+        buildMessage: () => "propose message",
+        resultFilePath: () => null,
+        parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+      };
+
+      // Must not throw even when specrunner/project.md is absent
+      await expect(executor.execute(step, state, deps)).resolves.toBeDefined();
+
+      expect(captured.ctx).toBeDefined();
+      expect(captured.ctx!.projectContext).toBeUndefined();
+    } finally {
+      await fs.rm(cwdWithout, { recursive: true, force: true });
+    }
   });
 });

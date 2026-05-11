@@ -24,7 +24,7 @@ import { githubTokenValidCheck } from "./auth/github-token-valid.js";
 // Repo
 import { gitRepositoryCheck } from "./repo/git-repository.js";
 import { githubOriginCheck } from "./repo/github-origin.js";
-import { openspecProjectMdCheck } from "./repo/openspec-project-md.js";
+import { specrunnerProjectMdCheck } from "./repo/specrunner-project-md.js";
 import { workflowStructureCheck } from "./repo/workflow-structure.js";
 
 // Agents
@@ -53,7 +53,7 @@ export const allChecks: DoctorCheck[] = [
   // Repo (4)
   gitRepositoryCheck,
   githubOriginCheck,
-  openspecProjectMdCheck,
+  specrunnerProjectMdCheck,
   workflowStructureCheck,
   // Agents (3)
   agentsRegisteredCheck,
@@ -77,7 +77,7 @@ export {
   githubTokenValidCheck,
   gitRepositoryCheck,
   githubOriginCheck,
-  openspecProjectMdCheck,
+  specrunnerProjectMdCheck,
   workflowStructureCheck,
   agentsRegisteredCheck,
   environmentRegisteredCheck,

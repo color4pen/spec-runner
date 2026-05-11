@@ -52,6 +52,13 @@ function buildAdditionalInstructions(ctx: AgentRunContext): string {
     );
   }
 
+  if (ctx.projectContext) {
+    lines.push("");
+    lines.push("<project-context>");
+    lines.push(ctx.projectContext);
+    lines.push("</project-context>");
+  }
+
   return lines.join("\n");
 }
 

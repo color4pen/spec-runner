@@ -585,6 +585,186 @@ describe("resolveTimeoutMs — 正数はそのまま (TC-029)", () => {
 });
 
 // ---------------------------------------------------------------------------
+// TC-018/TC-019 (test-cases.md): projectContext injection — polling-style
+// TC-018: ctx.projectContext set → initialMessage includes <project-context>
+// TC-019: ctx.projectContext undefined → initialMessage unchanged (no <project-context>)
+// ---------------------------------------------------------------------------
+
+describe("TC-018 (test-cases.md): polling-style — projectContext injected into initialMessage", () => {
+  it("sendUserMessage receives message with <project-context> when ctx.projectContext is set", async () => {
+    const jobId = "tc-pc-018-job";
+    const state = makeJobState(jobId);
+    await persistState(state);
+
+    const sessionClient = makeMockSessionClient();
+    const sendUserMessageSpy = sessionClient.sendUserMessage as ReturnType<typeof vi.fn>;
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+    });
+
+    const ctx = makeCtx(
+      {
+        step: makePollingStyleStep("spec-review", "spec-review"),
+        state,
+        projectContext: "# Project\nStack: TypeScript",
+      },
+      jobId,
+    );
+
+    await runner.run(ctx);
+
+    expect(sendUserMessageSpy).toHaveBeenCalledTimes(1);
+    const sentMessage = sendUserMessageSpy.mock.calls[0]?.[1] as string;
+    expect(sentMessage).toContain("<project-context>");
+    expect(sentMessage).toContain("# Project\nStack: TypeScript");
+    expect(sentMessage).toContain("</project-context>");
+  });
+});
+
+describe("TC-019 (test-cases.md): polling-style — no <project-context> when projectContext is undefined", () => {
+  it("sendUserMessage receives message WITHOUT <project-context> when ctx.projectContext is absent", async () => {
+    const jobId = "tc-pc-019-job";
+    const state = makeJobState(jobId);
+    await persistState(state);
+
+    const sessionClient = makeMockSessionClient();
+    const sendUserMessageSpy = sessionClient.sendUserMessage as ReturnType<typeof vi.fn>;
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+    });
+
+    const ctx = makeCtx(
+      {
+        step: makePollingStyleStep("spec-review", "spec-review"),
+        state,
+        // projectContext intentionally absent
+      },
+      jobId,
+    );
+
+    await runner.run(ctx);
+
+    expect(sendUserMessageSpy).toHaveBeenCalledTimes(1);
+    const sentMessage = sendUserMessageSpy.mock.calls[0]?.[1] as string;
+    expect(sentMessage).not.toContain("<project-context>");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-020/TC-021 (test-cases.md): projectContext injection — SSE/propose-style
+// TC-020: ctx.projectContext set → requestContent includes <project-context>
+// TC-021: ctx.projectContext undefined → requestContent unchanged
+// ---------------------------------------------------------------------------
+
+describe("TC-020 (test-cases.md): SSE/propose-style — projectContext injected into requestContent", () => {
+  it("streamEvents receives requestContent with <project-context> when ctx.projectContext is set", async () => {
+    const jobId = "tc-pc-020-job";
+    const state = makeJobState(jobId, "feat/test");
+    await persistState(state);
+
+    const sessionClient = makeMockSessionClient();
+    const streamEventsSpy = sessionClient.streamEvents as ReturnType<typeof vi.fn>;
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+    });
+
+    const proposeStep: AgentStep = {
+      kind: "agent",
+      name: "propose",
+      agent: {
+        name: "specrunner-propose",
+        role: "propose",
+        model: "claude-sonnet-4-5",
+        system: "propose",
+        tools: [],
+      },
+      toolHandlers: undefined,
+      buildMessage: () => "base propose message",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+
+    const ctx = makeCtx(
+      {
+        step: proposeStep,
+        state,
+        branch: "feat/test",
+        requestContent: "base request content",
+        projectContext: "# Project\nStack: TypeScript",
+      },
+      jobId,
+    );
+
+    await runner.run(ctx);
+
+    expect(streamEventsSpy).toHaveBeenCalledTimes(1);
+    const streamOpts = streamEventsSpy.mock.calls[0]?.[1] as { requestContent?: string };
+    expect(streamOpts.requestContent).toContain("<project-context>");
+    expect(streamOpts.requestContent).toContain("# Project\nStack: TypeScript");
+    expect(streamOpts.requestContent).toContain("</project-context>");
+  });
+});
+
+describe("TC-021 (test-cases.md): SSE/propose-style — no <project-context> when projectContext is undefined", () => {
+  it("streamEvents receives requestContent WITHOUT <project-context> when ctx.projectContext is absent", async () => {
+    const jobId = "tc-pc-021-job";
+    const state = makeJobState(jobId, "feat/test");
+    await persistState(state);
+
+    const sessionClient = makeMockSessionClient();
+    const streamEventsSpy = sessionClient.streamEvents as ReturnType<typeof vi.fn>;
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+    });
+
+    const proposeStep: AgentStep = {
+      kind: "agent",
+      name: "propose",
+      agent: {
+        name: "specrunner-propose",
+        role: "propose",
+        model: "claude-sonnet-4-5",
+        system: "propose",
+        tools: [],
+      },
+      toolHandlers: undefined,
+      buildMessage: () => "base propose message",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+
+    const ctx = makeCtx(
+      {
+        step: proposeStep,
+        state,
+        branch: "feat/test",
+        requestContent: "base request content",
+        // projectContext intentionally absent
+      },
+      jobId,
+    );
+
+    await runner.run(ctx);
+
+    expect(streamEventsSpy).toHaveBeenCalledTimes(1);
+    const streamOpts = streamEventsSpy.mock.calls[0]?.[1] as { requestContent?: string };
+    expect(streamOpts.requestContent).not.toContain("<project-context>");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-031: result file not found → completionReason error
 // ---------------------------------------------------------------------------
 

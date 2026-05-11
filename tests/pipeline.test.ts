@@ -278,10 +278,13 @@ describe("TC-038: propose pipeline — initial message contains user-request tag
       slug: "2026-04-27-test",
       githubClient,
       runner: buildRunner(client, githubClient),
+      // Use tempDir as cwd: no specrunner/project.md exists there, so
+      // projectContext is undefined and requestContent equals the raw request text.
+      cwd: tempDir,
     });
 
-    // The requestContent passed to streamEvents is used to build the initial message
-    // (the adapter wraps it in <user-request> tags via buildInitialMessage)
+    // With cwd set to tempDir (no specrunner/project.md), requestContent is the raw
+    // request content without any <project-context> append.
     expect(capturedRequestContent).toBe("Please implement this.");
   });
 });

@@ -1,4 +1,5 @@
 import * as path from "node:path";
+import { readFile } from "node:fs/promises";
 import type { Step, AgentStep, CliStep } from "./types.js";
 import type { JobState, Verdict, ModelUsage } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
@@ -14,6 +15,11 @@ import {
 import type { ErrorInfo } from "../../state/schema.js";
 import { getBranchPrefix } from "../../config/type-config.js";
 import { transitionJob } from "../../state/lifecycle.js";
+import { projectMdPath } from "../../util/paths.js";
+
+const PROJECT_CONTEXT_STEPS: ReadonlySet<string> = new Set([
+  "propose", "spec-review", "implementer", "code-review",
+]);
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -90,6 +96,17 @@ export class StepExecutor {
       message: `Starting ${step.name} step`,
     });
 
+    let projectContext: string | undefined;
+    if (PROJECT_CONTEXT_STEPS.has(step.name)) {
+      const cwd = deps.cwd ?? process.cwd();
+      const pmPath = path.join(cwd, projectMdPath());
+      try {
+        projectContext = await readFile(pmPath, "utf-8");
+      } catch {
+        // File not found — projectContext remains undefined
+      }
+    }
+
     const ctx = {
       step,
       state,
@@ -99,6 +116,7 @@ export class StepExecutor {
       requestContent: deps.request.content,
       config: deps.config,
       dynamicContext: deps.dynamicContext,
+      projectContext,
       emit: (event: string, payload: Record<string, unknown>) => {
         // Forward adapter events to the event bus
         this.events.emit(event as Parameters<EventBus["emit"]>[0], payload as never);

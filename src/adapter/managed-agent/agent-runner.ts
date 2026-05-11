@@ -160,8 +160,12 @@ export class ManagedAgentRunner implements AgentRunner {
       step.toolHandlers ? [...step.toolHandlers.entries()] : [],
     );
 
+    const effectiveRequestContent = ctx.projectContext
+      ? `${ctx.requestContent}\n\n<project-context>\n${ctx.projectContext}\n</project-context>`
+      : ctx.requestContent;
+
     const ssePromise = this.sessionClient.streamEvents(sessionId!, {
-      requestContent: ctx.requestContent,
+      requestContent: effectiveRequestContent,
       slug: ctx.slug,
       branch: ctx.branch || undefined,
       toolHandlers,
@@ -318,6 +322,10 @@ export class ManagedAgentRunner implements AgentRunner {
       const errHint = (err as { hint?: string }).hint ?? "Check step preconditions.";
       const buildMsgErrorInfo: ErrorInfo = { code: errCode, message: errMsg, hint: errHint };
       throwWrappedError(buildMsgErrorInfo, state);
+    }
+
+    if (ctx.projectContext) {
+      initialMessage = `${initialMessage}\n\n<project-context>\n${ctx.projectContext}\n</project-context>`;
     }
 
     // Branch guard

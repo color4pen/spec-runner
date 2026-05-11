@@ -81,7 +81,7 @@ src/
 ├── parser/           # request.md パーサー
 ├── prompts/          # ステップ別システムプロンプト
 └── util/             # Atomic write, XDG パス
-openspec/
+specrunner/
 ├── changes/          # Change proposals
 └── specs/            # Specifications
 docs/

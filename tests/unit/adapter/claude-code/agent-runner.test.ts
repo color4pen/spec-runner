@@ -861,3 +861,66 @@ describe("ClaudeCodeRunner modelUsage propagation", () => {
     expect(result.modelUsage).toBeUndefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-016: projectContext present → <project-context> tag in prompt
+// TC-017: projectContext undefined → no <project-context> tag in prompt
+// ---------------------------------------------------------------------------
+
+describe("TC-016: ClaudeCodeRunner injects <project-context> when ctx.projectContext is set", () => {
+  it("prompt includes <project-context> tag with projectContext content", async () => {
+    let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { capturedParams = params; },
+    });
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc016-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "base request content",
+      config: makeConfig(),
+      emit: vi.fn(),
+      projectContext: "# Project\nStack: TypeScript",
+    };
+
+    await runner.run(ctx);
+
+    expect(capturedParams).toBeDefined();
+    expect(capturedParams!.prompt).toContain("<project-context>");
+    expect(capturedParams!.prompt).toContain("# Project\nStack: TypeScript");
+    expect(capturedParams!.prompt).toContain("</project-context>");
+  });
+});
+
+describe("TC-017: ClaudeCodeRunner omits <project-context> when ctx.projectContext is undefined", () => {
+  it("prompt does not include <project-context> tag when projectContext is absent", async () => {
+    let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { capturedParams = params; },
+    });
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc017-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "base request content",
+      config: makeConfig(),
+      emit: vi.fn(),
+      // projectContext intentionally absent
+    };
+
+    await runner.run(ctx);
+
+    expect(capturedParams).toBeDefined();
+    expect(capturedParams!.prompt).not.toContain("<project-context>");
+  });
+});

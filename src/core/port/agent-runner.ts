@@ -21,7 +21,7 @@ export type { ModelUsage } from "./model-usage.js";
  * Context passed to AgentRunner.run() for each agent step execution.
  * All fields are runtime-neutral — no SDK-specific types are included.
  *
- * TC-002: fields are step, state, branch, slug, cwd, requestContent, config, emit only.
+ * TC-002: fields are step, state, branch, slug, cwd, requestContent, config, emit, projectContext only.
  */
 export interface AgentRunContext {
   /** The step declaration (agent definition, buildMessage, resultFilePath, etc.) */
@@ -44,6 +44,8 @@ export interface AgentRunContext {
   emit: (event: string, payload: Record<string, unknown>) => void;
   /** Dynamic repository context collected at pipeline start. Optional for backward compat. */
   dynamicContext?: DynamicContext;
+  /** Project-level context from specrunner/project.md. undefined when file does not exist. */
+  projectContext?: string;
 }
 
 /**
