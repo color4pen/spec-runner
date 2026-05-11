@@ -160,7 +160,7 @@ describe("TC-LR-001: setupWorkspace creates worktree for run command", () => {
     const { manager, createdPaths } = buildMockManager();
     const { spawnFn } = buildMockSpawnFn();
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
     const jobState = await makeJobState();
 
@@ -180,7 +180,7 @@ describe("TC-LR-008: setupWorkspace run path calls git fetch origin and uses ori
     const { manager, createdPaths } = buildMockManager();
     const { spawnFn, calls } = buildMockSpawnFn({ behindCount: 0 });
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
     const jobState = await makeJobState();
     await runtime.setupWorkspace("test-slug", jobState.jobId, {});
@@ -201,7 +201,7 @@ describe("TC-LR-008: setupWorkspace run path calls git fetch origin and uses ori
     const { manager } = buildMockManager();
     const { spawnFn } = buildMockSpawnFn({ fetchExitCode: 1, fetchStderr: "network unreachable" });
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
     const jobState = await makeJobState();
     await expect(
@@ -213,7 +213,7 @@ describe("TC-LR-008: setupWorkspace run path calls git fetch origin and uses ori
     const { manager } = buildMockManager();
     const { spawnFn } = buildMockSpawnFn({ behindCount: 3 });
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
     const jobState = await makeJobState();
     await runtime.setupWorkspace("test-slug", jobState.jobId, {});
@@ -231,7 +231,7 @@ describe("TC-LR-008: setupWorkspace run path calls git fetch origin and uses ori
     const { manager } = buildMockManager();
     const { spawnFn } = buildMockSpawnFn({ behindCount: 0 });
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
     const jobState = await makeJobState();
     await runtime.setupWorkspace("test-slug", jobState.jobId, {});
@@ -248,7 +248,7 @@ describe("TC-LR-008: setupWorkspace run path calls git fetch origin and uses ori
     const { manager } = buildMockManager();
     const { spawnFn, calls } = buildMockSpawnFn();
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
     const jobState = await makeJobState();
     await runtime.setupWorkspace("test-slug", jobState.jobId, { existingWorktreePath: null });
@@ -263,7 +263,7 @@ describe("TC-LR-002: setupWorkspace reuses existing worktree", () => {
   it("returns existing worktree path when it exists on disk", async () => {
     const { manager, createdPaths } = buildMockManager();
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager });
 
     const jobState = await makeJobState();
 
@@ -287,7 +287,7 @@ describe("TC-LR-003: setupWorkspace recreates worktree when existing is missing"
   it("creates new worktree when existingWorktreePath does not exist on disk", async () => {
     const { manager, createdPaths } = buildMockManager();
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager });
 
     const jobState = await makeJobState();
 
@@ -306,7 +306,7 @@ describe("TC-LR-004: setupWorkspace creates new worktree when existingWorktreePa
   it("creates new worktree when existingWorktreePath is null", async () => {
     const { manager, createdPaths } = buildMockManager();
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager });
 
     const jobState = await makeJobState();
 
@@ -324,7 +324,7 @@ describe("TC-LR-005: registerCleanup registers and teardown deregisters signal h
   it("signal handler is registered and can be deregistered via teardown", async () => {
     const { manager } = buildMockManager();
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager });
 
     const jobState = await makeJobState();
     const worktreePath = path.join(tempDir, "worktree");
@@ -349,7 +349,7 @@ describe("TC-LR-006: teardown calls cleanupWorktreeOnFailure on failure status",
   it("calls manager.remove and prune when status is not awaiting-merge", async () => {
     const { manager, removedPaths, prunedPaths } = buildMockManager();
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager });
 
     const jobState = await makeJobState();
 
@@ -368,7 +368,7 @@ describe("TC-LR-006: teardown calls cleanupWorktreeOnFailure on failure status",
   it("does NOT call cleanup when status is awaiting-merge", async () => {
     const { manager, removedPaths } = buildMockManager();
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager });
 
     const jobState = await makeJobState();
 
@@ -389,7 +389,7 @@ describe("TC-LR-007: buildDeps returns correct PipelineDeps", () => {
   it("returns PipelineDeps with runner, cwd, and no client", async () => {
     const { manager } = buildMockManager();
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager });
 
     const jobState = await makeJobState();
     const worktreePath = path.join(tempDir, "worktree");
@@ -414,7 +414,7 @@ describe("TC-LR-009: setupWorkspace run path passes branchName to manager.create
     const { manager } = buildMockManager();
     const { spawnFn } = buildMockSpawnFn();
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
     const jobState = await makeJobState();
     await runtime.setupWorkspace("test-slug", jobState.jobId, {
@@ -430,7 +430,7 @@ describe("TC-LR-009: setupWorkspace run path passes branchName to manager.create
   it("passes undefined branchName to manager.create() when branchName is absent (resume path compat)", async () => {
     const { manager } = buildMockManager();
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager });
 
     const jobState = await makeJobState();
     const existingPath = path.join(tempDir, "existing-worktree");
@@ -450,7 +450,7 @@ describe("TC-LR-009: setupWorkspace run path passes branchName to manager.create
     const { manager } = buildMockManager();
     const { spawnFn } = buildMockSpawnFn();
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
     const jobState = await makeJobState();
     const workspace = await runtime.setupWorkspace("test-slug", jobState.jobId, {
@@ -471,20 +471,6 @@ describe("TC-LR-011: Named options constructor", () => {
     expect(runtime).toBeDefined();
   });
 
-  it("named options and positional constructor produce equivalent runtimes", async () => {
-    const githubClient = buildMockGitHubClient();
-    const { manager: manager1 } = buildMockManager();
-    const { manager: manager2 } = buildMockManager();
-    const { spawnFn: spawnFn1 } = buildMockSpawnFn();
-    const { spawnFn: spawnFn2 } = buildMockSpawnFn();
-
-    const positional = new LocalRuntime(tempDir, githubClient, manager1, spawnFn1);
-    const named = new LocalRuntime({ cwd: tempDir, githubClient, manager: manager2, spawnFn: spawnFn2 });
-
-    // Both should be instanceOf LocalRuntime
-    expect(positional).toBeInstanceOf(LocalRuntime);
-    expect(named).toBeInstanceOf(LocalRuntime);
-  });
 });
 
 // TC-LR-012: query() method
@@ -557,7 +543,7 @@ describe("TC-LR-010: setupWorkspace run path commits request.md", () => {
     const { manager } = buildMockManager();
     const { spawnFn, calls } = buildMockSpawnFn();
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
     // Create a real request.md file in tempDir
     const requestFile = path.join(tempDir, "request.md");
@@ -584,7 +570,7 @@ describe("TC-LR-010: setupWorkspace run path commits request.md", () => {
     const { manager } = buildMockManager();
     const { spawnFn } = buildMockSpawnFn({ commitExitCode: 1, commitStderr: "nothing to commit" });
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime(tempDir, githubClient, manager, spawnFn);
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
     const requestFile = path.join(tempDir, "request.md");
     await fs.writeFile(requestFile, "# Test Request\n");

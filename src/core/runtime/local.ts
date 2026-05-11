@@ -58,29 +58,12 @@ export class LocalRuntime implements RuntimeStrategy {
   // Set by setupWorkspace(); used by buildDeps() and registerCleanup()
   private workspace: WorkspaceContext | null = null;
 
-  constructor(
-    cwdOrOpts: string | LocalRuntimeOptions,
-    githubClient?: GitHubClient,
-    manager?: ReturnType<typeof createWorktreeManager>,
-    spawnFn?: SpawnFn,
-    queryFn?: QueryFn,
-  ) {
-    if (typeof cwdOrOpts === "string") {
-      // Legacy positional constructor (backward compatibility)
-      this.cwd = cwdOrOpts;
-      this.githubClient = githubClient!;
-      this.manager = manager ?? createWorktreeManager();
-      this.spawnFn = spawnFn ?? spawnCommand;
-      this.queryFn = queryFn ?? (sdkQuery as unknown as QueryFn);
-    } else {
-      // Named options constructor
-      const opts = cwdOrOpts;
-      this.cwd = opts.cwd;
-      this.githubClient = opts.githubClient;
-      this.manager = opts.manager ?? createWorktreeManager();
-      this.spawnFn = opts.spawnFn ?? spawnCommand;
-      this.queryFn = opts.queryFn ?? (sdkQuery as unknown as QueryFn);
-    }
+  constructor(opts: LocalRuntimeOptions) {
+    this.cwd = opts.cwd;
+    this.githubClient = opts.githubClient;
+    this.manager = opts.manager ?? createWorktreeManager();
+    this.spawnFn = opts.spawnFn ?? spawnCommand;
+    this.queryFn = opts.queryFn ?? (sdkQuery as unknown as QueryFn);
   }
 
   /**
