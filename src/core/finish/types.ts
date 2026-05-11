@@ -43,6 +43,7 @@ export interface FinishFs {
   mkdir(path: string, opts: { recursive: boolean }): Promise<void>;
   writeFile(path: string, content: string): Promise<void>;
   unlink(path: string): Promise<void>;
+  readFile(path: string): Promise<string>;
 }
 
 /**

@@ -26,6 +26,7 @@ import { fetchPrViewWithRetry, pollMergeStateAfterPush } from "./pr-status.js";
 import { spawnOrEscalate } from "./spawn-helper.js";
 import { archiveChangeFolder } from "./archive-change-folder.js";
 import { moveRequestsDir } from "./move-requests-dir.js";
+import { mergeSpecsForChange } from "./spec-merge.js";
 import { assertJobFinishable, markJobArchived } from "./job-state-update.js";
 import { TERMINAL_STATUSES } from "../../state/lifecycle.js";
 import { formatEscalation } from "./escalation.js";
@@ -182,6 +183,11 @@ async function runPhase1Archive(params: {
   }
 
   const archiveCwd = operationCwd ?? cwd;
+
+  // merge delta specs into baseline specs before archive
+  const mergeResult = await mergeSpecsForChange({ slug: target.slug, cwd: archiveCwd, spawn, fs });
+  if (!mergeResult.ok) return { ok: false, escalation: mergeResult.escalation, exitCode: 1 };
+  if (!mergeResult.skipped) stdoutWrite(mergeResult.message);
 
   // archive change folder (specrunner/changes/<slug>/ → specrunner/changes/archive/<slug>/)
   const archiveResult = await archiveChangeFolder({ slug: target.slug, cwd: archiveCwd, spawn, fs });

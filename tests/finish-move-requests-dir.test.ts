@@ -32,6 +32,7 @@ function makeFs(activeExists: boolean, mergedExists: boolean): FinishFs {
     mkdir: vi.fn().mockResolvedValue(undefined),
     writeFile: vi.fn().mockResolvedValue(undefined),
     unlink: vi.fn().mockResolvedValue(undefined),
+    readFile: vi.fn().mockResolvedValue(""),
   };
 }
 

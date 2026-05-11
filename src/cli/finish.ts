@@ -46,6 +46,9 @@ function buildRealFs(): FinishFs {
     unlink: async (p: string) => {
       await nodeFsPromises.unlink(p);
     },
+    readFile: async (p: string) => {
+      return nodeFsPromises.readFile(p, "utf-8");
+    },
   };
 }
 

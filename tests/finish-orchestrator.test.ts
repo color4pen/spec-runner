@@ -83,6 +83,8 @@ function makeStubFs(opts: { changeFolderExists?: boolean; activeExists?: boolean
     exists: vi.fn().mockImplementation((p: string) => {
       if (p.includes("active")) return Promise.resolve(activeExists);
       if (p.includes("merged")) return Promise.resolve(false);
+      // specs/ dir check → false (skip merge)
+      if (p.includes("specs")) return Promise.resolve(false);
       // change folder
       return Promise.resolve(changeFolderExists);
     }),
@@ -91,6 +93,7 @@ function makeStubFs(opts: { changeFolderExists?: boolean; activeExists?: boolean
     mkdir: vi.fn().mockResolvedValue(undefined),
     writeFile: vi.fn().mockResolvedValue(undefined),
     unlink: vi.fn().mockResolvedValue(undefined),
+    readFile: vi.fn().mockResolvedValue(""),
   };
 }
 

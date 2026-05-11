@@ -182,6 +182,7 @@ function makeFs(changeFolderExists = true): FinishFs {
     mkdir: vi.fn().mockResolvedValue(undefined),
     writeFile: vi.fn().mockResolvedValue(undefined),
     unlink: vi.fn().mockResolvedValue(undefined),
+    readFile: vi.fn().mockResolvedValue(""),
   };
 }
 

@@ -69,12 +69,16 @@ async function makeJobWithPr(opts: {
 
 function makeStubFs(changeFolderExists = false): FinishFs {
   return {
-    exists: vi.fn().mockResolvedValue(changeFolderExists),
+    exists: vi.fn().mockImplementation((p: string) => {
+      if (p.includes("specs")) return Promise.resolve(false);
+      return Promise.resolve(changeFolderExists);
+    }),
     readdir: vi.fn().mockResolvedValue([]),
     stat: vi.fn().mockResolvedValue({ isDirectory: () => false }),
     mkdir: vi.fn().mockResolvedValue(undefined),
     writeFile: vi.fn().mockResolvedValue(undefined),
     unlink: vi.fn().mockResolvedValue(undefined),
+    readFile: vi.fn().mockResolvedValue(""),
   };
 }
 

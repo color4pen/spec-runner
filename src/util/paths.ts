@@ -71,3 +71,22 @@ export function requestMdPath(slug: string): string {
 export function changesDirRel(): string {
   return CHANGES_DIR;
 }
+
+/** Base directory for all baseline specs. */
+const SPECS_DIR = "specrunner/specs";
+
+/**
+ * Returns the relative path to the specs directory (no trailing slash).
+ * Example: specsDirRel() → "specrunner/specs"
+ */
+export function specsDirRel(): string {
+  return SPECS_DIR;
+}
+
+/**
+ * Returns the relative path to the baseline spec file for a given capability.
+ * Example: baselineSpecPath("cli-commands") → "specrunner/specs/cli-commands/spec.md"
+ */
+export function baselineSpecPath(capability: string): string {
+  return `${SPECS_DIR}/${capability}/spec.md`;
+}
