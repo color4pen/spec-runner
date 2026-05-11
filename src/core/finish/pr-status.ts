@@ -15,8 +15,15 @@ export type PrViewFetchResult =
   | { ok: true; data: PrViewData }
   | { ok: false; escalation: string };
 
+export type CheckMergeableResult =
+  | { ok: true }
+  | { ok: false; escalation: string };
+
 const UNKNOWN_RETRY_COUNT = 3;
 const UNKNOWN_RETRY_DELAY_MS = 3000;
+
+export const MERGEABLE_RETRY_COUNT = 3;
+export const MERGEABLE_RETRY_DELAY_MS = 5000;
 
 const POST_PUSH_RETRY_COUNT = 5;
 const POST_PUSH_RETRY_DELAY_MS = 3000;
@@ -110,6 +117,106 @@ export async function fetchPrViewWithRetry(params: {
     escalation: formatEscalation({
       failedStep: "Phase 0 check 4 (mergeStateStatus UNKNOWN)",
       detectedState: `mergeStateStatus is UNKNOWN after ${UNKNOWN_RETRY_COUNT} retries`,
+      recommendedAction: `Wait a moment and re-run: specrunner finish ${slug}`,
+      resumeCommand: `specrunner finish ${slug}`,
+    }),
+  };
+}
+
+/**
+ * Check PR mergeable status before Phase 3 merge.
+ * Implements the Phase 3 guard: MERGEABLE → ok, CONFLICTING → escalation, UNKNOWN → retry.
+ */
+export async function checkMergeableForMerge(params: {
+  prNumber: number;
+  cwd: string;
+  spawn: SpawnFn;
+  slug: string;
+  baseBranch: string;
+  sleepFn?: (ms: number) => Promise<void>;
+}): Promise<CheckMergeableResult> {
+  const { prNumber, cwd, spawn, slug, baseBranch } = params;
+  const sleepImpl = params.sleepFn ?? sleep;
+
+  for (let attempt = 1; attempt <= MERGEABLE_RETRY_COUNT; attempt++) {
+    const result = await spawn(
+      "gh",
+      ["pr", "view", String(prNumber), "--json", "mergeable"],
+      { cwd },
+    );
+
+    if (result.exitCode !== 0) {
+      return {
+        ok: false,
+        escalation: formatEscalation({
+          failedStep: "Phase 3 guard (gh pr view --json mergeable)",
+          detectedState: `gh pr view ${prNumber} failed (exit ${result.exitCode})`,
+          recommendedAction: `Check gh authentication: specrunner login. Error: ${result.stderr.trim()}`,
+          resumeCommand: `specrunner finish ${slug}`,
+        }),
+      };
+    }
+
+    let parsed: { mergeable?: string };
+    try {
+      parsed = JSON.parse(result.stdout.trim()) as { mergeable?: string };
+    } catch {
+      return {
+        ok: false,
+        escalation: formatEscalation({
+          failedStep: "Phase 3 guard (gh pr view --json mergeable parse)",
+          detectedState: `Failed to parse gh pr view output`,
+          recommendedAction: `Check gh CLI version. Output was: ${result.stdout.slice(0, 200)}`,
+          resumeCommand: `specrunner finish ${slug}`,
+        }),
+      };
+    }
+
+    const mergeable = (parsed.mergeable ?? "").toUpperCase();
+
+    if (mergeable === "MERGEABLE") {
+      return { ok: true };
+    }
+
+    if (mergeable === "CONFLICTING") {
+      return {
+        ok: false,
+        escalation: formatEscalation({
+          failedStep: "Phase 3 guard (mergeable CONFLICTING)",
+          detectedState: `mergeable is CONFLICTING (PR has merge conflicts)`,
+          recommendedAction: `Rebase the feature branch onto ${baseBranch} and re-run:\n  git rebase ${baseBranch}\n  git push --force-with-lease\n  specrunner finish ${slug}`,
+          resumeCommand: `specrunner finish ${slug}`,
+        }),
+      };
+    }
+
+    // UNKNOWN: retry with delay
+    if (attempt < MERGEABLE_RETRY_COUNT) {
+      process.stdout.write(
+        `Retrying Phase 3 mergeable check: UNKNOWN (attempt ${attempt}/${MERGEABLE_RETRY_COUNT})...\n`,
+      );
+      await sleepImpl(MERGEABLE_RETRY_DELAY_MS);
+      continue;
+    }
+
+    // All retries exhausted
+    return {
+      ok: false,
+      escalation: formatEscalation({
+        failedStep: "Phase 3 guard (mergeable UNKNOWN)",
+        detectedState: `mergeable is UNKNOWN after ${MERGEABLE_RETRY_COUNT} retries`,
+        recommendedAction: `GitHub's merge state is still computing. Wait a moment and re-run:\n  specrunner finish ${slug}`,
+        resumeCommand: `specrunner finish ${slug}`,
+      }),
+    };
+  }
+
+  // Unreachable — TypeScript needs a return here
+  return {
+    ok: false,
+    escalation: formatEscalation({
+      failedStep: "Phase 3 guard (mergeable UNKNOWN)",
+      detectedState: `mergeable is UNKNOWN after ${MERGEABLE_RETRY_COUNT} retries`,
       recommendedAction: `Wait a moment and re-run: specrunner finish ${slug}`,
       resumeCommand: `specrunner finish ${slug}`,
     }),

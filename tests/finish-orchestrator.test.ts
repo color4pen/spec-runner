@@ -106,6 +106,10 @@ function makeHappyPathSpawn(prState: "OPEN" | "MERGED" = "OPEN"): SpawnFn {
     // which (binary check)
     if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/gh", stderr: "" });
 
+    // gh pr view --json mergeable (Phase 3 guard)
+    if (cmd === "gh" && args[1] === "view" && args.includes("mergeable")) {
+      return Promise.resolve({ exitCode: 0, stdout: JSON.stringify({ mergeable: "MERGEABLE" }), stderr: "" });
+    }
     // gh pr view (phase 0 preflight + check)
     // TC-017: GitHub returns mergeStateStatus=UNKNOWN for MERGED PRs (real behavior).
     // The MERGED bypass in preflight.ts handles this case and returns ok:true immediately.
@@ -668,6 +672,112 @@ describe("TC-DIRTY-001: DIRTY mergeStateStatus after push → escalation without
     expect(result.escalation).toContain("specrunner finish");
     // merge must NOT have been called
     expect(mergeCalls).toHaveLength(0);
+  });
+});
+
+// TC-CONFLICT-001: mergeable=CONFLICTING → escalation, no gh pr merge
+describe("TC-CONFLICT-001: mergeable=CONFLICTING → escalation without merge", () => {
+  it("returns exitCode 1 with rebase instruction and does NOT call gh pr merge", async () => {
+    const { jobId } = await makeJobWithPr();
+    const mergeCalls: string[][] = [];
+
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "gh" && args[1] === "view" && args.includes("mergeable")) {
+        return Promise.resolve({ exitCode: 0, stdout: JSON.stringify({ mergeable: "CONFLICTING" }), stderr: "" });
+      }
+      if (cmd === "gh" && args[1] === "merge") {
+        mergeCalls.push([...args]);
+      }
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    const stubFs = makeStubFs({ changeFolderExists: false });
+
+    const result = await runFinishOrchestrator({
+      slug: "test-slug",
+      baseBranch: "main",
+      flags: {},
+      cwd: tempDir,
+      spawn,
+      fs: stubFs,
+      sleepFn: async () => {},
+    });
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode !== 1) return;
+    expect(result.escalation).toContain("CONFLICTING");
+    expect(result.escalation).toContain("rebase");
+    expect(mergeCalls).toHaveLength(0);
+  });
+});
+
+// TC-CONFLICT-003: mergeable=UNKNOWN → retry → MERGEABLE → success
+describe("TC-CONFLICT-003: mergeable=UNKNOWN → retry → MERGEABLE → success", () => {
+  it("retries once and succeeds when second attempt returns MERGEABLE", async () => {
+    const { jobId } = await makeJobWithPr();
+    let mergeableCallCount = 0;
+
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "gh" && args[1] === "view" && args.includes("mergeable")) {
+        mergeableCallCount++;
+        const mergeable = mergeableCallCount === 1 ? "UNKNOWN" : "MERGEABLE";
+        return Promise.resolve({ exitCode: 0, stdout: JSON.stringify({ mergeable }), stderr: "" });
+      }
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    const stubFs = makeStubFs({ changeFolderExists: false });
+
+    const result = await runFinishOrchestrator({
+      slug: "test-slug",
+      baseBranch: "main",
+      flags: {},
+      cwd: tempDir,
+      spawn,
+      fs: stubFs,
+      sleepFn: async () => {},
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(mergeableCallCount).toBe(2);
+  });
+});
+
+// TC-CONFLICT-004: mergeable=UNKNOWN × 3 → escalation
+describe("TC-CONFLICT-004: mergeable=UNKNOWN × 3 → escalation", () => {
+  it("exhausts all retries and returns escalation without calling gh pr merge", async () => {
+    const { jobId } = await makeJobWithPr();
+    let mergeableCallCount = 0;
+    const mergeCalls: string[][] = [];
+
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "gh" && args[1] === "view" && args.includes("mergeable")) {
+        mergeableCallCount++;
+        return Promise.resolve({ exitCode: 0, stdout: JSON.stringify({ mergeable: "UNKNOWN" }), stderr: "" });
+      }
+      if (cmd === "gh" && args[1] === "merge") {
+        mergeCalls.push([...args]);
+      }
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    const stubFs = makeStubFs({ changeFolderExists: false });
+
+    const result = await runFinishOrchestrator({
+      slug: "test-slug",
+      baseBranch: "main",
+      flags: {},
+      cwd: tempDir,
+      spawn,
+      fs: stubFs,
+      sleepFn: async () => {},
+    });
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode !== 1) return;
+    expect(result.escalation).toContain("UNKNOWN");
+    expect(mergeCalls).toHaveLength(0);
+    expect(mergeableCallCount).toBe(3);
   });
 });
 

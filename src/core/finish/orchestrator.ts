@@ -22,7 +22,7 @@ import type { WorktreeManager } from "../worktree/manager.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { resolveTarget } from "./resolve-target.js";
 import { runPreflight } from "./preflight.js";
-import { fetchPrViewWithRetry, pollMergeStateAfterPush } from "./pr-status.js";
+import { fetchPrViewWithRetry, pollMergeStateAfterPush, checkMergeableForMerge } from "./pr-status.js";
 import { spawnOrEscalate } from "./spawn-helper.js";
 import { archiveChangeFolder } from "./archive-change-folder.js";
 import { moveRequestsDir } from "./move-requests-dir.js";
@@ -132,6 +132,8 @@ export async function runFinishOrchestrator(
       cwd,
       spawn,
       slug: target.slug,
+      baseBranch,
+      sleepFn,
     });
     if (!mergeResult.ok) return { exitCode: 1, escalation: mergeResult.escalation };
     stdoutWrite(`PR #${target.prNumber} merged successfully.`);
@@ -398,6 +400,8 @@ interface MergePhase3Params {
   cwd: string;
   spawn: SpawnFn;
   slug: string;
+  baseBranch: string;
+  sleepFn?: (ms: number) => Promise<void>;
 }
 
 /**
@@ -406,7 +410,20 @@ interface MergePhase3Params {
  * when mergeStateStatus=BLOCKED (blocking checks) per spec.
  */
 async function mergeFeaturePrPhase3(params: MergePhase3Params): Promise<PhaseResult> {
-  const { prNumber, mergeStateStatus, force, cwd, spawn, slug } = params;
+  const { prNumber, mergeStateStatus, force, cwd, spawn, slug, baseBranch, sleepFn } = params;
+
+  // Phase 3 guard: check mergeable before attempting merge
+  const mergeableResult = await checkMergeableForMerge({
+    prNumber,
+    cwd,
+    spawn,
+    slug,
+    baseBranch,
+    sleepFn,
+  });
+  if (!mergeableResult.ok) {
+    return { ok: false, escalation: mergeableResult.escalation, exitCode: 1 };
+  }
 
   const mergeArgs = ["pr", "merge", String(prNumber), "--squash"];
 
