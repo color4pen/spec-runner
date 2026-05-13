@@ -34,7 +34,7 @@ export const USAGE = `Usage: specrunner <command> [options]
 Commands:
   init                   Create or update Anthropic Agent and Environment
   login                  Authenticate with GitHub via Device Flow
-  run <req.md> [--verbose]  Run propose pipeline for a request
+  run <req.md> [--verbose]  Run design pipeline for a request
   request template [--type <type>]  Print a scaffold request.md template to stdout
   request validate <file>           Validate a request.md file
   ps                     List all jobs

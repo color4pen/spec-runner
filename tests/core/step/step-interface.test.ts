@@ -3,7 +3,7 @@
  *
  * TC-009: Step implementation is stateless across invocations
  * TC-010: Step exposes agent definition without consulting global registry
- * TC-011: register_branch tool removed (D4); ProposeStep toolHandlers undefined
+ * TC-011: register_branch tool removed (D4); DesignStep toolHandlers undefined
  * TC-012: register-branch.ts is fully removed (D4)
  * TC-013: StepExecutor lifecycle events fire in correct order on success
  * TC-014: StepExecutor error path emits step:error and decorates exception
@@ -12,7 +12,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { ProposeStep } from "../../../src/core/step/propose.js";
+import { DesignStep } from "../../../src/core/step/design.js";
 import { SpecReviewStep } from "../../../src/core/step/spec-review.js";
 import { SpecFixerStep } from "../../../src/core/step/spec-fixer.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
@@ -93,7 +93,7 @@ function makeMinimalDeps(clientOpts?: Parameters<typeof makeMockSessionClient>[0
       version: 1 as const,
       anthropic: { apiKey: "sk-ant-test" },
       agents: {
-        propose: { agentId: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
+        design: { agentId: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
         "spec-review": { agentId: "agent_spec_review", definitionHash: "sha256:def", lastSyncedAt: new Date().toISOString() },
         "spec-fixer": { agentId: "agent_002", definitionHash: "sha256:xyz", lastSyncedAt: new Date().toISOString() },
       },
@@ -117,11 +117,11 @@ function makeMinimalDeps(clientOpts?: Parameters<typeof makeMockSessionClient>[0
 // TC-009: Step implementation is stateless across invocations
 // ---------------------------------------------------------------------------
 describe("TC-009: Step implementation is stateless across invocations", () => {
-  it("ProposeStep.buildMessage produces identical output on two identical calls", () => {
+  it("DesignStep.buildMessage produces identical output on two identical calls", () => {
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
-    const msg1 = ProposeStep.buildMessage(state, deps);
-    const msg2 = ProposeStep.buildMessage(state, deps);
+    const msg1 = DesignStep.buildMessage(state, deps);
+    const msg2 = DesignStep.buildMessage(state, deps);
     expect(msg1).toBe(msg2);
   });
 
@@ -133,10 +133,10 @@ describe("TC-009: Step implementation is stateless across invocations", () => {
     expect(msg1).toBe(msg2);
   });
 
-  it("ProposeStep.parseResult produces identical output on two identical calls", () => {
+  it("DesignStep.parseResult produces identical output on two identical calls", () => {
     const deps = makeMinimalDeps();
-    const r1 = ProposeStep.parseResult("some content", deps);
-    const r2 = ProposeStep.parseResult("some content", deps);
+    const r1 = DesignStep.parseResult("some content", deps);
+    const r2 = DesignStep.parseResult("some content", deps);
     expect(r1).toEqual(r2);
   });
 });
@@ -145,10 +145,10 @@ describe("TC-009: Step implementation is stateless across invocations", () => {
 // TC-010: Step exposes agent definition without consulting global registry
 // ---------------------------------------------------------------------------
 describe("TC-010: Step exposes agent definition directly", () => {
-  it("ProposeStep.agent is accessible without global registry", () => {
+  it("DesignStep.agent is accessible without global registry", () => {
     // agent object is accessible directly on the Step
-    expect(ProposeStep.agent).toBeDefined();
-    expect(typeof ProposeStep.agent).toBe("object");
+    expect(DesignStep.agent).toBeDefined();
+    expect(typeof DesignStep.agent).toBe("object");
   });
 
   it("SpecReviewStep.agent is accessible directly", () => {
@@ -161,11 +161,11 @@ describe("TC-010: Step exposes agent definition directly", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-011: register_branch tool removed (D4); ProposeStep toolHandlers undefined
+// TC-011: register_branch tool removed (D4); DesignStep toolHandlers undefined
 // ---------------------------------------------------------------------------
-describe("TC-011: register_branch tool removed (D4); ProposeStep toolHandlers undefined", () => {
-  it("ProposeStep.toolHandlers is undefined (no tool injection needed — D4)", () => {
-    expect(ProposeStep.toolHandlers).toBeUndefined();
+describe("TC-011: register_branch tool removed (D4); DesignStep toolHandlers undefined", () => {
+  it("DesignStep.toolHandlers is undefined (no tool injection needed — D4)", () => {
+    expect(DesignStep.toolHandlers).toBeUndefined();
   });
 
   it("SpecReviewStep.toolHandlers does not contain register_branch", () => {

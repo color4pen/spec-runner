@@ -34,7 +34,7 @@ describe("TC-071: EventBus — emit() with no handlers: no-op", () => {
     const bus = new EventBus();
 
     expect(() => {
-      bus.emit("step:start", { step: "propose", state: {} as never });
+      bus.emit("step:start", { step: "design", state: {} as never });
     }).not.toThrow();
   });
 });
@@ -126,9 +126,9 @@ describe("TC-076: EventBus — subscriber=0: reservation seat is valid", () => {
       { event: "pipeline:start",    payload: { state: {} } },
       { event: "pipeline:complete", payload: { state: {} } },
       { event: "pipeline:fail",     payload: { state: {}, reason: "test" } },
-      { event: "step:start",        payload: { step: "propose", state: {} } },
-      { event: "step:complete",     payload: { step: "propose", state: {} } },
-      { event: "step:error",        payload: { step: "propose", error: new Error("test"), state: {} } },
+      { event: "step:start",        payload: { step: "design", state: {} } },
+      { event: "step:complete",     payload: { step: "design", state: {} } },
+      { event: "step:error",        payload: { step: "design", error: new Error("test"), state: {} } },
       { event: "verdict:parsed",    payload: { step: "spec-review", outcome: { verdict: "approved" } } },
     ];
 

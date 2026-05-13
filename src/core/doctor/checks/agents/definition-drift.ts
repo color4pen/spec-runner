@@ -5,7 +5,7 @@
  */
 import type { DoctorCheck, DoctorContext } from "../../types.js";
 import { AgentRegistry } from "../../../agent/index.js";
-import { ProposeStep } from "../../../step/propose.js";
+import { DesignStep } from "../../../step/design.js";
 import { SpecReviewStep } from "../../../step/spec-review.js";
 import { SpecFixerStep } from "../../../step/spec-fixer.js";
 import { ImplementerStep } from "../../../step/implementer.js";
@@ -15,7 +15,7 @@ import { CodeFixerStep } from "../../../step/code-fixer.js";
 
 function buildRegistry(): AgentRegistry {
   return AgentRegistry.fromSteps([
-    ProposeStep,
+    DesignStep,
     SpecReviewStep,
     SpecFixerStep,
     ImplementerStep,
@@ -26,7 +26,7 @@ function buildRegistry(): AgentRegistry {
 }
 
 const AGENT_ROLES = [
-  "propose",
+  "design",
   "spec-review",
   "spec-fixer",
   "implementer",

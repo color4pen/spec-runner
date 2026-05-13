@@ -545,7 +545,7 @@ describe("TC-30: transitionJob — pid patch が正しく適用される", () =>
     const state = makeState("awaiting-resume", { pid: null });
     const ctx = makeCtx({
       trigger: "resume",
-      reason: "Resuming from step 'propose'",
+      reason: "Resuming from step 'design'",
       patch: { pid: process.pid },
     });
 

@@ -1,8 +1,8 @@
 /**
  * Unit tests for dynamic context injection in buildMessage functions.
  *
- * TC-DC-005: propose buildInitialMessage includes changesList when dynamicContext present
- * TC-DC-006: propose buildInitialMessage works without dynamicContext (backward compat)
+ * TC-DC-005: design buildInitialMessage includes changesList when dynamicContext present
+ * TC-DC-006: design buildInitialMessage works without dynamicContext (backward compat)
  * TC-DC-007: implementer buildImplementerInitialMessage includes gitLog and diffStat when dynamicContext present
  * TC-DC-008: implementer buildImplementerInitialMessage works without dynamicContext (backward compat)
  * TC-DC-009: code-review buildCodeReviewInitialMessage includes diffStat when dynamicContext present
@@ -13,7 +13,7 @@
  * TC-DC-014: buildInitialMessage handles changesList-only and specIndex-only independently
  */
 import { describe, it, expect } from "vitest";
-import { buildInitialMessage } from "../../src/prompts/propose-system.js";
+import { buildInitialMessage } from "../../src/prompts/design-system.js";
 import { buildImplementerInitialMessage } from "../../src/core/step/implementer.js";
 import { buildCodeReviewInitialMessage } from "../../src/core/step/code-review.js";
 import type { DynamicContext } from "../../src/git/dynamic-context.js";
@@ -27,7 +27,7 @@ const FULL_CONTEXT: DynamicContext = {
 };
 
 // ---------------------------------------------------------------------------
-// TC-DC-005 & 006: propose buildInitialMessage
+// TC-DC-005 & 006: design buildInitialMessage
 // ---------------------------------------------------------------------------
 describe("TC-DC-005: buildInitialMessage includes repo context when dynamicContext provided", () => {
   it("includes changesList entries in the message", () => {

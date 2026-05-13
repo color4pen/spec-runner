@@ -7,7 +7,7 @@ import { agentsRegisteredCheck } from "../../../../../src/core/doctor/checks/age
 import { buildMockContext, buildMockConfig } from "../../mock-context.js";
 
 const fullAgentsConfig = {
-  "propose": { agentId: "a1", definitionHash: "sha256:a" },
+  "design": { agentId: "a1", definitionHash: "sha256:a" },
   "spec-review": { agentId: "a2", definitionHash: "sha256:b" },
   "spec-fixer": { agentId: "a3", definitionHash: "sha256:c" },
   "implementer": { agentId: "a4", definitionHash: "sha256:d" },

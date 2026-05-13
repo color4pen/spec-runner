@@ -57,7 +57,7 @@ export function buildMockContext(overrides?: Partial<DoctorContext>): DoctorCont
       github: { accessToken: "ghp_test123" },
       environment: { id: "env_test123" },
       agents: {
-        "propose": { agentId: "agent_001", definitionHash: "sha256:abc" },
+        "design": { agentId: "agent_001", definitionHash: "sha256:abc" },
         "spec-review": { agentId: "agent_002", definitionHash: "sha256:abc" },
         "spec-fixer": { agentId: "agent_003", definitionHash: "sha256:abc" },
         "implementer": { agentId: "agent_004", definitionHash: "sha256:abc" },

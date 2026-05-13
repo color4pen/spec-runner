@@ -674,12 +674,12 @@ describe("TC-029: ClaudeCodeRunner — no requiresCommit guard (moved to StepExe
 
     const ctx: AgentRunContext = {
       step: makeAgentStep({
-        name: "propose",
+        name: "design",
         agent: {
-          name: "specrunner-propose",
-          role: "propose",
+          name: "specrunner-design",
+          role: "design",
           model: "claude-sonnet-4-5",
-          system: "propose",
+          system: "design",
           tools: [],
         },
         requiresCommit: true,

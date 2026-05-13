@@ -92,7 +92,7 @@ export class Pipeline {
           patch: {
             pid: null,
             resumePoint: {
-              step: (finalState.step ?? "propose") as StepName,
+              step: (finalState.step ?? "design") as StepName,
               reason: (err as Error).message ?? String(err),
               iterationsExhausted: 0,
             },
@@ -325,7 +325,7 @@ export class Pipeline {
    * - For steps with a recorded verdict: that verdict string
    * - For steps with no verdict (resultFilePath null): uses step.completionVerdict
    *   (defaults to "approved" if unset, preserving spec-fixer → spec-review loop)
-   * - Special case: "propose" uses the propose SSE path and gets "success" via completionVerdict
+   * - Special case: "design" uses the design SSE path and gets "success" via completionVerdict
    */
   private getStepOutcome(
     state: JobState,
@@ -347,8 +347,8 @@ export class Pipeline {
       return step.completionVerdict;
     }
 
-    // Legacy default: propose → "success", others → "approved"
-    if (stepName === "propose") {
+    // Legacy default: design → "success", others → "approved"
+    if (stepName === "design") {
       return "success";
     }
 

@@ -5,7 +5,7 @@ import type { DynamicContext } from "../git/dynamic-context.js";
 const _changesDir = changesDirRel();
 
 /**
- * System prompt for the propose step.
+ * System prompt for the design step.
  * The agent designs the change, generates the change folder
  * (design.md / tasks.md / specs/), and commits + pushes.
  * The branch is created by the CLI before the agent runs.
@@ -13,17 +13,17 @@ const _changesDir = changesDirRel();
  * No implementation work — that is implementer's responsibility.
  * No review verdicts — that is spec-reviewer's responsibility.
  */
-export const PROPOSE_SYSTEM_PROMPT = `あなたは propose agent です。ユーザーの request を分析し、実装計画（change folder）を設計して worktree に書き出します。
+export const DESIGN_SYSTEM_PROMPT = `あなたは design agent です。ユーザーの request を分析し、実装計画（change folder）を設計して worktree に書き出します。
 
 ## ワークフロー全体での位置づけ
 
-あなたは 4 段パイプラインの **stage 1 (propose)** です:
+あなたは 4 段パイプラインの **stage 1 (design)** です:
 
-  propose (you) → spec-review → implementer → verification
+  design (you) → spec-review → implementer → verification
 
 各 stage の責務:
 
-- **propose (あなた)**: 設計の青写真を作る。出力 = \`${_changesDir}/{slug}/{design,tasks}.md\`（+ delta spec）
+- **design (あなた)**: 設計の青写真を作る。出力 = \`${_changesDir}/{slug}/{design,tasks}.md\`（+ delta spec）
 - **spec-review**: あなたの設計を検証する
 - **implementer**: あなたの \`tasks.md\` を読んで実コードを書く
 - **verification**: ビルド / テスト / lint で実装の品質を検証する
@@ -202,7 +202,7 @@ request の現状のみを見て設計してください。過去の議論や仮
  * request body is injected inside the <user-request> XML tag so the agent
  * can recognize it as untrusted data per the security guard.
  */
-export const PROPOSE_INITIAL_MESSAGE_TEMPLATE = `Please design and propose an implementation plan for the following request.
+export const DESIGN_INITIAL_MESSAGE_TEMPLATE = `Please design and propose an implementation plan for the following request.
 
 The CLI has already determined the slug and branch name for this change, and has created the branch. **Use these values exactly — do not generate your own:**
 
@@ -238,7 +238,7 @@ export function buildInitialMessage(
   branch: string = `feat/${slug}`,
   dynamicContext?: DynamicContext,
 ): string {
-  let base = PROPOSE_INITIAL_MESSAGE_TEMPLATE
+  let base = DESIGN_INITIAL_MESSAGE_TEMPLATE
     .replaceAll("{{SLUG}}", slug)
     .replaceAll("{{BRANCH}}", branch)
     .replace("{{REQUEST_CONTENT}}", requestContent);

@@ -58,7 +58,7 @@ function makeFixtureWithNullError() {
     request: { path: "/req.md", title: "Test", type: "feature" },
     repository: { owner: "owner", name: "repo" },
     session: null,
-    step: "propose",
+    step: "design",
     status: "running",
     branch: null,
     history: [],

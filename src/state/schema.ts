@@ -12,7 +12,7 @@ import type { ModelUsage } from "../core/port/model-usage.js";
 export type { ModelUsage } from "../core/port/model-usage.js";
 
 export type StepName =
-  | "propose"
+  | "design"
   | "spec-review"
   | "spec-fixer"
   | "test-case-gen"
@@ -305,6 +305,11 @@ export function validateJobState(raw: unknown): JobState {
     (obj["error"] as Record<string, unknown>)["code"] === "SESSION_TIMEOUT"
   ) {
     (obj["error"] as Record<string, unknown>)["code"] = "SESSION_TERMINATED";
+  }
+
+  // Backward compat: remap legacy step="propose" to "design" (renamed in 2026-05)
+  if (obj["step"] === "propose") {
+    obj["step"] = "design";
   }
 
   // Backward compat: remap legacy status="success" to "awaiting-merge"

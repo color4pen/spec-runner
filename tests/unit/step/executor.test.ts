@@ -74,7 +74,7 @@ function makeConfig(overrides: Partial<SpecRunnerConfig> = {}): SpecRunnerConfig
     version: 1,
     anthropic: { apiKey: "sk-test" },
     agents: {
-      propose: { agentId: "agent_01x", definitionHash: "sha256:abc", lastSyncedAt: "2026-01-01" },
+      design: { agentId: "agent_01x", definitionHash: "sha256:abc", lastSyncedAt: "2026-01-01" },
       "spec-review": { agentId: "agent_02y", definitionHash: "sha256:def", lastSyncedAt: "2026-01-01" },
       "spec-fixer": { agentId: "agent_03z", definitionHash: "sha256:xyz", lastSyncedAt: "2026-01-01" },
     },
@@ -84,7 +84,7 @@ function makeConfig(overrides: Partial<SpecRunnerConfig> = {}): SpecRunnerConfig
   };
 }
 
-function makeAgentDef(role: "propose" | "spec-review" | "spec-fixer"): AgentDefinition {
+function makeAgentDef(role: "design" | "spec-review" | "spec-fixer"): AgentDefinition {
   return {
     name: `specrunner-${role}`,
     role,
@@ -541,7 +541,7 @@ describe("TC-007 to TC-010: allowlist steps set ctx.projectContext from specrunn
       name,
       agent: {
         name: `specrunner-${name}`,
-        role: name as "propose",
+        role: name as "design",
         model: "claude-sonnet-4-5",
         system: `system for ${name}`,
         tools: [],
@@ -577,7 +577,7 @@ describe("TC-007 to TC-010: allowlist steps set ctx.projectContext from specrunn
     };
   }
 
-  const ALLOWLIST_STEPS = ["propose", "spec-review", "implementer", "code-review"] as const;
+  const ALLOWLIST_STEPS = ["design", "spec-review", "implementer", "code-review"] as const;
 
   ALLOWLIST_STEPS.forEach((stepName) => {
     it(`step '${stepName}' → ctx.projectContext is set from specrunner/project.md`, async () => {
@@ -634,7 +634,7 @@ describe("TC-011 to TC-014: non-allowlist steps — ctx.projectContext is undefi
       name,
       agent: {
         name: `specrunner-${name}`,
-        role: name as "propose",
+        role: name as "design",
         model: "claude-sonnet-4-5",
         system: `system for ${name}`,
         tools: [],
@@ -737,10 +737,10 @@ describe("TC-015: specrunner/project.md not found — no error, ctx.projectConte
 
       const step: Step = {
         kind: "agent" as const,
-        name: "propose",
-        agent: { name: "specrunner-propose", role: "propose", model: "claude-sonnet-4-5", system: "propose", tools: [] },
+        name: "design",
+        agent: { name: "specrunner-design", role: "design", model: "claude-sonnet-4-5", system: "design", tools: [] },
         toolHandlers: undefined,
-        buildMessage: () => "propose message",
+        buildMessage: () => "design message",
         resultFilePath: () => null,
         parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
       };

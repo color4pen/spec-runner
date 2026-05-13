@@ -43,7 +43,7 @@ export class PipelineRunCommand extends CommandRunner {
     const { config, repo, request } = this.preflightResult;
     const slug = request.slug;
 
-    logInfo(`Starting propose pipeline for: ${request.title}`);
+    logInfo(`Starting design pipeline for: ${request.title}`);
 
     // Derive canonical slug for state: use canonical path detection.
     // Canonical pattern: specrunner/requests/active/<slug>/request.md
@@ -71,7 +71,7 @@ export class PipelineRunCommand extends CommandRunner {
 
     return {
       jobState,
-      startStep: "propose",
+      startStep: "design",
       request,
       config,
       repo,

@@ -50,7 +50,7 @@ function buildJobState(overrides: Partial<JobState> = {}): JobState {
     request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
     repository: { owner: "testowner", name: "testrepo" },
     session: null,
-    step: "propose",
+    step: "design",
     status: "running",
     branch: "feat/test",
     history: [],
@@ -62,7 +62,7 @@ function buildJobState(overrides: Partial<JobState> = {}): JobState {
 function buildPrepareResult(overrides: Partial<PrepareResult> = {}): PrepareResult {
   return {
     jobState: buildJobState(),
-    startStep: "propose",
+    startStep: "design",
     request: { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "test", enabled: [] },
     config: {
       version: 1,

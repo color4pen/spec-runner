@@ -92,7 +92,7 @@ export interface SpecRunnerConfig {
   anthropic: AnthropicConfig;
   /**
    * Canonical per-role agent map.
-   * Keys are StepNames (kebab-case: "propose", "spec-review", "spec-fixer").
+   * Keys are StepNames (kebab-case: "design", "spec-review", "spec-fixer").
    * Populated by ConfigStore.load() after migration.
    */
   agents: Record<string, AgentRecord>;
@@ -273,8 +273,8 @@ export function checkConfigComplete(
     if (!cfg.anthropic?.apiKey) {
       return { field: "anthropic.apiKey", hint: "Run 'specrunner init' first." };
     }
-    if (!cfg.agents?.["propose"]?.agentId) {
-      return { field: "agents.propose.agentId", hint: "Run 'specrunner init' first." };
+    if (!cfg.agents?.["design"]?.agentId) {
+      return { field: "agents.design.agentId", hint: "Run 'specrunner init' first." };
     }
     if (!cfg.environment?.id) {
       return { field: "environment.id", hint: "Run 'specrunner init' first." };

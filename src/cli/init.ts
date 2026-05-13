@@ -6,7 +6,7 @@ import type { SyncRoleResult } from "../core/agent/syncer.js";
 import type { AgentSyncerConfig } from "../core/agent/syncer.js";
 import type { AnthropicClient } from "../core/port/anthropic-client.js";
 import { AnthropicClientAdapter } from "../adapter/managed-agent/index.js";
-import { ProposeStep } from "../core/step/propose.js";
+import { DesignStep } from "../core/step/design.js";
 import { SpecReviewStep } from "../core/step/spec-review.js";
 import { SpecFixerStep } from "../core/step/spec-fixer.js";
 import { ImplementerStep } from "../core/step/implementer.js";
@@ -64,7 +64,7 @@ export async function runInit(options: {
   logInfo("specrunner init");
 
   // Build AgentRegistry from all steps (VerificationStep is CLI-resident, not included)
-  const registry = AgentRegistry.fromSteps([ProposeStep, SpecReviewStep, SpecFixerStep, ImplementerStep, BuildFixerStep, CodeReviewStep, CodeFixerStep]);
+  const registry = AgentRegistry.fromSteps([DesignStep, SpecReviewStep, SpecFixerStep, ImplementerStep, BuildFixerStep, CodeReviewStep, CodeFixerStep]);
 
   // Build AgentSyncerConfig from existing loaded config
   const storedConfig: AgentSyncerConfig = {

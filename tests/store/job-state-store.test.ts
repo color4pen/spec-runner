@@ -90,7 +90,7 @@ describe("TC-001: pre-PR24 single object → StepRun[] normalization", () => {
       history: [],
       error: null,
       steps: {
-        propose: {
+        design: {
           sessionId: "s1",
           verdict: "approved",
           completedAt: "2026-01-01T00:05:00.000Z",
@@ -104,12 +104,12 @@ describe("TC-001: pre-PR24 single object → StepRun[] normalization", () => {
     const store = new JobStateStore(jobId);
     const state = await store.load();
 
-    const proposeRuns = state.steps["propose"];
-    expect(proposeRuns).toBeDefined();
-    expect(Array.isArray(proposeRuns)).toBe(true);
-    expect(proposeRuns!.length).toBe(1);
+    const designRuns = state.steps["design"];
+    expect(designRuns).toBeDefined();
+    expect(Array.isArray(designRuns)).toBe(true);
+    expect(designRuns!.length).toBe(1);
 
-    const first = proposeRuns![0]!;
+    const first = designRuns![0]!;
     expect(first.attempt).toBe(1);
     expect(first.sessionId).toBe("s1");
     expect(first.outcome.verdict).toBe("approved");
@@ -375,7 +375,7 @@ describe("TC-006: appendStepRun — persists atomically (write-and-rename)", () 
       startedAt: "2026-01-01T00:00:00.000Z",
       endedAt: "2026-01-01T00:05:00.000Z",
     };
-    await store.appendStepRun(state, "propose", run);
+    await store.appendStepRun(state, "design", run);
 
     // Verify file on disk is valid JSON with the appended run
     const diskContent = await fs.readFile(
@@ -383,9 +383,9 @@ describe("TC-006: appendStepRun — persists atomically (write-and-rename)", () 
       "utf-8",
     );
     const diskState = JSON.parse(diskContent) as Record<string, unknown>;
-    const proposeRuns = (diskState["steps"] as Record<string, unknown>)?.["propose"];
-    expect(Array.isArray(proposeRuns)).toBe(true);
-    expect((proposeRuns as unknown[]).length).toBe(1);
+    const designRuns = (diskState["steps"] as Record<string, unknown>)?.["design"];
+    expect(Array.isArray(designRuns)).toBe(true);
+    expect((designRuns as unknown[]).length).toBe(1);
 
     // No tmp files left
     const files = await fs.readdir(jobsDir);
@@ -419,9 +419,9 @@ describe("TC-007: StepRun captures startedAt and endedAt timestamps", () => {
       startedAt,
       endedAt,
     };
-    const updated = await store.appendStepRun(state, "propose", run);
+    const updated = await store.appendStepRun(state, "design", run);
 
-    const first = updated.steps["propose"]![0]!;
+    const first = updated.steps["design"]![0]!;
     expect(first.startedAt).toBe(startedAt);
     expect(first.endedAt).toBe(endedAt);
     expect(new Date(first.endedAt) >= new Date(first.startedAt)).toBe(true);

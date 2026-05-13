@@ -115,7 +115,7 @@ describe("TC-025 (error-codes): CONFIG_INCOMPLETE code is preserved", () => {
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
       github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] as string[] },
     };
-    expect(() => getAgentId(configWithoutAgents, "propose")).toThrow(
+    expect(() => getAgentId(configWithoutAgents, "design")).toThrow(
       expect.objectContaining({ code: "CONFIG_INCOMPLETE" }),
     );
   });
@@ -146,7 +146,7 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
       request: { path: "/req.md", title: "Test", type: "feature" as const },
       repository: { owner: "testowner", name: "testrepo" },
       session: null,
-      step: "propose",
+      step: "design",
       status: "running" as const,
       branch: null,
       history: [],
@@ -154,21 +154,21 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
       steps: {},
     } as import("../src/state/schema.js").JobState;
 
-    const proposeResult = { ...state, status: "running" as const, branch: "feat/test" };
+    const designResult = { ...state, status: "running" as const, branch: "feat/test" };
 
     const events = new EventBus();
     let specReviewCall = 0;
 
     const executeSpy = vi.fn().mockImplementation(async (step: Step) => {
-      if (step.name === "propose") return proposeResult;
-      if (step.name === "spec-fixer") return { ...proposeResult };
+      if (step.name === "design") return designResult;
+      if (step.name === "spec-fixer") return { ...designResult };
       if (step.name === "spec-review") {
         const iter = ++specReviewCall;
         const existingRuns = iter === 1
           ? []
           : [{ iteration: 1, session: null, verdict: "needs-fix", findingsPath: null, completedAt: "2026-01-01", error: null }];
         return {
-          ...proposeResult,
+          ...designResult,
           status: "running" as const,
           steps: {
             "spec-review": [
@@ -192,7 +192,7 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
 
     const pipeline = new Pipeline({
       steps: new Map([
-        ["propose",     mockStep("propose")],
+        ["design",      mockStep("design")],
         ["spec-review", mockStep("spec-review")],
         ["spec-fixer",  mockStep("spec-fixer")],
       ]),
@@ -203,12 +203,12 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
       loopName: "spec-review",
     });
 
-    const result = await pipeline.run("propose", state, {
+    const result = await pipeline.run("design", state, {
       client: {} as PipelineDeps["client"],
       config: {
         version: 1,
         anthropic: { apiKey: "sk-test" },
-        agents: { propose: { agentId: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" } },
+        agents: { design: { agentId: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" } },
         environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
         github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
       },

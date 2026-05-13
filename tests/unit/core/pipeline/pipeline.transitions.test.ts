@@ -686,11 +686,11 @@ describe("TC-NEW-06: Pipeline escalate terminal → status: awaiting-resume", ()
 
     const pipeline = new Pipeline({
       steps: new Map([
-        ["propose", makeStepObject("propose")],
+        ["design", makeStepObject("design")],
       ]),
       transitions: [
-        { step: "propose", on: "success", to: "end" },
-        { step: "propose", on: "error",   to: "escalate" },
+        { step: "design", on: "success", to: "end" },
+        { step: "design", on: "error",   to: "escalate" },
       ],
       maxIterations,
       executor: mockExecutor,
@@ -699,7 +699,7 @@ describe("TC-NEW-06: Pipeline escalate terminal → status: awaiting-resume", ()
       loopNames: ["spec-review"],
     });
 
-    const result = await pipeline.run("propose", jobState, makeMinimalDeps());
+    const result = await pipeline.run("design", jobState, makeMinimalDeps());
 
     // Fatal error → status stays "failed"
     expect(result.status).toBe("failed");

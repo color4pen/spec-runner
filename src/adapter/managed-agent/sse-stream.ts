@@ -16,7 +16,7 @@ import {
   isRetryStatusRetrying,
 } from "./sdk/sessions.js";
 import { assertBreakAfterCompletion } from "./completion.js";
-import { buildInitialMessage } from "../../prompts/propose-system.js";
+import { buildInitialMessage } from "../../prompts/design-system.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import type { CustomToolContext, CustomToolHandler } from "../../core/tools/types.js";
 

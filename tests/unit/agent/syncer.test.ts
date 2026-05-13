@@ -112,23 +112,23 @@ function makeConfig(stored: Record<string, { agentId: string; definitionHash: st
 // ---------------------------------------------------------------------------
 describe("TC-015: AgentSyncer no-op when hash matches", () => {
   it("calls neither createAgent nor updateAgent", async () => {
-    const propose = makeStep("propose");
-    const registry = AgentRegistry.fromSteps([propose]);
-    const hash = registry.hashOf("propose");
+    const design = makeStep("design");
+    const registry = AgentRegistry.fromSteps([design]);
+    const hash = registry.hashOf("design");
 
     const client = new FakeAnthropicClient();
-    client.seed("agent_001", propose.agent);
+    client.seed("agent_001", design.agent);
 
-    const storedConfig = makeConfig({ propose: { agentId: "agent_001", definitionHash: hash } });
+    const storedConfig = makeConfig({ design: { agentId: "agent_001", definitionHash: hash } });
     const syncer = new AgentSyncer(client, registry, storedConfig);
 
     const result = await syncer.syncAll();
 
     expect(client.createAgentSpy).not.toHaveBeenCalled();
     expect(client.updateAgentSpy).not.toHaveBeenCalled();
-    expect(result.results.get("propose")?.action).toBe("no-op");
-    expect(result.results.get("propose")?.agentId).toBe("agent_001");
-    expect(result.results.get("propose")?.definitionHash).toBe(hash);
+    expect(result.results.get("design")?.action).toBe("no-op");
+    expect(result.results.get("design")?.agentId).toBe("agent_001");
+    expect(result.results.get("design")?.definitionHash).toBe(hash);
   });
 });
 
@@ -137,24 +137,24 @@ describe("TC-015: AgentSyncer no-op when hash matches", () => {
 // ---------------------------------------------------------------------------
 describe("TC-016: AgentSyncer update when hash differs", () => {
   it("calls updateAgent once with new definition", async () => {
-    const propose = makeStep("propose");
-    const registry = AgentRegistry.fromSteps([propose]);
-    const currentHash = registry.hashOf("propose");
+    const design = makeStep("design");
+    const registry = AgentRegistry.fromSteps([design]);
+    const currentHash = registry.hashOf("design");
 
     const client = new FakeAnthropicClient();
-    client.seed("agent_001", propose.agent);
+    client.seed("agent_001", design.agent);
 
-    const storedConfig = makeConfig({ propose: { agentId: "agent_001", definitionHash: "sha256:old_hash" } });
+    const storedConfig = makeConfig({ design: { agentId: "agent_001", definitionHash: "sha256:old_hash" } });
     const syncer = new AgentSyncer(client, registry, storedConfig);
 
     const result = await syncer.syncAll();
 
     expect(client.updateAgentSpy).toHaveBeenCalledTimes(1);
-    expect(client.updateAgentSpy).toHaveBeenCalledWith("agent_001", propose.agent);
+    expect(client.updateAgentSpy).toHaveBeenCalledWith("agent_001", design.agent);
     expect(client.createAgentSpy).not.toHaveBeenCalled();
-    expect(result.results.get("propose")?.action).toBe("update");
-    expect(result.results.get("propose")?.agentId).toBe("agent_001");
-    expect(result.results.get("propose")?.definitionHash).toBe(currentHash);
+    expect(result.results.get("design")?.action).toBe("update");
+    expect(result.results.get("design")?.agentId).toBe("agent_001");
+    expect(result.results.get("design")?.definitionHash).toBe(currentHash);
   });
 });
 
@@ -163,24 +163,24 @@ describe("TC-016: AgentSyncer update when hash differs", () => {
 // ---------------------------------------------------------------------------
 describe("TC-017: AgentSyncer 404 fallback → create", () => {
   it("calls createAgent when retrieveAgent returns 404", async () => {
-    const propose = makeStep("propose");
-    const registry = AgentRegistry.fromSteps([propose]);
-    const currentHash = registry.hashOf("propose");
+    const design = makeStep("design");
+    const registry = AgentRegistry.fromSteps([design]);
+    const currentHash = registry.hashOf("design");
 
     const client = new FakeAnthropicClient();
     // Do NOT seed "agent_001" — retrieval will 404
 
-    const storedConfig = makeConfig({ propose: { agentId: "agent_001", definitionHash: currentHash } });
+    const storedConfig = makeConfig({ design: { agentId: "agent_001", definitionHash: currentHash } });
     const syncer = new AgentSyncer(client, registry, storedConfig);
 
     const result = await syncer.syncAll();
 
     expect(client.retrieveAgentSpy).toHaveBeenCalledWith("agent_001");
     expect(client.createAgentSpy).toHaveBeenCalledTimes(1);
-    const newId = result.results.get("propose")?.agentId;
+    const newId = result.results.get("design")?.agentId;
     expect(newId).toBeDefined();
     // A new agent was created — the ID may be any string (fake generates incrementing IDs)
-    expect(result.results.get("propose")?.action).toBe("create");
+    expect(result.results.get("design")?.action).toBe("create");
   });
 });
 
@@ -211,8 +211,8 @@ describe("TC-018: AgentSyncer new role → create", () => {
 // ---------------------------------------------------------------------------
 describe("TC-019: AgentSyncer is idempotent", () => {
   it("2nd syncAll produces no create/update calls", async () => {
-    const propose = makeStep("propose");
-    const registry = AgentRegistry.fromSteps([propose]);
+    const design = makeStep("design");
+    const registry = AgentRegistry.fromSteps([design]);
 
     const client = new FakeAnthropicClient();
     const storedConfig1 = makeConfig({});
@@ -220,21 +220,21 @@ describe("TC-019: AgentSyncer is idempotent", () => {
 
     // 1st run
     const result1 = await syncer1.syncAll();
-    const newId = result1.results.get("propose")!.agentId;
-    const newHash = result1.results.get("propose")!.definitionHash;
+    const newId = result1.results.get("design")!.agentId;
+    const newHash = result1.results.get("design")!.definitionHash;
 
     // Reset spy counts
     client.createAgentSpy.mockClear();
     client.updateAgentSpy.mockClear();
 
     // 2nd run with stored data from 1st run
-    const storedConfig2 = makeConfig({ propose: { agentId: newId, definitionHash: newHash } });
+    const storedConfig2 = makeConfig({ design: { agentId: newId, definitionHash: newHash } });
     const syncer2 = new AgentSyncer(client, registry, storedConfig2);
     const result2 = await syncer2.syncAll();
 
     expect(client.createAgentSpy).not.toHaveBeenCalled();
     expect(client.updateAgentSpy).not.toHaveBeenCalled();
-    expect(result2.results.get("propose")?.action).toBe("no-op");
+    expect(result2.results.get("design")?.action).toBe("no-op");
   });
 });
 
@@ -243,21 +243,21 @@ describe("TC-019: AgentSyncer is idempotent", () => {
 // ---------------------------------------------------------------------------
 describe("TC-023: SyncResult per-role action kinds", () => {
   it("returns correct action for each role in a mixed scenario", async () => {
-    const propose = makeStep("propose");
+    const design = makeStep("design");
     const specReview = makeStep("spec-review");
     const specFixer = makeStep("spec-fixer");
-    const registry = AgentRegistry.fromSteps([propose, specReview, specFixer]);
+    const registry = AgentRegistry.fromSteps([design, specReview, specFixer]);
 
-    const proposeHash = registry.hashOf("propose");
+    const designHash = registry.hashOf("design");
     const specFixerHash = "sha256:old_spec_fixer_hash"; // stale hash for spec-fixer
 
     const client = new FakeAnthropicClient();
-    // Seed propose (matching hash → no-op) and spec-fixer (stale hash → update)
-    client.seed("agent_propose", propose.agent);
+    // Seed design (matching hash → no-op) and spec-fixer (stale hash → update)
+    client.seed("agent_design", design.agent);
     client.seed("agent_spec_fixer", specFixer.agent);
 
     const storedConfig = makeConfig({
-      propose: { agentId: "agent_propose", definitionHash: proposeHash },
+      design: { agentId: "agent_design", definitionHash: designHash },
       // spec-review: not stored → create
       "spec-fixer": { agentId: "agent_spec_fixer", definitionHash: specFixerHash },
     });
@@ -265,7 +265,7 @@ describe("TC-023: SyncResult per-role action kinds", () => {
     const syncer = new AgentSyncer(client, registry, storedConfig);
     const result = await syncer.syncAll();
 
-    expect(result.results.get("propose")?.action).toBe("no-op");
+    expect(result.results.get("design")?.action).toBe("no-op");
     expect(result.results.get("spec-review")?.action).toBe("create");
     expect(result.results.get("spec-fixer")?.action).toBe("update");
   });
@@ -276,8 +276,8 @@ describe("TC-023: SyncResult per-role action kinds", () => {
 // ---------------------------------------------------------------------------
 describe("TC-055: fake AnthropicClient injection", () => {
   it("syncAll works end-to-end with fake client, no real HTTP", async () => {
-    const propose = makeStep("propose");
-    const registry = AgentRegistry.fromSteps([propose]);
+    const design = makeStep("design");
+    const registry = AgentRegistry.fromSteps([design]);
     const client = new FakeAnthropicClient();
     const storedConfig = makeConfig({});
     const syncer = new AgentSyncer(client, registry, storedConfig);
@@ -285,6 +285,6 @@ describe("TC-055: fake AnthropicClient injection", () => {
     const result = await syncer.syncAll();
 
     expect(result.results.size).toBe(1);
-    expect(result.results.get("propose")?.action).toBe("create");
+    expect(result.results.get("design")?.action).toBe("create");
   });
 });

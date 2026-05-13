@@ -88,7 +88,7 @@ function makeMinimalConfig() {
     version: 1 as const,
     anthropic: { apiKey: "sk-test" },
     agents: {
-      propose: { agentId: "agent_propose", definitionHash: "sha256:abc", lastSyncedAt: "2026-01-01" },
+      design: { agentId: "agent_design", definitionHash: "sha256:abc", lastSyncedAt: "2026-01-01" },
       "spec-review": { agentId: "agent_spec_review", definitionHash: "sha256:def", lastSyncedAt: "2026-01-01" },
     },
     environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
@@ -516,11 +516,11 @@ describe("TC-011: StepExecutor dispatches on step.kind only", () => {
     const content = await fs.readFile(executorPath, "utf-8");
 
     // No `step.name === "..."` dispatch
-    const dispatchPattern = /step\.name\s*===\s*["'](?:spec-review|verification|implementer|build-fixer|spec-fixer|propose|code-review|code-fixer|pr-create)["']/;
+    const dispatchPattern = /step\.name\s*===\s*["'](?:spec-review|verification|implementer|build-fixer|spec-fixer|design|code-review|code-fixer|pr-create)["']/;
     expect(dispatchPattern.test(content)).toBe(false);
 
     // No literal string step name in case statements
-    const casePattern = /case\s*["'](?:spec-review|verification|implementer|build-fixer|spec-fixer|propose)["']\s*:/;
+    const casePattern = /case\s*["'](?:spec-review|verification|implementer|build-fixer|spec-fixer|design)["']\s*:/;
     expect(casePattern.test(content)).toBe(false);
   });
 });

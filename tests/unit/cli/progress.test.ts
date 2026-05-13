@@ -44,19 +44,19 @@ afterEach(() => {
 describe("TC-6.1: ProgressDisplay — EventBus emit → stdout 出力", () => {
   it("step:start イベントで '[step] running...' を出力する", () => {
     new ProgressDisplay(bus, { verbose: false, slug: "my-slug" });
-    bus.emit("step:start", { step: "propose", state: makeState() });
+    bus.emit("step:start", { step: "design", state: makeState() });
     const output = stdoutSpy.mock.calls.map((c: Parameters<typeof process.stdout.write>) => c[0]).join("");
-    expect(output).toContain("[propose] running...");
+    expect(output).toContain("[design] running...");
   });
 
   it("step:complete イベントで '[step] ✓ (Ns)' を出力する", () => {
     new ProgressDisplay(bus, { verbose: false, slug: "my-slug" });
     // Emit start first to register start time
-    bus.emit("step:start", { step: "propose", state: makeState() });
+    bus.emit("step:start", { step: "design", state: makeState() });
     stdoutSpy.mockClear();
-    bus.emit("step:complete", { step: "propose", state: makeState() });
+    bus.emit("step:complete", { step: "design", state: makeState() });
     const output = stdoutSpy.mock.calls.map((c: Parameters<typeof process.stdout.write>) => c[0]).join("");
-    expect(output).toContain("[propose] ✓");
+    expect(output).toContain("[design] ✓");
     expect(output).toMatch(/\d+s/);
   });
 

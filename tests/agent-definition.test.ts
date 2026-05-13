@@ -7,12 +7,12 @@ beforeEach(() => {
 
 // TC-070: Agent 定義ハッシュ — 同一定義は同一ハッシュ
 describe("TC-070: Agent definition hash — same definition produces same hash", () => {
-  it("hashObject returns identical hash on repeated calls with ProposeStep.agent", async () => {
+  it("hashObject returns identical hash on repeated calls with DesignStep.agent", async () => {
     const { hashObject } = await import("../src/core/agent/hash.js");
-    const { ProposeStep } = await import("../src/core/step/propose.js");
+    const { DesignStep } = await import("../src/core/step/design.js");
 
-    const hash1 = hashObject(ProposeStep.agent);
-    const hash2 = hashObject(ProposeStep.agent);
+    const hash1 = hashObject(DesignStep.agent);
+    const hash2 = hashObject(DesignStep.agent);
 
     expect(hash1).toBe(hash2);
     expect(hash1).toMatch(/^sha256:[a-f0-9]{64}$/);

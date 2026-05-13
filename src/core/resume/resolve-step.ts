@@ -8,7 +8,7 @@ export type ResumeRole = "critic" | "fixer" | "creator";
 /**
  * Steps that belong to the spec phase.
  */
-const SPEC_PHASE_STEPS = new Set<StepName>(["propose", "spec-review", "spec-fixer"]);
+const SPEC_PHASE_STEPS = new Set<StepName>(["design", "spec-review", "spec-fixer"]);
 
 /**
  * Steps that belong to the code phase.
@@ -43,7 +43,7 @@ const STEP_MAPPING: Record<"spec" | "code", Record<ResumeRole, StepName>> = {
   spec: {
     critic: "spec-review",
     fixer: "spec-fixer",
-    creator: "propose",
+    creator: "design",
   },
   code: {
     critic: "code-review",

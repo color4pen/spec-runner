@@ -82,7 +82,7 @@ describe("TC-MR-003: registerCleanup adds signal handlers and teardown removes t
     const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo());
 
     const listenersBefore = process.listenerCount("SIGINT");
-    const handle = runtime.registerCleanup("job-123", "propose");
+    const handle = runtime.registerCleanup("job-123", "design");
     const listenersAfterRegister = process.listenerCount("SIGINT");
 
     // Signal handler was added
@@ -99,7 +99,7 @@ describe("TC-MR-003: registerCleanup adds signal handlers and teardown removes t
     const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo());
 
     const listenersBefore = process.listenerCount("SIGTERM");
-    const handle = runtime.registerCleanup("job-123", "propose");
+    const handle = runtime.registerCleanup("job-123", "design");
 
     expect(process.listenerCount("SIGTERM")).toBe(listenersBefore + 1);
 

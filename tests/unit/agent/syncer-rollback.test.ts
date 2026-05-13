@@ -1,6 +1,6 @@
 /**
  * Unit tests for AgentSyncer — rollback scenarios
- * TC-020: spec-fixer create fails → propose + spec-review are rolled back
+ * TC-020: spec-fixer create fails → design + spec-review are rolled back
  * TC-021: update済みagentはrollbackされない
  * TC-022: rollback中のarchiveAgent失敗でも継続、元例外が再throw
  */
@@ -43,19 +43,19 @@ function makeConfig(stored: Record<string, { agentId: string; definitionHash: st
 }
 
 // ---------------------------------------------------------------------------
-// TC-020: spec-fixer create fails → propose + spec-review rolled back
+// TC-020: spec-fixer create fails → design + spec-review rolled back
 // ---------------------------------------------------------------------------
-describe("TC-020: spec-fixer create fails → rollback propose and spec-review", () => {
-  it("archives propose and spec-review when spec-fixer create throws", async () => {
-    const propose = makeStep("propose");
+describe("TC-020: spec-fixer create fails → rollback design and spec-review", () => {
+  it("archives design and spec-review when spec-fixer create throws", async () => {
+    const design = makeStep("design");
     const specReview = makeStep("spec-review");
     const specFixer = makeStep("spec-fixer");
-    const registry = AgentRegistry.fromSteps([propose, specReview, specFixer]);
+    const registry = AgentRegistry.fromSteps([design, specReview, specFixer]);
 
     let callCount = 0;
     const createAgentSpy = vi.fn(async () => {
       callCount++;
-      if (callCount === 1) return { id: "agent_01x", version: 1 }; // propose
+      if (callCount === 1) return { id: "agent_01x", version: 1 }; // design
       if (callCount === 2) return { id: "agent_02y", version: 1 }; // spec-review
       throw new Error("spec-fixer creation failed"); // spec-fixer
     });
@@ -74,7 +74,7 @@ describe("TC-020: spec-fixer create fails → rollback propose and spec-review",
 
     await expect(syncer.syncAll()).rejects.toThrow("spec-fixer creation failed");
 
-    // Both propose and spec-review must be archived
+    // Both design and spec-review must be archived
     expect(archiveAgentSpy).toHaveBeenCalledWith("agent_01x");
     expect(archiveAgentSpy).toHaveBeenCalledWith("agent_02y");
     expect(archiveAgentSpy).toHaveBeenCalledTimes(2);
@@ -83,9 +83,9 @@ describe("TC-020: spec-fixer create fails → rollback propose and spec-review",
   it("config is not partially updated when rollback occurs", async () => {
     // The syncer does not write to config — that's the caller's responsibility.
     // We verify that SyncResult is not returned (exception is thrown).
-    const propose = makeStep("propose");
+    const design = makeStep("design");
     const specFixer = makeStep("spec-fixer");
-    const registry = AgentRegistry.fromSteps([propose, specFixer]);
+    const registry = AgentRegistry.fromSteps([design, specFixer]);
 
     let callCount = 0;
     const client: AnthropicClient = {
@@ -113,15 +113,15 @@ describe("TC-020: spec-fixer create fails → rollback propose and spec-review",
 // TC-021: update済みagentはrollbackされない
 // ---------------------------------------------------------------------------
 describe("TC-021: update-only agents are NOT rolled back on partial failure", () => {
-  it("does not archive the update-only propose agent when spec-review create fails", async () => {
-    const propose = makeStep("propose");
+  it("does not archive the update-only design agent when spec-review create fails", async () => {
+    const design = makeStep("design");
     const specReview = makeStep("spec-review");
-    const registry = AgentRegistry.fromSteps([propose, specReview]);
+    const registry = AgentRegistry.fromSteps([design, specReview]);
 
-    // propose hash will mismatch → update path
-    const proposeHash = registry.hashOf("propose");
+    // design hash will mismatch → update path
+    const designHash = registry.hashOf("design");
     const staleHash = "sha256:stale";
-    expect(staleHash).not.toBe(proposeHash);
+    expect(staleHash).not.toBe(designHash);
 
     const archiveAgentSpy = vi.fn().mockResolvedValue(undefined);
     const createAgentSpy = vi.fn(async () => {
@@ -131,15 +131,15 @@ describe("TC-021: update-only agents are NOT rolled back on partial failure", ()
     const client: AnthropicClient = {
       createAgent: createAgentSpy,
       retrieveAgent: vi.fn().mockImplementation(async (id: string) => {
-        if (id === "agent_propose") return { id: "agent_propose", version: 1 };
+        if (id === "agent_design") return { id: "agent_design", version: 1 };
         throw Object.assign(new Error("404"), { status: 404 });
       }),
-      updateAgent: vi.fn().mockResolvedValue({ id: "agent_propose", version: 2 }),
+      updateAgent: vi.fn().mockResolvedValue({ id: "agent_design", version: 2 }),
       archiveAgent: archiveAgentSpy,
     };
 
     const storedConfig = makeConfig({
-      propose: { agentId: "agent_propose", definitionHash: staleHash },
+      design: { agentId: "agent_design", definitionHash: staleHash },
       // spec-review: no stored entry → create
     });
 
@@ -147,16 +147,16 @@ describe("TC-021: update-only agents are NOT rolled back on partial failure", ()
       new AgentSyncer(client, registry, storedConfig).syncAll(),
     ).rejects.toThrow("spec-review create failed");
 
-    // propose was UPDATED (not created) → must NOT be archived
-    expect(archiveAgentSpy).not.toHaveBeenCalledWith("agent_propose");
+    // design was UPDATED (not created) → must NOT be archived
+    expect(archiveAgentSpy).not.toHaveBeenCalledWith("agent_design");
     expect(archiveAgentSpy).toHaveBeenCalledTimes(0);
   });
 
-  it("archives spec-review (create) but not propose (update) in mixed scenario", async () => {
-    const propose = makeStep("propose");
+  it("archives spec-review (create) but not design (update) in mixed scenario", async () => {
+    const design = makeStep("design");
     const specReview = makeStep("spec-review");
     const specFixer = makeStep("spec-fixer");
-    const registry = AgentRegistry.fromSteps([propose, specReview, specFixer]);
+    const registry = AgentRegistry.fromSteps([design, specReview, specFixer]);
 
     const archiveAgentSpy = vi.fn().mockResolvedValue(undefined);
     let createCount = 0;
@@ -168,15 +168,15 @@ describe("TC-021: update-only agents are NOT rolled back on partial failure", ()
         throw new Error("spec-fixer create failed");
       }),
       retrieveAgent: vi.fn().mockImplementation(async (id: string) => {
-        if (id === "agent_propose") return { id: "agent_propose", version: 1 };
+        if (id === "agent_design") return { id: "agent_design", version: 1 };
         throw Object.assign(new Error("404"), { status: 404 });
       }),
-      updateAgent: vi.fn().mockResolvedValue({ id: "agent_propose", version: 2 }),
+      updateAgent: vi.fn().mockResolvedValue({ id: "agent_design", version: 2 }),
       archiveAgent: archiveAgentSpy,
     };
 
     const storedConfig = makeConfig({
-      propose: { agentId: "agent_propose", definitionHash: "sha256:stale" },
+      design: { agentId: "agent_design", definitionHash: "sha256:stale" },
       // spec-review + spec-fixer: no stored entry → create
     });
 
@@ -186,8 +186,8 @@ describe("TC-021: update-only agents are NOT rolled back on partial failure", ()
 
     // spec-review was created → should be archived
     expect(archiveAgentSpy).toHaveBeenCalledWith("agent_spec_review");
-    // propose was updated → should NOT be archived
-    expect(archiveAgentSpy).not.toHaveBeenCalledWith("agent_propose");
+    // design was updated → should NOT be archived
+    expect(archiveAgentSpy).not.toHaveBeenCalledWith("agent_design");
   });
 });
 
@@ -196,9 +196,9 @@ describe("TC-021: update-only agents are NOT rolled back on partial failure", ()
 // ---------------------------------------------------------------------------
 describe("TC-022: archive failure during rollback continues and re-throws original", () => {
   it("writes stderr warning when archiveAgent fails and still re-throws original error", async () => {
-    const propose = makeStep("propose");
+    const design = makeStep("design");
     const specFixer = makeStep("spec-fixer");
-    const registry = AgentRegistry.fromSteps([propose, specFixer]);
+    const registry = AgentRegistry.fromSteps([design, specFixer]);
 
     const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 

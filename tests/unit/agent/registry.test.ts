@@ -38,14 +38,14 @@ function makeStep(role: StepName, system?: string): AgentStep {
 // TC-024: fromSteps aggregates 3 Step AgentDefinitions
 describe("TC-024: AgentRegistry.fromSteps aggregates 3 Step definitions", () => {
   it("builds registry with list().length === 3", () => {
-    const propose = makeStep("propose");
+    const design = makeStep("design");
     const specReview = makeStep("spec-review");
     const specFixer = makeStep("spec-fixer");
 
-    const registry = AgentRegistry.fromSteps([propose, specReview, specFixer]);
+    const registry = AgentRegistry.fromSteps([design, specReview, specFixer]);
 
     expect(registry.list().length).toBe(3);
-    expect(registry.get("propose")).toEqual(propose.agent);
+    expect(registry.get("design")).toEqual(design.agent);
     expect(registry.get("spec-review")).toEqual(specReview.agent);
     expect(registry.get("spec-fixer")).toEqual(specFixer.agent);
   });
@@ -53,18 +53,18 @@ describe("TC-024: AgentRegistry.fromSteps aggregates 3 Step definitions", () => 
 
 // TC-025: fromSteps throws on duplicate role
 describe("TC-025: AgentRegistry.fromSteps throws on duplicate role", () => {
-  it("throws 'Duplicate agent role: propose' when two steps share a role", () => {
-    const stepA = makeStep("propose");
-    const stepB = makeStep("propose");
+  it("throws 'Duplicate agent role: design' when two steps share a role", () => {
+    const stepA = makeStep("design");
+    const stepB = makeStep("design");
 
     expect(() => AgentRegistry.fromSteps([stepA, stepB])).toThrow(
-      "Duplicate agent role: propose",
+      "Duplicate agent role: design",
     );
   });
 
   it("does not construct registry on duplicate", () => {
-    const stepA = makeStep("propose");
-    const stepB = makeStep("propose");
+    const stepA = makeStep("design");
+    const stepB = makeStep("design");
 
     let registry: AgentRegistry | undefined;
     try {
@@ -79,7 +79,7 @@ describe("TC-025: AgentRegistry.fromSteps throws on duplicate role", () => {
 // TC-026: get returns undefined for unregistered role
 describe("TC-026: AgentRegistry.get returns undefined for unregistered role", () => {
   it("returns undefined for 'implementer' role not in registry", () => {
-    const registry = AgentRegistry.fromSteps([makeStep("propose")]);
+    const registry = AgentRegistry.fromSteps([makeStep("design")]);
     // Cast to StepName to simulate a future role not yet in the union
     const result = registry.get("implementer" as StepName);
     expect(result).toBeUndefined();
@@ -89,37 +89,37 @@ describe("TC-026: AgentRegistry.get returns undefined for unregistered role", ()
 // TC-027: hashOf is deterministic
 describe("TC-027: AgentRegistry.hashOf is deterministic", () => {
   it("returns same hex string on repeated calls for same definition", () => {
-    const registry = AgentRegistry.fromSteps([makeStep("propose", "hello system")]);
+    const registry = AgentRegistry.fromSteps([makeStep("design", "hello system")]);
 
-    const h1 = registry.hashOf("propose");
-    const h2 = registry.hashOf("propose");
+    const h1 = registry.hashOf("design");
+    const h2 = registry.hashOf("design");
 
     expect(h1).toBe(h2);
     expect(h1).toMatch(/^sha256:[a-f0-9]{64}$/);
   });
 
   it("two registries with identical definitions produce identical hashes", () => {
-    const r1 = AgentRegistry.fromSteps([makeStep("propose", "same system")]);
-    const r2 = AgentRegistry.fromSteps([makeStep("propose", "same system")]);
+    const r1 = AgentRegistry.fromSteps([makeStep("design", "same system")]);
+    const r2 = AgentRegistry.fromSteps([makeStep("design", "same system")]);
 
-    expect(r1.hashOf("propose")).toBe(r2.hashOf("propose"));
+    expect(r1.hashOf("design")).toBe(r2.hashOf("design"));
   });
 });
 
 // TC-028: hashOf reacts to 1-char difference
 describe("TC-028: AgentRegistry.hashOf reacts to 1-char diff in system", () => {
   it("returns different hashes for definitions differing by one character", () => {
-    const r1 = AgentRegistry.fromSteps([makeStep("propose", "system A")]);
-    const r2 = AgentRegistry.fromSteps([makeStep("propose", "system B")]);
+    const r1 = AgentRegistry.fromSteps([makeStep("design", "system A")]);
+    const r2 = AgentRegistry.fromSteps([makeStep("design", "system B")]);
 
-    expect(r1.hashOf("propose")).not.toBe(r2.hashOf("propose"));
+    expect(r1.hashOf("design")).not.toBe(r2.hashOf("design"));
   });
 });
 
 // TC-029: hashOf throws for unknown role
 describe("TC-029: AgentRegistry.hashOf throws for unknown role", () => {
   it("throws 'Unknown agent role: implementer'", () => {
-    const registry = AgentRegistry.fromSteps([makeStep("propose")]);
+    const registry = AgentRegistry.fromSteps([makeStep("design")]);
 
     expect(() => registry.hashOf("implementer" as StepName)).toThrow(
       "Unknown agent role: implementer",
@@ -131,7 +131,7 @@ describe("TC-029: AgentRegistry.hashOf throws for unknown role", () => {
 describe("TC-045: AgentRegistry.list is idempotent", () => {
   it("returns equivalent arrays on repeated calls", () => {
     const registry = AgentRegistry.fromSteps([
-      makeStep("propose"),
+      makeStep("design"),
       makeStep("spec-review"),
     ]);
 
@@ -143,7 +143,7 @@ describe("TC-045: AgentRegistry.list is idempotent", () => {
   });
 
   it("does not mutate internal state on list()", () => {
-    const registry = AgentRegistry.fromSteps([makeStep("propose")]);
+    const registry = AgentRegistry.fromSteps([makeStep("design")]);
 
     const list = registry.list();
     // Mutating the returned array should not affect the registry
@@ -158,15 +158,15 @@ describe("AgentRegistry.fromSteps throws on step.name and agent.role mismatch", 
   it("throws 'Step name and agent role mismatch' when step.name differs from agent.role", () => {
     const mismatchedStep: AgentStep = {
       kind: "agent",
-      name: "propose" as StepName,
-      agent: makeAgentDef("spec-review"), // role = "spec-review" but name = "propose"
+      name: "design" as StepName,
+      agent: makeAgentDef("spec-review"), // role = "spec-review" but name = "design"
       buildMessage: () => "",
       resultFilePath: () => null,
       parseResult: () => ({ verdict: null, findingsPath: null }),
     };
 
     expect(() => AgentRegistry.fromSteps([mismatchedStep])).toThrow(
-      "Step name and agent role mismatch: name=propose, role=spec-review",
+      "Step name and agent role mismatch: name=design, role=spec-review",
     );
   });
 });
@@ -184,36 +184,36 @@ describe("TC-011: AgentRegistry.fromSteps — CLI step を除外してカウン�
   }
 
   it("6 step 配列 (verification のみ CLI) → registry.list().length === 5", () => {
-    const propose = makeStep("propose");
+    const design = makeStep("design");
     const specReview = makeStep("spec-review");
     const specFixer = makeStep("spec-fixer");
     const implementer = makeStep("implementer");
     const verification = makeCliStep("verification");
     const buildFixer = makeStep("build-fixer");
 
-    const registry = AgentRegistry.fromSteps([propose, specReview, specFixer, implementer, verification, buildFixer]);
+    const registry = AgentRegistry.fromSteps([design, specReview, specFixer, implementer, verification, buildFixer]);
 
     expect(registry.list().length).toBe(5);
   });
 
   it("registry.get('verification') は undefined", () => {
-    const propose = makeStep("propose");
+    const design = makeStep("design");
     const verification = makeCliStep("verification");
 
-    const registry = AgentRegistry.fromSteps([propose, verification]);
+    const registry = AgentRegistry.fromSteps([design, verification]);
 
     expect(registry.get("verification")).toBeUndefined();
   });
 
   it("registry.get('implementer') は ImplementerStep.agent を返す", () => {
-    const propose = makeStep("propose");
+    const design = makeStep("design");
     const specReview = makeStep("spec-review");
     const specFixer = makeStep("spec-fixer");
     const implementer = makeStep("implementer");
     const verification = makeCliStep("verification");
     const buildFixer = makeStep("build-fixer");
 
-    const registry = AgentRegistry.fromSteps([propose, specReview, specFixer, implementer, verification, buildFixer]);
+    const registry = AgentRegistry.fromSteps([design, specReview, specFixer, implementer, verification, buildFixer]);
 
     expect(registry.get("implementer")).toEqual(implementer.agent);
   });
@@ -222,8 +222,8 @@ describe("TC-011: AgentRegistry.fromSteps — CLI step を除外してカウン�
 // TC-071: canonical JSON is key-sorted and compact
 describe("TC-071: hashOf canonical JSON is key-sorted and compact", () => {
   it("hash is lowercase hex string of 64 chars after sha256: prefix", () => {
-    const registry = AgentRegistry.fromSteps([makeStep("propose")]);
-    const hash = registry.hashOf("propose");
+    const registry = AgentRegistry.fromSteps([makeStep("design")]);
+    const hash = registry.hashOf("design");
 
     expect(hash.startsWith("sha256:")).toBe(true);
     const hexPart = hash.slice("sha256:".length);

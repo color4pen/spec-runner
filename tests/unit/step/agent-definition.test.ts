@@ -1,44 +1,44 @@
 /**
  * Unit tests for Step AgentDefinition ownership
- * TC-032: ProposeStep has complete AgentDefinition
+ * TC-032: DesignStep has complete AgentDefinition
  * TC-033: SpecReviewStep has spec-review dedicated AgentDefinition
  * TC-034: SpecFixerStep has dedicated AgentDefinition with tools=[]
  * TC-035: spec-review system prompt includes verdict/severity contract
- * TC-036: ProposeStep tools and toolHandlers 1:1 correspondence (updated for D3)
+ * TC-036: DesignStep tools and toolHandlers 1:1 correspondence (updated for D3)
  * TC-037: SpecReviewStep tools=[] so toolHandlers can be omitted
  * TC-047: AgentDefinition.role matches StepName (kebab-case)
  *
- * Design D3 update: ProposeStep is now runtime-neutral.
- * - ProposeStep.toolHandlers is undefined (injection is done by ManagedAgentRunner)
- * - ProposeStep.agent.tools does NOT contain register_branch (adapter injects it)
+ * Design D3 update: DesignStep is now runtime-neutral.
+ * - DesignStep.toolHandlers is undefined (injection is done by ManagedAgentRunner)
+ * - DesignStep.agent.tools does NOT contain register_branch (adapter injects it)
  */
 import { describe, it, expect } from "vitest";
-import { ProposeStep } from "../../../src/core/step/propose.js";
+import { DesignStep } from "../../../src/core/step/design.js";
 import { SpecReviewStep } from "../../../src/core/step/spec-review.js";
 import { SpecFixerStep } from "../../../src/core/step/spec-fixer.js";
 
-// TC-032: ProposeStep has complete AgentDefinition
-describe("TC-032: ProposeStep has complete AgentDefinition", () => {
-  it("name === 'specrunner-propose' and role === 'propose'", () => {
-    expect(ProposeStep.agent.name).toBe("specrunner-propose");
-    expect(ProposeStep.agent.role).toBe("propose");
+// TC-032: DesignStep has complete AgentDefinition
+describe("TC-032: DesignStep has complete AgentDefinition", () => {
+  it("name === 'specrunner-design' and role === 'design'", () => {
+    expect(DesignStep.agent.name).toBe("specrunner-design");
+    expect(DesignStep.agent.role).toBe("design");
   });
 
   it("system is a non-empty string", () => {
-    expect(typeof ProposeStep.agent.system).toBe("string");
-    expect(ProposeStep.agent.system.length).toBeGreaterThan(0);
+    expect(typeof DesignStep.agent.system).toBe("string");
+    expect(DesignStep.agent.system.length).toBeGreaterThan(0);
   });
 
-  // Design D3: register_branch is now injected by ManagedAgentRunner, not declared in ProposeStep
-  it("ProposeStep.agent.tools does NOT contain register_branch (design D3: adapter injects it)", () => {
-    const customTool = ProposeStep.agent.tools.find(
+  // Design D3: register_branch is now injected by ManagedAgentRunner, not declared in DesignStep
+  it("DesignStep.agent.tools does NOT contain register_branch (design D3: adapter injects it)", () => {
+    const customTool = DesignStep.agent.tools.find(
       (t) => t.type === "custom" && (t as { name?: string }).name === "register_branch",
     );
     expect(customTool).toBeUndefined();
   });
 
   it("does not have agentId placeholder field", () => {
-    expect((ProposeStep.agent as unknown as Record<string, unknown>)["agentId"]).toBeUndefined();
+    expect((DesignStep.agent as unknown as Record<string, unknown>)["agentId"]).toBeUndefined();
   });
 });
 
@@ -48,8 +48,8 @@ describe("TC-033: SpecReviewStep has spec-review dedicated AgentDefinition", () 
     expect(SpecReviewStep.agent.role).toBe("spec-review");
   });
 
-  it("system is different from ProposeStep.agent.system", () => {
-    expect(SpecReviewStep.agent.system).not.toBe(ProposeStep.agent.system);
+  it("system is different from DesignStep.agent.system", () => {
+    expect(SpecReviewStep.agent.system).not.toBe(DesignStep.agent.system);
   });
 
   it("tools does not contain register_branch", () => {
@@ -107,11 +107,11 @@ describe("TC-035: spec-review system prompt includes verdict/severity definition
   });
 });
 
-// TC-036: ProposeStep runtime-neutral — toolHandlers undefined per design D3
-describe("TC-036: ProposeStep is runtime-neutral — toolHandlers is undefined (design D3)", () => {
-  it("ProposeStep.toolHandlers is undefined (adapter injects tools)", () => {
-    // Design D3: register_branch is injected by ManagedAgentRunner, not ProposeStep
-    expect(ProposeStep.toolHandlers).toBeUndefined();
+// TC-036: DesignStep runtime-neutral — toolHandlers undefined per design D3
+describe("TC-036: DesignStep is runtime-neutral — toolHandlers is undefined (design D3)", () => {
+  it("DesignStep.toolHandlers is undefined (adapter injects tools)", () => {
+    // Design D3: register_branch is injected by ManagedAgentRunner, not DesignStep
+    expect(DesignStep.toolHandlers).toBeUndefined();
   });
 });
 
@@ -137,7 +137,7 @@ describe("TC-047: AgentDefinition.role is kebab-case and matches step.name", () 
   });
 
   it("all 3 steps: name === agent.role", () => {
-    expect(ProposeStep.name).toBe(ProposeStep.agent.role);
+    expect(DesignStep.name).toBe(DesignStep.agent.role);
     expect(SpecReviewStep.name).toBe(SpecReviewStep.agent.role);
     expect(SpecFixerStep.name).toBe(SpecFixerStep.agent.role);
   });
@@ -147,7 +147,7 @@ describe("TC-047: AgentDefinition.role is kebab-case and matches step.name", () 
 describe("TC-052: AgentCapabilities type has network/gitWrite optional fields", () => {
   it("AgentDefinition accepts capabilities with network and gitWrite", () => {
     // Type check via runtime validation
-    const def = ProposeStep.agent;
+    const def = DesignStep.agent;
     // capabilities is optional
     expect(def.capabilities === undefined || typeof def.capabilities === "object").toBe(true);
   });
@@ -156,14 +156,14 @@ describe("TC-052: AgentCapabilities type has network/gitWrite optional fields", 
 // All 3 Steps have unique roles
 describe("3 Steps have unique roles", () => {
   it("no two steps share the same agent.role", () => {
-    const roles = [ProposeStep.agent.role, SpecReviewStep.agent.role, SpecFixerStep.agent.role];
+    const roles = [DesignStep.agent.role, SpecReviewStep.agent.role, SpecFixerStep.agent.role];
     const uniqueRoles = new Set(roles);
     expect(uniqueRoles.size).toBe(3);
   });
 
   it("each system prompt is unique", () => {
     const systems = [
-      ProposeStep.agent.system,
+      DesignStep.agent.system,
       SpecReviewStep.agent.system,
       SpecFixerStep.agent.system,
     ];

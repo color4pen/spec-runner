@@ -6,9 +6,9 @@
  * |---------|------------------|--------------|
  * | critic  | spec-review      | code-review  |
  * | fixer   | spec-fixer       | code-fixer   |
- * | creator | propose          | implementer  |
+ * | creator | design           | implementer  |
  *
- * Spec phase steps: propose, spec-review, spec-fixer
+ * Spec phase steps: design, spec-review, spec-fixer
  * Code phase steps: implementer, verification, build-fixer, code-review, code-fixer, pr-create
  */
 import { describe, it, expect } from "vitest";
@@ -28,12 +28,12 @@ describe("resolveResumeStep - spec phase", () => {
     expect(resolveResumeStep("fixer", makeResumePoint("spec-review"))).toBe("spec-fixer");
   });
 
-  it("spec phase + creator → propose", () => {
-    expect(resolveResumeStep("creator", makeResumePoint("spec-review"))).toBe("propose");
+  it("spec phase + creator → design", () => {
+    expect(resolveResumeStep("creator", makeResumePoint("spec-review"))).toBe("design");
   });
 
-  it("spec phase (propose step) + critic → spec-review", () => {
-    expect(resolveResumeStep("critic", makeResumePoint("propose"))).toBe("spec-review");
+  it("spec phase (design step) + critic → spec-review", () => {
+    expect(resolveResumeStep("critic", makeResumePoint("design"))).toBe("spec-review");
   });
 
   it("spec phase (spec-fixer step) + fixer → spec-fixer", () => {
@@ -101,8 +101,8 @@ describe("T4.1: resolveResumeStep - crash (iterationsExhausted=0) → restart fr
     expect(resolveResumeStep(undefined, { step: "implementer", reason: "crash", iterationsExhausted: 0 })).toBe("implementer");
   });
 
-  it("propose crash (iterationsExhausted=0) → propose", () => {
-    expect(resolveResumeStep(undefined, { step: "propose", reason: "crash", iterationsExhausted: 0 })).toBe("propose");
+  it("design crash (iterationsExhausted=0) → design", () => {
+    expect(resolveResumeStep(undefined, { step: "design", reason: "crash", iterationsExhausted: 0 })).toBe("design");
   });
 
   it("verification crash (iterationsExhausted=0) → verification", () => {
@@ -162,8 +162,8 @@ describe("T4.4: resolveResumeStep - --from specified → role-based mapping take
     expect(resolveResumeStep("critic", { step: "implementer", reason: "crash", iterationsExhausted: 0 })).toBe("code-review");
   });
 
-  it("--from creator + spec-review exhausted → propose (creator role, spec phase)", () => {
-    expect(resolveResumeStep("creator", { step: "spec-review", reason: "exhausted", iterationsExhausted: 3 })).toBe("propose");
+  it("--from creator + spec-review exhausted → design (creator role, spec phase)", () => {
+    expect(resolveResumeStep("creator", { step: "spec-review", reason: "exhausted", iterationsExhausted: 3 })).toBe("design");
   });
 
   it("--from fixer + spec-review crash (iterationsExhausted=0) → spec-fixer (fixer role wins)", () => {

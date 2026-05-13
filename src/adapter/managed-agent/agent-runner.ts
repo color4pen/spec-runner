@@ -94,9 +94,9 @@ export class ManagedAgentRunner implements AgentRunner {
   async run(ctx: AgentRunContext): Promise<AgentRunResult> {
     const step = ctx.step;
 
-    // Propose-style: uses SSE with custom tool handling
-    if (step.agent.role === "propose") {
-      return this.runProposeStyle(ctx);
+    // Design-style: uses SSE with custom tool handling
+    if (step.agent.role === "design") {
+      return this.runDesignStyle(ctx);
     }
 
     // Polling-style: creates session, sends message, polls until complete
@@ -104,11 +104,11 @@ export class ManagedAgentRunner implements AgentRunner {
   }
 
   // ---------------------------------------------------------------------------
-  // Stage: Propose-style (SSE)
+  // Stage: Design-style (SSE)
   // ---------------------------------------------------------------------------
 
   /**
-   * Propose-style execution:
+   * Design-style execution:
    * 1. Create session
    * 2. Stream SSE
    * 3. Handle polling fallback
@@ -119,9 +119,9 @@ export class ManagedAgentRunner implements AgentRunner {
    * TC-020: ctx.branch is embedded in streamEvents opts
    *
    * Note: register_branch tool removed (D4). Branch is set by CLI setupWorkspace()
-   * before propose runs, so agent does not need to register it.
+   * before design runs, so agent does not need to register it.
    */
-  private async runProposeStyle(
+  private async runDesignStyle(
     ctx: AgentRunContext,
   ): Promise<AgentRunResult> {
     const { config, state } = ctx;

@@ -5,7 +5,7 @@
 import type { DoctorCheck, DoctorContext } from "../../types.js";
 
 export const REQUIRED_AGENTS = [
-  "propose",
+  "design",
   "spec-review",
   "spec-fixer",
   "implementer",

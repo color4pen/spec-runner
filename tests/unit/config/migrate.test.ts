@@ -1,10 +1,10 @@
 /**
  * Unit tests for config migration
- * TC-001: 旧 schema (agent 単数) → agents.propose に migration
+ * TC-001: 旧 schema (agent 単数) → agents.design に migration
  * TC-002: 中間 schema (specFixer camelCase) → spec-fixer に正規化
  * TC-003: 中間 schema (specReview camelCase) → spec-review に正規化
- * TC-004: 旧 schema と中間 schema 両方 → 中間が採用
- * TC-005: 片側欠損 (propose のみ) → 不足分は空のまま
+ * TC-004: 旧 schema と中間 schema 両方 → 中間が採用、propose は design に migration
+ * TC-005: 片側欠損 (propose のみ) → design に migration、不足分は空のまま
  * TC-006: 片側欠損 + 旧 agent 併存 → 3 操作が独立適用
  * TC-007: どちらも未設定 → agents: {} で初期化
  * TC-008: 新 schema → migration 不発生 (no-op)
@@ -20,9 +20,9 @@ function makeBase(): Partial<RawConfig> {
   };
 }
 
-// TC-001: 旧 schema → agents.propose
-describe("TC-001: 旧 schema (agent 単数のみ) → agents.propose に migration", () => {
-  it("fills agents.propose from agent.id", () => {
+// TC-001: 旧 schema → agents.design
+describe("TC-001: 旧 schema (agent 単数のみ) → agents.design に migration", () => {
+  it("fills agents.design from agent.id", () => {
     const raw: RawConfig = {
       ...makeBase(),
       agent: { id: "agent_01x", definitionHash: "abc", lastSyncedAt: "2026-04-29T00:00:00Z" },
@@ -30,7 +30,7 @@ describe("TC-001: 旧 schema (agent 単数のみ) → agents.propose に migrati
 
     const result = migrateConfig(raw);
 
-    expect(result["propose"]).toEqual({
+    expect(result["design"]).toEqual({
       agentId: "agent_01x",
       definitionHash: "abc",
       lastSyncedAt: "2026-04-29T00:00:00Z",
@@ -39,7 +39,7 @@ describe("TC-001: 旧 schema (agent 単数のみ) → agents.propose に migrati
     expect(result["spec-fixer"]).toBeUndefined();
   });
 
-  it("does NOT include agent key in migrated agents", () => {
+  it("does NOT include agent or propose key in migrated agents", () => {
     const raw: RawConfig = {
       ...makeBase(),
       agent: { id: "agent_01x", definitionHash: "abc", lastSyncedAt: "2026-04-29T00:00:00Z" },
@@ -48,6 +48,7 @@ describe("TC-001: 旧 schema (agent 単数のみ) → agents.propose に migrati
     const result = migrateConfig(raw);
 
     expect(Object.keys(result)).not.toContain("agent");
+    expect(Object.keys(result)).not.toContain("propose");
   });
 });
 
@@ -69,8 +70,9 @@ describe("TC-002: 中間 schema (agents.specFixer camelCase) → spec-fixer に�
       definitionHash: "xyz",
       lastSyncedAt: "2026-04-29T00:00:00Z",
     });
-    expect(result["propose"]).toBeDefined();
+    expect(result["design"]).toBeDefined(); // old "propose" key is migrated to "design"
     expect(Object.keys(result)).not.toContain("specFixer");
+    expect(Object.keys(result)).not.toContain("propose");
   });
 });
 
@@ -97,7 +99,7 @@ describe("TC-003: 中間 schema (agents.specReview camelCase) → spec-review �
 
 // TC-004: 旧 schema と中間 schema 両方 → 中間が採用
 describe("TC-004: 旧 schema と中間 schema 両方 → 中間が採用", () => {
-  it("agents.propose wins over agent.id", () => {
+  it("agents.propose wins over agent.id, both map to agents.design", () => {
     const raw: RawConfig = {
       ...makeBase(),
       agent: { id: "agent_old", definitionHash: "old_hash", lastSyncedAt: "2026-04-29T00:00:00Z" },
@@ -108,13 +110,13 @@ describe("TC-004: 旧 schema と中間 schema 両方 → 中間が採用", () =>
 
     const result = migrateConfig(raw);
 
-    expect(result["propose"]?.agentId).toBe("agent_new");
+    expect(result["design"]?.agentId).toBe("agent_new"); // agents.propose → agents.design wins over agent.id
   });
 });
 
-// TC-005: 片側欠損 (propose のみ) → 不足分は空のまま
-describe("TC-005: 片側欠損 (propose のみ存在) → 不足分は空のまま", () => {
-  it("preserves only propose, no error", () => {
+// TC-005: 片側欠損 (propose のみ) → design に migration、不足分は空のまま
+describe("TC-005: 片側欠損 (propose のみ存在) → design に migration、不足分は空のまま", () => {
+  it("migrates propose to design, no error", () => {
     const raw: RawConfig = {
       ...makeBase(),
       agents: {
@@ -124,7 +126,7 @@ describe("TC-005: 片側欠損 (propose のみ存在) → 不足分は空のま�
 
     const result = migrateConfig(raw);
 
-    expect(result["propose"]?.agentId).toBe("agent_01x");
+    expect(result["design"]?.agentId).toBe("agent_01x"); // propose → design
     expect(result["spec-review"]).toBeUndefined();
     expect(result["spec-fixer"]).toBeUndefined();
   });
@@ -132,7 +134,7 @@ describe("TC-005: 片側欠損 (propose のみ存在) → 不足分は空のま�
 
 // TC-006: 片側欠損 + 旧 agent 併存 → 3 操作が独立適用
 describe("TC-006: 片側欠損 + 旧 agent 併存 → 3 操作が独立適用", () => {
-  it("fills propose from agent.id and normalizes specFixer, leaving spec-review absent", () => {
+  it("fills design from agent.id and normalizes specFixer, leaving spec-review absent", () => {
     const raw: RawConfig = {
       ...makeBase(),
       agent: { id: "agent_old", definitionHash: "abc", lastSyncedAt: "2026-04-29T00:00:00Z" },
@@ -143,7 +145,7 @@ describe("TC-006: 片側欠損 + 旧 agent 併存 → 3 操作が独立適用", 
 
     const result = migrateConfig(raw);
 
-    expect(result["propose"]?.agentId).toBe("agent_old");
+    expect(result["design"]?.agentId).toBe("agent_old"); // agent.id → agents.design
     expect(result["spec-fixer"]?.agentId).toBe("agent_03z");
     expect(result["spec-review"]).toBeUndefined();
   });
@@ -165,7 +167,7 @@ describe("TC-007: どちらも未設定 → agents: {} で初期化", () => {
 describe("TC-008: 新 schema → migration が発生しない (no-op)", () => {
   it("passes through new schema without change", () => {
     const agents = {
-      propose: { agentId: "agent_01x", definitionHash: "abc", lastSyncedAt: "2026-04-29T00:00:00Z" },
+      design: { agentId: "agent_01x", definitionHash: "abc", lastSyncedAt: "2026-04-29T00:00:00Z" },
       "spec-review": { agentId: "agent_02y", definitionHash: "def", lastSyncedAt: "2026-04-29T00:00:00Z" },
       "spec-fixer": { agentId: "agent_03z", definitionHash: "xyz", lastSyncedAt: "2026-04-29T00:00:00Z" },
     };
@@ -176,7 +178,7 @@ describe("TC-008: 新 schema → migration が発生しない (no-op)", () => {
 
     const result = migrateConfig(raw);
 
-    expect(result["propose"]).toEqual(agents["propose"]);
+    expect(result["design"]).toEqual(agents["design"]);
     expect(result["spec-review"]).toEqual(agents["spec-review"]);
     expect(result["spec-fixer"]).toEqual(agents["spec-fixer"]);
   });
@@ -185,7 +187,7 @@ describe("TC-008: 新 schema → migration が発生しない (no-op)", () => {
     const raw: RawConfig = {
       ...makeBase(),
       agents: {
-        propose: { agentId: "agent_01x", definitionHash: "abc", lastSyncedAt: "2026-04-29T00:00:00Z" },
+        design: { agentId: "agent_01x", definitionHash: "abc", lastSyncedAt: "2026-04-29T00:00:00Z" },
       },
     };
 
@@ -209,7 +211,7 @@ describe("applyMigration: legacy agent field stripped from output", () => {
     const result = applyMigration(raw);
 
     expect(result).not.toHaveProperty("agent");
-    expect(result.agents["propose"]?.agentId).toBe("agent_01x");
+    expect(result.agents["design"]?.agentId).toBe("agent_01x"); // agent.id → agents.design
   });
 });
 

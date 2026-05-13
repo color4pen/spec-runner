@@ -61,7 +61,7 @@ function makeSuccessState(verdict: "approved" | "needs-fix" | "escalation"): Job
     history: [],
     error: null,
     steps: {
-      "propose": [
+      "design": [
         {
           attempt: 1,
           sessionId: "sess_propose",

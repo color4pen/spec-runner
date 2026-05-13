@@ -2,7 +2,7 @@
  * Config schema migration utilities.
  *
  * Applies 3 independent normalization operations to a raw config object:
- * (a) Legacy `agent` singular → `agents.propose`
+ * (a) Legacy `agent` singular → `agents.design`
  * (b) camelCase intermediate keys → kebab-case (specFixer → spec-fixer, specReview → spec-review)
  * (c) Missing roles remain absent (syncAll fills them later)
  *
@@ -17,7 +17,8 @@ import type { RawConfig, AgentRecord, SpecRunnerConfig } from "./schema.js";
 const CAMEL_TO_KEBAB: Record<string, string> = {
   specFixer: "spec-fixer",
   specReview: "spec-review",
-  propose: "propose", // already canonical, no-op
+  propose: "design", // backward compat alias: old "propose" key → new "design" key
+  design: "design",  // canonical key (no-op)
 };
 
 /**
@@ -73,12 +74,12 @@ export function migrateConfig(raw: RawConfig): Record<string, AgentRecord> {
     }
   }
 
-  // Step 2: Apply legacy `agent` singular → `agents.propose` (only if propose not yet set)
-  if (raw.agent && !result["propose"]) {
+  // Step 2: Apply legacy `agent` singular → `agents.design` (only if design not yet set)
+  if (raw.agent && !result["design"]) {
     const legacy = raw.agent;
     const agentId = legacy.id ?? undefined;
     if (agentId) {
-      result["propose"] = {
+      result["design"] = {
         agentId,
         definitionHash: legacy.definitionHash ?? "",
         // Use "" sentinel — migration is deterministic; syncAll writes real timestamp.

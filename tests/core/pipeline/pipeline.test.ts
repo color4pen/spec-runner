@@ -53,7 +53,7 @@ function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
     request: { path: "/req.md", title: "Test", type: "feature" },
     repository: { owner: "testowner", name: "testrepo" },
     session: null,
-    step: "propose",
+    step: "design",
     status: "running",
     branch: null,
     history: [],
@@ -69,7 +69,7 @@ function makeMinimalDeps(): PipelineDeps {
     config: {
       version: 1,
       anthropic: { apiKey: "sk-test" },
-      agents: { propose: { agentId: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" } },
+      agents: { design: { agentId: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" } },
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
       github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
     },
@@ -92,7 +92,7 @@ function makeMinimalDeps(): PipelineDeps {
  * The executor.execute spy receives the step and returns the provided result.
  */
 function buildMockPipeline(opts: {
-  proposeResult: JobState | Error;
+  designResult: JobState | Error;
   specReviewResults?: Array<JobState | Error>;
   specFixerResults?: Array<JobState | Error>;
   implementerResult?: JobState | Error;
@@ -141,9 +141,9 @@ function buildMockPipeline(opts: {
   });
 
   const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
-    if (step.name === "propose") {
-      if (opts.proposeResult instanceof Error) throw opts.proposeResult;
-      return opts.proposeResult;
+    if (step.name === "design") {
+      if (opts.designResult instanceof Error) throw opts.designResult;
+      return opts.designResult;
     }
     if (step.name === "spec-review") {
       const results = opts.specReviewResults ?? [];
@@ -212,7 +212,7 @@ function buildMockPipeline(opts: {
   const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
 
   const steps = new Map<string, Step>([
-    ["propose",      { kind: "agent", name: "propose",      agent: { name: "test", role: "propose", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["design",       { kind: "agent", name: "design",       agent: { name: "test", role: "design", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["spec-review",  { kind: "agent", name: "spec-review",  agent: { name: "test", role: "spec-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["spec-fixer",   { kind: "agent", name: "spec-fixer",   agent: { name: "test", role: "spec-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["test-case-gen", { kind: "agent", name: "test-case-gen", agent: { name: "test", role: "test-case-gen", model: "claude-sonnet-4-6", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
@@ -257,23 +257,23 @@ describe("TC-060: Pipeline — propose success → spec-review approved: no fixe
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
 
-    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test", step: "propose" };
-    const specReviewResult = makeSpecReviewState(proposeResult, "approved", 1);
+    const designResult: JobState = { ...state, status: "running", branch: "feat/test", step: "design" };
+    const specReviewResult = makeSpecReviewState(designResult, "approved", 1);
 
     const { pipeline, executeSpy } = buildMockPipeline({
-      proposeResult,
+      designResult,
       specReviewResults: [specReviewResult],
       maxIterations: 2,
     });
 
-    const result = await pipeline.run("propose", state, deps);
+    const result = await pipeline.run("design", state, deps);
 
     // propose called once
-    const proposeCalls = executeSpy.mock.calls.filter(([step]) => step.name === "propose");
+    const designCalls = executeSpy.mock.calls.filter(([step]) => step.name === "design");
     const specReviewCalls = executeSpy.mock.calls.filter(([step]) => step.name === "spec-review");
     const specFixerCalls = executeSpy.mock.calls.filter(([step]) => step.name === "spec-fixer");
 
-    expect(proposeCalls).toHaveLength(1);
+    expect(designCalls).toHaveLength(1);
     expect(specReviewCalls).toHaveLength(1);
     expect(specFixerCalls).toHaveLength(0);
 
@@ -288,18 +288,18 @@ describe("TC-061: Pipeline — propose non-success → skip spec-review", () => 
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
 
-    const proposeResult: JobState = {
+    const designResult: JobState = {
       ...state,
       status: "failed",
       error: { code: "BRANCH_NOT_REGISTERED", message: "Branch not registered", hint: "" },
     };
 
     const { pipeline, executeSpy } = buildMockPipeline({
-      proposeResult,
+      designResult,
       maxIterations: 2,
     });
 
-    const result = await pipeline.run("propose", state, deps);
+    const result = await pipeline.run("design", state, deps);
 
     const specReviewCalls = executeSpy.mock.calls.filter(([step]) => step.name === "spec-review");
     expect(specReviewCalls).toHaveLength(0);
@@ -313,19 +313,19 @@ describe("TC-062: Pipeline — needs-fix → spec-fixer → spec-review approved
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
 
-    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test" };
-    const specReview1 = makeSpecReviewState(proposeResult, "needs-fix", 1);
+    const designResult: JobState = { ...state, status: "running", branch: "feat/test" };
+    const specReview1 = makeSpecReviewState(designResult, "needs-fix", 1);
     const specFixerResult: JobState = { ...specReview1, step: "spec-fixer" };
     const specReview2 = makeSpecReviewState(specFixerResult, "approved", 2);
 
     const { pipeline, executeSpy } = buildMockPipeline({
-      proposeResult,
+      designResult,
       specReviewResults: [specReview1, specReview2],
       specFixerResults: [specFixerResult],
       maxIterations: 2,
     });
 
-    const result = await pipeline.run("propose", state, deps);
+    const result = await pipeline.run("design", state, deps);
 
     const specReviewCalls = executeSpy.mock.calls.filter(([step]) => step.name === "spec-review");
     const specFixerCalls = executeSpy.mock.calls.filter(([step]) => step.name === "spec-fixer");
@@ -343,18 +343,18 @@ describe("TC-063: Pipeline — loop exhaustion: SPEC_REVIEW_RETRIES_EXHAUSTED", 
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
 
-    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test" };
+    const designResult: JobState = { ...state, status: "running", branch: "feat/test" };
 
     // All iterations return needs-fix
     let callCount = 0;
     const specReviewResults = [
-      makeSpecReviewState(proposeResult, "needs-fix", 1),
-      makeSpecReviewState({ ...proposeResult, steps: { "spec-review": [{ attempt: 1, sessionId: null, outcome: { verdict: "needs-fix" as const, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" }] } }, "needs-fix", 2),
+      makeSpecReviewState(designResult, "needs-fix", 1),
+      makeSpecReviewState({ ...designResult, steps: { "spec-review": [{ attempt: 1, sessionId: null, outcome: { verdict: "needs-fix" as const, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" }] } }, "needs-fix", 2),
     ];
-    const specFixerResult: JobState = { ...proposeResult };
+    const specFixerResult: JobState = { ...designResult };
 
     const executeSpy = vi.fn().mockImplementation(async (step: Step) => {
-      if (step.name === "propose") return proposeResult;
+      if (step.name === "design") return designResult;
       if (step.name === "spec-review") {
         return specReviewResults[callCount++] ?? specReviewResults[specReviewResults.length - 1];
       }
@@ -363,7 +363,7 @@ describe("TC-063: Pipeline — loop exhaustion: SPEC_REVIEW_RETRIES_EXHAUSTED", 
     });
 
     const steps = new Map<string, Step>([
-      ["propose",     { kind: "agent", name: "propose",     agent: { name: "test", role: "propose", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["design",      { kind: "agent", name: "design",      agent: { name: "test", role: "design", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
       ["spec-review", { kind: "agent", name: "spec-review", agent: { name: "test", role: "spec-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
       ["spec-fixer",  { kind: "agent", name: "spec-fixer",  agent: { name: "test", role: "spec-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ]);
@@ -378,7 +378,7 @@ describe("TC-063: Pipeline — loop exhaustion: SPEC_REVIEW_RETRIES_EXHAUSTED", 
       loopName: "spec-review",
     });
 
-    const result = await pipeline.run("propose", state, deps);
+    const result = await pipeline.run("design", state, deps);
 
     // Should have SPEC_REVIEW_RETRIES_EXHAUSTED error
     expect(result.error?.code).toBe("SPEC_REVIEW_RETRIES_EXHAUSTED");
@@ -396,16 +396,16 @@ describe("TC-065: Pipeline — spec-review escalation halts without running fixe
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
 
-    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test" };
-    const specReviewResult = makeSpecReviewState(proposeResult, "escalation", 1);
+    const designResult: JobState = { ...state, status: "running", branch: "feat/test" };
+    const specReviewResult = makeSpecReviewState(designResult, "escalation", 1);
 
     const { pipeline, executeSpy } = buildMockPipeline({
-      proposeResult,
+      designResult,
       specReviewResults: [specReviewResult],
       maxIterations: 2,
     });
 
-    const result = await pipeline.run("propose", state, deps);
+    const result = await pipeline.run("design", state, deps);
 
     const specFixerCalls = executeSpy.mock.calls.filter(([step]) => step.name === "spec-fixer");
     expect(specFixerCalls).toHaveLength(0);
@@ -428,11 +428,11 @@ describe("TC-066: Pipeline — lifecycle events emitted", () => {
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
 
-    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test" };
-    const specReviewResult = makeSpecReviewState(proposeResult, "approved", 1);
+    const designResult: JobState = { ...state, status: "running", branch: "feat/test" };
+    const specReviewResult = makeSpecReviewState(designResult, "approved", 1);
 
     const { pipeline, events } = buildMockPipeline({
-      proposeResult,
+      designResult,
       specReviewResults: [specReviewResult],
       maxIterations: 2,
     });
@@ -442,7 +442,7 @@ describe("TC-066: Pipeline — lifecycle events emitted", () => {
     events.on("pipeline:complete", () => emitted.push("pipeline:complete"));
     events.on("pipeline:fail", () => emitted.push("pipeline:fail"));
 
-    await pipeline.run("propose", state, deps);
+    await pipeline.run("design", state, deps);
 
     expect(emitted).toContain("pipeline:start");
     expect(emitted).toContain("pipeline:complete");
@@ -453,14 +453,14 @@ describe("TC-066: Pipeline — lifecycle events emitted", () => {
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
 
-    const proposeResult: JobState = {
+    const designResult: JobState = {
       ...state,
       status: "failed",
       error: { code: "SESSION_TERMINATED", message: "terminated", hint: "" },
     };
 
     const { pipeline, events } = buildMockPipeline({
-      proposeResult,
+      designResult,
       maxIterations: 2,
     });
 
@@ -469,7 +469,7 @@ describe("TC-066: Pipeline — lifecycle events emitted", () => {
     events.on("pipeline:complete", () => emitted.push("pipeline:complete"));
     events.on("pipeline:fail", () => emitted.push("pipeline:fail"));
 
-    await pipeline.run("propose", state, deps);
+    await pipeline.run("design", state, deps);
 
     expect(emitted).toContain("pipeline:start");
     // Pipeline does not throw when propose returns failed state (non-success, non-throwing)
@@ -484,8 +484,8 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     const find = (step: string, on: string) =>
       STANDARD_TRANSITIONS.find((t) => t.step === step && t.on === on);
 
-    expect(find("propose",       "success")).toMatchObject({ to: "spec-review" });
-    expect(find("propose",       "error")).toMatchObject({ to: "escalate" });
+    expect(find("design",        "success")).toMatchObject({ to: "spec-review" });
+    expect(find("design",        "error")).toMatchObject({ to: "escalate" });
     expect(find("spec-review",   "approved")).toMatchObject({ to: "test-case-gen" });
     expect(find("spec-review",   "needs-fix")).toMatchObject({ to: "spec-fixer" });
     expect(find("spec-review",   "escalation")).toMatchObject({ to: "escalate" });
@@ -528,16 +528,16 @@ describe("TC-068: Pipeline stdout — iter format bit-for-bit preserved", () => 
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
 
-    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test" };
-    const specReviewResult = makeSpecReviewState(proposeResult, "approved", 1);
+    const designResult: JobState = { ...state, status: "running", branch: "feat/test" };
+    const specReviewResult = makeSpecReviewState(designResult, "approved", 1);
 
     const { pipeline } = buildMockPipeline({
-      proposeResult,
+      designResult,
       specReviewResults: [specReviewResult],
       maxIterations: 3,
     });
 
-    await pipeline.run("propose", state, deps);
+    await pipeline.run("design", state, deps);
 
     const stdout = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))

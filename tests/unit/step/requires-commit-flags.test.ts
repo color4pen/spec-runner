@@ -18,7 +18,7 @@ import { BuildFixerStep } from "../../../src/core/step/build-fixer.js";
 import { CodeFixerStep } from "../../../src/core/step/code-fixer.js";
 import { SpecReviewStep } from "../../../src/core/step/spec-review.js";
 import { CodeReviewStep } from "../../../src/core/step/code-review.js";
-import { ProposeStep } from "../../../src/core/step/propose.js";
+import { DesignStep } from "../../../src/core/step/design.js";
 
 describe("requiresCommit flag — writing agents must opt in", () => {
   it("SpecFixerStep.requiresCommit === true", () => {
@@ -38,7 +38,7 @@ describe("requiresCommit flag — writing agents must opt in", () => {
   });
 });
 
-describe("requiresCommit flag — review and propose steps stay opt-out", () => {
+describe("requiresCommit flag — review and design steps stay opt-out", () => {
   it("SpecReviewStep.requiresCommit is falsy (review file verified separately)", () => {
     expect(SpecReviewStep.requiresCommit).toBeFalsy();
   });
@@ -47,7 +47,7 @@ describe("requiresCommit flag — review and propose steps stay opt-out", () => 
     expect(CodeReviewStep.requiresCommit).toBeFalsy();
   });
 
-  it("ProposeStep.requiresCommit is falsy (change folder verification gates completion)", () => {
-    expect(ProposeStep.requiresCommit).toBeFalsy();
+  it("DesignStep.requiresCommit is falsy (change folder verification gates completion)", () => {
+    expect(DesignStep.requiresCommit).toBeFalsy();
   });
 });

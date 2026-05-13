@@ -84,7 +84,7 @@ function buildConfig(overrides: Record<string, unknown> = {}) {
     version: 1 as const,
     anthropic: { apiKey: "sk-ant-test" },
     agents: {
-      propose: { agentId: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
+      design: { agentId: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
       "spec-review": { agentId: "agent_spec_review", definitionHash: "sha256:ghi", lastSyncedAt: new Date().toISOString() },
       "spec-fixer": { agentId: "agent_spec_fixer", definitionHash: "sha256:def", lastSyncedAt: new Date().toISOString() },
       "test-case-gen": { agentId: "test-case-gen-agent-id", definitionHash: "sha256:tcg", lastSyncedAt: new Date().toISOString() },
@@ -128,14 +128,14 @@ function buildRunner(
  * Implements the SessionClient port interface (not the raw Anthropic SDK).
  */
 function buildPipelineMockClient(opts: {
-  proposeBranch?: string;
-  proposeFailure?: boolean;
+  designBranch?: string;
+  designFailure?: boolean;
   specReviewVerdicts?: ("approved" | "needs-fix" | "escalation")[];
   sessionIds?: string[];
 }) {
   const {
-    proposeBranch = "feat/test-branch",
-    proposeFailure = false,
+    designBranch = "feat/test-branch",
+    designFailure = false,
     specReviewVerdicts = ["approved"],
     sessionIds = [
       "sess_propose_001",
@@ -158,7 +158,7 @@ function buildPipelineMockClient(opts: {
     pollUntilComplete: vi.fn().mockResolvedValue({ status: "idle" as const }),
     streamEvents: vi.fn().mockImplementation(
       (_sessionId: string) => {
-        if (proposeFailure) {
+        if (designFailure) {
           return Promise.resolve({
             sseDisconnected: false,
             idleEndTurnDetected: false,
@@ -412,7 +412,7 @@ describe("TC-014: runPipeline — spec-review loop skipped when propose fails", 
     const jobState = await makeJobState();
 
     const { client } = buildPipelineMockClient({
-      proposeFailure: true,
+      designFailure: true,
     });
     const githubClient = buildMockGithubClient();
 
@@ -770,7 +770,7 @@ describe("TC-030: runPipeline — persistence: both propose and spec-review step
     // Verify the final persisted state has both steps recorded
     const finalStateRaw = await fs.readFile(stateFilePath, "utf-8");
     const finalState = JSON.parse(finalStateRaw);
-    expect(finalState.steps?.["propose"]).toBeDefined();
+    expect(finalState.steps?.["design"]).toBeDefined();
     expect(finalState.steps?.["spec-review"]).toBeDefined();
   });
 });

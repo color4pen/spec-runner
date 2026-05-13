@@ -62,7 +62,7 @@ export async function runPreflight(input: PreflightInput): Promise<PreflightResu
       escalation: formatEscalation({
         failedStep: "Phase 0 check 2 (pullRequest.number)",
         detectedState: "state.pullRequest is absent",
-        recommendedAction: "pr-create が完走していません。propose pipeline を再実行してください。",
+        recommendedAction: "pr-create が完走していません。design pipeline を再実行してください。",
         resumeCommand: `specrunner finish ${target.slug}`,
       }),
     };

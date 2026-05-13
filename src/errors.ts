@@ -122,7 +122,7 @@ export function sessionTerminatedError(): SpecRunnerError {
 export function branchNotRegisteredError(): SpecRunnerError {
   return new SpecRunnerError(
     ERROR_CODES.BRANCH_NOT_REGISTERED,
-    "Check the agent's propose output for errors.",
+    "Check the agent's design output for errors.",
     "Branch was not registered by the agent.",
   );
 }
@@ -154,7 +154,7 @@ export function sessionCreateFailedError(detail: string): SpecRunnerError {
 export function branchNotSetError(stepName: string): SpecRunnerError {
   return new SpecRunnerError(
     ERROR_CODES.BRANCH_NOT_SET,
-    "Verify that propose ran successfully and called register_branch before this step.",
+    "Verify that design ran successfully and called register_branch before this step.",
     `state.branch is not set when entering '${stepName}'.`,
   );
 }

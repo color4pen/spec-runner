@@ -3,7 +3,7 @@
  * TC-017 (partial): runPollingStyleStep の step.name 汎用化
  *
  * Asserts that executor.ts and executor-helpers.ts contain no step name string literals
- * like "spec-review", "verification", "implementer", "build-fixer", "spec-fixer", "propose".
+ * like "spec-review", "verification", "implementer", "build-fixer", "spec-fixer", "design".
  *
  * Dispatch must be on step.kind only, not step.name.
  */
@@ -17,7 +17,7 @@ const STEP_NAMES = [
   "implementer",
   "build-fixer",
   "spec-fixer",
-  "propose",
+  "design",
 ];
 
 const STEP_DIR = path.resolve(__dirname, "../src/core/step");
@@ -49,8 +49,8 @@ describe("TC-003: executor.ts と executor-helpers.ts に step 名 hardcode が�
     // Check: no if/switch dispatch on step.name using hardcoded step name literals
     // Pattern: something like `if (step.name === "spec-review")` or `case "spec-review":`
     const dispatchPatterns = [
-      /if\s*\(.*step\.name\s*===?\s*["'](?:spec-review|verification|implementer|build-fixer|spec-fixer|propose)["']/,
-      /case\s*["'](?:spec-review|verification|implementer|build-fixer|spec-fixer|propose)["']\s*:/,
+      /if\s*\(.*step\.name\s*===?\s*["'](?:spec-review|verification|implementer|build-fixer|spec-fixer|design)["']/,
+      /case\s*["'](?:spec-review|verification|implementer|build-fixer|spec-fixer|design)["']\s*:/,
     ];
 
     for (const pattern of dispatchPatterns) {
@@ -66,8 +66,8 @@ describe("TC-003: executor.ts と executor-helpers.ts に step 名 hardcode が�
     const content = await readFile(helpersPath);
 
     const dispatchPatterns = [
-      /if\s*\(.*step\.name\s*===?\s*["'](?:spec-review|verification|implementer|build-fixer|spec-fixer|propose)["']/,
-      /case\s*["'](?:spec-review|verification|implementer|build-fixer|spec-fixer|propose)["']\s*:/,
+      /if\s*\(.*step\.name\s*===?\s*["'](?:spec-review|verification|implementer|build-fixer|spec-fixer|design)["']/,
+      /case\s*["'](?:spec-review|verification|implementer|build-fixer|spec-fixer|design)["']\s*:/,
     ];
 
     for (const pattern of dispatchPatterns) {

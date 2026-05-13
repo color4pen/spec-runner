@@ -334,7 +334,7 @@ describe("TC-LR-005: registerCleanup registers and teardown deregisters signal h
     await runtime.setupWorkspace("test-slug", jobState.jobId, { existingWorktreePath: worktreePath });
 
     const listenersBefore = process.listenerCount("SIGINT");
-    const handle = runtime.registerCleanup(jobState.jobId, "propose");
+    const handle = runtime.registerCleanup(jobState.jobId, "design");
     const listenersAfterRegister = process.listenerCount("SIGINT");
     expect(listenersAfterRegister).toBe(listenersBefore + 1);
 
@@ -357,7 +357,7 @@ describe("TC-LR-006: teardown calls cleanupWorktreeOnFailure on failure status",
     await fs.mkdir(worktreePath);
     await runtime.setupWorkspace("test-slug", jobState.jobId, { existingWorktreePath: worktreePath });
 
-    const handle = runtime.registerCleanup(jobState.jobId, "propose");
+    const handle = runtime.registerCleanup(jobState.jobId, "design");
     await runtime.teardown(handle, "failed");
 
     // On failure, worktree should be cleaned up
@@ -376,7 +376,7 @@ describe("TC-LR-006: teardown calls cleanupWorktreeOnFailure on failure status",
     await fs.mkdir(worktreePath);
     await runtime.setupWorkspace("test-slug", jobState.jobId, { existingWorktreePath: worktreePath });
 
-    const handle = runtime.registerCleanup(jobState.jobId, "propose");
+    const handle = runtime.registerCleanup(jobState.jobId, "design");
     await runtime.teardown(handle, "awaiting-merge");
 
     // Success: worktree kept for finish command

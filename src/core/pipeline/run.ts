@@ -8,7 +8,7 @@ import type { Transition } from "./types.js";
 import { EventBus } from "../event/event-bus.js";
 import { StepExecutor } from "../step/executor.js";
 import type { AgentRunner } from "../port/agent-runner.js";
-import { ProposeStep } from "../step/propose.js";
+import { DesignStep } from "../step/design.js";
 import { SpecReviewStep } from "../step/spec-review.js";
 import { SpecFixerStep } from "../step/spec-fixer.js";
 import { ImplementerStep } from "../step/implementer.js";
@@ -38,7 +38,7 @@ export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): P
   const executor = new StepExecutor(bus, runner);
 
   const steps = new Map<string, Step>([
-    ["propose",      ProposeStep],
+    ["design",       DesignStep],
     ["spec-review",    SpecReviewStep],
     ["spec-fixer",     SpecFixerStep],
     ["test-case-gen",  TestCaseGenStep],
@@ -62,7 +62,7 @@ export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): P
 }
 
 /**
- * Run the full pipeline: propose → spec-review loop (with spec-fixer on needs-fix).
+ * Run the full pipeline: design → spec-review loop (with spec-fixer on needs-fix).
  *
  * This is a thin wrapper that constructs the Pipeline class with the standard
  * transition table and calls pipeline.run(). The function signature is preserved
@@ -80,21 +80,21 @@ export async function runPipeline(
 ): Promise<JobState> {
   const bus = events ?? new EventBus();
   const pipeline = createStandardPipeline(deps, bus);
-  return pipeline.run("propose", jobState, deps);
+  return pipeline.run("design", jobState, deps);
 }
 
 /**
- * Run only the propose step (no spec-review loop).
+ * Run only the design step (no spec-review loop).
  *
- * Uses the Pipeline class with a propose-only step map and a transition table
- * that terminates after propose completes. Preserves all error semantics of the
+ * Uses the Pipeline class with a design-only step map and a transition table
+ * that terminates after design completes. Preserves all error semantics of the
  * original implementation via StepExecutor.
  *
- * Note: Unlike the old runProposeStepLegacy, errors from the propose step are
+ * Note: Unlike the old runDesignStepLegacy, errors from the design step are
  * surfaced via err.state (attached by StepExecutor) rather than re-thrown directly.
  * Tests that relied on the legacy re-throw behavior should use the err.state path.
  */
-export async function runProposePipeline(
+export async function runDesignPipeline(
   jobState: JobState,
   deps: PipelineDeps,
   events?: EventBus,
@@ -102,30 +102,30 @@ export async function runProposePipeline(
   const bus = events ?? new EventBus();
 
   // Design D8: runner is injected by RuntimeStrategy.buildDeps() — no runtime branch here.
-  const proposeRunner: AgentRunner = deps.runner ?? (() => {
+  const designRunner: AgentRunner = deps.runner ?? (() => {
     throw new Error("PipelineDeps.runner is required. Use createRuntime().buildDeps() to construct PipelineDeps.");
   })();
 
-  const executor = new StepExecutor(bus, proposeRunner);
+  const executor = new StepExecutor(bus, designRunner);
 
   const steps = new Map([
-    ["propose", ProposeStep],
+    ["design", DesignStep],
   ]);
 
-  // Propose-only transition table: propose always terminates (success or error → end)
-  const proposeOnlyTransitions: Transition[] = [
-    { step: "propose", on: "success", to: "end" },
-    { step: "propose", on: "error",   to: "escalate" },
+  // Design-only transition table: design always terminates (success or error → end)
+  const designOnlyTransitions: Transition[] = [
+    { step: "design", on: "success", to: "end" },
+    { step: "design", on: "error",   to: "escalate" },
   ];
 
   const pipeline = new Pipeline({
     steps,
-    transitions: proposeOnlyTransitions,
+    transitions: designOnlyTransitions,
     maxIterations: 1,
     executor,
     events: bus,
-    loopName: "propose",
+    loopName: "design",
   });
 
-  return pipeline.run("propose", jobState, deps);
+  return pipeline.run("design", jobState, deps);
 }

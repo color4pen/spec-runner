@@ -60,7 +60,7 @@ export const NULL_PARSE_RESULT: ParsedStepResult = {
  */
 export interface AgentStep {
   kind: "agent";
-  /** Canonical name of this step (e.g. "propose", "spec-review"). Must match agent.role. */
+  /** Canonical name of this step (e.g. "design", "spec-review"). Must match agent.role. */
   name: string;
   /** Full agent definition used by this step. Owned by the Step implementation. */
   agent: AgentDefinition;

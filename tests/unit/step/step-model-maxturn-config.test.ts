@@ -7,7 +7,7 @@
  * TC-006: 各 step の maxTurns が設計値と一致する (must)
  */
 import { describe, it, expect } from "vitest";
-import { ProposeStep } from "../../../src/core/step/propose.js";
+import { DesignStep } from "../../../src/core/step/design.js";
 import { SpecReviewStep } from "../../../src/core/step/spec-review.js";
 import { SpecFixerStep } from "../../../src/core/step/spec-fixer.js";
 import { ImplementerStep } from "../../../src/core/step/implementer.js";
@@ -18,16 +18,16 @@ import type { AgentStep } from "../../../src/core/step/types.js";
 
 // TC-001: AgentStep interface に maxTurns フィールドが存在する
 describe("TC-001: AgentStep interface has maxTurns optional field", () => {
-  it("ProposeStep.maxTurns is a number (maxTurns field exists on AgentStep)", () => {
+  it("DesignStep.maxTurns is a number (maxTurns field exists on AgentStep)", () => {
     // TypeScript structural type check via runtime inspection
     // The fact that this compiles proves maxTurns? exists in the AgentStep interface
-    const step: AgentStep = ProposeStep;
+    const step: AgentStep = DesignStep;
     expect(typeof step.maxTurns === "number" || step.maxTurns === undefined).toBe(true);
   });
 
   it("maxTurns field is accessible without TypeScript error on any AgentStep", () => {
     const steps: AgentStep[] = [
-      ProposeStep, SpecReviewStep, SpecFixerStep,
+      DesignStep, SpecReviewStep, SpecFixerStep,
       ImplementerStep, BuildFixerStep, CodeReviewStep, CodeFixerStep,
     ];
     // Accessing .maxTurns on all steps compiles without error (field exists in interface)
@@ -39,8 +39,8 @@ describe("TC-001: AgentStep interface has maxTurns optional field", () => {
 
 // TC-004: 設計/レビュー step の model が claude-opus-4-6[1m] に設定されている
 describe("TC-004: Design/review steps use claude-opus-4-6[1m] model (opusplan pattern)", () => {
-  it("PROPOSE_AGENT_MODEL is claude-opus-4-6[1m]", () => {
-    expect(ProposeStep.agent.model).toBe("claude-opus-4-6[1m]");
+  it("DESIGN_AGENT_MODEL is claude-opus-4-6[1m]", () => {
+    expect(DesignStep.agent.model).toBe("claude-opus-4-6[1m]");
   });
 
   it("SPEC_REVIEW_AGENT_MODEL is claude-opus-4-6[1m]", () => {
@@ -73,8 +73,8 @@ describe("TC-005: Implementation/fixer steps use claude-sonnet-4-6 model (opuspl
 
 // TC-006: 各 step の maxTurns が設計値と一致する
 describe("TC-006: Per-step maxTurns values match design specification", () => {
-  it("ProposeStep.maxTurns === 15", () => {
-    expect(ProposeStep.maxTurns).toBe(15);
+  it("DesignStep.maxTurns === 15", () => {
+    expect(DesignStep.maxTurns).toBe(15); // design uses 15 maxTurns
   });
 
   it("SpecReviewStep.maxTurns === 15", () => {

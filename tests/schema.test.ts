@@ -95,7 +95,7 @@ describe("TC-024: pushStepResult — appends step result into state.steps", () =
 
   it("preserves existing steps when adding a new one", () => {
     let state = validateJobState(makeMinimalV1State()) as JobState;
-    state = pushStepResult(state, "propose", {
+    state = pushStepResult(state, "design", {
       session: { id: "sess_propose", agentId: "a", environmentId: "e" },
       verdict: null,
       findingsPath: null,
@@ -111,7 +111,7 @@ describe("TC-024: pushStepResult — appends step result into state.steps", () =
       error: null,
     });
 
-    expect(state.steps?.["propose"]).toBeDefined();
+    expect(state.steps?.["design"]).toBeDefined();
     const lastSpecReview = state.steps?.["spec-review"]?.[state.steps["spec-review"]!.length - 1];
     expect(lastSpecReview ? toLegacyStepResult(lastSpecReview).verdict : undefined).toBe("approved");
   });

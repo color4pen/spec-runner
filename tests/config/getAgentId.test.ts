@@ -1,7 +1,7 @@
 /**
  * Unit tests for src/config/getAgentId.ts (new schema)
  * TC-012: getAgentId returns agents[role].agentId from new schema
- * TC-013: getAgentId throws CONFIG_INCOMPLETE when propose missing
+ * TC-013: getAgentId throws CONFIG_INCOMPLETE when design missing
  * TC-014: getAgentId throws CONFIG_INCOMPLETE when spec-fixer missing
  */
 import { describe, it, expect } from "vitest";
@@ -20,28 +20,28 @@ function makeConfig(overrides: Partial<SpecRunnerConfig> = {}): SpecRunnerConfig
 }
 
 // TC-012: getAgentId returns new schema direct value
-describe("TC-012: getAgentId — propose role resolved from agents.propose.agentId", () => {
-  it("returns agents.propose.agentId when set", () => {
+describe("TC-012: getAgentId — design role resolved from agents.design.agentId", () => {
+  it("returns agents.design.agentId when set", () => {
     const config = makeConfig({
       agents: {
-        propose: { agentId: "agent_01x", definitionHash: "sha", lastSyncedAt: "2026-01-01" },
+        design: { agentId: "agent_01x", definitionHash: "sha", lastSyncedAt: "2026-01-01" },
       },
     });
 
-    const id = getAgentId(config, "propose");
+    const id = getAgentId(config, "design");
     expect(id).toBe("agent_01x");
   });
 });
 
-// TC-013: getAgentId throws CONFIG_INCOMPLETE when propose missing
-describe("TC-013: getAgentId — throws CONFIG_INCOMPLETE when agents.propose is missing", () => {
-  it("throws CONFIG_INCOMPLETE when agents.propose is not set", () => {
+// TC-013: getAgentId throws CONFIG_INCOMPLETE when design missing
+describe("TC-013: getAgentId — throws CONFIG_INCOMPLETE when agents.design is missing", () => {
+  it("throws CONFIG_INCOMPLETE when agents.design is not set", () => {
     const config = makeConfig({ agents: {} });
 
-    expect(() => getAgentId(config, "propose")).toThrow();
+    expect(() => getAgentId(config, "design")).toThrow();
 
     try {
-      getAgentId(config, "propose");
+      getAgentId(config, "design");
     } catch (err) {
       expect((err as { code?: string }).code).toBe("CONFIG_INCOMPLETE");
     }
@@ -53,7 +53,7 @@ describe("TC-014: getAgentId — throws CONFIG_INCOMPLETE for spec-fixer role mi
   it("throws CONFIG_INCOMPLETE when agents['spec-fixer'] is not set", () => {
     const config = makeConfig({
       agents: {
-        propose: { agentId: "agent_01x", definitionHash: "sha", lastSyncedAt: "2026-01-01" },
+        design: { agentId: "agent_01x", definitionHash: "sha", lastSyncedAt: "2026-01-01" },
       },
     });
 

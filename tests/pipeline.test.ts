@@ -132,7 +132,7 @@ function buildConfig() {
     version: 1 as const,
     anthropic: { apiKey: "sk-ant-test" },
     agents: {
-      propose: { agentId: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
+      design: { agentId: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
       "spec-review": { agentId: "agent_spec_review", definitionHash: "sha256:ghi", lastSyncedAt: new Date().toISOString() },
       "spec-fixer": { agentId: "agent_spec_fixer", definitionHash: "sha256:def", lastSyncedAt: new Date().toISOString() },
     },
@@ -161,7 +161,7 @@ function buildRunner(client: SessionClient, githubClient: GitHubClient) {
 describe("TC-035: propose pipeline — normal completion with full history", () => {
   it("records all required history steps on success", async () => {
 
-    const { runProposePipeline } = await import("../src/core/pipeline/index.js");
+    const { runDesignPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
     // Pre-set branch as CLI would (D3: branch set before pipeline runs)
     jobState.branch = "feat/2026-04-27-test";
@@ -169,7 +169,7 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
     const { client } = buildMockSessionClient({ registerBranch: "feat/2026-04-27-test" });
     const githubClient = buildMockGithubClient({ branchFound: true, folderFound: true });
 
-    const result = await runProposePipeline(jobState, {
+    const result = await runDesignPipeline(jobState, {
       client,
       config: buildConfig(),
       repo: buildRepo(),
@@ -183,8 +183,8 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
 
     const steps = result.history.map((h) => h.step);
     // Executor adds step-start and step-complete entries (design D3 mitigation)
-    expect(steps).toContain("propose-started");
-    expect(steps).toContain("propose-verdict");
+    expect(steps).toContain("design-started");
+    expect(steps).toContain("design-verdict");
     // branch is pre-set by CLI before propose runs (D3)
     expect(result.branch).toBe("feat/2026-04-27-test");
   });
@@ -194,7 +194,7 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
 describe("TC-036: propose pipeline — pre-set branch from CLI is used (D4)", () => {
   it("uses state.branch pre-set by CLI even when streamEvents returns end_turn without tool call", async () => {
 
-    const { runProposePipeline } = await import("../src/core/pipeline/index.js");
+    const { runDesignPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
     // Pre-set branch as CLI would (D4: branch is always set by CLI before propose)
     jobState.branch = "feat/test-cli-branch-d4";
@@ -202,7 +202,7 @@ describe("TC-036: propose pipeline — pre-set branch from CLI is used (D4)", ()
     const { client } = buildMockSessionClient({});
     const githubClient = buildMockGithubClient({ branchFound: true, folderFound: true });
 
-    const result = await runProposePipeline(jobState, {
+    const result = await runDesignPipeline(jobState, {
       client,
       config: buildConfig(),
       repo: buildRepo(),
@@ -222,14 +222,14 @@ describe("TC-036: propose pipeline — pre-set branch from CLI is used (D4)", ()
 describe("TC-037: propose pipeline — SSE stream connected before initial message send", () => {
   it("streamEvents() is called (which internally ensures stream-before-send ordering)", async () => {
 
-    const { runProposePipeline } = await import("../src/core/pipeline/index.js");
+    const { runDesignPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
     jobState.branch = "feat/test"; // pre-set by CLI (D3)
 
     const { client, streamEventsMock } = buildMockSessionClient({ registerBranch: "feat/test" });
     const githubClient = buildMockGithubClient();
 
-    await runProposePipeline(jobState, {
+    await runDesignPipeline(jobState, {
       client,
       config: buildConfig(),
       repo: buildRepo(),
@@ -249,7 +249,7 @@ describe("TC-037: propose pipeline — SSE stream connected before initial messa
 describe("TC-038: propose pipeline — initial message contains user-request tag", () => {
   it("streamEvents receives requestContent containing the user request text", async () => {
 
-    const { runProposePipeline } = await import("../src/core/pipeline/index.js");
+    const { runDesignPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
     jobState.branch = "feat/test"; // pre-set by CLI (D3)
 
@@ -270,7 +270,7 @@ describe("TC-038: propose pipeline — initial message contains user-request tag
     );
 
     const githubClient = buildMockGithubClient();
-    await runProposePipeline(jobState, {
+    await runDesignPipeline(jobState, {
       client,
       config: buildConfig(),
       repo: buildRepo(),
@@ -293,7 +293,7 @@ describe("TC-038: propose pipeline — initial message contains user-request tag
 describe("TC-039: propose pipeline — CHANGE_FOLDER_NOT_FOUND", () => {
   it("fails with CHANGE_FOLDER_NOT_FOUND when change folder API returns 404", async () => {
 
-    const { runProposePipeline } = await import("../src/core/pipeline/index.js");
+    const { runDesignPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
     jobState.branch = "feat/test"; // pre-set by CLI (D3)
 
@@ -302,7 +302,7 @@ describe("TC-039: propose pipeline — CHANGE_FOLDER_NOT_FOUND", () => {
     const githubClient = buildMockGithubClient({ branchFound: true, folderFound: false });
 
     // Pipeline returns failed state rather than throwing; check state.error.code
-    const result = await runProposePipeline(jobState, {
+    const result = await runDesignPipeline(jobState, {
       client,
       config: buildConfig(),
       repo: buildRepo(),
@@ -321,7 +321,7 @@ describe("TC-039: propose pipeline — CHANGE_FOLDER_NOT_FOUND", () => {
 describe("TC-040: propose pipeline — branch not found on GitHub is warning only", () => {
   it("succeeds with warning when branch API returns 404 but folder API returns 200", async () => {
 
-    const { runProposePipeline } = await import("../src/core/pipeline/index.js");
+    const { runDesignPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
     jobState.branch = "feat/test"; // pre-set by CLI (D3)
 
@@ -329,7 +329,7 @@ describe("TC-040: propose pipeline — branch not found on GitHub is warning onl
     // branch not found (warning), folder found (OK)
     const githubClient = buildMockGithubClient({ branchFound: false, folderFound: true });
 
-    const result = await runProposePipeline(jobState, {
+    const result = await runDesignPipeline(jobState, {
       client,
       config: buildConfig(),
       repo: buildRepo(),
@@ -353,7 +353,7 @@ describe("TC-040: propose pipeline — branch not found on GitHub is warning onl
 describe("TC-041: propose pipeline — GITHUB_TOKEN_EXPIRED on 401", () => {
   it("fails with GITHUB_TOKEN_EXPIRED when GitHub API returns 401", async () => {
 
-    const { runProposePipeline } = await import("../src/core/pipeline/index.js");
+    const { runDesignPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
     jobState.branch = "feat/test"; // pre-set by CLI (D3)
 
@@ -362,7 +362,7 @@ describe("TC-041: propose pipeline — GITHUB_TOKEN_EXPIRED on 401", () => {
     const githubClient = buildMockGithubClient({ tokenExpired: true });
 
     // Pipeline returns failed state rather than throwing; check state.error.code
-    const result = await runProposePipeline(jobState, {
+    const result = await runDesignPipeline(jobState, {
       client,
       config: buildConfig(),
       repo: buildRepo(),
@@ -385,14 +385,14 @@ describe("TC-041: propose pipeline — GITHUB_TOKEN_EXPIRED on 401", () => {
 describe("TC-042: session creation parameters", () => {
   it("createSession is called with agentId, environmentId, repoUrl, and githubToken", async () => {
 
-    const { runProposePipeline } = await import("../src/core/pipeline/index.js");
+    const { runDesignPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
     jobState.branch = "feat/test"; // pre-set by CLI (D3)
     const { client, createSessionMock } = buildMockSessionClient({ registerBranch: "feat/test" });
     const githubClient = buildMockGithubClient();
 
-    await runProposePipeline(jobState, {
+    await runDesignPipeline(jobState, {
       client,
       config: buildConfig(),
       repo: buildRepo(),

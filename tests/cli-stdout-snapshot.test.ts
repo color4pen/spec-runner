@@ -54,7 +54,7 @@ function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
     request: { path: "/req.md", title: "Test", type: "feature" },
     repository: { owner: "testowner", name: "testrepo" },
     session: null,
-    step: "propose",
+    step: "design",
     status: "running",
     branch: null,
     history: [],
@@ -71,7 +71,7 @@ function makeMinimalDeps(): PipelineDeps {
       version: 1,
       anthropic: { apiKey: "sk-test" },
       agents: {
-        propose: { agentId: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" },
+        design: { agentId: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" },
         "spec-review": { agentId: "agent_spec_review", definitionHash: "sha", lastSyncedAt: "2026-01-01" },
         "spec-fixer": { agentId: "agent_spec_fixer", definitionHash: "sha", lastSyncedAt: "2026-01-01" },
       },
@@ -139,12 +139,12 @@ describe("TC-027: stdout [iter N/M] — approved verdict line is bit-for-bit exa
     const maxIterations = 3;
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
-    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test" };
-    const specReviewResult = makeSpecReviewState(proposeResult, "approved", 1);
+    const designResult: JobState = { ...state, status: "running", branch: "feat/test" };
+    const specReviewResult = makeSpecReviewState(designResult, "approved", 1);
 
     const events = new EventBus();
     const executeSpy = vi.fn().mockImplementation(async (step: Step) => {
-      if (step.name === "propose") return proposeResult;
+      if (step.name === "design") return designResult;
       if (step.name === "spec-review") return specReviewResult;
       throw new Error(`Unexpected step: ${step.name}`);
     });
@@ -153,8 +153,8 @@ describe("TC-027: stdout [iter N/M] — approved verdict line is bit-for-bit exa
     // Use a custom transition table that terminates at spec-review approved
     // (to verify the exact stdout format without needing to mock implementer/verification)
     const testTransitions = [
-      { step: "propose",     on: "success",    to: "spec-review" },
-      { step: "propose",     on: "error",      to: "escalate" },
+      { step: "design",      on: "success",    to: "spec-review" },
+      { step: "design",      on: "error",      to: "escalate" },
       { step: "spec-review", on: "approved",   to: "end" },       // terminal for this test
       { step: "spec-review", on: "needs-fix",  to: "spec-fixer" },
       { step: "spec-review", on: "escalation", to: "escalate" },
@@ -164,7 +164,7 @@ describe("TC-027: stdout [iter N/M] — approved verdict line is bit-for-bit exa
 
     const pipeline = new Pipeline({
       steps: new Map([
-        ["propose",     makeStepObject("propose")],
+        ["design",      makeStepObject("design")],
         ["spec-review", makeStepObject("spec-review")],
         ["spec-fixer",  makeStepObject("spec-fixer")],
       ]),
@@ -175,7 +175,7 @@ describe("TC-027: stdout [iter N/M] — approved verdict line is bit-for-bit exa
       loopName: LOOP_NAME,
     });
 
-    await pipeline.run("propose", state, deps);
+    await pipeline.run("design", state, deps);
 
     const stdout = getCapturedStdout();
     // Exact format pinned per pipeline.ts runSpecReviewLoop:
@@ -192,15 +192,15 @@ describe("TC-028: stdout [iter N/M] — needs-fix continuation line is bit-for-b
     const maxIterations = 2;
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
-    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test" };
-    const specReview1 = makeSpecReviewState(proposeResult, "needs-fix", 1);
+    const designResult: JobState = { ...state, status: "running", branch: "feat/test" };
+    const specReview1 = makeSpecReviewState(designResult, "needs-fix", 1);
     const specFixerResult: JobState = { ...specReview1, step: "spec-fixer" };
     const specReview2 = makeSpecReviewState(specFixerResult, "approved", 2);
 
     const events = new EventBus();
     let specReviewCall = 0;
     const executeSpy = vi.fn().mockImplementation(async (step: Step) => {
-      if (step.name === "propose") return proposeResult;
+      if (step.name === "design") return designResult;
       if (step.name === "spec-fixer") return specFixerResult;
       if (step.name === "spec-review") {
         return specReviewCall++ === 0 ? specReview1 : specReview2;
@@ -212,8 +212,8 @@ describe("TC-028: stdout [iter N/M] — needs-fix continuation line is bit-for-b
     // Use a custom transition table that terminates at spec-review approved
     // (to verify the exact stdout format without needing to mock implementer/verification)
     const testTransitions = [
-      { step: "propose",     on: "success",    to: "spec-review" },
-      { step: "propose",     on: "error",      to: "escalate" },
+      { step: "design",      on: "success",    to: "spec-review" },
+      { step: "design",      on: "error",      to: "escalate" },
       { step: "spec-review", on: "approved",   to: "end" },       // terminal for this test
       { step: "spec-review", on: "needs-fix",  to: "spec-fixer" },
       { step: "spec-review", on: "escalation", to: "escalate" },
@@ -223,7 +223,7 @@ describe("TC-028: stdout [iter N/M] — needs-fix continuation line is bit-for-b
 
     const pipeline = new Pipeline({
       steps: new Map([
-        ["propose",     makeStepObject("propose")],
+        ["design",      makeStepObject("design")],
         ["spec-review", makeStepObject("spec-review")],
         ["spec-fixer",  makeStepObject("spec-fixer")],
       ]),
@@ -234,7 +234,7 @@ describe("TC-028: stdout [iter N/M] — needs-fix continuation line is bit-for-b
       loopName: LOOP_NAME,
     });
 
-    await pipeline.run("propose", state, deps);
+    await pipeline.run("design", state, deps);
 
     const stdout = getCapturedStdout();
     // Exact format pinned per pipeline.ts runSpecReviewLoop:
@@ -249,16 +249,16 @@ describe("TC-029: stdout [iter N/M] — retries exhausted line is bit-for-bit ex
     const maxIterations = 2;
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
-    const proposeResult: JobState = { ...state, status: "running", branch: "feat/test" };
+    const designResult: JobState = { ...state, status: "running", branch: "feat/test" };
 
     let specReviewCall = 0;
-    const specReview1 = makeSpecReviewState(proposeResult, "needs-fix", 1);
+    const specReview1 = makeSpecReviewState(designResult, "needs-fix", 1);
     const specReview2 = makeSpecReviewState(specReview1, "needs-fix", 2);
 
     const events = new EventBus();
     const executeSpy = vi.fn().mockImplementation(async (step: Step) => {
-      if (step.name === "propose") return proposeResult;
-      if (step.name === "spec-fixer") return { ...proposeResult };
+      if (step.name === "design") return designResult;
+      if (step.name === "spec-fixer") return { ...designResult };
       if (step.name === "spec-review") {
         return specReviewCall++ === 0 ? specReview1 : specReview2;
       }
@@ -268,7 +268,7 @@ describe("TC-029: stdout [iter N/M] — retries exhausted line is bit-for-bit ex
 
     const pipeline = new Pipeline({
       steps: new Map([
-        ["propose",     makeStepObject("propose")],
+        ["design",      makeStepObject("design")],
         ["spec-review", makeStepObject("spec-review")],
         ["spec-fixer",  makeStepObject("spec-fixer")],
       ]),
@@ -279,7 +279,7 @@ describe("TC-029: stdout [iter N/M] — retries exhausted line is bit-for-bit ex
       loopName: LOOP_NAME,
     });
 
-    await pipeline.run("propose", state, deps);
+    await pipeline.run("design", state, deps);
 
     const stdout = getCapturedStdout();
     // Exact format pinned: [iter 2/2] retries exhausted, escalating

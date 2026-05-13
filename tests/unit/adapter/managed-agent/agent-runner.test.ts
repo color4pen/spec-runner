@@ -6,10 +6,10 @@
  * TC-015: ManagedAgentRunner.run() is semantically equivalent to existing lifecycle
  * TC-016: register_branch tool removed (D4) — file no longer exists
  * TC-017: no source file imports register-branch module
- * TC-018: propose role does not inject register_branch (D4: tool removed)
+ * TC-018: design role does not inject register_branch (D4: tool removed)
  * TC-019: register_branch tool removed — adapter does not import it
  * TC-020: prompt includes ctx.branch
- * TC-021: propose uses pre-set ctx.branch from CLI (D4)
+ * TC-021: design uses pre-set ctx.branch from CLI (D4)
  * TC-030: verifyBranch 404 → error
  * TC-031: result file not found → error
  */
@@ -80,7 +80,7 @@ function makeConfig(overrides: Partial<SpecRunnerConfig> = {}): SpecRunnerConfig
     version: 1,
     anthropic: { apiKey: "sk-test" },
     agents: {
-      propose: { agentId: "agent_propose", definitionHash: "sha256:abc", lastSyncedAt: "2026-01-01" },
+      design: { agentId: "agent_design", definitionHash: "sha256:abc", lastSyncedAt: "2026-01-01" },
       "spec-review": { agentId: "agent_spec_review", definitionHash: "sha256:def", lastSyncedAt: "2026-01-01" },
       "spec-fixer": { agentId: "agent_spec_fixer", definitionHash: "sha256:xyz", lastSyncedAt: "2026-01-01" },
       "implementer": { agentId: "agent_implementer", definitionHash: "sha256:imh", lastSyncedAt: "2026-01-01" },
@@ -304,11 +304,11 @@ describe("TC-017: no source file imports register-branch (removed in D4)", () =>
 });
 
 // ---------------------------------------------------------------------------
-// TC-018: propose role — no register_branch in toolHandlers (D4)
+// TC-018: design role — no register_branch in toolHandlers (D4)
 // ---------------------------------------------------------------------------
 
-describe("TC-018: propose role — register_branch not in toolHandlers (D4: tool removed)", () => {
-  it("for propose role: streamEvents is called WITHOUT register_branch in toolHandlers", async () => {
+describe("TC-018: design role — register_branch not in toolHandlers (D4: tool removed)", () => {
+  it("for design role: streamEvents is called WITHOUT register_branch in toolHandlers", async () => {
     const jobId = "tc018-job";
     const state = makeJobState(jobId, "feat/test-slug-tc018abc");
 
@@ -339,24 +339,24 @@ describe("TC-018: propose role — register_branch not in toolHandlers (D4: tool
       repo: { owner: "testowner", name: "testrepo" },
     });
 
-    const proposeStep: AgentStep = {
+    const designStep: AgentStep = {
       kind: "agent",
-      name: "propose",
+      name: "design",
       agent: {
-        name: "specrunner-propose",
-        role: "propose",
+        name: "specrunner-design",
+        role: "design",
         model: "claude-sonnet-4-5",
-        system: "propose system",
+        system: "design system",
         tools: [],
       },
       toolHandlers: undefined,
-      buildMessage: () => "propose message",
+      buildMessage: () => "design message",
       resultFilePath: () => null,
       parseResult: () => ({ verdict: null, findingsPath: null }),
     };
 
     const ctx: AgentRunContext = {
-      step: proposeStep,
+      step: designStep,
       state,
       branch: "feat/test-slug-tc018abc",
       slug: "test-slug",
@@ -389,9 +389,9 @@ describe("TC-019: register_branch tool removed (D4)", () => {
     expect(content).not.toMatch(/from.*register-branch/);
   });
 
-  it("PROPOSE_SYSTEM_PROMPT does not contain register_branch instruction", async () => {
-    const { PROPOSE_SYSTEM_PROMPT } = await import("../../../../src/prompts/propose-system.js");
-    expect(PROPOSE_SYSTEM_PROMPT).not.toContain("register_branch");
+  it("DESIGN_SYSTEM_PROMPT does not contain register_branch instruction", async () => {
+    const { DESIGN_SYSTEM_PROMPT } = await import("../../../../src/prompts/design-system.js");
+    expect(DESIGN_SYSTEM_PROMPT).not.toContain("register_branch");
   });
 });
 
@@ -400,7 +400,7 @@ describe("TC-019: register_branch tool removed (D4)", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-020: ManagedAgentRunner includes ctx.branch in prompt", () => {
-  it("streamEvents opts.branch matches ctx.branch for propose", async () => {
+  it("streamEvents opts.branch matches ctx.branch for design", async () => {
     const jobId = "tc020-job";
     const state = makeJobState(jobId, "");
     await persistState(state);
@@ -428,19 +428,19 @@ describe("TC-020: ManagedAgentRunner includes ctx.branch in prompt", () => {
       repo: { owner: "testowner", name: "testrepo" },
     });
 
-    const proposeStep: AgentStep = {
+    const designStep: AgentStep = {
       kind: "agent",
-      name: "propose",
-      agent: { name: "specrunner-propose", role: "propose", model: "claude-sonnet-4-5", system: "propose", tools: [] },
+      name: "design",
+      agent: { name: "specrunner-design", role: "design", model: "claude-sonnet-4-5", system: "design", tools: [] },
       toolHandlers: undefined,
-      buildMessage: () => "propose",
+      buildMessage: () => "design",
       resultFilePath: () => null,
       parseResult: () => ({ verdict: null, findingsPath: null }),
     };
 
     try {
       await runner.run({
-        step: proposeStep,
+        step: designStep,
         state,
         branch: "feat/foo-bar",
         slug: "foo-bar",
@@ -462,7 +462,7 @@ describe("TC-020: ManagedAgentRunner includes ctx.branch in prompt", () => {
 // TC-021: ctx.branch is pre-set by CLI (D4 — register_branch removed)
 // ---------------------------------------------------------------------------
 
-describe("TC-021: propose uses pre-set ctx.branch from CLI (D4)", () => {
+describe("TC-021: design uses pre-set ctx.branch from CLI (D4)", () => {
   it("createSession is called with ctx.branch when branch is pre-set", async () => {
     const jobId = "tc021-job";
     const state = makeJobState(jobId, "feat/foo-bar-tc021abc");
@@ -491,19 +491,19 @@ describe("TC-021: propose uses pre-set ctx.branch from CLI (D4)", () => {
       repo: { owner: "testowner", name: "testrepo" },
     });
 
-    const proposeStep: AgentStep = {
+    const designStep: AgentStep = {
       kind: "agent",
-      name: "propose",
-      agent: { name: "specrunner-propose", role: "propose", model: "claude-sonnet-4-5", system: "propose", tools: [] },
+      name: "design",
+      agent: { name: "specrunner-design", role: "design", model: "claude-sonnet-4-5", system: "design", tools: [] },
       toolHandlers: undefined,
-      buildMessage: () => "propose",
+      buildMessage: () => "design",
       resultFilePath: () => null,
       parseResult: () => ({ verdict: null, findingsPath: null }),
     };
 
     try {
       await runner.run({
-        step: proposeStep,
+        step: designStep,
         state,
         branch: "feat/foo-bar-tc021abc",
         slug: "foo-bar",
@@ -629,12 +629,12 @@ describe("TC-019 (test-cases.md): polling-style — no <project-context> when pr
 });
 
 // ---------------------------------------------------------------------------
-// TC-020/TC-021 (test-cases.md): projectContext injection — SSE/propose-style
+// TC-020/TC-021 (test-cases.md): projectContext injection — SSE/design-style
 // TC-020: ctx.projectContext set → requestContent includes <project-context>
 // TC-021: ctx.projectContext undefined → requestContent unchanged
 // ---------------------------------------------------------------------------
 
-describe("TC-020 (test-cases.md): SSE/propose-style — projectContext injected into requestContent", () => {
+describe("TC-020 (test-cases.md): SSE/design-style — projectContext injected into requestContent", () => {
   it("streamEvents receives requestContent with <project-context> when ctx.projectContext is set", async () => {
     const jobId = "tc-pc-020-job";
     const state = makeJobState(jobId, "feat/test");
@@ -649,25 +649,25 @@ describe("TC-020 (test-cases.md): SSE/propose-style — projectContext injected 
       repo: { owner: "testowner", name: "testrepo" },
     });
 
-    const proposeStep: AgentStep = {
+    const designStep: AgentStep = {
       kind: "agent",
-      name: "propose",
+      name: "design",
       agent: {
-        name: "specrunner-propose",
-        role: "propose",
+        name: "specrunner-design",
+        role: "design",
         model: "claude-sonnet-4-5",
-        system: "propose",
+        system: "design",
         tools: [],
       },
       toolHandlers: undefined,
-      buildMessage: () => "base propose message",
+      buildMessage: () => "base design message",
       resultFilePath: () => null,
       parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
     };
 
     const ctx = makeCtx(
       {
-        step: proposeStep,
+        step: designStep,
         state,
         branch: "feat/test",
         requestContent: "base request content",
@@ -686,7 +686,7 @@ describe("TC-020 (test-cases.md): SSE/propose-style — projectContext injected 
   });
 });
 
-describe("TC-021 (test-cases.md): SSE/propose-style — no <project-context> when projectContext is undefined", () => {
+describe("TC-021 (test-cases.md): SSE/design-style — no <project-context> when projectContext is undefined", () => {
   it("streamEvents receives requestContent WITHOUT <project-context> when ctx.projectContext is absent", async () => {
     const jobId = "tc-pc-021-job";
     const state = makeJobState(jobId, "feat/test");
@@ -701,25 +701,25 @@ describe("TC-021 (test-cases.md): SSE/propose-style — no <project-context> whe
       repo: { owner: "testowner", name: "testrepo" },
     });
 
-    const proposeStep: AgentStep = {
+    const designStep: AgentStep = {
       kind: "agent",
-      name: "propose",
+      name: "design",
       agent: {
-        name: "specrunner-propose",
-        role: "propose",
+        name: "specrunner-design",
+        role: "design",
         model: "claude-sonnet-4-5",
-        system: "propose",
+        system: "design",
         tools: [],
       },
       toolHandlers: undefined,
-      buildMessage: () => "base propose message",
+      buildMessage: () => "base design message",
       resultFilePath: () => null,
       parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
     };
 
     const ctx = makeCtx(
       {
-        step: proposeStep,
+        step: designStep,
         state,
         branch: "feat/test",
         requestContent: "base request content",

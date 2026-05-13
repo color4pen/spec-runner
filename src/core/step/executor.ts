@@ -20,7 +20,7 @@ import { gitExec, gitExecExitCode, defaultSpawnFn, type SpawnFn } from "../../ut
 import { noCommitDetectedError, pushFailedError } from "../../errors.js";
 
 const PROJECT_CONTEXT_STEPS: ReadonlySet<string> = new Set([
-  "propose", "spec-review", "implementer", "code-review",
+  "design", "spec-review", "implementer", "code-review",
 ]);
 
 /**

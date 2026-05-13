@@ -312,17 +312,17 @@ describe("TC-001: completionVerdict fallback — resultContent null + completion
 
     const step: AgentStep = {
       kind: "agent",
-      name: "propose",
+      name: "design",
       agent: {
-        name: "specrunner-propose",
-        role: "propose",
+        name: "specrunner-design",
+        role: "design",
         model: "claude-sonnet-4-5",
-        system: "propose",
+        system: "design",
         tools: [],
       },
       toolHandlers: undefined,
       completionVerdict: "success",
-      buildMessage: () => "propose",
+      buildMessage: () => "design",
       resultFilePath: () => null,
       parseResult: () => ({ verdict: null, findingsPath: null }),
     };
@@ -352,11 +352,11 @@ describe("TC-001: completionVerdict fallback — resultContent null + completion
     const resultState = await executor.execute(step, initialState, deps);
 
     // Verdict should be "success" from completionVerdict, not escalation
-    const stepResults = resultState.steps?.["propose"];
+    const stepResults = resultState.steps?.["design"];
     expect(stepResults).toBeDefined();
     const lastResult = stepResults![stepResults!.length - 1] as StepRun;
     expect(lastResult.outcome.verdict).toBe("success");
-    expect(verdictEvents).toContain("propose:success");
+    expect(verdictEvents).toContain("design:success");
   });
 });
 
@@ -501,18 +501,18 @@ describe("TC-004: setsBranch flag — state.branch set after propose step comple
 
     const step: AgentStep = {
       kind: "agent",
-      name: "propose",
+      name: "design",
       agent: {
-        name: "specrunner-propose",
-        role: "propose",
+        name: "specrunner-design",
+        role: "design",
         model: "claude-sonnet-4-5",
-        system: "propose",
+        system: "design",
         tools: [],
       },
       toolHandlers: undefined,
       completionVerdict: "success",
       setsBranch: true,
-      buildMessage: () => "propose",
+      buildMessage: () => "design",
       resultFilePath: () => null,
       parseResult: () => ({ verdict: null, findingsPath: null }),
     };
@@ -560,18 +560,18 @@ describe("TC-005: setsBranch flag — does not overwrite existing state.branch",
 
     const step: AgentStep = {
       kind: "agent",
-      name: "propose",
+      name: "design",
       agent: {
-        name: "specrunner-propose",
-        role: "propose",
+        name: "specrunner-design",
+        role: "design",
         model: "claude-sonnet-4-5",
-        system: "propose",
+        system: "design",
         tools: [],
       },
       toolHandlers: undefined,
       completionVerdict: "success",
       setsBranch: true,
-      buildMessage: () => "propose",
+      buildMessage: () => "design",
       resultFilePath: () => null,
       parseResult: () => ({ verdict: null, findingsPath: null }),
     };
@@ -614,7 +614,7 @@ describe("TC-006: executor.ts uses setsBranch flag, not step.name hardcode", () 
 
     // Step name hardcode dispatch patterns (TC-003 / TC-006)
     const stepNameHardcodePattern =
-      /if\s*\(.*step\.name\s*===?\s*["'](?:propose|spec-review|implementer|build-fixer|spec-fixer|verification)["']/;
+      /if\s*\(.*step\.name\s*===?\s*["'](?:design|spec-review|implementer|build-fixer|spec-fixer|verification)["']/;
     expect(stepNameHardcodePattern.test(executorSrc)).toBe(false);
 
     // Must use setsBranch flag instead

@@ -4,7 +4,7 @@
 import { describe, it, expect } from "vitest";
 import { NULL_PARSE_RESULT } from "../../../../src/core/step/types.js";
 import { verificationResultPath } from "../../../../src/util/paths.js";
-import { ProposeStep } from "../../../../src/core/step/propose.js";
+import { DesignStep } from "../../../../src/core/step/design.js";
 import { SpecFixerStep } from "../../../../src/core/step/spec-fixer.js";
 import { ImplementerStep } from "../../../../src/core/step/implementer.js";
 import { BuildFixerStep } from "../../../../src/core/step/build-fixer.js";
@@ -68,9 +68,9 @@ describe("TC-010: NULL_PARSE_RESULT 定数の共有 — 4 step 適合性", () =>
     });
   });
 
-  it("ProposeStep.parseResult('any') は NULL_PARSE_RESULT と deep-equal", () => {
+  it("DesignStep.parseResult('any') は NULL_PARSE_RESULT と deep-equal", () => {
     const deps = makeMinimalDeps();
-    const result = ProposeStep.parseResult("any content", deps);
+    const result = DesignStep.parseResult("any content", deps);
     expect(result).toEqual(NULL_PARSE_RESULT);
   });
 

@@ -44,10 +44,10 @@ export const LOOP_ERROR_CODES: Record<string, LoopErrorShape> = {
 };
 
 /**
- * Standard pipeline transition table for the propose → spec-review → spec-fixer flow,
+ * Standard pipeline transition table for the design → spec-review → spec-fixer flow,
  * extended with the implementer → verification ↔ build-fixer flow.
  *
- * propose uses "success" / "error" rather than Verdict because it has no file-based verdict.
+ * design uses "success" / "error" rather than Verdict because it has no file-based verdict.
  * spec-review and spec-fixer use standard Verdict values.
  * implementer / build-fixer use "success" / "error" (no result file).
  * verification uses "passed" / "failed" / "escalation".
@@ -57,8 +57,8 @@ export const LOOP_ERROR_CODES: Record<string, LoopErrorShape> = {
  * (but with escalation semantics). Any other value is the name of the next step to run.
  */
 export const STANDARD_TRANSITIONS: Transition[] = [
-  { step: "propose",      on: "success",    to: "spec-review" },
-  { step: "propose",      on: "error",      to: "escalate" },
+  { step: "design",       on: "success",    to: "spec-review" },
+  { step: "design",       on: "error",      to: "escalate" },
   { step: "spec-review",  on: "approved",   to: "test-case-gen" },
   { step: "test-case-gen", on: "success",  to: "implementer" },
   { step: "test-case-gen", on: "error",    to: "escalate" },
