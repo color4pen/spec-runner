@@ -900,7 +900,7 @@ describe("TC-DC-103: projectContext injected only for allowlist steps", () => {
       cwd: tempDir,
     });
 
-    const allowlistNames = ["propose", "spec-review", "implementer", "code-review"];
+    const allowlistNames = ["design", "spec-review", "implementer", "code-review"];
     for (const stepName of allowlistNames) {
       const ctx = capturedCtxList.find((c) => c.step.name === stepName);
       expect(ctx, `Expected step '${stepName}' to be called`).toBeDefined();
@@ -1061,7 +1061,7 @@ describe("TC-DC-107: project.md absent — projectContext is undefined for all s
     // Pipeline must not throw — project.md absence is not an error
     expect(result.status).toBe("awaiting-merge");
 
-    const allowlistNames = ["propose", "spec-review", "implementer", "code-review"];
+    const allowlistNames = ["design", "spec-review", "implementer", "code-review"];
     for (const stepName of allowlistNames) {
       const ctx = capturedCtxList.find((c) => c.step.name === stepName);
       expect(ctx, `Expected step '${stepName}' to be called`).toBeDefined();
