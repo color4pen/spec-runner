@@ -1,5 +1,13 @@
 import type { StepName, ResumePoint } from "../../state/schema.js";
 import { STEP_NAMES } from "../step/step-names.js";
+import { DesignStep } from "../step/design.js";
+import { SpecReviewStep } from "../step/spec-review.js";
+import { SpecFixerStep } from "../step/spec-fixer.js";
+import { TestCaseGenStep } from "../step/test-case-gen.js";
+import { ImplementerStep } from "../step/implementer.js";
+import { BuildFixerStep } from "../step/build-fixer.js";
+import { CodeReviewStep } from "../step/code-review.js";
+import { CodeFixerStep } from "../step/code-fixer.js";
 
 /**
  * Abstract resume role specified via --from flag.
@@ -7,21 +15,15 @@ import { STEP_NAMES } from "../step/step-names.js";
 export type ResumeRole = "critic" | "fixer" | "creator";
 
 /**
- * Steps that belong to the spec phase.
+ * Phase map derived from step definitions.
+ * Keys are step names; values are the declared phase (defaulting to "impl").
+ * Replaces the hardcoded SPEC_PHASE_STEPS and CODE_PHASE_STEPS Sets.
  */
-const SPEC_PHASE_STEPS = new Set<StepName>([STEP_NAMES.DESIGN, STEP_NAMES.SPEC_REVIEW, STEP_NAMES.SPEC_FIXER]);
-
-/**
- * Steps that belong to the code phase.
- */
-const CODE_PHASE_STEPS = new Set<StepName>([
-  STEP_NAMES.IMPLEMENTER,
-  STEP_NAMES.VERIFICATION,
-  STEP_NAMES.BUILD_FIXER,
-  STEP_NAMES.CODE_REVIEW,
-  STEP_NAMES.CODE_FIXER,
-  STEP_NAMES.PR_CREATE,
-]);
+const STEP_PHASE_MAP = new Map<string, "spec" | "impl">(
+  [DesignStep, SpecReviewStep, SpecFixerStep,
+   TestCaseGenStep, ImplementerStep, BuildFixerStep, CodeReviewStep, CodeFixerStep]
+  .map(s => [s.name, s.phase ?? "impl"]),
+);
 
 /**
  * Steps that are reviewers (critic role). Used to distinguish crash from review exhaustion.
@@ -30,10 +32,10 @@ const REVIEWER_STEPS = new Set<StepName>([STEP_NAMES.SPEC_REVIEW, STEP_NAMES.COD
 
 /**
  * Determine whether a step belongs to the spec phase.
- * Unrecognized steps default to code phase.
+ * Unrecognized steps default to code (impl) phase.
  */
-function isSpecPhase(step: string): boolean {
-  return SPEC_PHASE_STEPS.has(step as StepName);
+function isSpecPhase(stepName: string): boolean {
+  return STEP_PHASE_MAP.get(stepName) === "spec";
 }
 
 /**

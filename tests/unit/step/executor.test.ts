@@ -586,7 +586,8 @@ describe("TC-007 to TC-010: allowlist steps set ctx.projectContext from specrunn
       const executor = new StepExecutor(events, runner);
       const state = makeMinimalState(`tc-allowlist-${stepName}`);
       const deps = makeDepsWithCwd(cwdWithProjectMd);
-      const step = makeStepNamed(stepName);
+      // needsProjectContext: true is required for executor to inject projectContext
+      const step = { ...makeStepNamed(stepName), needsProjectContext: true as const };
 
       await executor.execute(step, state, deps);
 

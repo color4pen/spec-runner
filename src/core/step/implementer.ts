@@ -92,6 +92,8 @@ export const ImplementerStep: AgentStep = {
 
   completionVerdict: "success",
 
+  needsProjectContext: true,
+
   requiresCommit: true,
 
   // maxTurns: implementer handles complex multi-file tasks; 60 is the upper bound.

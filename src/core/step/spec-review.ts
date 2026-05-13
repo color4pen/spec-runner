@@ -74,6 +74,9 @@ export const SpecReviewStep: AgentStep = {
   // No custom tool handlers for spec-review
   toolHandlers: undefined,
 
+  phase: "spec",
+  needsProjectContext: true,
+
   // maxTurns: spec-review is read-heavy with focused judgment; 15 is sufficient.
   // Design D3 (propose-openspec-cli-and-step-model-config).
   maxTurns: 15,

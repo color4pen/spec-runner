@@ -152,6 +152,8 @@ export const CodeReviewStep: AgentStep = {
 
   toolHandlers: undefined,
 
+  needsProjectContext: true,
+
   // maxTurns: code-review reads diff + writes findings; 20 is sufficient.
   // Design D3 (propose-openspec-cli-and-step-model-config).
   maxTurns: 20,

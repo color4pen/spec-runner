@@ -56,6 +56,9 @@ export const DesignStep: AgentStep = {
   // Design D2: declarative flag replaces step-name-based branch detection (TC-003 / TC-006).
   setsBranch: true,
 
+  phase: "spec",
+  needsProjectContext: true,
+
   buildMessage(state: JobState, deps: StepDeps): string {
     // Use state.branch if already set by CLI (setupWorkspace early recording, D3).
     // Fall back to computing from type/slug/jobId for backward compatibility.

@@ -92,7 +92,7 @@ function makeMinimalDeps(): PipelineDeps {
   };
 }
 
-function makeStepObject(name: string): Step {
+function makeStepObject(name: string, extras?: Partial<import("../src/core/step/types.js").AgentStep>): Step {
   return {
     kind: "agent",
     name,
@@ -106,7 +106,12 @@ function makeStepObject(name: string): Step {
     buildMessage: () => "",
     resultFilePath: () => null,
     parseResult: () => ({ verdict: null, findingsPath: null }),
+    ...extras,
   };
+}
+
+function makeDesignStepObject(): Step {
+  return makeStepObject("design", { completionVerdict: "success" });
 }
 
 function makeSpecReviewState(base: JobState, verdict: "approved" | "needs-fix" | "escalation", iter: number): JobState {
@@ -164,7 +169,7 @@ describe("TC-027: stdout [iter N/M] — approved verdict line is bit-for-bit exa
 
     const pipeline = new Pipeline({
       steps: new Map([
-        ["design",      makeStepObject("design")],
+        ["design",      makeDesignStepObject()],
         ["spec-review", makeStepObject("spec-review")],
         ["spec-fixer",  makeStepObject("spec-fixer")],
       ]),
@@ -223,7 +228,7 @@ describe("TC-028: stdout [iter N/M] — needs-fix continuation line is bit-for-b
 
     const pipeline = new Pipeline({
       steps: new Map([
-        ["design",      makeStepObject("design")],
+        ["design",      makeDesignStepObject()],
         ["spec-review", makeStepObject("spec-review")],
         ["spec-fixer",  makeStepObject("spec-fixer")],
       ]),
@@ -268,7 +273,7 @@ describe("TC-029: stdout [iter N/M] — retries exhausted line is bit-for-bit ex
 
     const pipeline = new Pipeline({
       steps: new Map([
-        ["design",      makeStepObject("design")],
+        ["design",      makeDesignStepObject()],
         ["spec-review", makeStepObject("spec-review")],
         ["spec-fixer",  makeStepObject("spec-fixer")],
       ]),

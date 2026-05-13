@@ -181,18 +181,19 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
       throw new Error(`Unexpected step: ${step.name}`);
     });
 
-    const mockStep = (name: string): Step => ({
+    const mockStep = (name: string, extras?: Partial<import("../src/core/step/types.js").AgentStep>): Step => ({
       kind: "agent",
       name,
       agent: { name: "test", role: name as any, model: "claude-sonnet-4-5", system: "", tools: [] },
       buildMessage: () => "",
       resultFilePath: () => null,
       parseResult: () => ({ verdict: null, findingsPath: null }),
+      ...extras,
     });
 
     const pipeline = new Pipeline({
       steps: new Map([
-        ["design",      mockStep("design")],
+        ["design",      mockStep("design", { completionVerdict: "success" })],
         ["spec-review", mockStep("spec-review")],
         ["spec-fixer",  mockStep("spec-fixer")],
       ]),

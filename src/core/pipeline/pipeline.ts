@@ -348,11 +348,6 @@ export class Pipeline {
       return step.completionVerdict;
     }
 
-    // Legacy default: design → "success", others → "approved"
-    if (stepName === STEP_NAMES.DESIGN) {
-      return "success";
-    }
-
     // spec-fixer and other polling-style steps with no result file default to "approved"
     return "approved";
   }

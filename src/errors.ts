@@ -1,4 +1,3 @@
-import { specReviewResultPath, reviewFeedbackPath } from "./util/paths.js";
 
 /**
  * Named error class for specrunner CLI.
@@ -192,12 +191,26 @@ export function ambiguousJobIdError(prefix: string, matchingJobIds: string[]): S
   );
 }
 
-export function specReviewResultNotFoundError(slug: string, branch: string, iteration: number): SpecRunnerError {
-  const resultPath = specReviewResultPath(slug, iteration);
+/**
+ * Generic factory for result-file-not-found errors.
+ * Derives the error code from stepName:
+ *   "spec-review" → SPEC_REVIEW_RESULT_NOT_FOUND
+ *   "code-review" → CODE_REVIEW_RESULT_NOT_FOUND
+ *   (any step)    → <STEP_UPPER>_RESULT_NOT_FOUND
+ *
+ * resultPath is the already-computed path from step.resultFilePath().
+ */
+export function resultFileNotFoundError(
+  stepName: string,
+  resultPath: string,
+  branch: string,
+): SpecRunnerError {
+  const code = `${stepName.toUpperCase().replace(/-/g, "_")}_RESULT_NOT_FOUND`;
   return new SpecRunnerError(
-    ERROR_CODES.SPEC_REVIEW_RESULT_NOT_FOUND,
-    `Ensure the spec-review agent wrote the result file to ${resultPath} on branch '${branch}'. If the agent wrote the file but did not commit + push, re-run the step or check the agent session logs for git push errors.`,
-    `Spec-review result file not found on branch '${branch}'.`,
+    code,
+    `Ensure the ${stepName} agent wrote the result file to ${resultPath} on branch '${branch}'. ` +
+    `If the agent wrote the file but did not commit + push, re-run the step or check the agent session logs for git push errors.`,
+    `${stepName} result file not found on branch '${branch}'.`,
   );
 }
 
@@ -207,15 +220,6 @@ export function pollTimeoutError(sessionId: string, elapsedMs: number): SpecRunn
     ERROR_CODES.POLL_TIMEOUT,
     "Session may still be running on Anthropic side. Use 'specrunner resume' to retry or 'specrunner cancel' to abort.",
     `Session '${sessionId}' did not complete within ${elapsedSec}s (${elapsedMs}ms).`,
-  );
-}
-
-export function codeReviewResultNotFoundError(slug: string, branch: string, iteration: number): SpecRunnerError {
-  const feedbackPath = reviewFeedbackPath(slug, iteration);
-  return new SpecRunnerError(
-    ERROR_CODES.CODE_REVIEW_RESULT_NOT_FOUND,
-    `Ensure the code-review agent wrote the result file to ${feedbackPath} on branch '${branch}'. If the agent wrote the file but did not commit + push, re-run the step or check the agent session logs for git push errors.`,
-    `Code-review result file not found on branch '${branch}'.`,
   );
 }
 

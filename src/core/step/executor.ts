@@ -18,11 +18,6 @@ import { transitionJob } from "../../state/lifecycle.js";
 import { projectMdPath } from "../../util/paths.js";
 import { gitExec, gitExecExitCode, defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
 import { noCommitDetectedError, pushFailedError } from "../../errors.js";
-import { STEP_NAMES } from "./step-names.js";
-
-const PROJECT_CONTEXT_STEPS: ReadonlySet<string> = new Set([
-  STEP_NAMES.DESIGN, STEP_NAMES.SPEC_REVIEW, STEP_NAMES.IMPLEMENTER, STEP_NAMES.CODE_REVIEW,
-]);
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -108,7 +103,7 @@ export class StepExecutor {
     });
 
     let projectContext: string | undefined;
-    if (PROJECT_CONTEXT_STEPS.has(step.name)) {
+    if (step.needsProjectContext === true) {
       const cwd = deps.cwd ?? process.cwd();
       const pmPath = path.join(cwd, projectMdPath());
       try {

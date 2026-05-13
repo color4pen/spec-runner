@@ -17,8 +17,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
-  specReviewResultNotFoundError,
-  codeReviewResultNotFoundError,
+  resultFileNotFoundError,
   ERROR_CODES,
 } from "../../../src/errors.js";
 import { CodeReviewStep, buildReviewFeedbackPath } from "../../../src/core/step/code-review.js";
@@ -41,27 +40,30 @@ import * as os from "node:os";
 import { vi } from "vitest";
 
 // -------------------------------------------------------------------------
-// TC-001: specReviewResultNotFoundError — iteration=1
+// TC-001: resultFileNotFoundError for spec-review — iteration=1
 // -------------------------------------------------------------------------
-describe("TC-001: specReviewResultNotFoundError — iteration=1 suffix and guidance", () => {
+describe("TC-001: resultFileNotFoundError (spec-review) — iteration=1 suffix and guidance", () => {
   it("hint contains spec-review-result-001.md", () => {
-    const err = specReviewResultNotFoundError("readme-status-section", "feat/readme-status-section", 1);
+    const resultPath = specReviewResultPath("readme-status-section", 1);
+    const err = resultFileNotFoundError("spec-review", resultPath, "feat/readme-status-section");
     expect(err.hint).toContain("spec-review-result-001.md");
   });
 
   it("hint contains the branch name", () => {
-    const err = specReviewResultNotFoundError("readme-status-section", "feat/readme-status-section", 1);
+    const resultPath = specReviewResultPath("readme-status-section", 1);
+    const err = resultFileNotFoundError("spec-review", resultPath, "feat/readme-status-section");
     expect(err.hint).toContain("feat/readme-status-section");
   });
 
   it("hint contains the change folder path", () => {
-    const err = specReviewResultNotFoundError("readme-status-section", "feat/readme-status-section", 1);
-    expect(err.hint).toContain(specReviewResultPath("readme-status-section", 1));
+    const resultPath = specReviewResultPath("readme-status-section", 1);
+    const err = resultFileNotFoundError("spec-review", resultPath, "feat/readme-status-section");
+    expect(err.hint).toContain(resultPath);
   });
 
   it("hint contains commit+push guidance", () => {
-    const err = specReviewResultNotFoundError("readme-status-section", "feat/readme-status-section", 1);
-    // Must contain guidance about commit+push not done
+    const resultPath = specReviewResultPath("readme-status-section", 1);
+    const err = resultFileNotFoundError("spec-review", resultPath, "feat/readme-status-section");
     const hasGuidance =
       err.hint.includes("re-run the step") ||
       err.hint.includes("check the agent session logs for git push errors");
@@ -69,47 +71,53 @@ describe("TC-001: specReviewResultNotFoundError — iteration=1 suffix and guida
   });
 
   it("error code is SPEC_REVIEW_RESULT_NOT_FOUND", () => {
-    const err = specReviewResultNotFoundError("slug", "branch", 1);
+    const resultPath = specReviewResultPath("slug", 1);
+    const err = resultFileNotFoundError("spec-review", resultPath, "branch");
     expect(err.code).toBe(ERROR_CODES.SPEC_REVIEW_RESULT_NOT_FOUND);
   });
 });
 
 // -------------------------------------------------------------------------
-// TC-002: specReviewResultNotFoundError — iteration=10 -> suffix -010
+// TC-002: resultFileNotFoundError for spec-review — iteration=10 -> suffix -010
 // -------------------------------------------------------------------------
-describe("TC-002: specReviewResultNotFoundError — iteration=10 generates suffix -010", () => {
+describe("TC-002: resultFileNotFoundError (spec-review) — iteration=10 generates suffix -010", () => {
   it("hint contains spec-review-result-010.md", () => {
-    const err = specReviewResultNotFoundError("my-slug", "feat/my-slug", 10);
+    const resultPath = specReviewResultPath("my-slug", 10);
+    const err = resultFileNotFoundError("spec-review", resultPath, "feat/my-slug");
     expect(err.hint).toContain("spec-review-result-010.md");
   });
 });
 
 // -------------------------------------------------------------------------
-// TC-003: specReviewResultNotFoundError — iteration=100 -> suffix -100
+// TC-003: resultFileNotFoundError for spec-review — iteration=100 -> suffix -100
 // -------------------------------------------------------------------------
-describe("TC-003: specReviewResultNotFoundError — iteration=100 generates suffix -100", () => {
+describe("TC-003: resultFileNotFoundError (spec-review) — iteration=100 generates suffix -100", () => {
   it("hint contains spec-review-result-100.md", () => {
-    const err = specReviewResultNotFoundError("my-slug", "feat/my-slug", 100);
+    const resultPath = specReviewResultPath("my-slug", 100);
+    const err = resultFileNotFoundError("spec-review", resultPath, "feat/my-slug");
     expect(err.hint).toContain("spec-review-result-100.md");
   });
 });
 
 // -------------------------------------------------------------------------
-// TC-004: codeReviewResultNotFoundError — iteration=3
+// TC-004: resultFileNotFoundError for code-review — iteration=3
 // -------------------------------------------------------------------------
-describe("TC-004: codeReviewResultNotFoundError — iteration=3 suffix and guidance", () => {
+describe("TC-004: resultFileNotFoundError (code-review) — iteration=3 suffix and guidance", () => {
   it("hint contains review-feedback-003.md", () => {
-    const err = codeReviewResultNotFoundError("some-slug", "feat/some-slug", 3);
+    const feedbackPath = reviewFeedbackPath("some-slug", 3);
+    const err = resultFileNotFoundError("code-review", feedbackPath, "feat/some-slug");
     expect(err.hint).toContain("review-feedback-003.md");
   });
 
   it("hint contains the change folder path", () => {
-    const err = codeReviewResultNotFoundError("some-slug", "feat/some-slug", 3);
-    expect(err.hint).toContain(reviewFeedbackPath("some-slug", 3));
+    const feedbackPath = reviewFeedbackPath("some-slug", 3);
+    const err = resultFileNotFoundError("code-review", feedbackPath, "feat/some-slug");
+    expect(err.hint).toContain(feedbackPath);
   });
 
   it("hint contains commit+push guidance", () => {
-    const err = codeReviewResultNotFoundError("some-slug", "feat/some-slug", 3);
+    const feedbackPath = reviewFeedbackPath("some-slug", 3);
+    const err = resultFileNotFoundError("code-review", feedbackPath, "feat/some-slug");
     const hasGuidance =
       err.hint.includes("re-run the step") ||
       err.hint.includes("check the agent session logs for git push errors");
@@ -117,25 +125,26 @@ describe("TC-004: codeReviewResultNotFoundError — iteration=3 suffix and guida
   });
 
   it("error code is CODE_REVIEW_RESULT_NOT_FOUND", () => {
-    const err = codeReviewResultNotFoundError("slug", "branch", 3);
+    const feedbackPath = reviewFeedbackPath("slug", 3);
+    const err = resultFileNotFoundError("code-review", feedbackPath, "branch");
     expect(err.code).toBe(ERROR_CODES.CODE_REVIEW_RESULT_NOT_FOUND);
   });
 });
 
 // -------------------------------------------------------------------------
-// TC-005: iteration argument is required (TypeScript-level test)
-// Verified by the required (non-optional) parameter type in errors.ts.
-// This test confirms both functions accept exactly (slug, branch, iteration).
+// TC-005: resultFileNotFoundError accepts (stepName, resultPath, branch)
 // -------------------------------------------------------------------------
-describe("TC-005: iteration argument is required", () => {
-  it("specReviewResultNotFoundError accepts 3 args and returns a SpecRunnerError", () => {
-    const err = specReviewResultNotFoundError("slug", "branch", 2);
+describe("TC-005: resultFileNotFoundError generic factory", () => {
+  it("returns SPEC_REVIEW_RESULT_NOT_FOUND for spec-review stepName", () => {
+    const resultPath = specReviewResultPath("slug", 2);
+    const err = resultFileNotFoundError("spec-review", resultPath, "branch");
     expect(err).toBeDefined();
     expect(err.code).toBe("SPEC_REVIEW_RESULT_NOT_FOUND");
   });
 
-  it("codeReviewResultNotFoundError accepts 3 args and returns a SpecRunnerError", () => {
-    const err = codeReviewResultNotFoundError("slug", "branch", 2);
+  it("returns CODE_REVIEW_RESULT_NOT_FOUND for code-review stepName", () => {
+    const feedbackPath = reviewFeedbackPath("slug", 2);
+    const err = resultFileNotFoundError("code-review", feedbackPath, "branch");
     expect(err).toBeDefined();
     expect(err.code).toBe("CODE_REVIEW_RESULT_NOT_FOUND");
   });

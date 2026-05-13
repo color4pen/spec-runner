@@ -24,6 +24,7 @@
  * TC-031: result file not found → error
  */
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../core/port/agent-runner.js";
+import type { AgentStep } from "../../core/step/types.js";
 import type { SessionClient } from "../../core/port/session-client.js";
 import type { GitHubClient } from "../../core/port/github-client.js";
 import type { JobState, ErrorInfo } from "../../state/schema.js";
@@ -40,8 +41,7 @@ import {
   branchNotSetError,
   sessionTerminatedError,
   changeFolderNotFoundError,
-  specReviewResultNotFoundError,
-  codeReviewResultNotFoundError,
+  resultFileNotFoundError,
   noCommitDetectedError,
 } from "../../errors.js";
 import { changeFolderPath } from "../../util/paths.js";
@@ -93,15 +93,14 @@ export class ManagedAgentRunner implements AgentRunner {
    * Design D3 (stepcontext-type-separation): No JobStateStore — returns AgentRunResult only.
    */
   async run(ctx: AgentRunContext): Promise<AgentRunResult> {
-    const step = ctx.step;
+    return this.useSseStrategy(ctx.step)
+      ? this.runDesignStyle(ctx)
+      : this.runPollingStyle(ctx);
+  }
 
-    // Design-style: uses SSE with custom tool handling
-    if (step.agent.role === STEP_NAMES.DESIGN) {
-      return this.runDesignStyle(ctx);
-    }
-
-    // Polling-style: creates session, sends message, polls until complete
-    return this.runPollingStyle(ctx);
+  /** True when the step should use SSE streaming rather than polling. */
+  private useSseStrategy(step: AgentStep): boolean {
+    return step.agent.role === STEP_NAMES.DESIGN;
   }
 
   // ---------------------------------------------------------------------------
@@ -448,11 +447,7 @@ export class ManagedAgentRunner implements AgentRunner {
       );
 
       if (fileContent === null) {
-        const existingResults = state.steps?.[step.name] ?? [];
-        const iteration = existingResults.length + 1;
-        const notFoundErr = step.name === STEP_NAMES.CODE_REVIEW
-          ? codeReviewResultNotFoundError(ctx.slug, effectiveBranch, iteration)
-          : specReviewResultNotFoundError(ctx.slug, effectiveBranch, iteration);
+        const notFoundErr = resultFileNotFoundError(step.name, resultFilePath, effectiveBranch);
         stderrWrite(notFoundErr.message);
         const notFoundErrorInfo: ErrorInfo = { code: notFoundErr.code, message: notFoundErr.message, hint: notFoundErr.hint };
         attachStateAndRethrow(Object.assign(notFoundErr, notFoundErrorInfo), state);
