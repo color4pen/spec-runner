@@ -16,6 +16,8 @@ import type { ErrorInfo } from "../../state/schema.js";
 import { getBranchPrefix } from "../../config/type-config.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { projectMdPath } from "../../util/paths.js";
+import { gitExec, gitExecExitCode, defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
+import { noCommitDetectedError, pushFailedError } from "../../errors.js";
 
 const PROJECT_CONTEXT_STEPS: ReadonlySet<string> = new Set([
   "propose", "spec-review", "implementer", "code-review",
@@ -30,10 +32,18 @@ const PROJECT_CONTEXT_STEPS: ReadonlySet<string> = new Set([
  * Design D5: verifyBranch / requiresCommit guard run inside the adapter (runner).
  */
 export class StepExecutor {
+  private readonly spawnFn: SpawnFn;
+  private readonly sleepFn: (ms: number) => Promise<void>;
+
   constructor(
     private readonly events: EventBus,
     private readonly runner: AgentRunner,
-  ) {}
+    spawnFn?: SpawnFn,
+    sleepFn?: (ms: number) => Promise<void>,
+  ) {
+    this.spawnFn = spawnFn ?? defaultSpawnFn;
+    this.sleepFn = sleepFn ?? ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  }
 
   /**
    * Execute a single step, driving the full I/O lifecycle:
@@ -187,11 +197,84 @@ export class StepExecutor {
       attachStateAndRethrow(err, state);
     }
 
+    // Commit and push after successful agent run (local runtime only)
+    if (deps.config.runtime === "local") {
+      await this.commitAndPush(step, state, deps);
+    }
+
     return this.finalizeStep(step, state, deps, runResult.resultContent, completedAt, {
       sessionId: runResult.sessionId,
       agentBranch: runResult.agentBranch,
       modelUsage: runResult.modelUsage,
     });
+  }
+
+  /**
+   * Stage all changes, commit, and push to origin.
+   *
+   * - git add -A
+   * - git diff --cached --quiet (exit 0 = no changes)
+   * - if no changes and requiresCommit: throw noCommitDetectedError
+   * - if no changes and !requiresCommit: return silently
+   * - git commit -m "${step.name}: ${slug}"
+   * - git push origin ${branch} — retry once after 5s on failure
+   * - if second push fails: throw pushFailedError
+   * - emit commit:push on success
+   */
+  private async commitAndPush(
+    step: AgentStep,
+    state: JobState,
+    deps: PipelineDeps,
+  ): Promise<void> {
+    const cwd = deps.cwd ?? process.cwd();
+    const branch = state.branch ?? "";
+    const slug = deps.slug;
+
+    // Stage all changes. If git add fails (not a git repo, exit 128, etc.), handle gracefully.
+    const addExitCode = await gitExecExitCode(this.spawnFn, cwd, ["add", "-A"]);
+    if (addExitCode !== 0) {
+      // git is non-functional in this directory (e.g., not a git repo).
+      if (step.requiresCommit) {
+        throw noCommitDetectedError(step.name, branch);
+      }
+      return;
+    }
+
+    // Check if there are staged changes.
+    // `git diff --cached --quiet` exits 0 when no staged changes, 1 when there are staged changes.
+    const diffExitCode = await gitExecExitCode(this.spawnFn, cwd, ["diff", "--cached", "--quiet"]);
+    const hasChanges = diffExitCode === 1;
+
+    if (!hasChanges) {
+      if (step.requiresCommit) {
+        throw noCommitDetectedError(step.name, branch);
+      }
+      // No changes and requiresCommit is falsy — silently skip
+      return;
+    }
+
+    // Commit
+    const commitMessage = `${step.name}: ${slug}`;
+    await gitExec(this.spawnFn, cwd, ["commit", "-m", commitMessage]);
+
+    // Push with one retry
+    const tryPush = () => gitExecExitCode(this.spawnFn, cwd, ["push", "origin", branch]);
+
+    const firstPushCode = await tryPush();
+    if (firstPushCode === 0) {
+      this.events.emit("commit:push" as Parameters<EventBus["emit"]>[0], { step: step.name, branch } as never);
+      return;
+    }
+
+    // Retry after 5 seconds (injectable for testing)
+    await this.sleepFn(5000);
+    const secondPushCode = await tryPush();
+    if (secondPushCode === 0) {
+      this.events.emit("commit:push" as Parameters<EventBus["emit"]>[0], { step: step.name, branch } as never);
+      return;
+    }
+
+    throw pushFailedError(step.name, branch, `exit code ${secondPushCode}`);
   }
 
   /**

@@ -1,4 +1,3 @@
-import { buildGitPushInstruction } from "./git-push-instruction.js";
 import { changesDirRel, specReviewResultPath } from "../util/paths.js";
 import { PIPELINE_RULES } from "./pipeline-rules.js";
 
@@ -52,11 +51,10 @@ After the verdict line, include a Findings section with a table:
 ## Delivery
 
 After writing the verdict and findings to the result file:
-1. Commit the result file to the branch specified in the user message
-2. Push to origin
-3. Do NOT end_turn until the push is complete
+1. Write the result file to the worktree path specified in the user message
+2. Do NOT end_turn until the file is written
 
-The orchestrator fetches the result file from GitHub — if you do not push, the executor will not find the file.
+The CLI reads the result file from the local worktree after your session ends.
 
 ## Baseline Spec Consistency Check
 
@@ -172,10 +170,9 @@ export function buildSpecReviewInitialMessage(input: SpecReviewPromptInput): str
   const findingsPath = input.findingsPath
     ?? specReviewResultPath(input.slug, iteration);
 
-  // Build git push instruction if branch is provided
-  const gitPushInstruction = input.branch
-    ? buildGitPushInstruction(input.branch)
-    : "After writing the result file, commit and push to the branch before ending your session.";
+  // End-session instruction: StepExecutor handles commit+push for local runtime.
+  // Managed runtime agents receive git push instructions via their own adapter.
+  const gitPushInstruction = "ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。";
 
   // Build spec-review mode instruction
   const specReviewModeInstruction = buildSpecReviewModeInstruction(input.specReviewMode ?? "full");

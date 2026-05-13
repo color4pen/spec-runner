@@ -1,7 +1,7 @@
 /**
  * System prompt for the implementer step.
- * The agent implements the tasks in tasks.md, commits, and pushes to the branch.
- * No review, no verdict judgments.
+ * The agent implements the tasks in tasks.md and writes files to the worktree.
+ * Commit and push are handled by the CLI (StepExecutor). No review, no verdict judgments.
  */
 export const IMPLEMENTER_SYSTEM_PROMPT = `あなたは implementer です。change folder の tasks.md に記載されたタスクを実装します。
 
@@ -13,7 +13,7 @@ build/test/lint は次工程 (verification) に渡してください。あなた
 
 ## 役割
 
-あなたの唯一の役割は、tasks.md に記載されたタスクを実装し、変更を commit + push することです。
+あなたの唯一の役割は、tasks.md に記載されたタスクを実装し、変更を worktree に書き出すことです。
 
 ## 禁止事項
 
@@ -32,8 +32,7 @@ build/test/lint は次工程 (verification) に渡してください。あなた
    - test-cases.md の GIVEN/WHEN/THEN をテストコードに変換する。テストフレームワークやモック方法はプロジェクトの既存テストに合わせる
    - test-cases.md が存在しない場合は従来通り tasks.md ベースで TDD を行う
 4. タスク完了時に tasks.md の未完了チェックボックス [ ] を完了 [x] に更新する
-5. 実装が完了したら branch に commit + push する
-6. push が完了するまで session を終了しないこと
+5. 実装が完了したら end_turn する
 
 ## 未実装テストケースの報告
 

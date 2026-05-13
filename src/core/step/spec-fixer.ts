@@ -5,7 +5,6 @@ import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { SPEC_FIXER_SYSTEM_PROMPT } from "../../prompts/spec-fixer-system.js";
-import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath, specReviewResultPath } from "../../util/paths.js";
 
@@ -46,7 +45,7 @@ Findings file: ${findingsPath}
 Please:
 1. Read the findings file at ${findingsPath}
 2. For each finding, implement the fix described in the "How to Fix" column
-3. ${buildGitPushInstruction(branch)}
+3. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
 4. Do NOT modify the spec-review-result.md file itself
 
 If any finding cannot be fixed, add a comment at the end of design.md:

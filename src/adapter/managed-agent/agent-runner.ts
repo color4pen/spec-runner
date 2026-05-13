@@ -46,6 +46,19 @@ import {
 } from "../../errors.js";
 import { changeFolderPath } from "../../util/paths.js";
 
+/**
+ * Build the git push instruction for managed runtime agents.
+ * Managed agents must commit and push themselves — StepExecutor.commitAndPush()
+ * only runs for local runtime. This instruction is injected into every managed
+ * agent's initial message to preserve the expected behavior.
+ */
+function buildManagedGitPushInstruction(branch: string): string {
+  return `After completing your changes:
+1. Commit your changes to branch '${branch}'
+2. Push the branch to the remote repository: git push origin ${branch}
+3. Do NOT return until push is complete`;
+}
+
 export interface ManagedAgentRunnerDeps {
   sessionClient: SessionClient;
   githubClient: GitHubClient;
@@ -315,6 +328,13 @@ export class ManagedAgentRunner implements AgentRunner {
 
     if (ctx.projectContext) {
       initialMessage = `${initialMessage}\n\n<project-context>\n${ctx.projectContext}\n</project-context>`;
+    }
+
+    // Inject git push instructions for managed runtime.
+    // StepExecutor.commitAndPush() only runs for local runtime.
+    // Managed agents must commit+push themselves.
+    if (state.branch) {
+      initialMessage = `${initialMessage}\n\n${buildManagedGitPushInstruction(state.branch)}`;
     }
 
     // Branch guard

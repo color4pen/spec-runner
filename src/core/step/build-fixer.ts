@@ -5,7 +5,6 @@ import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
 import { BUILD_FIXER_SYSTEM_PROMPT } from "../../prompts/build-fixer-system.js";
-import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { SpecRunnerError, branchNotSetError } from "../../errors.js";
 import { extractVerificationFailures } from "../verification/parse-result.js";
@@ -93,7 +92,7 @@ Please:
 1. Read the verification result at ${findingsPath}
 2. Identify all failed phases and their error logs
 3. Fix the errors mechanically (NO specification changes, NO design decisions)
-4. ${buildGitPushInstruction(branch)}
+4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
 5. Do NOT modify verification-result.md itself
 
 Original request:

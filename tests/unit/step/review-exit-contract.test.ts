@@ -314,26 +314,33 @@ describe("TC-009: code-review round-trip — resultFilePath and buildReviewFeedb
 });
 
 // -------------------------------------------------------------------------
-// TC-010: spec-review system prompt includes commit+push+delayed end_turn instructions
+// TC-010: spec-review system prompt — StepExecutor now handles commit+push (local runtime)
+// Updated: agents write files and end_turn; CLI commit+push replaces agent-driven push
 // -------------------------------------------------------------------------
-describe("TC-010: spec-review system prompt includes commit+push+delayed end_turn instructions", () => {
-  it("SPEC_REVIEW_SYSTEM_PROMPT contains commit instruction (case-insensitive)", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT.toLowerCase()).toContain("commit");
+describe("TC-010: spec-review system prompt includes end_turn instructions (StepExecutor owns commit+push)", () => {
+  it("SPEC_REVIEW_SYSTEM_PROMPT instructs agent to write files to worktree", () => {
+    const hasWriteInstruction =
+      SPEC_REVIEW_SYSTEM_PROMPT.includes("Write the result file to the worktree") ||
+      SPEC_REVIEW_SYSTEM_PROMPT.includes("worktree") ||
+      SPEC_REVIEW_SYSTEM_PROMPT.includes("end_turn");
+    expect(hasWriteInstruction).toBe(true);
   });
 
-  it("SPEC_REVIEW_SYSTEM_PROMPT contains push instruction", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT.toLowerCase()).toContain("push");
+  it("SPEC_REVIEW_SYSTEM_PROMPT does not instruct agents to commit and push (local runtime)", () => {
+    // For local runtime, StepExecutor.commitAndPush() handles this.
+    // The system prompt should NOT tell agents to git push.
+    // Note: managed runtime injects git push instructions separately via ManagedAgentRunner.
+    const hasAgentPushInstruction =
+      SPEC_REVIEW_SYSTEM_PROMPT.includes("git push") ||
+      SPEC_REVIEW_SYSTEM_PROMPT.includes("Push to origin");
+    expect(hasAgentPushInstruction).toBe(false);
   });
 
-  it("SPEC_REVIEW_SYSTEM_PROMPT contains 'Do NOT end_turn until push is complete' equivalent", () => {
-    const hasDelayEndTurn =
-      SPEC_REVIEW_SYSTEM_PROMPT.includes("Do NOT end_turn until the push is complete") ||
-      SPEC_REVIEW_SYSTEM_PROMPT.includes("do not end_turn until push") ||
-      (SPEC_REVIEW_SYSTEM_PROMPT.includes("end_turn") && SPEC_REVIEW_SYSTEM_PROMPT.toLowerCase().includes("push"));
-    expect(hasDelayEndTurn).toBe(true);
+  it("SPEC_REVIEW_SYSTEM_PROMPT contains end_turn instruction", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("end_turn");
   });
 
-  it("buildSpecReviewInitialMessage with branch embeds buildGitPushInstruction content", () => {
+  it("buildSpecReviewInitialMessage contains findings path for local runtime", () => {
     const msg = buildSpecReviewInitialMessage({
       slug: "my-slug",
       repository: "owner/repo",
@@ -341,11 +348,10 @@ describe("TC-010: spec-review system prompt includes commit+push+delayed end_tur
       branch: "feat/my-slug",
       iteration: 1,
     });
-    // buildGitPushInstruction embeds push + end_turn guard
-    expect(msg).toContain("feat/my-slug");
-    expect(msg.toLowerCase()).toContain("commit");
-    expect(msg.toLowerCase()).toContain("push");
-    expect(msg).toContain("Do NOT return until push is complete");
+    // Must contain slug reference
+    expect(msg).toContain("my-slug");
+    // Must contain end-session instruction (CLI handles commit+push)
+    expect(msg).toContain("end_turn");
   });
 
   it("buildSpecReviewInitialMessage includes correct findings path for iteration 1", () => {

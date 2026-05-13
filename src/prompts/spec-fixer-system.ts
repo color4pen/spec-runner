@@ -20,8 +20,7 @@ export const SPEC_FIXER_SYSTEM_PROMPT = `あなたは spec-fixer です。spec-r
 
 1. findings ファイルを読み込む
 2. 各 finding の "How to Fix" に従って該当ファイルを修正する
-3. 修正が完了したら必ずブランチに commit + push する
-4. push が完了するまで session を終了しないこと
+3. 修正が完了したら end_turn する
 
 ## Delta Spec Format Rules
 

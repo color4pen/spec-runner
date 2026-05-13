@@ -63,8 +63,7 @@ describe("IMPLEMENTER_SYSTEM_PROMPT — basic requirements", () => {
     expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("tasks.md");
   });
 
-  it("still contains commit + push instructions", () => {
-    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("commit");
-    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("push");
+  it("contains end_turn instruction instead of commit + push (StepExecutor handles commit+push)", () => {
+    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("end_turn");
   });
 });

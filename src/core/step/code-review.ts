@@ -5,7 +5,6 @@ import type { JobState } from "../../state/schema.js";
 import type { Verdict } from "../../state/schema.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../../prompts/code-review-system.js";
-import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { parseReviewVerdict } from "../parser/review-verdict.js";
 import { parseReviewScores } from "../parser/review-scores.js";
 import type { ReviewScores } from "../parser/review-scores.js";
@@ -108,10 +107,6 @@ export function buildCodeReviewInitialMessage(opts: {
   requestContent: string;
   dynamicContext?: DynamicContext;
 }): string {
-  const gitInstruction = opts.branch
-    ? buildGitPushInstruction(opts.branch)
-    : "After writing the result file, commit and push to the branch before ending your session.";
-
   const contextSection = opts.dynamicContext?.diffStat
     ? `\n\n## Branch Context\n\n### Diff stat (main..HEAD)\n\n\`\`\`\n${opts.dynamicContext.diffStat}\n\`\`\``
     : "";
@@ -136,7 +131,7 @@ Original request:
 ${opts.requestContent}
 </user-request>${contextSection}
 
-${gitInstruction}`;
+ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。`;
 }
 
 /**

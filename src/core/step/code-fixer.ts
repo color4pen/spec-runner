@@ -5,7 +5,6 @@ import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
 import { CODE_FIXER_SYSTEM_PROMPT } from "../../prompts/code-fixer-system.js";
-import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { SpecRunnerError, branchNotSetError } from "../../errors.js";
 import { changeFolderPath } from "../../util/paths.js";
@@ -94,7 +93,7 @@ Please:
 2. Fix all HIGH severity findings (mandatory)
 3. Fix MEDIUM severity findings only if they do not require design changes
 4. Ignore LOW severity findings
-5. ${buildGitPushInstruction(branch)}
+5. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
 6. Do NOT modify the review-feedback file itself
 7. Do NOT add new features or make specification changes
 

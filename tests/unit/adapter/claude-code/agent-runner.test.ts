@@ -607,8 +607,11 @@ describe("TC-027: ClaudeCodeRunner does not import register_branch", () => {
 // TC-028: requiresCommit guard — branch HEAD not advanced → error
 // ---------------------------------------------------------------------------
 
-describe("TC-028: ClaudeCodeRunner requiresCommit guard — branch not advanced", () => {
-  it("returns completionReason='error' when branch HEAD did not advance", async () => {
+describe("TC-028: ClaudeCodeRunner — no requiresCommit guard (moved to StepExecutor)", () => {
+  it("does NOT return completionReason='error' for requiresCommit:true steps (guard removed from adapter)", async () => {
+    // TC-028 updated: requiresCommit guard was removed from ClaudeCodeRunner.
+    // StepExecutor.commitAndPush() now handles this via staged diff check.
+    // The adapter should NOT trigger NO_COMMIT_DETECTED — it just runs the agent.
     const SHA = "sha-abc123deadbeef";
 
     const gitResponses = {
@@ -644,9 +647,9 @@ describe("TC-028: ClaudeCodeRunner requiresCommit guard — branch not advanced"
       emit: vi.fn(),
     };
 
+    // The adapter succeeds — commit+push check is StepExecutor's responsibility
     const result = await runner.run(ctx);
-    expect(result.completionReason).toBe("error");
-    expect(result.error?.message).toMatch(/branch HEAD did not advance/);
+    expect(result.completionReason).toBe("success");
   });
 });
 
@@ -654,8 +657,10 @@ describe("TC-028: ClaudeCodeRunner requiresCommit guard — branch not advanced"
 // TC-029: branch does not exist after agent run → error
 // ---------------------------------------------------------------------------
 
-describe("TC-029: ClaudeCodeRunner requiresCommit — branch does not exist → error", () => {
-  it("returns completionReason='error' when expected branch does not exist after run", async () => {
+describe("TC-029: ClaudeCodeRunner — no requiresCommit guard (moved to StepExecutor)", () => {
+  it("returns completionReason='success' regardless of branch state (adapter no longer checks requiresCommit)", async () => {
+    // TC-029 updated: requiresCommit guard was removed from ClaudeCodeRunner.
+    // StepExecutor.commitAndPush() now handles commit detection via staged diff check.
     const gitResponses = {
       "rev-parse": { stdout: "sha-abc123", exitCode: 0 },
       "branch": { stdout: "", exitCode: 0 },
@@ -689,9 +694,9 @@ describe("TC-029: ClaudeCodeRunner requiresCommit — branch does not exist → 
       emit: vi.fn(),
     };
 
+    // Adapter returns success — commit detection moved to StepExecutor
     const result = await runner.run(ctx);
-    expect(result.completionReason).toBe("error");
-    expect(result.error).toBeDefined();
+    expect(result.completionReason).toBe("success");
   });
 });
 

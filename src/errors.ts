@@ -43,6 +43,7 @@ export const ERROR_CODES = {
   GH_SUBPROCESS_FAILED: "GH_SUBPROCESS_FAILED",
   GIT_SUBPROCESS_FAILED: "GIT_SUBPROCESS_FAILED",
   NO_COMMIT_DETECTED: "NO_COMMIT_DETECTED",
+  PUSH_FAILED: "PUSH_FAILED",
   WORKTREE_GUARD: "WORKTREE_GUARD",
   AMBIGUOUS_JOB_ID: "AMBIGUOUS_JOB_ID",
   POLL_TIMEOUT: "POLL_TIMEOUT",
@@ -161,8 +162,16 @@ export function branchNotSetError(stepName: string): SpecRunnerError {
 export function noCommitDetectedError(stepName: string, branch: string): SpecRunnerError {
   return new SpecRunnerError(
     ERROR_CODES.NO_COMMIT_DETECTED,
-    `The agent likely forgot to commit + push, or completed without changes. Re-run the step or inspect the agent session log on Anthropic side. If the step legitimately produced no changes, this is a misconfiguration — set requiresCommit: false on the step.`,
-    `${stepName} session ended without advancing branch '${branch}': HEAD SHA was unchanged before and after the session.`,
+    `The agent produced no staged changes. Re-run the step or inspect the agent session log. If the step legitimately produces no changes, set requiresCommit: false on the step.`,
+    `${stepName} completed with no staged changes on branch '${branch}'.`,
+  );
+}
+
+export function pushFailedError(stepName: string, branch: string, detail: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.PUSH_FAILED,
+    `Check network connectivity and remote permissions. Retry with 'specrunner resume'.`,
+    `${stepName}: git push origin ${branch} failed after retry: ${detail}`,
   );
 }
 

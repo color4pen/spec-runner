@@ -1,4 +1,3 @@
-import { buildGitPushInstruction } from "./git-push-instruction.js";
 import { changesDirRel, changeFolderPath } from "../util/paths.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
@@ -143,12 +142,11 @@ Result determination:
 ## Delivery
 
 After writing test-cases.md:
-1. Commit the file to the branch specified in the user message
-2. Push to origin
-3. Do NOT end_turn until the push is complete
+1. Write the file to the worktree path specified in the user message
+2. Do NOT end_turn until the file is written
 
-The orchestrator uses test-cases.md as the reference for Scenario Coverage in
-the subsequent code-review step.
+The CLI handles commit and push after your session ends. The subsequent code-review step
+uses test-cases.md as the reference for Scenario Coverage.
 
 ## Security Note
 
@@ -189,7 +187,7 @@ Please:
 3. Read ${changeFolder}/tasks.md to identify each task and its acceptance criteria
 4. Generate test scenarios in GIVEN/WHEN/THEN format with Category, Priority, Source, and must/should/could priorities
 5. Write the scenarios to ${outputPath}
-6. ${buildGitPushInstruction(branch)}
+6. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
 
 <user-request>
 ${requestContent}

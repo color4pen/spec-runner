@@ -6,7 +6,7 @@
  *
  * Design D8 (design.md): composition root injects ClaudeCodeRunner when runtime === "local".
  * Design D2: resultContent fetched from local fs via fs.readFile.
- * Design D5: verifyBranch / requiresCommit via git subprocess (not GitHub API).
+ * Design D5: commit+push is handled by StepExecutor.commitAndPush() (not in adapter).
  * Design D9: runtime-specific git instructions injected as additionalInstructions.
  *
  * TC-022: ClaudeCodeRunner implements AgentRunner interface
@@ -15,8 +15,6 @@
  * TC-025: resultContent from fs.readFile (not GitHub API)
  * TC-026: additionalInstructions contains branch checkout instruction
  * TC-027: no register_branch import
- * TC-028: requiresCommit guard — branch not advanced → error
- * TC-029: branch does not exist → error (git only, no GitHub API)
  */
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
@@ -26,7 +24,7 @@ import {
   type SDKResultMessage,
   type SDKResultSuccess,
 } from "@anthropic-ai/claude-agent-sdk";
-import { gitExec, defaultSpawnFn, type SpawnFn } from "./git-exec.js";
+import { defaultSpawnFn, type SpawnFn } from "./git-exec.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from "../../core/port/agent-runner.js";
 import type { StepContext } from "../../core/types.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
@@ -47,7 +45,7 @@ function buildAdditionalInstructions(ctx: AgentRunContext): string {
       `RUNTIME INSTRUCTIONS (local Claude Code mode):`,
       `- You are running locally in the repository worktree at: ${ctx.cwd}`,
       `- Work on branch: ${branch} (already created by the CLI — do not create it again)`,
-      `- After completing the task, commit all changes and push: git push origin ${branch}`,
+      `- After completing your task, end your session. The CLI will handle commit and push.`,
       `- Slug for this request: ${slug}`,
     );
   }
@@ -118,11 +116,6 @@ export class ClaudeCodeRunner implements AgentRunner {
     const fullPrompt = additionalInstructions
       ? `${baseMessage}\n\n${additionalInstructions}`
       : baseMessage;
-
-    let preRunHeadSha: string | null = null;
-    if (step.requiresCommit && ctx.branch) {
-      preRunHeadSha = await gitExec(this.spawnFn, cwd, ["rev-parse", ctx.branch]);
-    }
 
     // Resolve execution config: step-level > config defaults > step hardcoded > SDK default
     // D2/D3 (design.md): getStepExecutionConfig() resolves model, maxTurns, timeoutMs
@@ -221,35 +214,6 @@ export class ClaudeCodeRunner implements AgentRunner {
       };
     } finally {
       if (timeoutId !== undefined) clearTimeout(timeoutId);
-    }
-
-    // TC-028: requiresCommit guard — verify branch advanced (D5)
-    if (step.requiresCommit && ctx.branch) {
-      const branchExists = await gitExec(this.spawnFn, cwd, ["branch", "--list", ctx.branch]);
-      if (!branchExists) {
-        return {
-          completionReason: "error",
-          resultContent: null,
-          error: Object.assign(
-            new Error(`Branch '${ctx.branch}' does not exist after agent run.`),
-            { code: "BRANCH_NOT_FOUND" },
-          ),
-        };
-      }
-
-      const postRunHeadSha = await gitExec(this.spawnFn, cwd, ["rev-parse", ctx.branch]);
-      if (postRunHeadSha !== null && preRunHeadSha !== null && postRunHeadSha === preRunHeadSha) {
-        return {
-          completionReason: "error",
-          resultContent: null,
-          error: Object.assign(
-            new Error(
-              `branch HEAD did not advance: '${ctx.branch}' HEAD was unchanged before and after the agent run.`,
-            ),
-            { code: "NO_COMMIT_DETECTED" },
-          ),
-        };
-      }
     }
 
     // TC-025: read result file from local fs (not GitHub API)

@@ -53,7 +53,7 @@ For Custom Tools that are **runtime-neutral** (none currently exist; reserved fo
 
 ### Requirement: StepExecutor Manages Lifecycle and Emits Events
 
-A `StepExecutor` class SHALL coordinate the I/O lifecycle of a `Step` execution. The lifecycle SHALL branch on `step.kind`:
+`StepExecutor` SHALL coordinate the I/O lifecycle of a `Step` execution. The lifecycle SHALL branch on `step.kind`:
 
 For `kind: "agent"` steps:
 
@@ -61,108 +61,30 @@ For `kind: "agent"` steps:
 2. Call `store.update(state, { step: step.name })` to record current step for `specrunner ps`
 3. Delegate to `AgentRunner.run(ctx)` which handles session creation, polling, and result fetching
 4. Receive `AgentRunResult` containing `completionReason`, `resultContent`, `sessionId?`, `agentBranch?`, `error?`
-5. On success: parse verdict from `resultContent` via `step.parseResult` (or derive verdict from `step.completionVerdict` when `resultContent` is null; if `completionVerdict` is also undefined, fall back to `"escalation"`)
-6. Emit `verdict:parsed`
-7. Persist the `StepRun` via `JobStateStore.appendStepRun` (recording `sessionId` from result)
-8. Set `state.branch` from `result.agentBranch` if present and `state.branch` is unset
-9. Emit `step:complete` on success or `step:error` on failure
+5. **[NEW] For local runtime: call `commitAndPush(step, state, deps)` to stage, commit, and push agent-written files**
+6. On success: parse verdict from `resultContent` via `step.parseResult` (or derive verdict from `step.completionVerdict` when `resultContent` is null; if `completionVerdict` is also undefined, fall back to `"escalation"`)
+7. Emit `verdict:parsed`
+8. Persist the `StepRun` via `JobStateStore.appendStepRun` (recording `sessionId` from result)
+9. Set `state.branch` from `result.agentBranch` if present and `state.branch` is unset
+10. Emit `step:complete` on success or `step:error` on failure
 
-For the local runtime path (AgentRunner returns without `_updatedState`):
+The `commitAndPush` step (step 5) SHALL only execute when the runtime configuration is `"local"`. For `"managed"` runtime, step 5 SHALL be skipped. All other lifecycle steps remain unchanged.
 
-- When `resultContent === null` and `step.completionVerdict` is defined, the executor SHALL use `step.completionVerdict` as the verdict instead of falling back to `"escalation"`.
-- When `resultContent === null` and `step.completionVerdict` is undefined, the executor SHALL fall back to `"escalation"` (existing behavior).
-- When `step.setsBranch === true` and `jobState.branch` is falsy, the executor SHALL set `state.branch = "feat/${slug}"` after successful verdict resolution. The slug SHALL be obtained from `deps.slug`.
+`StepExecutor` SHALL accept an optional `SpawnFn` via constructor injection for git subprocess execution. This dependency is used exclusively by `commitAndPush` and SHALL NOT affect the existing `EventBus` and `AgentRunner` constructor parameters.
 
-For `kind: "cli"` steps:
+#### Scenario: Agent step lifecycle with commitAndPush (local runtime)
 
-1. Emit `step:start`
-2. Skip session creation, agent ID resolution, and `buildMessage` invocation
-3. Invoke `step.run(state, deps)` and `await` its completion
-4. Fetch the artifact at `step.resultFilePath`
-5. Parse the artifact using `step.parseResult` to obtain a `StepOutcome`
-6. Emit `verdict:parsed`
-7. Persist the `StepRun` via `JobStateStore.appendStepRun`
-8. Emit `step:complete` on success or `step:error` on failure
+- **GIVEN** an agent step that completes successfully via `AgentRunner.run` under local runtime
+- **WHEN** `StepExecutor.execute(step, state)` runs to completion
+- **THEN** events are emitted in the order: `step:start` → (commitAndPush) → `verdict:parsed` → `step:complete`
+- **AND** git commit and push occur between `runner.run()` return and `finalizeStep()`
 
-`StepExecutor` SHALL accept its dependencies (`EventBus`, `AgentRunner`) via constructor injection. `StepExecutor` MUST NOT directly depend on `SessionClient`, `GitHubClient` (for agent step result fetching), `@anthropic-ai/sdk`, or `@anthropic-ai/claude-code` — all runtime-specific concerns are mediated by the `AgentRunner` port. `GitHubClient` injection remains permitted for `CliStep` paths (e.g., pr-create). `StepExecutor` MUST NOT contain a `STEP_AGENT_ROLE` lookup table or any equivalent intermediate role-mapping; the role is read from `step.agent.role` directly inside the `AgentRunner` adapter (no longer in `StepExecutor`). `StepExecutor` MUST NOT contain hardcoded step-name branches (e.g., `if (step.name === "verification")`); the only allowed dispatch is on `step.kind`. Helper functions within `StepExecutor` (e.g., `runPollingStyleStep`) MUST also contain no hardcoded step-name literals; grep for step-name string literals (e.g., `"spec-review"`, `"verification"`) in `executor.ts` MUST return zero matches.
+#### Scenario: Agent step lifecycle without commitAndPush (managed runtime)
 
-`StepExecutor` SHALL be the sole code path that persists `JobState` for both agent and CLI step executions. `AgentRunner` adapters SHALL NOT perform state persistence.
-
-When a CLI step's `parseResult` returns `{ verdict: null, ... }`, `StepExecutor` MUST normalize the verdict to `"escalation"` before persisting the `StepRun`. This ensures that an unrecognized verification-result.md format is routed through the `verification --escalation→ escalate` transition rather than causing an undefined routing state.
-
-`src/core/step/types.ts` SHALL export a shared `NULL_PARSE_RESULT` constant:
-
-```ts
-export const NULL_PARSE_RESULT: ParsedStepResult = {
-  verdict: null,
-  findingsPath: null,
-  fileContent: null,
-};
-```
-
-This constant is shared by `spec-fixer`, `implementer`, and `build-fixer` agent steps (all three have `resultFilePath === null` and produce no verdict file).
-
-#### Scenario: AgentStep lifecycle events fire in order
-- **GIVEN** an agent step that completes successfully via `AgentRunner.run`
+- **GIVEN** an agent step that completes successfully via `AgentRunner.run` under managed runtime
 - **WHEN** `StepExecutor.execute(step, state)` runs to completion
 - **THEN** events are emitted in the order: `step:start` → `verdict:parsed` → `step:complete`
-- **AND** no `step:error` event is emitted
-
-#### Scenario: CliStep lifecycle events fire in order
-- **GIVEN** a CLI step that completes successfully
-- **WHEN** `StepExecutor.execute(step, state)` runs to completion
-- **THEN** events are emitted in the order: `step:start` → `verdict:parsed` → `step:complete`
-- **AND** Anthropic SessionClient.create is NOT called
-- **AND** no `step:error` event is emitted
-
-#### Scenario: AgentStep delegates to AgentRunner.run
-- **GIVEN** any AgentStep instance
-- **WHEN** `StepExecutor.execute(step, state)` is invoked
-- **THEN** `runner.run(ctx)` is awaited exactly once with `ctx.step === step`
-- **AND** `SessionClient.create` is NOT directly called from `executor.ts`
-- **AND** session protocol details (SSE / polling / register_branch dispatch) are not visible from `executor.ts`
-
-#### Scenario: StepExecutor dispatch is on kind only
-- **WHEN** `src/core/step/executor.ts` is grepped
-- **THEN** dispatch occurs only on `step.kind`
-- **AND** no `if (step.name === ...)` or equivalent step-name hardcoded branch exists
-- **AND** no step-name string literals (e.g., `"spec-review"`, `"verification"`, `"build-fixer"`) appear in executor.ts or executor-helpers.ts
-
-#### Scenario: Local runtime completionVerdict fallback
-- **GIVEN** an AgentStep with `resultFilePath === null` and `completionVerdict: "success"` (e.g., ProposeStep)
-- **WHEN** the local runtime adapter returns `resultContent === null` and `completionReason === "success"`
-- **THEN** the executor uses `step.completionVerdict` ("success") as the verdict
-- **AND** the executor does NOT emit a "Treating as escalation" warning
-
-#### Scenario: Local runtime completionVerdict undefined fallback
-- **GIVEN** an AgentStep with `resultFilePath === null` and `completionVerdict` undefined
-- **WHEN** the local runtime adapter returns `resultContent === null` and `completionReason === "success"`
-- **THEN** the executor falls back to `"escalation"` as the verdict
-- **AND** the executor emits a "Treating as escalation" warning
-
-#### Scenario: Local runtime setsBranch after propose
-- **GIVEN** an AgentStep with `setsBranch: true` (e.g., ProposeStep)
-- **AND** `jobState.branch` is undefined or empty
-- **WHEN** the local runtime path completes successfully
-- **THEN** `state.branch` is set to `"feat/${slug}"` where slug comes from `deps.slug`
-
-#### Scenario: setsBranch does not overwrite existing branch
-- **GIVEN** an AgentStep with `setsBranch: true`
-- **AND** `jobState.branch` is already set to `"fix/existing-branch"`
-- **WHEN** the local runtime path completes successfully
-- **THEN** `state.branch` remains `"fix/existing-branch"` (not overwritten)
-
-#### Scenario: CLI step verdict null is normalized to escalation
-- **GIVEN** a CLI step whose `parseResult` returns `{ verdict: null, findingsPath: <path> }`
-- **WHEN** `StepExecutor.execute(step, state)` processes the parsed outcome
-- **THEN** the persisted `StepRun` has `verdict: "escalation"` (not `null`)
-- **AND** the pipeline routes via the `verification --escalation→ escalate` transition
-
-#### Scenario: Error path emits step:error and decorates exception
-- **WHEN** an exception is raised during the step lifecycle (either kind), or `runner.run` resolves with `completionReason !== "success"`
-- **THEN** `step:error` is emitted with the error payload
-- **AND** the exception bubbles up with the `err.state` field attached for upstream consumers
-- **AND** `failJobState` and `appendHistory` semantics are preserved verbatim
+- **AND** no git subprocess is spawned by the executor
 
 ### Requirement: spec-review uses a dedicated Anthropic Agent, not the propose Agent
 
@@ -536,3 +458,85 @@ This method is async and MAY perform I/O (unlike `buildMessage` which is pure). 
 - **WHEN** the adapter executes the step
 - **THEN** `buildMessage` receives the original `dynamicContext` unchanged
 - **AND** no additional I/O is performed
+
+### Requirement: StepExecutor performs commitAndPush after agent step completion (local runtime)
+
+`StepExecutor` SHALL perform `commitAndPush` after a successful `runner.run()` call and before `finalizeStep()`, but only when the runtime is `"local"`. For managed runtime, this step SHALL be skipped entirely.
+
+The `commitAndPush` sequence SHALL be:
+
+1. `git add -A` in the step's working directory (`deps.cwd`)
+2. `git diff --cached --quiet` to detect staged changes (exit code 1 = changes exist, exit code 0 = no changes)
+3. If no staged changes AND `step.requiresCommit === true`: throw `NO_COMMIT_DETECTED` error
+4. If no staged changes AND `step.requiresCommit` is falsy: return silently (no commit, no error)
+5. `git commit -m "${step.name}: ${deps.slug}"` to commit staged changes
+6. `git push origin ${state.branch}` to push to remote
+7. On push failure: wait 5 seconds, retry push once
+8. On second push failure: throw `PUSH_FAILED` error with diagnostic information, record in state for escalation
+
+`StepExecutor` SHALL accept an optional `SpawnFn` via constructor injection for git subprocess execution, defaulting to `node:child_process.spawn`.
+
+The `commitAndPush` method SHALL be a private method of `StepExecutor`. It SHALL NOT be exposed on the public API.
+
+#### Scenario: Agent step produces changes and commitAndPush succeeds
+
+- **GIVEN** an agent step completes successfully via `runner.run()` under local runtime
+- **AND** the agent wrote files to the worktree
+- **WHEN** `StepExecutor` runs `commitAndPush`
+- **THEN** `git add -A` is called
+- **AND** `git diff --cached --quiet` returns exit code 1 (changes exist)
+- **AND** `git commit -m "implementer: my-slug"` is called
+- **AND** `git push origin feat/my-slug-abcdef01` is called
+- **AND** `finalizeStep` is called after commitAndPush completes
+
+#### Scenario: No staged changes with requiresCommit true raises error
+
+- **GIVEN** an agent step with `requiresCommit: true` completes under local runtime
+- **AND** the agent produced no file changes
+- **WHEN** `StepExecutor` runs `commitAndPush`
+- **THEN** `git add -A` is called
+- **AND** `git diff --cached --quiet` returns exit code 0 (no changes)
+- **AND** a `NO_COMMIT_DETECTED` error is thrown
+- **AND** `git commit` is NOT called
+
+#### Scenario: No staged changes with requiresCommit false skips silently
+
+- **GIVEN** an agent step with `requiresCommit` undefined or false completes under local runtime
+- **AND** the agent produced no file changes
+- **WHEN** `StepExecutor` runs `commitAndPush`
+- **THEN** `git add -A` is called
+- **AND** `git diff --cached --quiet` returns exit code 0 (no changes)
+- **AND** no error is thrown
+- **AND** `git commit` is NOT called
+- **AND** `finalizeStep` proceeds normally
+
+#### Scenario: Push failure triggers single retry
+
+- **GIVEN** an agent step completes with changes under local runtime
+- **AND** the first `git push` fails (non-zero exit code)
+- **WHEN** `StepExecutor` retries push after 5 seconds
+- **AND** the second push succeeds
+- **THEN** no error is thrown
+- **AND** `finalizeStep` proceeds normally
+
+#### Scenario: Push failure after retry raises PUSH_FAILED
+
+- **GIVEN** an agent step completes with changes under local runtime
+- **AND** both the first and second `git push` attempts fail
+- **WHEN** `StepExecutor` processes the second failure
+- **THEN** a `PUSH_FAILED` error is thrown
+- **AND** the error is recorded in job state for escalation
+
+#### Scenario: Managed runtime skips commitAndPush entirely
+
+- **GIVEN** an agent step completes successfully under managed runtime
+- **WHEN** `StepExecutor.runAgentStep()` proceeds after `runner.run()`
+- **THEN** `commitAndPush` is NOT called
+- **AND** no `git add`, `git commit`, or `git push` subprocess is spawned
+- **AND** `finalizeStep` is called directly
+
+#### Scenario: Commit message follows step-name-colon-slug format
+
+- **GIVEN** an agent step named `"spec-fixer"` with slug `"add-git-commit-to-executor"`
+- **WHEN** `commitAndPush` creates the commit
+- **THEN** the commit message is `"spec-fixer: add-git-commit-to-executor"`

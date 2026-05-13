@@ -6,7 +6,6 @@ import type { JobState } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
 import { IMPLEMENTER_SYSTEM_PROMPT } from "../../prompts/implementer-system.js";
-import { buildGitPushInstruction } from "../../prompts/git-push-instruction.js";
 import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath } from "../../util/paths.js";
 
@@ -67,7 +66,7 @@ Please:
 2. Read the relevant specs/ files for detailed specifications
 3. Implement all tasks in tasks.md (TDD: write tests first where applicable)
 4. Update tasks.md: mark completed tasks with [x]
-5. ${buildGitPushInstruction(branch)}
+5. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
 
 Original request:
 ${requestContent}
