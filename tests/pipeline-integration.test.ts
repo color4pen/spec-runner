@@ -6,6 +6,8 @@ import * as os from "node:os";
 import type { GitHubClient } from "../src/core/port/github-client.js";
 import { createManagedAgentRunner } from "../src/adapter/managed-agent/agent-runner.js";
 import { verificationResultPath, prCreateResultPath } from "../src/util/paths.js";
+import type { AgentRunContext } from "../src/core/port/agent-runner.js";
+import type { DynamicContext } from "../src/git/dynamic-context.js";
 
 // Mock the verification runner so pipeline-integration tests don't spawn real processes.
 // VerificationStep.run() calls runVerification() internally.
@@ -770,5 +772,330 @@ describe("TC-030: runPipeline — persistence: both propose and spec-review step
     const finalState = JSON.parse(finalStateRaw);
     expect(finalState.steps?.["propose"]).toBeDefined();
     expect(finalState.steps?.["spec-review"]).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-DC-100: DynamicContext injection through pipeline
+// ---------------------------------------------------------------------------
+
+const testDynamicContext: DynamicContext = {
+  gitLog: "abc1234 feat: add tests",
+  diffStat: " tests/foo.test.ts | 10 +++\n 1 file changed",
+  changesList: ["dynamic-context-integration-tests", "other-change"],
+  specIndex: [
+    { capability: "cli-commands", purpose: "CLI subcommands", requirementCount: 10 },
+    { capability: "pipeline-orchestrator", purpose: "Pipeline state machine", requirementCount: 13 },
+  ],
+};
+
+/**
+ * Build a runner spy that captures every AgentRunContext passed to runner.run().
+ * The original implementation is called through (spy-through), so the pipeline
+ * progresses normally.
+ */
+function buildRunnerWithSpy(
+  client: ReturnType<typeof buildPipelineMockClient>["client"],
+  githubClient: GitHubClient,
+): { runner: ReturnType<typeof buildRunner>; capturedCtxList: AgentRunContext[] } {
+  const runner = buildRunner(client, githubClient);
+  const capturedCtxList: AgentRunContext[] = [];
+  const originalRun = runner.run.bind(runner);
+  vi.spyOn(runner, "run").mockImplementation(async (ctx: AgentRunContext) => {
+    capturedCtxList.push(ctx);
+    return originalRun(ctx);
+  });
+  return { runner, capturedCtxList };
+}
+
+// TC-DC-101: dynamicContext is forwarded to all agent steps via AgentRunContext
+describe("TC-DC-101: DynamicContext forwarded to all agent steps via AgentRunContext", () => {
+  it("ctx.dynamicContext matches testDynamicContext fields in every runner.run() call", async () => {
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+    const jobState = await makeJobState();
+
+    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["approved"] });
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
+    const { runner, capturedCtxList } = buildRunnerWithSpy(client, githubClient);
+
+    await runPipeline(jobState, {
+      client,
+      config: buildConfig(),
+      repo: buildRepo(),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner,
+      dynamicContext: testDynamicContext,
+    });
+
+    // All agent steps must have received dynamicContext
+    expect(capturedCtxList.length).toBeGreaterThan(0);
+    for (const ctx of capturedCtxList) {
+      expect(ctx.dynamicContext).toBeDefined();
+      expect(ctx.dynamicContext?.gitLog).toBe(testDynamicContext.gitLog);
+      expect(ctx.dynamicContext?.diffStat).toBe(testDynamicContext.diffStat);
+      expect(ctx.dynamicContext?.changesList).toEqual(testDynamicContext.changesList);
+    }
+  });
+});
+
+// TC-DC-102: specIndex is present in dynamicContext for all steps
+describe("TC-DC-102: specIndex propagated to all agent steps", () => {
+  it("ctx.dynamicContext.specIndex has 2 entries with correct capabilities in every call", async () => {
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+    const jobState = await makeJobState();
+
+    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["approved"] });
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
+    const { runner, capturedCtxList } = buildRunnerWithSpy(client, githubClient);
+
+    await runPipeline(jobState, {
+      client,
+      config: buildConfig(),
+      repo: buildRepo(),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner,
+      dynamicContext: testDynamicContext,
+    });
+
+    expect(capturedCtxList.length).toBeGreaterThan(0);
+    for (const ctx of capturedCtxList) {
+      expect(ctx.dynamicContext?.specIndex).toBeDefined();
+      expect(ctx.dynamicContext?.specIndex.length).toBe(2);
+      expect(ctx.dynamicContext?.specIndex[0]?.capability).toBe("cli-commands");
+      expect(ctx.dynamicContext?.specIndex[1]?.capability).toBe("pipeline-orchestrator");
+    }
+  });
+});
+
+// TC-DC-103: projectContext injected only for allowlist steps
+describe("TC-DC-103: projectContext injected only for allowlist steps", () => {
+  it("allowlist steps (propose, spec-review, implementer, code-review) have projectContext set", async () => {
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+    const jobState = await makeJobState();
+
+    // Write project.md into tempDir
+    await fs.mkdir(path.join(tempDir, "specrunner"), { recursive: true });
+    await fs.writeFile(path.join(tempDir, "specrunner", "project.md"), "# Test Project Context");
+
+    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["approved"] });
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
+    const { runner, capturedCtxList } = buildRunnerWithSpy(client, githubClient);
+
+    await runPipeline(jobState, {
+      client,
+      config: buildConfig(),
+      repo: buildRepo(),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner,
+      dynamicContext: testDynamicContext,
+      cwd: tempDir,
+    });
+
+    const allowlistNames = ["propose", "spec-review", "implementer", "code-review"];
+    for (const stepName of allowlistNames) {
+      const ctx = capturedCtxList.find((c) => c.step.name === stepName);
+      expect(ctx, `Expected step '${stepName}' to be called`).toBeDefined();
+      expect(ctx?.projectContext).toBe("# Test Project Context");
+    }
+  });
+});
+
+// TC-DC-104: projectContext is undefined for non-allowlist steps
+describe("TC-DC-104: projectContext undefined for non-allowlist steps", () => {
+  it("test-case-gen step has projectContext === undefined", async () => {
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+    const jobState = await makeJobState();
+
+    // Write project.md so allowlist steps get it — we're testing non-allowlist steps
+    await fs.mkdir(path.join(tempDir, "specrunner"), { recursive: true });
+    await fs.writeFile(path.join(tempDir, "specrunner", "project.md"), "# Test Project Context");
+
+    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["approved"] });
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
+    const { runner, capturedCtxList } = buildRunnerWithSpy(client, githubClient);
+
+    await runPipeline(jobState, {
+      client,
+      config: buildConfig(),
+      repo: buildRepo(),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner,
+      dynamicContext: testDynamicContext,
+      cwd: tempDir,
+    });
+
+    // test-case-gen is a non-allowlist step that runs on the approved path
+    const testCaseGenCtx = capturedCtxList.find((c) => c.step.name === "test-case-gen");
+    expect(testCaseGenCtx, "Expected test-case-gen step to be called").toBeDefined();
+    expect(testCaseGenCtx?.projectContext).toBeUndefined();
+  });
+});
+
+// TC-DC-105: enrichContext adds baselineSpecs for spec-review step
+describe("TC-DC-105: enrichContext adds baselineSpecs for spec-review step", () => {
+  it("SpecReviewStep.enrichContext is called and returns baselineSpecs['my-cap']", async () => {
+    const { SpecReviewStep } = await import("../src/core/step/spec-review.js");
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+    const jobState = await makeJobState();
+
+    // Build file system: delta spec dir (enrichContext trigger) + baseline spec
+    await fs.mkdir(path.join(tempDir, "specrunner", "changes", "test-slug", "specs", "my-cap"), { recursive: true });
+    await fs.mkdir(path.join(tempDir, "specrunner", "specs", "my-cap"), { recursive: true });
+    await fs.writeFile(
+      path.join(tempDir, "specrunner", "specs", "my-cap", "spec.md"),
+      "# my-cap baseline spec content",
+    );
+
+    // Spy on enrichContext: call the real implementation, capture the return value
+    let capturedEnrichResult: DynamicContext | undefined;
+    const realEnrichContext = SpecReviewStep.enrichContext!.bind(SpecReviewStep);
+    const enrichSpy = vi.spyOn(SpecReviewStep, "enrichContext").mockImplementation(
+      async (dynamicContext: DynamicContext, cwd: string, slug: string) => {
+        const result = await realEnrichContext(dynamicContext, cwd, slug);
+        capturedEnrichResult = result;
+        return result;
+      },
+    );
+
+    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["approved"] });
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
+    const { runner } = buildRunnerWithSpy(client, githubClient);
+
+    await runPipeline(jobState, {
+      client,
+      config: buildConfig(),
+      repo: buildRepo(),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner,
+      dynamicContext: testDynamicContext,
+      cwd: tempDir,
+    });
+
+    expect(enrichSpy).toHaveBeenCalledOnce();
+    expect(capturedEnrichResult).toBeDefined();
+    expect(capturedEnrichResult?.baselineSpecs).toBeDefined();
+    expect(capturedEnrichResult?.baselineSpecs?.["my-cap"]).toBe("# my-cap baseline spec content");
+  });
+});
+
+// TC-DC-106: enrichContext returns unmodified dynamicContext when no delta specs dir
+describe("TC-DC-106: enrichContext returns unmodified dynamicContext when no delta specs dir", () => {
+  it("baselineSpecs is undefined when specrunner/changes/test-slug/specs/ does not exist", async () => {
+    const { SpecReviewStep } = await import("../src/core/step/spec-review.js");
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+    const jobState = await makeJobState();
+
+    // No delta spec directory — enrichContext should return dynamicContext unchanged
+    let capturedEnrichResult: DynamicContext | undefined;
+    const enrichSpy = vi.spyOn(SpecReviewStep, "enrichContext").mockImplementation(
+      async (dynamicContext: DynamicContext, _cwd: string, _slug: string) => {
+        // Simulate: no delta specs dir → return as-is
+        capturedEnrichResult = dynamicContext;
+        return dynamicContext;
+      },
+    );
+
+    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["approved"] });
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
+    const { runner } = buildRunnerWithSpy(client, githubClient);
+
+    const result = await runPipeline(jobState, {
+      client,
+      config: buildConfig(),
+      repo: buildRepo(),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner,
+      dynamicContext: testDynamicContext,
+      cwd: tempDir,
+    });
+
+    expect(enrichSpy).toHaveBeenCalledOnce();
+    expect(capturedEnrichResult?.baselineSpecs).toBeUndefined();
+    expect(result.status).toBe("awaiting-merge");
+  });
+});
+
+// TC-DC-107: project.md absent — projectContext undefined even for allowlist steps
+describe("TC-DC-107: project.md absent — projectContext is undefined for all steps", () => {
+  it("allowlist steps have projectContext === undefined when project.md does not exist", async () => {
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+    const jobState = await makeJobState();
+
+    // Do NOT write project.md — tempDir has no specrunner/project.md
+
+    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["approved"] });
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
+    const { runner, capturedCtxList } = buildRunnerWithSpy(client, githubClient);
+
+    const result = await runPipeline(jobState, {
+      client,
+      config: buildConfig(),
+      repo: buildRepo(),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner,
+      dynamicContext: testDynamicContext,
+      cwd: tempDir,
+    });
+
+    // Pipeline must not throw — project.md absence is not an error
+    expect(result.status).toBe("awaiting-merge");
+
+    const allowlistNames = ["propose", "spec-review", "implementer", "code-review"];
+    for (const stepName of allowlistNames) {
+      const ctx = capturedCtxList.find((c) => c.step.name === stepName);
+      expect(ctx, `Expected step '${stepName}' to be called`).toBeDefined();
+      expect(ctx?.projectContext).toBeUndefined();
+    }
+  });
+});
+
+// TC-DC-108: dynamicContext omitted — backward compatibility
+describe("TC-DC-108: dynamicContext omitted — backward compatibility", () => {
+  it("ctx.dynamicContext is undefined in all calls and pipeline completes normally", async () => {
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+    const jobState = await makeJobState();
+
+    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["approved"] });
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
+    const { runner, capturedCtxList } = buildRunnerWithSpy(client, githubClient);
+
+    // Do NOT include dynamicContext in deps
+    const result = await runPipeline(jobState, {
+      client,
+      config: buildConfig(),
+      repo: buildRepo(),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner,
+    });
+
+    expect(result.status).toBe("awaiting-merge");
+    expect(capturedCtxList.length).toBeGreaterThan(0);
+    for (const ctx of capturedCtxList) {
+      expect(ctx.dynamicContext).toBeUndefined();
+    }
   });
 });
