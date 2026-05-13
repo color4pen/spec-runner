@@ -4,6 +4,7 @@ import type { StepDeps } from "./types.js";
 import { runVerification } from "../verification/runner.js";
 import { propagateVerificationResult } from "../verification/propagate.js";
 import { verificationResultPath } from "../../util/paths.js";
+import { STEP_NAMES } from "./step-names.js";
 
 const stderrWrite = (msg: string): void => {
   process.stderr.write(msg);
@@ -30,7 +31,7 @@ const stderrWrite = (msg: string): void => {
  */
 export const VerificationStep: CliStep = {
   kind: "cli",
-  name: "verification",
+  name: STEP_NAMES.VERIFICATION,
 
   async run(state: JobState, deps: StepDeps): Promise<void> {
     const verificationCwd = deps.cwd ?? process.cwd();
@@ -39,7 +40,7 @@ export const VerificationStep: CliStep = {
 
     // Propagate verification-result.md to branch so build-fixer can read it
     if (state.branch) {
-      const iteration = (state.steps?.["verification"]?.length ?? 0) + 1;
+      const iteration = (state.steps?.[STEP_NAMES.VERIFICATION]?.length ?? 0) + 1;
       const result = await propagateVerificationResult({
         slug: deps.slug,
         branch: state.branch,

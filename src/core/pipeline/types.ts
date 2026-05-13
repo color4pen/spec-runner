@@ -1,4 +1,5 @@
 import type { Verdict } from "../../state/schema.js";
+import { STEP_NAMES } from "../step/step-names.js";
 
 /**
  * A single row in the transition table.
@@ -26,17 +27,17 @@ export interface LoopErrorShape {
  * Add new cycle entries here without touching Pipeline source code.
  */
 export const LOOP_ERROR_CODES: Record<string, LoopErrorShape> = {
-  "spec-review": {
+  [STEP_NAMES.SPEC_REVIEW]: {
     code: "SPEC_REVIEW_RETRIES_EXHAUSTED",
     message: (n) => `spec-review did not approve after ${n} iterations`,
     hint: (nnn) => `Review spec-review-result-${nnn}.md and adjust the request manually.`,
   },
-  "verification": {
+  [STEP_NAMES.VERIFICATION]: {
     code: "VERIFICATION_RETRIES_EXHAUSTED",
     message: (n) => `verification did not pass after ${n} iterations`,
     hint: (nnn) => `Review verification-result-${nnn}.md and fix the build errors manually.`,
   },
-  "code-review": {
+  [STEP_NAMES.CODE_REVIEW]: {
     code: "CODE_REVIEW_RETRIES_EXHAUSTED",
     message: (n) => `code-review did not approve after ${n} iterations`,
     hint: (nnn) => `Review review-feedback-${nnn}.md and address findings manually.`,
@@ -57,29 +58,29 @@ export const LOOP_ERROR_CODES: Record<string, LoopErrorShape> = {
  * (but with escalation semantics). Any other value is the name of the next step to run.
  */
 export const STANDARD_TRANSITIONS: Transition[] = [
-  { step: "design",       on: "success",    to: "spec-review" },
-  { step: "design",       on: "error",      to: "escalate" },
-  { step: "spec-review",  on: "approved",   to: "test-case-gen" },
-  { step: "test-case-gen", on: "success",  to: "implementer" },
-  { step: "test-case-gen", on: "error",    to: "escalate" },
-  { step: "spec-review",  on: "needs-fix",  to: "spec-fixer" },
-  { step: "spec-review",  on: "escalation", to: "escalate" },
-  { step: "spec-fixer",   on: "approved",   to: "spec-review" },
-  { step: "spec-fixer",   on: "error",      to: "escalate" },
-  { step: "implementer",  on: "success",    to: "verification" },
-  { step: "implementer",  on: "error",      to: "escalate" },
-  { step: "verification", on: "passed",     to: "code-review" },
-  { step: "verification", on: "failed",     to: "build-fixer" },
-  { step: "verification", on: "escalation", to: "escalate" },
-  { step: "build-fixer",  on: "success",    to: "verification" },
-  { step: "build-fixer",  on: "error",      to: "escalate" },
+  { step: STEP_NAMES.DESIGN,       on: "success",    to: STEP_NAMES.SPEC_REVIEW },
+  { step: STEP_NAMES.DESIGN,       on: "error",      to: "escalate" },
+  { step: STEP_NAMES.SPEC_REVIEW,  on: "approved",   to: STEP_NAMES.TEST_CASE_GEN },
+  { step: STEP_NAMES.TEST_CASE_GEN, on: "success",   to: STEP_NAMES.IMPLEMENTER },
+  { step: STEP_NAMES.TEST_CASE_GEN, on: "error",     to: "escalate" },
+  { step: STEP_NAMES.SPEC_REVIEW,  on: "needs-fix",  to: STEP_NAMES.SPEC_FIXER },
+  { step: STEP_NAMES.SPEC_REVIEW,  on: "escalation", to: "escalate" },
+  { step: STEP_NAMES.SPEC_FIXER,   on: "approved",   to: STEP_NAMES.SPEC_REVIEW },
+  { step: STEP_NAMES.SPEC_FIXER,   on: "error",      to: "escalate" },
+  { step: STEP_NAMES.IMPLEMENTER,  on: "success",    to: STEP_NAMES.VERIFICATION },
+  { step: STEP_NAMES.IMPLEMENTER,  on: "error",      to: "escalate" },
+  { step: STEP_NAMES.VERIFICATION, on: "passed",     to: STEP_NAMES.CODE_REVIEW },
+  { step: STEP_NAMES.VERIFICATION, on: "failed",     to: STEP_NAMES.BUILD_FIXER },
+  { step: STEP_NAMES.VERIFICATION, on: "escalation", to: "escalate" },
+  { step: STEP_NAMES.BUILD_FIXER,  on: "success",    to: STEP_NAMES.VERIFICATION },
+  { step: STEP_NAMES.BUILD_FIXER,  on: "error",      to: "escalate" },
   // --- code review loop ---
-  { step: "code-review",  on: "approved",   to: "pr-create" },
-  { step: "code-review",  on: "needs-fix",  to: "code-fixer" },
-  { step: "code-review",  on: "escalation", to: "escalate" },
-  { step: "code-fixer",   on: "approved",   to: "code-review" },
-  { step: "code-fixer",   on: "error",      to: "escalate" },
+  { step: STEP_NAMES.CODE_REVIEW,  on: "approved",   to: STEP_NAMES.PR_CREATE },
+  { step: STEP_NAMES.CODE_REVIEW,  on: "needs-fix",  to: STEP_NAMES.CODE_FIXER },
+  { step: STEP_NAMES.CODE_REVIEW,  on: "escalation", to: "escalate" },
+  { step: STEP_NAMES.CODE_FIXER,   on: "approved",   to: STEP_NAMES.CODE_REVIEW },
+  { step: STEP_NAMES.CODE_FIXER,   on: "error",      to: "escalate" },
   // --- pr-create (single shot, no loop) ---
-  { step: "pr-create",    on: "success",    to: "end" },
-  { step: "pr-create",    on: "error",      to: "escalate" },
+  { step: STEP_NAMES.PR_CREATE,    on: "success",    to: "end" },
+  { step: STEP_NAMES.PR_CREATE,    on: "error",      to: "escalate" },
 ];

@@ -16,12 +16,12 @@ describe("TC-025: Pipeline steps Map — pr-create が登録されている", ()
       "utf-8",
     );
 
-    // Verify pr-create is included in the steps Map
-    expect(source).toContain('"pr-create"');
+    // Verify pr-create is included in the steps Map (via STEP_NAMES constant)
+    expect(source).toContain('STEP_NAMES.PR_CREATE');
     expect(source).toContain("PrCreateStep");
 
-    // Count entries in the steps Map by counting ["<name>", step] patterns
-    const mapEntries = source.match(/\["[^"]+",\s+\w+Step\]/g);
+    // Count entries in the steps Map by counting [STEP_NAMES.*, Step] patterns
+    const mapEntries = source.match(/\[STEP_NAMES\.\w+,\s+\w+Step\]/g);
     expect(mapEntries).not.toBeNull();
     expect(mapEntries!.length).toBeGreaterThanOrEqual(9);
   });

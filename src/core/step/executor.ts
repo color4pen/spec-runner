@@ -18,9 +18,10 @@ import { transitionJob } from "../../state/lifecycle.js";
 import { projectMdPath } from "../../util/paths.js";
 import { gitExec, gitExecExitCode, defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
 import { noCommitDetectedError, pushFailedError } from "../../errors.js";
+import { STEP_NAMES } from "./step-names.js";
 
 const PROJECT_CONTEXT_STEPS: ReadonlySet<string> = new Set([
-  "design", "spec-review", "implementer", "code-review",
+  STEP_NAMES.DESIGN, STEP_NAMES.SPEC_REVIEW, STEP_NAMES.IMPLEMENTER, STEP_NAMES.CODE_REVIEW,
 ]);
 
 /**

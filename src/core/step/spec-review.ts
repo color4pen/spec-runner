@@ -9,6 +9,7 @@ import { SPEC_REVIEW_SYSTEM_PROMPT, buildSpecReviewInitialMessage } from "../../
 import { parseReviewVerdict } from "../parser/review-verdict.js";
 import { getSpecReviewMode } from "../../config/type-config.js";
 import { specReviewResultPath, changeFolderPath, baselineSpecPath } from "../../util/paths.js";
+import { STEP_NAMES } from "./step-names.js";
 
 const SPEC_REVIEW_AGENT_MODEL = "claude-opus-4-6[1m]";
 
@@ -23,7 +24,7 @@ const SPEC_REVIEW_AGENT_MODEL = "claude-opus-4-6[1m]";
  */
 const specReviewAgentDefinition: AgentDefinition = {
   name: "specrunner-spec-review",
-  role: "spec-review",
+  role: STEP_NAMES.SPEC_REVIEW,
   model: SPEC_REVIEW_AGENT_MODEL,
   system: SPEC_REVIEW_SYSTEM_PROMPT,
   tools: [
@@ -54,7 +55,7 @@ export function buildFindingsPath(slug: string, iteration: number): string {
  * Compute the iteration number for the next spec-review push.
  */
 function computeSpecReviewIteration(state: JobState): number {
-  return (state.steps?.["spec-review"]?.length ?? 0) + 1;
+  return (state.steps?.[STEP_NAMES.SPEC_REVIEW]?.length ?? 0) + 1;
 }
 
 /**
@@ -66,7 +67,7 @@ function computeSpecReviewIteration(state: JobState): number {
  */
 export const SpecReviewStep: AgentStep = {
   kind: "agent",
-  name: "spec-review",
+  name: STEP_NAMES.SPEC_REVIEW,
 
   agent: specReviewAgentDefinition,
 

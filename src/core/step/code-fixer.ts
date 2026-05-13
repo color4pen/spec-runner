@@ -8,6 +8,7 @@ import { CODE_FIXER_SYSTEM_PROMPT } from "../../prompts/code-fixer-system.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { SpecRunnerError, branchNotSetError } from "../../errors.js";
 import { changeFolderPath } from "../../util/paths.js";
+import { STEP_NAMES } from "./step-names.js";
 
 const CODE_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -21,7 +22,7 @@ export const CODE_FIXER_NO_REVIEW_RESULT = "CODE_FIXER_NO_REVIEW_RESULT";
  */
 const codeFixerAgentDefinition: AgentDefinition = {
   name: "specrunner-code-fixer",
-  role: "code-fixer",
+  role: STEP_NAMES.CODE_FIXER,
   model: CODE_FIXER_AGENT_MODEL,
   system: CODE_FIXER_SYSTEM_PROMPT,
   tools: [
@@ -50,7 +51,7 @@ const codeFixerAgentDefinition: AgentDefinition = {
  */
 export const CodeFixerStep: AgentStep = {
   kind: "agent",
-  name: "code-fixer",
+  name: STEP_NAMES.CODE_FIXER,
 
   agent: codeFixerAgentDefinition,
 
@@ -65,9 +66,9 @@ export const CodeFixerStep: AgentStep = {
   maxTurns: 30,
 
   buildMessage(state: JobState, deps: StepDeps): string {
-    if (!state.branch) throw branchNotSetError("code-fixer");
+    if (!state.branch) throw branchNotSetError(STEP_NAMES.CODE_FIXER);
     const branch = state.branch;
-    const codeReviewResult = getLatestStepResult(state, "code-review");
+    const codeReviewResult = getLatestStepResult(state, STEP_NAMES.CODE_REVIEW);
 
     // Pure function — must not mutate state.
     // Throw if code-review result is absent so the caller can halt before creating a session.

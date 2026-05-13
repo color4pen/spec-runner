@@ -11,6 +11,7 @@ import type { ReviewScores } from "../parser/review-scores.js";
 import { parseFindingSeverityCounts } from "../parser/review-findings.js";
 import type { FindingSeverityCounts } from "../parser/review-findings.js";
 import { reviewFeedbackPath, changeFolderPath } from "../../util/paths.js";
+import { STEP_NAMES } from "./step-names.js";
 
 const CODE_REVIEW_AGENT_MODEL = "claude-opus-4-6[1m]";
 
@@ -71,7 +72,7 @@ export function buildReviewFeedbackPath(slug: string, iteration: number): string
  * Compute the iteration number for the next code-review push.
  */
 function computeCodeReviewIteration(state: JobState): number {
-  return (state.steps?.["code-review"]?.length ?? 0) + 1;
+  return (state.steps?.[STEP_NAMES.CODE_REVIEW]?.length ?? 0) + 1;
 }
 
 /**
@@ -83,7 +84,7 @@ function computeCodeReviewIteration(state: JobState): number {
  */
 const codeReviewAgentDefinition: AgentDefinition = {
   name: "specrunner-code-review",
-  role: "code-review",
+  role: STEP_NAMES.CODE_REVIEW,
   model: CODE_REVIEW_AGENT_MODEL,
   system: CODE_REVIEW_SYSTEM_PROMPT,
   tools: [
@@ -145,7 +146,7 @@ ${opts.requestContent}
  */
 export const CodeReviewStep: AgentStep = {
   kind: "agent",
-  name: "code-review",
+  name: STEP_NAMES.CODE_REVIEW,
 
   agent: codeReviewAgentDefinition,
 

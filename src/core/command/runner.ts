@@ -35,6 +35,7 @@ import type { ParsedRequest } from "../../parser/request-md.js";
 import type { PipelineDeps } from "../types.js";
 import { collectDynamicContext } from "../../git/dynamic-context.js";
 import { specReviewResultPath } from "../../util/paths.js";
+import { STEP_NAMES } from "../step/step-names.js";
 
 // ---------------------------------------------------------------------------
 // PrepareResult
@@ -260,7 +261,7 @@ export function parseSpecReviewFindingsSummary(
  * Output spec-review verdict information to stdout.
  */
 function outputSpecReviewVerdict(finalState: JobState, slug: string): void {
-  const specReviewResult = getLatestStepResult(finalState, "spec-review");
+  const specReviewResult = getLatestStepResult(finalState, STEP_NAMES.SPEC_REVIEW);
   if (!specReviewResult?.verdict) return;
 
   const verdict = specReviewResult.verdict;

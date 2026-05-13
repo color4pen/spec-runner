@@ -12,6 +12,7 @@ import { logInfo, setVerbose } from "../../logger/stdout.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../runtime/strategy.js";
 import { getBranchPrefix } from "../../config/type-config.js";
+import { STEP_NAMES } from "../step/step-names.js";
 
 export interface PipelineRunOptions {
   cwd?: string;
@@ -71,7 +72,7 @@ export class PipelineRunCommand extends CommandRunner {
 
     return {
       jobState,
-      startStep: "design",
+      startStep: STEP_NAMES.DESIGN,
       request,
       config,
       repo,

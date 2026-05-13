@@ -10,15 +10,16 @@
  * The result is a canonical `agents: Record<string, AgentRecord>` shape.
  */
 import type { RawConfig, AgentRecord, SpecRunnerConfig } from "./schema.js";
+import { STEP_NAMES } from "../core/step/step-names.js";
 
 /**
  * camelCase intermediate key → kebab-case canonical key map.
  */
 const CAMEL_TO_KEBAB: Record<string, string> = {
-  specFixer: "spec-fixer",
-  specReview: "spec-review",
-  propose: "design", // backward compat alias: old "propose" key → new "design" key
-  design: "design",  // canonical key (no-op)
+  specFixer: STEP_NAMES.SPEC_FIXER,
+  specReview: STEP_NAMES.SPEC_REVIEW,
+  propose: STEP_NAMES.DESIGN,  // backward compat alias: old "propose" key → new "design" key
+  design: STEP_NAMES.DESIGN,   // canonical key (no-op)
 };
 
 /**
@@ -75,11 +76,11 @@ export function migrateConfig(raw: RawConfig): Record<string, AgentRecord> {
   }
 
   // Step 2: Apply legacy `agent` singular → `agents.design` (only if design not yet set)
-  if (raw.agent && !result["design"]) {
+  if (raw.agent && !result[STEP_NAMES.DESIGN]) {
     const legacy = raw.agent;
     const agentId = legacy.id ?? undefined;
     if (agentId) {
-      result["design"] = {
+      result[STEP_NAMES.DESIGN] = {
         agentId,
         definitionHash: legacy.definitionHash ?? "",
         // Use "" sentinel — migration is deterministic; syncAll writes real timestamp.

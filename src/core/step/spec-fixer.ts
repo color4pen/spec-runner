@@ -7,6 +7,7 @@ import { getLatestStepResult } from "../../state/helpers.js";
 import { SPEC_FIXER_SYSTEM_PROMPT } from "../../prompts/spec-fixer-system.js";
 import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath, specReviewResultPath } from "../../util/paths.js";
+import { STEP_NAMES } from "./step-names.js";
 
 const SPEC_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -17,7 +18,7 @@ const SPEC_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
  */
 const specFixerAgentDefinition: AgentDefinition = {
   name: "specrunner-spec-fixer",
-  role: "spec-fixer",
+  role: STEP_NAMES.SPEC_FIXER,
   model: SPEC_FIXER_AGENT_MODEL,
   system: SPEC_FIXER_SYSTEM_PROMPT,
   tools: [
@@ -62,7 +63,7 @@ If any finding cannot be fixed, add a comment at the end of design.md:
  */
 export const SpecFixerStep: AgentStep = {
   kind: "agent",
-  name: "spec-fixer",
+  name: STEP_NAMES.SPEC_FIXER,
 
   agent: specFixerAgentDefinition,
 
@@ -80,8 +81,8 @@ export const SpecFixerStep: AgentStep = {
   maxTurns: 25,
 
   buildMessage(state: JobState, deps: StepDeps): string {
-    if (!state.branch) throw branchNotSetError("spec-fixer");
-    const specReviewResult = getLatestStepResult(state, "spec-review");
+    if (!state.branch) throw branchNotSetError(STEP_NAMES.SPEC_FIXER);
+    const specReviewResult = getLatestStepResult(state, STEP_NAMES.SPEC_REVIEW);
     const findingsPath = specReviewResult?.findingsPath ?? specReviewResultPath(deps.slug, 1);
     return buildSpecFixerInitialMessage({
       slug: deps.slug,

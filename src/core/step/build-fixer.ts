@@ -9,6 +9,7 @@ import { getLatestStepResult } from "../../state/helpers.js";
 import { SpecRunnerError, branchNotSetError } from "../../errors.js";
 import { extractVerificationFailures } from "../verification/parse-result.js";
 import { changeFolderPath } from "../../util/paths.js";
+import { STEP_NAMES } from "./step-names.js";
 
 const BUILD_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -22,7 +23,7 @@ export const BUILD_FIXER_NO_VERIFICATION_RESULT = "BUILD_FIXER_NO_VERIFICATION_R
  */
 const buildFixerAgentDefinition: AgentDefinition = {
   name: "specrunner-build-fixer",
-  role: "build-fixer",
+  role: STEP_NAMES.BUILD_FIXER,
   model: BUILD_FIXER_AGENT_MODEL,
   system: BUILD_FIXER_SYSTEM_PROMPT,
   tools: [
@@ -47,7 +48,7 @@ const buildFixerAgentDefinition: AgentDefinition = {
  */
 export const BuildFixerStep: AgentStep = {
   kind: "agent",
-  name: "build-fixer",
+  name: STEP_NAMES.BUILD_FIXER,
 
   agent: buildFixerAgentDefinition,
 
@@ -62,9 +63,9 @@ export const BuildFixerStep: AgentStep = {
   maxTurns: 35,
 
   buildMessage(state: JobState, deps: StepDeps): string {
-    if (!state.branch) throw branchNotSetError("build-fixer");
+    if (!state.branch) throw branchNotSetError(STEP_NAMES.BUILD_FIXER);
     const branch = state.branch;
-    const verificationResult = getLatestStepResult(state, "verification");
+    const verificationResult = getLatestStepResult(state, STEP_NAMES.VERIFICATION);
 
     // Pure function — must not mutate state.
     // Throw if verification result is absent so the caller can halt before creating a session.

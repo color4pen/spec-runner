@@ -45,6 +45,7 @@ import {
   noCommitDetectedError,
 } from "../../errors.js";
 import { changeFolderPath } from "../../util/paths.js";
+import { STEP_NAMES } from "../../core/step/step-names.js";
 
 /**
  * Build the git push instruction for managed runtime agents.
@@ -95,7 +96,7 @@ export class ManagedAgentRunner implements AgentRunner {
     const step = ctx.step;
 
     // Design-style: uses SSE with custom tool handling
-    if (step.agent.role === "design") {
+    if (step.agent.role === STEP_NAMES.DESIGN) {
       return this.runDesignStyle(ctx);
     }
 
@@ -449,7 +450,7 @@ export class ManagedAgentRunner implements AgentRunner {
       if (fileContent === null) {
         const existingResults = state.steps?.[step.name] ?? [];
         const iteration = existingResults.length + 1;
-        const notFoundErr = step.name === "code-review"
+        const notFoundErr = step.name === STEP_NAMES.CODE_REVIEW
           ? codeReviewResultNotFoundError(ctx.slug, effectiveBranch, iteration)
           : specReviewResultNotFoundError(ctx.slug, effectiveBranch, iteration);
         stderrWrite(notFoundErr.message);

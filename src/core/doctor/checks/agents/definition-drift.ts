@@ -12,6 +12,7 @@ import { ImplementerStep } from "../../../step/implementer.js";
 import { BuildFixerStep } from "../../../step/build-fixer.js";
 import { CodeReviewStep } from "../../../step/code-review.js";
 import { CodeFixerStep } from "../../../step/code-fixer.js";
+import { STEP_NAMES } from "../../../step/step-names.js";
 
 function buildRegistry(): AgentRegistry {
   return AgentRegistry.fromSteps([
@@ -26,13 +27,13 @@ function buildRegistry(): AgentRegistry {
 }
 
 const AGENT_ROLES = [
-  "design",
-  "spec-review",
-  "spec-fixer",
-  "implementer",
-  "build-fixer",
-  "code-review",
-  "code-fixer",
+  STEP_NAMES.DESIGN,
+  STEP_NAMES.SPEC_REVIEW,
+  STEP_NAMES.SPEC_FIXER,
+  STEP_NAMES.IMPLEMENTER,
+  STEP_NAMES.BUILD_FIXER,
+  STEP_NAMES.CODE_REVIEW,
+  STEP_NAMES.CODE_FIXER,
 ] as const;
 
 export const definitionDriftCheck: DoctorCheck = {

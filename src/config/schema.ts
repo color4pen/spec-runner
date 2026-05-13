@@ -7,6 +7,7 @@
  * are handled by migrate.ts at load time.
  */
 import type { StepName } from "../state/schema.js";
+import { STEP_NAMES } from "../core/step/step-names.js";
 
 /**
  * Per-step execution config: model, maxTurns, timeoutMs.
@@ -273,7 +274,7 @@ export function checkConfigComplete(
     if (!cfg.anthropic?.apiKey) {
       return { field: "anthropic.apiKey", hint: "Run 'specrunner init' first." };
     }
-    if (!cfg.agents?.["design"]?.agentId) {
+    if (!cfg.agents?.[STEP_NAMES.DESIGN]?.agentId) {
       return { field: "agents.design.agentId", hint: "Run 'specrunner init' first." };
     }
     if (!cfg.environment?.id) {

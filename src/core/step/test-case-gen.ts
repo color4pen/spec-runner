@@ -5,6 +5,7 @@ import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { TEST_CASE_GEN_SYSTEM_PROMPT, buildTestCaseGenInitialMessage } from "../../prompts/test-case-gen-system.js";
 import { branchNotSetError } from "../../errors.js";
+import { STEP_NAMES } from "./step-names.js";
 
 const TEST_CASE_GEN_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -19,7 +20,7 @@ const TEST_CASE_GEN_AGENT_MODEL = "claude-sonnet-4-6";
  */
 const testCaseGenAgentDefinition: AgentDefinition = {
   name: "specrunner-test-case-gen",
-  role: "test-case-gen",
+  role: STEP_NAMES.TEST_CASE_GEN,
   model: TEST_CASE_GEN_AGENT_MODEL,
   system: TEST_CASE_GEN_SYSTEM_PROMPT,
   tools: [
@@ -44,7 +45,7 @@ const testCaseGenAgentDefinition: AgentDefinition = {
  */
 export const TestCaseGenStep: AgentStep = {
   kind: "agent",
-  name: "test-case-gen",
+  name: STEP_NAMES.TEST_CASE_GEN,
 
   agent: testCaseGenAgentDefinition,
 
@@ -55,7 +56,7 @@ export const TestCaseGenStep: AgentStep = {
   maxTurns: 15,
 
   buildMessage(state: JobState, deps: StepDeps): string {
-    if (!state.branch) throw branchNotSetError("test-case-gen");
+    if (!state.branch) throw branchNotSetError(STEP_NAMES.TEST_CASE_GEN);
     return buildTestCaseGenInitialMessage({
       slug: deps.slug,
       branch: state.branch,

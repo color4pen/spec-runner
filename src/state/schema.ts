@@ -11,23 +11,15 @@ import type { ModelUsage } from "../core/port/model-usage.js";
  */
 export type { ModelUsage } from "../core/port/model-usage.js";
 
-export type StepName =
-  | "design"
-  | "spec-review"
-  | "spec-fixer"
-  | "test-case-gen"
-  | "implementer"
-  | "verification"
-  | "build-fixer"
-  | "code-review"
-  | "code-fixer"
-  | "pr-create";
+import { STEP_NAMES } from "../core/step/step-names.js";
+
+export type StepName = typeof STEP_NAMES[keyof typeof STEP_NAMES];
 
 /**
  * AgentStepName excludes CLI-resident steps (verification, pr-create) from StepName.
  * Used to constrain AgentRegistry and config schema to agent-only roles.
  */
-export type AgentStepName = Exclude<StepName, "verification" | "pr-create">;
+export type AgentStepName = Exclude<StepName, typeof STEP_NAMES.VERIFICATION | typeof STEP_NAMES.PR_CREATE>;
 
 export type Verdict =
   | "approved"

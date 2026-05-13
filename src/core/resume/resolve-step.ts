@@ -1,4 +1,5 @@
 import type { StepName, ResumePoint } from "../../state/schema.js";
+import { STEP_NAMES } from "../step/step-names.js";
 
 /**
  * Abstract resume role specified via --from flag.
@@ -8,24 +9,24 @@ export type ResumeRole = "critic" | "fixer" | "creator";
 /**
  * Steps that belong to the spec phase.
  */
-const SPEC_PHASE_STEPS = new Set<StepName>(["design", "spec-review", "spec-fixer"]);
+const SPEC_PHASE_STEPS = new Set<StepName>([STEP_NAMES.DESIGN, STEP_NAMES.SPEC_REVIEW, STEP_NAMES.SPEC_FIXER]);
 
 /**
  * Steps that belong to the code phase.
  */
 const CODE_PHASE_STEPS = new Set<StepName>([
-  "implementer",
-  "verification",
-  "build-fixer",
-  "code-review",
-  "code-fixer",
-  "pr-create",
+  STEP_NAMES.IMPLEMENTER,
+  STEP_NAMES.VERIFICATION,
+  STEP_NAMES.BUILD_FIXER,
+  STEP_NAMES.CODE_REVIEW,
+  STEP_NAMES.CODE_FIXER,
+  STEP_NAMES.PR_CREATE,
 ]);
 
 /**
  * Steps that are reviewers (critic role). Used to distinguish crash from review exhaustion.
  */
-const REVIEWER_STEPS = new Set<StepName>(["spec-review", "code-review"]);
+const REVIEWER_STEPS = new Set<StepName>([STEP_NAMES.SPEC_REVIEW, STEP_NAMES.CODE_REVIEW]);
 
 /**
  * Determine whether a step belongs to the spec phase.
@@ -41,14 +42,14 @@ function isSpecPhase(step: string): boolean {
  */
 const STEP_MAPPING: Record<"spec" | "code", Record<ResumeRole, StepName>> = {
   spec: {
-    critic: "spec-review",
-    fixer: "spec-fixer",
-    creator: "design",
+    critic: STEP_NAMES.SPEC_REVIEW,
+    fixer: STEP_NAMES.SPEC_FIXER,
+    creator: STEP_NAMES.DESIGN,
   },
   code: {
-    critic: "code-review",
-    fixer: "code-fixer",
-    creator: "implementer",
+    critic: STEP_NAMES.CODE_REVIEW,
+    fixer: STEP_NAMES.CODE_FIXER,
+    creator: STEP_NAMES.IMPLEMENTER,
   },
 };
 

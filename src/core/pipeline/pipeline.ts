@@ -10,6 +10,7 @@ import { getLatestStepResult } from "../../state/helpers.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { stdoutWrite } from "../../logger/stdout.js";
+import { STEP_NAMES } from "../step/step-names.js";
 
 /** Error codes that indicate truly fatal pipeline failures (not resumable). */
 const FATAL_ERROR_CODES: Set<string> = new Set([
@@ -59,7 +60,7 @@ export class Pipeline {
     this.maxIterations = params.maxIterations;
     this.executor = params.executor;
     this.events = params.events;
-    this.loopName = params.loopName ?? "spec-review";
+    this.loopName = params.loopName ?? STEP_NAMES.SPEC_REVIEW;
     this.loopNames = params.loopNames ?? [this.loopName];
   }
 
@@ -92,7 +93,7 @@ export class Pipeline {
           patch: {
             pid: null,
             resumePoint: {
-              step: (finalState.step ?? "design") as StepName,
+              step: (finalState.step ?? STEP_NAMES.DESIGN) as StepName,
               reason: (err as Error).message ?? String(err),
               iterationsExhausted: 0,
             },
@@ -232,9 +233,9 @@ export class Pipeline {
         }
 
         // Print final pipeline summary if spec-review was in the pipeline
-        if (this.steps.has("spec-review")) {
-          const specReviewResults = state.steps?.["spec-review"] ?? [];
-          const finalVerdict = getLatestStepResult(state, "spec-review")?.verdict ?? "escalation";
+        if (this.steps.has(STEP_NAMES.SPEC_REVIEW)) {
+          const specReviewResults = state.steps?.[STEP_NAMES.SPEC_REVIEW] ?? [];
+          const finalVerdict = getLatestStepResult(state, STEP_NAMES.SPEC_REVIEW)?.verdict ?? "escalation";
           stdoutWrite(
             `Pipeline finished: spec-review iterations=${specReviewResults.length}, final verdict=${finalVerdict}\n`,
           );
@@ -282,9 +283,9 @@ export class Pipeline {
           state = await this.handleExhausted(state, nextStep as string);
 
           // Print final summary if spec-review was in the pipeline
-          if (this.steps.has("spec-review")) {
-            const specReviewResults = state.steps?.["spec-review"] ?? [];
-            const finalVerdict = getLatestStepResult(state, "spec-review")?.verdict ?? "escalation";
+          if (this.steps.has(STEP_NAMES.SPEC_REVIEW)) {
+            const specReviewResults = state.steps?.[STEP_NAMES.SPEC_REVIEW] ?? [];
+            const finalVerdict = getLatestStepResult(state, STEP_NAMES.SPEC_REVIEW)?.verdict ?? "escalation";
             stdoutWrite(
               `Pipeline finished: spec-review iterations=${specReviewResults.length}, final verdict=${finalVerdict}\n`,
             );
@@ -348,7 +349,7 @@ export class Pipeline {
     }
 
     // Legacy default: design → "success", others → "approved"
-    if (stepName === "design") {
+    if (stepName === STEP_NAMES.DESIGN) {
       return "success";
     }
 

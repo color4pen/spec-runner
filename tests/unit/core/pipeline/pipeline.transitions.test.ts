@@ -484,10 +484,10 @@ describe("TC-023: Pipeline loopNames — pr-create が loopNames に含まれな
       "utf-8",
     );
 
-    // loopNames should include spec-review, verification, code-review
-    expect(source).toContain('"spec-review"');
-    expect(source).toContain('"verification"');
-    expect(source).toContain('"code-review"');
+    // loopNames should include spec-review, verification, code-review (via STEP_NAMES constants)
+    expect(source).toContain('STEP_NAMES.SPEC_REVIEW');
+    expect(source).toContain('STEP_NAMES.VERIFICATION');
+    expect(source).toContain('STEP_NAMES.CODE_REVIEW');
 
     // loopNames array should NOT contain pr-create
     const loopNamesMatch = /loopNames:\s*\[([^\]]+)\]/.exec(source);

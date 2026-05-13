@@ -5,6 +5,7 @@ import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { buildInitialMessage, DESIGN_SYSTEM_PROMPT } from "../../prompts/design-system.js";
 import { getBranchPrefix } from "../../config/type-config.js";
+import { STEP_NAMES } from "./step-names.js";
 
 const DESIGN_AGENT_MODEL = "claude-opus-4-6[1m]";
 
@@ -18,7 +19,7 @@ const DESIGN_AGENT_MODEL = "claude-opus-4-6[1m]";
  */
 const designAgentDefinition: AgentDefinition = {
   name: "specrunner-design",
-  role: "design",
+  role: STEP_NAMES.DESIGN,
   model: DESIGN_AGENT_MODEL,
   system: DESIGN_SYSTEM_PROMPT,
   tools: [
@@ -36,7 +37,7 @@ const designAgentDefinition: AgentDefinition = {
  */
 export const DesignStep: AgentStep = {
   kind: "agent",
-  name: "design",
+  name: STEP_NAMES.DESIGN,
 
   agent: designAgentDefinition,
 

@@ -8,6 +8,7 @@ import type { DynamicContext } from "../../git/dynamic-context.js";
 import { IMPLEMENTER_SYSTEM_PROMPT } from "../../prompts/implementer-system.js";
 import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath } from "../../util/paths.js";
+import { STEP_NAMES } from "./step-names.js";
 
 const IMPLEMENTER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -18,7 +19,7 @@ const IMPLEMENTER_AGENT_MODEL = "claude-sonnet-4-6";
  */
 const implementerAgentDefinition: AgentDefinition = {
   name: "specrunner-implementer",
-  role: "implementer",
+  role: STEP_NAMES.IMPLEMENTER,
   model: IMPLEMENTER_AGENT_MODEL,
   system: IMPLEMENTER_SYSTEM_PROMPT,
   tools: [
@@ -83,7 +84,7 @@ ${requestContent}
  */
 export const ImplementerStep: AgentStep = {
   kind: "agent",
-  name: "implementer",
+  name: STEP_NAMES.IMPLEMENTER,
 
   agent: implementerAgentDefinition,
 
@@ -98,7 +99,7 @@ export const ImplementerStep: AgentStep = {
   maxTurns: 60,
 
   buildMessage(state: JobState, deps: StepDeps): string {
-    if (!state.branch) throw branchNotSetError("implementer");
+    if (!state.branch) throw branchNotSetError(STEP_NAMES.IMPLEMENTER);
     return buildImplementerInitialMessage({
       slug: deps.slug,
       branch: state.branch,

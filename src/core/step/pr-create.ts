@@ -18,15 +18,16 @@ import { runPrCreate } from "../pr-create/runner.js";
 import { renderPrTitle, renderPrBody } from "../pr-create/body-template.js";
 import { branchNotSetError } from "../../errors.js";
 import { prCreateResultPath } from "../../util/paths.js";
+import { STEP_NAMES } from "./step-names.js";
 
 export const PrCreateStep: CliStep = {
   kind: "cli",
-  name: "pr-create",
+  name: STEP_NAMES.PR_CREATE,
 
   async run(state: JobState, deps: StepDeps): Promise<void> {
     const cwd = deps.cwd ?? process.cwd();
     const slug = deps.slug;
-    if (!state.branch) throw branchNotSetError("pr-create");
+    if (!state.branch) throw branchNotSetError(STEP_NAMES.PR_CREATE);
     const branch = state.branch;
     const title = renderPrTitle(deps.request);
     const body = renderPrBody({ parsedRequest: deps.request, jobState: state, slug });

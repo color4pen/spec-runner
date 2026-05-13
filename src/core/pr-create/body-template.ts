@@ -8,6 +8,7 @@
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { JobState, StepRun } from "../../state/schema.js";
 import { specReviewResultPath, verificationResultPath, reviewFeedbackPath, changeFolderPath } from "../../util/paths.js";
+import { STEP_NAMES } from "../step/step-names.js";
 
 /**
  * Render the PR title from the request.md H1 heading.
@@ -63,18 +64,18 @@ export function renderPrBody(params: {
 
   const workflowPhases: { name: string; stepKey: string; resultPathTemplate: (slug: string, n: number) => string }[] = [
     {
-      name: "spec-review",
-      stepKey: "spec-review",
+      name: STEP_NAMES.SPEC_REVIEW,
+      stepKey: STEP_NAMES.SPEC_REVIEW,
       resultPathTemplate: (slug, n) => specReviewResultPath(slug, n),
     },
     {
-      name: "verification",
-      stepKey: "verification",
+      name: STEP_NAMES.VERIFICATION,
+      stepKey: STEP_NAMES.VERIFICATION,
       resultPathTemplate: (slug, _n) => verificationResultPath(slug),
     },
     {
-      name: "code-review",
-      stepKey: "code-review",
+      name: STEP_NAMES.CODE_REVIEW,
+      stepKey: STEP_NAMES.CODE_REVIEW,
       resultPathTemplate: (slug, n) => reviewFeedbackPath(slug, n),
     },
   ];
@@ -100,7 +101,7 @@ export function renderPrBody(params: {
 
   // --- Test plan section ---
   sections.push("## Test plan");
-  const verificationRuns: StepRun[] = jobState.steps?.["verification"] ?? [];
+  const verificationRuns: StepRun[] = jobState.steps?.[STEP_NAMES.VERIFICATION] ?? [];
   if (verificationRuns.length > 0) {
     const lastVerification = verificationRuns[verificationRuns.length - 1]!;
     const verificationPath = lastVerification.outcome.findingsPath

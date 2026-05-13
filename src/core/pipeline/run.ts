@@ -18,6 +18,7 @@ import { CodeReviewStep } from "../step/code-review.js";
 import { CodeFixerStep } from "../step/code-fixer.js";
 import { PrCreateStep } from "../step/pr-create.js";
 import { TestCaseGenStep } from "../step/test-case-gen.js";
+import { STEP_NAMES } from "../step/step-names.js";
 
 /**
  * Construct the standard Pipeline with all steps and transitions.
@@ -38,16 +39,16 @@ export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): P
   const executor = new StepExecutor(bus, runner);
 
   const steps = new Map<string, Step>([
-    ["design",       DesignStep],
-    ["spec-review",    SpecReviewStep],
-    ["spec-fixer",     SpecFixerStep],
-    ["test-case-gen",  TestCaseGenStep],
-    ["implementer",    ImplementerStep],
-    ["verification", VerificationStep],
-    ["build-fixer",  BuildFixerStep],
-    ["code-review",  CodeReviewStep],
-    ["code-fixer",   CodeFixerStep],
-    ["pr-create",    PrCreateStep],
+    [STEP_NAMES.DESIGN,       DesignStep],
+    [STEP_NAMES.SPEC_REVIEW,  SpecReviewStep],
+    [STEP_NAMES.SPEC_FIXER,   SpecFixerStep],
+    [STEP_NAMES.TEST_CASE_GEN, TestCaseGenStep],
+    [STEP_NAMES.IMPLEMENTER,  ImplementerStep],
+    [STEP_NAMES.VERIFICATION, VerificationStep],
+    [STEP_NAMES.BUILD_FIXER,  BuildFixerStep],
+    [STEP_NAMES.CODE_REVIEW,  CodeReviewStep],
+    [STEP_NAMES.CODE_FIXER,   CodeFixerStep],
+    [STEP_NAMES.PR_CREATE,    PrCreateStep],
   ]);
 
   return new Pipeline({
@@ -56,8 +57,8 @@ export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): P
     maxIterations,
     executor,
     events: bus,
-    loopName: "spec-review",
-    loopNames: ["spec-review", "verification", "code-review"],
+    loopName: STEP_NAMES.SPEC_REVIEW,
+    loopNames: [STEP_NAMES.SPEC_REVIEW, STEP_NAMES.VERIFICATION, STEP_NAMES.CODE_REVIEW],
   });
 }
 
@@ -80,7 +81,7 @@ export async function runPipeline(
 ): Promise<JobState> {
   const bus = events ?? new EventBus();
   const pipeline = createStandardPipeline(deps, bus);
-  return pipeline.run("design", jobState, deps);
+  return pipeline.run(STEP_NAMES.DESIGN, jobState, deps);
 }
 
 /**
@@ -109,13 +110,13 @@ export async function runDesignPipeline(
   const executor = new StepExecutor(bus, designRunner);
 
   const steps = new Map([
-    ["design", DesignStep],
+    [STEP_NAMES.DESIGN, DesignStep],
   ]);
 
   // Design-only transition table: design always terminates (success or error → end)
   const designOnlyTransitions: Transition[] = [
-    { step: "design", on: "success", to: "end" },
-    { step: "design", on: "error",   to: "escalate" },
+    { step: STEP_NAMES.DESIGN, on: "success", to: "end" },
+    { step: STEP_NAMES.DESIGN, on: "error",   to: "escalate" },
   ];
 
   const pipeline = new Pipeline({
@@ -124,8 +125,8 @@ export async function runDesignPipeline(
     maxIterations: 1,
     executor,
     events: bus,
-    loopName: "design",
+    loopName: STEP_NAMES.DESIGN,
   });
 
-  return pipeline.run("design", jobState, deps);
+  return pipeline.run(STEP_NAMES.DESIGN, jobState, deps);
 }
