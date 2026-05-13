@@ -250,6 +250,65 @@ describe("TC-WTM-009: create — branchName specified uses -b flag", () => {
   });
 });
 
+// TC-WTM-010: lock contention retry succeeds on 2nd attempt
+describe("TC-WTM-010: lock contention retry succeeds on 2nd attempt", () => {
+  it("retries on lock contention, returns worktree path on success", async () => {
+    const lockErr = "error: could not lock config file .git/config: File exists";
+    const spawn = makeSpawn([
+      { exitCode: 128, stderr: lockErr }, // git worktree add (1st attempt — lock contention)
+      { exitCode: 0 },                    // git worktree add (2nd attempt — success)
+      { exitCode: 0 },                    // bun install
+    ]);
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    const manager = createWorktreeManager(spawn, undefined, sleepFn);
+    const result = await manager.create("/repo", "my-slug", "abcdef1234567890");
+
+    expect(result).toBe("/repo/.git/specrunner-worktrees/my-slug-abcdef12");
+    expect(spawn.calls.length).toBe(3);
+    expect(sleepFn).toHaveBeenCalledTimes(1);
+  });
+});
+
+// TC-WTM-011: lock contention exhausts retries → throws
+describe("TC-WTM-011: lock contention exhausts all retries", () => {
+  it("throws after 3 failed attempts, sleepFn called twice", async () => {
+    const lockErr = "error: could not lock config file .git/config: File exists";
+    const spawn = makeSpawn([
+      { exitCode: 128, stderr: lockErr },
+      { exitCode: 128, stderr: lockErr },
+      { exitCode: 128, stderr: lockErr },
+    ]);
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    const manager = createWorktreeManager(spawn, undefined, sleepFn);
+    await expect(manager.create("/repo", "my-slug", "abcdef1234567890")).rejects.toThrow(
+      "git worktree add failed",
+    );
+
+    // Sleep is called after attempt 1 and attempt 2 — not after the final failure
+    expect(sleepFn).toHaveBeenCalledTimes(2);
+  });
+});
+
+// TC-WTM-012: non-lock-contention error does not retry
+describe("TC-WTM-012: non-lock-contention error does not retry", () => {
+  it("throws immediately without retrying for unrelated errors", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 1, stderr: "fatal: worktree already exists" },
+    ]);
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    const manager = createWorktreeManager(spawn, undefined, sleepFn);
+    await expect(manager.create("/repo", "my-slug", "abcdef1234567890")).rejects.toThrow(
+      "git worktree add failed",
+    );
+
+    expect(spawn.calls.length).toBe(1);
+    expect(sleepFn).not.toHaveBeenCalled();
+  });
+});
+
 // TC-WTM-007: worktreePath in JobState — backward compat
 describe("TC-WTM-007: JobState worktreePath backward compat", () => {
   it("validateJobState accepts state without worktreePath", async () => {

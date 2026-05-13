@@ -49,15 +49,22 @@ export function buildWorktreePath(repoRoot: string, slug: string, jobId: string)
 /** Type alias for the injectable rm function (matches fs.rm signature subset used here). */
 type RmFn = (path: string, options?: { recursive?: boolean; force?: boolean }) => Promise<void>;
 
+/** Type alias for the injectable sleep function (avoids real delays in tests). */
+type SleepFn = (ms: number) => Promise<void>;
+
+const defaultSleep: SleepFn = (ms) => new Promise((r) => setTimeout(r, ms));
+
 /**
  * Create a WorktreeManager with optional DI (for testing).
  * spawnFn: replaces git/bun invocations.
  * rmFn: replaces fs.rm calls (avoids module-level mock conflicts in tests).
+ * sleepFn: replaces setTimeout-based delay (avoids real delays in tests).
  */
-export function createWorktreeManager(spawnFn?: SpawnFn, rmFn?: RmFn): WorktreeManager {
+export function createWorktreeManager(spawnFn?: SpawnFn, rmFn?: RmFn, sleepFn?: SleepFn): WorktreeManager {
   const spawn = spawnFn ?? spawnCommand;
   const rm = rmFn ?? ((p: string, opts?: { recursive?: boolean; force?: boolean }) =>
     fs.rm(p, opts));
+  const sleep = sleepFn ?? defaultSleep;
 
   return {
     async create(repoRoot: string, slug: string, jobId: string, baseRef?: string, branchName?: string): Promise<string> {
@@ -69,15 +76,21 @@ export function createWorktreeManager(spawnFn?: SpawnFn, rmFn?: RmFn): WorktreeM
         ? ["worktree", "add", "-b", branchName, worktreePath, ref]
         : ["worktree", "add", "--detach", worktreePath, ref];
 
-      const wtResult = await spawn(
-        "git",
-        wtArgs,
-        { cwd: repoRoot },
-      );
-      if (wtResult.exitCode !== 0) {
-        throw new Error(
-          `git worktree add failed (exit ${wtResult.exitCode}): ${wtResult.stderr.trim()}`,
-        );
+      const MAX_RETRIES = 3;
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        const wtResult = await spawn("git", wtArgs, { cwd: repoRoot });
+        if (wtResult.exitCode === 0) break;
+
+        const isLockContention = wtResult.stderr.includes("could not lock config file");
+        if (!isLockContention || attempt === MAX_RETRIES) {
+          throw new Error(
+            `git worktree add failed (exit ${wtResult.exitCode}): ${wtResult.stderr.trim()}`,
+          );
+        }
+
+        const delayMs = 1000 + Math.floor(Math.random() * 4000);
+        process.stderr.write(`Retrying worktree add: lock contention (attempt ${attempt}/${MAX_RETRIES})\n`);
+        await sleep(delayMs);
       }
 
       // bun install --frozen-lockfile
