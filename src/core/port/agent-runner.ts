@@ -63,7 +63,7 @@ export interface AgentRunResult {
    * null when resultFilePath is null or file could not be read.
    */
   resultContent: string | null;
-  /** Session ID for managed runtime (undefined for local) */
+  /** Session ID from the agent runtime (undefined when not available) */
   sessionId?: string;
   /** Agent-reported branch (managed: from register_branch tool; local: from git) */
   agentBranch?: string;

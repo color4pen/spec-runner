@@ -139,6 +139,7 @@ export class ClaudeCodeRunner implements AgentRunner {
 
     // TC-023: invoke SDK query() with cwd, allowedTools, permissionMode, maxTurns
     let extractedModelUsage: Record<string, ModelUsage> | undefined;
+    let extractedSessionId: string | undefined;
 
     // Set up wall-clock timeout via AbortController
     const abortController = new AbortController();
@@ -195,6 +196,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           }
           extractedModelUsage = mappedUsage;
         }
+        extractedSessionId = successResult.session_id;
       }
     } catch (err) {
       if (abortController.signal.aborted && timeoutId !== undefined) {
@@ -276,6 +278,7 @@ export class ClaudeCodeRunner implements AgentRunner {
       completionReason: "success",
       resultContent,
       modelUsage: extractedModelUsage,
+      sessionId: extractedSessionId,
     };
   }
 }
