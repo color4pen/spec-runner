@@ -126,7 +126,7 @@ Steps:
 1. Run \`git diff main...HEAD --stat\` to understand the scope of changes
 2. Review the implementation files changed in this branch
 3. Read the spec in ${changeFolderPath(opts.slug)}/ (design.md, tasks.md)
-4. Read .claude/rules/review-standards.md for the findings format and severity definitions
+4. Refer to the Pipeline Rules in your system prompt for the findings format and severity definitions
 5. Check test coverage against ${changeFolderPath(opts.slug)}/test-cases.md (must scenarios)
 6. Write your findings and verdict to: ${opts.findingsPath}
 

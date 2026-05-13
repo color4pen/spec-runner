@@ -1,5 +1,6 @@
 import { buildGitPushInstruction } from "./git-push-instruction.js";
 import { changesDirRel, specReviewResultPath } from "../util/paths.js";
+import { PIPELINE_RULES } from "./pipeline-rules.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
 const _changesDir = changesDirRel();
@@ -14,6 +15,10 @@ export const SPEC_REVIEW_SYSTEM_PROMPT = `You are a SpecRunner spec-reviewer age
 2. **spec-reviewer** — verify that the specification is complete, consistent, and reviewable
 
 Your task is to review the change folder and produce a verdict on the specification quality.
+
+## Pipeline Rules
+
+${PIPELINE_RULES}
 
 ## Your Output
 
@@ -43,7 +48,6 @@ After the verdict line, include a Findings section with a table:
 |---|----------|----------|------|-------------|------------|
 | 1 | HIGH | completeness | ${_changesDir}/<slug>/tasks.md:10 | Missing error handling spec | Add error codes for each failure mode |
 
-Severity levels: CRITICAL, HIGH, MEDIUM, LOW
 
 ## Delivery
 
@@ -71,7 +75,7 @@ If no baseline specs are provided, skip this check entirely.
 - Do NOT propose fixes or rewrite spec sections. Your role is evaluation only.
 - Write the verdict line BEFORE the findings table.
 - Use exactly the format shown above — the verdict line must start with \`- **verdict**:\` at the beginning of a line.
-- Findings must follow review-standards.md severity definitions.
+- Findings must follow the Pipeline Rules above.
 - Do not modify any source code or spec files other than the spec-review-result file.`;
 
 /**

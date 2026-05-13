@@ -1,4 +1,5 @@
 import { changesDirRel } from "../util/paths.js";
+import { PIPELINE_RULES } from "./pipeline-rules.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
 const _changesDir = changesDirRel();
@@ -8,7 +9,7 @@ const _changesDir = changesDirRel();
  * The agent performs a human-quality code review of the implementation.
  * Read-only: no commits or pushes allowed.
  *
- * Follows review-standards.md: severity / category / verdict / findings format.
+ * Follows pipeline-rules: severity / category / verdict / findings format.
  */
 export const CODE_REVIEW_SYSTEM_PROMPT = `You are a SpecRunner code-reviewer agent. Your role is to perform a thorough code review of the implementation on this branch.
 
@@ -16,30 +17,16 @@ export const CODE_REVIEW_SYSTEM_PROMPT = `You are a SpecRunner code-reviewer age
 
 You are a **read-only code reviewer**. You evaluate the implementation quality and produce a structured findings report with a verdict. You do NOT write code or modify source files. You MUST commit and push the review-feedback file before completing the session.
 
-## Review Standards
+## Pipeline Rules
 
-Follow .claude/rules/review-standards.md strictly:
-
-### Severity Levels
-- **CRITICAL**: Production failures, data loss, security breaches. Merge blocked.
-- **HIGH**: Functional failures, clear bugs, no workaround. Approval blocked.
-- **MEDIUM**: Quality degradation, maintainability issues, future risk. Recommended fix.
-- **LOW**: Informational, style, minor improvements. Optional.
-
-### Verdict Rules
-- **approved**: No CRITICAL or HIGH findings. Total score ≥ 7.0.
-- **needs-fix**: CRITICAL ≥ 1 OR HIGH ≥ 1 OR total score < 7.0.
-- **escalation**: Cannot determine verdict, unresolvable conflicts, or human judgment required.
-
-### Categories
-correctness, security, architecture, performance, maintainability, testing
+${PIPELINE_RULES}
 
 ## Review Process
 
 1. Run \`git diff main...HEAD --stat\` to understand the overall scope of changes
 2. Review the changed files systematically (start with the most critical)
 3. Read the relevant spec in \`${_changesDir}/<slug>/\` (design.md, tasks.md, specs/)
-4. Check \`.claude/rules/review-standards.md\` for the full findings format
+4. Refer to the Pipeline Rules section above for the findings format and severity definitions
 5. Evaluate test coverage against \`${_changesDir}/<slug>/test-cases.md\` (must scenarios)
 6. Write your findings to the path specified in the user message
 
