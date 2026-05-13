@@ -13,6 +13,7 @@ import { runFinish } from "./finish.js";
 import { runRm } from "./rm.js";
 import { runResume } from "./resume.js";
 import { executeTemplate, executeValidate } from "../core/command/request.js";
+import { executeReview } from "../core/command/request-review.js";
 import type { FlagDef, ParsedArgs } from "./flag-parser.js";
 
 export interface CommandDef {
@@ -37,6 +38,7 @@ Commands:
   run <req.md> [--verbose]  Run design pipeline for a request
   request template [--type <type>]  Print a scaffold request.md template to stdout
   request validate <file>           Validate a request.md file
+  request review <file> [--json]    Architect review of a request.md file
   ps                     List all jobs
   doctor                 Diagnose environment / config / auth prerequisites
   finish [<slug>]        Squash-merge feature PR and archive (1-PR model)
@@ -143,6 +145,15 @@ export const COMMANDS: Record<string, CommandEntry> = {
         positional: { name: "file", required: true },
         handler: async (parsed) => {
           process.exit(await executeValidate(parsed.positional!));
+        },
+      },
+      review: {
+        flags: {
+          json: { type: "boolean" },
+        },
+        positional: { name: "file", required: true },
+        handler: async (parsed) => {
+          process.exit(await executeReview(parsed.positional!, { json: !!parsed.flags["json"] }));
         },
       },
     },
