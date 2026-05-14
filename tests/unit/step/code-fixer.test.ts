@@ -14,6 +14,7 @@ import { CodeFixerStep, CODE_FIXER_NO_REVIEW_RESULT } from "../../../src/core/st
 import { NULL_PARSE_RESULT } from "../../../src/core/step/types.js";
 import { CODE_FIXER_SYSTEM_PROMPT } from "../../../src/prompts/code-fixer-system.js";
 import { AGENT_TOOLSET_TYPE } from "../../../src/core/agent/definition.js";
+import { buildContinuationMessage } from "../../../src/core/step/fixer-helpers.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { StepDeps } from "../../../src/core/step/types.js";
 import { reviewFeedbackPath, changeFolderPath } from "../../../src/util/paths.js";
@@ -267,5 +268,125 @@ describe("CodeFixerStep.buildMessage — fail-fast on missing branch", () => {
     expect(() => CodeFixerStep.buildMessage(state, deps)).toThrowError(
       expect.objectContaining({ code: "BRANCH_NOT_SET" }),
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-BM-03: code-fixer continuation → short prompt
+// ---------------------------------------------------------------------------
+
+describe("TC-BM-03: CodeFixerStep.buildMessage returns short prompt when previous session exists", () => {
+  function makeStateWithContinuation(sessionId: string, iteration: number = 1): JobState {
+    const findingsPath = reviewFeedbackPath("my-change", iteration);
+    return makeMinimalState({
+      steps: {
+        "code-fixer": [
+          {
+            attempt: 1,
+            sessionId,
+            outcome: { verdict: "approved", findingsPath: null, error: null },
+            startedAt: "2026-01-01T00:00:00.000Z",
+            endedAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+        "code-review": [
+          {
+            attempt: iteration,
+            sessionId: null,
+            outcome: { verdict: "needs-fix", findingsPath, error: null },
+            startedAt: "2026-01-01T00:00:00.000Z",
+            endedAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+      },
+    });
+  }
+
+  it("returns exact output of buildContinuationMessage", () => {
+    const state = makeStateWithContinuation("sess-code-xyz", 1);
+    const deps = makeMinimalDeps("my-change");
+    const message = CodeFixerStep.buildMessage(state, deps);
+
+    const findingsPath = reviewFeedbackPath("my-change", 1);
+    const expected = buildContinuationMessage({
+      stepName: "code-fixer",
+      findingsPath,
+      slug: "my-change",
+    });
+
+    expect(message).toBe(expected);
+  });
+
+  it("continuation prompt contains 'reviewer' as source label", () => {
+    const state = makeStateWithContinuation("sess-code-xyz");
+    const deps = makeMinimalDeps("my-change");
+    const message = CodeFixerStep.buildMessage(state, deps);
+
+    expect(message).toContain("reviewer");
+  });
+
+  it("continuation prompt does NOT contain 'You are the code-fixer'", () => {
+    const state = makeStateWithContinuation("sess-code-xyz");
+    const deps = makeMinimalDeps("my-change");
+    const message = CodeFixerStep.buildMessage(state, deps);
+
+    expect(message).not.toContain("You are the code-fixer");
+  });
+
+  it("continuation prompt contains the review-feedback findingsPath", () => {
+    const state = makeStateWithContinuation("sess-code-xyz", 2);
+    const deps = makeMinimalDeps("my-change");
+    const message = CodeFixerStep.buildMessage(state, deps);
+    const findingsPath = reviewFeedbackPath("my-change", 2);
+
+    expect(message).toContain(findingsPath);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-BM-04: code-fixer continuation + code-review result absent → CODE_FIXER_NO_REVIEW_RESULT
+// ---------------------------------------------------------------------------
+
+describe("TC-BM-04: CodeFixerStep.buildMessage throws CODE_FIXER_NO_REVIEW_RESULT even in continuation mode", () => {
+  function makeStateWithFixerRunButNoReview(sessionId: string): JobState {
+    // code-fixer has been run before (continuation scenario),
+    // but code-review result is absent (guard must still throw)
+    return makeMinimalState({
+      steps: {
+        "code-fixer": [
+          {
+            attempt: 1,
+            sessionId,
+            outcome: { verdict: "approved", findingsPath: null, error: null },
+            startedAt: "2026-01-01T00:00:00.000Z",
+            endedAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+        // code-review is intentionally absent
+      },
+    });
+  }
+
+  it("throws SpecRunnerError with CODE_FIXER_NO_REVIEW_RESULT", () => {
+    const state = makeStateWithFixerRunButNoReview("sess-code-xyz");
+    const deps = makeMinimalDeps("my-change");
+
+    let thrown: unknown;
+    try {
+      CodeFixerStep.buildMessage(state, deps);
+    } catch (err) {
+      thrown = err;
+    }
+
+    expect(thrown).toBeDefined();
+    expect((thrown as { code?: string }).code).toBe(CODE_FIXER_NO_REVIEW_RESULT);
+  });
+
+  it("guard runs before continuation check — throws even when code-fixer sessionId is set", () => {
+    // Verify that having a previous sessionId does NOT bypass the code-review guard
+    const state = makeStateWithFixerRunButNoReview("sess-code-xyz");
+    const deps = makeMinimalDeps("my-change");
+
+    expect(() => CodeFixerStep.buildMessage(state, deps)).toThrow();
   });
 });

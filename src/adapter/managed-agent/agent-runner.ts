@@ -354,39 +354,84 @@ export class ManagedAgentRunner implements AgentRunner {
       );
     }
 
-    // Create session
+    // Create (or resume) session
     const repoUrl = `https://github.com/${this.repo.owner}/${this.repo.name}`;
     let sessionId: string;
-    try {
-      const sessionResult = await this.sessionClient.createSession({
-        agentId: agentId!,
-        environmentId: config.environment!.id,
-        repoUrl,
-        githubToken: config.github!.accessToken,
-        branch: state.branch,
-      });
-      sessionId = sessionResult.sessionId;
-    } catch (err) {
-      const errMsg = (err as Error).message;
-      const errorInfo: ErrorInfo = {
-        code: "SESSION_CREATE_FAILED",
-        message: `Failed to create ${step.name} session: ${errMsg}`,
-        hint: "Check your API key and try again.",
-      };
-      throwWrappedError(errorInfo, state);
-    }
 
-    // Send initial message
-    try {
-      await this.sessionClient.sendUserMessage(sessionId!, initialMessage!);
-    } catch (err) {
-      const errMsg = (err as Error).message;
-      const errorInfo: ErrorInfo = {
-        code: "SESSION_CREATE_FAILED",
-        message: `Failed to send initial message to ${step.name} session: ${errMsg}`,
-        hint: "Check your network connection.",
-      };
-      throwWrappedError(errorInfo, state);
+    if (ctx.resumeSessionId) {
+      // Session continuity: skip createSession and send message to existing session.
+      // Falls back to a new session if the existing session is expired/unavailable.
+      sessionId = ctx.resumeSessionId;
+      try {
+        await this.sessionClient.sendUserMessage(sessionId, initialMessage!);
+      } catch (resumeErr) {
+        stderrWrite(
+          `[specrunner] warn: managed session resume failed for '${step.name}' (session: ${sessionId}): ${(resumeErr as Error).message}. Falling back to new session.`,
+        );
+        // Fallback: create a new session and send the same message.
+        try {
+          const sessionResult = await this.sessionClient.createSession({
+            agentId: agentId!,
+            environmentId: config.environment!.id,
+            repoUrl,
+            githubToken: config.github!.accessToken,
+            branch: state.branch,
+          });
+          sessionId = sessionResult.sessionId;
+        } catch (createErr) {
+          const errMsg = (createErr as Error).message;
+          const errorInfo: ErrorInfo = {
+            code: "SESSION_CREATE_FAILED",
+            message: `Failed to create ${step.name} session (fallback after resume failure): ${errMsg}`,
+            hint: "Check your API key and try again.",
+          };
+          throwWrappedError(errorInfo, state);
+        }
+        try {
+          await this.sessionClient.sendUserMessage(sessionId!, initialMessage!);
+        } catch (err) {
+          const errMsg = (err as Error).message;
+          const errorInfo: ErrorInfo = {
+            code: "SESSION_CREATE_FAILED",
+            message: `Failed to send message to ${step.name} session (fallback): ${errMsg}`,
+            hint: "Check your network connection.",
+          };
+          throwWrappedError(errorInfo, state);
+        }
+      }
+    } else {
+      // Normal path: create a new session.
+      try {
+        const sessionResult = await this.sessionClient.createSession({
+          agentId: agentId!,
+          environmentId: config.environment!.id,
+          repoUrl,
+          githubToken: config.github!.accessToken,
+          branch: state.branch,
+        });
+        sessionId = sessionResult.sessionId;
+      } catch (err) {
+        const errMsg = (err as Error).message;
+        const errorInfo: ErrorInfo = {
+          code: "SESSION_CREATE_FAILED",
+          message: `Failed to create ${step.name} session: ${errMsg}`,
+          hint: "Check your API key and try again.",
+        };
+        throwWrappedError(errorInfo, state);
+      }
+
+      // Send initial message
+      try {
+        await this.sessionClient.sendUserMessage(sessionId!, initialMessage!);
+      } catch (err) {
+        const errMsg = (err as Error).message;
+        const errorInfo: ErrorInfo = {
+          code: "SESSION_CREATE_FAILED",
+          message: `Failed to send initial message to ${step.name} session: ${errMsg}`,
+          hint: "Check your network connection.",
+        };
+        throwWrappedError(errorInfo, state);
+      }
     }
 
     // Resolve wall-clock timeout from step config

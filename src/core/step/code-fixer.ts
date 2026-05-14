@@ -9,6 +9,7 @@ import { getLatestStepResult } from "../../state/helpers.js";
 import { SpecRunnerError, branchNotSetError } from "../../errors.js";
 import { changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
+import { isFixerContinuation, buildContinuationMessage } from "./fixer-helpers.js";
 
 const CODE_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -72,6 +73,7 @@ export const CodeFixerStep: AgentStep = {
 
     // Pure function — must not mutate state.
     // Throw if code-review result is absent so the caller can halt before creating a session.
+    // This check runs regardless of whether this is a continuation.
     if (!codeReviewResult || !codeReviewResult.findingsPath) {
       throw new SpecRunnerError(
         CODE_FIXER_NO_REVIEW_RESULT,
@@ -82,6 +84,16 @@ export const CodeFixerStep: AgentStep = {
 
     const findingsPath = codeReviewResult.findingsPath;
 
+    // Session 継続の場合は短縮 prompt（前回コンテキストが session に残っているため）
+    if (isFixerContinuation(state, STEP_NAMES.CODE_FIXER)) {
+      return buildContinuationMessage({
+        stepName: STEP_NAMES.CODE_FIXER,
+        findingsPath,
+        slug: deps.slug,
+      });
+    }
+
+    // 初回は現行の full prompt
     return `<user-request>
 You are the code-fixer for the following change:
 

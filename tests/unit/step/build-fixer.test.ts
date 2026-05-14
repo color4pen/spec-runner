@@ -10,6 +10,7 @@ import { BuildFixerStep, BUILD_FIXER_NO_VERIFICATION_RESULT } from "../../../src
 import { NULL_PARSE_RESULT } from "../../../src/core/step/types.js";
 import { BUILD_FIXER_SYSTEM_PROMPT } from "../../../src/prompts/build-fixer-system.js";
 import { AGENT_TOOLSET_TYPE } from "../../../src/core/agent/definition.js";
+import { buildContinuationMessage } from "../../../src/core/step/fixer-helpers.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { StepDeps } from "../../../src/core/step/types.js";
 import { verificationResultPath, changeFolderPath } from "../../../src/util/paths.js";
@@ -328,5 +329,126 @@ describe("BuildFixerStep.buildMessage — fail-fast on missing branch", () => {
     expect(() => BuildFixerStep.buildMessage(state, deps)).toThrowError(
       expect.objectContaining({ code: "BRANCH_NOT_SET" }),
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-BM-05: build-fixer continuation → short prompt
+// ---------------------------------------------------------------------------
+
+describe("TC-BM-05: BuildFixerStep.buildMessage returns short prompt when previous session exists", () => {
+  function makeStateWithContinuation(sessionId: string): JobState {
+    const findingsPath = verificationResultPath("my-change");
+    return makeMinimalState({
+      steps: {
+        "build-fixer": [
+          {
+            attempt: 1,
+            sessionId,
+            outcome: { verdict: "success", findingsPath: null, error: null },
+            startedAt: "2026-01-01T00:00:00.000Z",
+            endedAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+        verification: [
+          {
+            attempt: 1,
+            sessionId: null,
+            outcome: { verdict: "failed", findingsPath, error: null },
+            startedAt: "2026-01-01T00:00:00.000Z",
+            endedAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+      },
+    });
+  }
+
+  it("returns exact output of buildContinuationMessage", () => {
+    const state = makeStateWithContinuation("sess-build-xyz");
+    const deps = makeMinimalDeps("my-change");
+    const message = BuildFixerStep.buildMessage(state, deps);
+
+    const findingsPath = verificationResultPath("my-change");
+    const expected = buildContinuationMessage({
+      stepName: "build-fixer",
+      findingsPath,
+      slug: "my-change",
+    });
+
+    expect(message).toBe(expected);
+  });
+
+  it("continuation prompt contains 'verification' as source label (not 'reviewer')", () => {
+    const state = makeStateWithContinuation("sess-build-xyz");
+    const deps = makeMinimalDeps("my-change");
+    const message = BuildFixerStep.buildMessage(state, deps);
+
+    expect(message).toContain("verification");
+    expect(message).not.toContain("reviewer");
+  });
+
+  it("continuation prompt does NOT contain 'You are the build-fixer'", () => {
+    const state = makeStateWithContinuation("sess-build-xyz");
+    const deps = makeMinimalDeps("my-change");
+    const message = BuildFixerStep.buildMessage(state, deps);
+
+    expect(message).not.toContain("You are the build-fixer");
+  });
+
+  it("continuation prompt contains the verification-result findingsPath", () => {
+    const state = makeStateWithContinuation("sess-build-xyz");
+    const deps = makeMinimalDeps("my-change");
+    const message = BuildFixerStep.buildMessage(state, deps);
+    const findingsPath = verificationResultPath("my-change");
+
+    expect(message).toContain(findingsPath);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-BM-06: build-fixer continuation + verification result absent → BUILD_FIXER_NO_VERIFICATION_RESULT
+// ---------------------------------------------------------------------------
+
+describe("TC-BM-06: BuildFixerStep.buildMessage throws BUILD_FIXER_NO_VERIFICATION_RESULT even in continuation mode", () => {
+  function makeStateWithFixerRunButNoVerification(sessionId: string): JobState {
+    // build-fixer has been run before (continuation scenario),
+    // but verification result is absent (guard must still throw)
+    return makeMinimalState({
+      steps: {
+        "build-fixer": [
+          {
+            attempt: 1,
+            sessionId,
+            outcome: { verdict: "success", findingsPath: null, error: null },
+            startedAt: "2026-01-01T00:00:00.000Z",
+            endedAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+        // verification is intentionally absent
+      },
+    });
+  }
+
+  it("throws SpecRunnerError with BUILD_FIXER_NO_VERIFICATION_RESULT", () => {
+    const state = makeStateWithFixerRunButNoVerification("sess-build-xyz");
+    const deps = makeMinimalDeps("my-change");
+
+    let thrown: unknown;
+    try {
+      BuildFixerStep.buildMessage(state, deps);
+    } catch (err) {
+      thrown = err;
+    }
+
+    expect(thrown).toBeDefined();
+    expect((thrown as { code?: string }).code).toBe(BUILD_FIXER_NO_VERIFICATION_RESULT);
+  });
+
+  it("guard runs before continuation check — throws even when build-fixer sessionId is set", () => {
+    // Verify that having a previous sessionId does NOT bypass the verification guard
+    const state = makeStateWithFixerRunButNoVerification("sess-build-xyz");
+    const deps = makeMinimalDeps("my-change");
+
+    expect(() => BuildFixerStep.buildMessage(state, deps)).toThrow();
   });
 });

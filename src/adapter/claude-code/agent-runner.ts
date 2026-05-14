@@ -118,25 +118,54 @@ export class ClaudeCodeRunner implements AgentRunner {
       timeoutId = setTimeout(() => abortController.abort(), resolvedConfig.timeoutMs);
     }
 
-    try {
-      const messages = this.queryFn({
-        prompt: fullPrompt,
-        options: {
-          cwd,
-          allowedTools: ["Read", "Edit", "Write", "Bash", "Grep", "Glob"],
-          permissionMode: "bypassPermissions",
-          ...maxTurnsOption,
-          model: resolvedConfig.model,
-          abortController,
-        },
-      });
+    // Build query options, adding resume if a previous session ID is available.
+    const resumeOption: Record<string, unknown> =
+      ctx.resumeSessionId ? { resume: ctx.resumeSessionId } : {};
 
+    const queryOptions: Record<string, unknown> = {
+      cwd,
+      allowedTools: ["Read", "Edit", "Write", "Bash", "Grep", "Glob"],
+      permissionMode: "bypassPermissions",
+      ...maxTurnsOption,
+      model: resolvedConfig.model,
+      abortController,
+      ...resumeOption,
+    };
+
+    const runQuery = async (): Promise<{ lastResult: SDKResultMessage | null; aborted: boolean }> => {
       let lastResult: SDKResultMessage | null = null;
+      let aborted = false;
+      const messages = this.queryFn({ prompt: fullPrompt, options: queryOptions });
       for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
         if (message.type === "result") {
           lastResult = message as SDKResultMessage;
         }
       }
+      return { lastResult, aborted };
+    };
+
+    try {
+      let queryResult: { lastResult: SDKResultMessage | null; aborted: boolean };
+      try {
+        queryResult = await runQuery();
+      } catch (innerErr) {
+        // Check for timeout first — do not fallback on timeout.
+        if (abortController.signal.aborted && timeoutId !== undefined) {
+          throw innerErr;
+        }
+        // If we were attempting a session resume, try falling back to a new session.
+        if (ctx.resumeSessionId) {
+          process.stderr.write(
+            `[specrunner] warn: session resume failed for '${step.name}' (session: ${ctx.resumeSessionId}): ${(innerErr as Error).message}. Falling back to new session.\n`,
+          );
+          delete queryOptions["resume"];
+          queryResult = await runQuery();
+        } else {
+          throw innerErr;
+        }
+      }
+
+      const { lastResult } = queryResult;
 
       if (lastResult && lastResult.subtype !== "success") {
         const errorResult = lastResult as SDKResultMessage & { errors?: string[] };

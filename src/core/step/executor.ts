@@ -18,6 +18,7 @@ import { transitionJob } from "../../state/lifecycle.js";
 import { projectMdPath } from "../../util/paths.js";
 import { gitExec, gitExecExitCode, defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
 import { noCommitDetectedError, pushFailedError } from "../../errors.js";
+import { FIXER_STEP_NAMES, getPreviousSessionId } from "./fixer-helpers.js";
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -113,6 +114,12 @@ export class StepExecutor {
       }
     }
 
+    // For fixer steps, pass the previous session ID so adapters can continue the session.
+    // Non-fixer steps always get undefined (new session).
+    const resumeSessionId = FIXER_STEP_NAMES.has(step.name)
+      ? getPreviousSessionId(state, step.name) ?? undefined
+      : undefined;
+
     const ctx = {
       step,
       state,
@@ -123,6 +130,7 @@ export class StepExecutor {
       config: deps.config,
       dynamicContext: deps.dynamicContext,
       projectContext,
+      resumeSessionId,
       emit: (event: string, payload: Record<string, unknown>) => {
         // Forward adapter events to the event bus
         this.events.emit(event as Parameters<EventBus["emit"]>[0], payload as never);

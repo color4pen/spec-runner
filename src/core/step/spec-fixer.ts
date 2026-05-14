@@ -8,6 +8,7 @@ import { SPEC_FIXER_SYSTEM_PROMPT } from "../../prompts/spec-fixer-system.js";
 import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath, specReviewResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
+import { isFixerContinuation, buildContinuationMessage } from "./fixer-helpers.js";
 
 const SPEC_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -84,6 +85,19 @@ export const SpecFixerStep: AgentStep = {
 
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.SPEC_FIXER);
+
+    // Session 継続の場合は短縮 prompt（前回コンテキストが session に残っているため）
+    if (isFixerContinuation(state, STEP_NAMES.SPEC_FIXER)) {
+      const specReviewResult = getLatestStepResult(state, STEP_NAMES.SPEC_REVIEW);
+      const findingsPath = specReviewResult?.findingsPath ?? specReviewResultPath(deps.slug, 1);
+      return buildContinuationMessage({
+        stepName: STEP_NAMES.SPEC_FIXER,
+        findingsPath,
+        slug: deps.slug,
+      });
+    }
+
+    // 初回は現行の full prompt
     const specReviewResult = getLatestStepResult(state, STEP_NAMES.SPEC_REVIEW);
     const findingsPath = specReviewResult?.findingsPath ?? specReviewResultPath(deps.slug, 1);
     return buildSpecFixerInitialMessage({

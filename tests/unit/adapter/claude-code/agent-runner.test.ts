@@ -1137,3 +1137,163 @@ describe("TC-041: Non-timeout error is not misclassified as timeout (ClaudeCodeR
     expect((result.error as { code?: string })?.code).toBe("CLAUDE_CODE_QUERY_FAILED");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Session continuity (T-06)
+// ---------------------------------------------------------------------------
+
+describe("ClaudeCodeRunner session continuity (resumeSessionId)", () => {
+  it("passes resume option to queryFn when resumeSessionId is set", async () => {
+    let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { capturedParams = params; },
+    });
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: vi.fn(),
+      resumeSessionId: "sess-abc",
+    };
+
+    const result = await runner.run(ctx);
+    expect(result.completionReason).toBe("success");
+    expect(capturedParams!.options?.["resume"]).toBe("sess-abc");
+  });
+
+  it("does NOT include resume option when resumeSessionId is not set", async () => {
+    let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { capturedParams = params; },
+    });
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: vi.fn(),
+      // resumeSessionId intentionally absent
+    };
+
+    await runner.run(ctx);
+    expect(capturedParams!.options?.["resume"]).toBeUndefined();
+  });
+
+  it("falls back to new session (no resume) and warns when session resume throws (non-timeout)", async () => {
+    let callCount = 0;
+    let secondCallOptions: Record<string, unknown> | undefined;
+    const warnLines: string[] = [];
+
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      warnLines.push(String(chunk));
+      return true;
+    });
+
+    const queryFn: QueryFn = async function* (params: { prompt: string; options?: Record<string, unknown> }) {
+      callCount++;
+      if (callCount === 1) {
+        // First call (with resume) — throw to simulate session expired
+        throw new Error("session not found");
+      }
+      // Second call (fallback without resume)
+      secondCallOptions = params.options;
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 100,
+        duration_api_ms: 80,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0.01,
+        usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "test-uuid",
+        session_id: "new-session",
+      } as unknown;
+    } as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: vi.fn(),
+      resumeSessionId: "sess-expired",
+    };
+
+    const result = await runner.run(ctx);
+    // Should succeed with fallback
+    expect(result.completionReason).toBe("success");
+    // Second call should NOT have resume option
+    expect(secondCallOptions?.["resume"]).toBeUndefined();
+    // Should have logged a warning
+    expect(warnLines.some((l) => l.includes("warn") || l.includes("resume"))).toBe(true);
+    // queryFn called twice
+    expect(callCount).toBe(2);
+
+    stderrSpy.mockRestore();
+  });
+
+  it("does NOT fallback (returns timeout) when resume throws due to abort/timeout", async () => {
+    const config: SpecRunnerConfig = {
+      ...makeConfig(),
+      steps: {
+        defaults: { timeoutMs: 50 },
+      },
+    };
+
+    // queryFn that respects abort and throws on abort
+    const queryFn: QueryFn = async function* (params: { prompt: string; options?: Record<string, unknown> }) {
+      const abortCtrl = params.options?.["abortController"] as AbortController | undefined;
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(resolve, 200);
+        if (abortCtrl) {
+          abortCtrl.signal.addEventListener("abort", () => {
+            clearTimeout(timer);
+            const err = new Error("AbortError");
+            (err as { name: string }).name = "AbortError";
+            reject(err);
+          }, { once: true });
+        }
+      });
+    } as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config,
+      emit: vi.fn(),
+      resumeSessionId: "sess-abc",
+    };
+
+    const result = await runner.run(ctx);
+    // Timeout — should NOT fallback to new session
+    expect(result.completionReason).toBe("timeout");
+    expect((result.error as { code?: string })?.code).toBe("STEP_TIMEOUT");
+  });
+});

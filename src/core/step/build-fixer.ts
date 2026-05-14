@@ -10,6 +10,7 @@ import { SpecRunnerError, branchNotSetError } from "../../errors.js";
 import { extractVerificationFailures } from "../verification/parse-result.js";
 import { changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
+import { isFixerContinuation, buildContinuationMessage } from "./fixer-helpers.js";
 
 const BUILD_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -69,6 +70,7 @@ export const BuildFixerStep: AgentStep = {
 
     // Pure function — must not mutate state.
     // Throw if verification result is absent so the caller can halt before creating a session.
+    // This check runs regardless of whether this is a continuation.
     if (!verificationResult || !verificationResult.findingsPath) {
       throw new SpecRunnerError(
         BUILD_FIXER_NO_VERIFICATION_RESULT,
@@ -79,7 +81,16 @@ export const BuildFixerStep: AgentStep = {
 
     const findingsPath = verificationResult.findingsPath;
 
-    // Build the inline failure context from fileContent when available.
+    // Session 継続の場合は短縮 prompt（前回コンテキストが session に残っているため）
+    if (isFixerContinuation(state, STEP_NAMES.BUILD_FIXER)) {
+      return buildContinuationMessage({
+        stepName: STEP_NAMES.BUILD_FIXER,
+        findingsPath,
+        slug: deps.slug,
+      });
+    }
+
+    // 初回は現行の full prompt（インライン failure context を含む）
     const failureSection = buildFailureSection(verificationResult.fileContent);
 
     return `<user-request>

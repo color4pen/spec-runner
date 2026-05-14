@@ -46,6 +46,12 @@ export interface AgentRunContext {
   dynamicContext?: DynamicContext;
   /** Project-level context from specrunner/project.md. undefined when file does not exist. */
   projectContext?: string;
+  /**
+   * 前回の fixer session ID。存在する場合 adapter は既存 session を継続する。未指定時は新規 session を作成する。
+   * fixer ステップ（spec-fixer / build-fixer / code-fixer）専用。
+   * StepExecutor が state.steps から前回の sessionId を取得して設定する。
+   */
+  resumeSessionId?: string;
 }
 
 /**

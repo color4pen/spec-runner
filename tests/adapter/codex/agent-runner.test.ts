@@ -76,8 +76,10 @@ function makeThread(turnResult: {
   finalResponse: string;
   items?: unknown[];
   usage?: unknown;
+  id?: string;
 }): CodexThread {
   return {
+    id: turnResult.id ?? "thread-default-id",
     run: vi.fn().mockResolvedValue({
       finalResponse: turnResult.finalResponse,
       items: turnResult.items ?? [],
@@ -89,6 +91,7 @@ function makeThread(turnResult: {
 function makeCodexFactory(thread: CodexThread): () => CodexInstance {
   return vi.fn().mockReturnValue({
     startThread: vi.fn().mockReturnValue(thread),
+    resumeThread: vi.fn().mockReturnValue(thread),
   });
 }
 
@@ -231,6 +234,7 @@ describe("CodexAgentRunner", () => {
     try {
       let abortReject: ((e: Error) => void) | undefined;
       const thread: CodexThread = {
+        id: "thread-timeout-test",
         run: vi.fn().mockImplementation((_prompt: string, opts?: { signal?: AbortSignal }) => {
           return new Promise<never>((_resolve, reject) => {
             abortReject = reject;
@@ -241,7 +245,7 @@ describe("CodexAgentRunner", () => {
         }),
       };
       const mockStartThread = vi.fn().mockReturnValue(thread);
-      const factory = vi.fn().mockReturnValue({ startThread: mockStartThread });
+      const factory = vi.fn().mockReturnValue({ startThread: mockStartThread, resumeThread: vi.fn() });
       const runner = new CodexAgentRunner({ _codexFactory: factory });
 
       const config: SpecRunnerConfig = { ...makeConfig(), steps: { implementer: { timeoutMs: 100 } } };
@@ -296,5 +300,97 @@ describe("CodexAgentRunner", () => {
     const stepCtxArg = buildMessage.mock.calls[0]?.[1] as { dynamicContext?: DynamicContext };
     expect(stepCtxArg?.dynamicContext).toEqual(enrichedDynamicCtx);
     expect(stepCtxArg?.dynamicContext).not.toEqual(initialDynamicCtx);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Session continuity (T-08)
+// ---------------------------------------------------------------------------
+
+describe("CodexAgentRunner session continuity (resumeSessionId)", () => {
+  it("calls resumeThread when resumeSessionId is set (not startThread)", async () => {
+    const thread = makeThread({ finalResponse: "done", id: "thread-resumed" });
+    const mockStartThread = vi.fn().mockReturnValue(thread);
+    const mockResumeThread = vi.fn().mockReturnValue(thread);
+    const factory = vi.fn().mockReturnValue({
+      startThread: mockStartThread,
+      resumeThread: mockResumeThread,
+    });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const ctx = makeCtx({ resumeSessionId: "thread-existing" });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(mockResumeThread).toHaveBeenCalledWith("thread-existing");
+    expect(mockStartThread).not.toHaveBeenCalled();
+  });
+
+  it("calls startThread when resumeSessionId is NOT set (not resumeThread)", async () => {
+    const thread = makeThread({ finalResponse: "done", id: "thread-new" });
+    const mockStartThread = vi.fn().mockReturnValue(thread);
+    const mockResumeThread = vi.fn();
+    const factory = vi.fn().mockReturnValue({
+      startThread: mockStartThread,
+      resumeThread: mockResumeThread,
+    });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const ctx = makeCtx();
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(mockStartThread).toHaveBeenCalled();
+    expect(mockResumeThread).not.toHaveBeenCalled();
+  });
+
+  it("falls back to startThread when resumeThread throws", async () => {
+    const freshThread = makeThread({ finalResponse: "done-fresh", id: "thread-fallback" });
+    const warnLines: string[] = [];
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      warnLines.push(String(chunk));
+      return true;
+    });
+
+    const mockStartThread = vi.fn().mockReturnValue(freshThread);
+    const mockResumeThread = vi.fn().mockImplementation(() => {
+      throw new Error("thread not found in storage");
+    });
+    const factory = vi.fn().mockReturnValue({
+      startThread: mockStartThread,
+      resumeThread: mockResumeThread,
+    });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const ctx = makeCtx({ resumeSessionId: "thread-expired" });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(mockResumeThread).toHaveBeenCalledWith("thread-expired");
+    expect(mockStartThread).toHaveBeenCalled();
+    expect(warnLines.some((l) => l.includes("warn") || l.includes("resume"))).toBe(true);
+
+    stderrSpy.mockRestore();
+  });
+
+  it("result includes sessionId equal to thread.id", async () => {
+    const thread = makeThread({ finalResponse: "done", id: "thread-id-123" });
+    const mockStartThread = vi.fn().mockReturnValue(thread);
+    const mockResumeThread = vi.fn().mockReturnValue(thread);
+    const factory = vi.fn().mockReturnValue({
+      startThread: mockStartThread,
+      resumeThread: mockResumeThread,
+    });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    // Test with resumeSessionId set
+    const ctxResume = makeCtx({ resumeSessionId: "thread-id-123" });
+    const resumeResult = await runner.run(ctxResume);
+    expect(resumeResult.sessionId).toBe("thread-id-123");
+
+    // Test without resumeSessionId (fresh start)
+    const ctxFresh = makeCtx();
+    const freshResult = await runner.run(ctxFresh);
+    expect(freshResult.sessionId).toBe("thread-id-123");
   });
 });

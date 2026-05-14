@@ -690,6 +690,130 @@ describe("TC-011 to TC-014: non-allowlist steps — ctx.projectContext is undefi
   });
 });
 
+// ---------------------------------------------------------------------------
+// TC-EX-01, TC-EX-02, TC-EX-03: resumeSessionId injection for fixer steps
+// ---------------------------------------------------------------------------
+
+describe("TC-EX: StepExecutor injects resumeSessionId for fixer steps", () => {
+  function makeCapturingRunner(): {
+    runner: AgentRunner;
+    captured: { ctx: AgentRunContext | undefined };
+  } {
+    const captured: { ctx: AgentRunContext | undefined } = { ctx: undefined };
+    const runner: AgentRunner = {
+      async run(ctx: AgentRunContext): Promise<AgentRunResult> {
+        captured.ctx = ctx;
+        return { completionReason: "success", resultContent: null };
+      },
+    };
+    return { runner, captured };
+  }
+
+  function makeFixerLikeStep(name: string): Step {
+    return {
+      kind: "agent" as const,
+      name,
+      agent: {
+        name: `specrunner-${name}`,
+        role: name as "design",
+        model: "claude-sonnet-4-5",
+        system: `system for ${name}`,
+        tools: [],
+      },
+      toolHandlers: undefined,
+      completionVerdict: "approved" as const,
+      buildMessage: () => `fix message for ${name}`,
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+  }
+
+  function makeFixerTestDeps(): PipelineDeps {
+    return {
+      config: makeConfig(),
+      repo: { owner: "testowner", name: "testrepo" },
+      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
+      slug: "test-slug",
+      githubClient: {
+        verifyBranch: vi.fn().mockResolvedValue(true),
+        getRawFile: vi.fn().mockResolvedValue(null),
+        verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+        getRefSha: vi.fn().mockResolvedValue(null),
+      },
+    };
+  }
+
+  // TC-EX-01: spec-fixer with previous sessionId → ctx.resumeSessionId is set
+  it("TC-EX-01: spec-fixer with previous sessionId → ctx.resumeSessionId equals previous sessionId", async () => {
+    const { runner, captured } = makeCapturingRunner();
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner);
+
+    const state = makeMinimalState("tc-ex-01");
+    state.steps = {
+      "spec-fixer": [
+        {
+          attempt: 1,
+          sessionId: "sess-prev-001",
+          outcome: { verdict: "approved", findingsPath: null, error: null },
+          startedAt: "2026-01-01T00:00:00.000Z",
+          endedAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+    };
+
+    const step = makeFixerLikeStep("spec-fixer");
+    await executor.execute(step, state, makeFixerTestDeps());
+
+    expect(captured.ctx).toBeDefined();
+    expect(captured.ctx!.resumeSessionId).toBe("sess-prev-001");
+  });
+
+  // TC-EX-02: spec-fixer first run (no previous steps) → resumeSessionId is undefined
+  it("TC-EX-02: spec-fixer first run (no previous steps) → ctx.resumeSessionId is undefined", async () => {
+    const { runner, captured } = makeCapturingRunner();
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner);
+
+    const state = makeMinimalState("tc-ex-02");
+    // steps is empty (default) — first run, no previous sessionId
+
+    const step = makeFixerLikeStep("spec-fixer");
+    await executor.execute(step, state, makeFixerTestDeps());
+
+    expect(captured.ctx).toBeDefined();
+    expect(captured.ctx!.resumeSessionId).toBeUndefined();
+  });
+
+  // TC-EX-03: non-fixer step → resumeSessionId is always undefined (scope boundary)
+  it("TC-EX-03: non-fixer step (spec-review) → ctx.resumeSessionId is always undefined", async () => {
+    const { runner, captured } = makeCapturingRunner();
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner);
+
+    const state = makeMinimalState("tc-ex-03");
+    // spec-fixer has a previous session, but spec-review must NOT inherit it
+    state.steps = {
+      "spec-fixer": [
+        {
+          attempt: 1,
+          sessionId: "sess-prev-001",
+          outcome: { verdict: "approved", findingsPath: null, error: null },
+          startedAt: "2026-01-01T00:00:00.000Z",
+          endedAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+    };
+
+    const step = makeFixerLikeStep("spec-review");
+    await executor.execute(step, state, makeFixerTestDeps());
+
+    expect(captured.ctx).toBeDefined();
+    expect(captured.ctx!.resumeSessionId).toBeUndefined();
+  });
+});
+
 describe("TC-015: specrunner/project.md not found — no error, ctx.projectContext is undefined", () => {
   function makeCapturingRunner(): {
     runner: AgentRunner;

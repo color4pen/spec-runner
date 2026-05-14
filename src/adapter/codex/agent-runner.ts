@@ -48,6 +48,8 @@ interface CodexUsage {
 
 // Injectable for testing
 export interface CodexThread {
+  /** Unique identifier for this thread (used for session continuity). */
+  id: string;
   run(prompt: string, opts?: { signal?: AbortSignal }): Promise<Turn>;
 }
 
@@ -58,6 +60,11 @@ export interface CodexInstance {
     model?: string;
     skipGitRepoCheck?: boolean;
   }): CodexThread;
+  /**
+   * Resume an existing thread by ID.
+   * The thread is loaded from ~/.codex/sessions/ and a new turn is appended.
+   */
+  resumeThread(threadId: string): CodexThread;
 }
 
 export interface CodexAgentRunnerDeps {
@@ -118,15 +125,47 @@ export class CodexAgentRunner implements AgentRunner {
     }
 
     let turn: Turn;
+    let threadId: string;
     try {
       const codex = this.codexFactory();
-      const thread = codex.startThread({
+
+      const startFreshThread = (): CodexThread => codex.startThread({
         workingDirectory: cwd,
         sandboxMode: "workspace-write",
         model: resolvedConfig.model,
         skipGitRepoCheck: true,
       });
-      turn = await thread.run(fullPrompt, { signal: abortController.signal });
+
+      let thread: CodexThread;
+      if (ctx.resumeSessionId) {
+        try {
+          thread = codex.resumeThread(ctx.resumeSessionId);
+        } catch (resumeErr) {
+          process.stderr.write(
+            `[specrunner] warn: codex session resume failed for '${step.name}' (thread: ${ctx.resumeSessionId}): ${(resumeErr as Error).message}. Falling back to new thread.\n`,
+          );
+          thread = startFreshThread();
+        }
+      } else {
+        thread = startFreshThread();
+      }
+
+      try {
+        turn = await thread.run(fullPrompt, { signal: abortController.signal });
+        threadId = thread.id;
+      } catch (runErr) {
+        // If resume was used and thread.run() failed, retry with a fresh thread.
+        if (ctx.resumeSessionId && !abortController.signal.aborted) {
+          process.stderr.write(
+            `[specrunner] warn: codex thread.run() failed for '${step.name}' after resume (thread: ${ctx.resumeSessionId}): ${(runErr as Error).message}. Falling back to new thread.\n`,
+          );
+          const freshThread = startFreshThread();
+          turn = await freshThread.run(fullPrompt, { signal: abortController.signal });
+          threadId = freshThread.id;
+        } else {
+          throw runErr;
+        }
+      }
     } catch (err) {
       if (abortController.signal.aborted && timeoutId !== undefined) {
         clearTimeout(timeoutId);
@@ -200,6 +239,7 @@ export class CodexAgentRunner implements AgentRunner {
       completionReason: "success",
       resultContent,
       modelUsage,
+      sessionId: threadId!,
     };
   }
 }

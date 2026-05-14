@@ -907,3 +907,106 @@ describe("TC-040: No steps config → ManagedAgentRunner uses DEFAULT_POLL_TIMEO
     expect(pollSpy.mock.calls[0]![1]).toMatchObject({ timeoutMs: DEFAULT_POLL_TIMEOUT_MS });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Session continuity (T-10)
+// ---------------------------------------------------------------------------
+
+describe("ManagedAgentRunner session continuity (resumeSessionId)", () => {
+  it("skips createSession and uses resumeSessionId when ctx.resumeSessionId is set", async () => {
+    const sessionClient = makeMockSessionClient();
+    const createSessionSpy = sessionClient.createSession as ReturnType<typeof vi.fn>;
+    const sendUserMessageSpy = sessionClient.sendUserMessage as ReturnType<typeof vi.fn>;
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+    });
+
+    const state = makeJobState("resume-test", "feat/test");
+    const ctx = makeCtx({ state, resumeSessionId: "sess-existing-001" });
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    // createSession should NOT be called — we're resuming
+    expect(createSessionSpy).not.toHaveBeenCalled();
+    // sendUserMessage should be called with the resume session ID
+    expect(sendUserMessageSpy).toHaveBeenCalledWith("sess-existing-001", expect.any(String));
+    // The returned sessionId should be the resumed session ID
+    expect(result.sessionId).toBe("sess-existing-001");
+  });
+
+  it("calls createSession normally when resumeSessionId is NOT set", async () => {
+    const sessionClient = makeMockSessionClient();
+    const createSessionSpy = sessionClient.createSession as ReturnType<typeof vi.fn>;
+    const sendUserMessageSpy = sessionClient.sendUserMessage as ReturnType<typeof vi.fn>;
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+    });
+
+    const state = makeJobState("no-resume-test", "feat/test");
+    const ctx = makeCtx({ state });
+    // No resumeSessionId
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    // createSession should be called (normal flow)
+    expect(createSessionSpy).toHaveBeenCalledTimes(1);
+    // sendUserMessage should use the session ID from createSession
+    expect(sendUserMessageSpy).toHaveBeenCalledWith("sess_mock_001", expect.any(String));
+  });
+
+  it("falls back to createSession when sendUserMessage fails during resume", async () => {
+    const warnLines: string[] = [];
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      warnLines.push(String(chunk));
+      return true;
+    });
+
+    let sendCallCount = 0;
+    const sessionClient: SessionClient = {
+      createSession: vi.fn().mockResolvedValue({ sessionId: "sess-fallback-001" }),
+      sendUserMessage: vi.fn().mockImplementation(async (sessionId: string) => {
+        sendCallCount++;
+        if (sendCallCount === 1 && sessionId === "sess-expired-001") {
+          // First call with the expired resume session fails
+          throw new Error("session not found or expired");
+        }
+        // Subsequent calls (with fallback session) succeed
+        return undefined;
+      }),
+      pollUntilComplete: vi.fn().mockResolvedValue({ status: "idle" }),
+      streamEvents: vi.fn().mockResolvedValue({
+        sseDisconnected: false,
+        idleEndTurnDetected: true,
+        terminated: false,
+        terminationReason: "end_turn" as const,
+      }),
+    };
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+    });
+
+    const state = makeJobState("fallback-test", "feat/test");
+    const ctx = makeCtx({ state, resumeSessionId: "sess-expired-001" });
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    // createSession should have been called (fallback)
+    expect(sessionClient.createSession).toHaveBeenCalledTimes(1);
+    // A warning should have been emitted
+    expect(warnLines.some((l) => l.includes("warn") || l.includes("resume"))).toBe(true);
+
+    stderrSpy.mockRestore();
+  });
+});
