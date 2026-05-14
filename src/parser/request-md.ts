@@ -3,27 +3,8 @@ import { requestMdInvalidError } from "../errors.js";
 import { stderrWrite } from "../logger/stdout.js";
 import { TYPE_CONFIG } from "../config/type-config.js";
 
-export interface ParsedRequestSections {
-  /** Content under ## 背景 heading, or undefined if heading not present. */
-  背景?: string;
-  /** Content under ## 目的 heading, or undefined if heading not present. */
-  目的?: string;
-}
-
-export interface ParsedRequest {
-  type: string;
-  title: string;
-  /** Canonical slug for this change — the single source of truth across the pipeline.
-   * Required in the Meta section as `- **slug**: <slug>`; missing → REQUEST_MD_INVALID. */
-  slug: string;
-  /** Base branch for diff/worktree/PR operations (e.g. "main" or "master").
-   * Required in the Meta section as `- **base-branch**: <value>`; missing → REQUEST_MD_INVALID. */
-  baseBranch: string;
-  content: string;
-  enabled: string[];
-  /** Optional section extracts for PR body generation. */
-  sections?: ParsedRequestSections;
-}
+export type { ParsedRequest, ParsedRequestSections } from "../core/request/types.js";
+import type { ParsedRequest, ParsedRequestSections } from "../core/request/types.js";
 
 function isAllowedType(t: string): t is keyof typeof TYPE_CONFIG {
   return t in TYPE_CONFIG;

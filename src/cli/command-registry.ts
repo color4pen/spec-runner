@@ -4,6 +4,8 @@
  * No external dependencies.
  */
 
+import * as path from "node:path";
+import * as fs from "node:fs";
 import { runInit } from "./init.js";
 import { runLogin } from "./login.js";
 import { runRun } from "./run.js";
@@ -14,6 +16,9 @@ import { runRm } from "./rm.js";
 import { runResume } from "./resume.js";
 import { executeTemplate, executeValidate } from "../core/command/request.js";
 import { executeReview } from "../core/command/request-review.js";
+import { executeCreate } from "../core/command/request-create.js";
+import { executeList } from "../core/command/request-list.js";
+import { resolve as storeResolve } from "../core/request/store.js";
 import type { FlagDef, ParsedArgs } from "./flag-parser.js";
 
 export interface CommandDef {
@@ -35,10 +40,12 @@ export const USAGE = `Usage: specrunner <command> [options]
 Commands:
   init                   Create or update Anthropic Agent and Environment
   login                  Authenticate with GitHub via Device Flow
-  run <req.md> [--verbose]  Run design pipeline for a request
-  request template [--type <type>]  Print a scaffold request.md template to stdout
-  request validate <file>           Validate a request.md file
-  request review <file> [--json]    Architect review of a request.md file
+  run <request.md|slug> [--verbose]  Run design pipeline for a request
+  request template [--type <type>]   Print a scaffold request.md template to stdout
+  request validate <file>            Validate a request.md file
+  request review <file-or-slug> [--json]  Architect review of a request.md file
+  request create "<text>" [--stdin]  Generate a request.md from text and save to active/
+  request list                       List active requests
   ps                     List all jobs
   doctor                 Diagnose environment / config / auth prerequisites
   finish [<slug>]        Squash-merge feature PR and archive (1-PR model)
@@ -121,7 +128,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
     flags: {
       verbose: { type: "boolean" },
     },
-    positional: { name: "request.md", required: true },
+    positional: { name: "request.md|slug", required: true },
     handler: async (parsed) => {
       const requestMdPath = parsed.positional!;
       const verbose = !!parsed.flags["verbose"];
@@ -151,9 +158,40 @@ export const COMMANDS: Record<string, CommandEntry> = {
         flags: {
           json: { type: "boolean" },
         },
-        positional: { name: "file", required: true },
+        positional: { name: "file-or-slug", required: true },
         handler: async (parsed) => {
-          process.exit(await executeReview(parsed.positional!, { json: !!parsed.flags["json"] }));
+          const input = parsed.positional!;
+          let filePath = path.resolve(process.cwd(), input);
+          if (!fs.existsSync(filePath)) {
+            const slugResolved = storeResolve(process.cwd(), input);
+            if (!fs.existsSync(slugResolved)) {
+              process.stderr.write(`Error: '${input}' is neither a file path nor an active request slug.\n`);
+              process.stderr.write("Hint: Use 'specrunner request list' to see available slugs.\n");
+              process.exit(1);
+            }
+            filePath = slugResolved;
+          }
+          process.exit(await executeReview(filePath, { json: !!parsed.flags["json"] }));
+        },
+      },
+      create: {
+        flags: {
+          stdin: { type: "boolean" },
+        },
+        positional: { name: "text", required: false },
+        handler: async (parsed) => {
+          process.exit(
+            await executeCreate(parsed.positional ?? null, {
+              stdin: !!parsed.flags["stdin"],
+              cwd: process.cwd(),
+            }),
+          );
+        },
+      },
+      list: {
+        flags: {},
+        handler: async () => {
+          process.exit(await executeList(process.cwd()));
         },
       },
     },
