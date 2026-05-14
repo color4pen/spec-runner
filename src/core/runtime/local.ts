@@ -14,6 +14,7 @@ import type { OriginInfo } from "../../git/remote.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { StepName } from "../../state/schema.js";
 import { createClaudeCodeRunner, type QueryFn } from "../../adapter/claude-code/agent-runner.js";
+import { DispatchingAgentRunner } from "../../adapter/dispatching/agent-runner.js";
 import { query as sdkQuery } from "@anthropic-ai/claude-agent-sdk";
 import { createWorktreeManager } from "../worktree/manager.js";
 import { loadJobState, updateJobState } from "../../state/store.js";
@@ -103,7 +104,8 @@ export class LocalRuntime implements RuntimeStrategy {
 
   createAgentRunner(): AgentRunner {
     const worktreeCwd = this.workspace?.cwd ?? this.cwd;
-    return createClaudeCodeRunner({ cwd: worktreeCwd });
+    const claudeRunner = createClaudeCodeRunner({ cwd: worktreeCwd, _queryFn: this.queryFn });
+    return new DispatchingAgentRunner(claudeRunner);
   }
 
   async setupWorkspace(

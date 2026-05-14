@@ -1,0 +1,80 @@
+import { describe, it, expect } from "vitest";
+import {
+  BUILTIN_MODEL_REGISTRY,
+  mergeModelRegistry,
+  resolveProvider,
+} from "../../src/config/model-registry.js";
+import type { SpecRunnerConfig } from "../../src/config/schema.js";
+
+function makeConfig(overrides: Partial<SpecRunnerConfig> = {}): SpecRunnerConfig {
+  return {
+    version: 1,
+    runtime: "local",
+    anthropic: { apiKey: "" },
+    agents: {},
+    ...overrides,
+  };
+}
+
+describe("BUILTIN_MODEL_REGISTRY", () => {
+  it("contains anthropic models", () => {
+    expect(BUILTIN_MODEL_REGISTRY["claude-sonnet-4-5"]?.provider).toBe("anthropic");
+    expect(BUILTIN_MODEL_REGISTRY["claude-opus-4-6"]?.provider).toBe("anthropic");
+  });
+
+  it("contains openai models", () => {
+    expect(BUILTIN_MODEL_REGISTRY["o3"]?.provider).toBe("openai");
+    expect(BUILTIN_MODEL_REGISTRY["gpt-5.3-codex"]?.provider).toBe("openai");
+  });
+});
+
+describe("mergeModelRegistry", () => {
+  it("with no user models → equals BUILTIN", () => {
+    const config = makeConfig();
+    const merged = mergeModelRegistry(config);
+    expect(merged).toEqual(BUILTIN_MODEL_REGISTRY);
+  });
+
+  it("with user override → user entry wins", () => {
+    const config = makeConfig({
+      models: {
+        "claude-sonnet-4-5": { provider: "openai" },
+      },
+    });
+    const merged = mergeModelRegistry(config);
+    expect(merged["claude-sonnet-4-5"]?.provider).toBe("openai");
+  });
+
+  it("with new model → merged contains both built-in and new", () => {
+    const config = makeConfig({
+      models: {
+        "gpt-6-turbo": { provider: "openai" },
+      },
+    });
+    const merged = mergeModelRegistry(config);
+    expect(merged["gpt-6-turbo"]?.provider).toBe("openai");
+    expect(merged["claude-sonnet-4-5"]?.provider).toBe("anthropic");
+  });
+});
+
+describe("resolveProvider", () => {
+  it("known anthropic model → 'anthropic'", () => {
+    const merged = mergeModelRegistry(makeConfig());
+    expect(resolveProvider("claude-sonnet-4-5", merged)).toBe("anthropic");
+  });
+
+  it("known openai model → 'openai'", () => {
+    const merged = mergeModelRegistry(makeConfig());
+    expect(resolveProvider("o3", merged)).toBe("openai");
+  });
+
+  it("unknown model → throws code: 'CONFIG_INVALID'", () => {
+    const merged = mergeModelRegistry(makeConfig());
+    expect(() => resolveProvider("unknown-xyz", merged)).toThrow();
+    try {
+      resolveProvider("unknown-xyz", merged);
+    } catch (err) {
+      expect((err as { code?: string }).code).toBe("CONFIG_INVALID");
+    }
+  });
+});

@@ -8,6 +8,7 @@ import type { DoctorCheck } from "../types.js";
 import { nodeVersionCheck } from "./runtime/node.js";
 import { bunVersionCheck } from "./runtime/bun.js";
 import { gitVersionCheck } from "./runtime/git.js";
+import { codexCliCheck } from "./runtime/codex-cli.js";
 
 // Config
 import { configFileExistsCheck } from "./config/file-exists.js";
@@ -37,10 +38,11 @@ import { jobsWritableCheck } from "./storage/jobs-writable.js";
 import { oldStateFilesCheck } from "./storage/old-state-files.js";
 
 export const allChecks: DoctorCheck[] = [
-  // Runtime (3)
+  // Runtime (3+1)
   nodeVersionCheck,
   bunVersionCheck,
   gitVersionCheck,
+  codexCliCheck,
   // Config (3)
   configFileExistsCheck,
   anthropicKeyPresentCheck,
@@ -69,6 +71,7 @@ export {
   nodeVersionCheck,
   bunVersionCheck,
   gitVersionCheck,
+  codexCliCheck,
   configFileExistsCheck,
   anthropicKeyPresentCheck,
   githubTokenPresentCheck,

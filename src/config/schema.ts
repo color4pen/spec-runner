@@ -8,6 +8,7 @@
  */
 import type { StepName } from "../state/schema.js";
 import { STEP_NAMES } from "../core/step/step-names.js";
+import { BUILTIN_MODEL_REGISTRY } from "./model-registry.js";
 
 /**
  * Per-step execution config: model, maxTurns, timeoutMs.
@@ -21,6 +22,14 @@ export interface StepExecutionConfig {
   model?: string;
   maxTurns?: number | null;
   timeoutMs?: number | null;
+}
+
+export interface ModelEntry {
+  provider: "anthropic" | "openai";
+}
+
+export interface ModelsConfig {
+  [modelName: string]: ModelEntry;
 }
 
 /**
@@ -111,6 +120,13 @@ export interface SpecRunnerConfig {
    * Steps section absent = use step definition hardcoded values.
    */
   steps?: StepConfigMap;
+  /**
+   * User-defined model registry. Merged with BUILTIN_MODEL_REGISTRY at runtime.
+   * Use this to add new models or override provider assignments.
+   * When absent, only built-in models are available.
+   * D5 (design.md): user entries override built-ins.
+   */
+  models?: ModelsConfig;
 }
 
 /**
@@ -140,6 +156,7 @@ export interface RawConfig {
   specFixer?: Partial<SpecFixerConfig>;
   /** Per-step execution config — passed through as-is. Validated in validateConfig(). */
   steps?: Record<string, unknown>;
+  models?: Record<string, unknown>;
 }
 
 /**
@@ -249,6 +266,77 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
             );
           }
         }
+      }
+    }
+  }
+
+  // Validate models section if provided
+  if (obj["models"] !== undefined && obj["models"] !== null) {
+    if (typeof obj["models"] !== "object") {
+      throw Object.assign(
+        new Error("CONFIG_INVALID: models must be an object."),
+        { code: "CONFIG_INVALID" },
+      );
+    }
+    const modelsObj = obj["models"] as Record<string, unknown>;
+    for (const [modelName, modelVal] of Object.entries(modelsObj)) {
+      if (typeof modelVal !== "object" || modelVal === null) {
+        throw Object.assign(
+          new Error(`CONFIG_INVALID: models.${modelName} must be an object.`),
+          { code: "CONFIG_INVALID" },
+        );
+      }
+      const entry = modelVal as Record<string, unknown>;
+      if (entry["provider"] !== "anthropic" && entry["provider"] !== "openai") {
+        throw Object.assign(
+          new Error(`CONFIG_INVALID: models.${modelName}.provider must be "anthropic" or "openai".`),
+          { code: "CONFIG_INVALID" },
+        );
+      }
+    }
+  }
+
+  // Validate that step models exist in the merged registry and that OpenAI models
+  // are not used with managed runtime (D6 design.md).
+  if (obj["steps"] !== undefined && obj["steps"] !== null) {
+    const stepsObj = obj["steps"] as Record<string, unknown>;
+    const userModels = (obj["models"] ?? {}) as Record<string, { provider?: string }>;
+    const merged = { ...BUILTIN_MODEL_REGISTRY, ...userModels };
+    const allModelNames = new Set(Object.keys(merged));
+    const openaiModels = new Set(
+      Object.entries(merged)
+        .filter(([, v]) => (v as { provider?: string }).provider === "openai")
+        .map(([k]) => k),
+    );
+
+    const collectStepModel = (stepKey: string, stepVal: unknown): string | undefined => {
+      if (typeof stepVal === "object" && stepVal !== null) {
+        const m = (stepVal as Record<string, unknown>)["model"];
+        if (typeof m === "string" && m.length > 0) return m;
+      }
+      return undefined;
+    };
+
+    for (const [stepKey, stepVal] of Object.entries(stepsObj)) {
+      const model = collectStepModel(stepKey, stepVal);
+      if (model === undefined) continue;
+
+      // Guard: unknown model
+      if (!allModelNames.has(model)) {
+        throw Object.assign(
+          new Error(`CONFIG_INVALID: steps.${stepKey}.model "${model}" is not in the model registry. Add it to config.models.`),
+          { code: "CONFIG_INVALID" },
+        );
+      }
+
+      // Guard: managed + openai
+      // runtime undefined = default "managed"
+      const isManagedRuntime = runtime === "managed" || runtime === undefined;
+      if (isManagedRuntime && openaiModels.has(model)) {
+        throw Object.assign(
+          new Error(`CONFIG_INVALID: OpenAI model "${model}" cannot be used with runtime "managed".`),
+          { code: "CONFIG_INVALID" },
+        );
       }
     }
   }

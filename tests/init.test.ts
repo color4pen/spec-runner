@@ -599,7 +599,7 @@ describe("TC-011: specrunner init --runtime=local で既存の steps は上書�
       steps: {
         defaults: {
           maxTurns: 90,
-          model: "claude-haiku-3",
+          model: "claude-haiku-4-5",
         },
       },
     };
@@ -614,6 +614,6 @@ describe("TC-011: specrunner init --runtime=local で既存の steps は上書�
 
     // Existing steps must NOT be overwritten
     expect(config.steps.defaults.maxTurns).toBe(90);
-    expect(config.steps.defaults.model).toBe("claude-haiku-3");
+    expect(config.steps.defaults.model).toBe("claude-haiku-4-5");
   });
 });
