@@ -86,7 +86,7 @@ function makeThread(turnResult: {
   };
 }
 
-function makeCodexFactory(thread: CodexThread): (opts: { apiKey: string }) => CodexInstance {
+function makeCodexFactory(thread: CodexThread): () => CodexInstance {
   return vi.fn().mockReturnValue({
     startThread: vi.fn().mockReturnValue(thread),
   });
@@ -94,14 +94,14 @@ function makeCodexFactory(thread: CodexThread): (opts: { apiKey: string }) => Co
 
 describe("CodexAgentRunner", () => {
   it("implements AgentRunner interface (has run method)", () => {
-    const runner = new CodexAgentRunner({ apiKey: "sk-test" });
+    const runner = new CodexAgentRunner();
     expect(typeof runner.run).toBe("function");
   });
 
   it("returns success with finalResponse when resultFilePath is null", async () => {
     const thread = makeThread({ finalResponse: "done!" });
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ apiKey: "sk-test", _codexFactory: factory });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
 
     const result = await runner.run(makeCtx());
     expect(result.completionReason).toBe("success");
@@ -112,7 +112,7 @@ describe("CodexAgentRunner", () => {
     const thread = makeThread({ finalResponse: "" });
     const mockStartThread = vi.fn().mockReturnValue(thread);
     const factory = vi.fn().mockReturnValue({ startThread: mockStartThread });
-    const runner = new CodexAgentRunner({ apiKey: "sk-test", _codexFactory: factory });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
 
     const ctx = makeCtx({ cwd: "/my/worktree" });
     await runner.run(ctx);
@@ -126,7 +126,7 @@ describe("CodexAgentRunner", () => {
     const thread = makeThread({ finalResponse: "" });
     const mockStartThread = vi.fn().mockReturnValue(thread);
     const factory = vi.fn().mockReturnValue({ startThread: mockStartThread });
-    const runner = new CodexAgentRunner({ apiKey: "sk-test", _codexFactory: factory });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
 
     await runner.run(makeCtx());
 
@@ -147,7 +147,7 @@ describe("CodexAgentRunner", () => {
     };
     const thread = makeThread({ finalResponse: "ok", usage });
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ apiKey: "sk-test", _codexFactory: factory });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
 
     const result = await runner.run(makeCtx());
     expect(result.modelUsage).toBeDefined();
@@ -165,7 +165,7 @@ describe("CodexAgentRunner", () => {
         run: vi.fn().mockRejectedValue(new Error("network failure")),
       }),
     });
-    const runner = new CodexAgentRunner({ apiKey: "sk-test", _codexFactory: factory });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
 
     const result = await runner.run(makeCtx());
     expect(result.completionReason).toBe("error");
@@ -177,7 +177,7 @@ describe("CodexAgentRunner", () => {
     const thread = makeThread({ finalResponse: "" });
     const mockRun = thread.run as ReturnType<typeof vi.fn>;
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ apiKey: "sk-test", _codexFactory: factory });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
 
     await runner.run(makeCtx({
       branch: "feat/my-feature",
@@ -194,7 +194,7 @@ describe("CodexAgentRunner", () => {
   it("returns RESULT_FILE_NOT_FOUND error when result file is missing", async () => {
     const thread = makeThread({ finalResponse: "" });
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ apiKey: "sk-test", _codexFactory: factory });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
 
     const step = makeAgentStep({
       resultFilePath: () => "/nonexistent/path/result.md",
@@ -212,7 +212,7 @@ describe("CodexAgentRunner", () => {
     try {
       const thread = makeThread({ finalResponse: "agent final response" });
       const factory = makeCodexFactory(thread);
-      const runner = new CodexAgentRunner({ apiKey: "sk-test", _codexFactory: factory });
+      const runner = new CodexAgentRunner({ _codexFactory: factory });
 
       const step = makeAgentStep({ resultFilePath: () => tmpFile });
       const result = await runner.run(makeCtx({ step }));
@@ -242,7 +242,7 @@ describe("CodexAgentRunner", () => {
       };
       const mockStartThread = vi.fn().mockReturnValue(thread);
       const factory = vi.fn().mockReturnValue({ startThread: mockStartThread });
-      const runner = new CodexAgentRunner({ apiKey: "sk-test", _codexFactory: factory });
+      const runner = new CodexAgentRunner({ _codexFactory: factory });
 
       const config: SpecRunnerConfig = { ...makeConfig(), steps: { implementer: { timeoutMs: 100 } } };
       const runPromise = runner.run(makeCtx({ config }));
@@ -266,7 +266,7 @@ describe("CodexAgentRunner", () => {
   it("calls enrichContext before buildMessage and passes enriched dynamicContext", async () => {
     const thread = makeThread({ finalResponse: "" });
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ apiKey: "sk-test", _codexFactory: factory });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
 
     const initialDynamicCtx: DynamicContext = {
       gitLog: "",

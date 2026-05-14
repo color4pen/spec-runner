@@ -88,40 +88,14 @@ describe("DispatchingAgentRunner", () => {
     const claudeRunner = makeMockRunner();
     const dispatcher = new DispatchingAgentRunner(claudeRunner as never);
 
-    const originalEnv = process.env["OPENAI_API_KEY"];
-    process.env["OPENAI_API_KEY"] = "sk-test-key";
-
-    try {
-      // We can't easily mock the CodexAgentRunner constructor here,
-      // but we can verify that claudeRunner is NOT called for OpenAI model
-      const ctx = makeCtx("o3");
-      // Expect it to either succeed with codex or fail with CODEX_SDK_ERROR (SDK not available)
-      const result = await dispatcher.run(ctx).catch((err: Error) => ({ error: err }));
-      // The important assertion: claude runner was NOT called
-      expect(claudeRunner.run).not.toHaveBeenCalled();
-    } finally {
-      if (originalEnv === undefined) {
-        delete process.env["OPENAI_API_KEY"];
-      } else {
-        process.env["OPENAI_API_KEY"] = originalEnv;
-      }
-    }
-  });
-
-  it("throws MISSING_OPENAI_API_KEY when OPENAI_API_KEY is not set", async () => {
-    const claudeRunner = makeMockRunner();
-    const dispatcher = new DispatchingAgentRunner(claudeRunner as never);
-
-    const originalEnv = process.env["OPENAI_API_KEY"];
-    delete process.env["OPENAI_API_KEY"];
-
-    try {
-      await expect(dispatcher.run(makeCtx("o3"))).rejects.toThrow("OPENAI_API_KEY");
-    } finally {
-      if (originalEnv !== undefined) {
-        process.env["OPENAI_API_KEY"] = originalEnv;
-      }
-    }
+    // We can't easily mock the CodexAgentRunner constructor here,
+    // but we can verify that claudeRunner is NOT called for OpenAI model
+    const ctx = makeCtx("o3");
+    // Expect it to either succeed with codex or fail with CODEX_SDK_ERROR (SDK not available)
+    const result = await dispatcher.run(ctx).catch((err: Error) => ({ error: err }));
+    // The important assertion: claude runner was NOT called
+    expect(claudeRunner.run).not.toHaveBeenCalled();
+    void result;
   });
 
   it("throws CONFIG_INVALID for unknown model", async () => {

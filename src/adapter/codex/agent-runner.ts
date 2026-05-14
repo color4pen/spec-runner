@@ -61,18 +61,15 @@ export interface CodexInstance {
 }
 
 export interface CodexAgentRunnerDeps {
-  apiKey: string;
-  /** Injectable factory for testing. Defaults to `(opts) => new Codex(opts)`. */
-  _codexFactory?: (opts: { apiKey: string }) => CodexInstance;
+  /** Injectable factory for testing. Defaults to `() => new Codex()`. */
+  _codexFactory?: () => CodexInstance;
 }
 
 export class CodexAgentRunner implements AgentRunner {
-  private readonly apiKey: string;
-  private readonly codexFactory: (opts: { apiKey: string }) => CodexInstance;
+  private readonly codexFactory: () => CodexInstance;
 
-  constructor(deps: CodexAgentRunnerDeps) {
-    this.apiKey = deps.apiKey;
-    this.codexFactory = deps._codexFactory ?? ((opts) => new Codex(opts) as unknown as CodexInstance);
+  constructor(deps: CodexAgentRunnerDeps = {}) {
+    this.codexFactory = deps._codexFactory ?? (() => new Codex() as unknown as CodexInstance);
   }
 
   async run(ctx: AgentRunContext): Promise<AgentRunResult> {
@@ -122,7 +119,7 @@ export class CodexAgentRunner implements AgentRunner {
 
     let turn: Turn;
     try {
-      const codex = this.codexFactory({ apiKey: this.apiKey });
+      const codex = this.codexFactory();
       const thread = codex.startThread({
         workingDirectory: cwd,
         sandboxMode: "workspace-write",
@@ -147,7 +144,7 @@ export class CodexAgentRunner implements AgentRunner {
         completionReason: "error",
         resultContent: null,
         error: Object.assign(
-          new Error(`Codex SDK error: ${cause.message}`),
+          new Error(cause.message),
           { code: "CODEX_SDK_ERROR", cause },
         ),
       };

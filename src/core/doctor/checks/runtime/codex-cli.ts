@@ -41,20 +41,33 @@ export const codexCliCheck: DoctorCheck = {
       };
     }
 
+    let version: string;
     try {
       const result = await ctx.execFile("codex", ["--version"], {
         signal: AbortSignal.timeout(5000),
       });
-      const version = result.stdout.trim();
-      return {
-        status: "pass",
-        message: `codex ${version}`,
-      };
+      version = result.stdout.trim();
     } catch {
       return {
         status: "fail",
         message: "codex CLI is not installed or not in PATH",
         hint: "Install @openai/codex: npm install -g @openai/codex",
+      };
+    }
+
+    try {
+      await ctx.execFile("codex", ["auth", "whoami"], {
+        signal: AbortSignal.timeout(5000),
+      });
+      return {
+        status: "pass",
+        message: `codex ${version} (authenticated)`,
+      };
+    } catch {
+      return {
+        status: "warn",
+        message: `codex ${version} (not authenticated)`,
+        hint: "Run `codex login` to authenticate, or set the CODEX_API_KEY environment variable",
       };
     }
   },

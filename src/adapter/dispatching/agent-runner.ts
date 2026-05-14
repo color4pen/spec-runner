@@ -31,14 +31,7 @@ export class DispatchingAgentRunner implements AgentRunner {
 
     if (provider === "openai") {
       if (!this.codexRunner) {
-        const apiKey = process.env["OPENAI_API_KEY"];
-        if (!apiKey) {
-          throw Object.assign(
-            new Error("OPENAI_API_KEY environment variable is required for OpenAI model steps"),
-            { code: "MISSING_OPENAI_API_KEY" },
-          );
-        }
-        this.codexRunner = new CodexAgentRunner({ apiKey });
+        this.codexRunner = new CodexAgentRunner();
       }
       return this.codexRunner.run(ctx);
     }

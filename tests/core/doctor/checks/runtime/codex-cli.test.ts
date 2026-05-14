@@ -37,7 +37,7 @@ describe("codexCliCheck — no OpenAI model steps", () => {
 });
 
 describe("codexCliCheck — OpenAI model steps present", () => {
-  it("returns pass when codex CLI is available", async () => {
+  it("returns pass with (authenticated) when codex CLI is available and auth succeeds", async () => {
     const execFile = vi.fn().mockResolvedValue({ stdout: "0.1.0\n", stderr: "" });
     const ctx = buildMockContext({
       execFile,
@@ -48,7 +48,26 @@ describe("codexCliCheck — OpenAI model steps present", () => {
     const result = await codexCliCheck.check(ctx);
     expect(result.status).toBe("pass");
     expect(result.message).toContain("codex");
+    expect(result.message).toContain("authenticated");
     expect(execFile).toHaveBeenCalledWith("codex", ["--version"], expect.anything());
+    expect(execFile).toHaveBeenCalledWith("codex", ["auth", "whoami"], expect.anything());
+  });
+
+  it("returns warn with hint when codex is installed but not authenticated", async () => {
+    const execFile = vi.fn()
+      .mockResolvedValueOnce({ stdout: "0.1.0\n", stderr: "" }) // --version succeeds
+      .mockRejectedValueOnce(new Error("not authenticated"));   // auth whoami fails
+    const ctx = buildMockContext({
+      execFile,
+      config: buildMockConfig({
+        steps: { implementer: { model: "o3" } },
+      }),
+    });
+    const result = await codexCliCheck.check(ctx);
+    expect(result.status).toBe("warn");
+    expect(result.message).toContain("not authenticated");
+    expect(result.hint).toContain("codex login");
+    expect(result.hint).toContain("CODEX_API_KEY");
   });
 
   it("returns fail when codex CLI is not in PATH", async () => {
