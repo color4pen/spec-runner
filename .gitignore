@@ -22,6 +22,12 @@ npm-debug.log*
 .vscode/
 *.swp
 
+# npm (not used — bun.lock is the single lockfile)
+package-lock.json
+
+# yarn (not used)
+yarn.lock
+
 # pnpm (not used)
 pnpm-lock.yaml
 

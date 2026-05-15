@@ -3,6 +3,9 @@
   "version": "0.2.0",
   "description": "AI CI/CD runner — submit request.md, get a PR back",
   "private": true,
+  "engines": {
+    "bun": ">=1.0.0"
+  },
   "type": "module",
   "bin": {
     "specrunner": "./bin/specrunner.ts"
