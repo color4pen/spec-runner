@@ -65,6 +65,8 @@ export interface ManagedAgentRunnerDeps {
   githubClient: GitHubClient;
   /** repo owner/name for GitHub API calls */
   repo: { owner: string; name: string };
+  /** GitHub token for createSession calls (injected by CLI entry layer, not read from config) */
+  githubToken: string;
 }
 
 /**
@@ -77,11 +79,13 @@ export class ManagedAgentRunner implements AgentRunner {
   private readonly sessionClient: SessionClient;
   private readonly githubClient: GitHubClient;
   private readonly repo: { owner: string; name: string };
+  private readonly githubToken: string;
 
   constructor(deps: ManagedAgentRunnerDeps) {
     this.sessionClient = deps.sessionClient;
     this.githubClient = deps.githubClient;
     this.repo = deps.repo;
+    this.githubToken = deps.githubToken;
   }
 
   /**
@@ -137,7 +141,7 @@ export class ManagedAgentRunner implements AgentRunner {
         agentId,
         environmentId: config.environment!.id,
         repoUrl,
-        githubToken: config.github!.accessToken,
+        githubToken: this.githubToken,
         branch: ctx.branch || undefined,
       });
       sessionId = sessionResult.sessionId;
@@ -378,7 +382,7 @@ export class ManagedAgentRunner implements AgentRunner {
             agentId: agentId!,
             environmentId: config.environment!.id,
             repoUrl,
-            githubToken: config.github!.accessToken,
+            githubToken: this.githubToken,
             branch: state.branch,
           });
           sessionId = sessionResult.sessionId;
@@ -410,7 +414,7 @@ export class ManagedAgentRunner implements AgentRunner {
           agentId: agentId!,
           environmentId: config.environment!.id,
           repoUrl,
-          githubToken: config.github!.accessToken,
+          githubToken: this.githubToken,
           branch: state.branch,
         });
         sessionId = sessionResult.sessionId;

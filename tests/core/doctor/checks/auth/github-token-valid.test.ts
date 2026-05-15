@@ -8,15 +8,13 @@ import { describe, it, expect, vi } from "vitest";
 import { githubTokenValidCheck } from "../../../../../src/core/doctor/checks/auth/github-token-valid.js";
 import { buildMockContext, buildMockConfig, buildMockGitHubClient } from "../../mock-context.js";
 
-const configWithToken = buildMockConfig({ github: { accessToken: "ghp_test" } });
-
 describe("githubTokenValidCheck", () => {
   // TC-022
   it("returns pass when verifyTokenScopes returns 200 + repo scope", async () => {
     const githubClient = buildMockGitHubClient({
       verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo", "read:org"] }),
     });
-    const ctx = buildMockContext({ githubClient, config: configWithToken });
+    const ctx = buildMockContext({ githubClient, resolvedGitHubToken: "ghp_test" });
     const result = await githubTokenValidCheck.check(ctx);
     expect(result.status).toBe("pass");
   });
@@ -26,7 +24,7 @@ describe("githubTokenValidCheck", () => {
     const githubClient = buildMockGitHubClient({
       verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["read:user"] }),
     });
-    const ctx = buildMockContext({ githubClient, config: configWithToken });
+    const ctx = buildMockContext({ githubClient, resolvedGitHubToken: "ghp_test" });
     const result = await githubTokenValidCheck.check(ctx);
     expect(result.status).toBe("fail");
     expect(result.message).toMatch(/scope/i);
@@ -38,7 +36,7 @@ describe("githubTokenValidCheck", () => {
     const githubClient = buildMockGitHubClient({
       verifyTokenScopes: vi.fn().mockRejectedValue(abortError),
     });
-    const ctx = buildMockContext({ githubClient, config: configWithToken });
+    const ctx = buildMockContext({ githubClient, resolvedGitHubToken: "ghp_test" });
     const result = await githubTokenValidCheck.check(ctx);
     expect(result.status).toBe("warn");
     expect(result.message).toMatch(/network timeout/i);
@@ -49,7 +47,7 @@ describe("githubTokenValidCheck", () => {
     const verifyTokenScopes = vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] });
     const githubClient = buildMockGitHubClient({ verifyTokenScopes });
     const mockFetch = vi.fn() as unknown as typeof fetch;
-    const ctx = buildMockContext({ githubClient, fetch: mockFetch, config: configWithToken });
+    const ctx = buildMockContext({ githubClient, fetch: mockFetch, resolvedGitHubToken: "ghp_test" });
     await githubTokenValidCheck.check(ctx);
     expect(verifyTokenScopes).toHaveBeenCalledTimes(1);
     expect(mockFetch).not.toHaveBeenCalled();
@@ -59,14 +57,14 @@ describe("githubTokenValidCheck", () => {
     const githubClient = buildMockGitHubClient({
       verifyTokenScopes: vi.fn().mockResolvedValue({ status: 401, scopes: [] }),
     });
-    const ctx = buildMockContext({ githubClient, config: configWithToken });
+    const ctx = buildMockContext({ githubClient, resolvedGitHubToken: "ghp_test" });
     const result = await githubTokenValidCheck.check(ctx);
     expect(result.status).toBe("fail");
   });
 
   it("returns fail when token is not configured", async () => {
     const ctx = buildMockContext({
-      config: buildMockConfig({ github: undefined }),
+      resolvedGitHubToken: null,
     });
     const result = await githubTokenValidCheck.check(ctx);
     expect(result.status).toBe("fail");

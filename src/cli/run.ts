@@ -41,13 +41,13 @@ export async function runRunCore(
     return 1;
   }
 
-  const { config, repo } = preflightResult;
-  const githubClient = createGitHubClient(fetch, config.github?.accessToken ?? "");
+  const { config, repo, githubToken } = preflightResult;
+  const githubClient = createGitHubClient(fetch, githubToken);
   const sessionClient =
     config.runtime === "managed" && process.env["SPECRUNNER_API_KEY"]
       ? createAnthropicSessionClient(createAnthropicClient(process.env["SPECRUNNER_API_KEY"]))
       : undefined;
-  const runtime = createRuntime(config, cwd, githubClient, repo, sessionClient);
+  const runtime = createRuntime(config, cwd, githubClient, repo, sessionClient, githubToken);
   try {
     return await new PipelineRunCommand(runtime, absolutePath, preflightResult, options).execute();
   } catch (err) {

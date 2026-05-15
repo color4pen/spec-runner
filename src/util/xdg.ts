@@ -31,6 +31,13 @@ export function getConfigPath(): string {
 }
 
 /**
+ * Get the path to the specrunner credentials file.
+ */
+export function getCredentialsPath(): string {
+  return path.join(resolveXdgConfigDir(), "specrunner", "credentials.json");
+}
+
+/**
  * Get the path to the specrunner jobs directory.
  */
 export function getJobsDir(): string {

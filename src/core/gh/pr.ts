@@ -18,6 +18,8 @@ export interface GhPrCreateInput {
   head: string;
   cwd: string;
   spawn: SpawnFn;
+  /** GitHub token to inject as GITHUB_TOKEN env var for gh CLI subprocess. */
+  githubToken?: string;
 }
 
 export type GhPrCreateResult =
@@ -27,10 +29,13 @@ export type GhPrCreateResult =
 /**
  * Run `gh pr create` with body written to a tempfile (--body-file).
  * Tempfile is cleaned up in try/finally.
+ * Injects GITHUB_TOKEN env var for gh CLI when githubToken is provided.
  */
 export async function runGhPrCreate(input: GhPrCreateInput): Promise<GhPrCreateResult> {
   const tmpFile = path.join(os.tmpdir(), `specrunner-archive-body-${randomUUID()}.md`);
   await fs.writeFile(tmpFile, input.body, "utf-8");
+
+  const spawnEnv = input.githubToken ? { GITHUB_TOKEN: input.githubToken } : undefined;
 
   let result: { exitCode: number | null; stdout: string; stderr: string };
   try {
@@ -43,7 +48,7 @@ export async function runGhPrCreate(input: GhPrCreateInput): Promise<GhPrCreateR
         "--base", input.base,
         "--head", input.head,
       ],
-      { cwd: input.cwd },
+      { cwd: input.cwd, env: spawnEnv },
     );
   } finally {
     await fs.unlink(tmpFile).catch(() => undefined);

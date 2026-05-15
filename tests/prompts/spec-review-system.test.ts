@@ -199,7 +199,6 @@ describe("TC-021: SpecReviewStep.buildMessage passes baselineSpecs from dynamicC
       config: {
         version: 1 as const,
         agents: {},
-        github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
       },
       slug: "test-slug",
       request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
@@ -241,7 +240,6 @@ describe("TC-021: SpecReviewStep.buildMessage passes baselineSpecs from dynamicC
       config: {
         version: 1 as const,
         agents: {},
-        github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
       },
       slug: "test-slug",
       request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },

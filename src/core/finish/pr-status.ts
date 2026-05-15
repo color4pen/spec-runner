@@ -41,8 +41,9 @@ export async function fetchPrViewWithRetry(params: {
   spawn: SpawnFn;
   slug: string;
   sleepFn?: (ms: number) => Promise<void>;
+  env?: Record<string, string | undefined>;
 }): Promise<PrViewFetchResult> {
-  const { prNumber, cwd, spawn, slug } = params;
+  const { prNumber, cwd, spawn, slug, env } = params;
   const sleepImpl = params.sleepFn ?? sleep;
 
   for (let attempt = 1; attempt <= UNKNOWN_RETRY_COUNT; attempt++) {
@@ -50,7 +51,7 @@ export async function fetchPrViewWithRetry(params: {
     const result = await spawn(
       "gh",
       ["pr", "view", String(prNumber), "--json", "state,mergeStateStatus,headRefName"],
-      { cwd },
+      { cwd, env },
     );
 
     if (result.exitCode !== 0) {
@@ -134,15 +135,16 @@ export async function checkMergeableForMerge(params: {
   slug: string;
   baseBranch: string;
   sleepFn?: (ms: number) => Promise<void>;
+  env?: Record<string, string | undefined>;
 }): Promise<CheckMergeableResult> {
-  const { prNumber, cwd, spawn, slug, baseBranch } = params;
+  const { prNumber, cwd, spawn, slug, baseBranch, env } = params;
   const sleepImpl = params.sleepFn ?? sleep;
 
   for (let attempt = 1; attempt <= MERGEABLE_RETRY_COUNT; attempt++) {
     const result = await spawn(
       "gh",
       ["pr", "view", String(prNumber), "--json", "mergeable"],
-      { cwd },
+      { cwd, env },
     );
 
     if (result.exitCode !== 0) {
@@ -236,15 +238,16 @@ export async function pollMergeStateAfterPush(params: {
   spawn: SpawnFn;
   slug: string;
   sleepFn?: (ms: number) => Promise<void>;
+  env?: Record<string, string | undefined>;
 }): Promise<{ mergeStateStatus: string }> {
-  const { prNumber, cwd, spawn, slug: _slug } = params;
+  const { prNumber, cwd, spawn, slug: _slug, env } = params;
   const sleepImpl = params.sleepFn ?? sleep;
 
   for (let attempt = 1; attempt <= POST_PUSH_RETRY_COUNT; attempt++) {
     const result = await spawn(
       "gh",
       ["pr", "view", String(prNumber), "--json", "mergeStateStatus"],
-      { cwd },
+      { cwd, env },
     );
 
     if (result.exitCode !== 0) {

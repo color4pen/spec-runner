@@ -100,6 +100,11 @@ export interface DoctorContext {
   processVersion: string;
   /** OS platform — injected from process.platform */
   platform: NodeJS.Platform;
+  /**
+   * Resolved GitHub token from credentials file or GITHUB_TOKEN env var.
+   * null when no token is available (credentials missing + env var not set).
+   */
+  resolvedGitHubToken: string | null;
 }
 
 /**

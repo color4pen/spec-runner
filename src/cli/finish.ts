@@ -15,6 +15,7 @@ import { runFinishOrchestrator } from "../core/finish/orchestrator.js";
 import type { FinishFs } from "../core/finish/types.js";
 import { parseRequestMd } from "../parser/request-md.js";
 import { requestMdPath } from "../util/paths.js";
+import { resolveGitHubToken } from "../core/credentials/github.js";
 
 /**
  * Build a FinishFs from real fs modules.
@@ -72,6 +73,16 @@ export interface RunFinishOptions {
  * Caller (bin/specrunner.ts) is responsible for process.exit().
  */
 export async function runFinish(opts: RunFinishOptions): Promise<number> {
+  // Resolve GitHub token (best-effort — if unavailable, gh CLI may still work via gh auth login)
+  let githubToken: string | undefined;
+  try {
+    const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>);
+    githubToken = resolved.token;
+  } catch {
+    // Token not available — gh CLI will rely on its own auth (gh auth login)
+    process.stderr.write("Warning: GitHub token not found in credentials file or GITHUB_TOKEN env; falling back to gh CLI auth.\n");
+  }
+
   // Resolve baseBranch from request.md if slug is available
   let baseBranch = "main"; // fallback for slug-less paths (--pr, --job)
   if (opts.slug) {
@@ -97,6 +108,7 @@ export async function runFinish(opts: RunFinishOptions): Promise<number> {
       cwd: opts.cwd,
       spawn: spawnCommand,
       fs: buildRealFs(),
+      githubToken,
     },
     (msg) => process.stdout.write(msg + "\n"),
   );

@@ -12,11 +12,11 @@ export const githubTokenValidCheck: DoctorCheck = {
   required: true,
 
   async check(ctx: DoctorContext) {
-    const token = ctx.config.get("github.accessToken");
+    const token = ctx.resolvedGitHubToken;
     if (typeof token !== "string" || token.length === 0) {
       return {
         status: "fail",
-        message: "github.accessToken is not configured — cannot validate",
+        message: "GitHub token not found in credentials file or GITHUB_TOKEN env var — cannot validate",
         hint: "Run 'specrunner login' first.",
       };
     }

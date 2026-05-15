@@ -31,6 +31,7 @@ export class ManagedRuntime implements RuntimeStrategy {
     private readonly githubClient: GitHubClient,
     private readonly repo: OriginInfo,
     spawnFn?: SpawnFn,
+    private readonly githubToken: string = "",
   ) {
     this.spawnFn = spawnFn ?? spawnCommand;
   }
@@ -48,6 +49,7 @@ export class ManagedRuntime implements RuntimeStrategy {
       sessionClient: this.sessionClient,
       githubClient: this.githubClient,
       repo: this.repo,
+      githubToken: this.githubToken,
     });
   }
 
@@ -168,6 +170,7 @@ export class ManagedRuntime implements RuntimeStrategy {
       request,
       slug,
       githubClient: this.githubClient,
+      githubToken: this.githubToken,
       cwd: workspace.cwd,
       runner: this.createAgentRunner(),
     };

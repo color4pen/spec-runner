@@ -38,16 +38,18 @@ const validConfig = {
   runtime: "local",
   agents: {},
   pipeline: { maxRetries: 2 },
-  github: { accessToken: "gh-token", tokenObtainedAt: new Date().toISOString(), scopes: ["repo"] },
 };
 
 async function writeValidConfig() {
   // getConfigPath() returns $XDG_CONFIG_HOME/specrunner/config.json
+  // getCredentialsPath() returns $XDG_CONFIG_HOME/specrunner/credentials.json
   // We set XDG_CONFIG_HOME = tempDir in beforeEach
   const configDir = path.join(tempDir, "specrunner");
   await fs.mkdir(configDir, { recursive: true });
   const configPath = path.join(configDir, "config.json");
   await fs.writeFile(configPath, JSON.stringify(validConfig), { mode: 0o600 });
+  const credPath = path.join(configDir, "credentials.json");
+  await fs.writeFile(credPath, JSON.stringify({ github: { token: "ghp_testtoken" } }), { mode: 0o600 });
 }
 
 describe("TC-BS-001: bootstrap() returns BootstrapResult on success", () => {

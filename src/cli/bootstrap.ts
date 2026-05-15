@@ -1,13 +1,14 @@
 /**
  * bootstrap: shared CLI initialisation for create and resume commands.
  *
- * Encapsulates loadConfig → createGitHubClient → createRuntime.
+ * Encapsulates loadConfig → resolveGitHubToken → createGitHubClient → createRuntime.
  * Callers are responsible for resolving `repo` before calling bootstrap()
  * (each command obtains repo differently: create via getOriginInfo, resume via state).
  *
  * run.ts does NOT use bootstrap() — it uses preflight() which already returns config + repo.
  */
 import { loadConfig } from "../config/store.js";
+import { resolveGitHubToken } from "../core/credentials/github.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { createAnthropicClient } from "../adapter/managed-agent/client.js";
 import { createAnthropicSessionClient } from "../adapter/managed-agent/session-client.js";
@@ -21,19 +22,21 @@ export interface BootstrapResult {
   config: SpecRunnerConfig;
   githubClient: GitHubClient;
   runtime: RuntimeStrategy;
+  githubToken: string;
 }
 
 /**
- * Load config, create GitHub client and runtime for the given working directory and repo.
- * Throws on config load failure — callers handle the error.
+ * Load config, resolve GitHub token, create GitHub client and runtime for the given working directory and repo.
+ * Throws on config load failure or missing GitHub token — callers handle the error.
  */
 export async function bootstrap(cwd: string, repo: OriginInfo): Promise<BootstrapResult> {
   const config = await loadConfig();
-  const githubClient = createGitHubClient(fetch, config.github?.accessToken ?? "");
+  const { token: githubToken } = await resolveGitHubToken(process.env as Record<string, string | undefined>);
+  const githubClient = createGitHubClient(fetch, githubToken);
   const sessionClient =
     config.runtime === "managed" && process.env["SPECRUNNER_API_KEY"]
       ? createAnthropicSessionClient(createAnthropicClient(process.env["SPECRUNNER_API_KEY"]))
       : undefined;
-  const runtime = createRuntime(config, cwd, githubClient, repo, sessionClient);
-  return { config, githubClient, runtime };
+  const runtime = createRuntime(config, cwd, githubClient, repo, sessionClient, githubToken);
+  return { config, githubClient, runtime, githubToken };
 }

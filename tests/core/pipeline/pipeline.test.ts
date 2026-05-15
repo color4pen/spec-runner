@@ -70,7 +70,6 @@ function makeMinimalDeps(): PipelineDeps {
       version: 1,
       agents: { design: { agentId: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" } },
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
-      github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
     },
     repo: { owner: "testowner", name: "testrepo" },
     request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },

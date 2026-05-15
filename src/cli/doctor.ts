@@ -16,6 +16,7 @@ import type { DoctorContext, DoctorFs, DoctorConfig, DoctorGitHubClient, ExecFil
 import { loadConfig } from "../config/store.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
+import { resolveGitHubToken } from "../core/credentials/github.js";
 
 const execFileAsync = promisify(childProcess.execFile);
 
@@ -86,14 +87,19 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
     configLoadError = err instanceof Error ? err.message : String(err);
   }
 
-  // Build GitHub client (needs token from config — may be null)
-  const githubToken = typeof rawConfig?.github?.accessToken === "string"
-    ? rawConfig.github.accessToken
-    : "";
+  // Resolve GitHub token (best-effort — doctor works even without token)
+  let resolvedGitHubToken: string | null = null;
+  try {
+    const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>);
+    resolvedGitHubToken = resolved.token;
+  } catch {
+    // Token not found — checks will report failure
+  }
 
+  // Build GitHub client (uses resolved token — may be null → empty string fallback)
   const githubClient: DoctorGitHubClient = createGitHubClient(
     globalThis.fetch,
-    githubToken,
+    resolvedGitHubToken ?? "",
   );
 
   // Assemble DoctorContext
@@ -109,6 +115,7 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
     homeDir: os.homedir(),
     processVersion: process.version,
     platform: process.platform,
+    resolvedGitHubToken,
   };
 
   // Run runtime-specific checks

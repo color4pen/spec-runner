@@ -8,26 +8,26 @@ import { buildMockContext, buildMockConfig } from "../../mock-context.js";
 
 describe("githubTokenPresentCheck", () => {
   // TC-014
-  it("returns pass when github.accessToken is a non-empty string", async () => {
+  it("returns pass when resolvedGitHubToken is a non-empty string", async () => {
     const ctx = buildMockContext({
-      config: buildMockConfig({ github: { accessToken: "ghp_test" } }),
+      resolvedGitHubToken: "ghp_test",
     });
     const result = await githubTokenPresentCheck.check(ctx);
     expect(result.status).toBe("pass");
   });
 
   // TC-015
-  it("returns fail when github.accessToken is undefined", async () => {
+  it("returns fail when resolvedGitHubToken is null", async () => {
     const ctx = buildMockContext({
-      config: buildMockConfig({ github: undefined }),
+      resolvedGitHubToken: null,
     });
     const result = await githubTokenPresentCheck.check(ctx);
     expect(result.status).toBe("fail");
   });
 
-  it("returns fail when github.accessToken is empty string", async () => {
+  it("returns fail when resolvedGitHubToken is empty string", async () => {
     const ctx = buildMockContext({
-      config: buildMockConfig({ github: { accessToken: "" } }),
+      resolvedGitHubToken: "",
     });
     const result = await githubTokenPresentCheck.check(ctx);
     expect(result.status).toBe("fail");

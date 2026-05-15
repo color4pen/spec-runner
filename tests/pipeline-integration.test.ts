@@ -94,7 +94,6 @@ function buildConfig(overrides: Record<string, unknown> = {}) {
     },
     pipeline: { maxRetries: 2 },
     environment: { id: "env_001", lastSyncedAt: new Date().toISOString() },
-    github: { accessToken: "ghp_test", tokenObtainedAt: new Date().toISOString(), scopes: ["repo"] },
     specReview: { pollIntervalMs: 100 },
     ...overrides,
   };
@@ -116,7 +115,7 @@ function buildRunner(
   client: ReturnType<typeof buildPipelineMockClient>["client"],
   githubClient: GitHubClient,
 ) {
-  return createManagedAgentRunner({ sessionClient: client, githubClient, repo: buildRepo() });
+  return createManagedAgentRunner({ sessionClient: client, githubClient, repo: buildRepo(), githubToken: "ghp_test" });
 }
 
 /**

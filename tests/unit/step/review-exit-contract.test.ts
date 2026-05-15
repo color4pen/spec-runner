@@ -213,7 +213,6 @@ describe("TC-008: spec-review round-trip — resultFilePath and buildFindingsPat
         version: 1,
         agents: {},
         environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
-        github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
       },
       repo: { owner: "testowner", name: "testrepo" },
       request: { type: "feature", title: "Test", slug, baseBranch: "main", content: "content", enabled: [] },
@@ -285,7 +284,6 @@ describe("TC-009: code-review round-trip — resultFilePath and buildReviewFeedb
         version: 1,
         agents: {},
         environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
-        github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
       },
       repo: { owner: "testowner", name: "testrepo" },
       request: { type: "feature", title: "Test", slug, baseBranch: "main", content: "content", enabled: [] },
@@ -428,7 +426,6 @@ function makeExecutorTestConfig() {
       "code-review": { agentId: "agent_code_rev", definitionHash: "sha256:def", lastSyncedAt: "2026-01-01" },
     },
     environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
-    github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
   };
 }
 
@@ -496,6 +493,7 @@ function makeExecutorFromDeps(events: EventBus, deps: PipelineDeps): StepExecuto
     sessionClient: deps.client!,
     githubClient: deps.githubClient,
     repo: deps.repo,
+    githubToken: "ghp_test",
   });
   return new StepExecutor(events, runner);
 }

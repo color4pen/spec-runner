@@ -24,7 +24,6 @@ import type { JobState, StepRun } from "../../../src/state/schema.js";
 vi.mock("../../../src/config/store.js", () => ({
   loadConfig: vi.fn().mockResolvedValue({
     runtime: "local",
-    github: { accessToken: "gh-token" },
     pipeline: { maxRetries: 2 },
     agents: {},
   }),
@@ -32,6 +31,10 @@ vi.mock("../../../src/config/store.js", () => ({
 
 vi.mock("../../../src/adapter/github/github-client.js", () => ({
   createGitHubClient: vi.fn().mockReturnValue({}),
+}));
+
+vi.mock("../../../src/core/credentials/github.js", () => ({
+  resolveGitHubToken: vi.fn().mockResolvedValue({ token: "ghp_test", source: "credentials" }),
 }));
 
 vi.mock("../../../src/core/worktree/manager.js", () => ({

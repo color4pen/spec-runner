@@ -7,6 +7,7 @@ import { loadConfig } from "../config/store.js";
 import { checkConfigComplete } from "../config/schema.js";
 import { getOriginInfo } from "../git/remote.js";
 import { parseRequestMd } from "../parser/request-md.js";
+import { resolveGitHubToken } from "../core/credentials/github.js";
 import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import type { OriginInfo } from "../git/remote.js";
@@ -16,6 +17,8 @@ export interface PreflightResult {
   config: SpecRunnerConfig;
   repo: OriginInfo;
   request: ParsedRequest;
+  /** Resolved GitHub token (from credentials file or GITHUB_TOKEN env var). */
+  githubToken: string;
 }
 
 /**
@@ -61,7 +64,7 @@ export async function runPreflight(
   // Step 1: Config exists
   const config = await loadConfig();
 
-  // Step 2: Config complete (all required fields present)
+  // Step 2: Config complete (all required fields present — github check moved here)
   const incomplete = checkConfigComplete(config);
   if (incomplete) {
     throw new SpecRunnerError(
@@ -71,7 +74,23 @@ export async function runPreflight(
     );
   }
 
-  // Step 2.5: Runtime prerequisites (managed-specific)
+  // Step 2.5: GitHub token (both runtimes require it for PR creation / gh CLI)
+  let githubToken: string;
+  try {
+    const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>);
+    githubToken = resolved.token;
+  } catch (err) {
+    if (err instanceof SpecRunnerError) {
+      throw new SpecRunnerError(
+        ERROR_CODES.RUNTIME_PREREQ_MISSING,
+        err.hint,
+        err.message,
+      );
+    }
+    throw err;
+  }
+
+  // Step 2.7: Runtime prerequisites (managed-specific)
   const prereq = checkRuntimePrereqs(config, process.env as Record<string, string | undefined>);
   if (prereq) {
     throw new SpecRunnerError(
@@ -87,5 +106,5 @@ export async function runPreflight(
   // Step 5: request.md parseable
   const request = await parseRequestMd(requestMdPath);
 
-  return { config, repo, request };
+  return { config, repo, request, githubToken };
 }

@@ -28,6 +28,8 @@ export interface ResolveTargetInput {
   cwd?: string;
   /** spawn function for gh CLI calls (required for --pr resolution). */
   spawn?: SpawnFn;
+  /** Additional env vars (e.g. GITHUB_TOKEN) to inject into gh CLI subprocess. */
+  env?: Record<string, string | undefined>;
 }
 
 export type ResolveTargetResult =
@@ -49,7 +51,7 @@ export async function resolveTarget(
 
   // 2. --pr <num> reverse lookup
   if (input.prNumber !== undefined && input.spawn) {
-    return resolveByPrNumber(input.prNumber, input.cwd ?? process.cwd(), input.spawn, stdoutWrite);
+    return resolveByPrNumber(input.prNumber, input.cwd ?? process.cwd(), input.spawn, stdoutWrite, input.env);
   }
 
   // 3. --job <jobId> direct lookup (forensics / debug)
@@ -104,11 +106,12 @@ async function resolveByPrNumber(
   cwd: string,
   spawn: SpawnFn,
   stdoutWrite: (msg: string) => void,
+  env?: Record<string, string | undefined>,
 ): Promise<ResolveTargetResult> {
   const result = await spawn(
     "gh",
     ["pr", "view", String(prNumber), "--json", "headRefName"],
-    { cwd },
+    { cwd, env },
   );
 
   if (result.exitCode !== 0) {

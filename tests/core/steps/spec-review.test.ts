@@ -85,7 +85,6 @@ function buildDeps(opts: {
         "spec-fixer": { agentId: "agent_spec_fixer", definitionHash: "sha", lastSyncedAt: "2026-01-01" },
       },
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
-      github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
     },
     repo: { owner: "testowner", name: "testrepo" },
     request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
@@ -107,6 +106,7 @@ async function runStep(jobState: JobState, deps: PipelineDeps): Promise<JobState
     sessionClient: deps.client!,
     githubClient: deps.githubClient,
     repo: deps.repo,
+    githubToken: "ghp_test",
   });
   const executor = new StepExecutor(events, runner);
   return executor.execute(SpecReviewStep, jobState, deps);

@@ -23,6 +23,7 @@ import { ManagedRuntime } from "./managed.js";
  * @param githubClient - GitHub API client
  * @param repo - Repository owner/name
  * @param sessionClient - Pre-built SessionClient (required for managed runtime)
+ * @param githubToken - Resolved GitHub token (for managed agent session creation)
  */
 export function createRuntime(
   config: SpecRunnerConfig,
@@ -30,14 +31,15 @@ export function createRuntime(
   githubClient: GitHubClient,
   repo: OriginInfo,
   sessionClient?: SessionClient,
+  githubToken: string = "",
 ): RuntimeStrategy {
   if (config.runtime === "local") {
-    return new LocalRuntime({ cwd, githubClient });
+    return new LocalRuntime({ cwd, githubClient, githubToken });
   }
 
   // Managed runtime: sessionClient must be injected by the caller
   if (!sessionClient) {
     throw new Error("sessionClient is required for managed runtime");
   }
-  return new ManagedRuntime(cwd, sessionClient, githubClient, repo);
+  return new ManagedRuntime(cwd, sessionClient, githubClient, repo, undefined, githubToken);
 }

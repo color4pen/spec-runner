@@ -50,6 +50,8 @@ export interface FinishInput {
   sleepFn?: (ms: number) => Promise<void>;
   /** Injectable WorktreeManager for testing (defaults to createWorktreeManager()). */
   worktreeManagerFn?: () => import("../worktree/manager.js").WorktreeManager;
+  /** GitHub token injected into gh CLI subprocess env (GITHUB_TOKEN). */
+  githubToken?: string;
 }
 
 export type FinishResult =
@@ -65,9 +67,13 @@ export async function runFinishOrchestrator(
   input: FinishInput,
   stdoutWrite: (msg: string) => void = (m) => process.stdout.write(m + "\n"),
 ): Promise<FinishResult> {
-  const { slug, prNumber, jobId, baseBranch, flags, cwd, spawn, fs, sleepFn, worktreeManagerFn } = input;
+  const { slug, prNumber, jobId, baseBranch, flags, cwd, spawn, fs, sleepFn, worktreeManagerFn, githubToken } = input;
 
-  const resolveResult = await resolveTarget({ slug, prNumber, jobId, cwd, spawn }, stdoutWrite);
+  // Build env override for gh CLI subprocess (inject GITHUB_TOKEN so gh auth login is not required)
+  const ghEnv: Record<string, string | undefined> | undefined =
+    githubToken ? { GITHUB_TOKEN: githubToken } : undefined;
+
+  const resolveResult = await resolveTarget({ slug, prNumber, jobId, cwd, spawn, env: ghEnv }, stdoutWrite);
   if (!resolveResult.ok) return { exitCode: 2, message: resolveResult.message };
   const target = resolveResult.target;
 
@@ -102,7 +108,7 @@ export async function runFinishOrchestrator(
 
   // Phase 0: pre-flight
   stdoutWrite("Phase 0: pre-flight checks...");
-  const preflightResult = await runPreflight({ target, cwd, spawn, fs, dryRun: flags.dryRun ?? false, sleepFn });
+  const preflightResult = await runPreflight({ target, cwd, spawn, fs, dryRun: flags.dryRun ?? false, sleepFn, env: ghEnv });
   if (!preflightResult.ok) return { exitCode: 1, escalation: preflightResult.escalation };
   const { prViewData } = preflightResult;
 
@@ -121,7 +127,7 @@ export async function runFinishOrchestrator(
     if (!p1.ok) return { exitCode: 1, escalation: p1.escalation };
 
     stdoutWrite(`Phase 2: git push origin ${target.branch}...`);
-    const p2 = await runPhase2Push({ target, operationCwd, cwd, spawn, baseBranch, prViewData, stdoutWrite, sleepFn });
+    const p2 = await runPhase2Push({ target, operationCwd, cwd, spawn, baseBranch, prViewData, stdoutWrite, sleepFn, ghEnv });
     if (!p2.ok) return { exitCode: 1, escalation: p2.escalation };
 
     stdoutWrite(`Phase 3: merging PR #${target.prNumber}...`);
@@ -134,6 +140,7 @@ export async function runFinishOrchestrator(
       slug: target.slug,
       baseBranch,
       sleepFn,
+      ghEnv,
     });
     if (!mergeResult.ok) return { exitCode: 1, escalation: mergeResult.escalation };
     stdoutWrite(`PR #${target.prNumber} merged successfully.`);
@@ -216,8 +223,9 @@ async function runPhase2Push(params: {
   prViewData: PrViewData;
   stdoutWrite: (msg: string) => void;
   sleepFn?: (ms: number) => Promise<void>;
+  ghEnv?: Record<string, string | undefined>;
 }): Promise<Phase2Result> {
-  const { target, operationCwd, cwd, spawn, baseBranch, prViewData, stdoutWrite, sleepFn } = params;
+  const { target, operationCwd, cwd, spawn, baseBranch, prViewData, stdoutWrite, sleepFn, ghEnv } = params;
   const archiveCwd = operationCwd ?? cwd;
 
   const pushResult = await pushFeatureBranch({ branch: target.branch, cwd: archiveCwd, spawn, slug: target.slug });
@@ -231,6 +239,7 @@ async function runPhase2Push(params: {
     spawn,
     slug: target.slug,
     sleepFn,
+    env: ghEnv,
   });
   const mergeStateAfterPush = postPushPoll.mergeStateStatus || (prViewData.mergeStateStatus ?? "");
 
@@ -402,6 +411,7 @@ interface MergePhase3Params {
   slug: string;
   baseBranch: string;
   sleepFn?: (ms: number) => Promise<void>;
+  ghEnv?: Record<string, string | undefined>;
 }
 
 /**
@@ -410,7 +420,7 @@ interface MergePhase3Params {
  * when mergeStateStatus=BLOCKED (blocking checks) per spec.
  */
 async function mergeFeaturePrPhase3(params: MergePhase3Params): Promise<PhaseResult> {
-  const { prNumber, mergeStateStatus, force, cwd, spawn, slug, baseBranch, sleepFn } = params;
+  const { prNumber, mergeStateStatus, force, cwd, spawn, slug, baseBranch, sleepFn, ghEnv } = params;
 
   // Phase 3 guard: check mergeable before attempting merge
   const mergeableResult = await checkMergeableForMerge({
@@ -420,6 +430,7 @@ async function mergeFeaturePrPhase3(params: MergePhase3Params): Promise<PhaseRes
     slug,
     baseBranch,
     sleepFn,
+    env: ghEnv,
   });
   if (!mergeableResult.ok) {
     return { ok: false, escalation: mergeableResult.escalation, exitCode: 1 };
@@ -440,6 +451,7 @@ async function mergeFeaturePrPhase3(params: MergePhase3Params): Promise<PhaseRes
     cwd,
     failedStep: "Phase 3 (gh pr merge)",
     resumeCommand: `specrunner finish ${slug}`,
+    env: ghEnv,
   });
   if (!mergeResult.ok) {
     return { ok: false, escalation: mergeResult.escalation, exitCode: 1 };

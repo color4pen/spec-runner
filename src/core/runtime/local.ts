@@ -44,6 +44,7 @@ function getInternals(handle: CleanupHandle): LocalCleanupInternals {
 export interface LocalRuntimeOptions {
   cwd: string;
   githubClient: GitHubClient;
+  githubToken?: string;
   manager?: ReturnType<typeof createWorktreeManager>;
   spawnFn?: SpawnFn;
   queryFn?: QueryFn;
@@ -52,6 +53,7 @@ export interface LocalRuntimeOptions {
 export class LocalRuntime implements RuntimeStrategy {
   private readonly cwd: string;
   private readonly githubClient: GitHubClient;
+  private readonly githubToken: string;
   private readonly manager: ReturnType<typeof createWorktreeManager>;
   private readonly spawnFn: SpawnFn;
   private readonly queryFn: QueryFn;
@@ -62,6 +64,7 @@ export class LocalRuntime implements RuntimeStrategy {
   constructor(opts: LocalRuntimeOptions) {
     this.cwd = opts.cwd;
     this.githubClient = opts.githubClient;
+    this.githubToken = opts.githubToken ?? "";
     this.manager = opts.manager ?? createWorktreeManager();
     this.spawnFn = opts.spawnFn ?? spawnCommand;
     this.queryFn = opts.queryFn ?? (sdkQuery as unknown as QueryFn);
@@ -264,6 +267,7 @@ export class LocalRuntime implements RuntimeStrategy {
       request,
       slug,
       githubClient: this.githubClient,
+      githubToken: this.githubToken,
       cwd: workspace.cwd,
       runner: this.createAgentRunner(),
     };

@@ -54,7 +54,6 @@ function buildConfig() {
     runtime: "local" as const,
     agents: {},
     pipeline: { maxRetries: 2 },
-    github: { accessToken: "gh-token", tokenObtainedAt: new Date().toISOString(), scopes: ["repo"] },
   };
 }
 

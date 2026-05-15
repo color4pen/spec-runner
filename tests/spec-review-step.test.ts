@@ -52,7 +52,6 @@ function buildConfig(overrides?: { specReview?: { pollIntervalMs?: number } }) {
       "spec-fixer": { agentId: "agent_spec_fixer", definitionHash: "sha256:def", lastSyncedAt: new Date().toISOString() },
     },
     environment: { id: "env_001", lastSyncedAt: new Date().toISOString() },
-    github: { accessToken: "ghp_test", tokenObtainedAt: new Date().toISOString(), scopes: ["repo"] },
     specReview: overrides?.specReview ?? { pollIntervalMs: 100 },
   };
 }
@@ -130,6 +129,7 @@ async function runSpecReviewViaExecutor(
     sessionClient: deps.client,
     githubClient: deps.githubClient,
     repo: deps.repo,
+    githubToken: "ghp_test",
   });
   const executor = new StepExecutor(events, runner);
   return executor.execute(SpecReviewStep, jobState, deps);

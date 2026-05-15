@@ -53,7 +53,6 @@ export function buildMockContext(overrides?: Partial<DoctorContext>): DoctorCont
     fs: buildMockFs(),
     execFile: buildMockExecFile(),
     config: buildMockConfig({
-      github: { accessToken: "ghp_test123" },
       environment: { id: "env_test123" },
       agents: {
         "design": { agentId: "agent_001", definitionHash: "sha256:abc" },
@@ -69,6 +68,7 @@ export function buildMockContext(overrides?: Partial<DoctorContext>): DoctorCont
     homeDir: "/fake/home",
     processVersion: "v20.0.0",
     platform: "linux" as NodeJS.Platform,
+    resolvedGitHubToken: "ghp_test123",
     ...overrides,
   };
 }

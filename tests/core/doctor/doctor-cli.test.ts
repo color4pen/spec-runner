@@ -24,7 +24,6 @@ vi.mock("../../../src/core/doctor/checks/index.js", () => ({
 vi.mock("../../../src/config/store.js", () => ({
   loadConfig: vi.fn().mockResolvedValue({
     version: 1,
-    github: { accessToken: "ghp_test" },
     agents: {},
   }),
 }));

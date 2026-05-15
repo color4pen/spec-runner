@@ -33,7 +33,6 @@ function buildConfig() {
   return {
     version: 1 as const,
     agents: {},
-    github: { accessToken: "ghp_test", tokenObtainedAt: "", scopes: ["repo"] },
     environment: { id: "env_001", lastSyncedAt: "" },
   };
 }

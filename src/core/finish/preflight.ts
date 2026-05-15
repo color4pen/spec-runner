@@ -41,6 +41,8 @@ export interface PreflightInput {
   sleepFn?: (ms: number) => Promise<void>;
   /** Warning output function (defaults to process.stderr.write). */
   warnFn?: (msg: string) => void;
+  /** Additional env vars to inject into gh CLI subprocesses. */
+  env?: Record<string, string | undefined>;
 }
 
 export type PreflightResult =
@@ -51,7 +53,7 @@ export type PreflightResult =
  * Run all Phase 0 preflight checks.
  */
 export async function runPreflight(input: PreflightInput): Promise<PreflightResult> {
-  const { target, cwd, spawn, fs, dryRun } = input;
+  const { target, cwd, spawn, fs, dryRun, env } = input;
   const warn = input.warnFn ?? ((m: string) => process.stderr.write(m));
 
   // Check 2: pullRequest.number must exist (already validated in resolveTarget,
@@ -89,6 +91,7 @@ export async function runPreflight(input: PreflightInput): Promise<PreflightResu
     spawn,
     slug: target.slug,
     sleepFn: input.sleepFn,
+    env,
   });
 
   if (!prViewResult.ok) {

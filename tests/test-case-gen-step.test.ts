@@ -47,7 +47,6 @@ function makeMinimalDeps(slug: string = "my-change"): StepDeps {
       version: 1,
       agents: {},
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
-      github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
     },
     repo: { owner: "testowner", name: "testrepo" },
     request: {

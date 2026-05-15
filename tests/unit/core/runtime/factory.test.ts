@@ -31,7 +31,6 @@ function buildManagedConfig() {
     version: 1 as const,
     agents: {},
     environment: { id: "env_001", lastSyncedAt: "" },
-    github: { accessToken: "ghp_test", tokenObtainedAt: "", scopes: ["repo"] },
   };
 }
 

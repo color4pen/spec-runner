@@ -88,7 +88,6 @@ function makeConfig(overrides: Partial<SpecRunnerConfig> = {}): SpecRunnerConfig
       "code-fixer": { agentId: "agent_code_fixer", definitionHash: "sha256:cfh", lastSyncedAt: "2026-01-01" },
     },
     environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
-    github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
     ...overrides,
   };
 }
@@ -164,6 +163,7 @@ describe("TC-013: ManagedAgentRunner implements AgentRunner interface", () => {
       sessionClient: makeMockSessionClient(),
       githubClient: makeMockGithubClient(),
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
     expect(typeof runner.run).toBe("function");
   });
@@ -179,7 +179,7 @@ describe("TC-014: ManagedAgentRunner constructor receives sessionClient, githubC
     const githubClient = makeMockGithubClient();
     const repo = { owner: "testowner", name: "testrepo" };
 
-    expect(() => new ManagedAgentRunner({ sessionClient, githubClient, repo })).not.toThrow();
+    expect(() => new ManagedAgentRunner({ sessionClient, githubClient, repo, githubToken: "ghp_test" })).not.toThrow();
   });
 });
 
@@ -202,6 +202,7 @@ describe("TC-015: ManagedAgentRunner.run() is equivalent to existing lifecycle",
       sessionClient,
       githubClient,
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
 
     const ctx = makeCtx(
@@ -336,6 +337,7 @@ describe("TC-018: design role — register_branch not in toolHandlers (D4: tool 
       sessionClient,
       githubClient,
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
 
     const designStep: AgentStep = {
@@ -425,6 +427,7 @@ describe("TC-020: ManagedAgentRunner includes ctx.branch in prompt", () => {
       sessionClient,
       githubClient: makeMockGithubClient(),
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
 
     const designStep: AgentStep = {
@@ -488,6 +491,7 @@ describe("TC-021: design uses pre-set ctx.branch from CLI (D4)", () => {
       sessionClient,
       githubClient: makeMockGithubClient(),
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
 
     const designStep: AgentStep = {
@@ -539,6 +543,7 @@ describe("TC-030: ManagedAgentRunner.verifyBranch — branch not found → warni
       sessionClient: makeMockSessionClient(),
       githubClient,
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
 
     const ctx = makeCtx(
@@ -574,6 +579,7 @@ describe("TC-018 (test-cases.md): polling-style — projectContext injected into
       sessionClient,
       githubClient: makeMockGithubClient(),
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
 
     const ctx = makeCtx(
@@ -608,6 +614,7 @@ describe("TC-019 (test-cases.md): polling-style — no <project-context> when pr
       sessionClient,
       githubClient: makeMockGithubClient(),
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
 
     const ctx = makeCtx(
@@ -646,6 +653,7 @@ describe("TC-020 (test-cases.md): SSE/design-style — projectContext injected i
       sessionClient,
       githubClient: makeMockGithubClient(),
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
 
     const designStep: AgentStep = {
@@ -698,6 +706,7 @@ describe("TC-021 (test-cases.md): SSE/design-style — no <project-context> when
       sessionClient,
       githubClient: makeMockGithubClient(),
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
 
     const designStep: AgentStep = {
@@ -753,6 +762,7 @@ describe("TC-031: managed adapter result file not found → error", () => {
       sessionClient: makeMockSessionClient(),
       githubClient,
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
 
     // Step has a resultFilePath (expects a file to exist)
@@ -788,6 +798,7 @@ describe("TC-036: ManagedAgentRunner — defaults.timeoutMs applied when no step
       sessionClient,
       githubClient: makeMockGithubClient(),
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
 
     const config = makeConfig({
@@ -821,6 +832,7 @@ describe("TC-037: ManagedAgentRunner — step-level timeoutMs overrides defaults
       sessionClient,
       githubClient: makeMockGithubClient(),
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
 
     const config = makeConfig({
@@ -857,6 +869,7 @@ describe("TC-038: resolveTimeoutMs removed — stepDefaults provides DEFAULT_POL
       sessionClient,
       githubClient: makeMockGithubClient(),
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
 
     // makeCtx uses makeConfig() which has no steps field → falls back to stepDefaults
@@ -894,6 +907,7 @@ describe("TC-040: No steps config → ManagedAgentRunner uses DEFAULT_POLL_TIMEO
       sessionClient,
       githubClient: makeMockGithubClient(),
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
 
     // makeCtx uses makeConfig() which has no `steps` key — minimal config
@@ -921,6 +935,7 @@ describe("ManagedAgentRunner session continuity (resumeSessionId)", () => {
       sessionClient,
       githubClient: makeMockGithubClient(),
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
 
     const state = makeJobState("resume-test", "feat/test");
@@ -946,6 +961,7 @@ describe("ManagedAgentRunner session continuity (resumeSessionId)", () => {
       sessionClient,
       githubClient: makeMockGithubClient(),
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
 
     const state = makeJobState("no-resume-test", "feat/test");
@@ -993,6 +1009,7 @@ describe("ManagedAgentRunner session continuity (resumeSessionId)", () => {
       sessionClient,
       githubClient: makeMockGithubClient(),
       repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
     });
 
     const state = makeJobState("fallback-test", "feat/test");

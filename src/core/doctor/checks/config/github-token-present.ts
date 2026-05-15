@@ -1,6 +1,6 @@
 /**
  * TC-014, TC-015
- * Check that github.accessToken is present in the config.
+ * Check that a GitHub token is resolvable (credentials file or GITHUB_TOKEN env var).
  */
 import type { DoctorCheck, DoctorContext } from "../../types.js";
 
@@ -10,18 +10,16 @@ export const githubTokenPresentCheck: DoctorCheck = {
   required: true,
 
   async check(ctx: DoctorContext) {
-    const token = ctx.config.get("github.accessToken");
-
-    if (typeof token === "string" && token.length > 0) {
+    if (typeof ctx.resolvedGitHubToken === "string" && ctx.resolvedGitHubToken.length > 0) {
       return {
         status: "pass",
-        message: "github.accessToken is set in config",
+        message: "GitHub token is available",
       };
     }
 
     return {
       status: "fail",
-      message: "github.accessToken is not set in config",
+      message: "GitHub token not found in credentials file or GITHUB_TOKEN env var",
       hint: "Run 'specrunner login' to authenticate with GitHub.",
     };
   },

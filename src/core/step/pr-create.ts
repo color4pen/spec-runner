@@ -38,6 +38,7 @@ export const PrCreateStep: CliStep = {
       title,
       body,
       cwd,
+      githubToken: deps.githubToken,
     });
 
     const resultFilePath = PrCreateStep.resultFilePath(state, deps);

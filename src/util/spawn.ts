@@ -41,7 +41,7 @@ export function spawnCommand(
     const proc = spawn(cmd, args, {
       cwd: opts.cwd,
       shell: false,
-      env: opts.env ?? process.env as Record<string, string>,
+      env: opts.env ? { ...process.env, ...opts.env } as Record<string, string> : process.env as Record<string, string>,
     });
 
     let stdout = "";

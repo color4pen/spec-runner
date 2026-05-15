@@ -6,15 +6,13 @@ import type { SpecRunnerConfig, AgentRecord } from "./schema.js";
 import type { StepName } from "../state/schema.js";
 import { configMissingError, configIncompleteError } from "../errors.js";
 import { SpecRunnerError, ERROR_CODES } from "../errors.js";
-import { stderrWrite } from "../logger/stdout.js";
 import { applyMigration } from "./migrate.js";
 
 const CONFIG_MODE = 0o600;
-const LOOSE_MODE_THRESHOLD = 0o007; // group/other readable bits
 
 /**
  * Load config from disk. Applies migration (legacy/intermediate → new schema)
- * and validates the result. Warns about loose permissions.
+ * and validates the result.
  * Throws SpecRunnerError if config is missing or invalid.
  */
 export async function loadConfig(): Promise<SpecRunnerConfig> {
@@ -29,19 +27,6 @@ export async function loadConfig(): Promise<SpecRunnerConfig> {
       throw configMissingError();
     }
     throw err;
-  }
-
-  // Check permissions — warn if too loose
-  try {
-    const stat = await fs.stat(configPath);
-    const mode = stat.mode & 0o777;
-    if (mode & LOOSE_MODE_THRESHOLD) {
-      stderrWrite(
-        `Warning: ${configPath} has loose permissions (recommend 0600).`,
-      );
-    }
-  } catch {
-    // Ignore stat errors — file was just read
   }
 
   let parsed: unknown;
@@ -96,6 +81,7 @@ export async function saveConfig(cfg: SpecRunnerConfig): Promise<void> {
   delete toSave["agent"]; // never write legacy agent field
   delete toSave["timeout"]; // removed in remove-session-timeout (D3)
   delete toSave["anthropic"]; // removed in managed-command-extraction
+  delete toSave["github"]; // removed in github-credential-env-separation (secrets moved to credentials.json)
 
   await atomicWriteJson(configPath, toSave, { mode: CONFIG_MODE });
 }

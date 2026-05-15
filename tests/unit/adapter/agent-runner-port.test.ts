@@ -91,7 +91,6 @@ function makeMinimalConfig() {
       "spec-review": { agentId: "agent_spec_review", definitionHash: "sha256:def", lastSyncedAt: "2026-01-01" },
     },
     environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
-    github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
   };
 }
 

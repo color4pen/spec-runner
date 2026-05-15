@@ -24,6 +24,8 @@ export interface StepContext {
   repo: OriginInfo;
   /** Dynamic repository context injected at pipeline start. Optional for backward compat. */
   dynamicContext?: DynamicContext;
+  /** Resolved GitHub token to inject into gh CLI subprocesses. Optional for backward compat. */
+  githubToken?: string;
 }
 
 /**

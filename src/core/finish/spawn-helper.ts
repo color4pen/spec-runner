@@ -23,10 +23,12 @@ export async function spawnOrEscalate(params: {
   resumeCommand: string;
   /** Override default recommended action (default: stderr + resumeCommand) */
   recommendedAction?: string;
+  /** Additional env vars to merge into process.env for the subprocess. */
+  env?: Record<string, string | undefined>;
 }): Promise<SpawnOrEscalateResult> {
-  const { spawn, cmd, args, cwd, failedStep, resumeCommand, recommendedAction } = params;
+  const { spawn, cmd, args, cwd, failedStep, resumeCommand, recommendedAction, env } = params;
 
-  const result = await spawn(cmd, args, { cwd });
+  const result = await spawn(cmd, args, { cwd, env });
 
   if (result.exitCode === 0) {
     return { ok: true, stdout: result.stdout, stderr: result.stderr };

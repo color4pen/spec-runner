@@ -13,6 +13,7 @@ import type { DoctorCheck } from "../types.js";
 import { nodeVersionCheck } from "./runtime/node.js";
 import { bunVersionCheck } from "./runtime/bun.js";
 import { gitVersionCheck } from "./runtime/git.js";
+import { ghCliPresentCheck } from "./runtime/gh-cli.js";
 import { codexCliCheck } from "./runtime/codex-cli.js";
 
 // Config
@@ -45,10 +46,11 @@ import { jobsWritableCheck } from "./storage/jobs-writable.js";
 import { oldStateFilesCheck } from "./storage/old-state-files.js";
 
 export const commonChecks: DoctorCheck[] = [
-  // Runtime (3)
+  // Runtime (4)
   nodeVersionCheck,
   bunVersionCheck,
   gitVersionCheck,
+  ghCliPresentCheck,
   // Config
   configFileExistsCheck,
   githubTokenPresentCheck,
@@ -91,6 +93,7 @@ export {
   nodeVersionCheck,
   bunVersionCheck,
   gitVersionCheck,
+  ghCliPresentCheck,
   codexCliCheck,
   configFileExistsCheck,
   anthropicKeyPresentCheck,

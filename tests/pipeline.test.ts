@@ -136,7 +136,6 @@ function buildConfig() {
       "spec-fixer": { agentId: "agent_spec_fixer", definitionHash: "sha256:def", lastSyncedAt: new Date().toISOString() },
     },
     environment: { id: "env_001", lastSyncedAt: new Date().toISOString() },
-    github: { accessToken: "ghp_test", tokenObtainedAt: new Date().toISOString(), scopes: ["repo"] },
   };
 }
 
@@ -153,7 +152,7 @@ function buildRequest() {
  * Required after Task 2.1: PipelineDeps.runner replaces runtime branching in pipeline/run.ts.
  */
 function buildRunner(client: SessionClient, githubClient: GitHubClient) {
-  return createManagedAgentRunner({ sessionClient: client, githubClient, repo: buildRepo() });
+  return createManagedAgentRunner({ sessionClient: client, githubClient, repo: buildRepo(), githubToken: "ghp_test" });
 }
 
 // TC-035: propose パイプライン — 正常完了（状態遷移の全記録）

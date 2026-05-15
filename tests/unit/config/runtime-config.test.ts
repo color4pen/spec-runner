@@ -347,22 +347,20 @@ describe("TC-041: checkConfigComplete only checks github.accessToken (managed pr
       version: 1 as const,
       runtime: "local" as const,
       agents: {},
-      github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
     };
 
     const result = checkConfigComplete(config);
     expect(result).toBeNull();
   });
 
-  it("checkConfigComplete returns field=github.accessToken when token is missing", () => {
+  it("checkConfigComplete always returns null (GitHub token moved to runPreflight)", () => {
     const config = {
       version: 1 as const,
       agents: {},
     };
 
     const result = checkConfigComplete(config);
-    expect(result).not.toBeNull();
-    expect(result?.field).toBe("github.accessToken");
+    expect(result).toBeNull();
   });
 });
 

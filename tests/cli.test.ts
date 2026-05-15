@@ -52,7 +52,6 @@ async function createValidConfig(overrides: Record<string, unknown> = {}) {
     version: 1,
     agent: { id: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
     environment: { id: "env_001", lastSyncedAt: new Date().toISOString() },
-    github: { accessToken: "ghp_test", tokenObtainedAt: new Date().toISOString(), scopes: ["repo"] },
     ...overrides,
   };
   const configPath = path.join(configDir, "config.json");
@@ -88,9 +87,13 @@ describe("TC-063: specrunner run — fail-fast when config missing", () => {
 
 // TC-064: specrunner run — fail-fast（github token 欠落 → exit 1）
 describe("TC-064: specrunner run — fail-fast when github token missing", () => {
-  it("exits with error when github.accessToken is missing from config", async () => {
-    // Config exists but no github token
-    await createValidConfig({ github: undefined });
+  it("exits with error when GITHUB_TOKEN env var and credentials file are both missing", async () => {
+    // Config exists but no github token in env
+    await createValidConfig({});
+
+    // Ensure GITHUB_TOKEN env var is not set
+    const originalGithubToken = process.env["GITHUB_TOKEN"];
+    delete process.env["GITHUB_TOKEN"];
 
     const exitSpy = vi.spyOn(process, "exit").mockImplementation((_code?: string | number | null) => {
       throw new Error("process.exit called");
@@ -99,12 +102,18 @@ describe("TC-064: specrunner run — fail-fast when github token missing", () =>
     const { runRun } = await import("../src/cli/run.js");
     const reqPath = await createRequestMd();
 
-    await expect(runRun(reqPath, { cwd: tempDir })).rejects.toThrow("process.exit called");
+    try {
+      await expect(runRun(reqPath, { cwd: tempDir })).rejects.toThrow("process.exit called");
 
-    expect(exitSpy).toHaveBeenCalledWith(1);
-    const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
-    const combined = stderrCalls.map((c: unknown[]) => String(c[0])).join("\n");
-    expect(combined).toMatch(/login/i);
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
+      const combined = stderrCalls.map((c: unknown[]) => String(c[0])).join("\n");
+      expect(combined).toMatch(/login/i);
+    } finally {
+      if (originalGithubToken !== undefined) {
+        process.env["GITHUB_TOKEN"] = originalGithubToken;
+      }
+    }
   });
 });
 

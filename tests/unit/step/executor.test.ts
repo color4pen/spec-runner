@@ -26,6 +26,7 @@ function makeExecutor(events: EventBus, deps: PipelineDeps): StepExecutor {
     sessionClient: deps.client!,
     githubClient: deps.githubClient,
     repo: deps.repo,
+    githubToken: "ghp_test",
   });
   return new StepExecutor(events, runner);
 }
@@ -78,7 +79,6 @@ function makeConfig(overrides: Partial<SpecRunnerConfig> = {}): SpecRunnerConfig
       "spec-fixer": { agentId: "agent_03z", definitionHash: "sha256:xyz", lastSyncedAt: "2026-01-01" },
     },
     environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
-    github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
     ...overrides,
   };
 }

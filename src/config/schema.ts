@@ -57,12 +57,6 @@ export interface EnvironmentConfig {
   lastSyncedAt: string;
 }
 
-export interface GithubConfig {
-  accessToken: string;
-  tokenObtainedAt: string;
-  scopes: string[];
-}
-
 export interface SpecReviewConfig {
   /** Polling interval in milliseconds. Default: 10000 (10s) */
   pollIntervalMs?: number;
@@ -97,7 +91,6 @@ export interface SpecRunnerConfig {
   agents: Record<string, AgentRecord>;
   pipeline?: PipelineConfig;
   environment?: EnvironmentConfig;
-  github?: GithubConfig;
   specReview?: SpecReviewConfig;
   specFixer?: SpecFixerConfig;
   /**
@@ -141,7 +134,6 @@ export interface RawConfig {
   agents?: Record<string, unknown>;
   pipeline?: Partial<PipelineConfig>;
   environment?: Partial<EnvironmentConfig>;
-  github?: Partial<GithubConfig>;
   specReview?: Partial<SpecReviewConfig>;
   specFixer?: Partial<SpecFixerConfig>;
   /** Per-step execution config — passed through as-is. Validated in validateConfig(). */
@@ -330,12 +322,10 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
  * TC-052: local runtime allows missing spec-review agent ID.
  */
 export function checkConfigComplete(
-  cfg: SpecRunnerConfig,
+  _cfg: SpecRunnerConfig,
 ): { field: string; hint: string } | null {
-  // Both runtimes require GitHub token for PR creation (TC-041: local still requires login)
-  if (!cfg.github?.accessToken) {
-    return { field: "github.accessToken", hint: "Run 'specrunner login' first." };
-  }
+  // GitHub token check moved to runPreflight (resolveGitHubToken via credentials file / env var).
+  // Config no longer stores secrets.
   return null;
 }
 

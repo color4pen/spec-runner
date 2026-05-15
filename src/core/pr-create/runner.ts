@@ -17,6 +17,8 @@ export interface PrCreateInput {
   title: string;
   body: string;
   cwd?: string;
+  /** GitHub token to inject as GITHUB_TOKEN env var for gh CLI subprocess. */
+  githubToken?: string;
 }
 
 export type PrCreateResult =
@@ -40,8 +42,9 @@ function spawnCommand(
   cmd: string,
   args: string[],
   cwd: string,
+  env?: Record<string, string | undefined>,
 ): Promise<{ exitCode: number | null; stdout: string; stderr: string }> {
-  return _spawnCommand(cmd, args, { cwd });
+  return _spawnCommand(cmd, args, { cwd, env });
 }
 
 /**
@@ -53,6 +56,7 @@ async function listPrs(
   branch: string,
   baseBranch: string,
   cwd: string,
+  env?: Record<string, string | undefined>,
 ): Promise<{ ok: true; entries: GhPrListEntry[] } | { ok: false; stderr: string }> {
   const { exitCode, stdout, stderr } = await spawnCommand(
     "gh",
@@ -64,6 +68,7 @@ async function listPrs(
       "--json", "url,number,state",
     ],
     cwd,
+    env,
   );
 
   if (exitCode !== 0) {
@@ -86,6 +91,7 @@ async function listPrs(
 async function createPr(
   input: PrCreateInput,
   cwd: string,
+  env?: Record<string, string | undefined>,
 ): Promise<{ ok: true; url: string; number: number } | { ok: false; stderr: string }> {
   const tmpFile = path.join(os.tmpdir(), `specrunner-pr-body-${Date.now()}.md`);
   await fs.writeFile(tmpFile, input.body, "utf-8");
@@ -102,6 +108,7 @@ async function createPr(
         "--head", input.branch,
       ],
       cwd,
+      env,
     );
   } finally {
     // Always delete temp file, regardless of success or failure
@@ -134,9 +141,10 @@ async function createPr(
  */
 export async function runPrCreate(input: PrCreateInput): Promise<PrCreateResult> {
   const cwd = input.cwd ?? process.cwd();
+  const ghEnv = input.githubToken ? { GITHUB_TOKEN: input.githubToken } : undefined;
 
   // Step 1: Check for existing PRs
-  const listResult = await listPrs(input.branch, input.baseBranch, cwd);
+  const listResult = await listPrs(input.branch, input.baseBranch, cwd, ghEnv);
 
   if (!listResult.ok) {
     return {
@@ -151,7 +159,7 @@ export async function runPrCreate(input: PrCreateInput): Promise<PrCreateResult>
   // Step 2: PR absent — JSON array length 0 is the only criterion
   if (entries.length === 0) {
     // Create new PR
-    const createResult = await createPr(input, cwd);
+    const createResult = await createPr(input, cwd, ghEnv);
     if (!createResult.ok) {
       return {
         status: "error",
