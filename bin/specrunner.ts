@@ -39,11 +39,11 @@ export async function main(): Promise<void> {
     if (!subDef) {
       process.stderr.write(
         sub
-          ? `Unknown request subcommand: ${sub}\n\n`
-          : "Error: specrunner request requires a subcommand.\n\n",
+          ? `Unknown ${command} subcommand: ${sub}\n\n`
+          : `Error: specrunner ${command} requires a subcommand.\n\n`,
       );
-      process.stderr.write("Usage: specrunner request template [--type <type>]\n");
-      process.stderr.write("       specrunner request validate <file>\n");
+      const subNames = Object.keys(entry.subcommands).join("|");
+      process.stderr.write(`Usage: specrunner ${command} ${subNames}\n`);
       process.exit(2);
     }
     try {

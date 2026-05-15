@@ -32,7 +32,6 @@ function buildMockGitHubClient() {
 function buildConfig() {
   return {
     version: 1 as const,
-    anthropic: { apiKey: "sk-ant-test" },
     agents: {},
     github: { accessToken: "ghp_test", tokenObtainedAt: "", scopes: ["repo"] },
     environment: { id: "env_001", lastSyncedAt: "" },

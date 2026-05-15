@@ -29,15 +29,15 @@ describe("TC-025: Pipeline steps Map — pr-create が登録されている", ()
 
 // TC-026: AgentRegistry — pr-create が登録されない
 describe("TC-026: AgentRegistry — pr-create が登録されない", () => {
-  it("init.ts AgentRegistry.fromSteps does not include PrCreateStep", async () => {
+  it("managed.ts AgentRegistry.fromSteps does not include PrCreateStep", async () => {
     const fs = await import("node:fs/promises");
-    const initSource = await fs.readFile(
-      new URL("../../../../src/cli/init.ts", import.meta.url).pathname,
+    const managedSource = await fs.readFile(
+      new URL("../../../../src/cli/managed.ts", import.meta.url).pathname,
       "utf-8",
     );
 
-    // PrCreateStep should NOT be in the fromSteps call in init.ts
-    const fromStepsMatch = /AgentRegistry\.fromSteps\(\[([^\]]+)\]\)/.exec(initSource);
+    // PrCreateStep should NOT be in the fromSteps call in managed.ts
+    const fromStepsMatch = /AgentRegistry\.fromSteps\(\[([^\]]+)\]\)/.exec(managedSource);
     expect(fromStepsMatch).not.toBeNull();
     const fromStepsContent = fromStepsMatch![1]!;
     expect(fromStepsContent).not.toContain("PrCreateStep");

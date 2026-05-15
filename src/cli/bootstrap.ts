@@ -31,8 +31,8 @@ export async function bootstrap(cwd: string, repo: OriginInfo): Promise<Bootstra
   const config = await loadConfig();
   const githubClient = createGitHubClient(fetch, config.github?.accessToken ?? "");
   const sessionClient =
-    config.runtime !== "local" && config.anthropic?.apiKey
-      ? createAnthropicSessionClient(createAnthropicClient(config.anthropic.apiKey))
+    config.runtime === "managed" && process.env["SPECRUNNER_API_KEY"]
+      ? createAnthropicSessionClient(createAnthropicClient(process.env["SPECRUNNER_API_KEY"]))
       : undefined;
   const runtime = createRuntime(config, cwd, githubClient, repo, sessionClient);
   return { config, githubClient, runtime };

@@ -17,11 +17,13 @@ vi.mock("../../../src/core/doctor/runner.js", () => ({
 }));
 vi.mock("../../../src/core/doctor/checks/index.js", () => ({
   allChecks: [],
+  commonChecks: [],
+  managedChecks: [],
+  localChecks: [],
 }));
 vi.mock("../../../src/config/store.js", () => ({
   loadConfig: vi.fn().mockResolvedValue({
     version: 1,
-    anthropic: { apiKey: "sk-ant-test" },
     github: { accessToken: "ghp_test" },
     agents: {},
   }),

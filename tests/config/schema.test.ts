@@ -9,7 +9,6 @@ import { validateConfig } from "../../src/config/schema.js";
 function makeMinimalRawConfig(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     version: 1,
-    anthropic: { apiKey: "sk-test" },
     ...overrides,
   };
 }
@@ -126,17 +125,17 @@ describe("validateConfig — step model registry validation", () => {
     const raw = {
       version: 1,
       runtime: "local",
-      anthropic: { apiKey: "" },
       steps: { implementer: { model: "o3" } },
     };
     expect(() => validateConfig(raw)).not.toThrow();
   });
 
   it("throws when managed runtime uses openai model", () => {
-    const raw = makeMinimalRawConfig({
+    const raw = {
+      version: 1,
+      runtime: "managed",
       steps: { implementer: { model: "o3" } },
-    });
-    // managed runtime (default)
+    };
     expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
     expect(() => validateConfig(raw)).toThrow(/cannot be used with runtime "managed"/);
   });

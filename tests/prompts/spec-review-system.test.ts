@@ -198,7 +198,6 @@ describe("TC-021: SpecReviewStep.buildMessage passes baselineSpecs from dynamicC
     const deps = {
       config: {
         version: 1 as const,
-        anthropic: { apiKey: "sk-test" },
         agents: {},
         github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
       },
@@ -241,7 +240,6 @@ describe("TC-021: SpecReviewStep.buildMessage passes baselineSpecs from dynamicC
     const deps = {
       config: {
         version: 1 as const,
-        anthropic: { apiKey: "sk-test" },
         agents: {},
         github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
       },

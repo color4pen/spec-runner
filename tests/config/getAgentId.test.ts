@@ -11,7 +11,6 @@ import type { SpecRunnerConfig } from "../../src/config/schema.js";
 function makeConfig(overrides: Partial<SpecRunnerConfig> = {}): SpecRunnerConfig {
   return {
     version: 1,
-    anthropic: { apiKey: "sk-test" },
     agents: {},
     environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
     github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },

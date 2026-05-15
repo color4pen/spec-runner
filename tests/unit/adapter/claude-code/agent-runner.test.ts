@@ -57,7 +57,6 @@ function makeConfig(): SpecRunnerConfig {
   return {
     version: 1,
     runtime: "local",
-    anthropic: { apiKey: "" },
     agents: {},
     github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
   };

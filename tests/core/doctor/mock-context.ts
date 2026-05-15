@@ -47,13 +47,12 @@ export function buildMockExecFile(result?: { stdout: string; stderr: string }): 
 export function buildMockContext(overrides?: Partial<DoctorContext>): DoctorContext {
   return {
     cwd: "/fake/cwd",
-    env: {},
+    env: { SPECRUNNER_API_KEY: "sk-ant-test123" },
     now: new Date("2026-04-30T00:00:00Z"),
     fetch: vi.fn().mockResolvedValue({ status: 200, headers: { get: () => null } }) as unknown as typeof fetch,
     fs: buildMockFs(),
     execFile: buildMockExecFile(),
     config: buildMockConfig({
-      anthropic: { apiKey: "sk-ant-test123" },
       github: { accessToken: "ghp_test123" },
       environment: { id: "env_test123" },
       agents: {

@@ -52,7 +52,6 @@ function buildConfig() {
   return {
     version: 1 as const,
     runtime: "local" as const,
-    anthropic: { apiKey: "" },
     agents: {},
     pipeline: { maxRetries: 2 },
     github: { accessToken: "gh-token", tokenObtainedAt: new Date().toISOString(), scopes: ["repo"] },

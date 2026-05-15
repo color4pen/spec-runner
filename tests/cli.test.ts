@@ -50,7 +50,6 @@ async function createValidConfig(overrides: Record<string, unknown> = {}) {
   await fs.mkdir(configDir, { recursive: true });
   const config = {
     version: 1,
-    anthropic: { apiKey: "sk-ant-test" },
     agent: { id: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
     environment: { id: "env_001", lastSyncedAt: new Date().toISOString() },
     github: { accessToken: "ghp_test", tokenObtainedAt: new Date().toISOString(), scopes: ["repo"] },

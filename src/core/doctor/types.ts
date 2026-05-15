@@ -107,7 +107,7 @@ export interface DoctorContext {
  * Provides access to raw config values without requiring the full ConfigStore port.
  */
 export interface DoctorConfig {
-  /** Get a dotted-path config value, e.g. "anthropic.apiKey" */
+  /** Get a dotted-path config value, e.g. "github.accessToken" or "agents.design.agentId" */
   get(path: string): unknown;
   /** Whether the config was successfully loaded */
   loaded: boolean;

@@ -212,7 +212,6 @@ describe("TC-051: config atomic write and 0600 permission", () => {
       const { saveConfig } = await import("../src/config/store.js");
       await saveConfig({
         version: 1,
-        anthropic: { apiKey: "sk-ant-test" },
         agents: {},
       });
 
@@ -236,26 +235,25 @@ describe("TC-051: config atomic write and 0600 permission", () => {
   });
 });
 
-// TC-053: config — apiKey 欠落で CONFIG_INCOMPLETE
-describe("TC-053: config — apiKey missing", () => {
-  it("loadConfig throws CONFIG_INCOMPLETE for missing apiKey", async () => {
-    let originalXdgConfigHome = process.env["XDG_CONFIG_HOME"];
+// TC-053: config — anthropic フィールドは不要になった (managed setup に移管)
+describe("TC-053: config — anthropic field no longer required", () => {
+  it("loadConfig succeeds for config without anthropic.apiKey (apiKey moved to env var)", async () => {
+    const originalXdgConfigHome = process.env["XDG_CONFIG_HOME"];
     process.env["XDG_CONFIG_HOME"] = tempDir;
 
     try {
-      // Write config without apiKey
+      // Write config without apiKey — should now load successfully
       const configDir = path.join(tempDir, "specrunner");
       await fs.mkdir(configDir, { recursive: true });
       await fs.writeFile(
         path.join(configDir, "config.json"),
-        JSON.stringify({ version: 1, anthropic: {} }),
+        JSON.stringify({ version: 1, agents: {} }),
         { mode: 0o600 },
       );
 
       const { loadConfig } = await import("../src/config/store.js");
-      await expect(loadConfig()).rejects.toThrow();
-    } catch (err: unknown) {
-      expect((err as { code?: string }).code).toBe("CONFIG_INCOMPLETE");
+      const config = await loadConfig();
+      expect(config.version).toBe(1);
     } finally {
       if (originalXdgConfigHome !== undefined) {
         process.env["XDG_CONFIG_HOME"] = originalXdgConfigHome;

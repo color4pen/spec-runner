@@ -54,8 +54,8 @@ export async function runRm(opts: RunRmOptions): Promise<number> {
 
   // Build Anthropic client for managed mode
   const anthropicClient =
-    config.runtime !== "local" && config.anthropic?.apiKey
-      ? createAnthropicClient(config.anthropic.apiKey)
+    config.runtime === "managed" && process.env["SPECRUNNER_API_KEY"]
+      ? createAnthropicClient(process.env["SPECRUNNER_API_KEY"])
       : undefined;
 
   if (allTerminated) {

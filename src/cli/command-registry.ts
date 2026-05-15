@@ -7,6 +7,7 @@
 import * as path from "node:path";
 import * as fs from "node:fs";
 import { runInit } from "./init.js";
+import { runManagedSetup, runManagedStatus, runManagedReset } from "./managed.js";
 import { runLogin } from "./login.js";
 import { runRun } from "./run.js";
 import { runPs } from "./ps.js";
@@ -38,8 +39,9 @@ export type CommandEntry = CommandDef | ParentCommandDef;
 export const USAGE = `Usage: specrunner <command> [options]
 
 Commands:
-  init                   Create or update Anthropic Agent and Environment
-  login                  Authenticate with GitHub via Device Flow
+  init                   Initialize config scaffold
+  login                  Authenticate with GitHub via Device Flow OAuth
+  managed setup|status|reset  Manage Anthropic Managed Agents resources (runtime: managed)
   run <request.md|slug> [--verbose]  Run design pipeline for a request
   request template [--type <type>]   Print a scaffold request.md template to stdout
   request validate <file>            Validate a request.md file
@@ -51,6 +53,9 @@ Commands:
   finish [<slug>]        Squash-merge feature PR and archive (1-PR model)
   rm <jobId>             Remove a job (state file + cloud session)
   resume <slug>          Resume a halted (awaiting-resume) job
+
+Standard flow (local):   init -> login -> run
+Standard flow (managed): init -> login -> (set SPECRUNNER_API_KEY) -> managed setup -> run
 
 Options:
   --help, -h    Show this help message
@@ -86,6 +91,18 @@ Resume Options:
   --verbose         Enable verbose output
 `;
 
+export const MANAGED_RESET_USAGE = `Usage: specrunner managed reset [--force]
+
+Delete the Anthropic Environment from the provider and clear managed config.
+
+Note: Anthropic-side agent resources are NOT deleted (no agent delete API available)
+      and remain as orphans on the provider side.
+
+Options:
+  --force   Skip confirmation prompt
+  --help    Show this help message
+`;
+
 export const FINISH_USAGE = `Usage: specrunner finish [<slug>] [options]
 
 Squash-merge feature PR and archive the completed job (1-PR model).
@@ -105,15 +122,43 @@ Options:
 export const COMMANDS: Record<string, CommandEntry> = {
   init: {
     flags: {
-      "api-key": { type: "string" },
       runtime: { type: "string", values: ["managed", "local"] as const },
     },
     handler: async (parsed) => {
-      const apiKey = parsed.flags["api-key"] as string | undefined;
       const runtimeRaw = parsed.flags["runtime"] as string | undefined;
       // enum validation is done by parseFlags, so cast is safe
       const runtime = runtimeRaw as "managed" | "local" | undefined;
-      await runInit({ apiKey, runtime });
+      await runInit({ runtime });
+    },
+  },
+
+  managed: {
+    subcommands: {
+      setup: {
+        flags: {},
+        handler: async () => {
+          await runManagedSetup();
+        },
+      },
+      status: {
+        flags: {},
+        handler: async () => {
+          await runManagedStatus();
+        },
+      },
+      reset: {
+        flags: {
+          force: { type: "boolean" },
+          help: { type: "boolean" },
+        },
+        handler: async (parsed) => {
+          if (parsed.flags["help"]) {
+            process.stdout.write(MANAGED_RESET_USAGE);
+            process.exit(0);
+          }
+          await runManagedReset({ force: !!parsed.flags["force"] });
+        },
+      },
     },
   },
 

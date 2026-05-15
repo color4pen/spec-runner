@@ -95,6 +95,7 @@ export async function saveConfig(cfg: SpecRunnerConfig): Promise<void> {
   const toSave: Record<string, unknown> = { ...cfg };
   delete toSave["agent"]; // never write legacy agent field
   delete toSave["timeout"]; // removed in remove-session-timeout (D3)
+  delete toSave["anthropic"]; // removed in managed-command-extraction
 
   await atomicWriteJson(configPath, toSave, { mode: CONFIG_MODE });
 }
@@ -134,7 +135,7 @@ export class FileConfigStore {
     }
     throw new SpecRunnerError(
       ERROR_CODES.CONFIG_INCOMPLETE,
-      `Run 'specrunner init' to create the ${role} agent.`,
+      `Run 'specrunner managed setup' to register the ${role} agent.`,
       `Missing agent ID for role: ${role}.`,
     );
   }

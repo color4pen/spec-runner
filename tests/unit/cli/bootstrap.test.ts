@@ -36,7 +36,6 @@ const mockRepo = { owner: "testowner", name: "testrepo" };
 const validConfig = {
   version: 1,
   runtime: "local",
-  anthropic: { apiKey: "test-key" },
   agents: {},
   pipeline: { maxRetries: 2 },
   github: { accessToken: "gh-token", tokenObtainedAt: new Date().toISOString(), scopes: ["repo"] },

@@ -1,6 +1,5 @@
 /**
- * TC-018, TC-019, TC-020, TC-021, TC-064
- * Validate Anthropic API key via GET /v1/models.
+ * Validate the Anthropic managed API key via GET /v1/models.
  * 200 = pass, 401 = fail, 5xx/timeout = warn.
  * Uses DoctorContext.fetch (not global fetch) — core never imports adapter.
  */
@@ -10,17 +9,17 @@ const ANTHROPIC_API_TIMEOUT_MS = 5000;
 const ANTHROPIC_MODELS_URL = "https://api.anthropic.com/v1/models";
 
 export const anthropicKeyValidCheck: DoctorCheck = {
-  name: "anthropic-key-valid",
+  name: "managed/api-key-valid",
   category: "auth",
   required: true,
 
   async check(ctx: DoctorContext) {
-    const apiKey = ctx.config.get("anthropic.apiKey");
+    const apiKey = ctx.env["SPECRUNNER_API_KEY"];
     if (typeof apiKey !== "string" || apiKey.length === 0) {
       return {
         status: "fail",
-        message: "anthropic.apiKey is not configured — cannot validate",
-        hint: "Run 'specrunner init --api-key=<KEY>' first.",
+        message: "SPECRUNNER_API_KEY is not set — cannot validate",
+        hint: "Set SPECRUNNER_API_KEY env var first.",
       };
     }
 
@@ -49,11 +48,10 @@ export const anthropicKeyValidCheck: DoctorCheck = {
         return {
           status: "fail",
           message: "Anthropic API key is invalid or revoked (HTTP 401)",
-          hint: "Run 'specrunner init --api-key=<KEY>' with a valid API key.",
+          hint: "Check your SPECRUNNER_API_KEY value.",
         };
       }
 
-      // 5xx or other
       return {
         status: "warn",
         message: `Anthropic API returned HTTP ${response.status} — cannot confirm key validity`,

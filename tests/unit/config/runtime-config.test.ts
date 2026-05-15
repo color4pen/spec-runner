@@ -60,26 +60,24 @@ async function writeConfig(cfg: Record<string, unknown>): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// TC-032: runtime field absent → migrated to "managed"
+// TC-032: runtime field absent → migrated to "local"
 // ---------------------------------------------------------------------------
 
-describe("TC-032: applyMigration normalizes missing runtime to 'managed'", () => {
-  it("config without runtime field → runtime: 'managed' after migration", () => {
+describe("TC-032: applyMigration normalizes missing runtime to 'local'", () => {
+  it("config without runtime field → runtime: 'local' after migration", () => {
     const raw = {
       version: 1,
-      anthropic: { apiKey: "sk-test" },
       agents: {},
     };
 
     const migrated = applyMigration(raw);
-    expect(migrated.runtime).toBe("managed");
+    expect(migrated.runtime).toBe("local");
   });
 
   it("config with runtime: 'local' → preserves 'local' after migration", () => {
     const raw = {
       version: 1,
       runtime: "local",
-      anthropic: { apiKey: "" },
       agents: {},
     };
 
@@ -91,7 +89,6 @@ describe("TC-032: applyMigration normalizes missing runtime to 'managed'", () =>
     const raw = {
       version: 1,
       runtime: "managed",
-      anthropic: { apiKey: "sk-test" },
       agents: {},
     };
 
@@ -115,11 +112,10 @@ describe("TC-033: validateConfig accepts local runtime without apiKey", () => {
     expect(() => validateConfig(raw)).not.toThrow();
   });
 
-  it("local runtime config passes validateConfig with empty anthropic", () => {
+  it("local runtime config passes validateConfig", () => {
     const raw = {
       version: 1,
       runtime: "local",
-      anthropic: { apiKey: "" },
       agents: {},
     };
 
@@ -138,7 +134,6 @@ describe("TC-034: validateConfig rejects invalid runtime values", () => {
     const raw = {
       version: 1,
       runtime: "remote",
-      anthropic: { apiKey: "sk-test" },
     };
 
     expect(() => validateConfig(raw)).toThrow();
@@ -151,12 +146,12 @@ describe("TC-034: validateConfig rejects invalid runtime values", () => {
   });
 
   it("runtime: 'cloud' → CONFIG_INVALID", () => {
-    const raw = { version: 1, runtime: "cloud", anthropic: { apiKey: "sk-test" } };
+    const raw = { version: 1, runtime: "cloud" };
     expect(() => validateConfig(raw)).toThrow();
   });
 
   it("runtime: '' (empty string) → CONFIG_INVALID", () => {
-    const raw = { version: 1, runtime: "", anthropic: { apiKey: "sk-test" } };
+    const raw = { version: 1, runtime: "" };
     expect(() => validateConfig(raw)).toThrow();
   });
 });
@@ -219,42 +214,30 @@ describe("TC-037: local runtime → getAgentId not called for pipeline steps", (
 // TC-038: AgentSyncer not called on init --runtime local
 // ---------------------------------------------------------------------------
 
-describe("TC-038: runInit with runtime='local' does not call AgentSyncer.syncAll()", () => {
-  it("init.ts runInitLocal function does not reference AgentSyncer or syncAll", async () => {
-    // Verify via source inspection that the local init path skips AgentSyncer.
-    // The runInitLocal function should not contain any reference to AgentSyncer.
+describe("TC-038: init does not reference AgentSyncer (managed setup moved to 'managed setup')", () => {
+  it("init.ts does not import or call AgentSyncer", async () => {
+    // Verify via source inspection that init.ts no longer references AgentSyncer.
     const initPath = path.resolve(__dirname, "../../../src/cli/init.ts");
     const content = await fs.readFile(initPath, "utf-8");
 
-    // Extract the local init section (everything after "runInitLocal" function)
-    const localInitMatch = /async function runInitLocal\(\)[^}]+(?:\{[^}]*\})*[^}]*\}/s.exec(content);
-    if (localInitMatch) {
-      const localInitBody = localInitMatch[0];
-      // The local init path must not reference syncAll or AgentSyncer
-      expect(localInitBody).not.toContain("syncAll");
-      expect(localInitBody).not.toContain("AgentSyncer");
-    } else {
-      // Fallback: verify the overall structure has a local guard
-      expect(content).toContain("runtime === \"local\"");
-      expect(content).toContain("return runInitLocal()");
-    }
+    expect(content).not.toContain("AgentSyncer");
+    expect(content).not.toContain("syncAll");
   });
 
-  it("init --runtime local actually writes config without calling AgentSyncer", async () => {
-    // Run the actual init local to verify config is written
+  it("init writes config scaffold without anthropic or runtime field", async () => {
+    // Run the actual init to verify config scaffold is written
     const { runInit } = await import("../../../src/cli/init.js");
-    await runInit({ runtime: "local" });
+    await runInit({});
 
     const configPath = path.join(tempDir, "specrunner", "config.json");
     const raw = await fs.readFile(configPath, "utf-8");
     const config = JSON.parse(raw);
 
-    // Local init should write runtime: "local" and empty agents
-    expect(config.runtime).toBe("local");
+    // Init should write version, agents, steps but NOT runtime or anthropic
+    expect(config.version).toBe(1);
     expect(typeof config.agents).toBe("object");
-    // No environment.id (AgentSyncer + environment creation was skipped)
-    // Anthropic API key should be empty
-    expect(config.anthropic?.apiKey ?? "").toBe("");
+    expect(config.runtime).toBeUndefined();
+    expect(config.anthropic).toBeUndefined();
   });
 });
 
@@ -358,32 +341,28 @@ describe("TC-040: managed-agent and claude-code adapters do not import each othe
 // TC-041: --runtime local accepts missing apiKey
 // ---------------------------------------------------------------------------
 
-describe("TC-041: runtime='local' allows missing apiKey", () => {
-  it("checkConfigComplete with local runtime: no error when apiKey is empty", () => {
+describe("TC-041: checkConfigComplete only checks github.accessToken (managed prereqs moved to checkRuntimePrereqs)", () => {
+  it("checkConfigComplete with local runtime: returns null when github token is set", () => {
     const config = {
       version: 1 as const,
       runtime: "local" as const,
-      anthropic: { apiKey: "" },
       agents: {},
       github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
     };
 
     const result = checkConfigComplete(config);
-    // Should not return an error for apiKey
     expect(result).toBeNull();
   });
 
-  it("checkConfigComplete with managed runtime: error when apiKey is empty", () => {
+  it("checkConfigComplete returns field=github.accessToken when token is missing", () => {
     const config = {
       version: 1 as const,
-      anthropic: { apiKey: "" },
       agents: {},
-      github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
     };
 
     const result = checkConfigComplete(config);
     expect(result).not.toBeNull();
-    expect(result?.field).toContain("apiKey");
+    expect(result?.field).toBe("github.accessToken");
   });
 });
 
@@ -391,29 +370,28 @@ describe("TC-041: runtime='local' allows missing apiKey", () => {
 // TC-042: specrunner init --runtime local writes config with runtime: "local"
 // ---------------------------------------------------------------------------
 
-describe("TC-042: specrunner init --runtime local writes config with runtime: 'local'", () => {
-  it("config file contains runtime: 'local' after init local", async () => {
+describe("TC-042: specrunner init writes config scaffold without runtime or anthropic field", () => {
+  it("config file has no runtime field (local is the default)", async () => {
     const { runInit } = await import("../../../src/cli/init.js");
-    await runInit({ runtime: "local" });
+    await runInit({});
 
     const configPath = path.join(tempDir, "specrunner", "config.json");
     const raw = await fs.readFile(configPath, "utf-8");
-    const config = JSON.parse(raw) as { runtime: string; agents: Record<string, unknown> };
+    const config = JSON.parse(raw) as { runtime?: string; agents: Record<string, unknown> };
 
-    expect(config.runtime).toBe("local");
+    expect(config.runtime).toBeUndefined();
     // Agents should be empty (no AgentSyncer ran)
     expect(typeof config.agents).toBe("object");
   });
 
-  it("init local does not write apiKey to config if not provided", async () => {
+  it("init does not write anthropic field to config", async () => {
     const { runInit } = await import("../../../src/cli/init.js");
-    await runInit({ runtime: "local" });
+    await runInit({});
 
     const configPath = path.join(tempDir, "specrunner", "config.json");
     const raw = await fs.readFile(configPath, "utf-8");
-    const config = JSON.parse(raw) as { anthropic?: { apiKey?: string } };
+    const config = JSON.parse(raw) as { anthropic?: unknown };
 
-    // apiKey should be empty (not from env — no env var set)
-    expect(config.anthropic?.apiKey ?? "").toBe("");
+    expect(config.anthropic).toBeUndefined();
   });
 });

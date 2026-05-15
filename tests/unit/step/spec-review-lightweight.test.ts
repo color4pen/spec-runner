@@ -178,7 +178,6 @@ describe("TC-5.5: SpecReviewStep.buildMessage with refactoring type includes lig
       config: {
         version: 1 as const,
         runtime: "local" as const,
-        anthropic: { apiKey: "" },
         agents: {},
         github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] as string[] },
       },
@@ -205,7 +204,6 @@ describe("TC-5.5: SpecReviewStep.buildMessage with refactoring type includes lig
       config: {
         version: 1 as const,
         runtime: "local" as const,
-        anthropic: { apiKey: "" },
         agents: {},
         github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] as string[] },
       },

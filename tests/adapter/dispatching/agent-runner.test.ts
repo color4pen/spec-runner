@@ -30,7 +30,6 @@ function makeConfig(overrides: Partial<SpecRunnerConfig> = {}): SpecRunnerConfig
   return {
     version: 1,
     runtime: "local",
-    anthropic: { apiKey: "" },
     agents: {},
     ...overrides,
   };

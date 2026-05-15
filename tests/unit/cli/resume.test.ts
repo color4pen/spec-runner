@@ -24,7 +24,6 @@ import type { JobState, StepRun } from "../../../src/state/schema.js";
 vi.mock("../../../src/config/store.js", () => ({
   loadConfig: vi.fn().mockResolvedValue({
     runtime: "local",
-    anthropic: { apiKey: "test-key" },
     github: { accessToken: "gh-token" },
     pipeline: { maxRetries: 2 },
     agents: {},

@@ -7,7 +7,7 @@ import { loadConfig } from "../config/store.js";
 import { checkConfigComplete } from "../config/schema.js";
 import { getOriginInfo } from "../git/remote.js";
 import { parseRequestMd } from "../parser/request-md.js";
-import { SpecRunnerError } from "../errors.js";
+import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import type { OriginInfo } from "../git/remote.js";
 import type { ParsedRequest } from "../parser/request-md.js";
@@ -16,6 +16,38 @@ export interface PreflightResult {
   config: SpecRunnerConfig;
   repo: OriginInfo;
   request: ParsedRequest;
+}
+
+/**
+ * Check runtime-specific prerequisites for the managed runtime.
+ * Returns { field, hint } when a prerequisite is missing, null when all are satisfied.
+ * For non-managed runtimes, always returns null.
+ */
+export function checkRuntimePrereqs(
+  cfg: SpecRunnerConfig,
+  env: Record<string, string | undefined>,
+): { field: string; hint: string } | null {
+  if (cfg.runtime !== "managed") return null;
+
+  if (!env["SPECRUNNER_API_KEY"]) {
+    return {
+      field: "SPECRUNNER_API_KEY",
+      hint: "Set SPECRUNNER_API_KEY env var, then run 'specrunner managed setup'.",
+    };
+  }
+  if (!cfg.agents?.["design"]?.agentId) {
+    return {
+      field: "agents.design.agentId",
+      hint: "Run 'specrunner managed setup' first.",
+    };
+  }
+  if (!cfg.environment?.id) {
+    return {
+      field: "environment.id",
+      hint: "Run 'specrunner managed setup' first.",
+    };
+  }
+  return null;
 }
 
 /**
@@ -36,6 +68,16 @@ export async function runPreflight(
       "CONFIG_INCOMPLETE",
       incomplete.hint,
       incomplete.hint,
+    );
+  }
+
+  // Step 2.5: Runtime prerequisites (managed-specific)
+  const prereq = checkRuntimePrereqs(config, process.env as Record<string, string | undefined>);
+  if (prereq) {
+    throw new SpecRunnerError(
+      ERROR_CODES.RUNTIME_PREREQ_MISSING,
+      prereq.hint,
+      `Missing runtime prerequisite: ${prereq.field}.`,
     );
   }
 

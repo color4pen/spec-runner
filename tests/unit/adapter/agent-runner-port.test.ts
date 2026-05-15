@@ -86,7 +86,6 @@ async function setupJobState(jobId: string): Promise<JobState> {
 function makeMinimalConfig() {
   return {
     version: 1 as const,
-    anthropic: { apiKey: "sk-test" },
     agents: {
       design: { agentId: "agent_design", definitionHash: "sha256:abc", lastSyncedAt: "2026-01-01" },
       "spec-review": { agentId: "agent_spec_review", definitionHash: "sha256:def", lastSyncedAt: "2026-01-01" },

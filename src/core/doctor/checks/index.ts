@@ -1,6 +1,11 @@
 /**
- * Aggregated list of all 17 DoctorChecks.
+ * Aggregated list of DoctorChecks.
  * Execution order: runtime → config → env → auth → repo → agents → storage.
+ *
+ * commonChecks: checks run for all runtimes (14)
+ * managedChecks: checks run only for managed runtime (5)
+ * localChecks: checks run only for local runtime (1)
+ * allChecks: combined for backward compatibility
  */
 import type { DoctorCheck } from "../types.js";
 
@@ -32,39 +37,54 @@ import { workflowStructureCheck } from "./repo/workflow-structure.js";
 import { agentsRegisteredCheck } from "./agents/agents-registered.js";
 import { environmentRegisteredCheck } from "./agents/environment-registered.js";
 import { definitionDriftCheck } from "./agents/definition-drift.js";
+import { agentProviderAliveCheck } from "./agents/agent-provider-alive.js";
+import { environmentProviderAliveCheck } from "./agents/environment-provider-alive.js";
 
 // Storage
 import { jobsWritableCheck } from "./storage/jobs-writable.js";
 import { oldStateFilesCheck } from "./storage/old-state-files.js";
 
-export const allChecks: DoctorCheck[] = [
-  // Runtime (3+1)
+export const commonChecks: DoctorCheck[] = [
+  // Runtime (3)
   nodeVersionCheck,
   bunVersionCheck,
   gitVersionCheck,
-  codexCliCheck,
-  // Config (3)
+  // Config
   configFileExistsCheck,
-  anthropicKeyPresentCheck,
   githubTokenPresentCheck,
-  // Env (1)
+  // Env
   githubClientIdCheck,
-  // Auth (2)
-  anthropicKeyValidCheck,
+  // Auth
   githubTokenValidCheck,
-  // Repo (4)
+  // Repo
   gitRepositoryCheck,
   githubOriginCheck,
   specrunnerProjectMdCheck,
   workflowStructureCheck,
-  // Agents (3)
-  agentsRegisteredCheck,
-  environmentRegisteredCheck,
-  definitionDriftCheck,
-  // Storage (2)
+  // Storage
   jobsWritableCheck,
   oldStateFilesCheck,
 ];
+
+export const managedChecks: DoctorCheck[] = [
+  anthropicKeyPresentCheck,
+  anthropicKeyValidCheck,
+  agentsRegisteredCheck,
+  environmentRegisteredCheck,
+  definitionDriftCheck,
+  agentProviderAliveCheck,
+  environmentProviderAliveCheck,
+];
+
+export const localChecks: DoctorCheck[] = [
+  codexCliCheck,
+];
+
+/**
+ * All checks combined (for backward compatibility).
+ * For runtime-specific assembly, use commonChecks + managedChecks or commonChecks + localChecks.
+ */
+export const allChecks: DoctorCheck[] = [...commonChecks, ...managedChecks, ...localChecks];
 
 // Re-export individual checks for direct import
 export {
@@ -85,6 +105,8 @@ export {
   agentsRegisteredCheck,
   environmentRegisteredCheck,
   definitionDriftCheck,
+  agentProviderAliveCheck,
+  environmentProviderAliveCheck,
   jobsWritableCheck,
   oldStateFilesCheck,
 };

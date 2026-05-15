@@ -67,7 +67,6 @@ function buildPrepareResult(overrides: Partial<PrepareResult> = {}): PrepareResu
     config: {
       version: 1,
       runtime: "local",
-      anthropic: { apiKey: "" },
       agents: {},
     },
     repo: { owner: "testowner", name: "testrepo" },
@@ -98,7 +97,6 @@ function buildMockRuntime(opts: {
     }),
     buildDeps: vi.fn().mockReturnValue({
       client: undefined,
-      config: { version: 1, anthropic: { apiKey: "" }, agents: {} },
       repo: { owner: "testowner", name: "testrepo" },
       request: { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "test", enabled: [] },
       slug: "test-slug",

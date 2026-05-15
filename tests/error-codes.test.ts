@@ -109,7 +109,6 @@ describe("TC-025 (error-codes): CONFIG_INCOMPLETE code is preserved", () => {
     const { getAgentId } = await import("../src/config/getAgentId.js");
     const configWithoutAgents = {
       version: 1 as const,
-      anthropic: { apiKey: "sk-test" },
       agents: {},
       // No agents.propose — should throw CONFIG_INCOMPLETE
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
@@ -208,7 +207,6 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
       client: {} as PipelineDeps["client"],
       config: {
         version: 1,
-        anthropic: { apiKey: "sk-test" },
         agents: { design: { agentId: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" } },
         environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
         github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },

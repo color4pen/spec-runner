@@ -79,7 +79,6 @@ function buildDeps(opts: {
     } as unknown as PipelineDeps["client"],
     config: {
       version: 1,
-      anthropic: { apiKey: "sk-test" },
       agents: {
         design: { agentId: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" },
         "spec-review": { agentId: "agent_spec_review", definitionHash: "sha", lastSyncedAt: "2026-01-01" },

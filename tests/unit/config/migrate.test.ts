@@ -16,7 +16,6 @@ import type { RawConfig } from "../../../src/config/schema.js";
 function makeBase(): Partial<RawConfig> {
   return {
     version: 1,
-    anthropic: { apiKey: "sk-test" },
   };
 }
 
@@ -204,7 +203,6 @@ describe("applyMigration: legacy agent field stripped from output", () => {
   it("does not include `agent` key in final config", () => {
     const raw = {
       version: 1 as const,
-      anthropic: { apiKey: "sk-test" },
       agent: { id: "agent_01x", definitionHash: "abc", lastSyncedAt: "2026-04-29T00:00:00Z" },
     };
 
@@ -234,7 +232,6 @@ describe("TC-010: top-level specFixer config preserved after migration", () => {
   it("migrates specFixer agent from camelCase to kebab-case", () => {
     const raw = {
       version: 1 as const,
-      anthropic: { apiKey: "sk-test" },
       agents: {
         specFixer: { agentId: "agent_x", definitionHash: "abc", lastSyncedAt: "2026-04-29T00:00:00Z" },
       },

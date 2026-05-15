@@ -159,7 +159,6 @@ describe("TC-012: ConfigStore.load が旧 timeoutMs を含む config を warn/er
 
     const legacyConfig = {
       version: 1,
-      anthropic: { apiKey: "sk-test-key" },
       agents: {
         design: { agentId: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: "2026-01-01T00:00:00Z" },
       },
@@ -176,7 +175,6 @@ describe("TC-012: ConfigStore.load が旧 timeoutMs を含む config を warn/er
 
     const config = await loadConfig();
     // Core fields are preserved
-    expect(config.anthropic.apiKey).toBe("sk-test-key");
     expect(config.agents["design"]?.agentId).toBe("agent_001");
     // pollIntervalMs (non-timeout field) is preserved
     expect(config.specReview?.pollIntervalMs).toBe(100);

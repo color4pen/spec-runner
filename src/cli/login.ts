@@ -20,7 +20,6 @@ export async function runLogin(): Promise<void> {
     // No config yet — login alone is not enough, but we save partial config
     config = {
       version: 1,
-      anthropic: { apiKey: "" },
       agents: {},
     };
   }

@@ -10,7 +10,7 @@ import * as childProcess from "node:child_process";
 import { promisify } from "node:util";
 
 import { runChecks } from "../core/doctor/runner.js";
-import { allChecks } from "../core/doctor/checks/index.js";
+import { commonChecks, managedChecks, localChecks } from "../core/doctor/checks/index.js";
 import { formatHuman, formatJson } from "../core/doctor/formatter.js";
 import type { DoctorContext, DoctorFs, DoctorConfig, DoctorGitHubClient, ExecFileFunction } from "../core/doctor/types.js";
 import { loadConfig } from "../config/store.js";
@@ -111,8 +111,13 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
     platform: process.platform,
   };
 
-  // Run all checks
-  const results = await runChecks(allChecks, ctx);
+  // Run runtime-specific checks
+  const runtime = rawConfig?.runtime ?? "local";
+  const checks = [
+    ...commonChecks,
+    ...(runtime === "managed" ? managedChecks : localChecks),
+  ];
+  const results = await runChecks(checks, ctx);
 
   // Output
   const output = opts.json ? formatJson(results) : formatHuman(results);

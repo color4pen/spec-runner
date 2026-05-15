@@ -72,7 +72,6 @@ function makeMinimalState(jobId: string = "test-job-id"): JobState {
 function makeConfig(overrides: Partial<SpecRunnerConfig> = {}): SpecRunnerConfig {
   return {
     version: 1,
-    anthropic: { apiKey: "sk-test" },
     agents: {
       design: { agentId: "agent_01x", definitionHash: "sha256:abc", lastSyncedAt: "2026-01-01" },
       "spec-review": { agentId: "agent_02y", definitionHash: "sha256:def", lastSyncedAt: "2026-01-01" },

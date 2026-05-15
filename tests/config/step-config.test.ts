@@ -35,7 +35,6 @@ function makeBaseConfig(overrides: Partial<SpecRunnerConfig> = {}): SpecRunnerCo
   return {
     version: 1,
     runtime: "local",
-    anthropic: { apiKey: "" },
     agents: {},
     ...overrides,
   };
@@ -255,7 +254,6 @@ function makeMinimalRawConfig(overrides: Record<string, unknown> = {}): Record<s
   return {
     version: 1,
     runtime: "local",
-    anthropic: { apiKey: "" },
     ...overrides,
   };
 }

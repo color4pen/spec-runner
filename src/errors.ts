@@ -49,6 +49,7 @@ export const ERROR_CODES = {
   SESSION_RETRIES_EXHAUSTED: "SESSION_RETRIES_EXHAUSTED",
   SESSION_REQUIRES_ACTION: "SESSION_REQUIRES_ACTION",
   SESSION_RESCHEDULING_EXHAUSTED: "SESSION_RESCHEDULING_EXHAUSTED",
+  RUNTIME_PREREQ_MISSING: "RUNTIME_PREREQ_MISSING",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -65,7 +66,7 @@ export function configMissingError(): SpecRunnerError {
 export function configIncompleteError(field: string): SpecRunnerError {
   return new SpecRunnerError(
     ERROR_CODES.CONFIG_INCOMPLETE,
-    "Run 'specrunner init' first.",
+    "Run 'specrunner login' first.",
     `Missing required config field: ${field}.`,
   );
 }

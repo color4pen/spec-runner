@@ -211,7 +211,6 @@ describe("TC-008: spec-review round-trip — resultFilePath and buildFindingsPat
     return {
       config: {
         version: 1,
-        anthropic: { apiKey: "sk-test" },
         agents: {},
         environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
         github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
@@ -284,7 +283,6 @@ describe("TC-009: code-review round-trip — resultFilePath and buildReviewFeedb
     return {
       config: {
         version: 1,
-        anthropic: { apiKey: "sk-test" },
         agents: {},
         environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
         github: { accessToken: "ghp_test", tokenObtainedAt: "2026-01-01", scopes: ["repo"] },
@@ -425,7 +423,6 @@ afterEach(async () => {
 function makeExecutorTestConfig() {
   return {
     version: 1 as const,
-    anthropic: { apiKey: "sk-test" },
     agents: {
       "spec-review": { agentId: "agent_spec_rev", definitionHash: "sha256:abc", lastSyncedAt: "2026-01-01" },
       "code-review": { agentId: "agent_code_rev", definitionHash: "sha256:def", lastSyncedAt: "2026-01-01" },

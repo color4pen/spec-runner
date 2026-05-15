@@ -35,7 +35,6 @@ function makeConfig(): SpecRunnerConfig {
   return {
     version: 1,
     runtime: "local",
-    anthropic: { apiKey: "" },
     agents: {},
   };
 }

@@ -66,7 +66,6 @@ function makeLocalConfig(): SpecRunnerConfig {
   return {
     version: 1,
     runtime: "local",
-    anthropic: { apiKey: "" },
     agents: {},
   };
 }
@@ -76,7 +75,6 @@ function makeManagedConfig(): SpecRunnerConfig {
   return {
     version: 1,
     runtime: "managed",
-    anthropic: { apiKey: "sk-ant-test" },
     agents: {},
   };
 }

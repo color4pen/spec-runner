@@ -46,7 +46,6 @@ async function makeJobState() {
 function buildConfig(overrides?: { specReview?: { pollIntervalMs?: number } }) {
   return {
     version: 1 as const,
-    anthropic: { apiKey: "sk-ant-test" },
     agents: {
       design: { agentId: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
       "spec-review": { agentId: "agent_spec_review", definitionHash: "sha256:ghi", lastSyncedAt: new Date().toISOString() },

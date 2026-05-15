@@ -22,7 +22,6 @@ function buildLocalConfig() {
   return {
     version: 1 as const,
     runtime: "local" as const,
-    anthropic: { apiKey: "" },
     agents: {},
   };
 }
@@ -30,7 +29,6 @@ function buildLocalConfig() {
 function buildManagedConfig() {
   return {
     version: 1 as const,
-    anthropic: { apiKey: "sk-ant-test" },
     agents: {},
     environment: { id: "env_001", lastSyncedAt: "" },
     github: { accessToken: "ghp_test", tokenObtainedAt: "", scopes: ["repo"] },

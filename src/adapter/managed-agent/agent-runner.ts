@@ -289,7 +289,7 @@ export class ManagedAgentRunner implements AgentRunner {
     } catch (err) {
       const errCode = (err as { code?: string }).code ?? "CONFIG_INCOMPLETE";
       const errMsg = (err as Error).message;
-      const errHint = (err as { hint?: string }).hint ?? "Run 'specrunner init' to configure agents.";
+      const errHint = (err as { hint?: string }).hint ?? "Run 'specrunner managed setup' to configure agents.";
       const agentIdErrorInfo: ErrorInfo = { code: errCode, message: errMsg, hint: errHint };
       throwWrappedError(agentIdErrorInfo, state);
     }
