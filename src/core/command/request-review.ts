@@ -83,7 +83,8 @@ export async function executeReview(filePath: string, opts: { json: boolean }): 
   if (opts.json) {
     process.stdout.write(JSON.stringify(result, null, 2) + "\n");
   } else {
-    process.stdout.write(result.summary + "\n");
+    const { formatHumanReadable } = await import("../request/reviewer.js");
+    process.stdout.write(formatHumanReadable(result) + "\n");
   }
 
   // Step 12: Return exit code based on verdict

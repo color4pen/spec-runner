@@ -23,9 +23,12 @@ import type { SpecRunnerConfig } from "../../config/schema.js";
 export type RequestReviewVerdict = "approve" | "needs-discussion" | "reject";
 
 export interface RequestReviewFinding {
+  number: number;           // 1-indexed stable finding number
   severity: "HIGH" | "MEDIUM" | "LOW";
   category: string;
   description: string;
+  location?: string;        // file path or section reference
+  recommendation?: string;  // 推奨アクション
 }
 
 export interface RequestReviewResult {
@@ -66,7 +69,15 @@ export function parseReviewOutput(text: string): RequestReviewResult {
         "verdict" in parsed &&
         isValidVerdict((parsed as Record<string, unknown>)["verdict"])
       ) {
-        return parsed as RequestReviewResult;
+        const parsedObj = parsed as Record<string, unknown>;
+        const rawFindings = Array.isArray(parsedObj["findings"])
+          ? (parsedObj["findings"] as RequestReviewFinding[])
+          : [];
+        const findings = rawFindings.map((f, i) => ({
+          ...f,
+          number: f.number ?? i + 1,
+        }));
+        return { ...(parsed as RequestReviewResult), findings };
       }
     } catch {
       // Fall through to fallback
@@ -77,6 +88,7 @@ export function parseReviewOutput(text: string): RequestReviewResult {
     verdict: "needs-discussion",
     findings: [
       {
+        number: 1,
         severity: "HIGH",
         category: "parse-error",
         description: "Could not parse structured output from reviewer",
@@ -84,6 +96,48 @@ export function parseReviewOutput(text: string): RequestReviewResult {
     ],
     summary: text.slice(0, 500),
   };
+}
+
+// ---------------------------------------------------------------------------
+// formatHumanReadable
+// ---------------------------------------------------------------------------
+
+/**
+ * Format a RequestReviewResult as human-readable text.
+ * Includes verdict, summary, and all findings.
+ * If findings is empty, prints "No findings." instead.
+ */
+export function formatHumanReadable(result: RequestReviewResult): string {
+  const parts: string[] = [];
+
+  parts.push(`## Verdict: ${result.verdict}`);
+  parts.push("");
+  parts.push(result.summary);
+  parts.push("");
+
+  if (result.findings.length === 0) {
+    parts.push("No findings.");
+  } else {
+    parts.push("## Findings");
+    parts.push("");
+
+    const findingBlocks: string[] = [];
+    for (const finding of result.findings) {
+      const lines: string[] = [];
+      lines.push(`#${finding.number} [${finding.severity}] ${finding.category} — ${finding.description}`);
+      if (finding.location) {
+        lines.push(`   Location: ${finding.location}`);
+      }
+      if (finding.recommendation) {
+        lines.push(`   → ${finding.recommendation}`);
+      }
+      findingBlocks.push(lines.join("\n"));
+    }
+
+    parts.push(findingBlocks.join("\n\n"));
+  }
+
+  return parts.join("\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -119,7 +173,7 @@ ${requestContent}
 </request>
 
 上記の request.md を読み、既存のコードベースを探索した上で、architect レビューを実施してください。
-レビュープロセス（現状分析 → 要件整理 → 設計評価 → トレードオフ分析 → Domain Synthesis → Devil's Advocate）を順に実行し、
+レビュープロセス（コードベース文脈把握 → 要件検証 → 外部依存チェック → Scope 妥当性検証）を順に実行し、
 最後に必ず \`\`\`json フェンスで構造化 JSON を出力してください。`;
 }
 

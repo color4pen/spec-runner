@@ -12,12 +12,20 @@
  * TC-RVR-009: buildInitialMessage — requestContent wrapped in <request> tags
  * TC-RVR-010: buildInitialMessage — projectContext wrapped in <project-context> tags
  * TC-RVR-011: runReview() with mock queryFn returns RequestReviewResult
+ * TC-RVR-012: parseReviewOutput — number field present is preserved
+ * TC-RVR-013: parseReviewOutput — number field absent → index+1 auto-assigned
+ * TC-RVR-014: parseReviewOutput — location/recommendation optional fields parsed
+ * TC-RVR-015: formatHumanReadable — findings あり → verdict + summary + findings
+ * TC-RVR-016: formatHumanReadable — findings なし → "No findings."
+ * TC-RVR-017: formatHumanReadable — location/recommendation optional lines
+ * TC-RVR-018: formatHumanReadable — summary #N references match finding numbers
  */
 import { describe, it, expect } from "vitest";
 import {
   parseReviewOutput,
   verdictToExitCode,
   buildInitialMessage,
+  formatHumanReadable,
   runReview,
   type RequestReviewResult,
 } from "../../../../src/core/request/reviewer.js";
@@ -26,8 +34,8 @@ import {
 // TC-RVR-001
 // ---------------------------------------------------------------------------
 describe("TC-RVR-001: parseReviewOutput with valid JSON block", () => {
-  it("extracts verdict, findings, and summary from a valid JSON block", () => {
-    const validResult: RequestReviewResult = {
+  it("extracts verdict, findings, and summary from a valid JSON block; number auto-assigned", () => {
+    const validResult = {
       verdict: "approve",
       findings: [
         { severity: "LOW", category: "maintainability", description: "Minor naming inconsistency" },
@@ -48,6 +56,7 @@ ${JSON.stringify(validResult, null, 2)}
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0]?.severity).toBe("LOW");
     expect(result.findings[0]?.category).toBe("maintainability");
+    expect(result.findings[0]?.number).toBe(1);
     expect(result.summary).toBe("The request is well-defined and ready for pipeline execution.");
   });
 });
@@ -93,7 +102,7 @@ ${invalidJson}
 describe("TC-RVR-004: parseReviewOutput uses the last JSON block", () => {
   it("extracts data from the last ```json block when multiple exist", () => {
     const firstResult = { verdict: "reject", findings: [], summary: "first" };
-    const lastResult: RequestReviewResult = { verdict: "approve", findings: [], summary: "last" };
+    const lastResult = { verdict: "approve", findings: [], summary: "last" };
 
     const text = `
 \`\`\`json
@@ -174,6 +183,12 @@ describe("TC-RVR-009: buildInitialMessage wraps requestContent in <request> tags
     const contentBetween = message.slice(requestStart + "<request>".length, requestEnd);
     expect(contentBetween).toContain(requestContent);
   });
+
+  it("references the new review step names", () => {
+    const message = buildInitialMessage("# Request", "ctx");
+    expect(message).toContain("コードベース文脈把握");
+    expect(message).toContain("外部依存チェック");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -245,5 +260,184 @@ describe("TC-RVR-011: runReview() with mock queryFn returns RequestReviewResult"
     } finally {
       await rm(tmpDir, { recursive: true, force: true });
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RVR-012: parseReviewOutput — number field present is preserved
+// ---------------------------------------------------------------------------
+describe("TC-RVR-012: parseReviewOutput — number field present is preserved", () => {
+  it("preserves explicit number field in findings", () => {
+    const input = {
+      verdict: "approve",
+      findings: [
+        { number: 3, severity: "LOW", category: "clarity", description: "Wording unclear" },
+      ],
+      summary: "Minor issue at #3.",
+    };
+    const text = `\`\`\`json\n${JSON.stringify(input)}\n\`\`\``;
+    const result = parseReviewOutput(text);
+    expect(result.findings[0]?.number).toBe(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RVR-013: parseReviewOutput — number field absent → index+1 auto-assigned
+// ---------------------------------------------------------------------------
+describe("TC-RVR-013: parseReviewOutput — number field absent → index+1 auto-assigned", () => {
+  it("assigns index+1 when number is missing from findings", () => {
+    const input = {
+      verdict: "needs-discussion",
+      findings: [
+        { severity: "HIGH", category: "requirements", description: "Goal unclear" },
+        { severity: "MEDIUM", category: "scope", description: "Scope too broad" },
+      ],
+      summary: "Two issues found.",
+    };
+    const text = `\`\`\`json\n${JSON.stringify(input)}\n\`\`\``;
+    const result = parseReviewOutput(text);
+    expect(result.findings[0]?.number).toBe(1);
+    expect(result.findings[1]?.number).toBe(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RVR-014: parseReviewOutput — location/recommendation optional fields parsed
+// ---------------------------------------------------------------------------
+describe("TC-RVR-014: parseReviewOutput — location/recommendation optional fields", () => {
+  it("parses location and recommendation when present", () => {
+    const input = {
+      verdict: "needs-discussion",
+      findings: [
+        {
+          number: 1,
+          severity: "HIGH",
+          category: "external-dependency",
+          description: "SDK version unspecified",
+          location: "request.md#external-deps",
+          recommendation: "Specify SDK version constraint",
+        },
+      ],
+      summary: "See #1.",
+    };
+    const text = `\`\`\`json\n${JSON.stringify(input)}\n\`\`\``;
+    const result = parseReviewOutput(text);
+    expect(result.findings[0]?.location).toBe("request.md#external-deps");
+    expect(result.findings[0]?.recommendation).toBe("Specify SDK version constraint");
+  });
+
+  it("leaves location/recommendation undefined when absent", () => {
+    const input = {
+      verdict: "approve",
+      findings: [
+        { number: 1, severity: "LOW", category: "clarity", description: "Minor wording" },
+      ],
+      summary: "ok",
+    };
+    const text = `\`\`\`json\n${JSON.stringify(input)}\n\`\`\``;
+    const result = parseReviewOutput(text);
+    expect(result.findings[0]?.location).toBeUndefined();
+    expect(result.findings[0]?.recommendation).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RVR-015: formatHumanReadable — findings あり
+// ---------------------------------------------------------------------------
+describe("TC-RVR-015: formatHumanReadable — findings ありの場合", () => {
+  it("includes verdict, summary, and all findings in output", () => {
+    const result: RequestReviewResult = {
+      verdict: "needs-discussion",
+      findings: [
+        { number: 1, severity: "HIGH", category: "requirements", description: "Goal unclear" },
+        { number: 2, severity: "MEDIUM", category: "scope", description: "Scope too broad" },
+      ],
+      summary: "Two issues found: #1 is critical, #2 is advisory.",
+    };
+    const output = formatHumanReadable(result);
+    expect(output).toContain("## Verdict: needs-discussion");
+    expect(output).toContain("Two issues found: #1 is critical, #2 is advisory.");
+    expect(output).toContain("## Findings");
+    expect(output).toContain("#1 [HIGH] requirements — Goal unclear");
+    expect(output).toContain("#2 [MEDIUM] scope — Scope too broad");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RVR-016: formatHumanReadable — findings なし
+// ---------------------------------------------------------------------------
+describe("TC-RVR-016: formatHumanReadable — findings なしの場合", () => {
+  it('shows "No findings." and no ## Findings header when findings is empty', () => {
+    const result: RequestReviewResult = {
+      verdict: "approve",
+      findings: [],
+      summary: "All good.",
+    };
+    const output = formatHumanReadable(result);
+    expect(output).toContain("## Verdict: approve");
+    expect(output).toContain("All good.");
+    expect(output).toContain("No findings.");
+    expect(output).not.toContain("## Findings");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RVR-017: formatHumanReadable — location/recommendation optional lines
+// ---------------------------------------------------------------------------
+describe("TC-RVR-017: formatHumanReadable — location/recommendation optional", () => {
+  it("omits Location and → lines when location/recommendation are absent", () => {
+    const result: RequestReviewResult = {
+      verdict: "needs-discussion",
+      findings: [
+        { number: 1, severity: "HIGH", category: "requirements", description: "Goal unclear" },
+      ],
+      summary: "See #1.",
+    };
+    const output = formatHumanReadable(result);
+    expect(output).not.toContain("Location:");
+    expect(output).not.toContain("→");
+  });
+
+  it("shows Location and → lines when location/recommendation are present", () => {
+    const result: RequestReviewResult = {
+      verdict: "needs-discussion",
+      findings: [
+        {
+          number: 1,
+          severity: "HIGH",
+          category: "external-dependency",
+          description: "SDK version unspecified",
+          location: "request.md#meta",
+          recommendation: "Add version constraint",
+        },
+      ],
+      summary: "See #1.",
+    };
+    const output = formatHumanReadable(result);
+    expect(output).toContain("Location: request.md#meta");
+    expect(output).toContain("→ Add version constraint");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RVR-018: formatHumanReadable — summary #N references match finding numbers
+// ---------------------------------------------------------------------------
+describe("TC-RVR-018: formatHumanReadable — summary #N references match finding numbers", () => {
+  it("preserves finding numbers so #N in summary corresponds to formatted findings", () => {
+    const result: RequestReviewResult = {
+      verdict: "needs-discussion",
+      findings: [
+        { number: 1, severity: "HIGH", category: "requirements", description: "Missing goal" },
+        { number: 2, severity: "MEDIUM", category: "scope", description: "Scope ambiguous" },
+      ],
+      summary: "Critical issue at #1. Advisory note at #2.",
+    };
+    const output = formatHumanReadable(result);
+    // Summary references are present
+    expect(output).toContain("#1");
+    expect(output).toContain("#2");
+    // Finding entries with matching numbers
+    expect(output).toContain("#1 [HIGH]");
+    expect(output).toContain("#2 [MEDIUM]");
   });
 });

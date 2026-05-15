@@ -28,7 +28,7 @@ describe("TC-RR-001: parseReviewOutput with valid JSON block", () => {
     const validResult: RequestReviewResult = {
       verdict: "approve",
       findings: [
-        { severity: "LOW", category: "maintainability", description: "Minor naming inconsistency" },
+        { number: 1, severity: "LOW", category: "maintainability", description: "Minor naming inconsistency" },
       ],
       summary: "The request is well-defined and ready for pipeline execution.",
     };
