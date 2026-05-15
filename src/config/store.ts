@@ -96,18 +96,6 @@ export async function saveConfig(cfg: SpecRunnerConfig): Promise<void> {
   delete toSave["agent"]; // never write legacy agent field
   delete toSave["timeout"]; // removed in remove-session-timeout (D3)
 
-  // Strip legacy timeoutMs from specReview / specFixer (D3: silently ignore on write)
-  if (toSave["specReview"] && typeof toSave["specReview"] === "object") {
-    const specReview = { ...(toSave["specReview"] as Record<string, unknown>) };
-    delete specReview["timeoutMs"];
-    toSave["specReview"] = specReview;
-  }
-  if (toSave["specFixer"] && typeof toSave["specFixer"] === "object") {
-    const specFixer = { ...(toSave["specFixer"] as Record<string, unknown>) };
-    delete specFixer["timeoutMs"];
-    toSave["specFixer"] = specFixer;
-  }
-
   await atomicWriteJson(configPath, toSave, { mode: CONFIG_MODE });
 }
 

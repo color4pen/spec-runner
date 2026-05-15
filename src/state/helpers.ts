@@ -55,6 +55,7 @@ export interface StepResultInput {
   verdict: import("./schema.js").Verdict | null;
   findingsPath: string | null;
   completedAt?: string | null;
+  startedAt?: string | null;
   error: import("./schema.js").ErrorInfo | null;
   fileContent?: string | null;
   /**
@@ -79,7 +80,7 @@ export function pushStepResult(
 ): JobState {
   const existing = state.steps?.[stepName] ?? [];
   const attempt = existing.length + 1;
-  const now = partial.completedAt ?? new Date().toISOString();
+  const now = new Date().toISOString();
   const run: StepRun = {
     attempt,
     sessionId: partial.session?.id ?? null,
@@ -89,8 +90,8 @@ export function pushStepResult(
       error: partial.error,
       fileContent: partial.fileContent,
     },
-    startedAt: now,
-    endedAt: now,
+    startedAt: partial.startedAt ?? now,
+    endedAt: partial.completedAt ?? now,
     ...(partial.modelUsage !== undefined ? { modelUsage: partial.modelUsage } : {}),
   };
   return {

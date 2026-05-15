@@ -201,3 +201,69 @@ describe("TC-047: verdict independence per iteration", () => {
     expect(run).not.toHaveProperty("modelUsage");
   });
 });
+
+// TC-startedAt-01: startedAt を渡した場合に StepRun.startedAt に反映される
+describe("TC-startedAt-01: pushStepResult — startedAt is recorded when provided", () => {
+  it("stores the provided startedAt in StepRun.startedAt", () => {
+    const state = makeMinimalState();
+    const startedAt = "2026-05-15T10:00:00.000Z";
+    const completedAt = "2026-05-15T10:10:00.000Z";
+
+    const updated = pushStepResult(state, "implementer", {
+      session: null,
+      verdict: "success",
+      findingsPath: null,
+      startedAt,
+      completedAt,
+      error: null,
+    });
+
+    const run = updated.steps?.["implementer"]?.[0];
+    expect(run?.startedAt).toBe(startedAt);
+    expect(run?.endedAt).toBe(completedAt);
+  });
+});
+
+// TC-startedAt-02: startedAt を渡さなかった場合に endedAt と同じ現在時刻にフォールバック
+describe("TC-startedAt-02: pushStepResult — startedAt falls back to now when not provided", () => {
+  it("sets startedAt to a valid ISO timestamp when startedAt is not provided", () => {
+    const state = makeMinimalState();
+
+    const before = new Date().toISOString();
+    const updated = pushStepResult(state, "implementer", {
+      session: null,
+      verdict: "success",
+      findingsPath: null,
+      error: null,
+    });
+    const after = new Date().toISOString();
+
+    const run = updated.steps?.["implementer"]?.[0];
+    expect(run?.startedAt).toBeDefined();
+    expect(run?.startedAt! >= before).toBe(true);
+    expect(run?.startedAt! <= after).toBe(true);
+  });
+});
+
+// TC-startedAt-03: startedAt と completedAt が異なるタイムスタンプで記録される
+describe("TC-startedAt-03: pushStepResult — startedAt and endedAt can differ", () => {
+  it("records distinct startedAt and endedAt when both are provided", () => {
+    const state = makeMinimalState();
+    const startedAt = "2026-05-15T10:00:00.000Z";
+    const completedAt = "2026-05-15T10:10:00.000Z";
+
+    const updated = pushStepResult(state, "implementer", {
+      session: null,
+      verdict: "success",
+      findingsPath: null,
+      startedAt,
+      completedAt,
+      error: null,
+    });
+
+    const run = updated.steps?.["implementer"]?.[0];
+    expect(run?.startedAt).toBe(startedAt);
+    expect(run?.endedAt).toBe(completedAt);
+    expect(run?.startedAt).not.toBe(run?.endedAt);
+  });
+});

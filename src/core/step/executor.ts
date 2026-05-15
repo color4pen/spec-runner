@@ -137,7 +137,7 @@ export class StepExecutor {
       },
     };
 
-    const completedAt = new Date().toISOString();
+    const startedAt = new Date().toISOString();
     const runResult = await this.runner.run(ctx).catch(async (thrownErr: unknown) => {
       const err = thrownErr as Error & { code?: string; hint?: string };
       const errorInfo: ErrorInfo = {
@@ -145,7 +145,7 @@ export class StepExecutor {
         message: err.message,
         hint: err.hint ?? "",
       };
-      state = recordFailedStepResult(state, step.name, errorInfo, { completedAt });
+      state = recordFailedStepResult(state, step.name, errorInfo, { startedAt });
       state = await store.fail(state, errorInfo, step.name);
       state = await store.appendHistory(state, {
         ts: new Date().toISOString(),
@@ -159,6 +159,8 @@ export class StepExecutor {
       return null as never;
     });
 
+    const completedAt = new Date().toISOString();
+
     if (runResult.completionReason === "timeout") {
       // Poll timeout — transition to awaiting-resume (not a hard failure)
       const err = runResult.error ?? new Error(`Agent step '${step.name}' timed out`);
@@ -167,7 +169,7 @@ export class StepExecutor {
         message: err.message,
         hint: (err as Error & { hint?: string }).hint ?? "",
       };
-      state = recordFailedStepResult(state, step.name, errorInfo, { completedAt });
+      state = recordFailedStepResult(state, step.name, errorInfo, { completedAt, startedAt });
       const { state: timeoutState } = transitionJob(state, "awaiting-resume", {
         trigger: "executor",
         reason: "timeout",
@@ -195,7 +197,7 @@ export class StepExecutor {
         message: err.message,
         hint: (err as Error & { hint?: string }).hint ?? "",
       };
-      state = recordFailedStepResult(state, step.name, errorInfo, { completedAt });
+      state = recordFailedStepResult(state, step.name, errorInfo, { completedAt, startedAt });
       state = await store.fail(state, errorInfo, step.name);
       await store.persist(state);
       attachStateAndRethrow(err, state);
@@ -206,7 +208,7 @@ export class StepExecutor {
       await this.commitAndPush(step, state, deps);
     }
 
-    return this.finalizeStep(step, state, deps, runResult.resultContent, completedAt, {
+    return this.finalizeStep(step, state, deps, runResult.resultContent, completedAt, startedAt, {
       sessionId: runResult.sessionId,
       agentBranch: runResult.agentBranch,
       modelUsage: runResult.modelUsage,
@@ -311,7 +313,7 @@ export class StepExecutor {
       message: `Transitioning to ${step.name} step`,
     });
 
-    const completedAt = new Date().toISOString();
+    const startedAt = new Date().toISOString();
 
     try {
       await step.run(state, deps);
@@ -324,11 +326,13 @@ export class StepExecutor {
       };
       state = await store.fail(state, errorInfo, step.name);
       state = recordFailedStepResult(state, step.name, errorInfo, {
-        completedAt,
+        startedAt,
       });
       await store.persist(state);
       attachStateAndRethrow(err, state);
     }
+
+    const completedAt = new Date().toISOString();
 
     // Read the result file from disk (not GitHub — CLI steps write locally)
     const resultFilePath = step.resultFilePath(state, deps);
@@ -344,7 +348,7 @@ export class StepExecutor {
       // File may not exist yet — treat as null verdict
     }
 
-    return this.finalizeStep(step, state, deps, fileContent, completedAt);
+    return this.finalizeStep(step, state, deps, fileContent, completedAt, startedAt);
   }
 
   /** Shared success path: parse verdict, persist result, set branch, and emit events. */
@@ -354,6 +358,7 @@ export class StepExecutor {
     deps: PipelineDeps,
     resultContent: string | null,
     completedAt: string,
+    startedAt: string,
     agentResult?: {
       sessionId?: string;
       agentBranch?: string;
@@ -384,6 +389,7 @@ export class StepExecutor {
       findingsPath,
       fileContent: resultContent,
       completedAt,
+      startedAt,
       error: null,
       modelUsage: agentResult?.modelUsage,
     });

@@ -113,8 +113,10 @@ export interface SpecRunnerConfig {
   specFixer?: SpecFixerConfig;
   /**
    * Per-step execution config: model, maxTurns, timeoutMs.
-   * Effective only for local runtime (ClaudeCodeRunner).
-   * ManagedAgentRunner ignores this field.
+   * Effective for local runtime (ClaudeCodeRunner) and managed agent runtime (ManagedAgentRunner).
+   * - ClaudeCodeRunner: AbortController + setTimeout
+   * - ManagedAgentRunner: pollUntilComplete() の timeoutMs パラメータ経由
+   * Default: null (unlimited) — timeout is only applied when explicitly configured.
    *
    * D1 (design.md): steps is optional for backward compatibility.
    * Steps section absent = use step definition hardcoded values.

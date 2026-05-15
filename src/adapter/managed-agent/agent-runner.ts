@@ -189,16 +189,20 @@ export class ManagedAgentRunner implements AgentRunner {
 
     if (needsPollingFallback) {
       stderrWrite("SSE disconnected; falling back to polling.");
-      // Resolve wall-clock timeout from step config for polling fallback
+      // Resolve wall-clock timeout from step config for polling fallback.
+      // User-configured timeoutMs takes precedence; fall back to DEFAULT_POLL_TIMEOUT_MS
+      // so the SSE fallback still has a safety net when no step timeout is configured.
       const resolvedConfig = getStepExecutionConfig(config, step.name, {
         model: step.agent.model,
-        timeoutMs: DEFAULT_POLL_TIMEOUT_MS,
       });
-      const timeoutMs = resolvedConfig.timeoutMs === 0 ? null : resolvedConfig.timeoutMs;
+      const effectiveTimeoutMs =
+        resolvedConfig.timeoutMs && resolvedConfig.timeoutMs > 0
+          ? resolvedConfig.timeoutMs
+          : DEFAULT_POLL_TIMEOUT_MS;
 
       const pollResult = await this.sessionClient.pollUntilComplete(sessionId!, {
         abortSignal: abortController.signal,
-        timeoutMs: timeoutMs ?? undefined,
+        timeoutMs: effectiveTimeoutMs,
       });
 
       if (pollResult.status !== "idle") {
@@ -434,15 +438,19 @@ export class ManagedAgentRunner implements AgentRunner {
       }
     }
 
-    // Resolve wall-clock timeout from step config
+    // Resolve wall-clock timeout from step config.
+    // User-configured timeoutMs takes precedence; fall back to DEFAULT_POLL_TIMEOUT_MS
+    // so polling has a safety net when no step timeout is configured.
     const resolvedConfig = getStepExecutionConfig(config, step.name, {
       model: step.agent.model,
-      timeoutMs: DEFAULT_POLL_TIMEOUT_MS,
     });
-    const timeoutMs = resolvedConfig.timeoutMs === 0 ? null : resolvedConfig.timeoutMs;
+    const effectiveTimeoutMs =
+      resolvedConfig.timeoutMs && resolvedConfig.timeoutMs > 0
+        ? resolvedConfig.timeoutMs
+        : DEFAULT_POLL_TIMEOUT_MS;
 
     // Poll until complete
-    const pollResult = await this.sessionClient.pollUntilComplete(sessionId!, { timeoutMs: timeoutMs ?? undefined });
+    const pollResult = await this.sessionClient.pollUntilComplete(sessionId!, { timeoutMs: effectiveTimeoutMs });
     const completedAt = new Date().toISOString();
 
     if (pollResult.status !== "idle") {

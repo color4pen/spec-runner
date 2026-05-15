@@ -1,7 +1,7 @@
 # Remove Wall-Clock Timeout from Step Sessions
 
 **Date**: 2026-05-03
-**Status**: accepted
+**Status**: superseded by ADR-0014
 
 ## Context
 

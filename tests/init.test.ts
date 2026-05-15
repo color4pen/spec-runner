@@ -273,8 +273,9 @@ describe("TC-060: specrunner init — calls agents.update when hash differs", ()
 
 // Regression test for finding #1: pipeline settings survive re-init
 // TC-012 (partial): ConfigStore.load reads old timeoutMs without error, and init preserves pipeline.maxRetries
+// ADR-0014: timeoutMs stripping from specReview/specFixer removed (ADR-0013 superseded)
 describe("Regression #1: re-init preserves user-tuned pipeline settings", () => {
-  it("existing pipeline.maxRetries survives a second init; old timeoutMs keys are silently ignored", async () => {
+  it("existing pipeline.maxRetries survives a second init; old timeoutMs keys in specReview/specFixer do not cause errors", async () => {
 
     // Pre-populate with user-tuned settings including legacy timeoutMs (should be silently ignored)
     const configDir = path.join(tempDir, "specrunner");
@@ -361,9 +362,8 @@ describe("Regression #1: re-init preserves user-tuned pipeline settings", () => 
     const raw = await fs.readFile(configPath, "utf-8");
     const savedConfig = JSON.parse(raw);
     expect(savedConfig.pipeline?.maxRetries).toBe(5);
-    // Legacy timeoutMs fields must NOT be written back to disk (TC-013 partial)
-    expect(savedConfig.specReview?.timeoutMs).toBeUndefined();
-    expect(savedConfig.specFixer?.timeoutMs).toBeUndefined();
+    // specReview.pollIntervalMs (a valid field) must be preserved
+    expect(savedConfig.specReview?.pollIntervalMs).toBe(100);
   });
 });
 

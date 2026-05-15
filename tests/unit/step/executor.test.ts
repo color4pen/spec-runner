@@ -13,7 +13,7 @@ import { createManagedAgentRunner } from "../../../src/adapter/managed-agent/age
 import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentDefinition } from "../../../src/core/agent/definition.js";
-import type { Step } from "../../../src/core/step/types.js";
+import type { Step, CliStep } from "../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
 
@@ -878,5 +878,126 @@ describe("TC-015: specrunner/project.md not found — no error, ctx.projectConte
     } finally {
       await fs.rm(cwdWithout, { recursive: true, force: true });
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-05: runAgentStep — startedAt captured before runner.run(), endedAt after
+// TC-06: runCliStep — startedAt captured before step.run(), endedAt after
+// ---------------------------------------------------------------------------
+
+describe("TC-05: runAgentStep — StepRun.startedAt < StepRun.endedAt (success path)", () => {
+  it("records startedAt strictly before endedAt when runner.run() has non-zero duration", async () => {
+    const events = new EventBus();
+
+    // Runner that introduces a real delay so the two Date.toISOString() calls differ
+    const delayMs = 15;
+    const delayedRunner: AgentRunner = {
+      async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
+        await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
+        return { completionReason: "success", resultContent: null };
+      },
+    };
+    const executor = new StepExecutor(events, delayedRunner);
+
+    const jobId = "tc05-agent-timestamp-job";
+    const state = await setupJobState(jobId);
+
+    const step: Step = {
+      kind: "agent" as const,
+      name: "spec-review",
+      agent: makeAgentDef("spec-review"),
+      toolHandlers: undefined,
+      completionVerdict: "approved" as const,
+      buildMessage: () => "review",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+
+    const deps: PipelineDeps = {
+      config: makeConfig(),
+      repo: { owner: "testowner", name: "testrepo" },
+      request: { type: "feature", title: "Test", slug: "tc05-slug", baseBranch: "main", content: "content", enabled: [] },
+      slug: "tc05-slug",
+      githubClient: {
+        verifyBranch: vi.fn().mockResolvedValue(true),
+        getRawFile: vi.fn().mockResolvedValue(null),
+        verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+        getRefSha: vi.fn().mockResolvedValue(null),
+      },
+    };
+
+    const resultState = await executor.execute(step, state, deps);
+
+    const stepRuns = resultState.steps?.["spec-review"];
+    expect(stepRuns).toBeDefined();
+    expect(stepRuns!.length).toBeGreaterThan(0);
+
+    const lastRun = stepRuns![stepRuns!.length - 1]!;
+    expect(lastRun.startedAt).toBeDefined();
+    expect(lastRun.endedAt).toBeDefined();
+    // Core invariant: startedAt must be strictly before endedAt
+    expect(lastRun.startedAt < lastRun.endedAt).toBe(true);
+  });
+});
+
+describe("TC-06: runCliStep — StepRun.startedAt < StepRun.endedAt (success path)", () => {
+  it("records startedAt strictly before endedAt when step.run() has non-zero duration", async () => {
+    const events = new EventBus();
+
+    // CLI step does not use the runner, but StepExecutor requires one
+    const noopRunner: AgentRunner = {
+      async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
+        return { completionReason: "success", resultContent: null };
+      },
+    };
+    const executor = new StepExecutor(events, noopRunner);
+
+    const jobId = "tc06-cli-timestamp-job";
+    const state = await setupJobState(jobId);
+
+    const delayMs = 15;
+    const cliStep: CliStep = {
+      kind: "cli" as const,
+      name: "verification",
+      async run(_state, _deps): Promise<void> {
+        // Simulate work so the before/after timestamps differ
+        await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
+      },
+      resultFilePath(_state, _deps): string {
+        return "specrunner/changes/tc06-slug/verification-result.md";
+      },
+      parseResult(_content, _deps) {
+        return { verdict: "passed" as const, findingsPath: null };
+      },
+    };
+
+    const deps: PipelineDeps = {
+      config: makeConfig(),
+      repo: { owner: "testowner", name: "testrepo" },
+      request: { type: "feature", title: "Test", slug: "tc06-slug", baseBranch: "main", content: "content", enabled: [] },
+      slug: "tc06-slug",
+      cwd: tempDir,
+      githubClient: {
+        verifyBranch: vi.fn().mockResolvedValue(true),
+        getRawFile: vi.fn().mockResolvedValue(null),
+        verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+        getRefSha: vi.fn().mockResolvedValue(null),
+      },
+    };
+
+    const resultState = await executor.execute(cliStep, state, deps);
+
+    const stepRuns = resultState.steps?.["verification"];
+    expect(stepRuns).toBeDefined();
+    expect(stepRuns!.length).toBeGreaterThan(0);
+
+    const lastRun = stepRuns![stepRuns!.length - 1]!;
+    expect(lastRun.startedAt).toBeDefined();
+    expect(lastRun.endedAt).toBeDefined();
+    // Core invariant: startedAt must be strictly before endedAt
+    expect(lastRun.startedAt < lastRun.endedAt).toBe(true);
   });
 });
