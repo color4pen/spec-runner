@@ -13,6 +13,7 @@ import { toLegacyStepResult } from "../../../src/state/helpers.js";
 import { specReviewResultPath } from "../../../src/util/paths.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
+import type { SpawnFn } from "../../../src/util/spawn.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import { createManagedAgentRunner } from "../../../src/adapter/managed-agent/agent-runner.js";
@@ -57,6 +58,8 @@ async function makePersistedJobState(steps: JobState["steps"] = {}): Promise<Job
   }, {});
 }
 
+const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
+
 function buildDeps(opts: {
   sessionId?: string;
   verdict?: "approved" | "needs-fix" | "escalation";
@@ -97,6 +100,7 @@ function buildDeps(opts: {
       verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       getRefSha: vi.fn().mockResolvedValue(null),
     },
+    spawn: noopSpawn,
   };
 }
 

@@ -1,5 +1,6 @@
 import type { JobState } from "../../state/schema.js";
 import type { StepContext } from "../types.js";
+import type { SpawnFn } from "../../util/spawn.js";
 import type { CustomToolHandler } from "../tools/types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import type { ReviewScores } from "../parser/review-scores.js";
@@ -17,6 +18,18 @@ export type { AgentDefinition };
  * Callers that pass PipelineDeps remain valid because PipelineDeps extends StepContext.
  */
 export type StepDeps = StepContext;
+
+/**
+ * Dependencies for CLI-resident steps (kind: "cli").
+ * Extends StepDeps with spawn — required for steps that invoke subprocesses.
+ * Agent steps continue to use StepDeps (no spawn needed).
+ *
+ * Design D2 (require-spawn-injection): compile-time guarantee that CLI steps
+ * receive an injected spawn function rather than falling back to a default.
+ */
+export interface CliStepDeps extends StepDeps {
+  spawn: SpawnFn;
+}
 
 /**
  * The outcome of a successful step execution, as returned by parseResult.
@@ -178,7 +191,7 @@ export interface CliStep {
    * Execute the CLI step (spawn processes, write result files, etc.).
    * StepExecutor calls this instead of creating a session.
    */
-  run(state: JobState, deps: StepDeps): Promise<void>;
+  run(state: JobState, deps: CliStepDeps): Promise<void>;
   /**
    * Compute the path of the result file written by this step.
    * Unlike AgentStep, this is non-null (CLI steps always produce a result file).

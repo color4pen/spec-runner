@@ -5,6 +5,9 @@ import * as os from "node:os";
 import type { SessionClient } from "../src/core/port/session-client.js";
 import type { GitHubClient } from "../src/core/port/github-client.js";
 import { createManagedAgentRunner } from "../src/adapter/managed-agent/agent-runner.js";
+import type { SpawnFn } from "../src/util/spawn.js";
+
+const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
 // Setup temp directory for state files
 let tempDir: string;
@@ -175,6 +178,7 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
       slug: "2026-04-27-cli-core-pipeline",
       githubClient,
       runner: buildRunner(client, githubClient),
+      spawn: noopSpawn,
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -208,6 +212,7 @@ describe("TC-036: propose pipeline — pre-set branch from CLI is used (D4)", ()
       slug: "test-cli-branch-d4",
       githubClient,
       runner: buildRunner(client, githubClient),
+      spawn: noopSpawn,
     });
 
     // With branch pre-set, propose should succeed
@@ -235,6 +240,7 @@ describe("TC-037: propose pipeline — SSE stream connected before initial messa
       slug: "2026-04-27-test",
       githubClient,
       runner: buildRunner(client, githubClient),
+      spawn: noopSpawn,
     });
 
     // streamEvents() was called — the SessionClient port guarantees SSE is connected
@@ -279,6 +285,7 @@ describe("TC-038: propose pipeline — initial message contains user-request tag
       // Use tempDir as cwd: no specrunner/project.md exists there, so
       // projectContext is undefined and requestContent equals the raw request text.
       cwd: tempDir,
+      spawn: noopSpawn,
     });
 
     // With cwd set to tempDir (no specrunner/project.md), requestContent is the raw
@@ -308,6 +315,7 @@ describe("TC-039: propose pipeline — CHANGE_FOLDER_NOT_FOUND", () => {
       slug: "2026-04-27-test",
       githubClient,
       runner: buildRunner(client, githubClient),
+      spawn: noopSpawn,
     });
 
     expect(result.status).toBe("awaiting-resume");
@@ -335,6 +343,7 @@ describe("TC-040: propose pipeline — branch not found on GitHub is warning onl
       slug: "2026-04-27-test",
       githubClient,
       runner: buildRunner(client, githubClient),
+      spawn: noopSpawn,
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -368,6 +377,7 @@ describe("TC-041: propose pipeline — GITHUB_TOKEN_EXPIRED on 401", () => {
       slug: "2026-04-27-test",
       githubClient,
       runner: buildRunner(client, githubClient),
+      spawn: noopSpawn,
     });
 
     expect(result.status).toBe("awaiting-resume");
@@ -398,6 +408,7 @@ describe("TC-042: session creation parameters", () => {
       slug: "2026-04-27-test",
       githubClient,
       runner: buildRunner(client, githubClient),
+      spawn: noopSpawn,
     });
 
     expect(createSessionMock).toHaveBeenCalledTimes(1);

@@ -20,7 +20,10 @@ import { EventBus } from "../../../src/core/event/event-bus.js";
 import { createManagedAgentRunner } from "../../../src/adapter/managed-agent/agent-runner.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
+import type { SpawnFn } from "../../../src/util/spawn.js";
 import { specReviewResultPath } from "../../../src/util/paths.js";
+
+const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -108,6 +111,7 @@ function makeMinimalDeps(clientOpts?: Parameters<typeof makeMockSessionClient>[0
       verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       getRefSha: vi.fn().mockResolvedValue(null),
     },
+    spawn: noopSpawn,
   };
 }
 

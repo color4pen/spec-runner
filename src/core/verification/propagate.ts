@@ -15,7 +15,7 @@
  */
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
-import { spawnCommand, type SpawnFn } from "../../util/spawn.js";
+import type { SpawnFn } from "../../util/spawn.js";
 import { verificationResultPath } from "../../util/paths.js";
 
 export interface PropagateResult {
@@ -32,9 +32,9 @@ export async function propagateVerificationResult(params: {
   branch: string;
   iteration: number;
   cwd: string;
-  spawn?: SpawnFn;
+  spawn: SpawnFn;
 }): Promise<PropagateResult> {
-  const spawn = params.spawn ?? spawnCommand;
+  const spawn = params.spawn;
   const { slug, branch, iteration, cwd } = params;
 
   // Verify the source file exists in cwd (the job worktree)

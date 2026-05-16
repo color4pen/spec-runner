@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { toLegacyStepResult } from "../src/state/helpers.js";
 import type { SessionClient } from "../src/core/port/session-client.js";
 import type { GitHubClient } from "../src/core/port/github-client.js";
+import type { SpawnFn } from "../src/util/spawn.js";
+
+const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -152,6 +155,7 @@ describe("TC-006: runSpecReviewStep — pollUntilComplete is called with default
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient: buildMockGithubClient(fileContent),
+      spawn: noopSpawn,
     });
 
     // pollUntilComplete should be called with the default timeoutMs (900000ms)
@@ -181,6 +185,7 @@ describe("TC-017: runSpecReviewStep — treats status='idle' as complete", () =>
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient: buildMockGithubClient(fileContent),
+      spawn: noopSpawn,
     });
 
     const lastSpecReview = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
@@ -211,6 +216,7 @@ describe("TC-018: runSpecReviewStep — SESSION_TERMINATED error handling", () =
         slug: "test-slug",
         sleepFn: vi.fn().mockResolvedValue(undefined),
         githubClient: buildMockGithubClient(""),
+        spawn: noopSpawn,
       }),
     ).rejects.toMatchObject({ code: "SESSION_TERMINATED" });
   });
@@ -236,6 +242,7 @@ describe("TC-020: runSpecReviewStep — SPEC_REVIEW_RESULT_NOT_FOUND when file n
         slug: "test-slug",
         sleepFn: vi.fn().mockResolvedValue(undefined),
         githubClient: buildMockGithubClient(null),
+        spawn: noopSpawn,
       }),
     ).rejects.toMatchObject({ code: "SPEC_REVIEW_RESULT_NOT_FOUND" });
   });
@@ -257,6 +264,7 @@ describe("TC-021: runSpecReviewStep — escalation failsafe when verdict line ab
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient: buildMockGithubClient("## Findings\n\nNo findings."),
+      spawn: noopSpawn,
     });
 
     // SpecReviewStep.parseResult maps null verdict → "escalation" (failsafe)
@@ -284,6 +292,7 @@ describe("TC-041: runSpecReviewStep — records session, verdict, findingsPath, 
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient: buildMockGithubClient(fileContent),
+      spawn: noopSpawn,
     });
 
     const stepResultArr = result.steps?.["spec-review"];
@@ -315,6 +324,7 @@ describe("TC-042: runSpecReviewStep — session created without custom tools", (
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient: buildMockGithubClient("- **verdict**: approved"),
+      spawn: noopSpawn,
     });
 
     expect(createSessionMock).toHaveBeenCalledTimes(1);
@@ -349,6 +359,7 @@ describe("TC-049: runSpecReviewStep — findingsPath has correct format", () => 
       slug,
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient: buildMockGithubClient("- **verdict**: needs-fix"),
+      spawn: noopSpawn,
     });
 
     const lastStepResult = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];

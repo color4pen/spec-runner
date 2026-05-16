@@ -19,6 +19,7 @@ import { StepExecutor } from "../../../../src/core/step/executor.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { JobState, StepRun } from "../../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
+import type { SpawnFn } from "../../../../src/util/spawn.js";
 import type { AgentStep } from "../../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
 import { specReviewResultPath, changeFolderPath } from "../../../../src/util/paths.js";
@@ -61,6 +62,8 @@ function makeJobState(jobId: string): JobState {
     steps: {},
   };
 }
+
+const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
 function makeConfig(): SpecRunnerConfig {
   return {
@@ -191,6 +194,7 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
         getRefSha: vi.fn(),
       },
       cwd: tempDir,
+      spawn: noopSpawn,
     };
 
     const verdictEvents: string[] = [];
@@ -271,6 +275,7 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
         getRefSha: vi.fn(),
       },
       cwd: tempDir,
+      spawn: noopSpawn,
     };
 
     await expect(executor.execute(step, initialState, deps)).rejects.toMatchObject({
@@ -339,6 +344,7 @@ describe("TC-001: completionVerdict fallback — resultContent null + completion
         getRefSha: vi.fn(),
       },
       cwd: tempDir,
+      spawn: noopSpawn,
     };
 
     const verdictEvents: string[] = [];
@@ -405,6 +411,7 @@ describe("TC-002: completionVerdict fallback — resultContent null + completion
         getRefSha: vi.fn(),
       },
       cwd: tempDir,
+      spawn: noopSpawn,
     };
 
     const resultState = await executor.execute(step, initialState, deps);
@@ -469,6 +476,7 @@ describe("TC-003 (behavior): completionVerdict is NOT used when resultContent is
         getRefSha: vi.fn(),
       },
       cwd: tempDir,
+      spawn: noopSpawn,
     };
 
     const resultState = await executor.execute(step, initialState, deps);
@@ -529,6 +537,7 @@ describe("TC-004: setsBranch flag — state.branch set after propose step comple
         getRefSha: vi.fn(),
       },
       cwd: tempDir,
+      spawn: noopSpawn,
     };
 
     const resultState = await executor.execute(step, initialState, deps);
@@ -588,6 +597,7 @@ describe("TC-005: setsBranch flag — does not overwrite existing state.branch",
         getRefSha: vi.fn(),
       },
       cwd: tempDir,
+      spawn: noopSpawn,
     };
 
     const resultState = await executor.execute(step, initialState, deps);

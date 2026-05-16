@@ -173,6 +173,7 @@ export class ManagedRuntime implements RuntimeStrategy {
       githubToken: this.githubToken,
       cwd: workspace.cwd,
       runner: this.createAgentRunner(),
+      spawn: spawnCommand,
     };
   }
 

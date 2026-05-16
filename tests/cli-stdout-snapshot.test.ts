@@ -18,6 +18,7 @@ import { StepExecutor } from "../src/core/step/executor.js";
 import type { Step } from "../src/core/step/types.js";
 import type { JobState, StepRun } from "../src/state/schema.js";
 import type { PipelineDeps } from "../src/core/types.js";
+import type { SpawnFn } from "../src/util/spawn.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -42,6 +43,8 @@ afterEach(async () => {
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
+
+const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
 const LOOP_NAME = "spec-review";
 
@@ -87,6 +90,7 @@ function makeMinimalDeps(): PipelineDeps {
       verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       getRefSha: vi.fn().mockResolvedValue(null),
     },
+    spawn: noopSpawn,
   };
 }
 

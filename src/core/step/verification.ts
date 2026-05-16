@@ -1,6 +1,5 @@
-import type { CliStep } from "./types.js";
+import type { CliStep, CliStepDeps } from "./types.js";
 import type { JobState } from "../../state/schema.js";
-import type { StepDeps } from "./types.js";
 import { runVerification } from "../verification/runner.js";
 import { propagateVerificationResult } from "../verification/propagate.js";
 import { verificationResultPath } from "../../util/paths.js";
@@ -33,7 +32,7 @@ export const VerificationStep: CliStep = {
   kind: "cli",
   name: STEP_NAMES.VERIFICATION,
 
-  async run(state: JobState, deps: StepDeps): Promise<void> {
+  async run(state: JobState, deps: CliStepDeps): Promise<void> {
     const verificationCwd = deps.cwd ?? process.cwd();
 
     await runVerification(deps.slug, verificationCwd);
@@ -46,6 +45,7 @@ export const VerificationStep: CliStep = {
         branch: state.branch,
         iteration,
         cwd: verificationCwd,
+        spawn: deps.spawn,
       });
       if (!result.ok) {
         stderrWrite(
@@ -58,11 +58,11 @@ export const VerificationStep: CliStep = {
     }
   },
 
-  resultFilePath(_state: JobState, deps: StepDeps): string {
+  resultFilePath(_state: JobState, deps): string {
     return verificationResultPath(deps.slug);
   },
 
-  parseResult(content: string, deps: StepDeps) {
+  parseResult(content: string, deps) {
     const match = /^## Verdict: (passed|failed)$/m.exec(content);
     const verdict = match?.[1] as "passed" | "failed" | undefined;
     const findingsPath = verificationResultPath(deps.slug);

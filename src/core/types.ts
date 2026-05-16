@@ -5,6 +5,7 @@ import type { SpecRunnerConfig } from "../config/schema.js";
 import type { OriginInfo } from "../git/remote.js";
 import type { ParsedRequest } from "../parser/request-md.js";
 import type { DynamicContext } from "../git/dynamic-context.js";
+import type { SpawnFn } from "../util/spawn.js";
 
 /**
  * Minimal context required by Step methods (buildMessage, resultFilePath, parseResult).
@@ -56,4 +57,10 @@ export interface PipelineDeps extends StepContext {
    * Design D8: runner replaces runtime-specific AgentRunner construction in pipeline.
    */
   runner?: AgentRunner;
+  /**
+   * Subprocess spawning function. Injected by RuntimeStrategy.buildDeps().
+   * CLI steps (verification, pr-create) pass this to subprocess-spawning functions.
+   * Design D3 (require-spawn-injection): required to prevent leaky defaults in tests.
+   */
+  spawn: SpawnFn;
 }

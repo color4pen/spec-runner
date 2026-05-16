@@ -22,6 +22,7 @@ import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
 import type { SpawnFn } from "../../../src/util/git-exec.js";
+import type { SpawnFn as PipelineSpawnFn } from "../../../src/util/spawn.js";
 import type { SpawnOptions, ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
 
@@ -99,6 +100,7 @@ function makeLocalDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
       verifyTokenScopes: vi.fn(),
       getRefSha: vi.fn(),
     },
+    spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as PipelineSpawnFn,
     ...overrides,
   };
 }

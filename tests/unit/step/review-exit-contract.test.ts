@@ -30,6 +30,7 @@ import type { JobState } from "../../../src/state/schema.js";
 import type { StepDeps } from "../../../src/core/step/types.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
+import type { SpawnFn } from "../../../src/util/spawn.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
 import { createManagedAgentRunner } from "../../../src/adapter/managed-agent/agent-runner.js";
@@ -38,6 +39,8 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { vi } from "vitest";
+
+const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
 // -------------------------------------------------------------------------
 // TC-001: resultFileNotFoundError for spec-review — iteration=1
@@ -528,6 +531,7 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
       },
+      spawn: noopSpawn,
     };
 
     const executor = makeExecutorFromDeps(events, deps);
@@ -568,6 +572,7 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
       },
+      spawn: noopSpawn,
     };
 
     const executor = makeExecutorFromDeps(events, deps);
@@ -610,6 +615,7 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
       },
+      spawn: noopSpawn,
     };
 
     const executor = makeExecutorFromDeps(events, deps);
@@ -650,6 +656,7 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
       },
+      spawn: noopSpawn,
     };
 
     const executor = makeExecutorFromDeps(events, deps);

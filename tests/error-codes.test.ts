@@ -23,6 +23,7 @@ import {
   stateFileInvalidError,
   configIncompleteError,
 } from "../src/errors.js";
+import type { SpawnFn } from "../src/util/spawn.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -220,6 +221,7 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       getRefSha: vi.fn().mockResolvedValue(null),
       },
+      spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as SpawnFn,
     });
 
     expect(result.error?.code).toBe("SPEC_REVIEW_RETRIES_EXHAUSTED");

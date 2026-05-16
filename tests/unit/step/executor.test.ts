@@ -16,6 +16,9 @@ import type { AgentDefinition } from "../../../src/core/agent/definition.js";
 import type { Step, CliStep } from "../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
+import type { SpawnFn } from "../../../src/util/spawn.js";
+
+const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
 /**
  * Create a StepExecutor wired with a ManagedAgentRunner built from deps.
@@ -153,6 +156,7 @@ describe("TC-030: StepExecutor resolves agent ID via step.agent.role", () => {
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
       },
+      spawn: noopSpawn,
     };
 
     const executor = makeExecutor(events, deps);
@@ -206,6 +210,7 @@ describe("TC-031: spec-review Step does not use propose Agent ID", () => {
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
       },
+      spawn: noopSpawn,
     };
 
     const executor = makeExecutor(events, deps);
@@ -257,6 +262,7 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
       },
+      spawn: noopSpawn,
     };
 
     const executor = makeExecutor(events, deps);
@@ -300,6 +306,7 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
       },
+      spawn: noopSpawn,
     };
 
     const executor = makeExecutor(events, deps);
@@ -346,6 +353,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: getRefShaSpy,
       },
+      spawn: noopSpawn,
     };
 
     const executor = makeExecutor(events, deps);
@@ -407,6 +415,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: getRefShaSpy,
       },
+      spawn: noopSpawn,
     };
 
     const executor = makeExecutor(events, deps);
@@ -447,6 +456,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: getRefShaSpy,
       },
+      spawn: noopSpawn,
     };
 
     const executor = makeExecutor(events, deps);
@@ -489,6 +499,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: getRefShaSpy,
       },
+      spawn: noopSpawn,
     };
 
     const executor = makeExecutor(events, deps);
@@ -573,6 +584,7 @@ describe("TC-007 to TC-010: allowlist steps set ctx.projectContext from specrunn
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
       },
+      spawn: noopSpawn,
     };
   }
 
@@ -667,6 +679,7 @@ describe("TC-011 to TC-014: non-allowlist steps — ctx.projectContext is undefi
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
       },
+      spawn: noopSpawn,
     };
   }
 
@@ -740,6 +753,7 @@ describe("TC-EX: StepExecutor injects resumeSessionId for fixer steps", () => {
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
       },
+      spawn: noopSpawn,
     };
   }
 
@@ -857,6 +871,7 @@ describe("TC-015: specrunner/project.md not found — no error, ctx.projectConte
           verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
           getRefSha: vi.fn().mockResolvedValue(null),
         },
+        spawn: noopSpawn,
       };
 
       const step: Step = {
@@ -925,6 +940,7 @@ describe("TC-05: runAgentStep — StepRun.startedAt < StepRun.endedAt (success p
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
       },
+      spawn: noopSpawn,
     };
 
     const resultState = await executor.execute(step, state, deps);
@@ -985,6 +1001,7 @@ describe("TC-06: runCliStep — StepRun.startedAt < StepRun.endedAt (success pat
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
       },
+      spawn: noopSpawn,
     };
 
     const resultState = await executor.execute(cliStep, state, deps);

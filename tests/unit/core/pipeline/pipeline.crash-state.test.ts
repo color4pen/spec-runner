@@ -11,6 +11,7 @@ import { StepExecutor } from "../../../../src/core/step/executor.js";
 import type { Step } from "../../../../src/core/step/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
+import type { SpawnFn } from "../../../../src/util/spawn.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -73,6 +74,7 @@ function makeMinimalDeps(): PipelineDeps {
       verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       getRefSha: vi.fn().mockResolvedValue(null),
     },
+    spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as SpawnFn,
   };
 }
 

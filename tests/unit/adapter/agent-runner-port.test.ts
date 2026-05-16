@@ -27,6 +27,7 @@ import type {
 } from "../../../src/core/port/agent-runner.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
+import type { SpawnFn } from "../../../src/util/spawn.js";
 import type { Step, AgentStep, CliStep } from "../../../src/core/step/types.js";
 
 // ---------------------------------------------------------------------------
@@ -94,6 +95,8 @@ function makeMinimalConfig() {
   };
 }
 
+const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
+
 function makeMinimalDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
   return {
     config: makeMinimalConfig(),
@@ -107,6 +110,7 @@ function makeMinimalDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
       verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       getRefSha: vi.fn().mockResolvedValue(null),
     },
+    spawn: noopSpawn,
     ...overrides,
   };
 }

@@ -20,8 +20,11 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import type { JobState } from "../../../src/state/schema.js";
-import type { StepDeps } from "../../../src/core/step/types.js";
+import type { StepDeps, CliStepDeps } from "../../../src/core/step/types.js";
+import type { SpawnFn } from "../../../src/util/spawn.js";
 import { changeFolderPath, prCreateResultPath } from "../../../src/util/paths.js";
+
+const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
 // Mock the runner so we don't spawn real processes
 vi.mock("../../../src/core/pr-create/runner.js", () => ({
@@ -58,7 +61,7 @@ function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
   };
 }
 
-function makeMinimalDeps(slug: string = "my-change"): StepDeps {
+function makeMinimalDeps(slug: string = "my-change"): CliStepDeps {
   return {
     config: {
       version: 1,
@@ -69,6 +72,7 @@ function makeMinimalDeps(slug: string = "my-change"): StepDeps {
     request: { type: "feature", title: "Test PR", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], sections: {} },
     slug,
     cwd: tempDir,
+    spawn: noopSpawn,
   };
 }
 
