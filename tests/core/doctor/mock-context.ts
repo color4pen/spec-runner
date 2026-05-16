@@ -69,6 +69,7 @@ export function buildMockContext(overrides?: Partial<DoctorContext>): DoctorCont
     processVersion: "v20.0.0",
     platform: "linux" as NodeJS.Platform,
     resolvedGitHubToken: "ghp_test123",
+    githubTokenSource: "credentials",
     ...overrides,
   };
 }

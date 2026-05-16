@@ -9,6 +9,7 @@ import { getOriginInfo } from "../git/remote.js";
 import { parseRequestMd } from "../parser/request-md.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { SpecRunnerError, ERROR_CODES } from "../errors.js";
+import { logInfo } from "../logger/stdout.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import type { OriginInfo } from "../git/remote.js";
 import type { ParsedRequest } from "../parser/request-md.js";
@@ -19,6 +20,8 @@ export interface PreflightResult {
   request: ParsedRequest;
   /** Resolved GitHub token (from credentials file or GITHUB_TOKEN env var). */
   githubToken: string;
+  /** Source of the resolved GitHub token. */
+  githubTokenSource: "credentials" | "env";
 }
 
 /**
@@ -76,9 +79,12 @@ export async function runPreflight(
 
   // Step 2.5: GitHub token (both runtimes require it for PR creation / gh CLI)
   let githubToken: string;
+  let githubTokenSource: "credentials" | "env";
   try {
     const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>);
     githubToken = resolved.token;
+    githubTokenSource = resolved.source;
+    logInfo(`GitHub token source: ${resolved.source}`);
   } catch (err) {
     if (err instanceof SpecRunnerError) {
       throw new SpecRunnerError(
@@ -106,5 +112,5 @@ export async function runPreflight(
   // Step 5: request.md parseable
   const request = await parseRequestMd(requestMdPath);
 
-  return { config, repo, request, githubToken };
+  return { config, repo, request, githubToken, githubTokenSource };
 }

@@ -312,3 +312,39 @@ interface DoctorResult {
 
 - **WHEN** `~/.local/share/specrunner/jobs/` が存在せず、かつ親ディレクトリも書き込み不可な状態で `specrunner doctor` を実行する
 - **THEN** storage category の該当 check が `fail` を返し、hint で `Parent directory is not writable. Check permissions.` を表示し、exit code 1 で終了する
+
+### Requirement: `specrunner doctor` の `github-token-present` check は token 取得元を表示する
+
+`github-token-present` check の pass message は MUST 解決元 (`resolveGitHubToken` の `source`) を含める。
+
+- credentials.json 由来: `GitHub token is available (source: credentials)`
+- `GITHUB_TOKEN` env var 由来: `GitHub token is available (source: env)`
+
+`github-token-valid` check は scope 検証が責務のため source を出力しない。
+
+#### Scenario: credentials.json から token が解決される
+
+- **WHEN** `~/.config/specrunner/credentials.json` の `github.token` が存在し、env var が unset
+- **THEN** `github-token-present` check は `pass` を返し、message は `GitHub token is available (source: credentials)`
+
+#### Scenario: env var から token が解決される
+
+- **WHEN** credentials.json は空または不在、かつ `GITHUB_TOKEN` env var が設定されている
+- **THEN** `github-token-present` check は `pass` を返し、message は `GitHub token is available (source: env)`
+
+### Requirement: `specrunner run` の preflight は GitHub token 取得元を info ログに出力する
+
+`runPreflight` 実行時、`resolveGitHubToken` が成功した直後に MUST 取得元を info ログに 1 行出力する。
+
+- credentials.json 由来: `GitHub token source: credentials`
+- env var 由来: `GitHub token source: env`
+
+#### Scenario: preflight 成功時に取得元が stdout に出る
+
+- **WHEN** `specrunner run` を起動し、preflight の token resolve が credentials.json で成功する
+- **THEN** stdout に `GitHub token source: credentials` の info ログが 1 行出力される
+
+#### Scenario: env var 経由でも取得元が表示される
+
+- **WHEN** `specrunner run` を起動し、preflight の token resolve が `GITHUB_TOKEN` env var で成功する
+- **THEN** stdout に `GitHub token source: env` の info ログが 1 行出力される

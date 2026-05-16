@@ -69,6 +69,8 @@ token endpoint のレスポンスが `authorization_pending` の場合、CLI は
 - **WHEN** access_token を取得する
 - **THEN** config の github ブロックが上記 3 フィールドで更新され、ファイルパーミッションが 0600 に維持される
 
+token 取得元（credentials file / GITHUB_TOKEN env var）は `specrunner doctor` の `github-token-present` check 出力および `specrunner run` の preflight info ログで可視化される。
+
 ### Requirement: 期限切れトークンは検出されリカバリ手順が表示される
 
 `specrunner run` で GitHub API 呼び出し（リポジトリ存在確認・branch 検証）が 401 を返した場合、CLI は MUST `error.code = "GITHUB_TOKEN_EXPIRED"` を state に記録し、stderr に SHALL `GitHub token expired. Run 'specrunner login' again.` を出力する。

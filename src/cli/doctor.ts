@@ -89,9 +89,11 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
 
   // Resolve GitHub token (best-effort — doctor works even without token)
   let resolvedGitHubToken: string | null = null;
+  let githubTokenSource: "credentials" | "env" | null = null;
   try {
     const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>);
     resolvedGitHubToken = resolved.token;
+    githubTokenSource = resolved.source;
   } catch {
     // Token not found — checks will report failure
   }
@@ -116,6 +118,7 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
     processVersion: process.version,
     platform: process.platform,
     resolvedGitHubToken,
+    githubTokenSource,
   };
 
   // Run runtime-specific checks

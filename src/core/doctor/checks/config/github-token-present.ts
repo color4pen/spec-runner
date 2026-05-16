@@ -11,9 +11,10 @@ export const githubTokenPresentCheck: DoctorCheck = {
 
   async check(ctx: DoctorContext) {
     if (typeof ctx.resolvedGitHubToken === "string" && ctx.resolvedGitHubToken.length > 0) {
+      const sourceLabel = ctx.githubTokenSource ? ` (source: ${ctx.githubTokenSource})` : "";
       return {
         status: "pass",
-        message: "GitHub token is available",
+        message: `GitHub token is available${sourceLabel}`,
       };
     }
 

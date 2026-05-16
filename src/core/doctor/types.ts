@@ -105,6 +105,11 @@ export interface DoctorContext {
    * null when no token is available (credentials missing + env var not set).
    */
   resolvedGitHubToken: string | null;
+  /**
+   * Source of the resolved GitHub token ("credentials" or "env").
+   * null when no token is available (resolvedGitHubToken is null).
+   */
+  githubTokenSource: "credentials" | "env" | null;
 }
 
 /**
