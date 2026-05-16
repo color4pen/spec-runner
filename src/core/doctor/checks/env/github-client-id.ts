@@ -1,7 +1,7 @@
 /**
  * TC-016, TC-017
  * Check SPECRUNNER_GITHUB_CLIENT_ID environment variable.
- * Missing = warn (only required during login).
+ * Missing = pass (built-in client_id is used as default).
  */
 import type { DoctorCheck, DoctorContext } from "../../types.js";
 
@@ -21,9 +21,8 @@ export const githubClientIdCheck: DoctorCheck = {
     }
 
     return {
-      status: "warn",
-      message: "SPECRUNNER_GITHUB_CLIENT_ID is not set",
-      hint: "This variable is only required during 'specrunner login'. Set it if you need to re-authenticate.",
+      status: "pass",
+      message: "SPECRUNNER_GITHUB_CLIENT_ID is not set (using built-in client_id)",
     };
   },
 };

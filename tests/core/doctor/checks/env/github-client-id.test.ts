@@ -1,5 +1,5 @@
 /**
- * TC-016: SPECRUNNER_GITHUB_CLIENT_ID not set → warn
+ * TC-016: SPECRUNNER_GITHUB_CLIENT_ID not set → pass (built-in client_id used)
  * TC-017: SPECRUNNER_GITHUB_CLIENT_ID set → pass
  */
 import { describe, it, expect } from "vitest";
@@ -8,12 +8,11 @@ import { buildMockContext } from "../../mock-context.js";
 
 describe("githubClientIdCheck", () => {
   // TC-016
-  it("returns warn when SPECRUNNER_GITHUB_CLIENT_ID is undefined", async () => {
+  it("returns pass when SPECRUNNER_GITHUB_CLIENT_ID is undefined", async () => {
     const ctx = buildMockContext({ env: {} });
     const result = await githubClientIdCheck.check(ctx);
-    expect(result.status).toBe("warn");
-    expect(result.hint).toBeDefined();
-    expect(result.hint).toMatch(/login/i);
+    expect(result.status).toBe("pass");
+    expect(result.message).toMatch(/built-in/i);
   });
 
   // TC-017

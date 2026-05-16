@@ -1,23 +1,20 @@
-import { SpecRunnerError } from "../errors.js";
+/**
+ * SpecRunner 公式 GitHub OAuth App の client_id。
+ *
+ * GitHub Device Flow は client_secret を必要としないため、client_id は
+ * CLI コードに固定で埋め込まれる（spec: github-device-flow-auth/spec.md）。
+ * テスト用に SPECRUNNER_GITHUB_CLIENT_ID 環境変数で上書き可能。
+ */
+const GITHUB_CLIENT_ID = "Ov23liiRKtu99i4njRSS";
 
 /**
- * GitHub OAuth App client ID for specrunner.
+ * GitHub OAuth App client_id を返す。
  *
- * Must be supplied via the SPECRUNNER_GITHUB_CLIENT_ID env var. There is
- * intentionally no placeholder fallback — a stub client_id silently fails
- * against the GitHub Device Flow API (404/401) which is harder to diagnose
- * than a fail-fast error here. Device Flow does not require client_secret.
+ * SPECRUNNER_GITHUB_CLIENT_ID が設定されていればその値を使用する（テスト用）。
+ * 未設定の場合は CLI に埋め込まれた client_id を返す（既定動作）。
  */
 export function getGithubClientId(): string {
-  const clientId = process.env["SPECRUNNER_GITHUB_CLIENT_ID"];
-  if (!clientId || clientId.length === 0) {
-    throw new SpecRunnerError(
-      "GITHUB_CLIENT_ID_MISSING",
-      "Set SPECRUNNER_GITHUB_CLIENT_ID to your GitHub OAuth App's client_id (Device Flow enabled).",
-      "SPECRUNNER_GITHUB_CLIENT_ID is not set.",
-    );
-  }
-  return clientId;
+  return process.env["SPECRUNNER_GITHUB_CLIENT_ID"] || GITHUB_CLIENT_ID;
 }
 
 export const GITHUB_DEVICE_CODE_URL = "https://github.com/login/device/code";
