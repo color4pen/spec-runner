@@ -56,7 +56,8 @@ export async function loadCredentials(): Promise<CredentialsFile> {
   try {
     return JSON.parse(raw) as CredentialsFile;
   } catch {
-    // Malformed JSON — treat as empty
+    // Malformed JSON — return empty so resolveGitHubToken falls through
+    // to env-var priority and eventually throws GITHUB_TOKEN_MISSING.
     return {};
   }
 }

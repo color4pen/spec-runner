@@ -30,8 +30,8 @@ export class ManagedRuntime implements RuntimeStrategy {
     private readonly sessionClient: SessionClient,
     private readonly githubClient: GitHubClient,
     private readonly repo: OriginInfo,
-    spawnFn?: SpawnFn,
-    private readonly githubToken: string = "",
+    spawnFn: SpawnFn | undefined,
+    private readonly githubToken: string,
   ) {
     this.spawnFn = spawnFn ?? spawnCommand;
   }

@@ -45,7 +45,7 @@ describe("TC-RT-001: createRuntime returns LocalRuntime when runtime === 'local'
   it("returns an instance of LocalRuntime", async () => {
     const { createRuntime } = await import("../../../../src/core/runtime/factory.js");
     const githubClient = buildMockGithubClient();
-    const runtime = createRuntime(buildLocalConfig(), "/repo", githubClient, repo);
+    const runtime = createRuntime(buildLocalConfig(), "/repo", githubClient, repo, undefined, "");
     expect(runtime).toBeInstanceOf(LocalRuntime);
   });
 });
@@ -57,7 +57,7 @@ describe("TC-RT-002: createRuntime returns ManagedRuntime when runtime !== 'loca
     const githubClient = buildMockGithubClient();
     const config = { ...buildManagedConfig(), runtime: "managed" as const };
     const sessionClient = buildMockSessionClient();
-    const runtime = createRuntime(config, "/repo", githubClient, repo, sessionClient);
+    const runtime = createRuntime(config, "/repo", githubClient, repo, sessionClient, "");
     expect(runtime).toBeInstanceOf(ManagedRuntime);
   });
 });
@@ -69,7 +69,7 @@ describe("TC-RT-003: createRuntime defaults to ManagedRuntime when runtime is un
     const githubClient = buildMockGithubClient();
     const config = buildManagedConfig(); // no runtime field
     const sessionClient = buildMockSessionClient();
-    const runtime = createRuntime(config, "/repo", githubClient, repo, sessionClient);
+    const runtime = createRuntime(config, "/repo", githubClient, repo, sessionClient, "");
     expect(runtime).toBeInstanceOf(ManagedRuntime);
   });
 });

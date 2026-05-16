@@ -50,7 +50,7 @@ describe("TC-MR-001: setupWorkspace returns cwd unchanged", () => {
   it("returns { cwd } without creating worktree", async () => {
     const sessionClient = buildMockSessionClient();
     const githubClient = buildMockGitHubClient();
-    const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo());
+    const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo(), undefined, "");
 
     const workspace = await runtime.setupWorkspace("test-slug", "job-123");
 
@@ -64,7 +64,7 @@ describe("TC-MR-002: createAgentRunner returns ManagedAgentRunner", () => {
   it("returns an instance of ManagedAgentRunner", () => {
     const sessionClient = buildMockSessionClient();
     const githubClient = buildMockGitHubClient();
-    const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo());
+    const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo(), undefined, "");
 
     const runner = runtime.createAgentRunner();
 
@@ -77,7 +77,7 @@ describe("TC-MR-003: registerCleanup adds signal handlers and teardown removes t
   it("registerCleanup increases SIGINT listener count; teardown restores it", async () => {
     const sessionClient = buildMockSessionClient();
     const githubClient = buildMockGitHubClient();
-    const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo());
+    const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo(), undefined, "");
 
     const listenersBefore = process.listenerCount("SIGINT");
     const handle = runtime.registerCleanup("job-123", "design");
@@ -94,7 +94,7 @@ describe("TC-MR-003: registerCleanup adds signal handlers and teardown removes t
   it("registerCleanup increases SIGTERM listener count; teardown restores it", async () => {
     const sessionClient = buildMockSessionClient();
     const githubClient = buildMockGitHubClient();
-    const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo());
+    const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo(), undefined, "");
 
     const listenersBefore = process.listenerCount("SIGTERM");
     const handle = runtime.registerCleanup("job-123", "design");
@@ -111,7 +111,7 @@ describe("TC-MR-004: buildDeps includes sessionClient and ManagedAgentRunner", (
   it("returns PipelineDeps with client set and runner as ManagedAgentRunner", () => {
     const sessionClient = buildMockSessionClient();
     const githubClient = buildMockGitHubClient();
-    const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo());
+    const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo(), undefined, "");
 
     const workspace = { cwd: "/repo" };
     const deps = runtime.buildDeps(buildConfig(), buildRepo(), buildRequest(), "test-slug", workspace);

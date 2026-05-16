@@ -30,8 +30,8 @@ export function createRuntime(
   cwd: string,
   githubClient: GitHubClient,
   repo: OriginInfo,
-  sessionClient?: SessionClient,
-  githubToken: string = "",
+  sessionClient: SessionClient | undefined,
+  githubToken: string,
 ): RuntimeStrategy {
   if (config.runtime === "local") {
     return new LocalRuntime({ cwd, githubClient, githubToken });

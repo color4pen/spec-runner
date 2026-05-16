@@ -341,7 +341,7 @@ describe("TC-040: managed-agent and claude-code adapters do not import each othe
 // TC-041: --runtime local accepts missing apiKey
 // ---------------------------------------------------------------------------
 
-describe("TC-041: checkConfigComplete only checks github.accessToken (managed prereqs moved to checkRuntimePrereqs)", () => {
+describe("TC-041: checkConfigComplete always returns null (GitHub token check moved to runPreflight)", () => {
   it("checkConfigComplete with local runtime: returns null when github token is set", () => {
     const config = {
       version: 1 as const,

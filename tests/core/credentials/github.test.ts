@@ -79,6 +79,9 @@ describe("TC-CRED-004: saveCredentials() writes with 0600 permissions", () => {
     const { saveCredentials, loadCredentials } = await import("../../../src/core/credentials/github.js");
     await saveCredentials({ github: { token: "ghp_saved" } });
 
+    const stat = await fs.stat(credPath());
+    expect(stat.mode & 0o777).toBe(0o600);
+
     const loaded = await loadCredentials();
     expect(loaded.github?.token).toBe("ghp_saved");
   });
