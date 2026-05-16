@@ -195,6 +195,35 @@ describe("runManagedStatus", () => {
     expect(output).toMatch(/local/);
   });
 
+  it("shows stale managed config when runtime is not managed (5-a)", async () => {
+    await writeConfig({
+      version: 1,
+      agents: { design: { agentId: "agent_001", definitionHash: "hash", lastSyncedAt: "2026-01-01T00:00:00Z" } },
+      environment: { id: "env_001", lastSyncedAt: "2026-01-01T00:00:00Z" },
+    });
+
+    const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const { runManagedStatus } = await import("../../../src/cli/managed.js");
+    await runManagedStatus();
+
+    const output = stdoutSpy.mock.calls.map((c) => c[0]).join("");
+    expect(output).toContain("Stale managed config detected:");
+    expect(output).toContain("environment.id: env_001");
+    expect(output).toContain("agents.design: agent_001");
+  });
+
+  it("shows only local message when no stale config (5-b)", async () => {
+    await writeConfig({ version: 1, agents: {} });
+
+    const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const { runManagedStatus } = await import("../../../src/cli/managed.js");
+    await runManagedStatus();
+
+    const output = stdoutSpy.mock.calls.map((c) => c[0]).join("");
+    expect(output).toContain("local");
+    expect(output).not.toContain("Stale");
+  });
+
   it("shows full managed status including agents, environment, and API key (TC-MST-001)", async () => {
     process.env["SPECRUNNER_API_KEY"] = "sk-test-key";
 
@@ -216,6 +245,40 @@ describe("runManagedStatus", () => {
     expect(output).toContain("SPECRUNNER_API_KEY: set");
     expect(output).toContain("env_e001");
     expect(output).toContain("agent_d001");
+  });
+
+  it("lists only agents when only agents are stale (TC-MST-NEW-002)", async () => {
+    await writeConfig({
+      version: 1,
+      agents: { design: { agentId: "agent_001", definitionHash: "hash", lastSyncedAt: "2026-01-01T00:00:00Z" } },
+      // no environment field
+    });
+
+    const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const { runManagedStatus } = await import("../../../src/cli/managed.js");
+    await runManagedStatus();
+
+    const output = stdoutSpy.mock.calls.map((c) => c[0]).join("");
+    expect(output).toContain("Stale managed config detected:");
+    expect(output).toContain("agents.design: agent_001");
+    expect(output).not.toContain("environment.id");
+  });
+
+  it("lists only environment.id when only environment is stale (TC-MST-NEW-003)", async () => {
+    await writeConfig({
+      version: 1,
+      agents: {},
+      environment: { id: "env_001", lastSyncedAt: "2026-01-01T00:00:00Z" },
+    });
+
+    const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const { runManagedStatus } = await import("../../../src/cli/managed.js");
+    await runManagedStatus();
+
+    const output = stdoutSpy.mock.calls.map((c) => c[0]).join("");
+    expect(output).toContain("Stale managed config detected:");
+    expect(output).toContain("environment.id: env_001");
+    expect(output).not.toContain("agents.");
   });
 });
 
@@ -334,6 +397,115 @@ describe("runManagedReset", () => {
     await runManagedReset({ force: true });
 
     expect(currentMockSdk.beta.environments.delete).not.toHaveBeenCalled();
+    const saved = await readConfig();
+    expect(saved["agents"]).toEqual({});
+    expect(saved["environment"]).toBeUndefined();
+  });
+
+  it("resets stale config with --force when runtime is not managed (5-d)", async () => {
+    await writeConfig({
+      version: 1,
+      agents: { design: { agentId: "agent_001", definitionHash: "hash", lastSyncedAt: "2026-01-01T00:00:00Z" } },
+      environment: { id: "env_001", lastSyncedAt: "2026-01-01T00:00:00Z" },
+    });
+
+    delete process.env["SPECRUNNER_API_KEY"];
+
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const { runManagedReset } = await import("../../../src/cli/managed.js");
+    await runManagedReset({ force: true });
+
+    const stderrOutput = stderrSpy.mock.calls.map((c) => c[0]).join("");
+    expect(stderrOutput).toContain("runtime is");
+    expect(stderrOutput).toContain('not "managed"');
+
+    // TC-MR-NEW-012: existing destructive prompt must NOT appear (no double confirmation)
+    const stdoutOutput = stdoutSpy.mock.calls.map((c) => c[0]).join("");
+    expect(stdoutOutput).not.toContain("This will delete the Anthropic Environment");
+
+    const saved = await readConfig();
+    expect(saved["agents"]).toEqual({});
+    expect(saved["environment"]).toBeUndefined();
+  });
+
+  it("aborts in non-TTY mode without --force when runtime is not managed (5-e)", async () => {
+    await writeConfig({
+      version: 1,
+      agents: { design: { agentId: "agent_001", definitionHash: "hash", lastSyncedAt: "2026-01-01T00:00:00Z" } },
+      environment: { id: "env_001", lastSyncedAt: "2026-01-01T00:00:00Z" },
+    });
+
+    // process.stdin.isTTY is undefined in test environment (= non-TTY)
+    const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const { runManagedReset } = await import("../../../src/cli/managed.js");
+    await runManagedReset({ force: false });
+
+    const output = stdoutSpy.mock.calls.map((c) => c[0]).join("");
+    expect(output).toContain("--force");
+
+    // Config should be unchanged
+    const saved = await readConfig();
+    expect((saved["agents"] as Record<string, unknown>)?.["design"]).toBeDefined();
+  });
+
+  it("aborts when user answers 'n' to stale reset prompt (5-f)", async () => {
+    await writeConfig({
+      version: 1,
+      agents: { design: { agentId: "agent_001", definitionHash: "hash", lastSyncedAt: "2026-01-01T00:00:00Z" } },
+    });
+
+    // Mock TTY — save and restore original value
+    const originalIsTTY = (process.stdin as { isTTY?: boolean }).isTTY;
+    Object.defineProperty(process.stdin, "isTTY", { value: true, configurable: true });
+
+    const readline = await import("node:readline");
+    vi.mocked(readline.createInterface).mockReturnValue({
+      question: vi.fn().mockImplementation((_msg: string, cb: (ans: string) => void) => cb("n")),
+      close: vi.fn(),
+    } as unknown as import("node:readline").Interface);
+
+    const { runManagedReset } = await import("../../../src/cli/managed.js");
+    await runManagedReset({ force: false });
+
+    // Restore isTTY
+    Object.defineProperty(process.stdin, "isTTY", { value: originalIsTTY, configurable: true });
+
+    const saved = await readConfig();
+    expect((saved["agents"] as Record<string, unknown>)?.["design"]).toBeDefined();
+  });
+
+  it("does nothing when no stale config and runtime is not managed (5-h)", async () => {
+    await writeConfig({ version: 1, agents: {} });
+
+    const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const { runManagedReset } = await import("../../../src/cli/managed.js");
+    await runManagedReset({ force: true });
+
+    const output = stdoutSpy.mock.calls.map((c) => c[0]).join("");
+    expect(output).toContain("Nothing to reset");
+  });
+
+  it("resets stale config when TTY user answers 'y' (TC-MR-NEW-004)", async () => {
+    await writeConfig({
+      version: 1,
+      agents: { design: { agentId: "agent_001", definitionHash: "hash", lastSyncedAt: "2026-01-01T00:00:00Z" } },
+    });
+
+    const originalIsTTY = (process.stdin as { isTTY?: boolean }).isTTY;
+    Object.defineProperty(process.stdin, "isTTY", { value: true, configurable: true });
+
+    const readline = await import("node:readline");
+    vi.mocked(readline.createInterface).mockReturnValue({
+      question: vi.fn().mockImplementation((_msg: string, cb: (ans: string) => void) => cb("y")),
+      close: vi.fn(),
+    } as unknown as import("node:readline").Interface);
+
+    const { runManagedReset } = await import("../../../src/cli/managed.js");
+    await runManagedReset({ force: false });
+
+    Object.defineProperty(process.stdin, "isTTY", { value: originalIsTTY, configurable: true });
+
     const saved = await readConfig();
     expect(saved["agents"]).toEqual({});
     expect(saved["environment"]).toBeUndefined();

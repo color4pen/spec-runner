@@ -19,6 +19,12 @@ import type { StepName } from "../state/schema.js";
 const ENVIRONMENT_NAME = "specrunner-default";
 const ENVIRONMENT_PACKAGES_NPM: string[] = [];
 
+function hasStaleManagedConfig(config: SpecRunnerConfig): boolean {
+  if (config.environment?.id) return true;
+  if (Object.keys(config.agents ?? {}).length > 0) return true;
+  return false;
+}
+
 export async function runManagedSetup(): Promise<void> {
   const apiKey = process.env["SPECRUNNER_API_KEY"];
   if (!apiKey) {
@@ -140,6 +146,15 @@ export async function runManagedStatus(): Promise<void> {
 
   if (config.runtime !== "managed") {
     process.stdout.write("Runtime: local (managed setup not required)\n");
+    if (hasStaleManagedConfig(config)) {
+      process.stdout.write("Stale managed config detected:\n");
+      if (config.environment?.id) {
+        process.stdout.write(`  - environment.id: ${config.environment.id}\n`);
+      }
+      for (const [role, record] of Object.entries(config.agents ?? {})) {
+        process.stdout.write(`  - agents.${role}: ${record.agentId}\n`);
+      }
+    }
     return;
   }
 
@@ -170,6 +185,58 @@ export async function runManagedReset(opts: { force: boolean }): Promise<void> {
     process.exit(1);
   }
 
+  // --- runtime mismatch guard: handle stale managed fields when runtime != managed ---
+  if (config.runtime !== "managed") {
+    if (!hasStaleManagedConfig(config)) {
+      process.stdout.write("No stale managed config. Nothing to reset.\n");
+      return;
+    }
+
+    process.stderr.write(
+      `Warning: runtime is "${config.runtime ?? "local"}", not "managed". This will reset stale managed fields only.\n`,
+    );
+
+    if (!opts.force) {
+      const isTTY = (process.stdin as NodeJS.ReadStream).isTTY ?? false;
+      if (!isTTY) {
+        process.stdout.write("Non-interactive mode requires --force to reset stale config.\n");
+        return;
+      }
+      const confirmed = await promptConfirm("Proceed? [y/N] ");
+      if (!confirmed) {
+        process.stdout.write("Aborted.\n");
+        return;
+      }
+    }
+
+    // SDK delete if environment.id present and API key available
+    if (config.environment?.id && apiKey) {
+      const rawSdk = createAnthropicClient(apiKey);
+      try {
+        await rawSdk.beta.environments.delete(config.environment.id);
+        logSuccess(`Environment deleted (${config.environment.id})`);
+      } catch (err: unknown) {
+        const status = (err as { status?: number }).status;
+        if (status === 404) {
+          logStep(`Environment ${config.environment.id} not found on provider side (already deleted)`);
+        } else {
+          throw err;
+        }
+      }
+    } else if (config.environment?.id && !apiKey) {
+      process.stderr.write("Warning: SPECRUNNER_API_KEY not set — skipping provider-side environment deletion.\n");
+    }
+
+    // Clear stale fields
+    const { environment: _env, ...rest } = config;
+    const newConfig: SpecRunnerConfig = { ...rest, agents: {} };
+    delete (newConfig as unknown as Record<string, unknown>)["runtime"];
+    await saveConfig(newConfig);
+    logSuccess("Reset stale managed fields.");
+    return;
+  }
+
+  // --- managed runtime path (existing behavior, unchanged) ---
   if (!opts.force) {
     const confirmed = await promptConfirm(
       "This will delete the Anthropic Environment and clear managed config. Continue? [y/N] ",
@@ -199,15 +266,15 @@ export async function runManagedReset(opts: { force: boolean }): Promise<void> {
   }
 
   // Reset config: remove runtime, clear agents to {}, remove environment
-  const { environment: _env, ...rest } = config;
-  const newConfig: SpecRunnerConfig = {
-    ...rest,
+  const { environment: _managedEnv, ...managedRest } = config;
+  const managedNewConfig: SpecRunnerConfig = {
+    ...managedRest,
     agents: {},
   };
   // Remove runtime field (delete it so it defaults to local)
-  delete (newConfig as unknown as Record<string, unknown>)["runtime"];
+  delete (managedNewConfig as unknown as Record<string, unknown>)["runtime"];
 
-  await saveConfig(newConfig);
+  await saveConfig(managedNewConfig);
   logSuccess("Config reset.");
   process.stdout.write(
     "Note: Anthropic-side agent resources are NOT deleted (no delete API available) and remain as orphans.\n",

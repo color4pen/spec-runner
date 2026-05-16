@@ -99,7 +99,7 @@ Note: Anthropic-side agent resources are NOT deleted (no agent delete API availa
       and remain as orphans on the provider side.
 
 Options:
-  --force   Skip confirmation prompt
+  --force   Skip confirmation prompt (including when runtime is not managed)
   --help    Show this help message
 `;
 
