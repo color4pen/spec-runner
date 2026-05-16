@@ -51,9 +51,8 @@ export function buildContinuationMessage(opts: {
   slug: string;
 }): string {
   // build-fixer は verification（CLI ステップ）からの findings、それ以外は reviewer からの findings
-  const STEP_NAMES_BUILD_FIXER = "build-fixer";
   const source =
-    opts.stepName === STEP_NAMES_BUILD_FIXER ? "verification" : "reviewer";
+    opts.stepName === STEP_NAMES.BUILD_FIXER ? "verification" : "reviewer";
   return `<user-request>
 前回の修正に対して ${source} から新しい findings が出ました。
 
