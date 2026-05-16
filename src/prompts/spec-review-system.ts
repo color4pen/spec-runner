@@ -82,7 +82,6 @@ If no baseline specs are provided, skip this check entirely.
 export const SPEC_REVIEW_INITIAL_MESSAGE_TEMPLATE = `Please review the following change folder specification and produce a verdict.
 
 Change folder: ${_changesDir}/{{SLUG}}
-Repository: {{REPOSITORY}}
 Request type: {{REQUEST_TYPE}}
 Enabled options: {{ENABLED}}
 
@@ -102,7 +101,6 @@ The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escal
 
 export interface SpecReviewPromptInput {
   slug: string;
-  repository: string;
   requestType: string;
   enabled?: string[];
   requestContent?: string;
@@ -188,7 +186,6 @@ export function buildSpecReviewInitialMessage(input: SpecReviewPromptInput): str
 
   return SPEC_REVIEW_INITIAL_MESSAGE_TEMPLATE
     .replace(/{{SLUG}}/g, input.slug)
-    .replace(/{{REPOSITORY}}/g, input.repository)
     .replace(/{{REQUEST_TYPE}}/g, input.requestType)
     .replace(/{{ENABLED}}/g, enabledStr)
     .replace(/{{SPEC_REVIEW_MODE}}/g, specReviewModeInstruction)

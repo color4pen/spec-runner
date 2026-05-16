@@ -114,7 +114,7 @@ describe("TC-MR-004: buildDeps includes sessionClient and ManagedAgentRunner", (
     const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo(), undefined, "");
 
     const workspace = { cwd: "/repo" };
-    const deps = runtime.buildDeps(buildConfig(), buildRepo(), buildRequest(), "test-slug", workspace);
+    const deps = runtime.buildDeps(buildConfig(), buildRequest(), "test-slug", workspace);
 
     expect(deps.client).toBe(sessionClient);
     expect(deps.runner).toBeInstanceOf(ManagedAgentRunner);

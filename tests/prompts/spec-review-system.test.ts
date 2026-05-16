@@ -95,7 +95,6 @@ describe("TC-019: buildSpecReviewInitialMessage includes baseline-specs section 
   it("includes <baseline-specs> tag and capability content when baselineSpecs is set", () => {
     const input: SpecReviewPromptInput = {
       slug: "test-slug",
-      repository: "owner/repo",
       requestType: "feature",
       baselineSpecs: { "my-capability": "## Spec content for my-capability" },
     };
@@ -111,7 +110,6 @@ describe("TC-019: buildSpecReviewInitialMessage includes baseline-specs section 
   it("does not contain {{BASELINE_SPECS}} placeholder in output", () => {
     const input: SpecReviewPromptInput = {
       slug: "test-slug",
-      repository: "owner/repo",
       requestType: "feature",
       baselineSpecs: { "cap-a": "content-a", "cap-b": "content-b" },
     };
@@ -128,7 +126,6 @@ describe("TC-019: buildSpecReviewInitialMessage includes baseline-specs section 
   it("includes capability sections separated by ---", () => {
     const input: SpecReviewPromptInput = {
       slug: "test-slug",
-      repository: "owner/repo",
       requestType: "feature",
       baselineSpecs: { "cap-a": "spec-a", "cap-b": "spec-b" },
     };
@@ -148,7 +145,6 @@ describe("TC-020: buildSpecReviewInitialMessage omits baseline-specs section whe
   it("does not include <baseline-specs> when baselineSpecs is undefined", () => {
     const input: SpecReviewPromptInput = {
       slug: "test-slug",
-      repository: "owner/repo",
       requestType: "feature",
     };
 
@@ -161,7 +157,6 @@ describe("TC-020: buildSpecReviewInitialMessage omits baseline-specs section whe
   it("does not include <baseline-specs> when baselineSpecs is empty object", () => {
     const input: SpecReviewPromptInput = {
       slug: "test-slug",
-      repository: "owner/repo",
       requestType: "feature",
       baselineSpecs: {},
     };
@@ -202,7 +197,7 @@ describe("TC-021: SpecReviewStep.buildMessage passes baselineSpecs from dynamicC
       },
       slug: "test-slug",
       request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
-      repo: { owner: "testowner", name: "testrepo" },
+
       dynamicContext: {
         gitLog: "",
         diffStat: "",
@@ -243,7 +238,7 @@ describe("TC-021: SpecReviewStep.buildMessage passes baselineSpecs from dynamicC
       },
       slug: "test-slug",
       request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
-      repo: { owner: "testowner", name: "testrepo" },
+
       dynamicContext: {
         gitLog: "",
         diffStat: "",
@@ -267,7 +262,6 @@ describe("TC-022: SpecReviewPromptInput has baselineSpecs field", () => {
     // Type-level check — if this compiles, the field exists.
     const input: SpecReviewPromptInput = {
       slug: "test-slug",
-      repository: "owner/repo",
       requestType: "feature",
       baselineSpecs: { "my-cap": "spec content" },
     };
@@ -279,7 +273,6 @@ describe("TC-022: SpecReviewPromptInput has baselineSpecs field", () => {
   it("baselineSpecs is optional (can be omitted)", () => {
     const input: SpecReviewPromptInput = {
       slug: "test-slug",
-      repository: "owner/repo",
       requestType: "feature",
     };
 

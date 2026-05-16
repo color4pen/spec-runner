@@ -101,7 +101,6 @@ function makeMinimalDeps(clientOpts?: Parameters<typeof makeMockSessionClient>[0
       },
       environment: { id: "env_001", lastSyncedAt: new Date().toISOString() },
     },
-    repo: { owner: "testowner", name: "testrepo" },
     request: { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "Test request content", enabled: [] },
     slug: "2026-01-01-test",
     githubClient: {
@@ -247,7 +246,7 @@ describe("TC-013: StepExecutor lifecycle events fire in correct order on success
     const runner = createManagedAgentRunner({
       sessionClient: deps.client!,
       githubClient: deps.githubClient,
-      repo: deps.repo,
+      repo: { owner: "testowner", name: "testrepo" },
       githubToken: "ghp_test",
     });
     const executor = new StepExecutor(events, runner);
@@ -318,7 +317,7 @@ describe("TC-014: StepExecutor error path emits step:error and decorates excepti
     const runner = createManagedAgentRunner({
       sessionClient: deps.client!,
       githubClient: deps.githubClient,
-      repo: deps.repo,
+      repo: { owner: "testowner", name: "testrepo" },
       githubToken: "ghp_test",
     });
     const executor = new StepExecutor(events, runner);

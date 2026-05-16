@@ -158,7 +158,6 @@ export class ManagedRuntime implements RuntimeStrategy {
 
   buildDeps(
     config: SpecRunnerConfig,
-    repo: OriginInfo,
     request: ParsedRequest,
     slug: string,
     workspace: WorkspaceContext,
@@ -166,7 +165,6 @@ export class ManagedRuntime implements RuntimeStrategy {
     return {
       client: this.sessionClient,
       config,
-      repo,
       request,
       slug,
       githubClient: this.githubClient,

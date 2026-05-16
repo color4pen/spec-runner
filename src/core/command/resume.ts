@@ -203,18 +203,11 @@ export class ResumeCommand extends CommandRunner {
       throw new PrepareError(1, "Failed to load config");
     }
 
-    // repo is taken from state.repository (no git remote re-detection needed)
-    const repo = {
-      owner: state.repository.owner,
-      name: state.repository.name,
-    };
-
     return {
       jobState: updatedState,
       startStep,
       request,
       config,
-      repo,
       slug: this.slug,
       verbose,
       workspaceOpts: {

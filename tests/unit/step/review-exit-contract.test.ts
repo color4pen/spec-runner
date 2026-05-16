@@ -217,7 +217,7 @@ describe("TC-008: spec-review round-trip — resultFilePath and buildFindingsPat
         agents: {},
         environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
       },
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: { type: "feature", title: "Test", slug, baseBranch: "main", content: "content", enabled: [] },
       slug,
     };
@@ -288,7 +288,7 @@ describe("TC-009: code-review round-trip — resultFilePath and buildReviewFeedb
         agents: {},
         environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
       },
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: { type: "feature", title: "Test", slug, baseBranch: "main", content: "content", enabled: [] },
       slug,
     };
@@ -351,7 +351,6 @@ describe("TC-010: spec-review system prompt includes end_turn instructions (Step
   it("buildSpecReviewInitialMessage contains findings path for local runtime", () => {
     const msg = buildSpecReviewInitialMessage({
       slug: "my-slug",
-      repository: "owner/repo",
       requestType: "feature",
       branch: "feat/my-slug",
       iteration: 1,
@@ -365,7 +364,6 @@ describe("TC-010: spec-review system prompt includes end_turn instructions (Step
   it("buildSpecReviewInitialMessage includes correct findings path for iteration 1", () => {
     const msg = buildSpecReviewInitialMessage({
       slug: "my-slug",
-      repository: "owner/repo",
       requestType: "feature",
       branch: "feat/my-slug",
       iteration: 1,
@@ -376,7 +374,6 @@ describe("TC-010: spec-review system prompt includes end_turn instructions (Step
   it("buildSpecReviewInitialMessage includes correct findings path for iteration 2", () => {
     const msg = buildSpecReviewInitialMessage({
       slug: "my-slug",
-      repository: "owner/repo",
       requestType: "feature",
       branch: "feat/my-slug",
       iteration: 2,
@@ -495,7 +492,7 @@ function makeExecutorFromDeps(events: EventBus, deps: PipelineDeps): StepExecuto
   const runner = createManagedAgentRunner({
     sessionClient: deps.client!,
     githubClient: deps.githubClient,
-    repo: deps.repo,
+    repo: { owner: "testowner", name: "testrepo" },
     githubToken: "ghp_test",
   });
   return new StepExecutor(events, runner);
@@ -521,7 +518,7 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
     const deps: PipelineDeps = {
       client: mockClient,
       config: makeExecutorTestConfig(),
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: { type: "feature", title: "Test", slug: "my-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "my-slug",
       githubClient: {
@@ -562,7 +559,7 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
     const deps: PipelineDeps = {
       client: mockClient,
       config: makeExecutorTestConfig(),
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: { type: "feature", title: "Test", slug: "my-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "my-slug",
       githubClient: {
@@ -605,7 +602,7 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
     const deps: PipelineDeps = {
       client: mockClient,
       config: makeExecutorTestConfig(),
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: { type: "feature", title: "Test", slug: "my-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "my-slug",
       githubClient: {
@@ -646,7 +643,7 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
     const deps: PipelineDeps = {
       client: mockClient,
       config: makeExecutorTestConfig(),
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: { type: "feature", title: "Test", slug: "my-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "my-slug",
       githubClient: {

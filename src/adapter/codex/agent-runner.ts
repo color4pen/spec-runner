@@ -96,7 +96,6 @@ export class CodexAgentRunner implements AgentRunner {
         content: ctx.requestContent,
         enabled: [],
       },
-      repo: { owner: "", name: "" },
       dynamicContext: ctx.dynamicContext,
     };
 

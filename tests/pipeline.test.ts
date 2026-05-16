@@ -173,7 +173,7 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
     const result = await runDesignPipeline(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
+
       request: buildRequest(),
       slug: "2026-04-27-cli-core-pipeline",
       githubClient,
@@ -207,7 +207,7 @@ describe("TC-036: propose pipeline — pre-set branch from CLI is used (D4)", ()
     const result = await runDesignPipeline(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
+
       request: buildRequest(),
       slug: "test-cli-branch-d4",
       githubClient,
@@ -235,7 +235,7 @@ describe("TC-037: propose pipeline — SSE stream connected before initial messa
     await runDesignPipeline(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
+
       request: buildRequest(),
       slug: "2026-04-27-test",
       githubClient,
@@ -277,7 +277,7 @@ describe("TC-038: propose pipeline — initial message contains user-request tag
     await runDesignPipeline(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
+
       request: buildRequest(),
       slug: "2026-04-27-test",
       githubClient,
@@ -310,7 +310,7 @@ describe("TC-039: propose pipeline — CHANGE_FOLDER_NOT_FOUND", () => {
     const result = await runDesignPipeline(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
+
       request: buildRequest(),
       slug: "2026-04-27-test",
       githubClient,
@@ -338,7 +338,7 @@ describe("TC-040: propose pipeline — branch not found on GitHub is warning onl
     const result = await runDesignPipeline(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
+
       request: buildRequest(),
       slug: "2026-04-27-test",
       githubClient,
@@ -372,7 +372,7 @@ describe("TC-041: propose pipeline — GITHUB_TOKEN_EXPIRED on 401", () => {
     const result = await runDesignPipeline(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
+
       request: buildRequest(),
       slug: "2026-04-27-test",
       githubClient,
@@ -403,7 +403,7 @@ describe("TC-042: session creation parameters", () => {
     await runDesignPipeline(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
+
       request: buildRequest(),
       slug: "2026-04-27-test",
       githubClient,

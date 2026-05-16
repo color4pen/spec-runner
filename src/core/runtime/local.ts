@@ -10,7 +10,6 @@ import type { GitHubClient } from "../port/github-client.js";
 import type { AgentRunner } from "../port/agent-runner.js";
 import type { PipelineDeps } from "../types.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
-import type { OriginInfo } from "../../git/remote.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { StepName } from "../../state/schema.js";
 import { createClaudeCodeRunner, type QueryFn } from "../../adapter/claude-code/agent-runner.js";
@@ -255,7 +254,6 @@ export class LocalRuntime implements RuntimeStrategy {
 
   buildDeps(
     config: SpecRunnerConfig,
-    repo: OriginInfo,
     request: ParsedRequest,
     slug: string,
     workspace: WorkspaceContext,
@@ -263,7 +261,6 @@ export class LocalRuntime implements RuntimeStrategy {
     return {
       client: undefined,
       config,
-      repo,
       request,
       slug,
       githubClient: this.githubClient,

@@ -312,7 +312,6 @@ export class ManagedAgentRunner implements AgentRunner {
         content: ctx.requestContent,
         enabled: [],
       },
-      repo: this.repo,
       dynamicContext: ctx.dynamicContext,
     };
 

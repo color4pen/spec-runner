@@ -253,7 +253,6 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
     const result = await runPipeline(jobState, {
       client: client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -302,7 +301,6 @@ describe("TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 app
     const result = await runPipeline(jobState, {
       client: client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -347,7 +345,6 @@ describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RE
     const result = await runPipeline(jobState, {
       client: client,
       config: buildConfig({ pipeline: { maxRetries: 2 } }),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -384,7 +381,6 @@ describe("TC-013: runPipeline — escalation stops loop without invoking spec-fi
     const result = await runPipeline(jobState, {
       client: client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -424,7 +420,6 @@ describe("TC-014: runPipeline — spec-review loop skipped when propose fails", 
     const result = await runPipeline(jobState, {
       client: client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -457,7 +452,6 @@ describe("TC-015: runPipeline — fresh session IDs per iteration", () => {
     const result = await runPipeline(jobState, {
       client: client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -500,7 +494,6 @@ describe("TC-016: runPipeline — stdout contains 'retries exhausted, escalating
     await runPipeline(jobState, {
       client: client,
       config: buildConfig({ pipeline: { maxRetries: 2 } }),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -535,7 +528,6 @@ describe("TC-017: runPipeline — Pipeline finished summary line in stdout", () 
     await runPipeline(jobState, {
       client: client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -574,7 +566,6 @@ describe("TC-018: runPipeline — stdout log order for needs-fix → approved pa
     await runPipeline(jobState, {
       client: client,
       config: buildConfig({ pipeline: { maxRetries: 2 } }),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -619,7 +610,6 @@ describe("TC-050: state.step updated: spec-fixer → spec-review within loop", (
     const result = await runPipeline(jobState, {
       client: client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -672,7 +662,6 @@ describe("TC-060: runPipeline — code-review needs-fix → code-fixer → code-
     const result = await runPipeline(jobState, {
       client: client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -732,7 +721,6 @@ describe("TC-061: runPipeline — code-review retries exhausted: escalation + CO
     const result = await runPipeline(jobState, {
       client: client,
       config: buildConfig({ pipeline: { maxRetries: 2 } }),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -772,7 +760,6 @@ describe("TC-030: runPipeline — persistence: both propose and spec-review step
     await runPipeline(jobState, {
       client: client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -835,7 +822,6 @@ describe("TC-DC-101: DynamicContext forwarded to all agent steps via AgentRunCon
     await runPipeline(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -869,7 +855,6 @@ describe("TC-DC-102: specIndex propagated to all agent steps", () => {
     await runPipeline(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -906,7 +891,6 @@ describe("TC-DC-103: projectContext injected only for allowlist steps", () => {
     await runPipeline(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -943,7 +927,6 @@ describe("TC-DC-104: projectContext undefined for non-allowlist steps", () => {
     await runPipeline(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -994,7 +977,6 @@ describe("TC-DC-105: enrichContext adds baselineSpecs for spec-review step", () 
     await runPipeline(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -1036,7 +1018,6 @@ describe("TC-DC-106: enrichContext returns unmodified dynamicContext when no del
     const result = await runPipeline(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -1068,7 +1049,6 @@ describe("TC-DC-107: project.md absent — projectContext is undefined for all s
     const result = await runPipeline(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -1105,7 +1085,6 @@ describe("TC-DC-108: dynamicContext omitted — backward compatibility", () => {
     const result = await runPipeline(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),

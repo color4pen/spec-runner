@@ -316,7 +316,6 @@ export interface StepContext {
   slug: string;
   cwd?: string;
   request: ParsedRequest;
-  repo: OriginInfo;
 }
 ```
 
@@ -330,11 +329,13 @@ export type StepDeps = StepContext;
 
 All Step method signatures (`buildMessage(state, deps)`, `resultFilePath(state, deps)`, `parseResult(content, deps)`, `run(state, deps)`) continue to accept `StepDeps` as the second parameter. Because `PipelineDeps extends StepContext`, callers passing `PipelineDeps` remain type-compatible.
 
+Repository origin information (owner/name) is NOT part of `StepContext`. Steps that need repository identity SHALL read it from `state.repository` (the persisted `JobState.repository` field populated at preflight) or invoke `git remote get-url origin` directly from `cwd`. AI prompts SHALL NOT include repository identity as a context variable (the previous `Repository: <owner>/<name>` line in spec-review prompt has been removed; spec-review operates correctly without it).
+
 #### Scenario: StepContext contains only step-relevant fields
 
 - **WHEN** `StepContext` is inspected
-- **THEN** it contains exactly: `config`, `slug`, `cwd?`, `request`, `repo`
-- **AND** it does NOT contain `client`, `githubClient`, or `sleepFn`
+- **THEN** it contains exactly: `config`, `slug`, `cwd?`, `request`
+- **AND** it does NOT contain `repo`, `client`, `githubClient`, or `sleepFn`
 
 #### Scenario: PipelineDeps extends StepContext
 
@@ -351,7 +352,7 @@ All Step method signatures (`buildMessage(state, deps)`, `resultFilePath(state, 
 
 - **GIVEN** `ClaudeCodeRunner.run(ctx)` needs to call `step.buildMessage(state, deps)` and `step.resultFilePath(state, deps)`
 - **WHEN** the deps parameter is constructed
-- **THEN** the deps object contains only `StepContext` fields (`config`, `slug`, `cwd`, `request`, `repo`)
+- **THEN** the deps object contains only `StepContext` fields (`config`, `slug`, `cwd`, `request`)
 - **AND** `grep -r "undefined as any" src/` returns zero matches
 
 ### Requirement: StepExecutor is the sole state persistence authority for agent steps

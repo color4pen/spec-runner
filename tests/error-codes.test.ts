@@ -210,7 +210,6 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
         agents: { design: { agentId: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" } },
         environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
       },
-      repo: { owner: "testowner", name: "testrepo" },
       request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),

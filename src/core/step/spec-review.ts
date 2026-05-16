@@ -114,7 +114,6 @@ export const SpecReviewStep: AgentStep = {
     const findingsPath = buildFindingsPath(deps.slug, iteration);
     return buildSpecReviewInitialMessage({
       slug: deps.slug,
-      repository: `${deps.repo.owner}/${deps.repo.name}`,
       requestType: state.request.type,
       enabled: deps.request.enabled,
       requestContent: deps.request.content,

@@ -131,7 +131,7 @@ async function runSpecReviewViaExecutor(
   const runner = createManagedAgentRunner({
     sessionClient: deps.client,
     githubClient: deps.githubClient,
-    repo: deps.repo,
+    repo: { owner: "testowner", name: "testrepo" },
     githubToken: "ghp_test",
   });
   const executor = new StepExecutor(events, runner);
@@ -150,7 +150,6 @@ describe("TC-006: runSpecReviewStep — pollUntilComplete is called with default
     const result = await runSpecReviewViaExecutor(jobState, {
       client,
       config,
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -180,7 +179,6 @@ describe("TC-017: runSpecReviewStep — treats status='idle' as complete", () =>
     const result = await runSpecReviewViaExecutor(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -211,7 +209,6 @@ describe("TC-018: runSpecReviewStep — SESSION_TERMINATED error handling", () =
       runSpecReviewViaExecutor(jobState, {
         client,
         config: buildConfig(),
-        repo: buildRepo(),
         request: buildRequest(),
         slug: "test-slug",
         sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -237,7 +234,6 @@ describe("TC-020: runSpecReviewStep — SPEC_REVIEW_RESULT_NOT_FOUND when file n
       runSpecReviewViaExecutor(jobState, {
         client,
         config: buildConfig(),
-        repo: buildRepo(),
         request: buildRequest(),
         slug: "test-slug",
         sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -259,7 +255,6 @@ describe("TC-021: runSpecReviewStep — escalation failsafe when verdict line ab
     const result = await runSpecReviewViaExecutor(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -287,7 +282,6 @@ describe("TC-041: runSpecReviewStep — records session, verdict, findingsPath, 
     const result = await runSpecReviewViaExecutor(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -319,7 +313,6 @@ describe("TC-042: runSpecReviewStep — session created without custom tools", (
     await runSpecReviewViaExecutor(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -354,7 +347,6 @@ describe("TC-049: runSpecReviewStep — findingsPath has correct format", () => 
     const result = await runSpecReviewViaExecutor(jobState, {
       client,
       config: buildConfig(),
-      repo: buildRepo(),
       request: buildRequest(),
       slug,
       sleepFn: vi.fn().mockResolvedValue(undefined),

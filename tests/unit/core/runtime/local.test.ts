@@ -396,7 +396,7 @@ describe("TC-LR-007: buildDeps returns correct PipelineDeps", () => {
       existingWorktreePath: worktreePath,
     });
 
-    const deps = runtime.buildDeps(buildConfig(), buildRepo(), buildRequest(), "test-slug", workspace);
+    const deps = runtime.buildDeps(buildConfig(), buildRequest(), "test-slug", workspace);
 
     expect(deps.client).toBeUndefined();
     expect(deps.runner).toBeDefined();

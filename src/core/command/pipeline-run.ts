@@ -41,7 +41,7 @@ export class PipelineRunCommand extends CommandRunner {
     const verbose = this.options.verbose ?? false;
     setVerbose(verbose);
 
-    const { config, repo, request } = this.preflightResult;
+    const { config, request } = this.preflightResult;
     const slug = request.slug;
 
     logInfo(`Starting design pipeline for: ${request.title}`);
@@ -61,7 +61,7 @@ export class PipelineRunCommand extends CommandRunner {
         type: request.type,
         slug: requestSlug,
       },
-      repository: { owner: repo.owner, name: repo.name },
+      repository: { owner: this.preflightResult.repo.owner, name: this.preflightResult.repo.name },
     });
 
     logInfo(`Job ID: ${jobState.jobId}`);
@@ -75,7 +75,6 @@ export class PipelineRunCommand extends CommandRunner {
       startStep: STEP_NAMES.DESIGN,
       request,
       config,
-      repo,
       slug,
       verbose,
       workspaceOpts: {

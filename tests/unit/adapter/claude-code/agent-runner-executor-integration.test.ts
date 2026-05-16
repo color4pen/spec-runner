@@ -185,7 +185,7 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
         enabled: [],
       },
       slug: "integration-test",
-      repo: { owner: "testowner", name: "testrepo" },
+
       githubClient: {
         verifyBranch: vi.fn(),
         getRawFile: vi.fn(),
@@ -266,7 +266,7 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
         enabled: [],
       },
       slug: "integration-test",
-      repo: { owner: "testowner", name: "testrepo" },
+
       githubClient: {
         verifyBranch: vi.fn(),
         getRawFile: vi.fn(),
@@ -335,7 +335,7 @@ describe("TC-001: completionVerdict fallback — resultContent null + completion
       config,
       request: { type: "feature", title: "Test", slug: "tc001-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "tc001-slug",
-      repo: { owner: "testowner", name: "testrepo" },
+
       githubClient: {
         verifyBranch: vi.fn(),
         getRawFile: vi.fn(),
@@ -402,7 +402,7 @@ describe("TC-002: completionVerdict fallback — resultContent null + completion
       config,
       request: { type: "feature", title: "Test", slug: "tc002-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "tc002-slug",
-      repo: { owner: "testowner", name: "testrepo" },
+
       githubClient: {
         verifyBranch: vi.fn(),
         getRawFile: vi.fn(),
@@ -467,7 +467,7 @@ describe("TC-003 (behavior): completionVerdict is NOT used when resultContent is
       config,
       request: { type: "feature", title: "Test", slug: "tc003-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "tc003-slug",
-      repo: { owner: "testowner", name: "testrepo" },
+
       githubClient: {
         verifyBranch: vi.fn(),
         getRawFile: vi.fn(),
@@ -528,7 +528,7 @@ describe("TC-004: setsBranch flag — state.branch set after propose step comple
       config,
       request: { type: "feature", title: "Test", slug: "my-feature-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "my-feature-slug",
-      repo: { owner: "testowner", name: "testrepo" },
+
       githubClient: {
         verifyBranch: vi.fn(),
         getRawFile: vi.fn(),
@@ -588,7 +588,7 @@ describe("TC-005: setsBranch flag — does not overwrite existing state.branch",
       config,
       request: { type: "feature", title: "Test", slug: "different-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "different-slug",
-      repo: { owner: "testowner", name: "testrepo" },
+
       githubClient: {
         verifyBranch: vi.fn(),
         getRawFile: vi.fn(),

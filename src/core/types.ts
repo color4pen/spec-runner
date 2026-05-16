@@ -2,7 +2,6 @@ import type { SessionClient } from "./port/session-client.js";
 import type { GitHubClient } from "./port/github-client.js";
 import type { AgentRunner } from "./port/agent-runner.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
-import type { OriginInfo } from "../git/remote.js";
 import type { ParsedRequest } from "../parser/request-md.js";
 import type { DynamicContext } from "../git/dynamic-context.js";
 import type { SpawnFn } from "../util/spawn.js";
@@ -22,7 +21,6 @@ export interface StepContext {
   /** Working directory for CLI steps (e.g. verification). Defaults to process.cwd(). */
   cwd?: string;
   request: ParsedRequest;
-  repo: OriginInfo;
   /** Dynamic repository context injected at pipeline start. Optional for backward compat. */
   dynamicContext?: DynamicContext;
   /** Resolved GitHub token to inject into gh CLI subprocesses. Optional for backward compat. */

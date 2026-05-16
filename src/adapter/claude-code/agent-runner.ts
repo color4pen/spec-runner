@@ -76,7 +76,6 @@ export class ClaudeCodeRunner implements AgentRunner {
         content: ctx.requestContent,
         enabled: [],
       },
-      repo: { owner: "", name: "" },
       dynamicContext: ctx.dynamicContext,
     };
 

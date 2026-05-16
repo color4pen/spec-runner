@@ -69,7 +69,6 @@ function buildPrepareResult(overrides: Partial<PrepareResult> = {}): PrepareResu
       runtime: "local",
       agents: {},
     },
-    repo: { owner: "testowner", name: "testrepo" },
     slug: "test-slug",
     verbose: false,
     workspaceOpts: {},
@@ -97,7 +96,6 @@ function buildMockRuntime(opts: {
     }),
     buildDeps: vi.fn().mockReturnValue({
       client: undefined,
-      repo: { owner: "testowner", name: "testrepo" },
       request: { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "test", enabled: [] },
       slug: "test-slug",
       githubClient: {},

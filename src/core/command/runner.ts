@@ -30,7 +30,6 @@ import { ProgressDisplay } from "../../cli/progress.js";
 import { createStandardPipeline } from "../pipeline/index.js";
 import type { CleanupHandle, RuntimeStrategy, WorkspaceOptions } from "../runtime/strategy.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
-import type { OriginInfo } from "../../git/remote.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { PipelineDeps } from "../types.js";
 import { collectDynamicContext } from "../../git/dynamic-context.js";
@@ -50,7 +49,6 @@ export interface PrepareResult {
   startStep: StepName;
   request: ParsedRequest;
   config: SpecRunnerConfig;
-  repo: OriginInfo;
   slug: string;
   verbose: boolean;
   workspaceOpts: WorkspaceOptions;
@@ -76,7 +74,7 @@ export abstract class CommandRunner {
     // Note: re-throw any error so callers (e.g. ResumeCommand.execute) can inspect it
     const prepared = await this.prepare();
 
-    const { jobState, startStep, request, config, repo, slug, verbose, workspaceOpts } = prepared;
+    const { jobState, startStep, request, config, slug, verbose, workspaceOpts } = prepared;
 
     // Set up EventBus and ProgressDisplay
     const events = new EventBus();
@@ -116,7 +114,7 @@ export abstract class CommandRunner {
     // Step 4: registerCleanup
     let handle: CleanupHandle;
     try {
-      deps = this.runtime.buildDeps(config, repo, request, slug, workspace);
+      deps = this.runtime.buildDeps(config, request, slug, workspace);
 
       // Step 3b: collect dynamic context and attach to deps (once per run, not per-step)
       // collectDynamicContext never throws — failures return empty fields.

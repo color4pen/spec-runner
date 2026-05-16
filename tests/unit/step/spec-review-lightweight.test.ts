@@ -40,7 +40,6 @@ describe("TC-5.1: buildSpecReviewModeInstruction('lightweight') expands to struc
   function getLightweightInstruction(): string {
     return buildSpecReviewInitialMessage({
       slug: "test-slug",
-      repository: "owner/repo",
       requestType: "refactoring",
       specReviewMode: "lightweight",
     });
@@ -101,7 +100,6 @@ describe("TC-5.2: buildSpecReviewModeInstruction('full') returns full review str
   it("full mode instruction contains OWASP Top 10 reference", () => {
     const msg = buildSpecReviewInitialMessage({
       slug: "test-slug",
-      repository: "owner/repo",
       requestType: "new-feature",
       specReviewMode: "full",
     });
@@ -111,7 +109,6 @@ describe("TC-5.2: buildSpecReviewModeInstruction('full') returns full review str
   it("full mode instruction does not contain 'Lightweight review'", () => {
     const msg = buildSpecReviewInitialMessage({
       slug: "test-slug",
-      repository: "owner/repo",
       requestType: "new-feature",
       specReviewMode: "full",
     });
@@ -121,7 +118,6 @@ describe("TC-5.2: buildSpecReviewModeInstruction('full') returns full review str
   it("full mode instruction does not contain 'behavior-preserving'", () => {
     const msg = buildSpecReviewInitialMessage({
       slug: "test-slug",
-      repository: "owner/repo",
       requestType: "new-feature",
       specReviewMode: "full",
     });
@@ -190,7 +186,7 @@ describe("TC-5.5: SpecReviewStep.buildMessage with refactoring type includes lig
         enabled: [],
         baseBranch: "main",
       },
-      repo: { owner: "testowner", name: "testrepo" },
+
     };
     const msg = SpecReviewStep.buildMessage(state, deps);
     const hasLightweight = msg.includes("Lightweight review") || msg.includes("behavior-preserving");
@@ -215,7 +211,7 @@ describe("TC-5.5: SpecReviewStep.buildMessage with refactoring type includes lig
         enabled: [],
         baseBranch: "main",
       },
-      repo: { owner: "testowner", name: "testrepo" },
+
     };
     const msg = SpecReviewStep.buildMessage(state, deps);
     expect(msg).not.toContain("Lightweight review");

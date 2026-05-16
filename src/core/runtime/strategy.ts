@@ -10,7 +10,6 @@
 import type { AgentRunner } from "../port/agent-runner.js";
 import type { PipelineDeps } from "../types.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
-import type { OriginInfo } from "../../git/remote.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 
 // ---------------------------------------------------------------------------
@@ -111,7 +110,6 @@ export interface RuntimeStrategy {
    */
   buildDeps(
     config: SpecRunnerConfig,
-    repo: OriginInfo,
     request: ParsedRequest,
     slug: string,
     workspace: WorkspaceContext,

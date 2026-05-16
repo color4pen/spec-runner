@@ -89,7 +89,6 @@ function buildDeps(opts: {
       },
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
     },
-    repo: { owner: "testowner", name: "testrepo" },
     request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
     slug: "test-slug",
     sleepFn: vi.fn().mockResolvedValue(undefined),
@@ -109,7 +108,7 @@ async function runStep(jobState: JobState, deps: PipelineDeps): Promise<JobState
   const runner = createManagedAgentRunner({
     sessionClient: deps.client!,
     githubClient: deps.githubClient,
-    repo: deps.repo,
+    repo: { owner: "testowner", name: "testrepo" },
     githubToken: "ghp_test",
   });
   const executor = new StepExecutor(events, runner);

@@ -82,7 +82,6 @@ function makeLocalDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
       runtime: "local",
       agents: {},
     },
-    repo: { owner: "testowner", name: "testrepo" },
     request: {
       type: "feature",
       title: "Test",

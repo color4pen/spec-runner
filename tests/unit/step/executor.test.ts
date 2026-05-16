@@ -28,7 +28,7 @@ function makeExecutor(events: EventBus, deps: PipelineDeps): StepExecutor {
   const runner = createManagedAgentRunner({
     sessionClient: deps.client!,
     githubClient: deps.githubClient,
-    repo: deps.repo,
+    repo: { owner: "testowner", name: "testrepo" },
     githubToken: "ghp_test",
   });
   return new StepExecutor(events, runner);
@@ -146,7 +146,7 @@ describe("TC-030: StepExecutor resolves agent ID via step.agent.role", () => {
     const deps: PipelineDeps = {
       client: mockClient,
       config,
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "2026-01-01-test",
       githubClient: {
@@ -200,7 +200,7 @@ describe("TC-031: spec-review Step does not use propose Agent ID", () => {
     const deps: PipelineDeps = {
       client: mockClient,
       config,
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "2026-01-01-test",
       githubClient: {
@@ -252,7 +252,7 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
     const deps: PipelineDeps = {
       client: mockClient,
       config: makeConfig(),
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "test-slug",
       githubClient: {
@@ -296,7 +296,7 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
     const deps: PipelineDeps = {
       client: mockClient,
       config: makeConfig(),
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "test-slug",
       githubClient: {
@@ -343,7 +343,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
     const deps: PipelineDeps = {
       client: mockClient,
       config: makeConfig(),
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "test-slug",
       githubClient: {
@@ -405,7 +405,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
     const deps: PipelineDeps = {
       client: mockClient,
       config: makeConfig(),
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "test-slug",
       githubClient: {
@@ -446,7 +446,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
     const deps: PipelineDeps = {
       client: mockClient,
       config: makeConfig(),
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "test-slug",
       githubClient: {
@@ -489,7 +489,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
     const deps: PipelineDeps = {
       client: mockClient,
       config: makeConfig(),
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "test-slug",
       githubClient: {
@@ -566,7 +566,7 @@ describe("TC-007 to TC-010: allowlist steps set ctx.projectContext from specrunn
   function makeDepsWithCwd(cwd: string): PipelineDeps {
     return {
       config: makeConfig(),
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: {
         type: "feature",
         title: "Test",
@@ -661,7 +661,7 @@ describe("TC-011 to TC-014: non-allowlist steps — ctx.projectContext is undefi
   function makeDepsWithCwd(cwd: string): PipelineDeps {
     return {
       config: makeConfig(),
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: {
         type: "feature",
         title: "Test",
@@ -743,7 +743,7 @@ describe("TC-EX: StepExecutor injects resumeSessionId for fixer steps", () => {
   function makeFixerTestDeps(): PipelineDeps {
     return {
       config: makeConfig(),
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "test-slug",
       githubClient: {
@@ -853,7 +853,7 @@ describe("TC-015: specrunner/project.md not found — no error, ctx.projectConte
       const state = makeMinimalState("tc015-no-project-md");
       const deps: PipelineDeps = {
         config: makeConfig(),
-        repo: { owner: "testowner", name: "testrepo" },
+  
         request: {
           type: "feature",
           title: "Test",
@@ -930,7 +930,7 @@ describe("TC-05: runAgentStep — StepRun.startedAt < StepRun.endedAt (success p
 
     const deps: PipelineDeps = {
       config: makeConfig(),
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: { type: "feature", title: "Test", slug: "tc05-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "tc05-slug",
       githubClient: {
@@ -990,7 +990,7 @@ describe("TC-06: runCliStep — StepRun.startedAt < StepRun.endedAt (success pat
 
     const deps: PipelineDeps = {
       config: makeConfig(),
-      repo: { owner: "testowner", name: "testrepo" },
+
       request: { type: "feature", title: "Test", slug: "tc06-slug", baseBranch: "main", content: "content", enabled: [] },
       slug: "tc06-slug",
       cwd: tempDir,
