@@ -3,7 +3,7 @@
  */
 import type { DoctorCheck, DoctorContext } from "../../types.js";
 
-export const anthropicKeyPresentCheck: DoctorCheck = {
+export const managedKeyPresentCheck: DoctorCheck = {
   name: "managed/api-key-present",
   category: "config",
   required: true,

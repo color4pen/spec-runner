@@ -18,14 +18,14 @@ import { codexCliCheck } from "./runtime/codex-cli.js";
 
 // Config
 import { configFileExistsCheck } from "./config/file-exists.js";
-import { anthropicKeyPresentCheck } from "./config/anthropic-key-present.js";
+import { managedKeyPresentCheck } from "./config/managed-key-present.js";
 import { githubTokenPresentCheck } from "./config/github-token-present.js";
 
 // Env
 import { githubClientIdCheck } from "./env/github-client-id.js";
 
 // Auth
-import { anthropicKeyValidCheck } from "./auth/anthropic-key-valid.js";
+import { managedKeyValidCheck } from "./auth/managed-key-valid.js";
 import { githubTokenValidCheck } from "./auth/github-token-valid.js";
 
 // Repo
@@ -69,8 +69,8 @@ export const commonChecks: DoctorCheck[] = [
 ];
 
 export const managedChecks: DoctorCheck[] = [
-  anthropicKeyPresentCheck,
-  anthropicKeyValidCheck,
+  managedKeyPresentCheck,
+  managedKeyValidCheck,
   agentsRegisteredCheck,
   environmentRegisteredCheck,
   definitionDriftCheck,
@@ -96,10 +96,10 @@ export {
   ghCliPresentCheck,
   codexCliCheck,
   configFileExistsCheck,
-  anthropicKeyPresentCheck,
+  managedKeyPresentCheck,
   githubTokenPresentCheck,
   githubClientIdCheck,
-  anthropicKeyValidCheck,
+  managedKeyValidCheck,
   githubTokenValidCheck,
   gitRepositoryCheck,
   githubOriginCheck,

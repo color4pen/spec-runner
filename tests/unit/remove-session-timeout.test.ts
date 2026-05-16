@@ -185,10 +185,10 @@ describe("TC-012: ConfigStore.load が旧 timeoutMs を含む config を warn/er
 // TC-015: doctor の network/CLI check timeout が削除されていない
 // ---------------------------------------------------------------------------
 describe("TC-015: doctor の network/CLI check timeout が維持されている", () => {
-  it("anthropic-key-valid.ts に ANTHROPIC_API_TIMEOUT_MS が定義されている", async () => {
+  it("managed-key-valid.ts に ANTHROPIC_API_TIMEOUT_MS が定義されている", async () => {
     const checkPath = path.resolve(
       import.meta.dirname ?? __dirname,
-      "../../src/core/doctor/checks/auth/anthropic-key-valid.ts",
+      "../../src/core/doctor/checks/auth/managed-key-valid.ts",
     );
     const content = await fs.readFile(checkPath, "utf-8");
     // Doctor network timeout must NOT have been removed

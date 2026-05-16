@@ -8,7 +8,7 @@ import type { DoctorCheck, DoctorContext } from "../../types.js";
 const ANTHROPIC_API_TIMEOUT_MS = 5000;
 const ANTHROPIC_MODELS_URL = "https://api.anthropic.com/v1/models";
 
-export const anthropicKeyValidCheck: DoctorCheck = {
+export const managedKeyValidCheck: DoctorCheck = {
   name: "managed/api-key-valid",
   category: "auth",
   required: true,
