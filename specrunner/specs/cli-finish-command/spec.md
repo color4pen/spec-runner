@@ -32,15 +32,13 @@ TBD - created by archiving change finish-redesign. Update Purpose after archive.
 | 2 | `state.pullRequest.number` 存在 | escalation: "pr-create が完走していません" |
 | 3 | `gh pr view <num> --json mergeStateStatus,state,headRefName` 成功 + state 取得 | escalation: "PR を gh で取得できません。auth / network を確認してください" |
 | 4 | `mergeStateStatus=UNKNOWN` の場合は 3 秒間隔で 3 回 retry | retry 後も UNKNOWN なら escalation |
-| 5 | `openspec/changes/<slug>/` 実存 + delta spec 有無判定 | 不在なら warning（archive skip path 予告。escalation せず Phase 1 へ進む） |
-| 6 | `openspec validate <slug>` dry-run（change folder 存在時のみ実行） | fail なら escalation: "delta spec の sync 検証で失敗" |
-| 7 | `gh` `git` `openspec` バイナリ available | fail なら escalation: "doctor を実行してください" |
-| 8 | feature branch の未 push commit 無し | warning のみ（user 判断で続行） |
-| 9 | feature branch の remote / local 存在確認（`git ls-remote --heads origin <branch>` で判定） | 存在しない場合は PR が MERGED 状態なら resume path（Phase 1〜3 skip）へ進む。MERGED 以外かつ branch 不在は escalation: "feature branch が見つかりません。PR の状態を確認してください" |
+| 5 | `gh` `git` バイナリ available | fail なら escalation: "doctor を実行してください" |
+| 6 | feature branch の未 push commit 無し | warning のみ（user 判断で続行） |
+| 7 | feature branch の remote / local 存在確認（`git ls-remote --heads origin <branch>` で判定） | 存在しない場合は PR が MERGED 状態なら resume path（Phase 1〜3 skip）へ進む。MERGED 以外かつ branch 不在は escalation: "feature branch が見つかりません。PR の状態を確認してください" |
 
 #### Scenario: 全 check 通過で Phase 1 へ進む
 
-- **WHEN** Phase 0 の 1〜7 が全部 pass、8 で warning なし
+- **WHEN** Phase 0 の 1〜5 が全部 pass、6 で warning なし
 - **THEN** Phase 1（archive 操作）に進む
 
 #### Scenario: `mergeStateStatus=UNKNOWN` の transient retry
@@ -52,11 +50,6 @@ TBD - created by archiving change finish-redesign. Update Purpose after archive.
 
 - **WHEN** 3 回 retry 後も `UNKNOWN` のまま
 - **THEN** escalation で停止、`gh pr merge` は実行されない、exit code 1
-
-#### Scenario: openspec validate fail で escalation
-
-- **WHEN** `openspec/changes/<slug>/` が存在し `openspec validate <slug>` が non-zero で終了
-- **THEN** escalation で停止、`gh pr merge` は実行されない、exit code 1、stderr に validate の失敗内容を出力する
 
 #### Scenario: バイナリ不在で escalation
 

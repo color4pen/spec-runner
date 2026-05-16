@@ -77,6 +77,18 @@ async function makeJobWithPr(
   return { jobId: state.jobId, slug: slug ?? "test-slug" };
 }
 
+// Valid request.md content used by makeStubFs so spec-merge can parse type
+const STUB_REQUEST_MD = [
+  "# Test Change",
+  "",
+  "## Meta",
+  "",
+  "- **type**: bug-fix",
+  "- **slug**: test-slug",
+  "- **base-branch**: main",
+  "",
+].join("\n");
+
 function makeStubFs(opts: { changeFolderExists?: boolean; activeExists?: boolean } = {}): FinishFs {
   const { changeFolderExists = false, activeExists = false } = opts;
   return {
@@ -93,7 +105,11 @@ function makeStubFs(opts: { changeFolderExists?: boolean; activeExists?: boolean
     mkdir: vi.fn().mockResolvedValue(undefined),
     writeFile: vi.fn().mockResolvedValue(undefined),
     unlink: vi.fn().mockResolvedValue(undefined),
-    readFile: vi.fn().mockResolvedValue(""),
+    readFile: vi.fn().mockImplementation((p: string) => {
+      // spec-merge reads request.md before checking specs/; return valid content
+      if (p.endsWith("request.md")) return Promise.resolve(STUB_REQUEST_MD);
+      return Promise.resolve("");
+    }),
   };
 }
 

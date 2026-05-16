@@ -27,6 +27,8 @@ import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs } from "./types.js";
 import { formatEscalation } from "./escalation.js";
 import { changeFolderPath, specsDirRel, baselineSpecPath } from "../../util/paths.js";
+import { parseRequestMdContent } from "../../parser/request-md.js";
+import { TYPE_CONFIG } from "../../config/type-config.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -327,6 +329,11 @@ export function createNewBaselineSpec(added: RequirementBlock[]): string {
 // Orchestrator-facing function
 // ---------------------------------------------------------------------------
 
+// Types that require a delta spec to be present (specs/ must exist and have capability dirs)
+const SPEC_REQUIRED_TYPES = new Set(["spec-change", "new-feature"]);
+// Types that allow skip when specs/ is absent
+const SPEC_OPTIONAL_TYPES = new Set(["bug-fix", "refactoring", "chore"]);
+
 /** Intermediate data for 2-pass write */
 interface WriteEntry {
   absPath: string;
@@ -349,10 +356,72 @@ export async function mergeSpecsForChange(params: {
 }): Promise<SpecMergeResult> {
   const { slug, cwd, spawn, fs } = params;
 
+  // Read and parse request.md to determine type
+  const requestMdAbsPath = path.join(cwd, changeFolderPath(slug), "request.md");
+  let requestType: string;
+  try {
+    const requestMdContent = await fs.readFile(requestMdAbsPath);
+    const parsedRequest = parseRequestMdContent(requestMdContent, requestMdAbsPath);
+    requestType = parsedRequest.type;
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      escalation: formatEscalation({
+        failedStep: "spec-merge (request.md)",
+        detectedState: `Failed to read or parse request.md: ${errMsg}`,
+        recommendedAction: `Ensure request.md exists and is valid, then re-run: specrunner finish ${slug}`,
+        resumeCommand: `specrunner finish ${slug}`,
+      }),
+      exitCode: 1,
+    };
+  }
+
+  // Validate type against TYPE_CONFIG (parseRequestMdContent warns but does not throw for unknown types)
+  if (!(requestType in TYPE_CONFIG)) {
+    return {
+      ok: false,
+      escalation: formatEscalation({
+        failedStep: "spec-merge (request type)",
+        detectedState: `Unknown request type '${requestType}'. Known types: ${Object.keys(TYPE_CONFIG).join(", ")}`,
+        recommendedAction: `Fix the type field in request.md to a known type, then re-run: specrunner finish ${slug}`,
+        resumeCommand: `specrunner finish ${slug}`,
+      }),
+      exitCode: 1,
+    };
+  }
+
+  // Validate that type is in either SPEC_REQUIRED_TYPES or SPEC_OPTIONAL_TYPES (defense-in-depth)
+  if (!SPEC_REQUIRED_TYPES.has(requestType) && !SPEC_OPTIONAL_TYPES.has(requestType)) {
+    return {
+      ok: false,
+      escalation: formatEscalation({
+        failedStep: "spec-merge (request type)",
+        detectedState: `Request type '${requestType}' is not mapped to a spec policy. Known types: ${[...SPEC_REQUIRED_TYPES, ...SPEC_OPTIONAL_TYPES].join(", ")}`,
+        recommendedAction: `Fix the type field in request.md, then re-run: specrunner finish ${slug}`,
+        resumeCommand: `specrunner finish ${slug}`,
+      }),
+      exitCode: 1,
+    };
+  }
+
   const specsDir = path.join(cwd, changeFolderPath(slug), "specs");
   const specsDirExists = await fs.exists(specsDir);
 
   if (!specsDirExists) {
+    if (SPEC_REQUIRED_TYPES.has(requestType)) {
+      return {
+        ok: false,
+        escalation: formatEscalation({
+          failedStep: "spec-merge (specs/ absent)",
+          detectedState: `Request type is '${requestType}' which requires a delta spec, but specs/ directory does not exist in the change folder.`,
+          recommendedAction: `Add delta specs under specs/<capability>/spec.md in the change folder, then re-run: specrunner finish ${slug}`,
+          resumeCommand: `specrunner finish ${slug}`,
+        }),
+        exitCode: 1,
+      };
+    }
+    // SPEC_OPTIONAL_TYPES: normal skip
     return { ok: true, skipped: true, message: "" };
   }
 
@@ -368,6 +437,19 @@ export async function mergeSpecsForChange(params: {
   }
 
   if (capabilities.length === 0) {
+    if (SPEC_REQUIRED_TYPES.has(requestType)) {
+      return {
+        ok: false,
+        escalation: formatEscalation({
+          failedStep: "spec-merge (specs/ empty)",
+          detectedState: `Request type is '${requestType}' which requires a delta spec, but specs/ directory has no capability subdirectories.`,
+          recommendedAction: `Add delta specs under specs/<capability>/spec.md in the change folder, then re-run: specrunner finish ${slug}`,
+          resumeCommand: `specrunner finish ${slug}`,
+        }),
+        exitCode: 1,
+      };
+    }
+    // SPEC_OPTIONAL_TYPES: normal skip
     return { ok: true, skipped: true, message: "" };
   }
 
@@ -386,6 +468,13 @@ export async function mergeSpecsForChange(params: {
     }
 
     const delta = parseDeltaSpec(deltaContent);
+
+    // Semantic check: empty delta (no entries) is always an error
+    if (delta.added.length + delta.modified.length + delta.removed.length === 0) {
+      allErrors.push(`[${capability}] Delta spec is empty (no ADDED/MODIFIED/REMOVED requirements)`);
+      continue;
+    }
+
     const validationErrors = validateDeltaSpec(delta);
     if (validationErrors.length > 0) {
       allErrors.push(...validationErrors.map((e) => `[${capability}] ${e}`));

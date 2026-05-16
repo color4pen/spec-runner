@@ -620,14 +620,36 @@ describe("TC-SM-061: createNewBaselineSpec — multiple ADDED blocks", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-SM-070: mergeSpecsForChange — skip when specs/ doesn't exist
+// Helper: valid request.md content for a given type
+// ---------------------------------------------------------------------------
+
+function makeRequestMdContent(type: string, slug = "my-slug"): string {
+  return [
+    `# Test Change`,
+    ``,
+    `## Meta`,
+    ``,
+    `- **type**: ${type}`,
+    `- **slug**: ${slug}`,
+    `- **base-branch**: main`,
+    ``,
+  ].join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// TC-SM-070: mergeSpecsForChange — skip when specs/ doesn't exist (bug-fix)
 // ---------------------------------------------------------------------------
 
 describe("TC-SM-070: mergeSpecsForChange — skip when specs/ not found", () => {
-  it("returns ok:true skipped:true without calling readFile or spawn", async () => {
+  it("returns ok:true skipped:true for bug-fix with no specs/ dir", async () => {
+    const requestMdContent = makeRequestMdContent("bug-fix");
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockResolvedValue(false),
+      readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(requestMdContent);
+        return Promise.reject(new Error("ENOENT"));
+      }),
     });
 
     const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
@@ -635,7 +657,6 @@ describe("TC-SM-070: mergeSpecsForChange — skip when specs/ not found", () => 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.skipped).toBe(true);
-    expect((fs.readFile as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0);
     expect((spawn as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0);
   });
 });
@@ -661,6 +682,7 @@ describe("TC-SM-071: mergeSpecsForChange — ADDED success", () => {
       readdir: vi.fn().mockResolvedValue(["my-cap"]),
       stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
       readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("bug-fix"));
         if (p.includes("changes")) return Promise.resolve(deltaContent);
         return Promise.resolve(baselineContent);
       }),
@@ -710,6 +732,7 @@ describe("TC-SM-072: mergeSpecsForChange — MODIFIED success", () => {
       readdir: vi.fn().mockResolvedValue(["cap"]),
       stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
       readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("bug-fix"));
         if (p.includes("changes")) return Promise.resolve(deltaContent);
         return Promise.resolve(baselineContent);
       }),
@@ -744,6 +767,7 @@ describe("TC-SM-073: mergeSpecsForChange — REMOVED success", () => {
       readdir: vi.fn().mockResolvedValue(["cap"]),
       stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
       readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("bug-fix"));
         if (p.includes("changes")) return Promise.resolve(deltaContent);
         return Promise.resolve(baselineContent);
       }),
@@ -816,6 +840,7 @@ describe("TC-SM-074: mergeSpecsForChange — ADDED + MODIFIED + REMOVED composit
       readdir: vi.fn().mockResolvedValue(["cap"]),
       stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
       readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("bug-fix"));
         if (p.includes("changes")) return Promise.resolve(deltaContent);
         return Promise.resolve(baselineContent);
       }),
@@ -852,7 +877,10 @@ describe("TC-SM-075: mergeSpecsForChange — new capability ADDED only", () => {
       }),
       readdir: vi.fn().mockResolvedValue(["new-cap"]),
       stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
-      readFile: vi.fn().mockResolvedValue(deltaContent),
+      readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("bug-fix"));
+        return Promise.resolve(deltaContent);
+      }),
     });
 
     const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
@@ -888,7 +916,10 @@ describe("TC-SM-076: mergeSpecsForChange — new capability MODIFIED → escalat
       }),
       readdir: vi.fn().mockResolvedValue(["cap"]),
       stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
-      readFile: vi.fn().mockResolvedValue(deltaContent),
+      readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("bug-fix"));
+        return Promise.resolve(deltaContent);
+      }),
     });
 
     const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
@@ -916,7 +947,10 @@ describe("TC-SM-077: mergeSpecsForChange — new capability REMOVED → escalati
       }),
       readdir: vi.fn().mockResolvedValue(["cap"]),
       stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
-      readFile: vi.fn().mockResolvedValue(deltaContent),
+      readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("bug-fix"));
+        return Promise.resolve(deltaContent);
+      }),
     });
 
     const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
@@ -947,6 +981,7 @@ describe("TC-SM-078: mergeSpecsForChange — validation error → no writes", ()
       readdir: vi.fn().mockResolvedValue(["cap"]),
       stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
       readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("bug-fix"));
         if (p.includes("changes")) return Promise.resolve(deltaContent);
         return Promise.resolve(
           "## Purpose\n\nTBD\n\n## Requirements\n\n### Requirement: Existing\n\nbody\n",
@@ -983,6 +1018,7 @@ describe("TC-SM-079: mergeSpecsForChange — git add failure → escalation", ()
       readdir: vi.fn().mockResolvedValue(["cap"]),
       stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
       readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("bug-fix"));
         if (p.includes("changes")) return Promise.resolve(deltaContent);
         return Promise.resolve(baselineContent);
       }),
@@ -1019,6 +1055,7 @@ describe("TC-SM-080: mergeSpecsForChange — 2-pass: partial error means zero wr
       readdir: vi.fn().mockResolvedValue(["cap-a", "cap-b"]),
       stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
       readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("bug-fix"));
         if (p.includes("cap-a") && p.includes("changes")) return Promise.resolve(validDelta);
         if (p.includes("cap-b") && p.includes("changes")) return Promise.resolve(invalidDelta);
         // baseline for both caps
@@ -1055,6 +1092,7 @@ describe("TC-SM-081: mergeSpecsForChange — 2 valid capabilities → 2 writes, 
       readdir: vi.fn().mockResolvedValue(["cap-a", "cap-b"]),
       stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
       readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("bug-fix"));
         if (p.includes("cap-a") && p.includes("changes")) return Promise.resolve(deltaA);
         if (p.includes("cap-b") && p.includes("changes")) return Promise.resolve(deltaB);
         return Promise.resolve(baseline);
@@ -1092,6 +1130,7 @@ describe("TC-SM-082: escalation format follows formatEscalation", () => {
       readdir: vi.fn().mockResolvedValue(["cap"]),
       stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
       readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("bug-fix"));
         if (p.includes("changes")) return Promise.resolve(deltaContent);
         return Promise.resolve("## Purpose\n\nTBD\n\n## Requirements\n\n");
       }),
@@ -1106,5 +1145,354 @@ describe("TC-SM-082: escalation format follows formatEscalation", () => {
     expect(result.escalation).toContain("Failed Step:");
     expect(result.escalation).toContain("Detected State:");
     expect(result.escalation).toContain("Resume Command:");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-090: request.md 不在で fail
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-090: mergeSpecsForChange — request.md not found → fail", () => {
+  it("returns ok:false when readFile throws for request.md", async () => {
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockResolvedValue(false),
+      readFile: vi.fn().mockRejectedValue(new Error("ENOENT: no such file or directory")),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.exitCode).toBe(1);
+    expect(result.escalation).toContain("request.md");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-091: request.md parse error で fail
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-091: mergeSpecsForChange — request.md parse error → fail", () => {
+  it("returns ok:false when request.md has no title heading", async () => {
+    // Content with no level-1 heading (parseRequestMdContent will throw)
+    const brokenContent = "- **type**: bug-fix\n- **slug**: my-slug\n- **base-branch**: main\n";
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockResolvedValue(false),
+      readFile: vi.fn().mockResolvedValue(brokenContent),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.exitCode).toBe(1);
+    // Should contain parse failure indication
+    expect(result.escalation.toLowerCase()).toMatch(/request\.md|parse|failed/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-092: type field 不在で fail
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-092: mergeSpecsForChange — type field missing → fail", () => {
+  it("returns ok:false when request.md has no type field", async () => {
+    // Valid title and slug but no type field
+    const noTypeContent = "# Test Change\n\n## Meta\n\n- **slug**: my-slug\n- **base-branch**: main\n";
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockResolvedValue(false),
+      readFile: vi.fn().mockResolvedValue(noTypeContent),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.exitCode).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-093: 未知 type で fail
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-093: mergeSpecsForChange — unknown type → fail", () => {
+  it("returns ok:false when type is not in TYPE_CONFIG", async () => {
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockResolvedValue(false),
+      readFile: vi.fn().mockResolvedValue(makeRequestMdContent("unknown-type")),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.exitCode).toBe(1);
+    expect(result.escalation).toContain("unknown-type");
+  });
+
+  it("TC-SM-093b: rejects case-variant type (spec_change)", async () => {
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockResolvedValue(false),
+      readFile: vi.fn().mockResolvedValue(makeRequestMdContent("spec_change")),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(false);
+  });
+
+  it("TC-SM-093b: rejects case-variant type (Spec-Change)", async () => {
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockResolvedValue(false),
+      readFile: vi.fn().mockResolvedValue(makeRequestMdContent("Spec-Change")),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-094: spec-change + specs/ 不在 → fail
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-094: mergeSpecsForChange — spec-change + no specs/ → fail", () => {
+  it("returns ok:false when specs/ dir is absent for spec-change type", async () => {
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockResolvedValue(false),
+      readFile: vi.fn().mockResolvedValue(makeRequestMdContent("spec-change")),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.exitCode).toBe(1);
+    // Should mention spec requirement
+    expect(result.escalation.toLowerCase()).toMatch(/spec|delta/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-095: new-feature + specs/ 不在 → fail
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-095: mergeSpecsForChange — new-feature + no specs/ → fail", () => {
+  it("returns ok:false when specs/ dir is absent for new-feature type", async () => {
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockResolvedValue(false),
+      readFile: vi.fn().mockResolvedValue(makeRequestMdContent("new-feature")),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.exitCode).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-096: bug-fix + specs/ 不在 → 正常 skip
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-096: mergeSpecsForChange — bug-fix + no specs/ → skip", () => {
+  it("returns ok:true skipped:true for bug-fix with no specs/ dir", async () => {
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockResolvedValue(false),
+      readFile: vi.fn().mockResolvedValue(makeRequestMdContent("bug-fix")),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.skipped).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-097: refactoring + specs/ 不在 → 正常 skip
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-097: mergeSpecsForChange — refactoring + no specs/ → skip", () => {
+  it("returns ok:true skipped:true for refactoring with no specs/ dir", async () => {
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockResolvedValue(false),
+      readFile: vi.fn().mockResolvedValue(makeRequestMdContent("refactoring")),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.skipped).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-098: chore + specs/ 不在 → 正常 skip
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-098: mergeSpecsForChange — chore + no specs/ → skip", () => {
+  it("returns ok:true skipped:true for chore with no specs/ dir", async () => {
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockResolvedValue(false),
+      readFile: vi.fn().mockResolvedValue(makeRequestMdContent("chore")),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.skipped).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-099: spec-change + specs/ あり + capability dir 0 件 → fail
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-099: mergeSpecsForChange — spec-change + specs/ empty (0 caps) → fail", () => {
+  it("returns ok:false when specs/ has no capability subdirs for spec-change", async () => {
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockImplementation((p: string) => {
+        // specs/ dir exists, but baseline dirs do not
+        if (p.endsWith("specs")) return Promise.resolve(true);
+        return Promise.resolve(false);
+      }),
+      readdir: vi.fn().mockResolvedValue([]), // 0 entries
+      stat: vi.fn().mockResolvedValue({ isDirectory: () => false }),
+      readFile: vi.fn().mockResolvedValue(makeRequestMdContent("spec-change")),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.exitCode).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-100: capability dir に空 delta → fail
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-100: mergeSpecsForChange — empty delta (0 entries) → fail", () => {
+  it("returns ok:false when delta has no ADDED/MODIFIED/REMOVED requirements", async () => {
+    // A valid spec.md but with no requirement sections → parseDeltaSpec returns empty
+    const emptyDelta = "# Some Delta\n\nThis file has no requirement sections.\n";
+
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("specs")) return Promise.resolve(true);
+        if (p.includes("specrunner/specs")) return Promise.resolve(true);
+        return Promise.resolve(false);
+      }),
+      readdir: vi.fn().mockResolvedValue(["my-cap"]),
+      stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
+      readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("spec-change"));
+        return Promise.resolve(emptyDelta);
+      }),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.exitCode).toBe(1);
+    // Should mention the capability and empty/no requirements
+    expect(result.escalation.toLowerCase()).toMatch(/my-cap|empty|no .*(added|modified|removed)/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-101: cross-capability: cap-a valid + cap-b 空 delta → 全 write 0
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-101: mergeSpecsForChange — cross-capability: 1 empty delta blocks all writes", () => {
+  it("returns ok:false and calls writeFile 0 times when cap-b has empty delta", async () => {
+    const validDelta = "## ADDED Requirements\n\n### Requirement: Good\n\nbody\n";
+    const emptyDelta = "# No Requirements Here\n";
+    const baselineContent =
+      "## Purpose\n\nTBD\n\n## Requirements\n\n### Requirement: Existing\n\nbody\n";
+
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("specs")) return Promise.resolve(true);
+        if (p.includes("specrunner/specs")) return Promise.resolve(true);
+        return Promise.resolve(false);
+      }),
+      readdir: vi.fn().mockResolvedValue(["cap-a", "cap-b"]),
+      stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
+      readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("spec-change"));
+        if (p.includes("cap-a") && p.includes("changes")) return Promise.resolve(validDelta);
+        if (p.includes("cap-b") && p.includes("changes")) return Promise.resolve(emptyDelta);
+        return Promise.resolve(baselineContent);
+      }),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.exitCode).toBe(1);
+    // No writes because of 2-pass atomic approach
+    expect((fs.writeFile as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-102: bug-fix + specs/ あり + 有効 delta → 正常 apply
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-102: mergeSpecsForChange — bug-fix + valid delta → normal apply", () => {
+  it("returns ok:true skipped:false and writes when bug-fix has a valid delta", async () => {
+    const deltaContent =
+      "## MODIFIED Requirements\n\n### Requirement: Target\n\nupdated content\n";
+    const baselineContent =
+      "## Purpose\n\nTBD\n\n## Requirements\n\n### Requirement: Target\n\noriginal content\n";
+
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("specs")) return Promise.resolve(true);
+        if (p.includes("specrunner/specs")) return Promise.resolve(true);
+        return Promise.resolve(false);
+      }),
+      readdir: vi.fn().mockResolvedValue(["my-cap"]),
+      stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
+      readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("bug-fix"));
+        if (p.includes("changes")) return Promise.resolve(deltaContent);
+        return Promise.resolve(baselineContent);
+      }),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.skipped).toBe(false);
+    // writeFile called
+    expect((fs.writeFile as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
   });
 });
