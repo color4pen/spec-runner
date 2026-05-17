@@ -528,7 +528,7 @@ describe("TC-016: runPipeline — stdout contains 'retries exhausted, escalating
     });
 
     const stdout = stdoutLines.join("");
-    expect(stdout).toContain("retries exhausted, escalating");
+    expect(stdout).toContain("retries exhausted on spec-review, escalating");
   });
 });
 

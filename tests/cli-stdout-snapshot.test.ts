@@ -295,6 +295,6 @@ describe("TC-029: stdout [iter N/M] — retries exhausted line is bit-for-bit ex
 
     const stdout = getCapturedStdout();
     // Exact format pinned: [iter 2/2] retries exhausted, escalating
-    expect(stdout).toContain(`[iter ${maxIterations}/${maxIterations}] retries exhausted, escalating`);
+    expect(stdout).toContain(`[iter ${maxIterations}/${maxIterations}] retries exhausted on spec-review, escalating`);
   });
 });

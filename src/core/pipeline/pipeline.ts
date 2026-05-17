@@ -161,9 +161,9 @@ export class Pipeline {
         const newIter = prevIter + 1;
         loopIters.set(currentStep, newIter);
 
-        if (isLoopStep) {
+        if (isAnyLoopStep) {
           const loopIter = newIter;
-          stdoutWrite(`[iter ${loopIter}/${this.maxIterations}] starting ${this.loopName}\n`);
+          stdoutWrite(`[iter ${loopIter}/${this.maxIterations}] starting ${currentStep}\n`);
         }
 
         // Append history: loop iteration started
@@ -180,6 +180,12 @@ export class Pipeline {
       if (isFixer) {
         const prevFixerIter = fixerIters.get(currentStep) ?? 0;
         fixerIters.set(currentStep, prevFixerIter + 1);
+      }
+
+      // --- Non-loop CliStep entry announcement ---
+      const isNonLoopCliStep = step.kind === "cli" && !isAnyLoopStep;
+      if (isNonLoopCliStep) {
+        stdoutWrite(`[step] ${currentStep}\n`);
       }
 
       // --- Execute the step ---
@@ -211,6 +217,14 @@ export class Pipeline {
       const outcome = this.getStepOutcome(state, stateBeforeExec, currentStep);
       const loopIter = loopIters.get(currentStep) ?? 0;
 
+      // --- Non-loop CliStep completion announcement ---
+      if (isNonLoopCliStep) {
+        const stepVerdict = getLatestStepResult(state, currentStep)?.verdict;
+        if (stepVerdict != null) {
+          stdoutWrite(`[step] ${currentStep}: ${stepVerdict}\n`);
+        }
+      }
+
       // --- Loop step exit bookkeeping ---
       if (isAnyLoopStep) {
         const verdict: Verdict | string = outcome;
@@ -237,11 +251,11 @@ export class Pipeline {
       // --- Terminal conditions ---
       if (nextStep === "end" || nextStep === "escalate") {
         // Print loop verdict line for primary loop steps
-        if (isLoopStep) {
+        if (isAnyLoopStep) {
           if (outcome === "approved") {
-            stdoutWrite(`[iter ${loopIter}] ${this.loopName} verdict: approved → done\n`);
+            stdoutWrite(`[iter ${loopIter}] ${currentStep} verdict: approved → done\n`);
           } else if (outcome === "escalation" || outcome === "error") {
-            stdoutWrite(`[iter ${loopIter}] ${this.loopName} verdict: escalation → halt\n`);
+            stdoutWrite(`[iter ${loopIter}] ${currentStep} verdict: escalation → halt\n`);
           }
         }
 
@@ -301,7 +315,7 @@ export class Pipeline {
 
           if (!fixerAtMax) {
             // Conventional exhaustion (no fixer bypass)
-            stdoutWrite(`[iter ${nextLoopIter}/${this.maxIterations}] retries exhausted, escalating\n`);
+            stdoutWrite(`[iter ${nextLoopIter}/${this.maxIterations}] retries exhausted on ${nextStep}, escalating\n`);
             state = await this.handleExhausted(state, nextStep as string, "review-exhausted");
 
             if (this.steps.has(STEP_NAMES.SPEC_REVIEW)) {
@@ -327,7 +341,7 @@ export class Pipeline {
           const pairedReview = Object.entries(this.loopFixerPairs)
             .find(([_, fixer]) => fixer === nextStep)?.[0];
           const exhaustedLoopName = pairedReview ?? (nextStep as string);
-          stdoutWrite(`[iter ${this.maxIterations}/${this.maxIterations}] retries exhausted, escalating\n`);
+          stdoutWrite(`[iter ${this.maxIterations}/${this.maxIterations}] retries exhausted on ${exhaustedLoopName}, escalating\n`);
           state = await this.handleExhausted(state, exhaustedLoopName, "review-after-final-fix");
 
           if (this.steps.has(STEP_NAMES.SPEC_REVIEW)) {
@@ -342,8 +356,8 @@ export class Pipeline {
       }
 
       // Print needs-fix transition message for loop steps
-      if (isLoopStep && outcome === "needs-fix") {
-        stdoutWrite(`[iter ${loopIter}] ${this.loopName} verdict: needs-fix → spawning fixer\n`);
+      if (isAnyLoopStep && outcome === "needs-fix") {
+        stdoutWrite(`[iter ${loopIter}] ${currentStep} verdict: needs-fix → spawning fixer\n`);
       }
 
       // --- Append transition history ---

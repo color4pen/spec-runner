@@ -430,7 +430,7 @@ describe("TC-063: Pipeline — loop exhaustion: SPEC_REVIEW_RETRIES_EXHAUSTED", 
     const stdout = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))
       .join("");
-    expect(stdout).toContain("[iter 2/2] retries exhausted, escalating");
+    expect(stdout).toContain("[iter 2/2] retries exhausted on spec-review, escalating");
   });
 });
 
