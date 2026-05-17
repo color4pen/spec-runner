@@ -59,6 +59,11 @@ export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): P
     events: bus,
     loopName: STEP_NAMES.SPEC_REVIEW,
     loopNames: [STEP_NAMES.SPEC_REVIEW, STEP_NAMES.VERIFICATION, STEP_NAMES.CODE_REVIEW],
+    loopFixerPairs: {
+      [STEP_NAMES.CODE_REVIEW]: STEP_NAMES.CODE_FIXER,
+      [STEP_NAMES.SPEC_REVIEW]: STEP_NAMES.SPEC_FIXER,
+      [STEP_NAMES.VERIFICATION]: STEP_NAMES.BUILD_FIXER,
+    },
   });
 }
 

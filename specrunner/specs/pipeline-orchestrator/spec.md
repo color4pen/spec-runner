@@ -3,6 +3,7 @@
 ## Purpose
 TBD - created by archiving change 2026-04-29-spec-review-pipeline. Update Purpose after archive.
 ## Requirements
+
 ### Requirement: Pipeline is Driven by a Declarative Transition Table
 The `Pipeline` class SHALL drive step execution as a state machine using a declarative `Transition[]` table provided at construction time.
 
@@ -86,36 +87,99 @@ The prior row `code-review --approved→ end` SHALL NOT be present in the table 
 - **AND** the failure surfaces via `pipeline:fail` event with a diagnostic payload
 
 ### Requirement: Pipeline Enforces Loop Guard via maxIterations
-`Pipeline` SHALL accept a `maxIterations` parameter and SHALL terminate cycles when the cycle count reaches the limit. The loop guard MUST apply to the spec-layer cycle (`spec-review ↔ spec-fixer`), the implementation-layer build cycle (`verification ↔ build-fixer`), and the implementation-layer review cycle (`code-review ↔ code-fixer`).
 
-The `SPEC_REVIEW_RETRIES_EXHAUSTED` and `VERIFICATION_RETRIES_EXHAUSTED` error shapes are preserved verbatim. A new error code `CODE_REVIEW_RETRIES_EXHAUSTED` SHALL be introduced for the code-review cycle, with the same shape (`code`, `message`, `hint`).
+以下を既存 Requirement に追加する:
 
-The loop name SHALL be derived from the transition table (the bidirectional `step ⇔ step` pair), not from a hardcoded literal check.
+---
 
-#### Scenario: spec-review ↔ spec-fixer cycle terminates at maxIterations
-- **GIVEN** `maxIterations = 3`
-- **AND** `spec-review` returns `needs-fix` for 3 consecutive iterations
-- **WHEN** the loop guard fires
-- **THEN** `Pipeline.run` raises an error with code `SPEC_REVIEW_RETRIES_EXHAUSTED`
-- **AND** `state.error` is set to `{ code: "SPEC_REVIEW_RETRIES_EXHAUSTED", message: LOOP_ERROR_CODES["spec-review"].message(3), hint: LOOP_ERROR_CODES["spec-review"].hint("003") }` — i.e. `message(3) === "spec-review did not approve after 3 iterations"`, identical to the pre-refactor format
-- **AND** `state.steps["spec-review"]` 末尾要素の verdict is rewritten to `escalation`
-- **AND** the error code matches the pre-refactor behavior verbatim
+`Pipeline` SHALL accept an additional constructor parameter `loopFixerPairs: Record<string, string>` that maps review step names to their paired fixer step names. The default value SHALL be `{}` (no pairs defined).
 
-#### Scenario: verification ↔ build-fixer cycle terminates at maxIterations
-- **GIVEN** `maxIterations = 3`
-- **AND** `verification` returns `failed` for 3 consecutive iterations
-- **WHEN** the loop guard fires
-- **THEN** `Pipeline.run` raises an error with code `VERIFICATION_RETRIES_EXHAUSTED`
-- **AND** `state.error` is set to `{ code: "VERIFICATION_RETRIES_EXHAUSTED", message: LOOP_ERROR_CODES["verification"].message(3), hint: LOOP_ERROR_CODES["verification"].hint("003") }` — i.e. `message(3) === "verification did not pass after 3 iterations"`
-- **AND** `state.steps["verification"]` 末尾要素の verdict is rewritten to `escalation`
+`Pipeline.runInternal` SHALL maintain a `fixerIters: Map<string, number>` counter parallel to `loopIters`. The counter SHALL be incremented each time a fixer step (a value in `loopFixerPairs`) is entered, before the step executes.
 
-#### Scenario: code-review ↔ code-fixer cycle terminates at maxIterations
-- **GIVEN** `maxIterations = 3`
-- **AND** `code-review` returns `needs-fix` for 3 consecutive iterations
-- **WHEN** the loop guard fires
-- **THEN** `Pipeline.run` raises an error with code `CODE_REVIEW_RETRIES_EXHAUSTED`
-- **AND** `state.error` is set to `{ code: "CODE_REVIEW_RETRIES_EXHAUSTED", message: LOOP_ERROR_CODES["code-review"].message(3), hint: LOOP_ERROR_CODES["code-review"].hint("003") }` — i.e. `message(3) === "code-review did not approve after 3 iterations"`
-- **AND** `state.steps["code-review"]` 末尾要素の verdict is rewritten to `escalation`
+#### Exhaustion bypass for fixer's final iteration
+
+When the next step is a loop step AND `loopIters[nextStep] >= maxIterations`, the pipeline SHALL check whether the exhaustion can be bypassed:
+
+- **Bypass condition**: The immediately preceding step (the step that just completed) is the paired fixer for `nextStep` (per `loopFixerPairs`), AND `fixerIters[pairedFixer] >= maxIterations`.
+- **When bypass condition is met**: The exhaustion check is skipped, and the review step executes one additional time (the "final-fix review").
+- **When bypass condition is NOT met**: The pipeline escalates with `resumePoint.exhaustionPhase = "review-exhausted"` (conventional exhaustion).
+
+This guarantees that the fixer's final iteration output is reviewed exactly once before any escalation decision.
+
+#### Fixer exhaustion gate
+
+When the next step is a fixer step (a value in `loopFixerPairs`) AND `fixerIters[nextStep] >= maxIterations`, the pipeline SHALL escalate immediately. The fixer SHALL NOT be re-entered. The escalation SHALL set `resumePoint.exhaustionPhase = "review-after-final-fix"` and use the paired review step's error shape from `LOOP_ERROR_CODES`.
+
+#### Maximum review iterations
+
+The maximum number of review iterations for a loop step with a paired fixer is `maxIterations + 1`. The `+1` iteration is exclusively the "final-fix review" (triggered only by the bypass condition). Loop steps without a paired fixer retain the existing maximum of `maxIterations`.
+
+#### `ResumePoint.exhaustionPhase`
+
+The `ResumePoint` interface SHALL include an optional field:
+
+```typescript
+exhaustionPhase?: "review-after-final-fix" | "review-exhausted";
+```
+
+- `"review-after-final-fix"`: The fixer ran to its maximum iterations, the subsequent review did not approve, and the pipeline escalated.
+- `"review-exhausted"`: The review exhausted at `maxIterations` without the fixer bypass condition being met (conventional exhaustion path).
+
+The field is optional for backward compatibility with existing state files.
+
+#### `loopFixerPairs` standard configuration
+
+The standard pipeline (`run.ts`) SHALL pass:
+
+```typescript
+loopFixerPairs: {
+  [STEP_NAMES.CODE_REVIEW]: STEP_NAMES.CODE_FIXER,
+  [STEP_NAMES.SPEC_REVIEW]: STEP_NAMES.SPEC_FIXER,
+  [STEP_NAMES.VERIFICATION]: STEP_NAMES.BUILD_FIXER,
+}
+```
+
+---
+
+#### Scenario: fixer final iter output is reviewed before escalation (code-review)
+
+- **GIVEN** `maxIterations = 2` and `loopFixerPairs` maps `code-review → code-fixer`
+- **AND** code-review returns `needs-fix` for iterations 1 and 2
+- **AND** code-fixer runs after each needs-fix (2 total fixer runs)
+- **WHEN** code-fixer iteration 2 completes and transitions to code-review
+- **THEN** code-review iteration 3 (the bypass) SHALL execute
+- **AND** if iteration 3 returns `approved`, the pipeline continues to pr-create
+- **AND** `state.steps["code-review"]` has 3 entries
+
+#### Scenario: bypass review rejects → fixer gate escalation
+
+- **GIVEN** same setup as above (maxIterations = 2, code-fixer runs 2 times)
+- **WHEN** code-review iteration 3 (bypass) returns `needs-fix`
+- **AND** the transition table routes to code-fixer
+- **THEN** the fixer gate detects `fixerIters["code-fixer"] >= 2`
+- **AND** pipeline escalates with `resumePoint.exhaustionPhase === "review-after-final-fix"`
+- **AND** error.code is `CODE_REVIEW_RETRIES_EXHAUSTED`
+
+#### Scenario: loop step without paired fixer exhausts at maxIterations (regression guard)
+
+- **GIVEN** a loop step that has no entry in `loopFixerPairs` keys
+- **WHEN** that step reaches `maxIterations`
+- **THEN** pipeline escalates immediately without bypass
+- **AND** `resumePoint.exhaustionPhase === "review-exhausted"`
+
+#### Scenario: spec-review ↔ spec-fixer bypass operates identically
+
+- **GIVEN** `maxIterations = 2` and `loopFixerPairs` maps `spec-review → spec-fixer`
+- **AND** spec-review returns `needs-fix` for iterations 1 and 2
+- **WHEN** spec-fixer iteration 2 completes
+- **THEN** spec-review iteration 3 (bypass) SHALL execute
+
+#### Scenario: verification ↔ build-fixer bypass operates identically
+
+- **GIVEN** `maxIterations = 2` and `loopFixerPairs` maps `verification → build-fixer`
+- **AND** verification returns `failed` for iterations 1 and 2
+- **WHEN** build-fixer iteration 2 completes
+- **THEN** verification iteration 3 (bypass) SHALL execute
 
 ### Requirement: Pipeline Emits Lifecycle Events
 `Pipeline.run` SHALL emit lifecycle events through the injected `EventBus`:
@@ -308,4 +372,3 @@ export type AgentStepName = Exclude<StepName, "verification" | "pr-create">;
 - **THEN** `"pr-create"` is NOT assignable to `AgentStepName`
 - **AND** `"verification"` is NOT assignable to `AgentStepName`
 - **AND** all agent-resident steps (`propose`, `spec-review`, `spec-fixer`, `implementer`, `build-fixer`, `code-review`, `code-fixer`) ARE assignable to `AgentStepName`
-

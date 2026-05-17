@@ -330,17 +330,26 @@ describe("TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 app
 });
 
 // TC-012: runPipeline — retry 上限到達: escalation verdict + SPEC_REVIEW_RETRIES_EXHAUSTED
+// New semantic: spec-fixer maxIter → spec-review +1 bypass → still needs-fix → escalation
 describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RETRIES_EXHAUSTED", () => {
   it("sets error.code=SPEC_REVIEW_RETRIES_EXHAUSTED and escalation verdict on last spec-review", async () => {
 
     const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
-    // Both iterations return needs-fix
+    // All 3 spec-review iterations return needs-fix (maxRetries=2, +1 bypass review = 3 total)
     const { client } = buildPipelineMockClient({
-      specReviewVerdicts: ["needs-fix", "needs-fix"],
+      specReviewVerdicts: ["needs-fix", "needs-fix", "needs-fix"],
+      sessionIds: [
+        "sess_propose_001",
+        "sess_spec_review_001",
+        "sess_spec_fixer_001",
+        "sess_spec_review_002",
+        "sess_spec_fixer_002",
+        "sess_spec_review_003",
+      ],
     });
-    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["needs-fix", "needs-fix"] });
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["needs-fix", "needs-fix", "needs-fix"] });
 
     const result = await runPipeline(jobState, {
       client: client,
@@ -353,10 +362,10 @@ describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RE
       spawn: noopSpawn,
     });
 
-    // spec-review: 2 entries, last verdict is escalation (written by onExceeded)
+    // spec-review: 3 entries (iter1 needs-fix, iter2 needs-fix, iter3 +1 bypass → escalation)
     const specReviewArr = result.steps?.["spec-review"];
     expect(specReviewArr).toBeDefined();
-    expect(specReviewArr?.length).toBe(2);
+    expect(specReviewArr?.length).toBe(3);
     const lastItem = specReviewArr?.[specReviewArr.length - 1];
     expect(lastItem ? toLegacyStepResult(lastItem).verdict : undefined).toBe("escalation");
 
@@ -365,6 +374,9 @@ describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RE
 
     // pipeline halts at awaiting-resume (retries exhausted)
     expect(result.status).toBe("awaiting-resume");
+
+    // exhaustionPhase should be "review-after-final-fix" since spec-fixer reached maxIter
+    expect(result.resumePoint?.exhaustionPhase).toBe("review-after-final-fix");
   });
 });
 
@@ -695,27 +707,31 @@ describe("TC-060: runPipeline — code-review needs-fix → code-fixer → code-
 });
 
 // TC-061: runPipeline — code-review retries exhausted → CODE_REVIEW_RETRIES_EXHAUSTED
+// New semantic: code-fixer runs maxIter times → code-review gets +1 bypass → still needs-fix → escalation
 describe("TC-061: runPipeline — code-review retries exhausted: escalation + CODE_REVIEW_RETRIES_EXHAUSTED", () => {
-  it("sets error.code=CODE_REVIEW_RETRIES_EXHAUSTED and escalation verdict on last code-review", async () => {
+  it("sets error.code=CODE_REVIEW_RETRIES_EXHAUSTED and escalation verdict on last code-review (3 reviews)", async () => {
 
     const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
-    // Both code-review iterations return needs-fix
+    // All 3 code-review iterations return needs-fix (maxRetries=2, +1 bypass review = 3 total)
     const { client } = buildPipelineMockClient({
       specReviewVerdicts: ["approved"],
       sessionIds: [
         "sess_propose_001",
         "sess_spec_review_001",
+        "sess_test_case_gen_001",
         "sess_implementer_001",
         "sess_code_review_001",
         "sess_code_fixer_001",
         "sess_code_review_002",
+        "sess_code_fixer_002",
+        "sess_code_review_003",
       ],
     });
     const githubClient = buildMockGithubClient({
       specReviewVerdicts: ["approved"],
-      codeReviewVerdicts: ["needs-fix", "needs-fix"],
+      codeReviewVerdicts: ["needs-fix", "needs-fix", "needs-fix"],
     });
 
     const result = await runPipeline(jobState, {
@@ -729,10 +745,10 @@ describe("TC-061: runPipeline — code-review retries exhausted: escalation + CO
       spawn: noopSpawn,
     });
 
-    // code-review: 2 entries, last verdict is escalation (written by onExceeded)
+    // code-review: 3 entries (iter1 needs-fix, iter2 needs-fix, iter3 +1 bypass → escalation)
     const codeReviewArr = result.steps?.["code-review"];
     expect(codeReviewArr).toBeDefined();
-    expect(codeReviewArr?.length).toBe(2);
+    expect(codeReviewArr?.length).toBe(3);
     const lastItem = codeReviewArr?.[codeReviewArr.length - 1];
     expect(lastItem ? toLegacyStepResult(lastItem).verdict : undefined).toBe("escalation");
 
@@ -741,6 +757,191 @@ describe("TC-061: runPipeline — code-review retries exhausted: escalation + CO
 
     // pipeline halts at awaiting-resume (retries exhausted)
     expect(result.status).toBe("awaiting-resume");
+
+    // exhaustionPhase should be "review-after-final-fix" since code-fixer reached maxIter
+    expect(result.resumePoint?.exhaustionPhase).toBe("review-after-final-fix");
+  });
+});
+
+// TC-062: code-fixer final iter → code-review (+1) approved → awaiting-merge
+describe("TC-062: code-fixer final iter reviewed — approved path", () => {
+  it("allows +1 review iteration after fixer final iter, completes on approval", async () => {
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+    const jobState = await makeJobState();
+
+    // maxRetries = 2
+    // code-review iter 1: needs-fix → code-fixer iter 1
+    // code-review iter 2: needs-fix → code-fixer iter 2 (final)
+    // code-review iter 3 (+1 bypass): approved → pr-create → end
+    const { client } = buildPipelineMockClient({
+      specReviewVerdicts: ["approved"],
+      sessionIds: [
+        "sess_propose_001",
+        "sess_spec_review_001",
+        "sess_test_case_gen_001",
+        "sess_implementer_001",
+        "sess_code_review_001",
+        "sess_code_fixer_001",
+        "sess_code_review_002",
+        "sess_code_fixer_002",
+        "sess_code_review_003",
+      ],
+    });
+    const githubClient = buildMockGithubClient({
+      specReviewVerdicts: ["approved"],
+      codeReviewVerdicts: ["needs-fix", "needs-fix", "approved"],
+    });
+
+    const result = await runPipeline(jobState, {
+      client: client,
+      config: buildConfig({ pipeline: { maxRetries: 2 } }),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner: buildRunner(client, githubClient),
+      spawn: noopSpawn,
+    });
+
+    expect(result.status).toBe("awaiting-merge");
+
+    // code-review: 3 entries (iter1 needs-fix, iter2 needs-fix, iter3 +1 bypass approved)
+    const codeReviewArr = result.steps?.["code-review"];
+    expect(codeReviewArr).toBeDefined();
+    expect(codeReviewArr?.length).toBe(3);
+    expect(codeReviewArr?.[2] ? toLegacyStepResult(codeReviewArr[2]).verdict : undefined).toBe("approved");
+
+    // code-fixer: 2 entries
+    const codeFixerArr = result.steps?.["code-fixer"];
+    expect(codeFixerArr).toBeDefined();
+    expect(codeFixerArr?.length).toBe(2);
+  });
+});
+
+// TC-063: spec-review / spec-fixer pair — same behavior as code-review / code-fixer
+describe("TC-063: spec-review / spec-fixer pair — fixer final iter reviewed and approved", () => {
+  it("allows +1 spec-review iteration after spec-fixer final iter, completes on approval", async () => {
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+    const jobState = await makeJobState();
+
+    // maxRetries = 2
+    // spec-review iter 1: needs-fix → spec-fixer iter 1
+    // spec-review iter 2: needs-fix → spec-fixer iter 2 (final)
+    // spec-review iter 3 (+1 bypass): approved → continues to implementer → end
+    const { client } = buildPipelineMockClient({
+      specReviewVerdicts: ["needs-fix", "needs-fix", "approved"],
+      sessionIds: [
+        "sess_propose_001",
+        "sess_spec_review_001",
+        "sess_spec_fixer_001",
+        "sess_spec_review_002",
+        "sess_spec_fixer_002",
+        "sess_spec_review_003",
+        "sess_test_case_gen_001",
+        "sess_implementer_001",
+        "sess_code_review_001",
+      ],
+    });
+    const githubClient = buildMockGithubClient({
+      specReviewVerdicts: ["needs-fix", "needs-fix", "approved"],
+      codeReviewVerdicts: ["approved"],
+    });
+
+    const result = await runPipeline(jobState, {
+      client: client,
+      config: buildConfig({ pipeline: { maxRetries: 2 } }),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner: buildRunner(client, githubClient),
+      spawn: noopSpawn,
+    });
+
+    expect(result.status).toBe("awaiting-merge");
+
+    // spec-review: 3 entries (iter1 needs-fix, iter2 needs-fix, iter3 +1 bypass approved)
+    const specReviewArr = result.steps?.["spec-review"];
+    expect(specReviewArr).toBeDefined();
+    expect(specReviewArr?.length).toBe(3);
+    expect(specReviewArr?.[2] ? toLegacyStepResult(specReviewArr[2]).verdict : undefined).toBe("approved");
+
+    // spec-fixer: 2 entries
+    const specFixerArr = result.steps?.["spec-fixer"];
+    expect(specFixerArr).toBeDefined();
+    expect(specFixerArr?.length).toBe(2);
+  });
+});
+
+// TC-064: verification / build-fixer pair — fixer final iter reviewed and passed
+describe("TC-064: verification / build-fixer pair — fixer final iter verification passes", () => {
+  it("allows +1 verification iteration after build-fixer final iter, completes on pass", async () => {
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+    const { runVerification } = await import("../src/core/verification/runner.js");
+    const jobState = await makeJobState();
+
+    // maxRetries = 2
+    // verification iter 1: failed → build-fixer iter 1
+    // verification iter 2: failed → build-fixer iter 2 (final)
+    // verification iter 3 (+1 bypass): passed → code-review → end
+    let verificationCallCount = 0;
+    vi.mocked(runVerification).mockImplementation(async (slug: string, cwd: string = process.cwd()) => {
+      const outputPath = `${cwd}/${verificationResultPath(slug)}`;
+      const dir = outputPath.substring(0, outputPath.lastIndexOf("/"));
+      await fs.mkdir(dir, { recursive: true });
+      const verdict = verificationCallCount < 2 ? "failed" : "passed";
+      verificationCallCount++;
+      await fs.writeFile(outputPath, `# Verification Result — ${slug} — iter ${verificationCallCount}\n\n## Verdict: ${verdict}\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n`);
+      return {
+        slug,
+        verdict: verdict as "passed" | "failed",
+        phases: [],
+      };
+    });
+
+    const { client } = buildPipelineMockClient({
+      specReviewVerdicts: ["approved"],
+      sessionIds: [
+        "sess_propose_001",
+        "sess_spec_review_001",
+        "sess_test_case_gen_001",
+        "sess_implementer_001",
+        // no session for verification (CLI step)
+        "sess_build_fixer_001",
+        // no session for verification iter 2
+        "sess_build_fixer_002",
+        // no session for verification iter 3
+        "sess_code_review_001",
+      ],
+    });
+    const githubClient = buildMockGithubClient({
+      specReviewVerdicts: ["approved"],
+      codeReviewVerdicts: ["approved"],
+    });
+
+    const result = await runPipeline(jobState, {
+      client: client,
+      config: buildConfig({ pipeline: { maxRetries: 2 } }),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner: buildRunner(client, githubClient),
+      spawn: noopSpawn,
+    });
+
+    expect(result.status).toBe("awaiting-merge");
+
+    // verification: 3 entries (iter1 failed, iter2 failed, iter3 +1 bypass passed)
+    const verificationArr = result.steps?.["verification"];
+    expect(verificationArr).toBeDefined();
+    expect(verificationArr?.length).toBe(3);
+    expect(verificationArr?.[2] ? toLegacyStepResult(verificationArr[2]).verdict : undefined).toBe("passed");
+
+    // build-fixer: 2 entries
+    const buildFixerArr = result.steps?.["build-fixer"];
+    expect(buildFixerArr).toBeDefined();
+    expect(buildFixerArr?.length).toBe(2);
   });
 });
 

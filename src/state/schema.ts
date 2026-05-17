@@ -68,6 +68,8 @@ export interface ResumePoint {
   step: StepName;
   reason: string;
   iterationsExhausted: number;
+  /** Diagnostic: distinguishes "fixer ran to completion then review rejected" from "review exhausted before fixer max". */
+  exhaustionPhase?: "review-after-final-fix" | "review-exhausted";
 }
 
 // ---------------------------------------------------------------------------

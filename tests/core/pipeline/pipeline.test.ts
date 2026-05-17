@@ -550,3 +550,74 @@ describe("TC-068: Pipeline stdout — iter format bit-for-bit preserved", () => 
     expect(stdout).toContain("Pipeline finished: spec-review iterations=1");
   });
 });
+
+// TC-069: Pipeline — loop step without paired fixer exhausts at maxIterations (no bypass)
+describe("TC-069: Pipeline — loop step without paired fixer retains conventional exhaustion", () => {
+  it("exhausts at maxIterations with no bypass when loopFixerPairs is empty", async () => {
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+
+    const designResult: JobState = { ...state, status: "running", branch: "feat/test" };
+
+    // Build a pipeline with spec-review loop but NO loopFixerPairs
+    const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
+      if (step.name === "design") return designResult;
+      if (step.name === "spec-review") {
+        // Always return needs-fix
+        return {
+          ...currentState,
+          status: "running" as const,
+          steps: {
+            ...currentState.steps,
+            "spec-review": [
+              ...(currentState.steps?.["spec-review"] ?? []),
+              {
+                attempt: (currentState.steps?.["spec-review"]?.length ?? 0) + 1,
+                sessionId: null,
+                outcome: { verdict: "needs-fix" as const, findingsPath: null, error: null },
+                startedAt: "2026-01-01",
+                endedAt: "2026-01-01",
+              },
+            ],
+          },
+        };
+      }
+      if (step.name === "spec-fixer") {
+        return currentState;
+      }
+      throw new Error(`Unexpected step: ${step.name}`);
+    });
+
+    const stepsMap = new Map<string, Step>([
+      ["design",      { kind: "agent", name: "design",      agent: { name: "test", role: "design", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["spec-review", { kind: "agent", name: "spec-review", agent: { name: "test", role: "spec-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["spec-fixer",  { kind: "agent", name: "spec-fixer",  agent: { name: "test", role: "spec-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ]);
+
+    const events = new EventBus();
+    const pipeline = new Pipeline({
+      steps: stepsMap,
+      transitions: STANDARD_TRANSITIONS,
+      maxIterations: 2,
+      executor: { execute: executeSpy } as unknown as StepExecutor,
+      events,
+      loopName: "spec-review",
+      loopNames: ["spec-review"],
+      loopFixerPairs: {},  // no pairs → conventional exhaustion
+    });
+
+    const result = await pipeline.run("design", state, deps);
+
+    // Should exhaust at exactly maxIterations (2), no bypass
+    expect(result.error?.code).toBe("SPEC_REVIEW_RETRIES_EXHAUSTED");
+    expect(result.status).toBe("awaiting-resume");
+
+    const specReviewArr = result.steps?.["spec-review"];
+    expect(specReviewArr).toBeDefined();
+    // Exactly 2 iterations, NOT 3 (no bypass)
+    expect(specReviewArr?.length).toBe(2);
+
+    // exhaustionPhase should be "review-exhausted" (no fixer bypass)
+    expect(result.resumePoint?.exhaustionPhase).toBe("review-exhausted");
+  });
+});

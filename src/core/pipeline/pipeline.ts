@@ -45,6 +45,8 @@ export class Pipeline {
   private readonly loopName: string;
   /** All loop step names (loopName + additional loops). */
   private readonly loopNames: string[];
+  /** Mapping: review step name → paired fixer step name. */
+  private readonly loopFixerPairs: Record<string, string>;
 
   constructor(params: {
     steps: Map<string, Step>;
@@ -54,6 +56,7 @@ export class Pipeline {
     events: EventBus;
     loopName?: string;
     loopNames?: string[];
+    loopFixerPairs?: Record<string, string>;  // review → fixer mapping
   }) {
     this.steps = params.steps;
     this.transitions = params.transitions;
@@ -62,6 +65,7 @@ export class Pipeline {
     this.events = params.events;
     this.loopName = params.loopName ?? STEP_NAMES.SPEC_REVIEW;
     this.loopNames = params.loopNames ?? [this.loopName];
+    this.loopFixerPairs = params.loopFixerPairs ?? {};
   }
 
   /**
@@ -139,6 +143,8 @@ export class Pipeline {
     let currentStep = startStep;
     // Per-loop iteration counters (supports multiple loops)
     const loopIters = new Map<string, number>();
+    // Per-fixer iteration counters (independent from loopIters)
+    const fixerIters = new Map<string, number>();
     let prevLoopStep = "";  // last step before entering the primary loopName (for history message)
 
     while (true) {
@@ -167,6 +173,13 @@ export class Pipeline {
           status: "started" as const,
           message: `${currentStep} iteration ${loopIters.get(currentStep)} started`,
         });
+      }
+
+      // --- Fixer step entry bookkeeping ---
+      const isFixer = Object.values(this.loopFixerPairs).includes(currentStep);
+      if (isFixer) {
+        const prevFixerIter = fixerIters.get(currentStep) ?? 0;
+        fixerIters.set(currentStep, prevFixerIter + 1);
       }
 
       // --- Execute the step ---
@@ -274,15 +287,45 @@ export class Pipeline {
       }
 
       // --- Check loop exhaustion before entering next loop iteration ---
-      // Check if we're about to enter a loop step that has reached its limit
       if (this.loopNames.includes(nextStep as string)) {
         const nextLoopIter = loopIters.get(nextStep as string) ?? 0;
         if (nextLoopIter >= this.maxIterations) {
-          // Print exhaustion message
-          stdoutWrite(`[iter ${nextLoopIter}/${this.maxIterations}] retries exhausted, escalating\n`);
-          state = await this.handleExhausted(state, nextStep as string);
+          // Check bypass: fixer's final iter just completed → allow one more review
+          const pairedFixer = this.loopFixerPairs[nextStep as string];
+          const cameFromFixer = pairedFixer !== undefined && currentStep === pairedFixer;
+          const fixerAtMax = cameFromFixer && (fixerIters.get(pairedFixer) ?? 0) >= this.maxIterations;
 
-          // Print final summary if spec-review was in the pipeline
+          if (!fixerAtMax) {
+            // Conventional exhaustion (no fixer bypass)
+            stdoutWrite(`[iter ${nextLoopIter}/${this.maxIterations}] retries exhausted, escalating\n`);
+            state = await this.handleExhausted(state, nextStep as string, "review-exhausted");
+
+            if (this.steps.has(STEP_NAMES.SPEC_REVIEW)) {
+              const specReviewResults = state.steps?.[STEP_NAMES.SPEC_REVIEW] ?? [];
+              const finalVerdict = getLatestStepResult(state, STEP_NAMES.SPEC_REVIEW)?.verdict ?? "escalation";
+              stdoutWrite(
+                `Pipeline finished: spec-review iterations=${specReviewResults.length}, final verdict=${finalVerdict}\n`,
+              );
+            }
+            break;
+          }
+          // else: bypass — allow the +1 review iteration (fixer final iter review)
+        }
+      }
+
+      // --- Check fixer exhaustion before entering fixer step ---
+      const fixerNames = new Set(Object.values(this.loopFixerPairs));
+      if (fixerNames.has(nextStep as string)) {
+        const nextFixerIter = fixerIters.get(nextStep as string) ?? 0;
+        if (nextFixerIter >= this.maxIterations) {
+          // Fixer exhausted: the review that triggered this needs-fix has already used the bypass
+          // Find the paired review for this fixer to escalate properly
+          const pairedReview = Object.entries(this.loopFixerPairs)
+            .find(([_, fixer]) => fixer === nextStep)?.[0];
+          const exhaustedLoopName = pairedReview ?? (nextStep as string);
+          stdoutWrite(`[iter ${this.maxIterations}/${this.maxIterations}] retries exhausted, escalating\n`);
+          state = await this.handleExhausted(state, exhaustedLoopName, "review-after-final-fix");
+
           if (this.steps.has(STEP_NAMES.SPEC_REVIEW)) {
             const specReviewResults = state.steps?.[STEP_NAMES.SPEC_REVIEW] ?? [];
             const finalVerdict = getLatestStepResult(state, STEP_NAMES.SPEC_REVIEW)?.verdict ?? "escalation";
@@ -356,8 +399,13 @@ export class Pipeline {
    * Handle loop exhaustion: sets the loop-specific error code from LOOP_ERROR_CODES.
    * Derived from the exhaustedLoopName → LOOP_ERROR_CODES lookup (no hardcoded error strings).
    * @param exhaustedLoopName - the name of the loop step that exhausted its retries
+   * @param exhaustionPhase - optional diagnostic phase for the resumePoint
    */
-  private async handleExhausted(state: JobState, exhaustedLoopName: string = this.loopName): Promise<JobState> {
+  private async handleExhausted(
+    state: JobState,
+    exhaustedLoopName: string = this.loopName,
+    exhaustionPhase?: "review-after-final-fix" | "review-exhausted",
+  ): Promise<JobState> {
     const loopResults = state.steps?.[exhaustedLoopName] ?? [];
     let updatedSteps = state.steps ?? {};
     if (loopResults.length > 0) {
@@ -392,6 +440,7 @@ export class Pipeline {
           step: exhaustedLoopName as StepName,
           reason: errorShape.message(this.maxIterations),
           iterationsExhausted: this.maxIterations,
+          ...(exhaustionPhase && { exhaustionPhase }),
         },
         error: {
           code: errorShape.code,
