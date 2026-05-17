@@ -1,8 +1,6 @@
-# pipeline-orchestrator Specification
+# Delta Spec: pipeline-orchestrator
 
-## Purpose
-TBD - created by archiving change 2026-04-29-spec-review-pipeline. Update Purpose after archive.
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Pipeline is Driven by a Declarative Transition Table
 
@@ -112,82 +110,6 @@ The `DELTA_SPEC_VALIDATION_RETRIES_EXHAUSTED` error shape SHALL be introduced fo
 - **THEN** `spec-review` iteration counter starts at 1 (not 3)
 - **AND** `delta-spec-validation` counter remains at 2
 
-### Requirement: Pipeline Emits Lifecycle Events
-`Pipeline.run` SHALL emit lifecycle events through the injected `EventBus`:
-
-- `pipeline:start` at the beginning of `run`
-- `pipeline:complete` when the run terminates with verdict `end`
-- `pipeline:fail` when the run terminates with verdict `escalate` or by exception
-
-#### Scenario: Successful run emits start and complete
-- **GIVEN** a pipeline that ends in `spec-review --approved→ end`
-- **WHEN** `Pipeline.run` is invoked and completes
-- **THEN** `pipeline:start` is emitted exactly once at the beginning
-- **AND** `pipeline:complete` is emitted exactly once at the end
-- **AND** `pipeline:fail` is NOT emitted
-
-#### Scenario: Escalation emits pipeline:fail
-- **WHEN** `Pipeline.run` terminates due to escalation or loop-guard exhaustion
-- **THEN** `pipeline:fail` is emitted with the failure reason in the payload
-
-### Requirement: step implementations are located in src/core/step/
-Step implementations SHALL be located at `src/core/step/<step>.ts` (singular `step/`), replacing the prior layout `src/core/steps/<step>.ts` (plural `steps/`).
-
-`Pipeline` itself SHALL be located at `src/core/pipeline/pipeline.ts`.
-
-#### Scenario: File layout
-- **WHEN** the change is applied
-- **THEN** `src/core/step/propose.ts`, `src/core/step/spec-review.ts`, `src/core/step/spec-fixer.ts` exist
-- **AND** `src/core/pipeline/pipeline.ts` exists
-- **AND** `src/core/steps/` directory does not exist
-
-### Requirement: Pipeline Emits Iteration Progress to Stdout
-
-`Pipeline.run` SHALL emit iteration progress to stdout in the same format previously produced by `runLoopUntil`. This Requirement is the authoritative (single source of truth) definition of these format strings, superseding `pipeline-loop-primitive` spec which is REMOVED by this change.
-
-The canonical format strings are:
-
-- Iteration start: `[iter <N>] <loopName> starting`
-- Iteration verdict approved: `[iter <N>/<max>] <loopName> verdict: approved → done`
-- Iteration verdict escalation: `[iter <N>/<max>] <loopName> verdict: escalation → halt`
-- Iteration verdict needs-fix (not last): `[iter <N>/<max>] <loopName> verdict: needs-fix → spawning fixer`
-- Iterations exhausted: `[iter <N>/<max>] retries exhausted, escalating`
-
-These strings MUST be reproduced bit-for-bit by `Pipeline.run`. Any future change to these format strings MUST be made in this Requirement only.
-
-#### Scenario: Iteration progress format — approved
-
-- **WHEN** `Pipeline.run` completes an iteration and the step returns `approved`
-- **THEN** stdout contains `[iter 1/<max>] <loopName> verdict: approved → done`
-
-#### Scenario: Iteration progress format — needs-fix continuation
-
-- **GIVEN** `maxIterations = 2`
-- **WHEN** iter=1 step returns `needs-fix` and iter < maxIterations
-- **THEN** stdout contains `[iter 1/2] <loopName> verdict: needs-fix → spawning fixer`
-
-#### Scenario: Iteration progress format — exhausted
-
-- **GIVEN** `maxIterations = 2`
-- **WHEN** iter=2 step returns `needs-fix` and the loop guard fires
-- **THEN** stdout contains `[iter 2/2] retries exhausted, escalating`
-
-### Requirement: Verdict union includes implementation-layer verdicts
-
-The `Verdict` union (`src/state/schema.ts`) SHALL include the literal values `"passed"`, `"failed"`, `"success"`, `"error"` in addition to the existing `"approved"`, `"needs-fix"`, `"escalation"`. The exhaustiveness of `Verdict` SHALL be enforced by TypeScript exhaustive-switch checks at every site that handles a verdict.
-
-- `passed` / `failed` — produced by `verification` step
-- `success` / `error` — produced by `implementer` and `build-fixer` steps via `StepExecutor` lifecycle (verdict file 不在のため CLI 側が導出)
-- `approved` / `needs-fix` / `escalation` — produced by `propose` / `spec-review` / `spec-fixer` (unchanged)
-
-`spec-fixer` の `parseResult` は引き続き `{ verdict: null, ... }` を返す（`NULL_PARSE_RESULT` 定数を使用）。`StepExecutor` は `resultFilePath === null` かつ session 正常完了の agent step に対して `verdict: "success"` を導出するため、spec-fixer / implementer / build-fixer の 3 step は全て同一の「session 完了 = success」パターンに統一される。将来的に spec-fixer も `"success"` verdict を明示的に返す `Verdict` 型に移行する際は、`NULL_PARSE_RESULT` 参照を `{ verdict: "success", findingsPath: null, fileContent: null }` に置き換えるだけで完結する（Open Question として記録）。
-
-#### Scenario: Verdict union accepts new literals
-
-- **WHEN** TypeScript compiles a switch statement that exhaustively handles the `Verdict` union
-- **THEN** the compilation succeeds when all 7 literals (`approved`, `needs-fix`, `escalation`, `passed`, `failed`, `success`, `error`) are covered
-- **AND** the compilation fails when any of the 7 literals is omitted
-
 ### Requirement: Pipeline はループごとのエラーコードを lookup table から取得する
 
 `Pipeline` SHALL retrieve per-cycle error code / message / hint from a `LOOP_ERROR_CODES: Record<StepName, { code: string; message: (n: number) => string; hint: (nnn: string) => string }>` lookup table. The table SHALL include `delta-spec-validation`:
@@ -211,15 +133,6 @@ const LOOP_ERROR_CODES: Record<string, { code: string; message: (n: number) => s
 - **THEN** `Pipeline` は `LOOP_ERROR_CODES["delta-spec-validation"]` を参照して error shape を構築する
 - **AND** error.code は `"DELTA_SPEC_VALIDATION_RETRIES_EXHAUSTED"` である
 
-### Requirement: StepName union includes implementation-layer steps
-
-The `StepName` union (`src/state/schema.ts`) SHALL include the literal values `"implementer"`, `"verification"`, `"build-fixer"`, `"code-review"`, `"code-fixer"` in addition to the existing `"propose"`, `"spec-review"`, `"spec-fixer"`.
-
-#### Scenario: StepName union accepts new literals
-
-- **WHEN** the StepName union is inspected
-- **THEN** it contains the 8 literals: `propose`, `spec-review`, `spec-fixer`, `implementer`, `verification`, `build-fixer`, `code-review`, `code-fixer`
-
 ### Requirement: Pipeline.loopNames 既定値は code-review を含む
 
 `Pipeline` constructor の `loopNames` パラメータ既定値 SHALL `["spec-review", "verification", "code-review"]` とし、`delta-spec-validation` は含まない。delta-spec-validation の retry 上限は paired fixer (delta-spec-fixer) の `fixerIters` で gate される (= `loopFixerPairs` 経由)。
@@ -239,56 +152,7 @@ The `StepName` union (`src/state/schema.ts`) SHALL include the literal values `"
 - **THEN** delta-spec-fixer 入場直前の fixer exhaustion check で `fixerIters[delta-spec-fixer] >= maxIterations` が検出され escalate する
 - **AND** error.code は `"DELTA_SPEC_VALIDATION_RETRIES_EXHAUSTED"` である
 
-### Requirement: pr-create is excluded from loopNames
-
-`Pipeline.loopNames`既定値 SHALL `["spec-review", "verification", "code-review"]` のままとし、`pr-create` を含めない。pr-create は単発 step（loop なし）であり、iteration 進捗 stdout（`[iter <N>] <loopName> starting`）と loop guard の対象外である。
-
-#### Scenario: pr-create は loopNames に含まれない
-
-- **GIVEN** `Pipeline` constructor を `loopNames` 引数なしで呼ぶ
-- **WHEN** インスタンスの `loopNames` を inspect する
-- **THEN** `["spec-review", "verification", "code-review"]` を含み、`"pr-create"` を含まない
-
-#### Scenario: pr-create 入場時に iteration 進捗は出力されない
-
-- **GIVEN** loopNames 既定値で構築された pipeline
-- **WHEN** `pr-create` step が実行される
-- **THEN** stdout に `[iter <N>] pr-create starting` という行は出力されない（pr-create は loopNames に含まれないため）
-
-### Requirement: pr-create は LOOP_ERROR_CODES に登録されない
-
-`pr-create` は loop ではないため、`LOOP_ERROR_CODES` lookup table に entry を追加してはならない (MUST NOT)。`Pipeline.handleExhausted` は `pr-create` を考慮 SHALL NOT する。
-
-#### Scenario: LOOP_ERROR_CODES に pr-create は存在しない
-
-- **WHEN** `LOOP_ERROR_CODES` を inspect する
-- **THEN** keys は `"spec-review"` / `"verification"` / `"code-review"` の 3 つのみで、`"pr-create"` は含まれない
-
-### Requirement: StepName union includes "pr-create"
-
-The `StepName` union (`src/state/schema.ts`) SHALL be extended to include the literal value `"pr-create"`, in addition to the 8 literals defined by prior changes (`propose`, `spec-review`, `spec-fixer`, `implementer`, `verification`, `build-fixer`, `code-review`, `code-fixer`).
-
-#### Scenario: StepName union accepts "pr-create"
-
-- **WHEN** the StepName union is inspected
-- **THEN** it contains the 9 literals: `propose`, `spec-review`, `spec-fixer`, `implementer`, `verification`, `build-fixer`, `code-review`, `code-fixer`, `pr-create`
-
-### Requirement: AgentStepName excludes "pr-create" from the Exclude clause
-
-The `AgentStepName` type (`src/state/schema.ts`) SHALL be updated to:
-
-```ts
-export type AgentStepName = Exclude<StepName, "verification" | "pr-create">;
-```
-
-`pr-create` is a `kind: "cli"` step with no `agent` field, mirroring `verification`. Including `pr-create` in `AgentStepName` would cause `AgentRegistry`, `AgentSyncer`, and `config.agents` to treat it as an agent role, which is incorrect. The Exclude clause MUST enumerate both `"verification"` and `"pr-create"` simultaneously with this change.
-
-#### Scenario: AgentStepName does not include "pr-create"
-
-- **WHEN** `AgentStepName` is inspected (e.g., via TypeScript type checking or runtime assertion)
-- **THEN** `"pr-create"` is NOT assignable to `AgentStepName`
-- **AND** `"verification"` is NOT assignable to `AgentStepName`
-- **AND** all agent-resident steps (`propose`, `spec-review`, `spec-fixer`, `implementer`, `build-fixer`, `code-review`, `code-fixer`) ARE assignable to `AgentStepName`
+## ADDED Requirements
 
 ### Requirement: Loop exhaustion bypass is gated by fixer iteration count, not preceding step identity
 

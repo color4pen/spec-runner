@@ -7,6 +7,8 @@ export const STEP_NAMES = {
   DESIGN: "design",
   SPEC_REVIEW: "spec-review",
   SPEC_FIXER: "spec-fixer",
+  DELTA_SPEC_VALIDATION: "delta-spec-validation",
+  DELTA_SPEC_FIXER: "delta-spec-fixer",
   TEST_CASE_GEN: "test-case-gen",
   IMPLEMENTER: "implementer",
   VERIFICATION: "verification",

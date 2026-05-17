@@ -262,27 +262,33 @@ describe("TC-029: stdout [iter N/M] — retries exhausted line is bit-for-bit ex
     const specReview2 = makeSpecReviewState(specReview1, "needs-fix", 2);
 
     const events = new EventBus();
-    const executeSpy = vi.fn().mockImplementation(async (step: Step) => {
+    const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       if (step.name === "design") return designResult;
       if (step.name === "spec-fixer") return { ...designResult };
       if (step.name === "spec-review") {
         return specReviewCall++ === 0 ? specReview1 : specReview2;
       }
+      // delta-spec-validation and delta-spec-fixer run freely (not in loopNames)
+      if (step.name === "delta-spec-validation") return currentState;
+      if (step.name === "delta-spec-fixer") return currentState;
       throw new Error(`Unexpected step: ${step.name}`);
     });
     const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
 
     const pipeline = new Pipeline({
       steps: new Map([
-        ["design",      makeDesignStepObject()],
-        ["spec-review", makeStepObject("spec-review")],
-        ["spec-fixer",  makeStepObject("spec-fixer")],
+        ["design",                makeDesignStepObject()],
+        ["spec-review",           makeStepObject("spec-review")],
+        ["spec-fixer",            makeStepObject("spec-fixer")],
+        ["delta-spec-validation", { kind: "cli" as const, name: "delta-spec-validation", run: async () => {}, resultFilePath: () => "dsv-result.md", parseResult: () => ({ verdict: "approved" as const, findingsPath: null }) }],
+        ["delta-spec-fixer",      makeStepObject("delta-spec-fixer")],
       ]),
       transitions: STANDARD_TRANSITIONS,
       maxIterations,
       executor: mockExecutor,
       events,
       loopName: LOOP_NAME,
+      // delta-spec-validation is NOT in loopNames — spec-review is the only loop here
     });
 
     await pipeline.run("design", state, deps);

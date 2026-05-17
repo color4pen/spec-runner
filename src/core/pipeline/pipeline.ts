@@ -290,10 +290,14 @@ export class Pipeline {
       if (this.loopNames.includes(nextStep as string)) {
         const nextLoopIter = loopIters.get(nextStep as string) ?? 0;
         if (nextLoopIter >= this.maxIterations) {
-          // Check bypass: fixer's final iter just completed → allow one more review
+          // Check bypass: fixer has reached its max iterations → allow one more review.
+          // Condition is based on fixer iteration count, not the immediately preceding step,
+          // so the bypass survives intermediate deterministic steps that the transition table
+          // inserts between the fixer and the review (e.g. spec-fixer → delta-spec-validation
+          // → spec-review). Per loop, the review is only re-entered through its paired fixer,
+          // so this counter-based check is correct for any path that reaches the review.
           const pairedFixer = this.loopFixerPairs[nextStep as string];
-          const cameFromFixer = pairedFixer !== undefined && currentStep === pairedFixer;
-          const fixerAtMax = cameFromFixer && (fixerIters.get(pairedFixer) ?? 0) >= this.maxIterations;
+          const fixerAtMax = pairedFixer !== undefined && (fixerIters.get(pairedFixer) ?? 0) >= this.maxIterations;
 
           if (!fixerAtMax) {
             // Conventional exhaustion (no fixer bypass)

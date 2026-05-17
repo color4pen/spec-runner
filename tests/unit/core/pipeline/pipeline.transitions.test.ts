@@ -172,13 +172,19 @@ describe("TC-012-015, TC-029: code-review / code-fixer transition rows", () => {
 });
 
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
-// TC-022: STANDARD_TRANSITIONS テーブルが 23 行を持つ（21 + test-case-gen 2 行 = 23）
+// TC-022: STANDARD_TRANSITIONS テーブルが 28 行を持つ（23 + delta-spec-validation/fixer 5 行 = 28）
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 23 rows total (21 original + 2 new test-case-gen rows = 23)", () => {
-    // 21 rows (including pr-create rows)
-    // + 2 new test-case-gen rows (success→implementer, error→escalate)
-    // spec-review --approved→ implementer replaced with --approved→ test-case-gen (net = 23)
-    expect(STANDARD_TRANSITIONS.length).toBe(23);
+  it("has 28 rows total (23 original + 5 new delta-spec-validation/fixer rows = 28)", () => {
+    // 23 rows (previous total)
+    // + 5 new delta-spec-validation/fixer rows:
+    //   delta-spec-validation → spec-review (approved)
+    //   delta-spec-validation → delta-spec-fixer (needs-fix)
+    //   delta-spec-validation → escalate (escalation)
+    //   delta-spec-fixer → delta-spec-validation (approved)
+    //   delta-spec-fixer → escalate (error)
+    // design --success→ delta-spec-validation (replaces spec-review, net same)
+    // spec-fixer --approved→ delta-spec-validation (replaces spec-review, net same)
+    expect(STANDARD_TRANSITIONS.length).toBe(28);
   });
 
   it("verification --passed→ end does NOT exist", () => {
@@ -497,13 +503,14 @@ describe("TC-023: Pipeline loopNames — pr-create が loopNames に含まれな
 
 // TC-024b: LOOP_ERROR_CODES — pr-create が含まれない
 describe("TC-024: LOOP_ERROR_CODES — pr-create が含まれない", () => {
-  it("LOOP_ERROR_CODES keys do not include pr-create", () => {
+  it("LOOP_ERROR_CODES keys do not include pr-create but include delta-spec-validation", () => {
     const keys = Object.keys(LOOP_ERROR_CODES);
     expect(keys).toContain("spec-review");
     expect(keys).toContain("verification");
     expect(keys).toContain("code-review");
+    expect(keys).toContain("delta-spec-validation");
     expect(keys).not.toContain("pr-create");
-    expect(keys).toHaveLength(3);
+    expect(keys).toHaveLength(4);
   });
 });
 

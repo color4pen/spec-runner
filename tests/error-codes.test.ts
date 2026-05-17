@@ -135,6 +135,7 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
     const { StepExecutor } = await import("../src/core/step/executor.js");
     type PipelineDeps = import("../src/core/types.js").PipelineDeps;
     type Step = import("../src/core/step/types.js").Step;
+    type JobState = import("../src/state/schema.js").JobState;
     type StepExecutorType = InstanceType<typeof StepExecutor>;
 
     const state = {
@@ -158,7 +159,7 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
     const events = new EventBus();
     let specReviewCall = 0;
 
-    const executeSpy = vi.fn().mockImplementation(async (step: Step) => {
+    const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       if (step.name === "design") return designResult;
       if (step.name === "spec-fixer") return { ...designResult };
       if (step.name === "spec-review") {
@@ -177,6 +178,9 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
           },
         };
       }
+      // delta-spec-validation and delta-spec-fixer run freely (not in loopNames)
+      if (step.name === "delta-spec-validation") return currentState;
+      if (step.name === "delta-spec-fixer") return currentState;
       throw new Error(`Unexpected step: ${step.name}`);
     });
 
@@ -190,17 +194,28 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
       ...extras,
     });
 
+    const mockCliStep = (name: string): Step => ({
+      kind: "cli",
+      name,
+      run: async () => {},
+      resultFilePath: () => `${name}-result.md`,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    });
+
     const pipeline = new Pipeline({
       steps: new Map([
-        ["design",      mockStep("design", { completionVerdict: "success" })],
-        ["spec-review", mockStep("spec-review")],
-        ["spec-fixer",  mockStep("spec-fixer")],
+        ["design",                mockStep("design", { completionVerdict: "success" })],
+        ["spec-review",           mockStep("spec-review")],
+        ["spec-fixer",            mockStep("spec-fixer")],
+        ["delta-spec-validation", mockCliStep("delta-spec-validation")],
+        ["delta-spec-fixer",      mockStep("delta-spec-fixer", { completionVerdict: "approved" })],
       ]),
       transitions: STANDARD_TRANSITIONS,
       maxIterations: 2,
       executor: { execute: executeSpy } as unknown as StepExecutorType,
       events,
       loopName: "spec-review",
+      // delta-spec-validation is NOT in loopNames — spec-review is the only counted loop
     });
 
     const result = await pipeline.run("design", state, {

@@ -11,6 +11,8 @@ import type { AgentRunner } from "../port/agent-runner.js";
 import { DesignStep } from "../step/design.js";
 import { SpecReviewStep } from "../step/spec-review.js";
 import { SpecFixerStep } from "../step/spec-fixer.js";
+import { DeltaSpecValidationStep } from "../step/delta-spec-validation.js";
+import { DeltaSpecFixerStep } from "../step/delta-spec-fixer.js";
 import { ImplementerStep } from "../step/implementer.js";
 import { VerificationStep } from "../step/verification.js";
 import { BuildFixerStep } from "../step/build-fixer.js";
@@ -39,16 +41,18 @@ export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): P
   const executor = new StepExecutor(bus, runner);
 
   const steps = new Map<string, Step>([
-    [STEP_NAMES.DESIGN,       DesignStep],
-    [STEP_NAMES.SPEC_REVIEW,  SpecReviewStep],
-    [STEP_NAMES.SPEC_FIXER,   SpecFixerStep],
-    [STEP_NAMES.TEST_CASE_GEN, TestCaseGenStep],
-    [STEP_NAMES.IMPLEMENTER,  ImplementerStep],
-    [STEP_NAMES.VERIFICATION, VerificationStep],
-    [STEP_NAMES.BUILD_FIXER,  BuildFixerStep],
-    [STEP_NAMES.CODE_REVIEW,  CodeReviewStep],
-    [STEP_NAMES.CODE_FIXER,   CodeFixerStep],
-    [STEP_NAMES.PR_CREATE,    PrCreateStep],
+    [STEP_NAMES.DESIGN,                DesignStep],
+    [STEP_NAMES.SPEC_REVIEW,           SpecReviewStep],
+    [STEP_NAMES.SPEC_FIXER,            SpecFixerStep],
+    [STEP_NAMES.DELTA_SPEC_VALIDATION, DeltaSpecValidationStep],
+    [STEP_NAMES.DELTA_SPEC_FIXER,      DeltaSpecFixerStep],
+    [STEP_NAMES.TEST_CASE_GEN,         TestCaseGenStep],
+    [STEP_NAMES.IMPLEMENTER,           ImplementerStep],
+    [STEP_NAMES.VERIFICATION,          VerificationStep],
+    [STEP_NAMES.BUILD_FIXER,           BuildFixerStep],
+    [STEP_NAMES.CODE_REVIEW,           CodeReviewStep],
+    [STEP_NAMES.CODE_FIXER,            CodeFixerStep],
+    [STEP_NAMES.PR_CREATE,             PrCreateStep],
   ]);
 
   return new Pipeline({
@@ -63,6 +67,7 @@ export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): P
       [STEP_NAMES.CODE_REVIEW]: STEP_NAMES.CODE_FIXER,
       [STEP_NAMES.SPEC_REVIEW]: STEP_NAMES.SPEC_FIXER,
       [STEP_NAMES.VERIFICATION]: STEP_NAMES.BUILD_FIXER,
+      [STEP_NAMES.DELTA_SPEC_VALIDATION]: STEP_NAMES.DELTA_SPEC_FIXER,
     },
   });
 }

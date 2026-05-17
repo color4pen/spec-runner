@@ -98,3 +98,11 @@ export function baselineSpecPath(capability: string): string {
 export function projectMdPath(): string {
   return "specrunner/project.md";
 }
+
+/**
+ * Returns the relative path to the delta-spec-validation result file for the given slug.
+ * Example: deltaSpecValidationResultPath("my-change") → "specrunner/changes/my-change/delta-spec-validation-result.md"
+ */
+export function deltaSpecValidationResultPath(slug: string): string {
+  return `${CHANGES_DIR}/${slug}/delta-spec-validation-result.md`;
+}

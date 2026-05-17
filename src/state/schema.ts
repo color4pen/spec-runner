@@ -16,10 +16,10 @@ import { STEP_NAMES } from "../core/step/step-names.js";
 export type StepName = typeof STEP_NAMES[keyof typeof STEP_NAMES];
 
 /**
- * AgentStepName excludes CLI-resident steps (verification, pr-create) from StepName.
+ * AgentStepName excludes CLI-resident steps (verification, pr-create, delta-spec-validation) from StepName.
  * Used to constrain AgentRegistry and config schema to agent-only roles.
  */
-export type AgentStepName = Exclude<StepName, typeof STEP_NAMES.VERIFICATION | typeof STEP_NAMES.PR_CREATE>;
+export type AgentStepName = Exclude<StepName, typeof STEP_NAMES.VERIFICATION | typeof STEP_NAMES.PR_CREATE | typeof STEP_NAMES.DELTA_SPEC_VALIDATION>;
 
 export type Verdict =
   | "approved"
