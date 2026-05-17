@@ -399,8 +399,10 @@ describe("TC-125: Phase 1 escalation → markJobArchived not called", () => {
       }
       if (cmd === "openspec" && args[0] === "validate") return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
       if (cmd === "git" && args[0] === "rev-list") return Promise.resolve({ exitCode: 0, stdout: "0", stderr: "" });
-      // Phase 1: git fetch fails
+      // Phase 0 conflict check: git fetch origin main → succeed
+      // Phase 1 branch-checkout: git fetch origin feat/test-slug → fail
       if (cmd === "git" && args[0] === "fetch") {
+        if (args[2] === "main") return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
         return Promise.resolve({ exitCode: 1, stdout: "", stderr: "remote error" });
       }
       return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
@@ -865,5 +867,219 @@ describe("TC-WT-FIN-003: Phase 4 worktree remove is called", () => {
     const finalState = await loadJobState(jobId);
     expect(finalState.status).toBe("archived");
     expect(finalState.worktreePath).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-LCC-ORCH: Phase 0 local conflict check integration
+// ---------------------------------------------------------------------------
+
+/**
+ * TC-LCC-ORCH-1: Phase 0 local conflict check fail → Phase 1 NOT called, { exitCode: 1, escalation }, job state unchanged
+ */
+describe("TC-LCC-ORCH-1: local conflict check fail → Phase 1 not called, exitCode 1, state unchanged", () => {
+  it("returns exitCode 1, does not call Phase 1 ops, and leaves job state at awaiting-merge", async () => {
+    const { jobId } = await makeJobWithPr({ status: "awaiting-merge" });
+
+    const archiveCalls: string[][] = [];
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "openspec" && args[0] === "archive") {
+        archiveCalls.push([...args]);
+      }
+      // git merge-tree → exit 1 (conflict)
+      if (cmd === "git" && args[0] === "merge-tree") {
+        return Promise.resolve({
+          exitCode: 1,
+          stdout: "CONFLICT (content): Merge conflict in src/foo.ts\n",
+          stderr: "",
+        });
+      }
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    const stubFs = makeStubFs({ changeFolderExists: true });
+
+    const result = await runFinishOrchestrator(
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+    );
+
+    expect(result.exitCode).toBe(1);
+
+    // Phase 1 (openspec archive) must NOT have been called
+    expect(archiveCalls).toHaveLength(0);
+
+    // Job state must remain at awaiting-merge (not archived)
+    const { loadJobState } = await import("../src/state/store.js");
+    const finalState = await loadJobState(jobId);
+    expect(finalState.status).toBe("awaiting-merge");
+  });
+});
+
+/**
+ * TC-LCC-ORCH-2: Phase 0 local conflict check pass → Phase 1 runs normally
+ */
+describe("TC-LCC-ORCH-2: local conflict check pass → Phase 1 runs", () => {
+  it("continues to Phase 1 and completes when merge-tree exits 0", async () => {
+    const { jobId } = await makeJobWithPr({ status: "awaiting-merge" });
+
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      // merge-tree exits 0 → no conflict
+      if (cmd === "git" && args[0] === "merge-tree") {
+        return Promise.resolve({ exitCode: 0, stdout: "deadbeef\n", stderr: "" });
+      }
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    const stubFs = makeStubFs({ changeFolderExists: false });
+
+    const messages: string[] = [];
+    const result = await runFinishOrchestrator(
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      (m) => messages.push(m),
+    );
+
+    expect(result.exitCode).toBe(0);
+    // Phase 1 message emitted
+    expect(messages.some((m) => m.includes("Phase 1"))).toBe(true);
+  });
+});
+
+/**
+ * TC-LCC-ORCH-3: git fetch failure in local check → { exitCode: 1, escalation }, job state unchanged
+ */
+describe("TC-LCC-ORCH-3: git fetch failure in local check → exitCode 1, state unchanged", () => {
+  it("returns exitCode 1 escalation when git fetch for conflict check fails", async () => {
+    const { jobId } = await makeJobWithPr({ status: "awaiting-merge" });
+
+    let fetchCallCount = 0;
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      // First git fetch (Phase 0 local conflict check against baseBranch) → fail
+      // Subsequent fetches (Phase 1 feature branch checkout) → success
+      if (cmd === "git" && args[0] === "fetch" && args[1] === "origin" && args[2] === "main") {
+        fetchCallCount++;
+        if (fetchCallCount === 1) {
+          return Promise.resolve({ exitCode: 1, stdout: "", stderr: "fatal: network error" });
+        }
+      }
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    const stubFs = makeStubFs({ changeFolderExists: false });
+
+    const result = await runFinishOrchestrator(
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+    );
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode !== 1) return;
+    expect(result.escalation).toContain("Phase 0 git fetch");
+
+    // Job state must remain at awaiting-merge
+    const { loadJobState } = await import("../src/state/store.js");
+    const finalState = await loadJobState(jobId);
+    expect(finalState.status).toBe("awaiting-merge");
+  });
+});
+
+/**
+ * TC-LCC-ORCH-4: Escalation message contains recovery instructions
+ */
+describe("TC-LCC-ORCH-4: conflict escalation message contains recovery instructions", () => {
+  it("escalation contains git rebase and specrunner finish instructions", async () => {
+    const { jobId } = await makeJobWithPr({ status: "awaiting-merge" });
+
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "git" && args[0] === "merge-tree") {
+        return Promise.resolve({
+          exitCode: 1,
+          stdout: "CONFLICT (content): Merge conflict in src/foo.ts\n",
+          stderr: "",
+        });
+      }
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    const stubFs = makeStubFs({ changeFolderExists: false });
+
+    const result = await runFinishOrchestrator(
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+    );
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode !== 1) return;
+    // Recovery instructions
+    expect(result.escalation).toContain("git rebase origin/main");
+    expect(result.escalation).toContain("specrunner finish test-slug");
+  });
+});
+
+/**
+ * TC-LCC-ORCH-5: After conflict escalation, re-running specrunner finish is not blocked by assertJobFinishable
+ */
+describe("TC-LCC-ORCH-5: after conflict escalation, re-run is not blocked by assertJobFinishable", () => {
+  it("second run with conflict check passing proceeds to Phase 1", async () => {
+    const { jobId } = await makeJobWithPr({ status: "awaiting-merge" });
+
+    // First run: conflict detected
+    {
+      const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+        if (cmd === "git" && args[0] === "merge-tree") {
+          return Promise.resolve({ exitCode: 1, stdout: "", stderr: "" });
+        }
+        const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+        return happySpawn(cmd, args, { cwd: "" });
+      });
+      const result = await runFinishOrchestrator(
+        { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: makeStubFs() },
+      );
+      expect(result.exitCode).toBe(1);
+    }
+
+    // Job state should still be awaiting-merge after first run
+    const { loadJobState } = await import("../src/state/store.js");
+    const stateAfterFirstRun = await loadJobState(jobId);
+    expect(stateAfterFirstRun.status).toBe("awaiting-merge");
+
+    // Second run: conflict resolved (merge-tree exits 0)
+    {
+      const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+        if (cmd === "git" && args[0] === "merge-tree") {
+          return Promise.resolve({ exitCode: 0, stdout: "deadbeef\n", stderr: "" });
+        }
+        const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+        return happySpawn(cmd, args, { cwd: "" });
+      });
+      const result = await runFinishOrchestrator(
+        { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: makeStubFs({ changeFolderExists: false }) },
+      );
+      expect(result.exitCode).toBe(0);
+    }
+  });
+});
+
+/**
+ * TC-LCC-ORCH-7 (tasks TC-LCC-ORCH-DRYRUN): dry-run skips local conflict check (no merge-tree call)
+ * Note: TC-LCC-ORCH-6 (regression-free, existing behavior preserved) is covered by the pre-existing orchestrator test suite.
+ */
+describe("TC-LCC-ORCH-7 (tasks TC-LCC-ORCH-DRYRUN): dry-run skips local conflict check", () => {
+  it("does not call git merge-tree in dry-run mode", async () => {
+    const { jobId } = await makeJobWithPr({ status: "awaiting-merge" });
+
+    const calls: Array<[string, string[]]> = [];
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      calls.push([cmd, [...args]]);
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    const stubFs = makeStubFs({ changeFolderExists: true });
+
+    const result = await runFinishOrchestrator(
+      { slug: "test-slug", baseBranch: "main", flags: { dryRun: true }, cwd: tempDir, spawn, fs: stubFs },
+    );
+
+    expect(result.exitCode).toBe(0);
+
+    const mergeTreeCalls = calls.filter(([c, a]) => c === "git" && a[0] === "merge-tree");
+    expect(mergeTreeCalls).toHaveLength(0);
   });
 });

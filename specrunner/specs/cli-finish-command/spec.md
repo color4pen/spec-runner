@@ -34,32 +34,32 @@ TBD - created by archiving change finish-redesign. Update Purpose after archive.
 | 4 | `mergeStateStatus=UNKNOWN` の場合は 3 秒間隔で 3 回 retry | retry 後も UNKNOWN なら escalation |
 | 5 | `gh` `git` バイナリ available | fail なら escalation: "doctor を実行してください" |
 | 6 | feature branch の未 push commit 無し | warning のみ（user 判断で続行） |
-| 7 | feature branch の remote / local 存在確認（`git ls-remote --heads origin <branch>` で判定） | 存在しない場合は PR が MERGED 状態なら resume path（Phase 1〜3 skip）へ進む。MERGED 以外かつ branch 不在は escalation: "feature branch が見つかりません。PR の状態を確認してください" |
+| 7 | feature branch の remote / local 存在確認（`git ls-remote --heads origin <branch>` で判定） | 存在しない場合は PR が MERGED 状態なら resume path（Phase 1〜3 skip）へ進む。MERGED 以外かつ branch 不在は escalation |
+| 8 | ローカル conflict check: `git fetch origin <baseBranch>` + `git merge-tree --write-tree HEAD origin/<baseBranch>` | conflict 検出 → escalation (conflict path 一覧 + rebase 手順を含む)。`git fetch` 失敗 → escalation (silent skip 禁止) |
 
-#### Scenario: 全 check 通過で Phase 1 へ進む
+Check #8 は check #1〜#7 が全て通過した後にのみ実行される。PR が既に MERGED 状態の場合は check #8 をスキップする（Phase 1〜3 が不要なため）。`--dry-run` 時も check #8 をスキップする（destructive op の前段ガードであり dry-run では不要）。
 
-- **WHEN** Phase 0 の 1〜5 が全部 pass、6 で warning なし
-- **THEN** Phase 1（archive 操作）に進む
+Check #8 は deterministic（retry 不要）。`git merge-tree --write-tree` の exit code が primary 判定基準であり、exit code 非 0 = conflict ありと判定する。
 
-#### Scenario: `mergeStateStatus=UNKNOWN` の transient retry
+#### Scenario: ローカル conflict 検出で Phase 1 阻止
 
-- **WHEN** `gh pr view` の 1 回目で `mergeStateStatus=UNKNOWN`、3 秒後の 2 回目で `CLEAN` を返す
-- **THEN** retry が成功扱いになり Phase 1 へ進む。retry 経過は stdout に出力される
+- **WHEN** Phase 0 check #1〜#7 が全 pass し、check #8 で `git merge-tree --write-tree HEAD origin/main` が exit code 1 を返す（conflict あり）
+- **THEN** escalation メッセージに conflict path 一覧と recovery 手順（`git rebase origin/main` + `specrunner finish <slug>` 再実行）が含まれ、Phase 1 archive は実行されない、exit code 1
 
-#### Scenario: `mergeStateStatus=UNKNOWN` が 3 回連続
+#### Scenario: git fetch 失敗で escalation
 
-- **WHEN** 3 回 retry 後も `UNKNOWN` のまま
-- **THEN** escalation で停止、`gh pr merge` は実行されない、exit code 1
+- **WHEN** Phase 0 check #8 の `git fetch origin main` が non-zero exit で失敗する（ネットワーク不可等）
+- **THEN** escalation メッセージに fetch エラー内容が含まれ、Phase 1 archive は実行されない、exit code 1。silent skip / フォールバックは SHALL NOT 行わない
 
-#### Scenario: バイナリ不在で escalation
+#### Scenario: ローカル conflict check 通過で Phase 1 進行
 
-- **WHEN** `gh` バイナリが PATH に存在しない
-- **THEN** `Binary not found: gh. Run 'specrunner doctor'.` を stderr に出し exit code 1 で停止、destructive op は実行されない
+- **WHEN** Phase 0 check #8 で `git merge-tree --write-tree HEAD origin/main` が exit code 0 を返す（conflict なし）
+- **THEN** Phase 1 archive に進む（既存フローと同一）
 
-#### Scenario: feature branch に未 push commit が残っている（warning）
+#### Scenario: conflict escalation 後の再実行が可能
 
-- **WHEN** feature branch に local 未 push commit が 1 件以上ある
-- **THEN** `Warning: feature branch has unpushed commits.` を stderr に出すが、escalation せず Phase 1 へ進む
+- **WHEN** check #8 で conflict escalation が発生した後、ユーザーが `git rebase origin/main` で conflict を解消する
+- **THEN** `specrunner finish <slug>` の再実行が可能（job state は変更されていないため `assertJobFinishable` で block されない）
 
 ### Requirement: `specrunner finish` は archive 操作を feature branch に commit する 1-PR モデルで動作する
 

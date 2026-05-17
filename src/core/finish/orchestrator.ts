@@ -22,6 +22,7 @@ import type { WorktreeManager } from "../worktree/manager.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { resolveTarget } from "./resolve-target.js";
 import { runPreflight } from "./preflight.js";
+import { runLocalConflictCheck } from "./local-conflict-check.js";
 import { fetchPrViewWithRetry, pollMergeStateAfterPush, checkMergeableForMerge } from "./pr-status.js";
 import { spawnOrEscalate } from "./spawn-helper.js";
 import { archiveChangeFolder } from "./archive-change-folder.js";
@@ -111,6 +112,44 @@ export async function runFinishOrchestrator(
   const preflightResult = await runPreflight({ target, cwd, spawn, fs, dryRun: flags.dryRun ?? false, sleepFn, env: ghEnv });
   if (!preflightResult.ok) return { exitCode: 1, escalation: preflightResult.escalation };
   const { prViewData } = preflightResult;
+
+  // Phase 0 (continued): local conflict check
+  if (!flags.dryRun && prViewData.state !== "MERGED") {
+    stdoutWrite("Phase 0: local conflict check...");
+    const localCheckCwd = target.worktreePath ?? cwd;
+    try {
+      const conflictResult = await runLocalConflictCheck({
+        baseBranch,
+        cwd: localCheckCwd,
+        spawn,
+      });
+      if (!conflictResult.ok) {
+        const pathList = conflictResult.conflictPaths.length > 0
+          ? conflictResult.conflictPaths.map(p => `  - ${p}`).join("\n")
+          : "  (paths could not be determined)";
+        return {
+          exitCode: 1,
+          escalation: formatEscalation({
+            failedStep: "Phase 0 local conflict check",
+            detectedState: `${target.slug} conflicts with origin/${baseBranch}`,
+            recommendedAction: `Resolve conflicts:\n${pathList}\n\n  1. git rebase origin/${baseBranch}\n  2. Re-run: specrunner finish ${target.slug}`,
+            resumeCommand: `specrunner finish ${target.slug}`,
+          }),
+        };
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return {
+        exitCode: 1,
+        escalation: formatEscalation({
+          failedStep: "Phase 0 git fetch",
+          detectedState: `git fetch origin ${baseBranch} failed`,
+          recommendedAction: `Check network/auth: ${message}. Then re-run: specrunner finish ${target.slug}`,
+          resumeCommand: `specrunner finish ${target.slug}`,
+        }),
+      };
+    }
+  }
 
   // --dry-run: output plan and exit
   if (flags.dryRun) {
