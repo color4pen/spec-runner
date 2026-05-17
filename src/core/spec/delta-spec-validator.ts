@@ -22,7 +22,8 @@ export type DeltaSpecViolationReason =
   | "legacy-flat-dir"
   | "non-canonical-path"
   | "missing-requirements-section"
-  | "empty-section";
+  | "empty-section"
+  | "no-specs-for-required-type";
 
 export interface DeltaSpecViolation {
   path: string;
@@ -37,18 +38,56 @@ export interface DeltaSpecValidatorFs {
   readFile(path: string): Promise<string>;
 }
 
+const TYPES_REQUIRING_SPECS = ["spec-change", "new-feature"];
+
 /**
  * Validate delta spec paths and file contents under `changePath`.
  *
  * @param changePath - Absolute path to the change folder (e.g. `/work/specrunner/changes/my-change`)
  * @param deps - Injectable fs operations for testing
+ * @param requestType - Request type from request.md Meta section. When "spec-change" or "new-feature", specs/ must contain at least one .md file.
  * @returns `{ ok: true }` when all checks pass; `{ ok: false, violations }` otherwise
  */
 export async function validateDeltaSpecPaths(
   changePath: string,
   deps: DeltaSpecValidatorFs,
+  requestType?: string,
 ): Promise<{ ok: true } | { ok: false; violations: DeltaSpecViolation[] }> {
   const violations: DeltaSpecViolation[] = [];
+
+  // --- Step 5: Check specs/ presence for required types (spec-change, new-feature) ---
+  if (requestType && TYPES_REQUIRING_SPECS.includes(requestType)) {
+    let specsFound = false;
+    try {
+      const specsTopEntries = await deps.readdir(`${changePath}/specs`);
+      for (const entry of specsTopEntries) {
+        if (entry.endsWith(".md")) {
+          specsFound = true;
+          break;
+        }
+        try {
+          const subEntries = await deps.readdir(`${changePath}/specs/${entry}`);
+          if (subEntries.some((e) => e.endsWith(".md"))) {
+            specsFound = true;
+            break;
+          }
+        } catch {
+          // not a dir
+        }
+      }
+    } catch {
+      // specs/ doesn't exist
+    }
+
+    if (!specsFound) {
+      violations.push({
+        path: `${changePath}/specs/`,
+        reason: "no-specs-for-required-type",
+        suggested: `Request type '${requestType}' requires a delta spec. Add a file under ${changePath}/specs/<capability-name>/spec.md`,
+      });
+      return { ok: false, violations };
+    }
+  }
 
   // --- Step 1: Check <change>/delta-spec.md (legacy flat file) ---
   let topLevelEntries: string[] = [];

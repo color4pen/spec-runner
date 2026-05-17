@@ -42,10 +42,14 @@ export const DeltaSpecValidationStep: CliStep = {
     const cwd = deps.cwd ?? process.cwd();
     const changePath = nodePath.join(cwd, changeFolderPath(deps.slug));
 
-    const result = await validateDeltaSpecPaths(changePath, {
-      readdir: (p: string) => nodeFs.readdir(p),
-      readFile: (p: string) => nodeFs.readFile(p, "utf-8"),
-    });
+    const result = await validateDeltaSpecPaths(
+      changePath,
+      {
+        readdir: (p: string) => nodeFs.readdir(p),
+        readFile: (p: string) => nodeFs.readFile(p, "utf-8"),
+      },
+      deps.request.type,
+    );
 
     const resultRelPath = deltaSpecValidationResultPath(deps.slug);
     const resultAbsPath = nodePath.resolve(cwd, resultRelPath);

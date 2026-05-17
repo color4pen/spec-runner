@@ -280,6 +280,80 @@ describe("TC-V-10: multiple violations are reported in a single result", () => {
 });
 
 // ---------------------------------------------------------------------------
+// TC-V-11: type=spec-change, specs/ has 0 .md files → needs-fix
+// ---------------------------------------------------------------------------
+describe("TC-V-11: type=spec-change + no specs → no-specs-for-required-type", () => {
+  it("returns violation when type=spec-change and specs/ has no .md files", async () => {
+    const files = {
+      [`${CHANGE_PATH}/design.md`]: "# Design",
+    };
+    const result = await validateDeltaSpecPaths(CHANGE_PATH, makeFsMock(files), "spec-change");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.violations).toHaveLength(1);
+      expect(result.violations[0]!.reason).toBe("no-specs-for-required-type");
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-V-12: type=new-feature, specs/ has 0 .md files → needs-fix
+// ---------------------------------------------------------------------------
+describe("TC-V-12: type=new-feature + no specs → no-specs-for-required-type", () => {
+  it("returns violation when type=new-feature and specs/ has no .md files", async () => {
+    const files = {
+      [`${CHANGE_PATH}/design.md`]: "# Design",
+    };
+    const result = await validateDeltaSpecPaths(CHANGE_PATH, makeFsMock(files), "new-feature");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.violations).toHaveLength(1);
+      expect(result.violations[0]!.reason).toBe("no-specs-for-required-type");
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-V-13: type=bug-fix, specs/ has 0 .md files → approved (対象外)
+// ---------------------------------------------------------------------------
+describe("TC-V-13: type=bug-fix + no specs → ok (not required)", () => {
+  it("returns ok: true when type=bug-fix even if specs/ is empty", async () => {
+    const files = {
+      [`${CHANGE_PATH}/design.md`]: "# Design",
+    };
+    const result = await validateDeltaSpecPaths(CHANGE_PATH, makeFsMock(files), "bug-fix");
+    expect(result.ok).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-V-14: type=refactoring, specs/ has 0 .md files → approved (対象外)
+// ---------------------------------------------------------------------------
+describe("TC-V-14: type=refactoring + no specs → ok (not required)", () => {
+  it("returns ok: true when type=refactoring even if specs/ is empty", async () => {
+    const files = {
+      [`${CHANGE_PATH}/design.md`]: "# Design",
+    };
+    const result = await validateDeltaSpecPaths(CHANGE_PATH, makeFsMock(files), "refactoring");
+    expect(result.ok).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-V-15: type=spec-change, specs/ has 1 .md file → existing Step 1-4 continues
+// ---------------------------------------------------------------------------
+describe("TC-V-15: type=spec-change + valid spec → existing steps continue", () => {
+  it("does not trigger no-specs violation when specs/ has .md files", async () => {
+    const files = {
+      [`${CHANGE_PATH}/design.md`]: "# Design",
+      [`${CHANGE_PATH}/specs/my-cap/spec.md`]: validSpecContent("my-cap"),
+    };
+    const result = await validateDeltaSpecPaths(CHANGE_PATH, makeFsMock(files), "spec-change");
+    expect(result.ok).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // MODIFIED Requirements section also triggers valid detection
 // ---------------------------------------------------------------------------
 describe("MODIFIED Requirements section is recognised as valid", () => {

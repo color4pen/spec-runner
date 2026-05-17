@@ -1720,3 +1720,59 @@ describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not
     expect(commitCalls.length).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-INT-01: dsv Step 5 fail (no-specs-for-required-type) → delta-spec-fixer transition
+// ---------------------------------------------------------------------------
+describe("TC-INT-01: Step 5 fail (no-specs-for-required-type) → pipeline transitions to delta-spec-fixer without escalation", () => {
+  it("dsv needs-fix on first call triggers delta-spec-fixer; second call approves and pipeline proceeds", async () => {
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+    const jobState = await makeJobState();
+
+    // First call: Step 5 fail (specs/ absent). Second call: approved after fixer creates specs/.
+    mockDeltaSpecValidator
+      .mockResolvedValueOnce({
+        ok: false,
+        violations: [
+          {
+            path: "/tmp/changes/test-slug/specs/",
+            reason: "no-specs-for-required-type",
+            suggested: "Request type 'spec-change' requires a delta spec. Add a file under /tmp/changes/test-slug/specs/<capability>/spec.md",
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ ok: true });
+
+    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["approved"] });
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
+
+    const result = await runPipeline(jobState, {
+      client,
+      config: buildConfig(),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner: buildRunner(client, githubClient),
+      spawn: noopSpawn,
+    });
+
+    // Pipeline did NOT escalate
+    expect(result.status).toBe("awaiting-merge");
+
+    // dsv ran twice: iter 1 needs-fix, iter 2 approved
+    const dsvSteps = result.steps?.["delta-spec-validation"];
+    expect(dsvSteps).toBeDefined();
+    expect(dsvSteps?.length).toBe(2);
+    expect(toLegacyStepResult(dsvSteps![0]!).verdict).toBe("needs-fix");
+    expect(toLegacyStepResult(dsvSteps![1]!).verdict).toBe("approved");
+
+    // delta-spec-fixer ran exactly once (= triggered by needs-fix transition)
+    const dsfSteps = result.steps?.["delta-spec-fixer"];
+    expect(dsfSteps).toBeDefined();
+    expect(dsfSteps?.length).toBe(1);
+
+    // Pipeline proceeded past delta-spec-validation → spec-review ran
+    expect(result.steps?.["spec-review"]).toBeDefined();
+  });
+});

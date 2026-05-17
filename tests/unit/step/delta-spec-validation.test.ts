@@ -187,3 +187,77 @@ describe("TC-DSV-03: result file format is parseable as delta-spec-fixer input",
     expect(filePath).toBe(deltaSpecValidationResultPath("my-change"));
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-DSV-04: Step 5 fail (no-specs-for-required-type) → verdict: needs-fix
+// ---------------------------------------------------------------------------
+describe("TC-DSV-04: Step 5 fail → verdict needs-fix → delta-spec-fixer transition path", () => {
+  it("run() writes needs-fix result when validator returns no-specs-for-required-type violation", async () => {
+    mockValidate.mockResolvedValue({
+      ok: false,
+      violations: [
+        {
+          path: "/work/specrunner/changes/test-slug/specs/",
+          reason: "no-specs-for-required-type",
+          suggested: "Request type 'spec-change' requires a delta spec.",
+        },
+      ],
+    });
+
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+    await DeltaSpecValidationStep.run(state, deps);
+
+    const resultAbsPath = path.join(tempDir, deltaSpecValidationResultPath("test-slug"));
+    const content = await fs.readFile(resultAbsPath, "utf-8");
+    expect(content).toContain("## Verdict: needs-fix");
+    expect(content).toContain("no-specs-for-required-type");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-DSV-05: dsv step passes deps.request.type as 3rd arg to validateDeltaSpecPaths
+// ---------------------------------------------------------------------------
+describe("TC-DSV-05: deps.request.type is forwarded to validateDeltaSpecPaths", () => {
+  it("forwards 'spec-change' as the 3rd argument", async () => {
+    mockValidate.mockResolvedValue({ ok: true });
+
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+    deps.request = { ...deps.request, type: "spec-change" };
+
+    await DeltaSpecValidationStep.run(state, deps);
+
+    expect(mockValidate).toHaveBeenCalledTimes(1);
+    const callArgs = mockValidate.mock.calls[0]!;
+    expect(callArgs[2]).toBe("spec-change");
+  });
+
+  it("forwards 'new-feature' as the 3rd argument", async () => {
+    mockValidate.mockResolvedValue({ ok: true });
+
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+    deps.request = { ...deps.request, type: "new-feature" };
+
+    await DeltaSpecValidationStep.run(state, deps);
+
+    expect(mockValidate).toHaveBeenCalledTimes(1);
+    const callArgs = mockValidate.mock.calls[0]!;
+    expect(callArgs[2]).toBe("new-feature");
+  });
+
+  it("forwards 'bug-fix' (non-required-type) as the 3rd argument", async () => {
+    mockValidate.mockResolvedValue({ ok: true });
+
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+    deps.request = { ...deps.request, type: "bug-fix" };
+
+    await DeltaSpecValidationStep.run(state, deps);
+
+    expect(mockValidate).toHaveBeenCalledTimes(1);
+    const callArgs = mockValidate.mock.calls[0]!;
+    expect(callArgs[2]).toBe("bug-fix");
+  });
+});
