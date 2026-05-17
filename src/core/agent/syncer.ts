@@ -9,7 +9,7 @@
  */
 import type { AnthropicClient } from "../port/anthropic-client.js";
 import type { AgentRegistry } from "./registry.js";
-import type { StepName } from "../../state/schema.js";
+import type { AgentStepName } from "../../state/schema.js";
 import { stderrWrite } from "../../logger/stdout.js";
 
 /**
@@ -27,7 +27,7 @@ export interface SyncRoleResult {
  * Contains per-role results indexed by StepName.
  */
 export interface SyncResult {
-  readonly results: Map<StepName, SyncRoleResult>;
+  readonly results: Map<AgentStepName, SyncRoleResult>;
 }
 
 /**
@@ -35,7 +35,7 @@ export interface SyncResult {
  * read the stored agentId and hash for a role (if any).
  */
 export interface AgentSyncerConfig {
-  getStoredAgent(role: StepName): { agentId: string; definitionHash: string } | undefined;
+  getStoredAgent(role: AgentStepName): { agentId: string; definitionHash: string } | undefined;
 }
 
 /**
@@ -56,11 +56,11 @@ export class AgentSyncer {
    * Throws the original error after rollback.
    */
   async syncAll(): Promise<SyncResult> {
-    const roles = this.registry.list().map((def) => def.role as StepName);
-    const results = new Map<StepName, SyncRoleResult>();
+    const roles = this.registry.list().map((def) => def.role);
+    const results = new Map<AgentStepName, SyncRoleResult>();
 
     // Track newly created agents for rollback
-    const createdAgents: Array<{ role: StepName; agentId: string }> = [];
+    const createdAgents: Array<{ role: AgentStepName; agentId: string }> = [];
 
     for (const role of roles) {
       const def = this.registry.get(role)!;
@@ -142,7 +142,7 @@ export class AgentSyncer {
    * The original error is re-thrown by the caller — this method does not throw.
    */
   private async rollback(
-    agents: Array<{ role: StepName; agentId: string }>,
+    agents: Array<{ role: AgentStepName; agentId: string }>,
   ): Promise<void> {
     for (const { agentId } of agents) {
       try {

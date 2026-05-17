@@ -3,7 +3,7 @@ import { getConfigPath } from "../util/xdg.js";
 import { atomicWriteJson } from "../util/atomic-write.js";
 import { validateConfig } from "./schema.js";
 import type { SpecRunnerConfig, AgentRecord } from "./schema.js";
-import type { StepName } from "../state/schema.js";
+import type { AgentStepName } from "../state/schema.js";
 import { configMissingError, configIncompleteError } from "../errors.js";
 import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 import { applyMigration } from "./migrate.js";
@@ -107,7 +107,7 @@ export class FileConfigStore {
    * Synchronously return agent ID for the given role.
    * Throws CONFIG_INCOMPLETE if load() has not been called or role is missing.
    */
-  getAgentId(role: StepName): string {
+  getAgentId(role: AgentStepName): string {
     if (!this.cachedConfig) {
       throw new SpecRunnerError(
         ERROR_CODES.CONFIG_INCOMPLETE,
@@ -130,7 +130,7 @@ export class FileConfigStore {
    * Upsert an AgentRecord for the given role into in-memory config.
    * Caller must call save() to persist.
    */
-  async upsertAgent(role: StepName, record: AgentRecord): Promise<void> {
+  async upsertAgent(role: AgentStepName, record: AgentRecord): Promise<void> {
     if (!this.cachedConfig) {
       throw new SpecRunnerError(
         ERROR_CODES.CONFIG_INCOMPLETE,

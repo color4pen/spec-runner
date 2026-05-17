@@ -91,7 +91,7 @@ function makeAgentStep(name: string, completionVerdict?: string): Step {
   return {
     kind: "agent",
     name,
-    agent: { name: `specrunner-${name}`, role: name as import("../../../../src/state/schema.js").StepName, model: "claude-sonnet-4-5", system: "", tools: [] },
+    agent: { name: `specrunner-${name}`, role: name as import("../../../../src/state/schema.js").AgentStepName, model: "claude-sonnet-4-5", system: "", tools: [] },
     buildMessage: () => "",
     resultFilePath: () => null,
     parseResult: () => ({ verdict: null, findingsPath: null }),

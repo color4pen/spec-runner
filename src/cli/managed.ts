@@ -14,7 +14,7 @@ import { CodeReviewStep } from "../core/step/code-review.js";
 import { CodeFixerStep } from "../core/step/code-fixer.js";
 import { logInfo, logStep, logSuccess, logError, stderrWrite } from "../logger/stdout.js";
 import type { SpecRunnerConfig, AgentRecord } from "../config/schema.js";
-import type { StepName } from "../state/schema.js";
+import type { AgentStepName } from "../state/schema.js";
 
 const ENVIRONMENT_NAME = "specrunner-default";
 const ENVIRONMENT_PACKAGES_NPM: string[] = [];
@@ -47,7 +47,7 @@ export async function runManagedSetup(): Promise<void> {
   const registry = AgentRegistry.fromSteps([DesignStep, SpecReviewStep, SpecFixerStep, ImplementerStep, BuildFixerStep, CodeReviewStep, CodeFixerStep]);
 
   const storedConfig: AgentSyncerConfig = {
-    getStoredAgent(role: StepName) {
+    getStoredAgent(role: AgentStepName) {
       const record = existingConfig.agents?.[role];
       if (record?.agentId) {
         return { agentId: record.agentId, definitionHash: record.definitionHash ?? "" };
@@ -110,7 +110,7 @@ export async function runManagedSetup(): Promise<void> {
   }
 
   const now = new Date().toISOString();
-  const agents: Record<string, AgentRecord> = {};
+  const agents: Partial<Record<AgentStepName, AgentRecord>> = {};
   for (const [role, result] of syncResult.results.entries()) {
     agents[role] = {
       agentId: result.agentId,

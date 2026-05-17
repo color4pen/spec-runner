@@ -11,15 +11,21 @@ import type { ModelUsage } from "../core/port/model-usage.js";
  */
 export type { ModelUsage } from "../core/port/model-usage.js";
 
-import { STEP_NAMES } from "../core/step/step-names.js";
+import { AGENT_STEP_NAMES, CLI_STEP_NAMES, STEP_NAMES } from "../core/step/step-names.js";
 
 export type StepName = typeof STEP_NAMES[keyof typeof STEP_NAMES];
 
 /**
- * AgentStepName excludes CLI-resident steps (verification, pr-create, delta-spec-validation) from StepName.
- * Used to constrain AgentRegistry and config schema to agent-only roles.
+ * AgentStepName: names of steps that run as AI agent sessions.
+ * Derived from AGENT_STEP_NAMES whitelist — new steps must be added to the appropriate array.
  */
-export type AgentStepName = Exclude<StepName, typeof STEP_NAMES.VERIFICATION | typeof STEP_NAMES.PR_CREATE | typeof STEP_NAMES.DELTA_SPEC_VALIDATION>;
+export type AgentStepName = typeof AGENT_STEP_NAMES[number];
+
+/**
+ * CliStepName: names of steps that run as deterministic CLI processes.
+ * Derived from CLI_STEP_NAMES whitelist.
+ */
+export type CliStepName = typeof CLI_STEP_NAMES[number];
 
 export type Verdict =
   | "approved"

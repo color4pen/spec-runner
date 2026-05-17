@@ -288,22 +288,31 @@ The `StepName` union (`src/state/schema.ts`) SHALL be extended to include the li
 - **WHEN** the StepName union is inspected
 - **THEN** it contains the 9 literals: `propose`, `spec-review`, `spec-fixer`, `implementer`, `verification`, `build-fixer`, `code-review`, `code-fixer`, `pr-create`
 
-### Requirement: AgentStepName excludes "pr-create" from the Exclude clause
+### Requirement: AgentStepName accepts only agent-resident steps (whitelist)
 
-The `AgentStepName` type (`src/state/schema.ts`) SHALL be updated to:
+Replaces: "AgentStepName excludes "pr-create" from the Exclude clause"
 
-```ts
-export type AgentStepName = Exclude<StepName, "verification" | "pr-create">;
-```
+`AgentStepName` is derived from the `AGENT_STEP_NAMES` whitelist array (`typeof AGENT_STEP_NAMES[number]`), not from `StepName` via `Exclude`. New steps must be added to either `AGENT_STEP_NAMES` or `CLI_STEP_NAMES` in `src/core/step/step-names.ts`; failure to add a step to either array causes a test failure (union mismatch with `STEP_NAMES`).
 
-`pr-create` is a `kind: "cli"` step with no `agent` field, mirroring `verification`. Including `pr-create` in `AgentStepName` would cause `AgentRegistry`, `AgentSyncer`, and `config.agents` to treat it as an agent role, which is incorrect. The Exclude clause MUST enumerate both `"verification"` and `"pr-create"` simultaneously with this change.
+`CliStepName` is similarly derived from `CLI_STEP_NAMES` (`typeof CLI_STEP_NAMES[number]`).
 
-#### Scenario: AgentStepName does not include "pr-create"
+`config.agents` key type is `Partial<Record<AgentStepName, AgentRecord>>`, preventing CliStep names from being used as agent config keys.
 
-- **WHEN** `AgentStepName` is inspected (e.g., via TypeScript type checking or runtime assertion)
-- **THEN** `"pr-create"` is NOT assignable to `AgentStepName`
-- **AND** `"verification"` is NOT assignable to `AgentStepName`
-- **AND** all agent-resident steps (`propose`, `spec-review`, `spec-fixer`, `implementer`, `build-fixer`, `code-review`, `code-fixer`) ARE assignable to `AgentStepName`
+#### Scenario: AgentStepName accepts only agent-resident steps (replaces old scenario)
+
+- **WHEN** `AgentStepName` is inspected via TypeScript type checking
+- **THEN** `"design"`, `"spec-review"`, `"spec-fixer"`, `"delta-spec-fixer"`, `"test-case-gen"`, `"implementer"`, `"build-fixer"`, `"code-review"`, `"code-fixer"` ARE assignable to `AgentStepName`
+- **AND** `"verification"`, `"pr-create"`, `"delta-spec-validation"` are NOT assignable to `AgentStepName`
+
+#### Scenario: New step addition requires explicit array membership
+
+- **WHEN** a new step is added to `STEP_NAMES` but not to `AGENT_STEP_NAMES` or `CLI_STEP_NAMES`
+- **THEN** the exhaustiveness test (union = STEP_NAMES values) fails
+
+#### Scenario: config.agents rejects CliStep keys at type level
+
+- **WHEN** `config.agents["delta-spec-validation"]` is written in TypeScript
+- **THEN** a type error is raised because `"delta-spec-validation"` is not in `AgentStepName`
 
 ### Requirement: Loop exhaustion bypass is gated by fixer iteration count, not preceding step identity
 

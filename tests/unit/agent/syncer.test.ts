@@ -14,14 +14,14 @@ import { AgentRegistry } from "../../../src/core/agent/registry.js";
 import type { AnthropicClient, AgentData } from "../../../src/core/port/anthropic-client.js";
 import type { AgentDefinition } from "../../../src/core/agent/definition.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
-import type { StepName } from "../../../src/state/schema.js";
+import type { AgentStepName } from "../../../src/state/schema.js";
 import type { AgentSyncerConfig } from "../../../src/core/agent/syncer.js";
 
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function makeAgentDef(role: StepName, system: string = "system"): AgentDefinition {
+function makeAgentDef(role: AgentStepName, system: string = "system"): AgentDefinition {
   return {
     name: `specrunner-${role}`,
     role,
@@ -31,7 +31,7 @@ function makeAgentDef(role: StepName, system: string = "system"): AgentDefinitio
   };
 }
 
-function makeStep(role: StepName, system?: string): AgentStep {
+function makeStep(role: AgentStepName, system?: string): AgentStep {
   return {
     kind: "agent",
     name: role,

@@ -2,7 +2,7 @@
  * Core agent definition types.
  * These types do NOT import from @anthropic-ai/sdk — adapter layer handles SDK mapping.
  */
-import type { StepName } from "../../state/schema.js";
+import type { AgentStepName } from "../../state/schema.js";
 
 /**
  * Single source of truth for the Anthropic agent toolset type string.
@@ -56,8 +56,8 @@ export interface AgentCapabilities {
 export interface AgentDefinition {
   /** Human-readable name on Anthropic (e.g. "specrunner-propose"). */
   readonly name: string;
-  /** StepName this agent is associated with (kebab-case). */
-  readonly role: StepName;
+  /** AgentStepName this agent is associated with (kebab-case). */
+  readonly role: AgentStepName;
   /** Anthropic model ID. */
   readonly model: string;
   /** Full system prompt string. */

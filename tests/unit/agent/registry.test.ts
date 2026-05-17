@@ -12,9 +12,9 @@ import { describe, it, expect } from "vitest";
 import { AgentRegistry } from "../../../src/core/agent/registry.js";
 import type { AgentDefinition } from "../../../src/core/agent/definition.js";
 import type { AgentStep, CliStep } from "../../../src/core/step/types.js";
-import type { StepName } from "../../../src/state/schema.js";
+import type { StepName, AgentStepName } from "../../../src/state/schema.js";
 
-function makeAgentDef(role: StepName, system: string = "system prompt"): AgentDefinition {
+function makeAgentDef(role: AgentStepName, system: string = "system prompt"): AgentDefinition {
   return {
     name: `specrunner-${role}`,
     role,
@@ -24,7 +24,7 @@ function makeAgentDef(role: StepName, system: string = "system prompt"): AgentDe
   };
 }
 
-function makeStep(role: StepName, system?: string): AgentStep {
+function makeStep(role: AgentStepName, system?: string): AgentStep {
   return {
     kind: "agent",
     name: role,
@@ -80,8 +80,8 @@ describe("TC-025: AgentRegistry.fromSteps throws on duplicate role", () => {
 describe("TC-026: AgentRegistry.get returns undefined for unregistered role", () => {
   it("returns undefined for 'implementer' role not in registry", () => {
     const registry = AgentRegistry.fromSteps([makeStep("design")]);
-    // Cast to StepName to simulate a future role not yet in the union
-    const result = registry.get("implementer" as StepName);
+    // Cast to AgentStepName to simulate a future role not yet in the union
+    const result = registry.get("implementer" as AgentStepName);
     expect(result).toBeUndefined();
   });
 });
@@ -121,7 +121,7 @@ describe("TC-029: AgentRegistry.hashOf throws for unknown role", () => {
   it("throws 'Unknown agent role: implementer'", () => {
     const registry = AgentRegistry.fromSteps([makeStep("design")]);
 
-    expect(() => registry.hashOf("implementer" as StepName)).toThrow(
+    expect(() => registry.hashOf("implementer" as AgentStepName)).toThrow(
       "Unknown agent role: implementer",
     );
   });
@@ -202,7 +202,8 @@ describe("TC-011: AgentRegistry.fromSteps — CLI step を除外してカウン�
 
     const registry = AgentRegistry.fromSteps([design, verification]);
 
-    expect(registry.get("verification")).toBeUndefined();
+    // "verification" is a CliStep — not in AgentStepName; cast is needed for this test
+    expect(registry.get("verification" as AgentStepName)).toBeUndefined();
   });
 
   it("registry.get('implementer') は ImplementerStep.agent を返す", () => {

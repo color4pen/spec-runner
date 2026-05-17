@@ -7,6 +7,7 @@
  * are handled by migrate.ts at load time.
  */
 import { BUILTIN_MODEL_REGISTRY } from "./model-registry.js";
+import type { AgentStepName } from "../state/schema.js";
 
 /**
  * Per-step execution config: model, maxTurns, timeoutMs.
@@ -85,10 +86,11 @@ export interface SpecRunnerConfig {
   runtime?: "managed" | "local";
   /**
    * Canonical per-role agent map.
-   * Keys are StepNames (kebab-case: "design", "spec-review", "spec-fixer").
+   * Keys are AgentStepNames (kebab-case: "design", "spec-review", "spec-fixer").
    * Populated by ConfigStore.load() after migration.
+   * Partial because not all agent steps may be configured (e.g. local runtime).
    */
-  agents: Record<string, AgentRecord>;
+  agents: Partial<Record<AgentStepName, AgentRecord>>;
   pipeline?: PipelineConfig;
   environment?: EnvironmentConfig;
   specReview?: SpecReviewConfig;

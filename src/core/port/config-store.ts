@@ -5,7 +5,7 @@
  * Design D7: ConfigStore.getAgentId is synchronous — callers must await load() first.
  */
 import type { SpecRunnerConfig, AgentRecord } from "../../config/schema.js";
-import type { StepName } from "../../state/schema.js";
+import type { AgentStepName } from "../../state/schema.js";
 
 export interface ConfigStore {
   /**
@@ -22,12 +22,16 @@ export interface ConfigStore {
   /**
    * Synchronously return agent ID for the given role.
    * Throws CONFIG_INCOMPLETE if load() has not been called or if the role is missing.
+   *
+   * Role must be an AgentStepName (= agent-resident step); CliStep names are rejected at compile time.
    */
-  getAgentId(role: StepName): string;
+  getAgentId(role: AgentStepName): string;
 
   /**
    * Upsert (insert or update) an AgentRecord for the given role.
    * Updates in-memory state. Call save() to persist.
+   *
+   * Role must be an AgentStepName (= agent-resident step); CliStep names are rejected at compile time.
    */
-  upsertAgent(role: StepName, record: AgentRecord): Promise<void>;
+  upsertAgent(role: AgentStepName, record: AgentRecord): Promise<void>;
 }

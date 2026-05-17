@@ -96,7 +96,7 @@ function makeStepObject(name: string, kind: "agent" | "cli" = "agent"): Step {
     name,
     agent: {
       name: `specrunner-${name}`,
-      role: name as import("../../../../src/state/schema.js").StepName,
+      role: name as import("../../../../src/state/schema.js").AgentStepName,
       model: "claude-sonnet-4-5",
       system: `system for ${name}`,
       tools: [],
