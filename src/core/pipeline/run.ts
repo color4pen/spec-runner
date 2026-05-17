@@ -22,6 +22,21 @@ import { PrCreateStep } from "../step/pr-create.js";
 import { TestCaseGenStep } from "../step/test-case-gen.js";
 import { STEP_NAMES } from "../step/step-names.js";
 
+/** Loop step names used by the standard pipeline. */
+export const STANDARD_LOOP_NAMES: readonly string[] = [
+  STEP_NAMES.SPEC_REVIEW,
+  STEP_NAMES.VERIFICATION,
+  STEP_NAMES.CODE_REVIEW,
+];
+
+/** Review → fixer step mapping used by the standard pipeline. */
+export const STANDARD_LOOP_FIXER_PAIRS: Readonly<Record<string, string>> = {
+  [STEP_NAMES.CODE_REVIEW]: STEP_NAMES.CODE_FIXER,
+  [STEP_NAMES.SPEC_REVIEW]: STEP_NAMES.SPEC_FIXER,
+  [STEP_NAMES.VERIFICATION]: STEP_NAMES.BUILD_FIXER,
+  [STEP_NAMES.DELTA_SPEC_VALIDATION]: STEP_NAMES.DELTA_SPEC_FIXER,
+};
+
 /**
  * Construct the standard Pipeline with all steps and transitions.
  * Extracted so that resume.ts can call pipeline.run(startStep, ...) directly.
@@ -62,13 +77,8 @@ export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): P
     executor,
     events: bus,
     loopName: STEP_NAMES.SPEC_REVIEW,
-    loopNames: [STEP_NAMES.SPEC_REVIEW, STEP_NAMES.VERIFICATION, STEP_NAMES.CODE_REVIEW],
-    loopFixerPairs: {
-      [STEP_NAMES.CODE_REVIEW]: STEP_NAMES.CODE_FIXER,
-      [STEP_NAMES.SPEC_REVIEW]: STEP_NAMES.SPEC_FIXER,
-      [STEP_NAMES.VERIFICATION]: STEP_NAMES.BUILD_FIXER,
-      [STEP_NAMES.DELTA_SPEC_VALIDATION]: STEP_NAMES.DELTA_SPEC_FIXER,
-    },
+    loopNames: [...STANDARD_LOOP_NAMES],
+    loopFixerPairs: { ...STANDARD_LOOP_FIXER_PAIRS },
   });
 }
 

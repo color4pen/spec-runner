@@ -12,6 +12,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Pipeline } from "../../../src/core/pipeline/pipeline.js";
 import { STANDARD_TRANSITIONS } from "../../../src/core/pipeline/types.js";
+import { STANDARD_LOOP_NAMES, STANDARD_LOOP_FIXER_PAIRS } from "../../../src/core/pipeline/run.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import { toLegacyStepResult } from "../../../src/state/helpers.js";
@@ -262,8 +263,8 @@ function buildMockPipeline(opts: {
     executor: mockExecutor,
     events,
     loopName: "spec-review",
-    loopNames: ["spec-review", "verification", "code-review", "delta-spec-validation"],
-    loopFixerPairs: { "delta-spec-validation": "delta-spec-fixer" },
+    loopNames: [...STANDARD_LOOP_NAMES],
+    loopFixerPairs: { ...STANDARD_LOOP_FIXER_PAIRS },
   });
 
   return { pipeline, events, executeSpy };
@@ -417,8 +418,8 @@ describe("TC-063: Pipeline — loop exhaustion: SPEC_REVIEW_RETRIES_EXHAUSTED", 
       loopName: "spec-review",
       // Note: delta-spec-validation is NOT in loopNames here — only spec-review is the loop.
       // This allows spec-review to exhaust normally (SPEC_REVIEW_RETRIES_EXHAUSTED).
-      // The standard pipeline (createStandardPipeline) includes dsv in loopNames which
-      // causes dsv to exhaust first when spec-review keeps failing.
+      // The standard pipeline (createStandardPipeline) does NOT include dsv in loopNames
+      // (PR #274), so dsv runs as a deterministic non-loop step.
     });
 
     const result = await pipeline.run("design", state, deps);
