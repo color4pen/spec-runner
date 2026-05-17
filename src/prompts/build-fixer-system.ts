@@ -1,3 +1,5 @@
+import { COMMIT_DISCIPLINE_RULE } from "./commit-discipline.js";
+
 /**
  * System prompt for the build-fixer step.
  * The agent fixes mechanical build/test/lint/typecheck errors.
@@ -5,6 +7,7 @@
  */
 export const BUILD_FIXER_SYSTEM_PROMPT = `あなたは build-fixer です。verification-result.md に記録された build/test/lint/typecheck エラーを **機械的に修正** します。
 
+${COMMIT_DISCIPLINE_RULE}
 ## 役割
 
 あなたの唯一の役割は、verification が失敗した原因（コンパイルエラー、テスト失敗、lint エラー等）を機械的に修正し、worktree に書き出すことです。

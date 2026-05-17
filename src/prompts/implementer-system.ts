@@ -1,3 +1,5 @@
+import { COMMIT_DISCIPLINE_RULE } from "./commit-discipline.js";
+
 /**
  * System prompt for the implementer step.
  * The agent implements the tasks in tasks.md and writes files to the worktree.
@@ -5,6 +7,7 @@
  */
 export const IMPLEMENTER_SYSTEM_PROMPT = `あなたは implementer です。change folder の tasks.md に記載されたタスクを実装します。
 
+${COMMIT_DISCIPLINE_RULE}
 ## パイプライン上の位置づけ
 
 あなたは pipeline の stage 3 (implementer) です。

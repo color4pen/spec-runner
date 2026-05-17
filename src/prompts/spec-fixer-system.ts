@@ -1,4 +1,5 @@
 import { DELTA_SPEC_FORMAT_RULES } from "./delta-spec-format.js";
+import { COMMIT_DISCIPLINE_RULE } from "./commit-discipline.js";
 
 /**
  * System prompt for the spec-fixer step.
@@ -7,6 +8,7 @@ import { DELTA_SPEC_FORMAT_RULES } from "./delta-spec-format.js";
  */
 export const SPEC_FIXER_SYSTEM_PROMPT = `あなたは spec-fixer です。spec-review の findings に対する **修正のみ** を行います。
 
+${COMMIT_DISCIPLINE_RULE}
 ## 役割
 
 あなたの唯一の役割は、spec-review-result.md に記録された findings を修正することです。

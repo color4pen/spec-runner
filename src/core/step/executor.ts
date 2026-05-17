@@ -137,6 +137,13 @@ export class StepExecutor {
       },
     };
 
+    // Capture HEAD SHA before agent executes (local runtime only, for self-commit detection).
+    // gitExec returns null on failure (non-git dir, etc.) — safe to use without try/catch.
+    let headBeforeStep: string | null = null;
+    if (deps.config.runtime === "local") {
+      headBeforeStep = await gitExec(this.spawnFn, deps.cwd ?? process.cwd(), ["rev-parse", "HEAD"]);
+    }
+
     const startedAt = new Date().toISOString();
     const runResult = await this.runner.run(ctx).catch(async (thrownErr: unknown) => {
       const err = thrownErr as Error & { code?: string; hint?: string };
@@ -205,7 +212,7 @@ export class StepExecutor {
 
     // Commit and push after successful agent run (local runtime only)
     if (deps.config.runtime === "local") {
-      await this.commitAndPush(step, state, deps);
+      await this.commitAndPush(step, state, deps, headBeforeStep);
     }
 
     return this.finalizeStep(step, state, deps, runResult.resultContent, completedAt, startedAt, {
@@ -218,9 +225,13 @@ export class StepExecutor {
   /**
    * Stage all changes, commit, and push to origin.
    *
+   * Extended with HEAD comparison for agent self-commit tolerance:
    * - git add -A
    * - git diff --cached --quiet (exit 0 = no changes)
-   * - if no changes and requiresCommit: throw noCommitDetectedError
+   * - if no changes and requiresCommit:
+   *   - compare headBeforeStep with current HEAD
+   *   - if HEAD advanced (agent self-committed): push only, log detection message
+   *   - otherwise: throw noCommitDetectedError
    * - if no changes and !requiresCommit: return silently
    * - git commit -m "${step.name}: ${slug}"
    * - git push origin ${branch} — retry once after 5s on failure
@@ -231,6 +242,7 @@ export class StepExecutor {
     step: AgentStep,
     state: JobState,
     deps: PipelineDeps,
+    headBeforeStep: string | null,
   ): Promise<void> {
     const cwd = deps.cwd ?? process.cwd();
     const branch = state.branch ?? "";
@@ -253,6 +265,14 @@ export class StepExecutor {
 
     if (!hasChanges) {
       if (step.requiresCommit) {
+        // Check if HEAD advanced (agent self-committed before pipeline commit).
+        const headAfterStep = await gitExec(this.spawnFn, cwd, ["rev-parse", "HEAD"]);
+        if (headBeforeStep && headAfterStep && headAfterStep !== headBeforeStep) {
+          // Agent authored commit(s) since step start — push the existing commits as-is.
+          stderrWrite("Detected agent-authored commit(s) since step start; skipping pipeline commit and pushing as-is.\n");
+          await this.pushOnly(branch, cwd, step.name);
+          return;
+        }
         throw noCommitDetectedError(step.name, branch);
       }
       // No changes and requiresCommit is falsy — silently skip
@@ -264,11 +284,20 @@ export class StepExecutor {
     await gitExec(this.spawnFn, cwd, ["commit", "-m", commitMessage]);
 
     // Push with one retry
+    await this.pushOnly(branch, cwd, step.name);
+  }
+
+  /**
+   * Push to origin with one retry on failure.
+   * Emits commit:push event on success.
+   * Throws pushFailedError if both attempts fail.
+   */
+  private async pushOnly(branch: string, cwd: string, stepName: string): Promise<void> {
     const tryPush = () => gitExecExitCode(this.spawnFn, cwd, ["push", "origin", branch]);
 
     const firstPushCode = await tryPush();
     if (firstPushCode === 0) {
-      this.events.emit("commit:push" as Parameters<EventBus["emit"]>[0], { step: step.name, branch } as never);
+      this.events.emit("commit:push" as Parameters<EventBus["emit"]>[0], { step: stepName, branch } as never);
       return;
     }
 
@@ -276,11 +305,11 @@ export class StepExecutor {
     await this.sleepFn(5000);
     const secondPushCode = await tryPush();
     if (secondPushCode === 0) {
-      this.events.emit("commit:push" as Parameters<EventBus["emit"]>[0], { step: step.name, branch } as never);
+      this.events.emit("commit:push" as Parameters<EventBus["emit"]>[0], { step: stepName, branch } as never);
       return;
     }
 
-    throw pushFailedError(step.name, branch, `exit code ${secondPushCode}`);
+    throw pushFailedError(stepName, branch, `exit code ${secondPushCode}`);
   }
 
   /**

@@ -1,3 +1,5 @@
+import { COMMIT_DISCIPLINE_RULE } from "./commit-discipline.js";
+
 /**
  * System prompt for the code-fixer step.
  * The agent fixes code issues found in review-feedback-NNN.md and writes files to worktree.
@@ -5,6 +7,7 @@
  */
 export const CODE_FIXER_SYSTEM_PROMPT = `あなたは code-fixer です。review-feedback-NNN.md に記録されたコードレビューの指摘事項を **最小限の修正** で解消し、worktree に書き出します。
 
+${COMMIT_DISCIPLINE_RULE}
 ## 役割
 
 あなたの唯一の役割は、code-review が指摘した問題を修正し、変更を worktree に書き出すことです。

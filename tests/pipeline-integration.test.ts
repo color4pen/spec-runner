@@ -3,12 +3,15 @@ import { toLegacyStepResult } from "../src/state/helpers.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
+import { EventEmitter } from "node:events";
+import type { SpawnOptions, ChildProcess } from "node:child_process";
 import type { GitHubClient } from "../src/core/port/github-client.js";
 import { createManagedAgentRunner } from "../src/adapter/managed-agent/agent-runner.js";
 import { verificationResultPath, prCreateResultPath } from "../src/util/paths.js";
-import type { AgentRunContext } from "../src/core/port/agent-runner.js";
+import type { AgentRunContext, AgentRunResult } from "../src/core/port/agent-runner.js";
 import type { DynamicContext } from "../src/git/dynamic-context.js";
 import type { SpawnFn } from "../src/util/spawn.js";
+import type { SpawnFn as GitSpawnFn } from "../src/util/git-exec.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -1581,5 +1584,139 @@ describe("TC-DSV-INT-04: delta-spec-validation and spec-review loops are indepen
     expect(specReviewSteps?.length).toBe(2);
     expect(toLegacyStepResult(specReviewSteps![0]!).verdict).toBe("needs-fix");
     expect(toLegacyStepResult(specReviewSteps![1]!).verdict).toBe("approved");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-AGENT-COMMIT-INT-001: implementer self-commit → pipeline does not halt
+// Reproduces the finish-phase0-local-conflict-check scenario (issue #275):
+// - implementer agent self-commits (HEAD advances, no staged changes after)
+// - pipeline should NOT halt — executor detects HEAD advancement and pushes as-is
+// - verification step runs after implementer completes
+// ---------------------------------------------------------------------------
+
+describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not halt, verification proceeds", () => {
+  it("pipeline continues to verification when implementer self-commits and HEAD advances", async () => {
+    // Build a git SpawnFn that simulates the agent self-commit scenario:
+    // 1. rev-parse HEAD (before implementer runs) → "before-sha-abc"
+    // 2. git add -A → exit 0
+    // 3. git diff --cached --quiet → exit 0 (no staged, agent already committed)
+    // 4. rev-parse HEAD (inside commitAndPush) → "after-sha-def" (HEAD advanced!)
+    // 5. git push → exit 0
+
+    let revParseCallCount = 0;
+    const gitCallLog: string[][] = [];
+
+    const gitSpawnFn: GitSpawnFn = (_bin: string, args: string[], _opts: SpawnOptions): ChildProcess => {
+      gitCallLog.push([...args]);
+      const subcommand = args[0] ?? "";
+
+      let exitCode = 0;
+      let stdout = "";
+
+      if (subcommand === "rev-parse") {
+        // First call: HEAD before step; second call: HEAD after step (advanced)
+        stdout = revParseCallCount === 0 ? "abc123before000000000000000000000000000" : "def456after000000000000000000000000000";
+        revParseCallCount++;
+      } else if (subcommand === "diff") {
+        // No staged changes (agent committed its own changes)
+        exitCode = 0;
+      }
+      // add, push, and all others exit 0
+
+      const procEm = new EventEmitter();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const procAny = procEm as any;
+      const stdoutEm = new EventEmitter();
+      procAny.stdout = stdoutEm;
+      procAny.stderr = new EventEmitter();
+      procAny.stdin = { write: () => true, end: () => {} };
+
+      setImmediate(() => {
+        if (stdout) stdoutEm.emit("data", Buffer.from(stdout));
+        procEm.emit("close", exitCode);
+      });
+
+      return procEm as unknown as ChildProcess;
+    };
+
+    // Mock AgentRunner that returns success for all steps (no real SDK required)
+    const mockAgentRunner = {
+      async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
+        return { completionReason: "success", resultContent: null };
+      },
+    };
+
+    // Imports needed to build the mini-pipeline
+    const { Pipeline } = await import("../src/core/pipeline/pipeline.js");
+    const { StepExecutor } = await import("../src/core/step/executor.js");
+    const { EventBus } = await import("../src/core/event/event-bus.js");
+    const { ImplementerStep } = await import("../src/core/step/implementer.js");
+    const { VerificationStep } = await import("../src/core/step/verification.js");
+
+    const events = new EventBus();
+    // Inject the git SpawnFn and a no-op sleep to avoid real 5s waits
+    const executor = new StepExecutor(events, mockAgentRunner, gitSpawnFn, async () => {});
+
+    // Minimal transitions: implementer → verification → end
+    const miniTransitions = [
+      { step: "implementer", on: "success", to: "verification" },
+      { step: "implementer", on: "error", to: "escalate" },
+      { step: "verification", on: "passed", to: "end" },
+      { step: "verification", on: "failed", to: "escalate" },
+      { step: "verification", on: "escalation", to: "escalate" },
+    ];
+
+    const miniSteps = new Map<string, import("../src/core/step/types.js").Step>([
+      ["implementer", ImplementerStep],
+      ["verification", VerificationStep],
+    ]);
+
+    const pipeline = new Pipeline({
+      steps: miniSteps,
+      transitions: miniTransitions,
+      maxIterations: 1,
+      executor,
+      events,
+      loopName: "verification",
+    });
+
+    // Job state with branch set (required by ImplementerStep.buildMessage)
+    const jobState = await makeJobState();
+    const stateWithBranch = { ...jobState, branch: "feat/test-self-commit" };
+    // Persist so store.update can find and update it
+    const { JobStateStore } = await import("../src/store/job-state-store.js");
+    const store = new JobStateStore(stateWithBranch.jobId);
+    await store.persist(stateWithBranch);
+
+    const localConfig = {
+      version: 1 as const,
+      runtime: "local" as const,
+      agents: {},
+    };
+
+    const result = await pipeline.run("implementer", stateWithBranch, {
+      config: localConfig,
+      request: buildRequest(),
+      slug: "test-slug",
+      cwd: tempDir,
+      githubClient: buildMockGithubClient(),
+      spawn: noopSpawn,
+    });
+
+    // Implementer must have completed (no halt)
+    expect(result.steps?.["implementer"]).toBeDefined();
+    expect(result.steps?.["implementer"]?.length).toBeGreaterThanOrEqual(1);
+
+    // Verification must have run (pipeline continued past implementer)
+    expect(result.steps?.["verification"]).toBeDefined();
+
+    // Push was called (agent self-commit path)
+    const pushCalls = gitCallLog.filter((args) => args[0] === "push");
+    expect(pushCalls.length).toBeGreaterThanOrEqual(1);
+
+    // Commit was NOT called by pipeline (push-only path)
+    const commitCalls = gitCallLog.filter((args) => args[0] === "commit");
+    expect(commitCalls.length).toBe(0);
   });
 });
