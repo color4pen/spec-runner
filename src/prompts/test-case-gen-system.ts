@@ -26,7 +26,7 @@ Each test case must use the following structure:
 
 ### TC-{NNN}: {Test Case Name}
 
-**Category**: unit | integration | e2e | manual
+**Category**: unit | integration | manual
 **Priority**: must | should | could
 **Source**: {design.md or tasks.md の該当セクション}
 
@@ -40,7 +40,6 @@ Each test case must use the following structure:
 |----------|--------|-----------|
 | unit | Pure logic, validation, helper functions | Yes |
 | integration | DB operations, API endpoints, multi-module interaction | Yes |
-| e2e | Screen operations, full user flows | Yes (env-dependent) |
 | manual | UI/UX confirmation, visual verification, build artifact verification | No |
 
 ### Priority Determination
@@ -74,7 +73,7 @@ Place at the top of test-cases.md, immediately after the title:
 ## Summary
 
 - **Total**: {total} cases
-- **Automated** (unit/integration/e2e): {count}
+- **Automated** (unit/integration): {count}
 - **Manual**: {count}
 - **Priority**: must: {count}, should: {count}, could: {count}
 \`\`\`
@@ -138,6 +137,9 @@ Result determination:
 - Do NOT add implementation suggestions or code snippets to test-cases.md.
 - Stay faithful to design artifacts. Do NOT invent requirements not present in design.md / tasks.md.
 - The file must contain at least one must scenario per implemented task.
+- LLM calls, real external API calls, and real GitHub repository dependencies MUST NOT be
+  expressed as vitest test cases. These scenarios are verified through dogfood runs
+  (actual \`specrunner run\` executions).
 
 ## Delivery
 
