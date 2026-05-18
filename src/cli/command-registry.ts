@@ -20,6 +20,7 @@ import { executeReview } from "../core/command/request-review.js";
 import { executeCreate } from "../core/command/request-create.js";
 import { executeList } from "../core/command/request-list.js";
 import { resolve as storeResolve } from "../core/request/store.js";
+import { AGENT_STEP_NAMES, CLI_STEP_NAMES } from "../core/step/step-names.js";
 import type { FlagDef, ParsedArgs } from "./flag-parser.js";
 
 export interface CommandDef {
@@ -86,7 +87,7 @@ Rm Options:
 
 Resume Options:
   <slug>            Slug of the job to resume (required)
-  --from=<role>     Override resume step: critic | fixer | creator
+  --from=<step|alias>  Override resume step (e.g. code-review, implementer, critic)
   --force           Resume even if consecutive escalations detected or status is not awaiting-resume
   --verbose         Enable verbose output
 `;
@@ -332,7 +333,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
 
   resume: {
     flags: {
-      from: { type: "string", values: ["critic", "fixer", "creator"] as const },
+      from: { type: "string", values: [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES, "critic", "fixer", "creator"] as const },
       force: { type: "boolean" },
       verbose: { type: "boolean" },
     },

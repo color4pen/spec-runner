@@ -252,3 +252,58 @@ describe("resolveResumeStep - fixer-empty detection (issue #236)", () => {
       .toBe("delta-spec-validation");
   });
 });
+
+// ============================================================
+// resolveResumeStep - --from with step name (TC-RESUME-FROM-*)
+// ============================================================
+
+describe("resolveResumeStep - --from with step name", () => {
+  // TC-RESUME-FROM-01: step name direct — phase of resumePoint is irrelevant
+  it("--from design → design", () => {
+    expect(resolveResumeStep("design", makeResumePoint("code-review"))).toBe("design");
+  });
+
+  // TC-RESUME-FROM-02: step name direct
+  it("--from code-review → code-review", () => {
+    expect(resolveResumeStep("code-review", makeResumePoint("implementer"))).toBe("code-review");
+  });
+
+  // TC-RESUME-FROM-03: deterministic step name direct
+  it("--from delta-spec-validation → delta-spec-validation", () => {
+    expect(resolveResumeStep("delta-spec-validation", makeResumePoint("spec-review"))).toBe("delta-spec-validation");
+  });
+
+  // TC-RESUME-FROM-04: legacy alias critic is still phase-aware
+  it("--from critic + spec phase → spec-review", () => {
+    expect(resolveResumeStep("critic", makeResumePoint("spec-review"))).toBe("spec-review");
+  });
+  it("--from critic + code phase → code-review", () => {
+    expect(resolveResumeStep("critic", makeResumePoint("implementer"))).toBe("code-review");
+  });
+
+  // TC-RESUME-FROM-05: legacy alias fixer is still phase-aware
+  it("--from fixer + spec phase → spec-fixer", () => {
+    expect(resolveResumeStep("fixer", makeResumePoint("spec-review"))).toBe("spec-fixer");
+  });
+  it("--from fixer + code phase → code-fixer", () => {
+    expect(resolveResumeStep("fixer", makeResumePoint("implementer"))).toBe("code-fixer");
+  });
+
+  // TC-RESUME-FROM-06: legacy alias creator is still phase-aware
+  it("--from creator + spec phase → design", () => {
+    expect(resolveResumeStep("creator", makeResumePoint("spec-review"))).toBe("design");
+  });
+  it("--from creator + code phase → implementer", () => {
+    expect(resolveResumeStep("creator", makeResumePoint("implementer"))).toBe("implementer");
+  });
+
+  // TC-RESUME-FROM-07: invalid value → throws with available step names and aliases listed
+  it("--from invalid-name → throws with available values", () => {
+    expect(() => resolveResumeStep("invalid-name", makeResumePoint("code-review")))
+      .toThrow(/invalid-name/);
+    expect(() => resolveResumeStep("invalid-name", makeResumePoint("code-review")))
+      .toThrow(/design/); // step name is listed
+    expect(() => resolveResumeStep("invalid-name", makeResumePoint("code-review")))
+      .toThrow(/critic/); // legacy alias is listed
+  });
+});

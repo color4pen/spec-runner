@@ -1,5 +1,5 @@
 import type { StepName, ResumePoint, StepRun } from "../../state/schema.js";
-import { STEP_NAMES } from "../step/step-names.js";
+import { STEP_NAMES, AGENT_STEP_NAMES, CLI_STEP_NAMES } from "../step/step-names.js";
 import { DesignStep } from "../step/design.js";
 import { SpecReviewStep } from "../step/spec-review.js";
 import { SpecFixerStep } from "../step/spec-fixer.js";
@@ -11,9 +11,23 @@ import { CodeFixerStep } from "../step/code-fixer.js";
 import { STANDARD_LOOP_FIXER_PAIRS } from "../pipeline/run.js";
 
 /**
- * Abstract resume role specified via --from flag.
+ * Legacy resume role aliases accepted by --from flag (for backward compatibility).
  */
-export type ResumeRole = "critic" | "fixer" | "creator";
+export type LegacyResumeRole = "critic" | "fixer" | "creator";
+
+/** @deprecated Use LegacyResumeRole instead */
+export type ResumeRole = LegacyResumeRole;
+
+/** Tuple of all legacy alias values, used for runtime membership checks. */
+export const LEGACY_RESUME_ROLES = ["critic", "fixer", "creator"] as const;
+
+/**
+ * All values accepted by the --from flag: any pipeline step name or a legacy alias.
+ */
+export type ResumeFrom = StepName | LegacyResumeRole;
+
+/** Set of all valid step names for O(1) membership check. */
+const ALL_STEP_NAMES_SET = new Set<string>([...AGENT_STEP_NAMES, ...CLI_STEP_NAMES]);
 
 /**
  * Reverse map of STANDARD_LOOP_FIXER_PAIRS: fixer step → loop step.
@@ -51,7 +65,7 @@ function isSpecPhase(stepName: string): boolean {
  * Mapping: (phase, role) → StepName
  * Design D2 mapping table.
  */
-const STEP_MAPPING: Record<"spec" | "code", Record<ResumeRole, StepName>> = {
+const STEP_MAPPING: Record<"spec" | "code", Record<LegacyResumeRole, StepName>> = {
   spec: {
     critic: STEP_NAMES.SPEC_REVIEW,
     fixer: STEP_NAMES.SPEC_FIXER,
@@ -94,15 +108,27 @@ export function resolveResumeStep(
   fallbackStep?: string,
   steps?: Record<string, StepRun[]>,
 ): StepName {
-  // 1. --from explicitly specified: role-based mapping (highest priority)
+  // 1. --from explicitly specified (highest priority)
   if (from !== undefined) {
-    const role: ResumeRole =
-      from === "fixer" ? "fixer" :
-      from === "creator" ? "creator" :
-      "critic";
-    const phaseStep = resumePoint?.step ?? fallbackStep;
-    const phase = phaseStep && isSpecPhase(phaseStep) ? "spec" : "code";
-    return STEP_MAPPING[phase][role];
+    // 1a. Step name directly: return as-is without phase mapping
+    if (ALL_STEP_NAMES_SET.has(from)) {
+      return from as StepName;
+    }
+    // 1b. Legacy alias: phase-aware mapping (backward-compatible)
+    if (from === "fixer" || from === "creator" || from === "critic") {
+      const role: LegacyResumeRole = from;
+      const phaseStep = resumePoint?.step ?? fallbackStep;
+      const phase = phaseStep && isSpecPhase(phaseStep) ? "spec" : "code";
+      return STEP_MAPPING[phase][role];
+    }
+    // 1c. Unknown value: throw with available values listed
+    const availableSteps = [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES].join(", ");
+    const availableAliases = LEGACY_RESUME_ROLES.join(", ");
+    throw new Error(
+      `Invalid --from value: "${from}". ` +
+      `Available step names: ${availableSteps}. ` +
+      `Legacy aliases: ${availableAliases}.`,
+    );
   }
 
   // 2. from undefined + resumePoint present: failure-reason-based resolution

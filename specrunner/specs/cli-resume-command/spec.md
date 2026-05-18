@@ -1,7 +1,6 @@
 ## Purpose
 
 TBD
-
 ## Requirements
 
 ### Requirement: resume の既定動作は state の最終 step + verdict に基づき決定する
@@ -39,19 +38,36 @@ TBD
 
 ### Requirement: `--from` 指定時は既定を上書きして指定 role に対応する step から再開する
 
-`--from <role>` が指定された場合、上記の自動解決を MUST 上書きし、role + phase に基づく step mapping で再開ステップを決定する。
+`--from` が受け付ける値を step 名 (`STEP_NAMES` の全 agent / CLI step) または legacy alias (`critic` / `fixer` / `creator`) に拡張する MUST。
 
-#### Scenario: --from fixer で fixer-empty mismatch を上書き
+#### Scenario: step 名を直接指定して再開
 
-- **GIVEN** fixer-empty mismatch に該当する state
-- **WHEN** `specrunner resume <slug> --from fixer` を実行する
-- **THEN** fixer step から再開する（= 明示指定が既定を上書き）
+- **GIVEN** 任意の `resumePoint` 状態
+- **WHEN** `specrunner resume <slug> --from <step-name>` を実行する（`<step-name>` は `AGENT_STEP_NAMES` または `CLI_STEP_NAMES` に含まれる値）
+- **THEN** 指定された step から直接再開する（phase mapping なし）
 
-#### Scenario: --from critic で fixer crash を上書き
+#### Scenario: legacy alias `critic` を指定して再開（既存挙動維持）
 
-- **GIVEN** `resumePoint.step` が fixer step で fixer が実行済み
+- **GIVEN** 任意の `resumePoint` 状態
 - **WHEN** `specrunner resume <slug> --from critic` を実行する
-- **THEN** 対応する loop step (code-review / spec-review) から再開する
+- **THEN** `resumePoint.step` の phase に応じて `spec-review`（spec phase）または `code-review`（code phase）から再開する
+
+#### Scenario: legacy alias `fixer` を指定して再開（既存挙動維持）
+
+- **GIVEN** 任意の `resumePoint` 状態
+- **WHEN** `specrunner resume <slug> --from fixer` を実行する
+- **THEN** `resumePoint.step` の phase に応じて `spec-fixer`（spec phase）または `code-fixer`（code phase）から再開する
+
+#### Scenario: legacy alias `creator` を指定して再開（既存挙動維持）
+
+- **GIVEN** 任意の `resumePoint` 状態
+- **WHEN** `specrunner resume <slug> --from creator` を実行する
+- **THEN** `resumePoint.step` の phase に応じて `design`（spec phase）または `implementer`（code phase）から再開する
+
+#### Scenario: 不正値を指定した場合のエラー
+
+- **WHEN** `specrunner resume <slug> --from <invalid>` を実行する（`<invalid>` は step 名にも legacy alias にも該当しない値）
+- **THEN** 利用可能な step 名一覧と legacy alias 一覧を含むエラーメッセージを表示して終了する
 
 ### Requirement: resumePoint が null かつ --from 未指定のとき resume を拒否する
 
