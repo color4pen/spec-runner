@@ -17,8 +17,16 @@ import { getBranchPrefix } from "../../config/type-config.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { projectMdPath } from "../../util/paths.js";
 import { gitExec, gitExecExitCode, defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
-import { noCommitDetectedError, pushFailedError } from "../../errors.js";
+import { noCommitDetectedError, pushFailedError, authoritySpecEditViolationError } from "../../errors.js";
 import { FIXER_STEP_NAMES, getPreviousSessionId } from "./fixer-helpers.js";
+
+/** Prefix that identifies authority spec files. Delta specs under specrunner/changes/ are NOT violations. */
+const AUTHORITY_SPEC_PREFIX = "specrunner/specs/";
+
+/** Return paths that start with the authority spec prefix. */
+function findAuthoritySpecViolations(filePaths: string[]): string[] {
+  return filePaths.filter(p => p.startsWith(AUTHORITY_SPEC_PREFIX));
+}
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -210,9 +218,24 @@ export class StepExecutor {
       attachStateAndRethrow(err, state);
     }
 
-    // Commit and push after successful agent run (local runtime only)
+    // Commit and push after successful agent run (local runtime only).
+    // commitAndPush errors (e.g. AUTHORITY_SPEC_EDIT_VIOLATION, PUSH_FAILED) must be recorded in
+    // state and have state attached to the thrown error so the pipeline can propagate the error
+    // code correctly (otherwise the pipeline safety net overwrites it with UNEXPECTED_STEP_ERROR).
     if (deps.config.runtime === "local") {
-      await this.commitAndPush(step, state, deps, headBeforeStep);
+      await this.commitAndPush(step, state, deps, headBeforeStep).catch(async (thrownErr: unknown) => {
+        const err = thrownErr as Error & { code?: string; hint?: string };
+        const errorInfo: ErrorInfo = {
+          code: err.code ?? "COMMIT_AND_PUSH_FAILED",
+          message: err.message,
+          hint: err.hint ?? "",
+        };
+        state = recordFailedStepResult(state, step.name, errorInfo, { startedAt });
+        state = await store.fail(state, errorInfo, step.name);
+        await store.persist(state);
+        attachStateAndRethrow(err, state);
+        return null as never;
+      });
     }
 
     return this.finalizeStep(step, state, deps, runResult.resultContent, completedAt, startedAt, {
@@ -268,6 +291,15 @@ export class StepExecutor {
         // Check if HEAD advanced (agent self-committed before pipeline commit).
         const headAfterStep = await gitExec(this.spawnFn, cwd, ["rev-parse", "HEAD"]);
         if (headBeforeStep && headAfterStep && headAfterStep !== headBeforeStep) {
+          // Agent self-commit path: inspect HEAD diff for authority spec violations before pushing.
+          const headDiffOutput = await gitExec(this.spawnFn, cwd, ["diff", `${headBeforeStep}..${headAfterStep}`, "--name-only"]);
+          if (headDiffOutput) {
+            const headFilePaths = headDiffOutput.split("\n").filter(p => p.length > 0);
+            const headViolations = findAuthoritySpecViolations(headFilePaths);
+            if (headViolations.length > 0) {
+              throw authoritySpecEditViolationError(step.name, headViolations);
+            }
+          }
           // Agent authored commit(s) since step start — push the existing commits as-is.
           stderrWrite("Detected agent-authored commit(s) since step start; skipping pipeline commit and pushing as-is.\n");
           await this.pushOnly(branch, cwd, step.name);
@@ -277,6 +309,16 @@ export class StepExecutor {
       }
       // No changes and requiresCommit is falsy — silently skip
       return;
+    }
+
+    // Staged changes exist — check for authority spec violations before committing.
+    const stagedFilesOutput = await gitExec(this.spawnFn, cwd, ["diff", "--cached", "--name-only"]);
+    if (stagedFilesOutput) {
+      const stagedFilePaths = stagedFilesOutput.split("\n").filter(p => p.length > 0);
+      const stagedViolations = findAuthoritySpecViolations(stagedFilePaths);
+      if (stagedViolations.length > 0) {
+        throw authoritySpecEditViolationError(step.name, stagedViolations);
+      }
     }
 
     // Commit

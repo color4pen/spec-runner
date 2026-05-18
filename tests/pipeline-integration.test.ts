@@ -1722,6 +1722,241 @@ describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not
 });
 
 // ---------------------------------------------------------------------------
+// TC-AUTH-INT-01: PR #289 / #291 同型 reproduction
+// implementer が authority spec + delta spec 両方 staged → AUTHORITY_SPEC_EDIT_VIOLATION で halt
+// ---------------------------------------------------------------------------
+describe("TC-AUTH-INT-01: implementer stages authority spec + delta spec → AUTHORITY_SPEC_EDIT_VIOLATION halt", () => {
+  it("pipeline halts when implementer stages authority spec alongside delta spec", async () => {
+    // Git mock: implementer staged diff includes both authority spec and delta spec
+    let revParseCallCount = 0;
+    const gitCallLog: string[][] = [];
+
+    const gitSpawnFn: GitSpawnFn = (_bin: string, args: string[], _opts: SpawnOptions): ChildProcess => {
+      gitCallLog.push([...args]);
+      const subcommand = args[0] ?? "";
+
+      let exitCode = 0;
+      let stdout = "";
+
+      if (subcommand === "rev-parse") {
+        stdout = revParseCallCount === 0 ? "sha-before-abc" : "sha-before-abc"; // HEAD does not advance
+        revParseCallCount++;
+      } else if (subcommand === "diff") {
+        const hasNameOnly = args.includes("--name-only");
+        const hasCached = args.includes("--cached");
+        if (hasNameOnly && hasCached) {
+          // staged file list: authority spec + delta spec
+          exitCode = 0;
+          stdout = "specrunner/specs/some-cap/spec.md\nspecrunner/changes/test-slug/specs/some-cap/spec.md";
+        } else {
+          // --cached --quiet: exit 1 = staged changes present
+          exitCode = 1;
+        }
+      }
+      // add, push → exit 0
+
+      const procEm = new EventEmitter();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const procAny = procEm as any;
+      const stdoutEm = new EventEmitter();
+      procAny.stdout = stdoutEm;
+      procAny.stderr = new EventEmitter();
+      procAny.stdin = { write: () => true, end: () => {} };
+
+      setImmediate(() => {
+        if (stdout) stdoutEm.emit("data", Buffer.from(stdout));
+        procEm.emit("close", exitCode);
+      });
+
+      return procEm as unknown as ChildProcess;
+    };
+
+    const mockAgentRunner = {
+      async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
+        return { completionReason: "success", resultContent: null };
+      },
+    };
+
+    const { Pipeline } = await import("../src/core/pipeline/pipeline.js");
+    const { StepExecutor } = await import("../src/core/step/executor.js");
+    const { EventBus } = await import("../src/core/event/event-bus.js");
+    const { ImplementerStep } = await import("../src/core/step/implementer.js");
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, mockAgentRunner, gitSpawnFn, async () => {});
+
+    const miniTransitions = [
+      { step: "implementer", on: "success", to: "end" },
+      { step: "implementer", on: "error", to: "escalate" },
+    ];
+
+    const miniSteps = new Map<string, import("../src/core/step/types.js").Step>([
+      ["implementer", ImplementerStep],
+    ]);
+
+    const pipeline = new Pipeline({
+      steps: miniSteps,
+      transitions: miniTransitions,
+      maxIterations: 1,
+      executor,
+      events,
+      loopName: "implementer",
+    });
+
+    const jobState = await makeJobState();
+    const stateWithBranch = { ...jobState, branch: "change/test-slug-auth-guard" };
+    const { JobStateStore } = await import("../src/store/job-state-store.js");
+    const store = new JobStateStore(stateWithBranch.jobId);
+    await store.persist(stateWithBranch);
+
+    const localConfig = {
+      version: 1 as const,
+      runtime: "local" as const,
+      agents: {},
+    };
+
+    const result = await pipeline.run("implementer", stateWithBranch, {
+      config: localConfig,
+      request: buildRequest(),
+      slug: "test-slug",
+      cwd: tempDir,
+      githubClient: buildMockGithubClient(),
+      spawn: noopSpawn,
+    });
+
+    // Pipeline must have halted (not completed successfully to awaiting-merge)
+    expect(result.status).not.toBe("awaiting-merge");
+
+    // The error should be AUTHORITY_SPEC_EDIT_VIOLATION
+    expect(result.error?.code).toBe("AUTHORITY_SPEC_EDIT_VIOLATION");
+
+    // git commit must NOT have been called
+    const commitCalls = gitCallLog.filter((args) => args[0] === "commit");
+    expect(commitCalls.length).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-AUTH-INT-02: delta spec のみ staged の spec-change pipeline は正常完了する（対照）
+// ---------------------------------------------------------------------------
+describe("TC-AUTH-INT-02: implementer stages delta spec only → pipeline continues normally", () => {
+  it("pipeline completes normally when implementer stages only delta spec path", async () => {
+    // Git mock: implementer staged diff includes only delta spec (no authority spec)
+    let revParseCallCount = 0;
+    const gitCallLog: string[][] = [];
+
+    const gitSpawnFn: GitSpawnFn = (_bin: string, args: string[], _opts: SpawnOptions): ChildProcess => {
+      gitCallLog.push([...args]);
+      const subcommand = args[0] ?? "";
+
+      let exitCode = 0;
+      let stdout = "";
+
+      if (subcommand === "rev-parse") {
+        stdout = revParseCallCount === 0 ? "sha-before-delta" : "sha-before-delta";
+        revParseCallCount++;
+      } else if (subcommand === "diff") {
+        const hasNameOnly = args.includes("--name-only");
+        const hasCached = args.includes("--cached");
+        if (hasNameOnly && hasCached) {
+          // staged file list: delta spec only — no authority spec violation
+          exitCode = 0;
+          stdout = "specrunner/changes/test-slug/specs/some-cap/spec.md";
+        } else {
+          // --cached --quiet: exit 1 = staged changes present
+          exitCode = 1;
+        }
+      }
+      // add, commit, push → exit 0
+
+      const procEm = new EventEmitter();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const procAny = procEm as any;
+      const stdoutEm = new EventEmitter();
+      procAny.stdout = stdoutEm;
+      procAny.stderr = new EventEmitter();
+      procAny.stdin = { write: () => true, end: () => {} };
+
+      setImmediate(() => {
+        if (stdout) stdoutEm.emit("data", Buffer.from(stdout));
+        procEm.emit("close", exitCode);
+      });
+
+      return procEm as unknown as ChildProcess;
+    };
+
+    const mockAgentRunner = {
+      async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
+        return { completionReason: "success", resultContent: null };
+      },
+    };
+
+    const { Pipeline } = await import("../src/core/pipeline/pipeline.js");
+    const { StepExecutor } = await import("../src/core/step/executor.js");
+    const { EventBus } = await import("../src/core/event/event-bus.js");
+    const { ImplementerStep } = await import("../src/core/step/implementer.js");
+    const { VerificationStep } = await import("../src/core/step/verification.js");
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, mockAgentRunner, gitSpawnFn, async () => {});
+
+    const miniTransitions = [
+      { step: "implementer", on: "success", to: "verification" },
+      { step: "implementer", on: "error", to: "escalate" },
+      { step: "verification", on: "passed", to: "end" },
+      { step: "verification", on: "failed", to: "escalate" },
+      { step: "verification", on: "escalation", to: "escalate" },
+    ];
+
+    const miniSteps = new Map<string, import("../src/core/step/types.js").Step>([
+      ["implementer", ImplementerStep],
+      ["verification", VerificationStep],
+    ]);
+
+    const pipeline = new Pipeline({
+      steps: miniSteps,
+      transitions: miniTransitions,
+      maxIterations: 1,
+      executor,
+      events,
+      loopName: "verification",
+    });
+
+    const jobState = await makeJobState();
+    const stateWithBranch = { ...jobState, branch: "change/test-slug-delta-only" };
+    const { JobStateStore } = await import("../src/store/job-state-store.js");
+    const store = new JobStateStore(stateWithBranch.jobId);
+    await store.persist(stateWithBranch);
+
+    const localConfig = {
+      version: 1 as const,
+      runtime: "local" as const,
+      agents: {},
+    };
+
+    const result = await pipeline.run("implementer", stateWithBranch, {
+      config: localConfig,
+      request: buildRequest(),
+      slug: "test-slug",
+      cwd: tempDir,
+      githubClient: buildMockGithubClient(),
+      spawn: noopSpawn,
+    });
+
+    // Implementer completed (no halt)
+    expect(result.steps?.["implementer"]).toBeDefined();
+    expect(result.steps?.["implementer"]?.length).toBeGreaterThanOrEqual(1);
+
+    // Verification ran (pipeline continued past implementer)
+    expect(result.steps?.["verification"]).toBeDefined();
+
+    // Commit was called (delta spec path allowed)
+    const commitCalls = gitCallLog.filter((args) => args[0] === "commit");
+    expect(commitCalls.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-INT-01: dsv Step 5 fail (no-specs-for-required-type) → delta-spec-fixer transition
 // ---------------------------------------------------------------------------
 describe("TC-INT-01: Step 5 fail (no-specs-for-required-type) → pipeline transitions to delta-spec-fixer without escalation", () => {

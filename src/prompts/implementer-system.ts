@@ -1,4 +1,5 @@
 import { COMMIT_DISCIPLINE_RULE } from "./commit-discipline.js";
+import { AUTHORITY_SPEC_GUARD_RULE } from "./authority-spec-guard.js";
 
 /**
  * System prompt for the implementer step.
@@ -18,6 +19,7 @@ build/test/lint は次工程 (verification) に渡してください。あなた
 
 あなたの唯一の役割は、tasks.md に記載されたタスクを実装し、変更を worktree に書き出すことです。
 
+${AUTHORITY_SPEC_GUARD_RULE}
 ## 禁止事項
 
 - レビューを行うこと（あなたはレビュアーではありません）

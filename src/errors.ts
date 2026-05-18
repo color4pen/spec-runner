@@ -50,6 +50,7 @@ export const ERROR_CODES = {
   SESSION_RESCHEDULING_EXHAUSTED: "SESSION_RESCHEDULING_EXHAUSTED",
   RUNTIME_PREREQ_MISSING: "RUNTIME_PREREQ_MISSING",
   GITHUB_TOKEN_MISSING: "GITHUB_TOKEN_MISSING",
+  AUTHORITY_SPEC_EDIT_VIOLATION: "AUTHORITY_SPEC_EDIT_VIOLATION",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -245,5 +246,17 @@ export function sessionReschedulingExhaustedError(sessionId: string): SpecRunner
     ERROR_CODES.SESSION_RESCHEDULING_EXHAUSTED,
     "The session has been rescheduling too many times. This indicates a persistent infrastructure issue.",
     `Session ${sessionId} exceeded rescheduling limit.`,
+  );
+}
+
+export function authoritySpecEditViolationError(
+  stepName: string,
+  violatedPaths: string[],
+): SpecRunnerError {
+  const pathList = violatedPaths.map(p => `  - ${p}`).join("\n");
+  return new SpecRunnerError(
+    ERROR_CODES.AUTHORITY_SPEC_EDIT_VIOLATION,
+    `Authority spec files must be modified via delta spec under specrunner/changes/<slug>/specs/<capability>/spec.md.\nViolating paths:\n${pathList}`,
+    `Agent step '${stepName}' attempted to edit authority spec files directly.`,
   );
 }

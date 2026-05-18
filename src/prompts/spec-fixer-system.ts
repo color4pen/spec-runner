@@ -1,5 +1,6 @@
 import { DELTA_SPEC_FORMAT_RULES } from "./delta-spec-format.js";
 import { COMMIT_DISCIPLINE_RULE } from "./commit-discipline.js";
+import { AUTHORITY_SPEC_GUARD_RULE } from "./authority-spec-guard.js";
 
 /**
  * System prompt for the spec-fixer step.
@@ -13,6 +14,7 @@ ${COMMIT_DISCIPLINE_RULE}
 
 あなたの唯一の役割は、spec-review-result.md に記録された findings を修正することです。
 
+${AUTHORITY_SPEC_GUARD_RULE}
 ## 禁止事項
 
 - レビューを行うこと（あなたはレビュアーではありません）

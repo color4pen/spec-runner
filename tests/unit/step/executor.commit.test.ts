@@ -138,10 +138,47 @@ interface GitCallRecord {
 }
 
 /**
+ * Resolve a git response from baseResponses with priority for diff subcommands.
+ *
+ * Priority for `diff`:
+ * 1. "diff --cached --name-only" — when both --cached and --name-only are present
+ * 2. "diff --name-only"          — when --name-only is present (no --cached, e.g. HEAD diff)
+ * 3. "diff"                      — fallback (e.g. --cached --quiet)
+ *
+ * All other subcommands: exact subcommand key lookup.
+ */
+function resolveGitResponse(
+  args: string[],
+  baseResponses: Record<string, { exitCode: number; stdout?: string }>,
+): { exitCode: number; stdout?: string } {
+  const subcommand = args[0] ?? "";
+
+  if (subcommand === "diff") {
+    const hasNameOnly = args.includes("--name-only");
+    const hasCached = args.includes("--cached");
+
+    if (hasNameOnly && hasCached) {
+      const key = "diff --cached --name-only";
+      if (baseResponses[key]) return baseResponses[key]!;
+    }
+    if (hasNameOnly && !hasCached) {
+      const key = "diff --name-only";
+      if (baseResponses[key]) return baseResponses[key]!;
+    }
+  }
+
+  return baseResponses[subcommand] ?? { exitCode: 0, stdout: "" };
+}
+
+/**
  * Build a SpawnFn that handles rev-parse as a sequence of SHA values.
  *
  * - revParseSequence: SHAs returned in order per call; last entry is repeated if exhausted.
  * - baseResponses: maps git subcommand → { exitCode, stdout? } for non-rev-parse commands.
+ *   For `diff`, compound keys are supported (see resolveGitResponse):
+ *   - "diff --cached --name-only" for staged file list
+ *   - "diff --name-only" for HEAD diff file list (agent self-commit path)
+ *   - "diff" for plain exit-code-only checks (e.g. --cached --quiet)
  */
 function makeGitSpawnFnWithRevParseSequence(
   baseResponses: Record<string, { exitCode: number; stdout?: string }>,
@@ -160,7 +197,7 @@ function makeGitSpawnFnWithRevParseSequence(
       revParseCallCount++;
       response = sha ? { exitCode: 0, stdout: sha } : { exitCode: 128 };
     } else {
-      response = baseResponses[subcommand] ?? { exitCode: 0, stdout: "" };
+      response = resolveGitResponse(args, baseResponses);
     }
 
     const procEm = new EventEmitter();
@@ -481,5 +518,211 @@ describe("TC-CAP-NEW-008: commit:push event emitted after push-only path", () =>
       step: "implementer",
       branch: "feat/self-commit-branch",
     });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-AUTH-01: staged に authority spec を含む → AUTHORITY_SPEC_EDIT_VIOLATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-AUTH-01: staged authority spec → AUTHORITY_SPEC_EDIT_VIOLATION, commit not called", () => {
+  it("throws AUTHORITY_SPEC_EDIT_VIOLATION and does not call git commit when staged includes authority spec", async () => {
+    const jobId = "tc-auth-01-job";
+    const state = makeJobState(jobId);
+    await seedJobState(jobId, state);
+
+    const { spawnFn, calls } = makeGitSpawnFnWithRevParseSequence(
+      {
+        add: { exitCode: 0 },
+        diff: { exitCode: 1 }, // staged changes present
+        "diff --cached --name-only": { exitCode: 0, stdout: "specrunner/specs/foo/spec.md\nsrc/bar.ts" },
+        commit: { exitCode: 0 },
+        push: { exitCode: 0 },
+      },
+      ["abc123before"],
+    );
+
+    const runner = makeSuccessRunner();
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, spawnFn);
+
+    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    await expect(executor.execute(step, state, makeLocalDeps())).rejects.toMatchObject({
+      code: "AUTHORITY_SPEC_EDIT_VIOLATION",
+    });
+
+    const subcommands = calls.map((c) => c.args[0]);
+    expect(subcommands).not.toContain("commit");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-AUTH-02: staged に delta spec のみ → 正常 commit
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-AUTH-02: staged delta spec only → normal commit + push", () => {
+  it("commits and pushes normally when staged contains only delta spec path", async () => {
+    const jobId = "tc-auth-02-job";
+    const state = makeJobState(jobId);
+    await seedJobState(jobId, state);
+
+    const { spawnFn, calls } = makeGitSpawnFnWithRevParseSequence(
+      {
+        add: { exitCode: 0 },
+        diff: { exitCode: 1 }, // staged changes present
+        "diff --cached --name-only": { exitCode: 0, stdout: "specrunner/changes/my-slug/specs/foo/spec.md" },
+        commit: { exitCode: 0 },
+        push: { exitCode: 0 },
+      },
+      ["abc123before"],
+    );
+
+    const runner = makeSuccessRunner();
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, spawnFn);
+
+    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const result = await executor.execute(step, state, makeLocalDeps());
+    expect(result).toBeDefined();
+
+    const subcommands = calls.map((c) => c.args[0]);
+    expect(subcommands).toContain("commit");
+    expect(subcommands).toContain("push");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-AUTH-03: staged に authority spec + src → reject、違反 path のみ列挙
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-AUTH-03: staged authority + src → reject with only authority path in error hint", () => {
+  it("throws with hint listing authority spec path but not src path", async () => {
+    const jobId = "tc-auth-03-job";
+    const state = makeJobState(jobId);
+    await seedJobState(jobId, state);
+
+    const { spawnFn } = makeGitSpawnFnWithRevParseSequence(
+      {
+        add: { exitCode: 0 },
+        diff: { exitCode: 1 },
+        "diff --cached --name-only": { exitCode: 0, stdout: "specrunner/specs/foo/spec.md\nsrc/foo.ts" },
+      },
+      ["abc123before"],
+    );
+
+    const runner = makeSuccessRunner();
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, spawnFn);
+
+    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const err = await executor.execute(step, state, makeLocalDeps()).catch((e: unknown) => e) as { code: string; hint: string };
+    expect(err.code).toBe("AUTHORITY_SPEC_EDIT_VIOLATION");
+    expect(err.hint).toContain("specrunner/specs/foo/spec.md");
+    expect(err.hint).not.toContain("src/foo.ts");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-AUTH-04: agent self-commit (HEAD advanced) で HEAD diff に authority spec → reject
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-AUTH-04: agent self-commit with authority spec in HEAD diff → reject, push not called", () => {
+  it("throws AUTHORITY_SPEC_EDIT_VIOLATION without calling git push", async () => {
+    const jobId = "tc-auth-04-job";
+    const state = makeJobState(jobId);
+    await seedJobState(jobId, state);
+
+    const { spawnFn, calls } = makeGitSpawnFnWithRevParseSequence(
+      {
+        add: { exitCode: 0 },
+        diff: { exitCode: 0 }, // no staged changes (agent self-committed)
+        "diff --name-only": { exitCode: 0, stdout: "specrunner/specs/foo/spec.md" }, // HEAD diff
+        push: { exitCode: 0 },
+      },
+      ["abc123before", "def456after"], // HEAD advanced
+    );
+
+    const runner = makeSuccessRunner();
+    const events = new EventBus();
+    const noopSleep = async (_ms: number) => {};
+    const executor = new StepExecutor(events, runner, spawnFn, noopSleep);
+
+    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    await expect(executor.execute(step, state, makeLocalDeps())).rejects.toMatchObject({
+      code: "AUTHORITY_SPEC_EDIT_VIOLATION",
+    });
+
+    const subcommands = calls.map((c) => c.args[0]);
+    expect(subcommands).not.toContain("push");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-AUTH-05: 通常 step (authority spec なし) は既存挙動維持
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-AUTH-05: normal step (no authority spec) — existing behavior unchanged", () => {
+  it("commits and pushes normally when staged contains only src files", async () => {
+    const jobId = "tc-auth-05-job";
+    const state = makeJobState(jobId);
+    await seedJobState(jobId, state);
+
+    const { spawnFn, calls } = makeGitSpawnFnWithRevParseSequence(
+      {
+        add: { exitCode: 0 },
+        diff: { exitCode: 1 },
+        "diff --cached --name-only": { exitCode: 0, stdout: "src/foo.ts" },
+        commit: { exitCode: 0 },
+        push: { exitCode: 0 },
+      },
+      ["abc123before"],
+    );
+
+    const runner = makeSuccessRunner();
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, spawnFn);
+
+    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const result = await executor.execute(step, state, makeLocalDeps());
+    expect(result).toBeDefined();
+
+    const subcommands = calls.map((c) => c.args[0]);
+    expect(subcommands).toContain("commit");
+    expect(subcommands).toContain("push");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-AUTH-06: agent self-commit with delta spec only in HEAD diff → normal push
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-AUTH-06: agent self-commit with delta spec only in HEAD diff → normal push", () => {
+  it("pushes normally when HEAD diff contains only delta spec path", async () => {
+    const jobId = "tc-auth-06-job";
+    const state = makeJobState(jobId);
+    await seedJobState(jobId, state);
+
+    const { spawnFn, calls } = makeGitSpawnFnWithRevParseSequence(
+      {
+        add: { exitCode: 0 },
+        diff: { exitCode: 0 }, // no staged changes (agent self-committed)
+        "diff --name-only": { exitCode: 0, stdout: "specrunner/changes/my-slug/specs/foo/spec.md" }, // HEAD diff, delta spec only
+        push: { exitCode: 0 },
+      },
+      ["abc123before", "def456after"], // HEAD advanced
+    );
+
+    const runner = makeSuccessRunner();
+    const events = new EventBus();
+    const noopSleep = async (_ms: number) => {};
+    const executor = new StepExecutor(events, runner, spawnFn, noopSleep);
+
+    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const result = await executor.execute(step, state, makeLocalDeps());
+    expect(result).toBeDefined();
+
+    const subcommands = calls.map((c) => c.args[0]);
+    expect(subcommands).toContain("push");
+    expect(subcommands).not.toContain("commit");
   });
 });
