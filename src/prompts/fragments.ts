@@ -1,12 +1,56 @@
 /**
- * Common pipeline rules for review agents.
+ * Shared prompt fragments for system prompts.
  *
- * Curated from the project's review standards and embedded as a TypeScript constant
- * so spec-runner works correctly when installed in any project without external
- * file dependencies at runtime.
+ * Single source of truth for all cross-step prompt rules.
+ * Each fragment is a plain string; no metadata or registry abstraction.
  *
- * Injected into code-review and spec-review system prompts via template literals.
+ * Dependency direction: prompt files → fragments (one-way).
+ * Fragment files do not know which prompts use them.
  */
+
+/** Prevents agents from editing authority specs directly. */
+export const AUTHORITY_SPEC_GUARD = `## authority spec の編集禁止
+
+\`specrunner/specs/\` 配下のファイルを直接編集してはならない（MUST NOT）。
+spec の変更は delta spec（\`specrunner/changes/<slug>/specs/<capability>/spec.md\`）を作成・編集する。
+authority spec への直接編集は executor が commit 前に検出し、ステップを halt する。
+`;
+
+/** Prevents agents from running git commands (commit / push). */
+export const COMMIT_DISCIPLINE = `## git operations
+
+あなたは file edit のみ行ってください。\`git add\` / \`git commit\` / \`git push\` の実行は禁止です。
+commit / push は pipeline executor が一括で行います。違反して自主 commit してしまっても pipeline は halt せず agent commit を許容しますが、commit message format が pipeline 規定 (\`<step>: <slug>\`) から外れて履歴が読みづらくなるため、必ず file edit のみで完了してください。
+`;
+
+/** Delta spec path conventions and format rules. */
+export const DELTA_SPEC_FORMAT = `### 使用するセクションヘッダー
+
+- \`## ADDED Requirements\` — 新規 Requirement を追加する場合
+- \`## MODIFIED Requirements\` — 既存 Requirement を変更する場合
+- \`## REMOVED Requirements\` — 既存 Requirement を削除する場合
+- \`## RENAMED Requirements\` — Requirement header を変更する場合（MODIFIED と併記必須）
+
+### ルール
+
+1. **各 Requirement は \`### Requirement:\` で始まる header を持つこと**
+2. **各 Requirement は少なくとも 1 つの \`#### Scenario:\` を含むこと**（scenario なしは validation error）
+   - **MODIFIED Requirements にも最低 1 つの Scenario が必須である。** Scenario は「差分の説明文」や「変更概要」ではなく、変更後のシステムの振る舞いを Given/When/Then 形式で具体的に記述すること。
+3. **\`## MODIFIED Requirements\` 配下の \`### Requirement:\` header は、変更前の元の header と完全一致すること**。header を変えたい場合は \`## RENAMED Requirements\` を併記し FROM / TO を明示する。
+4. **\`## Changed Requirement:\` や \`## Updated:\` などの独自フォーマットは禁止**。認識されるのは \`## ADDED/MODIFIED/REMOVED/RENAMED Requirements\` のみ。
+5. **Requirement 本文（header 直後〜最初の Scenario の間）に英語の \`SHALL\` または \`MUST\` を少なくとも 1 つ含めること**（normative keyword なしは validation error）
+6. **\`### Requirement:\` header と最初の \`#### Scenario:\` の間にコードブロック（\`\`\` ）を挟まないこと**（コードブロックが入るとシナリオ紐付けが失敗する）
+
+### ファイル配置
+
+- delta spec は \`specs/<capability-name>/spec.md\` に配置すること（唯一の正規 path）
+- \`<capability-name>\` は design.md で宣言した名前を使用すること
+- 以下の正規外 path への出力は禁止:
+  - \`<change>/delta-spec.md\`（単一フラット形式）
+  - \`<change>/delta-spec/<capability>.md\`（ディレクトリ形式だが非正規）
+  - \`<change>/specs/<name>.delta.md\`（拡張子付きフラット形式）`;
+
+/** Pipeline review rules (severity / categories / findings format / scoring / verdict). */
 export const PIPELINE_RULES = `## Severity
 
 | Severity | 定義 | 対応 |

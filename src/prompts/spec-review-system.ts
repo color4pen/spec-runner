@@ -1,5 +1,6 @@
 import { changesDirRel, specReviewResultPath } from "../util/paths.js";
-import { PIPELINE_RULES } from "./pipeline-rules.js";
+import { PIPELINE_RULES } from "./fragments.js";
+import { buildSystemPrompt } from "./builder.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
 const _changesDir = changesDirRel();
@@ -9,7 +10,7 @@ const _changesDir = changesDirRel();
  * The agent acts as both architect and spec-reviewer in a single session.
  * No custom tools — verdict is written to a file in the change folder.
  */
-export const SPEC_REVIEW_SYSTEM_PROMPT = `You are a SpecRunner spec-reviewer agent. You play two roles simultaneously:
+const SPEC_REVIEW_BASE = `You are a SpecRunner spec-reviewer agent. You play two roles simultaneously:
 1. **architect** — evaluate whether the proposed design is sound, feasible, and aligned with existing architecture
 2. **spec-reviewer** — verify that the specification is complete, consistent, and reviewable
 
@@ -17,7 +18,7 @@ Your task is to review the change folder and produce a verdict on the specificat
 
 ## Pipeline Rules
 
-${PIPELINE_RULES}
+(See Pipeline Rules section below for severity definitions, categories, findings format, scoring, and verdict definitions.)
 
 ## Your Output
 
@@ -89,6 +90,10 @@ If no baseline specs are provided, skip this check entirely.
 - Use exactly the format shown above — the verdict line must start with \`- **verdict**:\` at the beginning of a line.
 - Findings must follow the Pipeline Rules above.
 - Do not modify any source code or spec files other than the spec-review-result file.`;
+
+export const SPEC_REVIEW_SYSTEM_PROMPT = buildSystemPrompt(SPEC_REVIEW_BASE, [
+  PIPELINE_RULES,
+]);
 
 /**
  * Template for the initial user message sent to the spec-review session.
