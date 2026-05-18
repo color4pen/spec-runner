@@ -1,14 +1,13 @@
 import * as fs from "node:fs/promises";
 import { requestMdInvalidError } from "../errors.js";
 import { stderrWrite } from "../logger/stdout.js";
-import { TYPE_CONFIG } from "../config/type-config.js";
 
 export type { ParsedRequest, ParsedRequestSections } from "../core/request/types.js";
 import type { ParsedRequest, ParsedRequestSections } from "../core/request/types.js";
 
-function isAllowedType(t: string): t is keyof typeof TYPE_CONFIG {
-  return t in TYPE_CONFIG;
-}
+import type { ParsedRequestRaw } from "./rules/types.js";
+export type { ParsedRequestRaw } from "./rules/types.js";
+import { createRequestMdRegistry } from "./rules/index.js";
 
 /**
  * Parse a request.md file into structured fields.
@@ -30,6 +29,46 @@ export function parseRequestMdContent(
   content: string,
   filePath: string = "<string>",
 ): ParsedRequest {
+  const raw = parseRequestMdRaw(content, filePath);
+
+  const registry = createRequestMdRegistry();
+  const violations = registry.validate(raw);
+
+  for (const v of violations) {
+    if (v.severity === "warning") {
+      stderrWrite(v.message);
+    }
+  }
+
+  const firstError = violations.find((v) => v.severity === "error");
+  if (firstError) {
+    throw requestMdInvalidError(firstError.message);
+  }
+
+  // At this point all required fields are validated present — safe to cast
+  const adr = raw.adrRaw === "true";
+
+  return {
+    type: raw.type as string,
+    title: raw.title as string,
+    slug: raw.slug as string,
+    baseBranch: raw.baseBranch as string,
+    content: raw.content,
+    enabled: raw.enabled,
+    adr,
+    sections: raw.sections,
+    issue: raw.issue,
+  };
+}
+
+/**
+ * Extract raw fields from request.md content without validation.
+ * Exported for testing and rule unit tests.
+ */
+export function parseRequestMdRaw(
+  content: string,
+  filePath: string = "<string>",
+): ParsedRequestRaw {
   const lines = content.split("\n");
 
   // Extract title from first level-1 heading
@@ -40,11 +79,6 @@ export function parseRequestMdContent(
       title = m[1].trim();
       break;
     }
-  }
-  if (title === null) {
-    throw requestMdInvalidError(
-      `missing title (top-level # heading required) in ${filePath}`,
-    );
   }
 
   // Extract type from Meta section: "- **type**: value"
@@ -57,19 +91,8 @@ export function parseRequestMdContent(
       break;
     }
   }
-  if (type === null) {
-    throw requestMdInvalidError(
-      `missing 'type' in Meta section in ${filePath}`,
-    );
-  }
-
-  if (!isAllowedType(type)) {
-    stderrWrite(`Warning: unknown request type '${type}'.`);
-  }
 
   // Extract slug from Meta section: "- **slug**: value"
-  // Required: missing slug → REQUEST_MD_INVALID. Single source of truth for the
-  // change identifier across the whole pipeline (executor / agent / change folder).
   let slug: string | null = null;
   const slugPattern = /^\s*-\s+\*\*slug\*\*:\s+(.+)$/;
   for (const line of lines) {
@@ -79,14 +102,8 @@ export function parseRequestMdContent(
       break;
     }
   }
-  if (slug === null || slug.length === 0) {
-    throw requestMdInvalidError(
-      `missing 'slug' in Meta section in ${filePath}`,
-    );
-  }
 
   // Extract base-branch from Meta section: "- **base-branch**: value"
-  // Required: missing base-branch → REQUEST_MD_INVALID.
   let baseBranch: string | null = null;
   const baseBranchPattern = /^\s*-\s+\*\*base-branch\*\*:\s+(.+)$/;
   for (const line of lines) {
@@ -95,11 +112,6 @@ export function parseRequestMdContent(
       baseBranch = m[1].trim();
       break;
     }
-  }
-  if (baseBranch === null || baseBranch.length === 0) {
-    throw requestMdInvalidError(
-      `missing 'base-branch' in Meta section in ${filePath}`,
-    );
   }
 
   // Extract issue from Meta section: "- **issue**: value" (optional)
@@ -123,22 +135,19 @@ export function parseRequestMdContent(
       break;
     }
   }
+
+  // Check if there's an adr field with an invalid value
+  let adrAnyValue: string | null = null;
   if (adrRaw === null) {
-    // Check if there's an adr field with an invalid value
     const adrAnyPattern = /^\s*-\s+\*\*adr\*\*:\s+(.+)$/;
     for (const line of lines) {
       const m = adrAnyPattern.exec(line);
       if (m?.[1]) {
-        throw requestMdInvalidError(
-          `invalid value for 'adr' in Meta section in ${filePath}: must be 'true' or 'false', got '${m[1].trim()}'`,
-        );
+        adrAnyValue = m[1].trim();
+        break;
       }
     }
-    throw requestMdInvalidError(
-      `missing 'adr' in Meta section in ${filePath}`,
-    );
   }
-  const adr = adrRaw === "true";
 
   // Extract enabled list from Workflow Options section
   const enabled = extractEnabled(lines);
@@ -146,7 +155,19 @@ export function parseRequestMdContent(
   // Extract sections: 背景, 目的
   const sections = extractSections(lines);
 
-  return { type, title, slug, baseBranch, content, enabled, adr, sections, issue };
+  return {
+    title,
+    type,
+    slug,
+    baseBranch,
+    adrRaw,
+    adrAnyValue,
+    issue,
+    enabled,
+    sections,
+    filePath,
+    content,
+  };
 }
 
 /**
