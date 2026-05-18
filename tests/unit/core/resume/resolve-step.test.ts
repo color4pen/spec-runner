@@ -13,7 +13,21 @@
  */
 import { describe, it, expect } from "vitest";
 import { resolveResumeStep } from "../../../../src/core/resume/resolve-step.js";
-import type { ResumePoint } from "../../../../src/state/schema.js";
+import type { ResumePoint, StepRun, Verdict } from "../../../../src/state/schema.js";
+
+/**
+ * Create a minimal StepRun for use in fixer-empty detection tests.
+ * Only `outcome.verdict` is exercised by the logic under test.
+ */
+function makeVerdictRun(verdict: Verdict | null): StepRun {
+  return {
+    attempt: 1,
+    sessionId: null,
+    outcome: { verdict, findingsPath: null, error: null },
+    startedAt: "2026-01-01T00:00:00.000Z",
+    endedAt: "2026-01-01T00:00:00.000Z",
+  };
+}
 
 function makeResumePoint(step: ResumePoint["step"]): ResumePoint {
   return { step, reason: "test", iterationsExhausted: 0 };
@@ -168,5 +182,73 @@ describe("T4.4: resolveResumeStep - --from specified → role-based mapping take
 
   it("--from fixer + spec-review crash (iterationsExhausted=0) → spec-fixer (fixer role wins)", () => {
     expect(resolveResumeStep("fixer", { step: "spec-review", reason: "crash", iterationsExhausted: 0 })).toBe("spec-fixer");
+  });
+});
+
+// ============================================================
+// Fixer-empty detection (issue #236)
+// ============================================================
+
+describe("resolveResumeStep - fixer-empty detection (issue #236)", () => {
+  it("resumePoint=code-fixer + steps[code-fixer] empty + steps[code-review] needs-fix → code-review", () => {
+    const steps: Record<string, StepRun[]> = {
+      "code-review": [makeVerdictRun("needs-fix")],
+    };
+    expect(resolveResumeStep(undefined, { step: "code-fixer", reason: "kill", iterationsExhausted: 0 }, undefined, steps))
+      .toBe("code-review");
+  });
+
+  it("resumePoint=spec-fixer + steps[spec-fixer] empty + steps[spec-review] needs-fix → spec-review", () => {
+    const steps: Record<string, StepRun[]> = {
+      "spec-review": [makeVerdictRun("needs-fix")],
+    };
+    expect(resolveResumeStep(undefined, { step: "spec-fixer", reason: "kill", iterationsExhausted: 0 }, undefined, steps))
+      .toBe("spec-review");
+  });
+
+  it("resumePoint=build-fixer + steps[build-fixer] empty + steps[verification] failed → verification", () => {
+    const steps: Record<string, StepRun[]> = {
+      "verification": [makeVerdictRun("failed")],
+    };
+    expect(resolveResumeStep(undefined, { step: "build-fixer", reason: "kill", iterationsExhausted: 0 }, undefined, steps))
+      .toBe("verification");
+  });
+
+  it("resumePoint=code-fixer + steps[code-fixer] non-empty → code-fixer (fixer ran, crash restart)", () => {
+    const steps: Record<string, StepRun[]> = {
+      "code-review": [makeVerdictRun("needs-fix")],
+      "code-fixer": [makeVerdictRun("success")],
+    };
+    expect(resolveResumeStep(undefined, { step: "code-fixer", reason: "crash", iterationsExhausted: 0 }, undefined, steps))
+      .toBe("code-fixer");
+  });
+
+  it("--from fixer + fixer-empty scenario → code-fixer (--from wins)", () => {
+    const steps: Record<string, StepRun[]> = {
+      "code-review": [makeVerdictRun("needs-fix")],
+    };
+    expect(resolveResumeStep("fixer", { step: "code-fixer", reason: "kill", iterationsExhausted: 0 }, undefined, steps))
+      .toBe("code-fixer");
+  });
+
+  it("resumePoint=code-fixer + steps=undefined → code-fixer (legacy path, no steps inspection)", () => {
+    expect(resolveResumeStep(undefined, { step: "code-fixer", reason: "kill", iterationsExhausted: 0 }, undefined, undefined))
+      .toBe("code-fixer");
+  });
+
+  it("resumePoint=code-fixer + steps[code-fixer] empty + steps[code-review] approved → code-fixer (no mismatch)", () => {
+    const steps: Record<string, StepRun[]> = {
+      "code-review": [makeVerdictRun("approved")],
+    };
+    expect(resolveResumeStep(undefined, { step: "code-fixer", reason: "kill", iterationsExhausted: 0 }, undefined, steps))
+      .toBe("code-fixer");
+  });
+
+  it("resumePoint=delta-spec-fixer + steps[delta-spec-fixer] empty + steps[delta-spec-validation] needs-fix → delta-spec-validation", () => {
+    const steps: Record<string, StepRun[]> = {
+      "delta-spec-validation": [makeVerdictRun("needs-fix")],
+    };
+    expect(resolveResumeStep(undefined, { step: "delta-spec-fixer", reason: "kill", iterationsExhausted: 0 }, undefined, steps))
+      .toBe("delta-spec-validation");
   });
 });

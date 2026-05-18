@@ -311,3 +311,46 @@ describe("TC-RESUME-010: slug not found", () => {
     expect(stderrCalls.some((args) => String(args[0]).includes("Job not found"))).toBe(true);
   });
 });
+
+// TC-RESUME-013: exact #236 reproduction — fixer-empty mismatch through ResumeCommand.prepare()
+// Verifies that the fixer-empty detection in resolveResumeStep works end-to-end at the command layer
+// where state.steps is sourced from the loaded job state.
+describe("TC-RESUME-013: exact #236 — fixer-empty mismatch detected at command layer", () => {
+  it("resumePoint=code-fixer + steps[code-fixer] absent + steps[code-review] needs-fix → pipeline starts at code-review", async () => {
+    // Construct the exact #236 job state:
+    //   - resumePoint.step = "code-fixer" (pipeline.ts:100 recorded the transition)
+    //   - state.steps["code-fixer"] is absent (fixer never executed — kill happened after transition)
+    //   - state.steps["code-review"][-1].outcome.verdict = "needs-fix"
+    await makeAwaitingResumeJob("bug-236-slug", {
+      step: "code-fixer",
+      resumePoint: {
+        step: "code-fixer",
+        reason: "loop-iteration",
+        iterationsExhausted: 0,
+      },
+      steps: {
+        "code-review": [
+          {
+            attempt: 1,
+            sessionId: null,
+            outcome: { verdict: "needs-fix", findingsPath: null, error: null },
+            startedAt: "2026-01-01T00:00:00.000Z",
+            endedAt: "2026-01-01T00:00:00.000Z",
+          } satisfies StepRun,
+        ],
+        // "code-fixer" intentionally absent — fixer never ran (the #236 scenario)
+      },
+    });
+
+    const { runResumeCore } = await import("../../../src/cli/resume.js");
+    const exitCode = await runResumeCore("bug-236-slug", {});
+    expect(exitCode).toBe(0);
+
+    // Verify the pipeline was invoked with startStep = "code-review", not "code-fixer"
+    const { createStandardPipeline } = await import("../../../src/core/pipeline/index.js");
+    const pipelineMock = vi.mocked(createStandardPipeline);
+    // pipeline.run(startStep, jobState, deps) — first arg is startStep
+    const runFn = pipelineMock.mock.results[0]?.value.run as ReturnType<typeof vi.fn>;
+    expect(runFn.mock.calls[0]?.[0]).toBe("code-review");
+  });
+});

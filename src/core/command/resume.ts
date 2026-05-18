@@ -155,7 +155,7 @@ export class ResumeCommand extends CommandRunner {
 
     let startStep: StepName;
     try {
-      startStep = resolveResumeStep(this.options.from, resumePoint, fallbackStep);
+      startStep = resolveResumeStep(this.options.from, resumePoint, fallbackStep, state.steps);
     } catch (err) {
       process.stderr.write(`Error: ${(err as Error).message}\n`);
       throw new PrepareError(1, "Failed to resolve resume step");
