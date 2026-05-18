@@ -13,6 +13,7 @@ import { parseRequestMdContent } from "../../parser/request-md.js";
 import { SpecRunnerError } from "../../errors.js";
 import { loadConfig } from "../../config/store.js";
 import { runReview } from "../request/reviewer.js";
+import { stderrWrite } from "../../logger/stdout.js";
 
 // Re-export types and helpers from reviewer.ts for backward compatibility
 export type {
@@ -67,17 +68,21 @@ export async function executeReview(filePath: string, opts: { json: boolean }): 
 
   // Steps 4-9: Delegated to runReview()
   let result: import("../request/reviewer.js").RequestReviewResult;
+  stderrWrite("Reviewing request.md...");
   try {
     result = await runReview(content, config, process.cwd());
   } catch (err) {
     if (err instanceof SpecRunnerError) {
+      stderrWrite("✗ Failed: " + err.message);
       process.stderr.write(`Error: ${err.message}\n`);
     } else {
       const message = err instanceof Error ? err.message : String(err);
+      stderrWrite("✗ Failed: " + message);
       process.stderr.write(`Error: Review session failed: ${message}\n`);
     }
     return 1;
   }
+  stderrWrite("✓ Reviewed");
 
   // Step 10: Output
   if (opts.json) {

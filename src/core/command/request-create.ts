@@ -2,6 +2,7 @@ import { loadConfig } from "../../config/store.js";
 import { SpecRunnerError } from "../../errors.js";
 import * as manager from "../request/manager.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
+import { stderrWrite } from "../../logger/stdout.js";
 
 export async function executeCreate(
   text: string | null,
@@ -34,10 +35,13 @@ export async function executeCreate(
 
   // (e) Create request
   try {
+    stderrWrite("Generating request.md...");
     const slug = await manager.create(resolvedText, opts.cwd, config);
+    stderrWrite("✓ Generated " + slug);
     process.stdout.write(`${slug}\n`);
     return 0;
   } catch (err) {
+    stderrWrite("✗ Failed: " + (err instanceof Error ? err.message : String(err)));
     if (err instanceof SpecRunnerError) {
       process.stderr.write(`Error: ${err.message}\nHint: ${err.hint}\n`);
     } else {

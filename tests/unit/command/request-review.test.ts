@@ -221,3 +221,4 @@ describe("TC-RR-010: buildInitialMessage wraps projectContext in <project-contex
     expect(message).toContain("</project-context>");
   });
 });
+
