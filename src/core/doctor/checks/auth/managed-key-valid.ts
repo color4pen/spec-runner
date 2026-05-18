@@ -14,12 +14,12 @@ export const managedKeyValidCheck: DoctorCheck = {
   required: true,
 
   async check(ctx: DoctorContext) {
-    const apiKey = ctx.env["SPECRUNNER_API_KEY"];
-    if (typeof apiKey !== "string" || apiKey.length === 0) {
+    const apiKey = ctx.resolvedSpecRunnerApiKey;
+    if (apiKey === null) {
       return {
         status: "fail",
-        message: "SPECRUNNER_API_KEY is not set — cannot validate",
-        hint: "Set SPECRUNNER_API_KEY env var first.",
+        message: "Anthropic API key is not available — cannot validate",
+        hint: "Save an API key via 'specrunner login --provider anthropic' or set SPECRUNNER_API_KEY env var.",
       };
     }
 

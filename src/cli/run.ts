@@ -4,6 +4,7 @@ import { resolve as storeResolve } from "../core/request/store.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { createAnthropicClient } from "../adapter/managed-agent/client.js";
 import { createAnthropicSessionClient } from "../adapter/managed-agent/session-client.js";
+import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
 import { runPreflight } from "../core/preflight.js";
 import { setVerbose } from "../logger/stdout.js";
 import { SpecRunnerError } from "../errors.js";
@@ -43,10 +44,12 @@ export async function runRunCore(
 
   const { config, repo, githubToken } = preflightResult;
   const githubClient = createGitHubClient(fetch, githubToken);
-  const sessionClient =
-    config.runtime === "managed" && process.env["SPECRUNNER_API_KEY"]
-      ? createAnthropicSessionClient(createAnthropicClient(process.env["SPECRUNNER_API_KEY"]))
-      : undefined;
+  const anthropicResult = config.runtime === "managed"
+    ? await resolveSpecRunnerApiKey(process.env as Record<string, string | undefined>)
+    : await resolveSpecRunnerApiKey(process.env as Record<string, string | undefined>, { optional: true });
+  const sessionClient = anthropicResult
+    ? createAnthropicSessionClient(createAnthropicClient(anthropicResult.apiKey))
+    : undefined;
   const runtime = createRuntime(config, cwd, githubClient, repo, sessionClient, githubToken);
   try {
     return await new PipelineRunCommand(runtime, absolutePath, preflightResult, options).execute();

@@ -28,6 +28,12 @@ vi.mock("../../src/logger/stdout.js", () => ({
 vi.mock("../../src/core/credentials/github.js", () => ({
   resolveGitHubToken: vi.fn(),
 }));
+vi.mock("../../src/core/credentials/anthropic.js", () => ({
+  resolveSpecRunnerApiKey: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../../src/core/credentials/requirements.js", () => ({
+  requirementsFor: vi.fn().mockReturnValue([{ key: "github.token", envVar: "GITHUB_TOKEN" }]),
+}));
 
 import { runPreflight } from "../../src/core/preflight.js";
 import { resolveGitHubToken } from "../../src/core/credentials/github.js";

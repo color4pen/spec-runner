@@ -8,6 +8,8 @@ import { checkConfigComplete } from "../config/schema.js";
 import { getOriginInfo } from "../git/remote.js";
 import { parseRequestMd } from "../parser/request-md.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
+import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
+import { requirementsFor } from "../core/credentials/requirements.js";
 import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 import { logInfo } from "../logger/stdout.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
@@ -22,37 +24,52 @@ export interface PreflightResult {
   githubToken: string;
   /** Source of the resolved GitHub token. */
   githubTokenSource: "credentials" | "env";
+  /** Resolved Anthropic API key (present only for managed runtime). */
+  specRunnerApiKey?: string;
+  /** Source of the resolved Anthropic API key. */
+  specRunnerApiKeySource?: "credentials" | "env";
 }
 
 /**
- * Check runtime-specific prerequisites for the managed runtime.
+ * Check runtime-specific prerequisites using declarative requirements matrix.
  * Returns { field, hint } when a prerequisite is missing, null when all are satisfied.
- * For non-managed runtimes, always returns null.
+ * For non-managed runtimes, only checks non-anthropic requirements.
  */
-export function checkRuntimePrereqs(
+export async function checkRuntimePrereqs(
   cfg: SpecRunnerConfig,
   env: Record<string, string | undefined>,
-): { field: string; hint: string } | null {
-  if (cfg.runtime !== "managed") return null;
+): Promise<{ field: string; hint: string } | null> {
+  const requirements = requirementsFor(cfg.runtime ?? "local");
 
-  if (!env["SPECRUNNER_API_KEY"]) {
-    return {
-      field: "SPECRUNNER_API_KEY",
-      hint: "Set SPECRUNNER_API_KEY env var, then run 'specrunner managed setup'.",
-    };
+  for (const req of requirements) {
+    if (req.key === "anthropic.apiKey") {
+      try {
+        await resolveSpecRunnerApiKey(env);
+      } catch {
+        return {
+          field: req.envVar,
+          hint: "Save an API key via 'specrunner login --provider anthropic', set SPECRUNNER_API_KEY env var, then run 'specrunner managed setup'.",
+        };
+      }
+    }
   }
-  if (!cfg.agents?.["design"]?.agentId) {
-    return {
-      field: "agents.design.agentId",
-      hint: "Run 'specrunner managed setup' first.",
-    };
+
+  // Check non-credential runtime requirements (agents config, environment config)
+  if (cfg.runtime === "managed") {
+    if (!cfg.agents?.["design"]?.agentId) {
+      return {
+        field: "agents.design.agentId",
+        hint: "Run 'specrunner managed setup' first.",
+      };
+    }
+    if (!cfg.environment?.id) {
+      return {
+        field: "environment.id",
+        hint: "Run 'specrunner managed setup' first.",
+      };
+    }
   }
-  if (!cfg.environment?.id) {
-    return {
-      field: "environment.id",
-      hint: "Run 'specrunner managed setup' first.",
-    };
-  }
+
   return null;
 }
 
@@ -97,7 +114,7 @@ export async function runPreflight(
   }
 
   // Step 2.7: Runtime prerequisites (managed-specific)
-  const prereq = checkRuntimePrereqs(config, process.env as Record<string, string | undefined>);
+  const prereq = await checkRuntimePrereqs(config, process.env as Record<string, string | undefined>);
   if (prereq) {
     throw new SpecRunnerError(
       ERROR_CODES.RUNTIME_PREREQ_MISSING,
@@ -106,11 +123,29 @@ export async function runPreflight(
     );
   }
 
+  // Resolve Anthropic API key for managed runtime (best-effort, prereq check already validated)
+  let specRunnerApiKey: string | undefined;
+  let specRunnerApiKeySource: "credentials" | "env" | undefined;
+  if (config.runtime === "managed") {
+    try {
+      const resolved = await resolveSpecRunnerApiKey(
+        process.env as Record<string, string | undefined>,
+        { optional: true },
+      );
+      if (resolved) {
+        specRunnerApiKey = resolved.apiKey;
+        specRunnerApiKeySource = resolved.source;
+      }
+    } catch {
+      // Already validated in checkRuntimePrereqs; ignore
+    }
+  }
+
   // Step 3 & 4: Git repo + GitHub remote
   const repo = await getOriginInfo(cwd);
 
   // Step 5: request.md parseable
   const request = await parseRequestMd(requestMdPath);
 
-  return { config, repo, request, githubToken, githubTokenSource };
+  return { config, repo, request, githubToken, githubTokenSource, specRunnerApiKey, specRunnerApiKeySource };
 }

@@ -9,6 +9,7 @@
  */
 import { loadConfig } from "../config/store.js";
 import { createAnthropicClient } from "../adapter/managed-agent/client.js";
+import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
 import { removeSingleJob, removeAllTerminated } from "../core/rm/runner.js";
 import { resolveJobId } from "../state/store.js";
 import { SpecRunnerError } from "../errors.js";
@@ -53,10 +54,12 @@ export async function runRm(opts: RunRmOptions): Promise<number> {
   }
 
   // Build Anthropic client for managed mode
-  const anthropicClient =
-    config.runtime === "managed" && process.env["SPECRUNNER_API_KEY"]
-      ? createAnthropicClient(process.env["SPECRUNNER_API_KEY"])
-      : undefined;
+  const anthropicResult = config.runtime === "managed"
+    ? await resolveSpecRunnerApiKey(process.env as Record<string, string | undefined>)
+    : await resolveSpecRunnerApiKey(process.env as Record<string, string | undefined>, { optional: true });
+  const anthropicClient = anthropicResult
+    ? createAnthropicClient(anthropicResult.apiKey)
+    : undefined;
 
   if (allTerminated) {
     const result = await removeAllTerminated({

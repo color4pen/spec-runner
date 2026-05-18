@@ -1,5 +1,6 @@
 import * as readline from "node:readline";
 import { createAnthropicClient } from "../adapter/managed-agent/client.js";
+import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
 import { createEnvironment, retrieveEnvironment } from "../adapter/managed-agent/environments.js";
 import { loadConfig, saveConfig } from "../config/store.js";
 import { AgentRegistry, AgentSyncer } from "../core/agent/index.js";
@@ -26,9 +27,18 @@ function hasStaleManagedConfig(config: SpecRunnerConfig): boolean {
 }
 
 export async function runManagedSetup(): Promise<void> {
-  const apiKey = process.env["SPECRUNNER_API_KEY"];
-  if (!apiKey) {
-    logError("SPECRUNNER_API_KEY env var is not set. Export it before running 'managed setup'.");
+  let apiKey: string;
+  try {
+    const resolved = await resolveSpecRunnerApiKey(
+      process.env as Record<string, string | undefined>,
+    );
+    apiKey = resolved.apiKey;
+  } catch (err) {
+    logError(
+      err instanceof Error
+        ? err.message
+        : "Anthropic API key not found. Export SPECRUNNER_API_KEY or save it to credentials.",
+    );
     process.exit(1);
   }
 
@@ -158,7 +168,11 @@ export async function runManagedStatus(): Promise<void> {
     return;
   }
 
-  const apiKeyPresent = !!process.env["SPECRUNNER_API_KEY"];
+  const anthropicResult = await resolveSpecRunnerApiKey(
+    process.env as Record<string, string | undefined>,
+    { optional: true },
+  );
+  const apiKeyPresent = !!anthropicResult;
   process.stdout.write("Runtime: managed\n");
   process.stdout.write(`SPECRUNNER_API_KEY: ${apiKeyPresent ? "set" : "NOT SET"}\n`);
   process.stdout.write(`environment.id: ${config.environment?.id ?? "(not set)"}\n`);
@@ -175,7 +189,11 @@ export async function runManagedStatus(): Promise<void> {
 }
 
 export async function runManagedReset(opts: { force: boolean }): Promise<void> {
-  const apiKey = process.env["SPECRUNNER_API_KEY"];
+  const anthropicResult = await resolveSpecRunnerApiKey(
+    process.env as Record<string, string | undefined>,
+    { optional: true },
+  );
+  const apiKey = anthropicResult?.apiKey;
 
   let config: SpecRunnerConfig;
   try {

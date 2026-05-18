@@ -1,8 +1,8 @@
 ## Purpose
 
 GitHub Device Flow OAuth for the CLI to obtain a personal access token.
-
 ## Requirements
+
 ### Requirement: GitHub Device Flow OAuth でトークンを取得する
 
 `specrunner login` は MUST GitHub Device Flow（[OAuth 2.0 Device Authorization Grant](https://datatracker.ietf.org/doc/html/rfc8628)）で `repo` スコープのアクセストークンを取得する。フローの 3 ステップ（device code 取得 / ユーザー承認誘導 / token poll）を SHALL 順に実行する。
@@ -62,14 +62,17 @@ token endpoint のレスポンスが `authorization_pending` の場合、CLI は
 
 ### Requirement: 取得した access_token は config に保存される
 
-成功時、CLI は MUST access_token と取得時刻、付与されたスコープを `~/.config/specrunner/config.json` の `github.accessToken`、`github.tokenObtainedAt`、`github.scopes` に保存する。書き込みは SHALL atomic、ファイルパーミッションは 0600 を維持する。
+成功時、CLI は MUST access_token を `~/.config/specrunner/credentials.json` の `github.token` に保存する。書き込みは SHALL atomic、ファイルパーミッションは 0600 を維持する。
+
+credential の格納・解決ルールの詳細は `specrunner/specs/credential-store/spec.md` を参照。
 
 #### Scenario: 保存内容
 
 - **WHEN** access_token を取得する
-- **THEN** config の github ブロックが上記 3 フィールドで更新され、ファイルパーミッションが 0600 に維持される
+- **THEN** credentials.json の `github.token` が更新され、ファイルパーミッションが 0600 に維持される
+- **AND** 既存の他 provider の credential（例: `anthropic.apiKey`）は保持される
 
-token 取得元（credentials file / GITHUB_TOKEN env var）は `specrunner doctor` の `github-token-present` check 出力および `specrunner run` の preflight info ログで可視化される。
+token 取得元（credentials.json / GITHUB_TOKEN env var）は `specrunner doctor` の `github-token-present` check 出力および `specrunner run` の preflight info ログで可視化される。
 
 ### Requirement: 期限切れトークンは検出されリカバリ手順が表示される
 

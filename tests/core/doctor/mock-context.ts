@@ -70,6 +70,8 @@ export function buildMockContext(overrides?: Partial<DoctorContext>): DoctorCont
     platform: "linux" as NodeJS.Platform,
     resolvedGitHubToken: "ghp_test123",
     githubTokenSource: "credentials",
+    resolvedSpecRunnerApiKey: "sk-ant-test123",
+    specRunnerApiKeySource: "env",
     ...overrides,
   };
 }

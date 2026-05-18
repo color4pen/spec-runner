@@ -110,6 +110,16 @@ export interface DoctorContext {
    * null when no token is available (resolvedGitHubToken is null).
    */
   githubTokenSource: "credentials" | "env" | null;
+  /**
+   * Resolved Anthropic API key from credentials file or SPECRUNNER_API_KEY env var.
+   * null when no key is available.
+   */
+  resolvedSpecRunnerApiKey: string | null;
+  /**
+   * Source of the resolved Anthropic API key ("credentials" or "env").
+   * null when no key is available (resolvedSpecRunnerApiKey is null).
+   */
+  specRunnerApiKeySource: "credentials" | "env" | null;
 }
 
 /**

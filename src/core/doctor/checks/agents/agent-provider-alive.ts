@@ -25,12 +25,12 @@ export const agentProviderAliveCheck: DoctorCheck = {
   required: true,
 
   async check(ctx: DoctorContext) {
-    const apiKey = ctx.env["SPECRUNNER_API_KEY"];
-    if (typeof apiKey !== "string" || apiKey.length === 0) {
+    const apiKey = ctx.resolvedSpecRunnerApiKey;
+    if (apiKey === null) {
       return {
         status: "warn",
-        message: "SPECRUNNER_API_KEY not set — skipping provider-side agent check",
-        hint: "Set SPECRUNNER_API_KEY env var.",
+        message: "Anthropic API key not available — skipping provider-side agent check",
+        hint: "Save an API key via 'specrunner login --provider anthropic' or set SPECRUNNER_API_KEY env var.",
       };
     }
 

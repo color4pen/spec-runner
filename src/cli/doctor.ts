@@ -17,6 +17,7 @@ import { loadConfig } from "../config/store.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
+import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
 
 const execFileAsync = promisify(childProcess.execFile);
 
@@ -98,6 +99,22 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
     // Token not found — checks will report failure
   }
 
+  // Resolve Anthropic API key (best-effort — doctor works even without key)
+  let resolvedSpecRunnerApiKey: string | null = null;
+  let specRunnerApiKeySource: "credentials" | "env" | null = null;
+  try {
+    const resolved = await resolveSpecRunnerApiKey(
+      process.env as Record<string, string | undefined>,
+      { optional: true },
+    );
+    if (resolved) {
+      resolvedSpecRunnerApiKey = resolved.apiKey;
+      specRunnerApiKeySource = resolved.source;
+    }
+  } catch {
+    // resolver with optional:true doesn't throw, but safety catch
+  }
+
   // Build GitHub client (uses resolved token — may be null → empty string fallback)
   const githubClient: DoctorGitHubClient = createGitHubClient(
     globalThis.fetch,
@@ -119,6 +136,8 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
     platform: process.platform,
     resolvedGitHubToken,
     githubTokenSource,
+    resolvedSpecRunnerApiKey,
+    specRunnerApiKeySource,
   };
 
   // Run runtime-specific checks

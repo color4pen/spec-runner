@@ -3,21 +3,54 @@ import { managedKeyPresentCheck } from "../../../../../src/core/doctor/checks/co
 import { buildMockContext } from "../../mock-context.js";
 
 describe("managedKeyPresentCheck (managed/api-key-present)", () => {
-  it("returns pass when SPECRUNNER_API_KEY env var is set", async () => {
-    const ctx = buildMockContext({ env: { SPECRUNNER_API_KEY: "sk-test" } });
+  // TC-DCHK-001: pass when resolvedSpecRunnerApiKey is present
+  it("returns pass when resolvedSpecRunnerApiKey is set", async () => {
+    const ctx = buildMockContext({
+      resolvedSpecRunnerApiKey: "sk-test",
+      specRunnerApiKeySource: "env",
+    });
     const result = await managedKeyPresentCheck.check(ctx);
     expect(result.status).toBe("pass");
   });
 
-  it("returns fail when SPECRUNNER_API_KEY is not set", async () => {
-    const ctx = buildMockContext({ env: {} });
+  // TC-DCHK-001: message includes source
+  it("includes source in pass message", async () => {
+    const ctx = buildMockContext({
+      resolvedSpecRunnerApiKey: "sk-test",
+      specRunnerApiKeySource: "env",
+    });
+    const result = await managedKeyPresentCheck.check(ctx);
+    expect(result.message).toContain("source: env");
+  });
+
+  // TC-DCHK-001: credentials source in message
+  it("includes credentials source in pass message", async () => {
+    const ctx = buildMockContext({
+      resolvedSpecRunnerApiKey: "sk-test",
+      specRunnerApiKeySource: "credentials",
+    });
+    const result = await managedKeyPresentCheck.check(ctx);
+    expect(result.message).toContain("source: credentials");
+  });
+
+  // TC-DCHK-002: fail when resolvedSpecRunnerApiKey is null
+  it("returns fail when resolvedSpecRunnerApiKey is null", async () => {
+    const ctx = buildMockContext({
+      resolvedSpecRunnerApiKey: null,
+      specRunnerApiKeySource: null,
+    });
     const result = await managedKeyPresentCheck.check(ctx);
     expect(result.status).toBe("fail");
   });
 
-  it("returns fail when SPECRUNNER_API_KEY is empty string", async () => {
-    const ctx = buildMockContext({ env: { SPECRUNNER_API_KEY: "" } });
+  // TC-DCHK-002: hint mentions credentials.json
+  it("hint mentions credentials.json when failing", async () => {
+    const ctx = buildMockContext({
+      resolvedSpecRunnerApiKey: null,
+      specRunnerApiKeySource: null,
+    });
     const result = await managedKeyPresentCheck.check(ctx);
-    expect(result.status).toBe("fail");
+    expect(result.hint).toBeDefined();
+    expect(result.hint).toMatch(/credentials/i);
   });
 });

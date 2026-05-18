@@ -7,4 +7,7 @@ export interface CredentialsFile {
   github?: {
     token: string;
   };
+  anthropic?: {
+    apiKey?: string;
+  };
 }

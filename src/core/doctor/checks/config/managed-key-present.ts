@@ -1,5 +1,5 @@
 /**
- * Check that SPECRUNNER_API_KEY env var is present (managed runtime API key).
+ * Check that the Anthropic API key is present (from credentials.json or env var).
  */
 import type { DoctorCheck, DoctorContext } from "../../types.js";
 
@@ -9,19 +9,17 @@ export const managedKeyPresentCheck: DoctorCheck = {
   required: true,
 
   async check(ctx: DoctorContext) {
-    const apiKey = ctx.env["SPECRUNNER_API_KEY"];
-
-    if (typeof apiKey === "string" && apiKey.length > 0) {
+    if (ctx.resolvedSpecRunnerApiKey !== null) {
       return {
         status: "pass",
-        message: "SPECRUNNER_API_KEY env var is set",
+        message: `Anthropic API key found (source: ${ctx.specRunnerApiKeySource})`,
       };
     }
 
     return {
       status: "fail",
-      message: "SPECRUNNER_API_KEY env var is not set",
-      hint: "Set SPECRUNNER_API_KEY env var and run 'specrunner managed setup'.",
+      message: "Anthropic API key not found",
+      hint: "Save an API key via 'specrunner login --provider anthropic', set SPECRUNNER_API_KEY env var, or add it to credentials.json.",
     };
   },
 };
