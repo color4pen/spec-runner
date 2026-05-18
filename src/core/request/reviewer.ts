@@ -4,14 +4,7 @@
  */
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
-import {
-  query,
-  type SDKMessage,
-  type SDKResultMessage,
-  type SDKResultSuccess,
-} from "@anthropic-ai/claude-agent-sdk";
-import { SpecRunnerError } from "../../errors.js";
-import { getStepExecutionConfig } from "../../config/step-config.js";
+import { queryOneShot, type QueryFn } from "../../adapter/claude-code/query-one-shot.js";
 import { projectMdPath } from "../../util/paths.js";
 import { REQUEST_REVIEW_SYSTEM_PROMPT } from "../../prompts/request-review-system.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
@@ -189,7 +182,7 @@ export async function runReview(
   content: string,
   config: SpecRunnerConfig,
   cwd: string,
-  queryFn: typeof query = query,
+  queryFn?: QueryFn,
 ): Promise<RequestReviewResult> {
   // Read project context
   let projectContext = "";
@@ -200,60 +193,19 @@ export async function runReview(
     // Continue without project context
   }
 
-  // Resolve step execution config
-  const resolvedConfig = getStepExecutionConfig(config, "request-review", {
-    model: "claude-opus-4-5",
-    maxTurns: 30,
-    timeoutMs: 300_000,
-  });
-
-  // maxTurns option
-  const maxTurnsOption: Record<string, unknown> =
-    resolvedConfig.maxTurns !== null ? { maxTurns: resolvedConfig.maxTurns } : {};
-
-  // Timeout via AbortController
-  const abortController = new AbortController();
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  if (resolvedConfig.timeoutMs !== null && resolvedConfig.timeoutMs > 0) {
-    timeoutId = setTimeout(() => abortController.abort(), resolvedConfig.timeoutMs);
-  }
-
-  // Iterate messages, capture last result
-  let lastResult: SDKResultMessage | null = null;
-  try {
-    const messages = queryFn({
+  const result = await queryOneShot(
+    {
+      systemPrompt: REQUEST_REVIEW_SYSTEM_PROMPT,
       prompt: buildInitialMessage(content, projectContext),
-      options: {
-        cwd,
-        allowedTools: ["Read", "Bash", "Grep", "Glob"],
-        permissionMode: "bypassPermissions",
-        ...maxTurnsOption,
-        model: resolvedConfig.model,
-        systemPrompt: REQUEST_REVIEW_SYSTEM_PROMPT,
-        abortController,
-      },
-    });
-
-    for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
-      if (message.type === "result") {
-        lastResult = message as SDKResultMessage;
-      }
-    }
-  } finally {
-    if (timeoutId !== undefined) clearTimeout(timeoutId);
-  }
-
-  // Check for success
-  if (!lastResult || lastResult.subtype !== "success") {
-    const subtype = lastResult?.subtype ?? "no-result";
-    throw new SpecRunnerError(
-      "REVIEW_SESSION_FAILED",
-      "Check the session logs for more information.",
-      `Review session failed (${subtype})`,
-    );
-  }
-
-  // Parse structured output
-  const rawOutput = (lastResult as SDKResultSuccess).result;
-  return parseReviewOutput(rawOutput);
+      allowedTools: ["Read", "Bash", "Grep", "Glob"],
+      maxTurns: 30,
+      timeoutMs: 300_000,
+      cwd,
+      stepName: "request-review",
+      model: "claude-opus-4-5",
+    },
+    config,
+    queryFn,
+  );
+  return parseReviewOutput(result.text);
 }

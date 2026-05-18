@@ -251,7 +251,7 @@ describe("TC-RVR-011: runReview() with mock queryFn returns RequestReviewResult"
         "# Test Request\n\n## Meta\n\n- **type**: new-feature\n- **slug**: test-slug\n- **base-branch**: main\n- **adr**: false\n",
         {} as import("../../../../src/config/schema.js").SpecRunnerConfig,
         tmpDir,
-        mockQueryFn as unknown as typeof import("@anthropic-ai/claude-agent-sdk").query,
+        mockQueryFn as unknown as import("../../../../src/adapter/claude-code/query-one-shot.js").QueryFn,
       );
 
       expect(result.verdict).toBe("approve");

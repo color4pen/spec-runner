@@ -5,6 +5,7 @@ import { query } from "@anthropic-ai/claude-agent-sdk";
 import * as store from "./store.js";
 import * as generator from "./generator.js";
 import * as reviewer from "./reviewer.js";
+import { type QueryFn } from "../../adapter/claude-code/query-one-shot.js";
 import type { RequestState } from "./types.js";
 import type { RequestReviewResult } from "./reviewer.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
@@ -23,7 +24,7 @@ export async function review(
   slugOrPath: string,
   cwd: string,
   config: SpecRunnerConfig,
-  queryFn?: typeof query,
+  queryFn?: QueryFn,
 ): Promise<RequestReviewResult> {
   let filePath: string;
   if (fs.existsSync(path.resolve(cwd, slugOrPath))) {
@@ -32,7 +33,7 @@ export async function review(
     filePath = store.resolve(cwd, slugOrPath);
   }
   const content = await fsAsync.readFile(filePath, "utf-8");
-  return reviewer.runReview(content, config, cwd, queryFn ?? query);
+  return reviewer.runReview(content, config, cwd, queryFn ?? (query as unknown as QueryFn));
 }
 
 export async function list(
