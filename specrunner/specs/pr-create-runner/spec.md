@@ -135,3 +135,17 @@ The helper SHALL be pure (no I/O, no side effects). All inputs SHALL be passed i
 - **WHEN** `renderPrBody({ ... })` is invoked
 - **THEN** the `## Workflow` table does NOT contain a `code-review` row
 
+#### Scenario: renderPrBody includes Fixes line when parsedRequest.issue is set
+
+`renderPrBody` は `parsedRequest.issue` が存在する場合、Summary section の直後に `Fixes ${issue}` 行を挿入する。issue が `undefined` のとき挿入しない。
+
+- **GIVEN** `parsedRequest.issue === "#279"`
+- **WHEN** `renderPrBody({ parsedRequest, jobState, slug })` is invoked
+- **THEN** the body contains `Fixes #279`
+
+#### Scenario: renderPrBody excludes Fixes line when issue is absent
+
+- **GIVEN** `parsedRequest.issue === undefined`
+- **WHEN** `renderPrBody({ parsedRequest, jobState, slug })` is invoked
+- **THEN** the body does NOT contain any `Fixes #` line
+

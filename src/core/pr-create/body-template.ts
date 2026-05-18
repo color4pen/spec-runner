@@ -59,6 +59,11 @@ export function renderPrBody(params: {
     sections.push("_No 背景/目的 sections found in request.md._");
   }
 
+  // --- Fixes line (auto-close linked issue on PR merge) ---
+  if (parsedRequest.issue) {
+    sections.push(`Fixes ${parsedRequest.issue}`);
+  }
+
   // --- Workflow table ---
   sections.push("## Workflow");
 

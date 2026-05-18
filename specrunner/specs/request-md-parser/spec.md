@@ -94,3 +94,20 @@ sections: {
 - **WHEN** sections 抽出ロジックを実装する
 - **THEN** package.json に新規 dependency を追加しない（既存の Requirement「パーサーは外部依存なしの実装でなければならない」を維持）
 
+### Requirement: parser は request.md Meta セクションの issue field を抽出する (optional)
+
+`request.md` パーサーは SHALL Meta セクションの `- **issue**: <value>` 行を抽出し、`parsedRequest.issue` として返す。
+
+- 値が存在する場合: `parsedRequest.issue` は `"#279"` 形式 (string、`#` prefix 含む) で返す
+- issue field 不在: `parsedRequest.issue` は `undefined`、エラーは発生しない
+
+#### Scenario: issue field が存在する request.md
+
+- **WHEN** Meta セクションに `- **issue**: #264` が存在する
+- **THEN** `parsedRequest.issue === "#264"` (string with `#` prefix)
+
+#### Scenario: issue field が存在しない request.md
+
+- **WHEN** Meta セクションに `issue` 行が存在しない
+- **THEN** `parsedRequest.issue === undefined`、エラーは発生しない
+

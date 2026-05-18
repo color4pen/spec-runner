@@ -123,6 +123,23 @@ describe("TC-034: renderPrBody — 実行されなかった phase を Workflow �
   });
 });
 
+// TC: Fixes line from parsedRequest.issue
+describe("renderPrBody — Fixes line from parsedRequest.issue", () => {
+  it("includes 'Fixes #264' when parsedRequest.issue is '#264'", () => {
+    const parsedRequest = makeParsedRequest({ issue: "#264" });
+    const jobState = makeMinimalState({ steps: {} });
+    const body = renderPrBody({ parsedRequest, jobState, slug: "pr-create-step" });
+    expect(body).toContain("Fixes #264");
+  });
+
+  it("does not include 'Fixes' line when parsedRequest.issue is undefined", () => {
+    const parsedRequest = makeParsedRequest(); // issue is undefined
+    const jobState = makeMinimalState({ steps: {} });
+    const body = renderPrBody({ parsedRequest, jobState, slug: "pr-create-step" });
+    expect(body).not.toMatch(/Fixes #/);
+  });
+});
+
 // Additional: body with no sections (no 背景/目的)
 describe("renderPrBody — sections absent", () => {
   it("still produces a valid body when sections are empty", () => {

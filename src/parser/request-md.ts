@@ -102,13 +102,24 @@ export function parseRequestMdContent(
     );
   }
 
+  // Extract issue from Meta section: "- **issue**: value" (optional)
+  let issue: string | undefined = undefined;
+  const issuePattern = /^\s*-\s+\*\*issue\*\*:\s+(.+)$/;
+  for (const line of lines) {
+    const m = issuePattern.exec(line);
+    if (m?.[1]) {
+      issue = m[1].trim();
+      break;
+    }
+  }
+
   // Extract enabled list from Workflow Options section
   const enabled = extractEnabled(lines);
 
   // Extract sections: 背景, 目的
   const sections = extractSections(lines);
 
-  return { type, title, slug, baseBranch, content, enabled, sections };
+  return { type, title, slug, baseBranch, content, enabled, sections, issue };
 }
 
 /**

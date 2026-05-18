@@ -21,6 +21,8 @@ export interface ParsedRequest {
   enabled: string[];
   /** Optional section extracts for PR body generation. */
   sections?: ParsedRequestSections;
+  /** Issue reference from Meta section (e.g. "#264"). undefined if not present. */
+  issue?: string;
 }
 
 /**
