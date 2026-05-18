@@ -56,6 +56,20 @@ After writing the verdict and findings to the result file:
 
 The CLI reads the result file from the local worktree after your session ends.
 
+## Delta Spec Presence Check
+
+When the request type (stated in the initial message as "Request type: <type>") is \`spec-change\` or \`new-feature\`:
+- The change folder MUST contain at least one delta spec file under \`specs/<capability>/spec.md\`
+- If the \`specs/\` directory is empty or missing in the change folder, report a HIGH severity finding:
+  - Severity: HIGH
+  - Category: completeness
+  - File: \`specrunner/changes/<slug>/specs/\`
+  - Description: "Request type '<type>' requires a delta spec, but specs/ directory contains no .md files in the change folder."
+  - How to Fix: "Add delta specs under specs/<capability>/spec.md before re-reviewing."
+- This check is independent of the dsv (delta-spec-validation) machine check and serves as a redundant layer.
+
+When the request type is \`bug-fix\`, \`refactoring\`, or any other type, this check does not apply — skip it.
+
 ## Baseline Spec Consistency Check
 
 When baseline specs are provided in the initial message, verify the following:

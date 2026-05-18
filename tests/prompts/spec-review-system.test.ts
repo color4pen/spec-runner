@@ -301,6 +301,33 @@ describe("TC-010: SpecReviewStep.enrichContext returns dynamicContext unchanged 
 });
 
 // ---------------------------------------------------------------------------
+// Delta Spec Presence Check — prompt keyword tests
+// ---------------------------------------------------------------------------
+describe("Delta Spec Presence Check: system prompt contains presence check instructions", () => {
+  it("contains 'Delta Spec Presence Check' section header", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("Delta Spec Presence Check");
+  });
+
+  it("mentions spec-change and new-feature as types requiring delta specs", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("spec-change");
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("new-feature");
+  });
+
+  it("specifies HIGH severity for missing delta specs", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toMatch(/specs\/.*directory.*empty.*missing.*HIGH/s);
+  });
+
+  it("instructs to skip check for bug-fix and refactoring types", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("bug-fix");
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("refactoring");
+  });
+
+  it("mentions this check is independent of dsv", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toMatch(/independent.*dsv|dsv.*independent/is);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Structural check: SpecReviewStep satisfies AgentStep interface with enrichContext
 // ---------------------------------------------------------------------------
 describe("AgentStep interface compliance with enrichContext", () => {
