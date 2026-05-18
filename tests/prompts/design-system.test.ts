@@ -168,6 +168,78 @@ describe("TC-SP-001: DESIGN_SYSTEM_PROMPT contains Baseline Spec 参照 section"
   });
 });
 
+// TC-CL-001: DESIGN_SYSTEM_PROMPT に Completion Checklist セクションが含まれる
+describe("TC-CL-001: DESIGN_SYSTEM_PROMPT contains Completion Checklist section", () => {
+  it("contains 'Completion Checklist' section header", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toContain("Completion Checklist");
+  });
+
+  it("contains 'delta spec' and 'REQUIRED' in the same section", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toContain("delta spec");
+    expect(DESIGN_SYSTEM_PROMPT).toContain("REQUIRED");
+    // Both must appear within the Completion Checklist section
+    const checklistIdx = DESIGN_SYSTEM_PROMPT.indexOf("Completion Checklist");
+    const requiredIdx = DESIGN_SYSTEM_PROMPT.indexOf("REQUIRED");
+    expect(checklistIdx).toBeGreaterThan(-1);
+    expect(requiredIdx).toBeGreaterThan(checklistIdx);
+  });
+
+  it("mentions spec-change and new-feature as requiring delta spec", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toContain("spec-change");
+    expect(DESIGN_SYSTEM_PROMPT).toContain("new-feature");
+  });
+
+  it("contains bug-fix and refactoring checklist (delta spec not required)", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toContain("bug-fix");
+    expect(DESIGN_SYSTEM_PROMPT).toContain("refactoring");
+  });
+
+  it("instructs agent not to end_turn if any checklist item is ✗", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toMatch(/end_turn.*fix|fix.*end_turn|✗.*end_turn|end_turn.*✗/s);
+  });
+});
+
+// TC-CL-002: DESIGN_INITIAL_MESSAGE_TEMPLATE に {{REQUEST_TYPE}} が含まれる
+describe("TC-CL-002: DESIGN_INITIAL_MESSAGE_TEMPLATE contains {{REQUEST_TYPE}} placeholder", () => {
+  it("template contains {{REQUEST_TYPE}} placeholder", () => {
+    expect(DESIGN_INITIAL_MESSAGE_TEMPLATE).toContain("{{REQUEST_TYPE}}");
+  });
+
+  it("{{REQUEST_TYPE}} appears after {{BRANCH}} in the template", () => {
+    const branchIdx = DESIGN_INITIAL_MESSAGE_TEMPLATE.indexOf("{{BRANCH}}");
+    const typeIdx = DESIGN_INITIAL_MESSAGE_TEMPLATE.indexOf("{{REQUEST_TYPE}}");
+    expect(branchIdx).toBeGreaterThan(-1);
+    expect(typeIdx).toBeGreaterThan(branchIdx);
+  });
+});
+
+// TC-CL-003: buildInitialMessage にリクエストタイプを渡すと出力に反映される
+describe("TC-CL-003: buildInitialMessage injects requestType into output", () => {
+  it("reflects requestType=spec-change in the built message", () => {
+    const msg = buildInitialMessage("body", "test-slug", "change/test-slug", undefined, "spec-change");
+    expect(msg).toContain("spec-change");
+  });
+
+  it("reflects requestType=bug-fix in the built message", () => {
+    const msg = buildInitialMessage("body", "test-slug", "change/test-slug", undefined, "bug-fix");
+    expect(msg).toContain("bug-fix");
+  });
+
+  it("works without requestType (backward compatibility)", () => {
+    const msg = buildInitialMessage("body", "test-slug", "change/test-slug");
+    expect(msg).toContain("test-slug");
+    expect(msg).toContain("change/test-slug");
+    expect(msg).toContain("body");
+    // No crash; {{REQUEST_TYPE}} replaced with empty string
+    expect(msg).not.toContain("{{REQUEST_TYPE}}");
+  });
+
+  it("does not leave {{REQUEST_TYPE}} placeholder in output when requestType omitted", () => {
+    const msg = buildInitialMessage("body", "my-slug");
+    expect(msg).not.toContain("{{REQUEST_TYPE}}");
+  });
+});
+
 // TC-SP-002: "Baseline Spec 参照" is placed after path-fence and before 禁止事項
 describe("TC-SP-002: Baseline Spec 参照 is placed between CRITICAL BOUNDARY and 禁止事項", () => {
   it("Baseline Spec 参照 appears after CRITICAL BOUNDARY and before 禁止事項", () => {

@@ -65,7 +65,7 @@ export const DesignStep: AgentStep = {
     const branch = state.branch
       ? state.branch
       : `${getBranchPrefix(deps.request.type)}${deps.slug}-${state.jobId.slice(0, 8)}`;
-    return buildInitialMessage(deps.request.content, deps.slug, branch, deps.dynamicContext);
+    return buildInitialMessage(deps.request.content, deps.slug, branch, deps.dynamicContext, deps.request.type);
   },
 
   resultFilePath(_state: JobState, _deps: StepDeps): string | null {
