@@ -73,15 +73,21 @@ When the request type is \`bug-fix\`, \`refactoring\`, or any other type, this c
 
 ## Baseline Spec Consistency Check
 
-When baseline specs are provided in the initial message, verify the following:
+When the delta spec contains \`## MODIFIED\` / \`## REMOVED\` / \`## RENAMED\` / \`## ADDED\`
+Requirements sections, follow these steps:
 
-1. **MODIFIED requirements**: Each Requirement header in the MODIFIED section of the delta spec MUST exist in the corresponding baseline spec. If a MODIFIED requirement references a name that does not exist in the baseline, report as HIGH severity finding (category: consistency).
-
-2. **REMOVED requirements**: Each Requirement header in the REMOVED section MUST exist in the corresponding baseline spec. If a REMOVED requirement references a name that does not exist in the baseline, report as HIGH severity finding (category: consistency).
-
-3. **ADDED requirements**: Each Requirement header in the ADDED section MUST NOT already exist in the corresponding baseline spec. If an ADDED requirement duplicates an existing baseline requirement name, report as HIGH severity finding (category: consistency).
-
-If no baseline specs are provided, skip this check entirely.
+1. Identify the capability name from the delta spec path
+   (\`specrunner/changes/<slug>/specs/<capability>/spec.md\`)
+2. Read \`specrunner/specs/<capability>/spec.md\` using the Read tool
+3. Extract existing \`### Requirement:\` headers from the baseline
+4. For MODIFIED / REMOVED / RENAMED-FROM headers: verify each exists in the baseline.
+   If not, report a HIGH severity finding (category: consistency).
+5. For ADDED headers: verify each does NOT already exist in the baseline.
+   If a duplicate is found, report a HIGH severity finding (category: consistency).
+6. If the baseline file does not exist and the delta has MODIFIED / REMOVED / RENAMED sections,
+   report a HIGH severity finding (category: consistency).
+7. If the baseline file does not exist and the delta only has ADDED sections,
+   this is expected (new capability) — no finding needed.
 
 ## Important Constraints
 
@@ -115,7 +121,6 @@ Review all spec files in the change folder (request.md, design.md, tasks.md, spe
 
 The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escalation>\`
 
-{{BASELINE_SPECS}}
 {{GIT_PUSH_INSTRUCTION}}`;
 
 export interface SpecReviewPromptInput {
@@ -136,12 +141,6 @@ export interface SpecReviewPromptInput {
    * Defaults to "full" when absent.
    */
   specReviewMode?: "full" | "lightweight";
-  /**
-   * Baseline spec content keyed by capability name.
-   * Injected by SpecReviewStep.enrichContext() when delta specs are present.
-   * When absent or empty, the baseline consistency check section is omitted from the message.
-   */
-  baselineSpecs?: Record<string, string>;
 }
 
 /**
@@ -194,15 +193,6 @@ export function buildSpecReviewInitialMessage(input: SpecReviewPromptInput): str
   // Build spec-review mode instruction
   const specReviewModeInstruction = buildSpecReviewModeInstruction(input.specReviewMode ?? "full");
 
-  // Build baseline specs section
-  let baselineSpecsSection = "";
-  if (input.baselineSpecs && Object.keys(input.baselineSpecs).length > 0) {
-    const sections = Object.entries(input.baselineSpecs)
-      .map(([cap, content]) => `### Capability: ${cap}\n\n${content}`)
-      .join("\n\n---\n\n");
-    baselineSpecsSection = `\n<baseline-specs>\n${sections}\n</baseline-specs>\n`;
-  }
-
   return SPEC_REVIEW_INITIAL_MESSAGE_TEMPLATE
     .replace(/{{SLUG}}/g, input.slug)
     .replace(/{{REQUEST_TYPE}}/g, input.requestType)
@@ -210,6 +200,5 @@ export function buildSpecReviewInitialMessage(input: SpecReviewPromptInput): str
     .replace(/{{SPEC_REVIEW_MODE}}/g, specReviewModeInstruction)
     .replace(/{{REQUEST_CONTENT}}/g, requestContent)
     .replace(/{{FINDINGS_PATH}}/g, findingsPath)
-    .replace(/{{BASELINE_SPECS}}/g, baselineSpecsSection)
     .replace(/{{GIT_PUSH_INSTRUCTION}}/g, gitPushInstruction);
 }

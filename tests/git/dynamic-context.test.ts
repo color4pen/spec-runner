@@ -52,23 +52,6 @@ describe("TC-DC-001: collectDynamicContext returns correct types on success", ()
 });
 
 // ---------------------------------------------------------------------------
-// TC-002 (add-spec-review-baseline-check): collectDynamicContext does not set baselineSpecs
-// ---------------------------------------------------------------------------
-describe("TC-002: collectDynamicContext does not populate baselineSpecs", () => {
-  it("baselineSpecs is undefined in result from collectDynamicContext", async () => {
-    const { collectDynamicContext } = await import("../../src/git/dynamic-context.js");
-    const ctx = await collectDynamicContext(tempDir, "main");
-
-    // baselineSpecs is optional — collectDynamicContext never sets it
-    expect(ctx.baselineSpecs).toBeUndefined();
-    // Existing fields are still present
-    expect(typeof ctx.gitLog).toBe("string");
-    expect(typeof ctx.diffStat).toBe("string");
-    expect(Array.isArray(ctx.changesList)).toBe(true);
-  });
-});
-
-// ---------------------------------------------------------------------------
 // TC-DC-002: Git command failure — fall back to empty string
 // ---------------------------------------------------------------------------
 describe("TC-DC-002: collectDynamicContext falls back on git failure", () => {

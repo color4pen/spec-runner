@@ -118,29 +118,6 @@ baseline spec が提供されていない場合（delta spec がない refactori
 - **WHEN** spec-review が実行される
 - **THEN** baseline 整合性チェックはスキップされ、他の観点のみでレビューが行われる
 
-### Requirement: spec-review の初期メッセージに関連 baseline spec が注入される
-
-`SpecReviewStep` は `enrichContext` メソッドを実装し、change folder の `specs/` ディレクトリから capability 名を列挙して、対応する baseline spec（`specrunner/specs/<capability>/spec.md`）を読み取り、`DynamicContext.baselineSpecs` に格納する。
-
-`buildSpecReviewInitialMessage` は `baselineSpecs` が存在する場合に `<baseline-specs>` タグで囲んだ baseline spec 全文を初期メッセージに含める。
-
-baseline spec が存在しない capability（新規追加）はスキップし、エラーとしない。
-
-#### Scenario: enrichContext が baseline spec を収集する
-
-- **GIVEN** change folder に `specs/cli-commands/spec.md` と `specs/pipeline-orchestrator/spec.md` がある
-- **AND** `specrunner/specs/cli-commands/spec.md` と `specrunner/specs/pipeline-orchestrator/spec.md` が存在する
-- **WHEN** `SpecReviewStep.enrichContext` が呼ばれる
-- **THEN** 返された `DynamicContext.baselineSpecs` に `cli-commands` と `pipeline-orchestrator` の baseline spec 全文が含まれる
-
-#### Scenario: 新規 capability の baseline はスキップされる
-
-- **GIVEN** change folder に `specs/new-capability/spec.md` がある
-- **AND** `specrunner/specs/new-capability/spec.md` が存在しない
-- **WHEN** `SpecReviewStep.enrichContext` が呼ばれる
-- **THEN** `baselineSpecs` に `new-capability` のエントリは含まれない
-- **AND** エラーは発生しない
-
 ### Requirement: spec-review は type=spec-change/new-feature のとき delta spec 存在を必須として check する
 
 spec-review エージェントは、request type が `spec-change` または `new-feature` のとき、change folder の `specs/` 配下に delta spec ファイル（`.md`）が 1 件以上存在することを確認する。不在の場合は HIGH severity の finding（category: completeness）を報告する。
@@ -168,3 +145,36 @@ spec-review エージェントは、request type が `spec-change` または `ne
 - **AND** change folder の `specs/<capability>/spec.md` に 1 件以上のファイルが存在する
 - **WHEN** spec-review エージェントがレビューを実行する
 - **THEN** delta spec 存在 check は通過し、他の review 観点に進む
+
+### Requirement: spec-review agent は Read tool で baseline spec を自力取得する
+
+spec-review エージェントは、baseline spec を initial message からの注入ではなく、`Read` tool を使って自ら取得する MUST。`SpecReviewStep.enrichContext()` や `DynamicContext.baselineSpecs` による caller 側の baseline 収集・注入は行わない。
+
+delta spec が `## MODIFIED Requirements` / `## REMOVED Requirements` / `## RENAMED Requirements` セクションを含む場合、エージェントは SHALL 対応する baseline spec (`specrunner/specs/<capability>/spec.md`) を Read tool で読み取り、delta spec 内の Requirement header が baseline に存在することを検証する。
+
+delta spec の `## ADDED Requirements` 配下の Requirement header についても、エージェントは SHALL baseline spec を Read して重複がないことを検証する。
+
+baseline と一致しない MODIFIED / REMOVED / RENAMED-FROM header は HIGH severity finding (category: consistency) として報告する。baseline に既に存在する ADDED header も同様に HIGH severity finding (category: consistency) として報告する。
+
+baseline spec ファイルが存在せず、delta spec に MODIFIED / REMOVED セクションがある場合は HIGH severity finding (category: consistency) を報告する。baseline が存在せず ADDED セクションのみの場合は新規 capability として正常とみなす。
+
+#### Scenario: agent が Read tool で baseline を取得して MODIFIED header を検証する
+
+- **GIVEN** delta spec の MODIFIED セクションに `### Requirement: SomeExistingReq` がある
+- **AND** 対応する baseline spec に `SomeExistingReq` という Requirement が存在する
+- **WHEN** spec-review エージェントがレビューを実行する
+- **THEN** エージェントは Read tool で baseline spec を読み取り、header の一致を確認する
+- **AND** consistency finding は報告されない
+
+#### Scenario: baseline が initial message に注入されない
+
+- **GIVEN** spec-review セッションが開始される
+- **WHEN** initial message が構築される
+- **THEN** initial message に `<baseline-specs>` セクションは含まれない
+- **AND** `SpecReviewPromptInput` に `baselineSpecs` field は存在しない
+
+#### Scenario: enrichContext は baselineSpecs を収集しない
+
+- **GIVEN** change folder に `specs/<capability>/spec.md` が存在する
+- **WHEN** `SpecReviewStep.enrichContext()` が呼ばれる
+- **THEN** 返された `DynamicContext` に `baselineSpecs` field は含まれない

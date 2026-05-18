@@ -4,18 +4,14 @@
  * TC-015 (add-spec-review-baseline-check): system prompt contains MODIFIED consistency check instruction
  * TC-016 (add-spec-review-baseline-check): system prompt contains REMOVED consistency check instruction
  * TC-017 (add-spec-review-baseline-check): system prompt contains ADDED consistency check instruction
- * TC-018 (add-spec-review-baseline-check): system prompt indicates to skip check when no baseline
- * TC-019 (add-spec-review-baseline-check): buildSpecReviewInitialMessage includes baseline-specs section when provided
- * TC-020 (add-spec-review-baseline-check): buildSpecReviewInitialMessage omits baseline-specs section when absent
- * TC-021 (add-spec-review-baseline-check): SpecReviewStep.buildMessage passes baselineSpecs from dynamicContext
- * TC-022 (add-spec-review-baseline-check): SpecReviewPromptInput has baselineSpecs field
  * TC-003 (add-spec-review-baseline-check): AgentStep interface has optional enrichContext method
+ * TC-NEW-001 (spec-review-baseline-pull-model): system prompt instructs agent to use Read tool for baseline
  */
 import { describe, it, expect } from "vitest";
 import {
   SPEC_REVIEW_SYSTEM_PROMPT,
+  SPEC_REVIEW_INITIAL_MESSAGE_TEMPLATE,
   buildSpecReviewInitialMessage,
-  type SpecReviewPromptInput,
 } from "../../src/prompts/spec-review-system.js";
 import { SpecReviewStep } from "../../src/core/step/spec-review.js";
 import type { AgentStep } from "../../src/core/step/types.js";
@@ -80,208 +76,7 @@ describe("TC-017: spec-review system prompt contains ADDED requirement check", (
 });
 
 // ---------------------------------------------------------------------------
-// TC-018: system prompt skips check when no baseline provided
-// ---------------------------------------------------------------------------
-describe("TC-018: spec-review system prompt indicates to skip check when no baseline", () => {
-  it("contains instruction to skip check when baseline specs are absent", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toMatch(/no baseline.*skip|skip.*no baseline/is);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-019: buildSpecReviewInitialMessage includes baseline-specs when provided
-// ---------------------------------------------------------------------------
-describe("TC-019: buildSpecReviewInitialMessage includes baseline-specs section when baselineSpecs provided", () => {
-  it("includes <baseline-specs> tag and capability content when baselineSpecs is set", () => {
-    const input: SpecReviewPromptInput = {
-      slug: "test-slug",
-      requestType: "feature",
-      baselineSpecs: { "my-capability": "## Spec content for my-capability" },
-    };
-
-    const message = buildSpecReviewInitialMessage(input);
-
-    expect(message).toContain("<baseline-specs>");
-    expect(message).toContain("</baseline-specs>");
-    expect(message).toContain("my-capability");
-    expect(message).toContain("## Spec content for my-capability");
-  });
-
-  it("does not contain {{BASELINE_SPECS}} placeholder in output", () => {
-    const input: SpecReviewPromptInput = {
-      slug: "test-slug",
-      requestType: "feature",
-      baselineSpecs: { "cap-a": "content-a", "cap-b": "content-b" },
-    };
-
-    const message = buildSpecReviewInitialMessage(input);
-
-    expect(message).not.toContain("{{BASELINE_SPECS}}");
-    expect(message).toContain("cap-a");
-    expect(message).toContain("cap-b");
-    expect(message).toContain("content-a");
-    expect(message).toContain("content-b");
-  });
-
-  it("includes capability sections separated by ---", () => {
-    const input: SpecReviewPromptInput = {
-      slug: "test-slug",
-      requestType: "feature",
-      baselineSpecs: { "cap-a": "spec-a", "cap-b": "spec-b" },
-    };
-
-    const message = buildSpecReviewInitialMessage(input);
-
-    expect(message).toContain("### Capability: cap-a");
-    expect(message).toContain("### Capability: cap-b");
-    expect(message).toContain("---");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-020: buildSpecReviewInitialMessage omits baseline-specs when absent
-// ---------------------------------------------------------------------------
-describe("TC-020: buildSpecReviewInitialMessage omits baseline-specs section when baselineSpecs absent or empty", () => {
-  it("does not include <baseline-specs> when baselineSpecs is undefined", () => {
-    const input: SpecReviewPromptInput = {
-      slug: "test-slug",
-      requestType: "feature",
-    };
-
-    const message = buildSpecReviewInitialMessage(input);
-
-    expect(message).not.toContain("<baseline-specs>");
-    expect(message).not.toContain("{{BASELINE_SPECS}}");
-  });
-
-  it("does not include <baseline-specs> when baselineSpecs is empty object", () => {
-    const input: SpecReviewPromptInput = {
-      slug: "test-slug",
-      requestType: "feature",
-      baselineSpecs: {},
-    };
-
-    const message = buildSpecReviewInitialMessage(input);
-
-    expect(message).not.toContain("<baseline-specs>");
-    expect(message).not.toContain("{{BASELINE_SPECS}}");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-021: SpecReviewStep.buildMessage passes baselineSpecs from dynamicContext
-// ---------------------------------------------------------------------------
-describe("TC-021: SpecReviewStep.buildMessage passes baselineSpecs from dynamicContext", () => {
-  it("initial message contains baseline spec content when dynamicContext.baselineSpecs is set", () => {
-    const baselineSpecs = { "spec-review-session": "## Baseline spec content" };
-    const state = {
-      version: 1 as const,
-      jobId: "test-job",
-      createdAt: "2026-01-01T00:00:00.000Z",
-      updatedAt: "2026-01-01T00:00:00.000Z",
-      request: { path: "/req.md", title: "Test", type: "feature" },
-      repository: { owner: "testowner", name: "testrepo" },
-      session: null,
-      step: "spec-review" as const,
-      status: "running" as const,
-      branch: "feat/test",
-      history: [],
-      error: null,
-      steps: {},
-    };
-
-    const deps = {
-      config: {
-        version: 1 as const,
-        agents: {},
-      },
-      slug: "test-slug",
-      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
-
-      dynamicContext: {
-        gitLog: "",
-        diffStat: "",
-        changesList: [],
-        specIndex: [],
-        baselineSpecs,
-      },
-    };
-
-    const message = SpecReviewStep.buildMessage(state, deps);
-
-    expect(message).toContain("<baseline-specs>");
-    expect(message).toContain("spec-review-session");
-    expect(message).toContain("## Baseline spec content");
-  });
-
-  it("initial message has no baseline section when dynamicContext.baselineSpecs is absent", () => {
-    const state = {
-      version: 1 as const,
-      jobId: "test-job",
-      createdAt: "2026-01-01T00:00:00.000Z",
-      updatedAt: "2026-01-01T00:00:00.000Z",
-      request: { path: "/req.md", title: "Test", type: "feature" },
-      repository: { owner: "testowner", name: "testrepo" },
-      session: null,
-      step: "spec-review" as const,
-      status: "running" as const,
-      branch: "feat/test",
-      history: [],
-      error: null,
-      steps: {},
-    };
-
-    const deps = {
-      config: {
-        version: 1 as const,
-        agents: {},
-      },
-      slug: "test-slug",
-      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
-
-      dynamicContext: {
-        gitLog: "",
-        diffStat: "",
-        changesList: [],
-        specIndex: [],
-        // no baselineSpecs
-      },
-    };
-
-    const message = SpecReviewStep.buildMessage(state, deps);
-
-    expect(message).not.toContain("<baseline-specs>");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-022: SpecReviewPromptInput has baselineSpecs field
-// ---------------------------------------------------------------------------
-describe("TC-022: SpecReviewPromptInput has baselineSpecs field", () => {
-  it("accepts baselineSpecs as optional Record<string, string>", () => {
-    // Type-level check — if this compiles, the field exists.
-    const input: SpecReviewPromptInput = {
-      slug: "test-slug",
-      requestType: "feature",
-      baselineSpecs: { "my-cap": "spec content" },
-    };
-
-    expect(input.baselineSpecs).toBeDefined();
-    expect(input.baselineSpecs!["my-cap"]).toBe("spec content");
-  });
-
-  it("baselineSpecs is optional (can be omitted)", () => {
-    const input: SpecReviewPromptInput = {
-      slug: "test-slug",
-      requestType: "feature",
-    };
-
-    expect(input.baselineSpecs).toBeUndefined();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// enrichContext no-op when specs/ directory absent (TC-010)
+// TC-010: SpecReviewStep.enrichContext returns dynamicContext unchanged
 // ---------------------------------------------------------------------------
 describe("TC-010: SpecReviewStep.enrichContext returns dynamicContext unchanged when specs/ absent", () => {
   it("returns the original dynamicContext when the specs directory does not exist", async () => {
@@ -296,7 +91,6 @@ describe("TC-010: SpecReviewStep.enrichContext returns dynamicContext unchanged 
     const result = await SpecReviewStep.enrichContext!(dynamicContext, "/nonexistent-path-xyz", "test-slug");
 
     expect(result).toEqual(dynamicContext);
-    expect(result.baselineSpecs).toBeUndefined();
   });
 });
 
@@ -337,5 +131,46 @@ describe("AgentStep interface compliance with enrichContext", () => {
     expect(step.kind).toBe("agent");
     expect(step.name).toBe("spec-review");
     expect(typeof step.enrichContext).toBe("function");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-NEW-001: Read-tool-pull model — system prompt instructs agent to Read baseline
+// ---------------------------------------------------------------------------
+describe("TC-NEW-001: Read-tool-pull model: system prompt instructs agent to use Read tool", () => {
+  it("system prompt contains 'Read tool' instruction", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("Read tool");
+  });
+
+  it("contains 'Identify the capability name' step", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("Identify the capability name");
+  });
+
+  it("contains 'Read `specrunner/specs/' instruction", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("Read `specrunner/specs/");
+  });
+
+  it("contains 'Extract existing' instruction", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("Extract existing");
+  });
+
+  it("contains 'category: consistency' keyword", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("category: consistency");
+  });
+
+  it("does NOT contain 'skip this check entirely'", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).not.toContain("skip this check entirely");
+  });
+
+  it("initial message template does not contain {{BASELINE_SPECS}} placeholder", () => {
+    expect(SPEC_REVIEW_INITIAL_MESSAGE_TEMPLATE).not.toContain("{{BASELINE_SPECS}}");
+  });
+
+  it("buildSpecReviewInitialMessage output does not contain <baseline-specs>", () => {
+    const message = buildSpecReviewInitialMessage({
+      slug: "test-slug",
+      requestType: "spec-change",
+    });
+    expect(message).not.toContain("<baseline-specs>");
   });
 });

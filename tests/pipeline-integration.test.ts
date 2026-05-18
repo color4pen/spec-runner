@@ -1162,20 +1162,12 @@ describe("TC-DC-104: projectContext undefined for non-allowlist steps", () => {
   });
 });
 
-// TC-DC-105: enrichContext adds baselineSpecs for spec-review step
-describe("TC-DC-105: enrichContext adds baselineSpecs for spec-review step", () => {
-  it("SpecReviewStep.enrichContext is called and returns baselineSpecs['my-cap']", async () => {
+// TC-DC-105: enrichContext is called for spec-review step (Read-tool-pull model)
+describe("TC-DC-105: enrichContext is called for spec-review step", () => {
+  it("SpecReviewStep.enrichContext is called and returns dynamicContext unchanged", async () => {
     const { SpecReviewStep } = await import("../src/core/step/spec-review.js");
     const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
-
-    // Build file system: delta spec dir (enrichContext trigger) + baseline spec
-    await fs.mkdir(path.join(tempDir, "specrunner", "changes", "test-slug", "specs", "my-cap"), { recursive: true });
-    await fs.mkdir(path.join(tempDir, "specrunner", "specs", "my-cap"), { recursive: true });
-    await fs.writeFile(
-      path.join(tempDir, "specrunner", "specs", "my-cap", "spec.md"),
-      "# my-cap baseline spec content",
-    );
 
     // Spy on enrichContext: call the real implementation, capture the return value
     let capturedEnrichResult: DynamicContext | undefined;
@@ -1207,8 +1199,8 @@ describe("TC-DC-105: enrichContext adds baselineSpecs for spec-review step", () 
 
     expect(enrichSpy).toHaveBeenCalledOnce();
     expect(capturedEnrichResult).toBeDefined();
-    expect(capturedEnrichResult?.baselineSpecs).toBeDefined();
-    expect(capturedEnrichResult?.baselineSpecs?.["my-cap"]).toBe("# my-cap baseline spec content");
+    // Read-tool-pull model: enrichContext returns dynamicContext unchanged
+    expect(capturedEnrichResult).toEqual(testDynamicContext);
   });
 });
 
@@ -1247,7 +1239,6 @@ describe("TC-DC-106: enrichContext returns unmodified dynamicContext when no del
     });
 
     expect(enrichSpy).toHaveBeenCalledOnce();
-    expect(capturedEnrichResult?.baselineSpecs).toBeUndefined();
     expect(result.status).toBe("awaiting-merge");
   });
 });

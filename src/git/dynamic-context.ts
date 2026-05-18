@@ -38,14 +38,6 @@ export interface DynamicContext {
   diffStat: string;
   /** Directories under specrunner/changes/ (excluding "archive") */
   changesList: string[];
-  /**
-   * Baseline spec contents keyed by capability name.
-   * key: capability name (e.g. "spec-review-session")
-   * value: full text of specrunner/specs/<capability>/spec.md
-   * Optional — collectDynamicContext() does not set this field.
-   * Set by SpecReviewStep.enrichContext() when delta specs are present.
-   */
-  baselineSpecs?: Record<string, string>;
   /** Index of baseline specs under specrunner/specs/ */
   specIndex: SpecIndexEntry[];
 }
