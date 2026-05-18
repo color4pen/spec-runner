@@ -29,6 +29,7 @@ import { formatEscalation } from "./escalation.js";
 import { changeFolderPath, specsDirRel, baselineSpecPath } from "../../util/paths.js";
 import { parseRequestMdContent } from "../../parser/request-md.js";
 import { TYPE_CONFIG } from "../../config/type-config.js";
+import { normalizeRequirementHeader } from "./baseline-headers.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -221,6 +222,73 @@ export function validateDeltaSpec(delta: DeltaSpec): string[] {
   }
 
   return errors;
+}
+
+// ---------------------------------------------------------------------------
+// Baseline header consistency check
+// ---------------------------------------------------------------------------
+
+/**
+ * Check that MODIFIED/REMOVED headers exist in the baseline and that ADDED
+ * headers do not already exist (duplicate detection).
+ *
+ * Normalization (markdown decoration stripping + whitespace trim) is applied
+ * to both delta and baseline names before comparison.
+ *
+ * Returns a list of violation strings (empty = all checks passed).
+ */
+export function checkBaselineHeaderConsistency(
+  delta: DeltaSpec,
+  baselineRequirements: RequirementBlock[] | null,
+  capability: string,
+): string[] {
+  const violations: string[] = [];
+
+  // Build a set of normalized baseline names for fast lookup
+  const normalizedBaselineNames = new Set<string>(
+    baselineRequirements !== null
+      ? baselineRequirements.map((r) => normalizeRequirementHeader(r.name))
+      : [],
+  );
+
+  // MODIFIED: header must exist in baseline
+  for (const block of delta.modified) {
+    if (baselineRequirements === null) {
+      violations.push(
+        `[${capability}] MODIFIED: Requirement "${block.name}" cannot apply to non-existent baseline`,
+      );
+    } else if (!normalizedBaselineNames.has(normalizeRequirementHeader(block.name))) {
+      violations.push(
+        `[${capability}] MODIFIED: Requirement "${block.name}" not found in baseline`,
+      );
+    }
+  }
+
+  // REMOVED: header must exist in baseline
+  for (const block of delta.removed) {
+    if (baselineRequirements === null) {
+      violations.push(
+        `[${capability}] REMOVED: Requirement "${block.name}" cannot apply to non-existent baseline`,
+      );
+    } else if (!normalizedBaselineNames.has(normalizeRequirementHeader(block.name))) {
+      violations.push(
+        `[${capability}] REMOVED: Requirement "${block.name}" not found in baseline`,
+      );
+    }
+  }
+
+  // ADDED: header must NOT already exist in baseline (duplicate detection)
+  if (baselineRequirements !== null) {
+    for (const block of delta.added) {
+      if (normalizedBaselineNames.has(normalizeRequirementHeader(block.name))) {
+        violations.push(
+          `[${capability}] ADDED: Requirement "${block.name}" already exists in baseline (duplicate)`,
+        );
+      }
+    }
+  }
+
+  return violations;
 }
 
 // ---------------------------------------------------------------------------
@@ -481,11 +549,31 @@ export async function mergeSpecsForChange(params: {
       continue;
     }
 
+    // Hoist baseline read (single read per capability, reused by check and applyMerge)
     const baselinePath = path.join(cwd, baselineSpecPath(capability));
     const baselineExists = await fs.exists(baselinePath);
+    let baselineReqs: RequirementBlock[] | null = null;
+    let baselineContent: string | null = null;
+
+    if (baselineExists) {
+      try {
+        baselineContent = await fs.readFile(baselinePath);
+      } catch {
+        allErrors.push(`Failed to read baseline spec for capability "${capability}": ${baselinePath}`);
+        continue;
+      }
+      baselineReqs = parseBaselineSpec(baselineContent).requirements;
+    }
+
+    // Baseline header consistency check (pre-check before applyMerge)
+    const violations = checkBaselineHeaderConsistency(delta, baselineReqs, capability);
+    if (violations.length > 0) {
+      allErrors.push(...violations);
+      continue;
+    }
 
     if (!baselineExists) {
-      // New capability: only ADDED is allowed
+      // New capability: only ADDED is allowed (defense-in-depth; also caught by checkBaselineHeaderConsistency above)
       if (delta.modified.length > 0 || delta.removed.length > 0) {
         const ops = [
           ...(delta.modified.length > 0 ? ["MODIFIED"] : []),
@@ -503,16 +591,8 @@ export async function mergeSpecsForChange(params: {
       const capabilityDir = path.join(cwd, specsDirRel(), capability);
       writeEntries.push({ absPath: baselinePath, content: newContent, mkdirPath: capabilityDir });
     } else {
-      // Existing capability → apply merge
-      let baselineContent: string;
-      try {
-        baselineContent = await fs.readFile(baselinePath);
-      } catch {
-        allErrors.push(`Failed to read baseline spec for capability "${capability}": ${baselinePath}`);
-        continue;
-      }
-
-      const baseline = parseBaselineSpec(baselineContent);
+      // Existing capability → apply merge (reuse already-read baselineContent)
+      const baseline = parseBaselineSpec(baselineContent!);
       const mergeResult = applyMerge(baseline, delta);
 
       if (!mergeResult.ok) {
