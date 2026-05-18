@@ -100,7 +100,7 @@ const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" })
 function makeMinimalDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
   return {
     config: makeMinimalConfig(),
-    request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
+    request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
     slug: "test-slug",
     githubClient: {
       verifyBranch: vi.fn().mockResolvedValue(true),

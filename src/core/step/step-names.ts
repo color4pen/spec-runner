@@ -18,6 +18,7 @@ export const AGENT_STEP_NAMES = [
   "build-fixer",
   "code-review",
   "code-fixer",
+  "adr-gen",
 ] as const;
 
 /**
@@ -42,5 +43,6 @@ export const STEP_NAMES = {
   BUILD_FIXER: "build-fixer",
   CODE_REVIEW: "code-review",
   CODE_FIXER: "code-fixer",
+  ADR_GEN: "adr-gen",
   PR_CREATE: "pr-create",
 } as const;

@@ -19,6 +19,13 @@ export interface ParsedRequest {
   baseBranch: string;
   content: string;
   enabled: string[];
+  /**
+   * Whether to run the adr-gen step for this request.
+   * true → judge agent evaluates if ADR-worthy and generates if so.
+   * false → adr-gen step is a no-op.
+   * Required field — missing or invalid values cause REQUEST_MD_INVALID.
+   */
+  adr: boolean;
   /** Optional section extracts for PR body generation. */
   sections?: ParsedRequestSections;
   /** Issue reference from Meta section (e.g. "#264"). undefined if not present. */

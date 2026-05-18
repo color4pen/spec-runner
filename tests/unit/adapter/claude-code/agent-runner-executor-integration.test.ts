@@ -183,6 +183,7 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
         baseBranch: "main",
         content: "test content",
         enabled: [],
+        adr: false,
       },
       slug: "integration-test",
 
@@ -264,6 +265,7 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
         baseBranch: "main",
         content: "test content",
         enabled: [],
+        adr: false,
       },
       slug: "integration-test",
 
@@ -333,7 +335,7 @@ describe("TC-001: completionVerdict fallback — resultContent null + completion
     const config = makeConfig();
     const deps: PipelineDeps = {
       config,
-      request: { type: "feature", title: "Test", slug: "tc001-slug", baseBranch: "main", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "tc001-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
       slug: "tc001-slug",
 
       githubClient: {
@@ -400,7 +402,7 @@ describe("TC-002: completionVerdict fallback — resultContent null + completion
     const config = makeConfig();
     const deps: PipelineDeps = {
       config,
-      request: { type: "feature", title: "Test", slug: "tc002-slug", baseBranch: "main", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "tc002-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
       slug: "tc002-slug",
 
       githubClient: {
@@ -465,7 +467,7 @@ describe("TC-003 (behavior): completionVerdict is NOT used when resultContent is
     const config = makeConfig();
     const deps: PipelineDeps = {
       config,
-      request: { type: "feature", title: "Test", slug: "tc003-slug", baseBranch: "main", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "tc003-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
       slug: "tc003-slug",
 
       githubClient: {
@@ -526,7 +528,7 @@ describe("TC-004: setsBranch flag — state.branch set after propose step comple
     const config = makeConfig();
     const deps: PipelineDeps = {
       config,
-      request: { type: "feature", title: "Test", slug: "my-feature-slug", baseBranch: "main", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "my-feature-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
       slug: "my-feature-slug",
 
       githubClient: {
@@ -586,7 +588,7 @@ describe("TC-005: setsBranch flag — does not overwrite existing state.branch",
     const config = makeConfig();
     const deps: PipelineDeps = {
       config,
-      request: { type: "feature", title: "Test", slug: "different-slug", baseBranch: "main", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "different-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
       slug: "different-slug",
 
       githubClient: {

@@ -101,7 +101,7 @@ function makeMinimalDeps(clientOpts?: Parameters<typeof makeMockSessionClient>[0
       },
       environment: { id: "env_001", lastSyncedAt: new Date().toISOString() },
     },
-    request: { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "Test request content", enabled: [] },
+    request: { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "Test request content", enabled: [], adr: false },
     slug: "2026-01-01-test",
     githubClient: {
       verifyBranch: vi.fn().mockResolvedValue(true),

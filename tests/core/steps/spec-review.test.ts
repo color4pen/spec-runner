@@ -89,7 +89,7 @@ function buildDeps(opts: {
       },
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
     },
-    request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
+    request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
     slug: "test-slug",
     sleepFn: vi.fn().mockResolvedValue(undefined),
     githubClient: {

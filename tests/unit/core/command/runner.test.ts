@@ -63,7 +63,7 @@ function buildPrepareResult(overrides: Partial<PrepareResult> = {}): PrepareResu
   return {
     jobState: buildJobState(),
     startStep: "design",
-    request: { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "test", enabled: [] },
+    request: { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "test", enabled: [], adr: false },
     config: {
       version: 1,
       runtime: "local",
@@ -96,7 +96,7 @@ function buildMockRuntime(opts: {
     }),
     buildDeps: vi.fn().mockReturnValue({
       client: undefined,
-      request: { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "test", enabled: [] },
+      request: { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "test", enabled: [], adr: false },
       slug: "test-slug",
       githubClient: {},
       cwd: "/worktree",

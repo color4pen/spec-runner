@@ -86,6 +86,7 @@ const STUB_REQUEST_MD = [
   "- **type**: bug-fix",
   "- **slug**: test-slug",
   "- **base-branch**: main",
+  "- **adr**: false",
   "",
 ].join("\n");
 

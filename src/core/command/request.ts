@@ -25,6 +25,9 @@ export function buildScaffoldTemplate(params: {
 - **type**: ${type}
 - **slug**: ${slug}
 - **base-branch**: main
+- **adr**: false
+
+<!-- adr 判断基準: 新しい port/adapter 追加、既存パターンと異なる設計選択、振る舞い/契約を変える修正、構造的リファクタリング → true。いずれにも該当しない → false -->
 
 ## 背景
 

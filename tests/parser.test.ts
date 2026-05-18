@@ -16,6 +16,7 @@ describe("TC-001: parseRequestMd — full valid content", () => {
 - **type**: new-feature
 - **slug**: my-feature-request
 - **base-branch**: main
+- **adr**: false
 - **status**: draft
 
 ## Workflow Options
@@ -45,6 +46,7 @@ describe("TC-002: enabled が空", () => {
 - **type**: new-feature
 - **slug**: title
 - **base-branch**: main
+- **adr**: false
 
 ## Workflow Options
 
@@ -66,6 +68,7 @@ describe("TC-003: no workflow options section", () => {
 - **type**: new-feature
 - **slug**: title
 - **base-branch**: main
+- **adr**: false
 
 ## Description
 
@@ -170,6 +173,7 @@ Content.
 - **type**: new-feature
 - **slug**: my-canonical-slug
 - **base-branch**: main
+- **adr**: false
 `;
     const result = parseRequestMdContent(content);
     expect(result.slug).toBe("my-canonical-slug");
@@ -203,6 +207,7 @@ describe("enabled extraction", () => {
 - **type**: new-feature
 - **slug**: feature
 - **base-branch**: main
+- **adr**: false
 
 ## Workflow Options
 
@@ -222,6 +227,7 @@ describe("enabled extraction", () => {
 - **type**: new-feature
 - **slug**: feature
 - **base-branch**: main
+- **adr**: false
 
 ## Workflow Options
 
@@ -245,6 +251,7 @@ describe("TC-029: sections — 背景と目的の両方が存在する場合", (
 - **type**: new-feature
 - **slug**: my-feature
 - **base-branch**: main
+- **adr**: false
 
 ## 背景
 
@@ -275,6 +282,7 @@ describe("TC-030: sections — 目的が存在しない場合", () => {
 - **type**: new-feature
 - **slug**: my-feature
 - **base-branch**: main
+- **adr**: false
 
 ## 背景
 
@@ -301,6 +309,7 @@ describe("TC-2.5: spec-change and refactoring — no warning on parse", () => {
 - **type**: spec-change
 - **slug**: my-spec-change
 - **base-branch**: main
+- **adr**: false
 
 ## Description
 
@@ -322,6 +331,7 @@ Some spec change.
 - **type**: refactoring
 - **slug**: my-refactoring
 - **base-branch**: main
+- **adr**: false
 
 ## Description
 
@@ -343,6 +353,7 @@ Some refactoring.
 - **type**: improvement
 - **slug**: some-improvement
 - **base-branch**: main
+- **adr**: false
 
 ## Description
 
@@ -394,6 +405,7 @@ describe("TC-BB-002: base-branch: master", () => {
 - **type**: new-feature
 - **slug**: my-slug
 - **base-branch**: master
+- **adr**: false
 `;
     const result = parseRequestMdContent(content);
     expect(result.baseBranch).toBe("master");
@@ -407,6 +419,7 @@ describe("TC-BB-002: base-branch: master", () => {
 - **type**: new-feature
 - **slug**: my-slug
 - **base-branch**: main
+- **adr**: false
 `;
     const result = parseRequestMdContent(content);
     expect(result.baseBranch).toBe("main");
@@ -423,6 +436,7 @@ describe("sections — 背景と目的の両方が存在しない場合", () => 
 - **type**: new-feature
 - **slug**: my-feature
 - **base-branch**: main
+- **adr**: false
 
 ## Description
 

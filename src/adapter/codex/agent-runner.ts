@@ -95,6 +95,7 @@ export class CodexAgentRunner implements AgentRunner {
         baseBranch: "main",
         content: ctx.requestContent,
         enabled: [],
+        adr: ctx.requestAdr ?? false,
       },
       dynamicContext: ctx.dynamicContext,
     };

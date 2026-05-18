@@ -39,6 +39,7 @@ function buildValidRequestMd(opts: {
 - **type**: ${type}
 - **slug**: ${slug}
 - **base-branch**: main
+- **adr**: false
 
 ## 背景
 

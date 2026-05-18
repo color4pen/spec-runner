@@ -22,6 +22,7 @@ import { VerificationStep } from "../../../../src/core/step/verification.js";
 import { BuildFixerStep } from "../../../../src/core/step/build-fixer.js";
 import { CodeReviewStep } from "../../../../src/core/step/code-review.js";
 import { CodeFixerStep } from "../../../../src/core/step/code-fixer.js";
+import { AdrGenStep } from "../../../../src/core/step/adr-gen.js";
 import { PrCreateStep } from "../../../../src/core/step/pr-create.js";
 
 // TC-TYPE-05: Extract<AgentStepName, CliStepName> must be never (compile-time disjoint guarantee)
@@ -41,6 +42,7 @@ const ALL_STEPS = [
   BuildFixerStep,
   CodeReviewStep,
   CodeFixerStep,
+  AdrGenStep,
   PrCreateStep,
 ];
 

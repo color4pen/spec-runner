@@ -37,6 +37,12 @@ export interface AgentRunContext {
   cwd: string;
   /** Content of the request file (request.md / pipeline-context.md) */
   requestContent: string;
+  /**
+   * Whether this request declared adr: true in its Meta section.
+   * Propagated from ParsedRequest.adr so adapters can construct a valid StepContext.
+   * Defaults to false when not provided (backward compat).
+   */
+  requestAdr?: boolean;
   /** Full pipeline config including runtime-specific settings */
   config: SpecRunnerConfig;
   /** Emit a domain event payload back to StepExecutor.

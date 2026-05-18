@@ -13,6 +13,7 @@ Your output MUST include all of the following sections in order:
    - \`- **type**: <type>\`
    - \`- **slug**: <generated-slug>\`
    - \`- **base-branch**: main\`
+   - \`- **adr**: <true|false>\`
    - \`- **date**: <today or omit>\`
    - \`- **author**: <omit or unknown>\`
 3. A \`## 背景\` section explaining the background and motivation
@@ -38,6 +39,18 @@ Infer the \`type\` field from the input. Use one of:
 The \`slug\` field MUST be exactly: \`<generated-slug>\`
 
 Do NOT replace this placeholder. The caller will substitute the actual slug.
+
+## ADR Field
+
+The \`adr\` field controls whether the adr-gen pipeline step will run for this request.
+
+Set \`adr: true\` if ANY of the following apply:
+- Adding a new port or adapter (new abstraction boundary)
+- Making a design choice that differs from existing patterns (alternatives exist)
+- A bug-fix that changes observable behavior or contracts (not just internal logic)
+- Structural refactoring (file/module reorganization, type structure changes, responsibility shifts)
+
+Set \`adr: false\` if NONE of the above apply (e.g., simple feature addition following existing patterns, minor bug fix with no design impact, test additions, documentation updates).
 
 ## Base Branch
 

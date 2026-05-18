@@ -113,13 +113,40 @@ export function parseRequestMdContent(
     }
   }
 
+  // Extract adr from Meta section: "- **adr**: true|false" (required)
+  let adrRaw: string | null = null;
+  const adrPattern = /^\s*-\s+\*\*adr\*\*:\s+(true|false)\s*$/;
+  for (const line of lines) {
+    const m = adrPattern.exec(line);
+    if (m?.[1]) {
+      adrRaw = m[1].trim();
+      break;
+    }
+  }
+  if (adrRaw === null) {
+    // Check if there's an adr field with an invalid value
+    const adrAnyPattern = /^\s*-\s+\*\*adr\*\*:\s+(.+)$/;
+    for (const line of lines) {
+      const m = adrAnyPattern.exec(line);
+      if (m?.[1]) {
+        throw requestMdInvalidError(
+          `invalid value for 'adr' in Meta section in ${filePath}: must be 'true' or 'false', got '${m[1].trim()}'`,
+        );
+      }
+    }
+    throw requestMdInvalidError(
+      `missing 'adr' in Meta section in ${filePath}`,
+    );
+  }
+  const adr = adrRaw === "true";
+
   // Extract enabled list from Workflow Options section
   const enabled = extractEnabled(lines);
 
   // Extract sections: 背景, 目的
   const sections = extractSections(lines);
 
-  return { type, title, slug, baseBranch, content, enabled, sections, issue };
+  return { type, title, slug, baseBranch, content, enabled, adr, sections, issue };
 }
 
 /**

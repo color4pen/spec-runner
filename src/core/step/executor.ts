@@ -135,6 +135,7 @@ export class StepExecutor {
       slug: deps.slug,
       cwd: deps.cwd ?? process.cwd(),
       requestContent: deps.request.content,
+      requestAdr: deps.request.adr,
       config: deps.config,
       dynamicContext: deps.dynamicContext,
       projectContext,

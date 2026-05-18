@@ -1,0 +1,136 @@
+import type { AgentStep, StepDeps } from "./types.js";
+import { NULL_PARSE_RESULT } from "./types.js";
+import type { AgentDefinition } from "../agent/definition.js";
+import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
+import type { JobState } from "../../state/schema.js";
+import { ADR_GEN_SYSTEM_PROMPT } from "../../prompts/adr-gen-system.js";
+import { changeFolderPath } from "../../util/paths.js";
+import { STEP_NAMES } from "./step-names.js";
+
+const ADR_GEN_AGENT_MODEL = "claude-sonnet-4-6";
+
+/**
+ * Full AgentDefinition owned by AdrGenStep.
+ * adr-gen reads change folder artifacts and writes the ADR to specrunner/adr/.
+ * tools = [agent_toolset_20260401] — needs file read/write and git access.
+ * capabilities.gitWrite = true — ADR file is committed and pushed by the agent.
+ *
+ * Design: 2-stage filter (request.adr flag + agent judge) to prevent ADR overproduction.
+ */
+const adrGenAgentDefinition: AgentDefinition = {
+  name: "specrunner-adr-gen",
+  role: STEP_NAMES.ADR_GEN,
+  model: ADR_GEN_AGENT_MODEL,
+  system: ADR_GEN_SYSTEM_PROMPT,
+  tools: [
+    { type: AGENT_TOOLSET_TYPE },
+  ],
+  capabilities: { gitWrite: true },
+};
+
+/**
+ * Build the initial user message for the adr-gen session.
+ *
+ * When request.adr === false, returns a no-op instruction message so the
+ * agent terminates immediately without generating any ADR.
+ * When request.adr === true, returns a judge+generate instruction with
+ * paths to all relevant change folder artifacts.
+ */
+export function buildAdrGenInitialMessage(opts: {
+  slug: string;
+  branch: string | undefined;
+  baseBranch: string;
+  adr: boolean;
+  requestContent: string;
+}): string {
+  const { slug, branch, baseBranch, adr, requestContent } = opts;
+  const changeFolder = changeFolderPath(slug);
+
+  if (!adr) {
+    return `<user-request>
+This request has adr: false — ADR generation is disabled.
+
+No action required. Please end your turn immediately without reading any files or generating any ADR.
+</user-request>`;
+  }
+
+  const branchInfo = branch ? `Branch: ${branch}` : "";
+  return `<user-request>
+This request has adr: true — please judge whether this change warrants an ADR and generate one if so.
+
+Change folder: ${changeFolder}
+${branchInfo}
+Base branch: ${baseBranch}
+
+## Judge materials
+
+Please read the following (if they exist) to make your judgment:
+
+1. request.md: ${changeFolder}/request.md
+2. design.md: ${changeFolder}/design.md
+3. delta specs: ${changeFolder}/specs/ (directory listing)
+4. review-feedback: ${changeFolder}/review-feedback-*.md (any numbered files)
+5. git diff: Run \`git diff ${baseBranch}..HEAD --stat\` to understand the scope of changes
+
+## Instructions
+
+1. Read the materials above
+2. Judge: is this change ADR-worthy? Apply the criteria in your system prompt
+3. If judge=yes: generate the ADR in specrunner/adr/ following the naming and format rules
+4. If judge=no: output the "judge: no / reason: ..." block and end_turn
+
+Original request:
+${requestContent}
+</user-request>
+
+ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。`;
+}
+
+/**
+ * AdrGenStep: generates an ADR when request.adr === true and the agent judges it worthwhile.
+ *
+ * Position in pipeline: code-review:approved → adr-gen → pr-create
+ *
+ * 2-stage filter:
+ * - Stage 1 (declarative): request.adr === false → no-op message, agent terminates immediately
+ * - Stage 2 (agent judge): agent reads change folder artifacts and decides ADR-worthy or not
+ *
+ * completionVerdict: "success" — both judge=yes (ADR generated) and judge=no (skip) are success.
+ * requiresCommit: undefined (false) — adr-gen may legitimately produce no commit (judge=no case).
+ * needsProjectContext: false — no project.md injection needed.
+ */
+export const AdrGenStep: AgentStep = {
+  kind: "agent",
+  name: STEP_NAMES.ADR_GEN,
+
+  agent: adrGenAgentDefinition,
+
+  toolHandlers: undefined,
+
+  completionVerdict: "success",
+
+  // adr-gen reads design.md / delta specs / review-feedback; 20 turns is sufficient.
+  maxTurns: 20,
+
+  needsProjectContext: false,
+
+  buildMessage(state: JobState, deps: StepDeps): string {
+    return buildAdrGenInitialMessage({
+      slug: deps.slug,
+      branch: state.branch ?? undefined,
+      baseBranch: deps.request.baseBranch,
+      adr: deps.request.adr,
+      requestContent: deps.request.content,
+    });
+  },
+
+  resultFilePath(_state: JobState, _deps: StepDeps): string | null {
+    // adr-gen does not produce a pipeline-parsed verdict file.
+    // The agent writes the ADR directly; pipeline detects completion via session idle.
+    return null;
+  },
+
+  parseResult(_content: string, _deps: StepDeps) {
+    return NULL_PARSE_RESULT;
+  },
+};

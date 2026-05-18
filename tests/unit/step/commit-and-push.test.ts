@@ -89,6 +89,7 @@ function makeLocalDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
       baseBranch: "main",
       content: "content",
       enabled: [],
+      adr: false,
     },
     slug: "test-slug",
     cwd: tempDir,

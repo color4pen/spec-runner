@@ -2,38 +2,55 @@
 
 Parse `request.md` into a structured object (type, title, content, enabled options).
 ## Requirements
+
 ### Requirement: request.md は YAML/Markdown ハイブリッド構造でパースされる
 
-request.md パーサーは MUST Markdown ファイルから以下の情報を抽出する: `type` (string、`Meta` 見出し配下の `- **type**: <value>` リスト項目から)、`title` (level-1 heading のテキスト)、`content` (Markdown 本文全体)、`enabled` (`ワークフローオプション` 見出し配下の `- **enabled**:` 配下のリスト項目を文字列配列として収集)。CLI は SHALL この抽出結果を構造化オブジェクトとして返す。
+以下を既存 Requirement に追加する:
 
-#### Scenario: 通常の request.md
+---
 
-- **WHEN** request.md が level-1 heading + Meta セクション + ワークフローオプションセクションを含む
-- **THEN** parser は `{ type, title, content, enabled }` を返し、`type` と `title` は非空文字列、`enabled` は string[]、`content` はファイル全体の文字列
+`ParsedRequest` interface に `adr: boolean` field を追加する。`parseRequestMd` の戻り値に `adr` が含まれる。
 
-#### Scenario: enabled が空
+#### Scenario: parsedRequest に adr フィールドが含まれる
 
-- **WHEN** ワークフローオプションセクションが存在するが `enabled:` 配下にリスト項目が無い
-- **THEN** `enabled` は空配列 `[]` になる
+- **WHEN** Meta セクションに `- **adr**: true` が存在する
+- **THEN** `parsedRequest` は `adr` プロパティを持つ
+- **AND** `parsedRequest.adr` は `boolean` 型である
 
-#### Scenario: ワークフローオプションセクションが無い
-
-- **WHEN** request.md にワークフローオプションセクションが存在しない
-- **THEN** `enabled` は空配列 `[]` で返り、エラーは発生しない
+> Note: `adr` の値の正確な型変換と validation Scenario は「必須フィールドの欠落はエラーとなる」Requirement に記載済み。重複を避けるため本 Requirement では型宣言のみ示す。
 
 ### Requirement: 必須フィールドの欠落はエラーとなる
 
-`type` または `title` が抽出できない場合、CLI は MUST `REQUEST_MD_INVALID` エラーを発生させ、SHALL 欠落しているフィールド名を含むメッセージで stderr に出力する。
+以下を既存 Requirement に追加する:
 
-#### Scenario: title が無い
+---
 
-- **WHEN** request.md に level-1 heading が存在しない
-- **THEN** `Request file invalid: missing title (top-level # heading required).` を含むエラーを返す
+`adr` フィールドが Meta セクションから抽出できない場合、CLI は MUST `REQUEST_MD_INVALID` エラーを発生させ、SHALL `missing 'adr' in Meta section` を含むメッセージで stderr に出力する。
 
-#### Scenario: type が無い
+`adr` フィールドの値が `true` または `false` 以外の場合も MUST `REQUEST_MD_INVALID` エラーを発生させる。
 
-- **WHEN** Meta セクションに `- **type**:` が存在しない
-- **THEN** `Request file invalid: missing 'type' in Meta section.` を含むエラーを返す
+`adr` フィールドの抽出パターンは `/^\s*-\s+\*\*adr\*\*:\s+(true|false)\s*$/` とする。抽出した文字列 `"true"` → `boolean true`、`"false"` → `boolean false` に変換する。
+
+#### Scenario: adr: true を含む request.md
+
+- **WHEN** Meta セクションに `- **adr**: true` が存在する
+- **THEN** `parsedRequest.adr === true` (boolean)
+
+#### Scenario: adr: false を含む request.md
+
+- **WHEN** Meta セクションに `- **adr**: false` が存在する
+- **THEN** `parsedRequest.adr === false` (boolean)
+
+#### Scenario: adr フィールド欠落
+
+- **WHEN** Meta セクションに `adr` 行が存在しない
+- **THEN** `REQUEST_MD_INVALID` エラーが throw される
+- **AND** メッセージに `missing 'adr' in Meta section` を含む
+
+#### Scenario: adr フィールドの値が不正
+
+- **WHEN** Meta セクションに `- **adr**: maybe` が存在する
+- **THEN** `REQUEST_MD_INVALID` エラーが throw される
 
 ### Requirement: type は許容値リストで検証される
 
@@ -110,4 +127,3 @@ sections: {
 
 - **WHEN** Meta セクションに `issue` 行が存在しない
 - **THEN** `parsedRequest.issue === undefined`、エラーは発生しない
-

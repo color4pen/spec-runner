@@ -45,10 +45,10 @@ describe("TC-ST-002: list() with existing entries", () => {
 
     // Create two slugs with request.md, one without
     await fs.mkdir(path.join(activeDir, "slug-a"), { recursive: true });
-    await fs.writeFile(path.join(activeDir, "slug-a", "request.md"), "# A\n\n## Meta\n\n- **type**: new-feature\n- **slug**: slug-a\n- **base-branch**: main\n\n## Workflow Options\n\n- enabled: []\n");
+    await fs.writeFile(path.join(activeDir, "slug-a", "request.md"), "# A\n\n## Meta\n\n- **type**: new-feature\n- **slug**: slug-a\n- **base-branch**: main\n- **adr**: false\n\n## Workflow Options\n\n- enabled: []\n");
 
     await fs.mkdir(path.join(activeDir, "slug-b"), { recursive: true });
-    await fs.writeFile(path.join(activeDir, "slug-b", "request.md"), "# B\n\n## Meta\n\n- **type**: bug-fix\n- **slug**: slug-b\n- **base-branch**: main\n\n## Workflow Options\n\n- enabled: []\n");
+    await fs.writeFile(path.join(activeDir, "slug-b", "request.md"), "# B\n\n## Meta\n\n- **type**: bug-fix\n- **slug**: slug-b\n- **base-branch**: main\n- **adr**: false\n\n## Workflow Options\n\n- enabled: []\n");
 
     // Entry without request.md — should be skipped
     await fs.mkdir(path.join(activeDir, "no-request-md"), { recursive: true });
@@ -76,7 +76,7 @@ describe("TC-ST-003: list() when active/ does not exist", () => {
 // ---------------------------------------------------------------------------
 describe("TC-ST-004: write() creates request.md", () => {
   it("creates the directory and writes request.md content", async () => {
-    const content = "# Test\n\n## Meta\n\n- **type**: new-feature\n- **slug**: test-slug\n- **base-branch**: main\n\n## Workflow Options\n\n- enabled: []\n";
+    const content = "# Test\n\n## Meta\n\n- **type**: new-feature\n- **slug**: test-slug\n- **base-branch**: main\n- **adr**: false\n\n## Workflow Options\n\n- enabled: []\n";
     await write(tempDir, "test-slug", content);
 
     const expectedPath = path.join(tempDir, "specrunner", "requests", "active", "test-slug", "request.md");

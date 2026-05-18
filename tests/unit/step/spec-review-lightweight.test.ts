@@ -184,6 +184,7 @@ describe("TC-5.5: SpecReviewStep.buildMessage with refactoring type includes lig
         slug: "my-refactor",
         content: "Refactor the module",
         enabled: [],
+        adr: false,
         baseBranch: "main",
       },
 
@@ -209,6 +210,7 @@ describe("TC-5.5: SpecReviewStep.buildMessage with refactoring type includes lig
         slug: "my-feature",
         content: "Add a new feature",
         enabled: [],
+        adr: false,
         baseBranch: "main",
       },
 

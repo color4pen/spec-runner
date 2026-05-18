@@ -6,21 +6,11 @@ TBD - created by archiving change 2026-04-29-spec-review-pipeline. Update Purpos
 
 ### Requirement: Pipeline is Driven by a Declarative Transition Table
 
-The `Pipeline` class SHALL drive step execution as a state machine using a declarative `Transition[]` table provided at construction time.
+以下を既存 Requirement の transition table 定義に追加・変更する:
 
-A `Transition` SHALL have the shape:
+---
 
-```ts
-type Transition = {
-  step: StepName;
-  on: Verdict;            // "approved" | "needs-fix" | "escalation" | "passed" | "failed" | "success" | "error"
-  to: StepName | "end" | "escalate";
-};
-```
-
-Inline `if`-chains for verdict-based step routing in `pipeline.ts` SHALL be replaced by table lookup.
-
-The standard transition table SHALL include the `delta-spec-validation` and `delta-spec-fixer` steps. The `design --success→ spec-review` row SHALL be **replaced** by `design --success→ delta-spec-validation`. The `spec-fixer --approved→ spec-review` row SHALL be **replaced** by `spec-fixer --approved→ delta-spec-validation`. The full table SHALL be:
+The standard transition table SHALL include the `adr-gen` step between `code-review` and `pr-create`. The existing row `code-review --approved→ pr-create` SHALL be **replaced** by `code-review --approved→ adr-gen`. The full table SHALL be:
 
 - `design --success→ delta-spec-validation`
 - `design --error→ escalate`
@@ -43,52 +33,48 @@ The standard transition table SHALL include the `delta-spec-validation` and `del
 - `verification --escalation→ escalate`
 - `build-fixer --success→ verification`
 - `build-fixer --error→ escalate`
-- `code-review --approved→ pr-create`
+- `code-review --approved→ adr-gen`
 - `code-review --needs-fix→ code-fixer`
 - `code-review --escalation→ escalate`
 - `code-fixer --approved→ code-review`
 - `code-fixer --error→ escalate`
+- `adr-gen --success→ pr-create`
+- `adr-gen --error→ escalate`
 - `pr-create --success→ end`
 - `pr-create --error→ escalate`
 
-The prior rows `design --success→ spec-review` and `spec-fixer --approved→ spec-review` SHALL NOT be present in the table after this change. `delta-spec-validation` is interposed as a gate between design/spec-fixer and spec-review.
+The prior row `code-review --approved→ pr-create` SHALL NOT be present in the table after this change. `adr-gen` is interposed between `code-review` approval and `pr-create`.
 
-#### Scenario: design routes to delta-spec-validation instead of spec-review
+`adr-gen` は `STANDARD_LOOP_NAMES` に含めない (= loop 対象外、単発実行)。`LOOP_ERROR_CODES` にも登録しない。`STANDARD_LOOP_FIXER_PAIRS` にも登録しない。
 
-- **GIVEN** the standard pipeline
-- **WHEN** `design` returns `success`
-- **THEN** `Pipeline.run` selects the `design --success→ delta-spec-validation` row
-- **AND** the next step executed is `delta-spec-validation`
-- **AND** the prior row `design --success→ spec-review` is NOT present in the table
-
-#### Scenario: spec-fixer routes to delta-spec-validation instead of spec-review
+#### Scenario: code-review approved routes to adr-gen instead of pr-create
 
 - **GIVEN** the standard pipeline
-- **WHEN** `spec-fixer` returns `approved`
-- **THEN** `Pipeline.run` selects the `spec-fixer --approved→ delta-spec-validation` row
-- **AND** the next step executed is `delta-spec-validation`
-- **AND** the prior row `spec-fixer --approved→ spec-review` is NOT present in the table
+- **WHEN** `code-review` returns `approved`
+- **THEN** `Pipeline.run` selects the `code-review --approved→ adr-gen` row
+- **AND** the next step executed is `adr-gen`
+- **AND** the prior row `code-review --approved→ pr-create` is NOT present in the table
 
-#### Scenario: delta-spec-validation approved routes to spec-review
-
-- **GIVEN** the standard pipeline
-- **WHEN** `delta-spec-validation` returns `approved`
-- **THEN** `Pipeline.run` selects the `delta-spec-validation --approved→ spec-review` row
-- **AND** the next step executed is `spec-review`
-
-#### Scenario: delta-spec-validation needs-fix routes to delta-spec-fixer
+#### Scenario: adr-gen success routes to pr-create
 
 - **GIVEN** the standard pipeline
-- **WHEN** `delta-spec-validation` returns `needs-fix`
-- **THEN** `Pipeline.run` selects the `delta-spec-validation --needs-fix→ delta-spec-fixer` row
-- **AND** the next step executed is `delta-spec-fixer`
+- **WHEN** `adr-gen` returns `success`
+- **THEN** `Pipeline.run` selects the `adr-gen --success→ pr-create` row
+- **AND** the next step executed is `pr-create`
 
-#### Scenario: delta-spec-fixer approved routes back to delta-spec-validation
+#### Scenario: adr-gen error routes to escalate
 
 - **GIVEN** the standard pipeline
-- **WHEN** `delta-spec-fixer` returns `approved`
-- **THEN** `Pipeline.run` selects the `delta-spec-fixer --approved→ delta-spec-validation` row
-- **AND** the next step executed is `delta-spec-validation` (re-validation loop)
+- **WHEN** `adr-gen` returns `error`
+- **THEN** `Pipeline.run` selects the `adr-gen --error→ escalate` row
+- **AND** the pipeline terminates with escalation
+
+#### Scenario: code-fixer → code-review loop is maintained (regression guard)
+
+- **GIVEN** the standard pipeline
+- **WHEN** `code-fixer` returns `approved`
+- **THEN** `Pipeline.run` selects `code-fixer --approved→ code-review`
+- **AND** the code-review ↔ code-fixer loop operates identically to before this change
 
 ### Requirement: Pipeline Enforces Loop Guard via maxIterations
 
@@ -290,29 +276,19 @@ The `StepName` union (`src/state/schema.ts`) SHALL be extended to include the li
 
 ### Requirement: AgentStepName accepts only agent-resident steps (whitelist)
 
-Replaces: "AgentStepName excludes "pr-create" from the Exclude clause"
+以下を既存 Requirement に追加する:
 
-`AgentStepName` is derived from the `AGENT_STEP_NAMES` whitelist array (`typeof AGENT_STEP_NAMES[number]`), not from `StepName` via `Exclude`. New steps must be added to either `AGENT_STEP_NAMES` or `CLI_STEP_NAMES` in `src/core/step/step-names.ts`; failure to add a step to either array causes a test failure (union mismatch with `STEP_NAMES`).
+---
 
-`CliStepName` is similarly derived from `CLI_STEP_NAMES` (`typeof CLI_STEP_NAMES[number]`).
+`AGENT_STEP_NAMES` 配列に `"adr-gen"` を追加する。`AgentStepName` 型は `typeof AGENT_STEP_NAMES[number]` から derive されるため自動的に `"adr-gen"` を含む。
 
-`config.agents` key type is `Partial<Record<AgentStepName, AgentRecord>>`, preventing CliStep names from being used as agent config keys.
+`STEP_NAMES` オブジェクトに `ADR_GEN: "adr-gen"` を追加する。
 
-#### Scenario: AgentStepName accepts only agent-resident steps (replaces old scenario)
+#### Scenario: AgentStepName accepts "adr-gen"
 
 - **WHEN** `AgentStepName` is inspected via TypeScript type checking
-- **THEN** `"design"`, `"spec-review"`, `"spec-fixer"`, `"delta-spec-fixer"`, `"test-case-gen"`, `"implementer"`, `"build-fixer"`, `"code-review"`, `"code-fixer"` ARE assignable to `AgentStepName`
+- **THEN** `"design"`, `"spec-review"`, `"spec-fixer"`, `"delta-spec-fixer"`, `"test-case-gen"`, `"implementer"`, `"build-fixer"`, `"code-review"`, `"code-fixer"`, `"adr-gen"` ARE assignable to `AgentStepName`
 - **AND** `"verification"`, `"pr-create"`, `"delta-spec-validation"` are NOT assignable to `AgentStepName`
-
-#### Scenario: New step addition requires explicit array membership
-
-- **WHEN** a new step is added to `STEP_NAMES` but not to `AGENT_STEP_NAMES` or `CLI_STEP_NAMES`
-- **THEN** the exhaustiveness test (union = STEP_NAMES values) fails
-
-#### Scenario: config.agents rejects CliStep keys at type level
-
-- **WHEN** `config.agents["delta-spec-validation"]` is written in TypeScript
-- **THEN** a type error is raised because `"delta-spec-validation"` is not in `AgentStepName`
 
 ### Requirement: Loop exhaustion bypass is gated by fixer iteration count, not preceding step identity
 

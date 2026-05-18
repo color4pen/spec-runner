@@ -63,7 +63,7 @@ function makeMinimalDeps(slug: string = "test-slug"): StepDeps & { spawn: SpawnF
       agents: {},
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
     },
-    request: { type: "feature", title: "Test", slug, baseBranch: "main", content: "content", enabled: [] },
+    request: { type: "feature", title: "Test", slug, baseBranch: "main", content: "content", enabled: [], adr: false },
     slug,
     cwd: tempDir,
     spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as SpawnFn,

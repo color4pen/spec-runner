@@ -632,6 +632,7 @@ function makeRequestMdContent(type: string, slug = "my-slug"): string {
     `- **type**: ${type}`,
     `- **slug**: ${slug}`,
     `- **base-branch**: main`,
+    `- **adr**: false`,
     ``,
   ].join("\n");
 }

@@ -18,6 +18,7 @@ import { VerificationStep } from "../step/verification.js";
 import { BuildFixerStep } from "../step/build-fixer.js";
 import { CodeReviewStep } from "../step/code-review.js";
 import { CodeFixerStep } from "../step/code-fixer.js";
+import { AdrGenStep } from "../step/adr-gen.js";
 import { PrCreateStep } from "../step/pr-create.js";
 import { TestCaseGenStep } from "../step/test-case-gen.js";
 import { STEP_NAMES } from "../step/step-names.js";
@@ -67,6 +68,7 @@ export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): P
     [STEP_NAMES.BUILD_FIXER,           BuildFixerStep],
     [STEP_NAMES.CODE_REVIEW,           CodeReviewStep],
     [STEP_NAMES.CODE_FIXER,            CodeFixerStep],
+    [STEP_NAMES.ADR_GEN,               AdrGenStep],
     [STEP_NAMES.PR_CREATE,             PrCreateStep],
   ]);
 

@@ -64,7 +64,7 @@ function buildRepo() {
 }
 
 function buildRequest() {
-  return { type: "feature", title: "Test", slug: "test", baseBranch: "main", content: "Do something", enabled: ["security-reviewer"] };
+  return { type: "feature", title: "Test", slug: "test", baseBranch: "main", content: "Do something", enabled: ["security-reviewer"], adr: false };
 }
 
 /**

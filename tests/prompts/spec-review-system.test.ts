@@ -196,7 +196,7 @@ describe("TC-021: SpecReviewStep.buildMessage passes baselineSpecs from dynamicC
         agents: {},
       },
       slug: "test-slug",
-      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
 
       dynamicContext: {
         gitLog: "",
@@ -237,7 +237,7 @@ describe("TC-021: SpecReviewStep.buildMessage passes baselineSpecs from dynamicC
         agents: {},
       },
       slug: "test-slug",
-      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
+      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
 
       dynamicContext: {
         gitLog: "",

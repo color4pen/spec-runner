@@ -75,7 +75,7 @@ function makeMinimalDeps(): PipelineDeps {
       agents: { design: { agentId: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" } },
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
     },
-    request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
+    request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
     slug: "test-slug",
     sleepFn: vi.fn().mockResolvedValue(undefined),
     githubClient: {
@@ -226,6 +226,16 @@ function buildMockPipeline(opts: {
     if (step.name === "code-fixer") {
       return currentState;
     }
+    if (step.name === "adr-gen") {
+      // Default: adr-gen succeeds (no ADR file in mock — completionVerdict: success)
+      return {
+        ...currentState,
+        steps: {
+          ...currentState.steps,
+          "adr-gen": [{ attempt: 1, sessionId: null, outcome: { verdict: "success" as const, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" }],
+        },
+      };
+    }
     if (step.name === "pr-create") {
       // Default: pr-create succeeds
       return {
@@ -253,6 +263,7 @@ function buildMockPipeline(opts: {
     ["build-fixer",           { kind: "agent", name: "build-fixer",           agent: { name: "test", role: "build-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["code-review",           { kind: "agent", name: "code-review",           agent: { name: "test", role: "code-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => reviewFeedbackPath("test", 1), parseResult: () => ({ verdict: "approved" as const, findingsPath: null }) }],
     ["code-fixer",            { kind: "agent", name: "code-fixer",            agent: { name: "test", role: "code-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "approved", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["adr-gen",               { kind: "agent", name: "adr-gen",               agent: { name: "test", role: "adr-gen", model: "claude-sonnet-4-6", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["pr-create",             { kind: "cli",   name: "pr-create",             run: async () => {}, resultFilePath: () => prCreateResultPath("test"), parseResult: () => ({ verdict: "success" as const, findingsPath: null }) }],
   ]);
 
@@ -560,8 +571,8 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     expect(find("verification", "escalation")).toMatchObject({ to: "escalate" });
     expect(find("build-fixer",  "success")).toMatchObject({ to: "verification" });
     expect(find("build-fixer",  "error")).toMatchObject({ to: "escalate" });
-    // code-review loop rows (code-review approved now routes to pr-create, not end)
-    expect(find("code-review",  "approved")).toMatchObject({ to: "pr-create" });
+    // code-review loop rows (code-review approved routes to adr-gen, not pr-create directly)
+    expect(find("code-review",  "approved")).toMatchObject({ to: "adr-gen" });
     expect(find("code-review",  "needs-fix")).toMatchObject({ to: "code-fixer" });
     expect(find("code-review",  "escalation")).toMatchObject({ to: "escalate" });
     expect(find("code-fixer",   "approved")).toMatchObject({ to: "code-review" });
@@ -571,8 +582,8 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     expect(find("pr-create",    "error")).toMatchObject({ to: "escalate" });
   });
 
-  it("has exactly 28 transitions (23 previous + 5 new delta-spec-validation/fixer rows)", () => {
-    expect(STANDARD_TRANSITIONS).toHaveLength(28);
+  it("has exactly 30 transitions (28 previous + 2 new adr-gen rows)", () => {
+    expect(STANDARD_TRANSITIONS).toHaveLength(30);
   });
 });
 

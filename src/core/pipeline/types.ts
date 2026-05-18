@@ -93,11 +93,14 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.BUILD_FIXER,           on: "success",    to: STEP_NAMES.VERIFICATION },
   { step: STEP_NAMES.BUILD_FIXER,           on: "error",      to: "escalate" },
   // --- code review loop ---
-  { step: STEP_NAMES.CODE_REVIEW,           on: "approved",   to: STEP_NAMES.PR_CREATE },
+  { step: STEP_NAMES.CODE_REVIEW,           on: "approved",   to: STEP_NAMES.ADR_GEN },
   { step: STEP_NAMES.CODE_REVIEW,           on: "needs-fix",  to: STEP_NAMES.CODE_FIXER },
   { step: STEP_NAMES.CODE_REVIEW,           on: "escalation", to: "escalate" },
   { step: STEP_NAMES.CODE_FIXER,            on: "approved",   to: STEP_NAMES.CODE_REVIEW },
   { step: STEP_NAMES.CODE_FIXER,            on: "error",      to: "escalate" },
+  // --- adr-gen (single shot, after code-review approved) ---
+  { step: STEP_NAMES.ADR_GEN,              on: "success",    to: STEP_NAMES.PR_CREATE },
+  { step: STEP_NAMES.ADR_GEN,              on: "error",      to: "escalate" },
   // --- pr-create (single shot, no loop) ---
   { step: STEP_NAMES.PR_CREATE,             on: "success",    to: "end" },
   { step: STEP_NAMES.PR_CREATE,             on: "error",      to: "escalate" },

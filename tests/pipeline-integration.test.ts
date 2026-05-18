@@ -109,6 +109,7 @@ function buildConfig(overrides: Record<string, unknown> = {}) {
       "code-review": { agentId: "code-review-agent-id", definitionHash: "sha256:crv", lastSyncedAt: new Date().toISOString() },
       "code-fixer": { agentId: "code-fixer-agent-id", definitionHash: "sha256:cfx", lastSyncedAt: new Date().toISOString() },
       "delta-spec-fixer": { agentId: "delta-spec-fixer-agent-id", definitionHash: "sha256:dsf", lastSyncedAt: new Date().toISOString() },
+      "adr-gen": { agentId: "adr-gen-agent-id", definitionHash: "sha256:adr", lastSyncedAt: new Date().toISOString() },
     },
     pipeline: { maxRetries: 2 },
     environment: { id: "env_001", lastSyncedAt: new Date().toISOString() },
@@ -122,7 +123,7 @@ function buildRepo() {
 }
 
 function buildRequest() {
-  return { type: "feature", title: "Test", slug: "test", baseBranch: "main", content: "Do something", enabled: [] };
+  return { type: "feature", title: "Test", slug: "test", baseBranch: "main", content: "Do something", enabled: [], adr: false };
 }
 
 /**
@@ -289,10 +290,10 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
     expect(result.steps?.["spec-fixer"]).toBeUndefined();
 
     // After spec-review approved, pipeline continues:
-    // propose(1) + spec-review(1) + test-case-gen(1) + implementer(1) + code-review(1) = 5 sessions
-    // VerificationStep is CLI (no session). Total = 5 createSession calls.
+    // design(1) + spec-review(1) + test-case-gen(1) + implementer(1) + code-review(1) + adr-gen(1) = 6 sessions
+    // VerificationStep is CLI (no session). Total = 6 createSession calls.
     const createCalls = (client.createSession as ReturnType<typeof vi.fn>).mock.calls;
-    expect(createCalls.length).toBe(5);
+    expect(createCalls.length).toBe(6);
 
     // implementer should have run
     expect(result.steps?.["implementer"]).toBeDefined();
@@ -2009,5 +2010,46 @@ describe("TC-INT-01: Step 5 fail (no-specs-for-required-type) → pipeline trans
 
     // Pipeline proceeded past delta-spec-validation → spec-review ran
     expect(result.steps?.["spec-review"]).toBeDefined();
+  });
+});
+
+// TC-ADR-INT-01: STANDARD_TRANSITIONS includes adr-gen transitions and removes old code-review→pr-create
+describe("TC-ADR-INT-01: STANDARD_TRANSITIONS adr-gen wiring", () => {
+  it("code-review --approved→ adr-gen (not pr-create)", async () => {
+    const { STANDARD_TRANSITIONS } = await import("../src/core/pipeline/types.js");
+    const codeReviewApproved = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-review" && t.on === "approved"
+    );
+    expect(codeReviewApproved).toBeDefined();
+    expect(codeReviewApproved!.to).toBe("adr-gen");
+    // Must NOT go directly to pr-create
+    expect(codeReviewApproved!.to).not.toBe("pr-create");
+  });
+
+  it("adr-gen --success→ pr-create exists", async () => {
+    const { STANDARD_TRANSITIONS } = await import("../src/core/pipeline/types.js");
+    const adrGenSuccess = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "adr-gen" && t.on === "success"
+    );
+    expect(adrGenSuccess).toBeDefined();
+    expect(adrGenSuccess!.to).toBe("pr-create");
+  });
+
+  it("adr-gen --error→ escalate exists", async () => {
+    const { STANDARD_TRANSITIONS } = await import("../src/core/pipeline/types.js");
+    const adrGenError = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "adr-gen" && t.on === "error"
+    );
+    expect(adrGenError).toBeDefined();
+    expect(adrGenError!.to).toBe("escalate");
+  });
+
+  it("code-fixer --approved→ code-review loop is preserved", async () => {
+    const { STANDARD_TRANSITIONS } = await import("../src/core/pipeline/types.js");
+    const codeFixerApproved = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-fixer" && t.on === "approved"
+    );
+    expect(codeFixerApproved).toBeDefined();
+    expect(codeFixerApproved!.to).toBe("code-review");
   });
 });

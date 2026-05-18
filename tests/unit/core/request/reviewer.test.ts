@@ -248,7 +248,7 @@ describe("TC-RVR-011: runReview() with mock queryFn returns RequestReviewResult"
 
     try {
       const result = await runReview(
-        "# Test Request\n\n## Meta\n\n- **type**: new-feature\n- **slug**: test-slug\n- **base-branch**: main\n",
+        "# Test Request\n\n## Meta\n\n- **type**: new-feature\n- **slug**: test-slug\n- **base-branch**: main\n- **adr**: false\n",
         {} as import("../../../../src/config/schema.js").SpecRunnerConfig,
         tmpDir,
         mockQueryFn as unknown as typeof import("@anthropic-ai/claude-agent-sdk").query,

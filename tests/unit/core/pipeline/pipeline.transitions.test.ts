@@ -67,7 +67,7 @@ function makeMinimalDeps(): PipelineDeps {
       agents: {},
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
     },
-    request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [] },
+    request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
     slug: "test-slug",
     sleepFn: vi.fn().mockResolvedValue(undefined),
     githubClient: {
@@ -153,12 +153,15 @@ describe("TC-011: verification passed → code-review transition が存在する
 // TC-012 (new code-review transitions): TC-012 / TC-013 / TC-014 / TC-015 / TC-029
 describe("TC-012-015, TC-029: code-review / code-fixer transition rows", () => {
   const codeReviewEdges = [
-    // TC-012: code-review approved now routes to pr-create (not end) — updated per pr-create-step spec
-    { step: "code-review", on: "approved",   to: "pr-create",   label: "TC-012: code-review approved → pr-create" },
+    // TC-012: code-review approved routes to adr-gen (adr-gen → pr-create)
+    { step: "code-review", on: "approved",   to: "adr-gen",     label: "TC-012: code-review approved → adr-gen" },
     { step: "code-review", on: "needs-fix",  to: "code-fixer",  label: "TC-013: code-review needs-fix → code-fixer" },
     { step: "code-review", on: "escalation", to: "escalate",    label: "TC-015: code-review escalation → escalate" },
     { step: "code-fixer",  on: "approved",   to: "code-review", label: "TC-014: code-fixer approved → code-review" },
     { step: "code-fixer",  on: "error",      to: "escalate",    label: "TC-029: code-fixer error → escalate" },
+    // adr-gen transitions
+    { step: "adr-gen",     on: "success",    to: "pr-create",   label: "TC-ADR-INT: adr-gen success → pr-create" },
+    { step: "adr-gen",     on: "error",      to: "escalate",    label: "TC-ADR-INT: adr-gen error → escalate" },
   ];
 
   for (const edge of codeReviewEdges) {
@@ -172,19 +175,14 @@ describe("TC-012-015, TC-029: code-review / code-fixer transition rows", () => {
 });
 
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
-// TC-022: STANDARD_TRANSITIONS テーブルが 28 行を持つ（23 + delta-spec-validation/fixer 5 行 = 28）
+// TC-022: STANDARD_TRANSITIONS テーブルが 30 行を持つ（28 + adr-gen 2 行 = 30）
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 28 rows total (23 original + 5 new delta-spec-validation/fixer rows = 28)", () => {
-    // 23 rows (previous total)
-    // + 5 new delta-spec-validation/fixer rows:
-    //   delta-spec-validation → spec-review (approved)
-    //   delta-spec-validation → delta-spec-fixer (needs-fix)
-    //   delta-spec-validation → escalate (escalation)
-    //   delta-spec-fixer → delta-spec-validation (approved)
-    //   delta-spec-fixer → escalate (error)
-    // design --success→ delta-spec-validation (replaces spec-review, net same)
-    // spec-fixer --approved→ delta-spec-validation (replaces spec-review, net same)
-    expect(STANDARD_TRANSITIONS.length).toBe(28);
+  it("has 30 rows total (28 previous + 2 new adr-gen rows = 30)", () => {
+    // 28 rows (previous total)
+    // + 2 new adr-gen rows:
+    //   adr-gen → pr-create (success)
+    //   adr-gen → escalate (error)
+    expect(STANDARD_TRANSITIONS.length).toBe(30);
   });
 
   it("verification --passed→ end does NOT exist", () => {
@@ -215,11 +213,18 @@ describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された�
     expect(row).toBeDefined();
   });
 
-  it("code-review --approved→ pr-create exists (TC-018)", () => {
+  it("code-review --approved→ adr-gen exists (TC-018)", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-review" && t.on === "approved" && t.to === "adr-gen",
+    );
+    expect(row).toBeDefined();
+  });
+
+  it("code-review --approved→ pr-create does NOT exist (direct route removed)", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) => t.step === "code-review" && t.on === "approved" && t.to === "pr-create",
     );
-    expect(row).toBeDefined();
+    expect(row).toBeUndefined();
   });
 });
 

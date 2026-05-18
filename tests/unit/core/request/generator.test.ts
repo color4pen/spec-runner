@@ -40,6 +40,7 @@ describe("TC-GEN-001: generate() with valid mock queryFn", () => {
 - **type**: new-feature
 - **slug**: <generated-slug>
 - **base-branch**: main
+- **adr**: false
 
 ## 背景
 

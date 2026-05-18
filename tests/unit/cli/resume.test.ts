@@ -77,6 +77,7 @@ vi.mock("../../../src/parser/request-md.js", () => ({
     baseBranch: "main",
     content: "# Test Request\n\n## Meta\n\n- **type**: new-feature\n- **slug**: test-slug\n",
     enabled: [],
+    adr: false,
     sections: {},
   }),
 }));

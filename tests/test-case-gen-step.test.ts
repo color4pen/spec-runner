@@ -55,6 +55,7 @@ function makeMinimalDeps(slug: string = "my-change"): StepDeps {
       baseBranch: "main",
       content: "Add test-case-gen step to pipeline",
       enabled: [],
+      adr: false,
     },
     slug,
   };
