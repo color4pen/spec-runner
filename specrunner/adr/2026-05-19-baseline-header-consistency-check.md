@@ -1,4 +1,4 @@
-# ADR-0004: Baseline Header Consistency Check as Defense-in-Depth Layer in spec-merge
+# Baseline Header Consistency Check as Defense-in-Depth Layer in spec-merge
 
 - **Date**: 2026-05-19
 - **Status**: Accepted

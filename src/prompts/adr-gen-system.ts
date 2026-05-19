@@ -43,9 +43,8 @@ const ADR_GEN_BASE = `あなたは adr-gen エージェントです。この req
 
 ### ファイル命名
 
-\`specrunner/adr/ADR-{NNNN}-{YYYY-MM-DD}-{slug}.md\`
+\`specrunner/adr/{YYYY-MM-DD}-{slug}.md\`
 
-- NNNN: 4 桁連番。\`specrunner/adr/\` 配下の既存 ADR を \`ls\` して最大番号 + 1 を採番（0 件なら 0001）
 - YYYY-MM-DD: ADR 作成日（today）
 - slug: request.md の slug フィールドを使用
 

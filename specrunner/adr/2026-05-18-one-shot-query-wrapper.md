@@ -1,4 +1,4 @@
-# ADR-0001: queryOneShot を agent-runner と分離した独立関数として導入する
+# queryOneShot を agent-runner と分離した独立関数として導入する
 
 **Date**: 2026-05-18
 **Status**: accepted

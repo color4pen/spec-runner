@@ -1,7 +1,6 @@
 ## Purpose
 
 TBD
-
 ## Requirements
 
 ### Requirement: adr-gen step skips when adr is false
@@ -16,9 +15,8 @@ TBD
 
 ### Requirement: judge=yes produces an ADR file
 - **Priority**: MUST
-- **Description**: When the judge determines the change is ADR-worthy, the agent MUST generate an ADR file at `specrunner/adr/ADR-{NNNN}-{YYYY-MM-DD}-{slug}.md` in Michael Nygard format.
+- **Description**: When the judge determines the change is ADR-worthy, the agent MUST generate an ADR file at `specrunner/adr/{YYYY-MM-DD}-{slug}.md` in Michael Nygard format.
 - **Format**: `# {Title}\n**Date**: YYYY-MM-DD\n**Status**: accepted\n## Context\n## Decision\n## Alternatives Considered\n## Consequences`
-- **Numbering**: NNNN is the next sequential number after existing ADRs in `specrunner/adr/`.
 
 ### Requirement: judge=no logs reason and skips
 - **Priority**: MUST
