@@ -6,8 +6,14 @@ export interface DeltaSpecRuleInput {
   requestType?: string;
 }
 
-export interface DeltaSpecRule {
-  name: string;
+export type DeltaSpecRuleName =
+  | "canonical-spec-structure"
+  | "no-legacy-flat-dir"
+  | "no-legacy-flat-file"
+  | "no-specs-for-required-type";
+
+export interface DeltaSpecRule<TName extends string = string> {
+  name: TName;
   severity: "error" | "warning";
   check(input: DeltaSpecRuleInput): Promise<DeltaSpecViolation[]>;
 }

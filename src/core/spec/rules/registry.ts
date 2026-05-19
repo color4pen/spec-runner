@@ -7,10 +7,10 @@ import type { DeltaSpecViolation } from "../delta-spec-validator.js";
  * Unlike the generic RuleRegistry, this registry uses async check methods
  * because DSV rules need to perform fs operations.
  */
-export class DeltaSpecRuleRegistry {
-  private rules: DeltaSpecRule[] = [];
+export class DeltaSpecRuleRegistry<TName extends string = string> {
+  private rules: DeltaSpecRule<TName>[] = [];
 
-  register(rule: DeltaSpecRule): void {
+  register(rule: DeltaSpecRule<TName>): void {
     if (this.rules.some((r) => r.name === rule.name)) {
       throw new Error(`Duplicate rule name: ${rule.name}`);
     }

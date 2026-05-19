@@ -1,7 +1,7 @@
-import type { DeltaSpecRule, DeltaSpecRuleInput } from "./types.js";
+import type { DeltaSpecRule, DeltaSpecRuleName, DeltaSpecRuleInput } from "./types.js";
 import type { DeltaSpecViolation } from "../delta-spec-validator.js";
 
-export const noLegacyFlatDir: DeltaSpecRule = {
+export const noLegacyFlatDir: DeltaSpecRule<DeltaSpecRuleName> = {
   name: "no-legacy-flat-dir",
   severity: "error",
   async check(input: DeltaSpecRuleInput): Promise<DeltaSpecViolation[]> {

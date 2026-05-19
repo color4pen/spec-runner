@@ -1,4 +1,4 @@
-import type { DeltaSpecRule, DeltaSpecRuleInput } from "./types.js";
+import type { DeltaSpecRule, DeltaSpecRuleName, DeltaSpecRuleInput } from "./types.js";
 import type { DeltaSpecViolation } from "../delta-spec-validator.js";
 
 /**
@@ -9,7 +9,7 @@ import type { DeltaSpecViolation } from "../delta-spec-validator.js";
  * - .md files directly in specs/ → non-canonical-path
  * - subdirs → validate spec.md presence and content
  */
-export const canonicalSpecStructure: DeltaSpecRule = {
+export const canonicalSpecStructure: DeltaSpecRule<DeltaSpecRuleName> = {
   name: "canonical-spec-structure",
   severity: "error",
   async check(input: DeltaSpecRuleInput): Promise<DeltaSpecViolation[]> {

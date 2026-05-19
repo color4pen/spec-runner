@@ -1,9 +1,9 @@
-import type { DeltaSpecRule, DeltaSpecRuleInput } from "./types.js";
+import type { DeltaSpecRule, DeltaSpecRuleName, DeltaSpecRuleInput } from "./types.js";
 import type { DeltaSpecViolation } from "../delta-spec-validator.js";
 
 const TYPES_REQUIRING_SPECS = ["spec-change", "new-feature"];
 
-export const noSpecsForRequiredType: DeltaSpecRule = {
+export const noSpecsForRequiredType: DeltaSpecRule<DeltaSpecRuleName> = {
   name: "no-specs-for-required-type",
   severity: "error",
   async check(input: DeltaSpecRuleInput): Promise<DeltaSpecViolation[]> {
