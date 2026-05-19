@@ -101,7 +101,13 @@ function makeLocalDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
       verifyPath: vi.fn(),
       verifyTokenScopes: vi.fn(),
       getRefSha: vi.fn(),
+      listPullRequests: vi.fn().mockResolvedValue([]),
+      createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+      getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+      mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
     },
+    owner: "user",
+    repo: "repo",
     spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as PipelineSpawnFn,
     ...overrides,
   };

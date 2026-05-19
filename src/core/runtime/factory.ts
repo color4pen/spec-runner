@@ -34,7 +34,7 @@ export function createRuntime(
   githubToken: string,
 ): RuntimeStrategy {
   if (config.runtime === "local") {
-    return new LocalRuntime({ cwd, githubClient, githubToken });
+    return new LocalRuntime({ cwd, githubClient, githubToken, owner: repo.owner, repo: repo.name });
   }
 
   // Managed runtime: sessionClient must be injected by the caller

@@ -110,7 +110,11 @@ function buildMockGithubClient(fileContent: string | null): GitHubClient {
     getRawFile: vi.fn().mockResolvedValue(fileContent),
     verifyPath: vi.fn().mockResolvedValue(true),
     verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
-      getRefSha: vi.fn().mockResolvedValue(null),
+    getRefSha: vi.fn().mockResolvedValue(null),
+    listPullRequests: vi.fn().mockResolvedValue([]),
+    createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+    getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+    mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
   };
 }
 
@@ -154,6 +158,8 @@ describe("TC-006: runSpecReviewStep — pollUntilComplete is called with default
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient: buildMockGithubClient(fileContent),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -183,6 +189,8 @@ describe("TC-017: runSpecReviewStep — treats status='idle' as complete", () =>
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient: buildMockGithubClient(fileContent),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -213,6 +221,8 @@ describe("TC-018: runSpecReviewStep — SESSION_TERMINATED error handling", () =
         slug: "test-slug",
         sleepFn: vi.fn().mockResolvedValue(undefined),
         githubClient: buildMockGithubClient(""),
+        owner: "testowner",
+        repo: "testrepo",
         spawn: noopSpawn,
       }),
     ).rejects.toMatchObject({ code: "SESSION_TERMINATED" });
@@ -238,6 +248,8 @@ describe("TC-020: runSpecReviewStep — SPEC_REVIEW_RESULT_NOT_FOUND when file n
         slug: "test-slug",
         sleepFn: vi.fn().mockResolvedValue(undefined),
         githubClient: buildMockGithubClient(null),
+        owner: "testowner",
+        repo: "testrepo",
         spawn: noopSpawn,
       }),
     ).rejects.toMatchObject({ code: "SPEC_REVIEW_RESULT_NOT_FOUND" });
@@ -259,6 +271,8 @@ describe("TC-021: runSpecReviewStep — escalation failsafe when verdict line ab
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient: buildMockGithubClient("## Findings\n\nNo findings."),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -286,6 +300,8 @@ describe("TC-041: runSpecReviewStep — records session, verdict, findingsPath, 
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient: buildMockGithubClient(fileContent),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -317,6 +333,8 @@ describe("TC-042: runSpecReviewStep — session created without custom tools", (
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient: buildMockGithubClient("- **verdict**: approved"),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -351,6 +369,8 @@ describe("TC-049: runSpecReviewStep — findingsPath has correct format", () => 
       slug,
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient: buildMockGithubClient("- **verdict**: needs-fix"),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 

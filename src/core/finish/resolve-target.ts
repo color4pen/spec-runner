@@ -4,7 +4,7 @@
  *
  * Priority: slug → --pr → --job → auto-detect
  *
- * TC-109: --pr <num> → gh pr view → headRefName → stripBranchPrefix → slug
+ * TC-109: --pr <num> → getPullRequest → headRefName → stripBranchPrefix → slug
  * TC-130: specrunner finish <slug> resolves state
  * TC-131: active 0 entries → escalation (exit 2)
  * TC-132: active 2+ entries → escalation (exit 2)
@@ -15,21 +15,23 @@ import * as path from "node:path";
 import { listJobStates, loadJobState } from "../../state/store.js";
 import { getJobSlug, stripBranchPrefix, stripJobIdSuffix } from "../../state/job-slug.js";
 import type { ResolvedTarget } from "./types.js";
-import type { SpawnFn } from "../../util/spawn.js";
+import type { GitHubClient } from "../../core/port/github-client.js";
 
 export interface ResolveTargetInput {
   /** Positional <slug> argument (first priority). */
   slug?: string;
-  /** --pr <num>: reverse lookup via gh pr view --json headRefName. */
+  /** --pr <num>: reverse lookup via REST API. */
   prNumber?: number;
   /** --job <jobId>: direct job ID lookup (forensics / debug). */
   jobId?: string;
   /** Base directory for active detection (defaults to cwd). */
   cwd?: string;
-  /** spawn function for gh CLI calls (required for --pr resolution). */
-  spawn?: SpawnFn;
-  /** Additional env vars (e.g. GITHUB_TOKEN) to inject into gh CLI subprocess. */
-  env?: Record<string, string | undefined>;
+  /** GitHub REST API client (required for --pr resolution). */
+  githubClient?: GitHubClient;
+  /** GitHub repository owner (required for --pr resolution). */
+  owner?: string;
+  /** GitHub repository name (required for --pr resolution). */
+  repo?: string;
 }
 
 export type ResolveTargetResult =
@@ -50,8 +52,8 @@ export async function resolveTarget(
   }
 
   // 2. --pr <num> reverse lookup
-  if (input.prNumber !== undefined && input.spawn) {
-    return resolveByPrNumber(input.prNumber, input.cwd ?? process.cwd(), input.spawn, stdoutWrite, input.env);
+  if (input.prNumber !== undefined && input.githubClient && input.owner && input.repo) {
+    return resolveByPrNumber(input.prNumber, input.githubClient, input.owner, input.repo, stdoutWrite);
   }
 
   // 3. --job <jobId> direct lookup (forensics / debug)
@@ -97,43 +99,30 @@ async function resolveBySlug(
 }
 
 /**
- * Resolve by --pr <num>: gh pr view → headRefName → stripBranchPrefix → slug.
+ * Resolve by --pr <num>: REST API getPullRequest → headRefName → stripBranchPrefix → slug.
  *
  * TC-109: --pr 48 → headRefName feat/readme-status-section → readme-status-section
  */
 async function resolveByPrNumber(
   prNumber: number,
-  cwd: string,
-  spawn: SpawnFn,
+  githubClient: GitHubClient,
+  owner: string,
+  repo: string,
   stdoutWrite: (msg: string) => void,
-  env?: Record<string, string | undefined>,
 ): Promise<ResolveTargetResult> {
-  const result = await spawn(
-    "gh",
-    ["pr", "view", String(prNumber), "--json", "headRefName"],
-    { cwd, env },
-  );
-
-  if (result.exitCode !== 0) {
-    return {
-      ok: false,
-      exitCode: 2,
-      message: `Failed to resolve PR #${prNumber}: ${result.stderr.trim()}. Ensure 'gh' is authenticated.`,
-    };
-  }
-
-  let parsed: { headRefName?: string };
+  let prData: { headRefName?: string };
   try {
-    parsed = JSON.parse(result.stdout.trim()) as { headRefName?: string };
-  } catch {
+    prData = await githubClient.getPullRequest(owner, repo, prNumber);
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
     return {
       ok: false,
       exitCode: 2,
-      message: `Failed to parse gh pr view output: ${result.stdout}`,
+      message: `Failed to resolve PR #${prNumber}: ${detail}. Run 'specrunner login'.`,
     };
   }
 
-  const headRef = parsed.headRefName ?? "";
+  const headRef = prData.headRefName ?? "";
   const slug = stripJobIdSuffix(stripBranchPrefix(headRef));
 
   if (!slug) {
@@ -144,7 +133,7 @@ async function resolveByPrNumber(
     };
   }
 
-  return resolveBySlug(slug, cwd, stdoutWrite);
+  return resolveBySlug(slug, undefined, stdoutWrite);
 }
 
 /**

@@ -21,17 +21,23 @@ const BRANCH = "feat/test";
 const FILE_PATH = specReviewResultPath("test-slug", 1);
 
 function buildClient(mockFetch: typeof fetch): GitHubApiClient {
-  return new GitHubApiClient(mockFetch, "ghp_test");
+  return new GitHubApiClient(mockFetch, "ghp_test", { sleepFn: () => Promise.resolve() });
+}
+
+/** Minimal headers stub — returns null for all rate-limit headers. */
+const mockHeaders = { get: vi.fn().mockReturnValue(null) };
+
+function makeResp(status: number, body: string): Partial<Response> {
+  return { status, headers: mockHeaders as unknown as Headers, text: () => Promise.resolve(body) };
 }
 
 // TC-012: getRawFile — 正常取得（200）
 describe("TC-012: GitHubApiClient.getRawFile — success on first try (200)", () => {
   it("returns file content without retrying when first call returns 200", async () => {
     const fileContent = "- **verdict**: approved\n\n## Findings\nNone.";
-    const mockFetch = vi.fn().mockResolvedValue({
-      status: 200,
-      text: () => Promise.resolve(fileContent),
-    }) as unknown as typeof fetch;
+    const mockFetch = vi.fn().mockResolvedValue(
+      makeResp(200, fileContent),
+    ) as unknown as typeof fetch;
 
     const sleepFn = vi.fn().mockResolvedValue(undefined);
     const client = buildClient(mockFetch);
@@ -50,9 +56,9 @@ describe("TC-013: GitHubApiClient.getRawFile — retries on 404, succeeds on 3rd
   it("returns file content after retrying twice with 1s sleep each time", async () => {
     const fileContent = "- **verdict**: approved";
     const mockFetch = vi.fn()
-      .mockResolvedValueOnce({ status: 404, text: () => Promise.resolve("") })
-      .mockResolvedValueOnce({ status: 404, text: () => Promise.resolve("") })
-      .mockResolvedValueOnce({ status: 200, text: () => Promise.resolve(fileContent) }) as unknown as typeof fetch;
+      .mockResolvedValueOnce(makeResp(404, ""))
+      .mockResolvedValueOnce(makeResp(404, ""))
+      .mockResolvedValueOnce(makeResp(200, fileContent)) as unknown as typeof fetch;
 
     const sleepFn = vi.fn().mockResolvedValue(undefined);
     const client = buildClient(mockFetch);
@@ -69,10 +75,9 @@ describe("TC-013: GitHubApiClient.getRawFile — retries on 404, succeeds on 3rd
 // TC-014: getRawFile — 3 回リトライしても 404 の場合は null を返す
 describe("TC-014: GitHubApiClient.getRawFile — returns null after 3 retries exhausted", () => {
   it("returns null and sleeps 3 times when all 4 calls return 404", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      status: 404,
-      text: () => Promise.resolve(""),
-    }) as unknown as typeof fetch;
+    const mockFetch = vi.fn().mockResolvedValue(
+      makeResp(404, ""),
+    ) as unknown as typeof fetch;
 
     const sleepFn = vi.fn().mockResolvedValue(undefined);
     const client = buildClient(mockFetch);
@@ -93,6 +98,7 @@ describe("TC-015: GitHubApiClient.getRawFile — throws GITHUB_TOKEN_EXPIRED on 
   it("throws SpecRunnerError with GITHUB_TOKEN_EXPIRED code on 401", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 401,
+      headers: mockHeaders,
       text: () => Promise.resolve(""),
     }) as unknown as typeof fetch;
 

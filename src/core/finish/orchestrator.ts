@@ -4,7 +4,7 @@
  * Phase 0: pre-flight (reversible checks)
  * Phase 1: checkout feature branch → archive change folder → git mv → commit
  * Phase 2: git push origin <feature-branch>
- * Phase 3: gh pr merge --squash --delete-branch
+ * Phase 3: REST API squash merge
  * Phase 4: git checkout main → git pull --ff-only (best-effort cleanup)
  *
  * TC-101: legacy /tmp/... request.path → PR merge succeeds
@@ -17,6 +17,7 @@
  * TC-126: state.status=archived → "Already archived" no-op
  */
 import type { SpawnFn } from "../../util/spawn.js";
+import type { GitHubClient } from "../../core/port/github-client.js";
 import type { FinishFs, FinishFlags, ResolvedTarget, PrViewData } from "./types.js";
 import type { WorktreeManager } from "../worktree/manager.js";
 import { JobStateStore } from "../../store/job-state-store.js";
@@ -47,12 +48,16 @@ export interface FinishInput {
   cwd: string;
   spawn: SpawnFn;
   fs: FinishFs;
+  /** GitHub REST API client for PR operations. */
+  githubClient: GitHubClient;
+  /** GitHub repository owner. */
+  owner: string;
+  /** GitHub repository name. */
+  repo: string;
   /** Injectable sleep for testing (defaults to real setTimeout-based sleep). */
   sleepFn?: (ms: number) => Promise<void>;
   /** Injectable WorktreeManager for testing (defaults to createWorktreeManager()). */
   worktreeManagerFn?: () => import("../worktree/manager.js").WorktreeManager;
-  /** GitHub token injected into gh CLI subprocess env (GITHUB_TOKEN). */
-  githubToken?: string;
 }
 
 export type FinishResult =
@@ -68,13 +73,12 @@ export async function runFinishOrchestrator(
   input: FinishInput,
   stdoutWrite: (msg: string) => void = (m) => process.stdout.write(m + "\n"),
 ): Promise<FinishResult> {
-  const { slug, prNumber, jobId, baseBranch, flags, cwd, spawn, fs, sleepFn, worktreeManagerFn, githubToken } = input;
+  const { slug, prNumber, jobId, baseBranch, flags, cwd, spawn, fs, sleepFn, worktreeManagerFn, githubClient, owner, repo } = input;
 
-  // Build env override for gh CLI subprocess (inject GITHUB_TOKEN so gh auth login is not required)
-  const ghEnv: Record<string, string | undefined> | undefined =
-    githubToken ? { GITHUB_TOKEN: githubToken } : undefined;
-
-  const resolveResult = await resolveTarget({ slug, prNumber, jobId, cwd, spawn, env: ghEnv }, stdoutWrite);
+  const resolveResult = await resolveTarget(
+    { slug, prNumber, jobId, cwd, githubClient, owner, repo },
+    stdoutWrite,
+  );
   if (!resolveResult.ok) return { exitCode: 2, message: resolveResult.message };
   const target = resolveResult.target;
 
@@ -109,7 +113,17 @@ export async function runFinishOrchestrator(
 
   // Phase 0: pre-flight
   stdoutWrite("Phase 0: pre-flight checks...");
-  const preflightResult = await runPreflight({ target, cwd, spawn, fs, dryRun: flags.dryRun ?? false, sleepFn, env: ghEnv });
+  const preflightResult = await runPreflight({
+    target,
+    cwd,
+    spawn,
+    fs,
+    dryRun: flags.dryRun ?? false,
+    githubClient,
+    owner,
+    repo,
+    sleepFn,
+  });
   if (!preflightResult.ok) return { exitCode: 1, escalation: preflightResult.escalation };
   const { prViewData } = preflightResult;
 
@@ -166,20 +180,31 @@ export async function runFinishOrchestrator(
     if (!p1.ok) return { exitCode: 1, escalation: p1.escalation };
 
     stdoutWrite(`Phase 2: git push origin ${target.branch}...`);
-    const p2 = await runPhase2Push({ target, operationCwd, cwd, spawn, baseBranch, prViewData, stdoutWrite, sleepFn, ghEnv });
+    const p2 = await runPhase2Push({
+      target,
+      operationCwd,
+      cwd,
+      spawn,
+      baseBranch,
+      prViewData,
+      stdoutWrite,
+      sleepFn,
+      githubClient,
+      owner,
+      repo,
+    });
     if (!p2.ok) return { exitCode: 1, escalation: p2.escalation };
 
     stdoutWrite(`Phase 3: merging PR #${target.prNumber}...`);
     const mergeResult = await mergeFeaturePrPhase3({
       prNumber: target.prNumber,
       mergeStateStatus: p2.mergeStateAfterPush,
-      force: flags.force ?? false,
-      cwd,
-      spawn,
+      githubClient,
+      owner,
+      repo,
       slug: target.slug,
       baseBranch,
       sleepFn,
-      ghEnv,
     });
     if (!mergeResult.ok) return { exitCode: 1, escalation: mergeResult.escalation };
     stdoutWrite(`PR #${target.prNumber} merged successfully.`);
@@ -262,9 +287,11 @@ async function runPhase2Push(params: {
   prViewData: PrViewData;
   stdoutWrite: (msg: string) => void;
   sleepFn?: (ms: number) => Promise<void>;
-  ghEnv?: Record<string, string | undefined>;
+  githubClient: GitHubClient;
+  owner: string;
+  repo: string;
 }): Promise<Phase2Result> {
-  const { target, operationCwd, cwd, spawn, baseBranch, prViewData, stdoutWrite, sleepFn, ghEnv } = params;
+  const { target, operationCwd, cwd, spawn, baseBranch, prViewData, stdoutWrite, sleepFn, githubClient, owner, repo } = params;
   const archiveCwd = operationCwd ?? cwd;
 
   const pushResult = await pushFeatureBranch({ branch: target.branch, cwd: archiveCwd, spawn, slug: target.slug });
@@ -274,11 +301,11 @@ async function runPhase2Push(params: {
   // Phase 2 post-push: poll mergeStateStatus until CLEAN (Design D1)
   const postPushPoll = await pollMergeStateAfterPush({
     prNumber: target.prNumber,
-    cwd,
-    spawn,
+    githubClient,
+    owner,
+    repo,
     slug: target.slug,
     sleepFn,
-    env: ghEnv,
   });
   const mergeStateAfterPush = postPushPoll.mergeStateStatus || (prViewData.mergeStateStatus ?? "");
 
@@ -444,56 +471,64 @@ async function pushFeatureBranch(params: {
 interface MergePhase3Params {
   prNumber: number;
   mergeStateStatus: string;
-  force: boolean;
-  cwd: string;
-  spawn: SpawnFn;
+  githubClient: GitHubClient;
+  owner: string;
+  repo: string;
   slug: string;
   baseBranch: string;
   sleepFn?: (ms: number) => Promise<void>;
-  ghEnv?: Record<string, string | undefined>;
 }
 
 /**
- * Merge feature PR (Phase 3).
- * --admin is added ONLY when mergeStateStatus=BLOCKED AND force=true OR
- * when mergeStateStatus=BLOCKED (blocking checks) per spec.
+ * Merge feature PR (Phase 3) via REST API.
+ * D4: --admin equivalent is handled implicitly by admin token; 405 → escalation.
  */
 async function mergeFeaturePrPhase3(params: MergePhase3Params): Promise<PhaseResult> {
-  const { prNumber, mergeStateStatus, force, cwd, spawn, slug, baseBranch, sleepFn, ghEnv } = params;
+  const { prNumber, githubClient, owner, repo, slug, baseBranch, sleepFn } = params;
 
   // Phase 3 guard: check mergeable before attempting merge
   const mergeableResult = await checkMergeableForMerge({
     prNumber,
-    cwd,
-    spawn,
+    githubClient,
+    owner,
+    repo,
     slug,
     baseBranch,
     sleepFn,
-    env: ghEnv,
   });
   if (!mergeableResult.ok) {
     return { ok: false, escalation: mergeableResult.escalation, exitCode: 1 };
   }
 
-  const mergeArgs = ["pr", "merge", String(prNumber), "--squash"];
-
-  // --admin: only when BLOCKED (required status checks blocking) or force flag
-  const status = mergeStateStatus.toUpperCase();
-  if (status === "BLOCKED" || force) {
-    mergeArgs.push("--admin");
+  // REST API squash merge (D4: admin bypass is implicit via token permissions)
+  let mergeResult: { merged: boolean; message: string };
+  try {
+    mergeResult = await githubClient.mergePullRequest(owner, repo, prNumber, { mergeMethod: "squash" });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      escalation: formatEscalation({
+        failedStep: "Phase 3 (REST API squash merge)",
+        detectedState: `mergePullRequest #${prNumber} threw: ${detail}`,
+        recommendedAction: `Check GitHub token permissions and re-run: specrunner finish ${slug}`,
+        resumeCommand: `specrunner finish ${slug}`,
+      }),
+      exitCode: 1,
+    };
   }
 
-  const mergeResult = await spawnOrEscalate({
-    spawn,
-    cmd: "gh",
-    args: mergeArgs,
-    cwd,
-    failedStep: "Phase 3 (gh pr merge)",
-    resumeCommand: `specrunner finish ${slug}`,
-    env: ghEnv,
-  });
-  if (!mergeResult.ok) {
-    return { ok: false, escalation: mergeResult.escalation, exitCode: 1 };
+  if (!mergeResult.merged) {
+    return {
+      ok: false,
+      escalation: formatEscalation({
+        failedStep: "Phase 3 (REST API squash merge)",
+        detectedState: `merge failed: ${mergeResult.message}`,
+        recommendedAction: `${mergeResult.message}\n\nCheck branch protection rules or token permissions, then re-run: specrunner finish ${slug}`,
+        resumeCommand: `specrunner finish ${slug}`,
+      }),
+      exitCode: 1,
+    };
   }
 
   return { ok: true };
@@ -508,8 +543,7 @@ function outputDryRunPlan(
   stdoutWrite: (msg: string) => void,
 ): void {
   const archivePlan = "archive change folder + move active to merged";
-  const mergeStrategy = "gh pr merge --squash";
-  const adminFlag = (prViewData.mergeStateStatus ?? "").toUpperCase() === "BLOCKED" ? "yes" : "no";
+  const mergeStrategy = "REST API squash merge";
   const expectedStatus = "archived";
 
   stdoutWrite("--- dry-run plan ---");
@@ -519,6 +553,5 @@ function outputDryRunPlan(
   stdoutWrite(`- merge-state-status: ${prViewData.mergeStateStatus ?? "unknown"}`);
   stdoutWrite(`- archive-plan: ${archivePlan}`);
   stdoutWrite(`- merge-strategy: ${mergeStrategy}`);
-  stdoutWrite(`- admin-flag: ${adminFlag}`);
   stdoutWrite(`- expected-status: ${expectedStatus}`);
 }

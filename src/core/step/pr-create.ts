@@ -2,7 +2,7 @@
  * PrCreateStep: implements the pr-create pipeline step as a CLI-resident step.
  *
  * kind: "cli" — no agent session is created.
- * Calls runPrCreate() to spawn gh CLI, writes pr-create-result.md, then
+ * Calls runPrCreate() to call GitHub REST API, writes pr-create-result.md, then
  * parseResult extracts the verdict via regex.
  *
  * Design D1: kind=cli (not kind=agent).
@@ -32,13 +32,24 @@ export const PrCreateStep: CliStep = {
     const title = renderPrTitle(deps.request);
     const body = renderPrBody({ parsedRequest: deps.request, jobState: state, slug });
 
+    if (!deps.githubClient) {
+      throw new Error("githubClient is required for pr-create step");
+    }
+    if (!deps.owner) {
+      throw new Error("owner is required for pr-create step");
+    }
+    if (!deps.repo) {
+      throw new Error("repo is required for pr-create step");
+    }
     const result = await runPrCreate({
       branch,
       baseBranch: deps.request.baseBranch,
       title,
       body,
       cwd,
-      githubToken: deps.githubToken,
+      githubClient: deps.githubClient,
+      owner: deps.owner,
+      repo: deps.repo,
     });
 
     const resultFilePath = PrCreateStep.resultFilePath(state, deps);

@@ -23,8 +23,14 @@ export interface StepContext {
   request: ParsedRequest;
   /** Dynamic repository context injected at pipeline start. Optional for backward compat. */
   dynamicContext?: DynamicContext;
-  /** Resolved GitHub token to inject into gh CLI subprocesses. Optional for backward compat. */
+  /** Resolved GitHub token. Optional for backward compat. */
   githubToken?: string;
+  /** GitHub REST API client. Optional in StepContext; required in PipelineDeps. */
+  githubClient?: GitHubClient;
+  /** GitHub repository owner (e.g. "octocat"). Optional in StepContext; required in PipelineDeps. */
+  owner?: string;
+  /** GitHub repository name (e.g. "my-repo"). Optional in StepContext; required in PipelineDeps. */
+  repo?: string;
 }
 
 /**
@@ -48,6 +54,10 @@ export interface PipelineDeps extends StepContext {
   sleepFn?: (ms: number) => Promise<void>;
   /** GitHub client (port interface). Required for all pipeline steps. */
   githubClient: GitHubClient;
+  /** GitHub repository owner. Required for PR operations. */
+  owner: string;
+  /** GitHub repository name. Required for PR operations. */
+  repo: string;
   /**
    * Pre-built AgentRunner injected by RuntimeStrategy.buildDeps().
    * createStandardPipeline and runProposePipeline use this directly,

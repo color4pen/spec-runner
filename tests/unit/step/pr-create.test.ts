@@ -72,6 +72,19 @@ function makeMinimalDeps(slug: string = "my-change"): CliStepDeps {
     slug,
     cwd: tempDir,
     spawn: noopSpawn,
+    githubClient: {
+      verifyBranch: vi.fn().mockResolvedValue(true),
+      getRawFile: vi.fn().mockResolvedValue(null),
+      verifyPath: vi.fn().mockResolvedValue(true),
+      verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+      getRefSha: vi.fn().mockResolvedValue(null),
+      listPullRequests: vi.fn().mockResolvedValue([]),
+      createPullRequest: vi.fn().mockResolvedValue({ url: "https://github.com/user/repo/pull/1", number: 1 }),
+      getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+      mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
+    },
+    owner: "testowner",
+    repo: "testrepo",
   };
 }
 

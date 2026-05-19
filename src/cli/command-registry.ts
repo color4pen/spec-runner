@@ -22,6 +22,8 @@ import { executeList } from "../core/command/request-list.js";
 import { resolve as storeResolve } from "../core/request/store.js";
 import { AGENT_STEP_NAMES, CLI_STEP_NAMES } from "../core/step/step-names.js";
 import type { FlagDef, ParsedArgs } from "./flag-parser.js";
+import { resolveGitHubToken } from "../core/credentials/github.js";
+import { createGitHubClient } from "../adapter/github/github-client.js";
 
 export interface CommandDef {
   flags: Record<string, FlagDef>;
@@ -75,10 +77,10 @@ Ps Options:
 
 Finish Options:
   <slug>            Resolve job by slug (first form, recommended)
-  --pr=<num>        Reverse-lookup slug via gh pr view <num>
+  --pr=<num>        Reverse-lookup slug via GitHub REST API (PR <num>)
   --job=<jobId>     Direct job ID lookup (forensics / debug only)
   --dry-run         Phase 0 pre-flight only, no destructive ops
-  --force           Force merge even with failing checks (--admin)
+  --force           Force merge even with failing checks (relies on admin token)
 
 Rm Options:
   --force           Remove job regardless of status (bypass status gate)
@@ -113,10 +115,10 @@ Arguments:
                     If omitted, auto-detects from awaiting-merge/ directory.
 
 Options:
-  --pr=<num>        Reverse-lookup slug via PR number (gh pr view)
+  --pr=<num>        Reverse-lookup slug via GitHub REST API (PR <num>)
   --job=<jobId>     Direct job ID lookup (forensics / debug only)
   --dry-run         Phase 0 pre-flight only — no commits, pushes, or merges
-  --force           Force merge even with failing checks (uses --admin)
+  --force           Force merge even with failing checks (relies on admin token)
   --help, -h        Show this help message
 `;
 
@@ -250,11 +252,22 @@ export const COMMANDS: Record<string, CommandEntry> = {
       status: { type: "string", values: ["running", "awaiting-resume", "awaiting-merge", "failed", "terminated", "archived", "canceled"] as const },
     },
     handler: async (parsed) => {
-      await runPs({
-        active: !!parsed.flags["active"],
-        all: !!parsed.flags["all"],
-        status: parsed.flags["status"] as string | undefined,
-      });
+      // Resolve GitHub client for PR merge status checks (optional — silently skip if no token)
+      let githubClient = null;
+      try {
+        const { token } = await resolveGitHubToken(process.env as Record<string, string | undefined>);
+        githubClient = createGitHubClient(fetch, token);
+      } catch {
+        // No token available — PR merge check will be skipped
+      }
+      await runPs(
+        {
+          active: !!parsed.flags["active"],
+          all: !!parsed.flags["all"],
+          status: parsed.flags["status"] as string | undefined,
+        },
+        githubClient,
+      );
     },
   },
 

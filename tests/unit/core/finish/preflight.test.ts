@@ -16,6 +16,22 @@ import {
 } from "../../../../src/core/finish/pr-status.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
 import type { ResolvedTarget, FinishFs } from "../../../../src/core/finish/types.js";
+import type { GitHubClient } from "../../../../src/core/port/github-client.js";
+
+function makeMockGithubClient(overrides: Partial<GitHubClient> = {}): GitHubClient {
+  return {
+    verifyBranch: vi.fn().mockResolvedValue(true),
+    getRawFile: vi.fn().mockResolvedValue(null),
+    verifyPath: vi.fn().mockResolvedValue(true),
+    verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+    getRefSha: vi.fn().mockResolvedValue(null),
+    listPullRequests: vi.fn().mockResolvedValue([]),
+    createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+    getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug", mergeable: "MERGEABLE" }),
+    mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
+    ...overrides,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // TC-013: MERGED PR with UNKNOWN mergeStateStatus → bypass retry, success
@@ -23,30 +39,22 @@ import type { ResolvedTarget, FinishFs } from "../../../../src/core/finish/types
 
 describe("TC-013: preflight MERGED bypass — MERGED + UNKNOWN → immediate success", () => {
   it("returns ok:true without retrying when state=MERGED and mergeStateStatus=UNKNOWN", async () => {
-    const spawnCalls: number[] = [];
+    let callCount = 0;
 
-    const spawn: SpawnFn = vi.fn().mockImplementation((_cmd: string, args: string[]) => {
-      if (args[1] === "view") {
-        spawnCalls.push(1);
-        return Promise.resolve({
-          exitCode: 0,
-          stdout: JSON.stringify({
-            state: "MERGED",
-            mergeStateStatus: "UNKNOWN",
-            headRefName: "feat/test-slug",
-          }),
-          stderr: "",
-        });
-      }
-      return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
+    const githubClient = makeMockGithubClient({
+      getPullRequest: vi.fn().mockImplementation(async () => {
+        callCount++;
+        return { state: "MERGED", mergeStateStatus: "UNKNOWN", headRefName: "feat/test-slug", mergeable: "MERGEABLE" };
+      }),
     });
 
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 
     const result = await fetchPrViewWithRetry({
       prNumber: 42,
-      cwd: "/tmp",
-      spawn,
+      githubClient,
+      owner: "user",
+      repo: "repo",
       slug: "test-slug",
       sleepFn,
     });
@@ -57,27 +65,25 @@ describe("TC-013: preflight MERGED bypass — MERGED + UNKNOWN → immediate suc
     }
     // Should NOT have slept — bypass returns immediately
     expect(sleepFn).not.toHaveBeenCalled();
-    // gh pr view called only once (no retry)
-    expect(spawnCalls).toHaveLength(1);
+    // getPullRequest called only once (no retry)
+    expect(callCount).toBe(1);
   });
 
   it("returns the parsed MERGED PR data in the success result", async () => {
-    const spawn: SpawnFn = vi.fn().mockImplementation((_cmd: string, _args: string[]) =>
-      Promise.resolve({
-        exitCode: 0,
-        stdout: JSON.stringify({
-          state: "MERGED",
-          mergeStateStatus: "UNKNOWN",
-          headRefName: "feat/my-feature",
-        }),
-        stderr: "",
+    const githubClient = makeMockGithubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "MERGED",
+        mergeStateStatus: "UNKNOWN",
+        headRefName: "feat/my-feature",
+        mergeable: "MERGEABLE",
       }),
-    );
+    });
 
     const result = await fetchPrViewWithRetry({
       prNumber: 99,
-      cwd: "/tmp",
-      spawn,
+      githubClient,
+      owner: "user",
+      repo: "repo",
       slug: "my-feature",
     });
 
@@ -96,31 +102,22 @@ describe("TC-013: preflight MERGED bypass — MERGED + UNKNOWN → immediate suc
 describe("TC-014: preflight MERGED bypass — OPEN + UNKNOWN → retry logic runs", () => {
   it("retries when state=OPEN and mergeStateStatus=UNKNOWN (MERGED bypass does not fire)", async () => {
     let callCount = 0;
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
 
-    const spawn: SpawnFn = vi.fn().mockImplementation((_cmd: string, args: string[]) => {
-      if (args[1] === "view") {
+    const githubClient = makeMockGithubClient({
+      getPullRequest: vi.fn().mockImplementation(async () => {
         callCount++;
         // First two calls: OPEN + UNKNOWN; third call: OPEN + CLEAN
         const mergeStateStatus = callCount < 3 ? "UNKNOWN" : "CLEAN";
-        return Promise.resolve({
-          exitCode: 0,
-          stdout: JSON.stringify({
-            state: "OPEN",
-            mergeStateStatus,
-            headRefName: "feat/test-slug",
-          }),
-          stderr: "",
-        });
-      }
-      return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
+        return { state: "OPEN", mergeStateStatus, headRefName: "feat/test-slug", mergeable: "MERGEABLE" };
+      }),
     });
-
-    const sleepFn = vi.fn().mockResolvedValue(undefined);
 
     const result = await fetchPrViewWithRetry({
       prNumber: 42,
-      cwd: "/tmp",
-      spawn,
+      githubClient,
+      owner: "user",
+      repo: "repo",
       slug: "test-slug",
       sleepFn,
     });
@@ -137,27 +134,22 @@ describe("TC-014: preflight MERGED bypass — OPEN + UNKNOWN → retry logic run
   });
 
   it("escalates after all retries exhausted for OPEN + UNKNOWN", async () => {
-    const spawn: SpawnFn = vi.fn().mockImplementation((_cmd: string, args: string[]) => {
-      if (args[1] === "view") {
-        return Promise.resolve({
-          exitCode: 0,
-          stdout: JSON.stringify({
-            state: "OPEN",
-            mergeStateStatus: "UNKNOWN",
-            headRefName: "feat/test-slug",
-          }),
-          stderr: "",
-        });
-      }
-      return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
+    const githubClient = makeMockGithubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "UNKNOWN",
+        headRefName: "feat/test-slug",
+        mergeable: "MERGEABLE",
+      }),
     });
 
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 
     const result = await fetchPrViewWithRetry({
       prNumber: 42,
-      cwd: "/tmp",
-      spawn,
+      githubClient,
+      owner: "user",
+      repo: "repo",
       slug: "test-slug",
       sleepFn,
     });
@@ -202,14 +194,6 @@ describe("TC-CHECKOUT-1: checkout success → validate success → restore succe
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       // Check 6: which binaries
       if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/which", stderr: "" });
-      // Check 3+4: gh pr view
-      if (cmd === "gh" && args[0] === "pr") {
-        return Promise.resolve({
-          exitCode: 0,
-          stdout: JSON.stringify({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug" }),
-          stderr: "",
-        });
-      }
       // git rev-parse → current branch is "main"
       if (cmd === "git" && args[0] === "rev-parse") {
         return Promise.resolve({ exitCode: 0, stdout: "main\n", stderr: "" });
@@ -235,6 +219,9 @@ describe("TC-CHECKOUT-1: checkout success → validate success → restore succe
       spawn,
       fs: makeFs(true),
       dryRun: false,
+      githubClient: makeMockGithubClient(),
+      owner: "user",
+      repo: "repo",
     });
 
     expect(result.ok).toBe(true);
@@ -260,13 +247,6 @@ describe("TC-CHECKOUT-3: checkout fail → escalation (no restore)", () => {
   it("escalates when git checkout fails", async () => {
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/x", stderr: "" });
-      if (cmd === "gh" && args[0] === "pr") {
-        return Promise.resolve({
-          exitCode: 0,
-          stdout: JSON.stringify({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug" }),
-          stderr: "",
-        });
-      }
       if (cmd === "git" && args[0] === "rev-parse") {
         return Promise.resolve({ exitCode: 0, stdout: "main\n", stderr: "" });
       }
@@ -286,6 +266,9 @@ describe("TC-CHECKOUT-3: checkout fail → escalation (no restore)", () => {
       spawn,
       fs: makeFs(true),
       dryRun: false,
+      githubClient: makeMockGithubClient(),
+      owner: "user",
+      repo: "repo",
     });
 
     expect(result.ok).toBe(false);
@@ -306,13 +289,6 @@ describe("TC-CHECKOUT-4: validate success → restore fail → warning only, ok:
 
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/x", stderr: "" });
-      if (cmd === "gh" && args[0] === "pr") {
-        return Promise.resolve({
-          exitCode: 0,
-          stdout: JSON.stringify({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug" }),
-          stderr: "",
-        });
-      }
       if (cmd === "git" && args[0] === "rev-parse") {
         return Promise.resolve({ exitCode: 0, stdout: "main\n", stderr: "" });
       }
@@ -344,6 +320,9 @@ describe("TC-CHECKOUT-4: validate success → restore fail → warning only, ok:
       spawn,
       fs: makeFs(true),
       dryRun: false,
+      githubClient: makeMockGithubClient(),
+      owner: "user",
+      repo: "repo",
       warnFn,
     });
 
@@ -373,13 +352,6 @@ describe("TC-WT-PRE-001: worktreePath set → no checkout needed", () => {
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[], opts: { cwd: string }) => {
       spawnCalls.push({ cmd, args: [...args], cwd: opts.cwd });
       if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/x", stderr: "" });
-      if (cmd === "gh" && args[0] === "pr") {
-        return Promise.resolve({
-          exitCode: 0,
-          stdout: JSON.stringify({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug" }),
-          stderr: "",
-        });
-      }
       if (cmd === "git" && args[0] === "rev-list") {
         return Promise.resolve({ exitCode: 0, stdout: "0\n", stderr: "" });
       }
@@ -392,6 +364,9 @@ describe("TC-WT-PRE-001: worktreePath set → no checkout needed", () => {
       spawn,
       fs: makeFs(true),
       dryRun: false,
+      githubClient: makeMockGithubClient(),
+      owner: "user",
+      repo: "repo",
     });
 
     expect(result.ok).toBe(true);
@@ -415,24 +390,23 @@ describe("pollMergeStateAfterPush", () => {
    * TC-POST-PUSH-001: 1 回目で CLEAN → 即座に返す（retry なし）
    */
   it("TC-POST-PUSH-001: returns immediately when mergeStateStatus is CLEAN", async () => {
-    const spawn = vi.fn().mockResolvedValue({
-      exitCode: 0,
-      stdout: JSON.stringify({ mergeStateStatus: "CLEAN" }),
-      stderr: "",
+    const githubClient = makeMockGithubClient({
+      getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug", mergeable: "MERGEABLE" }),
     });
     const sleepFn = vi.fn();
 
     const result = await pollMergeStateAfterPush({
       prNumber: 42,
-      cwd: "/tmp",
-      spawn,
+      githubClient,
+      owner: "user",
+      repo: "repo",
       slug: "test",
       sleepFn,
     });
 
     expect(result.mergeStateStatus).toBe("CLEAN");
     expect(sleepFn).not.toHaveBeenCalled();
-    expect(spawn).toHaveBeenCalledTimes(1);
+    expect(githubClient.getPullRequest as ReturnType<typeof vi.fn>).toHaveBeenCalledTimes(1);
   });
 
   /**
@@ -440,21 +414,20 @@ describe("pollMergeStateAfterPush", () => {
    */
   it("TC-POST-PUSH-002: retries on non-CLEAN and succeeds when CLEAN", async () => {
     let call = 0;
-    const spawn = vi.fn().mockImplementation(() => {
-      call++;
-      const status = call < 3 ? "BEHIND" : "CLEAN";
-      return Promise.resolve({
-        exitCode: 0,
-        stdout: JSON.stringify({ mergeStateStatus: status }),
-        stderr: "",
-      });
+    const githubClient = makeMockGithubClient({
+      getPullRequest: vi.fn().mockImplementation(async () => {
+        call++;
+        const status = call < 3 ? "BEHIND" : "CLEAN";
+        return { state: "OPEN", mergeStateStatus: status, headRefName: "feat/test-slug", mergeable: "MERGEABLE" };
+      }),
     });
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 
     const result = await pollMergeStateAfterPush({
       prNumber: 42,
-      cwd: "/tmp",
-      spawn,
+      githubClient,
+      owner: "user",
+      repo: "repo",
       slug: "test",
       sleepFn,
     });
@@ -467,23 +440,22 @@ describe("pollMergeStateAfterPush", () => {
    * TC-POST-PUSH-003: 5 回全部 UNKNOWN → escalation せず空文字を返す
    */
   it("TC-POST-PUSH-003: returns empty string after exhausting retries (no escalation)", async () => {
-    const spawn = vi.fn().mockResolvedValue({
-      exitCode: 0,
-      stdout: JSON.stringify({ mergeStateStatus: "UNKNOWN" }),
-      stderr: "",
+    const githubClient = makeMockGithubClient({
+      getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "UNKNOWN", headRefName: "feat/test-slug", mergeable: "MERGEABLE" }),
     });
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 
     const result = await pollMergeStateAfterPush({
       prNumber: 42,
-      cwd: "/tmp",
-      spawn,
+      githubClient,
+      owner: "user",
+      repo: "repo",
       slug: "test",
       sleepFn,
     });
 
     expect(result.mergeStateStatus).toBe("");
-    expect(spawn).toHaveBeenCalledTimes(5);
+    expect(githubClient.getPullRequest as ReturnType<typeof vi.fn>).toHaveBeenCalledTimes(5);
     expect(sleepFn).toHaveBeenCalledTimes(4); // sleep between attempts, not after last
   });
 
@@ -491,24 +463,23 @@ describe("pollMergeStateAfterPush", () => {
    * TC-POST-PUSH-004: DIRTY → 即座に打ち切り、retry なし
    */
   it("TC-POST-PUSH-004: returns DIRTY immediately without retrying", async () => {
-    const spawn = vi.fn().mockResolvedValue({
-      exitCode: 0,
-      stdout: JSON.stringify({ mergeStateStatus: "DIRTY" }),
-      stderr: "",
+    const githubClient = makeMockGithubClient({
+      getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "DIRTY", headRefName: "feat/test-slug", mergeable: "MERGEABLE" }),
     });
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 
     const result = await pollMergeStateAfterPush({
       prNumber: 42,
-      cwd: "/tmp",
-      spawn,
+      githubClient,
+      owner: "user",
+      repo: "repo",
       slug: "test",
       sleepFn,
     });
 
     expect(result.mergeStateStatus).toBe("DIRTY");
     // Polled exactly once — no retries for DIRTY
-    expect(spawn).toHaveBeenCalledTimes(1);
+    expect(githubClient.getPullRequest as ReturnType<typeof vi.fn>).toHaveBeenCalledTimes(1);
     expect(sleepFn).not.toHaveBeenCalled();
   });
 
@@ -517,21 +488,20 @@ describe("pollMergeStateAfterPush", () => {
    */
   it("TC-POST-PUSH-005: BEHIND is not treated as DIRTY, retries until CLEAN", async () => {
     let call = 0;
-    const spawn = vi.fn().mockImplementation(() => {
-      call++;
-      const status = call < 3 ? "BEHIND" : "CLEAN";
-      return Promise.resolve({
-        exitCode: 0,
-        stdout: JSON.stringify({ mergeStateStatus: status }),
-        stderr: "",
-      });
+    const githubClient = makeMockGithubClient({
+      getPullRequest: vi.fn().mockImplementation(async () => {
+        call++;
+        const status = call < 3 ? "BEHIND" : "CLEAN";
+        return { state: "OPEN", mergeStateStatus: status, headRefName: "feat/test-slug", mergeable: "MERGEABLE" };
+      }),
     });
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 
     const result = await pollMergeStateAfterPush({
       prNumber: 42,
-      cwd: "/tmp",
-      spawn,
+      githubClient,
+      owner: "user",
+      repo: "repo",
       slug: "test",
       sleepFn,
     });

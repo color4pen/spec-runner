@@ -169,6 +169,8 @@ export class ManagedRuntime implements RuntimeStrategy {
       slug,
       githubClient: this.githubClient,
       githubToken: this.githubToken,
+      owner: this.repo.owner,
+      repo: this.repo.name,
       cwd: workspace.cwd,
       runner: this.createAgentRunner(),
       spawn: spawnCommand,

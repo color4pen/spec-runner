@@ -44,6 +44,10 @@ export interface LocalRuntimeOptions {
   cwd: string;
   githubClient: GitHubClient;
   githubToken?: string;
+  /** GitHub repository owner (e.g. "octocat"). */
+  owner?: string;
+  /** GitHub repository name (e.g. "my-repo"). */
+  repo?: string;
   manager?: ReturnType<typeof createWorktreeManager>;
   spawnFn?: SpawnFn;
   queryFn?: QueryFn;
@@ -53,6 +57,8 @@ export class LocalRuntime implements RuntimeStrategy {
   private readonly cwd: string;
   private readonly githubClient: GitHubClient;
   private readonly githubToken: string;
+  private readonly owner: string;
+  private readonly repo: string;
   private readonly manager: ReturnType<typeof createWorktreeManager>;
   private readonly spawnFn: SpawnFn;
   private readonly queryFn: QueryFn;
@@ -64,6 +70,8 @@ export class LocalRuntime implements RuntimeStrategy {
     this.cwd = opts.cwd;
     this.githubClient = opts.githubClient;
     this.githubToken = opts.githubToken ?? "";
+    this.owner = opts.owner ?? "";
+    this.repo = opts.repo ?? "";
     this.manager = opts.manager ?? createWorktreeManager();
     this.spawnFn = opts.spawnFn ?? spawnCommand;
     this.queryFn = opts.queryFn ?? (sdkQuery as unknown as QueryFn);
@@ -265,6 +273,8 @@ export class LocalRuntime implements RuntimeStrategy {
       slug,
       githubClient: this.githubClient,
       githubToken: this.githubToken,
+      owner: this.owner,
+      repo: this.repo,
       cwd: workspace.cwd,
       runner: this.createAgentRunner(),
       spawn: spawnCommand,

@@ -16,6 +16,9 @@ import type { FinishFs } from "../core/finish/types.js";
 import { parseRequestMd } from "../parser/request-md.js";
 import { requestMdPath } from "../util/paths.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
+import { getOriginInfo } from "../git/remote.js";
+import { createGitHubClient } from "../adapter/github/github-client.js";
+import { SpecRunnerError } from "../errors.js";
 
 /**
  * Build a FinishFs from real fs modules.
@@ -56,13 +59,13 @@ function buildRealFs(): FinishFs {
 export interface RunFinishOptions {
   /** Positional slug argument — first form (recommended). */
   slug?: string;
-  /** --pr=<num>: reverse-lookup via gh pr view. */
+  /** --pr=<num>: reverse-lookup via REST API. */
   prNumber?: number;
   /** --job=<jobId>: forensics / debug only. */
   jobId?: string;
   /** --dry-run: Phase 0 pre-flight only, no destructive ops. */
   dryRun?: boolean;
-  /** --force: use --admin for blocked PRs. */
+  /** --force: use admin token for blocked PRs. */
   force: boolean;
   cwd: string;
 }
@@ -73,15 +76,35 @@ export interface RunFinishOptions {
  * Caller (bin/specrunner.ts) is responsible for process.exit().
  */
 export async function runFinish(opts: RunFinishOptions): Promise<number> {
-  // Resolve GitHub token (best-effort — if unavailable, gh CLI may still work via gh auth login)
-  let githubToken: string | undefined;
+  // Resolve GitHub token — required for REST API calls
+  let githubToken: string;
   try {
     const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>);
     githubToken = resolved.token;
-  } catch {
-    // Token not available — gh CLI will rely on its own auth (gh auth login)
-    process.stderr.write("Warning: GitHub token not found in credentials file or GITHUB_TOKEN env; falling back to gh CLI auth.\n");
+  } catch (err) {
+    if (err instanceof SpecRunnerError) {
+      process.stderr.write(`Error: ${err.message}\n`);
+      process.stderr.write(`Hint: ${err.hint}\n`);
+    } else {
+      process.stderr.write(`Error: GitHub token not found. Run 'specrunner login' to authenticate.\n`);
+    }
+    return 2;
   }
+
+  // Resolve GitHub owner/repo from git origin
+  let owner: string;
+  let repoName: string;
+  try {
+    const originInfo = await getOriginInfo(opts.cwd);
+    owner = originInfo.owner;
+    repoName = originInfo.name;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`Error: ${message}\n`);
+    return 2;
+  }
+
+  const githubClient = createGitHubClient(fetch, githubToken);
 
   // Resolve baseBranch from request.md if slug is available
   let baseBranch = "main"; // fallback for slug-less paths (--pr, --job)
@@ -108,7 +131,9 @@ export async function runFinish(opts: RunFinishOptions): Promise<number> {
       cwd: opts.cwd,
       spawn: spawnCommand,
       fs: buildRealFs(),
-      githubToken,
+      githubClient,
+      owner,
+      repo: repoName,
     },
     (msg) => process.stdout.write(msg + "\n"),
   );

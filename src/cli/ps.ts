@@ -2,7 +2,7 @@ import { listJobStates } from "../state/store.js";
 import type { JobState, JobStatus } from "../state/schema.js";
 import { getJobSlug } from "../state/job-slug.js";
 import { ACTIVE_STATUSES } from "../state/lifecycle.js";
-import { spawnCommand } from "../util/spawn.js";
+import type { GitHubClient } from "../core/port/github-client.js";
 
 /**
  * Format a job age in human-readable form.
@@ -85,30 +85,26 @@ export function formatJobRow(
 /**
  * Check if the PR for a given job has been merged.
  *
- * Uses `gh pr view` subprocess (node:child_process, not Bun.spawn).
+ * Uses GitHub REST API via GitHubClient.getPullRequest.
  * Returns:
  *   - true  if PR is MERGED
  *   - false if PR is not MERGED (OPEN/CLOSED)
- *   - null  if pullRequest is absent, gh is unavailable, or any error occurs
+ *   - null  if pullRequest is absent, githubClient is unavailable, or any error occurs
  *
- * Silently returns null when gh CLI is not found (TC-27).
+ * Silently returns null when no GitHub client is provided (TC-27).
  */
-export async function checkPrMerged(job: JobState): Promise<boolean | null> {
+export async function checkPrMerged(job: JobState, githubClient: GitHubClient | null): Promise<boolean | null> {
   if (!job.pullRequest) return null;
+  if (!githubClient) return null;
 
   const { owner, name } = job.repository;
-  const prNumber = String(job.pullRequest.number);
+  const prNumber = job.pullRequest.number;
 
   try {
-    const result = await spawnCommand(
-      "gh",
-      ["pr", "view", prNumber, "--repo", `${owner}/${name}`, "--json", "state", "--jq", ".state"],
-      { cwd: process.cwd() },
-    );
-    if (result.exitCode !== 0) return null;
-    return result.stdout.trim() === "MERGED";
+    const pr = await githubClient.getPullRequest(owner, name, prNumber);
+    return pr.state === "MERGED";
   } catch {
-    // gh CLI not found or other error → skip silently
+    // API unavailable or other error → skip silently
     return null;
   }
 }
@@ -118,8 +114,12 @@ export async function checkPrMerged(job: JobState): Promise<boolean | null> {
  * @param opts.active - When true, only show jobs with active (running) status
  * @param opts.all - When true, include archived jobs (default: archived hidden)
  * @param opts.status - When set, filter by exact status (overrides active/all)
+ * @param githubClient - Optional GitHub REST API client for PR merge status checks
  */
-export async function runPs(opts: { active?: boolean; all?: boolean; status?: string } = {}): Promise<void> {
+export async function runPs(
+  opts: { active?: boolean; all?: boolean; status?: string } = {},
+  githubClient: GitHubClient | null = null,
+): Promise<void> {
   const allJobs = await listJobStates();
 
   let jobs: typeof allJobs;
@@ -150,7 +150,7 @@ export async function runPs(opts: { active?: boolean; all?: boolean; status?: st
   const prMergedMap = new Map<string, boolean>();
   for (const job of sorted) {
     if (job.status === "awaiting-merge") {
-      const merged = await checkPrMerged(job);
+      const merged = await checkPrMerged(job, githubClient);
       if (merged === true) {
         prMergedMap.set(job.jobId, true);
       }

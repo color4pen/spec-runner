@@ -17,7 +17,6 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { createJobState } from "../src/state/store.js";
 import { resolveTarget } from "../src/core/finish/resolve-target.js";
-import type { SpawnFn } from "../src/util/spawn.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -173,18 +172,19 @@ describe("TC-109: --pr <num> → headRefName → slug resolved", () => {
   it("strips feat/ prefix from headRefName and resolves slug", async () => {
     await makeJobWithPr("readme-status-section");
 
-    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
-      if (cmd === "gh" && args[1] === "view" && args.includes("--json")) {
-        return Promise.resolve({
-          exitCode: 0,
-          stdout: JSON.stringify({ headRefName: "feat/readme-status-section" }),
-          stderr: "",
-        });
-      }
-      return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
-    });
+    const mockClient = {
+      verifyBranch: vi.fn().mockResolvedValue(true),
+      getRawFile: vi.fn().mockResolvedValue(null),
+      verifyPath: vi.fn().mockResolvedValue(true),
+      verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+      getRefSha: vi.fn().mockResolvedValue(null),
+      listPullRequests: vi.fn().mockResolvedValue([]),
+      createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+      getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", headRefName: "feat/readme-status-section", mergeStateStatus: "CLEAN", mergeable: "MERGEABLE" }),
+      mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
+    };
 
-    const result = await resolveTarget({ prNumber: 48, cwd: tempDir, spawn });
+    const result = await resolveTarget({ prNumber: 48, cwd: tempDir, githubClient: mockClient, owner: "user", repo: "repo" });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;

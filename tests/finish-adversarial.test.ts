@@ -19,6 +19,7 @@ import { runPreflight } from "../src/core/finish/preflight.js";
 import type { SpawnFn } from "../src/util/spawn.js";
 import type { FinishFs } from "../src/core/finish/types.js";
 import type { ResolvedTarget } from "../src/core/finish/types.js";
+import type { GitHubClient } from "../src/core/port/github-client.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -93,23 +94,37 @@ function makeTarget(overrides: Partial<ResolvedTarget> = {}): ResolvedTarget {
   };
 }
 
+function makeHappyPathClient(overrides: Partial<GitHubClient> = {}): GitHubClient {
+  return {
+    verifyBranch: vi.fn().mockResolvedValue(true),
+    getRawFile: vi.fn().mockResolvedValue(null),
+    verifyPath: vi.fn().mockResolvedValue(true),
+    verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+    getRefSha: vi.fn().mockResolvedValue(null),
+    listPullRequests: vi.fn().mockResolvedValue([]),
+    createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+    getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug", mergeable: "MERGEABLE" }),
+    mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
+    ...overrides,
+  };
+}
+
 // TC-104: UNKNOWN → CLEAN after 1 retry
 describe("TC-104: mergeStateStatus UNKNOWN → CLEAN after 1 retry → success", () => {
   it("succeeds on second attempt and emits retry message", async () => {
     let callCount = 0;
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
-      if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/x", stderr: "" });
+      if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/git", stderr: "" });
       if (cmd === "git" && args[0] === "rev-list") return Promise.resolve({ exitCode: 0, stdout: "0", stderr: "" });
-      if (cmd === "gh" && args[1] === "view") {
+      return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
+    });
+
+    const githubClient = makeHappyPathClient({
+      getPullRequest: vi.fn().mockImplementation(() => {
         callCount++;
         const mergeState = callCount === 1 ? "UNKNOWN" : "CLEAN";
-        return Promise.resolve({
-          exitCode: 0,
-          stdout: JSON.stringify({ state: "OPEN", mergeStateStatus: mergeState }),
-          stderr: "",
-        });
-      }
-      return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
+        return Promise.resolve({ state: "OPEN", mergeStateStatus: mergeState, headRefName: "feat/test-slug", mergeable: "MERGEABLE" });
+      }),
     });
 
     const target = makeTarget();
@@ -121,6 +136,9 @@ describe("TC-104: mergeStateStatus UNKNOWN → CLEAN after 1 retry → success",
       spawn,
       fs,
       dryRun: false,
+      githubClient,
+      owner: "user",
+      repo: "repo",
       sleepFn: () => Promise.resolve(),
     });
 
@@ -142,22 +160,21 @@ describe("TC-105: gh pr view auth failure → escalation, merge not executed", (
     const calls: Array<[string, string[]]> = [];
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       calls.push([cmd, [...args]]);
-      if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/x", stderr: "" });
-      if (cmd === "gh" && args[1] === "view") {
-        return Promise.resolve({ exitCode: 1, stdout: "", stderr: "authentication required" });
-      }
+      if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/git", stderr: "" });
       return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
+    });
+    const githubClient = makeHappyPathClient({
+      getPullRequest: vi.fn().mockRejectedValue(new Error("authentication required")),
     });
     const stubFs = makeStubFs(false);
 
     const result = await runFinishOrchestrator(
-      { slug, baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug, baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, githubClient, owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(1);
     // merge should not be called
-    const mergeCalls = calls.filter(([c, a]) => c === "gh" && a[1] === "merge");
-    expect(mergeCalls).toHaveLength(0);
+    expect((githubClient.mergePullRequest as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0);
   });
 });
 
@@ -165,16 +182,13 @@ describe("TC-105: gh pr view auth failure → escalation, merge not executed", (
 describe("TC-119: mergeStateStatus UNKNOWN × 3 → escalation after all retries", () => {
   it("escalates after 3 UNKNOWN results", async () => {
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
-      if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/x", stderr: "" });
+      if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/git", stderr: "" });
       if (cmd === "git" && args[0] === "rev-list") return Promise.resolve({ exitCode: 0, stdout: "0", stderr: "" });
-      if (cmd === "gh" && args[1] === "view") {
-        return Promise.resolve({
-          exitCode: 0,
-          stdout: JSON.stringify({ state: "OPEN", mergeStateStatus: "UNKNOWN" }),
-          stderr: "",
-        });
-      }
       return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
+    });
+
+    const githubClient = makeHappyPathClient({
+      getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "UNKNOWN", headRefName: "feat/test-slug", mergeable: "MERGEABLE" }),
     });
 
     const target = makeTarget();
@@ -186,6 +200,9 @@ describe("TC-119: mergeStateStatus UNKNOWN × 3 → escalation after all retries
       spawn,
       fs,
       dryRun: false,
+      githubClient,
+      owner: "user",
+      repo: "repo",
       sleepFn: () => Promise.resolve(),
     });
 
@@ -209,7 +226,7 @@ describe("TC-120: pullRequest.number absent → escalation", () => {
     const stubFs = makeStubFs(false);
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, githubClient: makeHappyPathClient(), owner: "user", repo: "repo" },
     );
 
     // Should fail with arg error (exit 2) because pr-create not done
@@ -219,12 +236,12 @@ describe("TC-120: pullRequest.number absent → escalation", () => {
   });
 });
 
-// TC-121: gh binary missing → escalation
-describe("TC-121: gh binary missing → escalation", () => {
+// TC-121: git binary missing → escalation
+describe("TC-121: git binary missing → escalation", () => {
   it("escalates with binary not found message", async () => {
     const { jobId, slug } = await makeJobWithPr();
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
-      if (cmd === "which" && args[0] === "gh") {
+      if (cmd === "which" && args[0] === "git") {
         return Promise.resolve({ exitCode: 1, stdout: "", stderr: "" });
       }
       return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
@@ -232,13 +249,13 @@ describe("TC-121: gh binary missing → escalation", () => {
     const stubFs = makeStubFs(false);
 
     const result = await runFinishOrchestrator(
-      { slug, baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug, baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, githubClient: makeHappyPathClient(), owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(1);
     if (result.exitCode !== 1) return;
     expect(result.escalation.toLowerCase()).toContain("binary not found");
-    expect(result.escalation.toLowerCase()).toContain("gh");
+    expect(result.escalation.toLowerCase()).toContain("git");
   });
 });
 
@@ -249,24 +266,22 @@ describe("TC-129: --dry-run + Phase 0 fail → exit 1, no destructive ops", () =
     const calls: Array<[string, string[]]> = [];
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       calls.push([cmd, [...args]]);
-      if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/x", stderr: "" });
-      // Simulate gh pr view auth failure
-      if (cmd === "gh" && args[1] === "view") {
-        return Promise.resolve({ exitCode: 1, stdout: "", stderr: "auth error" });
-      }
+      if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/git", stderr: "" });
       return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
+    });
+    const githubClient = makeHappyPathClient({
+      getPullRequest: vi.fn().mockRejectedValue(new Error("auth error")),
     });
     const stubFs = makeStubFs(false);
 
     const result = await runFinishOrchestrator(
-      { slug, baseBranch: "main", flags: { dryRun: true }, cwd: tempDir, spawn, fs: stubFs },
+      { slug, baseBranch: "main", flags: { dryRun: true }, cwd: tempDir, spawn, fs: stubFs, githubClient, owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(1);
     // No destructive ops
     const DESTRUCTIVE = [
       (cmd: string, args: string[]) => cmd === "git" && ["commit", "push"].includes(args[0] ?? ""),
-      (cmd: string, args: string[]) => cmd === "gh" && args[1] === "merge",
     ];
     const destructiveCalls = calls.filter(([cmd, args]) =>
       DESTRUCTIVE.some((fn) => fn(cmd, args)),
@@ -279,15 +294,13 @@ describe("TC-129: --dry-run + Phase 0 fail → exit 1, no destructive ops", () =
 describe("TC-139: escalation format has 4 required elements", () => {
   it("escalation message contains failedStep, detectedState, recommendedAction, resumeCommand", async () => {
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
-      if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/x", stderr: "" });
-      if (cmd === "gh" && args[1] === "view") {
-        return Promise.resolve({
-          exitCode: 0,
-          stdout: JSON.stringify({ state: "OPEN", mergeStateStatus: "UNKNOWN" }),
-          stderr: "",
-        });
-      }
+      if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/git", stderr: "" });
+      if (cmd === "git" && args[0] === "rev-list") return Promise.resolve({ exitCode: 0, stdout: "0", stderr: "" });
       return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
+    });
+
+    const githubClient = makeHappyPathClient({
+      getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "UNKNOWN", headRefName: "feat/test-slug", mergeable: "MERGEABLE" }),
     });
 
     const target = makeTarget();
@@ -299,6 +312,9 @@ describe("TC-139: escalation format has 4 required elements", () => {
       spawn,
       fs,
       dryRun: false,
+      githubClient,
+      owner: "user",
+      repo: "repo",
       sleepFn: () => Promise.resolve(),
     });
 

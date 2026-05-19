@@ -35,7 +35,17 @@ function buildManagedConfig() {
 }
 
 function buildMockGithubClient() {
-  return { verifyBranch: vi.fn(), verifyPath: vi.fn(), getRawFile: vi.fn(), verifyTokenScopes: vi.fn(), getRefSha: vi.fn() };
+  return {
+    verifyBranch: vi.fn(),
+    verifyPath: vi.fn(),
+    getRawFile: vi.fn(),
+    verifyTokenScopes: vi.fn(),
+    getRefSha: vi.fn(),
+    listPullRequests: vi.fn().mockResolvedValue([]),
+    createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+    getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+    mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
+  };
 }
 
 const repo = { owner: "testowner", name: "testrepo" };

@@ -244,6 +244,10 @@ function buildMockGithubClient(opts: {
     }),
     verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
     getRefSha: vi.fn().mockResolvedValue(null),
+    listPullRequests: vi.fn().mockResolvedValue([]),
+    createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+    getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+    mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
   };
 }
 
@@ -270,9 +274,12 @@ describe("TC-MLD-01: happy path — all 3 layers pass, pipeline completes", () =
       config: buildConfig(),
       request: buildRequest(),
       slug: "test-slug",
+      cwd: tempDir,
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     });
 
@@ -328,9 +335,12 @@ describe("TC-MLD-02: spec-review catches insufficient delta spec → spec-fixer 
       config: buildConfig(),
       request: buildRequest(),
       slug: "test-slug",
+      cwd: tempDir,
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     });
 
@@ -401,9 +411,12 @@ describe("TC-MLD-03: dsv catches legacy-flat-file → delta-spec-fixer → re-ds
       config: buildConfig(),
       request: buildRequest(),
       slug: "test-slug",
+      cwd: tempDir,
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     });
 
@@ -476,9 +489,12 @@ describe("TC-MLD-04: design + spec-review both fail — dsv catches no-specs-for
       config: buildConfig(),
       request: buildRequest(),
       slug: "test-slug",
+      cwd: tempDir,
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     });
 
@@ -544,9 +560,12 @@ describe("TC-MLD-05: design + dsv both fail — spec-review catches as sole defe
       config: buildConfig(),
       request: buildRequest(),
       slug: "test-slug",
+      cwd: tempDir,
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     });
 

@@ -251,6 +251,10 @@ function buildMockGithubClient(opts: {
     }),
     verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       getRefSha: vi.fn().mockResolvedValue(null),
+    listPullRequests: vi.fn().mockResolvedValue([]),
+    createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+    getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+    mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
   };
 }
 
@@ -271,9 +275,12 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
       config: buildConfig(),
       request: buildRequest(),
       slug: "test-slug",
+      cwd: tempDir,
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -322,6 +329,8 @@ describe("TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 app
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -375,6 +384,8 @@ describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RE
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -415,6 +426,8 @@ describe("TC-013: runPipeline — escalation stops loop without invoking spec-fi
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -454,6 +467,8 @@ describe("TC-014: runPipeline — spec-review loop skipped when propose fails", 
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -486,6 +501,8 @@ describe("TC-015: runPipeline — fresh session IDs per iteration", () => {
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -528,6 +545,8 @@ describe("TC-016: runPipeline — stdout contains 'retries exhausted, escalating
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -562,6 +581,8 @@ describe("TC-017: runPipeline — Pipeline finished summary line in stdout", () 
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -600,6 +621,8 @@ describe("TC-018: runPipeline — stdout log order for needs-fix → approved pa
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -644,6 +667,8 @@ describe("TC-050: state.step updated: spec-fixer → spec-review within loop", (
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -696,6 +721,8 @@ describe("TC-060: runPipeline — code-review needs-fix → code-fixer → code-
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -759,6 +786,8 @@ describe("TC-061: runPipeline — code-review retries exhausted: escalation + CO
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -817,6 +846,8 @@ describe("TC-062: code-fixer final iter reviewed — approved path", () => {
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -872,6 +903,8 @@ describe("TC-063: spec-review / spec-fixer pair — fixer final iter reviewed an
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -944,6 +977,8 @@ describe("TC-064: verification / build-fixer pair — fixer final iter verificat
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -983,6 +1018,8 @@ describe("TC-030: runPipeline — persistence: both propose and spec-review step
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -1046,6 +1083,8 @@ describe("TC-DC-101: DynamicContext forwarded to all agent steps via AgentRunCon
       githubClient,
       runner,
       dynamicContext: testDynamicContext,
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -1079,6 +1118,8 @@ describe("TC-DC-102: specIndex propagated to all agent steps", () => {
       githubClient,
       runner,
       dynamicContext: testDynamicContext,
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -1116,6 +1157,8 @@ describe("TC-DC-103: projectContext injected only for allowlist steps", () => {
       runner,
       dynamicContext: testDynamicContext,
       cwd: tempDir,
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -1152,6 +1195,8 @@ describe("TC-DC-104: projectContext undefined for non-allowlist steps", () => {
       runner,
       dynamicContext: testDynamicContext,
       cwd: tempDir,
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -1194,6 +1239,8 @@ describe("TC-DC-105: enrichContext is called for spec-review step", () => {
       runner,
       dynamicContext: testDynamicContext,
       cwd: tempDir,
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -1235,6 +1282,8 @@ describe("TC-DC-106: enrichContext returns unmodified dynamicContext when no del
       runner,
       dynamicContext: testDynamicContext,
       cwd: tempDir,
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -1265,6 +1314,8 @@ describe("TC-DC-107: project.md absent — projectContext is undefined for all s
       runner,
       dynamicContext: testDynamicContext,
       cwd: tempDir,
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -1299,6 +1350,8 @@ describe("TC-DC-108: dynamicContext omitted — backward compatibility", () => {
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner,
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -1332,6 +1385,8 @@ describe("TC-DSV-INT-01: delta-spec-validation approved is inserted between desi
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -1382,6 +1437,8 @@ describe("TC-DSV-INT-02: delta-spec-validation needs-fix triggers delta-spec-fix
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -1434,6 +1491,8 @@ describe("TC-DSV-INT-03: delta-spec-validation retries exhausted → DELTA_SPEC_
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -1495,6 +1554,8 @@ describe("TC-P-06: managed-reset-status-stale-guard scenario — legacy-flat-dir
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -1553,6 +1614,8 @@ describe("TC-DSV-INT-04: delta-spec-validation and spec-review loops are indepen
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -1693,6 +1756,8 @@ describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not
       slug: "test-slug",
       cwd: tempDir,
       githubClient: buildMockGithubClient(),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -1813,6 +1878,8 @@ describe("TC-AUTH-INT-01: implementer stages authority spec + delta spec → AUT
       slug: "test-slug",
       cwd: tempDir,
       githubClient: buildMockGithubClient(),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -1932,6 +1999,8 @@ describe("TC-AUTH-INT-02: implementer stages delta spec only → pipeline contin
       slug: "test-slug",
       cwd: tempDir,
       githubClient: buildMockGithubClient(),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -1981,6 +2050,8 @@ describe("TC-INT-01: Step 5 fail (no-specs-for-required-type) → pipeline trans
       sleepFn: vi.fn().mockResolvedValue(undefined),
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 

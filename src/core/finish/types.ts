@@ -4,7 +4,7 @@
 import type { SpawnFn } from "../../util/spawn.js";
 
 /**
- * Data returned from gh pr view for the feature PR.
+ * Data returned from getPullRequest for the feature PR.
  * Shared between preflight.ts and pr-status.ts.
  */
 export interface PrViewData {

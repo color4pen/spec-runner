@@ -94,7 +94,7 @@ export async function runPreflight(
     );
   }
 
-  // Step 2.5: GitHub token (both runtimes require it for PR creation / gh CLI)
+  // Step 2.5: GitHub token (required for PR operations via REST API)
   let githubToken: string;
   let githubTokenSource: "credentials" | "env";
   try {

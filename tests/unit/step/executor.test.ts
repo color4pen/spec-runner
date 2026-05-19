@@ -155,7 +155,13 @@ describe("TC-030: StepExecutor resolves agent ID via step.agent.role", () => {
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       },
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     };
 
@@ -209,7 +215,13 @@ describe("TC-031: spec-review Step does not use propose Agent ID", () => {
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       },
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     };
 
@@ -261,7 +273,13 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       },
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     };
 
@@ -305,7 +323,13 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       },
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     };
 
@@ -352,7 +376,13 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: getRefShaSpy,
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       },
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     };
 
@@ -414,7 +444,13 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: getRefShaSpy,
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       },
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     };
 
@@ -455,7 +491,13 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: getRefShaSpy,
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       },
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     };
 
@@ -498,7 +540,13 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: getRefShaSpy,
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       },
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     };
 
@@ -584,7 +632,13 @@ describe("TC-007 to TC-010: allowlist steps set ctx.projectContext from specrunn
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       },
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     };
   }
@@ -680,7 +734,13 @@ describe("TC-011 to TC-014: non-allowlist steps — ctx.projectContext is undefi
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       },
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     };
   }
@@ -754,7 +814,13 @@ describe("TC-EX: StepExecutor injects resumeSessionId for fixer steps", () => {
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       },
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     };
   }
@@ -873,7 +939,13 @@ describe("TC-015: specrunner/project.md not found — no error, ctx.projectConte
           verifyPath: vi.fn().mockResolvedValue(true),
           verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
           getRefSha: vi.fn().mockResolvedValue(null),
+          listPullRequests: vi.fn().mockResolvedValue([]),
+          createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+          getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+          mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
         },
+        owner: "user",
+        repo: "repo",
         spawn: noopSpawn,
       };
 
@@ -942,7 +1014,13 @@ describe("TC-05: runAgentStep — StepRun.startedAt < StepRun.endedAt (success p
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       },
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     };
 
@@ -1003,7 +1081,13 @@ describe("TC-06: runCliStep — StepRun.startedAt < StepRun.endedAt (success pat
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       },
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     };
 

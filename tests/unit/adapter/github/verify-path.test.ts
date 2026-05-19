@@ -17,13 +17,17 @@ const BRANCH = "feat/test";
 const FOLDER_PATH = changeFolderPath("test-slug");
 
 function buildClient(mockFetch: typeof fetch): GitHubApiClient {
-  return new GitHubApiClient(mockFetch, "ghp_test");
+  return new GitHubApiClient(mockFetch, "ghp_test", { sleepFn: () => Promise.resolve() });
 }
+
+/** Minimal headers stub — returns null for all rate-limit headers. */
+const mockHeaders = { get: vi.fn().mockReturnValue(null) };
 
 describe("GitHubApiClient.verifyPath — 200 returns true", () => {
   it("returns true when GitHub responds 200", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
+      headers: mockHeaders,
       text: () => Promise.resolve("[]"),
     }) as unknown as typeof fetch;
 
@@ -39,6 +43,7 @@ describe("GitHubApiClient.verifyPath — 404 returns false", () => {
   it("returns false when GitHub responds 404", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 404,
+      headers: mockHeaders,
       text: () => Promise.resolve(""),
     }) as unknown as typeof fetch;
 
@@ -68,6 +73,7 @@ describe("GitHubApiClient.verifyPath — 5xx throws GITHUB_API_ERROR", () => {
   it("throws SpecRunnerError with GITHUB_API_ERROR code on 503", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 503,
+      headers: mockHeaders,
       text: () => Promise.resolve(""),
     }) as unknown as typeof fetch;
 

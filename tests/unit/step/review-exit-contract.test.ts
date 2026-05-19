@@ -527,7 +527,13 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       },
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     };
 
@@ -568,7 +574,13 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       },
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     };
 
@@ -611,7 +623,13 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       },
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     };
 
@@ -652,7 +670,13 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
         verifyPath: vi.fn().mockResolvedValue(true),
         verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
         getRefSha: vi.fn().mockResolvedValue(null),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       },
+      owner: "user",
+      repo: "repo",
       spawn: noopSpawn,
     };
 

@@ -62,4 +62,63 @@ export interface GitHubClient {
    * advanced the branch HEAD during its session.
    */
   getRefSha(owner: string, repo: string, branch: string): Promise<string | null>;
+
+  /**
+   * List pull requests for a branch (all states).
+   * Always fetches state=all; caller filters as needed.
+   *
+   * - state: internal representation: "OPEN" / "MERGED" / "CLOSED"
+   */
+  listPullRequests(
+    owner: string,
+    repo: string,
+    head: string,
+    base: string,
+  ): Promise<Array<{ url: string; number: number; state: string }>>;
+
+  /**
+   * Create a pull request.
+   * Returns the URL and PR number of the created PR.
+   */
+  createPullRequest(
+    owner: string,
+    repo: string,
+    head: string,
+    base: string,
+    title: string,
+    body: string,
+  ): Promise<{ url: string; number: number }>;
+
+  /**
+   * Get a pull request by number.
+   * Returns PrViewData-compatible shape for use by finish modules.
+   *
+   * - state: "OPEN" / "MERGED" / "CLOSED"
+   * - mergeStateStatus: "CLEAN" / "BLOCKED" / "DIRTY" / "UNKNOWN" etc. (uppercased)
+   * - headRefName: branch name
+   * - mergeable: "MERGEABLE" / "CONFLICTING" / "UNKNOWN"
+   */
+  getPullRequest(
+    owner: string,
+    repo: string,
+    prNumber: number,
+  ): Promise<{
+    state: string;
+    mergeStateStatus?: string;
+    headRefName?: string;
+    mergeable?: string;
+  }>;
+
+  /**
+   * Merge a pull request via squash merge.
+   * - 200 → { merged: true, message }
+   * - 405/409 → { merged: false, message } (not mergeable / merge conflict)
+   * - 403 → { merged: false, message: "permission denied" hint }
+   */
+  mergePullRequest(
+    owner: string,
+    repo: string,
+    prNumber: number,
+    opts: { mergeMethod: "squash" },
+  ): Promise<{ merged: boolean; message: string }>;
 }

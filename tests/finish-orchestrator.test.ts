@@ -21,6 +21,7 @@ import { createJobState } from "../src/state/store.js";
 import { runFinishOrchestrator } from "../src/core/finish/orchestrator.js";
 import type { SpawnFn } from "../src/util/spawn.js";
 import type { FinishFs } from "../src/core/finish/types.js";
+import type { GitHubClient } from "../src/core/port/github-client.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -114,30 +115,33 @@ function makeStubFs(opts: { changeFolderExists?: boolean; activeExists?: boolean
   };
 }
 
+function makeHappyPathGitHubClient(prState: "OPEN" | "MERGED" = "OPEN"): GitHubClient {
+  return {
+    verifyBranch: vi.fn().mockResolvedValue(true),
+    getRawFile: vi.fn().mockResolvedValue(null),
+    verifyPath: vi.fn().mockResolvedValue(true),
+    verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+    getRefSha: vi.fn().mockResolvedValue(null),
+    listPullRequests: vi.fn().mockResolvedValue([]),
+    createPullRequest: vi.fn().mockResolvedValue({ url: "https://github.com/user/repo/pull/42", number: 42 }),
+    getPullRequest: vi.fn().mockResolvedValue({
+      state: prState,
+      mergeStateStatus: prState === "MERGED" ? "UNKNOWN" : "CLEAN",
+      headRefName: "feat/test-slug",
+      mergeable: "MERGEABLE",
+    }),
+    mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "Pull Request successfully merged" }),
+  };
+}
+
 /**
  * Build a spawn mock for the 1-PR model happy path.
  * prState: "OPEN" (normal) or "MERGED" (resume)
  */
-function makeHappyPathSpawn(prState: "OPEN" | "MERGED" = "OPEN"): SpawnFn {
+function makeHappyPathSpawn(_prState: "OPEN" | "MERGED" = "OPEN"): SpawnFn {
   return vi.fn().mockImplementation((cmd: string, args: string[]) => {
-    // which (binary check)
-    if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/gh", stderr: "" });
-
-    // gh pr view --json mergeable (Phase 3 guard)
-    if (cmd === "gh" && args[1] === "view" && args.includes("mergeable")) {
-      return Promise.resolve({ exitCode: 0, stdout: JSON.stringify({ mergeable: "MERGEABLE" }), stderr: "" });
-    }
-    // gh pr view (phase 0 preflight + check)
-    // TC-017: GitHub returns mergeStateStatus=UNKNOWN for MERGED PRs (real behavior).
-    // The MERGED bypass in preflight.ts handles this case and returns ok:true immediately.
-    if (cmd === "gh" && args[1] === "view" && args.includes("--json")) {
-      const out = {
-        state: prState,
-        mergeStateStatus: prState === "MERGED" ? "UNKNOWN" : "CLEAN",
-        headRefName: "feat/test-slug",
-      };
-      return Promise.resolve({ exitCode: 0, stdout: JSON.stringify(out), stderr: "" });
-    }
+    // which (binary check - only git now)
+    if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/git", stderr: "" });
     // openspec validate
     if (cmd === "openspec" && args[0] === "validate") {
       return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
@@ -166,8 +170,6 @@ function makeHappyPathSpawn(prState: "OPEN" | "MERGED" = "OPEN"): SpawnFn {
     if (cmd === "git" && args[0] === "push" && args[1] === "origin" && args[2] === "--delete") return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
     // git push origin <branch>
     if (cmd === "git" && args[0] === "push") return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
-    // gh pr merge (feature)
-    if (cmd === "gh" && args[1] === "merge") return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
     // git pull --ff-only
     if (cmd === "git" && args[0] === "pull") return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
     // git rev-parse --abbrev-ref HEAD (worktree detection in Phase 4)
@@ -197,6 +199,9 @@ describe("TC-123: 1-PR model normal success flow (archive present, CLEAN)", () =
         cwd: tempDir,
         spawn,
         fs: stubFs,
+        githubClient: makeHappyPathGitHubClient("OPEN"),
+        owner: "user",
+        repo: "repo",
       },
       (m) => messages.push(m),
     );
@@ -226,6 +231,9 @@ describe("TC-123: 1-PR model normal success flow (archive present, CLEAN)", () =
       cwd: tempDir,
       spawn,
       fs: stubFs,
+      githubClient: makeHappyPathGitHubClient("OPEN"),
+      owner: "user",
+      repo: "repo",
     });
 
     // Assert: no git checkout/push with chore/archive- branch
@@ -255,6 +263,9 @@ describe("TC-126: state.status=archived → Already archived, no-op", () => {
         cwd: tempDir,
         spawn,
         fs: stubFs,
+        githubClient: makeHappyPathGitHubClient(),
+        owner: "user",
+        repo: "repo",
       },
       (m) => messages.push(m),
     );
@@ -264,8 +275,7 @@ describe("TC-126: state.status=archived → Already archived, no-op", () => {
     // No destructive ops
     const calls = (spawn as ReturnType<typeof vi.fn>).mock.calls as [string, string[]][];
     const destructiveCalls = calls.filter(([cmd, args]) =>
-      (cmd === "git" && ["push", "commit"].includes(args[0] ?? "")) ||
-      (cmd === "gh" && args[1] === "merge"),
+      (cmd === "git" && ["push", "commit"].includes(args[0] ?? "")),
     );
     expect(destructiveCalls).toHaveLength(0);
   });
@@ -282,6 +292,7 @@ describe("TC-106: feature PR already MERGED → Phase 1-3 skip, Phase 4 only", (
     });
     const stubFs = makeStubFs();
 
+    const githubClient = makeHappyPathGitHubClient("MERGED");
     const messages: string[] = [];
     const result = await runFinishOrchestrator(
       {
@@ -291,6 +302,9 @@ describe("TC-106: feature PR already MERGED → Phase 1-3 skip, Phase 4 only", (
         cwd: tempDir,
         spawn,
         fs: stubFs,
+        githubClient,
+        owner: "user",
+        repo: "repo",
       },
       (m) => messages.push(m),
     );
@@ -299,8 +313,7 @@ describe("TC-106: feature PR already MERGED → Phase 1-3 skip, Phase 4 only", (
     // Phase 1-3 should be skipped
     const archiveCalls = calls.filter(([cmd, a]) => cmd === "openspec" && a[0] === "archive");
     expect(archiveCalls).toHaveLength(0);
-    const mergeCalls = calls.filter(([cmd, a]) => cmd === "gh" && a[1] === "merge");
-    expect(mergeCalls).toHaveLength(0);
+    expect((githubClient.mergePullRequest as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0);
     // Phase 4: git pull should be called
     const pullCalls = calls.filter(([cmd, a]) => cmd === "git" && a[0] === "pull");
     expect(pullCalls.length).toBeGreaterThan(0);
@@ -320,17 +333,17 @@ describe("TC-103: archive folder absent → skip archive steps, merge+archive", 
     // No archive folder, no active
     const stubFs = makeStubFs({ changeFolderExists: false, activeExists: false });
 
+    const githubClient = makeHappyPathGitHubClient("OPEN");
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, githubClient, owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(0);
     // openspec archive NOT called
     const archiveCalls = calls.filter(([c, a]) => c === "openspec" && a[0] === "archive");
     expect(archiveCalls).toHaveLength(0);
-    // gh pr merge SHOULD be called (Phase 3)
-    const mergeCalls = calls.filter(([c, a]) => c === "gh" && a[1] === "merge");
-    expect(mergeCalls.length).toBeGreaterThan(0);
+    // merge SHOULD be called (Phase 3)
+    expect((githubClient.mergePullRequest as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
   });
 });
 
@@ -347,7 +360,7 @@ describe("TC-101: legacy /tmp/... request.path → finish succeeds", () => {
     const stubFs = makeStubFs({ changeFolderExists: false });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, githubClient: makeHappyPathGitHubClient("OPEN"), owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(0);
@@ -374,7 +387,7 @@ describe("TC-124: markJobArchived called after Phase 3 merge (before Phase 4)", 
     const stubFs = makeStubFs({ changeFolderExists: false });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, githubClient: makeHappyPathGitHubClient("OPEN"), owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(0);
@@ -389,15 +402,7 @@ describe("TC-125: Phase 1 escalation → markJobArchived not called", () => {
 
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       // binary check OK
-      if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/x", stderr: "" });
-      // phase 0 preflight ok
-      if (cmd === "gh" && args[1] === "view") {
-        return Promise.resolve({
-          exitCode: 0,
-          stdout: JSON.stringify({ state: "OPEN", mergeStateStatus: "CLEAN" }),
-          stderr: "",
-        });
-      }
+      if (cmd === "which") return Promise.resolve({ exitCode: 0, stdout: "/usr/bin/git", stderr: "" });
       if (cmd === "openspec" && args[0] === "validate") return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
       if (cmd === "git" && args[0] === "rev-list") return Promise.resolve({ exitCode: 0, stdout: "0", stderr: "" });
       // Phase 0 conflict check: git fetch origin main → succeed
@@ -411,7 +416,7 @@ describe("TC-125: Phase 1 escalation → markJobArchived not called", () => {
     const stubFs = makeStubFs({ changeFolderExists: true });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, githubClient: makeHappyPathGitHubClient("OPEN"), owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(1);
@@ -431,7 +436,7 @@ describe("TC-047 / running job → exit 1", () => {
     const stubFs = makeStubFs();
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, githubClient: makeHappyPathGitHubClient(), owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(1);
@@ -452,7 +457,7 @@ describe("TC-108: --dry-run → no destructive subprocess spawns", () => {
     const stubFs = makeStubFs({ changeFolderExists: true });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", baseBranch: "main", flags: { dryRun: true }, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: { dryRun: true }, cwd: tempDir, spawn, fs: stubFs, githubClient: makeHappyPathGitHubClient("OPEN"), owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(0);
@@ -465,7 +470,6 @@ describe("TC-108: --dry-run → no destructive subprocess spawns", () => {
       (cmd: string, args: string[]) => cmd === "openspec" && args[0] === "archive",
       (cmd: string, args: string[]) => cmd === "git" && args[0] === "commit",
       (cmd: string, args: string[]) => cmd === "git" && args[0] === "push",
-      (cmd: string, args: string[]) => cmd === "gh" && args[1] === "merge",
       (cmd: string, args: string[]) => cmd === "git" && args[0] === "checkout" && args[1] === "-B",
       (cmd: string, args: string[]) => cmd === "git" && args[0] === "pull",
     ];
@@ -508,6 +512,9 @@ describe("TC-WT-FIN-001: worktreePath set → local runtime finish path", () => 
         spawn,
         fs: stubFs,
         worktreeManagerFn: () => mockManager,
+        githubClient: makeHappyPathGitHubClient("OPEN"),
+        owner: "user",
+        repo: "repo",
       },
       (m) => messages.push(m),
     );
@@ -547,7 +554,7 @@ describe("TC-WT-FIN-002: worktreePath=null → managed mode checkout flow", () =
     const stubFs = makeStubFs({ changeFolderExists: false });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, githubClient: makeHappyPathGitHubClient("OPEN"), owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(0);
@@ -585,6 +592,9 @@ describe("TC-FIN-P4-FAIL-001: Phase 4 worktree remove failure → state=archived
       spawn,
       fs: stubFs,
       worktreeManagerFn: () => mockManager,
+      githubClient: makeHappyPathGitHubClient("OPEN"),
+      owner: "user",
+      repo: "repo",
     });
 
     expect(result.exitCode).toBe(0);
@@ -606,14 +616,17 @@ describe("TC-FIN-BD-001: Phase 3 merge command excludes --delete-branch", () => 
     });
     const stubFs = makeStubFs({ changeFolderExists: false });
 
+    const githubClient = makeHappyPathGitHubClient("OPEN");
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, githubClient, owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(0);
-    const mergeCalls = calls.filter(([c, a]) => c === "gh" && a[0] === "pr" && a[1] === "merge");
-    expect(mergeCalls.length).toBe(1);
-    expect(mergeCalls[0]![1]).not.toContain("--delete-branch");
+    const mergeMockCalls = (githubClient.mergePullRequest as ReturnType<typeof vi.fn>).mock.calls;
+    expect(mergeMockCalls.length).toBe(1);
+    // mergePullRequest is called with (owner, repo, prNumber, { mergeMethod: "squash" })
+    // Verify no delete-branch option was passed (it's not part of the interface)
+    expect(mergeMockCalls[0]![3]).toEqual({ mergeMethod: "squash" });
   });
 });
 
@@ -638,7 +651,7 @@ describe("TC-FIN-BD-002: Phase 4 branch deletion commands are called", () => {
     const stubFs = makeStubFs({ changeFolderExists: false });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, worktreeManagerFn: () => mockManager },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, worktreeManagerFn: () => mockManager, githubClient: makeHappyPathGitHubClient("OPEN"), owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(0);
@@ -654,35 +667,27 @@ describe("TC-DIRTY-001: DIRTY mergeStateStatus after push → escalation without
   it("returns exitCode 1 escalation and does NOT call gh pr merge when DIRTY", async () => {
     const { jobId } = await makeJobWithPr({ worktreePath: null });
 
-    const mergeCalls: string[][] = [];
-    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
-      if (cmd === "gh" && args[1] === "merge") {
-        mergeCalls.push([...args]);
-      }
-      // gh pr view: Phase 0 returns CLEAN; post-push poll returns DIRTY
-      if (cmd === "gh" && args[1] === "view" && args.includes("--json")) {
-        // After push (poll), return DIRTY; otherwise CLEAN
-        const isPostPushPoll = args.length === 5 && !args.includes("state");
-        if (isPostPushPoll) {
-          return Promise.resolve({
-            exitCode: 0,
-            stdout: JSON.stringify({ mergeStateStatus: "DIRTY" }),
-            stderr: "",
-          });
+    let getPrCallCount = 0;
+    const githubClient = {
+      ...makeHappyPathGitHubClient("OPEN"),
+      getPullRequest: vi.fn().mockImplementation(() => {
+        getPrCallCount++;
+        if (getPrCallCount <= 1) {
+          // Phase 0: CLEAN
+          return Promise.resolve({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug", mergeable: "MERGEABLE" });
         }
-        return Promise.resolve({
-          exitCode: 0,
-          stdout: JSON.stringify({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug" }),
-          stderr: "",
-        });
-      }
+        // Phase 2 poll: DIRTY
+        return Promise.resolve({ state: "OPEN", mergeStateStatus: "DIRTY", headRefName: "feat/test-slug", mergeable: "MERGEABLE" });
+      }),
+    };
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
       return happySpawn(cmd, args, { cwd: "" });
     });
     const stubFs = makeStubFs({ changeFolderExists: false });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, githubClient, owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(1);
@@ -690,7 +695,7 @@ describe("TC-DIRTY-001: DIRTY mergeStateStatus after push → escalation without
     expect(result.escalation).toContain("DIRTY");
     expect(result.escalation).toContain("specrunner finish");
     // merge must NOT have been called
-    expect(mergeCalls).toHaveLength(0);
+    expect((githubClient.mergePullRequest as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0);
   });
 });
 
@@ -698,15 +703,21 @@ describe("TC-DIRTY-001: DIRTY mergeStateStatus after push → escalation without
 describe("TC-CONFLICT-001: mergeable=CONFLICTING → escalation without merge", () => {
   it("returns exitCode 1 with rebase instruction and does NOT call gh pr merge", async () => {
     const { jobId } = await makeJobWithPr();
-    const mergeCalls: string[][] = [];
 
+    let getPrCallCount = 0;
+    const githubClient = {
+      ...makeHappyPathGitHubClient("OPEN"),
+      getPullRequest: vi.fn().mockImplementation(() => {
+        getPrCallCount++;
+        if (getPrCallCount <= 2) {
+          // Phase 0 and Phase 2 poll: CLEAN
+          return Promise.resolve({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug", mergeable: "MERGEABLE" });
+        }
+        // Phase 3 mergeable check: CONFLICTING
+        return Promise.resolve({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug", mergeable: "CONFLICTING" });
+      }),
+    };
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
-      if (cmd === "gh" && args[1] === "view" && args.includes("mergeable")) {
-        return Promise.resolve({ exitCode: 0, stdout: JSON.stringify({ mergeable: "CONFLICTING" }), stderr: "" });
-      }
-      if (cmd === "gh" && args[1] === "merge") {
-        mergeCalls.push([...args]);
-      }
       const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
       return happySpawn(cmd, args, { cwd: "" });
     });
@@ -720,13 +731,16 @@ describe("TC-CONFLICT-001: mergeable=CONFLICTING → escalation without merge", 
       spawn,
       fs: stubFs,
       sleepFn: async () => {},
+      githubClient,
+      owner: "user",
+      repo: "repo",
     });
 
     expect(result.exitCode).toBe(1);
     if (result.exitCode !== 1) return;
     expect(result.escalation).toContain("CONFLICTING");
     expect(result.escalation).toContain("rebase");
-    expect(mergeCalls).toHaveLength(0);
+    expect((githubClient.mergePullRequest as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0);
   });
 });
 
@@ -734,14 +748,25 @@ describe("TC-CONFLICT-001: mergeable=CONFLICTING → escalation without merge", 
 describe("TC-CONFLICT-003: mergeable=UNKNOWN → retry → MERGEABLE → success", () => {
   it("retries once and succeeds when second attempt returns MERGEABLE", async () => {
     const { jobId } = await makeJobWithPr();
-    let mergeableCallCount = 0;
+    let getPrCallCount = 0;
 
+    const githubClient = {
+      ...makeHappyPathGitHubClient("OPEN"),
+      getPullRequest: vi.fn().mockImplementation(() => {
+        getPrCallCount++;
+        if (getPrCallCount <= 2) {
+          // Phase 0 and Phase 2: CLEAN
+          return Promise.resolve({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug", mergeable: "MERGEABLE" });
+        }
+        if (getPrCallCount === 3) {
+          // Phase 3 first attempt: UNKNOWN
+          return Promise.resolve({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug", mergeable: "UNKNOWN" });
+        }
+        // Phase 3 second attempt: MERGEABLE
+        return Promise.resolve({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug", mergeable: "MERGEABLE" });
+      }),
+    };
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
-      if (cmd === "gh" && args[1] === "view" && args.includes("mergeable")) {
-        mergeableCallCount++;
-        const mergeable = mergeableCallCount === 1 ? "UNKNOWN" : "MERGEABLE";
-        return Promise.resolve({ exitCode: 0, stdout: JSON.stringify({ mergeable }), stderr: "" });
-      }
       const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
       return happySpawn(cmd, args, { cwd: "" });
     });
@@ -755,10 +780,14 @@ describe("TC-CONFLICT-003: mergeable=UNKNOWN → retry → MERGEABLE → success
       spawn,
       fs: stubFs,
       sleepFn: async () => {},
+      githubClient,
+      owner: "user",
+      repo: "repo",
     });
 
     expect(result.exitCode).toBe(0);
-    expect(mergeableCallCount).toBe(2);
+    // getPrCallCount - 2 (phase 0 + phase 2) = 2 mergeable checks
+    expect(getPrCallCount - 2).toBe(2);
   });
 });
 
@@ -766,17 +795,19 @@ describe("TC-CONFLICT-003: mergeable=UNKNOWN → retry → MERGEABLE → success
 describe("TC-CONFLICT-004: mergeable=UNKNOWN × 3 → escalation", () => {
   it("exhausts all retries and returns escalation without calling gh pr merge", async () => {
     const { jobId } = await makeJobWithPr();
-    let mergeableCallCount = 0;
-    const mergeCalls: string[][] = [];
+    let getPrCallCount = 0;
 
+    const githubClient = {
+      ...makeHappyPathGitHubClient("OPEN"),
+      getPullRequest: vi.fn().mockImplementation(() => {
+        getPrCallCount++;
+        if (getPrCallCount <= 2) {
+          return Promise.resolve({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug", mergeable: "MERGEABLE" });
+        }
+        return Promise.resolve({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug", mergeable: "UNKNOWN" });
+      }),
+    };
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
-      if (cmd === "gh" && args[1] === "view" && args.includes("mergeable")) {
-        mergeableCallCount++;
-        return Promise.resolve({ exitCode: 0, stdout: JSON.stringify({ mergeable: "UNKNOWN" }), stderr: "" });
-      }
-      if (cmd === "gh" && args[1] === "merge") {
-        mergeCalls.push([...args]);
-      }
       const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
       return happySpawn(cmd, args, { cwd: "" });
     });
@@ -790,13 +821,17 @@ describe("TC-CONFLICT-004: mergeable=UNKNOWN × 3 → escalation", () => {
       spawn,
       fs: stubFs,
       sleepFn: async () => {},
+      githubClient,
+      owner: "user",
+      repo: "repo",
     });
 
     expect(result.exitCode).toBe(1);
     if (result.exitCode !== 1) return;
     expect(result.escalation).toContain("UNKNOWN");
-    expect(mergeCalls).toHaveLength(0);
-    expect(mergeableCallCount).toBe(3);
+    expect((githubClient.mergePullRequest as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0);
+    // getPrCallCount - 2 (phase 0 + phase 2) = 3 mergeable retries
+    expect(getPrCallCount - 2).toBe(3);
   });
 });
 
@@ -825,7 +860,7 @@ describe("TC-FIN-BD-003: branch deletion failure does not cause escalation", () 
     const stubFs = makeStubFs({ changeFolderExists: false });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, worktreeManagerFn: () => mockManager },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, worktreeManagerFn: () => mockManager, githubClient: makeHappyPathGitHubClient("OPEN"), owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(0);
@@ -856,6 +891,9 @@ describe("TC-WT-FIN-003: Phase 4 worktree remove is called", () => {
       spawn,
       fs: stubFs,
       worktreeManagerFn: () => mockManager,
+      githubClient: makeHappyPathGitHubClient("OPEN"),
+      owner: "user",
+      repo: "repo",
     });
 
     expect(result.exitCode).toBe(0);
@@ -901,7 +939,7 @@ describe("TC-LCC-ORCH-1: local conflict check fail → Phase 1 not called, exitC
     const stubFs = makeStubFs({ changeFolderExists: true });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, githubClient: makeHappyPathGitHubClient("OPEN"), owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(1);
@@ -935,7 +973,7 @@ describe("TC-LCC-ORCH-2: local conflict check pass → Phase 1 runs", () => {
 
     const messages: string[] = [];
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, githubClient: makeHappyPathGitHubClient("OPEN"), owner: "user", repo: "repo" },
       (m) => messages.push(m),
     );
 
@@ -968,7 +1006,7 @@ describe("TC-LCC-ORCH-3: git fetch failure in local check → exitCode 1, state 
     const stubFs = makeStubFs({ changeFolderExists: false });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, githubClient: makeHappyPathGitHubClient("OPEN"), owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(1);
@@ -1003,7 +1041,7 @@ describe("TC-LCC-ORCH-4: conflict escalation message contains recovery instructi
     const stubFs = makeStubFs({ changeFolderExists: false });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, githubClient: makeHappyPathGitHubClient("OPEN"), owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(1);
@@ -1031,7 +1069,7 @@ describe("TC-LCC-ORCH-5: after conflict escalation, re-run is not blocked by ass
         return happySpawn(cmd, args, { cwd: "" });
       });
       const result = await runFinishOrchestrator(
-        { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: makeStubFs() },
+        { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: makeStubFs(), githubClient: makeHappyPathGitHubClient("OPEN"), owner: "user", repo: "repo" },
       );
       expect(result.exitCode).toBe(1);
     }
@@ -1051,7 +1089,7 @@ describe("TC-LCC-ORCH-5: after conflict escalation, re-run is not blocked by ass
         return happySpawn(cmd, args, { cwd: "" });
       });
       const result = await runFinishOrchestrator(
-        { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: makeStubFs({ changeFolderExists: false }) },
+        { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: makeStubFs({ changeFolderExists: false }), githubClient: makeHappyPathGitHubClient("OPEN"), owner: "user", repo: "repo" },
       );
       expect(result.exitCode).toBe(0);
     }
@@ -1075,7 +1113,7 @@ describe("TC-LCC-ORCH-7 (tasks TC-LCC-ORCH-DRYRUN): dry-run skips local conflict
     const stubFs = makeStubFs({ changeFolderExists: true });
 
     const result = await runFinishOrchestrator(
-      { slug: "test-slug", baseBranch: "main", flags: { dryRun: true }, cwd: tempDir, spawn, fs: stubFs },
+      { slug: "test-slug", baseBranch: "main", flags: { dryRun: true }, cwd: tempDir, spawn, fs: stubFs, githubClient: makeHappyPathGitHubClient("OPEN"), owner: "user", repo: "repo" },
     );
 
     expect(result.exitCode).toBe(0);

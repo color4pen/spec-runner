@@ -1,15 +1,12 @@
 /**
- * pr-create runner — spawns gh CLI to create or detect GitHub PRs.
- * Uses node:child_process.spawn (NOT bun:* / Bun.*) per project rules.
+ * pr-create runner — creates GitHub PRs via REST API.
  *
  * Design D1: kind=cli, no LLM involvement.
  * Design D2: OPEN PR → existing-open (idempotent). MERGED/CLOSED → error (escalation).
  * Design D3: base branch is sourced from ParsedRequest.baseBranch.
+ * Design D7: GitHubClient replaces gh CLI subprocess.
  */
-import * as fs from "node:fs/promises";
-import * as os from "node:os";
-import * as path from "node:path";
-import { spawnCommand as _spawnCommand } from "../../util/spawn.js";
+import type { GitHubClient } from "../../core/port/github-client.js";
 
 export interface PrCreateInput {
   branch: string;
@@ -17,8 +14,12 @@ export interface PrCreateInput {
   title: string;
   body: string;
   cwd?: string;
-  /** GitHub token to inject as GITHUB_TOKEN env var for gh CLI subprocess. */
-  githubToken?: string;
+  /** GitHub REST API client. */
+  githubClient: GitHubClient;
+  /** Repository owner (e.g. "octocat"). */
+  owner: string;
+  /** Repository name (e.g. "my-repo"). */
+  repo: string;
 }
 
 export type PrCreateResult =
@@ -28,150 +29,54 @@ export type PrCreateResult =
   | { status: "error"; reason: "closed"; message: string }
   | { status: "error"; reason: "gh-failure"; message: string };
 
-interface GhPrListEntry {
-  url: string;
-  number: number;
-  state: string;
-}
-
-/**
- * Spawn a command and collect stdout/stderr.
- * Thin wrapper over shared spawnCommand for backward compat within this module.
- */
-function spawnCommand(
-  cmd: string,
-  args: string[],
-  cwd: string,
-  env?: Record<string, string | undefined>,
-): Promise<{ exitCode: number | null; stdout: string; stderr: string }> {
-  return _spawnCommand(cmd, args, { cwd, env });
-}
-
-/**
- * Run `gh pr list` to check for existing PRs on this branch.
- * PR absence is determined solely by JSON array length === 0.
- * stderr content is never used for absence detection.
- */
-async function listPrs(
-  branch: string,
-  baseBranch: string,
-  cwd: string,
-  env?: Record<string, string | undefined>,
-): Promise<{ ok: true; entries: GhPrListEntry[] } | { ok: false; stderr: string }> {
-  const { exitCode, stdout, stderr } = await spawnCommand(
-    "gh",
-    [
-      "pr", "list",
-      "--head", branch,
-      "--base", baseBranch,
-      "--state", "all",
-      "--json", "url,number,state",
-    ],
-    cwd,
-    env,
-  );
-
-  if (exitCode !== 0) {
-    return { ok: false, stderr };
-  }
-
-  try {
-    const parsed = JSON.parse(stdout.trim()) as GhPrListEntry[];
-    return { ok: true, entries: parsed };
-  } catch {
-    return { ok: false, stderr: `Failed to parse gh pr list output: ${stdout}` };
-  }
-}
-
-/**
- * Run `gh pr create` with a body written to a temp file.
- * --body flag is NOT used; body is passed via --body-file.
- * The temp file is deleted after the command completes (success or failure).
- */
-async function createPr(
-  input: PrCreateInput,
-  cwd: string,
-  env?: Record<string, string | undefined>,
-): Promise<{ ok: true; url: string; number: number } | { ok: false; stderr: string }> {
-  const tmpFile = path.join(os.tmpdir(), `specrunner-pr-body-${Date.now()}.md`);
-  await fs.writeFile(tmpFile, input.body, "utf-8");
-
-  let result: { exitCode: number | null; stdout: string; stderr: string };
-  try {
-    result = await spawnCommand(
-      "gh",
-      [
-        "pr", "create",
-        "--title", input.title,
-        "--body-file", tmpFile,
-        "--base", input.baseBranch,
-        "--head", input.branch,
-      ],
-      cwd,
-      env,
-    );
-  } finally {
-    // Always delete temp file, regardless of success or failure
-    await fs.unlink(tmpFile).catch(() => undefined);
-  }
-
-  if (result.exitCode !== 0) {
-    return { ok: false, stderr: result.stderr };
-  }
-
-  // Extract PR URL from stdout (gh pr create prints the URL on stdout)
-  const urlMatch = /https:\/\/github\.com\/[^\s]+\/pull\/(\d+)/.exec(result.stdout.trim());
-  if (!urlMatch) {
-    return { ok: false, stderr: `gh pr create succeeded but could not extract PR URL from output: ${result.stdout}` };
-  }
-
-  return {
-    ok: true,
-    url: urlMatch[0],
-    number: parseInt(urlMatch[1]!, 10),
-  };
-}
-
 /**
  * Run the pr-create operation:
  * 1. Check for existing PRs on the branch.
  * 2. If OPEN PR exists → return existing-open (idempotent).
  * 3. If MERGED/CLOSED PR exists → return error (escalation required).
- * 4. If no PR exists → create new PR via gh pr create.
+ * 4. If no PR exists → create new PR via REST API.
  */
 export async function runPrCreate(input: PrCreateInput): Promise<PrCreateResult> {
-  const cwd = input.cwd ?? process.cwd();
-  const ghEnv = input.githubToken ? { GITHUB_TOKEN: input.githubToken } : undefined;
+  const { githubClient, owner, repo } = input;
 
-  // Step 1: Check for existing PRs
-  const listResult = await listPrs(input.branch, input.baseBranch, cwd, ghEnv);
-
-  if (!listResult.ok) {
+  // Step 1: Check for existing PRs (state=all — all states)
+  let entries: Array<{ url: string; number: number; state: string }>;
+  try {
+    entries = await githubClient.listPullRequests(owner, repo, input.branch, input.baseBranch);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     return {
       status: "error",
       reason: "gh-failure",
-      message: buildGhFailureMessage(listResult.stderr),
+      message: buildFailureMessage(message),
     };
   }
-
-  const entries = listResult.entries;
 
   // Step 2: PR absent — JSON array length 0 is the only criterion
   if (entries.length === 0) {
     // Create new PR
-    const createResult = await createPr(input, cwd, ghEnv);
-    if (!createResult.ok) {
+    try {
+      const created = await githubClient.createPullRequest(
+        owner,
+        repo,
+        input.branch,
+        input.baseBranch,
+        input.title,
+        input.body,
+      );
+      return {
+        status: "created",
+        url: created.url,
+        number: created.number,
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
       return {
         status: "error",
         reason: "gh-failure",
-        message: buildGhFailureMessage(createResult.stderr),
+        message: buildFailureMessage(message),
       };
     }
-    return {
-      status: "created",
-      url: createResult.url,
-      number: createResult.number,
-    };
   }
 
   // Step 3: Existing PR found — check state
@@ -203,13 +108,14 @@ export async function runPrCreate(input: PrCreateInput): Promise<PrCreateResult>
 }
 
 /**
- * Build a user-friendly error message for gh CLI failures.
- * Includes re-authentication hint for common auth failures.
+ * Build a user-friendly error message for GitHub API failures.
+ * Includes re-authentication hint for auth-related failures.
  */
-function buildGhFailureMessage(stderr: string): string {
+function buildFailureMessage(detail: string): string {
+  const lower = detail.toLowerCase();
   const hint =
-    stderr.toLowerCase().includes("auth") || stderr.toLowerCase().includes("token")
-      ? "\n\nRun 'specrunner login' or 'gh auth login' to re-authenticate."
-      : "\n\nIf this is an authentication error, run 'specrunner login' or 'gh auth login' to re-authenticate.";
-  return `${stderr.trim()}${hint}`;
+    lower.includes("auth") || lower.includes("token") || lower.includes("credentials")
+      ? "\n\nRun 'specrunner login' to re-authenticate."
+      : "\n\nIf this is an authentication error, run 'specrunner login' to re-authenticate.";
+  return `${detail.trim()}${hint}`;
 }

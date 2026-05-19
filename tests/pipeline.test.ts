@@ -127,6 +127,10 @@ function buildMockGithubClient(opts: {
     getRawFile: vi.fn().mockResolvedValue(null),
     verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
       getRefSha: vi.fn().mockResolvedValue(null),
+    listPullRequests: vi.fn().mockResolvedValue([]),
+    createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+    getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+    mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
   };
 }
 
@@ -178,6 +182,8 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
       slug: "2026-04-27-cli-core-pipeline",
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -212,6 +218,8 @@ describe("TC-036: propose pipeline — pre-set branch from CLI is used (D4)", ()
       slug: "test-cli-branch-d4",
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -240,6 +248,8 @@ describe("TC-037: propose pipeline — SSE stream connected before initial messa
       slug: "2026-04-27-test",
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -285,6 +295,8 @@ describe("TC-038: propose pipeline — initial message contains user-request tag
       // Use tempDir as cwd: no specrunner/project.md exists there, so
       // projectContext is undefined and requestContent equals the raw request text.
       cwd: tempDir,
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -315,6 +327,8 @@ describe("TC-039: propose pipeline — CHANGE_FOLDER_NOT_FOUND", () => {
       slug: "2026-04-27-test",
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -343,6 +357,8 @@ describe("TC-040: propose pipeline — branch not found on GitHub is warning onl
       slug: "2026-04-27-test",
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -377,6 +393,8 @@ describe("TC-041: propose pipeline — GITHUB_TOKEN_EXPIRED on 401", () => {
       slug: "2026-04-27-test",
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 
@@ -408,6 +426,8 @@ describe("TC-042: session creation parameters", () => {
       slug: "2026-04-27-test",
       githubClient,
       runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
       spawn: noopSpawn,
     });
 

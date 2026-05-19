@@ -17,13 +17,17 @@ const BRANCH = "feat/test";
 const SHA = "0123456789abcdef0123456789abcdef01234567";
 
 function buildClient(mockFetch: typeof fetch): GitHubApiClient {
-  return new GitHubApiClient(mockFetch, "ghp_test");
+  return new GitHubApiClient(mockFetch, "ghp_test", { sleepFn: () => Promise.resolve() });
 }
+
+/** Minimal headers stub — returns null for all rate-limit headers. */
+const mockHeaders = { get: vi.fn().mockReturnValue(null) };
 
 describe("GitHubApiClient.getRefSha — 200 returns object.sha", () => {
   it("returns the SHA when GitHub responds 200 with a well-formed body", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
+      headers: mockHeaders,
       json: () => Promise.resolve({ ref: `refs/heads/${BRANCH}`, object: { sha: SHA, type: "commit" } }),
     });
 
@@ -42,6 +46,7 @@ describe("GitHubApiClient.getRefSha — 404 returns null", () => {
   it("returns null when the branch ref does not exist", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 404,
+      headers: mockHeaders,
       json: () => Promise.resolve({ message: "Not Found" }),
     }) as unknown as typeof fetch;
 
@@ -71,6 +76,7 @@ describe("GitHubApiClient.getRefSha — 5xx throws GITHUB_API_ERROR", () => {
   it("throws SpecRunnerError with GITHUB_API_ERROR on 503", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 503,
+      headers: mockHeaders,
       json: () => Promise.resolve({}),
     }) as unknown as typeof fetch;
 
@@ -86,6 +92,7 @@ describe("GitHubApiClient.getRefSha — malformed 200 body throws GITHUB_API_ERR
   it("throws when object.sha is missing or not a string", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
+      headers: mockHeaders,
       json: () => Promise.resolve({ ref: `refs/heads/${BRANCH}` }), // no object.sha
     }) as unknown as typeof fetch;
 
@@ -99,6 +106,7 @@ describe("GitHubApiClient.getRefSha — malformed 200 body throws GITHUB_API_ERR
   it("throws when object.sha is empty string", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       status: 200,
+      headers: mockHeaders,
       json: () => Promise.resolve({ object: { sha: "" } }),
     }) as unknown as typeof fetch;
 

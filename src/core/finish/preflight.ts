@@ -2,28 +2,29 @@
  * Phase 0 pre-flight checks for finish command.
  *
  * All checks run before any destructive operation.
- * Destructive ops: git commit / git push / gh pr merge
+ * Destructive ops: git commit / git push / REST API merge
  *
  * Checks:
  *   1. slug resolved (validated by resolveTarget)
  *   2. state.pullRequest.number exists
- *   3. gh pr view success + state           → pr-status.ts
+ *   3. getPullRequest success + state        → pr-status.ts
  *   4. mergeStateStatus=UNKNOWN → 3-second × 3-retry → pr-status.ts
  *   5. specrunner/changes/<slug>/ existence (warning, not escalation)
- *   6. gh / git binaries available
+ *   6. git binary available
  *   7. feature branch unpushed commits (warning only)
  *
  * TC-104: UNKNOWN → CLEAN after 1 retry → success
- * TC-105: gh pr view auth failure → escalation
+ * TC-105: getPullRequest auth failure → escalation
  * TC-108: --dry-run → Phase 0 only, 0 destructive spawns
  * TC-119: UNKNOWN × 3 → escalation
  * TC-120: pullRequest.number absent → escalation
- * TC-121: gh binary missing → escalation
+ * TC-121: git binary missing → escalation
  * TC-129: dry-run + Phase 0 fail → escalation, exit 1
  */
 import * as path from "node:path";
 import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs, ResolvedTarget, PrViewData } from "./types.js";
+import type { GitHubClient } from "../../core/port/github-client.js";
 import { formatEscalation } from "./escalation.js";
 import { fetchPrViewWithRetry } from "./pr-status.js";
 import { checkoutForValidation, restoreBranch } from "./branch-checkout.js";
@@ -37,12 +38,16 @@ export interface PreflightInput {
   spawn: SpawnFn;
   fs: FinishFs;
   dryRun: boolean;
+  /** GitHub REST API client for PR status checks. */
+  githubClient: GitHubClient;
+  /** GitHub repository owner. */
+  owner: string;
+  /** GitHub repository name. */
+  repo: string;
   /** Injectable sleep for testing (defaults to real setTimeout-based sleep). */
   sleepFn?: (ms: number) => Promise<void>;
   /** Warning output function (defaults to process.stderr.write). */
   warnFn?: (msg: string) => void;
-  /** Additional env vars to inject into gh CLI subprocesses. */
-  env?: Record<string, string | undefined>;
 }
 
 export type PreflightResult =
@@ -53,7 +58,7 @@ export type PreflightResult =
  * Run all Phase 0 preflight checks.
  */
 export async function runPreflight(input: PreflightInput): Promise<PreflightResult> {
-  const { target, cwd, spawn, fs, dryRun, env } = input;
+  const { target, cwd, spawn, fs, dryRun, githubClient, owner, repo } = input;
   const warn = input.warnFn ?? ((m: string) => process.stderr.write(m));
 
   // Check 2: pullRequest.number must exist (already validated in resolveTarget,
@@ -70,8 +75,8 @@ export async function runPreflight(input: PreflightInput): Promise<PreflightResu
     };
   }
 
-  // Check 6: binary availability (gh, git)
-  const binaryCheck = await checkBinaries(["gh", "git"], spawn, cwd);
+  // Check 6: binary availability (git only — gh CLI is no longer required)
+  const binaryCheck = await checkBinaries(["git"], spawn, cwd);
   if (!binaryCheck.ok) {
     return {
       ok: false,
@@ -84,14 +89,14 @@ export async function runPreflight(input: PreflightInput): Promise<PreflightResu
     };
   }
 
-  // Check 3 + 4: gh pr view + UNKNOWN retry
+  // Check 3 + 4: getPullRequest + UNKNOWN retry
   const prViewResult = await fetchPrViewWithRetry({
     prNumber: target.prNumber,
-    cwd,
-    spawn,
+    githubClient,
+    owner,
+    repo,
     slug: target.slug,
     sleepFn: input.sleepFn,
-    env,
   });
 
   if (!prViewResult.ok) {

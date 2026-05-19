@@ -1,11 +1,13 @@
 /**
  * PR status fetching and polling for the finish command.
+ * Uses GitHubClient REST API instead of gh CLI subprocess.
  *
  * Responsibilities:
- *   - fetchPrViewWithRetry: Check 3+4 (gh pr view + UNKNOWN retry)
+ *   - fetchPrViewWithRetry: Check 3+4 (getPullRequest + UNKNOWN retry)
  *   - pollMergeStateAfterPush: Phase 2 post-push mergeStateStatus polling
+ *   - checkMergeableForMerge: Phase 3 guard (MERGEABLE check)
  */
-import type { SpawnFn } from "../../util/spawn.js";
+import type { GitHubClient } from "../../core/port/github-client.js";
 import type { PrViewData } from "./types.js";
 import { formatEscalation } from "./escalation.js";
 
@@ -29,53 +31,36 @@ const POST_PUSH_RETRY_COUNT = 5;
 const POST_PUSH_RETRY_DELAY_MS = 3000;
 
 /**
- * Fetch PR view from gh CLI with retry on UNKNOWN mergeStateStatus.
- * Implements Check 3 (gh pr view success) and Check 4 (UNKNOWN retry).
+ * Fetch PR view from GitHub REST API with retry on UNKNOWN mergeStateStatus.
+ * Implements Check 3 (getPullRequest success) and Check 4 (UNKNOWN retry).
  *
  * Bypass: MERGED PRs with UNKNOWN mergeStateStatus return success immediately
  * (GitHub always returns UNKNOWN for MERGED PRs — merge-ability check is moot).
  */
 export async function fetchPrViewWithRetry(params: {
   prNumber: number;
-  cwd: string;
-  spawn: SpawnFn;
+  githubClient: GitHubClient;
+  owner: string;
+  repo: string;
   slug: string;
   sleepFn?: (ms: number) => Promise<void>;
-  env?: Record<string, string | undefined>;
 }): Promise<PrViewFetchResult> {
-  const { prNumber, cwd, spawn, slug, env } = params;
+  const { prNumber, githubClient, owner, repo, slug } = params;
   const sleepImpl = params.sleepFn ?? sleep;
 
   for (let attempt = 1; attempt <= UNKNOWN_RETRY_COUNT; attempt++) {
-    // Check 3: gh pr view
-    const result = await spawn(
-      "gh",
-      ["pr", "view", String(prNumber), "--json", "state,mergeStateStatus,headRefName"],
-      { cwd, env },
-    );
-
-    if (result.exitCode !== 0) {
-      return {
-        ok: false,
-        escalation: formatEscalation({
-          failedStep: "Phase 0 check 3 (gh pr view)",
-          detectedState: `gh pr view ${prNumber} failed (exit ${result.exitCode})`,
-          recommendedAction: `Check gh authentication: specrunner login. Error: ${result.stderr.trim()}`,
-          resumeCommand: `specrunner finish ${slug}`,
-        }),
-      };
-    }
-
+    // Check 3: getPullRequest
     let parsed: PrViewData;
     try {
-      parsed = JSON.parse(result.stdout.trim()) as PrViewData;
-    } catch {
+      parsed = await githubClient.getPullRequest(owner, repo, prNumber);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
       return {
         ok: false,
         escalation: formatEscalation({
-          failedStep: "Phase 0 check 3 (gh pr view parse)",
-          detectedState: `Failed to parse gh pr view output`,
-          recommendedAction: `Check gh CLI version. Output was: ${result.stdout.slice(0, 200)}`,
+          failedStep: "Phase 0 check 3 (getPullRequest)",
+          detectedState: `getPullRequest #${prNumber} failed: ${detail}`,
+          recommendedAction: `Check GitHub token: specrunner login. Error: ${detail}`,
           resumeCommand: `specrunner finish ${slug}`,
         }),
       };
@@ -130,45 +115,28 @@ export async function fetchPrViewWithRetry(params: {
  */
 export async function checkMergeableForMerge(params: {
   prNumber: number;
-  cwd: string;
-  spawn: SpawnFn;
+  githubClient: GitHubClient;
+  owner: string;
+  repo: string;
   slug: string;
   baseBranch: string;
   sleepFn?: (ms: number) => Promise<void>;
-  env?: Record<string, string | undefined>;
 }): Promise<CheckMergeableResult> {
-  const { prNumber, cwd, spawn, slug, baseBranch, env } = params;
+  const { prNumber, githubClient, owner, repo, slug, baseBranch } = params;
   const sleepImpl = params.sleepFn ?? sleep;
 
   for (let attempt = 1; attempt <= MERGEABLE_RETRY_COUNT; attempt++) {
-    const result = await spawn(
-      "gh",
-      ["pr", "view", String(prNumber), "--json", "mergeable"],
-      { cwd, env },
-    );
-
-    if (result.exitCode !== 0) {
-      return {
-        ok: false,
-        escalation: formatEscalation({
-          failedStep: "Phase 3 guard (gh pr view --json mergeable)",
-          detectedState: `gh pr view ${prNumber} failed (exit ${result.exitCode})`,
-          recommendedAction: `Check gh authentication: specrunner login. Error: ${result.stderr.trim()}`,
-          resumeCommand: `specrunner finish ${slug}`,
-        }),
-      };
-    }
-
     let parsed: { mergeable?: string };
     try {
-      parsed = JSON.parse(result.stdout.trim()) as { mergeable?: string };
-    } catch {
+      parsed = await githubClient.getPullRequest(owner, repo, prNumber);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
       return {
         ok: false,
         escalation: formatEscalation({
-          failedStep: "Phase 3 guard (gh pr view --json mergeable parse)",
-          detectedState: `Failed to parse gh pr view output`,
-          recommendedAction: `Check gh CLI version. Output was: ${result.stdout.slice(0, 200)}`,
+          failedStep: "Phase 3 guard (getPullRequest for mergeable)",
+          detectedState: `getPullRequest #${prNumber} failed: ${detail}`,
+          recommendedAction: `Check GitHub token: specrunner login. Error: ${detail}`,
           resumeCommand: `specrunner finish ${slug}`,
         }),
       };
@@ -234,31 +202,21 @@ export async function checkMergeableForMerge(params: {
  */
 export async function pollMergeStateAfterPush(params: {
   prNumber: number;
-  cwd: string;
-  spawn: SpawnFn;
+  githubClient: GitHubClient;
+  owner: string;
+  repo: string;
   slug: string;
   sleepFn?: (ms: number) => Promise<void>;
-  env?: Record<string, string | undefined>;
 }): Promise<{ mergeStateStatus: string }> {
-  const { prNumber, cwd, spawn, slug: _slug, env } = params;
+  const { prNumber, githubClient, owner, repo, slug: _slug } = params;
   const sleepImpl = params.sleepFn ?? sleep;
 
   for (let attempt = 1; attempt <= POST_PUSH_RETRY_COUNT; attempt++) {
-    const result = await spawn(
-      "gh",
-      ["pr", "view", String(prNumber), "--json", "mergeStateStatus"],
-      { cwd, env },
-    );
-
-    if (result.exitCode !== 0) {
-      // gh pr view failed — return empty string so Phase 3 attempts merge without --admin
-      return { mergeStateStatus: "" };
-    }
-
     let parsed: { mergeStateStatus?: string };
     try {
-      parsed = JSON.parse(result.stdout.trim());
+      parsed = await githubClient.getPullRequest(owner, repo, prNumber);
     } catch {
+      // getPullRequest failed — return empty string so Phase 3 attempts merge without --admin
       return { mergeStateStatus: "" };
     }
 
