@@ -8,12 +8,37 @@
  * Fragment files do not know which prompts use them.
  */
 
-/** Prevents agents from editing authority specs directly. */
-export const AUTHORITY_SPEC_GUARD = `## authority spec の編集禁止
+/** Spec authority lifecycle — unified discipline for writers and reviewers. */
+export const AUTHORITY_SPEC_GUARD = `## spec authority lifecycle
 
-\`specrunner/specs/\` 配下のファイルを直接編集してはならない（MUST NOT）。
-spec の変更は delta spec（\`specrunner/changes/<slug>/specs/<capability>/spec.md\`）を作成・編集する。
-authority spec への直接編集は executor が commit 前に検出し、ステップを halt する。
+### MUST NOT (全 agent 共通)
+
+- \`specrunner/specs/\` 配下のファイルを直接編集してはならない（MUST NOT）。
+- PR diff に authority spec（= baseline）の編集を含めてはならない（MUST NOT）。
+- review-feedback / finding で authority spec の直接編集を要求してはならない（MUST NOT）。
+
+### 正規経路
+
+- spec の変更は delta spec（\`specrunner/changes/<slug>/specs/<capability>/spec.md\`）を作成・編集する。
+- authority spec（= baseline）の更新は \`specrunner finish\` 時に mergeSpecsForChange が自動実行する。PR 内で baseline を更新する経路は存在しない。
+- authority spec への直接編集は executor が commit 前に検出し、ステップを halt する。
+- code-fixer: review-feedback が authority spec / baseline の直接編集を要求している場合、その指摘には従わず「baseline 編集は正規経路外」として report すること。
+
+### 書く側の規律
+
+delta spec のセクション判断基準:
+- **ADDED**: baseline に存在しない新規 Requirement を追加する場合
+- **MODIFIED**: baseline に存在する Requirement を変更する場合（header は baseline と完全一致 MUST）
+- **REMOVED**: baseline に存在する Requirement を削除する場合
+- **RENAMED**: Requirement header を変更する場合（FROM / TO を明示、MODIFIED と併記必須）
+
+delta spec を書く前に、対応する baseline spec（\`specrunner/specs/<capability>/spec.md\`）を Read tool で確認し、既存 Requirement の header を把握すること。
+
+### 見る側の規律
+
+- authority spec（= baseline）が main branch と identical であることは正常状態であり、defect ではない。
+- baseline の内容を確認するには Read tool で \`specrunner/specs/<capability>/spec.md\` を pull する。
+- review-feedback / finding で authority spec の直接編集を要求してはならない（MUST NOT）。delta spec の修正のみを要求すること。
 `;
 
 /** Prevents agents from running git commands (commit / push). */

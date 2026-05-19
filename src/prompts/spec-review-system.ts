@@ -1,5 +1,5 @@
 import { changesDirRel, specReviewResultPath } from "../util/paths.js";
-import { PIPELINE_RULES } from "./fragments.js";
+import { PIPELINE_RULES, AUTHORITY_SPEC_GUARD } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
@@ -99,6 +99,7 @@ Requirements sections, follow these steps:
 
 export const SPEC_REVIEW_SYSTEM_PROMPT = buildSystemPrompt(SPEC_REVIEW_BASE, [
   PIPELINE_RULES,
+  AUTHORITY_SPEC_GUARD,
 ]);
 
 /**

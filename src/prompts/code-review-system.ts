@@ -1,5 +1,5 @@
 import { changesDirRel } from "../util/paths.js";
-import { PIPELINE_RULES } from "./fragments.js";
+import { PIPELINE_RULES, AUTHORITY_SPEC_GUARD } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
@@ -83,4 +83,5 @@ The Scores table MUST include all 6 categories with the weights shown above. The
 
 export const CODE_REVIEW_SYSTEM_PROMPT = buildSystemPrompt(CODE_REVIEW_BASE, [
   PIPELINE_RULES,
+  AUTHORITY_SPEC_GUARD,
 ]);
