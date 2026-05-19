@@ -19,6 +19,7 @@ import {
   buildInitialMessage,
   type RequestReviewResult,
 } from "../../../src/core/command/request-review.js";
+import { REQUEST_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/request-review-system.js";
 
 // ---------------------------------------------------------------------------
 // TC-RR-001: parseReviewOutput — valid JSON block → extracts structured result
@@ -219,6 +220,27 @@ describe("TC-RR-010: buildInitialMessage wraps projectContext in <project-contex
 
     expect(message).toContain("<project-context>");
     expect(message).toContain("</project-context>");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RR-011: REQUEST_REVIEW_SYSTEM_PROMPT — contains authority path co-occurrence detection rule
+// ---------------------------------------------------------------------------
+describe("TC-RR-011: REQUEST_REVIEW_SYSTEM_PROMPT contains authority path co-occurrence detection rule", () => {
+  it("includes authority path co-occurrence HIGH finding detection rule", () => {
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("Authority path co-occurrence");
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("specrunner/specs/");
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("HIGH severity finding");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RR-012: REQUEST_REVIEW_SYSTEM_PROMPT — contains referential exclusion clause
+// ---------------------------------------------------------------------------
+describe("TC-RR-012: REQUEST_REVIEW_SYSTEM_PROMPT contains referential exclusion clause", () => {
+  it("includes exclusion for referential mentions from HIGH finding", () => {
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("referential mentions");
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("NOT HIGH findings");
   });
 });
 

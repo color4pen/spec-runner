@@ -62,4 +62,5 @@ Always use \`main\` as the \`base-branch\`.
 - Do NOT wrap in markdown code fences
 - Do NOT include explanatory text before or after the document
 - Do NOT include meta-commentary
-- The document must be self-contained and ready for use`;
+- The document must be self-contained and ready for use
+- request body 内で authority path（\`specrunner/specs/<capability>/spec.md\`）を MODIFIED / ADDED の対象として直接記述してはならない（MUST NOT）。spec 変更は必ず delta spec path（\`specrunner/changes/<slug>/specs/<capability>/spec.md\`）で表現すること`;
