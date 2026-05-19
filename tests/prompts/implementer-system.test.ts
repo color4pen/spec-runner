@@ -51,6 +51,31 @@ describe("TC-012: IMPLEMENTER_SYSTEM_PROMPT — positive-framing workflow contex
   });
 });
 
+// TC-022: implementer prompt に TC ID 記載規律が含まれる
+describe("TC-022: IMPLEMENTER_SYSTEM_PROMPT — TC ID 記載規律", () => {
+  it("TC ID を test 関数名 / comment に記載する規律が含まれる", () => {
+    const hasRule =
+      IMPLEMENTER_SYSTEM_PROMPT.includes("TC ID") ||
+      IMPLEMENTER_SYSTEM_PROMPT.includes("TC-");
+    expect(hasRule).toBe(true);
+  });
+
+  it("TC-070 またはそれに準じる形式の例示が含まれる", () => {
+    // The prompt must contain an example like `it("TC-070: ...")`
+    const hasExample =
+      IMPLEMENTER_SYSTEM_PROMPT.includes("TC-070") ||
+      IMPLEMENTER_SYSTEM_PROMPT.includes('it("TC-');
+    expect(hasExample).toBe(true);
+  });
+
+  it("後続の verification step が grep で TC ID を検証する旨が明記されている", () => {
+    const hasVerificationRef =
+      IMPLEMENTER_SYSTEM_PROMPT.includes("verification") &&
+      IMPLEMENTER_SYSTEM_PROMPT.includes("grep");
+    expect(hasVerificationRef).toBe(true);
+  });
+});
+
 describe("IMPLEMENTER_SYSTEM_PROMPT — basic requirements", () => {
   it("is a non-empty string", () => {
     expect(typeof IMPLEMENTER_SYSTEM_PROMPT).toBe("string");

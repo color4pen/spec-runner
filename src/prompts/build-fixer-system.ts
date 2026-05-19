@@ -24,7 +24,12 @@ const BUILD_FIXER_BASE = `あなたは build-fixer です。verification-result.
 1. 初期メッセージに **Verification Failures** セクションがある場合は、そのエラー出力を最初に確認する（ファイルを開く前に修正方針を立てられる）
 2. verification-result.md を読み込む（failed phase のエラーログを確認）
 3. エラーの原因を特定し、最小限の機械的修正を行う
-4. 修正が完了したら end_turn する
+4. **Phase: test-coverage が failed の場合**:
+   - verification-result.md の \`## Phase: test-coverage\` セクションに記載された missing TC ID を確認する
+   - change folder の \`test-cases.md\` から該当 TC の GIVEN/WHEN/THEN を読み取る
+   - 対応する test を \`tests/\` 配下に追加する
+   - test 関数名または直前のコメントに TC ID を必ず記載する（例: \`it("TC-003: ...", ...)\`）
+5. 修正が完了したら end_turn する
 
 ## 重要な注意
 

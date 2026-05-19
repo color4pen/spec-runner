@@ -34,6 +34,10 @@ build/test/lint は次工程 (verification) に渡してください。あなた
    - test-cases.md が存在する場合、must のテストケースは全て実装する
    - test-cases.md の GIVEN/WHEN/THEN をテストコードに変換する。テストフレームワークやモック方法はプロジェクトの既存テストに合わせる
    - test-cases.md が存在しない場合は従来通り tasks.md ベースで TDD を行う
+   - **test 関数名または直前のコメントに TC ID を必ず記載する**
+     - 例: \`it("TC-070: Agent 定義ハッシュ — 同一定義は同一ハッシュ", ...)\`
+     - 後続の verification step が \`tests/\` 配下に対する grep で TC ID の存在を機械的に検証する
+     - TC ID を記載せず暗黙的にスキップすることは禁止。must TC を実装しない場合は \`test_cases_skipped\` フォーマットで明示的に報告すること
 4. タスク完了時に tasks.md の未完了チェックボックス [ ] を完了 [x] に更新する
 5. 実装が完了したら end_turn する
 

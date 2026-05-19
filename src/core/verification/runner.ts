@@ -6,7 +6,8 @@ import { spawn } from "node:child_process";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { PHASE_NAMES, PHASE_SCRIPTS } from "./phases.js";
-import type { PhaseName } from "./phases.js";
+import type { PhaseName, ScriptPhaseName } from "./phases.js";
+import { runTestCoveragePhase } from "./test-coverage.js";
 import { verificationResultPath } from "../../util/paths.js";
 
 /** Result for a single verification phase. */
@@ -26,6 +27,14 @@ export interface VerificationResult {
   phases: PhaseResult[];
   /** Set when all phases were skipped (no runnable scripts found). */
   errorCode?: string;
+}
+
+/**
+ * Type guard: returns true if phaseName is a script-based phase
+ * (i.e. it has an entry in PHASE_SCRIPTS and runs via `bun run <script>`).
+ */
+function isScriptPhase(name: PhaseName): name is ScriptPhaseName {
+  return name in PHASE_SCRIPTS;
 }
 
 /**
@@ -121,7 +130,13 @@ async function writeVerificationResult(
     lines.push(`## Phase: ${p.phase}`);
     lines.push("");
     if (p.status === "skipped") {
-      lines.push("_(skipped — script not found in package.json)_");
+      // TC-020: if the phase produced a stdout (e.g. skip reason), show it instead
+      // of the generic "script not found in package.json" message.
+      if (p.stdout) {
+        lines.push(p.stdout);
+      } else {
+        lines.push("_(skipped — script not found in package.json)_");
+      }
     } else {
       const combined = [p.stdout, p.stderr].filter(Boolean).join("\n");
       lines.push("```");
@@ -137,7 +152,12 @@ async function writeVerificationResult(
 
 /**
  * Run all verification phases for the given slug.
- * Executes phases in order (fail-fast): build → typecheck → test → lint → security.
+ * Executes phases in order (fail-fast):
+ *   build → typecheck → test → lint → security → test-coverage
+ *
+ * Script phases (build/typecheck/test/lint/security) run via `bun run <script>`.
+ * The test-coverage phase runs as CLI internal processing (no child process).
+ *
  * If a phase fails, remaining phases are skipped.
  * Writes verification-result.md to the change folder.
  *
@@ -152,9 +172,45 @@ export async function runVerification(
   let failed = false;
 
   for (const phaseName of PHASE_NAMES) {
+    // Internal processing phases (not in PHASE_SCRIPTS)
+    if (!isScriptPhase(phaseName)) {
+      if (failed) {
+        // Fail-fast: skip internal phases after first failure
+        phases.push({
+          phase: phaseName,
+          status: "skipped",
+          stdout: "",
+          stderr: "",
+          exitCode: null,
+          durationMs: 0,
+        });
+        continue;
+      }
+
+      // TC-016, TC-017, TC-019: run test-coverage as CLI internal processing
+      const startMs = Date.now();
+      const result = await runTestCoveragePhase(slug, cwd);
+      const durationMs = Date.now() - startMs;
+
+      phases.push({
+        phase: phaseName,
+        status: result.status,
+        stdout: result.stdout,
+        stderr: "",
+        exitCode: result.status === "passed" ? 0 : result.status === "failed" ? 1 : null,
+        durationMs,
+      });
+
+      if (result.status === "failed") {
+        failed = true;
+      }
+      continue;
+    }
+
+    // Script-based phases
     const scriptName = PHASE_SCRIPTS[phaseName];
 
-    // Check if script exists
+    // Check if script exists in package.json
     const exists = await scriptExists(scriptName, cwd);
     if (!exists) {
       phases.push({
