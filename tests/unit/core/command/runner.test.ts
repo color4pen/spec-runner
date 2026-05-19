@@ -6,6 +6,8 @@
  * TC-CR-003: prepare() throw propagates (allows subclass exit code control)
  * TC-CR-004: success path → teardown("awaiting-merge") + return 0
  * TC-CR-005: awaiting-resume path → teardown("awaiting-resume") + return 1
+ * TC-06-02: pipeline success → closeVerboseLog() called (getVerboseLogFilePath() returns null)
+ * TC-06-03: pipeline throw → closeVerboseLog() called (getVerboseLogFilePath() returns null)
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
@@ -17,23 +19,38 @@ import type { RuntimeStrategy, WorkspaceContext, CleanupHandle } from "../../../
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import { JobStateStore } from "../../../../src/store/job-state-store.js";
+import {
+  setVerbose,
+  closeVerboseLog,
+  getVerboseLogFilePath,
+} from "../../../../src/logger/stdout.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
+let originalXdgStateHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "command-runner-test-"));
   originalXdgDataHome = process.env["XDG_DATA_HOME"];
+  originalXdgStateHome = process.env["XDG_STATE_HOME"];
   process.env["XDG_DATA_HOME"] = tempDir;
+  process.env["XDG_STATE_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
+  closeVerboseLog();
+  setVerbose(false);
   if (originalXdgDataHome !== undefined) {
     process.env["XDG_DATA_HOME"] = originalXdgDataHome;
   } else {
     delete process.env["XDG_DATA_HOME"];
+  }
+  if (originalXdgStateHome !== undefined) {
+    process.env["XDG_STATE_HOME"] = originalXdgStateHome;
+  } else {
+    delete process.env["XDG_STATE_HOME"];
   }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.clearAllMocks();
@@ -400,5 +417,39 @@ describe("TC-CR-011: pipeline throw with awaiting-resume state does not overwrit
 
     const diskState = await store.load();
     expect(diskState.status).toBe("awaiting-resume");
+  });
+});
+
+// TC-06-02: verbose log is closed on pipeline success (no fd leak)
+describe("TC-06-02: verbose log closed on pipeline success", () => {
+  it("execute() success path → getVerboseLogFilePath() returns null (closeVerboseLog called)", async () => {
+    setVerbose(true);
+
+    const runtime = buildMockRuntime();
+    const command = new TestCommand(runtime, buildPrepareResult({ verbose: true }));
+
+    await command.execute();
+
+    expect(getVerboseLogFilePath()).toBeNull();
+  });
+});
+
+// TC-06-03: verbose log is closed on pipeline error (no fd leak)
+describe("TC-06-03: verbose log closed on pipeline error", () => {
+  it("execute() pipeline throw → getVerboseLogFilePath() returns null (closeVerboseLog called)", async () => {
+    setVerbose(true);
+
+    const runtime = buildMockRuntime();
+    const command = new TestCommand(runtime, buildPrepareResult({ verbose: true }));
+
+    // Override pipeline to throw
+    const { createStandardPipeline } = await import("../../../../src/core/pipeline/index.js");
+    (createStandardPipeline as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+      run: vi.fn().mockRejectedValue(new Error("pipeline error")),
+    });
+
+    await command.execute();
+
+    expect(getVerboseLogFilePath()).toBeNull();
   });
 });

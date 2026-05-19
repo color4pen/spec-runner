@@ -50,3 +50,28 @@ export function getJobsDir(): string {
 export function getJobStatePath(jobId: string): string {
   return path.join(getJobsDir(), `${jobId}.json`);
 }
+
+/**
+ * Resolve XDG_STATE_HOME or fallback to ~/.local/state
+ */
+export function resolveXdgStateDir(): string {
+  const xdgStateHome = process.env["XDG_STATE_HOME"];
+  if (xdgStateHome && xdgStateHome.length > 0) {
+    return xdgStateHome;
+  }
+  return path.join(os.homedir(), ".local", "state");
+}
+
+/**
+ * Get the path to the specrunner verbose log directory.
+ */
+export function getVerboseLogDir(): string {
+  return path.join(resolveXdgStateDir(), "specrunner", "logs");
+}
+
+/**
+ * Get the path to a specific job's verbose log file.
+ */
+export function getVerboseLogPath(jobId: string): string {
+  return path.join(getVerboseLogDir(), `${jobId}.log`);
+}

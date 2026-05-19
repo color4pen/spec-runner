@@ -6,7 +6,7 @@ import { createAnthropicClient } from "../adapter/managed-agent/client.js";
 import { createAnthropicSessionClient } from "../adapter/managed-agent/session-client.js";
 import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
 import { runPreflight } from "../core/preflight.js";
-import { setVerbose } from "../logger/stdout.js";
+import { setVerbose, resolveVerboseFlag } from "../logger/stdout.js";
 import { SpecRunnerError } from "../errors.js";
 import { createRuntime } from "../core/runtime/index.js";
 import { PipelineRunCommand } from "../core/command/pipeline-run.js";
@@ -15,7 +15,7 @@ export async function runRunCore(
   requestMdPath: string,
   options: { cwd?: string; verbose?: boolean },
 ): Promise<number> {
-  setVerbose(options.verbose ?? false);
+  setVerbose(resolveVerboseFlag(options.verbose ?? false));
   const cwd = options.cwd ?? process.cwd();
   let absolutePath = path.resolve(cwd, requestMdPath);
 

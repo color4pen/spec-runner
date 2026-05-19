@@ -29,6 +29,7 @@ import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from ".
 import type { StepContext } from "../../core/types.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
 import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
+import { logVerbose } from "../../logger/stdout.js";
 
 export type { SpawnFn } from "./git-exec.js";
 
@@ -144,6 +145,8 @@ export class ClaudeCodeRunner implements AgentRunner {
       return { lastResult, aborted };
     };
 
+    logVerbose("session", "query started", { stepName: step.name, runtime: "local", model: resolvedConfig.model });
+
     try {
       let queryResult: { lastResult: SDKResultMessage | null; aborted: boolean };
       try {
@@ -197,9 +200,11 @@ export class ClaudeCodeRunner implements AgentRunner {
         }
         extractedSessionId = successResult.session_id;
       }
+      logVerbose("session", "query completed", { stepName: step.name, runtime: "local", sessionId: extractedSessionId });
     } catch (err) {
       if (abortController.signal.aborted && timeoutId !== undefined) {
         clearTimeout(timeoutId);
+        logVerbose("session", "query timeout", { stepName: step.name, runtime: "local", timeoutMs: resolvedConfig.timeoutMs });
         return {
           completionReason: "timeout",
           resultContent: null,
@@ -210,6 +215,7 @@ export class ClaudeCodeRunner implements AgentRunner {
         };
       }
       const cause = err as Error;
+      logVerbose("session", "query error", { stepName: step.name, runtime: "local", error: cause.message });
       return {
         completionReason: "error",
         resultContent: null,

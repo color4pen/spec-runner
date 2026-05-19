@@ -1,5 +1,5 @@
 import { SpecRunnerError } from "../errors.js";
-import { setVerbose } from "../logger/stdout.js";
+import { setVerbose, resolveVerboseFlag } from "../logger/stdout.js";
 import { resolveJobStateBySlug } from "../core/resume/resolve-job.js";
 import { bootstrap } from "./bootstrap.js";
 import { ResumeCommand } from "../core/command/resume.js";
@@ -12,7 +12,7 @@ export interface ResumeOptions {
 }
 
 export async function runResumeCore(slug: string, options: ResumeOptions): Promise<number> {
-  setVerbose(options.verbose ?? false);
+  setVerbose(resolveVerboseFlag(options.verbose ?? false));
   const cwd = options.cwd ?? process.cwd();
 
   const state = await resolveJobStateBySlug(slug);

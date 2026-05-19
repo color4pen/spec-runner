@@ -20,7 +20,7 @@
  *   - soft errors (awaiting-resume, failed) → teardown("error-status") + return 1
  *   - success (awaiting-merge) → teardown("awaiting-merge") + return 0
  */
-import { logInfo, logError } from "../../logger/stdout.js";
+import { logInfo, logError, initVerboseLog, closeVerboseLog, getVerboseLogFilePath } from "../../logger/stdout.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
 import { JobStateStore } from "../../store/job-state-store.js";
@@ -80,6 +80,9 @@ export abstract class CommandRunner {
     const events = new EventBus();
     new ProgressDisplay(events, { verbose, slug });
 
+    // Initialize verbose log file (no-op if verbose is disabled)
+    initVerboseLog(jobState.jobId);
+
     // Step 2: setupWorkspace
     let workspace;
     try {
@@ -92,6 +95,7 @@ export abstract class CommandRunner {
         hint: "",
       }, "init");
       process.stderr.write(`Error: Failed to set up workspace: ${(err as Error).message}\n`);
+      closeVerboseLog();
       return 1;
     }
 
@@ -136,6 +140,7 @@ export abstract class CommandRunner {
         hint: "",
       }, "init");
       process.stderr.write(`Error: ${(err as Error).message}\n`);
+      closeVerboseLog();
       return 1;
     }
 
@@ -159,15 +164,23 @@ export abstract class CommandRunner {
       } catch { /* best-effort — don't mask original error */ }
       outputPipelineThrowError(err, jobState.branch);
       await this.runtime.teardown(handle, "error");
+      closeVerboseLog();
       return 1;
     }
 
     // Step 6: handleResult (computes exit code)
     const exitCode = await handleResult(finalState, slug);
 
+    // Display verbose log path if active
+    const logPath = getVerboseLogFilePath();
+    if (logPath) {
+      logInfo(`Verbose log: ${logPath}`);
+    }
+
     // Step 7: teardown — pass actual final status so LocalRuntime knows whether to clean up
     await this.runtime.teardown(handle, finalState.status);
 
+    closeVerboseLog();
     return exitCode;
   }
 

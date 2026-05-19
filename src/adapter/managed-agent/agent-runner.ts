@@ -36,7 +36,7 @@ import {
 import { getAgentId } from "../../config/getAgentId.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
 import { DEFAULT_POLL_TIMEOUT_MS } from "./completion.js";
-import { stderrWrite } from "../../logger/stdout.js";
+import { stderrWrite, logVerbose } from "../../logger/stdout.js";
 import {
   branchNotSetError,
   sessionTerminatedError,
@@ -145,6 +145,7 @@ export class ManagedAgentRunner implements AgentRunner {
         branch: ctx.branch || undefined,
       });
       sessionId = sessionResult.sessionId;
+      logVerbose("session", "session created", { sessionId, stepName: step.name, runtime: "managed" });
     } catch (err) {
       const errMsg = (err as Error).message;
       const errorInfo: ErrorInfo = {
@@ -255,6 +256,7 @@ export class ManagedAgentRunner implements AgentRunner {
 
     // Return success — no resultContent for propose
     // TC-009: no _updatedState field
+    logVerbose("session", "session completed", { sessionId: sessionId!, stepName: step.name, runtime: "managed" });
     return {
       completionReason: "success",
       resultContent: null,
@@ -386,6 +388,7 @@ export class ManagedAgentRunner implements AgentRunner {
             branch: state.branch,
           });
           sessionId = sessionResult.sessionId;
+          logVerbose("session", "session created", { sessionId, stepName: step.name, runtime: "managed", fallback: true });
         } catch (createErr) {
           const errMsg = (createErr as Error).message;
           const errorInfo: ErrorInfo = {
@@ -418,6 +421,7 @@ export class ManagedAgentRunner implements AgentRunner {
           branch: state.branch,
         });
         sessionId = sessionResult.sessionId;
+        logVerbose("session", "session created", { sessionId, stepName: step.name, runtime: "managed" });
       } catch (err) {
         const errMsg = (err as Error).message;
         const errorInfo: ErrorInfo = {
@@ -514,6 +518,7 @@ export class ManagedAgentRunner implements AgentRunner {
     void completedAt; // used in error path above
 
     // TC-010: return AgentRunResult only — no _updatedState
+    logVerbose("session", "session completed", { sessionId: sessionId!, stepName: step.name, runtime: "managed" });
     return {
       completionReason: "success",
       resultContent: fileContent,

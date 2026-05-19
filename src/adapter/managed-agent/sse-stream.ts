@@ -17,7 +17,7 @@ import {
 } from "./sdk/sessions.js";
 import { assertBreakAfterCompletion } from "./completion.js";
 import { buildInitialMessage } from "../../prompts/design-system.js";
-import { stderrWrite } from "../../logger/stdout.js";
+import { stderrWrite, logVerbose } from "../../logger/stdout.js";
 import type { CustomToolContext, CustomToolHandler } from "../../core/tools/types.js";
 
 export type TerminationReason =
@@ -70,8 +70,10 @@ export async function runSseStream(deps: SseStreamDeps): Promise<SseStreamResult
   let stream: Awaited<ReturnType<typeof streamEvents>>;
   try {
     stream = await streamEvents(client, sessionId);
+    logVerbose("sse", "SSE stream connected", { sessionId });
   } catch (err) {
     sseDisconnected = true;
+    logVerbose("sse", "SSE stream connect failed", { sessionId, error: (err as Error).message });
     stderrWrite("SSE disconnected; falling back to polling.");
     deps.onSseDisconnected?.();
     return { sseDisconnected, idleEndTurnDetected, terminated, terminationReason: "sse_error" };
@@ -98,6 +100,7 @@ export async function runSseStream(deps: SseStreamDeps): Promise<SseStreamResult
       }
 
       if (isCustomToolUseEvent(event)) {
+        logVerbose("sse", "custom_tool_use event", { toolName: event.name });
         const handler: CustomToolHandler | undefined = deps.toolHandlers?.get(event.name);
         let result: { ok: boolean; [key: string]: unknown };
 
@@ -124,6 +127,7 @@ export async function runSseStream(deps: SseStreamDeps): Promise<SseStreamResult
         });
       } else if (isStatusIdleEvent(event)) {
         if (isEndTurnIdle(event)) {
+          logVerbose("sse", "status_idle event", { stopReason: "end_turn" });
           assertBreakAfterCompletion(event);
           idleEndTurnDetected = true;
           terminationReason = "end_turn";
@@ -132,6 +136,7 @@ export async function runSseStream(deps: SseStreamDeps): Promise<SseStreamResult
         // idle but not end_turn: requires_action or retries_exhausted
         // Both are error conditions for spec-runner
         const stopType = event.stop_reason.type;
+        logVerbose("sse", "status_idle event", { stopReason: stopType });
         if (stopType === "requires_action") {
           stderrWrite("Session idle with requires_action (unexpected in spec-runner).");
           terminated = true;
@@ -147,10 +152,12 @@ export async function runSseStream(deps: SseStreamDeps): Promise<SseStreamResult
         // Unknown future stop_reason — log and continue
         stderrWrite(`Session idle with unknown stop_reason: ${stopType}. Continuing.`);
       } else if (isStatusTerminatedEvent(event)) {
+        logVerbose("sse", "status_terminated event");
         terminated = true;
         terminationReason = "terminated";
         break;
       } else if (isSessionErrorEvent(event)) {
+        logVerbose("sse", "session_error event", { errorType: event.error.type, retryStatus: event.error.retry_status.type });
         if (isRetryStatusRetrying(event.error)) {
           stderrWrite(`Session error (${event.error.type}), SDK retrying. Continuing.`);
           // SDK is auto-retrying; continue listening
@@ -161,11 +168,13 @@ export async function runSseStream(deps: SseStreamDeps): Promise<SseStreamResult
           break;
         }
       } else if (isSessionDeletedEvent(event)) {
+        logVerbose("sse", "session_deleted event");
         stderrWrite("Session deleted (unrecoverable).");
         terminated = true;
         terminationReason = "session_deleted";
         break;
       } else if (isStatusRescheduledEvent(event)) {
+        logVerbose("sse", "status_rescheduled event");
         stderrWrite("Session rescheduled (error recovery in progress). Continuing.");
         // SDK is recovering; continue listening
       }
@@ -173,6 +182,7 @@ export async function runSseStream(deps: SseStreamDeps): Promise<SseStreamResult
   } catch (err) {
     sseDisconnected = true;
     terminationReason = "sse_error";
+    logVerbose("sse", "SSE stream disconnected", { sessionId, error: (err as Error).message });
     stderrWrite("SSE disconnected; falling back to polling.");
     deps.onSseDisconnected?.();
   }

@@ -5,7 +5,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import type { BetaManagedAgentsSession } from "@anthropic-ai/sdk/resources/beta/sessions/sessions";
 import { retrieveSession, listEvents } from "./sdk/sessions.js";
-import { stderrWrite } from "../../logger/stdout.js";
+import { stderrWrite, logVerbose } from "../../logger/stdout.js";
 import {
   sessionTerminatedError,
   pollTimeoutError,
@@ -94,12 +94,23 @@ export async function pollUntilComplete(
 
     const session = await retrieveSession(client, sessionId);
 
+    logVerbose("poll", "poll attempt", {
+      sessionId,
+      intervalMs,
+      sessionStatus: session.status,
+    });
+
     if (isSessionTerminated(session)) {
       throw sessionTerminatedError();
     }
 
     if (session.status === "rescheduling") {
       reschedulingCount++;
+      logVerbose("poll", "session rescheduling", {
+        sessionId,
+        reschedulingCount,
+        maxReschedulingCount: MAX_RESCHEDULING_COUNT,
+      });
       stderrWrite(`Session rescheduling (${reschedulingCount}/${MAX_RESCHEDULING_COUNT}).`);
       if (reschedulingCount >= MAX_RESCHEDULING_COUNT) {
         throw sessionReschedulingExhaustedError(sessionId);
@@ -114,6 +125,10 @@ export async function pollUntilComplete(
     if (isSessionIdle(session)) {
       // Verify stop_reason via events.list() to distinguish end_turn from error states
       const stopReason = await getIdleStopReason(client, sessionId);
+      logVerbose("poll", "session idle detected", {
+        sessionId,
+        stopReason,
+      });
       if (stopReason === "end_turn") {
         return session;
       }

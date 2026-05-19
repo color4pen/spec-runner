@@ -7,7 +7,7 @@ import type { EventBus } from "../event/event-bus.js";
 import type { AgentRunner } from "../port/agent-runner.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { pushStepResult } from "../../state/helpers.js";
-import { stderrWrite } from "../../logger/stdout.js";
+import { stderrWrite, logVerbose } from "../../logger/stdout.js";
 import {
   recordFailedStepResult,
   attachStateAndRethrow,
@@ -64,13 +64,16 @@ export class StepExecutor {
     deps: PipelineDeps,
   ): Promise<JobState> {
     this.events.emit("step:start", { step: step.name, state: jobState });
+    logVerbose("step", "step started", { step: step.name, jobId: jobState.jobId });
 
     try {
       const result = await this.runStepInternal(step, jobState, deps);
+      logVerbose("step", "step completed", { step: step.name, jobId: jobState.jobId });
       this.events.emit("step:complete", { step: step.name, state: result });
       return result;
     } catch (err) {
       const errState = (err as Record<string, unknown>)["state"] as JobState | undefined;
+      logVerbose("step", "step error", { step: step.name, jobId: jobState.jobId, error: (err as Error).message });
       this.events.emit("step:error", {
         step: step.name,
         error: err as Error,
@@ -451,6 +454,7 @@ export class StepExecutor {
       stderrWrite(`Warning: Could not parse verdict from ${step.kind} step '${step.name}'. Treating as escalation.`);
     }
     verdict = verdict ?? "escalation";
+    logVerbose("step", "verdict parsed", { step: step.name, verdict });
     this.events.emit("verdict:parsed", { step: step.name, outcome: { verdict } });
     const sessionEntry = agentResult?.sessionId
       ? { id: agentResult.sessionId, agentId: "", environmentId: "" }
