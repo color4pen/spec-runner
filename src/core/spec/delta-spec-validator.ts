@@ -14,8 +14,9 @@
  * - legacy-flat-file: `<change>/delta-spec.md` or `<change>/specs/<name>.delta.md`
  * - legacy-flat-dir: `<change>/delta-spec/<capability>.md`
  * - non-canonical-path: `<change>/specs/<name>.md` placed directly in specs/ without subdir
- * - missing-requirements-section: canonical path but no ADDED/MODIFIED/REMOVED section header
+ * - missing-requirements-section: canonical path but no ## Requirements section header
  * - empty-section: section header present but no Requirement block found
+ * - legacy-section-header: `## ADDED/MODIFIED/REMOVED/RENAMED Requirements` (old format — use ## Requirements instead)
  */
 export type DeltaSpecViolationReason =
   | "legacy-flat-file"
@@ -23,7 +24,8 @@ export type DeltaSpecViolationReason =
   | "non-canonical-path"
   | "missing-requirements-section"
   | "empty-section"
-  | "no-specs-for-required-type";
+  | "no-specs-for-required-type"
+  | "legacy-section-header";
 
 export interface DeltaSpecViolation {
   path: string;

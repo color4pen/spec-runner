@@ -73,21 +73,24 @@ When the request type is \`bug-fix\`, \`refactoring\`, or any other type, this c
 
 ## Baseline Spec Consistency Check
 
-When the delta spec contains \`## MODIFIED\` / \`## REMOVED\` / \`## RENAMED\` / \`## ADDED\`
-Requirements sections, follow these steps:
+When the delta spec contains \`## Requirements\` sections, follow these steps:
 
 1. Identify the capability name from the delta spec path
    (\`specrunner/changes/<slug>/specs/<capability>/spec.md\`)
 2. Read \`specrunner/specs/<capability>/spec.md\` using the Read tool
 3. Extract existing \`### Requirement:\` headers from the baseline
-4. For MODIFIED / REMOVED / RENAMED-FROM headers: verify each exists in the baseline.
-   If not, report a HIGH severity finding (category: consistency).
-5. For ADDED headers: verify each does NOT already exist in the baseline.
-   If a duplicate is found, report a HIGH severity finding (category: consistency).
-6. If the baseline file does not exist and the delta has MODIFIED / REMOVED / RENAMED sections,
+4. For each Requirement header in \`## Requirements\`: verify that the header is semantically
+   appropriate (i.e., baseline-matching headers exist in the baseline, new headers do not
+   duplicate existing ones). Note: ADDED / MODIFIED classification is handled by the tool
+   at \`specrunner finish\` time — spec-review focuses on semantic quality and header consistency.
+5. If the baseline file does not exist and the delta has \`## Removed\` / \`## Renamed\` sections,
    report a HIGH severity finding (category: consistency).
-7. If the baseline file does not exist and the delta only has ADDED sections,
-   this is expected (new capability) — no finding needed.
+6. If the baseline file does not exist and the delta only has \`## Requirements\` (no \`## Removed\`
+   or \`## Renamed\`), this is expected (new capability) — no finding needed.
+
+Note: ADDED / MODIFIED classification is performed by \`classifyDeltaSpec()\` at \`specrunner finish\`
+time using baseline comparison. Spec-review should focus on Requirement semantic quality,
+scenario coverage, and normative keyword presence rather than replicating the tool\'s classification.
 
 ## Important Constraints
 

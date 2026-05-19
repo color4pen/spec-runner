@@ -66,7 +66,7 @@ export const DeltaSpecValidationStep: CliStep = {
       const table = formatViolationsTable(result.violations);
       await nodeFs.writeFile(
         resultAbsPath,
-        `# Delta Spec Validation Result\n\n## Verdict: needs-fix\n\n## Violations\n\n${table}\n\n## How to Fix\n\n- Move all delta spec files to \`specs/<capability-name>/spec.md\` (canonical path)\n- Ensure each spec.md has at least one \`## ADDED Requirements\`, \`## MODIFIED Requirements\`, or \`## REMOVED Requirements\` section\n- Ensure each section contains at least one \`### Requirement:\` block\n`,
+        `# Delta Spec Validation Result\n\n## Verdict: needs-fix\n\n## Violations\n\n${table}\n\n## How to Fix\n\n- Move all delta spec files to \`specs/<capability-name>/spec.md\` (canonical path)\n- Ensure each spec.md has a \`## Requirements\` section (and optionally \`## Removed\` / \`## Renamed\`)\n- Ensure the \`## Requirements\` section contains at least one \`### Requirement:\` block\n`,
         "utf-8",
       );
     }

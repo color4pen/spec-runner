@@ -48,10 +48,10 @@ describe("TC-DSV-10: canonical-spec-structure — missing section violation", ()
   });
 });
 
-// TC-DSV-11: empty section (no Requirement block)
+// TC-DSV-11: empty section (no Requirement block under ## Requirements)
 describe("TC-DSV-11: canonical-spec-structure — empty section violation", () => {
-  it("returns empty-section when section header exists but no Requirement: block", async () => {
-    const emptySection = `# Spec\n\n## ADDED Requirements\n\nNo requirements here.\n`;
+  it("returns empty-section when ## Requirements exists but no ### Requirement: block", async () => {
+    const emptySection = `# Spec\n\n## Requirements\n\nNo requirements here.\n`;
     const input = {
       changePath: CHANGE_PATH,
       deps: makeFsMock({
@@ -59,8 +59,7 @@ describe("TC-DSV-11: canonical-spec-structure — empty section violation", () =
       }),
     };
     const result = await canonicalSpecStructure.check(input);
-    expect(result).toHaveLength(1);
-    expect(result[0]!.reason).toBe("empty-section");
+    expect(result.some((v) => v.reason === "empty-section")).toBe(true);
   });
 });
 
@@ -84,5 +83,35 @@ describe("TC-DSV-12: canonical-spec-structure — pass", () => {
     };
     const result = await canonicalSpecStructure.check(input);
     expect(result).toEqual([]);
+  });
+});
+
+// TC-DSV-13: legacy ADDED Requirements header → legacy-section-header violation
+describe("TC-DSV-13: canonical-spec-structure — legacy ADDED Requirements header", () => {
+  it("returns legacy-section-header when ## ADDED Requirements is present", async () => {
+    const content = `# Spec\n\n## ADDED Requirements\n\n### Requirement: Foo\n\nThe system SHALL do something.\n`;
+    const input = {
+      changePath: CHANGE_PATH,
+      deps: makeFsMock({
+        [`${CHANGE_PATH}/specs/cap/spec.md`]: content,
+      }),
+    };
+    const result = await canonicalSpecStructure.check(input);
+    expect(result.some((v) => v.reason === "legacy-section-header")).toBe(true);
+  });
+});
+
+// TC-DSV-14: legacy MODIFIED Requirements header → legacy-section-header violation
+describe("TC-DSV-14: canonical-spec-structure — legacy MODIFIED Requirements header", () => {
+  it("returns legacy-section-header when ## MODIFIED Requirements is present", async () => {
+    const content = `# Spec\n\n## MODIFIED Requirements\n\n### Requirement: Bar\n\nThe system SHALL support X.\n`;
+    const input = {
+      changePath: CHANGE_PATH,
+      deps: makeFsMock({
+        [`${CHANGE_PATH}/specs/cap/spec.md`]: content,
+      }),
+    };
+    const result = await canonicalSpecStructure.check(input);
+    expect(result.some((v) => v.reason === "legacy-section-header")).toBe(true);
   });
 });

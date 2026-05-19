@@ -159,7 +159,7 @@ describe("TC-DSV-03: result file format is parseable as delta-spec-fixer input",
         {
           path: "/work/specrunner/changes/test-slug/specs/cap/spec.md",
           reason: "missing-requirements-section",
-          suggested: "Add ## ADDED Requirements section",
+          suggested: "Add ## Requirements section",
         },
       ],
     });

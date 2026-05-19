@@ -81,20 +81,29 @@ export const canonicalSpecStructure: DeltaSpecRule<DeltaSpecRuleName> = {
         violations.push({
           path: specPath,
           reason: "missing-requirements-section",
-          suggested:
-            "Add ## ADDED Requirements / ## MODIFIED Requirements / ## REMOVED Requirements section",
+          suggested: "Add ## Requirements section",
         });
         continue;
       }
 
-      // Check for at least one valid section header
-      const hasValidSection = /^## (ADDED|MODIFIED|REMOVED|RENAMED) Requirements$/m.test(content);
-      if (!hasValidSection) {
+      // Check for legacy section headers (old format — HIGH violation)
+      const legacyMatches = content.match(/^## (?:ADDED|MODIFIED|REMOVED|RENAMED) Requirements\s*$/gm) ?? [];
+      for (const _match of legacyMatches) {
+        violations.push({
+          path: specPath,
+          reason: "legacy-section-header",
+          suggested:
+            "Replace ## ADDED/MODIFIED/REMOVED/RENAMED Requirements with ## Requirements (tool auto-classifies ADDED/MODIFIED)",
+        });
+      }
+
+      // Check for ## Requirements section (required in new format)
+      const hasRequirementsSection = /^## Requirements\s*$/m.test(content);
+      if (!hasRequirementsSection) {
         violations.push({
           path: specPath,
           reason: "missing-requirements-section",
-          suggested:
-            "Add ## ADDED Requirements, ## MODIFIED Requirements, or ## REMOVED Requirements section header",
+          suggested: "Add ## Requirements section",
         });
         continue;
       }
@@ -105,7 +114,7 @@ export const canonicalSpecStructure: DeltaSpecRule<DeltaSpecRuleName> = {
         violations.push({
           path: specPath,
           reason: "empty-section",
-          suggested: "Add at least one ### Requirement: block under the section header",
+          suggested: "Add at least one ### Requirement: block under the ## Requirements section",
         });
       }
     }

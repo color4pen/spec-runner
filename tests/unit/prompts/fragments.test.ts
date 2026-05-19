@@ -20,6 +20,7 @@ import {
   DELTA_SPEC_FORMAT,
   PIPELINE_RULES,
 } from "../../../src/prompts/fragments.js";
+import { DESIGN_SYSTEM_PROMPT } from "../../../src/prompts/design-system.js";
 
 // ---------------------------------------------------------------------------
 // All 4 fragments are exported as non-empty strings
@@ -197,5 +198,60 @@ describe("TC-08: PIPELINE_RULES does NOT contain excluded sections", () => {
   it("does not contain 参照リンク (skills/ paths)", () => {
     expect(PIPELINE_RULES).not.toContain("skills/code-review");
     expect(PIPELINE_RULES).not.toContain("skills/spec-review");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-12: DELTA_SPEC_FORMAT assertions
+// ---------------------------------------------------------------------------
+describe("T-12: DELTA_SPEC_FORMAT uses new format section headers", () => {
+  it("DELTA_SPEC_FORMAT contains ## Requirements", () => {
+    expect(DELTA_SPEC_FORMAT).toContain("## Requirements");
+  });
+
+  it("DELTA_SPEC_FORMAT does NOT contain ## ADDED Requirements", () => {
+    expect(DELTA_SPEC_FORMAT).not.toContain("## ADDED Requirements");
+  });
+
+  it("DELTA_SPEC_FORMAT does NOT contain ## MODIFIED Requirements", () => {
+    expect(DELTA_SPEC_FORMAT).not.toContain("## MODIFIED Requirements");
+  });
+
+  it("DELTA_SPEC_FORMAT does NOT contain ## REMOVED Requirements", () => {
+    expect(DELTA_SPEC_FORMAT).not.toContain("## REMOVED Requirements");
+  });
+
+  it("DELTA_SPEC_FORMAT does NOT contain ## RENAMED Requirements", () => {
+    expect(DELTA_SPEC_FORMAT).not.toContain("## RENAMED Requirements");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-12: AUTHORITY_SPEC_GUARD assertions — no old classification criteria
+// ---------------------------------------------------------------------------
+describe("T-12: AUTHORITY_SPEC_GUARD does not contain old ADDED/MODIFIED classification criteria", () => {
+  it("AUTHORITY_SPEC_GUARD does not instruct agent to write ADDED: based on baseline absence", () => {
+    expect(AUTHORITY_SPEC_GUARD).not.toMatch(/\*\*ADDED\*\*: baseline に存在しない/);
+  });
+
+  it("AUTHORITY_SPEC_GUARD does not instruct agent to write MODIFIED: based on baseline presence", () => {
+    expect(AUTHORITY_SPEC_GUARD).not.toMatch(/\*\*MODIFIED\*\*: baseline に存在する/);
+  });
+
+  it("AUTHORITY_SPEC_GUARD mentions tool auto-classification", () => {
+    expect(AUTHORITY_SPEC_GUARD).toMatch(/tool|自動/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-12: DESIGN_SYSTEM_PROMPT does not reference old section headers
+// ---------------------------------------------------------------------------
+describe("T-12: DESIGN_SYSTEM_PROMPT does not reference old section headers", () => {
+  it("DESIGN_SYSTEM_PROMPT does not contain ## ADDED Requirements", () => {
+    expect(DESIGN_SYSTEM_PROMPT).not.toContain("## ADDED Requirements");
+  });
+
+  it("DESIGN_SYSTEM_PROMPT does not contain ## MODIFIED Requirements", () => {
+    expect(DESIGN_SYSTEM_PROMPT).not.toContain("## MODIFIED Requirements");
   });
 });

@@ -22,13 +22,13 @@ export const TYPE_CONFIG: Record<string, TypeConfigEntry> = {
   "new-feature": {
     branchPrefix: "feat/",
     specReviewMode: "full",
-    specImpact: "ADDED Requirements で新規 capability を追加",
+    specImpact: "`## Requirements` で新規 capability を追加（tool が全 Requirement を ADDED に自動分類）",
     description: "新機能の追加",
   },
   "spec-change": {
     branchPrefix: "change/",
     specReviewMode: "full",
-    specImpact: "MODIFIED/RENAMED/REMOVED Requirements で既存 spec を変更",
+    specImpact: "`## Requirements` + `## Removed` / `## Renamed` で既存 spec を変更（tool が baseline 突合で ADDED/MODIFIED を自動分類）",
     description: "既存仕様の変更",
   },
   "refactoring": {
@@ -40,7 +40,7 @@ export const TYPE_CONFIG: Record<string, TypeConfigEntry> = {
   "bug-fix": {
     branchPrefix: "fix/",
     specReviewMode: "full",
-    specImpact: "原因が spec 不備なら MODIFIED Requirements、実装だけの問題なら不要",
+    specImpact: "原因が spec 不備なら `## Requirements` に修正内容を記載、実装だけの問題なら不要",
     description: "バグ修正",
   },
   "chore": {

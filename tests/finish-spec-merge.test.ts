@@ -9,6 +9,7 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   parseDeltaSpec,
+  classifyDeltaSpec,
   parseBaselineSpec,
   validateDeltaSpec,
   applyMerge,
@@ -19,7 +20,7 @@ import {
 import { specsDirRel, baselineSpecPath } from "../src/util/paths.js";
 import type { SpawnFn } from "../src/util/spawn.js";
 import type { FinishFs } from "../src/core/finish/types.js";
-import type { RequirementBlock, BaselineSpec } from "../src/core/finish/spec-merge.js";
+import type { RequirementBlock, BaselineSpec, ParsedDelta, RenameEntry } from "../src/core/finish/spec-merge.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -81,19 +82,19 @@ describe("TC-SM-003: baselineSpecPath", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-SM-010: parseDeltaSpec — ADDED only
+// TC-SM-010: parseDeltaSpec — ## Requirements section
 // ---------------------------------------------------------------------------
 
-describe("TC-SM-010: parseDeltaSpec — ADDED only", () => {
-  it("parses ADDED section into added array; modified and removed are empty", () => {
-    const content = "## ADDED Requirements\n\n### Requirement: Foo\n\ncontent\n";
+describe("TC-SM-010: parseDeltaSpec — ## Requirements only", () => {
+  it("parses Requirements section into requirements array; removed and renamed are empty", () => {
+    const content = "## Requirements\n\n### Requirement: Foo\n\ncontent\n";
     const result = parseDeltaSpec(content);
 
-    expect(result.added).toHaveLength(1);
-    expect(result.added[0]!.name).toBe("Foo");
-    expect(result.added[0]!.content).toContain("### Requirement: Foo");
-    expect(result.modified).toHaveLength(0);
+    expect(result.requirements).toHaveLength(1);
+    expect(result.requirements[0]!.name).toBe("Foo");
+    expect(result.requirements[0]!.content).toContain("### Requirement: Foo");
     expect(result.removed).toHaveLength(0);
+    expect(result.renamed).toHaveLength(0);
   });
 });
 
@@ -101,39 +102,36 @@ describe("TC-SM-010: parseDeltaSpec — ADDED only", () => {
 // TC-SM-011: parseDeltaSpec — all 3 sections
 // ---------------------------------------------------------------------------
 
-describe("TC-SM-011: parseDeltaSpec — 3 sections", () => {
-  it("parses all 3 sections correctly", () => {
+describe("TC-SM-011: parseDeltaSpec — Requirements + Removed + Renamed", () => {
+  it("parses all 3 new-format sections correctly", () => {
     const content = [
-      "## ADDED Requirements",
+      "## Requirements",
       "",
       "### Requirement: New",
       "",
       "added body",
       "",
-      "## MODIFIED Requirements",
+      "## Removed",
       "",
-      "### Requirement: Changed",
+      '- "Gone"',
       "",
-      "modified body",
+      "## Renamed",
       "",
-      "## REMOVED Requirements",
-      "",
-      "### Requirement: Gone",
-      "",
-      "removed body",
+      '- "Old" → "New2"',
       "",
     ].join("\n");
 
     const result = parseDeltaSpec(content);
 
-    expect(result.added).toHaveLength(1);
-    expect(result.added[0]!.name).toBe("New");
-
-    expect(result.modified).toHaveLength(1);
-    expect(result.modified[0]!.name).toBe("Changed");
+    expect(result.requirements).toHaveLength(1);
+    expect(result.requirements[0]!.name).toBe("New");
 
     expect(result.removed).toHaveLength(1);
-    expect(result.removed[0]!.name).toBe("Gone");
+    expect(result.removed[0]).toBe("Gone");
+
+    expect(result.renamed).toHaveLength(1);
+    expect(result.renamed[0]!.from).toBe("Old");
+    expect(result.renamed[0]!.to).toBe("New2");
   });
 });
 
@@ -144,18 +142,18 @@ describe("TC-SM-011: parseDeltaSpec — 3 sections", () => {
 describe("TC-SM-012: parseDeltaSpec — empty string", () => {
   it("returns empty arrays for all sections", () => {
     const result = parseDeltaSpec("");
-    expect(result).toEqual({ added: [], modified: [], removed: [] });
+    expect(result).toEqual({ requirements: [], removed: [], renamed: [] });
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-SM-013: parseDeltaSpec — multiple blocks in one section
+// TC-SM-013: parseDeltaSpec — multiple blocks in ## Requirements
 // ---------------------------------------------------------------------------
 
-describe("TC-SM-013: parseDeltaSpec — multiple blocks in ADDED", () => {
-  it("parses 2 blocks in ADDED section", () => {
+describe("TC-SM-013: parseDeltaSpec — multiple blocks in Requirements", () => {
+  it("parses 2 blocks in ## Requirements section", () => {
     const content = [
-      "## ADDED Requirements",
+      "## Requirements",
       "",
       "### Requirement: A",
       "",
@@ -169,21 +167,137 @@ describe("TC-SM-013: parseDeltaSpec — multiple blocks in ADDED", () => {
 
     const result = parseDeltaSpec(content);
 
-    expect(result.added).toHaveLength(2);
-    expect(result.added[0]!.name).toBe("A");
-    expect(result.added[1]!.name).toBe("B");
+    expect(result.requirements).toHaveLength(2);
+    expect(result.requirements[0]!.name).toBe("A");
+    expect(result.requirements[1]!.name).toBe("B");
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-SM-014: parseDeltaSpec — case sensitive section names
+// TC-SM-014: parseDeltaSpec — old format returns empty result
 // ---------------------------------------------------------------------------
 
-describe("TC-SM-014: parseDeltaSpec — case sensitive", () => {
-  it("does not match '## added requirements' (lowercase)", () => {
-    const content = "## added requirements\n\n### Requirement: Foo\n\nbody\n";
+describe("TC-SM-014: parseDeltaSpec — old format ## ADDED Requirements returns empty", () => {
+  it("does not parse ## ADDED Requirements (old format)", () => {
+    const content = "## ADDED Requirements\n\n### Requirement: Foo\n\nbody\n";
     const result = parseDeltaSpec(content);
-    expect(result.added).toHaveLength(0);
+    expect(result.requirements).toHaveLength(0);
+    expect(result.removed).toHaveLength(0);
+    expect(result.renamed).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-015: classifyDeltaSpec — ADDED (not in baseline)
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-015: classifyDeltaSpec — requirement not in baseline → ADDED", () => {
+  it("classifies requirement not found in baseline as ADDED", () => {
+    const parsed: ParsedDelta = {
+      requirements: [makeBlock("New")],
+      removed: [],
+      renamed: [],
+    };
+    const baseline = [makeBlock("Existing")];
+    const delta = classifyDeltaSpec(parsed, baseline);
+    expect(delta.added).toHaveLength(1);
+    expect(delta.added[0]!.name).toBe("New");
+    expect(delta.modified).toHaveLength(0);
+    expect(delta.removed).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-016: classifyDeltaSpec — MODIFIED (found in baseline)
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-016: classifyDeltaSpec — requirement found in baseline → MODIFIED", () => {
+  it("classifies requirement found in baseline as MODIFIED", () => {
+    const parsed: ParsedDelta = {
+      requirements: [makeBlock("Existing")],
+      removed: [],
+      renamed: [],
+    };
+    const baseline = [makeBlock("Existing"), makeBlock("Other")];
+    const delta = classifyDeltaSpec(parsed, baseline);
+    expect(delta.modified).toHaveLength(1);
+    expect(delta.modified[0]!.name).toBe("Existing");
+    expect(delta.added).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-017: classifyDeltaSpec — baseline null → all ADDED
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-017: classifyDeltaSpec — baseline null (new capability) → all ADDED", () => {
+  it("classifies all requirements as ADDED when baseline is null", () => {
+    const parsed: ParsedDelta = {
+      requirements: [makeBlock("A"), makeBlock("B"), makeBlock("C")],
+      removed: [],
+      renamed: [],
+    };
+    const delta = classifyDeltaSpec(parsed, null);
+    expect(delta.added).toHaveLength(3);
+    expect(delta.modified).toHaveLength(0);
+    expect(delta.removed).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-018: classifyDeltaSpec — Removed → RequirementBlocks
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-018: classifyDeltaSpec — removed names → RequirementBlocks", () => {
+  it("converts removed name strings to RequirementBlocks", () => {
+    const parsed: ParsedDelta = {
+      requirements: [],
+      removed: ["ToDelete"],
+      renamed: [],
+    };
+    const baseline = [makeBlock("ToDelete"), makeBlock("Keep")];
+    const delta = classifyDeltaSpec(parsed, baseline);
+    expect(delta.removed).toHaveLength(1);
+    expect(delta.removed[0]!.name).toBe("ToDelete");
+    expect(delta.added).toHaveLength(0);
+    expect(delta.modified).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-019: classifyDeltaSpec — Renamed → MODIFIED after rename
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-019: classifyDeltaSpec — renamed entry applied before classification", () => {
+  it("requirement with new name classified as MODIFIED after rename applied", () => {
+    const parsed: ParsedDelta = {
+      requirements: [makeBlock("NewName")],
+      removed: [],
+      renamed: [{ from: "OldName", to: "NewName" }],
+    };
+    const baseline = [makeBlock("OldName")];
+    const delta = classifyDeltaSpec(parsed, baseline);
+    expect(delta.modified).toHaveLength(1);
+    expect(delta.modified[0]!.name).toBe("NewName");
+    expect(delta.added).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-019b: classifyDeltaSpec — normalized header matching (markdown decoration)
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-019b: classifyDeltaSpec — normalized header matching", () => {
+  it("matches requirement with markdown bold **Existing** against plain Existing in baseline", () => {
+    const parsed: ParsedDelta = {
+      requirements: [{ name: "**Existing**", content: "### Requirement: **Existing**\n\nbody\n" }],
+      removed: [],
+      renamed: [],
+    };
+    const baseline = [makeBlock("Existing")];
+    const delta = classifyDeltaSpec(parsed, baseline);
+    expect(delta.modified).toHaveLength(1);
+    expect(delta.added).toHaveLength(0);
   });
 });
 
@@ -668,7 +782,7 @@ describe("TC-SM-070: mergeSpecsForChange — skip when specs/ not found", () => 
 
 describe("TC-SM-071: mergeSpecsForChange — ADDED success", () => {
   it("writes merged baseline and calls git add", async () => {
-    const deltaContent = "## ADDED Requirements\n\n### Requirement: NewFeature\n\nnew content\n";
+    const deltaContent = "## Requirements\n\n### Requirement: NewFeature\n\nnew content\n";
     const baselineContent =
       "## Purpose\n\nTBD\n\n## Requirements\n\n### Requirement: Existing\n\nexisting body\n";
 
@@ -719,7 +833,7 @@ describe("TC-SM-071: mergeSpecsForChange — ADDED success", () => {
 describe("TC-SM-072: mergeSpecsForChange — MODIFIED success", () => {
   it("replaces Target requirement in baseline", async () => {
     const deltaContent =
-      "## MODIFIED Requirements\n\n### Requirement: Target\n\nupdated content\n";
+      "## Requirements\n\n### Requirement: Target\n\nupdated content\n";
     const baselineContent =
       "## Purpose\n\nTBD\n\n## Requirements\n\n### Requirement: Target\n\noriginal content\n";
 
@@ -754,7 +868,7 @@ describe("TC-SM-072: mergeSpecsForChange — MODIFIED success", () => {
 
 describe("TC-SM-073: mergeSpecsForChange — REMOVED success", () => {
   it("removes Gone requirement from baseline", async () => {
-    const deltaContent = "## REMOVED Requirements\n\n### Requirement: Gone\n\nbody\n";
+    const deltaContent = "## Removed\n\n- \"Gone\"\n";
     const baselineContent =
       "## Purpose\n\nTBD\n\n## Requirements\n\n### Requirement: Gone\n\nbody\n\n### Requirement: Keep\n\nbody2\n";
 
@@ -790,23 +904,19 @@ describe("TC-SM-073: mergeSpecsForChange — REMOVED success", () => {
 describe("TC-SM-074: mergeSpecsForChange — ADDED + MODIFIED + REMOVED composite", () => {
   it("applies all 3 operations and writes once", async () => {
     const deltaContent = [
-      "## ADDED Requirements",
+      "## Requirements",
       "",
       "### Requirement: New",
       "",
       "new body",
       "",
-      "## MODIFIED Requirements",
-      "",
       "### Requirement: Modify",
       "",
       "updated body",
       "",
-      "## REMOVED Requirements",
+      "## Removed",
       "",
-      "### Requirement: Delete",
-      "",
-      "old",
+      '- "Delete"',
       "",
     ].join("\n");
 
@@ -867,7 +977,7 @@ describe("TC-SM-074: mergeSpecsForChange — ADDED + MODIFIED + REMOVED composit
 describe("TC-SM-075: mergeSpecsForChange — new capability ADDED only", () => {
   it("creates directory and writes new baseline", async () => {
     const deltaContent =
-      "## ADDED Requirements\n\n### Requirement: Init\n\nfirst requirement\n";
+      "## Requirements\n\n### Requirement: Init\n\nfirst requirement\n";
 
     const spawn = makeSpawn(0);
     const fs = makeFs({
@@ -901,13 +1011,12 @@ describe("TC-SM-075: mergeSpecsForChange — new capability ADDED only", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-SM-076: mergeSpecsForChange — new capability with MODIFIED → escalation
+// TC-SM-076: mergeSpecsForChange — new capability Removed → escalation
 // ---------------------------------------------------------------------------
 
-describe("TC-SM-076: mergeSpecsForChange — new capability MODIFIED → escalation", () => {
-  it("returns ok:false without writing", async () => {
-    const deltaContent =
-      "## MODIFIED Requirements\n\n### Requirement: NotThere\n\nbody\n";
+describe("TC-SM-076: mergeSpecsForChange — new capability Removed → escalation", () => {
+  it("returns ok:false without writing when new capability has ## Removed", async () => {
+    const deltaContent = "## Removed\n\n- \"NotThere\"\n";
 
     const spawn = makeSpawn(0);
     const fs = makeFs({
@@ -927,18 +1036,18 @@ describe("TC-SM-076: mergeSpecsForChange — new capability MODIFIED → escalat
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.escalation).toContain("MODIFIED");
+    expect(result.escalation).toContain("Removed");
     expect((fs.writeFile as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0);
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-SM-077: mergeSpecsForChange — new capability with REMOVED → escalation
+// TC-SM-077: mergeSpecsForChange — new capability Renamed → escalation
 // ---------------------------------------------------------------------------
 
-describe("TC-SM-077: mergeSpecsForChange — new capability REMOVED → escalation", () => {
-  it("returns ok:false without writing", async () => {
-    const deltaContent = "## REMOVED Requirements\n\n### Requirement: Gone\n\nbody\n";
+describe("TC-SM-077: mergeSpecsForChange — new capability Renamed → escalation", () => {
+  it("returns ok:false without writing when new capability has ## Renamed", async () => {
+    const deltaContent = "## Requirements\n\n### Requirement: Foo\n\nbody\n\n## Renamed\n\n- \"Bar\" → \"Baz\"\n";
 
     const spawn = makeSpawn(0);
     const fs = makeFs({
@@ -958,7 +1067,7 @@ describe("TC-SM-077: mergeSpecsForChange — new capability REMOVED → escalati
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.escalation).toContain("REMOVED");
+    expect(result.escalation).toContain("Renamed");
     expect((fs.writeFile as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0);
   });
 });
@@ -970,7 +1079,7 @@ describe("TC-SM-077: mergeSpecsForChange — new capability REMOVED → escalati
 describe("TC-SM-078: mergeSpecsForChange — validation error → no writes", () => {
   it("returns ok:false and does not call writeFile or spawn", async () => {
     const deltaContent =
-      "## ADDED Requirements\n\n### Requirement: Dup\n\nbody\n\n### Requirement: Dup\n\nbody2\n";
+      "## Requirements\n\n### Requirement: Dup\n\nbody\n\n### Requirement: Dup\n\nbody2\n";
 
     const spawn = makeSpawn(0);
     const fs = makeFs({
@@ -1005,7 +1114,7 @@ describe("TC-SM-078: mergeSpecsForChange — validation error → no writes", ()
 describe("TC-SM-079: mergeSpecsForChange — git add failure → escalation", () => {
   it("returns ok:false when spawn exits non-zero", async () => {
     const deltaContent =
-      "## ADDED Requirements\n\n### Requirement: New\n\nbody\n";
+      "## Requirements\n\n### Requirement: New\n\nbody\n";
     const baselineContent =
       "## Purpose\n\nTBD\n\n## Requirements\n\n### Requirement: Existing\n\nbody\n";
 
@@ -1040,9 +1149,9 @@ describe("TC-SM-079: mergeSpecsForChange — git add failure → escalation", ()
 describe("TC-SM-080: mergeSpecsForChange — 2-pass: partial error means zero writes", () => {
   it("does not write cap-a when cap-b fails", async () => {
     const validDelta =
-      "## ADDED Requirements\n\n### Requirement: X\n\nbody\n";
+      "## Requirements\n\n### Requirement: X\n\nbody\n";
     const invalidDelta =
-      "## MODIFIED Requirements\n\n### Requirement: MissingInBaseline\n\nbody\n";
+      "## Removed\n\n- \"MissingInBaseline\"\n";
     const baselineContent =
       "## Purpose\n\nTBD\n\n## Requirements\n\n### Requirement: Existing\n\nbody\n";
 
@@ -1078,8 +1187,8 @@ describe("TC-SM-080: mergeSpecsForChange — 2-pass: partial error means zero wr
 
 describe("TC-SM-081: mergeSpecsForChange — 2 valid capabilities → 2 writes, 1 git add", () => {
   it("calls writeFile twice and spawn once", async () => {
-    const deltaA = "## ADDED Requirements\n\n### Requirement: A\n\nbody\n";
-    const deltaB = "## ADDED Requirements\n\n### Requirement: B\n\nbody\n";
+    const deltaA = "## Requirements\n\n### Requirement: A\n\nbody\n";
+    const deltaB = "## Requirements\n\n### Requirement: B\n\nbody\n";
     const baseline =
       "## Purpose\n\nTBD\n\n## Requirements\n\n### Requirement: Existing\n\nbody\n";
 
@@ -1119,7 +1228,7 @@ describe("TC-SM-081: mergeSpecsForChange — 2 valid capabilities → 2 writes, 
 describe("TC-SM-082: escalation format follows formatEscalation", () => {
   it("escalation contains required fields", async () => {
     const deltaContent =
-      "## ADDED Requirements\n\n### Requirement: Dup\n\nbody\n\n### Requirement: Dup\n\nbody2\n";
+      "## Requirements\n\n### Requirement: Dup\n\nbody\n\n### Requirement: Dup\n\nbody2\n";
 
     const spawn = makeSpawn(0);
     const fs = makeFs({
@@ -1418,8 +1527,7 @@ describe("TC-SM-100: mergeSpecsForChange — empty delta (0 entries) → fail", 
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.exitCode).toBe(1);
-    // Should mention the capability and empty/no requirements
-    expect(result.escalation.toLowerCase()).toMatch(/my-cap|empty|no .*(added|modified|removed)/);
+    expect(result.escalation.toLowerCase()).toMatch(/my-cap|empty/);
   });
 });
 
@@ -1429,7 +1537,7 @@ describe("TC-SM-100: mergeSpecsForChange — empty delta (0 entries) → fail", 
 
 describe("TC-SM-101: mergeSpecsForChange — cross-capability: 1 empty delta blocks all writes", () => {
   it("returns ok:false and calls writeFile 0 times when cap-b has empty delta", async () => {
-    const validDelta = "## ADDED Requirements\n\n### Requirement: Good\n\nbody\n";
+    const validDelta = "## Requirements\n\n### Requirement: Good\n\nbody\n";
     const emptyDelta = "# No Requirements Here\n";
     const baselineContent =
       "## Purpose\n\nTBD\n\n## Requirements\n\n### Requirement: Existing\n\nbody\n";
@@ -1468,7 +1576,7 @@ describe("TC-SM-101: mergeSpecsForChange — cross-capability: 1 empty delta blo
 describe("TC-SM-102: mergeSpecsForChange — bug-fix + valid delta → normal apply", () => {
   it("returns ok:true skipped:false and writes when bug-fix has a valid delta", async () => {
     const deltaContent =
-      "## MODIFIED Requirements\n\n### Requirement: Target\n\nupdated content\n";
+      "## Requirements\n\n### Requirement: Target\n\nupdated content\n";
     const baselineContent =
       "## Purpose\n\nTBD\n\n## Requirements\n\n### Requirement: Target\n\noriginal content\n";
 
@@ -1495,5 +1603,169 @@ describe("TC-SM-102: mergeSpecsForChange — bug-fix + valid delta → normal ap
     expect(result.skipped).toBe(false);
     // writeFile called
     expect((fs.writeFile as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-103: mergeSpecsForChange — new capability ## Requirements → all ADDED
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-103: mergeSpecsForChange — new capability ## Requirements → all ADDED", () => {
+  it("creates new baseline with all requirements as ADDED when no baseline exists", async () => {
+    const deltaContent =
+      "## Requirements\n\n### Requirement: Alpha\n\nfirst req\n\n### Requirement: Beta\n\nsecond req\n";
+
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("specs")) return Promise.resolve(true);
+        // baseline does NOT exist
+        return Promise.resolve(false);
+      }),
+      readdir: vi.fn().mockResolvedValue(["new-cap"]),
+      stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
+      readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("new-feature"));
+        return Promise.resolve(deltaContent);
+      }),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(true);
+    const writeCalls = (fs.writeFile as ReturnType<typeof vi.fn>).mock.calls;
+    expect(writeCalls.some((c: unknown[]) => String(c[0]).includes("new-cap/spec.md"))).toBe(true);
+    const written = writeCalls[0]![1] as string;
+    expect(written).toContain("Alpha");
+    expect(written).toContain("Beta");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-104: mergeSpecsForChange — ADDED/MODIFIED auto-classify
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-104: mergeSpecsForChange — existing capability auto-classify ADDED/MODIFIED", () => {
+  it("auto-classifies: existing header → MODIFIED, new header → ADDED", async () => {
+    const deltaContent = [
+      "## Requirements",
+      "",
+      "### Requirement: Target",
+      "",
+      "updated content",
+      "",
+      "### Requirement: BrandNew",
+      "",
+      "brand new content",
+      "",
+    ].join("\n");
+    const baselineContent =
+      "## Purpose\n\nTBD\n\n## Requirements\n\n### Requirement: Target\n\noriginal content\n";
+
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("specs")) return Promise.resolve(true);
+        if (p.includes("specrunner/specs")) return Promise.resolve(true);
+        return Promise.resolve(false);
+      }),
+      readdir: vi.fn().mockResolvedValue(["cap"]),
+      stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
+      readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("spec-change"));
+        if (p.includes("changes")) return Promise.resolve(deltaContent);
+        return Promise.resolve(baselineContent);
+      }),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const writeCalls = (fs.writeFile as ReturnType<typeof vi.fn>).mock.calls;
+    const written = writeCalls[0]![1] as string;
+    expect(written).toContain("updated content");
+    expect(written).toContain("BrandNew");
+    expect(written).not.toContain("original content");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-105: mergeSpecsForChange — empty delta (new format) → fail
+// ---------------------------------------------------------------------------
+
+// TC-SM-106: classifyDeltaSpec + applyMerge integration — markdown decoration in delta header
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-106: classifyDeltaSpec + applyMerge integration — bold decoration in delta header", () => {
+  it("applies MODIFIED with **Bold** delta header to plain-named baseline requirement", () => {
+    const parsed = parseDeltaSpec(
+      [
+        "# Delta Spec: Test",
+        "",
+        "## Requirements",
+        "",
+        "### Requirement: **Existing**",
+        "",
+        "updated body",
+        "",
+      ].join("\n"),
+    );
+
+    const baseline = parseBaselineSpec(
+      [
+        "## Purpose",
+        "",
+        "TBD",
+        "",
+        "## Requirements",
+        "",
+        "### Requirement: Existing",
+        "",
+        "original body",
+        "",
+      ].join("\n"),
+    );
+
+    const delta = classifyDeltaSpec(parsed, baseline.requirements);
+    expect(delta.modified).toHaveLength(1);
+    expect(delta.modified[0]!.name).toBe("Existing"); // aligned to baseline name
+
+    const result = applyMerge(baseline, delta);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.merged).toContain("### Requirement: Existing");
+    expect(result.merged).toContain("updated body");
+    expect(result.merged).not.toContain("**Existing**");
+  });
+});
+
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-105: mergeSpecsForChange — empty delta (new format) → fail", () => {
+  it("returns ok:false when delta has no Requirements, Removed, or Renamed entries", async () => {
+    const emptyDelta = "# Delta Spec: Empty\n\nNo sections here.\n";
+
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("specs")) return Promise.resolve(true);
+        if (p.includes("specrunner/specs")) return Promise.resolve(true);
+        return Promise.resolve(false);
+      }),
+      readdir: vi.fn().mockResolvedValue(["my-cap"]),
+      stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
+      readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve(makeRequestMdContent("spec-change"));
+        return Promise.resolve(emptyDelta);
+      }),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.exitCode).toBe(1);
+    expect(result.escalation.toLowerCase()).toMatch(/my-cap|empty/);
   });
 });

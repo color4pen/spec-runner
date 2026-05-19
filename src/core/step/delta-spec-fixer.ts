@@ -51,7 +51,7 @@ Please:
 1. Read the validation result file at ${validationResultPath}
 2. For each violation in the Violations table, move / rename the file to the canonical path \`specs/<capability-name>/spec.md\`
 3. If specs/ directory does not exist or contains no delta spec files, create a new delta spec at \`specs/<capability-name>/spec.md\` based on the request.md content and the changes made in this branch
-4. Ensure each spec.md has at least one \`## ADDED Requirements\`, \`## MODIFIED Requirements\`, or \`## REMOVED Requirements\` section header
+4. Ensure each spec.md has a \`## Requirements\` section header (new format — do NOT use \`## ADDED Requirements\`, \`## MODIFIED Requirements\`, etc.)
 5. Ensure each section contains at least one \`### Requirement:\` block
 6. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
 

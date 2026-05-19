@@ -48,7 +48,7 @@ function makeFsMock(files: Record<string, string>): DeltaSpecValidatorFs {
 function validSpecContent(capability: string = "my-capability"): string {
   return `# ${capability} Spec
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: The system SHALL do something
 
@@ -165,11 +165,11 @@ The system SHALL do something.
 // ---------------------------------------------------------------------------
 // TC-V-06: canonical path + section header + no Requirement block → empty-section
 // ---------------------------------------------------------------------------
-describe("TC-V-06: canonical path + section header + 0 Requirement blocks → empty-section", () => {
-  it("detects empty-section when a valid section header has no Requirement blocks", async () => {
+describe("TC-V-06: canonical path + ## Requirements + 0 Requirement blocks → empty-section", () => {
+  it("detects empty-section when ## Requirements has no ### Requirement: blocks", async () => {
     const emptySection = `# Spec
 
-## ADDED Requirements
+## Requirements
 
 No requirements here yet.
 `;
@@ -179,8 +179,7 @@ No requirements here yet.
     const result = await validateDeltaSpecPaths(CHANGE_PATH, makeFsMock(files));
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.violations).toHaveLength(1);
-      expect(result.violations[0]!.reason).toBe("empty-section");
+      expect(result.violations.some((v) => v.reason === "empty-section")).toBe(true);
     }
   });
 });
@@ -354,10 +353,10 @@ describe("TC-V-15: type=spec-change + valid spec → existing steps continue", (
 });
 
 // ---------------------------------------------------------------------------
-// MODIFIED Requirements section also triggers valid detection
+// ## MODIFIED Requirements is now a legacy-section-header violation
 // ---------------------------------------------------------------------------
-describe("MODIFIED Requirements section is recognised as valid", () => {
-  it("accepts ## MODIFIED Requirements as a valid section", async () => {
+describe("legacy MODIFIED Requirements section triggers violation", () => {
+  it("rejects ## MODIFIED Requirements as a legacy-section-header violation", async () => {
     const content = `# Spec
 
 ## MODIFIED Requirements
@@ -375,6 +374,38 @@ The system SHALL support X.
       [`${CHANGE_PATH}/specs/cap/spec.md`]: content,
     };
     const result = await validateDeltaSpecPaths(CHANGE_PATH, makeFsMock(files));
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.violations.some((v) => v.reason === "legacy-section-header")).toBe(true);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-V-16: ## ADDED Requirements is a legacy-section-header violation
+// ---------------------------------------------------------------------------
+describe("TC-V-16: ## ADDED Requirements → legacy-section-header violation", () => {
+  it("rejects ## ADDED Requirements as a legacy-section-header violation", async () => {
+    const content = `# Spec
+
+## ADDED Requirements
+
+### Requirement: The system SHALL do something
+
+The system SHALL do something.
+
+#### Scenario: Basic
+
+- **WHEN** X
+- **THEN** Y
+`;
+    const files = {
+      [`${CHANGE_PATH}/specs/cap/spec.md`]: content,
+    };
+    const result = await validateDeltaSpecPaths(CHANGE_PATH, makeFsMock(files));
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.violations.some((v) => v.reason === "legacy-section-header")).toBe(true);
+    }
   });
 });

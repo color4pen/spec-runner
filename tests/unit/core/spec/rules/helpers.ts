@@ -32,10 +32,16 @@ export const CHANGE_PATH = "/work/specrunner/changes/my-change";
 export function validSpecContent(capability: string = "my-capability"): string {
   return `# ${capability} Spec
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: The system SHALL do something
 
 The system SHALL support the feature.
+
+#### Scenario: Basic usage
+
+- **GIVEN** a user
+- **WHEN** they use the feature
+- **THEN** it works
 `;
 }

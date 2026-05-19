@@ -1,19 +1,18 @@
 /**
  * Delta spec → baseline spec merge logic for finish command.
  *
- * Implements the merge of change folder delta specs into the canonical
- * baseline specs in specrunner/specs/<capability>/spec.md.
+ * Delta spec format (new — tool auto-classifies ADDED vs MODIFIED):
+ *   # Delta Spec: <Title>
  *
- * Delta spec format:
- *   ## ADDED Requirements
+ *   ## Requirements
  *   ### Requirement: <name>
- *   ...
- *   ## MODIFIED Requirements
- *   ### Requirement: <name>
- *   ...
- *   ## REMOVED Requirements
- *   ### Requirement: <name>
- *   ...
+ *   <content>
+ *
+ *   ## Removed
+ *   - "<requirement name>"
+ *
+ *   ## Renamed
+ *   - "old name" → "new name"
  *
  * Baseline spec format:
  *   ## Purpose
@@ -46,6 +45,17 @@ export interface DeltaSpec {
   removed: RequirementBlock[];
 }
 
+export interface RenameEntry {
+  from: string;
+  to: string;
+}
+
+export interface ParsedDelta {
+  requirements: RequirementBlock[];
+  removed: string[];
+  renamed: RenameEntry[];
+}
+
 export interface BaselineSpec {
   preamble: string;
   requirements: RequirementBlock[];
@@ -64,7 +74,6 @@ export type SpecMergeResult =
 // Parsers
 // ---------------------------------------------------------------------------
 
-const DELTA_SECTION_RE = /^## (ADDED|MODIFIED|REMOVED) Requirements\s*$/m;
 const REQ_HEADER_RE = /^### Requirement:\s*(.+?)\s*$/;
 
 /**
@@ -100,35 +109,139 @@ function splitRequirementBlocks(text: string): RequirementBlock[] {
 }
 
 /**
- * Parse a delta spec into ADDED / MODIFIED / REMOVED sections.
+ * Parse a delta spec into Requirements / Removed / Renamed sections.
  */
-export function parseDeltaSpec(content: string): DeltaSpec {
-  const result: DeltaSpec = { added: [], modified: [], removed: [] };
-
+export function parseDeltaSpec(content: string): ParsedDelta {
+  const result: ParsedDelta = { requirements: [], removed: [], renamed: [] };
   if (!content.trim()) return result;
 
-  // Find all section positions
   const lines = content.split("\n");
-  const sectionStarts: Array<{ type: "ADDED" | "MODIFIED" | "REMOVED"; lineIdx: number }> = [];
+  type Section = "requirements" | "removed" | "renamed" | null;
+  let currentSection: Section = null;
+  let reqLines: string[] = [];
 
-  for (let i = 0; i < lines.length; i++) {
-    const m = DELTA_SECTION_RE.exec(lines[i]!);
-    if (m) {
-      sectionStarts.push({ type: m[1] as "ADDED" | "MODIFIED" | "REMOVED", lineIdx: i });
+  const flushReqLines = () => {
+    if (reqLines.length > 0) {
+      result.requirements.push(...splitRequirementBlocks(reqLines.join("\n")));
+      reqLines = [];
+    }
+  };
+
+  for (const line of lines) {
+    if (/^## Requirements\s*$/.test(line)) {
+      if (currentSection === "requirements") flushReqLines();
+      currentSection = "requirements";
+    } else if (/^## Removed\s*$/.test(line)) {
+      if (currentSection === "requirements") flushReqLines();
+      currentSection = "removed";
+    } else if (/^## Renamed\s*$/.test(line)) {
+      if (currentSection === "requirements") flushReqLines();
+      currentSection = "renamed";
+    } else if (/^## /.test(line)) {
+      if (currentSection === "requirements") flushReqLines();
+      currentSection = null;
+    } else {
+      switch (currentSection) {
+        case "requirements":
+          reqLines.push(line);
+          break;
+        case "removed": {
+          const m = /^-\s+"(.+?)"\s*$/.exec(line);
+          if (m) result.removed.push(m[1]!);
+          break;
+        }
+        case "renamed": {
+          const m = /^-\s+"(.+?)"\s*(?:→|->|=>)\s*"(.+?)"\s*$/.exec(line);
+          if (m) result.renamed.push({ from: m[1]!, to: m[2]! });
+          break;
+        }
+      }
     }
   }
 
-  // Extract content for each section
-  for (let s = 0; s < sectionStarts.length; s++) {
-    const section = sectionStarts[s]!;
-    const startLine = section.lineIdx + 1;
-    const endLine = s + 1 < sectionStarts.length ? sectionStarts[s + 1]!.lineIdx : lines.length;
-    const sectionText = lines.slice(startLine, endLine).join("\n");
-    const blocks = splitRequirementBlocks(sectionText);
+  if (currentSection === "requirements") flushReqLines();
+  return result;
+}
 
-    if (section.type === "ADDED") result.added = blocks;
-    else if (section.type === "MODIFIED") result.modified = blocks;
-    else result.removed = blocks;
+/**
+ * Apply rename entries to a baseline requirements array.
+ * Returns a new array with renamed requirements updated in place.
+ */
+function applyRenamesToBaseline(
+  baselineReqs: RequirementBlock[],
+  renamed: RenameEntry[],
+): RequirementBlock[] {
+  if (renamed.length === 0) return baselineReqs;
+  const reqs = [...baselineReqs];
+  for (const rename of renamed) {
+    const normalizedFrom = normalizeRequirementHeader(rename.from);
+    const idx = reqs.findIndex(
+      (r) => normalizeRequirementHeader(r.name) === normalizedFrom,
+    );
+    if (idx !== -1) {
+      const oldReq = reqs[idx]!;
+      const newContent = oldReq.content.replace(
+        /^### Requirement: .+$/m,
+        `### Requirement: ${rename.to}`,
+      );
+      reqs[idx] = { name: rename.to, content: newContent };
+    }
+  }
+  return reqs;
+}
+
+/**
+ * Classify a ParsedDelta into the DeltaSpec format by baseline comparison.
+ *
+ * Auto-determines ADDED vs MODIFIED by comparing requirement names against the baseline:
+ * - baseline null (new capability): all requirements → added
+ * - name found in (post-rename) baseline → modified
+ * - name not found → added
+ *
+ * Removed name strings are converted to minimal RequirementBlocks.
+ * Renamed entries are applied to the baseline before classification (D5).
+ */
+export function classifyDeltaSpec(
+  parsed: ParsedDelta,
+  baselineRequirements: RequirementBlock[] | null,
+): DeltaSpec {
+  const renamedBaselineReqs =
+    baselineRequirements !== null
+      ? applyRenamesToBaseline(baselineRequirements, parsed.renamed)
+      : null;
+
+  const normalizedRenamedNames = new Set<string>(
+    renamedBaselineReqs !== null
+      ? renamedBaselineReqs.map((r) => normalizeRequirementHeader(r.name))
+      : [],
+  );
+
+  const result: DeltaSpec = { added: [], modified: [], removed: [] };
+
+  for (const req of parsed.requirements) {
+    const normalizedName = normalizeRequirementHeader(req.name);
+    if (renamedBaselineReqs === null || !normalizedRenamedNames.has(normalizedName)) {
+      result.added.push(req);
+    } else {
+      // Align block name/header to baseline to avoid strict-equality mismatch in applyMerge
+      // (e.g. delta "**Existing**" vs baseline "Existing")
+      const baselineReq = renamedBaselineReqs.find(
+        (r) => normalizeRequirementHeader(r.name) === normalizedName,
+      );
+      if (baselineReq && baselineReq.name !== req.name) {
+        const alignedContent = req.content.replace(
+          /^### Requirement: .+$/m,
+          `### Requirement: ${baselineReq.name}`,
+        );
+        result.modified.push({ name: baselineReq.name, content: alignedContent });
+      } else {
+        result.modified.push(req);
+      }
+    }
+  }
+
+  for (const name of parsed.removed) {
+    result.removed.push({ name, content: `### Requirement: ${name}\n` });
   }
 
   return result;
@@ -535,21 +648,15 @@ export async function mergeSpecsForChange(params: {
       continue;
     }
 
-    const delta = parseDeltaSpec(deltaContent);
+    const parsed = parseDeltaSpec(deltaContent);
 
-    // Semantic check: empty delta (no entries) is always an error
-    if (delta.added.length + delta.modified.length + delta.removed.length === 0) {
-      allErrors.push(`[${capability}] Delta spec is empty (no ADDED/MODIFIED/REMOVED requirements)`);
+    // Empty check: no entries in any section
+    if (parsed.requirements.length + parsed.removed.length + parsed.renamed.length === 0) {
+      allErrors.push(`[${capability}] Delta spec is empty (no Requirements, Removed, or Renamed entries)`);
       continue;
     }
 
-    const validationErrors = validateDeltaSpec(delta);
-    if (validationErrors.length > 0) {
-      allErrors.push(...validationErrors.map((e) => `[${capability}] ${e}`));
-      continue;
-    }
-
-    // Hoist baseline read (single read per capability, reused by check and applyMerge)
+    // Read baseline BEFORE classification (needed for auto-classify)
     const baselinePath = path.join(cwd, baselineSpecPath(capability));
     const baselineExists = await fs.exists(baselinePath);
     let baselineReqs: RequirementBlock[] | null = null;
@@ -565,35 +672,53 @@ export async function mergeSpecsForChange(params: {
       baselineReqs = parseBaselineSpec(baselineContent).requirements;
     }
 
-    // Baseline header consistency check (pre-check before applyMerge)
-    const violations = checkBaselineHeaderConsistency(delta, baselineReqs, capability);
+    // Guard: Removed/Renamed cannot apply to non-existent baseline (new capability)
+    if (!baselineExists && (parsed.removed.length > 0 || parsed.renamed.length > 0)) {
+      const ops = [
+        ...(parsed.removed.length > 0 ? ["Removed"] : []),
+        ...(parsed.renamed.length > 0 ? ["Renamed"] : []),
+      ].join(", ");
+      allErrors.push(
+        `[${capability}] New capability (no baseline) but delta contains ${ops} operations. ` +
+          `Cannot apply ${ops} to non-existent baseline.`,
+      );
+      continue;
+    }
+
+    // Auto-classify: baseline comparison determines ADDED vs MODIFIED
+    const delta = classifyDeltaSpec(parsed, baselineReqs);
+
+    const validationErrors = validateDeltaSpec(delta);
+    if (validationErrors.length > 0) {
+      allErrors.push(...validationErrors.map((e) => `[${capability}] ${e}`));
+      continue;
+    }
+
+    // Use renamed baseline for consistency check and merge
+    const renamedBaselineReqs = baselineReqs !== null
+      ? applyRenamesToBaseline(baselineReqs, parsed.renamed)
+      : null;
+
+    // Baseline header consistency check (defense-in-depth — mainly validates REMOVED names)
+    const violations = checkBaselineHeaderConsistency(delta, renamedBaselineReqs, capability);
     if (violations.length > 0) {
       allErrors.push(...violations);
       continue;
     }
 
     if (!baselineExists) {
-      // New capability: only ADDED is allowed (defense-in-depth; also caught by checkBaselineHeaderConsistency above)
-      if (delta.modified.length > 0 || delta.removed.length > 0) {
-        const ops = [
-          ...(delta.modified.length > 0 ? ["MODIFIED"] : []),
-          ...(delta.removed.length > 0 ? ["REMOVED"] : []),
-        ].join(", ");
-        allErrors.push(
-          `[${capability}] Capability has no baseline spec but delta contains ${ops} operations. ` +
-            `Cannot apply ${ops} to non-existent baseline.`,
-        );
-        continue;
-      }
-
-      // ADDED-only for new capability → create new baseline
+      // New capability: all requirements auto-classified as ADDED → create new baseline
       const newContent = createNewBaselineSpec(delta.added);
       const capabilityDir = path.join(cwd, specsDirRel(), capability);
       writeEntries.push({ absPath: baselinePath, content: newContent, mkdirPath: capabilityDir });
     } else {
-      // Existing capability → apply merge (reuse already-read baselineContent)
-      const baseline = parseBaselineSpec(baselineContent!);
-      const mergeResult = applyMerge(baseline, delta);
+      // Existing capability → apply merge against renamed baseline
+      const baselineParsed = parseBaselineSpec(baselineContent!);
+      const renamedBaselineSpec: BaselineSpec = {
+        ...baselineParsed,
+        requirements: renamedBaselineReqs ?? baselineParsed.requirements,
+      };
+      const mergeResult = applyMerge(renamedBaselineSpec, delta);
 
       if (!mergeResult.ok) {
         allErrors.push(...mergeResult.errors.map((e) => `[${capability}] ${e}`));

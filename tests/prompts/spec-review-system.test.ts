@@ -50,15 +50,16 @@ describe("TC-015: spec-review system prompt contains MODIFIED requirement check"
 });
 
 // ---------------------------------------------------------------------------
-// TC-016: system prompt contains REMOVED consistency check instruction
+// TC-016: system prompt handles ## Removed section in new delta spec format
+// (Updated: REMOVED classification is now tool-side; spec-review checks new-capability guard)
 // ---------------------------------------------------------------------------
-describe("TC-016: spec-review system prompt contains REMOVED requirement check", () => {
-  it("mentions REMOVED requirements", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("REMOVED");
+describe("TC-016: spec-review system prompt contains ## Removed handling instruction", () => {
+  it("mentions ## Removed section", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toMatch(/##\s*Removed/);
   });
 
-  it("states REMOVED requirements must exist in baseline", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toMatch(/REMOVED.*exist.*baseline|REMOVED.*baseline.*exist/s);
+  it("states new-capability + ## Removed results in HIGH finding", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toMatch(/baseline.*does not exist.*Removed|Removed.*baseline.*does not exist/s);
   });
 });
 
