@@ -6,10 +6,10 @@ import type { ValidationRule } from "./types.js";
  * - register(): adds a rule; throws on duplicate name
  * - validate(): runs all rules and returns a flat list of violations
  */
-export class RuleRegistry<TInput, TViolation> {
-  private rules: ValidationRule<TInput, TViolation>[] = [];
+export class RuleRegistry<TInput, TViolation, TName extends string = string> {
+  private rules: ValidationRule<TInput, TViolation, TName>[] = [];
 
-  register(rule: ValidationRule<TInput, TViolation>): void {
+  register(rule: ValidationRule<TInput, TViolation, TName>): void {
     if (this.rules.some((r) => r.name === rule.name)) {
       throw new Error(`Duplicate rule name: ${rule.name}`);
     }

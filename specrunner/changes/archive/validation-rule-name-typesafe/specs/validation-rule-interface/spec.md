@@ -1,7 +1,4 @@
-## Purpose
-
-TBD
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: ValidationRule interface SHALL declare name, severity, and check
 
@@ -54,27 +51,7 @@ The third type parameter `TName` SHALL default to `string` to maintain backward 
 
 ---
 
-### Requirement: Parser layer and DSV layer rules SHALL each be defined as individual files registered via a registry factory
-
-Each validation check that was previously inline in `request-md.ts` or `delta-spec-validator.ts` SHALL be extracted into a dedicated rule file implementing the appropriate interface, and SHALL be registered via a factory function (`createRequestMdRegistry` / `createDeltaSpecRegistry`).
-
-#### Scenario: Parser rules registered
-
-- **GIVEN** `createRequestMdRegistry()` is called
-- **WHEN** the result's `validate()` is called with a raw input missing all required fields
-- **THEN** violations for `title-required`, `type-required`, `slug-required`, `base-branch-required`, and `adr-required` are all present in the result
-
----
-
-### Requirement: Migration SHALL preserve existing inline validation behaviour exactly
-
-After migrating `request-md.ts` and `delta-spec-validator.ts` to use the registry pattern, the public API signatures and error behaviour SHALL remain unchanged.
-
-#### Scenario: Regression guard
-
-- **GIVEN** the existing tests in `tests/unit/parser/request-md.test.ts` and `tests/unit/core/spec/delta-spec-validator.test.ts` are unmodified
-- **WHEN** the full test suite is executed
-- **THEN** all tests pass without modification
+## ADDED Requirements
 
 ### Requirement: Parser layer SHALL define RequestMdRuleName union type for compile-time name safety
 

@@ -1,7 +1,7 @@
 import type { ValidationRule } from "../../core/validation/types.js";
-import type { ParsedRequestRaw, RequestMdViolation } from "./types.js";
+import type { ParsedRequestRaw, RequestMdRuleName, RequestMdViolation } from "./types.js";
 
-export const titleRequired: ValidationRule<ParsedRequestRaw, RequestMdViolation> = {
+export const titleRequired: ValidationRule<ParsedRequestRaw, RequestMdViolation, RequestMdRuleName> = {
   name: "title-required",
   severity: "error",
   check(input) {

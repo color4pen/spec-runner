@@ -1,6 +1,20 @@
 import type { ParsedRequestSections } from "../../core/request/types.js";
 
 /**
+ * Union of all parser-layer validation rule names.
+ * Using this type for ValidationRule<TInput, TViolation, RequestMdRuleName>
+ * ensures typos in rule names are caught at compile time.
+ */
+export type RequestMdRuleName =
+  | "type-required"
+  | "type-known"
+  | "slug-required"
+  | "base-branch-required"
+  | "adr-required"
+  | "adr-valid"
+  | "title-required";
+
+/**
  * Raw extracted fields from request.md (null = not found).
  * Used as the input type for parser-layer ValidationRule instances.
  */
