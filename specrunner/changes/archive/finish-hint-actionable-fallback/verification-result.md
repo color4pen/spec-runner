@@ -1,4 +1,4 @@
-# Verification Result — request-review-command — iter 1
+# Verification Result — finish-hint-actionable-fallback — iter 1
 
 ## Verdict: passed
 
@@ -6,16 +6,17 @@
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 2.0s | 0 |
-| 2 | typecheck | passed | 1.7s | 0 |
-| 3 | test | passed | 4.2s | 0 |
+| 1 | build | passed | 1.2s | 0 |
+| 2 | typecheck | passed | 2.0s | 0 |
+| 3 | test | passed | 6.2s | 0 |
 | 4 | lint | skipped | — | — |
 | 5 | security | skipped | — | — |
+| 6 | test-coverage | passed | 0.0s | 0 |
 
 ## Phase: build
 
 ```
-$ tsc --noEmit false --outDir dist
+$ tsc -p tsconfig.build.json
 
 ```
 
@@ -30,7 +31,7 @@ $ tsc --noEmit
 
 ```
 
- RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-review-command-abdaf151
+ RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/finish-hint-actionable-fallback-9219caed
 
 [iter 1/1] starting design
 [iter 1/1] starting design
@@ -56,20 +57,25 @@ Post-push polling: mergeStateStatus=BEHIND, retrying (1/5)...
 Post-push polling: mergeStateStatus=BEHIND, retrying (2/5)...
 No jobs found.
 JOB_ID	SLUG	STEP	STATUS	BRANCH	AGE
-job-run-	slug-job-run-1	init	running (stale?)	feat/test	132d
+job-run-	slug-job-run-1	init	running (stale?)	feat/test	139d
 
- Test Files  146 passed (146)
-      Tests  1737 passed (1737)
-   Start at  02:19:36
-   Duration  3.98s (transform 2.88s, setup 0ms, import 5.27s, tests 7.48s, environment 8ms)
+ Test Files  210 passed (210)
+      Tests  2349 passed (2349)
+   Start at  09:14:09
+   Duration  5.97s (transform 3.78s, setup 0ms, import 8.11s, tests 11.57s, environment 13ms)
 
 
 $ vitest run
-Warning: A vi.mock("node:child_process") call in "~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-review-command-abdaf151/tests/git-remote.test.ts" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.
-See: https://vitest.dev/guide/mocking/modules#how-it-works
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-UGLgdT/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-DRZnwY/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: unknown request type 'unknown-type'.
+Warning: unknown request type 'spec_change'.
+Warning: unknown request type 'Spec-Change'.
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
+Warning: A vi.mock("node:child_process") call in "~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/finish-hint-actionable-fallback-9219caed/tests/git-remote.test.ts" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.
+See: https://vitest.dev/guide/mocking/modules#how-it-works
 
 ```
 
@@ -80,3 +86,9 @@ _(skipped — script not found in package.json)_
 ## Phase: security
 
 _(skipped — script not found in package.json)_
+
+## Phase: test-coverage
+
+```
+test-coverage: 10/10 must TCs covered
+```

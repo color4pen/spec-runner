@@ -223,7 +223,7 @@ export function pollTimeoutError(sessionId: string, elapsedMs: number): SpecRunn
   const elapsedSec = Math.round(elapsedMs / 1000);
   return new SpecRunnerError(
     ERROR_CODES.POLL_TIMEOUT,
-    "Session may still be running on Anthropic side. Use 'specrunner resume' to retry or 'specrunner cancel' to abort.",
+    "Session may still be running on Anthropic side. Use 'specrunner resume' to retry or 'specrunner rm <jobId>' to abort.",
     `Session '${sessionId}' did not complete within ${elapsedSec}s (${elapsedMs}ms).`,
   );
 }

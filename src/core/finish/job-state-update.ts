@@ -10,12 +10,12 @@ import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import type { JobState } from "../../state/schema.js";
 import { canTransition, transitionJob } from "../../state/lifecycle.js";
 
-const STATUS_HINTS: Record<string, string> = {
+export const STATUS_HINTS: Record<string, string> = {
   running: "Wait for the running job to complete before finishing.",
   "awaiting-resume": "Run 'specrunner resume' to continue the halted job before finishing.",
   canceled: "Job is already canceled. No action needed.",
-  failed: "Use 'specrunner cancel' to clean up failed or terminated jobs.",
-  terminated: "Use 'specrunner cancel' to clean up failed or terminated jobs.",
+  failed: "Run 'specrunner rm <jobId>' to remove the failed job.",
+  terminated: "Run 'specrunner rm <jobId>' to remove the terminated job.",
 };
 
 /**
