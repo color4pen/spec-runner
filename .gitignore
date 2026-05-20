@@ -31,12 +31,5 @@ yarn.lock
 # pnpm (not used)
 pnpm-lock.yaml
 
-# runtime-rule-promotion の生ログ。instinct に蒸留した後は参照不要
-openspec-workflow/observations.jsonl
-
-# dogfooding logs
-docs/dogfooding/
-
-# pipeline-integration test fixture residue (mock writes to repo cwd; harmless but pollutes openspec list)
-openspec/changes/test-slug/
+# pipeline-integration test fixture residue (mock writes to repo cwd; harmless but pollutes list)
 specrunner/changes/test-slug/
