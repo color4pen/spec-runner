@@ -1,6 +1,3 @@
-## Purpose
-
-TBD
 ## Requirements
 
 ### Requirement: Fragment 集約 export

@@ -6,6 +6,7 @@
  */
 import { describe, test, expect } from "vitest";
 import {
+  SPEC_RUNNER_COMMON_CONTEXT,
   AUTHORITY_SPEC_GUARD,
   COMMIT_DISCIPLINE,
   DELTA_SPEC_FORMAT,
@@ -19,18 +20,24 @@ import { BUILD_FIXER_SYSTEM_PROMPT } from "../../../src/prompts/build-fixer-syst
 import { ADR_GEN_SYSTEM_PROMPT } from "../../../src/prompts/adr-gen-system.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/spec-review-system.js";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/code-review-system.js";
+import { TEST_CASE_GEN_SYSTEM_PROMPT } from "../../../src/prompts/test-case-gen-system.js";
+import { REQUEST_GENERATE_SYSTEM_PROMPT } from "../../../src/prompts/request-generate-system.js";
+import { REQUEST_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/request-review-system.js";
 
 type FragmentCoverageEntry = [name: string, prompt: string, required: readonly string[]];
 
 const EXPECTED: FragmentCoverageEntry[] = [
-  ["IMPLEMENTER",  IMPLEMENTER_SYSTEM_PROMPT,  [DELTA_SPEC_FORMAT, AUTHORITY_SPEC_GUARD, COMMIT_DISCIPLINE]],
-  ["DESIGN",       DESIGN_SYSTEM_PROMPT,        [DELTA_SPEC_FORMAT, AUTHORITY_SPEC_GUARD]],
-  ["SPEC_FIXER",   SPEC_FIXER_SYSTEM_PROMPT,    [DELTA_SPEC_FORMAT, AUTHORITY_SPEC_GUARD, COMMIT_DISCIPLINE]],
-  ["CODE_FIXER",   CODE_FIXER_SYSTEM_PROMPT,    [DELTA_SPEC_FORMAT, AUTHORITY_SPEC_GUARD, COMMIT_DISCIPLINE]],
-  ["BUILD_FIXER",  BUILD_FIXER_SYSTEM_PROMPT,   [COMMIT_DISCIPLINE]],
-  ["ADR_GEN",      ADR_GEN_SYSTEM_PROMPT,       [COMMIT_DISCIPLINE]],
-  ["SPEC_REVIEW",  SPEC_REVIEW_SYSTEM_PROMPT,   [PIPELINE_RULES, AUTHORITY_SPEC_GUARD]],
-  ["CODE_REVIEW",  CODE_REVIEW_SYSTEM_PROMPT,   [PIPELINE_RULES, AUTHORITY_SPEC_GUARD]],
+  ["IMPLEMENTER",       IMPLEMENTER_SYSTEM_PROMPT,       [DELTA_SPEC_FORMAT, AUTHORITY_SPEC_GUARD, COMMIT_DISCIPLINE]],
+  ["DESIGN",            DESIGN_SYSTEM_PROMPT,            [DELTA_SPEC_FORMAT, AUTHORITY_SPEC_GUARD]],
+  ["SPEC_FIXER",        SPEC_FIXER_SYSTEM_PROMPT,        [DELTA_SPEC_FORMAT, AUTHORITY_SPEC_GUARD, COMMIT_DISCIPLINE]],
+  ["CODE_FIXER",        CODE_FIXER_SYSTEM_PROMPT,        [DELTA_SPEC_FORMAT, AUTHORITY_SPEC_GUARD, COMMIT_DISCIPLINE]],
+  ["BUILD_FIXER",       BUILD_FIXER_SYSTEM_PROMPT,       [COMMIT_DISCIPLINE]],
+  ["ADR_GEN",           ADR_GEN_SYSTEM_PROMPT,           [COMMIT_DISCIPLINE]],
+  ["SPEC_REVIEW",       SPEC_REVIEW_SYSTEM_PROMPT,       [PIPELINE_RULES, AUTHORITY_SPEC_GUARD]],
+  ["CODE_REVIEW",       CODE_REVIEW_SYSTEM_PROMPT,       [PIPELINE_RULES, AUTHORITY_SPEC_GUARD]],
+  ["TEST_CASE_GEN",     TEST_CASE_GEN_SYSTEM_PROMPT,     []],
+  ["REQUEST_GENERATE",  REQUEST_GENERATE_SYSTEM_PROMPT,  []],
+  ["REQUEST_REVIEW",    REQUEST_REVIEW_SYSTEM_PROMPT,    []],
 ];
 
 describe("fragment coverage — required fragments are present in each prompt", () => {
@@ -38,5 +45,11 @@ describe("fragment coverage — required fragments are present in each prompt", 
     for (const frag of required) {
       expect(prompt).toContain(frag);
     }
+  });
+});
+
+describe("SPEC_RUNNER_COMMON_CONTEXT — injected into all 11 agent prompts", () => {
+  test.each(EXPECTED)("%s contains SPEC_RUNNER_COMMON_CONTEXT", (_name, prompt) => {
+    expect(prompt).toContain(SPEC_RUNNER_COMMON_CONTEXT);
   });
 });

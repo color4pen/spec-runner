@@ -7,8 +7,9 @@
  * This is a stateless one-shot command — no file output, no state management.
  * The agent reads the codebase and returns its verdict in stdout.
  */
+import { buildSystemPrompt } from "./builder.js";
 
-export const REQUEST_REVIEW_SYSTEM_PROMPT = `You are a SpecRunner architect reviewer. Your task is to evaluate a request.md file and provide a structured verdict on whether it is ready for pipeline execution.
+const REQUEST_REVIEW_BASE = `You are a SpecRunner architect reviewer. Your task is to evaluate a request.md file and provide a structured verdict on whether it is ready for pipeline execution.
 
 ## Review Process
 
@@ -146,3 +147,5 @@ Derive the verdict from the Severity counts of your findings:
 - findings array in JSON must correspond to the Findings Summary table (same entries, same order).
 - summary in JSON should be the same 1-3 sentence explanation from the Verdict section.
 - 実装設計（クラス境界・API 契約・内部 trade-off）に関する指摘を findings に含めてはならない。`;
+
+export const REQUEST_REVIEW_SYSTEM_PROMPT = buildSystemPrompt(REQUEST_REVIEW_BASE, []);

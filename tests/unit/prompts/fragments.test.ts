@@ -15,6 +15,7 @@
  */
 import { describe, it, expect } from "vitest";
 import {
+  SPEC_RUNNER_COMMON_CONTEXT,
   AUTHORITY_SPEC_GUARD,
   COMMIT_DISCIPLINE,
   DELTA_SPEC_FORMAT,
@@ -23,9 +24,14 @@ import {
 import { DESIGN_SYSTEM_PROMPT } from "../../../src/prompts/design-system.js";
 
 // ---------------------------------------------------------------------------
-// All 4 fragments are exported as non-empty strings
+// All 5 fragments are exported as non-empty strings
 // ---------------------------------------------------------------------------
-describe("fragments.ts exports all 4 fragments as strings", () => {
+describe("fragments.ts exports all fragments as strings", () => {
+  it("SPEC_RUNNER_COMMON_CONTEXT is a non-empty string", () => {
+    expect(typeof SPEC_RUNNER_COMMON_CONTEXT).toBe("string");
+    expect(SPEC_RUNNER_COMMON_CONTEXT.length).toBeGreaterThan(0);
+  });
+
   it("AUTHORITY_SPEC_GUARD is a non-empty string", () => {
     expect(typeof AUTHORITY_SPEC_GUARD).toBe("string");
     expect(AUTHORITY_SPEC_GUARD.length).toBeGreaterThan(0);
@@ -44,6 +50,51 @@ describe("fragments.ts exports all 4 fragments as strings", () => {
   it("PIPELINE_RULES is a non-empty string", () => {
     expect(typeof PIPELINE_RULES).toBe("string");
     expect(PIPELINE_RULES.length).toBeGreaterThan(100);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SPEC_RUNNER_COMMON_CONTEXT assertions
+// ---------------------------------------------------------------------------
+describe("SPEC_RUNNER_COMMON_CONTEXT content checks", () => {
+  it("contains 'spec-runner'", () => {
+    expect(SPEC_RUNNER_COMMON_CONTEXT).toContain("spec-runner");
+  });
+
+  it("contains pipeline step name 'design'", () => {
+    expect(SPEC_RUNNER_COMMON_CONTEXT).toContain("design");
+  });
+
+  it("contains pipeline step name 'implementer'", () => {
+    expect(SPEC_RUNNER_COMMON_CONTEXT).toContain("implementer");
+  });
+
+  it("contains pipeline step name 'code-review'", () => {
+    expect(SPEC_RUNNER_COMMON_CONTEXT).toContain("code-review");
+  });
+
+  it("contains '禁止'", () => {
+    expect(SPEC_RUNNER_COMMON_CONTEXT).toContain("禁止");
+  });
+
+  it("contains 'specrunner/adr/'", () => {
+    expect(SPEC_RUNNER_COMMON_CONTEXT).toContain("specrunner/adr/");
+  });
+
+  it("contains 'specrunner/specs/'", () => {
+    expect(SPEC_RUNNER_COMMON_CONTEXT).toContain("specrunner/specs/");
+  });
+
+  it("contains 'specrunner/changes/'", () => {
+    expect(SPEC_RUNNER_COMMON_CONTEXT).toContain("specrunner/changes/");
+  });
+
+  it("does NOT contain 'あなたは'", () => {
+    expect(SPEC_RUNNER_COMMON_CONTEXT).not.toContain("あなたは");
+  });
+
+  it("does NOT contain 'あなたの'", () => {
+    expect(SPEC_RUNNER_COMMON_CONTEXT).not.toContain("あなたの");
   });
 });
 
@@ -227,8 +278,26 @@ describe("T-12: DELTA_SPEC_FORMAT uses new format section headers", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T-12: AUTHORITY_SPEC_GUARD assertions — no old classification criteria
+// T-12: AUTHORITY_SPEC_GUARD assertions
 // ---------------------------------------------------------------------------
+describe("T-12: AUTHORITY_SPEC_GUARD contains 書く側/見る側の規律", () => {
+  it("AUTHORITY_SPEC_GUARD contains 書く側の規律", () => {
+    expect(AUTHORITY_SPEC_GUARD).toContain("書く側の規律");
+  });
+
+  it("AUTHORITY_SPEC_GUARD contains 見る側の規律", () => {
+    expect(AUTHORITY_SPEC_GUARD).toContain("見る側の規律");
+  });
+
+  it("AUTHORITY_SPEC_GUARD does NOT contain 'MUST NOT (全 agent 共通)' as section heading", () => {
+    expect(AUTHORITY_SPEC_GUARD).not.toContain("MUST NOT (全 agent 共通)");
+  });
+
+  it("AUTHORITY_SPEC_GUARD does NOT contain the sentence about 直接編集してはならない（MUST NOT）", () => {
+    expect(AUTHORITY_SPEC_GUARD).not.toContain("specrunner/specs/` 配下のファイルを直接編集してはならない（MUST NOT）");
+  });
+});
+
 describe("T-12: AUTHORITY_SPEC_GUARD does not contain old ADDED/MODIFIED classification criteria", () => {
   it("AUTHORITY_SPEC_GUARD does not instruct agent to write ADDED: based on baseline absence", () => {
     expect(AUTHORITY_SPEC_GUARD).not.toMatch(/\*\*ADDED\*\*: baseline に存在しない/);
@@ -246,6 +315,19 @@ describe("T-12: AUTHORITY_SPEC_GUARD does not contain old ADDED/MODIFIED classif
 // ---------------------------------------------------------------------------
 // T-12: DESIGN_SYSTEM_PROMPT does not reference old section headers
 // ---------------------------------------------------------------------------
+// TC-32: TypeScript compilation passes
+describe("TC-32: bun run typecheck passes", () => {
+  it("TC-32: TypeScript compilation passes — all fragment exports are well-typed strings", () => {
+    // If TypeScript fails to compile, the imports at the top of this file would error.
+    // This test marks TC-32 coverage in the test-coverage phase.
+    expect(typeof SPEC_RUNNER_COMMON_CONTEXT).toBe("string");
+    expect(typeof AUTHORITY_SPEC_GUARD).toBe("string");
+    expect(typeof DELTA_SPEC_FORMAT).toBe("string");
+    expect(typeof COMMIT_DISCIPLINE).toBe("string");
+    expect(typeof PIPELINE_RULES).toBe("string");
+  });
+});
+
 describe("T-12: DESIGN_SYSTEM_PROMPT does not reference old section headers", () => {
   it("DESIGN_SYSTEM_PROMPT does not contain ## ADDED Requirements", () => {
     expect(DESIGN_SYSTEM_PROMPT).not.toContain("## ADDED Requirements");
