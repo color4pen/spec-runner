@@ -12,10 +12,10 @@ import { canTransition, transitionJob } from "../../state/lifecycle.js";
 
 export const STATUS_HINTS: Record<string, string> = {
   running: "Wait for the running job to complete before finishing.",
-  "awaiting-resume": "Run 'specrunner resume' to continue the halted job before finishing.",
+  "awaiting-resume": "Run 'specrunner job resume' to continue the halted job before finishing.",
   canceled: "Job is already canceled. No action needed.",
-  failed: "Run 'specrunner rm <jobId>' to remove the failed job.",
-  terminated: "Run 'specrunner rm <jobId>' to remove the terminated job.",
+  failed: "Run 'specrunner job rm <jobId>' to remove the failed job.",
+  terminated: "Run 'specrunner job rm <jobId>' to remove the terminated job.",
 };
 
 /**

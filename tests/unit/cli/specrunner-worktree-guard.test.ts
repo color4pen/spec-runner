@@ -1,11 +1,14 @@
 /**
  * Integration tests for the worktree guard in bin/specrunner.ts
  *
- * TC-WG-001: run from worktree → exit 1 with WORKTREE_GUARD error
- * TC-WG-002: finish from worktree → exit 1 with WORKTREE_GUARD error
- * TC-WG-003: resume from worktree → exit 1 with WORKTREE_GUARD error
- * TC-WG-004: ps from worktree → NOT guarded, proceeds normally
+ * TC-WG-001: job start from worktree → exit 1 with WORKTREE_GUARD error
+ * TC-WG-002: job finish from worktree → exit 1 with WORKTREE_GUARD error
+ * TC-WG-003: job resume from worktree → exit 1 with WORKTREE_GUARD error
+ * TC-WG-004: job ls from worktree → NOT guarded, proceeds normally
  * TC-WG-005: error message includes hint with main worktree path
+ * TC-WG-006: run alias from worktree → exit 1 (top-level guard)
+ * TC-WG-007: job rm from worktree → NOT guarded
+ * TC-WG-008: job show from worktree → NOT guarded
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
@@ -21,7 +24,11 @@ vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(unde
 vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn() }));
 vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn() }));
 vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn() }));
-vi.mock("../../../src/cli/rm.js", () => ({ runRm: vi.fn() }));
+vi.mock("../../../src/cli/rm.js", () => ({ runRm: vi.fn().mockResolvedValue(0) }));
+vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("../../../src/core/command/request-new.js", () => ({ executeNew: vi.fn() }));
+vi.mock("../../../src/core/command/request-show.js", () => ({ executeShow: vi.fn() }));
+vi.mock("../../../src/core/command/request-rm.js", () => ({ executeRm: vi.fn() }));
 
 let originalArgv: string[];
 let exitSpy: ReturnType<typeof vi.spyOn>;
@@ -58,9 +65,85 @@ async function setWorktreeDetection(isWorktree: boolean, mainWorktreePath?: stri
   (detectWorktree as ReturnType<typeof vi.fn>).mockResolvedValue({ isWorktree, mainWorktreePath });
 }
 
-// TC-WG-001: run from worktree → rejected
-describe("TC-WG-001: run from inside a worktree", () => {
+// TC-WG-001: job start from worktree → rejected
+describe("TC-WG-001: job start from inside a worktree", () => {
   it("exits with code 1 and prints worktree guard error", async () => {
+    await setWorktreeDetection(true, "/home/user/my-project");
+
+    const result = await runMain(["job", "start", "request.md"]);
+
+    expect(result).toBe("process.exit(1)");
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    const combined = (stderrSpy.mock.calls as unknown[][])
+      .map((c) => String(c[0]))
+      .join("\n");
+    expect(combined).toMatch(/cannot be run from inside a worktree/i);
+  });
+});
+
+// TC-WG-002: job finish from worktree → rejected
+describe("TC-WG-002: job finish from inside a worktree", () => {
+  it("exits with code 1 and prints worktree guard error", async () => {
+    await setWorktreeDetection(true, "/home/user/my-project");
+
+    const result = await runMain(["job", "finish"]);
+
+    expect(result).toBe("process.exit(1)");
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    const combined = (stderrSpy.mock.calls as unknown[][])
+      .map((c) => String(c[0]))
+      .join("\n");
+    expect(combined).toMatch(/cannot be run from inside a worktree/i);
+  });
+});
+
+// TC-WG-003: job resume from worktree → rejected
+describe("TC-WG-003: job resume from inside a worktree", () => {
+  it("exits with code 1 and prints worktree guard error", async () => {
+    await setWorktreeDetection(true, "/home/user/my-project");
+
+    const result = await runMain(["job", "resume", "my-slug"]);
+
+    expect(result).toBe("process.exit(1)");
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    const combined = (stderrSpy.mock.calls as unknown[][])
+      .map((c) => String(c[0]))
+      .join("\n");
+    expect(combined).toMatch(/cannot be run from inside a worktree/i);
+  });
+});
+
+// TC-WG-004: job ls from worktree → NOT guarded
+describe("TC-WG-004: job ls from inside a worktree", () => {
+  it("does NOT reject job ls — proceeds normally", async () => {
+    await setWorktreeDetection(true, "/home/user/my-project");
+
+    const result = await runMain(["job", "ls"]);
+
+    // job ls should succeed (no process.exit(1))
+    expect(result).toBeUndefined();
+    expect(exitSpy).not.toHaveBeenCalled();
+  });
+});
+
+// TC-WG-005: error hint contains main worktree path
+describe("TC-WG-005: worktree guard error hint includes main path", () => {
+  it("includes the main worktree path in the hint", async () => {
+    const mainPath = "/home/user/projects/my-repo";
+    await setWorktreeDetection(true, mainPath);
+
+    await runMain(["job", "start", "request.md"]);
+
+    const combined = (stderrSpy.mock.calls as unknown[][])
+      .map((c) => String(c[0]))
+      .join("\n");
+    expect(combined).toContain(mainPath);
+  });
+});
+
+// TC-WG-006: run alias from worktree → rejected (top-level guard)
+describe("TC-WG-006: run alias from inside a worktree", () => {
+  it("exits with code 1 via top-level WORKTREE_GUARDED_COMMANDS", async () => {
     await setWorktreeDetection(true, "/home/user/my-project");
 
     const result = await runMain(["run", "request.md"]);
@@ -74,62 +157,33 @@ describe("TC-WG-001: run from inside a worktree", () => {
   });
 });
 
-// TC-WG-002: finish from worktree → rejected
-describe("TC-WG-002: finish from inside a worktree", () => {
-  it("exits with code 1 and prints worktree guard error", async () => {
+// TC-WG-007: job rm from worktree → NOT guarded
+describe("TC-WG-007: job rm from inside a worktree", () => {
+  it("does NOT reject job rm — proceeds normally", async () => {
     await setWorktreeDetection(true, "/home/user/my-project");
 
-    const result = await runMain(["finish"]);
+    // job rm with --all-terminated so no UUID required
+    const result = await runMain(["job", "rm", "--all-terminated", "--yes"]);
 
-    expect(result).toBe("process.exit(1)");
-    expect(exitSpy).toHaveBeenCalledWith(1);
-    const combined = (stderrSpy.mock.calls as unknown[][])
+    // Should not exit(1) due to worktree guard
+    const stderrOutput = (stderrSpy.mock.calls as unknown[][])
       .map((c) => String(c[0]))
       .join("\n");
-    expect(combined).toMatch(/cannot be run from inside a worktree/i);
+    expect(stderrOutput).not.toMatch(/cannot be run from inside a worktree/i);
   });
 });
 
-// TC-WG-003: resume from worktree → rejected
-describe("TC-WG-003: resume from inside a worktree", () => {
-  it("exits with code 1 and prints worktree guard error", async () => {
+// TC-WG-008: job show from worktree → NOT guarded
+describe("TC-WG-008: job show from inside a worktree", () => {
+  it("does NOT reject job show — proceeds normally", async () => {
     await setWorktreeDetection(true, "/home/user/my-project");
 
-    const result = await runMain(["resume", "my-slug"]);
+    const result = await runMain(["job", "show", "my-slug"]);
 
-    expect(result).toBe("process.exit(1)");
-    expect(exitSpy).toHaveBeenCalledWith(1);
-    const combined = (stderrSpy.mock.calls as unknown[][])
+    // Should not exit(1) due to worktree guard
+    const stderrOutput = (stderrSpy.mock.calls as unknown[][])
       .map((c) => String(c[0]))
       .join("\n");
-    expect(combined).toMatch(/cannot be run from inside a worktree/i);
-  });
-});
-
-// TC-WG-004: ps from worktree → NOT guarded
-describe("TC-WG-004: ps from inside a worktree", () => {
-  it("does NOT reject ps — proceeds normally", async () => {
-    await setWorktreeDetection(true, "/home/user/my-project");
-
-    const result = await runMain(["ps"]);
-
-    // ps should succeed (no process.exit(1))
-    expect(result).toBeUndefined();
-    expect(exitSpy).not.toHaveBeenCalled();
-  });
-});
-
-// TC-WG-005: error hint contains main worktree path
-describe("TC-WG-005: worktree guard error hint includes main path", () => {
-  it("includes the main worktree path in the hint", async () => {
-    const mainPath = "/home/user/projects/my-repo";
-    await setWorktreeDetection(true, mainPath);
-
-    await runMain(["run", "request.md"]);
-
-    const combined = (stderrSpy.mock.calls as unknown[][])
-      .map((c) => String(c[0]))
-      .join("\n");
-    expect(combined).toContain(mainPath);
+    expect(stderrOutput).not.toMatch(/cannot be run from inside a worktree/i);
   });
 });

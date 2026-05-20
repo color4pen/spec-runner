@@ -4,12 +4,12 @@
  * Registry-based dispatch — no switch/case.
  */
 
-import { COMMANDS, USAGE, FINISH_USAGE } from "../src/cli/command-registry.js";
+import { COMMANDS, USAGE, FINISH_USAGE, RUNTIME_RESET_USAGE } from "../src/cli/command-registry.js";
 import { parseFlags, FlagParseError } from "../src/cli/flag-parser.js";
 import { detectWorktree } from "../src/core/worktree/detection.js";
 import { SpecRunnerError, worktreeGuardError } from "../src/errors.js";
 
-export { USAGE, FINISH_USAGE };
+export { USAGE, FINISH_USAGE, RUNTIME_RESET_USAGE };
 
 export async function main(): Promise<void> {
   const args = process.argv.slice(2);
@@ -32,7 +32,7 @@ export async function main(): Promise<void> {
     process.exit(2);
   }
 
-  // Subcommand dispatch (e.g. request template / request validate)
+  // Subcommand dispatch (e.g. request template / job start)
   if ("subcommands" in entry) {
     const sub = args[1];
     const subDef = sub ? entry.subcommands[sub] : undefined;
@@ -46,6 +46,18 @@ export async function main(): Promise<void> {
       process.stderr.write(`Usage: specrunner ${command} ${subNames}\n`);
       process.exit(2);
     }
+
+    // Worktree guard for guarded subcommands
+    if (entry.guardedSubcommands?.has(sub!)) {
+      const detection = await detectWorktree(process.cwd());
+      if (detection.isWorktree) {
+        const err = worktreeGuardError(`${command} ${sub}`, detection.mainWorktreePath ?? process.cwd());
+        process.stderr.write(`Error: ${err.message}\n`);
+        process.stderr.write(`Hint: ${err.hint}\n`);
+        process.exit(1);
+      }
+    }
+
     try {
       const parsed = parseFlags(args.slice(2), subDef.flags, subDef.positional);
       await subDef.handler(parsed);
@@ -61,7 +73,8 @@ export async function main(): Promise<void> {
   }
 
   // Normal command dispatch
-  const WORKTREE_GUARDED_COMMANDS = new Set(["run", "finish", "resume"]);
+  // Only `run` is worktree-guarded at the top level (job start/resume/finish are guarded via guardedSubcommands)
+  const WORKTREE_GUARDED_COMMANDS = new Set(["run"]);
 
   try {
     const parsed = parseFlags(args.slice(1), entry.flags, entry.positional);

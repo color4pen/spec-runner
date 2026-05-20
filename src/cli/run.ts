@@ -23,7 +23,7 @@ export async function runRunCore(
     const slugResolved = storeResolve(cwd, requestMdPath);
     if (!fs.existsSync(slugResolved)) {
       process.stderr.write(`Error: '${requestMdPath}' is neither a file path nor an active request slug.\n`);
-      process.stderr.write("Hint: Use 'specrunner request list' to see available slugs.\n");
+      process.stderr.write("Hint: Use 'specrunner request ls' to see available slugs.\n");
       return 1;
     }
     absolutePath = slugResolved;

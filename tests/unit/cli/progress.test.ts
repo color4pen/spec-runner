@@ -86,11 +86,11 @@ describe("TC-6.1: ProgressDisplay — EventBus emit → stdout 出力", () => {
     expect(output).toBe("");
   });
 
-  it("pipeline:complete イベントで 'Next: bun ./bin/specrunner.ts finish <slug>' を出力する", () => {
+  it("pipeline:complete イベントで 'Next: specrunner job finish <slug>' を出力する", () => {
     new ProgressDisplay(bus, { verbose: false, slug: "my-slug" });
     bus.emit("pipeline:complete", { state: makeState({ status: "awaiting-merge" }) });
     const output = stdoutSpy.mock.calls.map((c: Parameters<typeof process.stdout.write>) => c[0]).join("");
-    expect(output).toContain("Next: bun ./bin/specrunner.ts finish my-slug");
+    expect(output).toContain("Next: specrunner job finish my-slug");
   });
 
   it("pipeline:fail イベントで failure reason を出力する", () => {

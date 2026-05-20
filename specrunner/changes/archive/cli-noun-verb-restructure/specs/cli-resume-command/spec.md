@@ -1,7 +1,25 @@
-## Purpose
-
-TBD
 ## Requirements
+
+### Requirement: `specrunner resume` コマンドは `specrunner job resume` に移動する
+
+`specrunner resume <slug> [--from <step>]` の全機能は `specrunner job resume <slug> [--from <step>]` として提供される。コマンド名以外の振る舞い・引数・フラグ・再開ロジックはすべて既存仕様を維持する。
+
+旧 top-level `specrunner resume` は SHALL NOT 動作する（`Unknown command: resume` を返す）。
+
+#### Scenario: `specrunner job resume <slug>` が旧 `specrunner resume` と同等に動作する
+
+- **WHEN** ユーザーが `specrunner job resume my-feature` を実行する
+- **THEN** 既存の `specrunner resume my-feature` と同一の再開ロジックで動作し、exit code / stderr / stdout 出力は旧コマンドと同等である
+
+#### Scenario: `--from` フラグを指定した再開も動作する
+
+- **WHEN** ユーザーが `specrunner job resume my-feature --from code-review` を実行する
+- **THEN** `specrunner resume my-feature --from code-review` と同一の振る舞いで指定ステップから再開する
+
+#### Scenario: 旧 top-level `specrunner resume` は廃止される
+
+- **WHEN** ユーザーが `specrunner resume my-feature` を実行する
+- **THEN** `Unknown command: resume` を stderr に出し exit code 2 で終了する（`job resume` へ誘導するヒントを含む）
 
 ### Requirement: resume の既定動作は state の最終 step + verdict に基づき決定する
 
@@ -77,24 +95,3 @@ TBD
 
 - **WHEN** `resumePoint` が null の状態で `specrunner job resume <slug>` を `--from` なしで実行する
 - **THEN** stderr に「再開位置が不明です」を出力し exit code 1 で終了する
-
-### Requirement: `specrunner resume` コマンドは `specrunner job resume` に移動する
-
-`specrunner resume <slug> [--from <step>]` の全機能は `specrunner job resume <slug> [--from <step>]` として提供される。コマンド名以外の振る舞い・引数・フラグ・再開ロジックはすべて既存仕様を維持する。
-
-旧 top-level `specrunner resume` は SHALL NOT 動作する（`Unknown command: resume` を返す）。
-
-#### Scenario: `specrunner job resume <slug>` が旧 `specrunner resume` と同等に動作する
-
-- **WHEN** ユーザーが `specrunner job resume my-feature` を実行する
-- **THEN** 既存の `specrunner resume my-feature` と同一の再開ロジックで動作し、exit code / stderr / stdout 出力は旧コマンドと同等である
-
-#### Scenario: `--from` フラグを指定した再開も動作する
-
-- **WHEN** ユーザーが `specrunner job resume my-feature --from code-review` を実行する
-- **THEN** `specrunner resume my-feature --from code-review` と同一の振る舞いで指定ステップから再開する
-
-#### Scenario: 旧 top-level `specrunner resume` は廃止される
-
-- **WHEN** ユーザーが `specrunner resume my-feature` を実行する
-- **THEN** `Unknown command: resume` を stderr に出し exit code 2 で終了する（`job resume` へ誘導するヒントを含む）

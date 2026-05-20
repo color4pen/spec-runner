@@ -46,7 +46,7 @@
 - **WHEN** ユーザーが GitHub 上で承認を拒否し `access_denied` が返る
 - **THEN** `Authorization denied by user.` を stderr に出力し exit code 1 で終了する
 
-### Requirement: `specrunner run` は起動前に fail-fast バリデーションを固定順序で実行する
+### Requirement: `specrunner job start` は起動前に fail-fast バリデーションを固定順序で実行する
 
 `specrunner run` は MUST 以下の 5 段階を **この順序で** 実行し、最初に失敗したステップで即時終了する。後続ステップの評価は行わない。
 
@@ -71,48 +71,7 @@
 - **WHEN** config と token は揃い cwd は git repo だが origin が gitlab.com を指す
 - **THEN** ステップ 4 で `'origin' must point to github.com.` を stderr に出し exit 1
 
-### Requirement: `specrunner ps` は実行中のジョブを一覧表示する
-
-`specrunner ps [--all]` は MUST `~/.local/share/specrunner/jobs/` 以下の状態ファイルをすべて読み込み、`JOB_ID`、`SLUG`、`STEP`、`STATUS`、`BRANCH`、`AGE` の 6 列で SHALL テーブル表示する。`--all` flag を指定した場合は MUST `status=archived` のジョブも含めて表示する。`--all` 指定なしの場合は `status=archived` のジョブを SHALL NOT 表示する（デフォルトでは active / success / failed / terminated 状態のジョブのみ表示）。出力フォーマットの詳細は以下に従う:
-
-- **ソート順**: `createdAt` 降順（新しいジョブが上）
-- **JOB_ID**: uuid の先頭 8 文字に短縮する
-- **SLUG**: `getJobSlug(state)` の戻り値（`state.request.slug` → `state.branch` の prefix strip → `path.basename(state.request.path)` の fallback chain）。truncate は SHALL NOT 行う（terminal 幅による wrap は許容）
-- **BRANCH**: 40 文字を超える場合は 37 文字 + `...` に truncate する
-- **AGE**: `createdAt` からの経過時間を人間可読形式（例: `2m`, `1h`, `3d`）で表示する
-- **非 TTY 時**: TAB 区切りの固定フォーマットで出力する（ヘッダ行を含む）。列幅のパディングは不要
-
-#### Scenario: TTY 出力（複数ジョブ）
-
-- **WHEN** stdout が TTY でディレクトリに 3 件の状態ファイルが存在する
-- **THEN** 3 行 + ヘッダ行を固定列幅でテーブル表示し、JOB_ID は先頭 8 文字、SLUG は `getJobSlug` の戻り値で truncate なし、BRANCH は 40 文字超で truncate、AGE は人間可読で表示し exit code 0 で終了する。createdAt 降順でソートされる
-
-#### Scenario: 非 TTY 出力（パイプ等）
-
-- **WHEN** stdout が非 TTY（パイプ先あり等）でジョブが 2 件存在する
-- **THEN** ヘッダ行 + 2 行を TAB 区切りで出力する。列幅パディングは行わない。SLUG 列も含む
-
-#### Scenario: ジョブが 1 件もない
-
-- **WHEN** `~/.local/share/specrunner/jobs/` が存在しないか空
-- **THEN** `No jobs found.` を stdout に出力し exit code 0 で終了する
-
-#### Scenario: 複数ジョブが存在する
-
-- **WHEN** ディレクトリに 3 件の状態ファイルが存在する
-- **THEN** 3 行 + ヘッダ行をテーブル形式で stdout に表示し、JOB_ID は短縮 8 文字、SLUG は `getJobSlug` 戻り値、AGE は人間可読（例: `2m`, `1h`）で表示し exit code 0 で終了する
-
-#### Scenario: 破損した状態ファイルがある
-
-- **WHEN** ある状態ファイルが JSON パース不可
-- **THEN** `Skipping malformed file: <path>` を stderr に出し、残りのジョブは表示し exit code 0 で終了する
-
-#### Scenario: archived 状態のジョブが表示される
-
-- **WHEN** `state.status=archived` の job が存在し `specrunner ps --all` を実行する
-- **THEN** STATUS 列に `archived` を表示する row が含まれ、SLUG 列にも `getJobSlug` 戻り値が表示される
-
-### Requirement: `specrunner run <request.md>` は propose と spec-review セッションを直列で実行する
+### Requirement: `specrunner job start <request.md|slug>` は propose と spec-review セッションを直列で実行する
 
 `specrunner run` は MUST 引数で渡された request.md ファイルから request 情報を抽出し、cwd の git remote から repo を特定し、propose セッションを作成して完了を検知し、続いて spec-review セッションを作成して完了を検知する。spec-review 完了後、verdict を取得して stdout に表示し、SHALL 状態ファイルを各ステップ完了時に更新する。
 
@@ -121,42 +80,31 @@
 - **WHEN** propose は正常完了したが spec-review セッション完了後に `deps.githubClient.getRawFile` が adapter 内部リトライ後も null を返す
 - **THEN** state.status を `failed`、error.code を `SPEC_REVIEW_RESULT_NOT_FOUND` で記録し、stderr に `Spec-review result file not found on branch '<branch>'.` を出力し exit code 1 で終了する
 
-### Requirement: `specrunner` バイナリは 6 つのサブコマンドを提供する
+### Requirement: `specrunner` バイナリは noun-verb 体系のサブコマンド群を提供する
 
-`specrunner` CLI は SHALL `init`、`login`、`run`、`ps`、`doctor`、`finish` の 6 サブコマンドを提供する。引数なし、または不明なサブコマンドが渡された場合は usage を stderr に出力し、exit code 2 で MUST 終了する。usage 文字列には `doctor` の 1 行説明（例: `Diagnose environment / config / auth prerequisites`）と `finish` の 1 行説明（例: `Finalize a merged PR: archive openspec change and squash-merge feature PR (1-PR model)`）を含む。
+`specrunner` CLI は SHALL `request` / `job` / `runtime` の 3 名詞グループと `init` / `login` / `doctor` の環境系コマンドを提供する。引数なし、または不明なサブコマンドが渡された場合は usage を stderr に出力し、exit code 2 で MUST 終了する。
 
-`finish` サブコマンドの引数 / フラグは MUST 以下の形式である:
-
-```
-specrunner finish [<slug>] [--pr <num>] [--job <jobId>] [--dry-run]
-```
-
-- 第一引数 `<slug>` は推奨形（user の mental model に一致）
-- `--pr <num>` は PR 番号からの逆引き（gh pr view 経由）
-- `--job <jobId>` は forensics / debug 用（互換性のため残置）
-- `--dry-run` は Phase 0 pre-flight のみ実行する非破壊モード
-
-第一引数として jobId を直接渡す形（`specrunner finish <jobId>`）は SHALL NOT サポートされない。jobId 渡しは `--job` flag 経由のみ。
+旧 top-level コマンド `ps` / `rm` / `resume` / `finish` は SHALL NOT 提供される（廃止）。不明なサブコマンドとして `Unknown command: ps` 等を返す。
 
 #### Scenario: 引数なしで実行された場合
 
 - **WHEN** ユーザーが `specrunner` をサブコマンドなしで実行する
-- **THEN** stderr に各サブコマンドの 1 行説明（init / login / run / ps / doctor / finish）を含む usage を出力し、exit code 2 で終了する
+- **THEN** stderr に request / job / 環境系の 3 グループにまとめた usage を出力し、exit code 2 で終了する
 
-#### Scenario: 不明なサブコマンドが渡された場合
+#### Scenario: 旧 top-level `ps` を実行した場合
 
-- **WHEN** ユーザーが `specrunner foobar` を実行する
-- **THEN** `Unknown command: foobar` を stderr に出し、6 サブコマンドの usage を続けて表示し、exit code 2 で終了する
+- **WHEN** ユーザーが `specrunner ps` を実行する
+- **THEN** `Unknown command: ps` を stderr に出し exit code 2 で終了する
 
-#### Scenario: `--help` または `-h` が渡された場合
+#### Scenario: 旧 top-level `resume` を実行した場合
 
-- **WHEN** ユーザーが `specrunner --help` を実行する
-- **THEN** stdout に 6 サブコマンド分の usage を出力し、exit code 0 で終了する
+- **WHEN** ユーザーが `specrunner resume <slug>` を実行する
+- **THEN** `Unknown command: resume` を stderr に出し exit code 2 で終了する
 
-#### Scenario: `specrunner finish --help` の出力に新フラグが含まれる
+#### Scenario: 旧 top-level `finish` を実行した場合
 
-- **WHEN** ユーザーが `specrunner finish --help` を実行する
-- **THEN** stdout に `<slug>` 第一形・`--pr` `--job` `--dry-run` の説明が含まれる、exit code 0 で終了する
+- **WHEN** ユーザーが `specrunner finish <slug>` を実行する
+- **THEN** `Unknown command: finish` を stderr に出し exit code 2 で終了する
 
 ### Requirement: `specrunner doctor` は 7 カテゴリの環境前提条件を診断する
 
@@ -332,7 +280,7 @@ interface DoctorResult {
 - **WHEN** credentials.json は空または不在、かつ `GITHUB_TOKEN` env var が設定されている
 - **THEN** `github-token-present` check は `pass` を返し、message は `GitHub token is available (source: env)`
 
-### Requirement: `specrunner run` の preflight は GitHub token 取得元を info ログに出力する
+### Requirement: `specrunner job start` の preflight は GitHub token 取得元を info ログに出力する
 
 `runPreflight` 実行時、`resolveGitHubToken` が成功した直後に MUST 取得元を info ログに 1 行出力する。
 
@@ -374,7 +322,7 @@ scaffold には ADR 判断基準を HTML コメントとして含める:
 - **WHEN** `specrunner request template` を実行する
 - **THEN** stdout に `<!-- adr 判断基準:` で始まる HTML コメントが出力される
 
-### Requirement: `specrunner request create` / `specrunner request review` は LLM 呼び出しの進捗を stderr に出力する
+### Requirement: `specrunner request generate` / `specrunner request review` は LLM 呼び出しの進捗を stderr に出力する
 
 `specrunner request create` と `specrunner request review` は MUST LLM query() 呼び出しの開始時と完了時に stderr へ進捗メッセージを出力する。
 
@@ -437,3 +385,285 @@ scaffold には ADR 判断基準を HTML コメントとして含める:
   - ポーリング試行回数・間隔・セッション status
   - セッション作成・削除タイミング（managed / local 両 runtime）
   - step 遷移タイムスタンプ
+
+### Requirement: `specrunner --help` は主語別グルーピングで表示される
+
+`specrunner --help` は MUST 以下の 4 ブロック構造で usage を stdout に出力する。exit code 0 で終了する。
+
+```
+request commands:
+  request new <slug>            template から request.md を作る
+  request generate "<text>"     LLM 生成で request.md を作る
+  request ls                    active 配下の request 一覧
+  request show <slug>           request.md の本文を表示
+  request rm <slug>             active 配下から削除
+  request validate <file|slug>  構文 / 規律 check
+  request template              雛形 markdown を stdout
+  request review <slug|file>    architect agent によるレビュー
+
+job commands:
+  job start <request-slug|file>  pipeline 開始、jobId 発行
+  job ls                         全 job 一覧
+  job show <jobId|slug>          job state 詳細
+  job rm <jobId>                 job state file 削除
+  job resume <slug>              halted job を再開
+  job finish <slug>              PR merge + archive
+
+environment commands:
+  init                           config scaffold
+  login                          GitHub Device Flow OAuth
+  doctor                         環境診断
+  runtime setup|status|reset     Manage Anthropic runtime resources
+
+Aliases:
+  run <slug|file>                job start の互換 alias
+```
+
+#### Scenario: `--help` または `-h` が渡された場合
+
+- **WHEN** ユーザーが `specrunner --help` を実行する
+- **THEN** stdout に request / job / environment の 3 グループと Aliases セクションにまとめた usage を出力し、exit code 0 で終了する
+
+#### Scenario: `--help` の Aliases セクションに `run` が記載されている
+
+- **WHEN** ユーザーが `specrunner --help` を実行する
+- **THEN** Aliases セクションに `run` が `job start` の互換 alias として記載されている
+
+### Requirement: `specrunner request` サブコマンド群が動作する
+
+`specrunner request` は SHALL 以下の 8 サブコマンドを提供する。
+
+| サブコマンド | 機能 |
+|---|---|
+| `new <slug>` | template から request.md を作る |
+| `generate "<text>"` | LLM 生成で request.md を作る（旧 `request create` の rename） |
+| `ls` | active 配下の request 一覧（旧 `request list` の rename） |
+| `show <slug>` | request.md の本文を stdout に表示 |
+| `rm <slug>` | active 配下から削除 |
+| `validate <file|slug>` | 構文 / 規律 check（静的、LLM 不使用）。slug で active 配下を解決する |
+| `template` | 雛形 markdown を stdout |
+| `review <slug|file> [--json]` | architect agent によるレビュー（one-shot LLM、state-less）。slug で active 配下を解決する。`--json` フラグで機械可読 JSON を stdout に出力する |
+
+旧 `request create` は SHALL NOT 動作する（`Unknown request subcommand: create` を返す）。
+旧 `request list` は SHALL NOT 動作する（`Unknown request subcommand: list` を返す）。
+
+#### Scenario: `specrunner request show <slug>` が request.md を表示する
+
+- **WHEN** `specrunner request show my-feature` を実行する
+- **THEN** `specrunner/requests/active/my-feature/request.md` の本文を stdout に出力し exit code 0 で終了する
+
+#### Scenario: `specrunner request validate <slug>` が slug で解決する
+
+- **WHEN** `specrunner request validate my-feature` を実行する（file path ではなく slug 指定）
+- **THEN** `specrunner/requests/active/my-feature/request.md` を対象として validation を実行する
+
+#### Scenario: `specrunner request review <slug>` が slug で解決する
+
+- **WHEN** `specrunner request review my-feature` を実行する（file path ではなく slug 指定）
+- **THEN** `specrunner/requests/active/my-feature/request.md` を対象としてレビューを実行する
+
+#### Scenario: 旧 `request create` を実行した場合
+
+- **WHEN** ユーザーが `specrunner request create "..."` を実行する
+- **THEN** `Unknown request subcommand: create` を stderr に出し exit code 2 で終了する
+
+#### Scenario: 旧 `request list` を実行した場合
+
+- **WHEN** ユーザーが `specrunner request list` を実行する
+- **THEN** `Unknown request subcommand: list` を stderr に出し exit code 2 で終了する
+
+### Requirement: `specrunner job` サブコマンド群が動作する
+
+`specrunner job` は SHALL 以下の 6 サブコマンドを提供する。
+
+| サブコマンド | 機能 |
+|---|---|
+| `start <request-slug\|file>` | pipeline 開始、jobId 発行（旧 `run` の主流名）。slug / file path 両方を受ける |
+| `ls` | 全 job 一覧（旧 `ps`） |
+| `show <jobId\|slug>` | job state の主要フィールド（jobId / status / branch / step / createdAt / updatedAt）を stdout に表示 |
+| `rm <jobId>` | job state file 削除 |
+| `resume <slug>` | halted job を再開 |
+| `finish <slug>` | PR merge + archive |
+
+不明な job サブコマンドは MUST `Unknown job subcommand: <name>` を stderr に出し exit code 2 で終了する。
+
+#### Scenario: `specrunner job start <slug>` で pipeline を起動する
+
+- **WHEN** `specrunner job start my-feature` を実行する（slug 指定）
+- **THEN** `specrunner/requests/active/my-feature/request.md` を対象として pipeline を開始する
+
+#### Scenario: `specrunner job start <file>` で pipeline を起動する
+
+- **WHEN** `specrunner job start path/to/request.md` を実行する（file path 指定）
+- **THEN** 指定された request.md ファイルを対象として pipeline を開始する
+
+#### Scenario: `specrunner job ls` で job 一覧を表示する
+
+- **WHEN** `specrunner job ls` を実行する
+- **THEN** `~/.local/share/specrunner/jobs/` 以下の job state をテーブル表示する（旧 `ps` と同等）
+
+#### Scenario: `specrunner job show <jobId>` で job state を表示する
+
+- **WHEN** `specrunner job show <jobId>` を実行する
+- **THEN** jobId / status / branch / step / createdAt / updatedAt の主要フィールドを stdout に表示し exit code 0 で終了する
+
+#### Scenario: 不明な job サブコマンドを実行した場合
+
+- **WHEN** ユーザーが `specrunner job unknown` を実行する
+- **THEN** `Unknown job subcommand: unknown` を stderr に出し exit code 2 で終了する
+
+### Requirement: `specrunner run <slug>` は `job start <slug>` の唯一の互換 alias として動作する
+
+`specrunner run <slug>` は MUST `specrunner job start <slug>` と同等に動作する唯一の互換 alias である。slug / file path 両方を受ける。それ以外の旧 alias（`ps` / top-level `rm` / top-level `resume` / top-level `finish`）は SHALL NOT 提供される。
+
+#### Scenario: `specrunner run <slug>` が `job start` に展開される
+
+- **WHEN** `specrunner run my-feature` を実行する
+- **THEN** `specrunner job start my-feature` と同一の挙動で pipeline を開始する
+
+### Requirement: `job start` / `job resume` / `job finish` は worktree guard の対象である
+
+`job start` / `job resume` / `job finish` は MUST linked worktree 内から実行された場合 worktree guard error になる。`job ls` / `job rm` / `job show` は linked worktree 内でも実行できる。
+
+subcommand dispatch path は MUST top-level command と同じ worktree guard を通す（既存の `WORKTREE_GUARDED_COMMANDS` set による guard を subcommand dispatch でも適用する）。
+
+#### Scenario: linked worktree 内で `job start` を実行した場合
+
+- **WHEN** linked worktree ディレクトリ内で `specrunner job start <slug>` を実行する
+- **THEN** worktree guard error を出力し exit code 1 で終了する（pipeline は起動されない）
+
+#### Scenario: linked worktree 内で `job ls` を実行した場合
+
+- **WHEN** linked worktree ディレクトリ内で `specrunner job ls` を実行する
+- **THEN** worktree guard をスキップし、通常通り job 一覧を表示する
+
+#### Scenario: linked worktree 内で `job rm` を実行した場合
+
+- **WHEN** linked worktree ディレクトリ内で `specrunner job rm <jobId>` を実行する
+- **THEN** worktree guard をスキップし、通常通り job state file を削除する
+
+#### Scenario: linked worktree 内で `job show` を実行した場合
+
+- **WHEN** linked worktree ディレクトリ内で `specrunner job show <jobId>` を実行する
+- **THEN** worktree guard をスキップし、通常通り job state を表示する
+
+### Requirement: `specrunner request new <slug>` は template から request.md を作成する
+
+`specrunner request new <slug> [--type <type>]` は MUST 以下を実行する:
+
+1. slug が `/^[a-z0-9][a-z0-9-]{0,63}$/` にマッチしない場合は slug validation error を stderr に出し exit code 2 で終了する
+2. `checkSlugCollision(cwd, slug)` で active / merged 配下の slug 重複をチェックする。重複時は `SLUG_COLLISION` error で exit 1
+3. `--type` で指定された type（デフォルト: `new-feature`）の template を生成する
+4. `specrunner/requests/active/<slug>/request.md` にファイルを書き出す
+5. stderr に `Created: specrunner/requests/active/<slug>/request.md` を出力する
+6. exit code 0 で終了する
+
+#### Scenario: 新規 slug で request new
+
+- **WHEN** `specrunner request new my-feature` を実行し、`my-feature` slug が未使用
+- **THEN** `specrunner/requests/active/my-feature/request.md` が作成され、stderr に `Created: specrunner/requests/active/my-feature/request.md` が出力され、exit code 0
+
+#### Scenario: 既存 slug で request new（slug collision）
+
+- **WHEN** `specrunner request new existing-slug` を実行し、`existing-slug` が active に存在
+- **THEN** `SLUG_COLLISION` error メッセージが出力され、exit code 1
+
+#### Scenario: 不正 slug で request new（path traversal 防止）
+
+- **WHEN** `specrunner request new "../../evil"` を実行する
+- **THEN** slug validation error を stderr に出し exit code 2 で終了する
+
+### Requirement: `specrunner request show <slug>` は request.md の本文を表示する
+
+`specrunner request show <slug>` は MUST `specrunner/requests/active/<slug>/request.md` の内容を stdout に出力する。slug が active 配下に存在しない場合は `Request not found: <slug>` を stderr に出力し exit code 1 で終了する。
+
+slug は `/^[a-z0-9][a-z0-9-]{0,63}$/` に MUST マッチする。マッチしない場合は exit code 2 で拒否する。
+
+#### Scenario: 存在する slug で request show
+
+- **WHEN** `specrunner request show my-feature` を実行し、active 配下に `my-feature/request.md` が存在する
+- **THEN** request.md の全文が stdout に出力され、exit code 0
+
+#### Scenario: 存在しない slug で request show
+
+- **WHEN** `specrunner request show nonexistent` を実行し、active 配下に `nonexistent` が存在しない
+- **THEN** stderr に `Request not found: nonexistent` を出力し、exit code 1
+
+### Requirement: `specrunner request rm <slug>` は active 配下から request を削除する
+
+`specrunner request rm <slug>` は MUST `specrunner/requests/active/<slug>/` ディレクトリを再帰削除する。slug が active 配下に存在しない場合は `Request not found: <slug>` を stderr に出力し exit code 1 で終了する。
+
+slug は `/^[a-z0-9][a-z0-9-]{0,63}$/` に MUST マッチする。マッチしない場合は exit code 2 で拒否する（path traversal 防止）。
+
+#### Scenario: 存在する slug で request rm
+
+- **WHEN** `specrunner request rm my-feature` を実行し、active 配下に `my-feature/` が存在する
+- **THEN** ディレクトリが削除され、stderr に削除メッセージが出力され、exit code 0
+
+#### Scenario: 存在しない slug で request rm
+
+- **WHEN** `specrunner request rm nonexistent` を実行し、active 配下に `nonexistent` が存在しない
+- **THEN** stderr に `Request not found: nonexistent` を出力し、exit code 1
+
+#### Scenario: path traversal slug で request rm
+
+- **WHEN** `specrunner request rm "../../etc"` を実行する
+- **THEN** slug validation error を stderr に出し exit code 2 で終了する（ファイルシステム外への削除を防ぐ）
+
+### Requirement: `specrunner job show <jobId|slug>` は job state の詳細を表示する
+
+`specrunner job show <jobId|slug>` は MUST 以下の 6 フィールドを stdout に出力する:
+
+- `Job ID`: 完全な UUID
+- `Status`: job の現在ステータス
+- `Branch`: 関連ブランチ名（未設定時は `(none)`）
+- `Step`: 現在/最終ステップ名（未設定時は `(none)`）
+- `Created`: createdAt タイムスタンプ
+- `Updated`: updatedAt タイムスタンプ
+
+入力が jobId（UUID 形式）の場合は直接 load する。slug の場合は全 job を走査し `getJobSlug()` で一致するものを解決する（複数該当時は最新 `updatedAt` 優先）。対象が存在しない場合は stderr にエラーを出力し exit code 1 で終了する。
+
+#### Scenario: jobId で job show（6 フィールド表示）
+
+- **WHEN** `specrunner job show abcd1234-...` を実行し、対応する job が存在する
+- **THEN** Job ID / Status / Branch / Step / Created / Updated の 6 フィールドが stdout に出力され、exit code 0
+
+#### Scenario: slug で job show
+
+- **WHEN** `specrunner job show my-feature` を実行し、slug が `my-feature` の job が存在する
+- **THEN** 6 フィールドが stdout に出力され、exit code 0
+
+#### Scenario: 存在しない入力で job show
+
+- **WHEN** `specrunner job show nonexistent` を実行し、該当 job が存在しない
+- **THEN** stderr にエラーメッセージを出力し、exit code 1
+
+### Requirement: job サブコマンドは jobId 引数を UUID 形式で検証する
+
+`job rm` / `job show` / `job resume` / `job finish` の `<jobId>` 引数は `/^[a-f0-9-]{36}$/` にマッチしない場合、`Error: invalid jobId format` を stderr に出力し exit code 1 で終了する。これにより `~/.local/share/specrunner/jobs/` ディレクトリ外へのパス解決（`../` 等）を防ぐ。
+
+#### Scenario: UUID でない jobId を渡した場合にエラーを返す
+
+- **GIVEN** ユーザーが `specrunner job rm ../../../etc/passwd` を実行する
+- **WHEN** jobId バリデーションが走る
+- **THEN** `Error: invalid jobId format` を stderr に出力して exit code 1 で終了する
+- **AND** ファイルシステムへのアクセスは行われない
+
+#### Scenario: 正常 UUID は受理される
+
+- **WHEN** ユーザーが `specrunner job rm abcd1234-ef56-7890-abcd-ef1234567890` を実行する
+- **THEN** jobId validation を通過し、通常の削除処理に進む
+
+### Requirement: `request new` / `request show` / `request rm` / `request validate` / `request review` は slug validation を実行する
+
+`request new <slug>` / `request show <slug>` / `request rm <slug>` / `request validate <slug>` / `request review <slug>` は slug 入力に対し MUST `/^[a-z0-9][a-z0-9-]{0,63}$/` でバリデーションを実行する。マッチしない入力は exit code 2 で拒否し、path traversal（`../../` 等）を防ぐ。
+
+#### Scenario: 不正 slug（path traversal）を拒否する
+
+- **WHEN** `specrunner request rm "../../etc/passwd"` を実行する
+- **THEN** stderr に validation error を出力し exit code 2 で終了する。ファイルシステム操作は実行されない
+
+#### Scenario: 正常 slug は受理される
+
+- **WHEN** `specrunner request new "my-feature-123"` を実行する（slug は `/^[a-z0-9][a-z0-9-]{0,63}$/` にマッチ）
+- **THEN** slug validation を通過し、通常の処理に進む

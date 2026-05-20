@@ -174,7 +174,7 @@ export function noCommitDetectedError(stepName: string, branch: string): SpecRun
 export function pushFailedError(stepName: string, branch: string, detail: string): SpecRunnerError {
   return new SpecRunnerError(
     ERROR_CODES.PUSH_FAILED,
-    `Check network connectivity and remote permissions. Retry with 'specrunner resume'.`,
+    `Check network connectivity and remote permissions. Retry with 'specrunner job resume'.`,
     `${stepName}: git push origin ${branch} failed after retry: ${detail}`,
   );
 }
@@ -223,7 +223,7 @@ export function pollTimeoutError(sessionId: string, elapsedMs: number): SpecRunn
   const elapsedSec = Math.round(elapsedMs / 1000);
   return new SpecRunnerError(
     ERROR_CODES.POLL_TIMEOUT,
-    "Session may still be running on Anthropic side. Use 'specrunner resume' to retry or 'specrunner rm <jobId>' to abort.",
+    "Session may still be running on Anthropic side. Use 'specrunner job resume' to retry or 'specrunner job rm <jobId>' to abort.",
     `Session '${sessionId}' did not complete within ${elapsedSec}s (${elapsedMs}ms).`,
   );
 }

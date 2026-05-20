@@ -1,14 +1,14 @@
 /**
- * Tests for bin/specrunner.ts resume case — argument parsing
+ * Tests for bin/specrunner.ts `job resume` dispatch — argument parsing
  *
- * TC-DISPATCH-001: resume with valid slug → calls runResume with slug
- * TC-DISPATCH-002: resume without slug → exit 2
- * TC-DISPATCH-003: resume with --from=critic → passes from: "critic"
- * TC-DISPATCH-004: resume with --from=fixer → passes from: "fixer"
- * TC-DISPATCH-005: resume with --from=creator → passes from: "creator"
- * TC-DISPATCH-006: resume with invalid --from value → exit 2
- * TC-DISPATCH-007: resume with --force → passes force: true
- * TC-DISPATCH-008: resume with unknown flag → exit 2
+ * TC-DISPATCH-001: job resume with valid slug → calls runResume with slug
+ * TC-DISPATCH-002: job resume without slug → exit 2
+ * TC-DISPATCH-003: job resume with --from=critic → passes from: "critic"
+ * TC-DISPATCH-004: job resume with --from=fixer → passes from: "fixer"
+ * TC-DISPATCH-005: job resume with --from=creator → passes from: "creator"
+ * TC-DISPATCH-006: job resume with invalid --from value → exit 2
+ * TC-DISPATCH-007: job resume with --force → passes force: true
+ * TC-DISPATCH-008: job resume with unknown flag → exit 2
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
@@ -30,6 +30,10 @@ vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn() }));
 vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn() }));
 vi.mock("../../../src/cli/finish.js", () => ({ runFinish: vi.fn() }));
 vi.mock("../../../src/cli/rm.js", () => ({ runRm: vi.fn() }));
+vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn() }));
+vi.mock("../../../src/core/command/request-new.js", () => ({ executeNew: vi.fn() }));
+vi.mock("../../../src/core/command/request-show.js", () => ({ executeShow: vi.fn() }));
+vi.mock("../../../src/core/command/request-rm.js", () => ({ executeRm: vi.fn() }));
 
 let originalArgv: string[];
 let exitSpy: ReturnType<typeof vi.spyOn>;
@@ -62,12 +66,12 @@ async function runMain(args: string[]) {
   }
 }
 
-// TC-DISPATCH-001: resume with valid slug → calls runResume
-describe("TC-DISPATCH-001: resume with valid slug", () => {
+// TC-DISPATCH-001: job resume with valid slug → calls runResume
+describe("TC-DISPATCH-001: job resume with valid slug", () => {
   it("calls runResume with the slug argument", async () => {
     const { runResume } = await import("../../../src/cli/resume.js");
 
-    await runMain(["resume", "my-feature-slug"]);
+    await runMain(["job", "resume", "my-feature-slug"]);
 
     expect(runResume).toHaveBeenCalledWith(
       "my-feature-slug",
@@ -76,21 +80,21 @@ describe("TC-DISPATCH-001: resume with valid slug", () => {
   });
 });
 
-// TC-DISPATCH-002: resume without slug → exit 2
-describe("TC-DISPATCH-002: resume without slug", () => {
+// TC-DISPATCH-002: job resume without slug → exit 2
+describe("TC-DISPATCH-002: job resume without slug", () => {
   it("exits with code 2 when no slug is provided", async () => {
-    const error = await runMain(["resume"]);
+    const error = await runMain(["job", "resume"]);
     expect(error).toBe("process.exit(2)");
     expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining("requires a <slug>"));
   });
 });
 
-// TC-DISPATCH-003: resume with --from=critic
+// TC-DISPATCH-003: job resume with --from=critic
 describe("TC-DISPATCH-003: --from=critic", () => {
   it("passes from: 'critic' to runResume", async () => {
     const { runResume } = await import("../../../src/cli/resume.js");
 
-    await runMain(["resume", "my-slug", "--from=critic"]);
+    await runMain(["job", "resume", "my-slug", "--from=critic"]);
 
     expect(runResume).toHaveBeenCalledWith(
       "my-slug",
@@ -99,12 +103,12 @@ describe("TC-DISPATCH-003: --from=critic", () => {
   });
 });
 
-// TC-DISPATCH-004: resume with --from=fixer
+// TC-DISPATCH-004: job resume with --from=fixer
 describe("TC-DISPATCH-004: --from=fixer", () => {
   it("passes from: 'fixer' to runResume", async () => {
     const { runResume } = await import("../../../src/cli/resume.js");
 
-    await runMain(["resume", "my-slug", "--from=fixer"]);
+    await runMain(["job", "resume", "my-slug", "--from=fixer"]);
 
     expect(runResume).toHaveBeenCalledWith(
       "my-slug",
@@ -113,12 +117,12 @@ describe("TC-DISPATCH-004: --from=fixer", () => {
   });
 });
 
-// TC-DISPATCH-005: resume with --from=creator
+// TC-DISPATCH-005: job resume with --from=creator
 describe("TC-DISPATCH-005: --from=creator", () => {
   it("passes from: 'creator' to runResume", async () => {
     const { runResume } = await import("../../../src/cli/resume.js");
 
-    await runMain(["resume", "my-slug", "--from=creator"]);
+    await runMain(["job", "resume", "my-slug", "--from=creator"]);
 
     expect(runResume).toHaveBeenCalledWith(
       "my-slug",
@@ -127,21 +131,21 @@ describe("TC-DISPATCH-005: --from=creator", () => {
   });
 });
 
-// TC-DISPATCH-006: resume with invalid --from value → exit 2
+// TC-DISPATCH-006: job resume with invalid --from value → exit 2
 describe("TC-DISPATCH-006: invalid --from value", () => {
   it("exits with code 2 for invalid --from value", async () => {
-    const error = await runMain(["resume", "my-slug", "--from=invalid"]);
+    const error = await runMain(["job", "resume", "my-slug", "--from=invalid"]);
     expect(error).toBe("process.exit(2)");
     expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid --from value"));
   });
 });
 
-// TC-DISPATCH-007: resume with --force → passes force: true
+// TC-DISPATCH-007: job resume with --force → passes force: true
 describe("TC-DISPATCH-007: --force flag", () => {
   it("passes force: true to runResume", async () => {
     const { runResume } = await import("../../../src/cli/resume.js");
 
-    await runMain(["resume", "my-slug", "--force"]);
+    await runMain(["job", "resume", "my-slug", "--force"]);
 
     expect(runResume).toHaveBeenCalledWith(
       "my-slug",
@@ -150,10 +154,10 @@ describe("TC-DISPATCH-007: --force flag", () => {
   });
 });
 
-// TC-DISPATCH-008: resume with unknown flag → exit 2
+// TC-DISPATCH-008: job resume with unknown flag → exit 2
 describe("TC-DISPATCH-008: unknown flag", () => {
   it("exits with code 2 for unknown flags", async () => {
-    const error = await runMain(["resume", "my-slug", "--unknown-flag"]);
+    const error = await runMain(["job", "resume", "my-slug", "--unknown-flag"]);
     expect(error).toBe("process.exit(2)");
     expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining("Unknown flag(s)"));
   });

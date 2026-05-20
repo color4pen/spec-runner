@@ -47,7 +47,7 @@ export class ProgressDisplay {
   }
 
   private onPipelineComplete(_p: unknown): void {
-    process.stdout.write(`\nNext: bun ./bin/specrunner.ts finish ${this.options.slug}\n`);
+    process.stdout.write(`\nNext: specrunner job finish ${this.options.slug}\n`);
   }
 
   private onPipelineFail(p: { reason: string }): void {
