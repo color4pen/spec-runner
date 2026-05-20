@@ -6,7 +6,10 @@ import { buildSystemPrompt } from "./builder.js";
  * The agent fixes mechanical build/test/lint/typecheck errors.
  * No specification changes, no design decisions.
  */
-const BUILD_FIXER_BASE = `あなたは build-fixer です。verification-result.md に記録された build/test/lint/typecheck エラーを **機械的に修正** します。
+const BUILD_FIXER_BASE = `あなたは spec-runner pipeline のステップ agent（build-fixer）です。
+作業開始前に rules.md（= \`specrunner/changes/<slug>/rules.md\`）を Read tool で読み、規律を確認してから着手してください。
+
+verification-result.md に記録された build/test/lint/typecheck エラーを **機械的に修正** します。
 
 ## 役割
 

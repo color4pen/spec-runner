@@ -6,9 +6,33 @@
  * TC-MR-003: registerCleanup returns handle; teardown is no-op
  * TC-MR-004: buildDeps includes client and runner
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import * as os from "node:os";
 import { ManagedRuntime } from "../../../../src/core/runtime/managed.js";
 import { ManagedAgentRunner } from "../../../../src/adapter/managed-agent/agent-runner.js";
+
+let tempDir: string;
+let originalXdgDataHome: string | undefined;
+
+beforeEach(async () => {
+  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "managed-runtime-test-"));
+  originalXdgDataHome = process.env["XDG_DATA_HOME"];
+  process.env["XDG_DATA_HOME"] = tempDir;
+  vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+});
+
+afterEach(async () => {
+  if (originalXdgDataHome !== undefined) {
+    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
+  } else {
+    delete process.env["XDG_DATA_HOME"];
+  }
+  await fs.rm(tempDir, { recursive: true, force: true });
+  vi.clearAllMocks();
+  vi.restoreAllMocks();
+});
 
 function buildMockSessionClient() {
   return {
@@ -124,5 +148,91 @@ describe("TC-MR-004: buildDeps includes sessionClient and ManagedAgentRunner", (
     expect(deps.runner).toBeInstanceOf(ManagedAgentRunner);
     expect(deps.cwd).toBe("/repo");
     expect(deps.githubClient).toBe(githubClient);
+  });
+});
+
+// Helper: build a spawnFn mock for ManagedRuntime setupWorkspace with requestFilePath
+function buildManagedMockSpawnFn() {
+  const calls: Array<{ cmd: string; args: string[] }> = [];
+  const fn = vi.fn().mockImplementation(async (cmd: string, args: string[]) => {
+    calls.push({ cmd, args: [...args] });
+    return { exitCode: 0, stdout: "", stderr: "" };
+  });
+  return { spawnFn: fn as unknown as import("../../../../src/util/spawn.js").SpawnFn, calls };
+}
+
+// Helper: create a minimal job state in tempDir (requires XDG_DATA_HOME = tempDir)
+async function makeJobStateForManaged(slug = "test-slug") {
+  const { createJobState } = await import("../../../../src/state/store.js");
+  return createJobState({
+    request: {
+      path: path.join(tempDir, "request.md"),
+      title: "Test",
+      type: "new-feature",
+      slug,
+    },
+    repository: { owner: "testowner", name: "testrepo" },
+  });
+}
+
+// TC-MR-005: setupWorkspace copies rules.md to change folder when present (TC-14)
+describe("TC-MR-005: setupWorkspace copies rules.md to change folder when present", () => {
+  it("copies specrunner/rules.md to change folder and stages it with git add", async () => {
+    // Arrange: create request.md and specrunner/rules.md in tempDir (the cwd)
+    await fs.writeFile(path.join(tempDir, "request.md"), "# Test Request\n");
+    await fs.mkdir(path.join(tempDir, "specrunner"), { recursive: true });
+    await fs.writeFile(path.join(tempDir, "specrunner", "rules.md"), "# Rules\n");
+
+    const sessionClient = buildMockSessionClient();
+    const githubClient = buildMockGitHubClient();
+    const { spawnFn, calls } = buildManagedMockSpawnFn();
+    const runtime = new ManagedRuntime(tempDir, sessionClient, githubClient, buildRepo(), spawnFn, "");
+
+    const jobState = await makeJobStateForManaged();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {
+      requestFilePath: path.join(tempDir, "request.md"),
+      branchName: "feat/test-slug-abcd1234",
+    });
+
+    // Verify rules.md was copied to the change folder
+    const destPath = path.join(tempDir, "specrunner", "changes", "test-slug", "rules.md");
+    await fs.access(destPath); // throws ENOENT if copy did not happen
+
+    // Verify git add was called with the rules.md path
+    const rulesAddCall = calls.find(
+      (c) => c.cmd === "git" && c.args[0] === "add" && c.args.some((a) => a.includes("rules.md")),
+    );
+    expect(rulesAddCall).toBeDefined();
+  });
+});
+
+// TC-MR-006: setupWorkspace does not throw when rules.md is absent (TC-18)
+describe("TC-MR-006: setupWorkspace does not throw when specrunner/rules.md is absent (ENOENT guard)", () => {
+  it("logs warning to stderr and does not throw when rules.md is not found", async () => {
+    // Arrange: create request.md but NO specrunner/rules.md
+    await fs.writeFile(path.join(tempDir, "request.md"), "# Test Request\n");
+    // specrunner/ dir does not exist → fs.access will throw ENOENT
+
+    const sessionClient = buildMockSessionClient();
+    const githubClient = buildMockGitHubClient();
+    const { spawnFn } = buildManagedMockSpawnFn();
+    const runtime = new ManagedRuntime(tempDir, sessionClient, githubClient, buildRepo(), spawnFn, "");
+
+    const jobState = await makeJobStateForManaged();
+    // Must NOT throw
+    await expect(
+      runtime.setupWorkspace("test-slug", jobState.jobId, {
+        requestFilePath: path.join(tempDir, "request.md"),
+        branchName: "feat/test-slug-abcd1234",
+      }),
+    ).resolves.toBeDefined();
+
+    // Must log warning to stderr
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const warningCalls = stderrMock.mock.calls as [string][];
+    const hasWarning = warningCalls.some(
+      ([msg]) => typeof msg === "string" && msg.includes("specrunner/rules.md not found"),
+    );
+    expect(hasWarning).toBe(true);
   });
 });

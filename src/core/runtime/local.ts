@@ -20,6 +20,7 @@ import { loadJobState, updateJobState } from "../../state/store.js";
 import { spawnCommand } from "../../util/spawn.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { changeFolderPath } from "../../util/paths.js";
+import { copyRulesToChangeFolder } from "../../util/copy-artifacts.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./strategy.js";
 
 // Internal structure stored inside CleanupHandle
@@ -232,7 +233,10 @@ export class LocalRuntime implements RuntimeStrategy {
         );
       }
 
-      // Commit request.md (both locations) as the first commit on the feature branch (D2)
+      // Also copy rules.md into the change folder so agents can read project disciplines
+      await copyRulesToChangeFolder(worktreePath, slug, this.spawnFn);
+
+      // Commit request.md (both locations) and rules.md as the first commit on the feature branch (D2)
       const gitCommitResult = await this.spawnFn(
         "git",
         ["commit", "-m", `add request.md for ${slug}`],

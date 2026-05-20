@@ -20,6 +20,7 @@ import type { StepName } from "../../state/schema.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { spawnCommand } from "../../util/spawn.js";
 import { changeFolderPath } from "../../util/paths.js";
+import { copyRulesToChangeFolder } from "../../util/copy-artifacts.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./strategy.js";
 
 export class ManagedRuntime implements RuntimeStrategy {
@@ -127,7 +128,10 @@ export class ManagedRuntime implements RuntimeStrategy {
         );
       }
 
-      // git commit
+      // Also copy rules.md into the change folder so agents can read project disciplines
+      await copyRulesToChangeFolder(this.cwd, slug, this.spawnFn);
+
+      // git commit request.md (both locations) and rules.md
       const gitCommitResult = await this.spawnFn(
         "git",
         ["commit", "-m", `add request.md for ${slug}`],

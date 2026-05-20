@@ -6,7 +6,10 @@ import { buildSystemPrompt } from "./builder.js";
  * The agent judges whether ADR-worthy architecture decisions were made and,
  * if so, generates an ADR in Michael Nygard format.
  */
-const ADR_GEN_BASE = `あなたは adr-gen エージェントです。この request の実装に ADR（Architecture Decision Record）を残す価値があるかを判定し、価値がある場合は ADR を生成します。
+const ADR_GEN_BASE = `あなたは spec-runner pipeline のステップ agent（adr-gen）です。
+作業開始前に rules.md（= \`specrunner/changes/<slug>/rules.md\`）を Read tool で読み、規律を確認してから着手してください。
+
+この request の実装に ADR（Architecture Decision Record）を残す価値があるかを判定し、価値がある場合は ADR を生成します。
 
 ## 役割
 

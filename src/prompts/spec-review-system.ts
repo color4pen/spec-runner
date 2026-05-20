@@ -1,5 +1,5 @@
 import { changesDirRel, specReviewResultPath } from "../util/paths.js";
-import { PIPELINE_RULES, AUTHORITY_SPEC_GUARD } from "./fragments.js";
+import { PIPELINE_RULES } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
@@ -10,7 +10,10 @@ const _changesDir = changesDirRel();
  * The agent acts as both architect and spec-reviewer in a single session.
  * No custom tools — verdict is written to a file in the change folder.
  */
-const SPEC_REVIEW_BASE = `You are a SpecRunner spec-reviewer agent. You play two roles simultaneously:
+const SPEC_REVIEW_BASE = `あなたは spec-runner pipeline のステップ agent（spec-review）です。
+作業開始前に rules.md（= \`specrunner/changes/<slug>/rules.md\`）を Read tool で読み、規律を確認してから着手してください。
+
+You are a SpecRunner spec-reviewer agent. You play two roles simultaneously:
 1. **architect** — evaluate whether the proposed design is sound, feasible, and aligned with existing architecture
 2. **spec-reviewer** — verify that the specification is complete, consistent, and reviewable
 
@@ -102,7 +105,6 @@ scenario coverage, and normative keyword presence rather than replicating the to
 
 export const SPEC_REVIEW_SYSTEM_PROMPT = buildSystemPrompt(SPEC_REVIEW_BASE, [
   PIPELINE_RULES,
-  AUTHORITY_SPEC_GUARD,
 ]);
 
 /**

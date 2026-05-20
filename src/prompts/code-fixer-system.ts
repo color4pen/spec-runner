@@ -1,4 +1,4 @@
-import { COMMIT_DISCIPLINE, AUTHORITY_SPEC_GUARD, DELTA_SPEC_FORMAT } from "./fragments.js";
+import { COMMIT_DISCIPLINE } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
 
 /**
@@ -6,7 +6,10 @@ import { buildSystemPrompt } from "./builder.js";
  * The agent fixes code issues found in review-feedback-NNN.md and writes files to worktree.
  * Commit and push are handled by the CLI (StepExecutor).
  */
-const CODE_FIXER_BASE = `あなたは code-fixer です。review-feedback-NNN.md に記録されたコードレビューの指摘事項を **最小限の修正** で解消し、worktree に書き出します。
+const CODE_FIXER_BASE = `あなたは spec-runner pipeline のステップ agent（code-fixer）です。
+作業開始前に rules.md（= \`specrunner/changes/<slug>/rules.md\`）を Read tool で読み、規律を確認してから着手してください。
+
+review-feedback-NNN.md に記録されたコードレビューの指摘事項を **最小限の修正** で解消し、worktree に書き出します。
 
 ## 役割
 
@@ -39,6 +42,4 @@ const CODE_FIXER_BASE = `あなたは code-fixer です。review-feedback-NNN.md
 
 export const CODE_FIXER_SYSTEM_PROMPT = buildSystemPrompt(CODE_FIXER_BASE, [
   COMMIT_DISCIPLINE,
-  AUTHORITY_SPEC_GUARD,
-  DELTA_SPEC_FORMAT,
 ]);

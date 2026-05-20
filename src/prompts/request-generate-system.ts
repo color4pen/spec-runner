@@ -1,6 +1,9 @@
 import { buildSystemPrompt } from "./builder.js";
 
-const REQUEST_GENERATE_BASE = `You are a SpecRunner request generator. Your task is to read an input text and convert it into a well-structured request.md document in the standard format.
+const REQUEST_GENERATE_BASE = `あなたは spec-runner pipeline のステップ agent（request-generate）です。
+作業開始前に rules.md（= \`specrunner/changes/<slug>/rules.md\`）を Read tool で読み、規律を確認してから着手してください。
+
+You are a SpecRunner request generator. Your task is to read an input text and convert it into a well-structured request.md document in the standard format.
 
 ## Role
 

@@ -1,10 +1,17 @@
 /**
  * Structural guarantee test for PR #339-type prevention.
  *
- * Verifies that SPEC_RUNNER_COMMON_CONTEXT is structurally injected into all
- * agent system prompts, ensuring ADR / spec / change paths are always known.
+ * Verifies that all agent system prompts contain a Read instruction pointing
+ * to rules.md in the change folder, and that rules.md itself contains
+ * the ADR placement discipline.
+ *
+ * Two-layer verification:
+ *   1. Agent prompts → rules.md Read instruction (static string assert)
+ *   2. rules.md file → ADR discipline section content (file content assert)
  */
 import { describe, test, expect } from "vitest";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import { IMPLEMENTER_SYSTEM_PROMPT } from "../../../src/prompts/implementer-system.js";
 import { DESIGN_SYSTEM_PROMPT } from "../../../src/prompts/design-system.js";
 import { SPEC_FIXER_SYSTEM_PROMPT } from "../../../src/prompts/spec-fixer-system.js";
@@ -45,16 +52,28 @@ describe("TC-31: common-context-catch.test.ts — structure", () => {
   });
 });
 
-describe("PR #339 prevention: ADR / spec / change paths are injected into all agent prompts", () => {
-  test.each(ALL_AGENT_PROMPTS)("%s contains ADR path pattern", (_name, prompt) => {
-    expect(prompt).toContain("specrunner/adr/");
+describe("PR #339 prevention: all agent prompts contain rules.md Read instruction", () => {
+  test.each(ALL_AGENT_PROMPTS)("%s contains rules.md Read instruction", (_name, prompt) => {
+    expect(prompt).toContain("specrunner/changes/<slug>/rules.md");
+  });
+});
+
+describe("PR #339 prevention: rules.md file contains ADR placement discipline", () => {
+  const RULES_MD_PATH = path.resolve(process.cwd(), "specrunner/rules.md");
+
+  test("rules.md exists", async () => {
+    await fs.access(RULES_MD_PATH); // throws ENOENT if file is missing
   });
 
-  test.each(ALL_AGENT_PROMPTS)("%s contains authority spec path pattern", (_name, prompt) => {
-    expect(prompt).toContain("specrunner/specs/");
+  test("rules.md contains ADR placement discipline keywords", async () => {
+    const content = await fs.readFile(RULES_MD_PATH, "utf-8");
+    expect(content).toContain("業界慣習 MADR");
+    expect(content).toContain("採用しません");
+    expect(content).toContain("adr-gen 以外");
   });
 
-  test.each(ALL_AGENT_PROMPTS)("%s contains change folder path pattern", (_name, prompt) => {
-    expect(prompt).toContain("specrunner/changes/");
+  test("rules.md contains canonical ADR path", async () => {
+    const content = await fs.readFile(RULES_MD_PATH, "utf-8");
+    expect(content).toContain("specrunner/adr/{YYYY-MM-DD}-{slug}.md");
   });
 });

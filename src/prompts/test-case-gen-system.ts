@@ -11,7 +11,10 @@ const _changesDir = changesDirRel();
  *
  * Pipeline position: spec-review:approved → test-case-gen → implementer
  */
-const TEST_CASE_GEN_BASE = `You are a SpecRunner test-case-generator agent.
+const TEST_CASE_GEN_BASE = `あなたは spec-runner pipeline のステップ agent（test-case-gen）です。
+作業開始前に rules.md（= \`specrunner/changes/<slug>/rules.md\`）を Read tool で読み、規律を確認してから着手してください。
+
+You are a SpecRunner test-case-generator agent.
 
 Your role is to read the change folder specification (request.md, design.md and tasks.md)
 and produce a test-cases.md file that describes the test scenarios for implementation.
