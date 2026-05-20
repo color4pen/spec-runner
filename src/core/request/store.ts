@@ -8,7 +8,7 @@ const ACTIVE_SUBDIR = path.join("specrunner", "requests", "active");
 const MERGED_SUBDIR = path.join("specrunner", "requests", "merged");
 
 export function resolve(cwd: string, slug: string): string {
-  return path.join(cwd, ACTIVE_SUBDIR, slug, "request.md");
+  return path.join(cwd, ACTIVE_SUBDIR, slug + ".md");
 }
 
 export async function list(cwd: string): Promise<string[]> {
@@ -26,17 +26,9 @@ export async function list(cwd: string): Promise<string[]> {
     }
     throw err;
   }
-  const slugs: string[] = [];
-  for (const entry of entries) {
-    const requestMdFile = path.join(activeDir, entry, "request.md");
-    try {
-      await fs.access(requestMdFile);
-      slugs.push(entry);
-    } catch {
-      // no request.md — skip
-    }
-  }
-  return slugs;
+  return entries
+    .filter((e) => e.endsWith(".md"))
+    .map((e) => e.slice(0, -3));
 }
 
 export async function read(cwd: string, slug: string): Promise<ParsedRequest> {
@@ -46,7 +38,7 @@ export async function read(cwd: string, slug: string): Promise<ParsedRequest> {
 }
 
 export async function write(cwd: string, slug: string, content: string): Promise<void> {
-  const dir = path.join(cwd, ACTIVE_SUBDIR, slug);
+  const dir = path.join(cwd, ACTIVE_SUBDIR);
   await fs.mkdir(dir, { recursive: true });
   const filePath = resolve(cwd, slug);
   await fs.writeFile(filePath, content, "utf-8");
@@ -66,7 +58,7 @@ export async function checkSlugCollision(cwd: string, slug: string): Promise<voi
       continue;
     }
 
-    if (entries.includes(slug)) {
+    if (entries.includes(slug + ".md")) {
       throw new SpecRunnerError(
         "SLUG_COLLISION",
         `Use a different description or pass --slug to specify a unique slug.`,

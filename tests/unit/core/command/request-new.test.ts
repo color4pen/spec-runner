@@ -1,7 +1,7 @@
 /**
  * Tests for src/core/command/request-new.ts
  *
- * TC-NEW-001: valid new slug → creates request.md
+ * TC-NEW-001: valid new slug → creates <slug>.md
  * TC-NEW-002: existing slug → SLUG_COLLISION error (exit 1)
  * TC-NEW-003: invalid slug (path traversal) → exit 2
  * TC-NEW-004: invalid slug (uppercase) → exit 2
@@ -31,13 +31,13 @@ async function invokeExecuteNew(slug: string, type = "new-feature", cwd = tempDi
   return executeNew(slug, type, cwd);
 }
 
-// TC-NEW-001: valid new slug → creates file
-describe("TC-NEW-001: valid new slug creates request.md", () => {
-  it("creates specrunner/requests/active/<slug>/request.md and returns 0", async () => {
+// TC-NEW-001: valid new slug → creates flat file
+describe("TC-NEW-001: valid new slug creates <slug>.md", () => {
+  it("creates specrunner/requests/active/my-feature.md and returns 0", async () => {
     const result = await invokeExecuteNew("my-feature");
     expect(result).toBe(0);
 
-    const filePath = path.join(tempDir, "specrunner", "requests", "active", "my-feature", "request.md");
+    const filePath = path.join(tempDir, "specrunner", "requests", "active", "my-feature.md");
     const content = await fs.readFile(filePath, "utf-8");
     expect(content).toContain("## Meta");
     expect(content).toContain("new-feature");
@@ -45,17 +45,17 @@ describe("TC-NEW-001: valid new slug creates request.md", () => {
     const stderrOutput = (vi.mocked(process.stderr.write).mock.calls as unknown[][])
       .map((c) => String(c[0]))
       .join("");
-    expect(stderrOutput).toContain("Created: specrunner/requests/active/my-feature/request.md");
+    expect(stderrOutput).toContain("Created: specrunner/requests/active/my-feature.md");
   });
 });
 
 // TC-NEW-002: slug collision → exit 1
 describe("TC-NEW-002: slug collision returns exit 1", () => {
   it("returns 1 when slug already exists in active/", async () => {
-    // Create the slug directory first
-    const dir = path.join(tempDir, "specrunner", "requests", "active", "existing-slug");
-    await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(path.join(dir, "request.md"), "# existing\n");
+    // Create the flat file first
+    const activeDir = path.join(tempDir, "specrunner", "requests", "active");
+    await fs.mkdir(activeDir, { recursive: true });
+    await fs.writeFile(path.join(activeDir, "existing-slug.md"), "# existing\n");
 
     const result = await invokeExecuteNew("existing-slug");
     expect(result).toBe(1);
@@ -90,11 +90,11 @@ describe("TC-NEW-004: uppercase slug rejected with exit 2", () => {
 
 // TC-NEW-005: valid slug with hyphens and digits → passes
 describe("TC-NEW-005: valid slug with hyphens and digits", () => {
-  it("accepts 'my-feature-123' slug and creates file", async () => {
+  it("accepts 'my-feature-123' slug and creates flat file", async () => {
     const result = await invokeExecuteNew("my-feature-123");
     expect(result).toBe(0);
 
-    const filePath = path.join(tempDir, "specrunner", "requests", "active", "my-feature-123", "request.md");
+    const filePath = path.join(tempDir, "specrunner", "requests", "active", "my-feature-123.md");
     await expect(fs.access(filePath)).resolves.toBeUndefined();
   });
 });
@@ -105,7 +105,7 @@ describe("TC-NEW-006: --type option sets request type in template", () => {
     const result = await invokeExecuteNew("my-spec", "spec-change");
     expect(result).toBe(0);
 
-    const filePath = path.join(tempDir, "specrunner", "requests", "active", "my-spec", "request.md");
+    const filePath = path.join(tempDir, "specrunner", "requests", "active", "my-spec.md");
     const content = await fs.readFile(filePath, "utf-8");
     expect(content).toContain("spec-change");
   });

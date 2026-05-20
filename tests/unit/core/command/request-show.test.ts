@@ -26,9 +26,9 @@ afterEach(async () => {
 });
 
 async function createRequest(slug: string, content: string): Promise<void> {
-  const dir = path.join(tempDir, "specrunner", "requests", "active", slug);
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(path.join(dir, "request.md"), content, "utf-8");
+  const activeDir = path.join(tempDir, "specrunner", "requests", "active");
+  await fs.mkdir(activeDir, { recursive: true });
+  await fs.writeFile(path.join(activeDir, slug + ".md"), content, "utf-8");
 }
 
 async function invokeExecuteShow(slug: string, cwd = tempDir) {
@@ -37,7 +37,7 @@ async function invokeExecuteShow(slug: string, cwd = tempDir) {
 }
 
 // TC-SHOW-001: existing slug → stdout content + exit 0
-describe("TC-SHOW-001: existing slug outputs request.md to stdout", () => {
+describe("TC-SHOW-001: existing slug outputs content to stdout", () => {
   it("returns 0 and writes content to stdout", async () => {
     const content = "# My Feature\n\nSome content here.\n";
     await createRequest("my-feature", content);

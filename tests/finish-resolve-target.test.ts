@@ -110,9 +110,10 @@ describe("TC-003 / TC-134: <slug> multiple matches → latest updatedAt, stdout 
 // TC-004: active 1 entry → auto-detect
 describe("TC-004: active 1 entry → auto-detect", () => {
   it("auto-detects the single active slug", async () => {
-    // Create the active dir with one slug
-    const activeDir = path.join(tempDir, "specrunner", "requests", "active", "auto-slug");
+    // Create a flat .md file for the slug
+    const activeDir = path.join(tempDir, "specrunner", "requests", "active");
     await fs.mkdir(activeDir, { recursive: true });
+    await fs.writeFile(path.join(activeDir, "auto-slug.md"), "# auto-slug\n");
 
     // Create matching job state
     await makeJobWithPr("auto-slug");
@@ -149,10 +150,11 @@ describe("TC-005 / TC-131: active 0 entries → exit code 2", () => {
 // TC-006 / TC-132: active 2+ entries → exit code 2
 describe("TC-006 / TC-132: active 2+ entries → exit code 2", () => {
   it("returns exit code 2 with slug list when multiple active slugs", async () => {
-    // Create two active dirs
+    // Create two flat .md files
     const base = path.join(tempDir, "specrunner", "requests", "active");
-    await fs.mkdir(path.join(base, "slug-a"), { recursive: true });
-    await fs.mkdir(path.join(base, "slug-b"), { recursive: true });
+    await fs.mkdir(base, { recursive: true });
+    await fs.writeFile(path.join(base, "slug-a.md"), "# slug-a\n");
+    await fs.writeFile(path.join(base, "slug-b.md"), "# slug-b\n");
 
     const result = await resolveTarget({ cwd: tempDir });
 

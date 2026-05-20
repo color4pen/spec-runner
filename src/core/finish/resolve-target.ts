@@ -177,7 +177,9 @@ async function resolveByAutoDetect(
   try {
     const { readdir } = await import("node:fs/promises");
     const dirents = await readdir(activeDir, { withFileTypes: true });
-    entries = dirents.filter((d) => d.isDirectory()).map((d) => d.name);
+    entries = dirents
+      .filter((d) => d.isFile() && d.name.endsWith(".md"))
+      .map((d) => d.name.slice(0, -3));
   } catch (err: unknown) {
     const code = (err as NodeJS.ErrnoException).code;
     if (code === "ENOENT") {

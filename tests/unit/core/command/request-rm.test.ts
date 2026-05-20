@@ -1,7 +1,7 @@
 /**
  * Tests for src/core/command/request-rm.ts
  *
- * TC-RM-001: existing slug → directory deleted + exit 0
+ * TC-RM-001: existing slug → file deleted + exit 0
  * TC-RM-002: nonexistent slug → exit 1
  * TC-RM-003: path traversal slug → exit 2 (no filesystem access)
  * TC-RM-004: valid slug passes validation
@@ -25,9 +25,9 @@ afterEach(async () => {
 });
 
 async function createRequest(slug: string): Promise<void> {
-  const dir = path.join(tempDir, "specrunner", "requests", "active", slug);
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(path.join(dir, "request.md"), "# test\n", "utf-8");
+  const activeDir = path.join(tempDir, "specrunner", "requests", "active");
+  await fs.mkdir(activeDir, { recursive: true });
+  await fs.writeFile(path.join(activeDir, slug + ".md"), "# test\n", "utf-8");
 }
 
 async function invokeExecuteRm(slug: string, cwd = tempDir) {
@@ -36,21 +36,21 @@ async function invokeExecuteRm(slug: string, cwd = tempDir) {
 }
 
 // TC-RM-001: existing slug → deleted + exit 0
-describe("TC-RM-001: existing slug deletes directory and returns 0", () => {
-  it("removes the directory and returns 0", async () => {
+describe("TC-RM-001: existing slug deletes file and returns 0", () => {
+  it("removes the .md file and returns 0", async () => {
     await createRequest("to-delete");
 
     const result = await invokeExecuteRm("to-delete");
 
     expect(result).toBe(0);
 
-    const dir = path.join(tempDir, "specrunner", "requests", "active", "to-delete");
-    await expect(fs.access(dir)).rejects.toThrow();
+    const filePath = path.join(tempDir, "specrunner", "requests", "active", "to-delete.md");
+    await expect(fs.access(filePath)).rejects.toThrow();
 
     const stderrOutput = (vi.mocked(process.stderr.write).mock.calls as unknown[][])
       .map((c) => String(c[0]))
       .join("");
-    expect(stderrOutput).toContain("Removed: specrunner/requests/active/to-delete/");
+    expect(stderrOutput).toContain("Removed: specrunner/requests/active/to-delete.md");
   });
 });
 

@@ -1,7 +1,7 @@
 /**
  * Core logic for the `specrunner request new` command.
  *
- * Creates a new request.md from a scaffold template in specrunner/requests/active/<slug>/.
+ * Creates a new request file at specrunner/requests/active/<slug>.md.
  */
 import * as path from "node:path";
 import { buildScaffoldTemplate } from "./request.js";
@@ -12,7 +12,7 @@ const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 /**
  * Execute `request new` subcommand.
- * Creates specrunner/requests/active/<slug>/request.md from a scaffold template.
+ * Creates specrunner/requests/active/<slug>.md from a scaffold template.
  * Returns 0 on success, 1 on slug collision, 2 on invalid slug.
  */
 export async function executeNew(
@@ -49,7 +49,7 @@ export async function executeNew(
   // Write file
   await storeWrite(cwd, slug, content);
 
-  const relPath = path.join("specrunner", "requests", "active", slug, "request.md");
+  const relPath = path.join("specrunner", "requests", "active", slug + ".md");
   process.stderr.write(`Created: ${relPath}\n`);
   return 0;
 }

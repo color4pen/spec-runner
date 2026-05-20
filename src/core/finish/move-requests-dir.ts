@@ -1,7 +1,7 @@
 /**
- * Move requests dir from active to merged and commit.
+ * Move request file from active to merged and commit.
  *
- * TC-027: git mv active/<slug> → merged/<slug>
+ * TC-027: git mv active/<slug>.md → merged/<slug>.md
  * TC-028: merged/ exists + active/ absent → skip (idempotent)
  * TC-044: no changes to commit → skip commit
  * TC-063: commit message = "chore: archive <slug>"
@@ -16,7 +16,7 @@ export type MoveRequestsDirResult =
   | { ok: false; escalation: string; exitCode: 1 };
 
 /**
- * Move active/<slug> to merged/<slug> and commit.
+ * Move active/<slug>.md to merged/<slug>.md and commit.
  */
 export async function moveRequestsDir(params: {
   slug: string;
@@ -27,10 +27,10 @@ export async function moveRequestsDir(params: {
   const { slug, cwd, spawn, fs } = params;
 
   const activePath = path.join(
-    "specrunner", "requests", "active", slug,
+    "specrunner", "requests", "active", slug + ".md",
   );
   const mergedPath = path.join(
-    "specrunner", "requests", "merged", slug,
+    "specrunner", "requests", "merged", slug + ".md",
   );
 
   const activeExists = await fs.exists(path.join(cwd, activePath));
@@ -42,7 +42,7 @@ export async function moveRequestsDir(params: {
       ok: true,
       skipped: true,
       committed: false,
-      message: `requests dir already moved to merged/${slug}, skipping.`,
+      message: `request file already moved to merged/${slug}.md, skipping.`,
     };
   }
 
@@ -102,6 +102,6 @@ export async function moveRequestsDir(params: {
     ok: true,
     skipped: false,
     committed: true,
-    message: `Moved active/${slug} to merged/${slug} and committed.`,
+    message: `Moved active/${slug}.md to merged/${slug}.md and committed.`,
   };
 }

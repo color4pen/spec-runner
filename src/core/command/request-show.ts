@@ -1,7 +1,7 @@
 /**
  * Core logic for the `specrunner request show` command.
  *
- * Reads and prints specrunner/requests/active/<slug>/request.md to stdout.
+ * Reads and prints specrunner/requests/active/<slug>.md to stdout.
  */
 import * as fs from "node:fs/promises";
 import { resolve as storeResolve } from "../request/store.js";
@@ -10,7 +10,7 @@ const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 /**
  * Execute `request show` subcommand.
- * Outputs the content of specrunner/requests/active/<slug>/request.md to stdout.
+ * Outputs the content of specrunner/requests/active/<slug>.md to stdout.
  * Returns 0 on success, 1 if not found, 2 if slug is invalid.
  */
 export async function executeShow(slug: string, cwd: string): Promise<number> {

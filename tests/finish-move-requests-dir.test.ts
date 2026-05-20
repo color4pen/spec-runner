@@ -1,8 +1,8 @@
 /**
- * Tests for finish command: requests dir move and commit.
+ * Tests for finish command: request file move and commit.
  *
- * TC-027: git mv active → merged
- * TC-028: merged/ exists + active/ absent → skip
+ * TC-027: git mv active/<slug>.md → merged/<slug>.md
+ * TC-028: merged/<slug>.md exists + active/<slug>.md absent → skip
  * TC-044: no changes → skip commit
  * TC-063: commit message = "chore: archive <slug>"
  */
@@ -61,8 +61,8 @@ describe("TC-027: git mv active → merged", () => {
     expect(mvCall).toBeDefined();
     const mvArgs = (mvCall as unknown[])[1] as string[];
     expect(mvArgs).toContain("mv");
-    expect(mvArgs.join(" ")).toContain("active/my-feature");
-    expect(mvArgs.join(" ")).toContain("merged/my-feature");
+    expect(mvArgs.join(" ")).toContain("active/my-feature.md");
+    expect(mvArgs.join(" ")).toContain("merged/my-feature.md");
   });
 });
 

@@ -80,14 +80,13 @@ describe("TC-GEN-001: generate() with valid mock queryFn", () => {
     expect(result.content).toContain(expectedSlug);
     expect(result.content).not.toContain("<generated-slug>");
 
-    // Verify file was written to the store
+    // Verify file was written to the store (flat form)
     const expectedPath = path.join(
       tempDir,
       "specrunner",
       "requests",
       "active",
-      expectedSlug,
-      "request.md",
+      expectedSlug + ".md",
     );
     const written = await fs.readFile(expectedPath, "utf-8");
     expect(written).toBe(result.content);
@@ -153,16 +152,11 @@ describe("TC-GEN-002: generate() with invalid content from mock queryFn", () => 
 // ---------------------------------------------------------------------------
 describe("TC-GEN-003: generate() with slug collision", () => {
   it("throws SLUG_COLLISION error and queryFn is never called", async () => {
-    // Pre-create the slug directory to trigger collision
+    // Pre-create the flat .md file to trigger collision
     const slug = "my-feature";
-    const collisionDir = path.join(
-      tempDir,
-      "specrunner",
-      "requests",
-      "active",
-      slug,
-    );
-    await fs.mkdir(collisionDir, { recursive: true });
+    const activeDir = path.join(tempDir, "specrunner", "requests", "active");
+    await fs.mkdir(activeDir, { recursive: true });
+    await fs.writeFile(path.join(activeDir, slug + ".md"), "# my-feature\n");
 
     const mockQueryFn = vi.fn();
 
