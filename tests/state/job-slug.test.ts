@@ -116,10 +116,10 @@ describe("TC-114: getJobSlug — all sources absent → empty string (no throw)"
 
 // TC-116 / TC-117: run.ts canonical path detection logic (tested via regex)
 describe("TC-116 / TC-117: canonical path detection (run.ts logic)", () => {
-  const CANONICAL_PATTERN = /^.*\/specrunner\/requests\/active\/([^/]+)\/[^/]+\.md$/;
+  const CANONICAL_PATTERN = /^.*\/specrunner\/drafts\/([^/]+)\.md$/;
 
-  it("TC-116: canonical active path → extracts slug", () => {
-    const path = "/workspace/repo/specrunner/requests/active/my-feature/request.md";
+  it("TC-116: canonical drafts path → extracts slug", () => {
+    const path = "/workspace/repo/specrunner/drafts/my-feature.md";
     const m = CANONICAL_PATTERN.exec(path);
     expect(m).not.toBeNull();
     expect(m?.[1]).toBe("my-feature");

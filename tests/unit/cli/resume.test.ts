@@ -108,7 +108,7 @@ afterEach(async () => {
 async function makeAwaitingResumeJob(slug: string, overrides: Partial<JobState> = {}): Promise<JobState> {
   const state = await createJobState({
     request: {
-      path: `/specrunner/requests/active/${slug}/request.md`,
+      path: `/specrunner/drafts/${slug}.md`,
       title: "Test",
       type: "new-feature",
       slug,

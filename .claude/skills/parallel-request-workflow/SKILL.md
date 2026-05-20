@@ -22,11 +22,11 @@ description: >-
 # main 最新化 + active が空であること + build 通過を確認
 git status
 git pull --ff-only
-ls specrunner/requests/active/
+ls specrunner/drafts/
 bun run build
 ```
 
-`active/` に残骸があれば削除する (= 並列 run で worktree 衝突を避ける)。
+`drafts/` に残骸があれば削除する (= 並列 run で worktree 衝突を避ける)。
 
 ## ワークフロー
 
@@ -54,14 +54,14 @@ gh issue view <num> --json title,body
 
 関連 layer 全体を grep / Read で網羅的に調査 (= `core / cli / utils / adapter / prompts / tests` のどこに対象が散らばっているか)。grep 漏れは review HIGH 指摘になりやすい。
 
-`specrunner/requests/active/<slug>/request.md` を起票する。slug は date prefix なし ([[project-slug-no-date-prefix]])。authority path 直接指定禁止 ([[feedback-no-baseline-path-in-request]])。
+`specrunner/drafts/<slug>.md` を起票する。slug は date prefix なし ([[project-slug-no-date-prefix]])。authority path 直接指定禁止 ([[feedback-no-baseline-path-in-request]])。
 
 ### 3. request review 並列実行
 
 ```bash
-bun ./bin/specrunner.ts request review specrunner/requests/active/<slug-1>/request.md  # background
-sleep 3 && bun ./bin/specrunner.ts request review specrunner/requests/active/<slug-2>/request.md  # background
-sleep 6 && bun ./bin/specrunner.ts request review specrunner/requests/active/<slug-3>/request.md  # background
+bun ./bin/specrunner.ts request review specrunner/drafts/<slug-1>.md  # background
+sleep 3 && bun ./bin/specrunner.ts request review specrunner/drafts/<slug-2>.md  # background
+sleep 6 && bun ./bin/specrunner.ts request review specrunner/drafts/<slug-3>.md  # background
 ```
 
 全件完了通知を待ち、各 output を順次確認。

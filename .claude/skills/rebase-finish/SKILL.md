@@ -136,11 +136,6 @@ worktree 内で衝突解消 → `git add` + `git rebase --continue` → `git pus
 ### 5. 全件完了後の後処理
 
 ```bash
-# active 配下の残骸削除 (= finish が active/<slug>/ を merged/ に move するが、ローカル untracked が残ることがある)
-ls specrunner/requests/active/
-# 残骸があれば
-rm -rf specrunner/requests/active/<slug>
-
 # main 最新化
 git pull --ff-only
 

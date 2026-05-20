@@ -50,7 +50,7 @@ async function makeJobWithPr(opts: {
   const { status = "awaiting-merge", slug = "test-slug", requestPath } = opts;
   const state = await createJobState({
     request: {
-      path: requestPath ?? `specrunner/requests/active/${slug}/request.md`,
+      path: requestPath ?? `specrunner/drafts/${slug}.md`,
       title: "Test",
       type: "new-feature",
       slug,
@@ -218,7 +218,7 @@ describe("TC-120: pullRequest.number absent → escalation", () => {
   it("escalates with pr-create message when pullRequest is missing", async () => {
     // Create job WITHOUT pullRequest
     const state = await createJobState({
-      request: { path: "specrunner/requests/active/test-slug/request.md", title: "T", type: "new-feature", slug: "test-slug" },
+      request: { path: "specrunner/drafts/test-slug.md", title: "T", type: "new-feature", slug: "test-slug" },
       repository: { owner: "u", name: "r" },
     });
 

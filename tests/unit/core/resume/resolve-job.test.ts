@@ -36,7 +36,7 @@ afterEach(async () => {
 async function makeJob(slug: string, updatedAt?: string) {
   const state = await createJobState({
     request: {
-      path: `/specrunner/requests/active/${slug}/request.md`,
+      path: `/specrunner/drafts/${slug}.md`,
       title: "Test",
       type: "new-feature",
       slug,

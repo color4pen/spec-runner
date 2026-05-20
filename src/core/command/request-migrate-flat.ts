@@ -1,8 +1,8 @@
 /**
  * Migration: dir形式 → flat形式
  *
- * specrunner/requests/{active,merged}/<slug>/request.md
- * → specrunner/requests/{active,merged}/<slug>.md
+ * specrunner/drafts/<slug>/request.md → specrunner/drafts/<slug>.md
+ * specrunner/requests/merged/<slug>/request.md → specrunner/requests/merged/<slug>.md
  *
  * Extra files がある dir は request.md だけ move し、dir は残す (partial migration)。
  */
@@ -18,56 +18,63 @@ export interface MigrateResult {
 export async function migrateRequestsFlat(cwd: string): Promise<MigrateResult> {
   const result: MigrateResult = { migrated: [], partial: [], skipped: [] };
 
-  for (const subdir of ["active", "merged"]) {
-    const dir = path.join(cwd, "specrunner", "requests", subdir);
-    let entries: string[];
+  // Migrate drafts/ (new location)
+  const draftsDir = path.join(cwd, "specrunner", "drafts");
+  await migrateDir(draftsDir, "drafts", result);
+
+  // Migrate requests/merged/ (historical, read-only maintenance)
+  const mergedDir = path.join(cwd, "specrunner", "requests", "merged");
+  await migrateDir(mergedDir, "merged", result);
+
+  return result;
+}
+
+async function migrateDir(dir: string, label: string, result: MigrateResult): Promise<void> {
+  let entries: string[];
+  try {
+    entries = await fs.readdir(dir);
+  } catch {
+    return;
+  }
+
+  for (const entry of entries) {
+    const entryPath = path.join(dir, entry);
+    let stat: Awaited<ReturnType<typeof fs.stat>>;
     try {
-      entries = await fs.readdir(dir);
+      stat = await fs.stat(entryPath);
     } catch {
       continue;
     }
+    if (!stat.isDirectory()) continue;
 
-    for (const entry of entries) {
-      const entryPath = path.join(dir, entry);
-      let stat: Awaited<ReturnType<typeof fs.stat>>;
-      try {
-        stat = await fs.stat(entryPath);
-      } catch {
-        continue;
-      }
-      if (!stat.isDirectory()) continue;
+    const requestMdPath = path.join(entryPath, "request.md");
+    try {
+      await fs.access(requestMdPath);
+    } catch {
+      result.skipped.push(`${label}/${entry}`);
+      continue;
+    }
 
-      const requestMdPath = path.join(entryPath, "request.md");
-      try {
-        await fs.access(requestMdPath);
-      } catch {
-        result.skipped.push(`${subdir}/${entry}`);
-        continue;
-      }
+    // Read request.md content
+    const content = await fs.readFile(requestMdPath, "utf-8");
 
-      // Read request.md content
-      const content = await fs.readFile(requestMdPath, "utf-8");
+    // Write flat file
+    const flatPath = path.join(dir, entry + ".md");
+    await fs.writeFile(flatPath, content, "utf-8");
 
-      // Write flat file
-      const flatPath = path.join(dir, entry + ".md");
-      await fs.writeFile(flatPath, content, "utf-8");
+    // Remove request.md from dir
+    await fs.unlink(requestMdPath);
 
-      // Remove request.md from dir
-      await fs.unlink(requestMdPath);
-
-      // Check for extra files
-      const remaining = await fs.readdir(entryPath);
-      if (remaining.length === 0) {
-        await fs.rmdir(entryPath);
-        result.migrated.push(`${subdir}/${entry}`);
-      } else {
-        result.partial.push(`${subdir}/${entry}`);
-        process.stderr.write(
-          `partial migration: ${subdir}/${entry} (extra files retained in dir)\n`,
-        );
-      }
+    // Check for extra files
+    const remaining = await fs.readdir(entryPath);
+    if (remaining.length === 0) {
+      await fs.rmdir(entryPath);
+      result.migrated.push(`${label}/${entry}`);
+    } else {
+      result.partial.push(`${label}/${entry}`);
+      process.stderr.write(
+        `partial migration: ${label}/${entry} (extra files retained in dir)\n`,
+      );
     }
   }
-
-  return result;
 }

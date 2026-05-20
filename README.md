@@ -18,7 +18,7 @@ specrunner login
 # 3. Create a new request from template
 specrunner request new my-feature
 
-# 4. (Edit specrunner/requests/active/my-feature/request.md)
+# 4. (Edit specrunner/drafts/my-feature.md)
 
 # 5. Start the pipeline
 specrunner job start my-feature

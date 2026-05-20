@@ -125,10 +125,10 @@ describe("checkSlugCollision", () => {
     await expect(checkSlugCollision(tempDir, "any-slug")).resolves.toBeUndefined();
   });
 
-  it("TC-SL-006c: throws SLUG_COLLISION when slug exists in active/", async () => {
-    const activeDir = path.join(tempDir, "specrunner", "requests", "active");
-    await fs.mkdir(activeDir, { recursive: true });
-    await fs.writeFile(path.join(activeDir, "my-feature.md"), "# my-feature\n");
+  it("TC-SL-006c: throws SLUG_COLLISION when slug exists in drafts/", async () => {
+    const draftsDir = path.join(tempDir, "specrunner", "drafts");
+    await fs.mkdir(draftsDir, { recursive: true });
+    await fs.writeFile(path.join(draftsDir, "my-feature.md"), "# my-feature\n");
 
     await expect(checkSlugCollision(tempDir, "my-feature")).rejects.toMatchObject({
       code: "SLUG_COLLISION",

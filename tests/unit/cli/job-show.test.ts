@@ -24,7 +24,7 @@ function makeJob(overrides: Partial<JobState> = {}): JobState {
     jobId: VALID_UUID,
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T01:00:00.000Z",
-    request: { path: "/repo/specrunner/requests/active/my-feature/request.md", title: "My Feature", type: "new-feature", slug: "my-feature" },
+    request: { path: "/repo/specrunner/drafts/my-feature.md", title: "My Feature", type: "new-feature", slug: "my-feature" },
     repository: { owner: "testowner", name: "testrepo" },
     session: null,
     step: "design",

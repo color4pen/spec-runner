@@ -199,44 +199,39 @@ export class LocalRuntime implements RuntimeStrategy {
     // Record worktreePath in state before pipeline runs (enables crash recovery)
     await updateJobState(jobId, (s) => ({ ...s, worktreePath }));
 
-    // Copy request.md into the worktree so the agent can read it
+    // Copy request.md into the change folder so the agent can read it
     if (opts?.requestFilePath) {
-      const relativeRequestPath = path.relative(this.cwd, opts.requestFilePath);
-      const worktreeRequestPath = path.join(worktreePath, relativeRequestPath);
-      await fs.mkdir(path.dirname(worktreeRequestPath), { recursive: true });
-      await fs.cp(opts.requestFilePath, worktreeRequestPath);
-
-      // Stage the request file in the worktree
-      const gitAddResult = await this.spawnFn("git", ["add", relativeRequestPath], { cwd: worktreePath });
-      if (gitAddResult.exitCode !== 0) {
-        // Cleanup worktree before propagating error
-        await this.manager.remove(worktreePath, this.cwd).catch(() => {});
-        await this.manager.prune(this.cwd).catch(() => {});
-        throw new Error(`Failed to stage request file: ${gitAddResult.stderr.trim()}`);
-      }
-
-      // Also copy request.md into the change folder so agents can find it alongside design.md / tasks.md
+      // Only copy request.md into the change folder (no canonical path copy)
       const changeFolderRequestPath = path.join(worktreePath, changeFolderPath(slug), "request.md");
       await fs.mkdir(path.dirname(changeFolderRequestPath), { recursive: true });
       await fs.cp(opts.requestFilePath, changeFolderRequestPath);
 
-      // Stage the change folder request.md as well
+      // Stage the change folder request.md
       const gitAddChangeFolderResult = await this.spawnFn(
         "git",
         ["add", path.join(changeFolderPath(slug), "request.md")],
         { cwd: worktreePath },
       );
       if (gitAddChangeFolderResult.exitCode !== 0) {
-        // Non-fatal: log warning but don't fail setup
-        process.stderr.write(
-          `Warning: failed to stage change folder request.md: ${gitAddChangeFolderResult.stderr.trim()}\n`,
-        );
+        // Cleanup worktree before propagating error
+        await this.manager.remove(worktreePath, this.cwd).catch(() => {});
+        await this.manager.prune(this.cwd).catch(() => {});
+        throw new Error(`Failed to stage change folder request.md: ${gitAddChangeFolderResult.stderr.trim()}`);
       }
 
       // Also copy rules.md into the change folder so agents can read project disciplines
       await copyRulesToChangeFolder(worktreePath, slug, this.spawnFn);
 
-      // Commit request.md (both locations) and rules.md as the first commit on the feature branch (D2)
+      // Delete main worktree draft file (move semantics: draft consumed on run)
+      try {
+        await fs.rm(opts.requestFilePath);
+      } catch {
+        process.stderr.write(
+          `Warning: failed to delete draft file ${opts.requestFilePath} from main worktree. Remove it manually.\n`,
+        );
+      }
+
+      // Commit change folder request.md and rules.md as the first commit on the feature branch (D2)
       const gitCommitResult = await this.spawnFn(
         "git",
         ["commit", "-m", `add request.md for ${slug}`],

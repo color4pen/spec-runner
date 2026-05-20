@@ -84,8 +84,7 @@ describe("TC-GEN-001: generate() with valid mock queryFn", () => {
     const expectedPath = path.join(
       tempDir,
       "specrunner",
-      "requests",
-      "active",
+      "drafts",
       expectedSlug + ".md",
     );
     const written = await fs.readFile(expectedPath, "utf-8");
@@ -154,9 +153,9 @@ describe("TC-GEN-003: generate() with slug collision", () => {
   it("throws SLUG_COLLISION error and queryFn is never called", async () => {
     // Pre-create the flat .md file to trigger collision
     const slug = "my-feature";
-    const activeDir = path.join(tempDir, "specrunner", "requests", "active");
-    await fs.mkdir(activeDir, { recursive: true });
-    await fs.writeFile(path.join(activeDir, slug + ".md"), "# my-feature\n");
+    const draftsDir = path.join(tempDir, "specrunner", "drafts");
+    await fs.mkdir(draftsDir, { recursive: true });
+    await fs.writeFile(path.join(draftsDir, slug + ".md"), "# my-feature\n");
 
     const mockQueryFn = vi.fn();
 

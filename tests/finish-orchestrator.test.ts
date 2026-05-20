@@ -54,7 +54,7 @@ async function makeJobWithPr(
 ) {
   const {
     status = "awaiting-merge",
-    requestPath = "specrunner/requests/active/test-slug/request.md",
+    requestPath = "specrunner/drafts/test-slug.md",
     slug = "test-slug",
     worktreePath = undefined,
   } = opts;

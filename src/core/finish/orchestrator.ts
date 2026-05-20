@@ -27,7 +27,6 @@ import { runLocalConflictCheck } from "./local-conflict-check.js";
 import { fetchPrViewWithRetry, pollMergeStateAfterPush, checkMergeableForMerge } from "./pr-status.js";
 import { spawnOrEscalate } from "./spawn-helper.js";
 import { archiveChangeFolder } from "./archive-change-folder.js";
-import { moveRequestsDir } from "./move-requests-dir.js";
 import { mergeSpecsForChange } from "./spec-merge.js";
 import { assertJobFinishable, markJobArchived } from "./job-state-update.js";
 import { TERMINAL_STATUSES } from "../../state/lifecycle.js";
@@ -266,11 +265,6 @@ async function runPhase1Archive(params: {
   const archiveResult = await archiveChangeFolder({ slug: target.slug, cwd: archiveCwd, spawn, fs });
   if (!archiveResult.ok) return { ok: false, escalation: archiveResult.escalation, exitCode: 1 };
   if (!archiveResult.skipped) stdoutWrite(archiveResult.message);
-
-  // git mv active → merged + commit
-  const moveResult = await moveRequestsDir({ slug: target.slug, cwd: archiveCwd, spawn, fs });
-  if (!moveResult.ok) return { ok: false, escalation: moveResult.escalation, exitCode: 1 };
-  if (!moveResult.skipped) stdoutWrite(moveResult.message);
 
   return { ok: true };
 }
@@ -542,7 +536,7 @@ function outputDryRunPlan(
   prViewData: { state: string; mergeStateStatus?: string },
   stdoutWrite: (msg: string) => void,
 ): void {
-  const archivePlan = "archive change folder + move active to merged";
+  const archivePlan = "archive change folder";
   const mergeStrategy = "REST API squash merge";
   const expectedStatus = "archived";
 

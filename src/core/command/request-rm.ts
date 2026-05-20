@@ -1,17 +1,18 @@
 /**
  * Core logic for the `specrunner request rm` command.
  *
- * Removes specrunner/requests/active/<slug>.md file.
+ * Removes specrunner/drafts/<slug>.md file.
  */
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { draftPath } from "../../util/paths.js";
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,63}$/;
-const ACTIVE_SUBDIR = path.join("specrunner", "requests", "active");
+const DRAFTS_SUBDIR = path.join("specrunner", "drafts");
 
 /**
  * Execute `request rm` subcommand.
- * Deletes specrunner/requests/active/<slug>.md.
+ * Deletes specrunner/drafts/<slug>.md.
  * Returns 0 on success, 1 if not found, 2 if slug is invalid.
  */
 export async function executeRm(slug: string, cwd: string): Promise<number> {
@@ -23,7 +24,7 @@ export async function executeRm(slug: string, cwd: string): Promise<number> {
     return 2;
   }
 
-  const filePath = path.join(cwd, ACTIVE_SUBDIR, slug + ".md");
+  const filePath = path.join(cwd, DRAFTS_SUBDIR, slug + ".md");
   try {
     await fs.access(filePath);
   } catch {
@@ -32,6 +33,6 @@ export async function executeRm(slug: string, cwd: string): Promise<number> {
   }
 
   await fs.unlink(filePath);
-  process.stderr.write(`Removed: specrunner/requests/active/${slug}.md\n`);
+  process.stderr.write(`Removed: ${draftPath(slug)}\n`);
   return 0;
 }

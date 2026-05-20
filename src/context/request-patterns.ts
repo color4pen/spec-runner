@@ -1,5 +1,5 @@
 /**
- * request-patterns: Collect example request.md files from merged requests
+ * request-patterns: Collect example request.md files from archived changes
  * to provide context for the LLM when generating new request files.
  */
 import * as fs from "node:fs/promises";
@@ -14,25 +14,25 @@ export interface RequestPattern {
 }
 
 /**
- * Collect example request patterns from merged requests directory.
+ * Collect example request patterns from changes/archive directory.
  *
  * Returns up to maxSamples patterns:
  * - Up to 3 from the same type (sorted alphabetically by slug)
  * - Up to 1 from a different type
  *
  * Silently skips directories/files that cannot be read.
- * Returns empty array if merged/ directory does not exist.
+ * Returns empty array if archive/ directory does not exist.
  */
 export async function collectRequestPatterns(
   cwd: string,
   targetType: string,
   maxSamples = 4,
 ): Promise<RequestPattern[]> {
-  const mergedDir = path.join(cwd, "specrunner", "requests", "merged");
+  const archiveDir = path.join(cwd, "specrunner", "changes", "archive");
 
   let entries: string[];
   try {
-    const dirEntries = await fs.readdir(mergedDir, { withFileTypes: true });
+    const dirEntries = await fs.readdir(archiveDir, { withFileTypes: true });
     entries = dirEntries
       .filter((e) => e.isDirectory())
       .map((e) => e.name)
@@ -45,7 +45,7 @@ export async function collectRequestPatterns(
   const otherTypePatterns: RequestPattern[] = [];
 
   for (const slug of entries) {
-    const requestPath = path.join(mergedDir, slug, "request.md");
+    const requestPath = path.join(archiveDir, slug, "request.md");
     let content: string;
     try {
       content = await fs.readFile(requestPath, "utf-8");

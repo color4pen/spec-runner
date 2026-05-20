@@ -90,27 +90,8 @@ export class ManagedRuntime implements RuntimeStrategy {
       );
     }
 
-    // Copy request.md if provided
     if (opts?.requestFilePath) {
-      const relativeRequestPath = path.relative(this.cwd, opts.requestFilePath);
-      const destPath = path.join(this.cwd, relativeRequestPath);
-      await fs.mkdir(path.dirname(destPath), { recursive: true });
-      // Only copy if source and dest differ
-      if (opts.requestFilePath !== destPath) {
-        await fs.cp(opts.requestFilePath, destPath);
-      }
-
-      // git add request file
-      const gitAddResult = await this.spawnFn(
-        "git",
-        ["add", relativeRequestPath],
-        { cwd: this.cwd },
-      );
-      if (gitAddResult.exitCode !== 0) {
-        throw new Error(`Failed to stage request file: ${gitAddResult.stderr.trim()}`);
-      }
-
-      // Also copy request.md into the change folder so agents can find it alongside design.md / tasks.md
+      // Copy request.md into the change folder so agents can find it alongside design.md / tasks.md
       const changeFolderRequestPath = path.join(this.cwd, changeFolderPath(slug), "request.md");
       await fs.mkdir(path.dirname(changeFolderRequestPath), { recursive: true });
       await fs.cp(opts.requestFilePath, changeFolderRequestPath);
@@ -131,7 +112,16 @@ export class ManagedRuntime implements RuntimeStrategy {
       // Also copy rules.md into the change folder so agents can read project disciplines
       await copyRulesToChangeFolder(this.cwd, slug, this.spawnFn);
 
-      // git commit request.md (both locations) and rules.md
+      // Delete draft file from main cwd (move semantics: draft consumed on run)
+      try {
+        await fs.rm(opts.requestFilePath);
+      } catch {
+        process.stderr.write(
+          `Warning: failed to delete draft file ${opts.requestFilePath} from main worktree. Remove it manually.\n`,
+        );
+      }
+
+      // git commit request.md and rules.md
       const gitCommitResult = await this.spawnFn(
         "git",
         ["commit", "-m", `add request.md for ${slug}`],

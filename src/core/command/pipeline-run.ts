@@ -19,8 +19,8 @@ export interface PipelineRunOptions {
   verbose?: boolean;
 }
 
-// Canonical path pattern: specrunner/requests/active/<slug>.md
-const CANONICAL_PATTERN = /^.*\/specrunner\/requests\/active\/([^/]+)\.md$/;
+// Canonical path pattern: specrunner/drafts/<slug>.md
+const CANONICAL_PATTERN = /^.*\/specrunner\/drafts\/([^/]+)\.md$/;
 
 /**
  * CommandRunner for `specrunner run`.
@@ -47,7 +47,7 @@ export class PipelineRunCommand extends CommandRunner {
     logInfo(`Starting design pipeline for: ${request.title}`);
 
     // Derive canonical slug for state: use canonical path detection.
-    // Canonical pattern: specrunner/requests/active/<slug>.md
+    // Canonical pattern: specrunner/drafts/<slug>.md
     // Non-canonical (e.g. /tmp/...) → null
     const canonicalMatch = CANONICAL_PATTERN.exec(this.absolutePath);
     const requestSlug: string | null = canonicalMatch ? (canonicalMatch[1] ?? null) : null;

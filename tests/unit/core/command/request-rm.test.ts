@@ -25,9 +25,9 @@ afterEach(async () => {
 });
 
 async function createRequest(slug: string): Promise<void> {
-  const activeDir = path.join(tempDir, "specrunner", "requests", "active");
-  await fs.mkdir(activeDir, { recursive: true });
-  await fs.writeFile(path.join(activeDir, slug + ".md"), "# test\n", "utf-8");
+  const draftsDir = path.join(tempDir, "specrunner", "drafts");
+  await fs.mkdir(draftsDir, { recursive: true });
+  await fs.writeFile(path.join(draftsDir, slug + ".md"), "# test\n", "utf-8");
 }
 
 async function invokeExecuteRm(slug: string, cwd = tempDir) {
@@ -35,26 +35,24 @@ async function invokeExecuteRm(slug: string, cwd = tempDir) {
   return executeRm(slug, cwd);
 }
 
-// TC-RM-001: existing slug → deleted + exit 0
 describe("TC-RM-001: existing slug deletes file and returns 0", () => {
-  it("removes the .md file and returns 0", async () => {
+  it("removes the .md file from drafts/ and returns 0", async () => {
     await createRequest("to-delete");
 
     const result = await invokeExecuteRm("to-delete");
 
     expect(result).toBe(0);
 
-    const filePath = path.join(tempDir, "specrunner", "requests", "active", "to-delete.md");
+    const filePath = path.join(tempDir, "specrunner", "drafts", "to-delete.md");
     await expect(fs.access(filePath)).rejects.toThrow();
 
     const stderrOutput = (vi.mocked(process.stderr.write).mock.calls as unknown[][])
       .map((c) => String(c[0]))
       .join("");
-    expect(stderrOutput).toContain("Removed: specrunner/requests/active/to-delete.md");
+    expect(stderrOutput).toContain("Removed: specrunner/drafts/to-delete.md");
   });
 });
 
-// TC-RM-002: nonexistent slug → exit 1
 describe("TC-RM-002: nonexistent slug returns exit 1", () => {
   it("returns 1 and writes error to stderr", async () => {
     const result = await invokeExecuteRm("ghost-slug");
@@ -67,7 +65,6 @@ describe("TC-RM-002: nonexistent slug returns exit 1", () => {
   });
 });
 
-// TC-RM-003: path traversal → exit 2, no filesystem access
 describe("TC-RM-003: path traversal slug returns exit 2 without filesystem access", () => {
   it("returns 2 for '../../etc/passwd' slug", async () => {
     const result = await invokeExecuteRm("../../etc/passwd");
@@ -80,7 +77,6 @@ describe("TC-RM-003: path traversal slug returns exit 2 without filesystem acces
   });
 });
 
-// TC-RM-004: uppercase letters → exit 2
 describe("TC-RM-004: uppercase slug rejected with exit 2", () => {
   it("returns 2 for 'MyFeature'", async () => {
     const result = await invokeExecuteRm("MyFeature");
@@ -88,9 +84,8 @@ describe("TC-RM-004: uppercase slug rejected with exit 2", () => {
   });
 });
 
-// TC-RM-005: valid slug my-feature-123 passes validation
 describe("TC-RM-005: valid slug passes validation and deletes", () => {
-  it("accepts 'my-feature-123' and removes it", async () => {
+  it("accepts 'my-feature-123' and removes it from drafts/", async () => {
     await createRequest("my-feature-123");
 
     const result = await invokeExecuteRm("my-feature-123");

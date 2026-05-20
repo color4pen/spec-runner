@@ -6,12 +6,9 @@
  *
  * TC-109: --pr <num> → getPullRequest → headRefName → stripBranchPrefix → slug
  * TC-130: specrunner finish <slug> resolves state
- * TC-131: active 0 entries → escalation (exit 2)
- * TC-132: active 2+ entries → escalation (exit 2)
- * TC-133: cwd under active/<dir>/ → auto-detect
+ * TC-131: no slug specified → escalation (exit 2)
  * TC-134: multiple states for same slug → latest updatedAt chosen
  */
-import * as path from "node:path";
 import { listJobStates, loadJobState } from "../../state/store.js";
 import { getJobSlug, stripBranchPrefix, stripJobIdSuffix } from "../../state/job-slug.js";
 import type { ResolvedTarget } from "./types.js";
@@ -154,71 +151,19 @@ async function resolveByJobId(
 }
 
 /**
- * Auto-detect from active directory.
+ * Auto-detect: no longer supported. Returns error immediately.
  *
- * TC-131: 0 entries → escalation
- * TC-132: 2+ entries → escalation
- * TC-133: cwd under active/<dir>/ → auto-detect
+ * TC-131: no slug specified → escalation (exit 2)
  */
 async function resolveByAutoDetect(
-  cwd: string,
-  stdoutWrite: (msg: string) => void,
+  _cwd: string,
+  _stdoutWrite: (msg: string) => void,
 ): Promise<ResolveTargetResult> {
-  // TC-133: cwd itself is under active/<dir>/
-  const cwdSlug = detectSlugFromCwd(cwd);
-  if (cwdSlug) {
-    stdoutWrite(`Auto-detected slug from cwd: ${cwdSlug}`);
-    return resolveBySlug(cwdSlug, cwd, stdoutWrite);
-  }
-
-  const activeDir = path.join(cwd, "specrunner", "requests", "active");
-
-  let entries: string[];
-  try {
-    const { readdir } = await import("node:fs/promises");
-    const dirents = await readdir(activeDir, { withFileTypes: true });
-    entries = dirents
-      .filter((d) => d.isFile() && d.name.endsWith(".md"))
-      .map((d) => d.name.slice(0, -3));
-  } catch (err: unknown) {
-    const code = (err as NodeJS.ErrnoException).code;
-    if (code === "ENOENT") {
-      entries = [];
-    } else {
-      throw err;
-    }
-  }
-
-  if (entries.length === 0) {
-    return {
-      ok: false,
-      exitCode: 2,
-      message: "No request found in active/. Specify <slug>, --pr, or --job.",
-    };
-  }
-
-  if (entries.length > 1) {
-    return {
-      ok: false,
-      exitCode: 2,
-      message: `Multiple slugs in active/: ${entries.join(", ")}. Specify <slug>, --pr, or --job.`,
-    };
-  }
-
-  // Exactly 1 slug — auto-detect
-  const autoSlug = entries[0]!;
-  stdoutWrite(`Auto-detected active slug: ${autoSlug}`);
-
-  return resolveBySlug(autoSlug, cwd, stdoutWrite);
-}
-
-/**
- * Detect slug from cwd if it's under specrunner/requests/active/<slug>/.
- */
-function detectSlugFromCwd(cwd: string): string | null {
-  const PATTERN = /specrunner\/requests\/active\/([^/]+)(?:\/|$)/;
-  const m = PATTERN.exec(cwd.replace(/\\/g, "/"));
-  return m ? (m[1] ?? null) : null;
+  return {
+    ok: false,
+    exitCode: 2,
+    message: "No slug specified. Specify <slug>, --pr, or --job.",
+  };
 }
 
 /**

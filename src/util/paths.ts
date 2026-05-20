@@ -122,3 +122,22 @@ export function rulesSourcePath(): string {
 export function rulesDestPath(slug: string): string {
   return `${CHANGES_DIR}/${slug}/rules.md`;
 }
+
+/** Base directory for draft requests (not yet run). */
+const DRAFTS_DIR = "specrunner/drafts";
+
+/**
+ * Returns the relative path to the drafts directory (no trailing slash).
+ * Example: draftsDir() → "specrunner/drafts"
+ */
+export function draftsDir(): string {
+  return DRAFTS_DIR;
+}
+
+/**
+ * Returns the relative path to a draft request file for the given slug.
+ * Example: draftPath("my-change") → "specrunner/drafts/my-change.md"
+ */
+export function draftPath(slug: string): string {
+  return `${DRAFTS_DIR}/${slug}.md`;
+}

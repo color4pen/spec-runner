@@ -43,19 +43,19 @@ afterEach(async () => {
   await fs.rm(tempDir, { recursive: true, force: true });
 });
 
-async function createMergedRequest(slug: string, type: string, title: string): Promise<void> {
-  const dir = path.join(tempDir, "specrunner", "requests", "merged", slug);
+async function createArchivedRequest(slug: string, type: string, title: string): Promise<void> {
+  const dir = path.join(tempDir, "specrunner", "changes", "archive", slug);
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(path.join(dir, "request.md"), buildRequestMd({ title, type, slug }));
 }
 
 describe("TC-RP-001: same type 3 items + different type 1 item", () => {
   it("returns up to 3 same-type + 1 different-type", async () => {
-    await createMergedRequest("alpha-feature", "new-feature", "Alpha Feature");
-    await createMergedRequest("beta-feature", "new-feature", "Beta Feature");
-    await createMergedRequest("gamma-feature", "new-feature", "Gamma Feature");
-    await createMergedRequest("delta-feature", "new-feature", "Delta Feature");
-    await createMergedRequest("fix-something", "bug-fix", "Fix Something");
+    await createArchivedRequest("alpha-feature", "new-feature", "Alpha Feature");
+    await createArchivedRequest("beta-feature", "new-feature", "Beta Feature");
+    await createArchivedRequest("gamma-feature", "new-feature", "Gamma Feature");
+    await createArchivedRequest("delta-feature", "new-feature", "Delta Feature");
+    await createArchivedRequest("fix-something", "bug-fix", "Fix Something");
 
     const patterns = await collectRequestPatterns(tempDir, "new-feature");
 
@@ -68,9 +68,9 @@ describe("TC-RP-001: same type 3 items + different type 1 item", () => {
   });
 
   it("returns same-type items in alphabetical order by slug", async () => {
-    await createMergedRequest("c-feature", "new-feature", "C Feature");
-    await createMergedRequest("a-feature", "new-feature", "A Feature");
-    await createMergedRequest("b-feature", "new-feature", "B Feature");
+    await createArchivedRequest("c-feature", "new-feature", "C Feature");
+    await createArchivedRequest("a-feature", "new-feature", "A Feature");
+    await createArchivedRequest("b-feature", "new-feature", "B Feature");
 
     const patterns = await collectRequestPatterns(tempDir, "new-feature");
     const slugs = patterns.map((p) => p.slug);
@@ -83,8 +83,8 @@ describe("TC-RP-001: same type 3 items + different type 1 item", () => {
 
 describe("TC-RP-002: fewer than 3 same-type items", () => {
   it("returns only existing same-type items when fewer than 3 available", async () => {
-    await createMergedRequest("only-feature", "new-feature", "Only Feature");
-    await createMergedRequest("fix-bug", "bug-fix", "Fix Bug");
+    await createArchivedRequest("only-feature", "new-feature", "Only Feature");
+    await createArchivedRequest("fix-bug", "bug-fix", "Fix Bug");
 
     const patterns = await collectRequestPatterns(tempDir, "new-feature");
 
@@ -93,14 +93,14 @@ describe("TC-RP-002: fewer than 3 same-type items", () => {
     expect(patterns.filter((p) => p.type === "bug-fix").length).toBe(1);
   });
 
-  it("returns empty array when no merged requests exist at all", async () => {
+  it("returns empty array when no archived requests exist at all", async () => {
     const patterns = await collectRequestPatterns(tempDir, "new-feature");
     expect(patterns).toEqual([]);
   });
 });
 
-describe("TC-RP-003: merged directory does not exist", () => {
-  it("returns empty array when merged/ directory does not exist", async () => {
+describe("TC-RP-003: archive directory does not exist", () => {
+  it("returns empty array when changes/archive/ directory does not exist", async () => {
     const patterns = await collectRequestPatterns(tempDir, "new-feature");
     expect(patterns).toEqual([]);
   });
@@ -108,12 +108,10 @@ describe("TC-RP-003: merged directory does not exist", () => {
 
 describe("TC-RP-004: individual file read failure is skipped", () => {
   it("skips directories without request.md", async () => {
-    // Create a directory without request.md
-    const noFilesDir = path.join(tempDir, "specrunner", "requests", "merged", "no-request-file");
+    const noFilesDir = path.join(tempDir, "specrunner", "changes", "archive", "no-request-file");
     await fs.mkdir(noFilesDir, { recursive: true });
 
-    // Create a valid one
-    await createMergedRequest("valid-feature", "new-feature", "Valid Feature");
+    await createArchivedRequest("valid-feature", "new-feature", "Valid Feature");
 
     const patterns = await collectRequestPatterns(tempDir, "new-feature");
 
@@ -122,12 +120,11 @@ describe("TC-RP-004: individual file read failure is skipped", () => {
   });
 
   it("skips request.md files that fail parsing", async () => {
-    const brokenDir = path.join(tempDir, "specrunner", "requests", "merged", "broken");
+    const brokenDir = path.join(tempDir, "specrunner", "changes", "archive", "broken");
     await fs.mkdir(brokenDir, { recursive: true });
-    // Write invalid content (no title heading, no type)
     await fs.writeFile(path.join(brokenDir, "request.md"), "this is not valid request.md content");
 
-    await createMergedRequest("valid-feature", "new-feature", "Valid Feature");
+    await createArchivedRequest("valid-feature", "new-feature", "Valid Feature");
 
     const patterns = await collectRequestPatterns(tempDir, "new-feature");
 
