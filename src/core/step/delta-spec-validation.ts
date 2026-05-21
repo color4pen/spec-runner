@@ -42,6 +42,15 @@ export const DeltaSpecValidationStep: CliStep = {
     const cwd = deps.cwd ?? process.cwd();
     const changePath = nodePath.join(cwd, changeFolderPath(deps.slug));
 
+    const baselineSpecLoader = async (capability: string): Promise<string | null> => {
+      const baselinePath = nodePath.join(cwd, `specrunner/specs/${capability}/spec.md`);
+      try {
+        return await nodeFs.readFile(baselinePath, "utf-8");
+      } catch {
+        return null;
+      }
+    };
+
     const result = await validateDeltaSpecPaths(
       changePath,
       {
@@ -49,6 +58,7 @@ export const DeltaSpecValidationStep: CliStep = {
         readFile: (p: string) => nodeFs.readFile(p, "utf-8"),
       },
       deps.request.type,
+      baselineSpecLoader,
     );
 
     const resultRelPath = deltaSpecValidationResultPath(deps.slug);

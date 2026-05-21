@@ -25,7 +25,13 @@ export type DeltaSpecViolationReason =
   | "missing-requirements-section"
   | "empty-section"
   | "no-specs-for-required-type"
-  | "legacy-section-header";
+  | "legacy-section-header"
+  | "removed-section-format"
+  | "renamed-section-format"
+  | "non-standard-requirement-header"
+  | "missing-scenario"
+  | "missing-normative-keyword"
+  | "baseline-header-mismatch";
 
 export interface DeltaSpecViolation {
   path: string;
@@ -54,8 +60,9 @@ export async function validateDeltaSpecPaths(
   changePath: string,
   deps: DeltaSpecValidatorFs,
   requestType?: string,
+  baselineSpecLoader: (capability: string) => Promise<string | null> = async () => null,
 ): Promise<{ ok: true } | { ok: false; violations: DeltaSpecViolation[] }> {
-  const ruleInput = { changePath, deps, requestType };
+  const ruleInput = { changePath, deps, requestType, baselineSpecLoader };
 
   // D9: no-specs-for-required-type runs first with early return
   const specsViolations = await noSpecsForRequiredType.check(ruleInput);

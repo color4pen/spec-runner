@@ -3,6 +3,12 @@ import type { DeltaSpecRuleName } from "./types.js";
 import { noLegacyFlatFile } from "./no-legacy-flat-file.js";
 import { noLegacyFlatDir } from "./no-legacy-flat-dir.js";
 import { canonicalSpecStructure } from "./canonical-spec-structure.js";
+import { removedSectionFormat } from "./removed-section-format.js";
+import { renamedSectionFormat } from "./renamed-section-format.js";
+import { requirementHeaderRequired } from "./requirement-header-required.js";
+import { scenarioRequiredPerRequirement } from "./scenario-required-per-requirement.js";
+import { normativeKeywordRequired } from "./normative-keyword-required.js";
+import { baselineHeaderMatch } from "./baseline-header-match.js";
 
 export { noSpecsForRequiredType } from "./no-specs-for-required-type.js";
 export { DeltaSpecRuleRegistry };
@@ -19,8 +25,16 @@ export type { DeltaSpecRuleName } from "./types.js";
  */
 export function createDeltaSpecRegistry(): DeltaSpecRuleRegistry<DeltaSpecRuleName> {
   const registry = new DeltaSpecRuleRegistry<DeltaSpecRuleName>();
+  // Existing 3 rules
   registry.register(noLegacyFlatFile);
   registry.register(noLegacyFlatDir);
   registry.register(canonicalSpecStructure);
+  // New 6 rules
+  registry.register(removedSectionFormat);
+  registry.register(renamedSectionFormat);
+  registry.register(requirementHeaderRequired);
+  registry.register(scenarioRequiredPerRequirement);
+  registry.register(normativeKeywordRequired);
+  registry.register(baselineHeaderMatch);
   return registry;
 }

@@ -1,6 +1,5 @@
-## Purpose
+# delta-spec-rule Delta Spec
 
-TBD
 ## Requirements
 
 ### Requirement: DeltaSpecRuleName union type
@@ -20,31 +19,6 @@ TBD
 - **WHEN** the `name` property is set to `"removed-section-format"`
 - **THEN** the TypeScript compiler accepts it without error
 
-### Requirement: DeltaSpecRule interface に TName type parameter を追加
-
-`DeltaSpecRule` interface を `DeltaSpecRule<TName extends string = string>` に拡張し、`name` フィールドの型を `TName` に変更する。
-
-- default `string` で backward compatibility を維持する
-- `DeltaSpecRule` は `ValidationRule` を extend しない（sync vs async の差異により独立 interface を維持）
-
-### Requirement: DeltaSpecRuleRegistry に TName type parameter を追加
-
-`DeltaSpecRuleRegistry` を `DeltaSpecRuleRegistry<TName extends string = string>` に拡張する。
-
-- `register(rule: DeltaSpecRule<TName>)` の引数型を `DeltaSpecRule<TName>` にする
-- `TName` 外の name を持つ rule の register は tsc が compile error として拒否する
-
-### Requirement: DSV rule 4 ファイルを DeltaSpecRule<DeltaSpecRuleName> で specialize
-
-以下 4 ファイルの型注釈を `DeltaSpecRule<DeltaSpecRuleName>` に変更する:
-
-- `src/core/spec/rules/canonical-spec-structure.ts`
-- `src/core/spec/rules/no-legacy-flat-dir.ts`
-- `src/core/spec/rules/no-legacy-flat-file.ts`
-- `src/core/spec/rules/no-specs-for-required-type.ts`
-
-rule 内で typo（例: `"canonical-spec-strcuture"`）を書くと tsc が compile error として検知する。
-
 ### Requirement: createDeltaSpecRegistry() の戻り型を DeltaSpecRuleRegistry<DeltaSpecRuleName> に変更
 
 `src/core/spec/rules/index.ts` の `createDeltaSpecRegistry()` SHALL `DeltaSpecRuleRegistry<DeltaSpecRuleName>` を返す。
@@ -59,36 +33,6 @@ JSDoc に「`DeltaSpecRuleName` union は valid な rule name の制約であり
 - **GIVEN** `createDeltaSpecRegistry()` is called
 - **WHEN** the returned registry is inspected
 - **THEN** it contains 9 registered rules
-
-### Requirement: canonical-spec-structure rule SHALL validate new delta spec format
-
-The `canonical-spec-structure` rule SHALL check for the presence of `## Requirements` as the valid section header in delta spec files. The old section headers (`## ADDED Requirements`, `## MODIFIED Requirements`, `## REMOVED Requirements`, `## RENAMED Requirements`) SHALL be detected as a new violation reason `legacy-section-header` with severity `error`.
-
-Validation logic:
-- `## Requirements` present with at least one `### Requirement:` block → pass
-- `## Requirements` absent → `missing-requirements-section` violation (unchanged)
-- `## Requirements` present but no `### Requirement:` blocks → `empty-section` violation (unchanged)
-- Any of `## ADDED Requirements` / `## MODIFIED Requirements` / `## REMOVED Requirements` / `## RENAMED Requirements` present → `legacy-section-header` violation with suggested fix: "Replace with ## Requirements (tool auto-classifies ADDED/MODIFIED)"
-
-`## Removed` and `## Renamed` sections are optional and SHALL NOT be validated by this rule (their content is validated by the merger at finish time).
-
-#### Scenario: new format passes validation
-
-- **GIVEN** a delta spec file at `specs/<cap>/spec.md` containing `## Requirements` and `### Requirement:` blocks
-- **WHEN** the `canonical-spec-structure` rule checks the file
-- **THEN** no violations are returned
-
-#### Scenario: old format ADDED header triggers violation
-
-- **GIVEN** a delta spec file containing `## ADDED Requirements`
-- **WHEN** the `canonical-spec-structure` rule checks the file
-- **THEN** a `legacy-section-header` violation is returned
-
-#### Scenario: old format MODIFIED header triggers violation
-
-- **GIVEN** a delta spec file containing `## MODIFIED Requirements`
-- **WHEN** the `canonical-spec-structure` rule checks the file
-- **THEN** a `legacy-section-header` violation is returned
 
 ### Requirement: DeltaSpecRuleInput SHALL provide optional baselineSpecLoader
 
