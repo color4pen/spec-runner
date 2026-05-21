@@ -224,11 +224,11 @@ describe("TC-RR-010: buildInitialMessage wraps projectContext in <project-contex
 });
 
 // ---------------------------------------------------------------------------
-// TC-RR-011: REQUEST_REVIEW_SYSTEM_PROMPT — contains authority path co-occurrence detection rule
+// TC-RR-011: REQUEST_REVIEW_SYSTEM_PROMPT — contains authority path intent detection rule
 // ---------------------------------------------------------------------------
-describe("TC-RR-011: REQUEST_REVIEW_SYSTEM_PROMPT contains authority path co-occurrence detection rule", () => {
-  it("includes authority path co-occurrence HIGH finding detection rule", () => {
-    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("Authority path co-occurrence");
+describe("TC-RR-011: REQUEST_REVIEW_SYSTEM_PROMPT contains authority path intent detection rule", () => {
+  it("includes intent-based authority path HIGH finding detection rule", () => {
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("Authority path intent");
     expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("specrunner/specs/");
     expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("HIGH severity finding");
   });
@@ -238,9 +238,38 @@ describe("TC-RR-011: REQUEST_REVIEW_SYSTEM_PROMPT contains authority path co-occ
 // TC-RR-012: REQUEST_REVIEW_SYSTEM_PROMPT — contains referential exclusion clause
 // ---------------------------------------------------------------------------
 describe("TC-RR-012: REQUEST_REVIEW_SYSTEM_PROMPT contains referential exclusion clause", () => {
-  it("includes exclusion for referential mentions from HIGH finding", () => {
-    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("referential mentions");
-    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("NOT HIGH findings");
+  it("includes exclusion for referential/policy references from HIGH finding", () => {
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("policy statement");
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("NOT a HIGH finding");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RR-013: REQUEST_REVIEW_SYSTEM_PROMPT — intent 3-category classification and no verb enumeration
+// ---------------------------------------------------------------------------
+describe("TC-RR-013: REQUEST_REVIEW_SYSTEM_PROMPT intent-based detection covers 3 categories without verb enumeration", () => {
+  it("contains 3-category intent classification for authority path references", () => {
+    // Covers observation cases: line-number rewrites, arrow notation, grep commands, completeness
+    // demands — all are caught by agent intent judgment rather than pattern matching
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("Reference/mention");
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("Design reflection");
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("Direct operation");
+  });
+
+  it("does not contain specific edit verb enumeration in detection rule", () => {
+    // Abstraction verified: no patchwork verb listing
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).not.toContain("MODIFIED, ADDED");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RR-014: REQUEST_REVIEW_SYSTEM_PROMPT — HIGH finding recommendation guidance
+// ---------------------------------------------------------------------------
+describe("TC-RR-014: REQUEST_REVIEW_SYSTEM_PROMPT contains spec-merge / read-only / delta spec recommendation", () => {
+  it("contains spec-merge, read-only within the PR, and delta spec guidance in recommendation", () => {
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("spec-merge");
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("read-only within the PR");
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("delta spec");
   });
 });
 

@@ -28,7 +28,10 @@ Execute the following steps in order:
 - Verify acceptance criteria: are success conditions testable and complete?
 - Verify scope validity: is the scope bounded and coherent?
 - Note ambiguities or gaps that would block pipeline execution
-- Authority path co-occurrence: if the request body references a path under \`specrunner/specs/\` in conjunction with an edit verb (MODIFIED, ADDED, "を更新", "を作成", or equivalent), flag it as a HIGH severity finding. Exception: referential mentions that describe the authority path as forbidden (policy statements, past incident citations) are NOT HIGH findings.
+- Authority path intent: if the request body references a path under \`specrunner/specs/\`, assess the intent of that reference as an agent:
+  - Reference/mention (read-only reference, policy statement, past incident citation) → NOT a HIGH finding
+  - Design reflection via delta spec → NOT a HIGH finding
+  - Direct operation (intent to directly edit or modify the baseline) → HIGH severity finding. When reporting, recommend: authority specs are auto-updated by \`specrunner finish\` spec-merge from the delta; the baseline is read-only within the PR. Write Requirements in the delta spec and verify baseline state in AC via grep assertions rather than direct edits.
 
 ### Step 3: External Dependency Check
 - Identify any external SDKs, APIs, or third-party services mentioned in the request
@@ -47,7 +50,7 @@ Execute the following steps in order:
 
 Severity judgments apply ONLY to request-level defects. Do NOT escalate implementation design concerns to findings.
 
-- **HIGH** = Request-level defect: goal is unclear, acceptance criteria are absent or untestable, an external constraint critical to execution is unspecified, or the request body directly specifies an authority path (\`specrunner/specs/\`) as an edit target
+- **HIGH** = Request-level defect: goal is unclear, acceptance criteria are absent or untestable, an external constraint critical to execution is unspecified, or the request body expresses a direct-operation intent toward an authority path (\`specrunner/specs/\`)
 - **MEDIUM** = Scope ambiguity, recommended additions that would improve the request
 - **LOW** = Clarity improvements, expression refinements
 
