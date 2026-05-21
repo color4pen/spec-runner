@@ -186,7 +186,12 @@ function makeHappyPathSpawn(_prState: "OPEN" | "MERGED" = "OPEN"): SpawnFn {
 describe("TC-123: 1-PR model normal success flow (archive present, CLEAN)", () => {
   it("runs all 4 phases and exits 0", async () => {
     const { jobId } = await makeJobWithPr();
-    const spawn = makeHappyPathSpawn("OPEN");
+    const calls: Array<[string, string[]]> = [];
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      calls.push([cmd, [...args]]);
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
     const stubFs = makeStubFs({ changeFolderExists: true, activeExists: true });
 
     const messages: string[] = [];
@@ -212,6 +217,24 @@ describe("TC-123: 1-PR model normal success flow (archive present, CLEAN)", () =
     expect(messages.some((m) => m.includes("Phase 2"))).toBe(true);
     expect(messages.some((m) => m.includes("Phase 3"))).toBe(true);
     expect(messages.some((m) => m.includes("Phase 4"))).toBe(true);
+
+    // TC-123: Phase 1 commit step assertions
+    // git diff --cached --quiet must be called
+    const diffCalls = calls.filter(([c, a]) => c === "git" && a[0] === "diff" && a.includes("--cached") && a.includes("--quiet"));
+    expect(diffCalls).toHaveLength(1);
+
+    // git commit -m "chore: archive test-slug" must be called
+    const commitCalls = calls.filter(([c, a]) => c === "git" && a[0] === "commit" && a.includes("chore: archive test-slug"));
+    expect(commitCalls).toHaveLength(1);
+
+    // git commit must appear after git mv and git add in Phase 1
+    const mvIdx = calls.findIndex(([c, a]) => c === "git" && a[0] === "mv");
+    const addIdx = calls.findIndex(([c, a]) => c === "git" && a[0] === "add");
+    const commitIdx = calls.findIndex(([c, a]) => c === "git" && a[0] === "commit" && a.includes("chore: archive test-slug"));
+    expect(mvIdx).toBeGreaterThan(-1);
+    expect(addIdx).toBeGreaterThan(-1);
+    expect(commitIdx).toBeGreaterThan(mvIdx);
+    expect(commitIdx).toBeGreaterThan(addIdx);
   });
 
   it("TC-122: chore/archive-<slug> branch NOT created", async () => {
@@ -322,11 +345,15 @@ describe("TC-106: feature PR already MERGED → Phase 1-3 skip, Phase 4 only", (
 
 // TC-103: archive folder absent → commit/push skip, only merge+markJobArchived
 describe("TC-103: archive folder absent → skip archive steps, merge+archive", () => {
-  it("skips openspec archive, git mv, commit, but runs push+merge+Phase4", async () => {
+  it("skips openspec archive, git mv, but runs diff-check + push+merge+Phase4; no commit when staging empty", async () => {
     const { jobId } = await makeJobWithPr({ status: "awaiting-merge" });
     const calls: Array<[string, string[]]> = [];
     const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       calls.push([cmd, [...args]]);
+      // Override: no staged changes when archive folder is absent
+      if (cmd === "git" && args[0] === "diff" && args.includes("--cached") && args.includes("--quiet")) {
+        return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
+      }
       const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn; return happySpawn(cmd, args, { cwd: "" });
     });
     // No archive folder, no active
@@ -343,6 +370,15 @@ describe("TC-103: archive folder absent → skip archive steps, merge+archive", 
     expect(archiveCalls).toHaveLength(0);
     // merge SHOULD be called (Phase 3)
     expect((githubClient.mergePullRequest as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
+
+    // TC-103: commit step assertions
+    // git diff --cached --quiet IS called (even when archive is skipped)
+    const diffCalls = calls.filter(([c, a]) => c === "git" && a[0] === "diff" && a.includes("--cached") && a.includes("--quiet"));
+    expect(diffCalls).toHaveLength(1);
+
+    // git commit is NOT called (staging is empty when both mergeSpecs and archive are skipped)
+    const commitCalls = calls.filter(([c, a]) => c === "git" && a[0] === "commit");
+    expect(commitCalls).toHaveLength(0);
   });
 });
 

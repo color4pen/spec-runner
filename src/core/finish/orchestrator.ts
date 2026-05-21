@@ -28,6 +28,7 @@ import { fetchPrViewWithRetry, pollMergeStateAfterPush, checkMergeableForMerge }
 import { spawnOrEscalate } from "./spawn-helper.js";
 import { archiveChangeFolder } from "./archive-change-folder.js";
 import { mergeSpecsForChange } from "./spec-merge.js";
+import { commitArchive } from "./commit-archive.js";
 import { assertJobFinishable, markJobArchived } from "./job-state-update.js";
 import { TERMINAL_STATUSES } from "../../state/lifecycle.js";
 import { formatEscalation } from "./escalation.js";
@@ -265,6 +266,11 @@ async function runPhase1Archive(params: {
   const archiveResult = await archiveChangeFolder({ slug: target.slug, cwd: archiveCwd, spawn, fs });
   if (!archiveResult.ok) return { ok: false, escalation: archiveResult.escalation, exitCode: 1 };
   if (!archiveResult.skipped) stdoutWrite(archiveResult.message);
+
+  // commit staged changes (spec-merge + archive) as a single commit
+  const commitResult = await commitArchive({ slug: target.slug, cwd: archiveCwd, spawn });
+  if (!commitResult.ok) return { ok: false, escalation: commitResult.escalation, exitCode: 1 };
+  if (!commitResult.skipped) stdoutWrite(commitResult.message);
 
   return { ok: true };
 }
