@@ -175,13 +175,11 @@ async function makeJobStateForManaged(slug = "test-slug") {
   });
 }
 
-// TC-MR-005: setupWorkspace copies rules.md to change folder when present (TC-14)
-describe("TC-MR-005: setupWorkspace copies rules.md to change folder when present", () => {
-  it("copies specrunner/rules.md to change folder and stages it with git add", async () => {
-    // Arrange: create request.md and specrunner/rules.md in tempDir (the cwd)
+// TC-MR-005: setupWorkspace writes rules.md to change folder via writeFile (string constant)
+describe("TC-MR-005: setupWorkspace writes rules.md to change folder via string constant", () => {
+  it("writes RULES_MD_CONTENT to change folder and stages it with git add", async () => {
+    // Arrange: create request.md in tempDir (no specrunner/rules.md needed)
     await fs.writeFile(path.join(tempDir, "request.md"), "# Test Request\n");
-    await fs.mkdir(path.join(tempDir, "specrunner"), { recursive: true });
-    await fs.writeFile(path.join(tempDir, "specrunner", "rules.md"), "# Rules\n");
 
     const sessionClient = buildMockSessionClient();
     const githubClient = buildMockGitHubClient();
@@ -194,45 +192,14 @@ describe("TC-MR-005: setupWorkspace copies rules.md to change folder when presen
       branchName: "feat/test-slug-abcd1234",
     });
 
-    // Verify rules.md was copied to the change folder
+    // Verify rules.md was written to the change folder
     const destPath = path.join(tempDir, "specrunner", "changes", "test-slug", "rules.md");
-    await fs.access(destPath); // throws ENOENT if copy did not happen
+    await fs.access(destPath); // throws ENOENT if writeFile did not happen
 
     // Verify git add was called with the rules.md path
     const rulesAddCall = calls.find(
       (c) => c.cmd === "git" && c.args[0] === "add" && c.args.some((a) => a.includes("rules.md")),
     );
     expect(rulesAddCall).toBeDefined();
-  });
-});
-
-// TC-MR-006: setupWorkspace does not throw when rules.md is absent (TC-18)
-describe("TC-MR-006: setupWorkspace does not throw when specrunner/rules.md is absent (ENOENT guard)", () => {
-  it("logs warning to stderr and does not throw when rules.md is not found", async () => {
-    // Arrange: create request.md but NO specrunner/rules.md
-    await fs.writeFile(path.join(tempDir, "request.md"), "# Test Request\n");
-    // specrunner/ dir does not exist → fs.access will throw ENOENT
-
-    const sessionClient = buildMockSessionClient();
-    const githubClient = buildMockGitHubClient();
-    const { spawnFn } = buildManagedMockSpawnFn();
-    const runtime = new ManagedRuntime(tempDir, sessionClient, githubClient, buildRepo(), spawnFn, "");
-
-    const jobState = await makeJobStateForManaged();
-    // Must NOT throw
-    await expect(
-      runtime.setupWorkspace("test-slug", jobState.jobId, {
-        requestFilePath: path.join(tempDir, "request.md"),
-        branchName: "feat/test-slug-abcd1234",
-      }),
-    ).resolves.toBeDefined();
-
-    // Must log warning to stderr
-    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
-    const warningCalls = stderrMock.mock.calls as [string][];
-    const hasWarning = warningCalls.some(
-      ([msg]) => typeof msg === "string" && msg.includes("specrunner/rules.md not found"),
-    );
-    expect(hasWarning).toBe(true);
   });
 });

@@ -587,16 +587,14 @@ describe("TC-LR-010: setupWorkspace run path commits request.md", () => {
   });
 });
 
-// TC-LR-014: setupWorkspace(run) copies rules.md to change folder when present (TC-13)
-describe("TC-LR-014: setupWorkspace copies rules.md to change folder when present", () => {
-  it("copies specrunner/rules.md to change folder and stages it with git add", async () => {
-    // Custom manager that also creates specrunner/rules.md in the worktree
+// TC-LR-014: setupWorkspace(run) writes rules.md to change folder via writeFile (string constant)
+describe("TC-LR-014: setupWorkspace writes rules.md to change folder via string constant", () => {
+  it("writes RULES_MD_CONTENT to change folder and stages it with git add", async () => {
     const createdPaths: string[] = [];
     const manager = {
       create: vi.fn().mockImplementation(async (_cwd: string, slug: string, jobId: string) => {
         const p = path.join(tempDir, `worktree-${slug}-${jobId.slice(0, 8)}`);
-        await fs.mkdir(path.join(p, "specrunner"), { recursive: true });
-        await fs.writeFile(path.join(p, "specrunner", "rules.md"), "# Rules\n");
+        await fs.mkdir(p, { recursive: true });
         createdPaths.push(p);
         return p;
       }),
@@ -617,47 +615,16 @@ describe("TC-LR-014: setupWorkspace copies rules.md to change folder when presen
       branchName: "feat/test-slug-abcd1234",
     });
 
-    // Verify rules.md was copied to the change folder
+    // Verify rules.md was written to the change folder
     const worktreePath = createdPaths[0]!;
     const destPath = path.join(worktreePath, "specrunner", "changes", "test-slug", "rules.md");
-    await fs.access(destPath); // throws ENOENT if copy did not happen
+    await fs.access(destPath); // throws ENOENT if writeFile did not happen
 
     // Verify git add was called with the rules.md path
     const rulesAddCall = calls.find(
       (c) => c.cmd === "git" && c.args[0] === "add" && c.args.some((a) => a.includes("rules.md")),
     );
     expect(rulesAddCall).toBeDefined();
-  });
-});
-
-// TC-LR-017: setupWorkspace(run) does not throw when rules.md is absent (TC-17)
-describe("TC-LR-017: setupWorkspace does not throw when specrunner/rules.md is absent (ENOENT guard)", () => {
-  it("logs warning to stderr and does not throw when rules.md is not found in worktree", async () => {
-    // Standard mock — worktree directory is created but specrunner/rules.md does NOT exist
-    const { manager } = buildMockManager();
-    const { spawnFn } = buildMockSpawnFn();
-    const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
-
-    const requestFile = path.join(tempDir, "request.md");
-    await fs.writeFile(requestFile, "# Test Request\n");
-
-    const jobState = await makeJobState();
-    // Must NOT throw
-    await expect(
-      runtime.setupWorkspace("test-slug", jobState.jobId, {
-        requestFilePath: requestFile,
-        branchName: "feat/test-slug-abcd1234",
-      }),
-    ).resolves.toBeDefined();
-
-    // Must log warning to stderr
-    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
-    const warningCalls = stderrMock.mock.calls as [string][];
-    const hasWarning = warningCalls.some(
-      ([msg]) => typeof msg === "string" && msg.includes("specrunner/rules.md not found"),
-    );
-    expect(hasWarning).toBe(true);
   });
 });
 

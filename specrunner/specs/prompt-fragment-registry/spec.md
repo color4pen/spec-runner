@@ -101,7 +101,11 @@ fragment 側に inject 先 (= step 名 / prompt 名) を持たせない。依存
 
 ### Requirement: rules.md の存在と構造的保証
 
-`specrunner/rules.md` が存在し、パイプライン規律の source of truth として以下のセクションを含む MUST:
+rules.md content の source of truth は `src/prompts/rules.ts` の `RULES_MD_CONTENT` string constant である MUST。CLI は worktree setup 時に `RULES_MD_CONTENT` を `fs.writeFile` で `specrunner/changes/<slug>/rules.md` に配置する MUST。
+
+`specrunner/rules.md` ファイルは repo に存在しない MUST（source of truth は CLI コードに一本化）。
+
+rules.md content はパイプライン規律として以下のセクションを含む MUST:
 
 - System Context（pipeline 構成）
 - 思想原則
@@ -111,16 +115,14 @@ fragment 側に inject 先 (= step 名 / prompt 名) を持たせない。依存
 - spec authority lifecycle
 - delta spec 記法
 
-rules.md は worktree setup 時に `specrunner/changes/<slug>/rules.md` にコピーされる MUST。
+#### Scenario: rules.md content が ADR 配置規律を含む
 
-#### Scenario: rules.md が ADR 配置規律を含む
-
-- GIVEN `specrunner/rules.md` が存在する
+- GIVEN `RULES_MD_CONTENT` が `src/prompts/rules.ts` から export されている
 - WHEN 内容を検査する
 - THEN 「ADR 配置の特記」セクションが存在し、「業界慣習 MADR」「採用しない」「adr-gen 以外」のキーワードを含む
 
-#### Scenario: rules.md が正規 ADR path を含む
+#### Scenario: rules.md content が正規 ADR path を含む
 
-- GIVEN `specrunner/rules.md` が存在する
+- GIVEN `RULES_MD_CONTENT` が `src/prompts/rules.ts` から export されている
 - WHEN 内容を検査する
 - THEN `specrunner/adr/` を含む正規 path 文字列が存在する

@@ -2,16 +2,15 @@
  * Structural guarantee test for PR #339-type prevention.
  *
  * Verifies that all agent system prompts contain a Read instruction pointing
- * to rules.md in the change folder, and that rules.md itself contains
+ * to rules.md in the change folder, and that RULES_MD_CONTENT contains
  * the ADR placement discipline.
  *
  * Two-layer verification:
  *   1. Agent prompts → rules.md Read instruction (static string assert)
- *   2. rules.md file → ADR discipline section content (file content assert)
+ *   2. RULES_MD_CONTENT → ADR discipline section content (string constant assert)
  */
 import { describe, test, expect } from "vitest";
-import * as fs from "node:fs/promises";
-import * as path from "node:path";
+import { RULES_MD_CONTENT } from "../../../src/prompts/rules.js";
 import { IMPLEMENTER_SYSTEM_PROMPT } from "../../../src/prompts/implementer-system.js";
 import { DESIGN_SYSTEM_PROMPT } from "../../../src/prompts/design-system.js";
 import { SPEC_FIXER_SYSTEM_PROMPT } from "../../../src/prompts/spec-fixer-system.js";
@@ -58,22 +57,14 @@ describe("PR #339 prevention: all agent prompts contain rules.md Read instructio
   });
 });
 
-describe("PR #339 prevention: rules.md file contains ADR placement discipline", () => {
-  const RULES_MD_PATH = path.resolve(process.cwd(), "specrunner/rules.md");
-
-  test("rules.md exists", async () => {
-    await fs.access(RULES_MD_PATH); // throws ENOENT if file is missing
+describe("PR #339 prevention: RULES_MD_CONTENT contains ADR placement discipline", () => {
+  test("RULES_MD_CONTENT contains ADR placement discipline keywords", () => {
+    expect(RULES_MD_CONTENT).toContain("業界慣習 MADR");
+    expect(RULES_MD_CONTENT).toContain("採用しません");
+    expect(RULES_MD_CONTENT).toContain("adr-gen 以外");
   });
 
-  test("rules.md contains ADR placement discipline keywords", async () => {
-    const content = await fs.readFile(RULES_MD_PATH, "utf-8");
-    expect(content).toContain("業界慣習 MADR");
-    expect(content).toContain("採用しません");
-    expect(content).toContain("adr-gen 以外");
-  });
-
-  test("rules.md contains canonical ADR path", async () => {
-    const content = await fs.readFile(RULES_MD_PATH, "utf-8");
-    expect(content).toContain("specrunner/adr/{YYYY-MM-DD}-{slug}.md");
+  test("RULES_MD_CONTENT contains canonical ADR path", () => {
+    expect(RULES_MD_CONTENT).toContain("specrunner/adr/{YYYY-MM-DD}-{slug}.md");
   });
 });

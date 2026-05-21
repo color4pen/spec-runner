@@ -1,8 +1,8 @@
 /**
- * Static unit tests for specrunner/rules.md structural guarantees.
+ * Static unit tests for rules content structural guarantees.
  *
  * These tests catch PR #339 / #343 / #344 type ADR placement accidents:
- *   - rules.md exists and contains ADR discipline section
+ *   - RULES_MD_CONTENT contains ADR discipline section
  *   - All 11 agent system prompts contain a Read instruction for rules.md
  *   - design / code-review / code-fixer prompts do NOT reference docs/adr/
  *     (prevents industry convention MADR from triggering wrong path)
@@ -10,8 +10,7 @@
  * No LLM calls — pure static string assertions.
  */
 import { describe, test, expect } from "vitest";
-import * as fs from "node:fs/promises";
-import * as path from "node:path";
+import { RULES_MD_CONTENT } from "../../src/prompts/rules.js";
 import { IMPLEMENTER_SYSTEM_PROMPT } from "../../src/prompts/implementer-system.js";
 import { DESIGN_SYSTEM_PROMPT } from "../../src/prompts/design-system.js";
 import { SPEC_FIXER_SYSTEM_PROMPT } from "../../src/prompts/spec-fixer-system.js";
@@ -23,8 +22,6 @@ import { CODE_REVIEW_SYSTEM_PROMPT } from "../../src/prompts/code-review-system.
 import { TEST_CASE_GEN_SYSTEM_PROMPT } from "../../src/prompts/test-case-gen-system.js";
 import { REQUEST_GENERATE_SYSTEM_PROMPT } from "../../src/prompts/request-generate-system.js";
 import { REQUEST_REVIEW_SYSTEM_PROMPT } from "../../src/prompts/request-review-system.js";
-
-const RULES_MD_PATH = path.resolve(process.cwd(), "specrunner/rules.md");
 
 const ALL_AGENT_PROMPTS: Array<[string, string]> = [
   ["IMPLEMENTER", IMPLEMENTER_SYSTEM_PROMPT],
@@ -41,40 +38,28 @@ const ALL_AGENT_PROMPTS: Array<[string, string]> = [
 ];
 
 // ────────────────────────────────────────────
-// rules.md existence and content
+// rules content
 // ────────────────────────────────────────────
 
-describe("rules.md — file existence", () => {
-  // TC-42: specrunner/rules.md 存在確認の assertion
-  test("specrunner/rules.md exists", async () => {
-    await fs.access(RULES_MD_PATH); // throws ENOENT if file is missing
-  });
-});
-
 describe("rules.md — ADR placement discipline section", () => {
-  test("contains 'ADR 配置の特記' section", async () => {
-    const content = await fs.readFile(RULES_MD_PATH, "utf-8");
-    expect(content).toContain("ADR 配置の特記");
+  test("contains 'ADR 配置の特記' section", () => {
+    expect(RULES_MD_CONTENT).toContain("ADR 配置の特記");
   });
 
-  test("contains '業界慣習 MADR' keyword", async () => {
-    const content = await fs.readFile(RULES_MD_PATH, "utf-8");
-    expect(content).toContain("業界慣習 MADR");
+  test("contains '業界慣習 MADR' keyword", () => {
+    expect(RULES_MD_CONTENT).toContain("業界慣習 MADR");
   });
 
-  test("contains '採用しません' keyword (MADR not adopted)", async () => {
-    const content = await fs.readFile(RULES_MD_PATH, "utf-8");
-    expect(content).toContain("採用しません");
+  test("contains '採用しません' keyword (MADR not adopted)", () => {
+    expect(RULES_MD_CONTENT).toContain("採用しません");
   });
 
-  test("contains 'adr-gen 以外' keyword", async () => {
-    const content = await fs.readFile(RULES_MD_PATH, "utf-8");
-    expect(content).toContain("adr-gen 以外");
+  test("contains 'adr-gen 以外' keyword", () => {
+    expect(RULES_MD_CONTENT).toContain("adr-gen 以外");
   });
 
-  test("contains canonical ADR path 'specrunner/adr/{YYYY-MM-DD}-{slug}.md'", async () => {
-    const content = await fs.readFile(RULES_MD_PATH, "utf-8");
-    expect(content).toContain("specrunner/adr/{YYYY-MM-DD}-{slug}.md");
+  test("contains canonical ADR path 'specrunner/adr/{YYYY-MM-DD}-{slug}.md'", () => {
+    expect(RULES_MD_CONTENT).toContain("specrunner/adr/{YYYY-MM-DD}-{slug}.md");
   });
 });
 
