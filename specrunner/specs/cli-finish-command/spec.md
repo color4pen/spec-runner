@@ -297,3 +297,54 @@ The `FinishInput` interface SHALL accept `githubClient`, `owner`, and `repo` ins
 
 - **WHEN** ユーザーが `specrunner finish my-feature` を実行する
 - **THEN** `Unknown command: finish` を stderr に出し exit code 2 で終了する（`job finish` へ誘導するヒントを含む）
+
+### Requirement: `specrunner job finish` の archive path は `<YYYY-MM-DD>-<slug>` 形式である
+
+`specrunner finish` の Phase 1 で `specrunner/changes/<slug>/` を archive する際、archive 先パスは MUST `specrunner/changes/archive/<YYYY-MM-DD>-<slug>/` 形式とする。`<YYYY-MM-DD>` は finish 実行時刻のローカル日付（`new Date()` の `getFullYear()` / `getMonth()` / `getDate()`、実行マシンの timezone）。
+
+この命名規約は ADR の `docs/adr/<YYYY-MM-DD>-<slug>.md` と同一の思想（「動作した日を path に刻む」）に基づく。
+
+既存の archive dir（日付付き / 日付なし混在）は rename しない。新規 archive のみ本仕様を適用する。
+
+#### Scenario: archive path に日付 prefix が付与される
+
+- **WHEN** `specrunner finish my-feature` を 2026-05-21 に実行し、Phase 1 で `specrunner/changes/my-feature/` を archive する
+- **THEN** archive 先は `specrunner/changes/archive/2026-05-21-my-feature/` である
+
+#### Scenario: slug collision 検出が日付 prefix 付き archive dir に対応する
+
+- **WHEN** `specrunner/changes/archive/2026-05-20-my-feature/` が存在する状態で slug `my-feature` の collision check を実行する
+- **THEN** collision が検出される（日付 prefix を strip して slug 比較するため）
+
+#### Scenario: 既存の日付なし archive dir でも collision 検出される
+
+- **WHEN** `specrunner/changes/archive/my-feature/` が存在する状態で slug `my-feature` の collision check を実行する
+- **THEN** collision が検出される（後方互換）
+
+### Requirement: Phase 1 は staging された変更を archive commit として確定する
+
+`specrunner finish` の Phase 1 は、`mergeSpecsForChange` + `archiveChangeFolder` が staging した変更を MUST 末尾で `git commit -m "chore: archive <slug>"` として確定する。
+
+staging 検出は MUST `git diff --cached --quiet` の exit code で行う:
+
+- exit 0 (staging なし) → commit を skip する (= idempotent。resume 経路での二重 commit を防止する)
+- exit 1 (staging あり) → `git commit -m "chore: archive <slug>"` を実行する
+
+commit 失敗時は MUST escalation を返し、Phase 2 push に進まない SHALL。
+
+この commit は Phase 2 の `git push` で feature branch に反映され、Phase 3 の squash merge で main に到達する。commit がない場合、spec-merge と archive の変更が main に反映されない。
+
+#### Scenario: Phase 1 で staging あり → archive commit が作成される
+
+- **WHEN** `specrunner finish my-feature` を実行し、Phase 1 の `mergeSpecsForChange` + `archiveChangeFolder` が staging を生成した
+- **THEN** `git diff --cached --quiet` が exit 1 を返し、`git commit -m "chore: archive my-feature"` が実行される
+
+#### Scenario: Phase 1 で staging なし → commit skip (idempotent)
+
+- **WHEN** `specrunner finish my-feature` を実行し、Phase 1 で staging が空である（例: resume 経路で既に commit 済み）
+- **THEN** `git diff --cached --quiet` が exit 0 を返し、commit は実行されない
+
+#### Scenario: commit 失敗 → escalation
+
+- **WHEN** Phase 1 の `git commit` が exit code 非 0 で失敗した
+- **THEN** escalation を返し、Phase 2 push には進まない
