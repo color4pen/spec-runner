@@ -548,13 +548,13 @@ subcommand dispatch path は MUST top-level command と同じ worktree guard を
 - **WHEN** ユーザーが `specrunner job rm abcd1234-ef56-7890-abcd-ef1234567890` を実行する
 - **THEN** jobId validation を通過し、通常の削除処理に進む
 
-### Requirement: `request new` / `request show` / `request rm` / `request validate` / `request review` は slug validation を実行する
+### Requirement: `request new` / `request validate` / `request review` は slug validation を実行する
 
-`request new <slug>` / `request show <slug>` / `request rm <slug>` / `request validate <slug>` / `request review <slug>` は slug 入力に対し MUST `/^[a-z0-9][a-z0-9-]{0,63}$/` でバリデーションを実行する。マッチしない入力は exit code 2 で拒否し、path traversal（`../../` 等）を防ぐ。
+`request new <slug>` / `request validate <slug>` / `request review <slug>` は slug 入力に対し MUST `/^[a-z0-9][a-z0-9-]{0,63}$/` でバリデーションを実行する。マッチしない入力は exit code 2 で拒否し、path traversal（`../../` 等）を防ぐ。
 
 #### Scenario: 不正 slug（path traversal）を拒否する
 
-- **WHEN** `specrunner request rm "../../etc/passwd"` を実行する
+- **WHEN** `specrunner request new "../../etc/passwd"` を実行する
 - **THEN** stderr に validation error を出力し exit code 2 で終了する。ファイルシステム操作は実行されない
 
 #### Scenario: 正常 slug は受理される
@@ -564,22 +564,9 @@ subcommand dispatch path は MUST top-level command と同じ worktree guard を
 
 ### Requirement: `specrunner request` サブコマンド群が動作する（drafts パス対応）
 
-**Replaces**: 「`specrunner request` サブコマンド群が動作する（flat パス対応）」
+**Replaces**: 「`specrunner request` サブコマンド群が動作する（drafts パス対応）」
 
-drafts/ 化後、slug ベースのサブコマンドは `specrunner/drafts/<slug>.md` を解決する。
-
-#### Scenario: `specrunner request show <slug>` が request.md を表示する
-
-- **WHEN** `specrunner request show my-feature` を実行する
-- **THEN** `specrunner/drafts/my-feature.md` の本文を stdout に出力し exit code 0 で終了する
-
-#### Scenario: `specrunner request show <slug>` が旧 path を fallback で解決する
-
-- **GIVEN** `specrunner/drafts/my-feature.md` が存在しない
-- **AND** `specrunner/requests/active/my-feature.md` が存在する
-- **WHEN** `specrunner request show my-feature` を実行する
-- **THEN** `specrunner/requests/active/my-feature.md` の本文を stdout に出力し exit code 0 で終了する
-- **AND** stderr に deprecation warning を出力する
+drafts/ 化後、slug ベースのサブコマンドは MUST `specrunner/drafts/<slug>.md` を解決する。
 
 #### Scenario: `specrunner request validate <slug>` が slug で解決する
 
@@ -593,17 +580,15 @@ drafts/ 化後、slug ベースのサブコマンドは `specrunner/drafts/<slug
 
 ### Requirement: `specrunner request` サブコマンド群が動作する（drafts テーブル更新）
 
-**Replaces**: 「`specrunner request` サブコマンド群が動作する」のうち request サブコマンドテーブル
+**Replaces**: 「`specrunner request` サブコマンド群が動作する（drafts テーブル更新）」
 
-`specrunner request` は SHALL 以下の 8 サブコマンドを提供する。
+`specrunner request` は SHALL 以下の 6 サブコマンドを提供する。
 
 | サブコマンド | 機能 |
 |---|---|
 | `new <slug>` | template から request.md を `specrunner/drafts/` に作る |
 | `generate "<text>"` | LLM 生成で request.md を `specrunner/drafts/` に作る |
 | `ls` | `specrunner/drafts/` 配下の request 一覧 |
-| `show <slug>` | request.md の本文を stdout に表示（`drafts/` 優先、旧 `requests/active/` fallback） |
-| `rm <slug>` | `specrunner/drafts/` 配下から削除 |
 | `validate <file\|slug>` | 構文 / 規律 check。slug で `specrunner/drafts/` 配下を解決する |
 | `template` | 雛形 markdown を stdout |
 | `review <slug\|file> [--json]` | architect agent によるレビュー。slug で `specrunner/drafts/` 配下を解決する |
@@ -647,8 +632,6 @@ request commands:
   request new <slug>            template から request.md を作る
   request generate "<text>"     LLM 生成で request.md を作る
   request ls                    drafts 配下の request 一覧
-  request show <slug>           request.md の本文を表示
-  request rm <slug>             drafts 配下から削除
   request validate <file|slug>  構文 / 規律 check
   request template              雛形 markdown を stdout
   request review <slug|file>    architect agent によるレビュー
@@ -708,47 +691,6 @@ Aliases:
 
 - **WHEN** `specrunner request new "../../evil"` を実行する
 - **THEN** slug validation error を stderr に出し exit code 2 で終了する
-
-### Requirement: `specrunner request show <slug>` は request.md の本文を表示する
-
-**Replaces**: 「`specrunner request show <slug>` は request.md の本文を表示する」
-
-`specrunner request show <slug>` は MUST `specrunner/drafts/<slug>.md` の内容を stdout に出力する。slug が drafts 配下に存在しない場合は `Request not found: <slug>` を stderr に出力し exit code 1 で終了する。
-
-slug は `/^[a-z0-9][a-z0-9-]{0,63}$/` に MUST マッチする。マッチしない場合は exit code 2 で拒否する。
-
-#### Scenario: 存在する slug で request show
-
-- **WHEN** `specrunner request show my-feature` を実行し、drafts 配下に `my-feature.md` が存在する
-- **THEN** request.md の全文が stdout に出力され、exit code 0
-
-#### Scenario: 存在しない slug で request show
-
-- **WHEN** `specrunner request show nonexistent` を実行し、drafts 配下に `nonexistent.md` が存在しない
-- **THEN** stderr に `Request not found: nonexistent` を出力し、exit code 1
-
-### Requirement: `specrunner request rm <slug>` は drafts 配下から request を削除する
-
-**Replaces**: 「`specrunner request rm <slug>` は active 配下から request を削除する」
-
-`specrunner request rm <slug>` は MUST `specrunner/drafts/<slug>.md` ファイルを削除する。slug が drafts 配下に存在しない場合は `Request not found: <slug>` を stderr に出力し exit code 1 で終了する。
-
-slug は `/^[a-z0-9][a-z0-9-]{0,63}$/` に MUST マッチする。マッチしない場合は exit code 2 で拒否する（path traversal 防止）。
-
-#### Scenario: 存在する slug で request rm
-
-- **WHEN** `specrunner request rm my-feature` を実行し、drafts 配下に `my-feature.md` が存在する
-- **THEN** ファイルが削除され、stderr に削除メッセージが出力され、exit code 0
-
-#### Scenario: 存在しない slug で request rm
-
-- **WHEN** `specrunner request rm nonexistent` を実行し、drafts 配下に `nonexistent.md` が存在しない
-- **THEN** stderr に `Request not found: nonexistent` を出力し、exit code 1
-
-#### Scenario: path traversal slug で request rm
-
-- **WHEN** `specrunner request rm "../../etc"` を実行する
-- **THEN** slug validation error を stderr に出し exit code 2 で終了する（ファイルシステム外への削除を防ぐ）
 
 ### Requirement: `checkSlugCollision` は drafts + changes/archive の 2 経路で重複検出する
 

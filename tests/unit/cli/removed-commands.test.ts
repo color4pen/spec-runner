@@ -30,8 +30,6 @@ vi.mock("../../../src/cli/managed.js", () => ({
   runManagedReset: vi.fn(),
 }));
 vi.mock("../../../src/core/command/request-new.js", () => ({ executeNew: vi.fn() }));
-vi.mock("../../../src/core/command/request-show.js", () => ({ executeShow: vi.fn() }));
-vi.mock("../../../src/core/command/request-rm.js", () => ({ executeRm: vi.fn() }));
 vi.mock("../../../src/core/command/request.js", () => ({
   executeTemplate: vi.fn(),
   executeValidate: vi.fn(),

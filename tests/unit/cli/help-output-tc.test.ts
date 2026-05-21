@@ -22,12 +22,12 @@ describe("TC-41: --help — 主語別グルーピング表示", () => {
     expect(USAGE).toContain("Job commands");
   });
 
-  it("USAGE には request 系 subcommands（new/ls/show/rm 等）が含まれる", async () => {
+  it("USAGE には request 系 subcommands（new/ls 等）が含まれる", async () => {
     const { USAGE } = await import("../../../src/cli/command-registry.js");
     expect(USAGE).toContain("request new");
     expect(USAGE).toContain("request ls");
-    expect(USAGE).toContain("request show");
-    expect(USAGE).toContain("request rm");
+    expect(USAGE).not.toContain("request show");
+    expect(USAGE).not.toContain("request rm");
   });
 
   it("USAGE には job 系 subcommands（start/ls/show 等）が含まれる", async () => {

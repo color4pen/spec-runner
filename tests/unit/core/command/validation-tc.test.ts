@@ -2,9 +2,6 @@
  * Slug and jobId validation tests for noun-verb restructure.
  *
  * TC-45: slug validation — path traversal の拒否（request new）
- * TC-46: slug validation — path traversal の拒否（request rm）
- * TC-47: slug validation — スペース含む不正 slug の拒否
- * TC-48: slug validation — 正常 slug の通過（request show）
  * TC-49: jobId validation — UUID 形式でない jobId の拒否（job rm）
  * TC-50: jobId validation — UUID 形式でない jobId の拒否（job show）
  * TC-51: jobId validation — 正常 UUID の通過（job show）
@@ -38,45 +35,6 @@ describe("TC-45: slug validation — path traversal の拒否（request new）",
     const stderrOutput = (vi.mocked(process.stderr.write).mock.calls as unknown[][])
       .map((c) => String(c[0])).join("");
     expect(stderrOutput).toContain("Invalid slug");
-  });
-});
-
-// TC-46: path traversal in request rm → exit 2 (no filesystem access)
-describe("TC-46: slug validation — path traversal の拒否（request rm）", () => {
-  it("'../../etc/passwd' slug → executeRm returns 2", async () => {
-    const { executeRm } = await import("../../../../src/core/command/request-rm.js");
-    const result = await executeRm("../../etc/passwd", tempDir);
-    expect(result).toBe(2);
-
-    const stderrOutput = (vi.mocked(process.stderr.write).mock.calls as unknown[][])
-      .map((c) => String(c[0])).join("");
-    expect(stderrOutput).toContain("Invalid slug");
-  });
-});
-
-// TC-47: space in slug → exit 2
-describe("TC-47: slug validation — スペース含む不正 slug の拒否", () => {
-  it("'invalid slug' → executeShow returns 2", async () => {
-    const { executeShow } = await import("../../../../src/core/command/request-show.js");
-    const result = await executeShow("invalid slug", tempDir);
-    expect(result).toBe(2);
-
-    const stderrOutput = (vi.mocked(process.stderr.write).mock.calls as unknown[][])
-      .map((c) => String(c[0])).join("");
-    expect(stderrOutput).toContain("Invalid slug");
-  });
-});
-
-// TC-48: valid slug passes validation and resolves file
-describe("TC-48: slug validation — 正常 slug の通過（request show）", () => {
-  it("'my-feature-123' passes validation and reads request.md", async () => {
-    const draftsDir = path.join(tempDir, "specrunner", "drafts");
-    await fs.mkdir(draftsDir, { recursive: true });
-    await fs.writeFile(path.join(draftsDir, "my-feature-123.md"), "# My Feature 123\n", "utf-8");
-
-    const { executeShow } = await import("../../../../src/core/command/request-show.js");
-    const result = await executeShow("my-feature-123", tempDir);
-    expect(result).toBe(0);
   });
 });
 

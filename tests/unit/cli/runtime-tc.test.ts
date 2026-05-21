@@ -19,8 +19,6 @@ vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn() }));
 vi.mock("../../../src/cli/rm.js", () => ({ runRm: vi.fn().mockResolvedValue(0) }));
 vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("../../../src/core/command/request-new.js", () => ({ executeNew: vi.fn() }));
-vi.mock("../../../src/core/command/request-show.js", () => ({ executeShow: vi.fn() }));
-vi.mock("../../../src/core/command/request-rm.js", () => ({ executeRm: vi.fn() }));
 vi.mock("../../../src/core/command/request.js", () => ({
   executeTemplate: vi.fn(),
   executeValidate: vi.fn(),

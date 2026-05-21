@@ -32,8 +32,6 @@ vi.mock("../../../src/cli/finish.js", () => ({ runFinish: vi.fn() }));
 vi.mock("../../../src/cli/rm.js", () => ({ runRm: vi.fn() }));
 vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn() }));
 vi.mock("../../../src/core/command/request-new.js", () => ({ executeNew: vi.fn() }));
-vi.mock("../../../src/core/command/request-show.js", () => ({ executeShow: vi.fn() }));
-vi.mock("../../../src/core/command/request-rm.js", () => ({ executeRm: vi.fn() }));
 
 let originalArgv: string[];
 let exitSpy: ReturnType<typeof vi.spyOn>;

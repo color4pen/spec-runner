@@ -21,8 +21,6 @@ import { executeReview } from "../core/command/request-review.js";
 import { executeCreate } from "../core/command/request-create.js";
 import { executeList } from "../core/command/request-list.js";
 import { executeNew } from "../core/command/request-new.js";
-import { executeShow } from "../core/command/request-show.js";
-import { executeRm as executeRequestRm } from "../core/command/request-rm.js";
 import { resolve as storeResolve } from "../core/request/store.js";
 import { AGENT_STEP_NAMES, CLI_STEP_NAMES } from "../core/step/step-names.js";
 import type { FlagDef, ParsedArgs } from "./flag-parser.js";
@@ -54,8 +52,6 @@ Request commands:
   request new <slug>              template から request.md を作る
   request generate "<text>"       LLM 生成で request.md を作る
   request ls                      active 配下の request 一覧
-  request show <slug>             request.md の本文を表示
-  request rm <slug>               active 配下から削除
   request validate <file|slug>    構文 / 規律 check
   request template                雛形 markdown を stdout
   request review <slug|file>      architect agent によるレビュー
@@ -177,20 +173,6 @@ export const COMMANDS: Record<string, CommandEntry> = {
         flags: {},
         handler: async () => {
           process.exit(await executeList(process.cwd()));
-        },
-      },
-      show: {
-        flags: {},
-        positional: { name: "slug", required: true },
-        handler: async (parsed) => {
-          process.exit(await executeShow(parsed.positional!, process.cwd()));
-        },
-      },
-      rm: {
-        flags: {},
-        positional: { name: "slug", required: true },
-        handler: async (parsed) => {
-          process.exit(await executeRequestRm(parsed.positional!, process.cwd()));
         },
       },
       template: {
