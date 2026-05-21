@@ -31,9 +31,3 @@ export interface ParsedRequest {
   /** Issue reference from Meta section (e.g. "#264"). undefined if not present. */
   issue?: string;
 }
-
-/**
- * Lifecycle state of a request.
- * canceled is out of scope for this change.
- */
-export type RequestState = "active" | "merged";

@@ -70,7 +70,7 @@ describe("TC-47: slug validation — スペース含む不正 slug の拒否", (
 // TC-48: valid slug passes validation and resolves file
 describe("TC-48: slug validation — 正常 slug の通過（request show）", () => {
   it("'my-feature-123' passes validation and reads request.md", async () => {
-    const activeDir = path.join(tempDir, "specrunner", "requests", "active");
+    const activeDir = path.join(tempDir, "specrunner", "drafts");
     await fs.mkdir(activeDir, { recursive: true });
     await fs.writeFile(path.join(activeDir, "my-feature-123.md"), "# My Feature 123\n", "utf-8");
 

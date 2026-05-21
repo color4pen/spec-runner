@@ -121,7 +121,7 @@ describe("checkSlugCollision", () => {
     await expect(checkSlugCollision(tempDir, "my-new-feature")).resolves.toBeUndefined();
   });
 
-  it("TC-SL-006b: does not throw when active/ and merged/ directories do not exist", async () => {
+  it("TC-SL-006b: does not throw when drafts/ and archive/ directories do not exist", async () => {
     await expect(checkSlugCollision(tempDir, "any-slug")).resolves.toBeUndefined();
   });
 
@@ -131,16 +131,6 @@ describe("checkSlugCollision", () => {
     await fs.writeFile(path.join(draftsDir, "my-feature.md"), "# my-feature\n");
 
     await expect(checkSlugCollision(tempDir, "my-feature")).rejects.toMatchObject({
-      code: "SLUG_COLLISION",
-    });
-  });
-
-  it("TC-SL-006d: throws SLUG_COLLISION when slug exists in merged/", async () => {
-    const mergedDir = path.join(tempDir, "specrunner", "requests", "merged");
-    await fs.mkdir(mergedDir, { recursive: true });
-    await fs.writeFile(path.join(mergedDir, "old-feature.md"), "# old-feature\n");
-
-    await expect(checkSlugCollision(tempDir, "old-feature")).rejects.toMatchObject({
       code: "SLUG_COLLISION",
     });
   });

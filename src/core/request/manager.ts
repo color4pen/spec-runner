@@ -6,7 +6,6 @@ import * as store from "./store.js";
 import * as generator from "./generator.js";
 import * as reviewer from "./reviewer.js";
 import { type QueryFn } from "../../adapter/claude-code/query-one-shot.js";
-import type { RequestState } from "./types.js";
 import type { RequestReviewResult } from "./reviewer.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 
@@ -38,13 +37,13 @@ export async function review(
 
 export async function list(
   cwd: string,
-): Promise<Array<{ slug: string; type: string; state: RequestState }>> {
+): Promise<Array<{ slug: string; type: string }>> {
   const slugs = await store.list(cwd);
-  const results: Array<{ slug: string; type: string; state: RequestState }> = [];
+  const results: Array<{ slug: string; type: string }> = [];
   for (const slug of slugs) {
     try {
       const parsed = await store.read(cwd, slug);
-      results.push({ slug, type: parsed.type, state: "active" as const });
+      results.push({ slug, type: parsed.type });
     } catch {
       // Skip slugs that can't be read
     }

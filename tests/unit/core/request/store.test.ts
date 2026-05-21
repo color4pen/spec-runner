@@ -6,7 +6,6 @@
  * TC-ST-003: list() returns empty array when drafts/ does not exist
  * TC-ST-004: write() creates <slug>.md in specrunner/drafts/
  * TC-ST-005: checkSlugCollision() throws SLUG_COLLISION when slug exists in drafts/
- * TC-ST-006: checkSlugCollision() throws SLUG_COLLISION when slug exists in requests/merged/
  * TC-ST-007: checkSlugCollision() resolves without error when no collision
  * TC-ST-008: read() returns parsed request from flat file
  * TC-ST-009: checkSlugCollision() throws SLUG_COLLISION when slug exists in changes/archive/
@@ -88,18 +87,6 @@ describe("TC-ST-005: checkSlugCollision() throws when slug exists in drafts/", (
   });
 });
 
-describe("TC-ST-006: checkSlugCollision() throws when slug exists in requests/merged/", () => {
-  it("throws SpecRunnerError with code SLUG_COLLISION", async () => {
-    const mergedDir = path.join(tempDir, "specrunner", "requests", "merged");
-    await fs.mkdir(mergedDir, { recursive: true });
-    await fs.writeFile(path.join(mergedDir, "old-feature.md"), "# Old Feature\n");
-
-    await expect(checkSlugCollision(tempDir, "old-feature")).rejects.toMatchObject({
-      code: "SLUG_COLLISION",
-    });
-  });
-});
-
 describe("TC-ST-007: checkSlugCollision() resolves without error when no collision", () => {
   it("resolves when no dirs contain the slug", async () => {
     await expect(checkSlugCollision(tempDir, "brand-new-slug")).resolves.toBeUndefined();
@@ -140,5 +127,23 @@ describe("TC-ST-009: checkSlugCollision() throws when slug exists in changes/arc
     await fs.mkdir(archiveDir, { recursive: true });
 
     await expect(checkSlugCollision(tempDir, "new-feature")).resolves.toBeUndefined();
+  });
+});
+
+describe("Regression: MERGED_SUBDIR removed", () => {
+  it("store.ts source does not contain MERGED_SUBDIR", async () => {
+    const src = await fs.readFile(
+      path.join(__dirname, "../../../../src/core/request/store.ts"),
+      "utf-8",
+    );
+    expect(src).not.toContain("MERGED_SUBDIR");
+  });
+
+  it("store.ts source does not contain requests/merged path", async () => {
+    const src = await fs.readFile(
+      path.join(__dirname, "../../../../src/core/request/store.ts"),
+      "utf-8",
+    );
+    expect(src).not.toContain("requests/merged");
   });
 });

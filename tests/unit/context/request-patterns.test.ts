@@ -132,3 +132,30 @@ describe("TC-RP-004: individual file read failure is skipped", () => {
     expect(patterns[0]?.slug).toBe("valid-feature");
   });
 });
+
+describe("TC-RP-005: archive-only path — requests/merged not traversed", () => {
+  it("does not error when requests/merged/ does not exist", async () => {
+    await createArchivedRequest("feature-from-archive", "new-feature", "Feature From Archive");
+
+    // requests/merged/ does not exist — should not throw
+    const patterns = await collectRequestPatterns(tempDir, "new-feature");
+    expect(patterns.length).toBeGreaterThan(0);
+    expect(patterns[0]?.slug).toBe("feature-from-archive");
+  });
+
+  it("collects only from changes/archive, ignores requests/merged flat files", async () => {
+    await createArchivedRequest("archive-entry", "bug-fix", "Archive Entry");
+
+    // Create requests/merged directory with a flat .md file (should be ignored by collectRequestPatterns)
+    const mergedDir = path.join(tempDir, "specrunner", "requests", "merged");
+    await fs.mkdir(mergedDir, { recursive: true });
+    await fs.writeFile(path.join(mergedDir, "merged-request.md"), "# Merged Request\n");
+
+    const patterns = await collectRequestPatterns(tempDir, "bug-fix");
+    const slugs = patterns.map((p) => p.slug);
+
+    expect(slugs).toContain("archive-entry");
+    // merged-request is a flat file in requests/merged/, not in changes/archive/, so it's not collected
+    expect(slugs).not.toContain("merged-request");
+  });
+});

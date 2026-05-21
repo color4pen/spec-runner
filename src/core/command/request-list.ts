@@ -8,11 +8,11 @@ export async function executeList(cwd: string): Promise<number> {
     return 0;
   }
 
-  const header = `${"SLUG".padEnd(24)}${"TYPE".padEnd(14)}STATE\n`;
+  const header = `${"SLUG".padEnd(24)}TYPE\n`;
   process.stdout.write(header);
 
   for (const req of requests) {
-    const line = `${req.slug.padEnd(24)}${req.type.padEnd(14)}${req.state}\n`;
+    const line = `${req.slug.padEnd(24)}${req.type}\n`;
     process.stdout.write(line);
   }
 

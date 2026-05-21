@@ -96,7 +96,6 @@ function makeStubFs(opts: { changeFolderExists?: boolean; activeExists?: boolean
   return {
     exists: vi.fn().mockImplementation((p: string) => {
       if (p.includes("active")) return Promise.resolve(activeExists);
-      if (p.includes("merged")) return Promise.resolve(false);
       // specs/ dir check → false (skip merge)
       if (p.includes("specs")) return Promise.resolve(false);
       // change folder

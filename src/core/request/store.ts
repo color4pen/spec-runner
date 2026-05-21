@@ -5,7 +5,6 @@ import { parseRequestMdContent } from "../../parser/request-md.js";
 import type { ParsedRequest } from "./types.js";
 
 const DRAFTS_SUBDIR = path.join("specrunner", "drafts");
-const MERGED_SUBDIR = path.join("specrunner", "requests", "merged");
 const ARCHIVE_SUBDIR = path.join("specrunner", "changes", "archive");
 
 export function resolve(cwd: string, slug: string): string {
@@ -62,22 +61,7 @@ export async function checkSlugCollision(cwd: string, slug: string): Promise<voi
     // ENOENT: dir doesn't exist yet, not a collision
   }
 
-  // Check 2: requests/merged/ (flat .md files — 140 historical entries)
-  const mergedDir = path.join(cwd, MERGED_SUBDIR);
-  try {
-    const entries = await fs.readdir(mergedDir);
-    if (entries.includes(slug + ".md")) {
-      throw new SpecRunnerError(
-        "SLUG_COLLISION",
-        `Use a different description or pass --slug to specify a unique slug.`,
-        `Slug '${slug}' already exists in ${path.relative(cwd, mergedDir)}.`,
-      );
-    }
-  } catch (err) {
-    if (err instanceof SpecRunnerError) throw err;
-  }
-
-  // Check 3: changes/archive/ (directory per slug — 106+ entries)
+  // Check 2: changes/archive/ (directory per slug — 151+ entries)
   const archiveDir = path.join(cwd, ARCHIVE_SUBDIR);
   try {
     const entries = await fs.readdir(archiveDir);
