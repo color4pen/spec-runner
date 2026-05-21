@@ -85,6 +85,7 @@ afterEach(async () => {
     delete process.env["XDG_DATA_HOME"];
   }
   await fs.rm(tempDir, { recursive: true, force: true });
+  await fs.rm(path.join(process.cwd(), "specrunner/changes/test-slug"), { recursive: true, force: true });
   vi.restoreAllMocks();
 });
 
