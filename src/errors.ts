@@ -54,6 +54,7 @@ export const ERROR_CODES = {
   ANTHROPIC_KEY_MISSING: "ANTHROPIC_KEY_MISSING",
   QUERY_ONE_SHOT_FAILED: "QUERY_ONE_SHOT_FAILED",
   QUERY_ONE_SHOT_TIMEOUT: "QUERY_ONE_SHOT_TIMEOUT",
+  USER_CANCELED: "USER_CANCELED",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -223,7 +224,7 @@ export function pollTimeoutError(sessionId: string, elapsedMs: number): SpecRunn
   const elapsedSec = Math.round(elapsedMs / 1000);
   return new SpecRunnerError(
     ERROR_CODES.POLL_TIMEOUT,
-    "Session may still be running on Anthropic side. Use 'specrunner job resume' to retry or 'specrunner job rm <jobId>' to abort.",
+    "Session may still be running on Anthropic side. Use 'specrunner job resume' to retry or 'specrunner job cancel <jobId>' to abort.",
     `Session '${sessionId}' did not complete within ${elapsedSec}s (${elapsedMs}ms).`,
   );
 }

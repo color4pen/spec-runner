@@ -13,7 +13,7 @@ import { runRun } from "./run.js";
 import { runPs } from "./ps.js";
 import { runDoctor } from "./doctor.js";
 import { runFinish } from "./finish.js";
-import { runRm } from "./rm.js";
+import { runCancel } from "./cancel.js";
 import { runResume } from "./resume.js";
 import { runJobShow } from "./job-show.js";
 import { executeTemplate, executeValidate } from "../core/command/request.js";
@@ -29,6 +29,8 @@ import { createGitHubClient } from "../adapter/github/github-client.js";
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const UUID_REGEX = /^[a-f0-9-]{36}$/;
+/** Path-traversal guard for jobId; accepts full UUIDs and short prefixes. */
+const VALID_JOB_ID_CHARS = /^[a-f0-9-]+$/;
 
 export interface CommandDef {
   flags: Record<string, FlagDef>;
@@ -60,7 +62,7 @@ Job commands:
   job start <request-slug|file>   pipeline 開始、jobId 発行
   job ls                          全 job 一覧
   job show <jobId|slug>           job state 詳細
-  job rm <jobId>                  job state file 削除
+  job cancel <jobId>              job を cancel して cleanup
   job resume <slug>               halted job を再開
   job finish <slug>               PR merge + archive
 
@@ -285,25 +287,27 @@ export const COMMANDS: Record<string, CommandEntry> = {
           await runJobShow(parsed.positional!);
         },
       },
-      rm: {
+      cancel: {
         flags: {
           force: { type: "boolean" },
+          purge: { type: "boolean" },
           "all-terminated": { type: "boolean" },
           yes: { type: "boolean" },
         },
         positional: { name: "jobId", required: false },
         handler: async (parsed) => {
           const jobId = parsed.positional;
-          // UUID validation for explicit jobId
-          if (jobId !== undefined && !UUID_REGEX.test(jobId)) {
+          // Security: path-traversal guard; short prefixes are allowed (resolveId handles lookup)
+          if (jobId !== undefined && !VALID_JOB_ID_CHARS.test(jobId)) {
             process.stderr.write(`Error: invalid jobId format\n`);
             process.exit(1);
           }
           try {
             process.exit(
-              await runRm({
+              await runCancel({
                 jobId,
                 force: !!parsed.flags["force"],
+                purge: !!parsed.flags["purge"],
                 allTerminated: !!parsed.flags["all-terminated"],
                 yes: !!parsed.flags["yes"],
               }),

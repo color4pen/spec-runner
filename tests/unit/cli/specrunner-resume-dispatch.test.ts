@@ -29,7 +29,7 @@ vi.mock("../../../src/cli/run.js", () => ({ runRun: vi.fn(), handlePostPipelineS
 vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn() }));
 vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn() }));
 vi.mock("../../../src/cli/finish.js", () => ({ runFinish: vi.fn() }));
-vi.mock("../../../src/cli/rm.js", () => ({ runRm: vi.fn() }));
+vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0) }));
 vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn() }));
 vi.mock("../../../src/core/command/request-new.js", () => ({ executeNew: vi.fn() }));
 

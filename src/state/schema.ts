@@ -158,6 +158,8 @@ export interface JobState {
   resumePoint?: ResumePoint | null;
   /** PID of the process that set status to "running". Optional for backward compat. */
   pid?: number | null;
+  /** ISO 8601 timestamp when the job was canceled. Set by `job cancel`. Optional. */
+  canceledAt?: string;
 }
 
 export const MAX_HISTORY_SIZE = 100;

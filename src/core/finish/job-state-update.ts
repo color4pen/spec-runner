@@ -14,8 +14,8 @@ export const STATUS_HINTS: Record<string, string> = {
   running: "Wait for the running job to complete before finishing.",
   "awaiting-resume": "Run 'specrunner job resume' to continue the halted job before finishing.",
   canceled: "Job is already canceled. No action needed.",
-  failed: "Run 'specrunner job rm <jobId>' to remove the failed job.",
-  terminated: "Run 'specrunner job rm <jobId>' to remove the terminated job.",
+  failed: "Run 'specrunner job cancel <jobId>' to cancel the failed job.",
+  terminated: "Run 'specrunner job cancel <jobId>' to cancel the terminated job.",
 };
 
 /**

@@ -34,9 +34,9 @@ export interface TransitionResult {
 // ---------------------------------------------------------------------------
 
 export const VALID_TRANSITIONS: ReadonlyMap<JobStatus, ReadonlySet<JobStatus>> = new Map([
-  ["running",         new Set(["awaiting-resume", "awaiting-merge", "failed", "terminated"])],
+  ["running",         new Set(["awaiting-resume", "awaiting-merge", "failed", "terminated", "canceled"])],
   ["awaiting-resume", new Set(["running", "canceled"])],
-  ["awaiting-merge",  new Set(["archived"])],
+  ["awaiting-merge",  new Set(["archived", "canceled"])],
   ["failed",          new Set(["running", "canceled", "awaiting-resume"])],
   ["terminated",      new Set(["running", "canceled"])],
   ["archived",        new Set()],

@@ -38,10 +38,10 @@ describe("TC-45: slug validation — path traversal の拒否（request new）",
   });
 });
 
-// TC-49: invalid jobId in job rm → exit 1
-describe("TC-49: jobId validation — UUID 形式でない jobId の拒否（job rm）", () => {
+// TC-49: invalid jobId in job cancel → exit 1
+describe("TC-49: jobId validation — UUID 形式でない jobId の拒否（job cancel）", () => {
   it("path traversal jobId → rejected before filesystem access", async () => {
-    // job rm is exercised via the COMMANDS handler which validates UUID_REGEX
+    // job cancel is exercised via the COMMANDS handler which validates UUID_REGEX
     // We verify by checking the SLUG_REGEX / UUID_REGEX pattern used in command-registry
     // The UUID_REGEX = /^[a-f0-9-]{36}$/ — "../../../etc/passwd" does not match
     const INVALID_JOB_ID = "../../../etc/passwd";

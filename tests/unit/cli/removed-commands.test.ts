@@ -2,11 +2,12 @@
  * Tests for removed commands in the noun-verb restructure.
  *
  * TC-31: 旧 top-level ps コマンドが削除されている
- * TC-32: 旧 top-level rm コマンドが削除されている
- * TC-33: 旧 top-level resume コマンドが削除されている
- * TC-34: 旧 top-level finish コマンドが削除されている
- * TC-35: 旧 request create サブコマンドが削除されている
- * TC-36: 旧 request list サブコマンドが削除されている
+ * TC-32: 旧 job rm サブコマンドが削除されている
+ * TC-33: 旧 top-level rm コマンドが削除されている
+ * TC-34: 旧 top-level resume コマンドが削除されている
+ * TC-35: 旧 top-level finish コマンドが削除されている
+ * TC-36: 旧 request create サブコマンドが削除されている
+ * TC-37: 旧 request list サブコマンドが削除されている
  * TC-40: 旧 managed コマンドが削除されている
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -22,7 +23,7 @@ vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(unde
 vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn() }));
 vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn() }));
 vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn() }));
-vi.mock("../../../src/cli/rm.js", () => ({ runRm: vi.fn().mockResolvedValue(0) }));
+vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0) }));
 vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("../../../src/cli/managed.js", () => ({
   runManagedSetup: vi.fn(),
@@ -79,8 +80,19 @@ describe("TC-31: 旧 top-level ps コマンドの削除確認", () => {
   });
 });
 
-// TC-32: 旧 top-level rm が削除されている
-describe("TC-32: 旧 top-level rm コマンドの削除確認", () => {
+// TC-32: 旧 job rm サブコマンドが削除されている
+describe("TC-32: 旧 job rm サブコマンドの削除確認", () => {
+  it("specrunner job rm <jobId> → 'Unknown job subcommand: rm' を出力し exit 2 で終了", async () => {
+    const result = await runMain(["job", "rm", "some-job-id"]);
+
+    expect(result).toBe("process.exit(2)");
+    const stderr = (stderrSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
+    expect(stderr).toContain("Unknown job subcommand: rm");
+  });
+});
+
+// TC-33: 旧 top-level rm が削除されている
+describe("TC-33: 旧 top-level rm コマンドの削除確認", () => {
   it("specrunner rm → 'Unknown command: rm' を出力し exit 2 で終了", async () => {
     const result = await runMain(["rm"]);
 
@@ -90,8 +102,8 @@ describe("TC-32: 旧 top-level rm コマンドの削除確認", () => {
   });
 });
 
-// TC-33: 旧 top-level resume が削除されている
-describe("TC-33: 旧 top-level resume コマンドの削除確認", () => {
+// TC-34: 旧 top-level resume が削除されている
+describe("TC-34: 旧 top-level resume コマンドの削除確認", () => {
   it("specrunner resume → 'Unknown command: resume' を出力し exit 2 で終了", async () => {
     const result = await runMain(["resume"]);
 
@@ -101,8 +113,8 @@ describe("TC-33: 旧 top-level resume コマンドの削除確認", () => {
   });
 });
 
-// TC-34: 旧 top-level finish が削除されている
-describe("TC-34: 旧 top-level finish コマンドの削除確認", () => {
+// TC-35: 旧 top-level finish が削除されている
+describe("TC-35: 旧 top-level finish コマンドの削除確認", () => {
   it("specrunner finish → 'Unknown command: finish' を出力し exit 2 で終了", async () => {
     const result = await runMain(["finish"]);
 
@@ -112,8 +124,8 @@ describe("TC-34: 旧 top-level finish コマンドの削除確認", () => {
   });
 });
 
-// TC-35: 旧 request create サブコマンドが削除されている
-describe("TC-35: 旧 request create コマンドの削除確認", () => {
+// TC-36: 旧 request create サブコマンドが削除されている
+describe("TC-36: 旧 request create コマンドの削除確認", () => {
   it("specrunner request create → 'Unknown request subcommand: create' を出力し exit 2 で終了", async () => {
     const result = await runMain(["request", "create"]);
 
@@ -123,8 +135,8 @@ describe("TC-35: 旧 request create コマンドの削除確認", () => {
   });
 });
 
-// TC-36: 旧 request list サブコマンドが削除されている
-describe("TC-36: 旧 request list コマンドの削除確認", () => {
+// TC-37: 旧 request list サブコマンドが削除されている
+describe("TC-37: 旧 request list コマンドの削除確認", () => {
   it("specrunner request list → 'Unknown request subcommand: list' を出力し exit 2 で終了", async () => {
     const result = await runMain(["request", "list"]);
 

@@ -24,7 +24,7 @@ vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(unde
 vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn() }));
 vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn() }));
 vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn() }));
-vi.mock("../../../src/cli/rm.js", () => ({ runRm: vi.fn().mockResolvedValue(0) }));
+vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0) }));
 vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("../../../src/core/command/request-new.js", () => ({ executeNew: vi.fn() }));
 
@@ -155,13 +155,13 @@ describe("TC-WG-006: run alias from inside a worktree", () => {
   });
 });
 
-// TC-WG-007: job rm from worktree → NOT guarded
-describe("TC-WG-007: job rm from inside a worktree", () => {
-  it("does NOT reject job rm — proceeds normally", async () => {
+// TC-WG-007: job cancel from worktree → NOT guarded
+describe("TC-WG-007: job cancel from inside a worktree", () => {
+  it("does NOT reject job cancel — proceeds normally", async () => {
     await setWorktreeDetection(true, "/home/user/my-project");
 
-    // job rm with --all-terminated so no UUID required
-    const result = await runMain(["job", "rm", "--all-terminated", "--yes"]);
+    // job cancel with --all-terminated so no UUID required
+    const result = await runMain(["job", "cancel", "--all-terminated", "--yes"]);
 
     // Should not exit(1) due to worktree guard
     const stderrOutput = (stderrSpy.mock.calls as unknown[][])
