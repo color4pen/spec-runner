@@ -141,3 +141,19 @@ export function draftsDir(): string {
 export function draftPath(slug: string): string {
   return `${DRAFTS_DIR}/${slug}.md`;
 }
+
+/** Regex to detect YYYY-MM-DD prefix on an archive dir name. */
+const ARCHIVE_DATE_PREFIX_RE = /^(\d{4}-\d{2}-\d{2})-(.+)$/;
+
+/**
+ * Parses an archive directory name, stripping the optional YYYY-MM-DD prefix.
+ *
+ * Examples:
+ *   parseArchiveDirName("2026-05-20-foo-bar")   → { date: "2026-05-20", slug: "foo-bar" }
+ *   parseArchiveDirName("foo-bar")               → { date: null, slug: "foo-bar" }
+ */
+export function parseArchiveDirName(dirName: string): { date: string | null; slug: string } {
+  const m = ARCHIVE_DATE_PREFIX_RE.exec(dirName);
+  if (m) return { date: m[1] as string, slug: m[2] as string };
+  return { date: null, slug: dirName };
+}

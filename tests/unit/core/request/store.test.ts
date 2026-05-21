@@ -112,8 +112,24 @@ describe("TC-ST-008: read() returns parsed request from flat file", () => {
 });
 
 describe("TC-ST-009: checkSlugCollision() throws when slug exists in changes/archive/", () => {
-  it("throws SpecRunnerError with code SLUG_COLLISION for archived slug", async () => {
+  it("throws SpecRunnerError with code SLUG_COLLISION for archived slug (legacy, no date prefix)", async () => {
     const archiveDir = path.join(tempDir, "specrunner", "changes", "archive", "archived-feature");
+    await fs.mkdir(archiveDir, { recursive: true });
+    await fs.writeFile(path.join(archiveDir, "request.md"), "# Archived Feature\n");
+
+    await expect(checkSlugCollision(tempDir, "archived-feature")).rejects.toMatchObject({
+      code: "SLUG_COLLISION",
+    });
+  });
+
+  it("throws SpecRunnerError with code SLUG_COLLISION for dated archive dir (2026-05-20-archived-feature)", async () => {
+    const archiveDir = path.join(
+      tempDir,
+      "specrunner",
+      "changes",
+      "archive",
+      "2026-05-20-archived-feature",
+    );
     await fs.mkdir(archiveDir, { recursive: true });
     await fs.writeFile(path.join(archiveDir, "request.md"), "# Archived Feature\n");
 
@@ -124,6 +140,19 @@ describe("TC-ST-009: checkSlugCollision() throws when slug exists in changes/arc
 
   it("does not throw when archive contains a different slug", async () => {
     const archiveDir = path.join(tempDir, "specrunner", "changes", "archive", "other-feature");
+    await fs.mkdir(archiveDir, { recursive: true });
+
+    await expect(checkSlugCollision(tempDir, "new-feature")).resolves.toBeUndefined();
+  });
+
+  it("does not throw when dated archive dir has a different slug", async () => {
+    const archiveDir = path.join(
+      tempDir,
+      "specrunner",
+      "changes",
+      "archive",
+      "2026-05-20-other-feature",
+    );
     await fs.mkdir(archiveDir, { recursive: true });
 
     await expect(checkSlugCollision(tempDir, "new-feature")).resolves.toBeUndefined();

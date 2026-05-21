@@ -7,6 +7,7 @@ import {
   prCreateResultPath,
   requestMdPath,
   changesDirRel,
+  parseArchiveDirName,
 } from "../../src/util/paths.js";
 
 describe("changeFolderPath", () => {
@@ -93,6 +94,36 @@ describe("changesDirRel", () => {
   // TC-007
   it("returns the changes directory path", () => {
     expect(changesDirRel()).toBe("specrunner/changes");
+  });
+});
+
+describe("parseArchiveDirName", () => {
+  it("parses dated dir: 2026-05-20-foo-bar", () => {
+    expect(parseArchiveDirName("2026-05-20-foo-bar")).toEqual({
+      date: "2026-05-20",
+      slug: "foo-bar",
+    });
+  });
+
+  it("returns null date for plain slug: foo-bar", () => {
+    expect(parseArchiveDirName("foo-bar")).toEqual({
+      date: null,
+      slug: "foo-bar",
+    });
+  });
+
+  it("parses dated dir with multi-segment slug: 2026-04-16-phase2-auth-and-app-foundation", () => {
+    expect(parseArchiveDirName("2026-04-16-phase2-auth-and-app-foundation")).toEqual({
+      date: "2026-04-16",
+      slug: "phase2-auth-and-app-foundation",
+    });
+  });
+
+  it("returns null date for legacy dir without prefix: abolish-success-status", () => {
+    expect(parseArchiveDirName("abolish-success-status")).toEqual({
+      date: null,
+      slug: "abolish-success-status",
+    });
   });
 });
 

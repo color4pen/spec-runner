@@ -3,6 +3,7 @@ import * as path from "node:path";
 import { SpecRunnerError } from "../../errors.js";
 import { parseRequestMdContent } from "../../parser/request-md.js";
 import type { ParsedRequest } from "./types.js";
+import { parseArchiveDirName } from "../../util/paths.js";
 
 const DRAFTS_SUBDIR = path.join("specrunner", "drafts");
 const ARCHIVE_SUBDIR = path.join("specrunner", "changes", "archive");
@@ -62,12 +63,14 @@ export async function checkSlugCollision(cwd: string, slug: string): Promise<voi
   }
 
   // Check 2: changes/archive/ (directory per slug — 151+ entries)
+  // Supports both dated (YYYY-MM-DD-<slug>) and legacy (plain <slug>) dir names.
   const archiveDir = path.join(cwd, ARCHIVE_SUBDIR);
   try {
     const entries = await fs.readdir(archiveDir);
-    if (entries.includes(slug)) {
+    const match = entries.find((e) => parseArchiveDirName(e).slug === slug);
+    if (match) {
       // Check it's actually a directory
-      const stat = await fs.stat(path.join(archiveDir, slug));
+      const stat = await fs.stat(path.join(archiveDir, match));
       if (stat.isDirectory()) {
         throw new SpecRunnerError(
           "SLUG_COLLISION",

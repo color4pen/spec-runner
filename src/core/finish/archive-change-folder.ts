@@ -1,7 +1,7 @@
 /**
  * Archive change folder step for finish command.
  *
- * Moves specrunner/changes/<slug>/ → specrunner/changes/archive/<slug>/ via git mv.
+ * Moves specrunner/changes/<slug>/ → specrunner/changes/archive/<YYYY-MM-DD>-<slug>/ via git mv.
  * Replaces the old openspec archive step (TC-024-026, TC-043).
  *
  * TC-CF-001: change folder exists → git mv succeeds → ok: true, skipped: false
@@ -19,13 +19,15 @@ export type ArchiveChangeFolderResult =
   | { ok: false; escalation: string; exitCode: 1 };
 
 /**
- * Archive specrunner/changes/<slug>/ to specrunner/changes/archive/<slug>/ via git mv.
+ * Archive specrunner/changes/<slug>/ to specrunner/changes/archive/<YYYY-MM-DD>-<slug>/ via git mv.
+ * The YYYY-MM-DD prefix is derived from the local-time calendar date at finish execution.
  */
 export async function archiveChangeFolder(params: {
   slug: string;
   cwd: string;
   spawn: SpawnFn;
   fs: FinishFs;
+  now?: () => Date;
 }): Promise<ArchiveChangeFolderResult> {
   const { slug, cwd, spawn, fs } = params;
 
@@ -41,7 +43,9 @@ export async function archiveChangeFolder(params: {
   }
 
   const sourcePath = changeFolderPath(slug);
-  const archivePath = `${changesDirRel()}/archive/${slug}`;
+  const d = (params.now ?? (() => new Date()))();
+  const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const archivePath = `${changesDirRel()}/archive/${dateStr}-${slug}`;
 
   const mvResult = await spawn("git", ["mv", sourcePath, archivePath], { cwd });
 

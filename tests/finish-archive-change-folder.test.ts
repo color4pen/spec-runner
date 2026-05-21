@@ -37,9 +37,13 @@ function makeFs(overrides: Partial<FinishFs> = {}): FinishFs {
   };
 }
 
+const FIXED_DATE = "2026-01-15";
+const FIXED_NOW = () => new Date(`${FIXED_DATE}T12:00:00Z`);
+
 const BASE = {
   slug: "my-feature",
   cwd: "/repo",
+  now: FIXED_NOW,
 };
 
 // TC-CF-001
@@ -60,7 +64,7 @@ describe("TC-CF-001: change folder exists → git mv succeeds", () => {
     expect(calls[0]![0]).toBe("git");
     expect(calls[0]![1]).toContain("mv");
     expect(calls[0]![1]).toContain(changeFolderPath("my-feature"));
-    expect(calls[0]![1]).toContain(`${changesDirRel()}/archive/my-feature`);
+    expect(calls[0]![1]).toContain(`${changesDirRel()}/archive/${FIXED_DATE}-my-feature`);
 
     // Second call: git add
     expect(calls[1]![0]).toBe("git");

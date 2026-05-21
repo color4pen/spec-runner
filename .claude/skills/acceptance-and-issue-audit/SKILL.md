@@ -42,7 +42,7 @@ gh pr diff <num>  # 必要時
 
 request.md パス:
 - awaiting-merge: `specrunner/drafts/<slug>.md` (= 未 run) or `specrunner/changes/<slug>/request.md` (= run 後)
-- merged: `specrunner/changes/archive/<slug>/request.md`
+- merged: `specrunner/changes/archive/<YYYY-MM-DD>-<slug>/request.md`
 
 ### 2. AC 突合せ
 
