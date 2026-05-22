@@ -22,6 +22,7 @@ import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { specReviewResultPath } from "../../../src/util/paths.js";
+import { defaultStoreFactory } from "../../helpers/store-factory.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -118,6 +119,7 @@ function makeMinimalDeps(clientOpts?: Parameters<typeof makeMockSessionClient>[0
     owner: "user",
     repo: "repo",
     spawn: noopSpawn,
+    storeFactory: defaultStoreFactory,
   };
 }
 
@@ -256,7 +258,7 @@ describe("TC-013: StepExecutor lifecycle events fire in correct order on success
       repo: { owner: "testowner", name: "testrepo" },
       githubToken: "ghp_test",
     });
-    const executor = new StepExecutor(events, runner);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory);
 
     try {
       await executor.execute(mockStep, state, deps);
@@ -327,7 +329,7 @@ describe("TC-014: StepExecutor error path emits step:error and decorates excepti
       repo: { owner: "testowner", name: "testrepo" },
       githubToken: "ghp_test",
     });
-    const executor = new StepExecutor(events, runner);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory);
 
     let thrownErr: unknown;
     try {

@@ -7,7 +7,6 @@ import type { PipelineDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import { StepExecutor } from "../step/executor.js";
 import { getLatestStepResult } from "../../state/helpers.js";
-import { JobStateStore } from "../../store/job-state-store.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { stdoutWrite } from "../../logger/stdout.js";
 import { STEP_NAMES } from "../step/step-names.js";
@@ -90,7 +89,7 @@ export class Pipeline {
       // Last-resort safety net: if state is still "running" after an unhandled throw,
       // transition to awaiting-resume so the job is resumable (not stuck).
       if (finalState.status === "running") {
-        const store = new JobStateStore(finalState.jobId);
+        const store = deps.storeFactory(finalState.jobId);
         const { state: resumeState } = transitionJob(finalState, "awaiting-resume", {
           trigger: "pipeline",
           reason: (err as Error).message ?? String(err),
@@ -200,7 +199,7 @@ export class Pipeline {
           // Safety net: executor threw without attaching state.
           // Mark as failed so getStepOutcome() returns "error" and
           // the transition table routes to "escalate" → awaiting-resume.
-          const store = new JobStateStore(state.jobId);
+          const store = deps.storeFactory(state.jobId);
           state = await store.fail(state, {
             code: "UNEXPECTED_STEP_ERROR",
             message: (err as Error).message ?? String(err),
@@ -210,7 +209,7 @@ export class Pipeline {
       }
 
       // Persist state after each step for crash resilience
-      const store = new JobStateStore(state.jobId);
+      const store = deps.storeFactory(state.jobId);
       await store.persist(state);
 
       // --- Determine step outcome for transition lookup ---
@@ -275,7 +274,7 @@ export class Pipeline {
             reason: "pipeline complete",
           });
           state = mergeState;
-          const endStore = new JobStateStore(state.jobId);
+          const endStore = deps.storeFactory(state.jobId);
           await endStore.persist(state);
         }
 
@@ -293,7 +292,7 @@ export class Pipeline {
             },
           });
           state = escalateState;
-          const escalateStore = new JobStateStore(state.jobId);
+          const escalateStore = deps.storeFactory(state.jobId);
           await escalateStore.persist(state);
         }
 
@@ -316,7 +315,7 @@ export class Pipeline {
           if (!fixerAtMax) {
             // Conventional exhaustion (no fixer bypass)
             stdoutWrite(`[iter ${nextLoopIter}/${this.maxIterations}] retries exhausted on ${nextStep}, escalating\n`);
-            state = await this.handleExhausted(state, nextStep as string, "review-exhausted");
+            state = await this.handleExhausted(state, deps, nextStep as string, "review-exhausted");
 
             if (this.steps.has(STEP_NAMES.SPEC_REVIEW)) {
               const specReviewResults = state.steps?.[STEP_NAMES.SPEC_REVIEW] ?? [];
@@ -342,7 +341,7 @@ export class Pipeline {
             .find(([_, fixer]) => fixer === nextStep)?.[0];
           const exhaustedLoopName = pairedReview ?? (nextStep as string);
           stdoutWrite(`[iter ${this.maxIterations}/${this.maxIterations}] retries exhausted on ${exhaustedLoopName}, escalating\n`);
-          state = await this.handleExhausted(state, exhaustedLoopName, "review-after-final-fix");
+          state = await this.handleExhausted(state, deps, exhaustedLoopName, "review-after-final-fix");
 
           if (this.steps.has(STEP_NAMES.SPEC_REVIEW)) {
             const specReviewResults = state.steps?.[STEP_NAMES.SPEC_REVIEW] ?? [];
@@ -364,7 +363,7 @@ export class Pipeline {
       const fromMsg = prevLoopStep
         ? `${prevLoopStep} complete → ${nextStep} (iter ${(loopIters.get(this.loopName) ?? 0) + (nextStep === this.loopName ? 1 : 0)})`
         : `${currentStep} → ${nextStep}`;
-      const transitionStore = new JobStateStore(state.jobId);
+      const transitionStore = deps.storeFactory(state.jobId);
       state = await transitionStore.appendHistory(state, {
         ts: new Date().toISOString(),
         step: "step-transition",
@@ -421,6 +420,7 @@ export class Pipeline {
    */
   private async handleExhausted(
     state: JobState,
+    deps: PipelineDeps,
     exhaustedLoopName: string = this.loopName,
     exhaustionPhase?: "review-after-final-fix" | "review-exhausted",
   ): Promise<JobState> {
@@ -467,7 +467,7 @@ export class Pipeline {
         },
       },
     });
-    const exhaustedStore = new JobStateStore(exhaustedState.jobId);
+    const exhaustedStore = deps.storeFactory(exhaustedState.jobId);
     await exhaustedStore.persist(exhaustedState);
     return exhaustedState;
   }

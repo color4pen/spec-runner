@@ -9,6 +9,7 @@
  * TC-015: doctor の network/CLI check timeout が削除されていない
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { defaultStoreFactory } from "../helpers/store-factory.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -47,8 +48,9 @@ describe("TC-007: StepExecutor.getTimeoutMs は存在しない", () => {
     const { StepExecutor } = await import("../../src/core/step/executor.js");
     const { EventBus } = await import("../../src/core/event/event-bus.js");
     // Minimal mock AgentRunner for constructor — just tests method absence
+    const { JobStateStore } = await import("../../src/store/job-state-store.js");
     const mockRunner = { run: async () => ({ completionReason: "success" as const, resultContent: null }) };
-    const executor = new StepExecutor(new EventBus(), mockRunner);
+    const executor = new StepExecutor(new EventBus(), mockRunner, defaultStoreFactory);
     // getTimeoutMs は private だったが削除済み — prototype にも存在しない
     expect((executor as unknown as Record<string, unknown>)["getTimeoutMs"]).toBeUndefined();
     expect((StepExecutor.prototype as unknown as Record<string, unknown>)["getTimeoutMs"]).toBeUndefined();

@@ -5,6 +5,7 @@ import * as os from "node:os";
 import type { SessionClient } from "../src/core/port/session-client.js";
 import type { GitHubClient } from "../src/core/port/github-client.js";
 import { createManagedAgentRunner } from "../src/adapter/managed-agent/agent-runner.js";
+import { defaultStoreFactory } from "./helpers/store-factory.js";
 import type { SpawnFn } from "../src/util/spawn.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
@@ -186,6 +187,7 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -222,6 +224,7 @@ describe("TC-036: propose pipeline — pre-set branch from CLI is used (D4)", ()
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     // With branch pre-set, propose should succeed
@@ -252,6 +255,7 @@ describe("TC-037: propose pipeline — SSE stream connected before initial messa
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     // streamEvents() was called — the SessionClient port guarantees SSE is connected
@@ -299,6 +303,7 @@ describe("TC-038: propose pipeline — initial message contains user-request tag
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     // With cwd set to tempDir (no specrunner/project.md), requestContent is the raw
@@ -331,6 +336,7 @@ describe("TC-039: propose pipeline — CHANGE_FOLDER_NOT_FOUND", () => {
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     expect(result.status).toBe("awaiting-resume");
@@ -361,6 +367,7 @@ describe("TC-040: propose pipeline — branch not found on GitHub is warning onl
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -397,6 +404,7 @@ describe("TC-041: propose pipeline — GITHUB_TOKEN_EXPIRED on 401", () => {
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     expect(result.status).toBe("awaiting-resume");
@@ -430,6 +438,7 @@ describe("TC-042: session creation parameters", () => {
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     expect(createSessionMock).toHaveBeenCalledTimes(1);

@@ -2,10 +2,10 @@ import * as path from "node:path";
 import { readFile } from "node:fs/promises";
 import type { Step, AgentStep, CliStep } from "./types.js";
 import type { JobState, Verdict, ModelUsage } from "../../state/schema.js";
-import type { PipelineDeps } from "../types.js";
+import type { PipelineDeps, StoreFactory } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import type { AgentRunner } from "../port/agent-runner.js";
-import { JobStateStore } from "../../store/job-state-store.js";
+import type { JobStateStore } from "../../store/job-state-store.js";
 import { pushStepResult } from "../../state/helpers.js";
 import { stderrWrite, logVerbose } from "../../logger/stdout.js";
 import {
@@ -39,13 +39,16 @@ function findAuthoritySpecViolations(filePaths: string[]): string[] {
 export class StepExecutor {
   private readonly spawnFn: SpawnFn;
   private readonly sleepFn: (ms: number) => Promise<void>;
+  private readonly storeFactory: StoreFactory;
 
   constructor(
     private readonly events: EventBus,
     private readonly runner: AgentRunner,
+    storeFactory: StoreFactory,
     spawnFn?: SpawnFn,
     sleepFn?: (ms: number) => Promise<void>,
   ) {
+    this.storeFactory = storeFactory;
     this.spawnFn = spawnFn ?? defaultSpawnFn;
     this.sleepFn = sleepFn ?? ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   }
@@ -365,7 +368,7 @@ export class StepExecutor {
    */
   private getStore(jobId: string): JobStateStore {
     if (!this.storeCache || this.storeCacheJobId !== jobId) {
-      this.storeCache = new JobStateStore(jobId);
+      this.storeCache = this.storeFactory(jobId);
       this.storeCacheJobId = jobId;
     }
     return this.storeCache;

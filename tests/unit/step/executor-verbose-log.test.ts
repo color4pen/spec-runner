@@ -24,6 +24,7 @@ import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/
 import type { Step } from "../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
+import { defaultStoreFactory } from "../../helpers/store-factory.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -155,6 +156,7 @@ function makeDeps(): PipelineDeps {
     owner: "user",
     repo: "repo",
     spawn: noopSpawn,
+    storeFactory: defaultStoreFactory,
   };
 }
 
@@ -188,7 +190,7 @@ describe("TC-10-01: StepExecutor.execute() — logs 'step started' with step fie
     const logPath = getVerboseLogFilePath()!;
 
     const state = await setupJobState(jobId);
-    const executor = new StepExecutor(new EventBus(), makeSuccessRunner());
+    const executor = new StepExecutor(new EventBus(), makeSuccessRunner(), defaultStoreFactory);
     await executor.execute(makeAgentStep("spec-review"), state, makeDeps());
 
     const entries = readLogEntries(logPath);
@@ -210,7 +212,7 @@ describe("TC-10-02: StepExecutor.execute() — logs 'step completed' on success"
     const logPath = getVerboseLogFilePath()!;
 
     const state = await setupJobState(jobId);
-    const executor = new StepExecutor(new EventBus(), makeSuccessRunner());
+    const executor = new StepExecutor(new EventBus(), makeSuccessRunner(), defaultStoreFactory);
     await executor.execute(makeAgentStep("spec-review"), state, makeDeps());
 
     const entries = readLogEntries(logPath);
@@ -232,7 +234,7 @@ describe("TC-10-03: StepExecutor.execute() — logs 'step error' with error fiel
     const logPath = getVerboseLogFilePath()!;
 
     const state = await setupJobState(jobId);
-    const executor = new StepExecutor(new EventBus(), makeFailingRunner("runner test error"));
+    const executor = new StepExecutor(new EventBus(), makeFailingRunner("runner test error"), defaultStoreFactory);
 
     // execute() はエラーを re-throw する — その前に logVerbose("step", "step error", ...) が呼ばれる
     await expect(executor.execute(makeAgentStep("spec-review"), state, makeDeps())).rejects.toThrow();

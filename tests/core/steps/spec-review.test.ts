@@ -18,6 +18,8 @@ import { EventBus } from "../../../src/core/event/event-bus.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import { createManagedAgentRunner } from "../../../src/adapter/managed-agent/agent-runner.js";
 import { SpecReviewStep } from "../../../src/core/step/spec-review.js";
+import { JobStateStore } from "../../../src/store/job-state-store.js";
+import { defaultStoreFactory } from "../../helpers/store-factory.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -107,6 +109,7 @@ function buildDeps(opts: {
     owner: "user",
     repo: "repo",
     spawn: noopSpawn,
+    storeFactory: defaultStoreFactory,
   };
 }
 
@@ -118,7 +121,7 @@ async function runStep(jobState: JobState, deps: PipelineDeps): Promise<JobState
     repo: { owner: "testowner", name: "testrepo" },
     githubToken: "ghp_test",
   });
-  const executor = new StepExecutor(events, runner);
+  const executor = new StepExecutor(events, runner, defaultStoreFactory);
   return executor.execute(SpecReviewStep, jobState, deps);
 }
 

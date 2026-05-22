@@ -19,6 +19,7 @@ import { transitionJob } from "../../state/lifecycle.js";
 import type { StepName } from "../../state/schema.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { spawnCommand } from "../../util/spawn.js";
+import { JobStateStore } from "../../store/job-state-store.js";
 import { changeFolderPath } from "../../util/paths.js";
 import { copyRulesToChangeFolder } from "../../util/copy-artifacts.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./strategy.js";
@@ -168,6 +169,7 @@ export class ManagedRuntime implements RuntimeStrategy {
       cwd: workspace.cwd,
       runner: this.createAgentRunner(),
       spawn: spawnCommand,
+      storeFactory: (id: string) => new JobStateStore(id),
     };
   }
 

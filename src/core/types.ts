@@ -5,6 +5,7 @@ import type { SpecRunnerConfig } from "../config/schema.js";
 import type { ParsedRequest } from "../parser/request-md.js";
 import type { DynamicContext } from "../git/dynamic-context.js";
 import type { SpawnFn } from "../util/spawn.js";
+import type { JobStateStore } from "../store/job-state-store.js";
 
 /**
  * Minimal context required by Step methods (buildMessage, resultFilePath, parseResult).
@@ -32,6 +33,13 @@ export interface StepContext {
   /** GitHub repository name (e.g. "my-repo"). Optional in StepContext; required in PipelineDeps. */
   repo?: string;
 }
+
+/**
+ * Factory function that creates a JobStateStore for the given job ID.
+ * Injected via PipelineDeps to eliminate inline `new JobStateStore()` calls.
+ * Exported so that cancel/finish/resume can adopt the same seam in future requests.
+ */
+export type StoreFactory = (jobId: string) => JobStateStore;
 
 /**
  * Dependencies injected into all pipeline steps.
@@ -71,4 +79,10 @@ export interface PipelineDeps extends StepContext {
    * Design D3 (require-spawn-injection): required to prevent leaky defaults in tests.
    */
   spawn: SpawnFn;
+  /**
+   * Factory for creating JobStateStore instances. Injected by RuntimeStrategy.buildDeps().
+   * Pipeline and executor use this instead of inline `new JobStateStore()`.
+   * Design D1 (job-state-store-di): required to prevent leaky defaults in tests.
+   */
+  storeFactory: StoreFactory;
 }

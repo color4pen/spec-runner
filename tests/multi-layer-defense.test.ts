@@ -7,6 +7,7 @@ import type { GitHubClient } from "../src/core/port/github-client.js";
 import { createManagedAgentRunner } from "../src/adapter/managed-agent/agent-runner.js";
 import { verificationResultPath, prCreateResultPath } from "../src/util/paths.js";
 import type { SpawnFn } from "../src/util/spawn.js";
+import { defaultStoreFactory } from "./helpers/store-factory.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -282,6 +283,7 @@ describe("TC-MLD-01: happy path — all 3 layers pass, pipeline completes", () =
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -343,6 +345,7 @@ describe("TC-MLD-02: spec-review catches insufficient delta spec → spec-fixer 
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -419,6 +422,7 @@ describe("TC-MLD-03: dsv catches legacy-flat-file → delta-spec-fixer → re-ds
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -497,6 +501,7 @@ describe("TC-MLD-04: design + spec-review both fail — dsv catches no-specs-for
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -568,6 +573,7 @@ describe("TC-MLD-05: design + dsv both fail — spec-review catches as sole defe
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     expect(result.status).toBe("awaiting-merge");

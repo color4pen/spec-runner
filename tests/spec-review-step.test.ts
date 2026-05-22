@@ -9,6 +9,8 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { specReviewResultPath } from "../src/util/paths.js";
+import { JobStateStore } from "../src/store/job-state-store.js";
+import { defaultStoreFactory } from "./helpers/store-factory.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -139,7 +141,7 @@ async function runSpecReviewViaExecutor(
     repo: { owner: "testowner", name: "testrepo" },
     githubToken: "ghp_test",
   });
-  const executor = new StepExecutor(events, runner);
+  const executor = new StepExecutor(events, runner, defaultStoreFactory);
   return executor.execute(SpecReviewStep, jobState, deps);
 }
 
@@ -162,6 +164,7 @@ describe("TC-006: runSpecReviewStep — pollUntilComplete is called with default
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     // pollUntilComplete should be called with the default timeoutMs (900000ms)
@@ -193,6 +196,7 @@ describe("TC-017: runSpecReviewStep — treats status='idle' as complete", () =>
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     const lastSpecReview = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
@@ -225,6 +229,7 @@ describe("TC-018: runSpecReviewStep — SESSION_TERMINATED error handling", () =
         owner: "testowner",
         repo: "testrepo",
         spawn: noopSpawn,
+        storeFactory: defaultStoreFactory,
       }),
     ).rejects.toMatchObject({ code: "SESSION_TERMINATED" });
   });
@@ -252,6 +257,7 @@ describe("TC-020: runSpecReviewStep — SPEC_REVIEW_RESULT_NOT_FOUND when file n
         owner: "testowner",
         repo: "testrepo",
         spawn: noopSpawn,
+        storeFactory: defaultStoreFactory,
       }),
     ).rejects.toMatchObject({ code: "SPEC_REVIEW_RESULT_NOT_FOUND" });
   });
@@ -275,6 +281,7 @@ describe("TC-021: runSpecReviewStep — escalation failsafe when verdict line ab
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     // SpecReviewStep.parseResult maps null verdict → "escalation" (failsafe)
@@ -304,6 +311,7 @@ describe("TC-041: runSpecReviewStep — records session, verdict, findingsPath, 
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     const stepResultArr = result.steps?.["spec-review"];
@@ -337,6 +345,7 @@ describe("TC-042: runSpecReviewStep — session created without custom tools", (
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     expect(createSessionMock).toHaveBeenCalledTimes(1);
@@ -373,6 +382,7 @@ describe("TC-049: runSpecReviewStep — findingsPath has correct format", () => 
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
+      storeFactory: defaultStoreFactory,
     });
 
     const lastStepResult = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];

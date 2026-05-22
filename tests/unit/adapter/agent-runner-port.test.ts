@@ -29,6 +29,7 @@ import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import type { Step, AgentStep, CliStep } from "../../../src/core/step/types.js";
+import { defaultStoreFactory } from "../../helpers/store-factory.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -117,6 +118,7 @@ function makeMinimalDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     repo: "repo",
     spawn: noopSpawn,
     ...overrides,
+    storeFactory: overrides.storeFactory ?? (defaultStoreFactory),
   };
 }
 
@@ -246,7 +248,7 @@ describe("TC-003: completionReason 'success' → resultContent fetched by adapte
     };
 
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory);
     const deps = makeMinimalDeps();
 
     const step = makeAgentStep();
@@ -278,7 +280,7 @@ describe("TC-004 and TC-005: completionReason error/timeout → step:error emitt
       stepErrors.push({ step: (payload as { step: string }).step });
     });
 
-    const executor = new StepExecutor(events, runner);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory);
     const deps = makeMinimalDeps();
     const step = makeAgentStep();
 
@@ -327,7 +329,7 @@ describe("TC-006: resultFilePath null step → resultContent null", () => {
     };
 
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory);
     const deps = makeMinimalDeps();
 
     // Step with null resultFilePath
@@ -397,7 +399,7 @@ describe("TC-008: StepExecutor calls runner.run exactly once per agent step", ()
     };
 
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory);
     const deps = makeMinimalDeps();
 
     const step = makeAgentStep();
@@ -456,7 +458,7 @@ describe("TC-009: AgentStep lifecycle events fire in order", () => {
     events.on("step:complete", () => { emittedEvents.push("step:complete"); });
     events.on("step:error", () => { emittedEvents.push("step:error"); });
 
-    const executor = new StepExecutor(events, runner);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory);
     const deps = makeMinimalDeps();
     const step = makeAgentStep();
     await executor.execute(step, state, deps);
@@ -496,7 +498,7 @@ describe("TC-010: CliStep does not invoke runner.run", () => {
     events.on("step:complete", () => { emittedEvents.push("step:complete"); });
     events.on("step:error", () => { emittedEvents.push("step:error"); });
 
-    const executor = new StepExecutor(events, runner);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory);
     const deps = makeMinimalDeps({ cwd: tempDir });
 
     const step = makeCliStep({
@@ -555,7 +557,7 @@ describe("TC-012: CliStep verdict null is normalized to escalation", () => {
       verdictParsedPayloads.push(payload as { outcome: { verdict: string | null } });
     });
 
-    const executor = new StepExecutor(events, runner);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory);
     const deps = makeMinimalDeps({ cwd: tempDir });
 
     const step = makeCliStep({

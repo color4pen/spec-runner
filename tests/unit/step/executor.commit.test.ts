@@ -22,6 +22,7 @@ import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
 import type { SpawnFn } from "../../../src/util/git-exec.js";
+import { defaultStoreFactory } from "../../helpers/store-factory.js";
 import type { SpawnFn as PipelineSpawnFn } from "../../../src/util/spawn.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -110,6 +111,7 @@ function makeLocalDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     repo: "repo",
     spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as PipelineSpawnFn,
     ...overrides,
+    storeFactory: overrides.storeFactory ?? (defaultStoreFactory),
   };
 }
 
@@ -250,7 +252,7 @@ describe("TC-CAP-NEW-001: staged changes → commit + push (requiresCommit:true,
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, spawnFn);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
 
     const step = makeAgentStep({ name: "implementer", requiresCommit: true });
     const result = await executor.execute(step, state, makeLocalDeps());
@@ -287,7 +289,7 @@ describe("TC-CAP-NEW-002: staged 0 + HEAD no advance + requiresCommit:true → N
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, spawnFn);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
 
     const step = makeAgentStep({ name: "implementer", requiresCommit: true });
     await expect(executor.execute(step, state, makeLocalDeps())).rejects.toMatchObject({
@@ -318,7 +320,7 @@ describe("TC-CAP-NEW-003: staged 0 + HEAD advance + requiresCommit:true → push
     const runner = makeSuccessRunner();
     const events = new EventBus();
     const noopSleep = async (_ms: number) => {};
-    const executor = new StepExecutor(events, runner, spawnFn, noopSleep);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn, noopSleep);
 
     const step = makeAgentStep({ name: "implementer", requiresCommit: true });
 
@@ -359,7 +361,7 @@ describe("TC-CAP-NEW-004: staged changes + HEAD advance → commit staged + push
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, spawnFn);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
 
     const step = makeAgentStep({ name: "implementer", requiresCommit: true });
     const result = await executor.execute(step, state, makeLocalDeps());
@@ -395,7 +397,7 @@ describe("TC-CAP-NEW-005: staged 0 + HEAD no advance + requiresCommit:false → 
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, spawnFn);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
 
     // requiresCommit omitted (falsy)
     const step = makeAgentStep({ name: "spec-review" });
@@ -432,7 +434,7 @@ describe("TC-CAP-NEW-006: staged 0 + HEAD advance + requiresCommit:false → sil
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, spawnFn);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
 
     // requiresCommit not set (falsy)
     const step = makeAgentStep({ name: "spec-review" });
@@ -471,7 +473,7 @@ describe("TC-CAP-NEW-007: agent self-commit detected → detection message writt
     const runner = makeSuccessRunner();
     const events = new EventBus();
     const noopSleep = async (_ms: number) => {};
-    const executor = new StepExecutor(events, runner, spawnFn, noopSleep);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn, noopSleep);
 
     const stderrMessages: string[] = [];
     vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
@@ -510,7 +512,7 @@ describe("TC-CAP-NEW-008: commit:push event emitted after push-only path", () =>
     const runner = makeSuccessRunner();
     const events = new EventBus();
     const noopSleep = async (_ms: number) => {};
-    const executor = new StepExecutor(events, runner, spawnFn, noopSleep);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn, noopSleep);
 
     const emittedEvents: Array<{ step: string; branch: string }> = [];
     events.on("commit:push" as never, (payload: { step: string; branch: string }) => {
@@ -551,7 +553,7 @@ describe("TC-AUTH-01: staged authority spec → AUTHORITY_SPEC_EDIT_VIOLATION, c
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, spawnFn);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
 
     const step = makeAgentStep({ name: "implementer", requiresCommit: true });
     await expect(executor.execute(step, state, makeLocalDeps())).rejects.toMatchObject({
@@ -586,7 +588,7 @@ describe("TC-AUTH-02: staged delta spec only → normal commit + push", () => {
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, spawnFn);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
 
     const step = makeAgentStep({ name: "implementer", requiresCommit: true });
     const result = await executor.execute(step, state, makeLocalDeps());
@@ -619,7 +621,7 @@ describe("TC-AUTH-03: staged authority + src → reject with only authority path
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, spawnFn);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
 
     const step = makeAgentStep({ name: "implementer", requiresCommit: true });
     const err = await executor.execute(step, state, makeLocalDeps()).catch((e: unknown) => e) as { code: string; hint: string };
@@ -652,7 +654,7 @@ describe("TC-AUTH-04: agent self-commit with authority spec in HEAD diff → rej
     const runner = makeSuccessRunner();
     const events = new EventBus();
     const noopSleep = async (_ms: number) => {};
-    const executor = new StepExecutor(events, runner, spawnFn, noopSleep);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn, noopSleep);
 
     const step = makeAgentStep({ name: "implementer", requiresCommit: true });
     await expect(executor.execute(step, state, makeLocalDeps())).rejects.toMatchObject({
@@ -687,7 +689,7 @@ describe("TC-AUTH-05: normal step (no authority spec) — existing behavior unch
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, spawnFn);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
 
     const step = makeAgentStep({ name: "implementer", requiresCommit: true });
     const result = await executor.execute(step, state, makeLocalDeps());
@@ -722,7 +724,7 @@ describe("TC-AUTH-06: agent self-commit with delta spec only in HEAD diff → no
     const runner = makeSuccessRunner();
     const events = new EventBus();
     const noopSleep = async (_ms: number) => {};
-    const executor = new StepExecutor(events, runner, spawnFn, noopSleep);
+    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn, noopSleep);
 
     const step = makeAgentStep({ name: "implementer", requiresCommit: true });
     const result = await executor.execute(step, state, makeLocalDeps());

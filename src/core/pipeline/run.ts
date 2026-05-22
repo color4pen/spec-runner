@@ -54,7 +54,7 @@ export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): P
     throw new Error("PipelineDeps.runner is required. Use createRuntime().buildDeps() to construct PipelineDeps.");
   })();
 
-  const executor = new StepExecutor(bus, runner);
+  const executor = new StepExecutor(bus, runner, deps.storeFactory);
 
   const steps = new Map<string, Step>([
     [STEP_NAMES.DESIGN,                DesignStep],
@@ -129,7 +129,7 @@ export async function runDesignPipeline(
     throw new Error("PipelineDeps.runner is required. Use createRuntime().buildDeps() to construct PipelineDeps.");
   })();
 
-  const executor = new StepExecutor(bus, designRunner);
+  const executor = new StepExecutor(bus, designRunner, deps.storeFactory);
 
   const steps = new Map([
     [STEP_NAMES.DESIGN, DesignStep],
