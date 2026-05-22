@@ -95,6 +95,7 @@ function buildMockSessionClient(opts: {
     sendUserMessage: vi.fn().mockResolvedValue(undefined),
     pollUntilComplete: pollUntilCompleteMock,
     streamEvents: vi.fn().mockRejectedValue(new Error("streamEvents not used by spec-review")),
+    getSessionUsage: vi.fn().mockResolvedValue(undefined),
   };
 
   return { client, createSessionMock, pollUntilCompleteMock };

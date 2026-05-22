@@ -15,6 +15,7 @@ function buildMockSessionClient() {
     sendUserMessage: vi.fn(),
     pollUntilComplete: vi.fn(),
     streamEvents: vi.fn(),
+    getSessionUsage: vi.fn().mockResolvedValue(undefined),
   };
 }
 

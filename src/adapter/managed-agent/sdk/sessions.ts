@@ -10,6 +10,7 @@ import type { Stream } from "@anthropic-ai/sdk/streaming";
 // Re-export SDK types for adapter-layer consumers
 export type {
   BetaManagedAgentsSession,
+  BetaManagedAgentsSessionUsage,
   SessionCreateParams,
 } from "@anthropic-ai/sdk/resources/beta/sessions/sessions";
 

@@ -126,6 +126,7 @@ function makeMockSessionClient(): SessionClient {
       terminated: false,
       terminationReason: "end_turn" as const,
     }),
+    getSessionUsage: vi.fn().mockResolvedValue(undefined),
   } as SessionClient;
 }
 

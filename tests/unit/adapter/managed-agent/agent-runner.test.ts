@@ -121,6 +121,7 @@ function makeMockSessionClient(): SessionClient {
       terminated: false,
       terminationReason: "end_turn" as const,
     }),
+    getSessionUsage: vi.fn().mockResolvedValue(undefined),
   } as SessionClient;
 }
 
@@ -333,6 +334,7 @@ describe("TC-018: design role — register_branch not in toolHandlers (D4: tool 
           terminationReason: "end_turn" as const,
         });
       }),
+      getSessionUsage: vi.fn().mockResolvedValue(undefined),
     };
 
     const githubClient = makeMockGithubClient();
@@ -425,6 +427,7 @@ describe("TC-020: ManagedAgentRunner includes ctx.branch in prompt", () => {
           terminationReason: "end_turn" as const,
         });
       }),
+      getSessionUsage: vi.fn().mockResolvedValue(undefined),
     };
 
     const runner = new ManagedAgentRunner({
@@ -489,6 +492,7 @@ describe("TC-021: design uses pre-set ctx.branch from CLI (D4)", () => {
         terminated: false,
         terminationReason: "end_turn" as const,
       }),
+      getSessionUsage: vi.fn().mockResolvedValue(undefined),
     };
 
     const runner = new ManagedAgentRunner({
@@ -1007,6 +1011,7 @@ describe("ManagedAgentRunner session continuity (resumeSessionId)", () => {
         terminated: false,
         terminationReason: "end_turn" as const,
       }),
+      getSessionUsage: vi.fn().mockResolvedValue(undefined),
     };
 
     const runner = new ManagedAgentRunner({
@@ -1083,6 +1088,8 @@ describe("ManagedAgentRunner SSE 経路 follow-up", () => {
     );
     // pollUntilComplete called once for follow-up
     expect(sessionClient.pollUntilComplete).toHaveBeenCalledTimes(1);
+    // TC-18: getSessionUsage must be called exactly once (cumulative, not per-turn)
+    expect(sessionClient.getSessionUsage).toHaveBeenCalledTimes(1);
   });
 
   it("SSE terminated + followUpPrompt 指定 → follow turn 不実行", async () => {
@@ -1209,6 +1216,8 @@ describe("ManagedAgentRunner polling 経路 follow-up", () => {
     expect(sessionClient.pollUntilComplete).toHaveBeenCalledTimes(2);
     // Second sendUserMessage should be the follow-up prompt
     expect(sessionClient.sendUserMessage).toHaveBeenNthCalledWith(2, expect.any(String), "fix format");
+    // TC-18: getSessionUsage must be called exactly once (cumulative, not per-turn)
+    expect(sessionClient.getSessionUsage).toHaveBeenCalledTimes(1);
   });
 
   it("polling terminated + followUpPrompt 指定 → follow turn 不実行", async () => {
@@ -1286,5 +1295,139 @@ describe("ManagedAgentRunner polling 経路 follow-up", () => {
     expect(warnLines.some((l) => l.includes("warn") || l.includes("follow"))).toBe(true);
 
     stderrMock.mockRestore();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Usage tracking tests (managed-agent-usage-tracking)
+// ---------------------------------------------------------------------------
+
+describe("ManagedAgentRunner usage tracking — polling 経路", () => {
+  it("6a: getSessionUsage が SessionUsage を返す → modelUsage が結果に含まれる", async () => {
+    const jobId = "tc-usage-polling-job";
+    const state = makeJobState(jobId);
+    await persistState(state);
+
+    const mockUsage = {
+      inputTokens: 100,
+      outputTokens: 200,
+      cacheReadInputTokens: 50,
+      cacheCreationInputTokens: 30,
+    };
+
+    const sessionClient = makeMockSessionClient();
+    (sessionClient.getSessionUsage as ReturnType<typeof vi.fn>).mockResolvedValue(mockUsage);
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const ctx = makeCtx({ state }, jobId);
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.modelUsage).toEqual({
+      [ctx.step.agent.model]: mockUsage,
+    });
+  });
+
+  it("6c: getSessionUsage が undefined を返す → modelUsage は undefined、pipeline は止まらない", async () => {
+    const jobId = "tc-usage-polling-fail-job";
+    const state = makeJobState(jobId);
+    await persistState(state);
+
+    const sessionClient = makeMockSessionClient();
+    (sessionClient.getSessionUsage as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const ctx = makeCtx({ state }, jobId);
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.modelUsage).toBeUndefined();
+  });
+});
+
+describe("ManagedAgentRunner usage tracking — SSE (design) 経路", () => {
+  function makeDesignStepForUsage(model = "claude-sonnet-4-5"): AgentStep {
+    return {
+      kind: "agent",
+      name: "design",
+      agent: {
+        name: "specrunner-design",
+        role: "design",
+        model,
+        system: "design system",
+        tools: [],
+      },
+      toolHandlers: undefined,
+      buildMessage: () => "design message",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: null, findingsPath: null }),
+    };
+  }
+
+  it("6b: SSE end_turn + getSessionUsage が SessionUsage を返す → modelUsage が結果に含まれる", async () => {
+    const jobId = "tc-usage-sse-job";
+    const state = makeJobState(jobId, "feat/test");
+    await persistState(state);
+
+    const mockUsage = {
+      inputTokens: 500,
+      outputTokens: 300,
+      cacheReadInputTokens: 100,
+      cacheCreationInputTokens: 0,
+    };
+
+    const sessionClient = makeMockSessionClient();
+    (sessionClient.getSessionUsage as ReturnType<typeof vi.fn>).mockResolvedValue(mockUsage);
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const step = makeDesignStepForUsage("claude-opus-4");
+    const ctx = makeCtx({ step, state, branch: "feat/test" }, jobId);
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.modelUsage).toEqual({
+      "claude-opus-4": mockUsage,
+    });
+  });
+
+  it("SSE 経路: getSessionUsage が undefined を返す → modelUsage は undefined、pipeline は止まらない", async () => {
+    const jobId = "tc-usage-sse-fail-job";
+    const state = makeJobState(jobId, "feat/test");
+    await persistState(state);
+
+    const sessionClient = makeMockSessionClient();
+    (sessionClient.getSessionUsage as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const step = makeDesignStepForUsage();
+    const ctx = makeCtx({ step, state, branch: "feat/test" }, jobId);
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.modelUsage).toBeUndefined();
   });
 });

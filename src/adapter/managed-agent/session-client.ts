@@ -3,12 +3,13 @@
  * This is the ONLY file allowed to import from @anthropic-ai/sdk in the adapter.
  */
 import type Anthropic from "@anthropic-ai/sdk";
-import type { SessionClient } from "../../core/port/session-client.js";
+import type { SessionClient, SessionUsage } from "../../core/port/session-client.js";
 import type { CustomToolHandler } from "../../core/tools/types.js";
 import { pollUntilComplete } from "./completion.js";
 import { runSseStream } from "./sse-stream.js";
-import { createSession, sendEvents } from "./sdk/sessions.js";
+import { createSession, sendEvents, retrieveSession } from "./sdk/sessions.js";
 import { normalizeSessionError } from "./session-error.js";
+import { mapSessionUsage } from "./usage.js";
 
 export class AnthropicSessionClient implements SessionClient {
   constructor(private readonly client: Anthropic) {}
@@ -35,6 +36,15 @@ export class AnthropicSessionClient implements SessionClient {
       ],
     });
     return { sessionId: session.id };
+  }
+
+  async getSessionUsage(sessionId: string): Promise<SessionUsage | undefined> {
+    try {
+      const session = await retrieveSession(this.client, sessionId);
+      return mapSessionUsage(session.usage);
+    } catch {
+      return undefined;
+    }
   }
 
   async sendUserMessage(sessionId: string, text: string): Promise<void> {

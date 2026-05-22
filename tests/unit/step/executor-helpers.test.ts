@@ -171,6 +171,7 @@ describe("TC-NEW-helpers-005: createSessionWithHistory success path", () => {
       sendUserMessage: vi.fn(),
       pollUntilComplete: vi.fn(),
       streamEvents: vi.fn(),
+      getSessionUsage: vi.fn().mockResolvedValue(undefined),
     };
 
     const result = await createSessionWithHistory(
@@ -223,6 +224,7 @@ describe("TC-NEW-helpers-006: createSessionWithHistory failure path", () => {
       sendUserMessage: vi.fn(),
       pollUntilComplete: vi.fn(),
       streamEvents: vi.fn(),
+      getSessionUsage: vi.fn().mockResolvedValue(undefined),
     };
 
     let caught: unknown;

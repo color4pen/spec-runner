@@ -513,6 +513,7 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
         terminated: false,
         terminationReason: "end_turn" as const,
       }),
+      getSessionUsage: vi.fn().mockResolvedValue(undefined),
     } as PipelineDeps["client"];
 
     const deps: PipelineDeps = {
@@ -560,6 +561,7 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
         terminated: false,
         terminationReason: "end_turn" as const,
       }),
+      getSessionUsage: vi.fn().mockResolvedValue(undefined),
     } as PipelineDeps["client"];
 
     const deps: PipelineDeps = {
@@ -609,6 +611,7 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
         terminated: false,
         terminationReason: "end_turn" as const,
       }),
+      getSessionUsage: vi.fn().mockResolvedValue(undefined),
     } as PipelineDeps["client"];
 
     const deps: PipelineDeps = {
@@ -656,6 +659,7 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
         terminated: false,
         terminationReason: "end_turn" as const,
       }),
+      getSessionUsage: vi.fn().mockResolvedValue(undefined),
     } as PipelineDeps["client"];
 
     const deps: PipelineDeps = {

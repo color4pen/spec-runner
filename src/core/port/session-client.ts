@@ -1,6 +1,17 @@
 import type { CustomToolHandler } from "../tools/types.js";
 
 /**
+ * SDK-agnostic token usage for a completed session.
+ * Returned by SessionClient.getSessionUsage(); compatible with ModelUsage.
+ */
+export interface SessionUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadInputTokens: number;
+  cacheCreationInputTokens: number;
+}
+
+/**
  * Port interface for interacting with an Anthropic Managed Agent session.
  * Adapter (src/adapter/anthropic/) implements this; core never imports the adapter.
  */
@@ -49,6 +60,12 @@ export interface SessionClient {
     status: "idle" | "terminated";
     error?: { code: string; message: string; hint: string };
   }>;
+
+  /**
+   * Retrieve cumulative token usage for a completed session.
+   * Best-effort: returns undefined on failure (non-fatal).
+   */
+  getSessionUsage(sessionId: string): Promise<SessionUsage | undefined>;
 
   /**
    * Connect via SSE, process events, and drive the session until it ends.

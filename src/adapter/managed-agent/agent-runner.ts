@@ -24,6 +24,7 @@
  * TC-031: result file not found → error
  */
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../core/port/agent-runner.js";
+import type { ModelUsage } from "../../core/port/model-usage.js";
 import type { AgentStep } from "../../core/step/types.js";
 import type { SessionClient } from "../../core/port/session-client.js";
 import type { GitHubClient } from "../../core/port/github-client.js";
@@ -243,6 +244,13 @@ export class ManagedAgentRunner implements AgentRunner {
       }
     }
 
+    // Usage read (best-effort, session cumulative)
+    let modelUsage: Record<string, ModelUsage> | undefined;
+    const sessionUsage = await this.sessionClient.getSessionUsage(sessionId!);
+    if (sessionUsage) {
+      modelUsage = { [step.agent.model]: sessionUsage };
+    }
+
     // Stage 4: GitHub verification (design D5) — verify branch + change folder
     const effectiveBranch = ctx.branch || state.branch;
 
@@ -280,6 +288,7 @@ export class ManagedAgentRunner implements AgentRunner {
       completionReason: "success",
       resultContent: null,
       sessionId: sessionId!,
+      modelUsage,
     };
     return mergeFollowUpResult(designBaseResult, null);
   }
@@ -506,6 +515,13 @@ export class ManagedAgentRunner implements AgentRunner {
       }
     }
 
+    // Usage read (best-effort, session cumulative)
+    let modelUsage: Record<string, ModelUsage> | undefined;
+    const sessionUsage = await this.sessionClient.getSessionUsage(sessionId!);
+    if (sessionUsage) {
+      modelUsage = { [step.agent.model]: sessionUsage };
+    }
+
     // requiresCommit guard (design D5 + module-analysis 4-E)
     if (step.requiresCommit) {
       const postSessionHeadSha = await this.githubClient.getRefSha(
@@ -556,6 +572,7 @@ export class ManagedAgentRunner implements AgentRunner {
       completionReason: "success",
       resultContent: null,
       sessionId: sessionId!,
+      modelUsage,
     };
     return mergeFollowUpResult(pollingBaseResult, fileContent);
   }

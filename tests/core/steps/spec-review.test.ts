@@ -79,6 +79,7 @@ function buildDeps(opts: {
       sendUserMessage: vi.fn().mockResolvedValue(undefined),
       pollUntilComplete: vi.fn().mockResolvedValue({ status: "idle" }),
       streamEvents: vi.fn().mockResolvedValue({ sseDisconnected: false, idleEndTurnDetected: true, terminated: false, terminationReason: "end_turn" }),
+      getSessionUsage: vi.fn().mockResolvedValue(undefined),
     } as unknown as PipelineDeps["client"],
     config: {
       version: 1,

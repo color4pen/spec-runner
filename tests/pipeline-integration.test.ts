@@ -193,6 +193,7 @@ function buildPipelineMockClient(opts: {
         });
       },
     ),
+    getSessionUsage: vi.fn().mockResolvedValue(undefined),
   };
 
   return {

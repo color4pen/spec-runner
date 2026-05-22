@@ -107,6 +107,7 @@ function makeMockSessionClient(): PipelineDeps["client"] {
       terminated: false,
       terminationReason: "end_turn" as const,
     }),
+    getSessionUsage: vi.fn().mockResolvedValue(undefined),
   } as PipelineDeps["client"];
 }
 
