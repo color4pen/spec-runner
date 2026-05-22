@@ -143,7 +143,7 @@ export class StepExecutor {
       dynamicContext: deps.dynamicContext,
       projectContext,
       resumeSessionId,
-      followUpPrompt: step.followUpPrompt,
+      followUpPrompt: step.getFollowUpPrompt?.(state, deps) ?? step.followUpPrompt,
       emit: (event: string, payload: Record<string, unknown>) => {
         // Forward adapter events to the event bus
         this.events.emit(event as Parameters<EventBus["emit"]>[0], payload as never);

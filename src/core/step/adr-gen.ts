@@ -10,6 +10,26 @@ import { STEP_NAMES } from "./step-names.js";
 const ADR_GEN_AGENT_MODEL = "claude-sonnet-4-6";
 
 /**
+ * follow-prompt for AdrGenStep.
+ * 修正専用 — 判定ステップを含まない（確認バイアス回避）。
+ * `adr: true` のパスでのみ発火する（getFollowUpPrompt で gate）。
+ */
+export const ADR_FOLLOWUP_PROMPT = `作業完了後の self-fix pass です。
+
+あなたが書いた ADR を読み直してください。
+
+1. Alternatives Considered セクションを確認してください:
+   - 具体的な代替案名 (### Alternative N: {Name}) が存在するか
+   - 各代替案に Pros / Cons / Why not が記述されているか
+   - 代替案が placeholder や TODO ではなく、実際に検討された内容であるか
+
+2. 不足があれば、先ほど読んだ change folder artifacts (design.md, request.md, review-feedback) を根拠に追記してください。
+   - 代替案は実際に検討されたもののみ記述する（架空の代替案は不要）
+   - request.md の「architect 評価済みの設計判断」や「スコープ外」に不採用案の記述がある場合はそれを活用する
+
+3. 既に十分であれば変更せず end_turn してください。`;
+
+/**
  * Full AgentDefinition owned by AdrGenStep.
  * adr-gen reads change folder artifacts and writes the ADR to specrunner/adr/.
  * tools = [agent_toolset_20260401] — needs file read/write and git access.
@@ -132,5 +152,10 @@ export const AdrGenStep: AgentStep = {
 
   parseResult(_content: string, _deps: StepDeps) {
     return NULL_PARSE_RESULT;
+  },
+
+  getFollowUpPrompt(_state: JobState, deps: StepDeps): string | undefined {
+    if (!deps.request.adr) return undefined;
+    return ADR_FOLLOWUP_PROMPT;
   },
 };

@@ -734,6 +734,8 @@ CliStep execution (e.g., spec-merge via `finish`) SHALL NOT be affected because 
 
 `StepExecutor.runAgentStep` SHALL `AgentStep.followUpPrompt` を `AgentRunContext.followUpPrompt` に転記する。転記は `needsProjectContext` → `projectContext` と同型の executor 転記パターンに従う。
 
+`getFollowUpPrompt` が定義されている場合は `step.getFollowUpPrompt(state, deps) ?? step.followUpPrompt` で解決した値を転記する。
+
 `StepExecutor` は `followUpPrompt` の解釈や実行を行わない。転記のみを責務とし、2 段実行の制御は adapter に委ねる。
 
 executor / finalizeStep の既存ロジックは無改修とする。`runner.run(ctx)` が内部 2 turn でも executor からは 1 回の await で 1 つの `AgentRunResult` を受け取る。
@@ -785,3 +787,35 @@ follow プロンプトの文面には `slug` を実行時に埋め込む (rules.
 - **AND** 「delta spec の format 違反を修正しろ」という action 指示が含まれる
 - **AND** 「違反がなければ変更せず end_turn」という条件付き終了指示が含まれる
 - **AND** 「違反しているか判定せよ」という検出ゲート的な表現は含まれない
+
+### Requirement: AgentStep は getFollowUpPrompt で動的に followUpPrompt を解決できる
+
+`AgentStep` interface SHALL `getFollowUpPrompt?(state: JobState, deps: StepDeps): string | undefined` optional method を持つ。この method は実行時の state / deps に基づいて followUpPrompt を動的に解決する。
+
+`getFollowUpPrompt` が定義されている場合、`StepExecutor` はその戻り値を静的 `followUpPrompt` field より優先して使用する。`getFollowUpPrompt` が `undefined` を返した場合、静的 `followUpPrompt` にフォールバックする（`??` 演算子）。`getFollowUpPrompt` が未定義の step は従来通り静的 `followUpPrompt` を使用する。
+
+このパターンは `getMaxTurns` と同型の optional method override である。
+
+#### Scenario: getFollowUpPrompt が AgentStep interface に存在する
+
+- **WHEN** `AgentStep` interface の型定義を inspect する
+- **THEN** `getFollowUpPrompt?(state: JobState, deps: StepDeps): string | undefined` method が存在する
+- **AND** method は optional である
+
+#### Scenario: getFollowUpPrompt 未定義の step は静的 followUpPrompt を使用する
+
+- **GIVEN** `getFollowUpPrompt` が未定義で `followUpPrompt` が `"rules.md を読み直してください"` である AgentStep
+- **WHEN** `StepExecutor.runAgentStep` が `AgentRunContext` を構築する
+- **THEN** `ctx.followUpPrompt` は `"rules.md を読み直してください"` である
+
+#### Scenario: getFollowUpPrompt が string を返すと静的 followUpPrompt より優先される
+
+- **GIVEN** `getFollowUpPrompt` が `"dynamic prompt"` を返し、静的 `followUpPrompt` が `"static prompt"` である AgentStep
+- **WHEN** `StepExecutor.runAgentStep` が `AgentRunContext` を構築する
+- **THEN** `ctx.followUpPrompt` は `"dynamic prompt"` である
+
+#### Scenario: getFollowUpPrompt が undefined を返すと静的 followUpPrompt にフォールバックする
+
+- **GIVEN** `getFollowUpPrompt` が `undefined` を返し、静的 `followUpPrompt` が `"static prompt"` である AgentStep
+- **WHEN** `StepExecutor.runAgentStep` が `AgentRunContext` を構築する
+- **THEN** `ctx.followUpPrompt` は `"static prompt"` である

@@ -1191,4 +1191,50 @@ describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt
     expect(captured.ctx).toBeDefined();
     expect(captured.ctx!.followUpPrompt).toBeUndefined();
   });
+
+  it("TC-06-new: getFollowUpPrompt が定義されている場合、静的 followUpPrompt より優先される", async () => {
+    const { runner, captured } = makeCapturingFollowUpRunner();
+    const executor = new StepExecutor(new EventBus(), runner);
+
+    const step: Step = {
+      kind: "agent" as const,
+      name: "design",
+      agent: makeAgentDef("design"),
+      toolHandlers: undefined,
+      followUpPrompt: "static-value",           // 静的も設定
+      getFollowUpPrompt: () => "dynamic-value", // 動的が優先されるべき
+      buildMessage: () => "msg",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+
+    const state = makeMinimalState("tc-06-new");
+    await executor.execute(step, state, makeFollowUpDeps());
+
+    expect(captured.ctx).toBeDefined();
+    expect(captured.ctx!.followUpPrompt).toBe("dynamic-value");
+  });
+
+  it("TC-07: getFollowUpPrompt が undefined を返すと静的 followUpPrompt にフォールバックする", async () => {
+    const { runner, captured } = makeCapturingFollowUpRunner();
+    const executor = new StepExecutor(new EventBus(), runner);
+
+    const step: Step = {
+      kind: "agent" as const,
+      name: "design",
+      agent: makeAgentDef("design"),
+      toolHandlers: undefined,
+      followUpPrompt: "static-value",      // 静的が設定されている
+      getFollowUpPrompt: () => undefined,  // 動的が undefined を返す → フォールバック
+      buildMessage: () => "msg",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+
+    const state = makeMinimalState("tc-07");
+    await executor.execute(step, state, makeFollowUpDeps());
+
+    expect(captured.ctx).toBeDefined();
+    expect(captured.ctx!.followUpPrompt).toBe("static-value");
+  });
 });

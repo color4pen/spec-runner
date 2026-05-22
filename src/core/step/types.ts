@@ -139,6 +139,12 @@ export interface AgentStep {
   getMaxTurns?(state: JobState): number | undefined;
 
   /**
+   * 動的に followUpPrompt を解決する。定義時は静的 followUpPrompt より優先される。
+   * undefined を返すと follow turn は実行されない。
+   */
+  getFollowUpPrompt?(state: JobState, deps: StepDeps): string | undefined;
+
+  /**
    * If true, StepExecutor sets state.branch after this step completes (local runtime path only).
    * Used for steps that create the feature branch as a side effect of their execution
    * (e.g., propose). The branch is set to `feat/${slug}` if state.branch is not already set.

@@ -2,7 +2,7 @@
  * Unit tests for AdrGenStep and buildAdrGenInitialMessage.
  */
 import { describe, it, expect } from "vitest";
-import { AdrGenStep, buildAdrGenInitialMessage } from "../../../../src/core/step/adr-gen.js";
+import { AdrGenStep, buildAdrGenInitialMessage, ADR_FOLLOWUP_PROMPT } from "../../../../src/core/step/adr-gen.js";
 import { NULL_PARSE_RESULT } from "../../../../src/core/step/types.js";
 import { STEP_NAMES } from "../../../../src/core/step/step-names.js";
 
@@ -75,6 +75,38 @@ describe("buildAdrGenInitialMessage — adr: false", () => {
     const msg = AdrGenStep.buildMessage(buildState(), buildDeps(false));
     expect(msg).toContain("adr: false");
     expect(msg).toContain("ADR generation is disabled");
+  });
+});
+
+// TC-ADR-STEP-05: getFollowUpPrompt
+describe("AdrGenStep — getFollowUpPrompt", () => {
+  it("TC-ADR-STEP-05a: returns string when adr is true", () => {
+    const result = AdrGenStep.getFollowUpPrompt!(buildState(), buildDeps(true));
+    expect(typeof result).toBe("string");
+  });
+
+  it("TC-ADR-STEP-05b: returns undefined when adr is false", () => {
+    const result = AdrGenStep.getFollowUpPrompt!(buildState(), buildDeps(false));
+    expect(result).toBeUndefined();
+  });
+
+  it("TC-ADR-STEP-05c: returned string contains 'Alternatives Considered'", () => {
+    const result = AdrGenStep.getFollowUpPrompt!(buildState(), buildDeps(true));
+    expect(result).toContain("Alternatives Considered");
+  });
+
+  it("TC-ADR-STEP-05d: returned string instructs modification, not judgment (修正専用)", () => {
+    const result = AdrGenStep.getFollowUpPrompt!(buildState(), buildDeps(true));
+    // Should contain fix/supplement instructions
+    expect(result).toContain("追記");
+    // Should NOT use judgment-style phrasing like "判定" or "評価せよ"
+    expect(result).not.toContain("判定せよ");
+    expect(result).not.toContain("評価せよ");
+  });
+
+  it("TC-ADR-STEP-05e: ADR_FOLLOWUP_PROMPT constant is exported and matches return value", () => {
+    const result = AdrGenStep.getFollowUpPrompt!(buildState(), buildDeps(true));
+    expect(result).toBe(ADR_FOLLOWUP_PROMPT);
   });
 });
 
