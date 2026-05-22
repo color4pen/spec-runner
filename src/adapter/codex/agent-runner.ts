@@ -11,6 +11,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { Codex } from "@openai/codex-sdk";
 import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
+import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from "../../core/port/agent-runner.js";
 import type { StepContext } from "../../core/types.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
@@ -126,6 +127,7 @@ export class CodexAgentRunner implements AgentRunner {
 
     let turn: Turn;
     let threadId: string;
+    let activeThread: CodexThread;
     try {
       const codex = this.codexFactory();
 
@@ -149,10 +151,11 @@ export class CodexAgentRunner implements AgentRunner {
       } else {
         thread = startFreshThread();
       }
+      activeThread = thread;
 
       try {
-        turn = await thread.run(fullPrompt, { signal: abortController.signal });
-        threadId = thread.id;
+        turn = await activeThread.run(fullPrompt, { signal: abortController.signal });
+        threadId = activeThread.id;
       } catch (runErr) {
         // If resume was used and thread.run() failed, retry with a fresh thread.
         if (ctx.resumeSessionId && !abortController.signal.aborted) {
@@ -160,11 +163,31 @@ export class CodexAgentRunner implements AgentRunner {
             `[specrunner] warn: codex thread.run() failed for '${step.name}' after resume (thread: ${ctx.resumeSessionId}): ${(runErr as Error).message}. Falling back to new thread.\n`,
           );
           const freshThread = startFreshThread();
+          activeThread = freshThread;
           turn = await freshThread.run(fullPrompt, { signal: abortController.signal });
           threadId = freshThread.id;
         } else {
           throw runErr;
         }
+      }
+
+      // Follow-up turn: run on same thread with follow prompt
+      if (shouldRunFollowUp(ctx, "success")) {
+        const turn1Usage = turn.usage ? { ...turn.usage } : null;
+        const turn2 = await activeThread.run(ctx.followUpPrompt!, { signal: abortController.signal });
+
+        // Accumulate usage (adapter native: per-turn addition for Codex)
+        let accumulatedUsage = turn2.usage;
+        if (turn2.usage && turn1Usage) {
+          accumulatedUsage = {
+            input_tokens: turn1Usage.input_tokens + turn2.usage.input_tokens,
+            output_tokens: turn1Usage.output_tokens + turn2.usage.output_tokens,
+            cached_input_tokens: (turn1Usage.cached_input_tokens ?? 0) + (turn2.usage.cached_input_tokens ?? 0),
+          };
+        }
+
+        // Update turn to follow turn result (with accumulated usage)
+        turn = { ...turn2, usage: accumulatedUsage };
       }
     } catch (err) {
       if (abortController.signal.aborted && timeoutId !== undefined) {
@@ -235,11 +258,12 @@ export class CodexAgentRunner implements AgentRunner {
       modelUsage = { [resolvedConfig.model]: usage };
     }
 
-    return {
+    const baseResult: AgentRunResult = {
       completionReason: "success",
-      resultContent,
+      resultContent: null,
       modelUsage,
       sessionId: threadId!,
     };
+    return mergeFollowUpResult(baseResult, resultContent);
   }
 }

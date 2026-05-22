@@ -1030,3 +1030,261 @@ describe("ManagedAgentRunner session continuity (resumeSessionId)", () => {
     stderrSpy.mockRestore();
   });
 });
+
+// ---------------------------------------------------------------------------
+// T-13: ManagedAgentRunner follow-up (SSE 経路)
+// ---------------------------------------------------------------------------
+
+describe("ManagedAgentRunner SSE 経路 follow-up", () => {
+  function makeDesignStep(overrides: Partial<AgentStep> = {}): AgentStep {
+    return {
+      kind: "agent",
+      name: "design",
+      agent: {
+        name: "specrunner-design",
+        role: "design",
+        model: "claude-opus-4",
+        system: "design system",
+        tools: [],
+      },
+      buildMessage: () => "design message",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: null, findingsPath: null }),
+      completionVerdict: "success",
+      ...overrides,
+    };
+  }
+
+  it("SSE end_turn + followUpPrompt 指定 → sendUserMessage と pollUntilComplete が follow turn で呼ばれる", async () => {
+    const sessionClient = makeMockSessionClient();
+    const githubClient = makeMockGithubClient();
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient,
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const ctx = makeCtx({
+      step: makeDesignStep({ followUpPrompt: "fix format violations" }),
+      followUpPrompt: "fix format violations",
+      branch: "feat/test",
+    });
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    // sendUserMessage called once for follow-up (SSE handles initial message)
+    expect(sessionClient.sendUserMessage).toHaveBeenCalledTimes(1);
+    expect(sessionClient.sendUserMessage).toHaveBeenCalledWith(
+      expect.any(String),
+      "fix format violations",
+    );
+    // pollUntilComplete called once for follow-up
+    expect(sessionClient.pollUntilComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it("SSE terminated + followUpPrompt 指定 → follow turn 不実行", async () => {
+    const sessionClient: SessionClient = {
+      ...makeMockSessionClient(),
+      streamEvents: vi.fn().mockResolvedValue({
+        sseDisconnected: false,
+        idleEndTurnDetected: false,
+        terminated: true,
+        terminationReason: "terminated" as const,
+      }),
+    };
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const ctx = makeCtx({
+      step: makeDesignStep({ followUpPrompt: "fix format" }),
+      followUpPrompt: "fix format",
+      branch: "feat/test",
+    });
+
+    try {
+      await runner.run(ctx);
+    } catch {
+      // terminated → throws
+    }
+
+    // sendUserMessage should NOT have been called (terminated, no follow turn)
+    expect(sessionClient.sendUserMessage).not.toHaveBeenCalled();
+  });
+
+  it("followUpPrompt 未指定 → sendUserMessage 未呼び出し", async () => {
+    const sessionClient = makeMockSessionClient();
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const ctx = makeCtx({
+      step: makeDesignStep(), // no followUpPrompt
+      branch: "feat/test",
+    });
+
+    await runner.run(ctx);
+
+    expect(sessionClient.sendUserMessage).not.toHaveBeenCalled();
+  });
+
+  it("follow turn の sendUserMessage 失敗 → warning + 作業 turn result 返却", async () => {
+    const warnLines: string[] = [];
+    const stderrMock = vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      warnLines.push(String(chunk));
+      return true;
+    });
+
+    const sessionClient: SessionClient = {
+      ...makeMockSessionClient(),
+      sendUserMessage: vi.fn().mockRejectedValue(new Error("connection lost")),
+    };
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const ctx = makeCtx({
+      step: makeDesignStep({ followUpPrompt: "fix format" }),
+      followUpPrompt: "fix format",
+      branch: "feat/test",
+    });
+
+    const result = await runner.run(ctx);
+
+    // Should succeed with graceful degradation
+    expect(result.completionReason).toBe("success");
+    // Should have logged a warning
+    expect(warnLines.some((l) => l.includes("warn") || l.includes("follow"))).toBe(true);
+
+    stderrMock.mockRestore();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-13: ManagedAgentRunner follow-up (polling 経路)
+// TC-39, TC-40, TC-41, TC-42 covered here
+// TC-59: ManagedAgentRunner unit test (T-13) — このファイルが全 case green であること
+// ---------------------------------------------------------------------------
+
+describe("ManagedAgentRunner polling 経路 follow-up", () => {
+  it("polling idle + followUpPrompt 指定 → sendUserMessage 2 回 + pollUntilComplete 2 回", async () => {
+    const sessionClient = makeMockSessionClient();
+    const githubClient = makeMockGithubClient({
+      getRawFile: vi.fn().mockResolvedValue("verdict: approved"),
+    });
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient,
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const resultPath = specReviewResultPath("test-slug", 1);
+    const ctx = makeCtx({
+      step: { ...makePollingStyleStep("spec-review", "spec-review", resultPath), followUpPrompt: "fix format" },
+      followUpPrompt: "fix format",
+    });
+
+    const result = await runner.run(ctx);
+    expect(result.completionReason).toBe("success");
+    // sendUserMessage: 1 for initial + 1 for follow-up = 2 total
+    expect(sessionClient.sendUserMessage).toHaveBeenCalledTimes(2);
+    // pollUntilComplete: 1 for initial + 1 for follow-up = 2 total
+    expect(sessionClient.pollUntilComplete).toHaveBeenCalledTimes(2);
+    // Second sendUserMessage should be the follow-up prompt
+    expect(sessionClient.sendUserMessage).toHaveBeenNthCalledWith(2, expect.any(String), "fix format");
+  });
+
+  it("polling terminated + followUpPrompt 指定 → follow turn 不実行", async () => {
+    const sessionClient: SessionClient = {
+      ...makeMockSessionClient(),
+      pollUntilComplete: vi.fn().mockResolvedValue({
+        status: "terminated",
+        error: { code: "SESSION_TERMINATED", message: "agent stopped", hint: "" },
+      }),
+    };
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const ctx = makeCtx({
+      step: { ...makePollingStyleStep("spec-review", "spec-review"), followUpPrompt: "fix format" },
+      followUpPrompt: "fix format",
+    });
+
+    try {
+      await runner.run(ctx);
+    } catch {
+      // terminated → throws
+    }
+
+    // sendUserMessage called only once (for initial message, not for follow-up)
+    expect(sessionClient.sendUserMessage).toHaveBeenCalledTimes(1);
+  });
+
+  // TC-42: polling 経路 — sendUserMessage 失敗時に graceful degradation
+  it("TC-42: follow turn の sendUserMessage 失敗 → graceful degradation", async () => {
+    const warnLines: string[] = [];
+    const stderrMock = vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      warnLines.push(String(chunk));
+      return true;
+    });
+
+    let sendCallCount = 0;
+    const sessionClient: SessionClient = {
+      ...makeMockSessionClient(),
+      sendUserMessage: vi.fn().mockImplementation(() => {
+        sendCallCount++;
+        if (sendCallCount >= 2) {
+          return Promise.reject(new Error("follow send failed"));
+        }
+        return Promise.resolve();
+      }),
+    };
+
+    const githubClient = makeMockGithubClient({
+      getRawFile: vi.fn().mockResolvedValue("verdict: approved"),
+    });
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient,
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const resultPath = specReviewResultPath("test-slug", 1);
+    const ctx = makeCtx({
+      step: { ...makePollingStyleStep("spec-review", "spec-review", resultPath), followUpPrompt: "fix format" },
+      followUpPrompt: "fix format",
+    });
+
+    const result = await runner.run(ctx);
+    // Should succeed with graceful degradation
+    expect(result.completionReason).toBe("success");
+    // Should have logged a warning
+    expect(warnLines.some((l) => l.includes("warn") || l.includes("follow"))).toBe(true);
+
+    stderrMock.mockRestore();
+  });
+});

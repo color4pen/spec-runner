@@ -213,7 +213,7 @@ describe("TC-093: self-consistency — dsv-format-rules-expansion delta spec pas
   it("specrunner/changes/dsv-format-rules-expansion validates without violations", async () => {
     const changePath = nodePath.join(
       PROJECT_ROOT,
-      "specrunner/changes/dsv-format-rules-expansion",
+      "specrunner/changes/archive/2026-05-21-dsv-format-rules-expansion",
     );
     const deps = {
       readdir: (p: string) => nodeFs.readdir(p),

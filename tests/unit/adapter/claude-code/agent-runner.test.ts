@@ -748,6 +748,298 @@ describe("ClaudeCodeRunner SDK query error handling", () => {
 });
 
 // ---------------------------------------------------------------------------
+// ClaudeCodeRunner follow-up 2-turn execution
+// ---------------------------------------------------------------------------
+
+describe("ClaudeCodeRunner follow-up 2-turn execution", () => {
+  it("followUpPrompt 指定時に queryFn が 2 回呼ばれる", async () => {
+    let callCount = 0;
+    const callParams: Array<{ prompt: string; options?: Record<string, unknown> }> = [];
+
+    const queryFn: QueryFn = async function* (params) {
+      callCount++;
+      callParams.push({ prompt: params.prompt as string, options: params.options });
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 100,
+        duration_api_ms: 80,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0.01,
+        usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "test-uuid",
+        session_id: "sess-work",
+      } as unknown;
+    } as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep({ followUpPrompt: "fix the format" }),
+      followUpPrompt: "fix the format",
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+    expect(result.completionReason).toBe("success");
+    expect(callCount).toBe(2);
+  });
+
+  it("2 回目の queryFn options に resume: sessionId が含まれる", async () => {
+    let callCount = 0;
+    const callParams: Array<{ prompt: string; options?: Record<string, unknown> }> = [];
+
+    const queryFn: QueryFn = async function* (params) {
+      callCount++;
+      callParams.push({ prompt: params.prompt as string, options: params.options });
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 100,
+        duration_api_ms: 80,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0.01,
+        usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "test-uuid",
+        session_id: "sess-work-123",
+      } as unknown;
+    } as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep({ followUpPrompt: "fix the format" }),
+      followUpPrompt: "fix the format",
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    expect(callParams.length).toBe(2);
+    // Second call should have resume: "sess-work-123"
+    expect(callParams[1]!.options?.["resume"]).toBe("sess-work-123");
+    // Second call prompt is the followUpPrompt
+    expect(callParams[1]!.prompt).toBe("fix the format");
+  });
+
+  it("followUpPrompt 未指定時に queryFn が 1 回のみ呼ばれる", async () => {
+    let callCount = 0;
+
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 100,
+        duration_api_ms: 80,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0.01,
+        usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "test-uuid",
+        session_id: "sess-work",
+      } as unknown;
+    } as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(), // no followUpPrompt
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+    expect(callCount).toBe(1);
+  });
+
+  it("follow turn が error の場合 result.completionReason === 'error'", async () => {
+    let callCount = 0;
+
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      if (callCount === 1) {
+        yield {
+          type: "result" as const,
+          subtype: "success" as const,
+          result: "done",
+          duration_ms: 100,
+          duration_api_ms: 80,
+          is_error: false,
+          num_turns: 1,
+          stop_reason: "end_turn",
+          total_cost_usd: 0.01,
+          usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+          modelUsage: {},
+          permission_denials: [],
+          uuid: "test-uuid",
+          session_id: "sess-work",
+        } as unknown;
+      } else {
+        // follow turn returns error
+        yield {
+          type: "result" as const,
+          subtype: "error_during_execution" as const,
+          duration_ms: 100,
+          duration_api_ms: 80,
+          is_error: true,
+          num_turns: 1,
+          stop_reason: null,
+          total_cost_usd: 0.01,
+          usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+          modelUsage: {},
+          permission_denials: [],
+          errors: ["follow error"],
+          uuid: "test-uuid",
+          session_id: "sess-work",
+        } as unknown;
+      }
+    } as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep({ followUpPrompt: "fix format" }),
+      followUpPrompt: "fix format",
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+    expect(result.completionReason).toBe("error");
+    expect(result.error?.code).toBe("CLAUDE_CODE_QUERY_FAILED");
+  });
+
+  it("TC-25: work turn が abort されたとき follow turn が開始されず timeout が返る", async () => {
+    let callCount = 0;
+    const queryFn: QueryFn = async function* (params) {
+      callCount++;
+      const abortCtrl = params.options?.["abortController"] as AbortController | undefined;
+      await new Promise<void>((_, reject) => {
+        if (abortCtrl) {
+          abortCtrl.signal.addEventListener("abort", () => {
+            reject(Object.assign(new Error("AbortError"), { name: "AbortError" }));
+          }, { once: true });
+        }
+      });
+      yield {} as never; // never reached
+    } as QueryFn;
+
+    const config: SpecRunnerConfig = { ...makeConfig(), steps: { defaults: { timeoutMs: 50 } } };
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep({ followUpPrompt: "fix format" }),
+      followUpPrompt: "fix format",
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config,
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+    expect(result.completionReason).toBe("timeout");
+    expect(callCount).toBe(1); // follow turn not started
+  });
+
+  it("modelUsage が作業 turn と follow turn の per-model 加算 (session 総量)", async () => {
+    let callCount = 0;
+
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      const modelUsage = callCount === 1
+        ? {
+            "claude-opus-4": {
+              inputTokens: 100,
+              outputTokens: 50,
+              cacheReadInputTokens: 0,
+              cacheCreationInputTokens: 0,
+            },
+          }
+        : {
+            // follow turn: 別 query invocation 単体の usage (= 累積ではない)
+            "claude-opus-4": {
+              inputTokens: 250,
+              outputTokens: 120,
+              cacheReadInputTokens: 10,
+              cacheCreationInputTokens: 0,
+            },
+          };
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 100,
+        duration_api_ms: 80,
+        is_error: false,
+        num_turns: callCount,
+        stop_reason: "end_turn",
+        total_cost_usd: 0.01,
+        usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage,
+        permission_denials: [],
+        uuid: "test-uuid",
+        session_id: "sess-work",
+      } as unknown;
+    } as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep({ followUpPrompt: "fix format" }),
+      followUpPrompt: "fix format",
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+    expect(result.completionReason).toBe("success");
+    // 作業 turn (100/50/0) + follow turn (250/120/10) の per-model 加算
+    expect(result.modelUsage?.["claude-opus-4"]?.inputTokens).toBe(350);
+    expect(result.modelUsage?.["claude-opus-4"]?.outputTokens).toBe(170);
+    expect(result.modelUsage?.["claude-opus-4"]?.cacheReadInputTokens).toBe(10);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // modelUsage propagation
 // ---------------------------------------------------------------------------
 

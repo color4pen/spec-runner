@@ -37,6 +37,7 @@ import { getAgentId } from "../../config/getAgentId.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
 import { DEFAULT_POLL_TIMEOUT_MS } from "./completion.js";
 import { stderrWrite, logVerbose } from "../../logger/stdout.js";
+import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
 import {
   branchNotSetError,
   sessionTerminatedError,
@@ -224,6 +225,24 @@ export class ManagedAgentRunner implements AgentRunner {
       abortController.abort();
     }
 
+    // Follow-up turn (SSE end_turn only — not for polling fallback)
+    const sseEndTurn = !needsPollingFallback;
+    if (sseEndTurn && shouldRunFollowUp(ctx, "success")) {
+      try {
+        await this.sessionClient.sendUserMessage(sessionId!, ctx.followUpPrompt!);
+        const followResolvedConfig = getStepExecutionConfig(config, step.name, { model: step.agent.model });
+        const followTimeoutMs = followResolvedConfig.timeoutMs && followResolvedConfig.timeoutMs > 0
+          ? followResolvedConfig.timeoutMs
+          : DEFAULT_POLL_TIMEOUT_MS;
+        const followPollResult = await this.sessionClient.pollUntilComplete(sessionId!, { timeoutMs: followTimeoutMs });
+        if (followPollResult.status !== "idle") {
+          stderrWrite(`[specrunner] warn: follow-up turn for '${step.name}' did not complete (status: ${followPollResult.status}). Continuing with work turn result.\n`);
+        }
+      } catch (followErr) {
+        stderrWrite(`[specrunner] warn: follow-up turn failed for '${step.name}' (session: ${sessionId}): ${(followErr as Error).message}. Continuing with work turn result.\n`);
+      }
+    }
+
     // Stage 4: GitHub verification (design D5) — verify branch + change folder
     const effectiveBranch = ctx.branch || state.branch;
 
@@ -257,11 +276,12 @@ export class ManagedAgentRunner implements AgentRunner {
     // Return success — no resultContent for propose
     // TC-009: no _updatedState field
     logVerbose("session", "session completed", { sessionId: sessionId!, stepName: step.name, runtime: "managed" });
-    return {
+    const designBaseResult: AgentRunResult = {
       completionReason: "success",
       resultContent: null,
       sessionId: sessionId!,
     };
+    return mergeFollowUpResult(designBaseResult, null);
   }
 
   // ---------------------------------------------------------------------------
@@ -473,6 +493,19 @@ export class ManagedAgentRunner implements AgentRunner {
       throwWrappedError(errorInfo, state);
     }
 
+    // Follow-up turn (polling idle completion)
+    if (shouldRunFollowUp(ctx, "success")) {
+      try {
+        await this.sessionClient.sendUserMessage(sessionId!, ctx.followUpPrompt!);
+        const followPollResult = await this.sessionClient.pollUntilComplete(sessionId!, { timeoutMs: effectiveTimeoutMs });
+        if (followPollResult.status !== "idle") {
+          stderrWrite(`[specrunner] warn: follow-up turn for '${step.name}' did not complete (status: ${followPollResult.status}). Continuing with work turn result.\n`);
+        }
+      } catch (followErr) {
+        stderrWrite(`[specrunner] warn: follow-up turn failed for '${step.name}' (session: ${sessionId}): ${(followErr as Error).message}. Continuing with work turn result.\n`);
+      }
+    }
+
     // requiresCommit guard (design D5 + module-analysis 4-E)
     if (step.requiresCommit) {
       const postSessionHeadSha = await this.githubClient.getRefSha(
@@ -519,11 +552,12 @@ export class ManagedAgentRunner implements AgentRunner {
 
     // TC-010: return AgentRunResult only — no _updatedState
     logVerbose("session", "session completed", { sessionId: sessionId!, stepName: step.name, runtime: "managed" });
-    return {
+    const pollingBaseResult: AgentRunResult = {
       completionReason: "success",
-      resultContent: fileContent,
+      resultContent: null,
       sessionId: sessionId!,
     };
+    return mergeFollowUpResult(pollingBaseResult, fileContent);
   }
 
   // ---------------------------------------------------------------------------

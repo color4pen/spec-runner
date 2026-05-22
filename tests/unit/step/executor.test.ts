@@ -1104,3 +1104,91 @@ describe("TC-06: runCliStep — StepRun.startedAt < StepRun.endedAt (success pat
     expect(lastRun.startedAt < lastRun.endedAt).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt に転記する
+// ---------------------------------------------------------------------------
+
+describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt に転記する", () => {
+  function makeCapturingFollowUpRunner(): {
+    runner: AgentRunner;
+    captured: { ctx: AgentRunContext | undefined };
+  } {
+    const captured: { ctx: AgentRunContext | undefined } = { ctx: undefined };
+    const runner: AgentRunner = {
+      run: vi.fn().mockImplementation((ctx: AgentRunContext) => {
+        captured.ctx = ctx;
+        return Promise.resolve({ completionReason: "success" as const, resultContent: null });
+      }),
+    };
+    return { runner, captured };
+  }
+
+  function makeFollowUpDeps(): PipelineDeps {
+    return {
+      config: makeConfig(),
+      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
+      slug: "test-slug",
+      githubClient: {
+        verifyBranch: vi.fn().mockResolvedValue(true),
+        getRawFile: vi.fn().mockResolvedValue(null),
+        verifyPath: vi.fn().mockResolvedValue(true),
+        verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+        getRefSha: vi.fn().mockResolvedValue(null),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
+      },
+      owner: "user",
+      repo: "repo",
+      spawn: noopSpawn,
+    };
+  }
+
+  it("TC-05: step.followUpPrompt が ctx.followUpPrompt に転記される", async () => {
+    const { runner, captured } = makeCapturingFollowUpRunner();
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner);
+
+    const step: Step = {
+      kind: "agent" as const,
+      name: "design",
+      agent: makeAgentDef("design"),
+      toolHandlers: undefined,
+      followUpPrompt: "fix format violations",
+      buildMessage: () => "design message",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+
+    const state = makeMinimalState("tc-followup-05");
+    await executor.execute(step, state, makeFollowUpDeps());
+
+    expect(captured.ctx).toBeDefined();
+    expect(captured.ctx!.followUpPrompt).toBe("fix format violations");
+  });
+
+  it("TC-06: followUpPrompt 未設定の step では ctx.followUpPrompt が undefined", async () => {
+    const { runner, captured } = makeCapturingFollowUpRunner();
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner);
+
+    const step: Step = {
+      kind: "agent" as const,
+      name: "design",
+      agent: makeAgentDef("design"),
+      toolHandlers: undefined,
+      // followUpPrompt intentionally absent
+      buildMessage: () => "design message",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+
+    const state = makeMinimalState("tc-followup-06");
+    await executor.execute(step, state, makeFollowUpDeps());
+
+    expect(captured.ctx).toBeDefined();
+    expect(captured.ctx!.followUpPrompt).toBeUndefined();
+  });
+});

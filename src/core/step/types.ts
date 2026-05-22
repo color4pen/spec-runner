@@ -167,6 +167,13 @@ export interface AgentStep {
   needsProjectContext?: boolean;
 
   /**
+   * 作業 turn 完了後に同一 session で投げる follow プロンプト。
+   * 未指定の step は従来通り作業 turn のみで実行される。
+   * 汎用 field: 任意の AgentStep が primitive 改修なしで設定可能。
+   */
+  followUpPrompt?: string;
+
+  /**
    * Enrich dynamic context with step-specific data before buildMessage is called.
    * Async — I/O is allowed (unlike buildMessage which is pure).
    * Returns a new DynamicContext with additional fields populated.

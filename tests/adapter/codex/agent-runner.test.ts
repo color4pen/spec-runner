@@ -392,3 +392,118 @@ describe("CodexAgentRunner session continuity (resumeSessionId)", () => {
     expect(freshResult.sessionId).toBe("thread-id-123");
   });
 });
+
+// ---------------------------------------------------------------------------
+// CodexAgentRunner follow-up 2-turn execution
+// TC-27, TC-28, TC-29, TC-30, TC-31, TC-32 covered here
+// TC-58: CodexAgentRunner unit test (T-12) — このファイルが全 case green であること
+// ---------------------------------------------------------------------------
+
+describe("CodexAgentRunner follow-up 2-turn execution", () => {
+  it("followUpPrompt 指定時に thread.run が 2 回呼ばれる (同一 thread)", async () => {
+    const thread = makeThread({ finalResponse: "done", id: "thread-001" });
+    const mockRun = thread.run as ReturnType<typeof vi.fn>;
+    const factory = makeCodexFactory(thread);
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "fix format violations" }), followUpPrompt: "fix format violations" });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(mockRun).toHaveBeenCalledTimes(2);
+  });
+
+  it("2 回目の thread.run prompt が followUpPrompt", async () => {
+    const thread = makeThread({ finalResponse: "done", id: "thread-002" });
+    const mockRun = thread.run as ReturnType<typeof vi.fn>;
+    const factory = makeCodexFactory(thread);
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "read rules and fix" }), followUpPrompt: "read rules and fix" });
+    await runner.run(ctx);
+
+    expect(mockRun).toHaveBeenCalledTimes(2);
+    // First call with full work prompt
+    const firstCallPrompt = (mockRun.mock.calls[0] as [string])[0];
+    expect(firstCallPrompt).not.toBe("read rules and fix");
+    // Second call with follow-up prompt
+    const secondCallPrompt = (mockRun.mock.calls[1] as [string])[0];
+    expect(secondCallPrompt).toBe("read rules and fix");
+  });
+
+  it("followUpPrompt 未指定時に thread.run が 1 回のみ", async () => {
+    const thread = makeThread({ finalResponse: "done", id: "thread-003" });
+    const mockRun = thread.run as ReturnType<typeof vi.fn>;
+    const factory = makeCodexFactory(thread);
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const ctx = makeCtx(); // no followUpPrompt
+    await runner.run(ctx);
+
+    expect(mockRun).toHaveBeenCalledTimes(1);
+  });
+
+  it("modelUsage が turn 1 + turn 2 の加算 (per-turn 加算)", async () => {
+    const turn1Usage = { input_tokens: 100, output_tokens: 50, cached_input_tokens: 10 };
+    const turn2Usage = { input_tokens: 80, output_tokens: 40, cached_input_tokens: 5 };
+
+    let callCount = 0;
+    const thread: CodexThread = {
+      id: "thread-usage",
+      run: vi.fn().mockImplementation(() => {
+        callCount++;
+        return Promise.resolve({
+          finalResponse: "done",
+          items: [],
+          usage: callCount === 1 ? turn1Usage : turn2Usage,
+        });
+      }),
+    };
+
+    const factory = vi.fn().mockReturnValue({
+      startThread: vi.fn().mockReturnValue(thread),
+      resumeThread: vi.fn().mockReturnValue(thread),
+    });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "fix it" }), followUpPrompt: "fix it" });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.modelUsage).toBeDefined();
+    const modelKey = Object.keys(result.modelUsage!)[0]!;
+    // Should be sum: 100+80=180 input, 50+40=90 output, 10+5=15 cached
+    expect(result.modelUsage![modelKey]!.inputTokens).toBe(180);
+    expect(result.modelUsage![modelKey]!.outputTokens).toBe(90);
+    expect(result.modelUsage![modelKey]!.cacheReadInputTokens).toBe(15);
+  });
+
+  it("signal が follow turn にも渡される", async () => {
+    const receivedSignals: (AbortSignal | undefined)[] = [];
+    let callCount = 0;
+
+    const thread: CodexThread = {
+      id: "thread-signal",
+      run: vi.fn().mockImplementation((_prompt: string, opts?: { signal?: AbortSignal }) => {
+        callCount++;
+        receivedSignals.push(opts?.signal);
+        return Promise.resolve({ finalResponse: "done", items: [], usage: null });
+      }),
+    };
+
+    const factory = vi.fn().mockReturnValue({
+      startThread: vi.fn().mockReturnValue(thread),
+      resumeThread: vi.fn().mockReturnValue(thread),
+    });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "follow" }), followUpPrompt: "follow" });
+    await runner.run(ctx);
+
+    expect(callCount).toBe(2);
+    // Both turns should receive the same AbortSignal
+    expect(receivedSignals[0]).toBeDefined();
+    expect(receivedSignals[1]).toBeDefined();
+    expect(receivedSignals[0]).toBe(receivedSignals[1]); // same signal
+  });
+});

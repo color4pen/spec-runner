@@ -58,6 +58,12 @@ export interface AgentRunContext {
    * StepExecutor が state.steps から前回の sessionId を取得して設定する。
    */
   resumeSessionId?: string;
+  /**
+   * 作業 turn 後に同一 session へ投げる follow プロンプト。
+   * 指定時: adapter が作業 turn 完了後に同一 session で follow prompt を 1 本投げる。
+   * 未指定時: adapter は作業 turn のみで返す (既存挙動)。
+   */
+  followUpPrompt?: string;
 }
 
 /**

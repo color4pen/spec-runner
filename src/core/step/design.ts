@@ -59,6 +59,23 @@ export const DesignStep: AgentStep = {
   phase: "spec",
   needsProjectContext: true,
 
+  followUpPrompt: [
+    "作業完了後の self-fix pass です。",
+    "",
+    "1. specrunner/changes/ 配下の rules.md を Read tool で読んでください",
+    "2. 「delta spec 記法」セクションの以下の規律を確認してください:",
+    "   - セクションヘッダーは ## Requirements / ## Removed / ## Renamed のみ",
+    "     (## ADDED Requirements / ## MODIFIED Requirements 等の旧形式は禁止)",
+    "   - 各 Requirement は ### Requirement: で始まる header を持つ",
+    "   - 各 Requirement は少なくとも 1 つの #### Scenario: を含む",
+    "   - Requirement 本文 (header 直後〜最初の Scenario の間) に英語の SHALL または MUST が含まれる",
+    "   - ### Requirement: と最初の #### Scenario: の間にコードブロック (```) がない",
+    "   - ## Removed は - \"requirement name\" のリスト形式",
+    "   - ## Renamed は - \"old name\" → \"new name\" のリスト形式",
+    "3. 今回書いた delta spec ファイルをすべて Read し、違反箇所があれば修正してください",
+    "4. 違反がなければ変更せず end_turn してください",
+  ].join("\n"),
+
   buildMessage(state: JobState, deps: StepDeps): string {
     // Use state.branch if already set by CLI (setupWorkspace early recording, D3).
     // Fall back to computing from type/slug/jobId for backward compatibility.
