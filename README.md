@@ -45,8 +45,6 @@ specrunner job resume my-feature  # Resume from last checkpoint
 specrunner request new <slug>              Create request.md from template
 specrunner request generate "<text>"       Generate request.md via LLM
 specrunner request ls                      List active requests
-specrunner request show <slug>             Print request.md content to stdout
-specrunner request rm <slug>               Delete from active/
 specrunner request validate <file|slug>    Validate request.md syntax (static, no LLM)
 specrunner request template                Print scaffold template to stdout
 specrunner request review <slug|file>      Architect review (one-shot LLM, stateless)
@@ -58,7 +56,7 @@ specrunner request review <slug|file>      Architect review (one-shot LLM, state
 specrunner job start <request-slug|file>   Start pipeline, issue jobId
 specrunner job ls                          List all jobs
 specrunner job show <jobId|slug>           Show job state details
-specrunner job rm <jobId>                  Remove job state file
+specrunner job cancel <jobId>              Cancel job and cleanup
 specrunner job resume <slug>               Resume a halted job
 specrunner job finish <slug>               Squash-merge PR + archive (1-PR model)
 ```
@@ -97,9 +95,9 @@ specrunner job start my-feature
 Runs agents in Anthropic's cloud. Requires `SPECRUNNER_API_KEY` (Anthropic API key).
 
 ```bash
-export SPECRUNNER_API_KEY=sk-ant-...
-specrunner init --runtime managed
+specrunner init
 specrunner login
+export SPECRUNNER_API_KEY=sk-ant-...
 specrunner runtime setup
 specrunner job start my-feature
 ```
