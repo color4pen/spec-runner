@@ -1587,3 +1587,153 @@ describe("ClaudeCodeRunner session continuity (resumeSessionId)", () => {
     expect((result.error as { code?: string })?.code).toBe("STEP_TIMEOUT");
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-EMIT-001: step:progress emit on tool_use in main stream loop
+// TC-EMIT-002: no step:progress emit when no tool_use messages
+// TC-EMIT-003: step:progress emit in follow-up loop
+// ---------------------------------------------------------------------------
+
+describe("TC-EMIT: ClaudeCodeRunner emits step:progress on tool_use messages", () => {
+  it("TC-EMIT-001: emits step:progress when tool_use content_block_start appears in main stream", async () => {
+    const emitFn = vi.fn();
+    const queryFn: QueryFn = async function* () {
+      yield {
+        type: "stream_event",
+        event: {
+          type: "content_block_start",
+          content_block: { type: "tool_use", name: "Edit", input: { file_path: "src/foo.ts" } },
+        },
+      } as unknown;
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 10,
+        duration_api_ms: 10,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0,
+        usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "u1",
+        session_id: "s1",
+      } as unknown;
+    } as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep({ name: "implementer" }),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: emitFn,
+    };
+
+    await runner.run(ctx);
+
+    const progressCalls = emitFn.mock.calls.filter((c) => c[0] === "step:progress");
+    expect(progressCalls).toHaveLength(1);
+    expect(progressCalls[0]?.[1]).toMatchObject({ step: "implementer", tool: "Edit", target: "src/foo.ts" });
+  });
+
+  it("TC-EMIT-002: no step:progress when stream has no tool_use messages", async () => {
+    const emitFn = vi.fn();
+    const queryFn = makeQueryFn(); // yields only result message
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: emitFn,
+    };
+
+    await runner.run(ctx);
+
+    const progressCalls = emitFn.mock.calls.filter((c) => c[0] === "step:progress");
+    expect(progressCalls).toHaveLength(0);
+  });
+
+  it("TC-EMIT-003: emits step:progress in follow-up loop", async () => {
+    const emitFn = vi.fn();
+    const sessionId = "follow-session-id";
+    let callCount = 0;
+
+    const queryFn: QueryFn = async function* (params: { prompt: string; options?: Record<string, unknown> }) {
+      callCount++;
+      if (callCount === 1) {
+        // Main turn: yields result with session_id
+        yield {
+          type: "result" as const,
+          subtype: "success" as const,
+          result: "done",
+          duration_ms: 10,
+          duration_api_ms: 10,
+          is_error: false,
+          num_turns: 1,
+          stop_reason: "end_turn",
+          total_cost_usd: 0,
+          usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+          modelUsage: {},
+          permission_denials: [],
+          uuid: "u1",
+          session_id: sessionId,
+        } as unknown;
+      } else {
+        // Follow-up turn: yields tool_use then result
+        yield {
+          type: "stream_event",
+          event: {
+            type: "content_block_start",
+            content_block: { type: "tool_use", name: "Bash", input: { command: "bun run test" } },
+          },
+        } as unknown;
+        yield {
+          type: "result" as const,
+          subtype: "success" as const,
+          result: "done",
+          duration_ms: 10,
+          duration_api_ms: 10,
+          is_error: false,
+          num_turns: 1,
+          stop_reason: "end_turn",
+          total_cost_usd: 0,
+          usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+          modelUsage: {},
+          permission_denials: [],
+          uuid: "u2",
+          session_id: sessionId,
+        } as unknown;
+      }
+    } as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep({ name: "implementer" }),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "content",
+      config: makeConfig(),
+      emit: emitFn,
+      followUpPrompt: "verify your work",
+    };
+
+    await runner.run(ctx);
+
+    const progressCalls = emitFn.mock.calls.filter((c) => c[0] === "step:progress");
+    expect(progressCalls).toHaveLength(1);
+    expect(progressCalls[0]?.[1]).toMatchObject({ step: "implementer", tool: "Bash" });
+  });
+});

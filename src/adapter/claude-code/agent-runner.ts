@@ -25,6 +25,7 @@ import {
   type SDKResultSuccess,
 } from "@anthropic-ai/claude-agent-sdk";
 import { defaultSpawnFn, type SpawnFn } from "./git-exec.js";
+import { isToolUse } from "./message-types.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from "../../core/port/agent-runner.js";
 import type { StepContext } from "../../core/types.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
@@ -33,6 +34,58 @@ import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
 import { logVerbose } from "../../logger/stdout.js";
 
 export type { SpawnFn } from "./git-exec.js";
+
+/**
+ * Best-effort extraction of a human-readable target string from a tool's input.
+ * Returns undefined when no meaningful target can be inferred.
+ */
+function extractTarget(toolName: string, input?: Record<string, unknown>): string | undefined {
+  if (!input) return undefined;
+  switch (toolName) {
+    case "Edit":
+    case "Write":
+    case "Read": {
+      const fp = input["file_path"];
+      return typeof fp === "string" ? fp : undefined;
+    }
+    case "Bash": {
+      const cmd = input["command"];
+      if (typeof cmd !== "string") return undefined;
+      return cmd.length > 40 ? cmd.slice(0, 40) + "…" : cmd;
+    }
+    case "Grep": {
+      const p = input["path"];
+      if (typeof p === "string") return p;
+      const pat = input["pattern"];
+      return typeof pat === "string" ? pat : undefined;
+    }
+    case "Glob": {
+      const pat = input["pattern"];
+      return typeof pat === "string" ? pat : undefined;
+    }
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Emit a step:progress event when a tool_use content block starts in the stream.
+ * Called for every message in both main and follow-up stream loops.
+ * No-op when the message is not a tool_use event.
+ */
+function emitToolProgress(
+  msg: SDKMessage,
+  emitFn: (event: string, payload: Record<string, unknown>) => void,
+  stepName: string,
+): void {
+  if (!isToolUse(msg)) return;
+  const cb = (msg as { type: string; event: { content_block: { name: string; input?: Record<string, unknown> } } }).event.content_block;
+  const tool = cb.name;
+  const target = extractTarget(tool, cb.input);
+  const payload: Record<string, unknown> = { step: stepName, tool };
+  if (target !== undefined) payload["target"] = target;
+  emitFn("step:progress", payload);
+}
 
 export type QueryFn = (params: {
   prompt: string | AsyncIterable<unknown>;
@@ -139,6 +192,7 @@ export class ClaudeCodeRunner implements AgentRunner {
       let aborted = false;
       const messages = this.queryFn({ prompt: fullPrompt, options: queryOptions });
       for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
+        emitToolProgress(message, ctx.emit, step.name);
         if (message.type === "result") {
           lastResult = message as SDKResultMessage;
         }
@@ -211,6 +265,7 @@ export class ClaudeCodeRunner implements AgentRunner {
         const followMessages = this.queryFn({ prompt: ctx.followUpPrompt!, options: followUpOptions });
         let followLastResult: SDKResultMessage | null = null;
         for await (const message of followMessages as AsyncGenerator<SDKMessage, void>) {
+          emitToolProgress(message, ctx.emit, step.name);
           if (message.type === "result") {
             followLastResult = message as SDKResultMessage;
           }

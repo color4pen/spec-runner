@@ -63,6 +63,16 @@ export interface SpecReviewConfig {
   pollIntervalMs?: number;
 }
 
+/** Progress display settings */
+export interface ProgressConfig {
+  /**
+   * Heartbeat interval in seconds.
+   * 0 or null disables the heartbeat entirely.
+   * When absent, defaults to 30s (TTY) or 60s (non-TTY) at runtime.
+   */
+  heartbeatIntervalSec?: number | null;
+}
+
 export type SpecFixerConfig = Record<string, never>;
 
 /** Pipeline-level settings */
@@ -107,6 +117,11 @@ export interface SpecRunnerConfig {
    */
   steps?: StepConfigMap;
   /**
+   * Progress display settings: heartbeat interval, TTY behaviour.
+   * Absent → defaults applied at CLI composition point.
+   */
+  progress?: ProgressConfig;
+  /**
    * User-defined model registry. Merged with BUILTIN_MODEL_REGISTRY at runtime.
    * Use this to add new models or override provider assignments.
    * When absent, only built-in models are available.
@@ -141,6 +156,7 @@ export interface RawConfig {
   /** Per-step execution config — passed through as-is. Validated in validateConfig(). */
   steps?: Record<string, unknown>;
   models?: Record<string, unknown>;
+  progress?: Partial<Record<string, unknown>>;
 }
 
 /**
@@ -263,6 +279,28 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
           new Error(`CONFIG_INVALID: models.${modelName}.provider must be "anthropic" or "openai".`),
           { code: "CONFIG_INVALID" },
         );
+      }
+    }
+  }
+
+  // Validate progress section if provided
+  if (obj["progress"] !== undefined && obj["progress"] !== null) {
+    if (typeof obj["progress"] !== "object") {
+      throw Object.assign(
+        new Error("CONFIG_INVALID: progress must be an object."),
+        { code: "CONFIG_INVALID" },
+      );
+    }
+    const progress = obj["progress"] as Record<string, unknown>;
+    if (progress["heartbeatIntervalSec"] !== undefined) {
+      const interval = progress["heartbeatIntervalSec"];
+      if (interval !== null) {
+        if (typeof interval !== "number" || !Number.isInteger(interval) || interval < 0) {
+          throw Object.assign(
+            new Error("CONFIG_INVALID: progress.heartbeatIntervalSec must be a non-negative integer or null."),
+            { code: "CONFIG_INVALID" },
+          );
+        }
       }
     }
   }

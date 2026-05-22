@@ -347,7 +347,7 @@ export class StepExecutor {
 
     const firstPushCode = await tryPush();
     if (firstPushCode === 0) {
-      this.events.emit("commit:push" as Parameters<EventBus["emit"]>[0], { step: stepName, branch } as never);
+      this.events.emit("commit:push", { step: stepName, branch });
       return;
     }
 
@@ -355,7 +355,7 @@ export class StepExecutor {
     await this.sleepFn(5000);
     const secondPushCode = await tryPush();
     if (secondPushCode === 0) {
-      this.events.emit("commit:push" as Parameters<EventBus["emit"]>[0], { step: stepName, branch } as never);
+      this.events.emit("commit:push", { step: stepName, branch });
       return;
     }
 

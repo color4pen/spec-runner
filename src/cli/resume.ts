@@ -5,6 +5,26 @@ import { bootstrap } from "./bootstrap.js";
 import { ResumeCommand } from "../core/command/resume.js";
 import { EventBus } from "../core/event/event-bus.js";
 import { wireProgressDisplay } from "./progress.js";
+import type { SpecRunnerConfig } from "../config/schema.js";
+
+/**
+ * Resolve the heartbeat interval (seconds) from config → env → TTY-aware default.
+ * Returns 0 to disable the heartbeat.
+ */
+function resolveHeartbeatInterval(config: SpecRunnerConfig): number {
+  const cfgVal = config.progress?.heartbeatIntervalSec;
+  if (cfgVal === null || cfgVal === 0) return 0;
+  if (cfgVal !== undefined && cfgVal > 0) return cfgVal;
+
+  const envVal = process.env["SPECRUNNER_HEARTBEAT_INTERVAL"];
+  if (envVal === "0" || envVal === "off") return 0;
+  if (envVal !== undefined) {
+    const parsed = parseInt(envVal, 10);
+    if (!isNaN(parsed) && parsed >= 0) return parsed;
+  }
+
+  return process.stdout.isTTY ? 30 : 60;
+}
 
 export interface ResumeOptions {
   from?: string;
@@ -23,8 +43,9 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
     : { owner: "", name: "" };
 
   let runtime: Awaited<ReturnType<typeof bootstrap>>["runtime"];
+  let config: Awaited<ReturnType<typeof bootstrap>>["config"];
   try {
-    ({ runtime } = await bootstrap(cwd, repo));
+    ({ runtime, config } = await bootstrap(cwd, repo));
   } catch (err) {
     const e = err as Error & { hint?: string };
     process.stderr.write(`Error: ${e.message}\n`);
@@ -34,12 +55,18 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
 
   const events = new EventBus();
   const verbose = options.verbose ?? false;
-  wireProgressDisplay(events, { verbose, slug });
+  const progress = wireProgressDisplay(events, {
+    verbose,
+    slug,
+    heartbeatIntervalSec: resolveHeartbeatInterval(config),
+  });
   try {
     return await new ResumeCommand(runtime, events, slug, options).execute();
   } catch (err) {
     process.stderr.write(`Error: ${(err as Error).message}\n`);
     return 1;
+  } finally {
+    progress.dispose();
   }
 }
 

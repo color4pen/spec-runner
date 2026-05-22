@@ -11,7 +11,9 @@ export type DomainEvent =
   | "step:start"
   | "step:complete"
   | "step:error"
-  | "verdict:parsed";
+  | "step:progress"
+  | "verdict:parsed"
+  | "commit:push";
 
 /**
  * Payload types for each DomainEvent.
@@ -24,7 +26,9 @@ export type EventPayloadMap = {
   "step:start": { step: string; state: JobState };
   "step:complete": { step: string; state: JobState };
   "step:error": { step: string; error: Error; state: JobState };
+  "step:progress": { step: string; tool: string; target?: string };
   "verdict:parsed": { step: string; outcome: { verdict: string | null } };
+  "commit:push": { step: string; branch: string };
 };
 
 /**

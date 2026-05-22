@@ -368,6 +368,58 @@ describe("TC-041: checkConfigComplete always returns null (GitHub token check mo
 // TC-042: specrunner init --runtime local writes config with runtime: "local"
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// TC-PROG-001 through TC-PROG-005: progress.heartbeatIntervalSec validation
+// ---------------------------------------------------------------------------
+
+describe("TC-PROG: validateConfig progress.heartbeatIntervalSec validation", () => {
+  it("TC-PROG-001: heartbeatIntervalSec: 30 → valid", () => {
+    const raw = { version: 1, agents: {}, progress: { heartbeatIntervalSec: 30 } };
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("TC-PROG-002: heartbeatIntervalSec: 0 → valid (disabled)", () => {
+    const raw = { version: 1, agents: {}, progress: { heartbeatIntervalSec: 0 } };
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("TC-PROG-003: heartbeatIntervalSec: null → valid (disabled)", () => {
+    const raw = { version: 1, agents: {}, progress: { heartbeatIntervalSec: null } };
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("TC-PROG-004: heartbeatIntervalSec: -1 → CONFIG_INVALID", () => {
+    const raw = { version: 1, agents: {}, progress: { heartbeatIntervalSec: -1 } };
+    expect(() => validateConfig(raw)).toThrow();
+    try {
+      validateConfig(raw);
+    } catch (err) {
+      expect((err as { code?: string }).code).toBe("CONFIG_INVALID");
+      expect((err as Error).message).toMatch(/heartbeatIntervalSec/);
+    }
+  });
+
+  it("TC-PROG-005: heartbeatIntervalSec: 'foo' → CONFIG_INVALID", () => {
+    const raw = { version: 1, agents: {}, progress: { heartbeatIntervalSec: "foo" } };
+    expect(() => validateConfig(raw)).toThrow();
+    try {
+      validateConfig(raw);
+    } catch (err) {
+      expect((err as { code?: string }).code).toBe("CONFIG_INVALID");
+    }
+  });
+
+  it("TC-PROG-006: heartbeatIntervalSec: 1.5 (non-integer) → CONFIG_INVALID", () => {
+    const raw = { version: 1, agents: {}, progress: { heartbeatIntervalSec: 1.5 } };
+    expect(() => validateConfig(raw)).toThrow();
+  });
+
+  it("TC-PROG-007: progress section absent → no error", () => {
+    const raw = { version: 1, agents: {} };
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+});
+
 describe("TC-042: specrunner init writes config scaffold without runtime or anthropic field", () => {
   it("config file has no runtime field (local is the default)", async () => {
     const { runInit } = await import("../../../src/cli/init.js");

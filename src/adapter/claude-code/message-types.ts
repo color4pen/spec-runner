@@ -38,6 +38,28 @@ export function isStreamEvent(
 }
 
 /**
+ * Type guard for a tool_use content block start within a stream_event message.
+ * Checks: event.type === "content_block_start" && event.content_block.type === "tool_use".
+ * Narrows to a shape where event.content_block.name is a string.
+ */
+export function isToolUse(
+  v: unknown,
+): v is {
+  type: "stream_event";
+  event: {
+    type: "content_block_start";
+    content_block: { type: "tool_use"; name: string; input?: Record<string, unknown> };
+  };
+} {
+  if (!isStreamEvent(v)) return false;
+  const event = v.event;
+  if (event["type"] !== "content_block_start") return false;
+  const cb = event["content_block"];
+  if (typeof cb !== "object" || cb === null) return false;
+  return (cb as Record<string, unknown>)["type"] === "tool_use";
+}
+
+/**
  * Type guard for a text_delta event within a stream_event message.
  * Checks: event.type === "content_block_delta" && event.delta.type === "text_delta".
  * Narrows to a shape where event.delta.text is a string.

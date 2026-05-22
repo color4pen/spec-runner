@@ -12,6 +12,29 @@ import { createRuntime } from "../core/runtime/index.js";
 import { PipelineRunCommand } from "../core/command/pipeline-run.js";
 import { EventBus } from "../core/event/event-bus.js";
 import { wireProgressDisplay } from "./progress.js";
+import type { SpecRunnerConfig } from "../config/schema.js";
+
+/**
+ * Resolve the heartbeat interval (seconds) from config → env → TTY-aware default.
+ * Returns 0 to disable the heartbeat.
+ */
+function resolveHeartbeatInterval(config: SpecRunnerConfig): number {
+  // 1. config
+  const cfgVal = config.progress?.heartbeatIntervalSec;
+  if (cfgVal === null || cfgVal === 0) return 0;
+  if (cfgVal !== undefined && cfgVal > 0) return cfgVal;
+
+  // 2. env
+  const envVal = process.env["SPECRUNNER_HEARTBEAT_INTERVAL"];
+  if (envVal === "0" || envVal === "off") return 0;
+  if (envVal !== undefined) {
+    const parsed = parseInt(envVal, 10);
+    if (!isNaN(parsed) && parsed >= 0) return parsed;
+  }
+
+  // 3. default: TTY → 30s, non-TTY → 60s
+  return process.stdout.isTTY ? 30 : 60;
+}
 
 export async function runRunCore(
   requestMdPath: string,
@@ -56,12 +79,18 @@ export async function runRunCore(
   const events = new EventBus();
   const verbose = options.verbose ?? false;
   const slug = preflightResult.request.slug;
-  wireProgressDisplay(events, { verbose, slug });
+  const progress = wireProgressDisplay(events, {
+    verbose,
+    slug,
+    heartbeatIntervalSec: resolveHeartbeatInterval(config),
+  });
   try {
     return await new PipelineRunCommand(runtime, events, absolutePath, preflightResult, options).execute();
   } catch (err) {
     process.stderr.write(`Error: ${(err as Error).message}\n`);
     return 1;
+  } finally {
+    progress.dispose();
   }
 }
 
