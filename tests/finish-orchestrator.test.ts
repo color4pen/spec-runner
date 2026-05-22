@@ -107,8 +107,12 @@ function makeStubFs(opts: { changeFolderExists?: boolean; activeExists?: boolean
     writeFile: vi.fn().mockResolvedValue(undefined),
     unlink: vi.fn().mockResolvedValue(undefined),
     readFile: vi.fn().mockImplementation((p: string) => {
-      // spec-merge reads request.md before checking specs/; return valid content
-      if (p.endsWith("request.md")) return Promise.resolve(STUB_REQUEST_MD);
+      if (p.endsWith("request.md")) {
+        if (!changeFolderExists) {
+          return Promise.reject(Object.assign(new Error("ENOENT"), { code: "ENOENT" }));
+        }
+        return Promise.resolve(STUB_REQUEST_MD);
+      }
       return Promise.resolve("");
     }),
   };

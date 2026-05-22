@@ -752,6 +752,52 @@ function makeRequestMdContent(type: string, slug = "my-slug"): string {
 }
 
 // ---------------------------------------------------------------------------
+// TC-SM-068: mergeSpecsForChange — parse error escalation when change folder exists
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-068: mergeSpecsForChange — parse error escalation when change folder exists", () => {
+  it("returns ok:false escalation when request.md exists but is unparseable", async () => {
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockResolvedValue(true), // change folder exists
+      readFile: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("request.md")) return Promise.resolve("not valid yaml front matter garbage");
+        return Promise.resolve("");
+      }),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.escalation).toContain("spec-merge (request.md)");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SM-069: mergeSpecsForChange — skip when change folder absent
+// ---------------------------------------------------------------------------
+
+describe("TC-SM-069: mergeSpecsForChange — skip when change folder absent", () => {
+  it("returns ok:true skipped:true without reading request.md", async () => {
+    const spawn = makeSpawn(0);
+    const fs = makeFs({
+      exists: vi.fn().mockResolvedValue(false), // change folder does not exist
+      readFile: vi.fn().mockRejectedValue(new Error("ENOENT: should not be called")),
+    });
+
+    const result = await mergeSpecsForChange({ slug: "my-slug", cwd: "/repo", spawn, fs });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.skipped).toBe(true);
+    expect(result.message).toContain("change folder not found");
+    // readFile should NOT have been called
+    expect(fs.readFile).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-SM-070: mergeSpecsForChange — skip when specs/ doesn't exist (bug-fix)
 // ---------------------------------------------------------------------------
 
@@ -760,7 +806,10 @@ describe("TC-SM-070: mergeSpecsForChange — skip when specs/ not found", () => 
     const requestMdContent = makeRequestMdContent("bug-fix");
     const spawn = makeSpawn(0);
     const fs = makeFs({
-      exists: vi.fn().mockResolvedValue(false),
+      exists: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("specs")) return Promise.resolve(false); // specs/ dir absent
+        return Promise.resolve(true);                           // change folder present
+      }),
       readFile: vi.fn().mockImplementation((p: string) => {
         if (p.endsWith("request.md")) return Promise.resolve(requestMdContent);
         return Promise.reject(new Error("ENOENT"));
@@ -789,6 +838,7 @@ describe("TC-SM-071: mergeSpecsForChange — ADDED success", () => {
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         // baseline exists
         if (p.includes("specrunner/specs/my-cap")) return Promise.resolve(true);
@@ -840,6 +890,7 @@ describe("TC-SM-072: mergeSpecsForChange — MODIFIED success", () => {
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         if (p.includes("specrunner/specs")) return Promise.resolve(true);
         return Promise.resolve(false);
@@ -875,6 +926,7 @@ describe("TC-SM-073: mergeSpecsForChange — REMOVED success", () => {
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         if (p.includes("specrunner/specs")) return Promise.resolve(true);
         return Promise.resolve(false);
@@ -944,6 +996,7 @@ describe("TC-SM-074: mergeSpecsForChange — ADDED + MODIFIED + REMOVED composit
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         if (p.includes("specrunner/specs")) return Promise.resolve(true);
         return Promise.resolve(false);
@@ -982,6 +1035,7 @@ describe("TC-SM-075: mergeSpecsForChange — new capability ADDED only", () => {
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         // baseline does NOT exist
         return Promise.resolve(false);
@@ -1021,6 +1075,7 @@ describe("TC-SM-076: mergeSpecsForChange — new capability Removed → escalati
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         return Promise.resolve(false); // baseline does not exist
       }),
@@ -1052,6 +1107,7 @@ describe("TC-SM-077: mergeSpecsForChange — new capability Renamed → escalati
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         return Promise.resolve(false); // baseline does not exist
       }),
@@ -1084,6 +1140,7 @@ describe("TC-SM-078: mergeSpecsForChange — validation error → no writes", ()
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         if (p.includes("specrunner/specs")) return Promise.resolve(true);
         return Promise.resolve(false);
@@ -1121,6 +1178,7 @@ describe("TC-SM-079: mergeSpecsForChange — git add failure → escalation", ()
     const spawn = makeSpawn(1, "", "git add failed");
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         if (p.includes("specrunner/specs")) return Promise.resolve(true);
         return Promise.resolve(false);
@@ -1158,6 +1216,7 @@ describe("TC-SM-080: mergeSpecsForChange — 2-pass: partial error means zero wr
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         if (p.includes("specrunner/specs")) return Promise.resolve(true);
         return Promise.resolve(false);
@@ -1195,6 +1254,7 @@ describe("TC-SM-081: mergeSpecsForChange — 2 valid capabilities → 2 writes, 
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         if (p.includes("specrunner/specs")) return Promise.resolve(true);
         return Promise.resolve(false);
@@ -1233,6 +1293,7 @@ describe("TC-SM-082: escalation format follows formatEscalation", () => {
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         if (p.includes("specrunner/specs")) return Promise.resolve(true);
         return Promise.resolve(false);
@@ -1266,7 +1327,7 @@ describe("TC-SM-090: mergeSpecsForChange — request.md not found → fail", () 
   it("returns ok:false when readFile throws for request.md", async () => {
     const spawn = makeSpawn(0);
     const fs = makeFs({
-      exists: vi.fn().mockResolvedValue(false),
+      exists: vi.fn().mockResolvedValue(true), // change folder exists
       readFile: vi.fn().mockRejectedValue(new Error("ENOENT: no such file or directory")),
     });
 
@@ -1289,7 +1350,7 @@ describe("TC-SM-091: mergeSpecsForChange — request.md parse error → fail", (
     const brokenContent = "- **type**: bug-fix\n- **slug**: my-slug\n- **base-branch**: main\n";
     const spawn = makeSpawn(0);
     const fs = makeFs({
-      exists: vi.fn().mockResolvedValue(false),
+      exists: vi.fn().mockResolvedValue(true), // change folder exists
       readFile: vi.fn().mockResolvedValue(brokenContent),
     });
 
@@ -1313,7 +1374,7 @@ describe("TC-SM-092: mergeSpecsForChange — type field missing → fail", () =>
     const noTypeContent = "# Test Change\n\n## Meta\n\n- **slug**: my-slug\n- **base-branch**: main\n";
     const spawn = makeSpawn(0);
     const fs = makeFs({
-      exists: vi.fn().mockResolvedValue(false),
+      exists: vi.fn().mockResolvedValue(true), // change folder exists
       readFile: vi.fn().mockResolvedValue(noTypeContent),
     });
 
@@ -1333,7 +1394,7 @@ describe("TC-SM-093: mergeSpecsForChange — unknown type → fail", () => {
   it("returns ok:false when type is not in TYPE_CONFIG", async () => {
     const spawn = makeSpawn(0);
     const fs = makeFs({
-      exists: vi.fn().mockResolvedValue(false),
+      exists: vi.fn().mockResolvedValue(true), // change folder exists
       readFile: vi.fn().mockResolvedValue(makeRequestMdContent("unknown-type")),
     });
 
@@ -1348,7 +1409,7 @@ describe("TC-SM-093: mergeSpecsForChange — unknown type → fail", () => {
   it("TC-SM-093b: rejects case-variant type (spec_change)", async () => {
     const spawn = makeSpawn(0);
     const fs = makeFs({
-      exists: vi.fn().mockResolvedValue(false),
+      exists: vi.fn().mockResolvedValue(true), // change folder exists
       readFile: vi.fn().mockResolvedValue(makeRequestMdContent("spec_change")),
     });
 
@@ -1360,7 +1421,7 @@ describe("TC-SM-093: mergeSpecsForChange — unknown type → fail", () => {
   it("TC-SM-093b: rejects case-variant type (Spec-Change)", async () => {
     const spawn = makeSpawn(0);
     const fs = makeFs({
-      exists: vi.fn().mockResolvedValue(false),
+      exists: vi.fn().mockResolvedValue(true), // change folder exists
       readFile: vi.fn().mockResolvedValue(makeRequestMdContent("Spec-Change")),
     });
 
@@ -1378,7 +1439,10 @@ describe("TC-SM-094: mergeSpecsForChange — spec-change + no specs/ → fail", 
   it("returns ok:false when specs/ dir is absent for spec-change type", async () => {
     const spawn = makeSpawn(0);
     const fs = makeFs({
-      exists: vi.fn().mockResolvedValue(false),
+      exists: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("specs")) return Promise.resolve(false); // specs/ dir absent
+        return Promise.resolve(true); // change folder present
+      }),
       readFile: vi.fn().mockResolvedValue(makeRequestMdContent("spec-change")),
     });
 
@@ -1400,7 +1464,10 @@ describe("TC-SM-095: mergeSpecsForChange — new-feature + no specs/ → fail", 
   it("returns ok:false when specs/ dir is absent for new-feature type", async () => {
     const spawn = makeSpawn(0);
     const fs = makeFs({
-      exists: vi.fn().mockResolvedValue(false),
+      exists: vi.fn().mockImplementation((p: string) => {
+        if (p.endsWith("specs")) return Promise.resolve(false); // specs/ dir absent
+        return Promise.resolve(true); // change folder present
+      }),
       readFile: vi.fn().mockResolvedValue(makeRequestMdContent("new-feature")),
     });
 
@@ -1482,6 +1549,7 @@ describe("TC-SM-099: mergeSpecsForChange — spec-change + specs/ empty (0 caps)
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
         // specs/ dir exists, but baseline dirs do not
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         return Promise.resolve(false);
       }),
@@ -1510,6 +1578,7 @@ describe("TC-SM-100: mergeSpecsForChange — empty delta (0 entries) → fail", 
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         if (p.includes("specrunner/specs")) return Promise.resolve(true);
         return Promise.resolve(false);
@@ -1545,6 +1614,7 @@ describe("TC-SM-101: mergeSpecsForChange — cross-capability: 1 empty delta blo
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         if (p.includes("specrunner/specs")) return Promise.resolve(true);
         return Promise.resolve(false);
@@ -1583,6 +1653,7 @@ describe("TC-SM-102: mergeSpecsForChange — bug-fix + valid delta → normal ap
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         if (p.includes("specrunner/specs")) return Promise.resolve(true);
         return Promise.resolve(false);
@@ -1618,6 +1689,7 @@ describe("TC-SM-103: mergeSpecsForChange — new capability ## Requirements → 
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         // baseline does NOT exist
         return Promise.resolve(false);
@@ -1665,6 +1737,7 @@ describe("TC-SM-104: mergeSpecsForChange — existing capability auto-classify A
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         if (p.includes("specrunner/specs")) return Promise.resolve(true);
         return Promise.resolve(false);
@@ -1749,6 +1822,7 @@ describe("TC-SM-105: mergeSpecsForChange — empty delta (new format) → fail",
     const spawn = makeSpawn(0);
     const fs = makeFs({
       exists: vi.fn().mockImplementation((p: string) => {
+        if (!p.endsWith("specs") && !p.includes("specrunner/specs/")) return Promise.resolve(true); // change folder present
         if (p.endsWith("specs")) return Promise.resolve(true);
         if (p.includes("specrunner/specs")) return Promise.resolve(true);
         return Promise.resolve(false);

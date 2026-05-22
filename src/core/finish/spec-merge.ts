@@ -537,6 +537,17 @@ export async function mergeSpecsForChange(params: {
 }): Promise<SpecMergeResult> {
   const { slug, cwd, spawn, fs } = params;
 
+  // Guard: change folder absent → skip (idempotent for re-run after Phase 1 already archived)
+  const changeFolderAbsPath = path.join(cwd, changeFolderPath(slug));
+  const changeFolderExists = await fs.exists(changeFolderAbsPath);
+  if (!changeFolderExists) {
+    return {
+      ok: true,
+      skipped: true,
+      message: "spec-merge skipped: change folder not found",
+    };
+  }
+
   // Read and parse request.md to determine type
   const requestMdAbsPath = path.join(cwd, changeFolderPath(slug), "request.md");
   let requestType: string;
