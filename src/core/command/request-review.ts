@@ -11,9 +11,9 @@
 import * as fs from "node:fs/promises";
 import { parseRequestMdContent } from "../../parser/request-md.js";
 import { SpecRunnerError } from "../../errors.js";
-import { loadConfig } from "../../config/store.js";
 import { runReview } from "../request/reviewer.js";
 import { stderrWrite } from "../../logger/stdout.js";
+import type { OneShotQueryClient } from "../port/one-shot-query-client.js";
 
 // Re-export types and helpers from reviewer.ts for backward compatibility
 export type {
@@ -32,9 +32,14 @@ export {
  *
  * @param filePath  Path to the request.md file to review
  * @param opts      Options: json=true outputs structured JSON instead of raw text
+ * @param client    OneShotQueryClient injected by the caller (composition point)
  * @returns         Exit code: 0 (approve/needs-discussion), 1 (reject or error)
  */
-export async function executeReview(filePath: string, opts: { json: boolean }): Promise<number> {
+export async function executeReview(
+  filePath: string,
+  opts: { json: boolean },
+  client: OneShotQueryClient,
+): Promise<number> {
   // Step 1: Read the request.md file
   let content: string;
   try {
@@ -58,19 +63,11 @@ export async function executeReview(filePath: string, opts: { json: boolean }): 
     return 1;
   }
 
-  // Step 3: Load config (gracefully degrade if not initialized)
-  let config: import("../../config/schema.js").SpecRunnerConfig;
-  try {
-    config = await loadConfig();
-  } catch {
-    config = {} as import("../../config/schema.js").SpecRunnerConfig;
-  }
-
-  // Steps 4-9: Delegated to runReview()
+  // Steps 3-9: Delegated to runReview()
   let result: import("../request/reviewer.js").RequestReviewResult;
   stderrWrite("Reviewing request.md...");
   try {
-    result = await runReview(content, config, process.cwd());
+    result = await runReview(content, process.cwd(), client);
   } catch (err) {
     if (err instanceof SpecRunnerError) {
       stderrWrite("✗ Failed: " + err.message);

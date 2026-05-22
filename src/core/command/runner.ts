@@ -26,7 +26,6 @@ import type { JobState, StepName } from "../../state/schema.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { EventBus } from "../event/event-bus.js";
-import { ProgressDisplay } from "../../cli/progress.js";
 import { createStandardPipeline } from "../pipeline/index.js";
 import type { CleanupHandle, RuntimeStrategy, WorkspaceOptions } from "../runtime/strategy.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
@@ -63,7 +62,10 @@ export interface PrepareResult {
  * Concrete commands (PipelineRunCommand, ResumeCommand) override prepare() only.
  */
 export abstract class CommandRunner {
-  constructor(protected readonly runtime: RuntimeStrategy) {}
+  constructor(
+    protected readonly runtime: RuntimeStrategy,
+    protected readonly events: EventBus,
+  ) {}
 
   /**
    * Execute the pipeline command.
@@ -75,10 +77,6 @@ export abstract class CommandRunner {
     const prepared = await this.prepare();
 
     const { jobState, startStep, request, config, slug, verbose, workspaceOpts } = prepared;
-
-    // Set up EventBus and ProgressDisplay
-    const events = new EventBus();
-    new ProgressDisplay(events, { verbose, slug });
 
     // Initialize verbose log file (no-op if verbose is disabled)
     initVerboseLog(jobState.jobId);
@@ -147,7 +145,7 @@ export abstract class CommandRunner {
     // Step 5: runPipeline
     let finalState: JobState;
     try {
-      const pipeline = createStandardPipeline(deps, events);
+      const pipeline = createStandardPipeline(deps, this.events);
       finalState = await pipeline.run(startStep, jobState, deps);
     } catch (err) {
       // Defensive: if pipeline safety net did not transition state, mark as failed

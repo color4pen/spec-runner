@@ -10,6 +10,8 @@ import { setVerbose, resolveVerboseFlag } from "../logger/stdout.js";
 import { SpecRunnerError } from "../errors.js";
 import { createRuntime } from "../core/runtime/index.js";
 import { PipelineRunCommand } from "../core/command/pipeline-run.js";
+import { EventBus } from "../core/event/event-bus.js";
+import { wireProgressDisplay } from "./progress.js";
 
 export async function runRunCore(
   requestMdPath: string,
@@ -51,8 +53,12 @@ export async function runRunCore(
     ? createAnthropicSessionClient(createAnthropicClient(anthropicResult.apiKey))
     : undefined;
   const runtime = createRuntime(config, cwd, githubClient, repo, sessionClient, githubToken);
+  const events = new EventBus();
+  const verbose = options.verbose ?? false;
+  const slug = preflightResult.request.slug;
+  wireProgressDisplay(events, { verbose, slug });
   try {
-    return await new PipelineRunCommand(runtime, absolutePath, preflightResult, options).execute();
+    return await new PipelineRunCommand(runtime, events, absolutePath, preflightResult, options).execute();
   } catch (err) {
     process.stderr.write(`Error: ${(err as Error).message}\n`);
     return 1;

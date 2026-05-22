@@ -3,6 +3,8 @@ import { setVerbose, resolveVerboseFlag } from "../logger/stdout.js";
 import { resolveJobStateBySlug } from "../core/resume/resolve-job.js";
 import { bootstrap } from "./bootstrap.js";
 import { ResumeCommand } from "../core/command/resume.js";
+import { EventBus } from "../core/event/event-bus.js";
+import { wireProgressDisplay } from "./progress.js";
 
 export interface ResumeOptions {
   from?: string;
@@ -30,8 +32,11 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
     return 1;
   }
 
+  const events = new EventBus();
+  const verbose = options.verbose ?? false;
+  wireProgressDisplay(events, { verbose, slug });
   try {
-    return await new ResumeCommand(runtime, slug, options).execute();
+    return await new ResumeCommand(runtime, events, slug, options).execute();
   } catch (err) {
     process.stderr.write(`Error: ${(err as Error).message}\n`);
     return 1;

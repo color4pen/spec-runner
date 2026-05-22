@@ -1,9 +1,9 @@
 /**
  * Unit tests for src/core/request/generator.ts
  *
- * TC-GEN-001: generate() with valid mock queryFn returns { slug, content }
- * TC-GEN-002: generate() with invalid content from mock queryFn throws SpecRunnerError
- * TC-GEN-003: generate() with slug collision throws SLUG_COLLISION and queryFn is not called
+ * TC-GEN-001: generate() with valid mock client returns { slug, content }
+ * TC-GEN-002: generate() with invalid content from mock client throws SpecRunnerError
+ * TC-GEN-003: generate() with slug collision throws SLUG_COLLISION and client.run is not called
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
@@ -11,6 +11,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { generate } from "../../../../src/core/request/generator.js";
 import { SpecRunnerError } from "../../../../src/errors.js";
+import type { OneShotQueryClient } from "../../../../src/core/port/one-shot-query-client.js";
 
 let tempDir: string;
 
@@ -25,7 +26,7 @@ afterEach(async () => {
 // ---------------------------------------------------------------------------
 // TC-GEN-001
 // ---------------------------------------------------------------------------
-describe("TC-GEN-001: generate() with valid mock queryFn", () => {
+describe("TC-GEN-001: generate() with valid mock client", () => {
   it("returns { slug, content } and writes request.md to active/", async () => {
     // The input text determines the slug: slugify("add user authentication feature")
     // = "add-user-authentication-feature"
@@ -59,22 +60,14 @@ describe("TC-GEN-001: generate() with valid mock queryFn", () => {
 - enabled: []
 `;
 
-    const mockResultMessage = {
-      type: "result" as const,
-      subtype: "success" as const,
-      result: validContent,
+    const mockClient: OneShotQueryClient = {
+      run: vi.fn().mockResolvedValue({
+        text: validContent,
+        stopReason: "success",
+      }),
     };
 
-    async function* mockQueryFn(_args: unknown): AsyncGenerator<typeof mockResultMessage, void> {
-      yield mockResultMessage;
-    }
-
-    const result = await generate(
-      inputText,
-      tempDir,
-      {} as import("../../../../src/config/schema.js").SpecRunnerConfig,
-      mockQueryFn as unknown as typeof import("@anthropic-ai/claude-agent-sdk").query,
-    );
+    const result = await generate(inputText, tempDir, mockClient);
 
     expect(result.slug).toBe(expectedSlug);
     expect(result.content).toContain(expectedSlug);
@@ -95,51 +88,35 @@ describe("TC-GEN-001: generate() with valid mock queryFn", () => {
 // ---------------------------------------------------------------------------
 // TC-GEN-002
 // ---------------------------------------------------------------------------
-describe("TC-GEN-002: generate() with invalid content from mock queryFn", () => {
+describe("TC-GEN-002: generate() with invalid content from mock client", () => {
   it("throws SpecRunnerError when generated content fails validation", async () => {
     // Return content that will fail parseRequestMdContent (missing required fields)
     const invalidContent = "This is not a valid request.md at all.";
 
-    const mockResultMessage = {
-      type: "result" as const,
-      subtype: "success" as const,
-      result: invalidContent,
+    const mockClient: OneShotQueryClient = {
+      run: vi.fn().mockResolvedValue({
+        text: invalidContent,
+        stopReason: "success",
+      }),
     };
 
-    async function* mockQueryFn(_args: unknown): AsyncGenerator<typeof mockResultMessage, void> {
-      yield mockResultMessage;
-    }
-
     await expect(
-      generate(
-        "some feature description",
-        tempDir,
-        {} as import("../../../../src/config/schema.js").SpecRunnerConfig,
-        mockQueryFn as unknown as typeof import("@anthropic-ai/claude-agent-sdk").query,
-      ),
+      generate("some feature description", tempDir, mockClient),
     ).rejects.toBeInstanceOf(SpecRunnerError);
   });
 
   it("throws SpecRunnerError with code REQUEST_MD_INVALID", async () => {
     const invalidContent = "No title here.";
 
-    const mockResultMessage = {
-      type: "result" as const,
-      subtype: "success" as const,
-      result: invalidContent,
+    const mockClient: OneShotQueryClient = {
+      run: vi.fn().mockResolvedValue({
+        text: invalidContent,
+        stopReason: "success",
+      }),
     };
 
-    async function* mockQueryFn(_args: unknown): AsyncGenerator<typeof mockResultMessage, void> {
-      yield mockResultMessage;
-    }
-
     await expect(
-      generate(
-        "another feature",
-        tempDir,
-        {} as import("../../../../src/config/schema.js").SpecRunnerConfig,
-        mockQueryFn as unknown as typeof import("@anthropic-ai/claude-agent-sdk").query,
-      ),
+      generate("another feature", tempDir, mockClient),
     ).rejects.toMatchObject({
       code: "REQUEST_MD_INVALID",
     });
@@ -150,26 +127,23 @@ describe("TC-GEN-002: generate() with invalid content from mock queryFn", () => 
 // TC-GEN-003
 // ---------------------------------------------------------------------------
 describe("TC-GEN-003: generate() with slug collision", () => {
-  it("throws SLUG_COLLISION error and queryFn is never called", async () => {
+  it("throws SLUG_COLLISION error and client.run is never called", async () => {
     // Pre-create the flat .md file to trigger collision
     const slug = "my-feature";
     const draftsDir = path.join(tempDir, "specrunner", "drafts");
     await fs.mkdir(draftsDir, { recursive: true });
     await fs.writeFile(path.join(draftsDir, slug + ".md"), "# my-feature\n");
 
-    const mockQueryFn = vi.fn();
+    const mockClient: OneShotQueryClient = {
+      run: vi.fn(),
+    };
 
     await expect(
-      generate(
-        "my feature",
-        tempDir,
-        {} as import("../../../../src/config/schema.js").SpecRunnerConfig,
-        mockQueryFn as unknown as typeof import("@anthropic-ai/claude-agent-sdk").query,
-      ),
+      generate("my feature", tempDir, mockClient),
     ).rejects.toMatchObject({
       code: "SLUG_COLLISION",
     });
 
-    expect(mockQueryFn).not.toHaveBeenCalled();
+    expect(mockClient.run).not.toHaveBeenCalled();
   });
 });

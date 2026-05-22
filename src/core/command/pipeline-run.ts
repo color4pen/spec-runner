@@ -11,6 +11,7 @@ import { createJobState } from "../../state/store.js";
 import { logInfo, setVerbose } from "../../logger/stdout.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../runtime/strategy.js";
+import type { EventBus } from "../event/event-bus.js";
 import { getBranchPrefix } from "../../config/type-config.js";
 import { STEP_NAMES } from "../step/step-names.js";
 
@@ -30,11 +31,12 @@ const CANONICAL_PATTERN = /^.*\/specrunner\/drafts\/([^/]+)\.md$/;
 export class PipelineRunCommand extends CommandRunner {
   constructor(
     runtime: RuntimeStrategy,
+    events: EventBus,
     private readonly absolutePath: string,
     private readonly preflightResult: PreflightResult,
     private readonly options: PipelineRunOptions = {},
   ) {
-    super(runtime);
+    super(runtime, events);
   }
 
   protected async prepare(): Promise<PrepareResult> {

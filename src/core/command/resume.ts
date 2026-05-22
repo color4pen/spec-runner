@@ -16,6 +16,7 @@ import { checkConsecutiveEscalations, checkStaleState, isStaleRunning } from "..
 import { canTransition, transitionJob } from "../../state/lifecycle.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../runtime/strategy.js";
+import type { EventBus } from "../event/event-bus.js";
 
 export interface ResumeOptions {
   from?: string;
@@ -42,10 +43,11 @@ class PrepareError extends Error {
 export class ResumeCommand extends CommandRunner {
   constructor(
     runtime: RuntimeStrategy,
+    events: EventBus,
     private readonly slug: string,
     private readonly options: ResumeOptions = {},
   ) {
-    super(runtime);
+    super(runtime, events);
   }
 
   async execute(): Promise<number> {

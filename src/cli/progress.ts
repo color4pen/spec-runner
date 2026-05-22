@@ -1,6 +1,17 @@
 import type { EventBus } from "../core/event/event-bus.js";
 
 /**
+ * Wire a ProgressDisplay to an EventBus.
+ * Factory function for use at CLI composition points (run.ts, resume.ts).
+ */
+export function wireProgressDisplay(
+  events: EventBus,
+  opts: { verbose: boolean; slug: string },
+): ProgressDisplay {
+  return new ProgressDisplay(events, opts);
+}
+
+/**
  * ProgressDisplay: subscribes to EventBus domain events and prints
  * step transitions, elapsed times, and next-action hints to stdout.
  *

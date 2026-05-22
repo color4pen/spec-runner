@@ -10,6 +10,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { executeReview } from "../../../src/core/command/request-review.js";
 import * as reviewer from "../../../src/core/request/reviewer.js";
+import type { OneShotQueryClient } from "../../../src/core/port/one-shot-query-client.js";
 
 vi.mock("../../../src/core/request/reviewer.js", () => ({
   runReview: vi.fn().mockResolvedValue({
@@ -33,9 +34,9 @@ vi.mock("../../../src/parser/request-md.js", () => ({
   parseRequestMdContent: vi.fn().mockReturnValue({}),
 }));
 
-vi.mock("../../../src/config/store.js", () => ({
-  loadConfig: vi.fn().mockResolvedValue({}),
-}));
+const mockClient: OneShotQueryClient = {
+  run: vi.fn(),
+};
 
 // ---------------------------------------------------------------------------
 // TC-PROG-03: executeReview — stderr outputs "Reviewing request.md..."
@@ -54,7 +55,7 @@ describe("TC-PROG-03: executeReview outputs Reviewing message to stderr", () => 
   });
 
   it('writes "Reviewing request.md..." to stderr before LLM call', async () => {
-    await executeReview("dummy.md", { json: false });
+    await executeReview("dummy.md", { json: false }, mockClient);
 
     const allStderr = stderrSpy.mock.calls.map((args: unknown[]) => String(args[0])).join("");
     expect(allStderr).toContain("Reviewing request.md...");
@@ -80,7 +81,7 @@ describe("TC-PROG-05: executeReview outputs failure message to stderr", () => {
   it('writes "✗ Failed:" to stderr when runReview throws', async () => {
     vi.mocked(reviewer.runReview).mockRejectedValueOnce(new Error("Review failed"));
 
-    await executeReview("dummy.md", { json: false });
+    await executeReview("dummy.md", { json: false }, mockClient);
 
     const allStderr = stderrSpy.mock.calls.map((args: unknown[]) => String(args[0])).join("");
     expect(allStderr).toContain("✗ Failed:");

@@ -1,12 +1,12 @@
-import { loadConfig } from "../../config/store.js";
 import { SpecRunnerError } from "../../errors.js";
 import * as manager from "../request/manager.js";
-import type { SpecRunnerConfig } from "../../config/schema.js";
+import type { OneShotQueryClient } from "../port/one-shot-query-client.js";
 import { stderrWrite } from "../../logger/stdout.js";
 
 export async function executeCreate(
   text: string | null,
   opts: { stdin: boolean; cwd: string },
+  client: OneShotQueryClient,
 ): Promise<number> {
   let resolvedText: string | null = text;
 
@@ -25,18 +25,10 @@ export async function executeCreate(
     return 1;
   }
 
-  // (d) Load config
-  let config: SpecRunnerConfig;
-  try {
-    config = await loadConfig();
-  } catch {
-    config = {} as SpecRunnerConfig;
-  }
-
-  // (e) Create request
+  // (d) Create request
   try {
     stderrWrite("Generating request.md...");
-    const slug = await manager.create(resolvedText, opts.cwd, config);
+    const slug = await manager.create(resolvedText, opts.cwd, client);
     stderrWrite("✓ Generated " + slug);
     process.stdout.write(`${slug}\n`);
     return 0;

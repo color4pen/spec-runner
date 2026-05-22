@@ -16,6 +16,7 @@ import * as os from "node:os";
 import { CommandRunner } from "../../../../src/core/command/runner.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
 import type { RuntimeStrategy, WorkspaceContext, CleanupHandle } from "../../../../src/core/runtime/strategy.js";
+import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import { JobStateStore } from "../../../../src/store/job-state-store.js";
@@ -135,7 +136,7 @@ class TestCommand extends CommandRunner {
     private readonly prepareResult: PrepareResult,
     private readonly prepareShouldThrow?: Error,
   ) {
-    super(runtime);
+    super(runtime, new EventBus());
   }
 
   protected async prepare(): Promise<PrepareResult> {
@@ -166,10 +167,6 @@ vi.mock("../../../../src/core/pipeline/index.js", () => ({
       }
     ),
   }),
-}));
-
-vi.mock("../../../../src/cli/progress.js", () => ({
-  ProgressDisplay: vi.fn(),
 }));
 
 // TC-CR-001: execute() follows the template method sequence

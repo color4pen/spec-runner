@@ -20,7 +20,7 @@
  * TC-RVR-017: formatHumanReadable — location/recommendation optional lines
  * TC-RVR-018: formatHumanReadable — summary #N references match finding numbers
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   parseReviewOutput,
   verdictToExitCode,
@@ -222,23 +222,20 @@ describe("TC-RVR-010: buildInitialMessage wraps projectContext in <project-conte
 // ---------------------------------------------------------------------------
 // TC-RVR-011
 // ---------------------------------------------------------------------------
-describe("TC-RVR-011: runReview() with mock queryFn returns RequestReviewResult", () => {
-  it("returns parsed RequestReviewResult from mock query", async () => {
+describe("TC-RVR-011: runReview() with mock OneShotQueryClient returns RequestReviewResult", () => {
+  it("returns parsed RequestReviewResult from mock client", async () => {
     const approveResult: RequestReviewResult = {
       verdict: "approve",
       findings: [],
       summary: "looks good",
     };
 
-    const mockResultMessage = {
-      type: "result" as const,
-      subtype: "success" as const,
-      result: `\`\`\`json\n${JSON.stringify(approveResult)}\n\`\`\``,
+    const mockClient = {
+      run: vi.fn().mockResolvedValue({
+        text: `\`\`\`json\n${JSON.stringify(approveResult)}\n\`\`\``,
+        stopReason: "success",
+      }),
     };
-
-    async function* mockQueryFn(_args: unknown): AsyncGenerator<typeof mockResultMessage, void> {
-      yield mockResultMessage;
-    }
 
     // Use a temp dir to avoid reading project.md
     const { mkdtemp, rm } = await import("node:fs/promises");
@@ -249,9 +246,8 @@ describe("TC-RVR-011: runReview() with mock queryFn returns RequestReviewResult"
     try {
       const result = await runReview(
         "# Test Request\n\n## Meta\n\n- **type**: new-feature\n- **slug**: test-slug\n- **base-branch**: main\n- **adr**: false\n",
-        {} as import("../../../../src/config/schema.js").SpecRunnerConfig,
         tmpDir,
-        mockQueryFn as unknown as import("../../../../src/adapter/claude-code/query-one-shot.js").QueryFn,
+        mockClient,
       );
 
       expect(result.verdict).toBe("approve");

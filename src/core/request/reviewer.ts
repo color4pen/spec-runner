@@ -1,13 +1,12 @@
 /**
  * Core review logic for request.md — extracted from src/core/command/request-review.ts.
- * Provides runReview() with injectable queryFn for testability.
+ * Provides runReview() with injectable OneShotQueryClient for testability.
  */
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
-import { queryOneShot, type QueryFn } from "../../adapter/claude-code/query-one-shot.js";
+import type { OneShotQueryClient } from "../port/one-shot-query-client.js";
 import { projectMdPath } from "../../util/paths.js";
 import { REQUEST_REVIEW_SYSTEM_PROMPT } from "../../prompts/request-review-system.js";
-import type { SpecRunnerConfig } from "../../config/schema.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -175,14 +174,13 @@ ${requestContent}
 // ---------------------------------------------------------------------------
 
 /**
- * Run the review session. Extracts Steps 3-9 from executeReview().
- * queryFn is injectable for testability.
+ * Run the review session.
+ * client: OneShotQueryClient is injected by the caller (composition point).
  */
 export async function runReview(
   content: string,
-  config: SpecRunnerConfig,
   cwd: string,
-  queryFn?: QueryFn,
+  client: OneShotQueryClient,
 ): Promise<RequestReviewResult> {
   // Read project context
   let projectContext = "";
@@ -193,19 +191,15 @@ export async function runReview(
     // Continue without project context
   }
 
-  const result = await queryOneShot(
-    {
-      systemPrompt: REQUEST_REVIEW_SYSTEM_PROMPT,
-      prompt: buildInitialMessage(content, projectContext),
-      allowedTools: ["Read", "Bash", "Grep", "Glob"],
-      maxTurns: 30,
-      timeoutMs: 300_000,
-      cwd,
-      stepName: "request-review",
-      model: "claude-opus-4-5",
-    },
-    config,
-    queryFn,
-  );
+  const result = await client.run({
+    systemPrompt: REQUEST_REVIEW_SYSTEM_PROMPT,
+    prompt: buildInitialMessage(content, projectContext),
+    allowedTools: ["Read", "Bash", "Grep", "Glob"],
+    maxTurns: 30,
+    timeoutMs: 300_000,
+    cwd,
+    stepName: "request-review",
+    model: "claude-opus-4-5",
+  });
   return parseReviewOutput(result.text);
 }

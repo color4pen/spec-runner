@@ -67,6 +67,7 @@ vi.mock("../../../src/core/pipeline/index.js", () => ({
 
 vi.mock("../../../src/cli/progress.js", () => ({
   ProgressDisplay: vi.fn(),
+  wireProgressDisplay: vi.fn().mockReturnValue(undefined),
 }));
 
 vi.mock("../../../src/parser/request-md.js", () => ({
