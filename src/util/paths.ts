@@ -134,6 +134,17 @@ export function draftPath(slug: string): string {
   return `${DRAFTS_DIR}/${slug}.md`;
 }
 
+/** Base directory for project-level step rules. */
+const RULES_DIR = "specrunner/rules";
+
+/**
+ * Returns the relative path to the rules directory for a given step name.
+ * Example: stepRulesDirRel("design") → "specrunner/rules/design"
+ */
+export function stepRulesDirRel(stepName: string): string {
+  return `${RULES_DIR}/${stepName}`;
+}
+
 /** Regex to detect YYYY-MM-DD prefix on an archive dir name. */
 const ARCHIVE_DATE_PREFIX_RE = /^(\d{4}-\d{2}-\d{2})-(.+)$/;
 

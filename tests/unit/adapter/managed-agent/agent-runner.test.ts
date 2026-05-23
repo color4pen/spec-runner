@@ -1073,7 +1073,7 @@ describe("ManagedAgentRunner SSE 経路 follow-up", () => {
 
     const ctx = makeCtx({
       step: makeDesignStep({ followUpPrompt: "fix format violations" }),
-      followUpPrompt: "fix format violations",
+      followUpPrompts: ["fix format violations"],
       branch: "feat/test",
     });
 
@@ -1112,7 +1112,7 @@ describe("ManagedAgentRunner SSE 経路 follow-up", () => {
 
     const ctx = makeCtx({
       step: makeDesignStep({ followUpPrompt: "fix format" }),
-      followUpPrompt: "fix format",
+      followUpPrompts: ["fix format"],
       branch: "feat/test",
     });
 
@@ -1167,7 +1167,7 @@ describe("ManagedAgentRunner SSE 経路 follow-up", () => {
 
     const ctx = makeCtx({
       step: makeDesignStep({ followUpPrompt: "fix format" }),
-      followUpPrompt: "fix format",
+      followUpPrompts: ["fix format"],
       branch: "feat/test",
     });
 
@@ -1179,6 +1179,72 @@ describe("ManagedAgentRunner SSE 経路 follow-up", () => {
     expect(warnLines.some((l) => l.includes("warn") || l.includes("follow"))).toBe(true);
 
     stderrMock.mockRestore();
+  });
+
+  it("followUpPrompts 2 件 → sendUserMessage が 2 回呼ばれる (SSE 経路)", async () => {
+    const sessionClient = makeMockSessionClient();
+    const githubClient = makeMockGithubClient();
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient,
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const ctx = makeCtx({
+      step: makeDesignStep(),
+      followUpPrompts: ["fix-rule-1", "fix-rule-2"],
+      branch: "feat/test",
+    });
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(sessionClient.sendUserMessage).toHaveBeenCalledTimes(2);
+    expect(sessionClient.pollUntilComplete).toHaveBeenCalledTimes(2);
+  });
+
+  it("1 つ目の follow turn が失敗しても 2 つ目が実行される (graceful N-stage)", async () => {
+    const warnLines: string[] = [];
+    const stderrMock2 = vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      warnLines.push(String(chunk));
+      return true;
+    });
+
+    let sendCallCount = 0;
+    const sessionClient: SessionClient = {
+      ...makeMockSessionClient(),
+      sendUserMessage: vi.fn().mockImplementation(() => {
+        sendCallCount++;
+        if (sendCallCount === 1) {
+          return Promise.reject(new Error("first follow failed"));
+        }
+        return Promise.resolve();
+      }),
+    };
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const ctx = makeCtx({
+      step: makeDesignStep(),
+      followUpPrompts: ["fix-rule-1", "fix-rule-2"],
+      branch: "feat/test",
+    });
+
+    const result = await runner.run(ctx);
+
+    // Both follow turns attempted; first fails gracefully
+    expect(result.completionReason).toBe("success");
+    expect(sendCallCount).toBe(2); // both follow turns attempted
+    expect(warnLines.some((l) => l.includes("warn") || l.includes("follow"))).toBe(true);
+
+    stderrMock2.mockRestore();
   });
 });
 
@@ -1205,7 +1271,7 @@ describe("ManagedAgentRunner polling 経路 follow-up", () => {
     const resultPath = specReviewResultPath("test-slug", 1);
     const ctx = makeCtx({
       step: { ...makePollingStyleStep("spec-review", "spec-review", resultPath), followUpPrompt: "fix format" },
-      followUpPrompt: "fix format",
+      followUpPrompts: ["fix format"],
     });
 
     const result = await runner.run(ctx);
@@ -1238,7 +1304,7 @@ describe("ManagedAgentRunner polling 経路 follow-up", () => {
 
     const ctx = makeCtx({
       step: { ...makePollingStyleStep("spec-review", "spec-review"), followUpPrompt: "fix format" },
-      followUpPrompt: "fix format",
+      followUpPrompts: ["fix format"],
     });
 
     try {
@@ -1285,7 +1351,7 @@ describe("ManagedAgentRunner polling 経路 follow-up", () => {
     const resultPath = specReviewResultPath("test-slug", 1);
     const ctx = makeCtx({
       step: { ...makePollingStyleStep("spec-review", "spec-review", resultPath), followUpPrompt: "fix format" },
-      followUpPrompt: "fix format",
+      followUpPrompts: ["fix format"],
     });
 
     const result = await runner.run(ctx);
@@ -1295,6 +1361,33 @@ describe("ManagedAgentRunner polling 経路 follow-up", () => {
     expect(warnLines.some((l) => l.includes("warn") || l.includes("follow"))).toBe(true);
 
     stderrMock.mockRestore();
+  });
+
+  it("followUpPrompts 2 件 → sendUserMessage が 3 回呼ばれる (polling 経路: 1 initial + 2 follow)", async () => {
+    const sessionClient = makeMockSessionClient();
+    const githubClient = makeMockGithubClient({
+      getRawFile: vi.fn().mockResolvedValue("verdict: approved"),
+    });
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient,
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const resultPath = specReviewResultPath("test-slug", 1);
+    const ctx = makeCtx({
+      step: { ...makePollingStyleStep("spec-review", "spec-review", resultPath) },
+      followUpPrompts: ["rule-1", "rule-2"],
+    });
+
+    const result = await runner.run(ctx);
+    expect(result.completionReason).toBe("success");
+    // sendUserMessage: 1 initial + 2 follow = 3 total
+    expect(sessionClient.sendUserMessage).toHaveBeenCalledTimes(3);
+    // pollUntilComplete: 1 initial + 2 follow = 3 total
+    expect(sessionClient.pollUntilComplete).toHaveBeenCalledTimes(3);
   });
 });
 

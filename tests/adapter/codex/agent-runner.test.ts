@@ -406,7 +406,7 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
     const factory = makeCodexFactory(thread);
     const runner = new CodexAgentRunner({ _codexFactory: factory });
 
-    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "fix format violations" }), followUpPrompt: "fix format violations" });
+    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "fix format violations" }), followUpPrompts: ["fix format violations"] });
     const result = await runner.run(ctx);
 
     expect(result.completionReason).toBe("success");
@@ -419,7 +419,7 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
     const factory = makeCodexFactory(thread);
     const runner = new CodexAgentRunner({ _codexFactory: factory });
 
-    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "read rules and fix" }), followUpPrompt: "read rules and fix" });
+    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "read rules and fix" }), followUpPrompts: ["read rules and fix"] });
     await runner.run(ctx);
 
     expect(mockRun).toHaveBeenCalledTimes(2);
@@ -466,7 +466,7 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
     });
     const runner = new CodexAgentRunner({ _codexFactory: factory });
 
-    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "fix it" }), followUpPrompt: "fix it" });
+    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "fix it" }), followUpPrompts: ["fix it"] });
     const result = await runner.run(ctx);
 
     expect(result.completionReason).toBe("success");
@@ -497,7 +497,7 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
     });
     const runner = new CodexAgentRunner({ _codexFactory: factory });
 
-    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "follow" }), followUpPrompt: "follow" });
+    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "follow" }), followUpPrompts: ["follow"] });
     await runner.run(ctx);
 
     expect(callCount).toBe(2);
@@ -505,5 +505,36 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
     expect(receivedSignals[0]).toBeDefined();
     expect(receivedSignals[1]).toBeDefined();
     expect(receivedSignals[0]).toBe(receivedSignals[1]); // same signal
+  });
+
+  it("followUpPrompts 2 件: thread.run が 3 回呼ばれる", async () => {
+    const thread = makeThread({ finalResponse: "done", id: "thread-n-stage" });
+    const mockRun = thread.run as ReturnType<typeof vi.fn>;
+    const factory = makeCodexFactory(thread);
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const ctx = makeCtx({ followUpPrompts: ["rule-1", "rule-2"] });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(mockRun).toHaveBeenCalledTimes(3);
+  });
+
+  it("Thread.id が null の場合 sessionId が undefined になる", async () => {
+    const nullIdThread: CodexThread = {
+      id: null,
+      run: vi.fn().mockResolvedValue({ finalResponse: "done", items: [], usage: null }),
+    };
+    const factory = vi.fn().mockReturnValue({
+      startThread: vi.fn().mockReturnValue(nullIdThread),
+      resumeThread: vi.fn().mockReturnValue(nullIdThread),
+    });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const ctx = makeCtx();
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.sessionId).toBeUndefined();
   });
 });

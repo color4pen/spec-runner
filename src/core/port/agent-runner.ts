@@ -59,11 +59,11 @@ export interface AgentRunContext {
    */
   resumeSessionId?: string;
   /**
-   * 作業 turn 後に同一 session へ投げる follow プロンプト。
-   * 指定時: adapter が作業 turn 完了後に同一 session で follow prompt を 1 本投げる。
-   * 未指定時: adapter は作業 turn のみで返す (既存挙動)。
+   * 作業 turn 後に同一 session へ投げる follow プロンプト列。
+   * 指定時: adapter が作業 turn 完了後に同一 session で各 prompt を順番に投げる。
+   * 未指定 / 空配列: adapter は作業 turn のみで返す (既存挙動)。
    */
-  followUpPrompt?: string;
+  followUpPrompts?: string[];
 }
 
 /**

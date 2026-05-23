@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import type { Step, AgentStep, CliStep } from "./types.js";
 import type { JobState, Verdict, ModelUsage } from "../../state/schema.js";
 import type { PipelineDeps, StoreFactory } from "../types.js";
@@ -16,6 +16,8 @@ import type { ErrorInfo } from "../../state/schema.js";
 import { getBranchPrefix } from "../../config/type-config.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { projectMdPath } from "../../util/paths.js";
+import { resolveStepRules } from "./rules-resolve.js";
+import { buildRulesFollowUpPrompts } from "./rules-followup-prompts.js";
 import { gitExec, defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
 import { FIXER_STEP_NAMES, getPreviousSessionId } from "./fixer-helpers.js";
 import { commitAndPush, type CommitPushInfra } from "./commit-push.js";
@@ -111,9 +113,10 @@ export class StepExecutor {
       message: `Starting ${step.name} step`,
     });
 
+    const cwd = deps.cwd ?? process.cwd();
+
     let projectContext: string | undefined;
     if (step.needsProjectContext === true) {
-      const cwd = deps.cwd ?? process.cwd();
       const pmPath = path.join(cwd, projectMdPath());
       try {
         projectContext = await readFile(pmPath, "utf-8");
@@ -121,6 +124,18 @@ export class StepExecutor {
         // File not found — projectContext remains undefined
       }
     }
+
+    // Resolve project rules for this step and build follow-up prompt list.
+    const ruleContents = await resolveStepRules(step.name, cwd, {
+      readdir: (dir: string) => readdir(dir),
+      readFile: async (filePath: string, _enc: string): Promise<string> => readFile(filePath, "utf-8"),
+    });
+    const rulesPrompts = buildRulesFollowUpPrompts(ruleContents);
+    const existingFollowUp = step.getFollowUpPrompt?.(state, deps) ?? step.followUpPrompt;
+    const allFollowUpPrompts = [
+      ...(existingFollowUp ? [existingFollowUp] : []),
+      ...rulesPrompts,
+    ];
 
     // For fixer steps, pass the previous session ID so adapters can continue the session.
     // Non-fixer steps always get undefined (new session).
@@ -133,14 +148,14 @@ export class StepExecutor {
       state,
       branch: state.branch ?? "",
       slug: deps.slug,
-      cwd: deps.cwd ?? process.cwd(),
+      cwd,
       requestContent: deps.request.content,
       requestAdr: deps.request.adr,
       config: deps.config,
       dynamicContext: deps.dynamicContext,
       projectContext,
       resumeSessionId,
-      followUpPrompt: step.getFollowUpPrompt?.(state, deps) ?? step.followUpPrompt,
+      followUpPrompts: allFollowUpPrompts.length > 0 ? allFollowUpPrompts : undefined,
       emit: (event: string, payload: Record<string, unknown>) => {
         // Forward adapter events to the event bus
         this.events.emit(event as Parameters<EventBus["emit"]>[0], payload as never);
@@ -151,7 +166,7 @@ export class StepExecutor {
     // gitExec returns null on failure (non-git dir, etc.) — safe to use without try/catch.
     let headBeforeStep: string | null = null;
     if (deps.config.runtime === "local") {
-      headBeforeStep = await gitExec(this.spawnFn, deps.cwd ?? process.cwd(), ["rev-parse", "HEAD"]);
+      headBeforeStep = await gitExec(this.spawnFn, cwd, ["rev-parse", "HEAD"]);
     }
 
     const startedAt = new Date().toISOString();

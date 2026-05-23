@@ -256,53 +256,55 @@ export class ClaudeCodeRunner implements AgentRunner {
         extractedSessionId = successResult.session_id;
       }
 
-      // Follow-up turn (if configured and work turn succeeded)
+      // Follow-up turns (if configured and work turn succeeded) — N-stage loop
       if (shouldRunFollowUp(ctx, "success") && extractedSessionId) {
-        const followUpOptions: Record<string, unknown> = {
-          ...queryOptions,
-          resume: extractedSessionId,
-        };
-        const followMessages = this.queryFn({ prompt: ctx.followUpPrompt!, options: followUpOptions });
-        let followLastResult: SDKResultMessage | null = null;
-        for await (const message of followMessages as AsyncGenerator<SDKMessage, void>) {
-          emitToolProgress(message, ctx.emit, step.name);
-          if (message.type === "result") {
-            followLastResult = message as SDKResultMessage;
-          }
-        }
-
-        if (followLastResult && followLastResult.subtype !== "success") {
-          const followErrorResult = followLastResult as SDKResultMessage & { errors?: string[] };
-          return {
-            completionReason: "error",
-            resultContent: null,
-            error: Object.assign(
-              new Error(`Claude Code SDK follow-up query failed: ${followErrorResult.subtype}`),
-              { code: "CLAUDE_CODE_QUERY_FAILED" },
-            ),
+        for (const followPrompt of ctx.followUpPrompts!) {
+          const followUpOptions: Record<string, unknown> = {
+            ...queryOptions,
+            resume: extractedSessionId,
           };
-        }
-
-        if (followLastResult && followLastResult.subtype === "success") {
-          const followSuccessResult = followLastResult as SDKResultSuccess;
-          const rawUsage = followSuccessResult.modelUsage;
-          if (rawUsage && typeof rawUsage === "object" && Object.keys(rawUsage).length > 0) {
-            // resume は別 query invocation のため follow query の modelUsage は
-            // その invocation 単体の usage (履歴 re-read を input に含む)。session 累積ではない。
-            // 真の総コスト = 作業 query + follow query の加算 (= per-model sum)。
-            const summed: Record<string, ModelUsage> = { ...(extractedModelUsage ?? {}) };
-            for (const [model, usage] of Object.entries(rawUsage)) {
-              const prev = summed[model];
-              summed[model] = {
-                inputTokens: (prev?.inputTokens ?? 0) + usage.inputTokens,
-                outputTokens: (prev?.outputTokens ?? 0) + usage.outputTokens,
-                cacheReadInputTokens: (prev?.cacheReadInputTokens ?? 0) + usage.cacheReadInputTokens,
-                cacheCreationInputTokens: (prev?.cacheCreationInputTokens ?? 0) + usage.cacheCreationInputTokens,
-              };
+          const followMessages = this.queryFn({ prompt: followPrompt, options: followUpOptions });
+          let followLastResult: SDKResultMessage | null = null;
+          for await (const message of followMessages as AsyncGenerator<SDKMessage, void>) {
+            emitToolProgress(message, ctx.emit, step.name);
+            if (message.type === "result") {
+              followLastResult = message as SDKResultMessage;
             }
-            extractedModelUsage = summed;
           }
-          // Keep extractedSessionId from turn 1 (same session, sessionId should not change)
+
+          if (followLastResult && followLastResult.subtype !== "success") {
+            const followErrorResult = followLastResult as SDKResultMessage & { errors?: string[] };
+            return {
+              completionReason: "error",
+              resultContent: null,
+              error: Object.assign(
+                new Error(`Claude Code SDK follow-up query failed: ${followErrorResult.subtype}`),
+                { code: "CLAUDE_CODE_QUERY_FAILED" },
+              ),
+            };
+          }
+
+          if (followLastResult && followLastResult.subtype === "success") {
+            const followSuccessResult = followLastResult as SDKResultSuccess;
+            const rawUsage = followSuccessResult.modelUsage;
+            if (rawUsage && typeof rawUsage === "object" && Object.keys(rawUsage).length > 0) {
+              // resume は別 query invocation のため follow query の modelUsage は
+              // その invocation 単体の usage (履歴 re-read を input に含む)。session 累積ではない。
+              // 真の総コスト = 作業 query + 全 follow query の加算 (= per-model sum)。
+              const summed: Record<string, ModelUsage> = { ...(extractedModelUsage ?? {}) };
+              for (const [model, usage] of Object.entries(rawUsage)) {
+                const prev = summed[model];
+                summed[model] = {
+                  inputTokens: (prev?.inputTokens ?? 0) + usage.inputTokens,
+                  outputTokens: (prev?.outputTokens ?? 0) + usage.outputTokens,
+                  cacheReadInputTokens: (prev?.cacheReadInputTokens ?? 0) + usage.cacheReadInputTokens,
+                  cacheCreationInputTokens: (prev?.cacheCreationInputTokens ?? 0) + usage.cacheCreationInputTokens,
+                };
+              }
+              extractedModelUsage = summed;
+            }
+            // Keep extractedSessionId from turn 1 (same session, sessionId should not change)
+          }
         }
       }
 

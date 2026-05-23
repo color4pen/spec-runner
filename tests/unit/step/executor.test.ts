@@ -1122,10 +1122,10 @@ describe("TC-06: runCliStep — StepRun.startedAt < StepRun.endedAt (success pat
 });
 
 // ---------------------------------------------------------------------------
-// TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt に転記する
+// TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompts に変換する
 // ---------------------------------------------------------------------------
 
-describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt に転記する", () => {
+describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompts に変換する", () => {
   function makeCapturingFollowUpRunner(): {
     runner: AgentRunner;
     captured: { ctx: AgentRunContext | undefined };
@@ -1163,7 +1163,7 @@ describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt
     };
   }
 
-  it("TC-05: step.followUpPrompt が ctx.followUpPrompt に転記される", async () => {
+  it("TC-05: step.followUpPrompt が ctx.followUpPrompts の先頭要素になる", async () => {
     const { runner, captured } = makeCapturingFollowUpRunner();
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, defaultStoreFactory);
@@ -1183,10 +1183,10 @@ describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt
     await executor.execute(step, state, makeFollowUpDeps());
 
     expect(captured.ctx).toBeDefined();
-    expect(captured.ctx!.followUpPrompt).toBe("fix format violations");
+    expect(captured.ctx!.followUpPrompts).toContain("fix format violations");
   });
 
-  it("TC-06: followUpPrompt 未設定の step では ctx.followUpPrompt が undefined", async () => {
+  it("TC-06: followUpPrompt 未設定の step では ctx.followUpPrompts が undefined", async () => {
     const { runner, captured } = makeCapturingFollowUpRunner();
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, defaultStoreFactory);
@@ -1206,7 +1206,8 @@ describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt
     await executor.execute(step, state, makeFollowUpDeps());
 
     expect(captured.ctx).toBeDefined();
-    expect(captured.ctx!.followUpPrompt).toBeUndefined();
+    // No followUpPrompt on step + no rules files → undefined or empty
+    expect(!captured.ctx!.followUpPrompts || captured.ctx!.followUpPrompts.length === 0).toBe(true);
   });
 
   it("TC-06-new: getFollowUpPrompt が定義されている場合、静的 followUpPrompt より優先される", async () => {
@@ -1229,7 +1230,8 @@ describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt
     await executor.execute(step, state, makeFollowUpDeps());
 
     expect(captured.ctx).toBeDefined();
-    expect(captured.ctx!.followUpPrompt).toBe("dynamic-value");
+    expect(captured.ctx!.followUpPrompts).toContain("dynamic-value");
+    expect(captured.ctx!.followUpPrompts).not.toContain("static-value");
   });
 
   it("TC-07: getFollowUpPrompt が undefined を返すと静的 followUpPrompt にフォールバックする", async () => {
@@ -1252,6 +1254,6 @@ describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt
     await executor.execute(step, state, makeFollowUpDeps());
 
     expect(captured.ctx).toBeDefined();
-    expect(captured.ctx!.followUpPrompt).toBe("static-value");
+    expect(captured.ctx!.followUpPrompts).toContain("static-value");
   });
 });

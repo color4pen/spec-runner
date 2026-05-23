@@ -8,6 +8,7 @@ import {
   requestMdPath,
   changesDirRel,
   parseArchiveDirName,
+  stepRulesDirRel,
 } from "../../src/util/paths.js";
 
 describe("changeFolderPath", () => {
@@ -94,6 +95,20 @@ describe("changesDirRel", () => {
   // TC-007
   it("returns the changes directory path", () => {
     expect(changesDirRel()).toBe("specrunner/changes");
+  });
+});
+
+describe("stepRulesDirRel", () => {
+  it('returns "specrunner/rules/<stepName>"', () => {
+    expect(stepRulesDirRel("design")).toBe("specrunner/rules/design");
+  });
+
+  it("handles step names with hyphens", () => {
+    expect(stepRulesDirRel("spec-review")).toBe("specrunner/rules/spec-review");
+  });
+
+  it("handles implementer step", () => {
+    expect(stepRulesDirRel("implementer")).toBe("specrunner/rules/implementer");
   });
 });
 

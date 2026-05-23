@@ -49,8 +49,8 @@ interface CodexUsage {
 
 // Injectable for testing
 export interface CodexThread {
-  /** Unique identifier for this thread (used for session continuity). */
-  id: string;
+  /** Unique identifier for this thread (used for session continuity). null when not yet assigned. */
+  id: string | null;
   run(prompt: string, opts?: { signal?: AbortSignal }): Promise<Turn>;
 }
 
@@ -126,7 +126,7 @@ export class CodexAgentRunner implements AgentRunner {
     }
 
     let turn: Turn;
-    let threadId: string;
+    let threadId: string | null;
     let activeThread: CodexThread;
     try {
       const codex = this.codexFactory();
@@ -171,23 +171,25 @@ export class CodexAgentRunner implements AgentRunner {
         }
       }
 
-      // Follow-up turn: run on same thread with follow prompt
+      // Follow-up turns (N-stage loop): run on same thread for each follow prompt
       if (shouldRunFollowUp(ctx, "success")) {
-        const turn1Usage = turn.usage ? { ...turn.usage } : null;
-        const turn2 = await activeThread.run(ctx.followUpPrompt!, { signal: abortController.signal });
+        for (const followPrompt of ctx.followUpPrompts!) {
+          const prevUsage = turn.usage ? { ...turn.usage } : null;
+          const followTurn = await activeThread.run(followPrompt, { signal: abortController.signal });
 
-        // Accumulate usage (adapter native: per-turn addition for Codex)
-        let accumulatedUsage = turn2.usage;
-        if (turn2.usage && turn1Usage) {
-          accumulatedUsage = {
-            input_tokens: turn1Usage.input_tokens + turn2.usage.input_tokens,
-            output_tokens: turn1Usage.output_tokens + turn2.usage.output_tokens,
-            cached_input_tokens: (turn1Usage.cached_input_tokens ?? 0) + (turn2.usage.cached_input_tokens ?? 0),
-          };
+          // Accumulate usage (adapter native: per-turn addition for Codex)
+          let accumulatedUsage = followTurn.usage;
+          if (followTurn.usage && prevUsage) {
+            accumulatedUsage = {
+              input_tokens: prevUsage.input_tokens + followTurn.usage.input_tokens,
+              output_tokens: prevUsage.output_tokens + followTurn.usage.output_tokens,
+              cached_input_tokens: (prevUsage.cached_input_tokens ?? 0) + (followTurn.usage.cached_input_tokens ?? 0),
+            };
+          }
+
+          // Update turn to follow turn result (with accumulated usage)
+          turn = { ...followTurn, usage: accumulatedUsage };
         }
-
-        // Update turn to follow turn result (with accumulated usage)
-        turn = { ...turn2, usage: accumulatedUsage };
       }
     } catch (err) {
       if (abortController.signal.aborted && timeoutId !== undefined) {
@@ -262,7 +264,7 @@ export class CodexAgentRunner implements AgentRunner {
       completionReason: "success",
       resultContent: null,
       modelUsage,
-      sessionId: threadId!,
+      sessionId: threadId ?? undefined,
     };
     return mergeFollowUpResult(baseResult, resultContent);
   }

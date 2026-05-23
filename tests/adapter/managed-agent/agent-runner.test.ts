@@ -779,7 +779,7 @@ describe("TC-02-09: design follow-up NOT called when sseEndTurn=false (polling f
     githubClient.verifyPath.mockResolvedValue(true);
 
     // followUpPrompt is set — shouldRunFollowUp would return true, but sseEndTurn=false
-    const ctx = makeDesignCtx({ followUpPrompt: "please commit" });
+    const ctx = makeDesignCtx({ followUpPrompts: ["please commit"] });
     const result = await runner.run(ctx);
 
     expect(result.completionReason).toBe("success");
@@ -798,7 +798,7 @@ describe("TC-02-10: polling follow-up IS called when shouldRunFollowUp is true",
     // Follow-up poll also succeeds
     sessionClient.pollUntilComplete.mockResolvedValueOnce({ status: "idle" });
 
-    const ctx = makePollingCtx({ followUpPrompt: "now commit and push" });
+    const ctx = makePollingCtx({ followUpPrompts: ["now commit and push"] });
     const result = await runner.run(ctx);
 
     expect(result.completionReason).toBe("success");

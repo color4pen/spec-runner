@@ -13,24 +13,28 @@ function makeBaseResult(overrides: Partial<AgentRunResult> = {}): AgentRunResult
 }
 
 describe("shouldRunFollowUp", () => {
-  it("returns true when followUpPrompt is truthy and completionReason is success", () => {
-    expect(shouldRunFollowUp({ followUpPrompt: "fix this" }, "success")).toBe(true);
+  it("returns true when followUpPrompts has entries and completionReason is success", () => {
+    expect(shouldRunFollowUp({ followUpPrompts: ["fix this"] }, "success")).toBe(true);
   });
 
-  it("returns false when followUpPrompt is truthy and completionReason is error", () => {
-    expect(shouldRunFollowUp({ followUpPrompt: "fix this" }, "error")).toBe(false);
+  it("returns true when followUpPrompts has multiple entries and completionReason is success", () => {
+    expect(shouldRunFollowUp({ followUpPrompts: ["a", "b"] }, "success")).toBe(true);
   });
 
-  it("returns false when followUpPrompt is truthy and completionReason is timeout", () => {
-    expect(shouldRunFollowUp({ followUpPrompt: "fix this" }, "timeout")).toBe(false);
+  it("returns false when followUpPrompts has entries and completionReason is error", () => {
+    expect(shouldRunFollowUp({ followUpPrompts: ["fix this"] }, "error")).toBe(false);
   });
 
-  it("returns false when followUpPrompt is undefined and completionReason is success", () => {
-    expect(shouldRunFollowUp({ followUpPrompt: undefined }, "success")).toBe(false);
+  it("returns false when followUpPrompts has entries and completionReason is timeout", () => {
+    expect(shouldRunFollowUp({ followUpPrompts: ["fix this"] }, "timeout")).toBe(false);
   });
 
-  it("returns false when followUpPrompt is empty string and completionReason is success", () => {
-    expect(shouldRunFollowUp({ followUpPrompt: "" }, "success")).toBe(false);
+  it("returns false when followUpPrompts is empty array and completionReason is success", () => {
+    expect(shouldRunFollowUp({ followUpPrompts: [] }, "success")).toBe(false);
+  });
+
+  it("returns false when followUpPrompts is undefined and completionReason is success", () => {
+    expect(shouldRunFollowUp({ followUpPrompts: undefined }, "success")).toBe(false);
   });
 });
 

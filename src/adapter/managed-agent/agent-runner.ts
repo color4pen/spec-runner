@@ -170,7 +170,9 @@ export class ManagedAgentRunner implements AgentRunner {
     const effectiveTimeoutMs = this.resolveEffectiveTimeout(ctx.config, ctx.step.name, ctx.step.agent.model);
 
     if (sseEndTurn && shouldRunFollowUp(ctx, "success")) {
-      await this.executeFollowUpTurn(sessionId, ctx.step, ctx.followUpPrompt!, effectiveTimeoutMs);
+      for (const followPrompt of ctx.followUpPrompts!) {
+        await this.executeFollowUpTurn(sessionId, ctx.step, followPrompt, effectiveTimeoutMs);
+      }
     }
 
     const modelUsage = await this.readSessionUsage(sessionId, ctx.step.agent.model);
@@ -350,7 +352,9 @@ export class ManagedAgentRunner implements AgentRunner {
     }
 
     if (shouldRunFollowUp(ctx, "success")) {
-      await this.executeFollowUpTurn(sessionId, ctx.step, ctx.followUpPrompt!, effectiveTimeoutMs);
+      for (const followPrompt of ctx.followUpPrompts!) {
+        await this.executeFollowUpTurn(sessionId, ctx.step, followPrompt, effectiveTimeoutMs);
+      }
     }
 
     const modelUsage = await this.readSessionUsage(sessionId, ctx.step.agent.model);

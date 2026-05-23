@@ -142,65 +142,44 @@ Define the ClaudeCodeRunner adapter that implements AgentRunner using the Claude
 - **WHEN** `ClaudeCodeRunner.run(ctx)` がその step を実行する
 - **THEN** SDK `query()` の `options.maxTurns` は `100` である
 
-### Requirement: ClaudeCodeRunner は followUpPrompt 指定時に 2 段実行する
+### Requirement: ClaudeCodeRunner は N 段 follow-up を実行する
 
-`ClaudeCodeRunner.run(ctx)` SHALL `ctx.followUpPrompt` が指定されている場合、作業 turn 完了後に同一 session で follow プロンプトを 1 本投げる 2 段実行を行う。
+`ClaudeCodeRunner.run(ctx)` SHALL `ctx.followUpPrompts` が non-empty かつ作業 turn が success の場合、各 prompt を順番に同一 session で実行する N 段 follow-up を行う。
 
-2 段実行の手順:
+N 段 follow-up の手順:
+1. 作業 turn を `queryFn()` で実行 (既存)
+2. `ctx.followUpPrompts` の各 prompt に対して、`resume: extractedSessionId` で `queryFn()` を再呼び出し
+3. 各 follow turn の modelUsage を累積加算 (per-model sum)
+4. 最終 turn の resultContent を `mergeFollowUpResult` で採用
+5. いずれかの follow turn が error の場合、即座に error result を返す
 
-1. 作業 turn を実行 (既存の `queryFn` 呼び出し)
-2. 作業 turn の result から `session_id` を取得する
-3. `queryFn` を 2 回目で `resume: session_id` option 付きで呼び出し、`ctx.followUpPrompt` を prompt として渡す
-4. follow turn 完了後の result を最終 result として返す
+AbortController は run() 全体に 1 本。N 段全 follow turn を同一 AbortController で覆う。
 
-`ctx.followUpPrompt` が未指定の場合は `if (!ctx.followUpPrompt) return result;` 相当の早期 return で既存パスを汚さず分離する。
+#### Scenario: N 段 follow-up が順番に実行される
 
-#### Scenario: followUpPrompt 指定時に 2 回 query が呼ばれる
-
-- **GIVEN** `ctx.followUpPrompt` が設定されている
+- **GIVEN** `ctx.followUpPrompts` が `["rule-a prompt", "rule-b prompt"]` である
+- **AND** 作業 turn が success で sessionId が取得されている
 - **WHEN** `ClaudeCodeRunner.run(ctx)` を実行する
-- **THEN** `queryFn` が 2 回呼ばれる
-- **AND** 1 回目は `fullPrompt` (作業 turn)
-- **AND** 2 回目は `ctx.followUpPrompt` で `resume: sessionId` option 付き
+- **THEN** `queryFn` が 3 回呼ばれる (作業 turn + follow turn x2)
+- **AND** 2 回目と 3 回目の呼び出しは `resume: sessionId` オプションを含む
+- **AND** 2 回目の prompt は `"rule-a prompt"` である
+- **AND** 3 回目の prompt は `"rule-b prompt"` である
 
-#### Scenario: follow turn が同一 session を resume する
+#### Scenario: followUpPrompts が空の場合は作業 turn のみ
 
-- **GIVEN** 作業 turn の result が `session_id: "sess-abc"` を返す
-- **WHEN** follow turn の `queryFn` 呼び出しを inspect する
-- **THEN** options に `resume: "sess-abc"` が含まれる
-
-#### Scenario: followUpPrompt 未指定時は 1 回のみ
-
-- **GIVEN** `ctx.followUpPrompt` が undefined である
+- **GIVEN** `ctx.followUpPrompts` が `undefined` または `[]` である
 - **WHEN** `ClaudeCodeRunner.run(ctx)` を実行する
 - **THEN** `queryFn` が 1 回のみ呼ばれる
-- **AND** result は従来と同一構造である
 
-### Requirement: ClaudeCodeRunner は作業 turn と follow turn の modelUsage を加算して session 総量とする
+#### Scenario: N 段 follow-up の modelUsage が累積される
 
-`ClaudeCodeRunner` SHALL 作業 turn と follow turn の `modelUsage` を per-model で加算し、session 総量として最終 result に採用する。
+- **GIVEN** 3 turn 実行 (作業 + follow x2) で各 turn が modelUsage を返す
+- **WHEN** `ClaudeCodeRunner.run(ctx)` が完了する
+- **THEN** 結果の modelUsage は 3 turn 分の per-model 加算である
 
-follow turn は `resume` による別 query invocation であり、follow query の `modelUsage` はその invocation 単体の usage (= 履歴 re-read を input に含む) であって session 累積ではない。真の総コストは作業 query と follow query の加算で得られるため、両者を per-model で合算する MUST。
+#### Scenario: follow turn 中の AbortController が全 turn を覆う
 
-作業 turn のみの場合は従来通りその turn の `modelUsage` を返す。
-
-#### Scenario: 作業 turn と follow turn の modelUsage が加算される
-
-- **GIVEN** 作業 turn の `modelUsage` が `{ inputTokens: 1000, outputTokens: 200 }` である
-- **AND** follow turn の `modelUsage` が `{ inputTokens: 1200, outputTokens: 150 }` である
-- **WHEN** `ClaudeCodeRunner.run(ctx)` の result を inspect する
-- **THEN** `result.modelUsage` は両者の per-model 加算 (`{ inputTokens: 2200, outputTokens: 350 }`) である
-
-### Requirement: ClaudeCodeRunner は follow turn を既存 AbortController で timeout する
-
-ClaudeCodeRunner の 2 段実行 SHALL 既存の AbortController を作業 turn と follow turn で共有する。turn ごとに個別の timeout を設けない。
-
-作業 turn + follow turn の合算が wall-clock timeout 1 本として有効になる。
-
-#### Scenario: timeout が作業 turn + follow turn 合算で適用される
-
-- **GIVEN** `resolvedConfig.timeoutMs` が 60000ms である
-- **AND** 作業 turn が 50000ms かかる
-- **WHEN** follow turn が 15000ms 目に到達する (合計 65000ms)
-- **THEN** AbortController が abort する
-- **AND** result は `completionReason: "timeout"` である
+- **GIVEN** `ctx.followUpPrompts` が `["a", "b", "c"]` で timeout が設定されている
+- **WHEN** 2 turn 目の途中で AbortController が abort される
+- **THEN** 残りの follow turn は実行されない
+- **AND** timeout result が返される
