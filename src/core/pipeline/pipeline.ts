@@ -259,13 +259,7 @@ export class Pipeline {
         }
 
         // Print final pipeline summary if spec-review was in the pipeline
-        if (this.steps.has(STEP_NAMES.SPEC_REVIEW)) {
-          const specReviewResults = state.steps?.[STEP_NAMES.SPEC_REVIEW] ?? [];
-          const finalVerdict = getLatestStepResult(state, STEP_NAMES.SPEC_REVIEW)?.verdict ?? "escalation";
-          stdoutWrite(
-            `Pipeline finished: spec-review iterations=${specReviewResults.length}, final verdict=${finalVerdict}\n`,
-          );
-        }
+        this.printPipelineFinished(state);
 
         // Normal completion → awaiting-merge
         if (nextStep === "end" && state.status === "running") {
@@ -316,14 +310,7 @@ export class Pipeline {
             // Conventional exhaustion (no fixer bypass)
             stdoutWrite(`[iter ${nextLoopIter}/${this.maxIterations}] retries exhausted on ${nextStep}, escalating\n`);
             state = await this.handleExhausted(state, deps, nextStep as string, "review-exhausted");
-
-            if (this.steps.has(STEP_NAMES.SPEC_REVIEW)) {
-              const specReviewResults = state.steps?.[STEP_NAMES.SPEC_REVIEW] ?? [];
-              const finalVerdict = getLatestStepResult(state, STEP_NAMES.SPEC_REVIEW)?.verdict ?? "escalation";
-              stdoutWrite(
-                `Pipeline finished: spec-review iterations=${specReviewResults.length}, final verdict=${finalVerdict}\n`,
-              );
-            }
+            this.printPipelineFinished(state);
             break;
           }
           // else: bypass — allow the +1 review iteration (fixer final iter review)
@@ -342,14 +329,7 @@ export class Pipeline {
           const exhaustedLoopName = pairedReview ?? (nextStep as string);
           stdoutWrite(`[iter ${this.maxIterations}/${this.maxIterations}] retries exhausted on ${exhaustedLoopName}, escalating\n`);
           state = await this.handleExhausted(state, deps, exhaustedLoopName, "review-after-final-fix");
-
-          if (this.steps.has(STEP_NAMES.SPEC_REVIEW)) {
-            const specReviewResults = state.steps?.[STEP_NAMES.SPEC_REVIEW] ?? [];
-            const finalVerdict = getLatestStepResult(state, STEP_NAMES.SPEC_REVIEW)?.verdict ?? "escalation";
-            stdoutWrite(
-              `Pipeline finished: spec-review iterations=${specReviewResults.length}, final verdict=${finalVerdict}\n`,
-            );
-          }
+          this.printPipelineFinished(state);
           break;
         }
       }
@@ -376,6 +356,16 @@ export class Pipeline {
     }
 
     return state;
+  }
+
+  /** Print the "Pipeline finished" summary line if spec-review was in the pipeline. */
+  private printPipelineFinished(state: JobState): void {
+    if (!this.steps.has(STEP_NAMES.SPEC_REVIEW)) return;
+    const specReviewResults = state.steps?.[STEP_NAMES.SPEC_REVIEW] ?? [];
+    const finalVerdict = getLatestStepResult(state, STEP_NAMES.SPEC_REVIEW)?.verdict ?? "escalation";
+    stdoutWrite(
+      `Pipeline finished: spec-review iterations=${specReviewResults.length}, final verdict=${finalVerdict}\n`,
+    );
   }
 
   /**

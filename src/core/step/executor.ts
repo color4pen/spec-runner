@@ -16,17 +16,9 @@ import type { ErrorInfo } from "../../state/schema.js";
 import { getBranchPrefix } from "../../config/type-config.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { projectMdPath } from "../../util/paths.js";
-import { gitExec, gitExecExitCode, defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
-import { noCommitDetectedError, pushFailedError, authoritySpecEditViolationError } from "../../errors.js";
+import { gitExec, defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
 import { FIXER_STEP_NAMES, getPreviousSessionId } from "./fixer-helpers.js";
-
-/** Prefix that identifies authority spec files. Delta specs under specrunner/changes/ are NOT violations. */
-const AUTHORITY_SPEC_PREFIX = "specrunner/specs/";
-
-/** Return paths that start with the authority spec prefix. */
-function findAuthoritySpecViolations(filePaths: string[]): string[] {
-  return filePaths.filter(p => p.startsWith(AUTHORITY_SPEC_PREFIX));
-}
+import { commitAndPush, type CommitPushInfra } from "./commit-push.js";
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -40,6 +32,7 @@ export class StepExecutor {
   private readonly spawnFn: SpawnFn;
   private readonly sleepFn: (ms: number) => Promise<void>;
   private readonly storeFactory: StoreFactory;
+  private readonly commitPushInfra: CommitPushInfra;
 
   constructor(
     private readonly events: EventBus,
@@ -51,6 +44,7 @@ export class StepExecutor {
     this.storeFactory = storeFactory;
     this.spawnFn = spawnFn ?? defaultSpawnFn;
     this.sleepFn = sleepFn ?? ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+    this.commitPushInfra = { spawnFn: this.spawnFn, sleepFn: this.sleepFn, events: this.events };
   }
 
   /**
@@ -231,7 +225,7 @@ export class StepExecutor {
     // state and have state attached to the thrown error so the pipeline can propagate the error
     // code correctly (otherwise the pipeline safety net overwrites it with UNEXPECTED_STEP_ERROR).
     if (deps.config.runtime === "local") {
-      await this.commitAndPush(step, state, deps, headBeforeStep).catch(async (thrownErr: unknown) => {
+      await commitAndPush(step, state, deps, headBeforeStep, this.commitPushInfra).catch(async (thrownErr: unknown) => {
         const err = thrownErr as Error & { code?: string; hint?: string };
         const errorInfo: ErrorInfo = {
           code: err.code ?? "COMMIT_AND_PUSH_FAILED",
@@ -251,115 +245,6 @@ export class StepExecutor {
       agentBranch: runResult.agentBranch,
       modelUsage: runResult.modelUsage,
     });
-  }
-
-  /**
-   * Stage all changes, commit, and push to origin.
-   *
-   * Extended with HEAD comparison for agent self-commit tolerance:
-   * - git add -A
-   * - git diff --cached --quiet (exit 0 = no changes)
-   * - if no changes and requiresCommit:
-   *   - compare headBeforeStep with current HEAD
-   *   - if HEAD advanced (agent self-committed): push only, log detection message
-   *   - otherwise: throw noCommitDetectedError
-   * - if no changes and !requiresCommit: return silently
-   * - git commit -m "${step.name}: ${slug}"
-   * - git push origin ${branch} — retry once after 5s on failure
-   * - if second push fails: throw pushFailedError
-   * - emit commit:push on success
-   */
-  private async commitAndPush(
-    step: AgentStep,
-    state: JobState,
-    deps: PipelineDeps,
-    headBeforeStep: string | null,
-  ): Promise<void> {
-    const cwd = deps.cwd ?? process.cwd();
-    const branch = state.branch ?? "";
-    const slug = deps.slug;
-
-    // Stage all changes. If git add fails (not a git repo, exit 128, etc.), handle gracefully.
-    const addExitCode = await gitExecExitCode(this.spawnFn, cwd, ["add", "-A"]);
-    if (addExitCode !== 0) {
-      // git is non-functional in this directory (e.g., not a git repo).
-      if (step.requiresCommit) {
-        throw noCommitDetectedError(step.name, branch);
-      }
-      return;
-    }
-
-    // Check if there are staged changes.
-    // `git diff --cached --quiet` exits 0 when no staged changes, 1 when there are staged changes.
-    const diffExitCode = await gitExecExitCode(this.spawnFn, cwd, ["diff", "--cached", "--quiet"]);
-    const hasChanges = diffExitCode === 1;
-
-    if (!hasChanges) {
-      if (step.requiresCommit) {
-        // Check if HEAD advanced (agent self-committed before pipeline commit).
-        const headAfterStep = await gitExec(this.spawnFn, cwd, ["rev-parse", "HEAD"]);
-        if (headBeforeStep && headAfterStep && headAfterStep !== headBeforeStep) {
-          // Agent self-commit path: inspect HEAD diff for authority spec violations before pushing.
-          const headDiffOutput = await gitExec(this.spawnFn, cwd, ["diff", `${headBeforeStep}..${headAfterStep}`, "--name-only"]);
-          if (headDiffOutput) {
-            const headFilePaths = headDiffOutput.split("\n").filter(p => p.length > 0);
-            const headViolations = findAuthoritySpecViolations(headFilePaths);
-            if (headViolations.length > 0) {
-              throw authoritySpecEditViolationError(step.name, headViolations);
-            }
-          }
-          // Agent authored commit(s) since step start — push the existing commits as-is.
-          stderrWrite("Detected agent-authored commit(s) since step start; skipping pipeline commit and pushing as-is.\n");
-          await this.pushOnly(branch, cwd, step.name);
-          return;
-        }
-        throw noCommitDetectedError(step.name, branch);
-      }
-      // No changes and requiresCommit is falsy — silently skip
-      return;
-    }
-
-    // Staged changes exist — check for authority spec violations before committing.
-    const stagedFilesOutput = await gitExec(this.spawnFn, cwd, ["diff", "--cached", "--name-only"]);
-    if (stagedFilesOutput) {
-      const stagedFilePaths = stagedFilesOutput.split("\n").filter(p => p.length > 0);
-      const stagedViolations = findAuthoritySpecViolations(stagedFilePaths);
-      if (stagedViolations.length > 0) {
-        throw authoritySpecEditViolationError(step.name, stagedViolations);
-      }
-    }
-
-    // Commit
-    const commitMessage = `${step.name}: ${slug}`;
-    await gitExec(this.spawnFn, cwd, ["commit", "-m", commitMessage]);
-
-    // Push with one retry
-    await this.pushOnly(branch, cwd, step.name);
-  }
-
-  /**
-   * Push to origin with one retry on failure.
-   * Emits commit:push event on success.
-   * Throws pushFailedError if both attempts fail.
-   */
-  private async pushOnly(branch: string, cwd: string, stepName: string): Promise<void> {
-    const tryPush = () => gitExecExitCode(this.spawnFn, cwd, ["push", "origin", branch]);
-
-    const firstPushCode = await tryPush();
-    if (firstPushCode === 0) {
-      this.events.emit("commit:push", { step: stepName, branch });
-      return;
-    }
-
-    // Retry after 5 seconds (injectable for testing)
-    await this.sleepFn(5000);
-    const secondPushCode = await tryPush();
-    if (secondPushCode === 0) {
-      this.events.emit("commit:push", { step: stepName, branch });
-      return;
-    }
-
-    throw pushFailedError(stepName, branch, `exit code ${secondPushCode}`);
   }
 
   /**
