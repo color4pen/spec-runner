@@ -37,6 +37,10 @@ export async function main(): Promise<void> {
     const sub = args[1];
     const subDef = sub ? entry.subcommands[sub] : undefined;
     if (!subDef) {
+      if ((sub === "--help" || sub === "-h" || !sub) && entry.usage) {
+        process.stdout.write(entry.usage);
+        process.exit(0);
+      }
       process.stderr.write(
         sub
           ? `Unknown ${command} subcommand: ${sub}\n\n`

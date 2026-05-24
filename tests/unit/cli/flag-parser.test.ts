@@ -188,3 +188,54 @@ describe("1-14: flag before positional parses correctly", () => {
     expect(result.flags["verbose"]).toBe(true);
   });
 });
+
+// 1-15. positionals array collects all non-flag tokens
+describe("1-15: positionals array collects all non-flag tokens", () => {
+  it("captures multiple non-flag args in positionals array", () => {
+    const result = parseFlags(
+      ["implementer", "my-rule"],
+      {},
+      { name: "step-name rule-slug", required: true, count: 2 },
+    );
+    expect(result.positionals).toEqual(["implementer", "my-rule"]);
+  });
+
+  it("positional equals positionals[0]", () => {
+    const result = parseFlags(
+      ["implementer", "my-rule"],
+      {},
+      { name: "step-name rule-slug", required: true, count: 2 },
+    );
+    expect(result.positional).toBe(result.positionals[0]);
+    expect(result.positional).toBe("implementer");
+  });
+
+  it("positionals is empty array when no non-flag tokens", () => {
+    const result = parseFlags(["--verbose"], { verbose: { type: "boolean" } });
+    expect(result.positionals).toEqual([]);
+    expect(result.positional).toBeUndefined();
+  });
+});
+
+// 1-16. count: 2 requires at least 2 positionals
+describe("1-16: count: 2 requires two positionals", () => {
+  it("throws FlagParseError when only one positional is provided", () => {
+    expect(() =>
+      parseFlags(
+        ["implementer"],
+        {},
+        { name: "step-name rule-slug", required: true, count: 2 },
+      ),
+    ).toThrow(FlagParseError);
+  });
+
+  it("does not throw when exactly 2 positionals are provided", () => {
+    expect(() =>
+      parseFlags(
+        ["implementer", "my-rule"],
+        {},
+        { name: "step-name rule-slug", required: true, count: 2 },
+      ),
+    ).not.toThrow();
+  });
+});

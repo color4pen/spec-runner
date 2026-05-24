@@ -21,6 +21,7 @@ import { executeReview } from "../core/command/request-review.js";
 import { executeCreate } from "../core/command/request-create.js";
 import { executeList } from "../core/command/request-list.js";
 import { executeNew } from "../core/command/request-new.js";
+import { executeRulesNew } from "../core/command/rules-new.js";
 import { resolve as storeResolve } from "../core/request/store.js";
 import { AGENT_STEP_NAMES, CLI_STEP_NAMES } from "../core/step/step-names.js";
 import type { FlagDef, ParsedArgs } from "./flag-parser.js";
@@ -37,7 +38,7 @@ const VALID_JOB_ID_CHARS = /^[a-f0-9-]+$/;
 
 export interface CommandDef {
   flags: Record<string, FlagDef>;
-  positional?: { name: string; required: boolean };
+  positional?: { name: string; required: boolean; count?: number };
   usage?: string; // shown in error output for this command
   handler: (parsed: ParsedArgs) => Promise<void>;
 }
@@ -69,6 +70,9 @@ Job commands:
   job resume <slug>               halted job を再開
   job finish <slug>               PR merge + archive
 
+Rules commands:
+  rules new <step> <slug>         step 用の rules ファイルを scaffold
+
 Environment commands:
   init                            config scaffold
   login                           GitHub Device Flow OAuth
@@ -77,6 +81,45 @@ Environment commands:
 
 Aliases:
   run <slug|file>                 job start の互換 alias
+
+Options:
+  --help, -h    Show this help message
+`;
+
+export const RULES_USAGE = `Usage: specrunner rules new <step-name> <rule-slug>
+
+Scaffold a step-specific rules file at specrunner/rules/<step-name>/<NN>-<rule-slug>.md.
+
+Arguments:
+  <step-name>   Agent step name (see valid steps below)
+  <rule-slug>   Kebab-case identifier for the rule (e.g. no-inline-comment)
+
+Valid agent step names:
+  ${AGENT_STEP_NAMES.join(", ")}
+
+  Note: CLI steps (verification, pr-create, delta-spec-validation) are not accepted
+  because the executor ignores rules for CLI steps.
+
+Numbering:
+  Files are numbered automatically with a 2-digit zero-padded prefix (01-, 02-, ...).
+  The prefix is determined by scanning existing files and using max + 1.
+  An empty directory starts at 01-.
+
+Template:
+  The generated file includes a leading comment explaining the rules format,
+  and three recommended sections:
+    ## やめてほしいこと  (what to avoid)
+    ## こうしてほしいこと (what to do instead)
+    ## 例外             (exceptions)
+  These headings are suggestions — the CLI does not enforce them.
+
+Ordering:
+  The numeric prefix determines follow-up execution order (ascending).
+  Tip: place your most important rules last to leverage recency bias.
+
+Examples:
+  specrunner rules new implementer no-inline-comment
+  specrunner rules new code-review prefer-explicit-types
 
 Options:
   --help, -h    Show this help message
@@ -394,6 +437,21 @@ export const COMMANDS: Record<string, CommandEntry> = {
             process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);
             process.exit(1);
           }
+        },
+      },
+    },
+  },
+
+  rules: {
+    usage: RULES_USAGE,
+    subcommands: {
+      new: {
+        flags: {},
+        positional: { name: "step-name rule-slug", required: true, count: 2 },
+        handler: async (parsed) => {
+          const stepName = parsed.positionals[0]!;
+          const ruleSlug = parsed.positionals[1]!;
+          process.exit(await executeRulesNew(stepName, ruleSlug, process.cwd()));
         },
       },
     },

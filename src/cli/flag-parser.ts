@@ -10,7 +10,8 @@ export interface FlagDef {
 
 export interface ParsedArgs {
   flags: Record<string, string | boolean>;
-  positional?: string;
+  positional?: string;    // 後方互換: positionals[0]
+  positionals: string[];  // 全 non-flag トークン
 }
 
 export class FlagParseError extends Error {
@@ -27,19 +28,20 @@ export class FlagParseError extends Error {
  * 1. `--flag=value` → string flag stores value; boolean flag ignores value part
  * 2. `--flag` (no `=`) → boolean flag sets true; string flag consumes next arg
  * 3. `-h` → maps to `help: true`
- * 4. Non-flag tokens → first one becomes positional
+ * 4. Non-flag tokens → all collected into positionals array; positional = positionals[0]
  * 5. Unknown flag → FlagParseError
  * 6. Enum constraint violation → FlagParseError
  * 7. Required positional missing → FlagParseError
  * 8. String flag with no following value → FlagParseError
+ * 9. count: N → FlagParseError if positionals.length < N
  */
 export function parseFlags(
   rawArgs: string[],
   flagDefs: Record<string, FlagDef>,
-  positionalDef?: { name: string; required: boolean },
+  positionalDef?: { name: string; required: boolean; count?: number },
 ): ParsedArgs {
   const flags: Record<string, string | boolean> = {};
-  let positional: string | undefined;
+  const positionals: string[] = [];
   let i = 0;
 
   while (i < rawArgs.length) {
@@ -98,21 +100,24 @@ export function parseFlags(
         flags[flagName] = value;
       }
     } else {
-      // positional: take only the first one
-      if (positional === undefined) {
-        positional = arg;
-      }
+      // positional: collect all non-flag tokens
+      positionals.push(arg);
     }
 
     i++;
   }
 
-  // required positional check
-  if (positionalDef?.required && positional === undefined) {
-    throw new FlagParseError(
-      `requires a <${positionalDef.name}> argument`,
-    );
+  // required positional check (count-aware)
+  if (positionalDef?.required) {
+    const count = positionalDef.count ?? 1;
+    if (positionals.length < count) {
+      throw new FlagParseError(
+        count === 1
+          ? `requires a <${positionalDef.name}> argument`
+          : `requires <${positionalDef.name}> arguments`,
+      );
+    }
   }
 
-  return { flags, positional };
+  return { flags, positional: positionals[0], positionals };
 }
