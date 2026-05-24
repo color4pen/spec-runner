@@ -25,7 +25,7 @@ export async function review(
   if (fs.existsSync(path.resolve(cwd, slugOrPath))) {
     filePath = path.resolve(cwd, slugOrPath);
   } else {
-    filePath = store.resolve(cwd, slugOrPath);
+    filePath = store.resolveWithFallback(cwd, slugOrPath);
   }
   const content = await fsAsync.readFile(filePath, "utf-8");
   return reviewer.runReview(content, cwd, client);
@@ -48,5 +48,5 @@ export async function list(
 }
 
 export function resolve(cwd: string, slug: string): string {
-  return store.resolve(cwd, slug);
+  return store.resolveWithFallback(cwd, slug);
 }

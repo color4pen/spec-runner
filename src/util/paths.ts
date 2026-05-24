@@ -128,9 +128,17 @@ export function draftsDir(): string {
 
 /**
  * Returns the relative path to a draft request file for the given slug.
- * Example: draftPath("my-change") → "specrunner/drafts/my-change.md"
+ * Example: draftPath("my-change") → "specrunner/drafts/my-change/request.md"
  */
 export function draftPath(slug: string): string {
+  return `${DRAFTS_DIR}/${slug}/request.md`;
+}
+
+/**
+ * Returns the relative path to a draft request file in legacy flat-file format.
+ * Example: draftPathLegacy("my-change") → "specrunner/drafts/my-change.md"
+ */
+export function draftPathLegacy(slug: string): string {
   return `${DRAFTS_DIR}/${slug}.md`;
 }
 

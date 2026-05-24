@@ -1,6 +1,6 @@
 import * as path from "node:path";
 import * as fs from "node:fs";
-import { resolve as storeResolve } from "../core/request/store.js";
+import { resolveWithFallback as storeResolve } from "../core/request/store.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { createAnthropicClient } from "../adapter/managed-agent/client.js";
 import { createAnthropicSessionClient } from "../adapter/managed-agent/session-client.js";

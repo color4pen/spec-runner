@@ -22,7 +22,7 @@ import { executeCreate } from "../core/command/request-create.js";
 import { executeList } from "../core/command/request-list.js";
 import { executeNew } from "../core/command/request-new.js";
 import { executeRulesNew } from "../core/command/rules-new.js";
-import { resolve as storeResolve } from "../core/request/store.js";
+import { resolveWithFallback as storeResolve } from "../core/request/store.js";
 import { AGENT_STEP_NAMES, CLI_STEP_NAMES } from "../core/step/step-names.js";
 import type { FlagDef, ParsedArgs } from "./flag-parser.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";

@@ -73,12 +73,13 @@ describe("TC-GEN-001: generate() with valid mock client", () => {
     expect(result.content).toContain(expectedSlug);
     expect(result.content).not.toContain("<generated-slug>");
 
-    // Verify file was written to the store (flat form)
+    // Verify file was written to the store (directory format)
     const expectedPath = path.join(
       tempDir,
       "specrunner",
       "drafts",
-      expectedSlug + ".md",
+      expectedSlug,
+      "request.md",
     );
     const written = await fs.readFile(expectedPath, "utf-8");
     expect(written).toBe(result.content);
