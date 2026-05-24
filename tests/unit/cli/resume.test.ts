@@ -26,6 +26,7 @@ vi.mock("../../../src/config/store.js", () => ({
     runtime: "local",
     pipeline: { maxRetries: 2 },
     agents: {},
+    jobs: { location: "xdg" },
   }),
 }));
 

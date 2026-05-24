@@ -77,8 +77,8 @@ spec-runner の path 真理:
 - **Authority spec (baseline)**: \`specrunner/specs/<capability>/spec.md\` — PR 内では read-only
 - **Delta spec**: \`specrunner/changes/<slug>/specs/<capability>/spec.md\`
 - **Change folder**: \`specrunner/changes/<slug>/\`
-- **Job state**: \`~/.local/share/specrunner/jobs/<jobId>.json\`
-- **Verbose log**: \`~/.local/state/specrunner/logs/<jobId>.log\`
+- **Job state**: \`.specrunner/jobs/<jobId>.json\` (デフォルト。\`config.jobs.location: "xdg"\` 設定時は \`~/.local/share/specrunner/jobs/<jobId>.json\`)
+- **Verbose log**: \`.specrunner/logs/<jobId>.log\` (デフォルト。\`config.jobs.location: "xdg"\` 設定時は \`~/.local/state/specrunner/logs/<jobId>.log\`)
 
 ---
 

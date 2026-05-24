@@ -19,6 +19,8 @@ import { resolveGitHubToken } from "../core/credentials/github.js";
 import { getOriginInfo } from "../git/remote.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { SpecRunnerError } from "../errors.js";
+import { loadConfig } from "../config/store.js";
+import { setJobsLocation } from "../util/xdg.js";
 
 /**
  * Build a FinishFs from real fs modules.
@@ -102,6 +104,14 @@ export async function runFinish(opts: RunFinishOptions): Promise<number> {
     const message = err instanceof Error ? err.message : String(err);
     process.stderr.write(`Error: ${message}\n`);
     return 2;
+  }
+
+  // Set jobs storage location (opts.cwd is the repo root)
+  try {
+    const finishConfig = await loadConfig();
+    setJobsLocation(finishConfig.jobs?.location ?? "project", opts.cwd);
+  } catch {
+    setJobsLocation("xdg");
   }
 
   const githubClient = createGitHubClient(fetch, githubToken);

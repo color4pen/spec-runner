@@ -3,6 +3,9 @@ import type { JobState, JobStatus } from "../state/schema.js";
 import { getJobSlug } from "../state/job-slug.js";
 import { ACTIVE_STATUSES } from "../state/lifecycle.js";
 import type { GitHubClient } from "../core/port/github-client.js";
+import { loadConfig } from "../config/store.js";
+import { spawnCommand } from "../util/spawn.js";
+import { setJobsLocation } from "../util/xdg.js";
 
 /**
  * Format a job age in human-readable form.
@@ -120,6 +123,19 @@ export async function runPs(
   opts: { active?: boolean; all?: boolean; status?: string } = {},
   githubClient: GitHubClient | null = null,
 ): Promise<void> {
+  // Resolve jobs storage location; fall back to XDG on any error
+  try {
+    const config = await loadConfig();
+    const gitResult = await spawnCommand("git", ["rev-parse", "--show-toplevel"], { cwd: process.cwd() });
+    if (gitResult.exitCode === 0) {
+      setJobsLocation(config.jobs?.location ?? "project", gitResult.stdout.trim());
+    } else {
+      setJobsLocation("xdg");
+    }
+  } catch {
+    setJobsLocation("xdg");
+  }
+
   const allJobs = await listJobStates();
 
   let jobs: typeof allJobs;

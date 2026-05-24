@@ -12,6 +12,8 @@ import { SpecRunnerError } from "../errors.js";
 import { cancelSingleJob, cancelAllTerminated } from "../core/cancel/runner.js";
 import { createWorktreeManager } from "../core/worktree/manager.js";
 import { spawnCommand } from "../util/spawn.js";
+import { loadConfig } from "../config/store.js";
+import { setJobsLocation } from "../util/xdg.js";
 
 export interface RunCancelOptions {
   jobId?: string;
@@ -43,6 +45,21 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
     return 2;
   }
 
+  // Resolve jobs storage location before any job-state access; fall back to XDG on error
+  let cancelRepoRoot: string | null = null;
+  try {
+    const cancelConfig = await loadConfig();
+    const gitResult = await spawnCommand("git", ["rev-parse", "--show-toplevel"], { cwd: process.cwd() });
+    if (gitResult.exitCode === 0) {
+      cancelRepoRoot = gitResult.stdout.trim();
+      setJobsLocation(cancelConfig.jobs?.location ?? "project", cancelRepoRoot);
+    } else {
+      setJobsLocation("xdg");
+    }
+  } catch {
+    setJobsLocation("xdg");
+  }
+
   // --all-terminated bulk cleanup
   if (allTerminated) {
     const result = await cancelAllTerminated({ yes });
@@ -64,19 +81,22 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
     return 1;
   }
 
-  // Resolve repo root
-  let repoRoot: string;
-  try {
-    const result = await spawnCommand("git", ["rev-parse", "--show-toplevel"], { cwd: process.cwd() });
-    if (result.exitCode !== 0) {
-      process.stderr.write(`Error: failed to resolve git repo root: ${result.stderr.trim()}\n`);
+  // Repo root is needed for worktree management — must be resolved
+  if (!cancelRepoRoot) {
+    // Last-chance attempt (cancelRepoRoot is null when git failed in the setJobsLocation block)
+    try {
+      const result = await spawnCommand("git", ["rev-parse", "--show-toplevel"], { cwd: process.cwd() });
+      if (result.exitCode !== 0) {
+        process.stderr.write(`Error: failed to resolve git repo root: ${result.stderr.trim()}\n`);
+        return 1;
+      }
+      cancelRepoRoot = result.stdout.trim();
+    } catch (err: unknown) {
+      process.stderr.write(`Error: failed to resolve git repo root: ${(err as Error).message}\n`);
       return 1;
     }
-    repoRoot = result.stdout.trim();
-  } catch (err: unknown) {
-    process.stderr.write(`Error: failed to resolve git repo root: ${(err as Error).message}\n`);
-    return 1;
   }
+  const repoRoot = cancelRepoRoot;
 
   const worktreeManager = createWorktreeManager();
 

@@ -38,7 +38,7 @@ CLI-first の dual runtime アーキテクチャ。
 
 ### 状態管理
 
-- ジョブ状態: `~/.local/share/specrunner/jobs/` に JSON で永続化（XDG_DATA_HOME 準拠）
+- ジョブ状態: `.specrunner/jobs/` に JSON で永続化（デフォルト。`config.jobs.location: "xdg"` 設定時は `~/.local/share/specrunner/jobs/`）
 - ジョブ隔離: git worktree でジョブごとに独立した作業ディレクトリを確保
 
 ### 設定

@@ -13,15 +13,21 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { createJobState } from "../src/state/store.js";
 import { runPs, formatJobRow } from "../src/cli/ps.js";
+import { resetJobsLocation } from "../src/util/xdg.js";
 import type { JobState } from "../src/state/schema.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
+let originalXdgConfigHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-ps-test-"));
   originalXdgDataHome = process.env["XDG_DATA_HOME"];
+  originalXdgConfigHome = process.env["XDG_CONFIG_HOME"];
   process.env["XDG_DATA_HOME"] = tempDir;
+  // Point config home to tempDir (no config file there) so loadConfig fails →
+  // runPs falls back to setJobsLocation("xdg") and reads from XDG_DATA_HOME = tempDir
+  process.env["XDG_CONFIG_HOME"] = tempDir;
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 });
@@ -32,7 +38,14 @@ afterEach(async () => {
   } else {
     delete process.env["XDG_DATA_HOME"];
   }
+  if (originalXdgConfigHome !== undefined) {
+    process.env["XDG_CONFIG_HOME"] = originalXdgConfigHome;
+  } else {
+    delete process.env["XDG_CONFIG_HOME"];
+  }
   await fs.rm(tempDir, { recursive: true, force: true });
+  // Reset module-level jobs location state to prevent leakage between tests
+  resetJobsLocation();
   vi.restoreAllMocks();
 });
 

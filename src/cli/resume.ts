@@ -5,6 +5,8 @@ import { bootstrap } from "./bootstrap.js";
 import { ResumeCommand } from "../core/command/resume.js";
 import { EventBus } from "../core/event/event-bus.js";
 import { wireProgressDisplay } from "./progress.js";
+import { setJobsLocation } from "../util/xdg.js";
+import { loadConfig } from "../config/store.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 
 /**
@@ -36,6 +38,14 @@ export interface ResumeOptions {
 export async function runResumeCore(slug: string, options: ResumeOptions): Promise<number> {
   setVerbose(resolveVerboseFlag(options.verbose ?? false));
   const cwd = options.cwd ?? process.cwd();
+
+  // Resolve jobs storage location before any state reads; fall back to XDG on error
+  try {
+    const earlyConfig = await loadConfig();
+    setJobsLocation(earlyConfig.jobs?.location ?? "project", cwd);
+  } catch {
+    setJobsLocation("xdg");
+  }
 
   const state = await resolveJobStateBySlug(slug);
   const repo = state

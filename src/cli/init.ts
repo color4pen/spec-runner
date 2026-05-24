@@ -1,5 +1,7 @@
 import { loadConfig, saveConfig } from "../config/store.js";
 import { logInfo, logSuccess, logError } from "../logger/stdout.js";
+import { spawnCommand } from "../util/spawn.js";
+import { ensureDotSpecrunnerGitignore } from "../util/gitignore.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 
 /**
@@ -54,4 +56,16 @@ export async function runInit(options: {
   await saveConfig(newConfig);
   logSuccess("Config saved.");
   logInfo("Run 'specrunner login' to authenticate with GitHub (required for PR creation).");
+
+  // Append .specrunner/ to .gitignore if CWD is a git repository (idempotent)
+  try {
+    const result = await spawnCommand("git", ["rev-parse", "--show-toplevel"], { cwd: process.cwd() });
+    if (result.exitCode === 0) {
+      const repoRoot = result.stdout.trim();
+      await ensureDotSpecrunnerGitignore(repoRoot);
+    }
+    // Non-zero exit = not a git repo; skip silently
+  } catch {
+    // git not available or other error — skip silently
+  }
 }

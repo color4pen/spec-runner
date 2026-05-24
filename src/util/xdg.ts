@@ -2,6 +2,34 @@ import * as os from "node:os";
 import * as path from "node:path";
 
 /**
+ * Module-level state for jobs location.
+ * Default: "xdg" for backward compatibility when setJobsLocation() is not called.
+ */
+let jobsLocation: "project" | "xdg" = "xdg";
+let projectRoot: string | null = null;
+
+/**
+ * Set the jobs storage location mode.
+ * Call this at CLI entry points after loading config.
+ *
+ * @param location "project" stores under <repoRoot>/.specrunner/, "xdg" uses XDG paths
+ * @param repoRoot Required when location === "project"
+ */
+export function setJobsLocation(location: "project" | "xdg", repoRoot?: string): void {
+  jobsLocation = location;
+  projectRoot = repoRoot ?? null;
+}
+
+/**
+ * Reset jobs location to the default (XDG) state.
+ * Used in tests to isolate module state between test cases.
+ */
+export function resetJobsLocation(): void {
+  jobsLocation = "xdg";
+  projectRoot = null;
+}
+
+/**
  * Resolve XDG_CONFIG_HOME or fallback to ~/.config
  */
 export function resolveXdgConfigDir(): string {
@@ -39,8 +67,12 @@ export function getCredentialsPath(): string {
 
 /**
  * Get the path to the specrunner jobs directory.
+ * Returns project-local path when setJobsLocation("project", repoRoot) has been called.
  */
 export function getJobsDir(): string {
+  if (jobsLocation === "project" && projectRoot) {
+    return path.join(projectRoot, ".specrunner", "jobs");
+  }
   return path.join(resolveXdgDataDir(), "specrunner", "jobs");
 }
 
@@ -64,8 +96,12 @@ export function resolveXdgStateDir(): string {
 
 /**
  * Get the path to the specrunner verbose log directory.
+ * Returns project-local path when setJobsLocation("project", repoRoot) has been called.
  */
 export function getVerboseLogDir(): string {
+  if (jobsLocation === "project" && projectRoot) {
+    return path.join(projectRoot, ".specrunner", "logs");
+  }
   return path.join(resolveXdgStateDir(), "specrunner", "logs");
 }
 

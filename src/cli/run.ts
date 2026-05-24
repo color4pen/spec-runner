@@ -12,6 +12,8 @@ import { createRuntime } from "../core/runtime/index.js";
 import { PipelineRunCommand } from "../core/command/pipeline-run.js";
 import { EventBus } from "../core/event/event-bus.js";
 import { wireProgressDisplay } from "./progress.js";
+import { setJobsLocation } from "../util/xdg.js";
+import { ensureDotSpecrunnerGitignore } from "../util/gitignore.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 
 /**
@@ -68,6 +70,16 @@ export async function runRunCore(
   }
 
   const { config, repo, githubToken } = preflightResult;
+
+  // Set jobs storage location; default to "project" mode
+  const jobsLocation = config.jobs?.location ?? "project";
+  setJobsLocation(jobsLocation, cwd);
+
+  // Ensure .gitignore covers .specrunner/ when using project mode (idempotent)
+  if (jobsLocation === "project") {
+    await ensureDotSpecrunnerGitignore(cwd);
+  }
+
   const githubClient = createGitHubClient(fetch, githubToken);
   const anthropicResult = config.runtime === "managed"
     ? await resolveSpecRunnerApiKey(process.env as Record<string, string | undefined>)
