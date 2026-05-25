@@ -18,6 +18,7 @@ import {
 import { getStepExecutionConfig } from "../../config/step-config.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
+import type { ModelUsage } from "../../core/port/model-usage.js";
 
 // ---------------------------------------------------------------------------
 // QueryFn type (local definition — avoids circular dependency with agent-runner.ts)
@@ -63,6 +64,8 @@ export interface QueryOneShotResult {
   turnCount?: number;
   /** Completion reason from SDKResultMessage.subtype (e.g. "success", "max_turns"). */
   stopReason?: string;
+  /** Per-model token usage from the agent run. undefined if not available. */
+  modelUsage?: Record<string, ModelUsage>;
 }
 
 // ---------------------------------------------------------------------------
@@ -154,9 +157,26 @@ export async function queryOneShot(
 
   // Step 6: Assemble result (raw text — structured parse is caller's responsibility)
   const successResult = lastResult as SDKResultSuccess;
+
+  // Extract modelUsage (same pattern as ClaudeCodeRunner)
+  let modelUsage: Record<string, ModelUsage> | undefined;
+  const rawUsage = (successResult as Record<string, unknown>).modelUsage;
+  if (rawUsage && typeof rawUsage === "object" && Object.keys(rawUsage as object).length > 0) {
+    modelUsage = {};
+    for (const [model, usage] of Object.entries(rawUsage as Record<string, Record<string, number>>)) {
+      modelUsage[model] = {
+        inputTokens: usage.inputTokens ?? 0,
+        outputTokens: usage.outputTokens ?? 0,
+        cacheReadInputTokens: usage.cacheReadInputTokens ?? 0,
+        cacheCreationInputTokens: usage.cacheCreationInputTokens ?? 0,
+      };
+    }
+  }
+
   return {
     text: successResult.result,
     sessionId: successResult.session_id,
     stopReason: lastResult.subtype,
+    modelUsage,
   };
 }

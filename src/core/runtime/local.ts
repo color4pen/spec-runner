@@ -20,7 +20,7 @@ import { spawnCommand } from "../../util/spawn.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { changeFolderPath } from "../../util/paths.js";
-import { copyRulesToChangeFolder } from "../../util/copy-artifacts.js";
+import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder } from "../../util/copy-artifacts.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./strategy.js";
 
 // Internal structure stored inside CleanupHandle
@@ -229,6 +229,9 @@ export class LocalRuntime implements RuntimeStrategy {
         await this.manager.prune(this.cwd).catch(() => {});
         throw new Error(`Failed to stage change folder request.md: ${gitAddChangeFolderResult.stderr.trim()}`);
       }
+
+      // Copy draft's usage.json into the change folder (silent no-op if absent)
+      await copyDraftUsageToChangeFolder(opts.requestFilePath, worktreePath, slug, this.spawnFn);
 
       // Also copy rules.md into the change folder so agents can read project disciplines
       await copyRulesToChangeFolder(worktreePath, slug, this.spawnFn);

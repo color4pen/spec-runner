@@ -29,6 +29,7 @@ import { spawnOrEscalate } from "./spawn-helper.js";
 import { archiveChangeFolder } from "./archive-change-folder.js";
 import { mergeSpecsForChange } from "./spec-merge.js";
 import { commitArchive } from "./commit-archive.js";
+import { deriveAndWriteUsage } from "./derive-usage.js";
 import { assertJobFinishable, markJobArchived } from "./job-state-update.js";
 import { TERMINAL_STATUSES } from "../../state/lifecycle.js";
 import { formatEscalation } from "./escalation.js";
@@ -261,6 +262,22 @@ async function runPhase1Archive(params: {
   const mergeResult = await mergeSpecsForChange({ slug: target.slug, cwd: archiveCwd, spawn, fs });
   if (!mergeResult.ok) return { ok: false, escalation: mergeResult.escalation, exitCode: 1 };
   if (!mergeResult.skipped) stdoutWrite(mergeResult.message);
+
+  // derive pipeline usage into changes/<slug>/usage.json (before archive moves it)
+  try {
+    const usageResult = await deriveAndWriteUsage({
+      jobId: target.jobId,
+      slug: target.slug,
+      cwd: archiveCwd,
+      repoRoot: cwd,
+      spawn,
+      fs,
+    });
+    if (!usageResult.skipped) stdoutWrite(usageResult.message);
+  } catch {
+    // Best-effort: failure must not block finish
+    process.stderr.write(`Warning: failed to derive usage for ${target.slug}. Continuing finish.\n`);
+  }
 
   // archive change folder (specrunner/changes/<slug>/ → specrunner/changes/archive/<slug>/)
   const archiveResult = await archiveChangeFolder({ slug: target.slug, cwd: archiveCwd, spawn, fs });

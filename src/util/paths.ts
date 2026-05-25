@@ -188,3 +188,19 @@ export function parseArchiveDirName(dirName: string): { date: string | null; slu
   if (m) return { date: m[1] as string, slug: m[2] as string };
   return { date: null, slug: dirName };
 }
+
+/**
+ * Returns the relative path to the usage.json file for a draft.
+ * Example: draftUsageJsonPath("foo") → "specrunner/drafts/foo/usage.json"
+ */
+export function draftUsageJsonPath(slug: string): string {
+  return `${DRAFTS_DIR}/${slug}/usage.json`;
+}
+
+/**
+ * Returns the relative path to the usage.json file for a change folder.
+ * Example: usageJsonPath("foo") → "specrunner/changes/foo/usage.json"
+ */
+export function usageJsonPath(slug: string): string {
+  return `${CHANGES_DIR}/${slug}/usage.json`;
+}

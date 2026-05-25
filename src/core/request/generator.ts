@@ -1,9 +1,12 @@
+import * as path from "node:path";
 import { SpecRunnerError } from "../../errors.js";
 import { slugify } from "../../util/slugify.js";
 import { parseRequestMdContent } from "../../parser/request-md.js";
 import { REQUEST_GENERATE_SYSTEM_PROMPT } from "../../prompts/request-generate-system.js";
 import type { OneShotQueryClient } from "../port/one-shot-query-client.js";
 import * as store from "./store.js";
+import { appendInvocation } from "../usage/store.js";
+import { draftUsageJsonPath } from "../../util/paths.js";
 
 export interface GeneratedRequest {
   slug: string;
@@ -39,6 +42,18 @@ export async function generate(
       model: "claude-opus-4-5",
     });
     result = queryResult.text;
+
+    // Append usage to drafts/<slug>/usage.json (silent on error)
+    try {
+      const absUsagePath = path.join(cwd, draftUsageJsonPath(slug));
+      await appendInvocation(absUsagePath, {
+        command: "request-generate",
+        timestamp: new Date().toISOString(),
+        modelUsage: queryResult.modelUsage ?? null,
+      });
+    } catch {
+      // Silent skip — usage tracking failure must not block generate output
+    }
   } catch (err) {
     if (err instanceof SpecRunnerError) {
       throw new SpecRunnerError(

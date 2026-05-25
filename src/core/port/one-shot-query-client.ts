@@ -5,6 +5,7 @@
  * so that core/ has no direct dependency on adapter/ or SDK.
  * Concrete implementation: ClaudeCodeOneShotQueryClient (adapter/claude-code/).
  */
+import type { ModelUsage } from "./model-usage.js";
 
 // ---------------------------------------------------------------------------
 // OneShotQueryOptions
@@ -45,6 +46,8 @@ export interface OneShotQueryResult {
   turnCount?: number;
   /** Completion reason from SDKResultMessage.subtype (e.g. "success", "max_turns"). */
   stopReason?: string;
+  /** Per-model token usage from the agent run. undefined if not available. */
+  modelUsage?: Record<string, ModelUsage>;
 }
 
 // ---------------------------------------------------------------------------

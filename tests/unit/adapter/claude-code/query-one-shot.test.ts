@@ -201,6 +201,93 @@ describe("TC-OSQ-04: session_id propagates to sessionId field", () => {
 });
 
 // ---------------------------------------------------------------------------
+// TC-OSQ-06: modelUsage extracted from SDK result
+// ---------------------------------------------------------------------------
+
+describe("TC-OSQ-06: modelUsage is extracted from SDK result", () => {
+  it("maps modelUsage from SDK result to QueryOneShotResult", async () => {
+    const mockModelUsage = {
+      "claude-opus-4-5": {
+        inputTokens: 100,
+        outputTokens: 50,
+        cacheReadInputTokens: 10,
+        cacheCreationInputTokens: 5,
+      },
+    };
+
+    const mockQueryFn: QueryFn = vi.fn().mockImplementation(() => {
+      return (async function* () {
+        yield {
+          type: "result",
+          subtype: "success",
+          result: "done",
+          session_id: undefined,
+          modelUsage: mockModelUsage,
+        };
+      })();
+    }) as unknown as QueryFn;
+
+    const result = await queryOneShot(
+      { systemPrompt: "sys", prompt: "user" },
+      makeConfig(),
+      mockQueryFn,
+    );
+
+    expect(result.modelUsage).toBeDefined();
+    expect(result.modelUsage!["claude-opus-4-5"]).toMatchObject({
+      inputTokens: 100,
+      outputTokens: 50,
+      cacheReadInputTokens: 10,
+      cacheCreationInputTokens: 5,
+    });
+  });
+
+  it("returns undefined modelUsage when SDK result has no modelUsage", async () => {
+    const mockQueryFn: QueryFn = vi.fn().mockImplementation(() => {
+      return (async function* () {
+        yield {
+          type: "result",
+          subtype: "success",
+          result: "done",
+          session_id: undefined,
+          // No modelUsage field
+        };
+      })();
+    }) as unknown as QueryFn;
+
+    const result = await queryOneShot(
+      { systemPrompt: "sys", prompt: "user" },
+      makeConfig(),
+      mockQueryFn,
+    );
+
+    expect(result.modelUsage).toBeUndefined();
+  });
+
+  it("returns undefined modelUsage when SDK result has empty modelUsage object", async () => {
+    const mockQueryFn: QueryFn = vi.fn().mockImplementation(() => {
+      return (async function* () {
+        yield {
+          type: "result",
+          subtype: "success",
+          result: "done",
+          session_id: undefined,
+          modelUsage: {}, // empty object
+        };
+      })();
+    }) as unknown as QueryFn;
+
+    const result = await queryOneShot(
+      { systemPrompt: "sys", prompt: "user" },
+      makeConfig(),
+      mockQueryFn,
+    );
+
+    expect(result.modelUsage).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-OSQ-05: non-success result → SpecRunnerError("QUERY_ONE_SHOT_FAILED")
 // ---------------------------------------------------------------------------
 describe("TC-OSQ-05: non-success result throws QUERY_ONE_SHOT_FAILED", () => {

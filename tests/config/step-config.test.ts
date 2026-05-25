@@ -397,6 +397,70 @@ describe("TC-031: validateConfig — steps.defaults.timeoutMs: 1 は下限とし
   });
 });
 
+// ---------------------------------------------------------------------------
+// TC-032: config.steps["spec-review"].model = "claude-sonnet-4-6" → spec-review uses sonnet
+// ---------------------------------------------------------------------------
+
+describe("TC-032: config.steps['spec-review'].model が spec-review step に適用される", () => {
+  it("steps['spec-review'].model = 'claude-sonnet-4-6' の場合、spec-review は sonnet model を使う", () => {
+    const config = makeBaseConfig({
+      steps: {
+        "spec-review": { model: "claude-sonnet-4-6" },
+      },
+    });
+
+    const resolved = getStepExecutionConfig(config, "spec-review", {
+      model: "claude-opus-4-5",
+      maxTurns: 30,
+    });
+
+    expect(resolved.model).toBe("claude-sonnet-4-6");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-033: config.steps.defaults.model applies to steps without step-level model
+// ---------------------------------------------------------------------------
+
+describe("TC-033: config.steps.defaults.model が step-level 未設定の step に適用される", () => {
+  it("steps.defaults.model = 'claude-sonnet-4-6' は step-level 未設定の全 step に適用される", () => {
+    const config = makeBaseConfig({
+      steps: {
+        defaults: { model: "claude-sonnet-4-6" },
+      },
+    });
+
+    const resolvedDesign = getStepExecutionConfig(config, "design", {
+      model: "claude-opus-4-5",
+      maxTurns: 30,
+    });
+    expect(resolvedDesign.model).toBe("claude-sonnet-4-6");
+
+    const resolvedImplementer = getStepExecutionConfig(config, "implementer", {
+      model: "claude-opus-4-5",
+      maxTurns: 30,
+    });
+    expect(resolvedImplementer.model).toBe("claude-sonnet-4-6");
+  });
+
+  it("step-level model が設定されている step は defaults より step-level が優先される", () => {
+    const config = makeBaseConfig({
+      steps: {
+        defaults: { model: "claude-sonnet-4-6" },
+        implementer: { model: "claude-opus-4-5" },
+      },
+    });
+
+    const resolved = getStepExecutionConfig(config, "implementer", {
+      model: "claude-haiku-3",
+      maxTurns: 30,
+    });
+
+    // implementer has step-level override → opus wins over defaults sonnet
+    expect(resolved.model).toBe("claude-opus-4-5");
+  });
+});
+
 describe("validateConfig steps — 有効な値はエラーなし", () => {
   it("steps.defaults.maxTurns: null はエラーなし", () => {
     const raw = makeMinimalRawConfig({

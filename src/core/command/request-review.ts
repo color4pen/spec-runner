@@ -9,11 +9,14 @@
  *   1 — reject or execution error
  */
 import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import { parseRequestMdContent } from "../../parser/request-md.js";
 import { SpecRunnerError } from "../../errors.js";
 import { runReview } from "../request/reviewer.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import type { OneShotQueryClient } from "../port/one-shot-query-client.js";
+import { appendInvocation } from "../usage/store.js";
+import { draftUsageJsonPath } from "../../util/paths.js";
 
 // Re-export types and helpers from reviewer.ts for backward compatibility
 export type {
@@ -33,12 +36,14 @@ export {
  * @param filePath  Path to the request.md file to review
  * @param opts      Options: json=true outputs structured JSON instead of raw text
  * @param client    OneShotQueryClient injected by the caller (composition point)
+ * @param slug      Optional slug for usage.json tracking (silent skip if not provided)
  * @returns         Exit code: 0 (approve/needs-discussion), 1 (reject or error)
  */
 export async function executeReview(
   filePath: string,
   opts: { json: boolean },
   client: OneShotQueryClient,
+  slug?: string,
 ): Promise<number> {
   // Step 1: Read the request.md file
   let content: string;
@@ -68,6 +73,20 @@ export async function executeReview(
   stderrWrite("Reviewing request.md...");
   try {
     result = await runReview(content, process.cwd(), client);
+
+    // Append usage to drafts/<slug>/usage.json (silent on error)
+    if (slug) {
+      try {
+        const absUsagePath = path.join(process.cwd(), draftUsageJsonPath(slug));
+        await appendInvocation(absUsagePath, {
+          command: "request-review",
+          timestamp: new Date().toISOString(),
+          modelUsage: result.modelUsage ?? null,
+        });
+      } catch {
+        // Silent skip — usage tracking failure must not block review output
+      }
+    }
   } catch (err) {
     if (err instanceof SpecRunnerError) {
       stderrWrite("✗ Failed: " + err.message);

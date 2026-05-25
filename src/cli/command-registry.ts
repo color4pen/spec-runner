@@ -22,6 +22,8 @@ import { executeCreate } from "../core/command/request-create.js";
 import { executeList } from "../core/command/request-list.js";
 import { executeNew } from "../core/command/request-new.js";
 import { executeRulesNew } from "../core/command/rules-new.js";
+import { showUsage } from "../core/command/usage-show.js";
+import { showUsageSummary } from "../core/command/usage-summary.js";
 import { resolveWithFallback as storeResolve } from "../core/request/store.js";
 import { AGENT_STEP_NAMES, CLI_STEP_NAMES } from "../core/step/step-names.js";
 import type { FlagDef, ParsedArgs } from "./flag-parser.js";
@@ -273,6 +275,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
         handler: async (parsed) => {
           const input = parsed.positional!;
           let filePath = path.resolve(process.cwd(), input);
+          let resolvedSlug: string | undefined;
           if (!fs.existsSync(filePath)) {
             // Try as slug
             if (!SLUG_REGEX.test(input)) {
@@ -288,6 +291,13 @@ export const COMMANDS: Record<string, CommandEntry> = {
               process.exit(1);
             }
             filePath = slugResolved;
+            resolvedSlug = input;
+          } else {
+            // File path given — try to extract slug from drafts/<slug>/request.md pattern
+            const draftMatch = filePath.match(/[/\\]drafts[/\\]([^/\\]+)[/\\]request\.md$/);
+            if (draftMatch?.[1] && SLUG_REGEX.test(draftMatch[1])) {
+              resolvedSlug = draftMatch[1];
+            }
           }
           let config: SpecRunnerConfig;
           try {
@@ -296,7 +306,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
             config = {} as SpecRunnerConfig;
           }
           const client = new ClaudeCodeOneShotQueryClient(config);
-          process.exit(await executeReview(filePath, { json: !!parsed.flags["json"] }, client));
+          process.exit(await executeReview(filePath, { json: !!parsed.flags["json"] }, client, resolvedSlug));
         },
       },
     },
@@ -497,6 +507,19 @@ export const COMMANDS: Record<string, CommandEntry> = {
       } catch (err: unknown) {
         process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);
         process.exit(2);
+      }
+    },
+  },
+
+  usage: {
+    flags: {},
+    positional: { name: "slug", required: false },
+    handler: async (parsed) => {
+      const slug = parsed.positional;
+      if (slug) {
+        process.exit(await showUsage(slug, process.cwd()));
+      } else {
+        process.exit(await showUsageSummary(process.cwd()));
       }
     },
   },

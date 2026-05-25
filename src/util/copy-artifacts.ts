@@ -5,7 +5,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { SpawnFn } from "./spawn.js";
-import { rulesDestPath } from "./paths.js";
+import { rulesDestPath, usageJsonPath } from "./paths.js";
 import { RULES_MD_CONTENT } from "../prompts/rules.js";
 
 /**
@@ -30,4 +30,31 @@ export async function copyRulesToChangeFolder(
       `Warning: failed to stage change folder rules.md: ${result.stderr.trim()}\n`,
     );
   }
+}
+
+/**
+ * Copy the draft's usage.json (if it exists) to the change folder and stage it.
+ * Silent no-op when the draft usage.json is absent (= review/generate never ran).
+ *
+ * @param draftRequestFilePath - Absolute path to the draft's request.md (used to derive the draft folder).
+ * @param targetCwd            - Repo working directory where the change folder lives
+ *                                (worktreePath for local, this.cwd for managed).
+ * @param slug                 - The change slug (determines the change folder path).
+ * @param spawnFn              - Spawn helper for git commands.
+ */
+export async function copyDraftUsageToChangeFolder(
+  draftRequestFilePath: string,
+  targetCwd: string,
+  slug: string,
+  spawnFn: SpawnFn,
+): Promise<void> {
+  const draftUsageSrc = path.join(path.dirname(draftRequestFilePath), "usage.json");
+  const changeUsageDst = path.join(targetCwd, usageJsonPath(slug));
+  try {
+    await fs.cp(draftUsageSrc, changeUsageDst);
+  } catch {
+    // usage.json absent — normal case (review/generate not run)
+    return;
+  }
+  await spawnFn("git", ["add", usageJsonPath(slug)], { cwd: targetCwd });
 }

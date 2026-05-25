@@ -5,6 +5,7 @@
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
 import type { OneShotQueryClient } from "../port/one-shot-query-client.js";
+import type { ModelUsage } from "../port/model-usage.js";
 import { projectMdPath } from "../../util/paths.js";
 import { REQUEST_REVIEW_SYSTEM_PROMPT } from "../../prompts/request-review-system.js";
 
@@ -27,6 +28,8 @@ export interface RequestReviewResult {
   verdict: RequestReviewVerdict;
   findings: RequestReviewFinding[];
   summary: string;
+  /** Per-model token usage from the review agent run. undefined if not available. */
+  modelUsage?: Record<string, ModelUsage>;
 }
 
 // ---------------------------------------------------------------------------
@@ -201,5 +204,6 @@ export async function runReview(
     stepName: "request-review",
     model: "claude-opus-4-5",
   });
-  return parseReviewOutput(result.text);
+  const parsed = parseReviewOutput(result.text);
+  return { ...parsed, modelUsage: result.modelUsage };
 }
