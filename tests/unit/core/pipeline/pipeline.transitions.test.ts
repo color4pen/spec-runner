@@ -161,8 +161,8 @@ describe("TC-011: verification passed → code-review transition が存在する
 // TC-012 (new code-review transitions): TC-012 / TC-013 / TC-014 / TC-015 / TC-029
 describe("TC-012-015, TC-029: code-review / code-fixer transition rows", () => {
   const codeReviewEdges = [
-    // TC-012: code-review approved routes to adr-gen (adr-gen → pr-create)
-    { step: "code-review", on: "approved",   to: "adr-gen",     label: "TC-012: code-review approved → adr-gen" },
+    // TC-012: code-review approved now routes to delta-spec-validation (2nd phase validation)
+    { step: "code-review", on: "approved",   to: "delta-spec-validation", label: "TC-012: code-review approved → delta-spec-validation" },
     { step: "code-review", on: "needs-fix",  to: "code-fixer",  label: "TC-013: code-review needs-fix → code-fixer" },
     { step: "code-review", on: "escalation", to: "escalate",    label: "TC-015: code-review escalation → escalate" },
     { step: "code-fixer",  on: "approved",   to: "code-review", label: "TC-014: code-fixer approved → code-review" },
@@ -183,14 +183,13 @@ describe("TC-012-015, TC-029: code-review / code-fixer transition rows", () => {
 });
 
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
-// TC-022: STANDARD_TRANSITIONS テーブルが 30 行を持つ（28 + adr-gen 2 行 = 30）
+// TC-022: STANDARD_TRANSITIONS テーブルが 31 行を持つ（30 + conditional delta-spec-validation → adr-gen = 31）
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 30 rows total (28 previous + 2 new adr-gen rows = 30)", () => {
-    // 28 rows (previous total)
-    // + 2 new adr-gen rows:
-    //   adr-gen → pr-create (success)
-    //   adr-gen → escalate (error)
-    expect(STANDARD_TRANSITIONS.length).toBe(30);
+  it("has 31 rows total (30 previous + 1 new conditional delta-spec-validation → adr-gen = 31)", () => {
+    // 30 rows (previous total including adr-gen rows)
+    // + 1 conditional row: delta-spec-validation → adr-gen (when code-review ran)
+    // Note: code-review → adr-gen was replaced by code-review → delta-spec-validation (same count)
+    expect(STANDARD_TRANSITIONS.length).toBe(31);
   });
 
   it("verification --passed→ end does NOT exist", () => {
@@ -221,11 +220,18 @@ describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された�
     expect(row).toBeDefined();
   });
 
-  it("code-review --approved→ adr-gen exists (TC-018)", () => {
+  it("code-review --approved→ delta-spec-validation exists (TC-018 updated: 2nd-phase route)", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-review" && t.on === "approved" && t.to === "delta-spec-validation",
+    );
+    expect(row).toBeDefined();
+  });
+
+  it("code-review --approved→ adr-gen does NOT exist directly (replaced by 2nd-phase route)", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) => t.step === "code-review" && t.on === "approved" && t.to === "adr-gen",
     );
-    expect(row).toBeDefined();
+    expect(row).toBeUndefined();
   });
 
   it("code-review --approved→ pr-create does NOT exist (direct route removed)", () => {
@@ -233,6 +239,22 @@ describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された�
       (t) => t.step === "code-review" && t.on === "approved" && t.to === "pr-create",
     );
     expect(row).toBeUndefined();
+  });
+
+  it("delta-spec-validation --approved→ adr-gen exists as conditional row", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "delta-spec-validation" && t.on === "approved" && t.to === "adr-gen",
+    );
+    expect(row).toBeDefined();
+    expect(typeof row!.when).toBe("function");
+  });
+
+  it("delta-spec-validation --approved→ spec-review exists as fallback row (no `when`)", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "delta-spec-validation" && t.on === "approved" && t.to === "spec-review",
+    );
+    expect(row).toBeDefined();
+    expect(row!.when).toBeUndefined();
   });
 });
 

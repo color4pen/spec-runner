@@ -31,7 +31,8 @@ export type DeltaSpecViolationReason =
   | "non-standard-requirement-header"
   | "missing-scenario"
   | "missing-normative-keyword"
-  | "baseline-header-mismatch";
+  | "baseline-header-mismatch"
+  | "authority-spec-direct-edit";
 
 export interface DeltaSpecViolation {
   path: string;
@@ -61,8 +62,9 @@ export async function validateDeltaSpecPaths(
   deps: DeltaSpecValidatorFs,
   requestType?: string,
   baselineSpecLoader: (capability: string) => Promise<string | null> = async () => null,
+  changedFiles?: string[],
 ): Promise<{ ok: true } | { ok: false; violations: DeltaSpecViolation[] }> {
-  const ruleInput = { changePath, deps, requestType, baselineSpecLoader };
+  const ruleInput = { changePath, deps, requestType, baselineSpecLoader, changedFiles };
 
   // D9: no-specs-for-required-type runs first with early return
   const specsViolations = await noSpecsForRequiredType.check(ruleInput);

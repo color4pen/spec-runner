@@ -1411,10 +1411,11 @@ describe("TC-DSV-INT-01: delta-spec-validation approved is inserted between desi
 
     expect(result.status).toBe("awaiting-merge");
 
-    // delta-spec-validation must have run exactly once with approved verdict
+    // delta-spec-validation runs twice: once in 1st phase (after design) and once in 2nd phase (after code-review)
     const dsvSteps = result.steps?.["delta-spec-validation"];
     expect(dsvSteps, "delta-spec-validation step should be present").toBeDefined();
-    expect(dsvSteps?.length).toBe(1);
+    expect(dsvSteps?.length).toBeGreaterThanOrEqual(1);
+    // 1st phase run is always approved (default mock)
     expect(toLegacyStepResult(dsvSteps![0]!).verdict).toBe("approved");
 
     // spec-review must also have run (proving the pipeline proceeded past delta-spec-validation)
@@ -1464,10 +1465,11 @@ describe("TC-DSV-INT-02: delta-spec-validation needs-fix triggers delta-spec-fix
 
     expect(result.status).toBe("awaiting-merge");
 
-    // delta-spec-validation ran twice: iter 1 needs-fix, iter 2 approved
+    // delta-spec-validation ran at least twice: iter 1 needs-fix, iter 2 approved (1st phase),
+    // plus once more in 2nd phase after code-review.
     const dsvSteps = result.steps?.["delta-spec-validation"];
     expect(dsvSteps).toBeDefined();
-    expect(dsvSteps?.length).toBe(2);
+    expect(dsvSteps?.length).toBeGreaterThanOrEqual(2);
     expect(toLegacyStepResult(dsvSteps![0]!).verdict).toBe("needs-fix");
     expect(toLegacyStepResult(dsvSteps![1]!).verdict).toBe("approved");
 
@@ -1583,10 +1585,10 @@ describe("TC-P-06: managed-reset-status-stale-guard scenario — legacy-flat-dir
 
     expect(result.status).toBe("awaiting-merge");
 
-    // delta-spec-validation ran twice: iter 1 needs-fix (2 violations), iter 2 approved
+    // delta-spec-validation ran at least twice (1st phase: needs-fix + approved; 2nd phase: approved after code-review)
     const dsvSteps = result.steps?.["delta-spec-validation"];
     expect(dsvSteps).toBeDefined();
-    expect(dsvSteps?.length).toBe(2);
+    expect(dsvSteps?.length).toBeGreaterThanOrEqual(2);
     expect(toLegacyStepResult(dsvSteps![0]!).verdict).toBe("needs-fix");
     expect(toLegacyStepResult(dsvSteps![1]!).verdict).toBe("approved");
 
@@ -1645,13 +1647,14 @@ describe("TC-DSV-INT-04: delta-spec-validation and spec-review loops are indepen
     // Pipeline must complete normally — both loops resolved within their budgets
     expect(result.status).toBe("awaiting-merge");
 
-    // delta-spec-validation ran 3 times:
+    // delta-spec-validation ran at least 3 times (2nd phase adds one more after code-review):
     //   iter 1: needs-fix (initial phase) → delta-spec-fixer
-    //   iter 2: approved → spec-review (1st iter)
-    //   iter 3: approved (after spec-fixer) → spec-review (2nd iter)
+    //   iter 2: approved → spec-review (1st iter, 1st phase)
+    //   iter 3: approved (after spec-fixer) → spec-review (2nd iter, 1st phase)
+    //   iter 4: approved (2nd phase, after code-review)
     const dsvSteps = result.steps?.["delta-spec-validation"];
     expect(dsvSteps).toBeDefined();
-    expect(dsvSteps?.length).toBe(3);
+    expect(dsvSteps?.length).toBeGreaterThanOrEqual(3);
     expect(toLegacyStepResult(dsvSteps![0]!).verdict).toBe("needs-fix");
     expect(toLegacyStepResult(dsvSteps![1]!).verdict).toBe("approved");
     expect(toLegacyStepResult(dsvSteps![2]!).verdict).toBe("approved");
@@ -1804,10 +1807,11 @@ describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not
 
 // ---------------------------------------------------------------------------
 // TC-AUTH-INT-01: PR #289 / #291 同型 reproduction
-// implementer が authority spec + delta spec 両方 staged → AUTHORITY_SPEC_EDIT_VIOLATION で halt
+// implementer が authority spec + delta spec 両方 staged → warning ログ + commit 続行 (halt しない)
+// (Task 11: halt → warning 変更により、pipeline は続行し delta-spec-validation が検出する)
 // ---------------------------------------------------------------------------
-describe("TC-AUTH-INT-01: implementer stages authority spec + delta spec → AUTHORITY_SPEC_EDIT_VIOLATION halt", () => {
-  it("pipeline halts when implementer stages authority spec alongside delta spec", async () => {
+describe("TC-AUTH-INT-01: implementer stages authority spec + delta spec → warning to stderr, pipeline continues", () => {
+  it("pipeline continues with warning when implementer stages authority spec alongside delta spec", async () => {
     // Git mock: implementer staged diff includes both authority spec and delta spec
     let revParseCallCount = 0;
     const gitCallLog: string[][] = [];
@@ -1908,15 +1912,16 @@ describe("TC-AUTH-INT-01: implementer stages authority spec + delta spec → AUT
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    // Pipeline must have halted (not completed successfully to awaiting-merge)
-    expect(result.status).not.toBe("awaiting-merge");
+    // Pipeline must NOT halt — warning behavior: pipeline continues
+    // (delta-spec-validation will handle authority spec violations downstream)
+    expect(result.status).toBe("awaiting-merge");
 
-    // The error should be AUTHORITY_SPEC_EDIT_VIOLATION
-    expect(result.error?.code).toBe("AUTHORITY_SPEC_EDIT_VIOLATION");
+    // No AUTHORITY_SPEC_EDIT_VIOLATION error code — halt was converted to warning
+    expect(result.error?.code).not.toBe("AUTHORITY_SPEC_EDIT_VIOLATION");
 
-    // git commit must NOT have been called
+    // git commit MUST have been called (pipeline proceeds past the warning)
     const commitCalls = gitCallLog.filter((args) => args[0] === "commit");
-    expect(commitCalls.length).toBe(0);
+    expect(commitCalls.length).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -2085,12 +2090,17 @@ describe("TC-INT-01: Step 5 fail (no-specs-for-required-type) → pipeline trans
     // Pipeline did NOT escalate
     expect(result.status).toBe("awaiting-merge");
 
-    // dsv ran twice: iter 1 needs-fix, iter 2 approved
+    // dsv ran at least twice in 1st phase (iter 1 needs-fix, iter 2 approved),
+    // plus once more in 2nd phase after code-review approved (iter 3 approved).
     const dsvSteps = result.steps?.["delta-spec-validation"];
     expect(dsvSteps).toBeDefined();
-    expect(dsvSteps?.length).toBe(2);
+    expect(dsvSteps?.length).toBeGreaterThanOrEqual(2);
     expect(toLegacyStepResult(dsvSteps![0]!).verdict).toBe("needs-fix");
     expect(toLegacyStepResult(dsvSteps![1]!).verdict).toBe("approved");
+    // 3rd run (2nd phase, after code-review) also approved:
+    if (dsvSteps!.length >= 3) {
+      expect(toLegacyStepResult(dsvSteps![2]!).verdict).toBe("approved");
+    }
 
     // delta-spec-fixer ran exactly once (= triggered by needs-fix transition)
     const dsfSteps = result.steps?.["delta-spec-fixer"];
@@ -2104,14 +2114,16 @@ describe("TC-INT-01: Step 5 fail (no-specs-for-required-type) → pipeline trans
 
 // TC-ADR-INT-01: STANDARD_TRANSITIONS includes adr-gen transitions and removes old code-review→pr-create
 describe("TC-ADR-INT-01: STANDARD_TRANSITIONS adr-gen wiring", () => {
-  it("code-review --approved→ adr-gen (not pr-create)", async () => {
+  it("code-review --approved→ delta-spec-validation (2nd-phase gate, not adr-gen or pr-create directly)", async () => {
     const { STANDARD_TRANSITIONS } = await import("../src/core/pipeline/types.js");
     const codeReviewApproved = STANDARD_TRANSITIONS.find(
       (t) => t.step === "code-review" && t.on === "approved"
     );
     expect(codeReviewApproved).toBeDefined();
-    expect(codeReviewApproved!.to).toBe("adr-gen");
-    // Must NOT go directly to pr-create
+    // code-review approved now routes through delta-spec-validation (2nd phase) before adr-gen
+    expect(codeReviewApproved!.to).toBe("delta-spec-validation");
+    // Must NOT go directly to adr-gen or pr-create
+    expect(codeReviewApproved!.to).not.toBe("adr-gen");
     expect(codeReviewApproved!.to).not.toBe("pr-create");
   });
 

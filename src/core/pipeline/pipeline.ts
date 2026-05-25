@@ -242,8 +242,11 @@ export class Pipeline {
       }
 
       // --- Look up next step from transition table ---
+      // `when` predicate (if defined) must return true for the transition to fire.
+      // Rows without `when` always match — enabling context-aware conditional routing
+      // (e.g. 2nd-phase delta-spec-validation → adr-gen after code-review runs).
       const transition = this.transitions.find(
-        (t) => t.step === currentStep && t.on === outcome,
+        (t) => t.step === currentStep && t.on === outcome && (!t.when || t.when(state)),
       );
       const nextStep = transition?.to ?? "escalate";
 

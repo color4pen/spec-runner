@@ -4,7 +4,7 @@ import type { PipelineDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import { gitExec, gitExecExitCode, type SpawnFn } from "../../util/git-exec.js";
 import { stderrWrite } from "../../logger/stdout.js";
-import { noCommitDetectedError, pushFailedError, authoritySpecEditViolationError } from "../../errors.js";
+import { noCommitDetectedError, pushFailedError } from "../../errors.js";
 
 /** Prefix that identifies authority spec files. Delta specs under specrunner/changes/ are NOT violations. */
 const AUTHORITY_SPEC_PREFIX = "specrunner/specs/";
@@ -68,13 +68,14 @@ export async function commitAndPush(
       // Check if HEAD advanced (agent self-committed before pipeline commit).
       const headAfterStep = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
       if (headBeforeStep && headAfterStep && headAfterStep !== headBeforeStep) {
-        // Agent self-commit path: inspect HEAD diff for authority spec violations before pushing.
+        // Agent self-commit path: inspect HEAD diff for authority spec violations.
+        // Warning only — pipeline continues; delta-spec-validation will handle the violation.
         const headDiffOutput = await gitExec(infra.spawnFn, cwd, ["diff", `${headBeforeStep}..${headAfterStep}`, "--name-only"]);
         if (headDiffOutput) {
           const headFilePaths = headDiffOutput.split("\n").filter(p => p.length > 0);
           const headViolations = findAuthoritySpecViolations(headFilePaths);
           if (headViolations.length > 0) {
-            throw authoritySpecEditViolationError(step.name, headViolations);
+            stderrWrite(`Warning: authority spec edit detected in agent commits: ${headViolations.join(", ")}. Continuing — delta-spec-validation will handle.\n`);
           }
         }
         // Agent authored commit(s) since step start — push the existing commits as-is.
@@ -88,13 +89,14 @@ export async function commitAndPush(
     return;
   }
 
-  // Staged changes exist — check for authority spec violations before committing.
+  // Staged changes exist — check for authority spec violations.
+  // Warning only — pipeline continues; delta-spec-validation will handle the violation.
   const stagedFilesOutput = await gitExec(infra.spawnFn, cwd, ["diff", "--cached", "--name-only"]);
   if (stagedFilesOutput) {
     const stagedFilePaths = stagedFilesOutput.split("\n").filter(p => p.length > 0);
     const stagedViolations = findAuthoritySpecViolations(stagedFilePaths);
     if (stagedViolations.length > 0) {
-      throw authoritySpecEditViolationError(step.name, stagedViolations);
+      stderrWrite(`Warning: authority spec edit detected in staged files: ${stagedViolations.join(", ")}. Continuing — delta-spec-validation will handle.\n`);
     }
   }
 

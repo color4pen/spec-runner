@@ -79,6 +79,7 @@ spec-runner の path 真理:
 - **Change folder**: \`specrunner/changes/<slug>/\`
 - **Job state**: \`.specrunner/jobs/<jobId>.json\`
 - **Verbose log**: \`.specrunner/logs/<jobId>.log\`
+- **Baseline edit detection**: authority spec の直接編集は delta-spec-validation の \`no-authority-spec-direct-edit\` rule が検出し、delta-spec-fixer が自動修正する。code-review 後にも delta-spec-validation が再実行され、code-fixer loop で発生した baseline 編集も捕捉される。
 
 ---
 

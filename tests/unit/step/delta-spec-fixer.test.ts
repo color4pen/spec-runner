@@ -95,39 +95,39 @@ describe("TC-DSF-01: buildMessage includes validation result file path", () => {
   });
 });
 
+function makeStateWithPreviousDeltaSpecFixerRun(sessionId: string): JobState {
+  return makeMinimalState({
+    steps: {
+      "delta-spec-fixer": [
+        {
+          attempt: 1,
+          sessionId,
+          outcome: { verdict: "approved" as const, findingsPath: null, error: null },
+          startedAt: "2026-01-01T00:00:00.000Z",
+          endedAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+      "delta-spec-validation": [
+        {
+          attempt: 2,
+          sessionId: null,
+          outcome: {
+            verdict: "needs-fix" as const,
+            findingsPath: deltaSpecValidationResultPath("my-change"),
+            error: null,
+          },
+          startedAt: "2026-01-01T00:00:00.000Z",
+          endedAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+    },
+  });
+}
+
 // ---------------------------------------------------------------------------
 // TC-DSF-01b: continuation prompt on second run
 // ---------------------------------------------------------------------------
 describe("TC-DSF-01b: continuation prompt on second run", () => {
-  function makeStateWithPreviousDeltaSpecFixerRun(sessionId: string): JobState {
-    return makeMinimalState({
-      steps: {
-        "delta-spec-fixer": [
-          {
-            attempt: 1,
-            sessionId,
-            outcome: { verdict: "approved" as const, findingsPath: null, error: null },
-            startedAt: "2026-01-01T00:00:00.000Z",
-            endedAt: "2026-01-01T00:00:00.000Z",
-          },
-        ],
-        "delta-spec-validation": [
-          {
-            attempt: 2,
-            sessionId: null,
-            outcome: {
-              verdict: "needs-fix" as const,
-              findingsPath: deltaSpecValidationResultPath("my-change"),
-              error: null,
-            },
-            startedAt: "2026-01-01T00:00:00.000Z",
-            endedAt: "2026-01-01T00:00:00.000Z",
-          },
-        ],
-      },
-    });
-  }
-
   it("returns continuation prompt when previous session exists", () => {
     const state = makeStateWithPreviousDeltaSpecFixerRun("sess-dsf-001");
     const deps = makeMinimalDeps("my-change");
@@ -207,5 +207,57 @@ describe("TC-DSF-03: completionVerdict is 'approved'", () => {
     const deps = makeMinimalDeps();
     const result = DeltaSpecFixerStep.parseResult("anything", deps);
     expect(result).toEqual(NULL_PARSE_RESULT);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-PROMPT-01: initial message contains authority-spec-direct-edit instructions
+// ---------------------------------------------------------------------------
+describe("TC-PROMPT-01: initial message contains authority-spec-direct-edit instructions", () => {
+  it("contains authority-spec-direct-edit keyword", () => {
+    const state = makeMinimalState({ branch: "feat/my-change" });
+    const deps = makeMinimalDeps("my-change");
+    const message = DeltaSpecFixerStep.buildMessage(state, deps);
+    expect(message).toContain("authority-spec-direct-edit");
+  });
+
+  it("contains git checkout with baseBranch for authority spec revert", () => {
+    const state = makeMinimalState({ branch: "feat/my-change" });
+    const deps = makeMinimalDeps("my-change"); // baseBranch: "main"
+    const message = DeltaSpecFixerStep.buildMessage(state, deps);
+    expect(message).toContain("git checkout main");
+  });
+
+  it("contains delta path reference for rewrite destination", () => {
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps("my-change");
+    const message = DeltaSpecFixerStep.buildMessage(state, deps);
+    expect(message).toContain("specrunner/changes/my-change/specs/");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-PROMPT-02: continuation message contains authority-spec-direct-edit instructions
+// ---------------------------------------------------------------------------
+describe("TC-PROMPT-02: continuation message contains authority-spec-direct-edit instructions", () => {
+  it("contains authority-spec-direct-edit keyword", () => {
+    const state = makeStateWithPreviousDeltaSpecFixerRun("sess-001");
+    const deps = makeMinimalDeps("my-change");
+    const message = DeltaSpecFixerStep.buildMessage(state, deps);
+    expect(message).toContain("authority-spec-direct-edit");
+  });
+
+  it("contains git checkout with baseBranch for authority spec revert", () => {
+    const state = makeStateWithPreviousDeltaSpecFixerRun("sess-001");
+    const deps = makeMinimalDeps("my-change"); // baseBranch: "main"
+    const message = DeltaSpecFixerStep.buildMessage(state, deps);
+    expect(message).toContain("git checkout main");
+  });
+
+  it("contains delta path reference for rewrite destination", () => {
+    const state = makeStateWithPreviousDeltaSpecFixerRun("sess-001");
+    const deps = makeMinimalDeps("my-change");
+    const message = DeltaSpecFixerStep.buildMessage(state, deps);
+    expect(message).toContain("specrunner/changes/my-change/specs/");
   });
 });

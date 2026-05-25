@@ -551,7 +551,11 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     expect(find("design",                "success")).toMatchObject({ to: "delta-spec-validation" });
     expect(find("design",                "error")).toMatchObject({ to: "escalate" });
     // delta-spec-validation loop
-    expect(find("delta-spec-validation", "approved")).toMatchObject({ to: "spec-review" });
+    // Two approved rows: conditional (→ adr-gen, 2nd phase) and fallback (→ spec-review, 1st phase).
+    // find() returns first match — the conditional row with `when` predicate.
+    expect(find("delta-spec-validation", "approved")).toMatchObject({ to: "adr-gen" });
+    // The fallback row (→ spec-review) also exists:
+    expect(STANDARD_TRANSITIONS.find((t) => t.step === "delta-spec-validation" && t.on === "approved" && t.to === "spec-review")).toBeDefined();
     expect(find("delta-spec-validation", "needs-fix")).toMatchObject({ to: "delta-spec-fixer" });
     expect(find("delta-spec-validation", "escalation")).toMatchObject({ to: "escalate" });
     // delta-spec-fixer → delta-spec-validation loop
@@ -579,8 +583,8 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     expect(find("verification", "escalation")).toMatchObject({ to: "escalate" });
     expect(find("build-fixer",  "success")).toMatchObject({ to: "verification" });
     expect(find("build-fixer",  "error")).toMatchObject({ to: "escalate" });
-    // code-review loop rows (code-review approved routes to adr-gen, not pr-create directly)
-    expect(find("code-review",  "approved")).toMatchObject({ to: "adr-gen" });
+    // code-review loop rows (code-review approved now routes to delta-spec-validation for 2nd-phase validation)
+    expect(find("code-review",  "approved")).toMatchObject({ to: "delta-spec-validation" });
     expect(find("code-review",  "needs-fix")).toMatchObject({ to: "code-fixer" });
     expect(find("code-review",  "escalation")).toMatchObject({ to: "escalate" });
     expect(find("code-fixer",   "approved")).toMatchObject({ to: "code-review" });
@@ -590,8 +594,8 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     expect(find("pr-create",    "error")).toMatchObject({ to: "escalate" });
   });
 
-  it("has exactly 30 transitions (28 previous + 2 new adr-gen rows)", () => {
-    expect(STANDARD_TRANSITIONS).toHaveLength(30);
+  it("has exactly 31 transitions (30 previous + 1 new conditional delta-spec-validation → adr-gen)", () => {
+    expect(STANDARD_TRANSITIONS).toHaveLength(31);
   });
 });
 

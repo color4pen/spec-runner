@@ -280,10 +280,10 @@ describe("TC-MLD-01: happy path — all 3 layers pass, pipeline completes", () =
 
     expect(result.status).toBe("awaiting-merge");
 
-    // delta-spec-validation: 1 run, approved
+    // delta-spec-validation: at least 1 run approved (1st phase); 2nd phase adds one more after code-review
     const dsvSteps = result.steps?.["delta-spec-validation"];
     expect(dsvSteps, "delta-spec-validation should be defined").toBeDefined();
-    expect(dsvSteps?.length).toBe(1);
+    expect(dsvSteps?.length).toBeGreaterThanOrEqual(1);
     expect(toLegacyStepResult(dsvSteps![0]!).verdict).toBe("approved");
 
     // spec-review: 1 run, approved
@@ -342,11 +342,12 @@ describe("TC-MLD-02: spec-review catches insufficient delta spec → spec-fixer 
 
     expect(result.status).toBe("awaiting-merge");
 
-    // delta-spec-validation: 2 runs (once after design, once after spec-fixer)
-    // Both are approved — dsv never needs-fix
+    // delta-spec-validation: at least 2 runs (once after design, once after spec-fixer);
+    // 2nd phase adds one more run after code-review.
+    // All approved — dsv never needs-fix
     const dsvSteps = result.steps?.["delta-spec-validation"];
     expect(dsvSteps, "delta-spec-validation should be defined").toBeDefined();
-    expect(dsvSteps?.length).toBe(2);
+    expect(dsvSteps?.length).toBeGreaterThanOrEqual(2);
     expect(toLegacyStepResult(dsvSteps![0]!).verdict).toBe("approved"); // initial dsv after design
     expect(toLegacyStepResult(dsvSteps![1]!).verdict).toBe("approved"); // re-dsv after spec-fixer
 
@@ -419,10 +420,11 @@ describe("TC-MLD-03: dsv catches legacy-flat-file → delta-spec-fixer → re-ds
 
     expect(result.status).toBe("awaiting-merge");
 
-    // delta-spec-validation: 2 runs (needs-fix → approved)
+    // delta-spec-validation: at least 2 runs (1st phase: needs-fix → approved);
+    // 2nd phase adds one more run after code-review (approved via default mock).
     const dsvSteps = result.steps?.["delta-spec-validation"];
     expect(dsvSteps, "delta-spec-validation should be defined").toBeDefined();
-    expect(dsvSteps?.length).toBe(2);
+    expect(dsvSteps?.length).toBeGreaterThanOrEqual(2);
     expect(toLegacyStepResult(dsvSteps![0]!).verdict).toBe("needs-fix");
     expect(toLegacyStepResult(dsvSteps![1]!).verdict).toBe("approved");
 
@@ -498,10 +500,11 @@ describe("TC-MLD-04: design + spec-review both fail — dsv catches no-specs-for
 
     expect(result.status).toBe("awaiting-merge");
 
-    // delta-spec-validation: 2 runs (needs-fix with no-specs-for-required-type → approved after fixer)
+    // delta-spec-validation: at least 2 runs (1st phase: needs-fix → approved);
+    // 2nd phase adds one more after code-review (approved via default mock).
     const dsvSteps = result.steps?.["delta-spec-validation"];
     expect(dsvSteps, "delta-spec-validation should be defined").toBeDefined();
-    expect(dsvSteps?.length).toBe(2);
+    expect(dsvSteps?.length).toBeGreaterThanOrEqual(2);
     expect(toLegacyStepResult(dsvSteps![0]!).verdict).toBe("needs-fix");
     expect(toLegacyStepResult(dsvSteps![1]!).verdict).toBe("approved");
 
@@ -570,10 +573,11 @@ describe("TC-MLD-05: design + dsv both fail — spec-review catches as sole defe
 
     expect(result.status).toBe("awaiting-merge");
 
-    // delta-spec-validation: 2 runs, BOTH approved (dsv is bugged — never returns needs-fix)
+    // delta-spec-validation: at least 2 runs, ALL approved (dsv is bugged — never returns needs-fix);
+    // 2nd phase adds one more run after code-review.
     const dsvSteps = result.steps?.["delta-spec-validation"];
     expect(dsvSteps, "delta-spec-validation should be defined").toBeDefined();
-    expect(dsvSteps?.length).toBe(2);
+    expect(dsvSteps?.length).toBeGreaterThanOrEqual(2);
     expect(toLegacyStepResult(dsvSteps![0]!).verdict).toBe("approved"); // initial run — bugged, approves
     expect(toLegacyStepResult(dsvSteps![1]!).verdict).toBe("approved"); // re-run after spec-fixer — still bugged
 

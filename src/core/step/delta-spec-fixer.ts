@@ -37,14 +37,16 @@ const deltaSpecFixerAgentDefinition: AgentDefinition = {
 function buildDeltaSpecFixerInitialMessage(opts: {
   slug: string;
   branch: string;
+  baseBranch: string;
   validationResultPath: string;
 }): string {
-  const { slug, branch, validationResultPath } = opts;
+  const { slug, branch, baseBranch, validationResultPath } = opts;
   return `<user-request>
 You are the delta-spec-fixer for the following change:
 
 Change folder: ${changeFolderPath(slug)}
 Branch: ${branch}
+Base branch: ${baseBranch}
 Validation result: ${validationResultPath}
 
 Please:
@@ -54,6 +56,9 @@ Please:
 4. Ensure each spec.md has a \`## Requirements\` section header (new format — do NOT use \`## ADDED Requirements\`, \`## MODIFIED Requirements\`, etc.)
 5. Ensure each section contains at least one \`### Requirement:\` block
 6. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+7. If violations include \`authority-spec-direct-edit\`:
+   a. Revert the authority spec edit: \`git checkout ${baseBranch} -- <violated-path>\`
+   b. Write the intended changes to the delta path: \`specrunner/changes/${slug}/specs/<capability>/spec.md\`
 
 Do NOT modify the delta-spec-validation-result.md file itself.
 </user-request>`;
@@ -65,8 +70,9 @@ Do NOT modify the delta-spec-validation-result.md file itself.
 function buildDeltaSpecFixerContinuationMessage(opts: {
   validationResultPath: string;
   slug: string;
+  baseBranch: string;
 }): string {
-  const { validationResultPath } = opts;
+  const { validationResultPath, slug, baseBranch } = opts;
   return `<user-request>
 前回の修正後に delta-spec-validation から新しい violations が検出されました。
 
@@ -76,6 +82,10 @@ function buildDeltaSpecFixerContinuationMessage(opts: {
 前回試みたアプローチで不十分だった箇所は別のアプローチを検討してください。
 
 ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+
+violations に \`authority-spec-direct-edit\` が含まれる場合:
+a. authority spec の編集を revert: \`git checkout ${baseBranch} -- <violated-path>\`
+b. 意図した変更を delta path に書き直す: \`specrunner/changes/${slug}/specs/<capability>/spec.md\`
 </user-request>`;
 }
 
@@ -114,11 +124,14 @@ export const DeltaSpecFixerStep: AgentStep = {
     const validationResultPath = getLatestStepResult(state, STEP_NAMES.DELTA_SPEC_VALIDATION)?.findingsPath
       ?? deltaSpecValidationResultPath(deps.slug);
 
+    const baseBranch = deps.request.baseBranch;
+
     // Session 継続の場合は短縮 prompt
     if (isFixerContinuation(state, STEP_NAMES.DELTA_SPEC_FIXER)) {
       return buildDeltaSpecFixerContinuationMessage({
         validationResultPath,
         slug: deps.slug,
+        baseBranch,
       });
     }
 
@@ -126,6 +139,7 @@ export const DeltaSpecFixerStep: AgentStep = {
     return buildDeltaSpecFixerInitialMessage({
       slug: deps.slug,
       branch: state.branch,
+      baseBranch,
       validationResultPath,
     });
   },

@@ -530,11 +530,11 @@ describe("TC-CAP-NEW-008: commit:push event emitted after push-only path", () =>
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-AUTH-01: staged に authority spec を含む → AUTHORITY_SPEC_EDIT_VIOLATION
+// TC-AUTH-01: staged に authority spec を含む → warning 出力、commit 続行
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-AUTH-01: staged authority spec → AUTHORITY_SPEC_EDIT_VIOLATION, commit not called", () => {
-  it("throws AUTHORITY_SPEC_EDIT_VIOLATION and does not call git commit when staged includes authority spec", async () => {
+describe("TC-AUTH-01: staged authority spec → warning to stderr, commit continues", () => {
+  it("writes warning to stderr and proceeds with commit when staged includes authority spec", async () => {
     const jobId = "tc-auth-01-job";
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
@@ -554,13 +554,27 @@ describe("TC-AUTH-01: staged authority spec → AUTHORITY_SPEC_EDIT_VIOLATION, c
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
-    await expect(executor.execute(step, state, makeLocalDeps())).rejects.toMatchObject({
-      code: "AUTHORITY_SPEC_EDIT_VIOLATION",
+    const stderrMessages: string[] = [];
+    vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      stderrMessages.push(String(chunk));
+      return true;
     });
 
+    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    // Must NOT throw
+    const result = await executor.execute(step, state, makeLocalDeps());
+    expect(result).toBeDefined();
+
+    // Warning must be written to stderr
+    const combined = stderrMessages.join("");
+    expect(combined).toContain("Warning: authority spec edit detected in staged files");
+    expect(combined).toContain("specrunner/specs/foo/spec.md");
+    expect(combined).toContain("delta-spec-validation will handle");
+
+    // Commit must still be called
     const subcommands = calls.map((c) => c.args[0]);
-    expect(subcommands).not.toContain("commit");
+    expect(subcommands).toContain("commit");
+    expect(subcommands).toContain("push");
   });
 });
 
@@ -600,20 +614,22 @@ describe("TC-AUTH-02: staged delta spec only → normal commit + push", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-AUTH-03: staged に authority spec + src → reject、違反 path のみ列挙
+// TC-AUTH-03: staged に authority spec + src → warning 出力、commit 続行
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-AUTH-03: staged authority + src → reject with only authority path in error hint", () => {
-  it("throws with hint listing authority spec path but not src path", async () => {
+describe("TC-AUTH-03: staged authority + src → warning lists only authority path, commit continues", () => {
+  it("writes warning with authority path and proceeds with commit", async () => {
     const jobId = "tc-auth-03-job";
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    const { spawnFn } = makeGitSpawnFnWithRevParseSequence(
+    const { spawnFn, calls } = makeGitSpawnFnWithRevParseSequence(
       {
         add: { exitCode: 0 },
         diff: { exitCode: 1 },
         "diff --cached --name-only": { exitCode: 0, stdout: "specrunner/specs/foo/spec.md\nsrc/foo.ts" },
+        commit: { exitCode: 0 },
+        push: { exitCode: 0 },
       },
       ["abc123before"],
     );
@@ -622,20 +638,33 @@ describe("TC-AUTH-03: staged authority + src → reject with only authority path
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
 
+    const stderrMessages: string[] = [];
+    vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      stderrMessages.push(String(chunk));
+      return true;
+    });
+
     const step = makeAgentStep({ name: "implementer", requiresCommit: true });
-    const err = await executor.execute(step, state, makeLocalDeps()).catch((e: unknown) => e) as { code: string; hint: string };
-    expect(err.code).toBe("AUTHORITY_SPEC_EDIT_VIOLATION");
-    expect(err.hint).toContain("specrunner/specs/foo/spec.md");
-    expect(err.hint).not.toContain("src/foo.ts");
+    const result = await executor.execute(step, state, makeLocalDeps());
+    expect(result).toBeDefined();
+
+    const combined = stderrMessages.join("");
+    expect(combined).toContain("specrunner/specs/foo/spec.md");
+    // src path should NOT appear in the warning (only authority spec paths)
+    expect(combined).not.toContain("src/foo.ts");
+
+    // Commit continues
+    const subcommands = calls.map((c) => c.args[0]);
+    expect(subcommands).toContain("commit");
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-AUTH-04: agent self-commit (HEAD advanced) で HEAD diff に authority spec → reject
+// TC-AUTH-04: agent self-commit (HEAD advanced) で HEAD diff に authority spec → warning 出力、push 続行
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-AUTH-04: agent self-commit with authority spec in HEAD diff → reject, push not called", () => {
-  it("throws AUTHORITY_SPEC_EDIT_VIOLATION without calling git push", async () => {
+describe("TC-AUTH-04: agent self-commit with authority spec in HEAD diff → warning, push continues", () => {
+  it("writes warning to stderr and proceeds with push when HEAD diff contains authority spec", async () => {
     const jobId = "tc-auth-04-job";
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
@@ -655,13 +684,26 @@ describe("TC-AUTH-04: agent self-commit with authority spec in HEAD diff → rej
     const noopSleep = async (_ms: number) => {};
     const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn, noopSleep);
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
-    await expect(executor.execute(step, state, makeLocalDeps())).rejects.toMatchObject({
-      code: "AUTHORITY_SPEC_EDIT_VIOLATION",
+    const stderrMessages: string[] = [];
+    vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      stderrMessages.push(String(chunk));
+      return true;
     });
 
+    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    // Must NOT throw
+    const result = await executor.execute(step, state, makeLocalDeps());
+    expect(result).toBeDefined();
+
+    // Warning must be written to stderr
+    const combined = stderrMessages.join("");
+    expect(combined).toContain("Warning: authority spec edit detected in agent commits");
+    expect(combined).toContain("specrunner/specs/foo/spec.md");
+    expect(combined).toContain("delta-spec-validation will handle");
+
+    // Push must still be called
     const subcommands = calls.map((c) => c.args[0]);
-    expect(subcommands).not.toContain("push");
+    expect(subcommands).toContain("push");
   });
 });
 

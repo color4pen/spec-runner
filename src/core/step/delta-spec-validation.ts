@@ -51,6 +51,19 @@ export const DeltaSpecValidationStep: CliStep = {
       }
     };
 
+    // Resolve changed files via git diff for the no-authority-spec-direct-edit rule.
+    // Graceful degradation: if git diff fails, changedFiles stays undefined (rule is skipped).
+    let changedFiles: string[] | undefined;
+    try {
+      const baseBranch = deps.request.baseBranch;
+      const diffResult = await deps.spawn("git", ["diff", `${baseBranch}..HEAD`, "--name-only"], { cwd });
+      if (diffResult.exitCode === 0 && diffResult.stdout) {
+        changedFiles = diffResult.stdout.split("\n").filter(p => p.length > 0);
+      }
+    } catch {
+      // git unavailable or not a git repo — skip changedFiles injection
+    }
+
     const result = await validateDeltaSpecPaths(
       changePath,
       {
@@ -59,6 +72,7 @@ export const DeltaSpecValidationStep: CliStep = {
       },
       deps.request.type,
       baselineSpecLoader,
+      changedFiles,
     );
 
     const resultRelPath = deltaSpecValidationResultPath(deps.slug);

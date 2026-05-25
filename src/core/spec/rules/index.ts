@@ -9,6 +9,7 @@ import { requirementHeaderRequired } from "./requirement-header-required.js";
 import { scenarioRequiredPerRequirement } from "./scenario-required-per-requirement.js";
 import { normativeKeywordRequired } from "./normative-keyword-required.js";
 import { baselineHeaderMatch } from "./baseline-header-match.js";
+import { noAuthoritySpecDirectEdit } from "./no-authority-spec-direct-edit.js";
 
 export { noSpecsForRequiredType } from "./no-specs-for-required-type.js";
 export { DeltaSpecRuleRegistry };
@@ -36,5 +37,6 @@ export function createDeltaSpecRegistry(): DeltaSpecRuleRegistry<DeltaSpecRuleNa
   registry.register(scenarioRequiredPerRequirement);
   registry.register(normativeKeywordRequired);
   registry.register(baselineHeaderMatch);
+  registry.register(noAuthoritySpecDirectEdit);
   return registry;
 }

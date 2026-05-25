@@ -1,14 +1,19 @@
-import type { Verdict } from "../../state/schema.js";
+import type { Verdict, JobState } from "../../state/schema.js";
 import { STEP_NAMES } from "../step/step-names.js";
 
 /**
  * A single row in the transition table.
  * Defines: when step `step` produces verdict `on`, go to `to`.
+ *
+ * `when` is an optional context predicate. When defined, the transition only
+ * fires if `when(state)` returns true. This enables context-aware routing
+ * (e.g. 2nd-phase delta-spec-validation → adr-gen after code-review).
  */
 export interface Transition {
   step: string;
   on: Verdict | string;
   to: string | "end" | "escalate";
+  when?: (state: JobState) => boolean;
 }
 
 /**
@@ -53,7 +58,8 @@ export const LOOP_ERROR_CODES: Record<string, LoopErrorShape> = {
 
 /**
  * Standard pipeline transition table for the design → delta-spec-validation → spec-review
- * flow, extended with the implementer → verification ↔ build-fixer flow.
+ * flow, extended with the implementer → verification ↔ build-fixer flow and a 2nd-phase
+ * delta-spec-validation after code-review.
  *
  * design uses "success" / "error" rather than Verdict because it has no file-based verdict.
  * spec-review and spec-fixer use standard Verdict values.
@@ -65,12 +71,24 @@ export const LOOP_ERROR_CODES: Record<string, LoopErrorShape> = {
  * Drives Pipeline.runInternal: after each step completes, the table is consulted to
  * determine the next step. "end" terminates the pipeline; "escalate" also terminates
  * (but with escalation semantics). Any other value is the name of the next step to run.
+ *
+ * Context-aware routing:
+ * - delta-spec-validation approved → adr-gen (2nd phase, after code-review): fires when
+ *   state.steps["code-review"] has at least one attempt (i.e. code-review already ran).
+ * - delta-spec-validation approved → spec-review (1st phase, after design): fallback when
+ *   the conditional above does not match.
+ * - The delta-spec-fixer loop (needs-fix → delta-spec-fixer → delta-spec-validation) works
+ *   identically in both phases because its rows have no `when` predicate.
  */
 export const STANDARD_TRANSITIONS: Transition[] = [
   // design → delta-spec-validation (replaces old design → spec-review)
   { step: STEP_NAMES.DESIGN,                on: "success",    to: STEP_NAMES.DELTA_SPEC_VALIDATION },
   { step: STEP_NAMES.DESIGN,                on: "error",      to: "escalate" },
   // --- delta-spec-validation loop ---
+  // 2nd phase (after code-review): approved → adr-gen (conditional — must precede the fallback row)
+  { step: STEP_NAMES.DELTA_SPEC_VALIDATION, on: "approved",   to: STEP_NAMES.ADR_GEN,
+    when: (s) => (s.steps?.["code-review"]?.length ?? 0) > 0 },
+  // 1st phase (after design): approved → spec-review (fallback, no `when`)
   { step: STEP_NAMES.DELTA_SPEC_VALIDATION, on: "approved",   to: STEP_NAMES.SPEC_REVIEW },
   { step: STEP_NAMES.DELTA_SPEC_VALIDATION, on: "needs-fix",  to: STEP_NAMES.DELTA_SPEC_FIXER },
   { step: STEP_NAMES.DELTA_SPEC_VALIDATION, on: "escalation", to: "escalate" },
@@ -93,12 +111,13 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.BUILD_FIXER,           on: "success",    to: STEP_NAMES.VERIFICATION },
   { step: STEP_NAMES.BUILD_FIXER,           on: "error",      to: "escalate" },
   // --- code review loop ---
-  { step: STEP_NAMES.CODE_REVIEW,           on: "approved",   to: STEP_NAMES.ADR_GEN },
+  // code-review approved → delta-spec-validation (2nd phase validation before adr-gen)
+  { step: STEP_NAMES.CODE_REVIEW,           on: "approved",   to: STEP_NAMES.DELTA_SPEC_VALIDATION },
   { step: STEP_NAMES.CODE_REVIEW,           on: "needs-fix",  to: STEP_NAMES.CODE_FIXER },
   { step: STEP_NAMES.CODE_REVIEW,           on: "escalation", to: "escalate" },
   { step: STEP_NAMES.CODE_FIXER,            on: "approved",   to: STEP_NAMES.CODE_REVIEW },
   { step: STEP_NAMES.CODE_FIXER,            on: "error",      to: "escalate" },
-  // --- adr-gen (single shot, after code-review approved) ---
+  // --- adr-gen (single shot, after 2nd-phase delta-spec-validation approved) ---
   { step: STEP_NAMES.ADR_GEN,              on: "success",    to: STEP_NAMES.PR_CREATE },
   { step: STEP_NAMES.ADR_GEN,              on: "error",      to: "escalate" },
   // --- pr-create (single shot, no loop) ---

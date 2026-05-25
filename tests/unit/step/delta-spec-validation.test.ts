@@ -261,3 +261,67 @@ describe("TC-DSV-05: deps.request.type is forwarded to validateDeltaSpecPaths", 
     expect(callArgs[2]).toBe("bug-fix");
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-INJ-01: git diff 成功時に stdout を changedFiles として validateDeltaSpecPaths に注入
+// ---------------------------------------------------------------------------
+describe("TC-INJ-01: git diff stdout injected as changedFiles into validateDeltaSpecPaths", () => {
+  it("passes parsed changedFiles to validateDeltaSpecPaths when git diff succeeds", async () => {
+    mockValidate.mockResolvedValue({ ok: true });
+
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+    deps.spawn = async (_cmd, _args, _opts) => ({
+      exitCode: 0,
+      stdout: "specrunner/specs/foo/spec.md\nsrc/core/bar.ts\n",
+      stderr: "",
+    });
+
+    await DeltaSpecValidationStep.run(state, deps);
+
+    expect(mockValidate).toHaveBeenCalledTimes(1);
+    const changedFiles = mockValidate.mock.calls[0]?.[4];
+    expect(changedFiles).toEqual(["specrunner/specs/foo/spec.md", "src/core/bar.ts"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-INJ-02: git diff 失敗時は changedFiles undefined、pipeline はエラーにならない
+// ---------------------------------------------------------------------------
+describe("TC-INJ-02: git diff failure → changedFiles undefined, pipeline does not error", () => {
+  it("passes changedFiles: undefined and does not throw when git diff returns non-zero exit code", async () => {
+    mockValidate.mockResolvedValue({ ok: true });
+
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+    deps.spawn = async (_cmd, _args, _opts) => ({
+      exitCode: 128,
+      stdout: "",
+      stderr: "fatal: not a git repository",
+    });
+
+    // Must NOT throw
+    await expect(DeltaSpecValidationStep.run(state, deps)).resolves.toBeUndefined();
+
+    expect(mockValidate).toHaveBeenCalledTimes(1);
+    const changedFiles = mockValidate.mock.calls[0]?.[4];
+    expect(changedFiles).toBeUndefined();
+  });
+
+  it("passes changedFiles: undefined and does not throw when spawn throws", async () => {
+    mockValidate.mockResolvedValue({ ok: true });
+
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+    deps.spawn = async () => {
+      throw new Error("git not found");
+    };
+
+    // Must NOT throw
+    await expect(DeltaSpecValidationStep.run(state, deps)).resolves.toBeUndefined();
+
+    expect(mockValidate).toHaveBeenCalledTimes(1);
+    const changedFiles = mockValidate.mock.calls[0]?.[4];
+    expect(changedFiles).toBeUndefined();
+  });
+});
