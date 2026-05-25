@@ -131,7 +131,13 @@ export class ManagedRuntime implements RuntimeStrategy {
 
       // Delete draft file from main cwd (move semantics: draft consumed on run)
       try {
-        await fs.rm(opts.requestFilePath);
+        if (opts.requestFilePath.endsWith("/request.md")) {
+          // Directory-format draft: remove entire slug directory
+          await fs.rm(path.dirname(opts.requestFilePath), { recursive: true, force: true });
+        } else {
+          // Legacy flat-file format: remove file only
+          await fs.rm(opts.requestFilePath);
+        }
       } catch {
         process.stderr.write(
           `Warning: failed to delete draft file ${opts.requestFilePath} from main worktree. Remove it manually.\n`,

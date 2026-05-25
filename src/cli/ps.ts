@@ -3,7 +3,7 @@ import type { JobState, JobStatus } from "../state/schema.js";
 import { getJobSlug } from "../state/job-slug.js";
 import { ACTIVE_STATUSES } from "../state/lifecycle.js";
 import type { GitHubClient } from "../core/port/github-client.js";
-import { spawnCommand } from "../util/spawn.js";
+import { resolveRepoRoot } from "../util/repo-root.js";
 
 /**
  * Format a job age in human-readable form.
@@ -111,22 +111,6 @@ export async function checkPrMerged(job: JobState, githubClient: GitHubClient | 
 }
 
 /**
- * Resolve the git repository root from the current working directory.
- * Returns null if not in a git repo or git fails.
- */
-async function resolveRepoRoot(): Promise<string | null> {
-  try {
-    const result = await spawnCommand("git", ["rev-parse", "--show-toplevel"], { cwd: process.cwd() });
-    if (result.exitCode === 0) {
-      return result.stdout.trim();
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Run the specrunner ps command.
  * @param opts.active - When true, only show jobs with active (running) status
  * @param opts.all - When true, include archived jobs (default: archived hidden)
@@ -138,7 +122,8 @@ export async function runPs(
   opts: { active?: boolean; all?: boolean; status?: string; repoRoot?: string } = {},
   githubClient: GitHubClient | null = null,
 ): Promise<void> {
-  const repoRoot = opts.repoRoot ?? await resolveRepoRoot() ?? process.cwd();
+  // Read-only command — fallback to cwd if git unavailable
+  const repoRoot = opts.repoRoot ?? (await resolveRepoRoot()) ?? process.cwd();
 
   const allJobs = await JobStateStore.list(repoRoot);
 

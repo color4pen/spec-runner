@@ -11,32 +11,18 @@
 import { JobStateStore } from "../store/job-state-store.js";
 import { getJobSlug } from "../state/job-slug.js";
 import type { JobState } from "../state/schema.js";
-import { spawnCommand } from "../util/spawn.js";
 import { SpecRunnerError, ERROR_CODES } from "../errors.js";
+import { resolveRepoRoot } from "../util/repo-root.js";
 
 const UUID_REGEX = /^[a-f0-9-]{36}$/;
-
-/**
- * Resolve the git repository root from the current working directory.
- */
-async function resolveRepoRoot(): Promise<string> {
-  try {
-    const result = await spawnCommand("git", ["rev-parse", "--show-toplevel"], { cwd: process.cwd() });
-    if (result.exitCode === 0) {
-      return result.stdout.trim();
-    }
-  } catch {
-    // fall through
-  }
-  return process.cwd();
-}
 
 /**
  * Run `job show` — print 6 key fields to stdout.
  * Calls process.exit() on error.
  */
 export async function runJobShow(input: string): Promise<void> {
-  const repoRoot = await resolveRepoRoot();
+  // Read-only command — fallback to cwd if git unavailable
+  const repoRoot = (await resolveRepoRoot()) ?? process.cwd();
 
   let state: JobState;
 

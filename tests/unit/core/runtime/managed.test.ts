@@ -171,8 +171,8 @@ async function makeJobStateForManaged(slug = "test-slug") {
 // TC-MR-005: setupWorkspace writes rules.md to change folder via writeFile (string constant)
 describe("TC-MR-005: setupWorkspace writes rules.md to change folder via string constant", () => {
   it("writes RULES_MD_CONTENT to change folder and stages it with git add", async () => {
-    // Arrange: create request.md in tempDir (no specrunner/rules.md needed)
-    await fs.writeFile(path.join(tempDir, "request.md"), "# Test Request\n");
+    // Use flat-file draft path (not ending with /request.md) to avoid deleting tempDir
+    await fs.writeFile(path.join(tempDir, "test-slug.md"), "# Test Request\n");
 
     const sessionClient = buildMockSessionClient();
     const githubClient = buildMockGitHubClient();
@@ -181,7 +181,7 @@ describe("TC-MR-005: setupWorkspace writes rules.md to change folder via string 
 
     const jobState = await makeJobStateForManaged();
     await runtime.setupWorkspace("test-slug", jobState.jobId, {
-      requestFilePath: path.join(tempDir, "request.md"),
+      requestFilePath: path.join(tempDir, "test-slug.md"),
       branchName: "feat/test-slug-abcd1234",
     });
 
@@ -198,7 +198,8 @@ describe("TC-MR-005: setupWorkspace writes rules.md to change folder via string 
 
   // TC-07: state.request.path is updated to the permanent change-folder path after setupWorkspace
   it("TC-07: updates state.request.path to <cwd>/specrunner/changes/<slug>/request.md", async () => {
-    await fs.writeFile(path.join(tempDir, "request.md"), "# Test Request\n");
+    // Use flat-file draft path (not ending with /request.md) to avoid deleting tempDir
+    await fs.writeFile(path.join(tempDir, "test-slug.md"), "# Test Request\n");
 
     const sessionClient = buildMockSessionClient();
     const githubClient = buildMockGitHubClient();
@@ -207,7 +208,7 @@ describe("TC-MR-005: setupWorkspace writes rules.md to change folder via string 
 
     const jobState = await makeJobStateForManaged();
     await runtime.setupWorkspace("test-slug", jobState.jobId, {
-      requestFilePath: path.join(tempDir, "request.md"),
+      requestFilePath: path.join(tempDir, "test-slug.md"),
       branchName: "feat/test-slug-abcd1234",
     });
 

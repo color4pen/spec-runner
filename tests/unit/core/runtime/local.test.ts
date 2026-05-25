@@ -539,8 +539,8 @@ describe("TC-LR-010: setupWorkspace run path commits request.md", () => {
     const githubClient = buildMockGitHubClient();
     const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
-    // Create a real request.md file in tempDir
-    const requestFile = path.join(tempDir, "request.md");
+    // Use flat-file draft path (not ending with /request.md) to avoid deleting tempDir
+    const requestFile = path.join(tempDir, "test-slug.md");
     await fs.writeFile(requestFile, "# Test Request\nslug: test-slug\n");
 
     const jobState = await makeJobState();
@@ -566,7 +566,8 @@ describe("TC-LR-010: setupWorkspace run path commits request.md", () => {
     const githubClient = buildMockGitHubClient();
     const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
-    const requestFile = path.join(tempDir, "request.md");
+    // Use flat-file draft path (not ending with /request.md) to avoid deleting tempDir
+    const requestFile = path.join(tempDir, "test-slug.md");
     await fs.writeFile(requestFile, "# Test Request\n");
 
     const jobState = await makeJobState();
@@ -585,7 +586,8 @@ describe("TC-LR-010: setupWorkspace run path commits request.md", () => {
     const githubClient = buildMockGitHubClient();
     const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
-    const requestFile = path.join(tempDir, "request.md");
+    // Use flat-file draft path (not ending with /request.md) to avoid deleting tempDir
+    const requestFile = path.join(tempDir, "test-slug.md");
     await fs.writeFile(requestFile, "# Test Request\nslug: test-slug\n");
 
     const jobState = await makeJobState();
@@ -620,7 +622,8 @@ describe("TC-LR-014: setupWorkspace writes rules.md to change folder via string 
     const githubClient = buildMockGitHubClient();
     const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
-    const requestFile = path.join(tempDir, "request.md");
+    // Use flat-file draft path (not ending with /request.md) to avoid deleting tempDir
+    const requestFile = path.join(tempDir, "test-slug.md");
     await fs.writeFile(requestFile, "# Test Request\nslug: test-slug\n");
 
     const jobState = await makeJobState();

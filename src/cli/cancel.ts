@@ -12,6 +12,7 @@ import { SpecRunnerError } from "../errors.js";
 import { cancelSingleJob, cancelAllTerminated } from "../core/cancel/runner.js";
 import { createWorktreeManager } from "../core/worktree/manager.js";
 import { spawnCommand } from "../util/spawn.js";
+import { resolveRepoRootOrFail } from "../util/repo-root.js";
 
 export interface RunCancelOptions {
   jobId?: string;
@@ -43,17 +44,12 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
     return 2;
   }
 
-  // Resolve repo root via git
+  // State-modifying command — require valid git repo (fail-fast)
   let repoRoot: string;
   try {
-    const gitResult = await spawnCommand("git", ["rev-parse", "--show-toplevel"], { cwd: process.cwd() });
-    if (gitResult.exitCode !== 0) {
-      process.stderr.write(`Error: failed to resolve git repo root: ${gitResult.stderr.trim()}\n`);
-      return 1;
-    }
-    repoRoot = gitResult.stdout.trim();
+    repoRoot = await resolveRepoRootOrFail();
   } catch (err: unknown) {
-    process.stderr.write(`Error: failed to resolve git repo root: ${(err as Error).message}\n`);
+    process.stderr.write(`Error: ${(err as Error).message}\n`);
     return 1;
   }
 
