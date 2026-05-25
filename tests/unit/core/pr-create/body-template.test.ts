@@ -37,7 +37,6 @@ function makeParsedRequest(overrides: Partial<ParsedRequest> = {}): ParsedReques
     slug: "pr-create-step",
     baseBranch: "main",
     content: "# pr-create step\n\n## Meta\n- **type**: new-feature\n- **slug**: pr-create-step\n",
-    enabled: [],
     adr: false,
     sections: {
       背景: "これは背景テキストです。",

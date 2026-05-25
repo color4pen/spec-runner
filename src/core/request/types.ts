@@ -18,7 +18,6 @@ export interface ParsedRequest {
   /** Base branch for diff/worktree/PR operations (e.g. "main" or "master"). */
   baseBranch: string;
   content: string;
-  enabled: string[];
   /**
    * Whether to run the adr-gen step for this request.
    * true → judge agent evaluates if ADR-worthy and generates if so.

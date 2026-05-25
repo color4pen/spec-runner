@@ -122,7 +122,6 @@ function makeDeps(): PipelineDeps {
       slug: "test-slug",
       baseBranch: "main",
       content: "content",
-      enabled: [],
       adr: false,
     },
     slug: "test-slug",

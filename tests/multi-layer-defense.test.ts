@@ -113,7 +113,7 @@ function buildRepo() {
 // D5: type defaults to "spec-change" (not "feature") to match the multi-layer defense context.
 // The no-specs-for-required-type rule in delta-spec-validator triggers for spec-change/new-feature.
 function buildRequest() {
-  return { type: "spec-change", title: "Test", slug: "test", baseBranch: "main", content: "Do something", enabled: [], adr: false };
+  return { type: "spec-change", title: "Test", slug: "test", baseBranch: "main", content: "Do something", adr: false };
 }
 
 function buildRunner(

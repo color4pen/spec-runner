@@ -54,10 +54,6 @@ Each test case must use the following structure:
 | should | Important but the core feature still works without it. Edge cases, error handling. |
 | could | Nice to have, but omissible in initial implementation. Performance, UX details. |
 
-If the user message contains a <must-areas> section, any test case that falls within
-those areas MUST be assigned Priority: must, overriding the default priority rules.
-If <must-areas> is absent, apply the default priority rules above.
-
 ## Testable Behaviors Extraction
 
 Extract testable behaviors from design.md and tasks.md across these four dimensions:
@@ -172,26 +168,21 @@ export interface TestCaseGenMessageInput {
   slug: string;
   branch: string;
   requestContent: string;
-  enabled: string[];
 }
 
 /**
  * Build the initial user message for the test-case-gen session.
  */
 export function buildTestCaseGenInitialMessage(opts: TestCaseGenMessageInput): string {
-  const { slug, branch, requestContent, enabled } = opts;
+  const { slug, branch, requestContent } = opts;
   const changeFolder = changeFolderPath(slug);
   const outputPath = `${changeFolder}/test-cases.md`;
-
-  const mustAreasSection = enabled.length > 0
-    ? `\n<must-areas>\n${enabled.join(", ")}\n</must-areas>\n`
-    : "";
 
   return `Generate test scenarios for the following change.
 
 Change folder: ${changeFolder}
 Branch: ${branch}
-${mustAreasSection}
+
 Please:
 1. Read ${changeFolder}/request.md to understand the change background and goals
 2. Read ${changeFolder}/design.md to understand the technical design

@@ -149,7 +149,7 @@ describe("TC-030: StepExecutor resolves agent ID via step.agent.role", () => {
       client: mockClient,
       config,
 
-      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
+      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false },
       slug: "2026-01-01-test",
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),
@@ -210,7 +210,7 @@ describe("TC-031: spec-review Step does not use propose Agent ID", () => {
       client: mockClient,
       config,
 
-      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
+      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false },
       slug: "2026-01-01-test",
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),
@@ -269,7 +269,7 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
       client: mockClient,
       config: makeConfig(),
 
-      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
+      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false },
       slug: "test-slug",
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),
@@ -320,7 +320,7 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
       client: mockClient,
       config: makeConfig(),
 
-      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
+      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false },
       slug: "test-slug",
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),
@@ -374,7 +374,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
       client: mockClient,
       config: makeConfig(),
 
-      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
+      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false },
       slug: "test-slug",
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),
@@ -443,7 +443,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
       client: mockClient,
       config: makeConfig(),
 
-      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
+      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false },
       slug: "test-slug",
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),
@@ -491,7 +491,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
       client: mockClient,
       config: makeConfig(),
 
-      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
+      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false },
       slug: "test-slug",
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),
@@ -541,7 +541,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
       client: mockClient,
       config: makeConfig(),
 
-      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
+      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false },
       slug: "test-slug",
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),
@@ -631,7 +631,6 @@ describe("TC-007 to TC-010: allowlist steps set ctx.projectContext from specrunn
         slug: "test-slug",
         baseBranch: "main",
         content: "content",
-        enabled: [],
         adr: false,
       },
       slug: "test-slug",
@@ -734,7 +733,6 @@ describe("TC-011 to TC-014: non-allowlist steps — ctx.projectContext is undefi
         slug: "test-slug",
         baseBranch: "main",
         content: "content",
-        enabled: [],
         adr: false,
       },
       slug: "test-slug",
@@ -818,7 +816,7 @@ describe("TC-EX: StepExecutor injects resumeSessionId for fixer steps", () => {
     return {
       config: makeConfig(),
 
-      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
+      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false },
       slug: "test-slug",
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),
@@ -941,7 +939,6 @@ describe("TC-015: specrunner/project.md not found — no error, ctx.projectConte
           slug: "test-slug",
           baseBranch: "main",
           content: "content",
-          enabled: [],
           adr: false,
         },
         slug: "test-slug",
@@ -1020,7 +1017,7 @@ describe("TC-05: runAgentStep — StepRun.startedAt < StepRun.endedAt (success p
     const deps: PipelineDeps = {
       config: makeConfig(),
 
-      request: { type: "feature", title: "Test", slug: "tc05-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
+      request: { type: "feature", title: "Test", slug: "tc05-slug", baseBranch: "main", content: "content", adr: false },
       slug: "tc05-slug",
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),
@@ -1087,7 +1084,7 @@ describe("TC-06: runCliStep — StepRun.startedAt < StepRun.endedAt (success pat
     const deps: PipelineDeps = {
       config: makeConfig(),
 
-      request: { type: "feature", title: "Test", slug: "tc06-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
+      request: { type: "feature", title: "Test", slug: "tc06-slug", baseBranch: "main", content: "content", adr: false },
       slug: "tc06-slug",
       cwd: tempDir,
       githubClient: {
@@ -1143,7 +1140,7 @@ describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt
   function makeFollowUpDeps(): PipelineDeps {
     return {
       config: makeConfig(),
-      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
+      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false },
       slug: "test-slug",
       githubClient: {
         verifyBranch: vi.fn().mockResolvedValue(true),

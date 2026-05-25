@@ -26,10 +26,6 @@ Your output MUST include all of the following sections in order:
 5. A \`## 要件\` section with numbered requirements
 6. A \`## スコープ外\` section listing out-of-scope items
 7. A \`## 受け入れ基準\` section with checkboxes
-8. A \`## Workflow Options\` section:
-   \`\`\`
-   - enabled: []
-   \`\`\`
 
 ## Type Inference
 

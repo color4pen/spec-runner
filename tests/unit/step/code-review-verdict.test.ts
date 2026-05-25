@@ -22,7 +22,7 @@ function makeMinimalDeps(slug: string = "my-change"): StepDeps {
       agents: {},
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
     },
-    request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "Fix the code.", enabled: [], adr: false },
+    request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "Fix the code.", adr: false },
     slug,
   };
 }

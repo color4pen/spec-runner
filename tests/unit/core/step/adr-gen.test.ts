@@ -19,7 +19,6 @@ function buildDeps(adr: boolean) {
       slug: "test-slug",
       baseBranch: "main",
       content: "Do something",
-      enabled: [],
       adr,
     },
     dynamicContext: undefined,

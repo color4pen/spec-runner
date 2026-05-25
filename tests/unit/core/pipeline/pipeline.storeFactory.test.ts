@@ -91,7 +91,7 @@ function makeMinimalDeps(storeFactory: StoreFactory): PipelineDeps {
       agents: { design: { agentId: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" } },
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
     },
-    request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false },
+    request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false },
     slug: "test-slug",
     githubClient: {
       verifyBranch: vi.fn().mockResolvedValue(true),

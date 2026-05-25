@@ -28,7 +28,6 @@ export interface ParsedRequestRaw {
   /** raw value when adr pattern is partially matched (invalid value), null when absent */
   adrAnyValue: string | null;
   issue: string | undefined;
-  enabled: string[];
   sections: ParsedRequestSections;
   filePath: string;
   content: string;

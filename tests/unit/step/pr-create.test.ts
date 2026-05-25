@@ -68,7 +68,7 @@ function makeMinimalDeps(slug: string = "my-change"): CliStepDeps {
       agents: {},
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
     },
-    request: { type: "feature", title: "Test PR", slug: "test-slug", baseBranch: "main", content: "content", enabled: [], adr: false, sections: {} },
+    request: { type: "feature", title: "Test PR", slug: "test-slug", baseBranch: "main", content: "content", adr: false, sections: {} },
     slug,
     cwd: tempDir,
     spawn: noopSpawn,

@@ -11,8 +11,8 @@ import { createRequestMdRegistry } from "./rules/index.js";
 
 /**
  * Parse a request.md file into structured fields.
- * Format: level-1 heading as title, Meta section with type,
- * Workflow Options section with enabled list.
+ * Format: level-1 heading as title, Meta section with type.
+ * Unknown sections (e.g. legacy "## Workflow Options") are silently ignored.
  *
  * Throws REQUEST_MD_INVALID if required fields are missing.
  * Warns to stderr for unknown types but continues.
@@ -54,7 +54,6 @@ export function parseRequestMdContent(
     slug: raw.slug as string,
     baseBranch: raw.baseBranch as string,
     content: raw.content,
-    enabled: raw.enabled,
     adr,
     sections: raw.sections,
     issue: raw.issue,
@@ -149,9 +148,6 @@ export function parseRequestMdRaw(
     }
   }
 
-  // Extract enabled list from Workflow Options section
-  const enabled = extractEnabled(lines);
-
   // Extract sections: 背景, 目的
   const sections = extractSections(lines);
 
@@ -163,89 +159,10 @@ export function parseRequestMdRaw(
     adrRaw,
     adrAnyValue,
     issue,
-    enabled,
     sections,
     filePath,
     content,
   };
-}
-
-/**
- * Extract the enabled list from Workflow Options section.
- * Section header: "## Workflow Options" (case-insensitive match)
- * Items: "- item" lines under "enabled:" key or directly listed.
- */
-function extractEnabled(lines: string[]): string[] {
-  // Find the Workflow Options section
-  let sectionStart = -1;
-  const sectionHeaderPattern = /^##\s+Workflow\s+Options/i;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line !== undefined && sectionHeaderPattern.test(line)) {
-      sectionStart = i;
-      break;
-    }
-  }
-
-  if (sectionStart === -1) {
-    return [];
-  }
-
-  // Find section end (next ## heading)
-  let sectionEnd = lines.length;
-  for (let i = sectionStart + 1; i < lines.length; i++) {
-    const line = lines[i];
-    if (line !== undefined && /^##\s+/.test(line)) {
-      sectionEnd = i;
-      break;
-    }
-  }
-
-  const sectionLines = lines.slice(sectionStart + 1, sectionEnd);
-
-  // Look for "enabled:" line and extract list items below it
-  // Format: "- enabled: [item1, item2, ...]" or
-  // "- enabled:\n  - item1\n  - item2"
-  // Also handle: "- **enabled**: [item1, item2]"
-  const enabled: string[] = [];
-
-  // Try to find "enabled:" key (possible formats)
-  const enabledKeyPattern = /^\s*-?\s*\*?\*?enabled\*?\*?:?\s*(.*)/i;
-
-  for (let i = 0; i < sectionLines.length; i++) {
-    const line = sectionLines[i];
-    if (line === undefined) continue;
-    const m = enabledKeyPattern.exec(line);
-    if (m) {
-      const inlineValue = m[1]?.trim() ?? "";
-      if (inlineValue.length > 0) {
-        // Inline format: "enabled: [item1, item2]" or "enabled: item1, item2"
-        const cleaned = inlineValue.replace(/^\[|\]$/g, "");
-        const items = cleaned
-          .split(",")
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0);
-        enabled.push(...items);
-      } else {
-        // Multi-line format: items on subsequent lines
-        for (let j = i + 1; j < sectionLines.length; j++) {
-          const nextLine = sectionLines[j];
-          if (nextLine === undefined) continue;
-          if (/^##/.test(nextLine)) break;
-          const itemMatch = /^\s*-\s+(.+)$/.exec(nextLine.trimEnd());
-          if (itemMatch?.[1]) {
-            enabled.push(itemMatch[1].trim());
-          } else if (nextLine.trim().length > 0 && !/^\s*-/.test(nextLine)) {
-            // Non-list line, stop
-            break;
-          }
-        }
-      }
-      break;
-    }
-  }
-
-  return enabled;
 }
 
 /**

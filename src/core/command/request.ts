@@ -48,10 +48,6 @@ export function buildScaffoldTemplate(params: {
 - [ ] <基準 1>
 - [ ] \`bun run typecheck && bun run test\` が green
 
-## Workflow Options
-
-- enabled: []
-
 ## architect 評価済みの設計判断
 
 TBD

@@ -129,7 +129,6 @@ export class ClaudeCodeRunner implements AgentRunner {
         slug: ctx.slug,
         baseBranch: "main",
         content: ctx.requestContent,
-        enabled: [],
         adr: ctx.requestAdr ?? false,
       },
       dynamicContext: ctx.dynamicContext,

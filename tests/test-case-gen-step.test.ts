@@ -8,8 +8,6 @@
  * TC-005: STANDARD_TRANSITIONS has test-case-gen:success → implementer
  * TC-006: STANDARD_TRANSITIONS has test-case-gen:error → escalate
  * TC-007: TEST_CASE_GEN_SYSTEM_PROMPT contains required section keywords
- * TC-008: buildMessage includes <must-areas> when enabled is non-empty
- * TC-009: buildMessage omits <must-areas> when enabled is empty
  * TC-010: buildMessage includes proposal.md read instruction
  */
 import { describe, it, expect } from "vitest";
@@ -54,7 +52,6 @@ function makeMinimalDeps(slug: string = "my-change"): StepDeps {
       slug: "test-slug",
       baseBranch: "main",
       content: "Add test-case-gen step to pipeline",
-      enabled: [],
       adr: false,
     },
     slug,
@@ -220,49 +217,8 @@ describe("TC-007: TEST_CASE_GEN_SYSTEM_PROMPT 内容検証", () => {
     expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("blocked_reasons");
   });
 
-  it("must-areas キーワードが含まれる", () => {
-    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("must-areas");
-  });
-
   it("Result キーワードが含まれる", () => {
     expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("Result");
-  });
-});
-
-// TC-008: buildMessage — enabled 非空時に <must-areas> が含まれる
-describe("TC-008: buildMessage — enabled 非空時に <must-areas> が含まれる", () => {
-  it("enabled: ['security'] の場合 <must-areas> セクションが含まれる", () => {
-    const state = makeMinimalState({ branch: "feat/my-change" });
-    const deps = makeMinimalDeps("my-change");
-    deps.request.enabled = ["security"];
-    const message = TestCaseGenStep.buildMessage(state, deps);
-
-    expect(message).toContain("<must-areas>");
-    expect(message).toContain("security");
-    expect(message).toContain("</must-areas>");
-  });
-
-  it("複数 enabled の場合 <must-areas> にカンマ区切りで含まれる", () => {
-    const state = makeMinimalState({ branch: "feat/my-change" });
-    const deps = makeMinimalDeps("my-change");
-    deps.request.enabled = ["security", "performance"];
-    const message = TestCaseGenStep.buildMessage(state, deps);
-
-    expect(message).toContain("<must-areas>");
-    expect(message).toContain("security, performance");
-    expect(message).toContain("</must-areas>");
-  });
-});
-
-// TC-009: buildMessage — enabled 空配列時に <must-areas> が含まれない
-describe("TC-009: buildMessage — enabled 空配列時に <must-areas> が含まれない", () => {
-  it("enabled: [] の場合 <must-areas> セクションが含まれない", () => {
-    const state = makeMinimalState({ branch: "feat/my-change" });
-    const deps = makeMinimalDeps("my-change");
-    const message = TestCaseGenStep.buildMessage(state, deps);
-
-    expect(message).not.toContain("<must-areas>");
-    expect(message).not.toContain("</must-areas>");
   });
 });
 

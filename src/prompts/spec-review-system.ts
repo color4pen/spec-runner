@@ -114,7 +114,6 @@ export const SPEC_REVIEW_INITIAL_MESSAGE_TEMPLATE = `Please review the following
 
 Change folder: ${_changesDir}/{{SLUG}}
 Request type: {{REQUEST_TYPE}}
-Enabled options: {{ENABLED}}
 
 {{SPEC_REVIEW_MODE}}
 
@@ -132,7 +131,6 @@ The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escal
 export interface SpecReviewPromptInput {
   slug: string;
   requestType: string;
-  enabled?: string[];
   requestContent?: string;
   /** Branch to commit and push result file to. Required for push instruction. */
   branch?: string;
@@ -182,9 +180,6 @@ Skip (do not review):
  * Build the initial message for the spec-review session.
  */
 export function buildSpecReviewInitialMessage(input: SpecReviewPromptInput): string {
-  const enabledStr = input.enabled && input.enabled.length > 0
-    ? input.enabled.join(", ")
-    : "none";
   const requestContent = input.requestContent ?? "(see change folder)";
 
   // Compute findings path based on iteration
@@ -202,7 +197,6 @@ export function buildSpecReviewInitialMessage(input: SpecReviewPromptInput): str
   return SPEC_REVIEW_INITIAL_MESSAGE_TEMPLATE
     .replace(/{{SLUG}}/g, input.slug)
     .replace(/{{REQUEST_TYPE}}/g, input.requestType)
-    .replace(/{{ENABLED}}/g, enabledStr)
     .replace(/{{SPEC_REVIEW_MODE}}/g, specReviewModeInstruction)
     .replace(/{{REQUEST_CONTENT}}/g, requestContent)
     .replace(/{{FINDINGS_PATH}}/g, findingsPath)

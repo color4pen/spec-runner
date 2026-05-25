@@ -116,7 +116,7 @@ function buildRepo() {
 }
 
 function buildRequest() {
-  return { type: "feature", title: "Test", slug: "test", baseBranch: "main", content: "Do something", enabled: [], adr: false };
+  return { type: "feature", title: "Test", slug: "test", baseBranch: "main", content: "Do something", adr: false };
 }
 
 /**

@@ -94,7 +94,6 @@ export const SpecReviewStep: AgentStep = {
     return buildSpecReviewInitialMessage({
       slug: deps.slug,
       requestType: state.request.type,
-      enabled: deps.request.enabled,
       requestContent: deps.request.content,
       branch: state.branch ?? undefined,
       iteration,

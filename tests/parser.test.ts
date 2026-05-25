@@ -8,7 +8,7 @@ beforeEach(() => {
 
 // TC-001: request.md 正常パース（全フィールド存在）
 describe("TC-001: parseRequestMd — full valid content", () => {
-  it("returns type, title, content, enabled", () => {
+  it("returns type, title, content", () => {
     const content = `# My Feature Request
 
 ## Meta
@@ -19,10 +19,6 @@ describe("TC-001: parseRequestMd — full valid content", () => {
 - **adr**: false
 - **status**: draft
 
-## Workflow Options
-
-- enabled: test-case-generator, adr
-
 ## Description
 
 Some content here.
@@ -31,14 +27,13 @@ Some content here.
     expect(result.type).toBe("new-feature");
     expect(result.title).toBe("My Feature Request");
     expect(result.content).toBe(content);
-    expect(Array.isArray(result.enabled)).toBe(true);
     expect(result.title.length).toBeGreaterThan(0);
   });
 });
 
-// TC-002: enabled が空
-describe("TC-002: enabled が空", () => {
-  it("returns empty enabled array when no items under enabled key", () => {
+// TC-002: ## Workflow Options セクションは silent ignore される
+describe("TC-002: ## Workflow Options section is silently ignored", () => {
+  it("parses without error when ## Workflow Options section is present (legacy format)", () => {
     const content = `# Title
 
 ## Meta
@@ -50,17 +45,41 @@ describe("TC-002: enabled が空", () => {
 
 ## Workflow Options
 
-- enabled:
+- enabled: [test-case-generator]
+
+## Description
+
+Content here.
+`;
+    // Should not throw — parser silently ignores the unknown section
+    const result = parseRequestMdContent(content);
+    expect(result.type).toBe("new-feature");
+    expect(result.slug).toBe("title");
+  });
+
+  it("parses without error when ## Workflow Options has empty enabled list", () => {
+    const content = `# Title
+
+## Meta
+
+- **type**: new-feature
+- **slug**: title
+- **base-branch**: main
+- **adr**: false
+
+## Workflow Options
+
+- enabled: []
 
 `;
     const result = parseRequestMdContent(content);
-    expect(result.enabled).toEqual([]);
+    expect(result.type).toBe("new-feature");
   });
 });
 
 // TC-003: ワークフローオプションセクションが存在しない
 describe("TC-003: no workflow options section", () => {
-  it("returns enabled as empty array", () => {
+  it("parses normally when no Workflow Options section exists", () => {
     const content = `# Title
 
 ## Meta
@@ -75,7 +94,7 @@ describe("TC-003: no workflow options section", () => {
 Content here.
 `;
     const result = parseRequestMdContent(content);
-    expect(result.enabled).toEqual([]);
+    expect(result.type).toBe("new-feature");
     // Should not throw
   });
 });
@@ -194,50 +213,6 @@ describe("TC-007: parser has no external npm dependencies", () => {
     expect(fileContent).not.toMatch(/from ["']zod["']/);
     expect(fileContent).not.toMatch(/from ["']marked["']/);
     expect(fileContent).not.toMatch(/from ["']remark["']/);
-  });
-});
-
-// Additional: test enabled extraction from the actual request.md format
-describe("enabled extraction", () => {
-  it("extracts multi-item inline enabled list", () => {
-    const content = `# Feature
-
-## Meta
-
-- **type**: new-feature
-- **slug**: feature
-- **base-branch**: main
-- **adr**: false
-
-## Workflow Options
-
-- enabled: test-case-generator, adr, security-reviewer
-`;
-    const result = parseRequestMdContent(content);
-    expect(result.enabled).toContain("test-case-generator");
-    expect(result.enabled).toContain("adr");
-    expect(result.enabled).toContain("security-reviewer");
-  });
-
-  it("extracts multi-line enabled list", () => {
-    const content = `# Feature
-
-## Meta
-
-- **type**: new-feature
-- **slug**: feature
-- **base-branch**: main
-- **adr**: false
-
-## Workflow Options
-
-- enabled:
-  - test-case-generator
-  - adr
-`;
-    const result = parseRequestMdContent(content);
-    expect(result.enabled).toContain("test-case-generator");
-    expect(result.enabled).toContain("adr");
   });
 });
 
