@@ -75,17 +75,6 @@ export interface ProgressConfig {
 
 export type SpecFixerConfig = Record<string, never>;
 
-/** Job state storage location config */
-export interface JobsConfig {
-  /**
-   * Where to store job state files and verbose logs.
-   * - "project": `<repo-root>/.specrunner/jobs/` and `<repo-root>/.specrunner/logs/`
-   * - "xdg": XDG-compliant paths (`~/.local/share/specrunner/jobs/` and `~/.local/state/specrunner/logs/`)
-   * Default (when absent): "project"
-   */
-  location?: "project" | "xdg";
-}
-
 /** Pipeline-level settings */
 export interface PipelineConfig {
   /**
@@ -139,11 +128,6 @@ export interface SpecRunnerConfig {
    * D5 (design.md): user entries override built-ins.
    */
   models?: ModelsConfig;
-  /**
-   * Job state and verbose log storage configuration.
-   * When absent, defaults to "project" mode at the CLI layer.
-   */
-  jobs?: JobsConfig;
 }
 
 /**
@@ -173,7 +157,6 @@ export interface RawConfig {
   steps?: Record<string, unknown>;
   models?: Record<string, unknown>;
   progress?: Partial<Record<string, unknown>>;
-  jobs?: Record<string, unknown>;
 }
 
 /**
@@ -318,26 +301,6 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
             { code: "CONFIG_INVALID" },
           );
         }
-      }
-    }
-  }
-
-  // Validate jobs section if provided
-  if (obj["jobs"] !== undefined && obj["jobs"] !== null) {
-    if (typeof obj["jobs"] !== "object") {
-      throw Object.assign(
-        new Error("CONFIG_INVALID: jobs must be an object."),
-        { code: "CONFIG_INVALID" },
-      );
-    }
-    const jobs = obj["jobs"] as Record<string, unknown>;
-    if (jobs["location"] !== undefined) {
-      const loc = jobs["location"];
-      if (loc !== "project" && loc !== "xdg") {
-        throw Object.assign(
-          new Error('CONFIG_INVALID: jobs.location must be "project" or "xdg".'),
-          { code: "CONFIG_INVALID" },
-        );
       }
     }
   }

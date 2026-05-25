@@ -132,7 +132,7 @@ describe("TC-065: specrunner run — REMOTE_NOT_GITHUB error message", () => {
 // TC-066: specrunner ps — 破損ファイルをスキップして他のジョブを表示
 describe("TC-066: specrunner ps — skips corrupted state file", () => {
   it("shows other jobs and logs skip message when one file is malformed", async () => {
-    const jobsDir = path.join(tempDir, "specrunner", "jobs");
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     await fs.mkdir(jobsDir, { recursive: true });
 
     const now = new Date().toISOString();
@@ -161,7 +161,7 @@ describe("TC-066: specrunner ps — skips corrupted state file", () => {
     );
 
     const { runPs } = await import("../src/cli/ps.js");
-    await runPs();
+    await runPs({ repoRoot: tempDir });
 
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
     const combined = stderrCalls.map((c: unknown[]) => String(c[0])).join("\n");
@@ -179,7 +179,7 @@ describe("TC-067: specrunner ps — no jobs found", () => {
   it("outputs 'No jobs found.' when jobs directory is empty", async () => {
     // Jobs dir does not exist at all
     const { runPs } = await import("../src/cli/ps.js");
-    await runPs();
+    await runPs({ repoRoot: tempDir });
 
     const stdoutCalls = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls;
     const combined = stdoutCalls.map((c: unknown[]) => String(c[0])).join("\n");
@@ -190,7 +190,7 @@ describe("TC-067: specrunner ps — no jobs found", () => {
 // TC-068: specrunner ps — 非 TTY 出力（TAB 区切り）
 describe("TC-068: specrunner ps — TAB-separated output in non-TTY mode", () => {
   it("outputs TAB-separated rows when stdout is not a TTY", async () => {
-    const jobsDir = path.join(tempDir, "specrunner", "jobs");
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     await fs.mkdir(jobsDir, { recursive: true });
 
     const now = new Date().toISOString();
@@ -225,7 +225,7 @@ describe("TC-068: specrunner ps — TAB-separated output in non-TTY mode", () =>
 
     // Non-TTY mode is default in tests (process.stdout.isTTY is undefined/false)
     const { runPs } = await import("../src/cli/ps.js");
-    await runPs();
+    await runPs({ repoRoot: tempDir });
 
     const stdoutCalls = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls;
     const lines = stdoutCalls.map((c: unknown[]) => String(c[0])).join("");

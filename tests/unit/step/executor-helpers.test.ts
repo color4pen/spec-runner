@@ -25,20 +25,12 @@ import { JobStateStore } from "../../../src/store/job-state-store.js";
 import type { JobState, ErrorInfo } from "../../../src/state/schema.js";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "helpers-test-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -131,12 +123,11 @@ describe("TC-NEW-helpers-003: throwWrappedError", () => {
 // TC-NEW-helpers-004: failStepWithError
 describe("TC-NEW-helpers-004: failStepWithError", () => {
   it("records step result, marks state failed, persists, and throws", async () => {
-    const { createJobState } = await import("../../../src/state/store.js");
-    const state = await createJobState({
+    const state = await JobStateStore.create(tempDir, {
       request: { path: "/req.md", title: "Test", type: "feature" },
       repository: { owner: "o", name: "r" },
     });
-    const store = new JobStateStore(state.jobId);
+    const store = new JobStateStore(state.jobId, tempDir);
     const errorInfo: ErrorInfo = { code: "GENERIC_ERROR_CODE_FOR_TEST", message: "timeout", hint: "retry" };
     const completedAt = new Date().toISOString();
 
@@ -159,12 +150,11 @@ describe("TC-NEW-helpers-004: failStepWithError", () => {
 // TC-NEW-helpers-005: createSessionWithHistory — success path
 describe("TC-NEW-helpers-005: createSessionWithHistory success path", () => {
   it("records started/ok history, updates state with sessionId, and returns sessionId", async () => {
-    const { createJobState } = await import("../../../src/state/store.js");
-    const state = await createJobState({
+    const state = await JobStateStore.create(tempDir, {
       request: { path: "/req.md", title: "Test", type: "feature" },
       repository: { owner: "o", name: "r" },
     });
-    const store = new JobStateStore(state.jobId);
+    const store = new JobStateStore(state.jobId, tempDir);
 
     const mockClient: SessionClient = {
       createSession: vi.fn().mockResolvedValue({ sessionId: "sess-abc-123" }),
@@ -211,12 +201,11 @@ describe("TC-NEW-helpers-005: createSessionWithHistory success path", () => {
 // TC-NEW-helpers-006: createSessionWithHistory — failure path
 describe("TC-NEW-helpers-006: createSessionWithHistory failure path", () => {
   it("fails state, appends error history, attaches state to error, and rethrows", async () => {
-    const { createJobState } = await import("../../../src/state/store.js");
-    const state = await createJobState({
+    const state = await JobStateStore.create(tempDir, {
       request: { path: "/req.md", title: "Test", type: "feature" },
       repository: { owner: "o", name: "r" },
     });
-    const store = new JobStateStore(state.jobId);
+    const store = new JobStateStore(state.jobId, tempDir);
 
     const sessionError = new Error("network failure");
     const mockClient: SessionClient = {

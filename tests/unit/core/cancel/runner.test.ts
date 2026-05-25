@@ -35,22 +35,14 @@ import type { SpawnResult } from "../../../../src/util/spawn.js";
 // ---------- Test fixtures ----------
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await nodefs.mkdtemp(path.join(os.tmpdir(), "specrunner-cancel-test-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await nodefs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -60,12 +52,12 @@ async function makeJob(
   status: JobStatus = "failed",
   extras: Partial<{ pid: number | null | undefined; branch: string; worktreePath: string }> = {},
 ) {
-  const state = await JobStateStore.create({
+  const state = await JobStateStore.create(tempDir, {
     request: { path: "/test/request.md", title: "Test", type: "new-feature" },
     repository: { owner: "user", name: "repo" },
   });
 
-  const jobsDir = path.join(tempDir, "specrunner", "jobs");
+  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
   const statePath = path.join(jobsDir, `${state.jobId}.json`);
   const raw = JSON.parse(await nodefs.readFile(statePath, "utf-8")) as Record<string, unknown>;
   raw["status"] = status;
@@ -91,17 +83,17 @@ function makeDeps(overrides: Partial<CancelDeps> = {}): CancelDeps {
     sleep: vi.fn().mockResolvedValue(undefined),
     kill: vi.fn(),
     isAlive: vi.fn().mockReturnValue(false),
-    repoRoot: "/fake/repo",
+    repoRoot: tempDir,
     ...overrides,
   };
 }
 
 async function loadState(jobId: string): Promise<JobState> {
-  return (await new JobStateStore(jobId).load()) as JobState;
+  return (await new JobStateStore(jobId, tempDir).load()) as JobState;
 }
 
 async function stateFileExists(jobId: string): Promise<boolean> {
-  const jobsDir = path.join(tempDir, "specrunner", "jobs");
+  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
   try {
     await nodefs.access(path.join(jobsDir, `${jobId}.json`));
     return true;
@@ -392,7 +384,7 @@ describe("cancelAllTerminated", () => {
   it("returns 0 removed with message when no targeted jobs exist", async () => {
     await makeJob("running");
 
-    const result = await cancelAllTerminated({ yes: true });
+    const result = await cancelAllTerminated({ yes: true, repoRoot: tempDir });
 
     expect(result.exitCode).toBe(0);
     expect(result.message).toBe("No terminated jobs to remove.");
@@ -405,7 +397,7 @@ describe("cancelAllTerminated", () => {
     await makeJob("running");        // should NOT be removed
     await makeJob("awaiting-merge"); // should NOT be removed
 
-    const result = await cancelAllTerminated({ yes: true });
+    const result = await cancelAllTerminated({ yes: true, repoRoot: tempDir });
 
     expect(result.exitCode).toBe(0);
 
@@ -419,7 +411,7 @@ describe("cancelAllTerminated", () => {
     const { jobId: archivedId } = await makeJob("archived");
     await makeJob("failed");
 
-    const result = await cancelAllTerminated({ yes: true });
+    const result = await cancelAllTerminated({ yes: true, repoRoot: tempDir });
 
     expect(result.exitCode).toBe(0);
 
@@ -433,7 +425,7 @@ describe("cancelAllTerminated", () => {
     const { Readable } = await import("node:stream");
     const fakeStdin = new Readable({ read() {} });
 
-    const result = await cancelAllTerminated({ yes: false, stdin: fakeStdin });
+    const result = await cancelAllTerminated({ yes: false, stdin: fakeStdin, repoRoot: tempDir });
 
     expect(result.exitCode).toBe(1);
     expect(result.message).toMatch(/--yes/);
@@ -445,7 +437,7 @@ describe("cancelAllTerminated", () => {
     const ttyStdin = new Readable({ read() {} }) as NodeJS.ReadStream;
     (ttyStdin as unknown as { isTTY: boolean }).isTTY = true;
 
-    const resultPromise = cancelAllTerminated({ yes: false, stdin: ttyStdin });
+    const resultPromise = cancelAllTerminated({ yes: false, stdin: ttyStdin, repoRoot: tempDir });
     ttyStdin.push("y\n");
     ttyStdin.push(null);
     const result = await resultPromise;
@@ -458,7 +450,7 @@ describe("cancelAllTerminated", () => {
     await makeJob("failed");
     await makeJob("terminated");
 
-    const result = await cancelAllTerminated({ yes: true });
+    const result = await cancelAllTerminated({ yes: true, repoRoot: tempDir });
 
     expect(result.info).toContain("Found 2 terminated job(s) to remove.");
   });
@@ -470,7 +462,7 @@ describe("cancelAllTerminated", () => {
     await makeJob("archived");
     await makeJob("failed");
 
-    const result = await cancelAllTerminated({ yes: true });
+    const result = await cancelAllTerminated({ yes: true, repoRoot: tempDir });
 
     expect(result.info).toContain("Found 1 terminated job(s) to remove.");
   });

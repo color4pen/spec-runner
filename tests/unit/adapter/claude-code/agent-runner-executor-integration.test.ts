@@ -23,25 +23,17 @@ import type { SpawnFn } from "../../../../src/util/spawn.js";
 import type { AgentStep } from "../../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
 import { specReviewResultPath, changeFolderPath } from "../../../../src/util/paths.js";
-import { defaultStoreFactory } from "../../../helpers/store-factory.js";
+import { makeStoreFactory } from "../../../helpers/store-factory.js";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "claude-code-executor-integration-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -132,7 +124,7 @@ function makeLocalQueryFn(opts: {
 }
 
 async function seedJobState(jobId: string, state: JobState): Promise<void> {
-  const jobsDir = path.join(tempDir, "specrunner", "jobs");
+  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
   await fs.mkdir(jobsDir, { recursive: true });
   await fs.writeFile(path.join(jobsDir, `${jobId}.json`), JSON.stringify(state, null, 2));
 }
@@ -153,7 +145,7 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
     const queryFn = makeLocalQueryFn({ resultRelPath, resultContent });
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
 
     const step: AgentStep = {
       kind: "agent",
@@ -203,7 +195,7 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
 
     const verdictEvents: string[] = [];
@@ -230,7 +222,7 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
 
     expect(verdictEvents).toContain("spec-review:approved");
 
-    const jobsDir = path.join(tempDir, "specrunner", "jobs");
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     const persisted = JSON.parse(
       await fs.readFile(path.join(jobsDir, `${jobId}.json`), "utf-8"),
     ) as JobState;
@@ -245,7 +237,7 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
     const queryFn = makeLocalQueryFn({ error: true });
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
 
     const step: AgentStep = {
       kind: "agent",
@@ -292,14 +284,14 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
 
     await expect(executor.execute(step, initialState, deps)).rejects.toMatchObject({
       code: "CLAUDE_CODE_QUERY_FAILED",
     });
 
-    const jobsDir = path.join(tempDir, "specrunner", "jobs");
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     const persisted = JSON.parse(
       await fs.readFile(path.join(jobsDir, `${jobId}.json`), "utf-8"),
     ) as JobState;
@@ -328,7 +320,7 @@ describe("TC-001: completionVerdict fallback — resultContent null + completion
     const queryFn = makeLocalQueryFn({ /* no resultRelPath */ });
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
 
     const step: AgentStep = {
       kind: "agent",
@@ -368,7 +360,7 @@ describe("TC-001: completionVerdict fallback — resultContent null + completion
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
 
     const verdictEvents: string[] = [];
@@ -402,7 +394,7 @@ describe("TC-002: completionVerdict fallback — resultContent null + completion
     const queryFn = makeLocalQueryFn({ /* no resultRelPath */ });
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
 
     const step: AgentStep = {
       kind: "agent",
@@ -442,7 +434,7 @@ describe("TC-002: completionVerdict fallback — resultContent null + completion
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
 
     const resultState = await executor.execute(step, initialState, deps);
@@ -471,7 +463,7 @@ describe("TC-003 (behavior): completionVerdict is NOT used when resultContent is
     const queryFn = makeLocalQueryFn({ resultRelPath, resultContent });
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
 
     const step: AgentStep = {
       kind: "agent",
@@ -514,7 +506,7 @@ describe("TC-003 (behavior): completionVerdict is NOT used when resultContent is
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
 
     const resultState = await executor.execute(step, initialState, deps);
@@ -541,7 +533,7 @@ describe("TC-004: setsBranch flag — state.branch set after propose step comple
     const queryFn = makeLocalQueryFn({ /* no result file */ });
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
 
     const step: AgentStep = {
       kind: "agent",
@@ -582,7 +574,7 @@ describe("TC-004: setsBranch flag — state.branch set after propose step comple
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
 
     const resultState = await executor.execute(step, initialState, deps);
@@ -608,7 +600,7 @@ describe("TC-005: setsBranch flag — does not overwrite existing state.branch",
     const queryFn = makeLocalQueryFn({ /* no result file */ });
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
 
     const step: AgentStep = {
       kind: "agent",
@@ -649,7 +641,7 @@ describe("TC-005: setsBranch flag — does not overwrite existing state.branch",
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
 
     const resultState = await executor.execute(step, initialState, deps);

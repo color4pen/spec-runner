@@ -72,12 +72,12 @@ export class ResumeCommand extends CommandRunner {
     // Resolve job state by slug, with short Job ID fallback
     let state: JobState;
     try {
-      const resolved = await resolveJobStateBySlug(this.slug);
+      const resolved = await resolveJobStateBySlug(this.slug, cwd);
       if (resolved === null) {
         // Slug not found — try resolving as short Job ID prefix
         let fullId: string;
         try {
-          fullId = await JobStateStore.resolveId(this.slug);
+          fullId = await JobStateStore.resolveId(cwd, this.slug);
         } catch (err) {
           if (err instanceof SpecRunnerError) {
             process.stderr.write(`Error: ${err.message}\n`);
@@ -87,7 +87,7 @@ export class ResumeCommand extends CommandRunner {
           }
           throw new PrepareError(1, "Job not found");
         }
-        state = (await new JobStateStore(fullId).load()) as JobState;
+        state = (await new JobStateStore(fullId, cwd).load()) as JobState;
       } else {
         state = resolved;
       }
@@ -106,7 +106,7 @@ export class ResumeCommand extends CommandRunner {
           reason: "Process not running",
           patch: { pid: null },
         });
-        await new JobStateStore(state.jobId).persist(recovered);
+        await new JobStateStore(state.jobId, cwd).persist(recovered);
         state = recovered;
         process.stderr.write(
           `Warning: Job '${this.slug}' was running but the process is no longer alive. Recovering.\n`,
@@ -189,7 +189,7 @@ export class ResumeCommand extends CommandRunner {
         reason: `Resuming from step '${startStep}'`,
         patch: { error: null, resumePoint: null, pid: process.pid },
       });
-      await new JobStateStore(state.jobId).persist(transitioned);
+      await new JobStateStore(state.jobId, cwd).persist(transitioned);
       updatedState = transitioned;
     } catch (err) {
       process.stderr.write(`Error: Failed to update job state: ${(err as Error).message}\n`);
@@ -217,6 +217,7 @@ export class ResumeCommand extends CommandRunner {
       config,
       slug: this.slug,
       verbose,
+      repoRoot: cwd,
       workspaceOpts: {
         existingWorktreePath: updatedState.worktreePath ?? null,
         baseBranch: request.baseBranch,

@@ -13,7 +13,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as nodefs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { createJobState } from "../src/state/store.js";
+import { JobStateStore } from "../src/store/job-state-store.js";
 import { runFinishOrchestrator } from "../src/core/finish/orchestrator.js";
 import { runPreflight } from "../src/core/finish/preflight.js";
 import type { SpawnFn } from "../src/util/spawn.js";
@@ -22,22 +22,14 @@ import type { ResolvedTarget } from "../src/core/finish/types.js";
 import type { GitHubClient } from "../src/core/port/github-client.js";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await nodefs.mkdtemp(path.join(os.tmpdir(), "specrunner-finish-adv-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await nodefs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -48,7 +40,7 @@ async function makeJobWithPr(opts: {
   requestPath?: string;
 } = {}) {
   const { status = "awaiting-merge", slug = "test-slug", requestPath } = opts;
-  const state = await createJobState({
+  const state = await JobStateStore.create(tempDir, {
     request: {
       path: requestPath ?? `specrunner/drafts/${slug}.md`,
       title: "Test",
@@ -58,7 +50,7 @@ async function makeJobWithPr(opts: {
     repository: { owner: "user", name: "repo" },
   });
 
-  const jobsDir = path.join(tempDir, "specrunner", "jobs");
+  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
   const statePath = path.join(jobsDir, `${state.jobId}.json`);
   const raw = JSON.parse(await nodefs.readFile(statePath, "utf-8"));
   raw.status = status;
@@ -217,7 +209,7 @@ describe("TC-119: mergeStateStatus UNKNOWN × 3 → escalation after all retries
 describe("TC-120: pullRequest.number absent → escalation", () => {
   it("escalates with pr-create message when pullRequest is missing", async () => {
     // Create job WITHOUT pullRequest
-    const state = await createJobState({
+    await JobStateStore.create(tempDir, {
       request: { path: "specrunner/drafts/test-slug.md", title: "T", type: "new-feature", slug: "test-slug" },
       repository: { owner: "u", name: "r" },
     });

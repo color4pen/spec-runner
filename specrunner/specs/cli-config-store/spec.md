@@ -46,29 +46,14 @@ config の作成・更新時、CLI は MUST ファイルパーミッションを
 - `steps` (`StepConfigMap`, optional)
 - `progress` (`ProgressConfig`, optional)
 - `models` (`ModelsConfig`, optional)
-- `jobs` (`JobsConfig`, optional) — ジョブ状態ファイルの格納先設定
 
-`jobs` section SHALL `JobsConfig` 型のオブジェクトである。`JobsConfig` は optional field `location` (`"project"` | `"xdg"`) のみを持つ。
+`jobs` section は廃止された。旧 config に `jobs` section が残っていても SHALL 未知 field として無視される（error にならない）。`JobsConfig` 型は削除される。
 
-- `jobs.location`: `"project"` = `<repo-root>/.specrunner/` 配下、`"xdg"` = 従来の XDG パス
-- `jobs` section 自体が未設定の場合、または `jobs.location` が未設定の場合は `"project"` として扱う
-- `jobs.location` に `"project"` / `"xdg"` 以外の値が設定された場合は `CONFIG_INVALID` エラーを throw する
+#### Scenario: jobs section が残っていても無視される
 
-#### Scenario: jobs section 未設定（後方互換）
-
-- **WHEN** 既存の config file に `jobs` section が含まれていない
-- **THEN** config load は成功し、`config.jobs` は `undefined` となる
-- **AND** CLI は `"project"` をデフォルト location として使用する
-
-#### Scenario: jobs.location に無効値
-
-- **WHEN** config に `{ "jobs": { "location": "local" } }` が設定されている
-- **THEN** `validateConfig()` が `CONFIG_INVALID` エラーを throw する
-
-#### Scenario: jobs.location に "xdg" を設定
-
-- **WHEN** config に `{ "jobs": { "location": "xdg" } }` が設定されている
-- **THEN** config load は成功し、`config.jobs.location === "xdg"` となる
+- **WHEN** 既存の config file に `{ "jobs": { "location": "xdg" } }` が含まれている
+- **THEN** config load は成功し、jobs section は無視される
+- **AND** CLI は常に `<repo-root>/.specrunner/` をジョブ格納先として使用する
 
 ### Requirement: 設定の更新は atomic に行う
 

@@ -20,20 +20,12 @@ import type { StepRun } from "../../src/state/schema.js";
 import { specReviewResultPath } from "../../src/util/paths.js";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "job-state-store-test-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
 });
 
@@ -41,7 +33,7 @@ afterEach(async () => {
  * Write raw JSON directly to the jobs dir for a given jobId.
  */
 async function writeRawState(jobId: string, raw: unknown): Promise<void> {
-  const jobsDir = path.join(tempDir, "specrunner", "jobs");
+  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
   await fs.mkdir(jobsDir, { recursive: true });
   await fs.writeFile(
     path.join(jobsDir, `${jobId}.json`),
@@ -101,7 +93,7 @@ describe("TC-001: pre-PR24 single object → StepRun[] normalization", () => {
     };
     await writeRawState(jobId, raw);
 
-    const store = new JobStateStore(jobId);
+    const store = new JobStateStore(jobId, tempDir);
     const state = await store.load();
 
     const designRuns = state.steps["design"];
@@ -161,7 +153,7 @@ describe("TC-002: post-PR24 StepResult[] → StepRun[] normalization", () => {
     };
     await writeRawState(jobId, raw);
 
-    const store = new JobStateStore(jobId);
+    const store = new JobStateStore(jobId, tempDir);
     const state = await store.load();
 
     const runs = state.steps["spec-review"];
@@ -212,7 +204,7 @@ describe("TC-002: post-PR24 StepResult[] → StepRun[] normalization", () => {
     };
     await writeRawState(jobId, raw);
 
-    const store = new JobStateStore(jobId);
+    const store = new JobStateStore(jobId, tempDir);
     const state = await store.load();
 
     const runs = state.steps["spec-review"];
@@ -236,11 +228,11 @@ describe("TC-003: pre-PR24 fixture round-trip — load → normalize → save", 
     const fixture = JSON.parse(fixtureRaw) as { jobId: string };
     const jobId = fixture.jobId;
 
-    const jobsDir = path.join(tempDir, "specrunner", "jobs");
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     await fs.mkdir(jobsDir, { recursive: true });
     await fs.writeFile(path.join(jobsDir, `${jobId}.json`), fixtureRaw);
 
-    const store = new JobStateStore(jobId);
+    const store = new JobStateStore(jobId, tempDir);
     const state = await store.load();
 
     // Save to a temp path to inspect output
@@ -276,11 +268,11 @@ describe("TC-004: post-PR24 fixture round-trip — load → normalize → save",
     const fixture = JSON.parse(fixtureRaw) as { jobId: string };
     const jobId = fixture.jobId;
 
-    const jobsDir = path.join(tempDir, "specrunner", "jobs");
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     await fs.mkdir(jobsDir, { recursive: true });
     await fs.writeFile(path.join(jobsDir, `${jobId}.json`), fixtureRaw);
 
-    const store = new JobStateStore(jobId);
+    const store = new JobStateStore(jobId, tempDir);
     const state = await store.load();
     await store.persist(state);
 
@@ -329,14 +321,14 @@ describe("TC-005: appendStepRun — appends and auto-increments attempt", () => 
     };
 
     // Write the seeded state to disk first
-    const jobsDir = path.join(tempDir, "specrunner", "jobs");
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     await fs.mkdir(jobsDir, { recursive: true });
     await fs.writeFile(
       path.join(jobsDir, `${jobId}.json`),
       JSON.stringify(seeded, null, 2),
     );
 
-    const store = new JobStateStore(jobId);
+    const store = new JobStateStore(jobId, tempDir);
     const newRun: Omit<StepRun, "attempt"> = {
       sessionId: "sess_002",
       outcome: { verdict: "approved", findingsPath: null, fileContent: null, error: null },
@@ -361,14 +353,14 @@ describe("TC-006: appendStepRun — persists atomically (write-and-rename)", () 
     const jobId = "tc006-job";
     const state = makeMinimalNormalizedState(jobId);
 
-    const jobsDir = path.join(tempDir, "specrunner", "jobs");
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     await fs.mkdir(jobsDir, { recursive: true });
     await fs.writeFile(
       path.join(jobsDir, `${jobId}.json`),
       JSON.stringify(state, null, 2),
     );
 
-    const store = new JobStateStore(jobId);
+    const store = new JobStateStore(jobId, tempDir);
     const run: Omit<StepRun, "attempt"> = {
       sessionId: "sess_001",
       outcome: { verdict: "approved", findingsPath: null, fileContent: null, error: null },
@@ -402,7 +394,7 @@ describe("TC-007: StepRun captures startedAt and endedAt timestamps", () => {
     const jobId = "tc007-job";
     const state = makeMinimalNormalizedState(jobId);
 
-    const jobsDir = path.join(tempDir, "specrunner", "jobs");
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     await fs.mkdir(jobsDir, { recursive: true });
     await fs.writeFile(
       path.join(jobsDir, `${jobId}.json`),
@@ -412,7 +404,7 @@ describe("TC-007: StepRun captures startedAt and endedAt timestamps", () => {
     const startedAt = "2026-01-01T00:00:00.000Z";
     const endedAt = "2026-01-01T00:05:00.000Z";
 
-    const store = new JobStateStore(jobId);
+    const store = new JobStateStore(jobId, tempDir);
     const run: Omit<StepRun, "attempt"> = {
       sessionId: null,
       outcome: { verdict: "approved", findingsPath: null, fileContent: null, error: null },
@@ -462,12 +454,12 @@ describe("TC-008: persist after legacy load writes new format only", () => {
     };
     await writeRawState(jobId, raw);
 
-    const store = new JobStateStore(jobId);
+    const store = new JobStateStore(jobId, tempDir);
     const normalized = await store.load();
     await store.persist(normalized);
 
     const savedRaw = await fs.readFile(
-      path.join(tempDir, "specrunner", "jobs", `${jobId}.json`),
+      path.join(tempDir, ".specrunner", "jobs", `${jobId}.json`),
       "utf-8",
     );
     const saved = JSON.parse(savedRaw) as Record<string, unknown>;

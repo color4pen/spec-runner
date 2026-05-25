@@ -10,31 +10,23 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { vi } from "vitest";
-import { createJobState, updateJobState } from "../../../../src/state/store.js";
+import { JobStateStore } from "../../../../src/store/job-state-store.js";
 import { resolveJobStateBySlug } from "../../../../src/core/resume/resolve-job.js";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-resolve-job-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
 
 async function makeJob(slug: string, updatedAt?: string) {
-  const state = await createJobState({
+  const state = await JobStateStore.create(tempDir, {
     request: {
       path: `/specrunner/drafts/${slug}.md`,
       title: "Test",
@@ -45,7 +37,11 @@ async function makeJob(slug: string, updatedAt?: string) {
   });
 
   if (updatedAt) {
-    return await updateJobState(state.jobId, (s) => ({ ...s, updatedAt }));
+    const store = new JobStateStore(state.jobId, tempDir);
+    const current = await store.load();
+    const updated = { ...current, updatedAt };
+    await store.persist(updated);
+    return updated;
   }
 
   return state;
@@ -55,7 +51,7 @@ describe("TC-RJ-001: single match → returns that job", () => {
   it("returns the matching job when exactly one slug matches", async () => {
     const job = await makeJob("my-feature");
 
-    const result = await resolveJobStateBySlug("my-feature");
+    const result = await resolveJobStateBySlug("my-feature", tempDir);
     expect(result).not.toBeNull();
     expect(result!.jobId).toBe(job.jobId);
     expect(result!.request.slug).toBe("my-feature");
@@ -64,7 +60,7 @@ describe("TC-RJ-001: single match → returns that job", () => {
   it("does not match jobs with different slug", async () => {
     await makeJob("other-feature");
 
-    const result = await resolveJobStateBySlug("my-feature");
+    const result = await resolveJobStateBySlug("my-feature", tempDir);
     expect(result).toBeNull();
   });
 });
@@ -74,7 +70,7 @@ describe("TC-RJ-002: multiple matches → returns latest updatedAt", () => {
     const older = await makeJob("shared-slug", "2026-01-01T10:00:00.000Z");
     const newer = await makeJob("shared-slug", "2026-01-02T10:00:00.000Z");
 
-    const result = await resolveJobStateBySlug("shared-slug");
+    const result = await resolveJobStateBySlug("shared-slug", tempDir);
     expect(result).not.toBeNull();
     expect(result!.jobId).toBe(newer.jobId);
     expect(result!.updatedAt).toBe("2026-01-02T10:00:00.000Z");
@@ -86,14 +82,14 @@ describe("TC-RJ-002: multiple matches → returns latest updatedAt", () => {
 
 describe("TC-RJ-003: no match → returns null", () => {
   it("returns null when no jobs exist", async () => {
-    const result = await resolveJobStateBySlug("nonexistent-slug");
+    const result = await resolveJobStateBySlug("nonexistent-slug", tempDir);
     expect(result).toBeNull();
   });
 
   it("returns null when jobs exist but none match the slug", async () => {
     await makeJob("different-slug");
 
-    const result = await resolveJobStateBySlug("target-slug");
+    const result = await resolveJobStateBySlug("target-slug", tempDir);
     expect(result).toBeNull();
   });
 });

@@ -11,12 +11,11 @@ import type { AgentRunner } from "../port/agent-runner.js";
 import type { PipelineDeps } from "../types.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
-import type { StepName } from "../../state/schema.js";
+import type { JobState, StepName } from "../../state/schema.js";
 import { createClaudeCodeRunner, type QueryFn } from "../../adapter/claude-code/agent-runner.js";
 import { DispatchingAgentRunner } from "../../adapter/dispatching/agent-runner.js";
 import { query as sdkQuery } from "@anthropic-ai/claude-agent-sdk";
 import { createWorktreeManager } from "../worktree/manager.js";
-import { loadJobState, updateJobState } from "../../state/store.js";
 import { spawnCommand } from "../../util/spawn.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { JobStateStore } from "../../store/job-state-store.js";
@@ -77,6 +76,17 @@ export class LocalRuntime implements RuntimeStrategy {
     this.manager = opts.manager ?? createWorktreeManager();
     this.spawnFn = opts.spawnFn ?? spawnCommand;
     this.queryFn = opts.queryFn ?? (sdkQuery as unknown as QueryFn);
+  }
+
+  /**
+   * Update job state atomically: load → mutate → persist.
+   * Replaces the deprecated updateJobState() from state/store.ts.
+   */
+  private async updateJobState(jobId: string, mutator: (s: JobState) => JobState): Promise<void> {
+    const store = new JobStateStore(jobId, this.cwd);
+    const current = await store.load();
+    const updated = mutator(current as JobState);
+    await store.persist(updated);
   }
 
   /**
@@ -150,7 +160,7 @@ export class LocalRuntime implements RuntimeStrategy {
       } else {
         // Worktree was deleted — create a new one (resume path: fetch already ran during original run)
         const newWorktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef);
-        await updateJobState(jobId, (s) => ({ ...s, worktreePath: newWorktreePath }));
+        await this.updateJobState(jobId, (s) => ({ ...s, worktreePath: newWorktreePath }));
         const workspace: WorkspaceContext = {
           cwd: newWorktreePath,
           worktreePath: newWorktreePath,
@@ -163,7 +173,7 @@ export class LocalRuntime implements RuntimeStrategy {
     if (existingWorktreePath === null) {
       // Resume: no worktree recorded — create new one (fetch already ran during original run)
       const newWorktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef);
-      await updateJobState(jobId, (s) => ({ ...s, worktreePath: newWorktreePath }));
+      await this.updateJobState(jobId, (s) => ({ ...s, worktreePath: newWorktreePath }));
       const workspace: WorkspaceContext = {
         cwd: newWorktreePath,
         worktreePath: newWorktreePath,
@@ -198,7 +208,7 @@ export class LocalRuntime implements RuntimeStrategy {
     const worktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef, branchName);
 
     // Record worktreePath in state before pipeline runs (enables crash recovery)
-    await updateJobState(jobId, (s) => ({ ...s, worktreePath }));
+    await this.updateJobState(jobId, (s) => ({ ...s, worktreePath }));
 
     // Copy request.md into the change folder so the agent can read it
     if (opts?.requestFilePath) {
@@ -254,7 +264,7 @@ export class LocalRuntime implements RuntimeStrategy {
 
     // Record branchName in state so downstream steps can use it (D3)
     if (branchName) {
-      await updateJobState(jobId, (s) => ({ ...s, branch: branchName }));
+      await this.updateJobState(jobId, (s) => ({ ...s, branch: branchName }));
     }
 
     const workspace: WorkspaceContext = {
@@ -284,7 +294,7 @@ export class LocalRuntime implements RuntimeStrategy {
       cwd: workspace.cwd,
       runner: this.createAgentRunner(),
       spawn: spawnCommand,
-      storeFactory: (id: string) => new JobStateStore(id),
+      storeFactory: (id: string) => new JobStateStore(id, this.cwd),
     };
   }
 
@@ -298,14 +308,16 @@ export class LocalRuntime implements RuntimeStrategy {
     const cleanupWorktreeOnFailure = async (): Promise<void> => {
       // Check if job is awaiting-resume — if so, keep worktree for resume
       try {
-        const currentState = await loadJobState(jobId);
+        const currentState = await new JobStateStore(jobId, cwd).load();
         if (currentState?.status === "awaiting-resume") return;
       } catch { /* proceed with cleanup */ }
       try {
         if (worktreePath) {
           await manager.remove(worktreePath, cwd);
           await manager.prune(cwd);
-          await updateJobState(jobId, (s) => ({ ...s, worktreePath: null }));
+          const store = new JobStateStore(jobId, cwd);
+          const current = await store.load();
+          await store.persist({ ...current, worktreePath: null } as JobState);
         }
       } catch {
         // Best-effort; state file (layer 2) + prune (layer 3) handle residuals
@@ -315,8 +327,10 @@ export class LocalRuntime implements RuntimeStrategy {
     // Signal handler (layer 1 of 3-layer cleanup)
     const signalCleanup = async (): Promise<void> => {
       try {
-        await updateJobState(jobId, (s) => ({
-          ...s,
+        const store = new JobStateStore(jobId, cwd);
+        const current = await store.load();
+        await store.persist({
+          ...current,
           status: "awaiting-resume" as const,
           pid: null,
           resumePoint: {
@@ -325,7 +339,7 @@ export class LocalRuntime implements RuntimeStrategy {
             iterationsExhausted: 0,
           },
           updatedAt: new Date().toISOString(),
-        }));
+        } as JobState);
       } catch {
         // Best-effort persist; state file (layer 2) handles residuals
       }

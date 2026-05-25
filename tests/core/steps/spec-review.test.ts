@@ -19,37 +19,27 @@ import { StepExecutor } from "../../../src/core/step/executor.js";
 import { createManagedAgentRunner } from "../../../src/adapter/managed-agent/agent-runner.js";
 import { SpecReviewStep } from "../../../src/core/step/spec-review.js";
 import { JobStateStore } from "../../../src/store/job-state-store.js";
-import { defaultStoreFactory } from "../../helpers/store-factory.js";
+import { makeStoreFactory } from "../../helpers/store-factory.js";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "spec-review-step-test-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
 
 async function makePersistedJobState(steps: JobState["steps"] = {}): Promise<JobState> {
-  const { createJobState } = await import("../../../src/state/store.js");
-  const { JobStateStore } = await import("../../../src/store/job-state-store.js");
-  const state = await createJobState({
+  const state = await JobStateStore.create(tempDir, {
     request: { path: "/req.md", title: "Test", type: "feature" },
     repository: { owner: "testowner", name: "testrepo" },
   });
-  const store = new JobStateStore(state.jobId);
+  const store = new JobStateStore(state.jobId, tempDir);
   return store.update({
     ...state,
     step: "spec-review",
@@ -109,7 +99,7 @@ function buildDeps(opts: {
     owner: "user",
     repo: "repo",
     spawn: noopSpawn,
-    storeFactory: defaultStoreFactory,
+    storeFactory: makeStoreFactory(tempDir),
   };
 }
 
@@ -121,7 +111,7 @@ async function runStep(jobState: JobState, deps: PipelineDeps): Promise<JobState
     repo: { owner: "testowner", name: "testrepo" },
     githubToken: "ghp_test",
   });
-  const executor = new StepExecutor(events, runner, defaultStoreFactory);
+  const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
   return executor.execute(SpecReviewStep, jobState, deps);
 }
 

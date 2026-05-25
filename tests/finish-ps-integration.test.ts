@@ -11,46 +11,25 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { createJobState } from "../src/state/store.js";
+import { JobStateStore } from "../src/store/job-state-store.js";
 import { runPs, formatJobRow } from "../src/cli/ps.js";
-import { resetJobsLocation } from "../src/util/xdg.js";
 import type { JobState } from "../src/state/schema.js";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
-let originalXdgConfigHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-ps-test-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  originalXdgConfigHome = process.env["XDG_CONFIG_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
-  // Point config home to tempDir (no config file there) so loadConfig fails →
-  // runPs falls back to setJobsLocation("xdg") and reads from XDG_DATA_HOME = tempDir
-  process.env["XDG_CONFIG_HOME"] = tempDir;
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
-  if (originalXdgConfigHome !== undefined) {
-    process.env["XDG_CONFIG_HOME"] = originalXdgConfigHome;
-  } else {
-    delete process.env["XDG_CONFIG_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
-  // Reset module-level jobs location state to prevent leakage between tests
-  resetJobsLocation();
   vi.restoreAllMocks();
 });
 
 async function writeStateFile(state: JobState) {
-  const jobsDir = path.join(tempDir, "specrunner", "jobs");
+  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
   await fs.mkdir(jobsDir, { recursive: true });
   await fs.writeFile(
     path.join(jobsDir, `${state.jobId}.json`),
@@ -82,7 +61,7 @@ describe("TC-032: archived state file → ps reads without crash", () => {
     await writeStateFile(makeBaseState({ status: "archived", jobId: "archived-job-001" }));
 
     // Should not throw
-    await expect(runPs({ all: true })).resolves.toBeUndefined();
+    await expect(runPs({ all: true, repoRoot: tempDir })).resolves.toBeUndefined();
 
     const output = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))
@@ -94,7 +73,7 @@ describe("TC-032: archived state file → ps reads without crash", () => {
   it("ps (no flags) hides archived jobs by default (TC-142)", async () => {
     await writeStateFile(makeBaseState({ status: "archived", jobId: "archived-job-002" }));
 
-    await runPs();
+    await runPs({ repoRoot: tempDir });
 
     const output = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))
@@ -108,12 +87,12 @@ describe("TC-032: archived state file → ps reads without crash", () => {
 // TC-033
 describe("TC-033: legacy state file with status=success → ps reads correctly", () => {
   it("reads success state files without crash", async () => {
-    const job = await createJobState({
+    const job = await JobStateStore.create(tempDir, {
       request: { path: "/req.md", title: "T", type: "new-feature" },
       repository: { owner: "u", name: "r" },
     });
 
-    await expect(runPs()).resolves.toBeUndefined();
+    await expect(runPs({ repoRoot: tempDir })).resolves.toBeUndefined();
 
     const output = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))
@@ -131,7 +110,7 @@ describe("TC-034: ps --active excludes archived", () => {
     await writeStateFile(makeBaseState({ jobId: runningId, status: "running" }));
     await writeStateFile(makeBaseState({ jobId: archivedId, status: "archived" }));
 
-    await runPs({ active: true });
+    await runPs({ active: true, repoRoot: tempDir });
 
     const output = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))
@@ -148,7 +127,7 @@ describe("TC-034: ps --active excludes archived", () => {
     await writeStateFile(makeBaseState({ jobId: runningId, status: "running" }));
     await writeStateFile(makeBaseState({ jobId: successId, status: "awaiting-merge" }));
 
-    await runPs({ active: true });
+    await runPs({ active: true, repoRoot: tempDir });
 
     const output = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))
@@ -189,7 +168,7 @@ describe("TC-110: specrunner ps --all shows SLUG column and archived jobs", () =
       request: { path: "specrunner/drafts/active-job.md", title: "T", type: "new-feature", slug: "active-job" },
     }));
 
-    await runPs({ all: true });
+    await runPs({ all: true, repoRoot: tempDir });
 
     const allOutput = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))
@@ -216,7 +195,7 @@ describe("TC-NEW-07: ps --active includes awaiting-resume", () => {
     await writeStateFile(makeBaseState({ jobId: awaitingResumeId, status: "awaiting-resume" as JobState["status"] }));
     await writeStateFile(makeBaseState({ jobId: archivedId, status: "archived" }));
 
-    await runPs({ active: true });
+    await runPs({ active: true, repoRoot: tempDir });
 
     const output = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))
@@ -296,7 +275,7 @@ describe("TC-143: non-TTY TAB-separated output — SLUG is second column", () =>
       status: "awaiting-merge",
     }));
 
-    await runPs();
+    await runPs({ repoRoot: tempDir });
 
     const allOutput = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))

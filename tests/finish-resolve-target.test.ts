@@ -12,36 +12,28 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { createJobState } from "../src/state/store.js";
+import { JobStateStore } from "../src/store/job-state-store.js";
 import { resolveTarget } from "../src/core/finish/resolve-target.js";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-finish-resolve-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
 
 async function makeJobWithPr(slug: string, updatedAt?: string) {
-  const state = await createJobState({
+  const state = await JobStateStore.create(tempDir, {
     request: { path: `/specrunner/drafts/${slug}.md`, title: "Test", type: "new-feature", slug },
     repository: { owner: "user", name: "repo" },
   });
 
-  const jobsDir = path.join(tempDir, "specrunner", "jobs");
+  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
   const statePath = path.join(jobsDir, `${state.jobId}.json`);
   const raw = JSON.parse(await fs.readFile(statePath, "utf-8"));
   raw.pullRequest = { url: `https://github.com/user/repo/pull/42`, number: 42, createdAt: "2026-01-01" };
@@ -57,7 +49,7 @@ describe("TC-001: --job resolves state file", () => {
   it("returns correct prNumber, branch, slug from state file", async () => {
     const job = await makeJobWithPr("my-slug");
 
-    const result = await resolveTarget({ jobId: job.jobId });
+    const result = await resolveTarget({ jobId: job.jobId, cwd: tempDir });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
@@ -72,7 +64,7 @@ describe("TC-002: <slug> positional resolves single match", () => {
   it("returns the single matching state when slug matches", async () => {
     await makeJobWithPr("my-slug");
 
-    const result = await resolveTarget({ slug: "my-slug" });
+    const result = await resolveTarget({ slug: "my-slug", cwd: tempDir });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
@@ -87,7 +79,7 @@ describe("TC-003 / TC-134: <slug> multiple matches → latest updatedAt, stdout 
     const newer = await makeJobWithPr("multi-slug", "2026-06-01T00:00:00.000Z");
 
     const messages: string[] = [];
-    const result = await resolveTarget({ slug: "multi-slug" }, (m) => messages.push(m));
+    const result = await resolveTarget({ slug: "multi-slug", cwd: tempDir }, (m) => messages.push(m));
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;

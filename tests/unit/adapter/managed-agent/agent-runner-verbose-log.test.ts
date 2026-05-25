@@ -24,15 +24,9 @@ import {
 } from "../../../../src/logger/stdout.js";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
-let originalXdgStateHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "managed-runner-verbose-test-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  originalXdgStateHome = process.env["XDG_STATE_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
-  process.env["XDG_STATE_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
@@ -40,16 +34,6 @@ beforeEach(async () => {
 afterEach(async () => {
   closeVerboseLog();
   setVerbose(false);
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
-  if (originalXdgStateHome !== undefined) {
-    process.env["XDG_STATE_HOME"] = originalXdgStateHome;
-  } else {
-    delete process.env["XDG_STATE_HOME"];
-  }
   await fsPromises.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -73,7 +57,7 @@ function makeJobState(jobId = "tc09-01-job", branch = "feat/test"): JobState {
 }
 
 async function persistState(state: JobState): Promise<void> {
-  const jobsDir = path.join(tempDir, "specrunner", "jobs");
+  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
   await fsPromises.mkdir(jobsDir, { recursive: true });
   await fsPromises.writeFile(
     path.join(jobsDir, `${state.jobId}.json`),
@@ -170,7 +154,7 @@ describe("TC-09-01: ManagedAgentRunner.run() — logs 'session created' with run
   it("セッション作成後にログに 'session created' エントリと runtime: 'managed' が書き出される", async () => {
     const jobId = "tc09-01-job";
     setVerbose(true);
-    initVerboseLog(jobId);
+    initVerboseLog(tempDir, jobId);
     const logPath = getVerboseLogFilePath()!;
 
     const state = makeJobState(jobId);

@@ -33,23 +33,15 @@ import {
 } from "../../../../src/logger/stdout.js";
 
 let tempDir: string;
-let originalXdgStateHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "sse-verbose-log-test-"));
-  originalXdgStateHome = process.env["XDG_STATE_HOME"];
-  process.env["XDG_STATE_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
   closeVerboseLog();
   setVerbose(false);
-  if (originalXdgStateHome !== undefined) {
-    process.env["XDG_STATE_HOME"] = originalXdgStateHome;
-  } else {
-    delete process.env["XDG_STATE_HOME"];
-  }
   await fsPromises.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -87,7 +79,7 @@ describe("TC-07-01: runSseStream — logs 'status_idle event' on end_turn", () =
   it("status_idle(end_turn) event 受信後、ログに 'status_idle event' エントリが書き出される", async () => {
     const jobId = "tc07-01-job";
     setVerbose(true);
-    initVerboseLog(jobId);
+    initVerboseLog(tempDir, jobId);
     const logPath = getVerboseLogFilePath()!;
 
     // streamEvents returns an async generator that yields a single status_idle/end_turn event
@@ -115,7 +107,7 @@ describe("TC-07-02: runSseStream — logs 'session_error event' with errorType o
   it("session_error(terminal) event 受信後、ログに component='sse' かつ errorType フィールドを持つエントリが書き出される", async () => {
     const jobId = "tc07-02-job";
     setVerbose(true);
-    initVerboseLog(jobId);
+    initVerboseLog(tempDir, jobId);
     const logPath = getVerboseLogFilePath()!;
 
     // streamEvents returns a session_error event with terminal retry_status

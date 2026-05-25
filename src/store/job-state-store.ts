@@ -43,9 +43,9 @@ export class JobStateStore {
   private readonly jobId: string;
   private readonly filePath: string;
 
-  constructor(jobId: string) {
+  constructor(jobId: string, repoRoot: string) {
     this.jobId = jobId;
-    this.filePath = getJobStatePath(jobId);
+    this.filePath = getJobStatePath(repoRoot, jobId);
   }
 
   // -------------------------------------------------------------------------
@@ -55,9 +55,8 @@ export class JobStateStore {
   /**
    * Create a new job state file and persist it atomically.
    * request.slug defaults to null if not provided (backward compat).
-   * Equivalent to the deprecated createJobState() free function in state/store.ts.
    */
-  static async create(params: {
+  static async create(repoRoot: string, params: {
     request: RequestInfo;
     repository: RepositoryInfo;
   }): Promise<JobState> {
@@ -89,7 +88,7 @@ export class JobStateStore {
       error: null,
     };
 
-    const filePath = getJobStatePath(state.jobId);
+    const filePath = getJobStatePath(repoRoot, state.jobId);
     await atomicWriteJson(filePath, state);
     return state;
   }
@@ -97,10 +96,9 @@ export class JobStateStore {
   /**
    * Delete a job state file by jobId.
    * Idempotent: ENOENT is silently ignored. Other errors propagate.
-   * Equivalent to the deprecated deleteJobState() free function in state/store.ts.
    */
-  static async delete(jobId: string): Promise<void> {
-    const filePath = getJobStatePath(jobId);
+  static async delete(repoRoot: string, jobId: string): Promise<void> {
+    const filePath = getJobStatePath(repoRoot, jobId);
     try {
       await fs.unlink(filePath);
     } catch (err: unknown) {
@@ -115,10 +113,9 @@ export class JobStateStore {
   /**
    * List all valid job states from the jobs directory.
    * Skips malformed files and logs them to stderr.
-   * Equivalent to the deprecated listJobStates() free function in state/store.ts.
    */
-  static async list(): Promise<JobState[]> {
-    const jobsDir = getJobsDir();
+  static async list(repoRoot: string): Promise<JobState[]> {
+    const jobsDir = getJobsDir(repoRoot);
 
     let entries: Dirent[];
     try {
@@ -159,16 +156,14 @@ export class JobStateStore {
    *   - 0 matches: throws JOB_NOT_FOUND
    *   - 1 match: returns the full UUID
    *   - 2+ matches: throws AMBIGUOUS_JOB_ID with candidate list in hint
-   *
-   * Equivalent to the deprecated resolveJobId() free function in state/store.ts.
    */
-  static async resolveId(prefix: string): Promise<string> {
+  static async resolveId(repoRoot: string, prefix: string): Promise<string> {
     // Full UUID v4 is exactly 36 characters (8-4-4-4-12 + 4 hyphens)
     if (prefix.length === 36) {
       return prefix;
     }
 
-    const states = await JobStateStore.list();
+    const states = await JobStateStore.list(repoRoot);
     const matches = states.filter((s) => s.jobId.startsWith(prefix));
 
     if (matches.length === 0) {
@@ -218,7 +213,6 @@ export class JobStateStore {
 
   /**
    * Append a history entry and persist atomically.
-   * Mirrors the deprecated free function appendHistory() in state/store.ts.
    */
   async appendHistory(state: JobState, entry: HistoryEntry): Promise<JobState> {
     const updated = appendHistoryEntry(state, entry);
@@ -228,7 +222,6 @@ export class JobStateStore {
 
   /**
    * Update job state fields and persist atomically.
-   * Mirrors the deprecated free function updateJobState() in state/store.ts.
    */
   async update(
     state: JobState,
@@ -245,7 +238,6 @@ export class JobStateStore {
 
   /**
    * Mark a job as failed with error info and persist atomically.
-   * Mirrors the deprecated free function failJobState() in state/store.ts.
    */
   async fail(
     state: JobState,

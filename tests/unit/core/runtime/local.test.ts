@@ -17,22 +17,14 @@ import { LocalRuntime } from "../../../../src/core/runtime/local.js";
 import type { QueryFn } from "../../../../src/adapter/claude-code/agent-runner.js";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "local-runtime-test-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.clearAllMocks();
   vi.restoreAllMocks();
@@ -144,8 +136,8 @@ function buildMockManager(opts: {
 
 // Helper: create a minimal job state
 async function makeJobState(slug = "test-slug") {
-  const { createJobState } = await import("../../../../src/state/store.js");
-  return createJobState({
+  const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+  return JobStateStore.create(tempDir, {
     request: {
       path: path.join(tempDir, "request.md"),
       title: "Test",

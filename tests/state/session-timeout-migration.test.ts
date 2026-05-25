@@ -11,20 +11,12 @@ import * as os from "node:os";
 import { validateJobState } from "../../src/state/schema.js";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "session-timeout-migration-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
 });
 
@@ -121,13 +113,13 @@ describe("TC-002: validateJobState — SESSION_TIMEOUT 以外の error code は�
 // TC-003 (should): persist() 後の on-disk JSON に SESSION_TIMEOUT が含まれない
 describe("TC-003 (should): lazy migration 後の persist で on-disk JSON に SESSION_TIMEOUT が残らない", () => {
   it("SESSION_TIMEOUT fixture を validateJobState 後に atomicWriteJson すると on-disk JSON に SESSION_TIMEOUT が含まれない", async () => {
-    const { loadJobState } = await import("../../src/state/store.js");
+    const { JobStateStore } = await import("../../src/store/job-state-store.js");
     const { atomicWriteJson } = await import("../../src/util/atomic-write.js");
     const { getJobStatePath } = await import("../../src/util/xdg.js");
 
     // Write a fixture with SESSION_TIMEOUT directly to disk (bypass validateJobState)
     const jobId = "tc003-migration-job";
-    const jobsDir = path.join(tempDir, "specrunner", "jobs");
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     await fs.mkdir(jobsDir, { recursive: true });
 
     const fixtureWithTimeout = makeFixtureWithError("SESSION_TIMEOUT");
@@ -137,14 +129,15 @@ describe("TC-003 (should): lazy migration 後の persist で on-disk JSON に SE
       JSON.stringify(fixtureWithTimeout, null, 2),
     );
 
-    // Load via loadJobState (which calls validateJobState → lazy migration)
-    const state = await loadJobState(jobId);
+    // Load via JobStateStore.load() (which calls validateJobState → lazy migration)
+    const store = new JobStateStore(jobId, tempDir);
+    const state = await store.load();
 
     // state.error.code should be SESSION_TERMINATED after migration
     expect(state.error?.code).toBe("SESSION_TERMINATED");
 
     // Persist to disk via atomicWriteJson (simulates JobStateStore.persist / store.update)
-    const filePath = getJobStatePath(jobId);
+    const filePath = getJobStatePath(tempDir, jobId);
     await atomicWriteJson(filePath, state);
 
     // Read the on-disk JSON and verify error.code is SESSION_TERMINATED (not SESSION_TIMEOUT)

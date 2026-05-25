@@ -24,20 +24,14 @@ import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/
 import type { Step } from "../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
-import { defaultStoreFactory } from "../../helpers/store-factory.js";
+import { makeStoreFactory } from "../../helpers/store-factory.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
-let originalXdgStateHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "executor-verbose-log-test-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  originalXdgStateHome = process.env["XDG_STATE_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
-  process.env["XDG_STATE_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
@@ -45,16 +39,6 @@ beforeEach(async () => {
 afterEach(async () => {
   closeVerboseLog();
   setVerbose(false);
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
-  if (originalXdgStateHome !== undefined) {
-    process.env["XDG_STATE_HOME"] = originalXdgStateHome;
-  } else {
-    delete process.env["XDG_STATE_HOME"];
-  }
   await fsPromises.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -85,7 +69,7 @@ function makeConfig(): SpecRunnerConfig {
 }
 
 async function setupJobState(jobId: string): Promise<JobState> {
-  const jobsDir = path.join(tempDir, "specrunner", "jobs");
+  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
   await fsPromises.mkdir(jobsDir, { recursive: true });
   const state = makeJobState(jobId);
   await fsPromises.writeFile(
@@ -156,7 +140,7 @@ function makeDeps(): PipelineDeps {
     owner: "user",
     repo: "repo",
     spawn: noopSpawn,
-    storeFactory: defaultStoreFactory,
+    storeFactory: makeStoreFactory(tempDir),
   };
 }
 
@@ -186,11 +170,11 @@ describe("TC-10-01: StepExecutor.execute() — logs 'step started' with step fie
   it("step 実行開始時にログに 'step started' エントリと step フィールドが書き出される", async () => {
     const jobId = "tc10-01-job";
     setVerbose(true);
-    initVerboseLog(jobId);
+    initVerboseLog(tempDir, jobId);
     const logPath = getVerboseLogFilePath()!;
 
     const state = await setupJobState(jobId);
-    const executor = new StepExecutor(new EventBus(), makeSuccessRunner(), defaultStoreFactory);
+    const executor = new StepExecutor(new EventBus(), makeSuccessRunner(), makeStoreFactory(tempDir));
     await executor.execute(makeAgentStep("spec-review"), state, makeDeps());
 
     const entries = readLogEntries(logPath);
@@ -208,11 +192,11 @@ describe("TC-10-02: StepExecutor.execute() — logs 'step completed' on success"
   it("step が正常完了したとき 'step completed' エントリがログに書き出される", async () => {
     const jobId = "tc10-02-job";
     setVerbose(true);
-    initVerboseLog(jobId);
+    initVerboseLog(tempDir, jobId);
     const logPath = getVerboseLogFilePath()!;
 
     const state = await setupJobState(jobId);
-    const executor = new StepExecutor(new EventBus(), makeSuccessRunner(), defaultStoreFactory);
+    const executor = new StepExecutor(new EventBus(), makeSuccessRunner(), makeStoreFactory(tempDir));
     await executor.execute(makeAgentStep("spec-review"), state, makeDeps());
 
     const entries = readLogEntries(logPath);
@@ -230,11 +214,11 @@ describe("TC-10-03: StepExecutor.execute() — logs 'step error' with error fiel
   it("runner がエラーを throw したとき 'step error' エントリと error フィールドがログに書き出される", async () => {
     const jobId = "tc10-03-job";
     setVerbose(true);
-    initVerboseLog(jobId);
+    initVerboseLog(tempDir, jobId);
     const logPath = getVerboseLogFilePath()!;
 
     const state = await setupJobState(jobId);
-    const executor = new StepExecutor(new EventBus(), makeFailingRunner("runner test error"), defaultStoreFactory);
+    const executor = new StepExecutor(new EventBus(), makeFailingRunner("runner test error"), makeStoreFactory(tempDir));
 
     // execute() はエラーを re-throw する — その前に logVerbose("step", "step error", ...) が呼ばれる
     await expect(executor.execute(makeAgentStep("spec-review"), state, makeDeps())).rejects.toThrow();

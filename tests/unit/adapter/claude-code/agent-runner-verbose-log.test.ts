@@ -22,12 +22,9 @@ import {
 } from "../../../../src/logger/stdout.js";
 
 let tempDir: string;
-let originalXdgStateHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "agent-runner-verbose-test-"));
-  originalXdgStateHome = process.env["XDG_STATE_HOME"];
-  process.env["XDG_STATE_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
@@ -35,11 +32,6 @@ beforeEach(async () => {
 afterEach(async () => {
   closeVerboseLog();
   setVerbose(false);
-  if (originalXdgStateHome !== undefined) {
-    process.env["XDG_STATE_HOME"] = originalXdgStateHome;
-  } else {
-    delete process.env["XDG_STATE_HOME"];
-  }
   await fsPromises.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -142,7 +134,7 @@ describe("TC-09-02: ClaudeCodeRunner.run() — logs 'query started' with runtime
   it("run() 開始時にログに 'query started' エントリと runtime: 'local' が書き出される", async () => {
     const jobId = "tc09-02-job";
     setVerbose(true);
-    initVerboseLog(jobId);
+    initVerboseLog(tempDir, jobId);
     const logPath = getVerboseLogFilePath()!;
 
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: makeSuccessQueryFn() });

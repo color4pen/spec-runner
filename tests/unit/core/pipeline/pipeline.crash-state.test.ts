@@ -12,28 +12,20 @@ import type { Step } from "../../../../src/core/step/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
-import { defaultStoreFactory } from "../../../helpers/store-factory.js";
+import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "pipeline-crash-test-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -81,7 +73,7 @@ function makeMinimalDeps(): PipelineDeps {
     owner: "user",
     repo: "repo",
     spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as SpawnFn,
-    storeFactory: defaultStoreFactory,
+    storeFactory: makeStoreFactory(tempDir),
   };
 }
 
@@ -107,9 +99,9 @@ function makeAgentStep(name: string): Step {
 describe("T3.1: executor throws without .state → state becomes awaiting-resume (要件 7)", () => {
   it("plain Error throw results in awaiting-resume with UNEXPECTED_STEP_ERROR", async () => {
     const jobState = makeMinimalState("test-no-state-throw");
-    await fs.mkdir(path.join(tempDir, "specrunner", "jobs"), { recursive: true });
+    await fs.mkdir(path.join(tempDir, ".specrunner", "jobs"), { recursive: true });
     await fs.writeFile(
-      path.join(tempDir, "specrunner", "jobs", `${jobState.jobId}.json`),
+      path.join(tempDir, ".specrunner", "jobs", `${jobState.jobId}.json`),
       JSON.stringify(jobState),
       "utf-8",
     );
@@ -150,9 +142,9 @@ describe("T3.1: executor throws without .state → state becomes awaiting-resume
 
   it("non-Error object throw (no .state, no .message) → awaiting-resume", async () => {
     const jobState = makeMinimalState("test-non-error-throw");
-    await fs.mkdir(path.join(tempDir, "specrunner", "jobs"), { recursive: true });
+    await fs.mkdir(path.join(tempDir, ".specrunner", "jobs"), { recursive: true });
     await fs.writeFile(
-      path.join(tempDir, "specrunner", "jobs", `${jobState.jobId}.json`),
+      path.join(tempDir, ".specrunner", "jobs", `${jobState.jobId}.json`),
       JSON.stringify(jobState),
       "utf-8",
     );
@@ -191,9 +183,9 @@ describe("T3.1: executor throws without .state → state becomes awaiting-resume
 describe("T3.2: runInternal throws (unknown step) → pipeline.run() catch → awaiting-resume (要件 8)", () => {
   it("unknown startStep throws Step not found → state becomes awaiting-resume with PIPELINE_UNHANDLED_ERROR", async () => {
     const jobState = makeMinimalState("test-unknown-step");
-    await fs.mkdir(path.join(tempDir, "specrunner", "jobs"), { recursive: true });
+    await fs.mkdir(path.join(tempDir, ".specrunner", "jobs"), { recursive: true });
     await fs.writeFile(
-      path.join(tempDir, "specrunner", "jobs", `${jobState.jobId}.json`),
+      path.join(tempDir, ".specrunner", "jobs", `${jobState.jobId}.json`),
       JSON.stringify(jobState),
       "utf-8",
     );
@@ -228,7 +220,7 @@ describe("T3.2: runInternal throws (unknown step) → pipeline.run() catch → a
     // pipeline.run() re-throws after persisting, so we check via the persisted state
     // The state should have been persisted as awaiting-resume before re-throw
     const { default: fs2 } = await import("node:fs/promises");
-    const statePath = path.join(tempDir, "specrunner", "jobs", `${jobState.jobId}.json`);
+    const statePath = path.join(tempDir, ".specrunner", "jobs", `${jobState.jobId}.json`);
     const raw = await fs2.readFile(statePath, "utf-8");
     const persisted = JSON.parse(raw) as JobState;
 

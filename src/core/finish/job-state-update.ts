@@ -40,8 +40,8 @@ export function assertJobFinishable(state: JobState): void {
  * TC-029: transitions status → "archived" and appends history
  * TC-083: atomic write protocol via JobStateStore → atomicWriteJson
  */
-export async function markJobArchived(jobId: string): Promise<JobState> {
-  const store = new JobStateStore(jobId);
+export async function markJobArchived(jobId: string, repoRoot: string): Promise<JobState> {
+  const store = new JobStateStore(jobId, repoRoot);
   const current = await store.load();
   const { state: updated, noop } = transitionJob(current as JobState, "archived", {
     trigger: "finish",

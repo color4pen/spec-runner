@@ -16,7 +16,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { createJobState, updateJobState } from "../../../src/state/store.js";
+import { JobStateStore } from "../../../src/store/job-state-store.js";
 import type { JobState, StepRun } from "../../../src/state/schema.js";
 
 // Top-level vi.mock() — hoisted before all imports by Vitest.
@@ -85,22 +85,14 @@ vi.mock("../../../src/parser/request-md.js", () => ({
 }));
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-resume-test-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.clearAllMocks();
   vi.restoreAllMocks();
@@ -108,7 +100,7 @@ afterEach(async () => {
 });
 
 async function makeAwaitingResumeJob(slug: string, overrides: Partial<JobState> = {}): Promise<JobState> {
-  const state = await createJobState({
+  const state = await JobStateStore.create(tempDir, {
     request: {
       path: `/specrunner/drafts/${slug}.md`,
       title: "Test",
@@ -118,8 +110,10 @@ async function makeAwaitingResumeJob(slug: string, overrides: Partial<JobState> 
     repository: { owner: "user", name: "repo" },
   });
 
-  return await updateJobState(state.jobId, (s) => ({
-    ...s,
+  const store = new JobStateStore(state.jobId, tempDir);
+  const current = await store.load();
+  const updated: JobState = {
+    ...current,
     status: "awaiting-resume",
     step: "code-review",
     resumePoint: {
@@ -128,7 +122,9 @@ async function makeAwaitingResumeJob(slug: string, overrides: Partial<JobState> 
       iterationsExhausted: 2,
     },
     ...overrides,
-  }));
+  } as JobState;
+  await store.persist(updated);
+  return updated;
 }
 
 function makeStepRun(verdict: "escalation" | "error" | "approved", attempt = 1): StepRun {
@@ -147,7 +143,7 @@ describe("TC-RESUME-001: happy path awaiting-resume", () => {
     await makeAwaitingResumeJob("happy-slug");
 
     const { runResumeCore } = await import("../../../src/cli/resume.js");
-    const exitCode = await runResumeCore("happy-slug", {});
+    const exitCode = await runResumeCore("happy-slug", { cwd: tempDir });
     expect(exitCode).toBe(0);
   });
 });
@@ -158,7 +154,7 @@ describe("TC-RESUME-002: status gate rejection for terminal statuses", () => {
     await makeAwaitingResumeJob("my-slug", { status: "archived", resumePoint: null });
 
     const { runResumeCore } = await import("../../../src/cli/resume.js");
-    const exitCode = await runResumeCore("my-slug", {});
+    const exitCode = await runResumeCore("my-slug", { cwd: tempDir });
     expect(exitCode).toBe(1);
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
     expect(stderrCalls.some((args) => String(args[0]).includes("cannot transition to"))).toBe(true);
@@ -171,7 +167,7 @@ describe("TC-RESUME-002: status gate rejection for terminal statuses", () => {
     });
 
     const { runResumeCore } = await import("../../../src/cli/resume.js");
-    const exitCode = await runResumeCore("failed-slug", {});
+    const exitCode = await runResumeCore("failed-slug", { cwd: tempDir });
     expect(exitCode).toBe(0);
   });
 
@@ -182,7 +178,7 @@ describe("TC-RESUME-002: status gate rejection for terminal statuses", () => {
     });
 
     const { runResumeCore } = await import("../../../src/cli/resume.js");
-    const exitCode = await runResumeCore("terminated-slug", {});
+    const exitCode = await runResumeCore("terminated-slug", { cwd: tempDir });
     expect(exitCode).toBe(0);
   });
 });
@@ -193,7 +189,7 @@ describe("TC-RESUME-003: running status always rejected", () => {
     await makeAwaitingResumeJob("running-slug", { status: "running", resumePoint: null });
 
     const { runResumeCore } = await import("../../../src/cli/resume.js");
-    const exitCode = await runResumeCore("running-slug", { force: true });
+    const exitCode = await runResumeCore("running-slug", { force: true, cwd: tempDir });
     expect(exitCode).toBe(1);
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
     expect(stderrCalls.some((args) => String(args[0]).includes("currently running"))).toBe(true);
@@ -213,7 +209,7 @@ describe("TC-RESUME-004: --force allows non-awaiting-resume", () => {
     });
 
     const { runResumeCore } = await import("../../../src/cli/resume.js");
-    const exitCode = await runResumeCore("force-slug", { force: true });
+    const exitCode = await runResumeCore("force-slug", { force: true, cwd: tempDir });
     expect(exitCode).toBe(0);
   });
 });
@@ -224,7 +220,7 @@ describe("TC-RESUME-005: no resumePoint and no --from", () => {
     await makeAwaitingResumeJob("no-resume-slug", { resumePoint: null });
 
     const { runResumeCore } = await import("../../../src/cli/resume.js");
-    const exitCode = await runResumeCore("no-resume-slug", {});
+    const exitCode = await runResumeCore("no-resume-slug", { cwd: tempDir });
     expect(exitCode).toBe(1);
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
     expect(stderrCalls.some((args) => String(args[0]).includes("再開位置が不明"))).toBe(true);
@@ -240,7 +236,7 @@ describe("TC-RESUME-006: fallback step via --from", () => {
     });
 
     const { runResumeCore } = await import("../../../src/cli/resume.js");
-    const exitCode = await runResumeCore("fallback-slug", { from: "fixer" });
+    const exitCode = await runResumeCore("fallback-slug", { from: "fixer", cwd: tempDir });
     expect(exitCode).toBe(0);
   });
 });
@@ -259,7 +255,7 @@ describe("TC-RESUME-007: consecutive escalations without --force", () => {
     });
 
     const { runResumeCore } = await import("../../../src/cli/resume.js");
-    const exitCode = await runResumeCore("escalation-slug", {});
+    const exitCode = await runResumeCore("escalation-slug", { cwd: tempDir });
     expect(exitCode).toBe(1);
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
     expect(stderrCalls.some((args) => String(args[0]).includes("escalated 3 consecutive times"))).toBe(true);
@@ -280,7 +276,7 @@ describe("TC-RESUME-008: consecutive escalations with --force", () => {
     });
 
     const { runResumeCore } = await import("../../../src/cli/resume.js");
-    const exitCode = await runResumeCore("escalation-force-slug", { force: true });
+    const exitCode = await runResumeCore("escalation-force-slug", { force: true, cwd: tempDir });
     expect(exitCode).toBe(0);
   });
 });
@@ -295,7 +291,7 @@ describe("TC-RESUME-009: stale state warning", () => {
     });
 
     const { runResumeCore } = await import("../../../src/cli/resume.js");
-    await runResumeCore("stale-slug", {});
+    await runResumeCore("stale-slug", { cwd: tempDir });
 
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
     expect(stderrCalls.some((args) => String(args[0]).includes("24 hours"))).toBe(true);
@@ -308,7 +304,7 @@ describe("TC-RESUME-009: stale state warning", () => {
 describe("TC-RESUME-010: slug not found", () => {
   it("returns exit code 1 when no job found with given slug or job ID prefix", async () => {
     const { runResumeCore } = await import("../../../src/cli/resume.js");
-    const exitCode = await runResumeCore("nonexistent-slug", {});
+    const exitCode = await runResumeCore("nonexistent-slug", { cwd: tempDir });
     expect(exitCode).toBe(1);
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
     expect(stderrCalls.some((args) => String(args[0]).includes("Job not found"))).toBe(true);
@@ -346,7 +342,7 @@ describe("TC-RESUME-013: exact #236 — fixer-empty mismatch detected at command
     });
 
     const { runResumeCore } = await import("../../../src/cli/resume.js");
-    const exitCode = await runResumeCore("bug-236-slug", {});
+    const exitCode = await runResumeCore("bug-236-slug", { cwd: tempDir });
     expect(exitCode).toBe(0);
 
     // Verify the pipeline was invoked with startStep = "code-review", not "code-fixer"

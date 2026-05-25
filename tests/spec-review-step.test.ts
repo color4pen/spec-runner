@@ -10,37 +10,27 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { specReviewResultPath } from "../src/util/paths.js";
 import { JobStateStore } from "../src/store/job-state-store.js";
-import { defaultStoreFactory } from "./helpers/store-factory.js";
+import { makeStoreFactory } from "./helpers/store-factory.js";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "spec-review-step-test-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
 
 async function makeJobState() {
-  const { createJobState } = await import("../src/state/store.js");
-  const state = await createJobState({
+  const state = await JobStateStore.create(tempDir, {
     request: { path: "/test/request.md", title: "Test", type: "feature" },
     repository: { owner: "testowner", name: "testrepo" },
   });
   // Simulate propose step completed with a branch
-  const { JobStateStore } = await import("../src/store/job-state-store.js");
-  const store = new JobStateStore(state.jobId);
+  const store = new JobStateStore(state.jobId, tempDir);
   return store.update(state, {
     branch: "feat/test-branch",
     status: "running",
@@ -141,7 +131,7 @@ async function runSpecReviewViaExecutor(
     repo: { owner: "testowner", name: "testrepo" },
     githubToken: "ghp_test",
   });
-  const executor = new StepExecutor(events, runner, defaultStoreFactory);
+  const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
   return executor.execute(SpecReviewStep, jobState, deps);
 }
 
@@ -164,7 +154,7 @@ describe("TC-006: runSpecReviewStep — pollUntilComplete is called with default
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // pollUntilComplete should be called with the default timeoutMs (900000ms)
@@ -196,7 +186,7 @@ describe("TC-017: runSpecReviewStep — treats status='idle' as complete", () =>
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     const lastSpecReview = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
@@ -229,7 +219,7 @@ describe("TC-018: runSpecReviewStep — SESSION_TERMINATED error handling", () =
         owner: "testowner",
         repo: "testrepo",
         spawn: noopSpawn,
-        storeFactory: defaultStoreFactory,
+        storeFactory: makeStoreFactory(tempDir),
       }),
     ).rejects.toMatchObject({ code: "SESSION_TERMINATED" });
   });
@@ -257,7 +247,7 @@ describe("TC-020: runSpecReviewStep — SPEC_REVIEW_RESULT_NOT_FOUND when file n
         owner: "testowner",
         repo: "testrepo",
         spawn: noopSpawn,
-        storeFactory: defaultStoreFactory,
+        storeFactory: makeStoreFactory(tempDir),
       }),
     ).rejects.toMatchObject({ code: "SPEC_REVIEW_RESULT_NOT_FOUND" });
   });
@@ -281,7 +271,7 @@ describe("TC-021: runSpecReviewStep — escalation failsafe when verdict line ab
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // SpecReviewStep.parseResult maps null verdict → "escalation" (failsafe)
@@ -311,7 +301,7 @@ describe("TC-041: runSpecReviewStep — records session, verdict, findingsPath, 
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     const stepResultArr = result.steps?.["spec-review"];
@@ -345,7 +335,7 @@ describe("TC-042: runSpecReviewStep — session created without custom tools", (
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(createSessionMock).toHaveBeenCalledTimes(1);
@@ -382,7 +372,7 @@ describe("TC-049: runSpecReviewStep — findingsPath has correct format", () => 
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     const lastStepResult = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];

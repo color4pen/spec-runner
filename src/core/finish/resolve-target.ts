@@ -9,8 +9,9 @@
  * TC-131: no slug specified → escalation (exit 2)
  * TC-134: multiple states for same slug → latest updatedAt chosen
  */
-import { listJobStates, loadJobState } from "../../state/store.js";
+import { JobStateStore } from "../../store/job-state-store.js";
 import { getJobSlug, stripBranchPrefix, stripJobIdSuffix } from "../../state/job-slug.js";
+import type { JobState } from "../../state/schema.js";
 import type { ResolvedTarget } from "./types.js";
 import type { GitHubClient } from "../../core/port/github-client.js";
 
@@ -43,23 +44,25 @@ export async function resolveTarget(
   input: ResolveTargetInput,
   stdoutWrite: (msg: string) => void = (m) => process.stdout.write(m + "\n"),
 ): Promise<ResolveTargetResult> {
+  const repoRoot = input.cwd ?? process.cwd();
+
   // 1. Positional <slug> resolution
   if (input.slug) {
-    return resolveBySlug(input.slug, input.cwd, stdoutWrite);
+    return resolveBySlug(input.slug, repoRoot, stdoutWrite);
   }
 
   // 2. --pr <num> reverse lookup
   if (input.prNumber !== undefined && input.githubClient && input.owner && input.repo) {
-    return resolveByPrNumber(input.prNumber, input.githubClient, input.owner, input.repo, stdoutWrite);
+    return resolveByPrNumber(input.prNumber, input.githubClient, input.owner, input.repo, repoRoot, stdoutWrite);
   }
 
   // 3. --job <jobId> direct lookup (forensics / debug)
   if (input.jobId) {
-    return resolveByJobId(input.jobId, stdoutWrite);
+    return resolveByJobId(input.jobId, repoRoot, stdoutWrite);
   }
 
   // 4. active dir auto-detection
-  return resolveByAutoDetect(input.cwd ?? process.cwd(), stdoutWrite);
+  return resolveByAutoDetect(repoRoot, stdoutWrite);
 }
 
 /**
@@ -67,10 +70,10 @@ export async function resolveTarget(
  */
 async function resolveBySlug(
   slug: string,
-  cwd: string | undefined,
+  repoRoot: string,
   stdoutWrite: (msg: string) => void,
 ): Promise<ResolveTargetResult> {
-  const allStates = await listJobStates();
+  const allStates = await JobStateStore.list(repoRoot);
   const matching = allStates.filter((s) => getJobSlug(s) === slug);
 
   if (matching.length === 0) {
@@ -92,7 +95,7 @@ async function resolveBySlug(
     );
   }
 
-  return buildResolvedTarget(chosen, slug, cwd);
+  return buildResolvedTarget(chosen, slug);
 }
 
 /**
@@ -105,6 +108,7 @@ async function resolveByPrNumber(
   githubClient: GitHubClient,
   owner: string,
   repo: string,
+  repoRoot: string,
   stdoutWrite: (msg: string) => void,
 ): Promise<ResolveTargetResult> {
   let prData: { headRefName?: string };
@@ -130,7 +134,7 @@ async function resolveByPrNumber(
     };
   }
 
-  return resolveBySlug(slug, undefined, stdoutWrite);
+  return resolveBySlug(slug, repoRoot, stdoutWrite);
 }
 
 /**
@@ -138,12 +142,13 @@ async function resolveByPrNumber(
  */
 async function resolveByJobId(
   jobId: string,
+  repoRoot: string,
   _stdoutWrite: (msg: string) => void,
 ): Promise<ResolveTargetResult> {
   try {
-    const state = await loadJobState(jobId);
+    const state = (await new JobStateStore(jobId, repoRoot).load()) as JobState;
     const slug = getJobSlug(state);
-    return buildResolvedTarget(state, slug, undefined);
+    return buildResolvedTarget(state, slug);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return { ok: false, exitCode: 2, message };
@@ -171,9 +176,8 @@ async function resolveByAutoDetect(
  * Returns exitCode 2 if the state is missing PR or branch info.
  */
 function buildResolvedTarget(
-  state: import("../../state/schema.js").JobState,
+  state: JobState,
   slug: string,
-  _cwd: string | undefined,
 ): ResolveTargetResult {
   const prNumber = state.pullRequest?.number;
   const prUrl = state.pullRequest?.url;

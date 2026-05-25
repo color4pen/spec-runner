@@ -1,4 +1,4 @@
-import { listJobStates } from "../../state/store.js";
+import { JobStateStore } from "../../store/job-state-store.js";
 import { getJobSlug } from "../../state/job-slug.js";
 import type { JobState } from "../../state/schema.js";
 
@@ -15,8 +15,8 @@ import type { JobState } from "../../state/schema.js";
  * Design D1: resolveBySlug() from finish/resolve-target.ts is NOT used here
  * because it requires PR info via buildResolvedTarget().
  */
-export async function resolveJobStateBySlug(slug: string): Promise<JobState | null> {
-  const allStates = await listJobStates();
+export async function resolveJobStateBySlug(slug: string, repoRoot: string): Promise<JobState | null> {
+  const allStates = await JobStateStore.list(repoRoot);
   const matching = allStates.filter((s) => getJobSlug(s) === slug);
 
   if (matching.length === 0) {

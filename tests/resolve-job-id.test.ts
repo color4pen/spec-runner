@@ -2,28 +2,19 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { createJobState } from "../src/state/store.js";
-import { resolveJobId } from "../src/state/store.js";
+import { JobStateStore } from "../src/store/job-state-store.js";
 import { ERROR_CODES, ambiguousJobIdError } from "../src/errors.js";
 import { SpecRunnerError } from "../src/errors.js";
 
 // Setup temp directory for tests
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-resolve-job-id-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -58,14 +49,12 @@ describe("TC-07: ambiguousJobIdError factory helper", () => {
 
 // TC-01: resolveJobId — 完全 UUID pass-through
 describe("TC-01: resolveJobId — full UUID pass-through", () => {
-  it("returns the full UUID as-is without calling listJobStates", async () => {
+  it("returns the full UUID as-is without calling list()", async () => {
     const fullUuid = "3f1a1f29-0669-482a-b2d4-0f272e1caaf3";
 
-    // We spy on listJobStates to verify it is NOT called
-    const { listJobStates } = await import("../src/state/store.js");
-    const spy = vi.spyOn(await import("../src/state/store.js"), "listJobStates");
+    const spy = vi.spyOn(JobStateStore, "list");
 
-    const result = await resolveJobId(fullUuid);
+    const result = await JobStateStore.resolveId(tempDir, fullUuid);
 
     expect(result).toBe(fullUuid);
     expect(spy).not.toHaveBeenCalled();
@@ -75,10 +64,10 @@ describe("TC-01: resolveJobId — full UUID pass-through", () => {
 // TC-02: resolveJobId — 短縮 ID で 1 件 match
 describe("TC-02: resolveJobId — short ID with 1 match", () => {
   it("returns the full UUID when prefix matches exactly one job", async () => {
-    const state = await createJobState(makeBaseParams());
+    const state = await JobStateStore.create(tempDir, makeBaseParams());
     const prefix = state.jobId.slice(0, 8);
 
-    const result = await resolveJobId(prefix);
+    const result = await JobStateStore.resolveId(tempDir, prefix);
 
     expect(result).toBe(state.jobId);
   });
@@ -88,13 +77,13 @@ describe("TC-02: resolveJobId — short ID with 1 match", () => {
 describe("TC-03: resolveJobId — short ID with 0 matches", () => {
   it("throws JOB_NOT_FOUND when no job ID starts with the prefix", async () => {
     // Ensure there are no jobs in the store
-    await expect(resolveJobId("deadbeef")).rejects.toMatchObject({
+    await expect(JobStateStore.resolveId(tempDir, "deadbeef")).rejects.toMatchObject({
       code: ERROR_CODES.JOB_NOT_FOUND,
     });
   });
 
   it("throws SpecRunnerError", async () => {
-    await expect(resolveJobId("deadbeef")).rejects.toBeInstanceOf(SpecRunnerError);
+    await expect(JobStateStore.resolveId(tempDir, "deadbeef")).rejects.toBeInstanceOf(SpecRunnerError);
   });
 });
 
@@ -103,8 +92,8 @@ describe("TC-04: resolveJobId — short ID with 2+ matches", () => {
   it("throws AMBIGUOUS_JOB_ID with hint containing candidate UUIDs", async () => {
     // Create two jobs and give them a shared prefix by manipulating the store directly.
     // Since we can't control generated UUIDs, we create 2 jobs and use the first common prefix.
-    const s1 = await createJobState(makeBaseParams());
-    const s2 = await createJobState(makeBaseParams());
+    const s1 = await JobStateStore.create(tempDir, makeBaseParams());
+    const s2 = await JobStateStore.create(tempDir, makeBaseParams());
 
     // Find the longest common prefix of the two UUIDs
     let commonPrefix = "";
@@ -122,11 +111,11 @@ describe("TC-04: resolveJobId — short ID with 2+ matches", () => {
       return;
     }
 
-    await expect(resolveJobId(commonPrefix)).rejects.toMatchObject({
+    await expect(JobStateStore.resolveId(tempDir, commonPrefix)).rejects.toMatchObject({
       code: ERROR_CODES.AMBIGUOUS_JOB_ID,
     });
 
-    await expect(resolveJobId(commonPrefix)).rejects.toMatchObject({
+    await expect(JobStateStore.resolveId(tempDir, commonPrefix)).rejects.toMatchObject({
       hint: expect.stringContaining(s1.jobId),
     });
   });
@@ -136,11 +125,11 @@ describe("TC-04: resolveJobId — short ID with 2+ matches", () => {
 describe("TC-05: resolveJobId — single character prefix uniquely resolves", () => {
   it("resolves correctly when only one job starts with the given single character", async () => {
     // Create a job and find a prefix character that uniquely identifies it
-    const state = await createJobState(makeBaseParams());
+    const state = await JobStateStore.create(tempDir, makeBaseParams());
     const firstChar = state.jobId[0]!;
 
     // The store has only one job, so any prefix should uniquely resolve
-    const result = await resolveJobId(firstChar);
+    const result = await JobStateStore.resolveId(tempDir, firstChar);
     expect(result).toBe(state.jobId);
   });
 });

@@ -84,7 +84,7 @@ export async function runFinishOrchestrator(
 
   let state;
   try {
-    const store = new JobStateStore(target.jobId);
+    const store = new JobStateStore(target.jobId, cwd);
     state = await store.load();
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
@@ -209,11 +209,11 @@ export async function runFinishOrchestrator(
     if (!mergeResult.ok) return { exitCode: 1, escalation: mergeResult.escalation };
     stdoutWrite(`PR #${target.prNumber} merged successfully.`);
     // State確定: PR merge は不可逆。成功直後に archived に遷移
-    await markJobArchived(target.jobId);
+    await markJobArchived(target.jobId, cwd);
     stdoutWrite(`Job ${target.jobId} marked as archived.`);
   } else {
     stdoutWrite(`PR #${target.prNumber} already merged. Skipping Phase 1-3.`);
-    await markJobArchived(target.jobId);
+    await markJobArchived(target.jobId, cwd);
     stdoutWrite(`Job ${target.jobId} marked as archived.`);
   }
 
@@ -353,7 +353,7 @@ async function runPhase4Finalize(params: {
     }
     // Clear worktreePath in state (best-effort — state is already archived)
     try {
-      const store = new JobStateStore(target.jobId);
+      const store = new JobStateStore(target.jobId, cwd);
       const current = await store.load();
       await store.persist({ ...current, worktreePath: null });
     } catch {

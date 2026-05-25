@@ -26,15 +26,12 @@ import {
 } from "../../../src/logger/stdout.js";
 
 let tempDir: string;
-let originalXdgStateHome: string | undefined;
 let originalLogLevel: string | undefined;
 
 beforeEach(async () => {
-  // Create a fresh temp dir per test and point XDG_STATE_HOME there
+  // Create a fresh temp dir per test
   tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "specrunner-verbose-log-test-"));
-  originalXdgStateHome = process.env["XDG_STATE_HOME"];
   originalLogLevel = process.env["SPECRUNNER_LOG_LEVEL"];
-  process.env["XDG_STATE_HOME"] = tempDir;
   // Ensure verbose is off by default
   setVerbose(false);
   closeVerboseLog();
@@ -44,12 +41,6 @@ afterEach(async () => {
   // Always close any open fd
   closeVerboseLog();
   setVerbose(false);
-  // Restore env vars
-  if (originalXdgStateHome !== undefined) {
-    process.env["XDG_STATE_HOME"] = originalXdgStateHome;
-  } else {
-    delete process.env["XDG_STATE_HOME"];
-  }
   if (originalLogLevel !== undefined) {
     process.env["SPECRUNNER_LOG_LEVEL"] = originalLogLevel;
   } else {
@@ -97,13 +88,13 @@ describe("resolveVerboseFlag", () => {
 describe("logVerbose file writes", () => {
   it("TC-VL-05: writes JSON Lines to log file after initVerboseLog", async () => {
     setVerbose(true);
-    initVerboseLog("test-job-001");
+    initVerboseLog(tempDir, "test-job-001");
 
     logVerbose("test", "hello world");
 
     closeVerboseLog();
 
-    const logPath = path.join(tempDir, "specrunner", "logs", "test-job-001.log");
+    const logPath = path.join(tempDir, ".specrunner", "logs", "test-job-001.log");
     const content = fs.readFileSync(logPath, "utf-8");
     const lines = content.trim().split("\n").filter(Boolean);
     expect(lines.length).toBe(1);
@@ -114,13 +105,13 @@ describe("logVerbose file writes", () => {
 
   it("TC-VL-06: logVerbose is no-op after closeVerboseLog", async () => {
     setVerbose(true);
-    initVerboseLog("test-job-002");
+    initVerboseLog(tempDir, "test-job-002");
     closeVerboseLog();
 
     // This should not throw and should not write
     logVerbose("test", "should not appear");
 
-    const logPath = path.join(tempDir, "specrunner", "logs", "test-job-002.log");
+    const logPath = path.join(tempDir, ".specrunner", "logs", "test-job-002.log");
     // File may or may not exist; if it exists it should be empty
     try {
       const content = fs.readFileSync(logPath, "utf-8");
@@ -132,13 +123,13 @@ describe("logVerbose file writes", () => {
 
   it("TC-VL-07: log entry contains ts, component, message keys", async () => {
     setVerbose(true);
-    initVerboseLog("test-job-003");
+    initVerboseLog(tempDir, "test-job-003");
 
     logVerbose("step", "step started", { jobId: "abc" });
 
     closeVerboseLog();
 
-    const logPath = path.join(tempDir, "specrunner", "logs", "test-job-003.log");
+    const logPath = path.join(tempDir, ".specrunner", "logs", "test-job-003.log");
     const content = fs.readFileSync(logPath, "utf-8");
     const entry = JSON.parse(content.trim());
     expect(entry).toHaveProperty("ts");
@@ -151,14 +142,14 @@ describe("logVerbose file writes", () => {
 
   it("TC-VL-08: maskSensitive masks API keys in log entries", async () => {
     setVerbose(true);
-    initVerboseLog("test-job-004");
+    initVerboseLog(tempDir, "test-job-004");
 
     // Real Anthropic API keys use underscore separator: sk-ant-api03_xxx
     logVerbose("session", "auth info", { apiKey: "sk-ant-api03_secretkeyabcdefghijk" });
 
     closeVerboseLog();
 
-    const logPath = path.join(tempDir, "specrunner", "logs", "test-job-004.log");
+    const logPath = path.join(tempDir, ".specrunner", "logs", "test-job-004.log");
     const content = fs.readFileSync(logPath, "utf-8");
     expect(content).not.toContain("secretkeyabcdefghijk");
     expect(content).toContain("sk-ant-api03_...");
@@ -168,16 +159,16 @@ describe("logVerbose file writes", () => {
     setVerbose(true);
 
     // First cycle
-    initVerboseLog("test-job-005");
+    initVerboseLog(tempDir, "test-job-005");
     logVerbose("step", "entry one");
     closeVerboseLog();
 
     // Second cycle (resume simulation)
-    initVerboseLog("test-job-005");
+    initVerboseLog(tempDir, "test-job-005");
     logVerbose("step", "entry two");
     closeVerboseLog();
 
-    const logPath = path.join(tempDir, "specrunner", "logs", "test-job-005.log");
+    const logPath = path.join(tempDir, ".specrunner", "logs", "test-job-005.log");
     const content = fs.readFileSync(logPath, "utf-8");
     const lines = content.trim().split("\n").filter(Boolean);
     expect(lines.length).toBe(2);
@@ -187,10 +178,10 @@ describe("logVerbose file writes", () => {
 
   it("initVerboseLog is no-op when verbose is false", async () => {
     setVerbose(false);
-    initVerboseLog("test-job-006");
+    initVerboseLog(tempDir, "test-job-006");
     logVerbose("step", "should not appear");
 
-    const logPath = path.join(tempDir, "specrunner", "logs", "test-job-006.log");
+    const logPath = path.join(tempDir, ".specrunner", "logs", "test-job-006.log");
     expect(fs.existsSync(logPath)).toBe(false);
   });
 
@@ -201,7 +192,7 @@ describe("logVerbose file writes", () => {
 
   it("getVerboseLogFilePath returns the log path when active", () => {
     setVerbose(true);
-    initVerboseLog("test-job-007");
+    initVerboseLog(tempDir, "test-job-007");
     const logPath = getVerboseLogFilePath();
     expect(logPath).not.toBeNull();
     expect(logPath).toContain("test-job-007.log");
@@ -210,7 +201,7 @@ describe("logVerbose file writes", () => {
 
   it("getVerboseLogFilePath returns null after closeVerboseLog", () => {
     setVerbose(true);
-    initVerboseLog("test-job-008");
+    initVerboseLog(tempDir, "test-job-008");
     closeVerboseLog();
     expect(getVerboseLogFilePath()).toBeNull();
   });

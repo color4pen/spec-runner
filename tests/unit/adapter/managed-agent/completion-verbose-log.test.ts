@@ -32,23 +32,15 @@ import {
 } from "../../../../src/logger/stdout.js";
 
 let tempDir: string;
-let originalXdgStateHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "completion-verbose-log-test-"));
-  originalXdgStateHome = process.env["XDG_STATE_HOME"];
-  process.env["XDG_STATE_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
   closeVerboseLog();
   setVerbose(false);
-  if (originalXdgStateHome !== undefined) {
-    process.env["XDG_STATE_HOME"] = originalXdgStateHome;
-  } else {
-    delete process.env["XDG_STATE_HOME"];
-  }
   await fsPromises.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -75,7 +67,7 @@ describe("TC-08-01: pollUntilComplete — logs 'poll attempt' with intervalMs an
   it("ポーリング試行ごとに 'poll attempt' エントリと intervalMs・sessionStatus フィールドがログに書き出される", async () => {
     const jobId = "tc08-01-job";
     setVerbose(true);
-    initVerboseLog(jobId);
+    initVerboseLog(tempDir, jobId);
     const logPath = getVerboseLogFilePath()!;
 
     // First poll returns "running", second returns "idle" → loop completes

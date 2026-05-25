@@ -13,7 +13,7 @@ import type { DynamicContext } from "../src/git/dynamic-context.js";
 import type { SpawnFn } from "../src/util/spawn.js";
 import type { SpawnFn as GitSpawnFn } from "../src/util/git-exec.js";
 import { JobStateStore } from "../src/store/job-state-store.js";
-import { defaultStoreFactory } from "./helpers/store-factory.js";
+import { makeStoreFactory } from "./helpers/store-factory.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -68,12 +68,9 @@ vi.mock("../src/core/pr-create/runner.js", () => ({
 }));
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "pipeline-integration-test-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   // Reset delta-spec-validator mock to default (approved) before each test
@@ -81,19 +78,12 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
-  await fs.rm(path.join(process.cwd(), "specrunner/changes/test-slug"), { recursive: true, force: true });
   vi.restoreAllMocks();
 });
 
 async function makeJobState() {
-  const { createJobState } = await import("../src/state/store.js");
-  return createJobState({
+  return JobStateStore.create(tempDir, {
     request: { path: "/test/request.md", title: "Test", type: "feature" },
     repository: { owner: "testowner", name: "testrepo" },
   });
@@ -286,7 +276,7 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -337,7 +327,7 @@ describe("TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 app
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -393,7 +383,7 @@ describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RE
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // spec-review: 3 entries (iter1 needs-fix, iter2 needs-fix, iter3 bypass → spec-fixer
@@ -436,7 +426,7 @@ describe("TC-013: runPipeline — escalation stops loop without invoking spec-fi
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // spec-fixer not created
@@ -478,7 +468,7 @@ describe("TC-014: runPipeline — spec-review loop skipped when propose fails", 
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // Only propose session was created
@@ -513,7 +503,7 @@ describe("TC-015: runPipeline — fresh session IDs per iteration", () => {
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     const specReviewArr = result.steps?.["spec-review"];
@@ -558,7 +548,7 @@ describe("TC-016: runPipeline — stdout contains 'retries exhausted, escalating
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     const stdout = stdoutLines.join("");
@@ -595,7 +585,7 @@ describe("TC-017: runPipeline — Pipeline finished summary line in stdout", () 
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     const stdout = stdoutLines.join("");
@@ -636,7 +626,7 @@ describe("TC-018: runPipeline — stdout log order for needs-fix → approved pa
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     const stdout = stdoutLines.join("");
@@ -683,7 +673,7 @@ describe("TC-050: state.step updated: spec-fixer → spec-review within loop", (
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // After spec-review approved → implementer → verification → code-review → pr-create → end.
@@ -738,7 +728,7 @@ describe("TC-060: runPipeline — code-review needs-fix → code-fixer → code-
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -804,7 +794,7 @@ describe("TC-061: runPipeline — code-review retries exhausted: escalation + CO
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // code-review: 3 entries (iter1 needs-fix, iter2 needs-fix, iter3 +1 bypass → escalation)
@@ -865,7 +855,7 @@ describe("TC-062: code-fixer final iter reviewed — approved path", () => {
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -923,7 +913,7 @@ describe("TC-063: spec-review / spec-fixer pair — fixer final iter reviewed an
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -998,7 +988,7 @@ describe("TC-064: verification / build-fixer pair — fixer final iter verificat
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -1027,7 +1017,7 @@ describe("TC-030: runPipeline — persistence: both propose and spec-review step
     const { client } = buildPipelineMockClient({ specReviewVerdicts: ["approved"] });
     const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
 
-    const stateFilePath = path.join(tempDir, "specrunner", "jobs", `${jobState.jobId}.json`);
+    const stateFilePath = path.join(tempDir, ".specrunner", "jobs", `${jobState.jobId}.json`);
 
     await runPipeline(jobState, {
       client: client,
@@ -1040,7 +1030,7 @@ describe("TC-030: runPipeline — persistence: both propose and spec-review step
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // Verify the final persisted state has both steps recorded
@@ -1106,7 +1096,7 @@ describe("TC-DC-101: DynamicContext forwarded to all agent steps via AgentRunCon
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // All agent steps must have received dynamicContext
@@ -1142,7 +1132,7 @@ describe("TC-DC-102: specIndex propagated to all agent steps", () => {
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(capturedCtxList.length).toBeGreaterThan(0);
@@ -1182,7 +1172,7 @@ describe("TC-DC-103: projectContext injected only for allowlist steps", () => {
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     const allowlistNames = ["design", "spec-review", "implementer", "code-review"];
@@ -1221,7 +1211,7 @@ describe("TC-DC-104: projectContext undefined for non-allowlist steps", () => {
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // test-case-gen is a non-allowlist step that runs on the approved path
@@ -1266,7 +1256,7 @@ describe("TC-DC-105: enrichContext is called for spec-review step", () => {
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(enrichSpy).toHaveBeenCalledOnce();
@@ -1310,7 +1300,7 @@ describe("TC-DC-106: enrichContext returns unmodified dynamicContext when no del
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(enrichSpy).toHaveBeenCalledOnce();
@@ -1343,7 +1333,7 @@ describe("TC-DC-107: project.md absent — projectContext is undefined for all s
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // Pipeline must not throw — project.md absence is not an error
@@ -1380,7 +1370,7 @@ describe("TC-DC-108: dynamicContext omitted — backward compatibility", () => {
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -1416,7 +1406,7 @@ describe("TC-DSV-INT-01: delta-spec-validation approved is inserted between desi
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -1469,7 +1459,7 @@ describe("TC-DSV-INT-02: delta-spec-validation needs-fix triggers delta-spec-fix
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -1524,7 +1514,7 @@ describe("TC-DSV-INT-03: delta-spec-validation retries exhausted → DELTA_SPEC_
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-resume");
@@ -1588,7 +1578,7 @@ describe("TC-P-06: managed-reset-status-stale-guard scenario — legacy-flat-dir
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -1649,7 +1639,7 @@ describe("TC-DSV-INT-04: delta-spec-validation and spec-review loops are indepen
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // Pipeline must complete normally — both loops resolved within their budgets
@@ -1744,7 +1734,7 @@ describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not
 
     const events = new EventBus();
     // Inject the git SpawnFn and a no-op sleep to avoid real 5s waits
-    const executor = new StepExecutor(events, mockAgentRunner, defaultStoreFactory, gitSpawnFn, async () => {});
+    const executor = new StepExecutor(events, mockAgentRunner, makeStoreFactory(tempDir), gitSpawnFn, async () => {});
 
     // Minimal transitions: implementer → verification → end
     const miniTransitions = [
@@ -1774,7 +1764,7 @@ describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not
     const stateWithBranch = { ...jobState, branch: "feat/test-self-commit" };
     // Persist so store.update can find and update it
     const { JobStateStore } = await import("../src/store/job-state-store.js");
-    const store = new JobStateStore(stateWithBranch.jobId);
+    const store = new JobStateStore(stateWithBranch.jobId, tempDir);
     await store.persist(stateWithBranch);
 
     const localConfig = {
@@ -1792,7 +1782,7 @@ describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // Implementer must have completed (no halt)
@@ -1874,7 +1864,7 @@ describe("TC-AUTH-INT-01: implementer stages authority spec + delta spec → AUT
     const { ImplementerStep } = await import("../src/core/step/implementer.js");
 
     const events = new EventBus();
-    const executor = new StepExecutor(events, mockAgentRunner, defaultStoreFactory, gitSpawnFn, async () => {});
+    const executor = new StepExecutor(events, mockAgentRunner, makeStoreFactory(tempDir), gitSpawnFn, async () => {});
 
     const miniTransitions = [
       { step: "implementer", on: "success", to: "end" },
@@ -1897,7 +1887,7 @@ describe("TC-AUTH-INT-01: implementer stages authority spec + delta spec → AUT
     const jobState = await makeJobState();
     const stateWithBranch = { ...jobState, branch: "change/test-slug-auth-guard" };
     const { JobStateStore } = await import("../src/store/job-state-store.js");
-    const store = new JobStateStore(stateWithBranch.jobId);
+    const store = new JobStateStore(stateWithBranch.jobId, tempDir);
     await store.persist(stateWithBranch);
 
     const localConfig = {
@@ -1915,7 +1905,7 @@ describe("TC-AUTH-INT-01: implementer stages authority spec + delta spec → AUT
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // Pipeline must have halted (not completed successfully to awaiting-merge)
@@ -1992,7 +1982,7 @@ describe("TC-AUTH-INT-02: implementer stages delta spec only → pipeline contin
     const { VerificationStep } = await import("../src/core/step/verification.js");
 
     const events = new EventBus();
-    const executor = new StepExecutor(events, mockAgentRunner, defaultStoreFactory, gitSpawnFn, async () => {});
+    const executor = new StepExecutor(events, mockAgentRunner, makeStoreFactory(tempDir), gitSpawnFn, async () => {});
 
     const miniTransitions = [
       { step: "implementer", on: "success", to: "verification" },
@@ -2019,7 +2009,7 @@ describe("TC-AUTH-INT-02: implementer stages delta spec only → pipeline contin
     const jobState = await makeJobState();
     const stateWithBranch = { ...jobState, branch: "change/test-slug-delta-only" };
     const { JobStateStore } = await import("../src/store/job-state-store.js");
-    const store = new JobStateStore(stateWithBranch.jobId);
+    const store = new JobStateStore(stateWithBranch.jobId, tempDir);
     await store.persist(stateWithBranch);
 
     const localConfig = {
@@ -2037,7 +2027,7 @@ describe("TC-AUTH-INT-02: implementer stages delta spec only → pipeline contin
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // Implementer completed (no halt)
@@ -2089,7 +2079,7 @@ describe("TC-INT-01: Step 5 fail (no-specs-for-required-type) → pipeline trans
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // Pipeline did NOT escalate

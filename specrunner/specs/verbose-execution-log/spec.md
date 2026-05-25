@@ -13,26 +13,16 @@ TBD
 
 ### Requirement: ログファイルの配置と形式
 
-verbose 有効時、ログファイルの保存先は `config.jobs.location` 設定で決定される:
+verbose 有効時、ログファイルの保存先は MUST `<repo-root>/.specrunner/logs/<jobId>.log` でなければならない。
 
-- `"project"` (デフォルト): `<repo-root>/.specrunner/logs/<jobId>.log`
-- `"xdg"`: `${XDG_STATE_HOME:-$HOME/.local/state}/specrunner/logs/<jobId>.log`
+ログディレクトリは初回書き込み時に自動作成しなければならない（`mkdirSync({ recursive: true })`）。同一 jobId の retry / resume でログファイルは追記モードで 1 ファイルに集約されなければならない（SHALL）。
 
-`config.jobs` section が未設定、または `config.jobs.location` が未設定の場合は SHALL `"project"` として扱う。
-
-ログディレクトリは初回書き込み時に自動作成する（`mkdirSync({ recursive: true })`）。同一 jobId の retry / resume でログファイルは追記モードで 1 ファイルに集約される。
-
-パス解決は `src/util/xdg.ts` の `getVerboseLogDir()` が担当し、`setJobsLocation()` で設定された module state に基づいて分岐する。
+パス解決は `src/util/xdg.ts` の `getVerboseLogDir(repoRoot)` が担当しなければならない（MUST）。`repoRoot` は CLI entry point が解決し、`initVerboseLog(repoRoot, jobId)` の引数として渡す。module-level state (`setJobsLocation`) は廃止された。
 
 #### Scenario: デフォルト（project mode）
 
-- **WHEN** `config.jobs.location` が未設定で、`setJobsLocation("project", "~/myrepo")` が呼ばれた後に verbose log を初期化する
+- **WHEN** `repoRoot = "~/myrepo"` で `initVerboseLog(repoRoot, jobId)` を呼ぶ
 - **THEN** ログファイルは `~/myrepo/.specrunner/logs/<jobId>.log` に作成される
-
-#### Scenario: XDG mode
-
-- **WHEN** `config.jobs.location` が `"xdg"` で `XDG_STATE_HOME` 未設定
-- **THEN** ログファイルは `~/.local/state/specrunner/logs/<jobId>.log` に作成される（従来動作と同一）
 
 ### Requirement: ログ記録対象イベント
 
@@ -43,7 +33,9 @@ verbose 有効時、ログファイルの保存先は `config.jobs.location` 設
 
 ### Requirement: logger 層の抽象化
 
-- `src/logger/stdout.ts` に `logVerbose(message)` 関数を追加し、verbose 有効時のみファイル出力する
-- 既存の `stderrWrite` / `info` / `warn` / `error` 関数の振る舞いは変更しない
-- `src/util/xdg.ts` に `resolveXdgStateDir()` ヘルパーを追加して `~/.local/state/specrunner/logs/` パス解決を集約する
-- テストでは DI 経由で verbose ON/OFF を切替可能にする
+`src/logger/stdout.ts` は `logVerbose(message)` 関数を公開し、verbose 有効時のみファイル出力しなければならない（MUST）。既存の `stderrWrite` / `info` / `warn` / `error` 関数の振る舞いは変更してはならない（MUST NOT）。verbose ログの初期化は `initVerboseLog(repoRoot: string, jobId: string)` で行わなければならず（SHALL）、`repoRoot` は CLI entry point が解決して渡す。`resolveXdgStateDir()` は verbose log パス解決に使用してはならない（MUST NOT）。テストでは DI 経由で verbose ON/OFF を切替可能にしなければならない（SHALL）。
+
+#### Scenario: verbose 無効時はファイル出力しない
+
+- **WHEN** verbose が無効の状態で `logVerbose("test message")` を呼ぶ
+- **THEN** ファイルへの書き込みは発生しない

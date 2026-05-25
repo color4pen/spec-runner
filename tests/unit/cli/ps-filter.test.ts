@@ -20,16 +20,20 @@ import { parseFlags, FlagParseError } from "../../../src/cli/flag-parser.js";
 import { COMMANDS } from "../../../src/cli/command-registry.js";
 
 // ---------------------------------------------------------------------------
-// Mock listJobStates
+// Mock JobStateStore.list (and spawnCommand for resolveRepoRoot)
 // ---------------------------------------------------------------------------
 
-vi.mock("../../../src/state/store.js", () => ({
-  listJobStates: vi.fn(),
+const mockList = vi.hoisted(() => vi.fn());
+
+vi.mock("../../../src/store/job-state-store.js", () => ({
+  JobStateStore: { list: mockList },
 }));
 
-import { listJobStates } from "../../../src/state/store.js";
+vi.mock("../../../src/util/spawn.js", () => ({
+  spawnCommand: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "/fake/repo\n", stderr: "" }),
+}));
 
-const mockedListJobStates = vi.mocked(listJobStates);
+const mockedListJobStates = mockList;
 
 // ---------------------------------------------------------------------------
 // Test fixture

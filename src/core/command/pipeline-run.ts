@@ -7,7 +7,7 @@
  */
 import * as path from "node:path";
 import type { PreflightResult } from "../preflight.js";
-import { createJobState } from "../../state/store.js";
+import { JobStateStore } from "../../store/job-state-store.js";
 import { logInfo, setVerbose } from "../../logger/stdout.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../runtime/strategy.js";
@@ -61,7 +61,7 @@ export class PipelineRunCommand extends CommandRunner {
 
     // Create job state
     const cwd = this.options.cwd ?? process.cwd();
-    const jobState = await createJobState({
+    const jobState = await JobStateStore.create(cwd, {
       request: {
         path: this.absolutePath,
         title: request.title,
@@ -84,6 +84,7 @@ export class PipelineRunCommand extends CommandRunner {
       config,
       slug,
       verbose,
+      repoRoot: cwd,
       workspaceOpts: {
         requestFilePath: this.absolutePath,
         branchName,

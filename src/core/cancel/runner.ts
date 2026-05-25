@@ -117,7 +117,7 @@ export async function cancelSingleJob(opts: {
   // Load state
   let state: JobState;
   try {
-    state = (await new JobStateStore(jobId).load()) as JobState;
+    state = (await new JobStateStore(jobId, deps.repoRoot).load()) as JobState;
   } catch (err: unknown) {
     const code = (err as NodeJS.ErrnoException & { code?: string }).code;
     if (
@@ -189,7 +189,7 @@ export async function cancelSingleJob(opts: {
     });
 
     if (!purge) {
-      await new JobStateStore(jobId).persist(updated);
+      await new JobStateStore(jobId, deps.repoRoot).persist(updated);
     }
   }
 
@@ -198,7 +198,7 @@ export async function cancelSingleJob(opts: {
   // ---------------------------------------------------------------------------
 
   if (purge) {
-    await JobStateStore.delete(jobId);
+    await JobStateStore.delete(deps.repoRoot, jobId);
   }
 
   return {
@@ -218,11 +218,12 @@ export async function cancelSingleJob(opts: {
  */
 export async function cancelAllTerminated(opts: {
   yes: boolean;
+  repoRoot: string;
   stdin?: NodeJS.ReadableStream;
 }): Promise<CancelResult> {
-  const { yes, stdin: stdinOverride } = opts;
+  const { yes, repoRoot, stdin: stdinOverride } = opts;
 
-  const allStates = await JobStateStore.list();
+  const allStates = await JobStateStore.list(repoRoot);
   const targets = allStates.filter((s) => BULK_CLEANUP_STATUSES.has(s.status));
 
   if (targets.length === 0) {
@@ -254,7 +255,7 @@ export async function cancelAllTerminated(opts: {
 
   for (const state of targets) {
     try {
-      await JobStateStore.delete(state.jobId);
+      await JobStateStore.delete(repoRoot, state.jobId);
       removed++;
     } catch (err: unknown) {
       hasErrors = true;

@@ -12,22 +12,14 @@ import * as os from "node:os";
 import { changeFolderPath } from "../../src/util/paths.js";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "state-io-test-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -51,7 +43,7 @@ function makeLegacyStateRaw(overrides: Record<string, unknown> = {}): Record<str
 }
 
 async function writeStateFile(jobId: string, content: unknown): Promise<string> {
-  const jobsDir = path.join(tempDir, "specrunner", "jobs");
+  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
   await fs.mkdir(jobsDir, { recursive: true });
   const filePath = path.join(jobsDir, `${jobId}.json`);
   await fs.writeFile(filePath, JSON.stringify(content, null, 2));
@@ -125,9 +117,9 @@ describe("TC-049: listJobStates — normalizes legacy format in-memory without r
     const filePath = await writeStateFile(jobId, legacyState);
     const originalContent = await fs.readFile(filePath, "utf-8");
 
-    // Import listJobStates (the ps command read path)
-    const { listJobStates } = await import("../../src/state/store.js");
-    const states = await listJobStates();
+    // Import JobStateStore (the ps command read path)
+    const { JobStateStore } = await import("../../src/store/job-state-store.js");
+    const states = await JobStateStore.list(tempDir);
 
     // The state should be returned with normalized array format
     const found = states.find((s) => s.jobId === jobId);

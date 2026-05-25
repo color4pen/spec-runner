@@ -31,7 +31,6 @@ import {
 } from "../../../src/logger/stdout.js";
 
 let tempDir: string;
-let originalXdgStateHome: string | undefined;
 
 beforeEach(async () => {
   // vi.resetAllMocks() でコール履歴と一時実装キューをリセット
@@ -42,8 +41,6 @@ beforeEach(async () => {
   vi.mocked(nodeFs.writeSync).mockImplementation(actual.writeSync as typeof nodeFs.writeSync);
 
   tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "specrunner-verbose-err-test-"));
-  originalXdgStateHome = process.env["XDG_STATE_HOME"];
-  process.env["XDG_STATE_HOME"] = tempDir;
   setVerbose(false);
   closeVerboseLog();
 });
@@ -51,11 +48,6 @@ beforeEach(async () => {
 afterEach(async () => {
   closeVerboseLog();
   setVerbose(false);
-  if (originalXdgStateHome !== undefined) {
-    process.env["XDG_STATE_HOME"] = originalXdgStateHome;
-  } else {
-    delete process.env["XDG_STATE_HOME"];
-  }
   await fsPromises.rm(tempDir, { recursive: true, force: true });
 });
 
@@ -78,7 +70,7 @@ describe("TC-05-01: initVerboseLog — ディレクトリ作成失敗", () => {
     setVerbose(true);
 
     // 例外が伝播しないことを確認
-    expect(() => initVerboseLog("test-job-mkdir-fail")).not.toThrow();
+    expect(() => initVerboseLog(tempDir, "test-job-mkdir-fail")).not.toThrow();
 
     // stderr に警告が出力されていることを確認
     expect(stderrSpy).toHaveBeenCalledWith(
@@ -102,7 +94,7 @@ describe("TC-05-01: initVerboseLog — ディレクトリ作成失敗", () => {
 describe("TC-05-02: logVerbose — 書き込み失敗", () => {
   it("例外が発生しない AND logFd が null になる AND 以降の logVerbose が no-op になる", () => {
     setVerbose(true);
-    initVerboseLog("test-job-write-fail");
+    initVerboseLog(tempDir, "test-job-write-fail");
 
     // initVerboseLog が成功したことを確認（logFd が設定されている）
     expect(getVerboseLogFilePath()).not.toBeNull();

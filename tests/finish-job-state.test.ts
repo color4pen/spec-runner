@@ -12,40 +12,32 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { createJobState, loadJobState, updateJobState } from "../src/state/store.js";
+import { JobStateStore } from "../src/store/job-state-store.js";
 import { assertJobFinishable, markJobArchived } from "../src/core/finish/job-state-update.js";
-import { SpecRunnerError } from "../src/errors.js";
+import { SpecRunnerError, ERROR_CODES } from "../src/errors.js";
 import type { JobState } from "../src/state/schema.js";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-finish-state-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
 
 async function makeJob(status: JobState["status"] = "awaiting-merge") {
-  const job = await createJobState({
+  const job = await JobStateStore.create(tempDir, {
     request: { path: "/test/request.md", title: "Test", type: "new-feature" },
     repository: { owner: "user", name: "repo" },
   });
 
   // Patch status
   if (status !== "running") {
-    const jobsDir = path.join(tempDir, "specrunner", "jobs");
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     const statePath = path.join(jobsDir, `${job.jobId}.json`);
     const raw = JSON.parse(await fs.readFile(statePath, "utf-8"));
     raw.status = status;
@@ -55,12 +47,28 @@ async function makeJob(status: JobState["status"] = "awaiting-merge") {
   return job;
 }
 
+/** Helper replacing the removed loadJobState(id) from state/store.ts */
+async function loadJobState(jobId: string): Promise<JobState> {
+  try {
+    return (await new JobStateStore(jobId, tempDir).load()) as JobState;
+  } catch (err: unknown) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === "ENOENT") {
+      throw new SpecRunnerError(ERROR_CODES.JOB_NOT_FOUND, "", `Job not found: ${jobId}`);
+    }
+    if (err instanceof SyntaxError) {
+      throw new SpecRunnerError(ERROR_CODES.STATE_FILE_INVALID, "", `State file invalid for: ${jobId}`);
+    }
+    throw err;
+  }
+}
+
 // TC-029
 describe("TC-029: awaiting-merge → status: archived + history entry", () => {
   it("marks job as archived and appends finish history entry", async () => {
     const job = await makeJob("awaiting-merge");
 
-    const updated = await markJobArchived(job.jobId);
+    const updated = await markJobArchived(job.jobId, tempDir);
 
     expect(updated.status).toBe("archived");
     const finishEntry = updated.history.find((h) => h.step === "finish");
@@ -125,7 +133,7 @@ describe("TC-031: status=running → reject (JOB_NOT_FINISHABLE)", () => {
 describe("Backward compatibility: legacy status=success", () => {
   it("loads legacy success state as awaiting-merge", async () => {
     const job = await makeJob("awaiting-merge");
-    const jobsDir = path.join(tempDir, "specrunner", "jobs");
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     const statePath = path.join(jobsDir, `${job.jobId}.json`);
     
     // Write legacy state with status="success"
@@ -156,7 +164,7 @@ describe("TC-039: loadJobState ENOENT → JOB_NOT_FOUND", () => {
 // TC-040
 describe("TC-040: loadJobState parse failure → STATE_FILE_INVALID", () => {
   it("throws SpecRunnerError with STATE_FILE_INVALID for corrupt JSON", async () => {
-    const jobsDir = path.join(tempDir, "specrunner", "jobs");
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     await fs.mkdir(jobsDir, { recursive: true });
     const badJobId = "corrupt-job-00000000-0000-0000-0000-000000000000";
     await fs.writeFile(path.join(jobsDir, `${badJobId}.json`), "NOT VALID JSON {{{");
@@ -198,9 +206,11 @@ describe("TC-041: updateJobState atomic write protocol", () => {
   it("writes via atomic tmp+rename (no .tmp files remain)", async () => {
     const job = await makeJob("awaiting-merge");
 
-    await updateJobState(job.jobId, (s) => ({ ...s, step: "updated-step" }));
+    const store = new JobStateStore(job.jobId, tempDir);
+    const current = await store.load();
+    await store.persist({ ...current, step: "updated-step" });
 
-    const jobsDir = path.join(tempDir, "specrunner", "jobs");
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     const files = await fs.readdir(jobsDir);
     const tmpFiles = files.filter((f) => f.includes(".tmp."));
     expect(tmpFiles).toHaveLength(0);

@@ -14,9 +14,8 @@ import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { OriginInfo } from "../../git/remote.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import { createManagedAgentRunner } from "../../adapter/managed-agent/agent-runner.js";
-import { updateJobState, loadJobState } from "../../state/store.js";
+import type { JobState, StepName } from "../../state/schema.js";
 import { transitionJob } from "../../state/lifecycle.js";
-import type { StepName } from "../../state/schema.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { spawnCommand } from "../../util/spawn.js";
 import { JobStateStore } from "../../store/job-state-store.js";
@@ -152,7 +151,11 @@ export class ManagedRuntime implements RuntimeStrategy {
     }
 
     // Record branchName in state (D3)
-    await updateJobState(jobId, (s) => ({ ...s, branch: branchName }));
+    {
+      const store = new JobStateStore(jobId, this.cwd);
+      const current = await store.load();
+      await store.persist({ ...current, branch: branchName } as JobState);
+    }
 
     return { cwd: this.cwd, branch: branchName };
   }
@@ -175,15 +178,16 @@ export class ManagedRuntime implements RuntimeStrategy {
       cwd: workspace.cwd,
       runner: this.createAgentRunner(),
       spawn: spawnCommand,
-      storeFactory: (id: string) => new JobStateStore(id),
+      storeFactory: (id: string) => new JobStateStore(id, this.cwd),
     };
   }
 
   registerCleanup(jobId: string, startStep: string): CleanupHandle {
     const signalCleanup = async (): Promise<void> => {
       try {
-        const current = await loadJobState(jobId);
-        const { state: updated } = transitionJob(current, "awaiting-resume", {
+        const store = new JobStateStore(jobId, this.cwd);
+        const current = await store.load();
+        const { state: updated } = transitionJob(current as JobState, "awaiting-resume", {
           trigger: "signal-handler",
           reason: "Interrupted by signal",
           patch: {
@@ -195,7 +199,7 @@ export class ManagedRuntime implements RuntimeStrategy {
             },
           },
         });
-        await updateJobState(jobId, () => updated);
+        await store.persist(updated);
       } catch {
         // Best-effort persist
       }

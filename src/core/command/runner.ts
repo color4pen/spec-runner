@@ -51,6 +51,8 @@ export interface PrepareResult {
   slug: string;
   verbose: boolean;
   workspaceOpts: WorkspaceOptions;
+  /** Absolute path to the git repository root. Used for job state and verbose log paths. */
+  repoRoot: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -76,17 +78,17 @@ export abstract class CommandRunner {
     // Note: re-throw any error so callers (e.g. ResumeCommand.execute) can inspect it
     const prepared = await this.prepare();
 
-    const { jobState, startStep, request, config, slug, verbose, workspaceOpts } = prepared;
+    const { jobState, startStep, request, config, slug, verbose, workspaceOpts, repoRoot } = prepared;
 
     // Initialize verbose log file (no-op if verbose is disabled)
-    initVerboseLog(jobState.jobId);
+    initVerboseLog(repoRoot, jobState.jobId);
 
     // Step 2: setupWorkspace
     let workspace;
     try {
       workspace = await this.runtime.setupWorkspace(slug, jobState.jobId, workspaceOpts);
     } catch (err) {
-      const store = new JobStateStore(jobState.jobId);
+      const store = new JobStateStore(jobState.jobId, repoRoot);
       await store.fail(jobState, {
         code: "WORKSPACE_SETUP_FAILED",
         message: (err as Error).message,
@@ -131,7 +133,7 @@ export abstract class CommandRunner {
 
       handle = this.runtime.registerCleanup(jobState.jobId, startStep);
     } catch (err) {
-      const store = new JobStateStore(jobState.jobId);
+      const store = new JobStateStore(jobState.jobId, repoRoot);
       await store.fail(jobState, {
         code: "INIT_FAILED",
         message: (err as Error).message,
@@ -150,7 +152,7 @@ export abstract class CommandRunner {
     } catch (err) {
       // Defensive: if pipeline safety net did not transition state, mark as failed
       try {
-        const store = new JobStateStore(jobState.jobId);
+        const store = new JobStateStore(jobState.jobId, repoRoot);
         const diskState = await store.load();
         if (diskState.status === "running") {
           await store.fail(diskState as JobState, {

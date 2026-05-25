@@ -14,21 +14,13 @@ import { ManagedRuntime } from "../../../../src/core/runtime/managed.js";
 import { ManagedAgentRunner } from "../../../../src/adapter/managed-agent/agent-runner.js";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "managed-runtime-test-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.clearAllMocks();
   vi.restoreAllMocks();
@@ -162,10 +154,10 @@ function buildManagedMockSpawnFn() {
   return { spawnFn: fn as unknown as import("../../../../src/util/spawn.js").SpawnFn, calls };
 }
 
-// Helper: create a minimal job state in tempDir (requires XDG_DATA_HOME = tempDir)
+// Helper: create a minimal job state in tempDir
 async function makeJobStateForManaged(slug = "test-slug") {
-  const { createJobState } = await import("../../../../src/state/store.js");
-  return createJobState({
+  const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+  return JobStateStore.create(tempDir, {
     request: {
       path: path.join(tempDir, "request.md"),
       title: "Test",

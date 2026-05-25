@@ -5,36 +5,28 @@ import * as os from "node:os";
 import type { SessionClient } from "../src/core/port/session-client.js";
 import type { GitHubClient } from "../src/core/port/github-client.js";
 import { createManagedAgentRunner } from "../src/adapter/managed-agent/agent-runner.js";
-import { defaultStoreFactory } from "./helpers/store-factory.js";
+import { makeStoreFactory } from "./helpers/store-factory.js";
+import { JobStateStore } from "../src/store/job-state-store.js";
 import type { SpawnFn } from "../src/util/spawn.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
 // Setup temp directory for state files
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-pipeline-test-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
 
 // Helper to create a base job state
 async function makeJobState() {
-  const { createJobState } = await import("../src/state/store.js");
-  return createJobState({
+  return JobStateStore.create(tempDir, {
     request: { path: "/test/request.md", title: "Test Request", type: "new-feature" },
     repository: { owner: "testowner", name: "testrepo" },
   });
@@ -187,7 +179,7 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -224,7 +216,7 @@ describe("TC-036: propose pipeline — pre-set branch from CLI is used (D4)", ()
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // With branch pre-set, propose should succeed
@@ -255,7 +247,7 @@ describe("TC-037: propose pipeline — SSE stream connected before initial messa
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // streamEvents() was called — the SessionClient port guarantees SSE is connected
@@ -303,7 +295,7 @@ describe("TC-038: propose pipeline — initial message contains user-request tag
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     // With cwd set to tempDir (no specrunner/project.md), requestContent is the raw
@@ -336,7 +328,7 @@ describe("TC-039: propose pipeline — CHANGE_FOLDER_NOT_FOUND", () => {
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-resume");
@@ -367,7 +359,7 @@ describe("TC-040: propose pipeline — branch not found on GitHub is warning onl
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -404,7 +396,7 @@ describe("TC-041: propose pipeline — GITHUB_TOKEN_EXPIRED on 401", () => {
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-resume");
@@ -438,7 +430,7 @@ describe("TC-042: session creation parameters", () => {
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(createSessionMock).toHaveBeenCalledTimes(1);

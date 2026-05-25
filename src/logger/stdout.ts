@@ -45,12 +45,12 @@ export function resolveVerboseFlag(cliFlag: boolean): boolean {
  * No-op if verbose mode is not enabled (verbose === false).
  * Errors are caught and logged to stderr — verbose log failure must not block the pipeline.
  */
-export function initVerboseLog(jobId: string): void {
+export function initVerboseLog(repoRoot: string, jobId: string): void {
   if (!verbose) return;
   try {
-    const dir = getVerboseLogDir();
+    const dir = getVerboseLogDir(repoRoot);
     mkdirSync(dir, { recursive: true });
-    currentLogPath = getVerboseLogPath(jobId);
+    currentLogPath = getVerboseLogPath(repoRoot, jobId);
     logFd = openSync(currentLogPath, "a");
   } catch (err) {
     stderrWrite(`Warning: Failed to initialize verbose log: ${(err as Error).message}`);

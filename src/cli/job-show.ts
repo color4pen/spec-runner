@@ -8,47 +8,57 @@
  *   - UUID format (/^[a-f0-9-]{36}$/) → load by jobId directly
  *   - Otherwise → resolve by slug (all jobs, latest updatedAt wins)
  */
-import { loadJobState, listJobStates } from "../state/store.js";
+import { JobStateStore } from "../store/job-state-store.js";
 import { getJobSlug } from "../state/job-slug.js";
 import type { JobState } from "../state/schema.js";
-import { loadConfig } from "../config/store.js";
 import { spawnCommand } from "../util/spawn.js";
-import { setJobsLocation } from "../util/xdg.js";
+import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 
 const UUID_REGEX = /^[a-f0-9-]{36}$/;
+
+/**
+ * Resolve the git repository root from the current working directory.
+ */
+async function resolveRepoRoot(): Promise<string> {
+  try {
+    const result = await spawnCommand("git", ["rev-parse", "--show-toplevel"], { cwd: process.cwd() });
+    if (result.exitCode === 0) {
+      return result.stdout.trim();
+    }
+  } catch {
+    // fall through
+  }
+  return process.cwd();
+}
 
 /**
  * Run `job show` — print 6 key fields to stdout.
  * Calls process.exit() on error.
  */
 export async function runJobShow(input: string): Promise<void> {
-  // Resolve jobs storage location; fall back to XDG on any error
-  try {
-    const config = await loadConfig();
-    const gitResult = await spawnCommand("git", ["rev-parse", "--show-toplevel"], { cwd: process.cwd() });
-    if (gitResult.exitCode === 0) {
-      setJobsLocation(config.jobs?.location ?? "project", gitResult.stdout.trim());
-    } else {
-      setJobsLocation("xdg");
-    }
-  } catch {
-    setJobsLocation("xdg");
-  }
+  const repoRoot = await resolveRepoRoot();
 
   let state: JobState;
 
   if (UUID_REGEX.test(input)) {
     // Load directly by jobId
     try {
-      state = await loadJobState(input);
+      const store = new JobStateStore(input, repoRoot);
+      const loaded = await store.load();
+      state = loaded as JobState;
     } catch (err: unknown) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === "ENOENT") {
+        process.stderr.write(`Error: Job not found: ${input}\n`);
+        process.exit(1);
+      }
       const msg = err instanceof Error ? err.message : String(err);
       process.stderr.write(`Error: ${msg}\n`);
       process.exit(1);
     }
   } else {
     // Resolve by slug
-    const allJobs = await listJobStates();
+    const allJobs = await JobStateStore.list(repoRoot);
     const matching = allJobs.filter((j) => getJobSlug(j) === input);
     if (matching.length === 0) {
       process.stderr.write(`Error: Job not found for slug: ${input}\n`);

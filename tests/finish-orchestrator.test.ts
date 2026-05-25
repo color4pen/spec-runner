@@ -17,29 +17,21 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as nodefs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { createJobState } from "../src/state/store.js";
+import { JobStateStore } from "../src/store/job-state-store.js";
 import { runFinishOrchestrator } from "../src/core/finish/orchestrator.js";
 import type { SpawnFn } from "../src/util/spawn.js";
 import type { FinishFs } from "../src/core/finish/types.js";
 import type { GitHubClient } from "../src/core/port/github-client.js";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await nodefs.mkdtemp(path.join(os.tmpdir(), "specrunner-finish-orch-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await nodefs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -59,12 +51,12 @@ async function makeJobWithPr(
     worktreePath = undefined,
   } = opts;
 
-  const state = await createJobState({
+  const state = await JobStateStore.create(tempDir, {
     request: { path: requestPath, title: "Test", type: "new-feature", slug },
     repository: { owner: "user", name: "repo" },
   });
 
-  const jobsDir = path.join(tempDir, "specrunner", "jobs");
+  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
   const statePath = path.join(jobsDir, `${state.jobId}.json`);
   const raw = JSON.parse(await nodefs.readFile(statePath, "utf-8"));
   raw.status = status;
@@ -412,7 +404,7 @@ describe("TC-124: markJobArchived called after Phase 3 merge (before Phase 4)", 
     const { jobId } = await makeJobWithPr({ status: "awaiting-merge" });
 
     const callOrder: string[] = [];
-    const { loadJobState } = await import("../src/state/store.js");
+    const loadJobState = async (jobId: string) => (await new JobStateStore(jobId, tempDir).load());
 
     const spawn: SpawnFn = vi.fn().mockImplementation(async (cmd: string, args: string[]) => {
       if (cmd === "git" && args[0] === "pull") {
@@ -461,7 +453,7 @@ describe("TC-125: Phase 1 escalation → markJobArchived not called", () => {
     expect(result.exitCode).toBe(1);
 
     // State should NOT be archived
-    const { loadJobState } = await import("../src/state/store.js");
+    const loadJobState = async (jobId: string) => (await new JobStateStore(jobId, tempDir).load());
     const finalState = await loadJobState(jobId);
     expect(finalState.status).toBe("awaiting-merge");
   });
@@ -637,7 +629,7 @@ describe("TC-FIN-P4-FAIL-001: Phase 4 worktree remove failure → state=archived
     });
 
     expect(result.exitCode).toBe(0);
-    const { loadJobState } = await import("../src/state/store.js");
+    const loadJobState = async (jobId: string) => (await new JobStateStore(jobId, tempDir).load());
     const finalState = await loadJobState(jobId);
     expect(finalState.status).toBe("archived");
   });
@@ -941,7 +933,7 @@ describe("TC-WT-FIN-003: Phase 4 worktree remove is called", () => {
     expect(removeOrder.some((e) => e.startsWith("remove:"))).toBe(true);
 
     // Verify state has worktreePath=null after finish
-    const { loadJobState } = await import("../src/state/store.js");
+    const loadJobState = async (jobId: string) => (await new JobStateStore(jobId, tempDir).load());
     const finalState = await loadJobState(jobId);
     expect(finalState.status).toBe("archived");
     expect(finalState.worktreePath).toBeNull();
@@ -987,7 +979,7 @@ describe("TC-LCC-ORCH-1: local conflict check fail → Phase 1 not called, exitC
     expect(archiveCalls).toHaveLength(0);
 
     // Job state must remain at awaiting-merge (not archived)
-    const { loadJobState } = await import("../src/state/store.js");
+    const loadJobState = async (jobId: string) => (await new JobStateStore(jobId, tempDir).load());
     const finalState = await loadJobState(jobId);
     expect(finalState.status).toBe("awaiting-merge");
   });
@@ -1053,7 +1045,7 @@ describe("TC-LCC-ORCH-3: git fetch failure in local check → exitCode 1, state 
     expect(result.escalation).toContain("Phase 0 git fetch");
 
     // Job state must remain at awaiting-merge
-    const { loadJobState } = await import("../src/state/store.js");
+    const loadJobState = async (jobId: string) => (await new JobStateStore(jobId, tempDir).load());
     const finalState = await loadJobState(jobId);
     expect(finalState.status).toBe("awaiting-merge");
   });
@@ -1114,7 +1106,7 @@ describe("TC-LCC-ORCH-5: after conflict escalation, re-run is not blocked by ass
     }
 
     // Job state should still be awaiting-merge after first run
-    const { loadJobState } = await import("../src/state/store.js");
+    const loadJobState = async (jobId: string) => (await new JobStateStore(jobId, tempDir).load());
     const stateAfterFirstRun = await loadJobState(jobId);
     expect(stateAfterFirstRun.status).toBe("awaiting-merge");
 

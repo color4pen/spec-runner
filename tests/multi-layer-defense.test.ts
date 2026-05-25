@@ -7,7 +7,8 @@ import type { GitHubClient } from "../src/core/port/github-client.js";
 import { createManagedAgentRunner } from "../src/adapter/managed-agent/agent-runner.js";
 import { verificationResultPath, prCreateResultPath } from "../src/util/paths.js";
 import type { SpawnFn } from "../src/util/spawn.js";
-import { defaultStoreFactory } from "./helpers/store-factory.js";
+import { defaultStoreFactory, makeStoreFactory } from "./helpers/store-factory.js";
+import { JobStateStore } from "../src/store/job-state-store.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -62,12 +63,9 @@ vi.mock("../src/core/pr-create/runner.js", () => ({
 }));
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "multi-layer-defense-test-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   // Reset delta-spec-validator mock to default (approved) before each test
@@ -75,18 +73,12 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
 
 async function makeJobState() {
-  const { createJobState } = await import("../src/state/store.js");
-  return createJobState({
+  return JobStateStore.create(tempDir, {
     request: { path: "/test/request.md", title: "Test", type: "spec-change" },
     repository: { owner: "testowner", name: "testrepo" },
   });
@@ -283,7 +275,7 @@ describe("TC-MLD-01: happy path — all 3 layers pass, pipeline completes", () =
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -345,7 +337,7 @@ describe("TC-MLD-02: spec-review catches insufficient delta spec → spec-fixer 
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -422,7 +414,7 @@ describe("TC-MLD-03: dsv catches legacy-flat-file → delta-spec-fixer → re-ds
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -501,7 +493,7 @@ describe("TC-MLD-04: design + spec-review both fail — dsv catches no-specs-for
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-merge");
@@ -573,7 +565,7 @@ describe("TC-MLD-05: design + dsv both fail — spec-review catches as sole defe
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.status).toBe("awaiting-merge");

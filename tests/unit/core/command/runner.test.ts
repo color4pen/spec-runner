@@ -27,15 +27,9 @@ import {
 } from "../../../../src/logger/stdout.js";
 
 let tempDir: string;
-let originalXdgDataHome: string | undefined;
-let originalXdgStateHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "command-runner-test-"));
-  originalXdgDataHome = process.env["XDG_DATA_HOME"];
-  originalXdgStateHome = process.env["XDG_STATE_HOME"];
-  process.env["XDG_DATA_HOME"] = tempDir;
-  process.env["XDG_STATE_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
@@ -43,16 +37,6 @@ beforeEach(async () => {
 afterEach(async () => {
   closeVerboseLog();
   setVerbose(false);
-  if (originalXdgDataHome !== undefined) {
-    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
-  } else {
-    delete process.env["XDG_DATA_HOME"];
-  }
-  if (originalXdgStateHome !== undefined) {
-    process.env["XDG_STATE_HOME"] = originalXdgStateHome;
-  } else {
-    delete process.env["XDG_STATE_HOME"];
-  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.clearAllMocks();
   vi.restoreAllMocks();
@@ -90,6 +74,7 @@ function buildPrepareResult(overrides: Partial<PrepareResult> = {}): PrepareResu
     slug: "test-slug",
     verbose: false,
     workspaceOpts: {},
+    repoRoot: "/fake/repo",
     ...overrides,
   };
 }
@@ -341,19 +326,19 @@ describe("TC-CR-008: worktreePath from workspace is reflected in jobState passed
 // TC-CR-009: setupWorkspace failure marks job as failed
 describe("TC-CR-009: setupWorkspace failure marks job status as failed on disk", () => {
   it("persists status=failed with WORKSPACE_SETUP_FAILED when setupWorkspace throws", async () => {
-    const realJobState = await JobStateStore.create({
+    const realJobState = await JobStateStore.create(tempDir, {
       request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
       repository: { owner: "testowner", name: "testrepo" },
     });
 
     const runtime = buildMockRuntime({ setupThrow: new Error("worktree failed") });
-    const command = new TestCommand(runtime, buildPrepareResult({ jobState: realJobState }));
+    const command = new TestCommand(runtime, buildPrepareResult({ jobState: realJobState, repoRoot: tempDir }));
 
     const exitCode = await command.execute();
 
     expect(exitCode).toBe(1);
 
-    const store = new JobStateStore(realJobState.jobId);
+    const store = new JobStateStore(realJobState.jobId, tempDir);
     const diskState = await store.load();
     expect(diskState.status).toBe("failed");
     expect(diskState.error?.code).toBe("WORKSPACE_SETUP_FAILED");
@@ -363,13 +348,13 @@ describe("TC-CR-009: setupWorkspace failure marks job status as failed on disk",
 // TC-CR-010: pipeline throw with running state marks job as failed
 describe("TC-CR-010: pipeline throw with running disk state marks job as failed", () => {
   it("persists status=failed with PIPELINE_UNHANDLED_ERROR when pipeline throws and state is still running", async () => {
-    const realJobState = await JobStateStore.create({
+    const realJobState = await JobStateStore.create(tempDir, {
       request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
       repository: { owner: "testowner", name: "testrepo" },
     });
 
     const runtime = buildMockRuntime();
-    const command = new TestCommand(runtime, buildPrepareResult({ jobState: realJobState }));
+    const command = new TestCommand(runtime, buildPrepareResult({ jobState: realJobState, repoRoot: tempDir }));
 
     const { createStandardPipeline } = await import("../../../../src/core/pipeline/index.js");
     (createStandardPipeline as ReturnType<typeof vi.fn>).mockReturnValueOnce({
@@ -380,7 +365,7 @@ describe("TC-CR-010: pipeline throw with running disk state marks job as failed"
 
     expect(exitCode).toBe(1);
 
-    const store = new JobStateStore(realJobState.jobId);
+    const store = new JobStateStore(realJobState.jobId, tempDir);
     const diskState = await store.load();
     expect(diskState.status).toBe("failed");
     expect(diskState.error?.code).toBe("PIPELINE_UNHANDLED_ERROR");
@@ -390,12 +375,12 @@ describe("TC-CR-010: pipeline throw with running disk state marks job as failed"
 // TC-CR-011: pipeline throw with awaiting-resume state (safety net already fired) does not overwrite
 describe("TC-CR-011: pipeline throw with awaiting-resume state does not overwrite to failed", () => {
   it("leaves status=awaiting-resume unchanged when pipeline safety net already transitioned state", async () => {
-    const realJobState = await JobStateStore.create({
+    const realJobState = await JobStateStore.create(tempDir, {
       request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
       repository: { owner: "testowner", name: "testrepo" },
     });
 
-    const store = new JobStateStore(realJobState.jobId);
+    const store = new JobStateStore(realJobState.jobId, tempDir);
     const runtime = buildMockRuntime();
     const command = new TestCommand(runtime, buildPrepareResult({ jobState: realJobState }));
 

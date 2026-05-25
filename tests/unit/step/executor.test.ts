@@ -17,7 +17,7 @@ import type { Step, CliStep } from "../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
-import { defaultStoreFactory } from "../../helpers/store-factory.js";
+import { makeStoreFactory } from "../../helpers/store-factory.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -32,7 +32,7 @@ function makeExecutor(events: EventBus, deps: PipelineDeps): StepExecutor {
     repo: { owner: "testowner", name: "testrepo" },
     githubToken: "ghp_test",
   });
-  return new StepExecutor(events, runner, defaultStoreFactory);
+  return new StepExecutor(events, runner, makeStoreFactory(tempDir));
 }
 
 let tempDir: string;
@@ -113,7 +113,7 @@ function makeMockSessionClient(): PipelineDeps["client"] {
 }
 
 async function setupJobState(jobId: string): Promise<JobState> {
-  const jobsDir = path.join(tempDir, "specrunner", "jobs");
+  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
   await fs.mkdir(jobsDir, { recursive: true });
   const state = makeMinimalState(jobId);
   await fs.writeFile(
@@ -165,7 +165,7 @@ describe("TC-030: StepExecutor resolves agent ID via step.agent.role", () => {
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
 
     const executor = makeExecutor(events, deps);
@@ -226,7 +226,7 @@ describe("TC-031: spec-review Step does not use propose Agent ID", () => {
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
 
     const executor = makeExecutor(events, deps);
@@ -285,7 +285,7 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
 
     const executor = makeExecutor(events, deps);
@@ -336,7 +336,7 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
 
     const executor = makeExecutor(events, deps);
@@ -390,7 +390,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
 
     const executor = makeExecutor(events, deps);
@@ -405,7 +405,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
     // The HEAD verification runs BEFORE the verdict append so failed
     // steps never leave a misleading "verdict" marker for downstream
     // consumers (forensics, resume, status aggregation).
-    const stateFile = path.join(tempDir, "specrunner", "jobs", "requires-commit-no-advance.json");
+    const stateFile = path.join(tempDir, ".specrunner", "jobs", "requires-commit-no-advance.json");
     const persistedState = JSON.parse(await fs.readFile(stateFile, "utf-8")) as JobState;
     const completedOkEvents = persistedState.history.filter(
       (h) => h.step === "spec-fixer-verdict" && h.status === "ok",
@@ -459,7 +459,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
 
     const executor = makeExecutor(events, deps);
@@ -507,7 +507,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
 
     const executor = makeExecutor(events, deps);
@@ -557,7 +557,7 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
 
     const executor = makeExecutor(events, deps);
@@ -650,7 +650,7 @@ describe("TC-007 to TC-010: allowlist steps set ctx.projectContext from specrunn
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
   }
 
@@ -660,7 +660,7 @@ describe("TC-007 to TC-010: allowlist steps set ctx.projectContext from specrunn
     it(`step '${stepName}' → ctx.projectContext is set from specrunner/project.md`, async () => {
       const { runner, captured } = makeCapturingRunner();
       const events = new EventBus();
-      const executor = new StepExecutor(events, runner, defaultStoreFactory);
+      const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
       const state = makeMinimalState(`tc-allowlist-${stepName}`);
       const deps = makeDepsWithCwd(cwdWithProjectMd);
       // needsProjectContext: true is required for executor to inject projectContext
@@ -753,7 +753,7 @@ describe("TC-011 to TC-014: non-allowlist steps — ctx.projectContext is undefi
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
   }
 
@@ -763,7 +763,7 @@ describe("TC-011 to TC-014: non-allowlist steps — ctx.projectContext is undefi
     it(`step '${stepName}' → ctx.projectContext is undefined (file exists but step excluded)`, async () => {
       const { runner, captured } = makeCapturingRunner();
       const events = new EventBus();
-      const executor = new StepExecutor(events, runner, defaultStoreFactory);
+      const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
       const state = makeMinimalState(`tc-nonlist-${stepName}`);
       const deps = makeDepsWithCwd(cwdWithProjectMd);
       const step = makeStepNamed(stepName);
@@ -834,7 +834,7 @@ describe("TC-EX: StepExecutor injects resumeSessionId for fixer steps", () => {
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
   }
 
@@ -842,7 +842,7 @@ describe("TC-EX: StepExecutor injects resumeSessionId for fixer steps", () => {
   it("TC-EX-01: spec-fixer with previous sessionId → ctx.resumeSessionId equals previous sessionId", async () => {
     const { runner, captured } = makeCapturingRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
 
     const state = makeMinimalState("tc-ex-01");
     state.steps = {
@@ -868,7 +868,7 @@ describe("TC-EX: StepExecutor injects resumeSessionId for fixer steps", () => {
   it("TC-EX-02: spec-fixer first run (no previous steps) → ctx.resumeSessionId is undefined", async () => {
     const { runner, captured } = makeCapturingRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
 
     const state = makeMinimalState("tc-ex-02");
     // steps is empty (default) — first run, no previous sessionId
@@ -884,7 +884,7 @@ describe("TC-EX: StepExecutor injects resumeSessionId for fixer steps", () => {
   it("TC-EX-03: non-fixer step (spec-review) → ctx.resumeSessionId is always undefined", async () => {
     const { runner, captured } = makeCapturingRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
 
     const state = makeMinimalState("tc-ex-03");
     // spec-fixer has a previous session, but spec-review must NOT inherit it
@@ -926,7 +926,7 @@ describe("TC-015: specrunner/project.md not found — no error, ctx.projectConte
   it("propose step with missing specrunner/project.md → no exception, projectContext undefined", async () => {
     const { runner, captured } = makeCapturingRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
 
     // Use a temp dir without specrunner/project.md
     const cwdWithout = await fs.mkdtemp(path.join(os.tmpdir(), "executor-no-ctx-"));
@@ -960,7 +960,7 @@ describe("TC-015: specrunner/project.md not found — no error, ctx.projectConte
         owner: "user",
         repo: "repo",
         spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
       };
 
       const step: Step = {
@@ -1001,7 +1001,7 @@ describe("TC-05: runAgentStep — StepRun.startedAt < StepRun.endedAt (success p
         return { completionReason: "success", resultContent: null };
       },
     };
-    const executor = new StepExecutor(events, delayedRunner, defaultStoreFactory);
+    const executor = new StepExecutor(events, delayedRunner, makeStoreFactory(tempDir));
 
     const jobId = "tc05-agent-timestamp-job";
     const state = await setupJobState(jobId);
@@ -1036,7 +1036,7 @@ describe("TC-05: runAgentStep — StepRun.startedAt < StepRun.endedAt (success p
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
 
     const resultState = await executor.execute(step, state, deps);
@@ -1063,7 +1063,7 @@ describe("TC-06: runCliStep — StepRun.startedAt < StepRun.endedAt (success pat
         return { completionReason: "success", resultContent: null };
       },
     };
-    const executor = new StepExecutor(events, noopRunner, defaultStoreFactory);
+    const executor = new StepExecutor(events, noopRunner, makeStoreFactory(tempDir));
 
     const jobId = "tc06-cli-timestamp-job";
     const state = await setupJobState(jobId);
@@ -1104,7 +1104,7 @@ describe("TC-06: runCliStep — StepRun.startedAt < StepRun.endedAt (success pat
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
 
     const resultState = await executor.execute(cliStep, state, deps);
@@ -1159,14 +1159,14 @@ describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     };
   }
 
   it("TC-05: step.followUpPrompt が ctx.followUpPrompts の先頭要素になる", async () => {
     const { runner, captured } = makeCapturingFollowUpRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
 
     const step: Step = {
       kind: "agent" as const,
@@ -1189,7 +1189,7 @@ describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt
   it("TC-06: followUpPrompt 未設定の step では ctx.followUpPrompts が undefined", async () => {
     const { runner, captured } = makeCapturingFollowUpRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
 
     const step: Step = {
       kind: "agent" as const,
@@ -1212,7 +1212,7 @@ describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt
 
   it("TC-06-new: getFollowUpPrompt が定義されている場合、静的 followUpPrompt より優先される", async () => {
     const { runner, captured } = makeCapturingFollowUpRunner();
-    const executor = new StepExecutor(new EventBus(), runner, defaultStoreFactory);
+    const executor = new StepExecutor(new EventBus(), runner, makeStoreFactory(tempDir));
 
     const step: Step = {
       kind: "agent" as const,
@@ -1236,7 +1236,7 @@ describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt
 
   it("TC-07: getFollowUpPrompt が undefined を返すと静的 followUpPrompt にフォールバックする", async () => {
     const { runner, captured } = makeCapturingFollowUpRunner();
-    const executor = new StepExecutor(new EventBus(), runner, defaultStoreFactory);
+    const executor = new StepExecutor(new EventBus(), runner, makeStoreFactory(tempDir));
 
     const step: Step = {
       kind: "agent" as const,
