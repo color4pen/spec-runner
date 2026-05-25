@@ -594,8 +594,8 @@ describe("TC-LR-010: setupWorkspace run path commits request.md", () => {
       branchName: "feat/test-slug-abcd1234",
     });
 
-    const { loadJobState } = await import("../../../../src/state/store.js");
-    const finalState = await loadJobState(jobState.jobId);
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    const finalState = await new JobStateStore(jobState.jobId, tempDir).load();
     const expectedPath = path.join(createdPaths[0]!, "specrunner", "changes", "test-slug", "request.md");
     expect(finalState?.request.path).toBe(expectedPath);
   });

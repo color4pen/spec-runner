@@ -234,7 +234,7 @@ export class LocalRuntime implements RuntimeStrategy {
       await copyRulesToChangeFolder(worktreePath, slug, this.spawnFn);
 
       // Update state.request.path to point to the permanent copy (not the draft)
-      await updateJobState(jobId, (s) => ({
+      await this.updateJobState(jobId, (s) => ({
         ...s,
         request: { ...s.request, path: changeFolderRequestPath },
       }));

@@ -54,6 +54,17 @@ export class ManagedRuntime implements RuntimeStrategy {
     });
   }
 
+  /**
+   * Update job state atomically: load → mutate → persist.
+   * Replaces the deprecated updateJobState() from state/store.ts.
+   */
+  private async updateJobState(jobId: string, mutator: (s: JobState) => JobState): Promise<void> {
+    const store = new JobStateStore(jobId, this.cwd);
+    const current = await store.load();
+    const updated = mutator(current as JobState);
+    await store.persist(updated);
+  }
+
   async setupWorkspace(
     slug: string,
     jobId: string,
@@ -113,7 +124,7 @@ export class ManagedRuntime implements RuntimeStrategy {
       await copyRulesToChangeFolder(this.cwd, slug, this.spawnFn);
 
       // Update state.request.path to point to the permanent copy (not the draft)
-      await updateJobState(jobId, (s) => ({
+      await this.updateJobState(jobId, (s) => ({
         ...s,
         request: { ...s.request, path: changeFolderRequestPath },
       }));
@@ -151,11 +162,7 @@ export class ManagedRuntime implements RuntimeStrategy {
     }
 
     // Record branchName in state (D3)
-    {
-      const store = new JobStateStore(jobId, this.cwd);
-      const current = await store.load();
-      await store.persist({ ...current, branch: branchName } as JobState);
-    }
+    await this.updateJobState(jobId, (s) => ({ ...s, branch: branchName }));
 
     return { cwd: this.cwd, branch: branchName };
   }

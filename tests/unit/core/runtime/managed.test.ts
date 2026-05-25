@@ -211,8 +211,8 @@ describe("TC-MR-005: setupWorkspace writes rules.md to change folder via string 
       branchName: "feat/test-slug-abcd1234",
     });
 
-    const { loadJobState } = await import("../../../../src/state/store.js");
-    const finalState = await loadJobState(jobState.jobId);
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    const finalState = await new JobStateStore(jobState.jobId, tempDir).load();
     const expectedPath = path.join(tempDir, "specrunner", "changes", "test-slug", "request.md");
     expect(finalState?.request.path).toBe(expectedPath);
   });
