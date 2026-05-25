@@ -585,6 +585,28 @@ describe("TC-LR-010: setupWorkspace run path commits request.md", () => {
       }),
     ).rejects.toThrow("Failed to commit request file");
   });
+
+  // TC-06: state.request.path is updated to the permanent change-folder path after setupWorkspace
+  it("TC-06: updates state.request.path to <worktreePath>/specrunner/changes/<slug>/request.md", async () => {
+    const { manager, createdPaths } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn();
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const requestFile = path.join(tempDir, "request.md");
+    await fs.writeFile(requestFile, "# Test Request\nslug: test-slug\n");
+
+    const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {
+      requestFilePath: requestFile,
+      branchName: "feat/test-slug-abcd1234",
+    });
+
+    const { loadJobState } = await import("../../../../src/state/store.js");
+    const finalState = await loadJobState(jobState.jobId);
+    const expectedPath = path.join(createdPaths[0]!, "specrunner", "changes", "test-slug", "request.md");
+    expect(finalState?.request.path).toBe(expectedPath);
+  });
 });
 
 // TC-LR-014: setupWorkspace(run) writes rules.md to change folder via writeFile (string constant)

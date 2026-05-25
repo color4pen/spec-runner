@@ -223,6 +223,12 @@ export class LocalRuntime implements RuntimeStrategy {
       // Also copy rules.md into the change folder so agents can read project disciplines
       await copyRulesToChangeFolder(worktreePath, slug, this.spawnFn);
 
+      // Update state.request.path to point to the permanent copy (not the draft)
+      await updateJobState(jobId, (s) => ({
+        ...s,
+        request: { ...s.request, path: changeFolderRequestPath },
+      }));
+
       // Delete main worktree draft file (move semantics: draft consumed on run)
       try {
         await fs.rm(opts.requestFilePath);

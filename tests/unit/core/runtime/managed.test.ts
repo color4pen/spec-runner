@@ -203,4 +203,25 @@ describe("TC-MR-005: setupWorkspace writes rules.md to change folder via string 
     );
     expect(rulesAddCall).toBeDefined();
   });
+
+  // TC-07: state.request.path is updated to the permanent change-folder path after setupWorkspace
+  it("TC-07: updates state.request.path to <cwd>/specrunner/changes/<slug>/request.md", async () => {
+    await fs.writeFile(path.join(tempDir, "request.md"), "# Test Request\n");
+
+    const sessionClient = buildMockSessionClient();
+    const githubClient = buildMockGitHubClient();
+    const { spawnFn } = buildManagedMockSpawnFn();
+    const runtime = new ManagedRuntime(tempDir, sessionClient, githubClient, buildRepo(), spawnFn, "");
+
+    const jobState = await makeJobStateForManaged();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {
+      requestFilePath: path.join(tempDir, "request.md"),
+      branchName: "feat/test-slug-abcd1234",
+    });
+
+    const { loadJobState } = await import("../../../../src/state/store.js");
+    const finalState = await loadJobState(jobState.jobId);
+    const expectedPath = path.join(tempDir, "specrunner", "changes", "test-slug", "request.md");
+    expect(finalState?.request.path).toBe(expectedPath);
+  });
 });

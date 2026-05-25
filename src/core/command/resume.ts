@@ -11,6 +11,8 @@ import { SpecRunnerError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
 import { parseRequestMd } from "../../parser/request-md.js";
 import { resolveJobStateBySlug } from "../resume/resolve-job.js";
+import { resolveRequestPath } from "../resume/resolve-request-path.js";
+import { getJobSlug } from "../../state/job-slug.js";
 import { resolveResumeStep } from "../resume/resolve-step.js";
 import { checkConsecutiveEscalations, checkStaleState, isStaleRunning } from "../resume/safety.js";
 import { canTransition, transitionJob } from "../../state/lifecycle.js";
@@ -166,12 +168,15 @@ export class ResumeCommand extends CommandRunner {
     logInfo(`Resuming job '${this.slug}' from step '${startStep}'`);
 
     // Parse request.md before committing to "running" state
+    // resolveRequestPath handles legacy state files where request.path points to a deleted draft
+    const resolvedSlug = getJobSlug(state);
+    const resolvedPath = resolveRequestPath(state.request.path, resolvedSlug, state.worktreePath, cwd);
     let request;
     try {
-      request = await parseRequestMd(state.request.path);
+      request = await parseRequestMd(resolvedPath);
     } catch (err) {
       process.stderr.write(
-        `Error: Failed to read request.md at '${state.request.path}': ${(err as Error).message}\n`,
+        `Error: Failed to read request.md at '${resolvedPath}': ${(err as Error).message}\n`,
       );
       throw new PrepareError(1, "Failed to parse request.md");
     }

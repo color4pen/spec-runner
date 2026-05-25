@@ -113,6 +113,12 @@ export class ManagedRuntime implements RuntimeStrategy {
       // Also copy rules.md into the change folder so agents can read project disciplines
       await copyRulesToChangeFolder(this.cwd, slug, this.spawnFn);
 
+      // Update state.request.path to point to the permanent copy (not the draft)
+      await updateJobState(jobId, (s) => ({
+        ...s,
+        request: { ...s.request, path: changeFolderRequestPath },
+      }));
+
       // Delete draft file from main cwd (move semantics: draft consumed on run)
       try {
         await fs.rm(opts.requestFilePath);
