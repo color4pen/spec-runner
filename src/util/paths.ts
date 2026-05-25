@@ -72,6 +72,26 @@ export function changesDirRel(): string {
   return CHANGES_DIR;
 }
 
+/** Base directory for archived changes. */
+const ARCHIVE_DIR = `${CHANGES_DIR}/archive`;
+
+/**
+ * Returns the relative path to the archived changes directory (no trailing slash).
+ * Example: archivedChangesDirRel() → "specrunner/changes/archive"
+ */
+export function archivedChangesDirRel(): string {
+  return ARCHIVE_DIR;
+}
+
+/**
+ * Returns the relative path to the archived change folder for the given datedSlug.
+ * The datedSlug is expected to be in the form "<YYYY-MM-DD>-<slug>".
+ * Example: archivedChangeFolderPath("2026-05-20-my-change") → "specrunner/changes/archive/2026-05-20-my-change"
+ */
+export function archivedChangeFolderPath(datedSlug: string): string {
+  return `${ARCHIVE_DIR}/${datedSlug}`;
+}
+
 /** Base directory for all baseline specs. */
 const SPECS_DIR = "specrunner/specs";
 

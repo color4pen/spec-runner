@@ -4,10 +4,10 @@ import * as path from "node:path";
 import { SpecRunnerError } from "../../errors.js";
 import { parseRequestMdContent } from "../../parser/request-md.js";
 import type { ParsedRequest } from "./types.js";
-import { parseArchiveDirName } from "../../util/paths.js";
+import { parseArchiveDirName, archivedChangesDirRel } from "../../util/paths.js";
 
 const DRAFTS_SUBDIR = path.join("specrunner", "drafts");
-const ARCHIVE_SUBDIR = path.join("specrunner", "changes", "archive");
+const ARCHIVE_SUBDIR = archivedChangesDirRel();
 
 /**
  * Returns the new-format path for a draft request.

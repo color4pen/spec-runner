@@ -6,6 +6,7 @@
  */
 import * as path from "node:path";
 import type { DoctorCheck, DoctorContext } from "../../types.js";
+import { changesDirRel } from "../../../../util/paths.js";
 
 export const workflowStructureCheck: DoctorCheck = {
   name: "workflow-structure",
@@ -22,7 +23,7 @@ export const workflowStructureCheck: DoctorCheck = {
     }
 
     // Check specrunner/changes/ exists
-    const changesDirPath = path.join(ctx.cwd, "specrunner", "changes");
+    const changesDirPath = path.join(ctx.cwd, changesDirRel());
     if (!ctx.fs.existsSync(changesDirPath)) {
       missingDirs.push("changes");
     }

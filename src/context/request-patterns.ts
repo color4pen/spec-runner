@@ -5,6 +5,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { parseRequestMdContent } from "../parser/request-md.js";
+import { archivedChangesDirRel } from "../util/paths.js";
 
 export interface RequestPattern {
   type: string;
@@ -28,7 +29,7 @@ export async function collectRequestPatterns(
   targetType: string,
   maxSamples = 4,
 ): Promise<RequestPattern[]> {
-  const archiveDir = path.join(cwd, "specrunner", "changes", "archive");
+  const archiveDir = path.join(cwd, archivedChangesDirRel());
 
   let entries: string[];
   try {
