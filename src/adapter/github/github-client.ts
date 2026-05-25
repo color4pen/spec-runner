@@ -16,6 +16,7 @@
 import type { GitHubClient } from "../../core/port/github-client.js";
 import { githubApiError, githubTokenExpiredError } from "../../errors.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
+import { retryWithBackoff } from "../../util/retry.js";
 
 /** Current stable GitHub REST API version (D5). */
 const API_VERSION = "2022-11-28";
@@ -24,13 +25,15 @@ const MAX_5XX_RETRIES = 3;
 
 export class GitHubApiClient implements GitHubClient {
   private readonly sleepFn: (ms: number) => Promise<void>;
+  private readonly mergeMaxAttempts: number;
 
   constructor(
     private readonly fetchFn: typeof globalThis.fetch,
     private readonly token: string,
-    opts?: { sleepFn?: (ms: number) => Promise<void> },
+    opts?: { sleepFn?: (ms: number) => Promise<void>; mergeMaxAttempts?: number },
   ) {
     this.sleepFn = opts?.sleepFn ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+    this.mergeMaxAttempts = opts?.mergeMaxAttempts ?? 4;
   }
 
   // ---------------------------------------------------------------------------
@@ -356,6 +359,10 @@ export class GitHubApiClient implements GitHubClient {
   /**
    * Merge a pull request (squash).
    * D4: REST API does not have --admin equivalent; admin token bypasses implicitly.
+   *
+   * Transient failures (405 + "Base branch was modified" / "unstable state", 423 Locked)
+   * are retried with exponential backoff (1 s → 2 s → 4 s, up to 3 retries).
+   * Permanent failures (403, 409, non-transient 405) are returned immediately without retry.
    */
   async mergePullRequest(
     owner: string,
@@ -364,37 +371,82 @@ export class GitHubApiClient implements GitHubClient {
     opts: { mergeMethod: "squash" },
   ): Promise<{ merged: boolean; message: string }> {
     const url = `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/merge`;
-    const resp = await this.request(url, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ merge_method: opts.mergeMethod }),
+
+    const attemptMerge = async (): Promise<{ merged: boolean; message: string }> => {
+      const resp = await this.request(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ merge_method: opts.mergeMethod }),
+      });
+
+      if (resp.status === 200) {
+        const data = (await resp.json().catch(() => ({}))) as { message?: string };
+        return { merged: true, message: data.message ?? "Pull request merged" };
+      }
+
+      if (resp.status === 403) {
+        return {
+          merged: false,
+          message: "Merge failed: permission denied. Check admin token or repository merge policy.",
+        };
+      }
+
+      if (resp.status === 405 || resp.status === 409) {
+        const data = (await resp.json().catch(() => ({ message: "" }))) as { message?: string };
+        return { merged: false, message: data.message ?? `Merge not allowed (status ${resp.status})` };
+      }
+
+      if (resp.status === 423) {
+        const data = (await resp.json().catch(() => ({}))) as { message?: string };
+        return { merged: false, message: data.message || "Merge failed: branch locked (status 423)" };
+      }
+
+      const text = await resp.text().catch(() => "");
+      return { merged: false, message: `Merge failed (status ${resp.status}): ${text.slice(0, 200)}` };
+    };
+
+    return retryWithBackoff(attemptMerge, {
+      shouldRetryResult: isMergeTransientFailure,
+      maxAttempts: this.mergeMaxAttempts,
+      baseDelayMs: 1000,
+      sleepFn: this.sleepFn,
+      onRetry: (attempt, info) => {
+        const msg = info.result?.message ?? "unknown error";
+        const maxRetries = this.mergeMaxAttempts - 1;
+        process.stdout.write(`GitHub PR merge retry: ${msg}, retrying (${attempt}/${maxRetries})...\n`);
+      },
     });
-
-    if (resp.status === 200) {
-      const data = (await resp.json().catch(() => ({}))) as { message?: string };
-      return { merged: true, message: data.message ?? "Pull request merged" };
-    }
-
-    if (resp.status === 403) {
-      return {
-        merged: false,
-        message: "Merge failed: permission denied. Check admin token or repository merge policy.",
-      };
-    }
-
-    if (resp.status === 405 || resp.status === 409) {
-      const data = (await resp.json().catch(() => ({ message: "" }))) as { message?: string };
-      return { merged: false, message: data.message ?? `Merge not allowed (status ${resp.status})` };
-    }
-
-    const text = await resp.text().catch(() => "");
-    return { merged: false, message: `Merge failed (status ${resp.status}): ${text.slice(0, 200)}` };
   }
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Determine whether a mergePullRequest result represents a transient failure
+ * that should be retried with exponential backoff.
+ *
+ * Transient conditions (retry):
+ *   - 405 + "Base branch was modified" — GitHub TOCTOU race during squash merge
+ *   - 405 + "unstable state"           — GitHub internal consistency lag
+ *   - 423 Locked                       — branch protection temporary lock
+ *
+ * Permanent conditions (no retry — returned as-is):
+ *   - 403 permission denied
+ *   - 409 actual merge conflict
+ *   - 405 "Pull request is not mergeable" / other non-transient 405
+ *   - 5xx are handled upstream by request() and never reach here
+ */
+function isMergeTransientFailure(result: { merged: boolean; message: string }): boolean {
+  if (result.merged) return false;
+  const msg = result.message.toLowerCase();
+  return (
+    msg.includes("base branch was modified") ||
+    msg.includes("unstable state") ||
+    msg.includes("locked")
+  );
+}
 
 /**
  * Map REST API PR state + merged_at to internal state.

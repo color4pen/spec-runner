@@ -259,4 +259,135 @@ describe("TC-PM: mergePullRequest status code handling", () => {
     const body = JSON.parse(init.body as string) as { merge_method: string };
     expect(body.merge_method).toBe("squash");
   });
+
+  // ---------------------------------------------------------------------------
+  // TC-PM-010..016: transient retry behaviour
+  // ---------------------------------------------------------------------------
+
+  it("TC-PM-010: 405 'Base branch was modified' → retry → 2nd attempt 200 → { merged: true }", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(mergeResponse(405, { message: "Base branch was modified. Review and try the merge again." }))
+      .mockResolvedValueOnce(mergeResponse(200, { sha: "abc", merged: true, message: "Pull request successfully merged" }));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result).toMatchObject({ merged: true });
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("TC-PM-011: 405 'unstable state' → retry → 2nd attempt 200 → { merged: true }", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(mergeResponse(405, { message: "Repository is in an unstable state. Please wait and try again." }))
+      .mockResolvedValueOnce(mergeResponse(200, { sha: "def", merged: true, message: "Pull request successfully merged" }));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result).toMatchObject({ merged: true });
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("TC-PM-012: 423 Locked → retry → 2nd attempt 200 → { merged: true }", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(mergeResponse(423))
+      .mockResolvedValueOnce(mergeResponse(200, { sha: "ghi", merged: true, message: "Pull request successfully merged" }));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result).toMatchObject({ merged: true });
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("TC-PM-013: 405 'Base branch was modified' × 4 → exhausted → { merged: false }", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(mergeResponse(405, { message: "Base branch was modified. Review and try the merge again." }));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result.merged).toBe(false);
+    expect(result.message).toContain("Base branch was modified");
+    expect(mockFetch).toHaveBeenCalledTimes(4);
+  });
+
+  it("TC-PM-014: 403 permission denied → no retry → { merged: false } (permanent)", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(mergeResponse(403, { message: "Forbidden" }));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result.merged).toBe(false);
+    expect(result.message.toLowerCase()).toContain("permission denied");
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("TC-PM-015: 409 conflict → no retry → { merged: false } (permanent)", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(mergeResponse(409, { message: "Merge conflict" }));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result.merged).toBe(false);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("TC-PM-016: 405 'Pull request is not mergeable' → no retry → { merged: false } (permanent)", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(mergeResponse(405, { message: "Pull Request is not mergeable" }));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result.merged).toBe(false);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-423: 423 Locked message handling
+// ---------------------------------------------------------------------------
+
+describe("TC-423: 423 Locked message handling", () => {
+  /** Build a client with retry disabled (maxAttempts=1) for single-response assertions. */
+  function buildNoRetryClient(mockFetch: typeof fetch): GitHubApiClient {
+    return new GitHubApiClient(mockFetch, "ghp_test", { sleepFn: noopSleep, mergeMaxAttempts: 1 });
+  }
+
+  it("TC-423-001: 423 + JSON body → message preserved in return value", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(mergeResponse(423, { message: "Branch temporarily locked" }));
+
+    const client = buildNoRetryClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result).toMatchObject({ merged: false, message: "Branch temporarily locked" });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("TC-423-002: 423 + body parse failure → default message", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      status: 423,
+      headers: { get: () => null },
+      json: () => Promise.reject(new Error("not json")),
+      text: () => Promise.resolve("not json"),
+    } as unknown as Response);
+
+    const client = buildNoRetryClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result).toMatchObject({ merged: false, message: "Merge failed: branch locked (status 423)" });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
 });
