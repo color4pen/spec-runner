@@ -1,6 +1,9 @@
 /**
  * Unit tests for GitHubApiClient PR operations — field mapping and merge error handling.
  *
+ * TC-401: TypeScript typecheck passes (verified by bun run typecheck in CI)
+ * TC-402: All tests pass (verified by bun run test in CI)
+ *
  * These tests feed raw REST API response shapes into GitHubApiClient and verify
  * that the adapter boundary correctly transforms them into internal types.
  *
@@ -264,7 +267,7 @@ describe("TC-PM: mergePullRequest status code handling", () => {
   // TC-PM-010..016: transient retry behaviour
   // ---------------------------------------------------------------------------
 
-  it("TC-PM-010: 405 'Base branch was modified' → retry → 2nd attempt 200 → { merged: true }", async () => {
+  it("TC-PM-010 / TC-201: 405 'Base branch was modified' → retry → 2nd attempt 200 → { merged: true }", async () => {
     const mockFetch = vi
       .fn()
       .mockResolvedValueOnce(mergeResponse(405, { message: "Base branch was modified. Review and try the merge again." }))
@@ -277,7 +280,7 @@ describe("TC-PM: mergePullRequest status code handling", () => {
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
-  it("TC-PM-011: 405 'unstable state' → retry → 2nd attempt 200 → { merged: true }", async () => {
+  it("TC-PM-011 / TC-202: 405 'unstable state' → retry → 2nd attempt 200 → { merged: true }", async () => {
     const mockFetch = vi
       .fn()
       .mockResolvedValueOnce(mergeResponse(405, { message: "Repository is in an unstable state. Please wait and try again." }))
@@ -290,7 +293,7 @@ describe("TC-PM: mergePullRequest status code handling", () => {
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
-  it("TC-PM-012: 423 Locked → retry → 2nd attempt 200 → { merged: true }", async () => {
+  it("TC-PM-012 / TC-203: 423 Locked → retry → 2nd attempt 200 → { merged: true }", async () => {
     const mockFetch = vi
       .fn()
       .mockResolvedValueOnce(mergeResponse(423))
@@ -303,7 +306,7 @@ describe("TC-PM: mergePullRequest status code handling", () => {
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
-  it("TC-PM-013: 405 'Base branch was modified' × 4 → exhausted → { merged: false }", async () => {
+  it("TC-PM-013 / TC-204: 405 'Base branch was modified' × 4 → exhausted → { merged: false }", async () => {
     const mockFetch = vi
       .fn()
       .mockResolvedValue(mergeResponse(405, { message: "Base branch was modified. Review and try the merge again." }));
@@ -341,7 +344,59 @@ describe("TC-PM: mergePullRequest status code handling", () => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
-  it("TC-PM-016: 405 'Pull request is not mergeable' → no retry → { merged: false } (permanent)", async () => {
+  it("TC-PM-016: 405 'Pull Request is not mergeable' → retry (transient)", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(mergeResponse(405, { message: "Pull Request is not mergeable" }))
+      .mockResolvedValueOnce(mergeResponse(200, { sha: "abc", merged: true, message: "Pull request successfully merged" }));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result.merged).toBe(true);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("TC-PM-016b: 405 'Pull request is not mergeable' (小文字 r) → retry → 成功", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(mergeResponse(405, { message: "Pull request is not mergeable" }))
+      .mockResolvedValueOnce(mergeResponse(200, { sha: "abc", merged: true, message: "Pull request successfully merged" }));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result.merged).toBe(true);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("TC-PM-017: 405 'Head branch was modified' → retry → 2nd attempt 200 → { merged: true }", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(mergeResponse(405, { message: "Head branch was modified. Review and try the merge again." }))
+      .mockResolvedValueOnce(mergeResponse(200, { sha: "def", merged: true, message: "Pull request successfully merged" }));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result.merged).toBe(true);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("TC-PM-018: 405 'Required status check is expected' → retry → 2nd attempt 200 → { merged: true }", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(mergeResponse(405, { message: 'Required status check "ci/build" is expected' }))
+      .mockResolvedValueOnce(mergeResponse(200, { sha: "ghi", merged: true, message: "Pull request successfully merged" }));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result.merged).toBe(true);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("TC-PM-019: 405 'Pull Request is not mergeable' × 4 → exhausted → { merged: false }", async () => {
     const mockFetch = vi
       .fn()
       .mockResolvedValue(mergeResponse(405, { message: "Pull Request is not mergeable" }));
@@ -350,7 +405,7 @@ describe("TC-PM: mergePullRequest status code handling", () => {
     const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
 
     expect(result.merged).toBe(false);
-    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledTimes(4);
   });
 });
 

@@ -428,14 +428,16 @@ export class GitHubApiClient implements GitHubClient {
  * that should be retried with exponential backoff.
  *
  * Transient conditions (retry):
- *   - 405 + "Base branch was modified" — GitHub TOCTOU race during squash merge
- *   - 405 + "unstable state"           — GitHub internal consistency lag
- *   - 423 Locked                       — branch protection temporary lock
+ *   - 405 + "Base branch was modified"    — GitHub TOCTOU race during squash merge
+ *   - 405 + "unstable state"              — GitHub internal consistency lag
+ *   - 423 Locked                          — branch protection temporary lock
+ *   - 405 + "not mergeable"               — GitHub metadata recalculation lag after push
+ *   - 405 + "head branch was modified"    — push/merge race condition
+ *   - 405 + "required status check"       — CI completion race
  *
  * Permanent conditions (no retry — returned as-is):
  *   - 403 permission denied
  *   - 409 actual merge conflict
- *   - 405 "Pull request is not mergeable" / other non-transient 405
  *   - 5xx are handled upstream by request() and never reach here
  */
 function isMergeTransientFailure(result: { merged: boolean; message: string }): boolean {
@@ -444,7 +446,10 @@ function isMergeTransientFailure(result: { merged: boolean; message: string }): 
   return (
     msg.includes("base branch was modified") ||
     msg.includes("unstable state") ||
-    msg.includes("locked")
+    msg.includes("locked") ||
+    msg.includes("not mergeable") ||
+    msg.includes("head branch was modified") ||
+    msg.includes("required status check")
   );
 }
 
