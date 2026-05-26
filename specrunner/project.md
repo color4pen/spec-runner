@@ -99,6 +99,53 @@ exit 時 invariant として `process.on('beforeExit')` が running 状態の jo
 
 > Note: **managed** runtime では `model` / `byRequestType.model` は無視される（managed agent は事前登録済の model を使う）。これらのフィールドは **local** runtime でのみ有効。
 
+#### verification.commands 設定（language-agnostic verification）
+
+`verification.commands` を指定すると、verification step で任意の command 列を実行できる（language-agnostic）。
+
+**schema**: `(string | { name?: string; run: string })[]`
+
+- `string`: `"ruff check"` → `sh -c "ruff check"` で実行（シンプル）
+- `{ run: "cmd" }`: object 形式（name 省略）
+- `{ name: "label", run: "cmd" }`: object 形式 + name ラベル（失敗時に `Step 'label' failed` と表示）
+
+**実行モデル**:
+- 各 command は `sh -c <command>` 経由で実行（POSIX shell、パイプ / リダイレクト / 環境変数展開 OK）
+- 配列順に sequential 実行、fail-fast（1 件失敗で残り skip）
+- exit code 0 → passed、非 0 → failed
+
+**未定義時の fallback**: `verification.commands` が未定義の場合、package.json の `build / typecheck / test / lint / security` script を `bun run` で順次実行する（既存挙動、regression なし）
+
+**設定例（project local config）**:
+
+```jsonc
+// <repo-root>/.specrunner/config.json
+{
+  "verification": {
+    "commands": [
+      "bun run build",
+      "bun run typecheck",
+      "bun run test",
+      { "name": "lint", "run": "bun run lint" }
+    ]
+  }
+}
+```
+
+他言語 project（Python / Go / Rust 等）でも同様に任意の command を指定できる:
+
+```jsonc
+{
+  "verification": {
+    "commands": [
+      "ruff check",
+      { "run": "pytest -v" },
+      { "name": "type", "run": "mypy" }
+    ]
+  }
+}
+```
+
 ## Directory Structure
 
 ```

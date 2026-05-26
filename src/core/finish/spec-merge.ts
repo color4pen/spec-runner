@@ -414,7 +414,7 @@ export function checkBaselineHeaderConsistency(
  */
 export function applyMerge(baseline: BaselineSpec, delta: DeltaSpec): MergeResult {
   const errors: string[] = [];
-  let reqs = [...baseline.requirements];
+  const reqs = [...baseline.requirements];
 
   // REMOVED
   for (const block of delta.removed) {

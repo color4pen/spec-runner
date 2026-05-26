@@ -1,6 +1,10 @@
 /**
  * Verification runner — spawns package.json scripts and collects results.
  * Uses node:child_process.spawn (NOT bun:* / Bun.*) per project rules.
+ *
+ * Supports two execution paths:
+ * 1. commands path: executes user-defined commands from verification.commands config (language-agnostic)
+ * 2. phase path (fallback): detects and runs package.json scripts (build/typecheck/test/lint/security)
  */
 import { spawn } from "node:child_process";
 import * as fs from "node:fs/promises";
@@ -9,10 +13,13 @@ import { PHASE_NAMES, PHASE_SCRIPTS } from "./phases.js";
 import type { PhaseName, ScriptPhaseName } from "./phases.js";
 import { runTestCoveragePhase } from "./test-coverage.js";
 import { verificationResultPath } from "../../util/paths.js";
+import { normalizeCommands, spawnCommand } from "./commands.js";
+import type { VerificationConfig } from "../../config/schema.js";
 
 /** Result for a single verification phase. */
 export interface PhaseResult {
-  phase: PhaseName;
+  /** Phase name or command label used for display. */
+  phase: string;
   status: "passed" | "failed" | "skipped";
   stdout: string;
   stderr: string;
@@ -138,6 +145,10 @@ async function writeVerificationResult(
         lines.push("_(skipped — script not found in package.json)_");
       }
     } else {
+      if (p.status === "failed") {
+        lines.push(`Step '${p.phase}' failed`);
+        lines.push("");
+      }
       const combined = [p.stdout, p.stderr].filter(Boolean).join("\n");
       lines.push("```");
       lines.push(combined || "(no output)");
@@ -151,22 +162,110 @@ async function writeVerificationResult(
 }
 
 /**
- * Run all verification phases for the given slug.
- * Executes phases in order (fail-fast):
- *   build → typecheck → test → lint → security → test-coverage
+ * Run verification for the given slug.
  *
- * Script phases (build/typecheck/test/lint/security) run via `bun run <script>`.
- * The test-coverage phase runs as CLI internal processing (no child process).
+ * Two execution paths:
+ * 1. **commands path**: when verificationConfig.commands is defined, executes each command via
+ *    `sh -c <command>` in order (fail-fast). Language-agnostic.
+ * 2. **phase fallback path**: when commands is undefined, detects and runs package.json scripts
+ *    (build → typecheck → test → lint → security → test-coverage) via `bun run <script>`.
  *
- * If a phase fails, remaining phases are skipped.
  * Writes verification-result.md to the change folder.
  *
  * @param slug - Change slug (used for output path and result title)
  * @param cwd - Working directory (defaults to process.cwd())
+ * @param verificationConfig - Optional verification config from project local config
  */
 export async function runVerification(
   slug: string,
   cwd: string = process.cwd(),
+  verificationConfig?: VerificationConfig,
+): Promise<VerificationResult> {
+  // Dispatch to commands path if verification.commands is defined
+  if (verificationConfig?.commands !== undefined) {
+    return runVerificationCommands(slug, cwd, verificationConfig.commands);
+  }
+
+  // Fallback: phase detection path (existing behavior)
+  return runVerificationPhases(slug, cwd);
+}
+
+/**
+ * Commands path: execute user-defined commands in order (fail-fast).
+ * Each command is run via `sh -c <command>`.
+ */
+async function runVerificationCommands(
+  slug: string,
+  cwd: string,
+  rawCommands: import("../../config/schema.js").VerificationCommand[],
+): Promise<VerificationResult> {
+  const normalized = normalizeCommands(rawCommands);
+  const phases: PhaseResult[] = [];
+  let failed = false;
+
+  for (const cmd of normalized) {
+    const label = cmd.name ?? cmd.run;
+
+    if (failed) {
+      phases.push({
+        phase: label,
+        status: "skipped",
+        stdout: "_(skipped — previous command failed)_",
+        stderr: "",
+        exitCode: null,
+        durationMs: 0,
+      });
+      continue;
+    }
+
+    const startMs = Date.now();
+    const { exitCode, stdout, stderr } = await spawnCommand(cmd.run, cwd);
+    const durationMs = Date.now() - startMs;
+
+    const status = exitCode === 0 ? "passed" : "failed";
+    phases.push({ phase: label, status, stdout, stderr, exitCode, durationMs });
+
+    if (status === "failed") {
+      failed = true;
+    }
+  }
+
+  const nonSkipped = phases.filter((p) => p.status !== "skipped");
+  const anyFailed = phases.some((p) => p.status === "failed");
+  const allSkipped = nonSkipped.length === 0;
+
+  let verdict: "passed" | "failed";
+  let errorCode: string | undefined;
+
+  if (allSkipped) {
+    verdict = "failed";
+    errorCode = "VERIFICATION_NO_RUNNABLE_PHASES";
+  } else if (anyFailed) {
+    verdict = "failed";
+  } else {
+    verdict = "passed";
+  }
+
+  const result: VerificationResult = {
+    slug,
+    verdict,
+    phases,
+    ...(errorCode ? { errorCode } : {}),
+  };
+
+  const outputPath = path.join(cwd, verificationResultPath(slug));
+  await writeVerificationResult(result, outputPath);
+
+  return result;
+}
+
+/**
+ * Phase fallback path: detect and run package.json scripts in order (fail-fast).
+ * Existing behavior: build → typecheck → test → lint → security → test-coverage.
+ */
+async function runVerificationPhases(
+  slug: string,
+  cwd: string,
 ): Promise<VerificationResult> {
   const phases: PhaseResult[] = [];
   let failed = false;

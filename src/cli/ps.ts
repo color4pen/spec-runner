@@ -1,5 +1,5 @@
 import { JobStateStore } from "../store/job-state-store.js";
-import type { JobState, JobStatus } from "../state/schema.js";
+import type { JobState } from "../state/schema.js";
 import { getJobSlug } from "../state/job-slug.js";
 import { ACTIVE_STATUSES } from "../state/lifecycle.js";
 import type { GitHubClient } from "../core/port/github-client.js";

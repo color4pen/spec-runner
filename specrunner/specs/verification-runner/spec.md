@@ -178,3 +178,59 @@ passed phase が 1 つも存在せず全 phase が `status: "skipped"` の場合
 - **GIVEN** `specrunner/changes/<slug>/test-cases.md` が存在しない
 - **WHEN** `runTestCoveragePhase(slug, cwd)` を呼ぶ
 - **THEN** `status` は `"skipped"`
+
+### Requirement: verification CLI runner は config の commands 配列で任意の command を sequential 実行する
+
+`runVerification()` は MUST project local config（`<repo-root>/.specrunner/config.json`）の `verification.commands` が定義されている場合、配列順に command を sequential 実行する。各 command は `sh -c <command>` 経由で spawn される（POSIX shell 前提）。exit code 0 → passed、non-zero → failed。最初の failed command で MUST break し、残り command は SHALL `status: "skipped"` で記録される（fail-fast）。
+
+command 配列の各要素は `string | { name?: string; run: string }` の union 型で指定される。内部では `{ name: string | undefined; run: string }` の正規化配列に統一される。normalize ルール:
+- string `"cmd"` → `{ name: undefined, run: "cmd" }`
+- `{ run: "cmd" }` → `{ name: undefined, run: "cmd" }`
+- `{ name: "label", run: "cmd" }` → `{ name: "label", run: "cmd" }`
+
+failure 時の表示: `name` があれば `Step '<name>' failed`、無ければ `Step '<command>' failed`。
+
+verification-result.md の出力 format は既存と同じ構造（Phase Results 表 + Phase 詳細セクション）を維持する。`phase` field には `name` があればそれを、無ければ command 文字列を使用する。
+
+#### Scenario: commands 経路で全 command passed
+
+- **GIVEN** config に `verification.commands: ["echo ok", { "run": "true" }]` が定義されている
+- **WHEN** `runVerification(slug, cwd)` を呼ぶ
+- **THEN** 結果の verdict は `"passed"` であり、各 command の status は `"passed"`
+
+#### Scenario: commands 経路で 2 番目 failed → 後続 skipped
+
+- **GIVEN** config に `verification.commands: ["true", "false", "echo after"]` が定義されている
+- **WHEN** `runVerification(slug, cwd)` を呼ぶ
+- **THEN** 1 番目の status は `"passed"`、2 番目の status は `"failed"`、3 番目の status は `"skipped"`
+- **AND** verdict は `"failed"`
+
+#### Scenario: name あり failure の表示
+
+- **GIVEN** config に `verification.commands: [{ "name": "lint", "run": "false" }]` が定義されている
+- **WHEN** `runVerification(slug, cwd)` を呼ぶ
+- **THEN** verification-result.md の Phase Results 表で phase 列に `lint` が表示される
+
+#### Scenario: name なし failure の表示
+
+- **GIVEN** config に `verification.commands: ["ruff check"]` が定義されている
+- **WHEN** `runVerification(slug, cwd)` を呼ぶ
+- **THEN** verification-result.md の Phase Results 表で phase 列に `ruff check` が表示される
+
+### Requirement: verification CLI runner は commands 未定義時に既存の phase 検出 fallback で動作する
+
+`verification.commands` が未定義（config に `verification` section が無い、または `verification.commands` が無い）の場合、`runVerification()` は MUST 既存の phase 検出 fallback（`package.json` の `build / typecheck / test / lint / security` script を `bun run` で順次実行）で動作する。この fallback は既存挙動と完全に同等であり regression を生じない。
+
+#### Scenario: commands 未定義で fallback 動作
+
+- **GIVEN** config に `verification` section が存在しない
+- **AND** `package.json` に `build` / `typecheck` / `test` script が存在する
+- **WHEN** `runVerification(slug, cwd)` を呼ぶ
+- **THEN** 既存の phase 検出 fallback で `bun run build` / `bun run typecheck` / `bun run test` が順次実行される
+- **AND** 結果は commands 導入前と同一
+
+#### Scenario: config に verification section はあるが commands が未定義
+
+- **GIVEN** config に `{ "verification": {} }` が存在する（commands key が無い）
+- **WHEN** `runVerification(slug, cwd)` を呼ぶ
+- **THEN** 既存の phase 検出 fallback で動作する

@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { getJobStatePath, getJobsDir } from "../util/xdg.js";
 import { atomicWriteJson } from "../util/atomic-write.js";
 import { appendHistoryEntry, validateJobState } from "../state/schema.js";
-import type { JobState, StepRun, StepOutcome, ErrorInfo, HistoryEntry, JobStatus, RequestInfo, RepositoryInfo } from "../state/schema.js";
+import type { JobState, StepRun, ErrorInfo, HistoryEntry, JobStatus, RequestInfo, RepositoryInfo } from "../state/schema.js";
 import { stderrWrite } from "../logger/stdout.js";
 import { SpecRunnerError, ERROR_CODES, ambiguousJobIdError } from "../errors.js";
 

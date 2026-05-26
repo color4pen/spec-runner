@@ -11,7 +11,6 @@
 import { JobStateStore } from "../store/job-state-store.js";
 import { getJobSlug } from "../state/job-slug.js";
 import type { JobState } from "../state/schema.js";
-import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 import { resolveRepoRoot } from "../util/repo-root.js";
 
 const UUID_REGEX = /^[a-f0-9-]{36}$/;

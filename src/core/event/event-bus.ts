@@ -11,7 +11,6 @@ type HandlerFn<E extends DomainEvent> = (payload: Payload<E>) => void;
  * emit() is synchronous — all handlers complete before emit() returns.
  */
 export class EventBus {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- handler sets use unknown shape
   private readonly handlers = new Map<DomainEvent, Set<(payload: unknown) => void>>();
 
   /**

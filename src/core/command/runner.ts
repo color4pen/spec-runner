@@ -79,7 +79,7 @@ export abstract class CommandRunner {
     // Note: re-throw any error so callers (e.g. ResumeCommand.execute) can inspect it
     const prepared = await this.prepare();
 
-    const { jobState, startStep, request, config, slug, verbose, workspaceOpts, repoRoot } = prepared;
+    const { jobState, startStep, request, config, slug, workspaceOpts, repoRoot } = prepared;
 
     // Initialize verbose log file (no-op if verbose is disabled)
     initVerboseLog(repoRoot, jobState.jobId);

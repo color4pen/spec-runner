@@ -1,8 +1,16 @@
 /**
- * Unit tests for config schema validation — jobs field backward compatibility.
+ * Unit tests for config schema validation — jobs field backward compatibility
+ * and verification section validation.
  *
  * TC-JOBS-01: jobs section absent → valid (backward compat)
  * TC-JOBS-02: jobs.location: "xdg" in old config → no error, treated as unknown field
+ * TC-VERIF-01: valid commands array (string / object / mixed) → validation passes
+ * TC-VERIF-02: verification section absent → validation passes
+ * TC-VERIF-03: empty commands array → validation passes
+ * TC-VERIF-04: commands is not an array → CONFIG_INVALID
+ * TC-VERIF-05: commands element is empty string → CONFIG_INVALID
+ * TC-VERIF-06: commands element run is empty string → CONFIG_INVALID
+ * TC-VERIF-07: commands element is neither string nor object → CONFIG_INVALID
  */
 import { describe, it, expect } from "vitest";
 import { validateConfig } from "../../../src/config/schema.js";
@@ -18,5 +26,59 @@ describe("validateConfig: jobs field backward compatibility", () => {
     // Old configs may have jobs: { location: "xdg" }. Validation must not reject them.
     const raw = { ...baseConfig, jobs: { location: "xdg" } };
     expect(() => validateConfig(raw)).not.toThrow();
+  });
+});
+
+describe("validateConfig: verification section", () => {
+  it("TC-VERIF-01: valid commands — string / object with name / object without name → passes", () => {
+    const raw = {
+      ...baseConfig,
+      verification: {
+        commands: [
+          "bun run build",
+          { run: "bun run test" },
+          { name: "lint", run: "eslint ./src" },
+        ],
+      },
+    };
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("TC-VERIF-02: verification section absent → validation passes", () => {
+    expect(() => validateConfig(baseConfig)).not.toThrow();
+  });
+
+  it("TC-VERIF-03: empty commands array → validation passes", () => {
+    const raw = { ...baseConfig, verification: { commands: [] } };
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("TC-VERIF-04: commands is not an array → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, verification: { commands: "not-an-array" } };
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID.*verification\.commands.*array/i);
+  });
+
+  it("TC-VERIF-05: commands element is empty string → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, verification: { commands: [""] } };
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID.*verification\.commands\[0\]/);
+  });
+
+  it("TC-VERIF-06: commands element run is empty string → CONFIG_INVALID with key path", () => {
+    const raw = { ...baseConfig, verification: { commands: [{ run: "" }] } };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.message).toContain("verification.commands[0].run");
+  });
+
+  it("TC-VERIF-07: commands element is neither string nor object → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, verification: { commands: [42] } };
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+  });
+
+  it("TC-VERIF-08: verification is not an object → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, verification: "invalid" };
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID.*verification/);
   });
 });

@@ -7,6 +7,14 @@ vi.mock("../../../src/adapter/managed-agent/client.js", () => ({
   createAnthropicClient: () => currentMockSdk,
 }));
 
+// Prevent project local .specrunner/config.json from being loaded during tests.
+// Without this, the worktree's project local config (added by this PR) would be
+// deep-merged with the test config, overriding runtime: "managed" → "local".
+vi.mock("../../../src/util/repo-root.js", () => ({
+  resolveRepoRoot: vi.fn().mockResolvedValue(null),
+  resolveRepoRootOrFail: vi.fn().mockResolvedValue(null),
+}));
+
 // readline mock — createInterface is a vi.fn() so we can configure per-test
 vi.mock("node:readline", () => ({
   createInterface: vi.fn(),

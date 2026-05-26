@@ -82,6 +82,31 @@ export interface ProgressConfig {
 
 export type SpecFixerConfig = Record<string, never>;
 
+/**
+ * A single verification command entry.
+ * Can be a plain string (shorthand) or an object with optional name and required run.
+ *
+ * - string: `"ruff check"` → executed as `sh -c "ruff check"`
+ * - object with name: `{ name: "lint", run: "eslint ./src" }` → label displayed on failure
+ * - object without name: `{ run: "pytest" }` → command string displayed on failure
+ */
+export type VerificationCommand = string | { name?: string; run: string };
+
+/**
+ * Verification step configuration.
+ * When commands is defined, runVerification() executes them in order (fail-fast).
+ * When commands is undefined, the existing phase-detection fallback is used.
+ */
+export interface VerificationConfig {
+  /**
+   * Ordered list of commands to execute during verification.
+   * Each command is executed via `sh -c <command>` (POSIX shell, Windows not supported).
+   * fail-fast: first non-zero exit code stops the sequence; remaining entries are skipped.
+   * When absent, falls back to package.json script detection (build/typecheck/test/lint/security).
+   */
+  commands?: VerificationCommand[];
+}
+
 /** Pipeline-level settings */
 export interface PipelineConfig {
   /**
@@ -135,6 +160,12 @@ export interface SpecRunnerConfig {
    * D5 (design.md): user entries override built-ins.
    */
   models?: ModelsConfig;
+  /**
+   * Verification step configuration.
+   * When verification.commands is defined, runVerification() executes them in order (fail-fast).
+   * When absent, the existing phase-detection fallback is used (package.json scripts).
+   */
+  verification?: VerificationConfig;
 }
 
 /**
@@ -164,6 +195,8 @@ export interface RawConfig {
   steps?: Record<string, unknown>;
   models?: Record<string, unknown>;
   progress?: Partial<Record<string, unknown>>;
+  /** Verification configuration — passed through as-is. Validated in validateConfig(). */
+  verification?: unknown;
 }
 
 /**
@@ -385,6 +418,56 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
         if (typeof interval !== "number" || !Number.isInteger(interval) || interval < 0) {
           throw Object.assign(
             new Error("CONFIG_INVALID: progress.heartbeatIntervalSec must be a non-negative integer or null."),
+            { code: "CONFIG_INVALID" },
+          );
+        }
+      }
+    }
+  }
+
+  // Validate verification section if provided
+  if (obj["verification"] !== undefined && obj["verification"] !== null) {
+    if (typeof obj["verification"] !== "object") {
+      throw Object.assign(
+        new Error("CONFIG_INVALID: verification must be an object."),
+        { code: "CONFIG_INVALID" },
+      );
+    }
+    const verif = obj["verification"] as Record<string, unknown>;
+    if (verif["commands"] !== undefined) {
+      if (!Array.isArray(verif["commands"])) {
+        throw Object.assign(
+          new Error("CONFIG_INVALID: verification.commands must be an array."),
+          { code: "CONFIG_INVALID" },
+        );
+      }
+      const commands = verif["commands"] as unknown[];
+      for (let i = 0; i < commands.length; i++) {
+        const cmd = commands[i];
+        if (typeof cmd === "string") {
+          if (cmd.length === 0) {
+            throw Object.assign(
+              new Error(`CONFIG_INVALID: verification.commands[${i}] must be a non-empty string.`),
+              { code: "CONFIG_INVALID" },
+            );
+          }
+        } else if (typeof cmd === "object" && cmd !== null) {
+          const cmdObj = cmd as Record<string, unknown>;
+          if (typeof cmdObj["run"] !== "string" || cmdObj["run"].length === 0) {
+            throw Object.assign(
+              new Error(`CONFIG_INVALID: verification.commands[${i}].run must be a non-empty string.`),
+              { code: "CONFIG_INVALID" },
+            );
+          }
+          if (cmdObj["name"] !== undefined && typeof cmdObj["name"] !== "string") {
+            throw Object.assign(
+              new Error(`CONFIG_INVALID: verification.commands[${i}].name must be a string.`),
+              { code: "CONFIG_INVALID" },
+            );
+          }
+        } else {
+          throw Object.assign(
+            new Error(`CONFIG_INVALID: verification.commands[${i}] must be a string or object with a run field.`),
             { code: "CONFIG_INVALID" },
           );
         }

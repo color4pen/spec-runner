@@ -1,4 +1,4 @@
-import { changesDirRel, changeFolderPath } from "../util/paths.js";
+import { changesDirRel } from "../util/paths.js";
 import type { DynamicContext } from "../git/dynamic-context.js";
 import { buildSystemPrompt } from "./builder.js";
 

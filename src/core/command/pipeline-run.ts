@@ -5,7 +5,6 @@
  * Preflight is NOT called here — CLI (run.ts) calls runPreflight() and passes
  * the result to the constructor, per spec-review finding #1.
  */
-import * as path from "node:path";
 import type { PreflightResult } from "../preflight.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { logInfo, setVerbose } from "../../logger/stdout.js";

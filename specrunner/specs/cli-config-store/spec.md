@@ -53,6 +53,8 @@ config の作成・更新時、CLI は MUST ファイルパーミッションを
     - `byRequestType` (`Record<string, StepExecutionConfig>`, optional) — request type ごとの override。key は request type 名（`"bug-fix"` / `"spec-change"` / `"new-feature"` 等）、value は `StepExecutionConfig`（ただし `byRequestType` のネストは MUST 禁止、1 階層のみ）
 - `progress` (`ProgressConfig`, optional)
 - `models` (`ModelsConfig`, optional)
+- `verification` (`VerificationConfig`, optional) — verification step の実行方法を設定。以下の構造を持つ:
+  - `verification.commands` (`(string | { name?: string; run: string })[]`, optional) — 順次実行する command 配列。各 command は `sh -c` 経由で実行される。fail-fast（1 件失敗で残り skip）。未定義時は既存の phase 検出 fallback（`package.json` script → `bun run`）を使用する
 
 `jobs` section は廃止された。旧 config に `jobs` section が残っていても SHALL 未知 field として無視される（error にならない）。`JobsConfig` 型は削除される。
 
@@ -77,6 +79,22 @@ config の作成・更新時、CLI は MUST ファイルパーミッションを
 - **WHEN** config を読み込む
 - **THEN** 読み込みは正常に完了する
 - **AND** 既存の step config resolution（4 レベル）と同等の挙動が維持される
+
+#### Scenario: verification.commands を含む config が読み込まれる
+
+- **GIVEN** config に以下が設定されている:
+  ```json
+  { "verification": { "commands": ["bun run build", "bun run test", { "name": "lint", "run": "eslint ./src" }] } }
+  ```
+- **WHEN** config を読み込む
+- **THEN** `config.verification.commands` は 3 要素の配列として取得される
+
+#### Scenario: verification section なしの後方互換
+
+- **GIVEN** 既存の config に `verification` section が含まれない
+- **WHEN** config を読み込む
+- **THEN** 読み込みは正常に完了する
+- **AND** `config.verification` は `undefined` である
 
 ### Requirement: 設定の更新は atomic に行う
 
@@ -593,3 +611,46 @@ repoRoot を解決可能な command（`run`, `resume` 等）は SHALL `loadConfi
 - **WHEN** `specrunner job start <slug>` を実行する
 - **THEN** pipeline 開始前に `CONFIG_INVALID` エラーで終了する
 - **AND** error message に `steps.design.byRequestType.bug-fix.model` が含まれる
+
+### Requirement: verification config の値は型と形式が検証される
+
+`validateConfig()` は MUST `verification` section が存在する場合、以下のルールで検証する:
+
+- `verification`: object 型であること。違反時は `CONFIG_INVALID` エラーを throw する
+- `verification.commands`: array 型であること。違反時は `CONFIG_INVALID` エラーを throw する
+- 各 commands element: string（非空）または object（`run` が非空 string、`name` は optional string）であること。違反時は `CONFIG_INVALID` エラーを throw する
+
+未指定（`undefined` / JSON でキーが不在）の `verification` section は SHALL 検証をスキップする。
+
+error message には MUST 問題の key path が含まれる（例: `CONFIG_INVALID: verification.commands[2].run must be a non-empty string`）。
+
+#### Scenario: valid な verification.commands が検証を通過する
+
+- **GIVEN** config に `{ "verification": { "commands": ["bun run build", { "run": "bun run test" }, { "name": "lint", "run": "eslint ./src" }] } }` が設定されている
+- **WHEN** config を読み込み `validateConfig()` を実行する
+- **THEN** 検証は正常に通過する
+
+#### Scenario: verification section なしで検証通過
+
+- **GIVEN** config に `verification` section が存在しない
+- **WHEN** config を読み込み `validateConfig()` を実行する
+- **THEN** 検証は正常に通過する
+
+#### Scenario: commands が array でない場合の CONFIG_INVALID
+
+- **GIVEN** config に `{ "verification": { "commands": "not-an-array" } }` が設定されている
+- **WHEN** config を読み込み `validateConfig()` を実行する
+- **THEN** `CONFIG_INVALID` エラーが throw される
+
+#### Scenario: commands element に空文字列がある場合の CONFIG_INVALID
+
+- **GIVEN** config に `{ "verification": { "commands": [""] } }` が設定されている
+- **WHEN** config を読み込み `validateConfig()` を実行する
+- **THEN** `CONFIG_INVALID` エラーが throw される
+
+#### Scenario: commands element の run が空文字列の場合の CONFIG_INVALID
+
+- **GIVEN** config に `{ "verification": { "commands": [{ "run": "" }] } }` が設定されている
+- **WHEN** config を読み込み `validateConfig()` を実行する
+- **THEN** `CONFIG_INVALID` エラーが throw される
+- **AND** error message に `verification.commands[0].run` が含まれる

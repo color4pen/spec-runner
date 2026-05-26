@@ -25,7 +25,7 @@ import { JobStateStore } from "../../store/job-state-store.js";
 import { resolveTarget } from "./resolve-target.js";
 import { runPreflight } from "./preflight.js";
 import { runLocalConflictCheck } from "./local-conflict-check.js";
-import { fetchPrViewWithRetry, pollMergeStateAfterPush, checkMergeableForMerge } from "./pr-status.js";
+import { pollMergeStateAfterPush, checkMergeableForMerge } from "./pr-status.js";
 import { spawnOrEscalate } from "./spawn-helper.js";
 import { archiveChangeFolder } from "./archive-change-folder.js";
 import { mergeSpecsForChange } from "./spec-merge.js";

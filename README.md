@@ -161,6 +161,18 @@ specrunner job start my-feature
 
 ## Troubleshooting
 
+### Lint failure in verification pipeline
+
+If `bun run lint` (or a custom lint command in `verification.commands`) fails during verification:
+
+1. Run auto-fix to resolve mechanical issues automatically:
+   ```bash
+   bun run lint --fix
+   ```
+2. Review remaining warnings manually — these require human judgment (e.g. intentional `any` usage, complex control flow).
+3. Prefix intentionally unused variables with `_` to suppress `no-unused-vars` warnings (e.g. `_unused`).
+4. Re-run `bun run lint` to confirm 0 warnings / 0 errors before committing.
+
 ### Silent exit (process exits without error)
 
 If `specrunner run` or `specrunner resume` exits unexpectedly without error output:

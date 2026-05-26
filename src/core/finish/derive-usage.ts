@@ -6,7 +6,7 @@ import * as path from "node:path";
 import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs } from "./types.js";
 import { JobStateStore } from "../../store/job-state-store.js";
-import { deriveFromJobState, appendInvocation, readUsageFile } from "../usage/store.js";
+import { deriveFromJobState, appendInvocation } from "../usage/store.js";
 import { usageJsonPath, changeFolderPath } from "../../util/paths.js";
 import type { JobState } from "../../state/schema.js";
 
