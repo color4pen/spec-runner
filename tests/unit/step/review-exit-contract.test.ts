@@ -35,7 +35,7 @@ import { StepExecutor } from "../../../src/core/step/executor.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
 import { createManagedAgentRunner } from "../../../src/adapter/managed-agent/agent-runner.js";
 import { specReviewResultPath, reviewFeedbackPath, changeFolderPath } from "../../../src/util/paths.js";
-import { defaultStoreFactory } from "../../helpers/store-factory.js";
+import { makeStoreFactory } from "../../helpers/store-factory.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -496,7 +496,7 @@ function makeExecutorFromDeps(events: EventBus, deps: PipelineDeps): StepExecuto
     repo: { owner: "testowner", name: "testrepo" },
     githubToken: "ghp_test",
   });
-  return new StepExecutor(events, runner, defaultStoreFactory);
+  return new StepExecutor(events, runner, makeStoreFactory(tc011TempDir));
 }
 
 describe("TC-011: executor error-hint iteration — spec-review getRawFile failure", () => {
@@ -537,7 +537,7 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tc011TempDir),
     };
 
     const executor = makeExecutorFromDeps(events, deps);
@@ -586,7 +586,7 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tc011TempDir),
     };
 
     const executor = makeExecutorFromDeps(events, deps);
@@ -637,7 +637,7 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tc011TempDir),
     };
 
     const executor = makeExecutorFromDeps(events, deps);
@@ -686,7 +686,7 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
       owner: "user",
       repo: "repo",
       spawn: noopSpawn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tc011TempDir),
     };
 
     const executor = makeExecutorFromDeps(events, deps);

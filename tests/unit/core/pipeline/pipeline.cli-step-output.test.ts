@@ -21,7 +21,7 @@ import type { Step } from "../../../../src/core/step/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
-import { defaultStoreFactory } from "../../../helpers/store-factory.js";
+import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -93,7 +93,7 @@ function makeMinimalDeps(): PipelineDeps {
     owner: "user",
     repo: "repo",
     spawn: noopSpawn,
-    storeFactory: defaultStoreFactory,
+    storeFactory: makeStoreFactory(tempDir),
   };
 }
 

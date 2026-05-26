@@ -7,7 +7,7 @@ import type { GitHubClient } from "../src/core/port/github-client.js";
 import { createManagedAgentRunner } from "../src/adapter/managed-agent/agent-runner.js";
 import { verificationResultPath, prCreateResultPath } from "../src/util/paths.js";
 import type { SpawnFn } from "../src/util/spawn.js";
-import { defaultStoreFactory, makeStoreFactory } from "./helpers/store-factory.js";
+import { makeStoreFactory } from "./helpers/store-factory.js";
 import { JobStateStore } from "../src/store/job-state-store.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });

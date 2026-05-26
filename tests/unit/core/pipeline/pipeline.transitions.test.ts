@@ -19,7 +19,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { changeFolderPath, verificationResultPath, reviewFeedbackPath } from "../../../../src/util/paths.js";
-import { defaultStoreFactory } from "../../../helpers/store-factory.js";
+import { makeStoreFactory } from "../../../helpers/store-factory.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -85,7 +85,7 @@ function makeMinimalDeps(): PipelineDeps {
     owner: "user",
     repo: "repo",
     spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as SpawnFn,
-    storeFactory: defaultStoreFactory,
+    storeFactory: makeStoreFactory(tempDir),
   };
 }
 

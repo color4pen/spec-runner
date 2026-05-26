@@ -24,7 +24,7 @@ import {
   configIncompleteError,
 } from "../src/errors.js";
 import type { SpawnFn } from "../src/util/spawn.js";
-import { defaultStoreFactory } from "./helpers/store-factory.js";
+import { makeStoreFactory } from "./helpers/store-factory.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -243,7 +243,7 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
       owner: "user",
       repo: "repo",
       spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as SpawnFn,
-      storeFactory: defaultStoreFactory,
+      storeFactory: makeStoreFactory(tempDir),
     });
 
     expect(result.error?.code).toBe("SPEC_REVIEW_RETRIES_EXHAUSTED");

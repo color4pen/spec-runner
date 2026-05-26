@@ -23,7 +23,7 @@ import type { AgentStep } from "../../../src/core/step/types.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
 import type { SpawnFn } from "../../../src/util/git-exec.js";
 import type { SpawnFn as PipelineSpawnFn } from "../../../src/util/spawn.js";
-import { defaultStoreFactory } from "../../helpers/store-factory.js";
+import { makeStoreFactory } from "../../helpers/store-factory.js";
 import type { SpawnOptions, ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
 
@@ -108,7 +108,7 @@ function makeLocalDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     repo: "repo",
     spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as PipelineSpawnFn,
     ...overrides,
-    storeFactory: overrides.storeFactory ?? (defaultStoreFactory),
+    storeFactory: overrides.storeFactory ?? makeStoreFactory(tempDir),
   };
 }
 
@@ -241,7 +241,7 @@ describe("TC-CAP-001: commitAndPush — correct git call sequence", () => {
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const step = makeAgentStep({ name: "implementer", requiresCommit: true });
     const deps = makeLocalDeps();
@@ -284,7 +284,7 @@ describe("TC-CAP-002: requiresCommit:true + no staged changes → NO_COMMIT_DETE
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const step = makeAgentStep({ name: "implementer", requiresCommit: true });
     const deps = makeLocalDeps();
@@ -314,7 +314,7 @@ describe("TC-CAP-003: requiresCommit:false + no staged changes → silent skip",
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     // requiresCommit omitted (falsy)
     const step = makeAgentStep({ name: "spec-review" });
@@ -354,7 +354,7 @@ describe("TC-CAP-004: push failure → retry once → success on second push", (
     const runner = makeSuccessRunner();
     const events = new EventBus();
     const noopSleep = async (_ms: number) => {};
-    const executor = new StepExecutor(events, runner, defaultStoreFactory, overriddenSpawnFn, noopSleep);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), overriddenSpawnFn, noopSleep);
 
     const result = await executor.execute(
       makeAgentStep({ name: "implementer", requiresCommit: true }),
@@ -394,7 +394,7 @@ describe("TC-CAP-005: push failure → retry → second failure → PUSH_FAILED"
     const runner = makeSuccessRunner();
     const events = new EventBus();
     const noopSleep = async (_ms: number) => {};
-    const executor = new StepExecutor(events, runner, defaultStoreFactory, overriddenSpawnFn, noopSleep);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), overriddenSpawnFn, noopSleep);
 
     await expect(
       executor.execute(
@@ -432,7 +432,7 @@ describe("TC-CAP-006: commit message format", () => {
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const step = makeAgentStep({ name: "build-fixer", requiresCommit: true });
     const deps = makeLocalDeps({ slug: "my-test-slug" });
@@ -471,7 +471,7 @@ describe("TC-CAP-007: successful push emits commit:push event", () => {
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const emittedEvents: Array<{ step: string; branch: string }> = [];
     events.on("commit:push" as never, (payload: { step: string; branch: string }) => {
@@ -507,7 +507,7 @@ describe("TC-CAP-008: git add failure + requiresCommit:true → NO_COMMIT_DETECT
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const step = makeAgentStep({ name: "implementer", requiresCommit: true });
     await expect(executor.execute(step, state, makeLocalDeps())).rejects.toMatchObject({
@@ -534,7 +534,7 @@ describe("TC-CAP-009: git add failure + requiresCommit:false → silent skip", (
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, defaultStoreFactory, spawnFn);
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const step = makeAgentStep({ name: "spec-review" }); // requiresCommit not set
     await expect(executor.execute(step, state, makeLocalDeps())).resolves.toBeDefined();

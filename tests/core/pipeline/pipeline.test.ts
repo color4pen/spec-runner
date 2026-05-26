@@ -24,7 +24,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { changeFolderPath, reviewFeedbackPath, verificationResultPath, prCreateResultPath } from "../../../src/util/paths.js";
-import { defaultStoreFactory } from "../../helpers/store-factory.js";
+import { makeStoreFactory } from "../../helpers/store-factory.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -93,7 +93,7 @@ function makeMinimalDeps(): PipelineDeps {
     owner: "user",
     repo: "repo",
     spawn: noopSpawn,
-    storeFactory: defaultStoreFactory,
+    storeFactory: makeStoreFactory(tempDir),
   };
 }
 

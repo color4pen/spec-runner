@@ -15,9 +15,3 @@ import type { StoreFactory } from "../../src/core/types.js";
 export function makeStoreFactory(repoRoot: string): StoreFactory {
   return (id: string) => new JobStateStore(id, repoRoot);
 }
-
-/**
- * @deprecated Use makeStoreFactory(repoRoot) instead.
- * Kept for tests that haven't been updated yet — will be removed.
- */
-export const defaultStoreFactory: StoreFactory = (id: string) => new JobStateStore(id, process.cwd());
