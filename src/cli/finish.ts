@@ -19,6 +19,7 @@ import { resolveGitHubToken } from "../core/credentials/github.js";
 import { getOriginInfo } from "../git/remote.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { SpecRunnerError } from "../errors.js";
+import { registerExitGuard } from "../core/lifecycle/exit-guard.js";
 
 /**
  * Build a FinishFs from real fs modules.
@@ -76,6 +77,7 @@ export interface RunFinishOptions {
  * Caller (bin/specrunner.ts) is responsible for process.exit().
  */
 export async function runFinish(opts: RunFinishOptions): Promise<number> {
+  registerExitGuard(opts.cwd);
   // Resolve GitHub token — required for REST API calls
   let githubToken: string;
   try {

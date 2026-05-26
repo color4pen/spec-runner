@@ -6,6 +6,7 @@ import { ResumeCommand } from "../core/command/resume.js";
 import { EventBus } from "../core/event/event-bus.js";
 import { wireProgressDisplay } from "./progress.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
+import { registerExitGuard } from "../core/lifecycle/exit-guard.js";
 
 /**
  * Resolve the heartbeat interval (seconds) from config → env → TTY-aware default.
@@ -36,6 +37,7 @@ export interface ResumeOptions {
 export async function runResumeCore(slug: string, options: ResumeOptions): Promise<number> {
   setVerbose(resolveVerboseFlag(options.verbose ?? false));
   const cwd = options.cwd ?? process.cwd();
+  registerExitGuard(cwd);
 
   const state = await resolveJobStateBySlug(slug, cwd);
   const repo = state

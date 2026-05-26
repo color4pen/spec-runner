@@ -21,6 +21,7 @@
  *   - success (awaiting-merge) → teardown("awaiting-merge") + return 0
  */
 import { logInfo, logError, initVerboseLog, closeVerboseLog, getVerboseLogFilePath } from "../../logger/stdout.js";
+import { KeepAlive } from "../lifecycle/keepalive.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
 import { JobStateStore } from "../../store/job-state-store.js";
@@ -83,105 +84,113 @@ export abstract class CommandRunner {
     // Initialize verbose log file (no-op if verbose is disabled)
     initVerboseLog(repoRoot, jobState.jobId);
 
-    // Step 2: setupWorkspace
-    let workspace;
+    // Keep the event loop alive for the duration of the pipeline execution.
+    const keepAlive = new KeepAlive();
+    keepAlive.acquire();
+
     try {
-      workspace = await this.runtime.setupWorkspace(slug, jobState.jobId, workspaceOpts);
-    } catch (err) {
-      const store = new JobStateStore(jobState.jobId, repoRoot);
-      await store.fail(jobState, {
-        code: "WORKSPACE_SETUP_FAILED",
-        message: (err as Error).message,
-        hint: "",
-      }, "init");
-      process.stderr.write(`Error: Failed to set up workspace: ${(err as Error).message}\n`);
-      closeVerboseLog();
-      return 1;
-    }
-
-    // Reflect worktreePath into in-memory jobState so pipeline persist does not overwrite it.
-    // setupWorkspace() persists to the state store, but the in-memory object passed to
-    // pipeline.run() must also carry the value — otherwise step-level persist() reverts it.
-    if (workspace.worktreePath !== undefined) {
-      jobState.worktreePath = workspace.worktreePath;
-    }
-
-    // Reflect branch set by setupWorkspace() into in-memory jobState (D3).
-    // setupWorkspace() already persisted branch to the state store; mirror it in-memory
-    // so pipeline steps see the pre-set branch and setsBranch fallback is not triggered.
-    if (workspace.branch !== undefined && !jobState.branch) {
-      jobState.branch = workspace.branch;
-    }
-
-    // Step 3: buildDeps
-    let deps: PipelineDeps;
-    // Step 4: registerCleanup
-    let handle: CleanupHandle;
-    try {
-      deps = this.runtime.buildDeps(config, request, slug, workspace);
-
-      // Step 3b: collect dynamic context and attach to deps (once per run, not per-step)
-      // collectDynamicContext never throws — failures return empty fields.
+      // Step 2: setupWorkspace
+      let workspace;
       try {
-        deps.dynamicContext = await collectDynamicContext(
-          workspace.cwd,
-          request.baseBranch,
-        );
-      } catch {
-        // Swallow any unexpected error — pipeline must not be blocked
+        workspace = await this.runtime.setupWorkspace(slug, jobState.jobId, workspaceOpts);
+      } catch (err) {
+        const store = new JobStateStore(jobState.jobId, repoRoot);
+        await store.fail(jobState, {
+          code: "WORKSPACE_SETUP_FAILED",
+          message: (err as Error).message,
+          hint: "",
+        }, "init");
+        process.stderr.write(`Error: Failed to set up workspace: ${(err as Error).message}\n`);
+        closeVerboseLog();
+        return 1;
       }
 
-      handle = this.runtime.registerCleanup(jobState.jobId, startStep);
-    } catch (err) {
-      const store = new JobStateStore(jobState.jobId, repoRoot);
-      await store.fail(jobState, {
-        code: "INIT_FAILED",
-        message: (err as Error).message,
-        hint: "",
-      }, "init");
-      process.stderr.write(`Error: ${(err as Error).message}\n`);
-      closeVerboseLog();
-      return 1;
-    }
+      // Reflect worktreePath into in-memory jobState so pipeline persist does not overwrite it.
+      // setupWorkspace() persists to the state store, but the in-memory object passed to
+      // pipeline.run() must also carry the value — otherwise step-level persist() reverts it.
+      if (workspace.worktreePath !== undefined) {
+        jobState.worktreePath = workspace.worktreePath;
+      }
 
-    // Step 5: runPipeline
-    let finalState: JobState;
-    try {
-      const pipeline = createStandardPipeline(deps, this.events);
-      finalState = await pipeline.run(startStep, jobState, deps);
-    } catch (err) {
-      // Defensive: if pipeline safety net did not transition state, mark as failed
+      // Reflect branch set by setupWorkspace() into in-memory jobState (D3).
+      // setupWorkspace() already persisted branch to the state store; mirror it in-memory
+      // so pipeline steps see the pre-set branch and setsBranch fallback is not triggered.
+      if (workspace.branch !== undefined && !jobState.branch) {
+        jobState.branch = workspace.branch;
+      }
+
+      // Step 3: buildDeps
+      let deps: PipelineDeps;
+      // Step 4: registerCleanup
+      let handle: CleanupHandle;
       try {
-        const store = new JobStateStore(jobState.jobId, repoRoot);
-        const diskState = await store.load();
-        if (diskState.status === "running") {
-          await store.fail(diskState as JobState, {
-            code: "PIPELINE_UNHANDLED_ERROR",
-            message: (err as Error).message,
-            hint: "",
-          }, jobState.step);
+        deps = this.runtime.buildDeps(config, request, slug, workspace);
+
+        // Step 3b: collect dynamic context and attach to deps (once per run, not per-step)
+        // collectDynamicContext never throws — failures return empty fields.
+        try {
+          deps.dynamicContext = await collectDynamicContext(
+            workspace.cwd,
+            request.baseBranch,
+          );
+        } catch {
+          // Swallow any unexpected error — pipeline must not be blocked
         }
-      } catch { /* best-effort — don't mask original error */ }
-      outputPipelineThrowError(err, jobState.branch);
-      await this.runtime.teardown(handle, "error");
+
+        handle = this.runtime.registerCleanup(jobState.jobId, startStep);
+      } catch (err) {
+        const store = new JobStateStore(jobState.jobId, repoRoot);
+        await store.fail(jobState, {
+          code: "INIT_FAILED",
+          message: (err as Error).message,
+          hint: "",
+        }, "init");
+        process.stderr.write(`Error: ${(err as Error).message}\n`);
+        closeVerboseLog();
+        return 1;
+      }
+
+      // Step 5: runPipeline
+      let finalState: JobState;
+      try {
+        const pipeline = createStandardPipeline(deps, this.events);
+        finalState = await pipeline.run(startStep, jobState, deps);
+      } catch (err) {
+        // Defensive: if pipeline safety net did not transition state, mark as failed
+        try {
+          const store = new JobStateStore(jobState.jobId, repoRoot);
+          const diskState = await store.load();
+          if (diskState.status === "running") {
+            await store.fail(diskState as JobState, {
+              code: "PIPELINE_UNHANDLED_ERROR",
+              message: (err as Error).message,
+              hint: "",
+            }, jobState.step);
+          }
+        } catch { /* best-effort — don't mask original error */ }
+        outputPipelineThrowError(err, jobState.branch);
+        await this.runtime.teardown(handle, "error");
+        closeVerboseLog();
+        return 1;
+      }
+
+      // Step 6: handleResult (computes exit code)
+      const exitCode = await handleResult(finalState, slug);
+
+      // Display verbose log path if active
+      const logPath = getVerboseLogFilePath();
+      if (logPath) {
+        logInfo(`Verbose log: ${logPath}`);
+      }
+
+      // Step 7: teardown — pass actual final status so LocalRuntime knows whether to clean up
+      await this.runtime.teardown(handle, finalState.status);
+
       closeVerboseLog();
-      return 1;
+      return exitCode;
+    } finally {
+      keepAlive.release();
     }
-
-    // Step 6: handleResult (computes exit code)
-    const exitCode = await handleResult(finalState, slug);
-
-    // Display verbose log path if active
-    const logPath = getVerboseLogFilePath();
-    if (logPath) {
-      logInfo(`Verbose log: ${logPath}`);
-    }
-
-    // Step 7: teardown — pass actual final status so LocalRuntime knows whether to clean up
-    await this.runtime.teardown(handle, finalState.status);
-
-    closeVerboseLog();
-    return exitCode;
   }
 
   /**

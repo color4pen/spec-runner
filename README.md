@@ -158,3 +158,16 @@ export SPECRUNNER_API_KEY=sk-ant-...
 specrunner runtime setup
 specrunner job start my-feature
 ```
+
+## Troubleshooting
+
+### Silent exit (process exits without error)
+
+If `specrunner run` or `specrunner resume` exits unexpectedly without error output:
+
+1. Enable pipeline diagnostic logging:
+   ```bash
+   SPECRUNNER_DEBUG=pipeline specrunner run <request>
+   ```
+2. Check which boundary log point was the last one emitted — this identifies where the event loop exited prematurely.
+3. The job state will have been transitioned to `awaiting-resume` by the exit guard. Run `specrunner resume <slug>` to continue.

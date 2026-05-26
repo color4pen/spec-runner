@@ -32,6 +32,7 @@ import { getStepExecutionConfig } from "../../config/step-config.js";
 import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
 import { logVerbose } from "../../logger/stdout.js";
+import { logPipelineDiag } from "../../core/lifecycle/diagnostic.js";
 
 export type { SpawnFn } from "./git-exec.js";
 
@@ -179,6 +180,7 @@ export class ClaudeCodeRunner implements AgentRunner {
     const queryOptions: Record<string, unknown> = {
       cwd,
       allowedTools: ["Read", "Edit", "Write", "Bash", "Grep", "Glob"],
+      disallowedTools: ["Agent", "Task"],
       permissionMode: "bypassPermissions",
       ...maxTurnsOption,
       model: resolvedConfig.model,
@@ -186,23 +188,36 @@ export class ClaudeCodeRunner implements AgentRunner {
       ...resumeOption,
     };
 
-    const runQuery = async (): Promise<{ lastResult: SDKResultMessage | null; aborted: boolean }> => {
+    const agentRedirectCounter = { count: 0 };
+
+    const runQuery = async (): Promise<{ lastResult: SDKResultMessage | null }> => {
       let lastResult: SDKResultMessage | null = null;
-      let aborted = false;
+      logPipelineDiag("query:start", `step=${step.name}`);
       const messages = this.queryFn({ prompt: fullPrompt, options: queryOptions });
       for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
         emitToolProgress(message, ctx.emit, step.name);
+        if (isToolUse(message)) {
+          const toolName = message.event.content_block.name;
+          if (toolName === "Agent" || toolName === "Task") {
+            agentRedirectCounter.count++;
+            if (agentRedirectCounter.count > 3) {
+              abortController.abort();
+              break;
+            }
+          }
+        }
         if (message.type === "result") {
           lastResult = message as SDKResultMessage;
         }
       }
-      return { lastResult, aborted };
+      logPipelineDiag("query:complete", `step=${step.name}`);
+      return { lastResult };
     };
 
     logVerbose("session", "query started", { stepName: step.name, runtime: "local", model: resolvedConfig.model });
 
     try {
-      let queryResult: { lastResult: SDKResultMessage | null; aborted: boolean };
+      let queryResult: { lastResult: SDKResultMessage | null };
       try {
         queryResult = await runQuery();
       } catch (innerErr) {
@@ -220,6 +235,18 @@ export class ClaudeCodeRunner implements AgentRunner {
         } else {
           throw innerErr;
         }
+      }
+
+      // If agent redirect limit exceeded, return error without proceeding.
+      if (agentRedirectCounter.count > 3) {
+        return {
+          completionReason: "error",
+          resultContent: null,
+          error: Object.assign(
+            new Error(`Step '${step.name}': Agent/Task tool redirect limit exceeded (max 3)`),
+            { code: "AGENT_REDIRECT_LIMIT_EXCEEDED" },
+          ),
+        };
       }
 
       const { lastResult } = queryResult;

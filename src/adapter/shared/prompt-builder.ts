@@ -21,5 +21,12 @@ export function buildAdditionalInstructions(ctx: AgentRunContext): string {
     lines.push("</project-context>");
   }
 
+  // Always add Agent/Task tool prohibition.
+  if (lines.length > 0) lines.push("");
+  lines.push(
+    "IMPORTANT: Do not use the Agent or Task tool. These tools are not available in this environment.",
+    "Complete all tasks yourself using the available tools (Read, Grep, Edit, Bash, Write, Glob) directly.",
+  );
+
   return lines.join("\n");
 }

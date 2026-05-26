@@ -41,6 +41,13 @@ CLI-first の dual runtime アーキテクチャ。
 - ジョブ状態: `.specrunner/jobs/` に JSON で永続化
 - ジョブ隔離: git worktree でジョブごとに独立した作業ディレクトリを確保
 
+### Lifecycle binding
+
+spec-runner は pipeline / process lifecycle の明示的な binding を使い、Bun event loop の premature exit (silent exit) を防止する。
+`KeepAlive` sentinel timer が pipeline 実行中は event loop を alive に保ち、pipeline 完了時（正常 / timeout / error の全 case）に解放する。
+exit 時 invariant として `process.on('beforeExit')` が running 状態の job を検出し `awaiting-resume` に遷移する。
+`SPECRUNNER_DEBUG=pipeline` env var で pipeline 境界の診断ログを有効化できる。
+
 ### 設定
 
 #### Config ファイル（2 層）

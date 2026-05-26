@@ -17,6 +17,7 @@
  * TC-126: state.status=archived → "Already archived" no-op
  */
 import type { SpawnFn } from "../../util/spawn.js";
+import { KeepAlive } from "../lifecycle/keepalive.js";
 import type { GitHubClient } from "../../core/port/github-client.js";
 import type { FinishFs, FinishFlags, ResolvedTarget, PrViewData } from "./types.js";
 import type { WorktreeManager } from "../worktree/manager.js";
@@ -112,6 +113,11 @@ export async function runFinishOrchestrator(
     throw err;
   }
 
+  // Keep the event loop alive for the duration of the orchestration.
+  const keepAlive = new KeepAlive();
+  keepAlive.acquire();
+
+  try {
   // Phase 0: pre-flight
   stdoutWrite("Phase 0: pre-flight checks...");
   const preflightResult = await runPreflight({
@@ -223,6 +229,9 @@ export async function runFinishOrchestrator(
   if (!p4.ok) return { exitCode: 1, escalation: p4.escalation };
 
   return { exitCode: 0 };
+  } finally {
+    keepAlive.release();
+  }
 }
 
 // ---------------------------------------------------------------------------

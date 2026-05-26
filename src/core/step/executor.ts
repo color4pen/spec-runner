@@ -8,6 +8,7 @@ import type { AgentRunner } from "../port/agent-runner.js";
 import type { JobStateStore } from "../../store/job-state-store.js";
 import { pushStepResult } from "../../state/helpers.js";
 import { stderrWrite, logVerbose } from "../../logger/stdout.js";
+import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import {
   recordFailedStepResult,
   attachStateAndRethrow,
@@ -89,9 +90,11 @@ export class StepExecutor {
     deps: PipelineDeps,
   ): Promise<JobState> {
     if (step.kind === "cli") {
+      logPipelineDiag("executor:step:dispatch", `step=${step.name}, kind=${step.kind}`);
       return this.runCliStep(step, jobState, deps);
     }
     // kind === "agent" — delegate to AgentRunner port (Design D1)
+    logPipelineDiag("executor:step:dispatch", `step=${step.name}, kind=${step.kind}`);
     return this.runAgentStep(step, jobState, deps);
   }
 
@@ -171,6 +174,7 @@ export class StepExecutor {
     }
 
     const startedAt = new Date().toISOString();
+    logPipelineDiag("executor:agent:pre-run", `step=${step.name}`);
     const runResult = await this.runner.run(ctx).catch(async (thrownErr: unknown) => {
       const err = thrownErr as Error & { code?: string; hint?: string };
       const errorInfo: ErrorInfo = {
@@ -193,6 +197,7 @@ export class StepExecutor {
     });
 
     const completedAt = new Date().toISOString();
+    logPipelineDiag("executor:agent:post-run", `step=${step.name}, reason=${runResult.completionReason}`);
 
     if (runResult.completionReason === "timeout") {
       // Poll timeout — transition to awaiting-resume (not a hard failure)
@@ -241,6 +246,7 @@ export class StepExecutor {
     // state and have state attached to the thrown error so the pipeline can propagate the error
     // code correctly (otherwise the pipeline safety net overwrites it with UNEXPECTED_STEP_ERROR).
     if (deps.config.runtime === "local") {
+      logPipelineDiag("executor:commit:pre", `step=${step.name}`);
       await commitAndPush(step, state, deps, headBeforeStep, this.commitPushInfra).catch(async (thrownErr: unknown) => {
         const err = thrownErr as Error & { code?: string; hint?: string };
         const errorInfo: ErrorInfo = {
@@ -254,6 +260,7 @@ export class StepExecutor {
         attachStateAndRethrow(err, state);
         return null as never;
       });
+      logPipelineDiag("executor:commit:post", `step=${step.name}`);
     }
 
     return this.finalizeStep(step, state, deps, runResult.resultContent, completedAt, startedAt, {

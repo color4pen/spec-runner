@@ -10,6 +10,7 @@ import { getLatestStepResult } from "../../state/helpers.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { stdoutWrite } from "../../logger/stdout.js";
 import { STEP_NAMES } from "../step/step-names.js";
+import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 
 /** Error codes that indicate truly fatal pipeline failures (not resumable). */
 const FATAL_ERROR_CODES: Set<string> = new Set([
@@ -76,6 +77,7 @@ export class Pipeline {
     jobState: JobState,
     deps: PipelineDeps,
   ): Promise<JobState> {
+    logPipelineDiag("pipeline:run:entry", `jobId=${jobState.jobId}, startStep=${startStep}`);
     this.events.emit("pipeline:start", { state: jobState });
 
     try {
@@ -189,6 +191,7 @@ export class Pipeline {
 
       // --- Execute the step ---
       const stateBeforeExec = state;
+      logPipelineDiag("pipeline:step:pre-execute", `step=${currentStep}`);
       try {
         state = await this.executor.execute(step, state, deps);
       } catch (err) {
@@ -207,6 +210,8 @@ export class Pipeline {
           }, currentStep);
         }
       }
+
+      logPipelineDiag("pipeline:step:post-execute", `step=${currentStep}, status=${state.status}`);
 
       // Persist state after each step for crash resilience
       const store = deps.storeFactory(state.jobId);
@@ -249,9 +254,11 @@ export class Pipeline {
         (t) => t.step === currentStep && t.on === outcome && (!t.when || t.when(state)),
       );
       const nextStep = transition?.to ?? "escalate";
+      logPipelineDiag("pipeline:transition:resolved", `step=${currentStep}, outcome=${outcome}, next=${nextStep}`);
 
       // --- Terminal conditions ---
       if (nextStep === "end" || nextStep === "escalate") {
+        logPipelineDiag("pipeline:terminal", `step=${currentStep}, terminal=${nextStep}`);
         // Print loop verdict line for primary loop steps
         if (isAnyLoopStep) {
           if (outcome === "approved") {
@@ -311,6 +318,7 @@ export class Pipeline {
 
           if (!fixerAtMax) {
             // Conventional exhaustion (no fixer bypass)
+            logPipelineDiag("pipeline:loop:exhausted", `step=${nextStep}, iter=${nextLoopIter}, max=${this.maxIterations}`);
             stdoutWrite(`[iter ${nextLoopIter}/${this.maxIterations}] retries exhausted on ${nextStep}, escalating\n`);
             state = await this.handleExhausted(state, deps, nextStep as string, "review-exhausted");
             this.printPipelineFinished(state);
