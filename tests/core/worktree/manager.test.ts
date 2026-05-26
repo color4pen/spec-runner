@@ -309,6 +309,135 @@ describe("TC-WTM-012: non-lock-contention error does not retry", () => {
   });
 });
 
+// TC-WTM-013: lock contention → branch exists → retry without -b succeeds
+describe("TC-WTM-013: lock contention → branch exists → retry without -b", () => {
+  it("switches to existing-branch args when rev-parse shows branch already exists", async () => {
+    const lockErr = "error: could not lock config file .git/config: File exists";
+    const spawn = makeSpawn([
+      { exitCode: 128, stderr: lockErr }, // git worktree add (attempt 1, lock contention)
+      { exitCode: 0 },                    // git rev-parse (branch exists)
+      { exitCode: 0 },                    // git worktree add (attempt 2, success without -b)
+      { exitCode: 0 },                    // bun install
+    ]);
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    const manager = createWorktreeManager(spawn, undefined, sleepFn);
+    const result = await manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main", "feat/my-branch");
+
+    expect(result).toBe("/repo/.git/specrunner-worktrees/my-slug-abcdef12");
+
+    const worktreeAddCalls = spawn.calls.filter(
+      (c) => c.cmd === "git" && c.args.includes("worktree") && c.args.includes("add"),
+    );
+    expect(worktreeAddCalls.length).toBe(2);
+
+    // 2nd worktree add must NOT contain -b
+    const secondAdd = worktreeAddCalls[1]!;
+    expect(secondAdd.args).not.toContain("-b");
+    // branchName is the last arg
+    expect(secondAdd.args[secondAdd.args.length - 1]).toBe("feat/my-branch");
+  });
+});
+
+// TC-WTM-014: lock contention → branch not exists → retry with -b succeeds
+describe("TC-WTM-014: lock contention → branch not exists → retry with -b", () => {
+  it("keeps -b args when rev-parse shows branch does not exist", async () => {
+    const lockErr = "error: could not lock config file .git/config: File exists";
+    const spawn = makeSpawn([
+      { exitCode: 128, stderr: lockErr }, // git worktree add (attempt 1, lock contention)
+      { exitCode: 1 },                    // git rev-parse (branch does NOT exist)
+      { exitCode: 0 },                    // git worktree add (attempt 2, success with -b)
+      { exitCode: 0 },                    // bun install
+    ]);
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    const manager = createWorktreeManager(spawn, undefined, sleepFn);
+    await manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main", "feat/my-branch");
+
+    const worktreeAddCalls = spawn.calls.filter(
+      (c) => c.cmd === "git" && c.args.includes("worktree") && c.args.includes("add"),
+    );
+    expect(worktreeAddCalls.length).toBe(2);
+
+    // 2nd worktree add must still contain -b
+    const secondAdd = worktreeAddCalls[1]!;
+    expect(secondAdd.args).toContain("-b");
+    expect(secondAdd.args).toContain("feat/my-branch");
+  });
+});
+
+// TC-WTM-015: all retries fail → branch cleanup called
+describe("TC-WTM-015: all retries fail → branch cleanup", () => {
+  it("calls git branch -D after exhausting all retries with branchName", async () => {
+    const lockErr = "error: could not lock config file .git/config: File exists";
+    const spawn = makeSpawn([
+      { exitCode: 128, stderr: lockErr }, // attempt 1 fail
+      { exitCode: 0 },                    // rev-parse (branch exists)
+      { exitCode: 128, stderr: lockErr }, // attempt 2 fail
+      { exitCode: 0 },                    // rev-parse (branch exists)
+      { exitCode: 128, stderr: lockErr }, // attempt 3 fail (MAX_RETRIES)
+      { exitCode: 0 },                    // git branch -D (cleanup)
+    ]);
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    const manager = createWorktreeManager(spawn, undefined, sleepFn);
+    await expect(
+      manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main", "feat/my-branch"),
+    ).rejects.toThrow("git worktree add failed");
+
+    const cleanupCall = spawn.calls.find(
+      (c) => c.cmd === "git" && c.args.includes("-D"),
+    );
+    expect(cleanupCall).toBeDefined();
+    expect(cleanupCall?.args).toContain("feat/my-branch");
+  });
+});
+
+// TC-WTM-016: --detach mode, all retries fail → no branch cleanup
+describe("TC-WTM-016: detach mode all retries fail → no branch cleanup", () => {
+  it("does not call git branch -D when branchName is undefined", async () => {
+    const lockErr = "error: could not lock config file .git/config: File exists";
+    const spawn = makeSpawn([
+      { exitCode: 128, stderr: lockErr }, // attempt 1 fail (detach, no rev-parse)
+      { exitCode: 128, stderr: lockErr }, // attempt 2 fail
+      { exitCode: 128, stderr: lockErr }, // attempt 3 fail (MAX_RETRIES)
+    ]);
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    // No branchName → detach mode
+    const manager = createWorktreeManager(spawn, undefined, sleepFn);
+    await expect(
+      manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main"),
+    ).rejects.toThrow("git worktree add failed");
+
+    const cleanupCall = spawn.calls.find(
+      (c) => c.cmd === "git" && c.args.includes("-D"),
+    );
+    expect(cleanupCall).toBeUndefined();
+  });
+});
+
+// TC-WTM-017: all retries fail → branch -D fails → original error propagates
+describe("TC-WTM-017: all retries fail → branch cleanup failure does not propagate", () => {
+  it("throws original worktree add error even when git branch -D fails", async () => {
+    const lockErr = "error: could not lock config file .git/config: File exists";
+    const spawn = makeSpawn([
+      { exitCode: 128, stderr: lockErr }, // attempt 1 fail
+      { exitCode: 0 },                    // rev-parse (branch exists)
+      { exitCode: 128, stderr: lockErr }, // attempt 2 fail
+      { exitCode: 0 },                    // rev-parse (branch exists)
+      { exitCode: 128, stderr: lockErr }, // attempt 3 fail (MAX_RETRIES)
+      { exitCode: 1, stderr: "error: branch not found" }, // git branch -D (cleanup fails)
+    ]);
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    const manager = createWorktreeManager(spawn, undefined, sleepFn);
+    await expect(
+      manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main", "feat/my-branch"),
+    ).rejects.toThrow("git worktree add failed");
+  });
+});
+
 // TC-WTM-007: worktreePath in JobState — backward compat
 describe("TC-WTM-007: JobState worktreePath backward compat", () => {
   it("validateJobState accepts state without worktreePath", async () => {

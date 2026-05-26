@@ -72,7 +72,7 @@ export function createWorktreeManager(spawnFn?: SpawnFn, rmFn?: RmFn, sleepFn?: 
       const ref = baseRef ?? "HEAD";
 
       // git worktree add [-b <branchName> | --detach] <path> <ref>
-      const wtArgs = branchName
+      let wtArgs = branchName
         ? ["worktree", "add", "-b", branchName, worktreePath, ref]
         : ["worktree", "add", "--detach", worktreePath, ref];
 
@@ -83,9 +83,27 @@ export function createWorktreeManager(spawnFn?: SpawnFn, rmFn?: RmFn, sleepFn?: 
 
         const isLockContention = wtResult.stderr.includes("could not lock config file");
         if (!isLockContention || attempt === MAX_RETRIES) {
+          // Best-effort branch cleanup to prevent collision on next run
+          if (branchName) {
+            await spawn("git", ["branch", "-D", branchName], { cwd: repoRoot });
+          }
           throw new Error(
             `git worktree add failed (exit ${wtResult.exitCode}): ${wtResult.stderr.trim()}`,
           );
+        }
+
+        // Lock contention: check if branch was partially created before retrying
+        if (branchName) {
+          const revParseResult = await spawn(
+            "git",
+            ["rev-parse", "--verify", `refs/heads/${branchName}`],
+            { cwd: repoRoot },
+          );
+          if (revParseResult.exitCode === 0) {
+            // Branch exists but worktree dir was not created; use existing branch (no -b)
+            wtArgs = ["worktree", "add", worktreePath, branchName];
+          }
+          // If rev-parse fails, branch was not created; keep original -b args
         }
 
         const delayMs = 1000 + Math.floor(Math.random() * 4000);
