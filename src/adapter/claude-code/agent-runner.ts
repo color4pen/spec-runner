@@ -27,6 +27,7 @@ import {
 import { defaultSpawnFn, type SpawnFn } from "./git-exec.js";
 import { isToolUse } from "./message-types.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from "../../core/port/agent-runner.js";
+import type { DomainEvent } from "../../core/event/types.js";
 import type { StepContext } from "../../core/types.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
 import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
@@ -76,7 +77,7 @@ function extractTarget(toolName: string, input?: Record<string, unknown>): strin
  */
 function emitToolProgress(
   msg: SDKMessage,
-  emitFn: (event: string, payload: Record<string, unknown>) => void,
+  emitFn: (event: DomainEvent, payload: Record<string, unknown>) => void,
   stepName: string,
 ): void {
   if (!isToolUse(msg)) return;

@@ -4,6 +4,7 @@ import type { Step, AgentStep, CliStep } from "./types.js";
 import type { JobState, Verdict, ModelUsage } from "../../state/schema.js";
 import type { PipelineDeps, StoreFactory } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
+import type { DomainEvent } from "../event/types.js";
 import type { AgentRunner } from "../port/agent-runner.js";
 import type { JobStateStore } from "../../store/job-state-store.js";
 import { pushStepResult } from "../../state/helpers.js";
@@ -160,9 +161,9 @@ export class StepExecutor {
       projectContext,
       resumeSessionId,
       followUpPrompts: allFollowUpPrompts.length > 0 ? allFollowUpPrompts : undefined,
-      emit: (event: string, payload: Record<string, unknown>) => {
+      emit: (event: DomainEvent, payload: Record<string, unknown>) => {
         // Forward adapter events to the event bus
-        this.events.emit(event as Parameters<EventBus["emit"]>[0], payload as never);
+        this.events.emit(event, payload as never);
       },
     };
 
