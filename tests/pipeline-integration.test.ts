@@ -2116,8 +2116,9 @@ describe("TC-INT-01: Step 5 fail (no-specs-for-required-type) → pipeline trans
 describe("TC-ADR-INT-01: STANDARD_TRANSITIONS adr-gen wiring", () => {
   it("code-review --approved→ delta-spec-validation (2nd-phase gate, not adr-gen or pr-create directly)", async () => {
     const { STANDARD_TRANSITIONS } = await import("../src/core/pipeline/types.js");
+    // Find the fallback (no `when`) transition: code-review approved → delta-spec-validation
     const codeReviewApproved = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "code-review" && t.on === "approved"
+      (t) => t.step === "code-review" && t.on === "approved" && !t.when
     );
     expect(codeReviewApproved).toBeDefined();
     // code-review approved now routes through delta-spec-validation (2nd phase) before adr-gen

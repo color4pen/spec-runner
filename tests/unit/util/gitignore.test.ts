@@ -12,6 +12,7 @@
  * TC-GI-09: Adds missing exception line when only .specrunner/* present
  * TC-GI-10: Adds .specrunner/* before existing !.specrunner/config.json
  * TC-GI-11: Deduplicates multiple old-format .specrunner/ lines to 2-line format
+ * TC-GI-12: Deduplicates multiple !.specrunner/config.json lines to a single line
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
@@ -150,6 +151,15 @@ describe("ensureDotSpecrunnerGitignore", () => {
     expect(lines.some((l) => l.trim() === "!.specrunner/config.json")).toBe(true);
     // No old-format line
     expect(lines.some((l) => !l.trim().startsWith("#") && l.trim() === ".specrunner/")).toBe(false);
+  });
+
+  it("TC-GI-12: deduplicates multiple !.specrunner/config.json lines to a single line", async () => {
+    await writeGitignore(".specrunner/*\n!.specrunner/config.json\nnode_modules/\n!.specrunner/config.json\n");
+    await ensureDotSpecrunnerGitignore(tempDir);
+    const content = await readGitignore();
+    const lines = content.split("\n");
+    const exceptionLines = lines.filter((l) => l.trim() === "!.specrunner/config.json");
+    expect(exceptionLines.length).toBe(1);
   });
 
   it("preserves existing content when appending", async () => {

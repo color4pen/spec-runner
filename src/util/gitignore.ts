@@ -47,12 +47,17 @@ export async function ensureDotSpecrunnerGitignore(repoRoot: string): Promise<vo
     return line;
   });
 
-  // Step 2: Deduplicate .specrunner/* lines (keep first occurrence)
+  // Step 2: Deduplicate .specrunner/* and !.specrunner/config.json lines (keep first occurrence)
   let globSeen = false;
+  let exceptionSeen = false;
   lines = lines.filter((line) => {
     if (isNonComment(line) && line.trim() === GLOB_LINE) {
       if (globSeen) return false;
       globSeen = true;
+    }
+    if (line.trim() === EXCEPTION_LINE) {
+      if (exceptionSeen) return false;
+      exceptionSeen = true;
     }
     return true;
   });
