@@ -7,6 +7,7 @@ import { CODE_REVIEW_SYSTEM_PROMPT } from "../../prompts/code-review-system.js";
 import { parseReviewVerdict } from "../parser/review-verdict.js";
 import { reviewFeedbackPath, changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
+import { buildRequestConstraintsBlock } from "../../parser/extract-section.js";
 
 const CODE_REVIEW_AGENT_MODEL = "claude-opus-4-6[1m]";
 
@@ -63,6 +64,12 @@ export function buildCodeReviewInitialMessage(opts: {
     ? `\n\n## Branch Context\n\n### Diff stat (main..HEAD)\n\n\`\`\`\n${opts.dynamicContext.diffStat}\n\`\`\``
     : "";
 
+  // Inject request.md constraint sections after </user-request> tag, before Branch Context.
+  // This ensures the reviewer has スコープ外 / 受け入れ基準 / architect 設計判断 in context
+  // regardless of whether it reads request.md itself (D1, D2, D3 in design.md).
+  const constraintsBlock = buildRequestConstraintsBlock(opts.requestContent);
+  const constraintsSection = constraintsBlock ? `\n\n${constraintsBlock}` : "";
+
   return `<user-request>
 Please perform a code review for the following change:
 
@@ -81,7 +88,7 @@ The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escal
 
 Original request:
 ${opts.requestContent}
-</user-request>${contextSection}
+</user-request>${constraintsSection}${contextSection}
 
 ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。`;
 }

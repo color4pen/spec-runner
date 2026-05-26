@@ -9,7 +9,7 @@
  * TC-036: CodeReviewStep.parseResult が verdict 行なしのコンテンツで escalation フォールバックする (could)
  */
 import { describe, it, expect } from "vitest";
-import { CodeReviewStep, buildReviewFeedbackPath } from "../../../src/core/step/code-review.js";
+import { CodeReviewStep, buildReviewFeedbackPath, buildCodeReviewInitialMessage } from "../../../src/core/step/code-review.js";
 import { NULL_PARSE_RESULT } from "../../../src/core/step/types.js";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/code-review-system.js";
 import { AGENT_TOOLSET_TYPE } from "../../../src/core/agent/definition.js";
@@ -210,5 +210,97 @@ describe("CodeReviewStep — result file semantics", () => {
     const result = CodeReviewStep.parseResult("- **verdict**: approved\n", deps);
     expect(result).not.toEqual(NULL_PARSE_RESULT);
     expect(result.verdict).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-20: 補助 section を含む request.md → Request Constraints が code-review initial message に注入される
+// TC-21: 配置順 </user-request> → Request Constraints → Branch Context
+// TC-22: 補助 section なし → Request Constraints が含まれない
+// TC-23: Request Constraints は </user-request> タグ外に存在する
+// ---------------------------------------------------------------------------
+
+const REQUEST_WITH_CONSTRAINTS = [
+  "# タイトル",
+  "",
+  "## スコープ外",
+  "",
+  "- rules ファイルでの対応",
+  "",
+  "## 受け入れ基準",
+  "",
+  "- [ ] code-review に注入される",
+  "",
+  "## architect 評価済みの設計判断",
+  "",
+  "- CLI 内フォローアップを採用",
+  "",
+].join("\n");
+
+const REQUEST_WITHOUT_CONSTRAINTS =
+  "## 背景\n\ncontent\n\n## 要件\n\ncontent\n";
+
+describe("TC-20: 補助 section を含む request.md → Request Constraints が code-review message に注入される", () => {
+  it("includes ## Request Constraints (CLI-injected) when constraint sections exist", () => {
+    const message = buildCodeReviewInitialMessage({
+      slug: "my-change",
+      branch: "feat/my-change",
+      iteration: 1,
+      findingsPath: reviewFeedbackPath("my-change", 1),
+      requestContent: REQUEST_WITH_CONSTRAINTS,
+    });
+    expect(message).toContain("## Request Constraints (CLI-injected)");
+    expect(message).toContain("### スコープ外");
+    expect(message).toContain("### 受け入れ基準");
+    expect(message).toContain("### architect 評価済みの設計判断");
+  });
+});
+
+describe("TC-21: 配置順 </user-request> → Request Constraints → Branch Context", () => {
+  it("Request Constraints appears after </user-request> and before Branch Context", () => {
+    const message = buildCodeReviewInitialMessage({
+      slug: "my-change",
+      branch: "feat/my-change",
+      iteration: 1,
+      findingsPath: reviewFeedbackPath("my-change", 1),
+      requestContent: REQUEST_WITH_CONSTRAINTS,
+      dynamicContext: { diffStat: "2 files changed", gitLog: "", changesList: [], specIndex: [] },
+    });
+    const closeTagIdx = message.indexOf("</user-request>");
+    const constraintsIdx = message.indexOf("## Request Constraints (CLI-injected)");
+    const branchContextIdx = message.indexOf("## Branch Context");
+    expect(closeTagIdx).toBeGreaterThan(-1);
+    expect(constraintsIdx).toBeGreaterThan(-1);
+    expect(branchContextIdx).toBeGreaterThan(-1);
+    expect(constraintsIdx).toBeGreaterThan(closeTagIdx);
+    expect(constraintsIdx).toBeLessThan(branchContextIdx);
+  });
+});
+
+describe("TC-22: 補助 section なし → code-review initial message に Request Constraints が含まれない", () => {
+  it("does not include Request Constraints when no constraint sections exist", () => {
+    const message = buildCodeReviewInitialMessage({
+      slug: "my-change",
+      branch: "feat/my-change",
+      iteration: 1,
+      findingsPath: reviewFeedbackPath("my-change", 1),
+      requestContent: REQUEST_WITHOUT_CONSTRAINTS,
+    });
+    expect(message).not.toContain("Request Constraints");
+  });
+});
+
+describe("TC-23: Request Constraints は </user-request> タグ外に存在する (code-review)", () => {
+  it("Request Constraints block appears after </user-request>", () => {
+    const message = buildCodeReviewInitialMessage({
+      slug: "my-change",
+      branch: "feat/my-change",
+      iteration: 1,
+      findingsPath: reviewFeedbackPath("my-change", 1),
+      requestContent: REQUEST_WITH_CONSTRAINTS,
+    });
+    const closeTagIdx = message.indexOf("</user-request>");
+    const constraintsIdx = message.indexOf("## Request Constraints (CLI-injected)");
+    expect(constraintsIdx).toBeGreaterThan(closeTagIdx);
   });
 });

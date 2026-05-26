@@ -1,6 +1,7 @@
 import { changesDirRel } from "../util/paths.js";
 import type { DynamicContext } from "../git/dynamic-context.js";
 import { buildSystemPrompt } from "./builder.js";
+import { buildRequestConstraintsBlock } from "../parser/extract-section.js";
 
 // Build dynamically so path references stay in sync with path utility functions.
 const _changesDir = changesDirRel();
@@ -225,6 +226,14 @@ export function buildInitialMessage(
     .replaceAll("{{BRANCH}}", branch)
     .replaceAll("{{REQUEST_TYPE}}", requestType ?? "")
     .replace("{{REQUEST_CONTENT}}", requestContent);
+
+  // Inject request.md constraint sections after </user-request> tag, before Repository Context.
+  // This ensures the agent has スコープ外 / 受け入れ基準 / architect 設計判断 in context
+  // regardless of whether it reads request.md itself (D1, D2, D3 in design.md).
+  const constraintsBlock = buildRequestConstraintsBlock(requestContent);
+  if (constraintsBlock) {
+    base = `${base}\n\n${constraintsBlock}`;
+  }
 
   if (dynamicContext) {
     const repoContextSections: string[] = [];
