@@ -54,15 +54,16 @@ export const PIPELINE_RULES = `## Severity
 \`\`\`markdown
 ## Findings
 
-| # | Severity | Category | File | Description | How to Fix |
-|---|----------|----------|------|-------------|------------|
-| 1 | HIGH | security | src/auth/session.ts:42 | セッショントークンが平文で保存されている | bcrypt または argon2 でハッシュ化する |
-| 2 | MEDIUM | maintainability | src/api/users.ts:120 | 関数が 80 行を超え責務が不明瞭 | 認証・バリデーション・永続化で分割 |
+| # | Severity | Category | File | Description | How to Fix | Fix |
+|---|----------|----------|------|-------------|------------|-----|
+| 1 | HIGH | security | src/auth/session.ts:42 | セッショントークンが平文で保存されている | bcrypt または argon2 でハッシュ化する | yes |
+| 2 | MEDIUM | maintainability | src/api/users.ts:120 | 関数が 80 行を超え責務が不明瞭 | 認証・バリデーション・永続化で分割 | no |
 \`\`\`
 
-**必須カラム**: \`#\`, \`Severity\`, \`Category\`, \`File\`, \`Description\`, \`How to Fix\`
+**必須カラム**: \`#\`, \`Severity\`, \`Category\`, \`File\`, \`Description\`, \`How to Fix\`, \`Fix\`
 **File カラム**: 可能な限り \`{path}:{line}\` の形式。行番号が特定できない場合は path のみでも可。
 **How to Fix カラム**: 具体的な修正方針。「見直す」「改善する」等の抽象表現は不可。
+**Fix カラム**: \`yes\` = この PR で fixer が修正すべき finding。\`no\` = pre-existing / 設計判断 / 別 scope の issue（fixer は無視）。
 
 ## Scoring (code-review 専用)
 
@@ -91,7 +92,7 @@ export const PIPELINE_RULES = `## Severity
 | maintainability | 0.10 |
 | testing | 0.10 |
 
-\`Total = Σ(Score × Weight)\`、pass threshold は \`7.0\`。
+\`Total = Σ(Score × Weight)\`。スコアは reviewer の思考補助として任意で使用できるが、CLI 側の verdict 判定には使用されない。agent が出した verdict が最終判定。
 
 ## Verdict
 
@@ -99,9 +100,9 @@ export const PIPELINE_RULES = `## Severity
 
 | Verdict | 条件 | 次のアクション |
 |---------|------|--------------|
-| \`approved\` | スコア ≥ pass_threshold（code-review）または全 Findings が解消済み（spec-review）、かつ CRITICAL: 0, HIGH: 0 | 次ステップへ |
-| \`needs-fix\` | CRITICAL ≥ 1 または HIGH ≥ 1、または pass threshold 未達 | fixer エージェントで修正 → 再レビュー |
-| \`escalation\` | リトライ上限超過、停滞検出（スコア 2 iter 連続改善なし）、予期せぬエラー | ユーザーに報告・判断を仰ぐ |
+| \`approved\` | 実装が要件を満たし、blocking な問題がない | 次ステップへ（Fix: yes の finding がある場合は fixer が自動修正後に次ステップ） |
+| \`needs-fix\` | blocking な問題がある（CRITICAL / HIGH severity、または重大な設計乖離） | fixer エージェントで修正 → 再レビュー |
+| \`escalation\` | リトライ上限超過、停滞検出、予期せぬエラー | ユーザーに報告・判断を仰ぐ |
 
 ## Iteration Comparison
 

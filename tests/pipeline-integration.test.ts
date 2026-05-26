@@ -2145,12 +2145,15 @@ describe("TC-ADR-INT-01: STANDARD_TRANSITIONS adr-gen wiring", () => {
     expect(adrGenError!.to).toBe("escalate");
   });
 
-  it("code-fixer --approved→ code-review loop is preserved", async () => {
+  it("code-fixer --approved→ code-review loop is preserved (fallback row)", async () => {
     const { STANDARD_TRANSITIONS } = await import("../src/core/pipeline/types.js");
-    const codeFixerApproved = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "code-fixer" && t.on === "approved"
+    // The first code-fixer --approved row is the conditional row (when: last review was approved).
+    // The fallback row (needs-fix loop) has to: "code-review" and no when predicate.
+    const codeFixerApprovedFallback = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-fixer" && t.on === "approved" && t.to === "code-review"
     );
-    expect(codeFixerApproved).toBeDefined();
-    expect(codeFixerApproved!.to).toBe("code-review");
+    expect(codeFixerApprovedFallback).toBeDefined();
+    expect(codeFixerApprovedFallback!.to).toBe("code-review");
+    expect(codeFixerApprovedFallback!.when).toBeUndefined();
   });
 });

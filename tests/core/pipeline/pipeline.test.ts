@@ -575,6 +575,8 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
   it("contains all required implementation-layer transitions (TC-012)", () => {
     const find = (step: string, on: string) =>
       STANDARD_TRANSITIONS.find((t) => t.step === step && t.on === on);
+    const findWithTo = (step: string, on: string, to: string) =>
+      STANDARD_TRANSITIONS.find((t) => t.step === step && t.on === on && t.to === to);
 
     expect(find("implementer",  "success")).toMatchObject({ to: "verification" });
     expect(find("implementer",  "error")).toMatchObject({ to: "escalate" });
@@ -583,19 +585,24 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     expect(find("verification", "escalation")).toMatchObject({ to: "escalate" });
     expect(find("build-fixer",  "success")).toMatchObject({ to: "verification" });
     expect(find("build-fixer",  "error")).toMatchObject({ to: "escalate" });
-    // code-review loop rows (code-review approved now routes to delta-spec-validation for 2nd-phase validation)
-    expect(find("code-review",  "approved")).toMatchObject({ to: "delta-spec-validation" });
+    // code-review loop rows: first approved row is conditional (fixCount > 0 → code-fixer), second is fallback → delta-spec-validation
+    expect(find("code-review",  "approved")).toMatchObject({ to: "code-fixer" }); // conditional (when: fixCount > 0)
+    expect(findWithTo("code-review", "approved", "delta-spec-validation")).toBeDefined(); // fallback
     expect(find("code-review",  "needs-fix")).toMatchObject({ to: "code-fixer" });
     expect(find("code-review",  "escalation")).toMatchObject({ to: "escalate" });
-    expect(find("code-fixer",   "approved")).toMatchObject({ to: "code-review" });
+    // code-fixer has two approved rows: conditional (last review approved → delta-spec-validation) + fallback (→ code-review)
+    expect(find("code-fixer",   "approved")).toMatchObject({ to: "delta-spec-validation" }); // conditional first
+    expect(findWithTo("code-fixer", "approved", "code-review")).toBeDefined(); // fallback exists
     expect(find("code-fixer",   "error")).toMatchObject({ to: "escalate" });
     // pr-create rows
     expect(find("pr-create",    "success")).toMatchObject({ to: "end" });
     expect(find("pr-create",    "error")).toMatchObject({ to: "escalate" });
   });
 
-  it("has exactly 31 transitions (30 previous + 1 new conditional delta-spec-validation → adr-gen)", () => {
-    expect(STANDARD_TRANSITIONS).toHaveLength(31);
+  it("has exactly 33 transitions (31 previous + 2 new observation-auto-fix rows)", () => {
+    // + 1: code-review --approved→ code-fixer (conditional, when: fixCount > 0)
+    // + 1: code-fixer --approved→ delta-spec-validation (conditional, when: last review was approved)
+    expect(STANDARD_TRANSITIONS).toHaveLength(33);
   });
 });
 

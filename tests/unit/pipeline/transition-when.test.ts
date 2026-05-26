@@ -421,7 +421,10 @@ describe("TC-WHEN-01: conditional transition row has `when` predicate", () => {
 // TC-WHEN-02: STANDARD_TRANSITIONS has 31 rows (30 previous + 1 new conditional)
 // ─────────────────────────────────────────────────────────────────────────────
 describe("TC-WHEN-02: STANDARD_TRANSITIONS row count", () => {
-  it("has 31 rows (30 previous + 1 new conditional delta-spec-validation → adr-gen)", () => {
-    expect(STANDARD_TRANSITIONS.length).toBe(31);
+  it("has 33 rows (31 previous + 2 new observation-auto-fix rows)", () => {
+    // 31 rows (previous total including adr-gen rows and conditional delta-spec-validation → adr-gen)
+    // + 1: code-review --approved→ code-fixer (conditional, when: fixCount > 0)
+    // + 1: code-fixer --approved→ delta-spec-validation (conditional, when: last review was approved)
+    expect(STANDARD_TRANSITIONS.length).toBe(33);
   });
 });

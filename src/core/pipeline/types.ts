@@ -1,5 +1,6 @@
 import type { Verdict, JobState } from "../../state/schema.js";
 import { STEP_NAMES } from "../step/step-names.js";
+import { parseFixableFindings } from "../parser/review-findings.js";
 
 /**
  * A single row in the transition table.
@@ -111,10 +112,31 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.BUILD_FIXER,           on: "success",    to: STEP_NAMES.VERIFICATION },
   { step: STEP_NAMES.BUILD_FIXER,           on: "error",      to: "escalate" },
   // --- code review loop ---
-  // code-review approved → delta-spec-validation (2nd phase validation before adr-gen)
-  { step: STEP_NAMES.CODE_REVIEW,           on: "approved",   to: STEP_NAMES.DELTA_SPEC_VALIDATION },
-  { step: STEP_NAMES.CODE_REVIEW,           on: "needs-fix",  to: STEP_NAMES.CODE_FIXER },
-  { step: STEP_NAMES.CODE_REVIEW,           on: "escalation", to: "escalate" },
+  // code-review approved + fix:yes findings → code-fixer (observation auto-fix path)
+  { step: STEP_NAMES.CODE_REVIEW,           on: "approved",   to: STEP_NAMES.CODE_FIXER,
+    when: (s) => {
+      const reviews = s.steps?.["code-review"];
+      if (!reviews || reviews.length === 0) return false;
+      const lastReview = reviews[reviews.length - 1];
+      if (!lastReview?.outcome?.fileContent) return false;
+      return parseFixableFindings(lastReview.outcome.fileContent) > 0;
+    },
+  },
+  // code-review approved (no fixable findings) → delta-spec-validation (2nd phase)
+  { step: STEP_NAMES.CODE_REVIEW,           on: "approved",             to: STEP_NAMES.DELTA_SPEC_VALIDATION },
+  { step: STEP_NAMES.CODE_REVIEW,           on: "needs-fix",            to: STEP_NAMES.CODE_FIXER },
+  { step: STEP_NAMES.CODE_REVIEW,           on: "escalation",           to: "escalate" },
+  // code-fixer → delta-spec-validation (when: 直前 code-review が approved = observation fix 完了)
+  { step: STEP_NAMES.CODE_FIXER,            on: "approved",
+    to: STEP_NAMES.DELTA_SPEC_VALIDATION,
+    when: (s) => {
+      const reviews = s.steps?.["code-review"];
+      if (!reviews || reviews.length === 0) return false;
+      const lastReview = reviews[reviews.length - 1];
+      return lastReview?.outcome?.verdict === "approved";
+    },
+  },
+  // code-fixer → code-review (needs-fix 由来 — fallback, when なし)
   { step: STEP_NAMES.CODE_FIXER,            on: "approved",   to: STEP_NAMES.CODE_REVIEW },
   { step: STEP_NAMES.CODE_FIXER,            on: "error",      to: "escalate" },
   // --- adr-gen (single shot, after 2nd-phase delta-spec-validation approved) ---

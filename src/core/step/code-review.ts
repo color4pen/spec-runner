@@ -2,62 +2,13 @@ import type { AgentStep, StepDeps, ParsedStepResult } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
-import type { Verdict } from "../../state/schema.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../../prompts/code-review-system.js";
 import { parseReviewVerdict } from "../parser/review-verdict.js";
-import { parseReviewScores } from "../parser/review-scores.js";
-import type { ReviewScores } from "../parser/review-scores.js";
-import { parseFindingSeverityCounts } from "../parser/review-findings.js";
-import type { FindingSeverityCounts } from "../parser/review-findings.js";
 import { reviewFeedbackPath, changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 
 const CODE_REVIEW_AGENT_MODEL = "claude-opus-4-6[1m]";
-
-/**
- * Determine the final verdict using structured scoring when available.
- *
- * Design D3: CLI verdict uses the stricter of CLI and agent verdicts.
- *
- * Rules:
- * 1. agent says escalation → escalation (CLI does not override escalation judgment)
- * 2. no scores → fall back to agent verdict
- * 3. scores available → compute CLI verdict; adopt the stricter of CLI and agent
- *
- * CLI verdict logic:
- *   total >= 7.0 AND critical === 0 AND high === 0 → "approved"
- *   otherwise → "needs-fix"
- *
- * "Stricter wins": needs-fix > approved (if either is needs-fix, result is needs-fix)
- */
-function determineVerdict(
-  agentVerdict: Verdict | null,
-  scores: ReviewScores | null,
-  severityCounts: FindingSeverityCounts,
-): Verdict {
-  // Rule 1: escalation always propagates
-  if (agentVerdict === "escalation") {
-    return "escalation";
-  }
-
-  // Rule 2: no scores — fall back to agent verdict
-  if (!scores) {
-    return agentVerdict ?? "escalation";
-  }
-
-  // Rule 3: compute CLI verdict and adopt the stricter
-  const cliVerdict: Verdict =
-    scores.total >= 7.0 && severityCounts.critical === 0 && severityCounts.high === 0
-      ? "approved"
-      : "needs-fix";
-
-  // Stricter wins: needs-fix > approved
-  if (agentVerdict === "needs-fix" || cliVerdict === "needs-fix") {
-    return "needs-fix";
-  }
-  return "approved";
-}
 
 /**
  * Build the review-feedback file path for a given iteration.
@@ -177,29 +128,7 @@ export const CodeReviewStep: AgentStep = {
   },
 
   parseResult(content: string, _deps: StepDeps): ParsedStepResult {
-    const agentVerdict = parseReviewVerdict(content);
-    const scores = parseReviewScores(content);
-    const severityCounts = parseFindingSeverityCounts(content);
-
-    const verdict = determineVerdict(agentVerdict, scores, severityCounts);
-
-    if (scores) {
-      return {
-        verdict,
-        findingsPath: null, // filled in by StepExecutor after fetch
-        fileContent: content,
-        scores: {
-          ...scores,
-          critical: severityCounts.critical,
-          high: severityCounts.high,
-        },
-      };
-    }
-
-    return {
-      verdict,
-      findingsPath: null, // filled in by StepExecutor after fetch
-      fileContent: content,
-    };
+    const verdict = parseReviewVerdict(content) ?? "escalation";
+    return { verdict, findingsPath: null, fileContent: content };
   },
 };

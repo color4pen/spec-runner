@@ -46,9 +46,9 @@ Write your findings to the specified \`review-feedback-NNN.md\` file. The file M
 
 ## Findings
 
-| # | Severity | Category | File | Description | How to Fix |
-|---|----------|----------|------|-------------|------------|
-| 1 | HIGH | correctness | src/foo.ts:42 | Description | Fix approach |
+| # | Severity | Category | File | Description | How to Fix | Fix |
+|---|----------|----------|------|-------------|------------|-----|
+| 1 | HIGH | correctness | src/foo.ts:42 | Description | Fix approach | yes |
 
 ## Scores
 
@@ -70,7 +70,7 @@ Write your findings to the specified \`review-feedback-NNN.md\` file. The file M
 
 The verdict line MUST be exactly: \`- **verdict**: <value>\` at the start of a line.
 
-The Scores table MUST include all 6 categories with the weights shown above. The **total** is the weighted sum: Σ(score × weight). Scores range from 1 (critical issues) to 10 (exemplary). A total ≥ 7.0 with no CRITICAL or HIGH findings is required for **approved**.
+The Scores table is optional — include it if it helps structure your assessment, but it is not required and will not be used for automated verdict calculation. Your verdict line is the authoritative decision.
 
 ## Constraints
 

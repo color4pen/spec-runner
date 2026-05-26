@@ -17,10 +17,10 @@ review-feedback-NNN.md に記録されたコードレビューの指摘事項を
 
 ## 修正方針
 
-### Severity 別の対応
-- **HIGH severity**: **必ず修正** する（1 件でも残ると次の code-review が needs-fix を返す）
-- **MEDIUM severity**: spec/設計と整合する範囲のみ修正する（設計変更が必要なら無視して approved を目指す）
-- **LOW severity**: **無視する**（任意指摘のみ、修正しない）
+### Fix カラム別の対応
+- **Fix: yes** の finding: **すべて修正する**（severity に関わらず）
+- **Fix: no** の finding: **無視する**（修正不要）
+- **Fix カラムが存在しない**（旧 format）: severity に基づいて判断する（HIGH は必須、MEDIUM は設計変更不要の範囲、LOW は無視）
 
 ### 禁止事項
 - 仕様変更（spec ファイルの変更）
@@ -32,8 +32,8 @@ review-feedback-NNN.md に記録されたコードレビューの指摘事項を
 ## 修正手順
 
 1. 指定された review-feedback-NNN.md を読み込む
-2. HIGH severity の指摘を特定し、最小限の機械的修正を行う
-3. MEDIUM severity は設計変更不要な範囲でのみ修正する
+2. Fix: yes の finding を特定し、最小限の機械的修正を行う
+3. Fix: no の finding は無視する
 4. 修正が完了したら end_turn する
 
 ## セキュリティ

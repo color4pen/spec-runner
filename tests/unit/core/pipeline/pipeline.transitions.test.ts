@@ -185,11 +185,11 @@ describe("TC-012-015, TC-029: code-review / code-fixer transition rows", () => {
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
 // TC-022: STANDARD_TRANSITIONS テーブルが 31 行を持つ（30 + conditional delta-spec-validation → adr-gen = 31）
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 31 rows total (30 previous + 1 new conditional delta-spec-validation → adr-gen = 31)", () => {
-    // 30 rows (previous total including adr-gen rows)
-    // + 1 conditional row: delta-spec-validation → adr-gen (when code-review ran)
-    // Note: code-review → adr-gen was replaced by code-review → delta-spec-validation (same count)
-    expect(STANDARD_TRANSITIONS.length).toBe(31);
+  it("has 33 rows total (31 previous + 2 new observation-auto-fix rows = 33)", () => {
+    // 31 rows (previous total including adr-gen rows and conditional delta-spec-validation → adr-gen)
+    // + 1: code-review --approved→ code-fixer (conditional, when: fixCount > 0)
+    // + 1: code-fixer --approved→ delta-spec-validation (conditional, when: last review was approved)
+    expect(STANDARD_TRANSITIONS.length).toBe(33);
   });
 
   it("verification --passed→ end does NOT exist", () => {

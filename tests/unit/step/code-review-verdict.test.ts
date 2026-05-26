@@ -1,15 +1,22 @@
 /**
- * Unit tests for determineVerdict and parseResult with structured scoring
+ * Unit tests for parseResult in code-review.ts (new design: agent verdict adopted directly)
  *
- * TC-VD-001: スコア >= 7.0 + CRITICAL=0 + HIGH=0 + agent approved → approved (must)
- * TC-VD-002: スコア >= 7.0 + CRITICAL=0 + HIGH=0 + agent needs-fix → needs-fix（厳しい方）(must)
- * TC-VD-003: スコア < 7.0 + agent approved → needs-fix（CLI が上書き）(must)
- * TC-VD-004: CRITICAL >= 1 + agent approved → needs-fix（CLI が上書き）(must)
- * TC-VD-005: HIGH >= 1 + agent approved → needs-fix（CLI が上書き）(must)
- * TC-VD-006: agent escalation → escalation（スコアに関係なく）(must)
- * TC-VD-007: スコアテーブルなし + agent approved → approved（フォールバック）(must)
- * TC-VD-008: スコアテーブルなし + agent needs-fix → needs-fix（フォールバック）(must)
- * TC-VD-009: スコアテーブルなし + verdict 行なし → escalation（既存の挙動）(must)
+ * Design D4: determineVerdict() abolished. Agent verdict is adopted as-is.
+ * Design D5: Fix column in Findings table drives observation auto-fix via transition when predicate.
+ *
+ * TC-VD-001: agent approved + no Fix column → approved (score not consulted)
+ * TC-VD-002: agent needs-fix → needs-fix (Fix column is not consulted)
+ * TC-VD-003: agent approved + score < 7.0 → approved (CLI no longer overrides)
+ * TC-VD-004: agent approved + CRITICAL finding (no Fix column) → approved (Fix col not present)
+ * TC-VD-005: agent approved + HIGH finding (no Fix column) → approved (Fix col not present)
+ * TC-VD-006: agent escalation → escalation (regardless of Fix column)
+ * TC-VD-007: no scores + agent approved → approved (fallback preserved)
+ * TC-VD-008: no scores + agent needs-fix → needs-fix (fallback preserved)
+ * TC-VD-009: no verdict line → escalation (existing fallback)
+ * TC-VD-010: agent approved + Fix: yes finding → approved (transition handles fixCount)
+ * TC-VD-011: agent approved + Fix: no finding → approved
+ * TC-VD-012: agent approved + mixed Fix yes/no → approved (transition handles fixCount)
+ * TC-VD-013: scores field is NOT populated (score computation removed)
  */
 import { describe, it, expect } from "vitest";
 import { CodeReviewStep } from "../../../src/core/step/code-review.js";
@@ -69,17 +76,30 @@ const LOW_SCORES_TABLE = `| Category | Score | Weight |
 
 - **total**: 4.8`;
 
-const CRITICAL_FINDING = `| # | Severity | Category | File | Description | How to Fix |
+const CRITICAL_FINDING_NO_FIX_COL = `| # | Severity | Category | File | Description | How to Fix |
 |---|----------|----------|------|-------------|------------|
 | 1 | CRITICAL | security | src/auth.ts:10 | Auth bypass | Fix auth |`;
 
-const HIGH_FINDING = `| # | Severity | Category | File | Description | How to Fix |
+const HIGH_FINDING_NO_FIX_COL = `| # | Severity | Category | File | Description | How to Fix |
 |---|----------|----------|------|-------------|------------|
 | 1 | HIGH | correctness | src/foo.ts:42 | Null deref | Add null check |`;
 
-// TC-VD-001: スコア >= 7.0 + CRITICAL=0 + HIGH=0 + agent approved → approved
-describe("TC-VD-001: スコア >= 7.0 + CRITICAL=0 + HIGH=0 + agent approved → approved", () => {
-  it("returns approved when all conditions pass", () => {
+const FINDING_WITH_FIX_YES = `| # | Severity | Category | File | Description | How to Fix | Fix |
+|---|----------|----------|------|-------------|------------|-----|
+| 1 | HIGH | correctness | src/foo.ts:42 | Null deref | Add null check | yes |`;
+
+const FINDING_WITH_FIX_NO = `| # | Severity | Category | File | Description | How to Fix | Fix |
+|---|----------|----------|------|-------------|------------|-----|
+| 1 | HIGH | correctness | src/foo.ts:42 | Null deref | Add null check | no |`;
+
+const FINDING_WITH_MIXED_FIX = `| # | Severity | Category | File | Description | How to Fix | Fix |
+|---|----------|----------|------|-------------|------------|-----|
+| 1 | HIGH | correctness | src/foo.ts:42 | Null deref | Add null check | yes |
+| 2 | MEDIUM | maintainability | src/bar.ts:10 | Long func | Split it | no |`;
+
+// TC-VD-001: agent approved + no Fix column → approved (score not consulted)
+describe("TC-VD-001: agent approved + no Fix column → approved", () => {
+  it("returns approved when agent says approved and no Fix column", () => {
     const deps = makeMinimalDeps();
     const content = buildContent({
       agentVerdict: "approved",
@@ -88,23 +108,10 @@ describe("TC-VD-001: スコア >= 7.0 + CRITICAL=0 + HIGH=0 + agent approved →
     const result = CodeReviewStep.parseResult(content, deps);
     expect(result.verdict).toBe("approved");
   });
-
-  it("populates scores field with criticalCount and highCount", () => {
-    const deps = makeMinimalDeps();
-    const content = buildContent({
-      agentVerdict: "approved",
-      scoresTable: GOOD_SCORES_TABLE,
-    });
-    const result = CodeReviewStep.parseResult(content, deps);
-    expect(result.scores).toBeDefined();
-    expect(result.scores!.total).toBe(7.8);
-    expect(result.scores!.critical).toBe(0);
-    expect(result.scores!.high).toBe(0);
-  });
 });
 
-// TC-VD-002: スコア >= 7.0 + CRITICAL=0 + HIGH=0 + agent needs-fix → needs-fix（厳しい方）
-describe("TC-VD-002: スコア >= 7.0 + CRITICAL=0 + HIGH=0 + agent needs-fix → needs-fix", () => {
+// TC-VD-002: agent needs-fix → needs-fix (Fix column is not consulted)
+describe("TC-VD-002: agent needs-fix → needs-fix", () => {
   it("returns needs-fix when agent says needs-fix even if CLI says approved (stricter wins)", () => {
     const deps = makeMinimalDeps();
     const content = buildContent({
@@ -116,66 +123,44 @@ describe("TC-VD-002: スコア >= 7.0 + CRITICAL=0 + HIGH=0 + agent needs-fix �
   });
 });
 
-// TC-VD-003: スコア < 7.0 + agent approved → needs-fix（CLI が上書き）
-describe("TC-VD-003: スコア < 7.0 + agent approved → needs-fix", () => {
-  it("returns needs-fix when total score is below 7.0", () => {
+// TC-VD-003: agent approved + score < 7.0 → approved (CLI no longer overrides)
+describe("TC-VD-003: agent approved + score < 7.0 → approved (CLI no longer overrides)", () => {
+  it("returns approved when total score is below 7.0 (agent verdict trusted)", () => {
     const deps = makeMinimalDeps();
     const content = buildContent({
       agentVerdict: "approved",
       scoresTable: LOW_SCORES_TABLE,
     });
     const result = CodeReviewStep.parseResult(content, deps);
-    expect(result.verdict).toBe("needs-fix");
+    expect(result.verdict).toBe("approved");
   });
 });
 
-// TC-VD-004: CRITICAL >= 1 + agent approved → needs-fix（CLI が上書き）
-describe("TC-VD-004: CRITICAL >= 1 + agent approved → needs-fix", () => {
-  it("returns needs-fix when CRITICAL finding exists even if scores are high", () => {
+// TC-VD-004: agent approved + CRITICAL finding (no Fix column) → approved
+describe("TC-VD-004: agent approved + CRITICAL finding (no Fix column) → approved", () => {
+  it("returns approved when CRITICAL finding exists but Fix column absent (no CLI override)", () => {
     const deps = makeMinimalDeps();
     const content = buildContent({
       agentVerdict: "approved",
       scoresTable: GOOD_SCORES_TABLE,
-      findings: CRITICAL_FINDING,
+      findings: CRITICAL_FINDING_NO_FIX_COL,
     });
     const result = CodeReviewStep.parseResult(content, deps);
-    expect(result.verdict).toBe("needs-fix");
-  });
-
-  it("scores.criticalCount reflects the finding count", () => {
-    const deps = makeMinimalDeps();
-    const content = buildContent({
-      agentVerdict: "approved",
-      scoresTable: GOOD_SCORES_TABLE,
-      findings: CRITICAL_FINDING,
-    });
-    const result = CodeReviewStep.parseResult(content, deps);
-    expect(result.scores!.critical).toBe(1);
+    expect(result.verdict).toBe("approved");
   });
 });
 
-// TC-VD-005: HIGH >= 1 + agent approved → needs-fix（CLI が上書き）
-describe("TC-VD-005: HIGH >= 1 + agent approved → needs-fix", () => {
-  it("returns needs-fix when HIGH finding exists even if scores are high", () => {
+// TC-VD-005: agent approved + HIGH finding (no Fix column) → approved
+describe("TC-VD-005: agent approved + HIGH finding (no Fix column) → approved", () => {
+  it("returns approved when HIGH finding exists but Fix column absent (no CLI override)", () => {
     const deps = makeMinimalDeps();
     const content = buildContent({
       agentVerdict: "approved",
       scoresTable: GOOD_SCORES_TABLE,
-      findings: HIGH_FINDING,
+      findings: HIGH_FINDING_NO_FIX_COL,
     });
     const result = CodeReviewStep.parseResult(content, deps);
-    expect(result.verdict).toBe("needs-fix");
-  });
-
-  it("scores.highCount reflects the finding count", () => {
-    const deps = makeMinimalDeps();
-    const content = buildContent({
-      agentVerdict: "approved",
-      scoresTable: GOOD_SCORES_TABLE,
-      findings: HIGH_FINDING,
-    });
-    const result = CodeReviewStep.parseResult(content, deps);
-    expect(result.scores!.high).toBe(1);
+    expect(result.verdict).toBe("approved");
   });
 });
 
@@ -238,6 +223,58 @@ describe("TC-VD-009: スコアテーブルなし + verdict 行なし → escalat
     const content = "# Code Review\n\nNo verdict here.\n";
     const result = CodeReviewStep.parseResult(content, deps);
     expect(result.verdict).toBe("escalation");
+    expect(result.scores).toBeUndefined();
+  });
+});
+
+// TC-VD-010: agent approved + Fix: yes finding → verdict stays approved (transition handles fixCount)
+describe("TC-VD-010: agent approved + Fix: yes finding → approved (verdict not recomputed)", () => {
+  it("returns approved as-is — fixCount routing is handled by transition table, not parseResult", () => {
+    const deps = makeMinimalDeps();
+    const content = buildContent({
+      agentVerdict: "approved",
+      findings: FINDING_WITH_FIX_YES,
+    });
+    const result = CodeReviewStep.parseResult(content, deps);
+    expect(result.verdict).toBe("approved");
+  });
+});
+
+// TC-VD-011: agent approved + Fix: no finding → approved
+describe("TC-VD-011: agent approved + Fix: no finding → approved", () => {
+  it("returns approved when all findings are Fix: no", () => {
+    const deps = makeMinimalDeps();
+    const content = buildContent({
+      agentVerdict: "approved",
+      findings: FINDING_WITH_FIX_NO,
+    });
+    const result = CodeReviewStep.parseResult(content, deps);
+    expect(result.verdict).toBe("approved");
+  });
+});
+
+// TC-VD-012: agent approved + mixed Fix yes/no → approved (transition handles fixCount)
+describe("TC-VD-012: agent approved + mixed Fix yes/no → approved (verdict not recomputed)", () => {
+  it("returns approved as-is — fixCount routing is handled by transition table", () => {
+    const deps = makeMinimalDeps();
+    const content = buildContent({
+      agentVerdict: "approved",
+      findings: FINDING_WITH_MIXED_FIX,
+    });
+    const result = CodeReviewStep.parseResult(content, deps);
+    expect(result.verdict).toBe("approved");
+  });
+});
+
+// TC-VD-013: scores field is NOT populated (score computation removed)
+describe("TC-VD-013: scores field is not populated", () => {
+  it("does not populate scores field even when score table is present", () => {
+    const deps = makeMinimalDeps();
+    const content = buildContent({
+      agentVerdict: "approved",
+      scoresTable: GOOD_SCORES_TABLE,
+    });
+    const result = CodeReviewStep.parseResult(content, deps);
     expect(result.scores).toBeUndefined();
   });
 });
