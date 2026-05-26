@@ -54,6 +54,8 @@ export interface PrepareResult {
   workspaceOpts: WorkspaceOptions;
   /** Absolute path to the git repository root. Used for job state and verbose log paths. */
   repoRoot: string;
+  /** resume 時に注入する追加プロンプト。ResumeCommand のみが設定する。 */
+  resumePrompt?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -125,6 +127,11 @@ export abstract class CommandRunner {
       let handle: CleanupHandle;
       try {
         deps = this.runtime.buildDeps(config, request, slug, workspace);
+
+        // Step 3c: propagate resumePrompt from prepare() into deps (one-shot injection)
+        if (prepared.resumePrompt) {
+          deps.resumePrompt = prepared.resumePrompt;
+        }
 
         // Step 3b: collect dynamic context and attach to deps (once per run, not per-step)
         // collectDynamicContext never throws — failures return empty fields.

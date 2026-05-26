@@ -71,6 +71,12 @@ export interface AgentRunContext {
    * Propagated from ParsedRequest.type at executor level.
    */
   requestType?: string;
+  /**
+   * resume 時にユーザーが --prompt / --prompt-file で注入した追加コンテキスト。
+   * 最初の agent ステップのみに適用される（one-shot）。
+   * 未指定時は undefined（既存動作と同一）。
+   */
+  resumePrompt?: string;
 }
 
 /**

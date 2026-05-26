@@ -753,6 +753,180 @@ describe("TC-021 (test-cases.md): SSE/design-style — no <project-context> when
 });
 
 // ---------------------------------------------------------------------------
+// TC-15 / TC-16 (test-cases.md): resumePrompt injection
+// TC-15: ctx.resumePrompt set → polling initialMessage includes <resume-context>
+// TC-16: ctx.resumePrompt set → SSE requestContent includes <resume-context>
+// ---------------------------------------------------------------------------
+
+describe("TC-15 (test-cases.md): polling-style — resumePrompt injected into initialMessage", () => {
+  it("sendUserMessage receives message with <resume-context> when ctx.resumePrompt is set", async () => {
+    const jobId = "tc-rp-015-job";
+    const state = makeJobState(jobId);
+    await persistState(state);
+
+    const sessionClient = makeMockSessionClient();
+    const sendUserMessageSpy = sessionClient.sendUserMessage as ReturnType<typeof vi.fn>;
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const ctx = makeCtx(
+      {
+        step: makePollingStyleStep("spec-review", "spec-review"),
+        state,
+        resumePrompt: "手動で foo.ts の import を修正済み",
+      },
+      jobId,
+    );
+
+    await runner.run(ctx);
+
+    expect(sendUserMessageSpy).toHaveBeenCalledTimes(1);
+    const sentMessage = sendUserMessageSpy.mock.calls[0]?.[1] as string;
+    expect(sentMessage).toContain("<resume-context>");
+    expect(sentMessage).toContain("手動で foo.ts の import を修正済み");
+    expect(sentMessage).toContain("</resume-context>");
+  });
+
+  it("sendUserMessage receives message WITHOUT <resume-context> when resumePrompt is absent", async () => {
+    const jobId = "tc-rp-015b-job";
+    const state = makeJobState(jobId);
+    await persistState(state);
+
+    const sessionClient = makeMockSessionClient();
+    const sendUserMessageSpy = sessionClient.sendUserMessage as ReturnType<typeof vi.fn>;
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const ctx = makeCtx(
+      {
+        step: makePollingStyleStep("spec-review", "spec-review"),
+        state,
+        // resumePrompt intentionally absent
+      },
+      jobId,
+    );
+
+    await runner.run(ctx);
+
+    expect(sendUserMessageSpy).toHaveBeenCalledTimes(1);
+    const sentMessage = sendUserMessageSpy.mock.calls[0]?.[1] as string;
+    expect(sentMessage).not.toContain("<resume-context>");
+  });
+});
+
+describe("TC-16 (test-cases.md): SSE/design-style — resumePrompt injected into requestContent", () => {
+  it("streamEvents receives requestContent with <resume-context> when ctx.resumePrompt is set", async () => {
+    const jobId = "tc-rp-016-job";
+    const state = makeJobState(jobId, "feat/test");
+    await persistState(state);
+
+    const sessionClient = makeMockSessionClient();
+    const streamEventsSpy = sessionClient.streamEvents as ReturnType<typeof vi.fn>;
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const designStep: AgentStep = {
+      kind: "agent",
+      name: "design",
+      agent: {
+        name: "specrunner-design",
+        role: "design",
+        model: "claude-sonnet-4-5",
+        system: "design",
+        tools: [],
+      },
+      toolHandlers: undefined,
+      buildMessage: () => "base design message",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+
+    const ctx = makeCtx(
+      {
+        step: designStep,
+        state,
+        branch: "feat/test",
+        requestContent: "base request content",
+        resumePrompt: "前回の review feedback を反映済み",
+      },
+      jobId,
+    );
+
+    await runner.run(ctx);
+
+    expect(streamEventsSpy).toHaveBeenCalledTimes(1);
+    const streamOpts = streamEventsSpy.mock.calls[0]?.[1] as { requestContent?: string };
+    expect(streamOpts.requestContent).toContain("<resume-context>");
+    expect(streamOpts.requestContent).toContain("前回の review feedback を反映済み");
+    expect(streamOpts.requestContent).toContain("</resume-context>");
+  });
+
+  it("streamEvents receives requestContent WITHOUT <resume-context> when resumePrompt is absent", async () => {
+    const jobId = "tc-rp-016b-job";
+    const state = makeJobState(jobId, "feat/test");
+    await persistState(state);
+
+    const sessionClient = makeMockSessionClient();
+    const streamEventsSpy = sessionClient.streamEvents as ReturnType<typeof vi.fn>;
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const designStep: AgentStep = {
+      kind: "agent",
+      name: "design",
+      agent: {
+        name: "specrunner-design",
+        role: "design",
+        model: "claude-sonnet-4-5",
+        system: "design",
+        tools: [],
+      },
+      toolHandlers: undefined,
+      buildMessage: () => "base design message",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+
+    const ctx = makeCtx(
+      {
+        step: designStep,
+        state,
+        branch: "feat/test",
+        requestContent: "base request content",
+        // resumePrompt intentionally absent
+      },
+      jobId,
+    );
+
+    await runner.run(ctx);
+
+    expect(streamEventsSpy).toHaveBeenCalledTimes(1);
+    const streamOpts = streamEventsSpy.mock.calls[0]?.[1] as { requestContent?: string };
+    expect(streamOpts.requestContent).not.toContain("<resume-context>");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-031: result file not found → completionReason error
 // ---------------------------------------------------------------------------
 

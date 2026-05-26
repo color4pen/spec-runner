@@ -242,9 +242,12 @@ export class ManagedAgentRunner implements AgentRunner {
     const effectiveRequestContent = ctx.projectContext
       ? `${ctx.requestContent}\n\n<project-context>\n${ctx.projectContext}\n</project-context>`
       : ctx.requestContent;
+    const effectiveRequestContentWithResume = ctx.resumePrompt
+      ? `${effectiveRequestContent}\n\n<resume-context>\n${ctx.resumePrompt}\n</resume-context>`
+      : effectiveRequestContent;
 
     const sseResult = await this.sessionClient.streamEvents(sessionId, {
-      requestContent: effectiveRequestContent,
+      requestContent: effectiveRequestContentWithResume,
       slug: ctx.slug,
       branch: ctx.branch || undefined,
       toolHandlers,
@@ -422,6 +425,10 @@ export class ManagedAgentRunner implements AgentRunner {
 
     if (ctx.projectContext) {
       initialMessage = `${initialMessage}\n\n<project-context>\n${ctx.projectContext}\n</project-context>`;
+    }
+
+    if (ctx.resumePrompt) {
+      initialMessage = `${initialMessage}\n\n<resume-context>\n${ctx.resumePrompt}\n</resume-context>`;
     }
 
     // Managed agents commit+push themselves (StepExecutor.commitAndPush only runs for local runtime).

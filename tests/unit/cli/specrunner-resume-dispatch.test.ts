@@ -11,6 +11,9 @@
  * TC-DISPATCH-008: job resume with unknown flag → exit 2
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import * as os from "node:os";
 
 // Must mock runResume BEFORE importing main, since vitest hoists vi.mock
 vi.mock("../../../src/cli/resume.js", () => ({
@@ -158,5 +161,67 @@ describe("TC-DISPATCH-008: unknown flag", () => {
     const error = await runMain(["job", "resume", "my-slug", "--unknown-flag"]);
     expect(error).toBe("process.exit(2)");
     expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining("Unknown flag(s)"));
+  });
+});
+
+// TC-DISPATCH-009: job resume with --prompt → passes prompt to runResume
+describe("TC-DISPATCH-009: --prompt flag passes prompt to runResume", () => {
+  it("passes prompt: 'extra context' to runResume", async () => {
+    const { runResume } = await import("../../../src/cli/resume.js");
+
+    await runMain(["job", "resume", "my-slug", "--prompt=extra context"]);
+
+    expect(runResume).toHaveBeenCalledWith(
+      "my-slug",
+      expect.objectContaining({ prompt: "extra context" }),
+    );
+  });
+});
+
+// TC-DISPATCH-010: job resume with both --prompt and --prompt-file → exit 2
+describe("TC-DISPATCH-010: --prompt and --prompt-file are mutually exclusive", () => {
+  it("exits with code 2 and writes error message when both flags are specified", async () => {
+    const error = await runMain([
+      "job", "resume", "my-slug",
+      "--prompt=inline text",
+      "--prompt-file=./some-file.md",
+    ]);
+    expect(error).toBe("process.exit(2)");
+    // main() writes FlagParseError.message when caught — no "Error: " prefix
+    expect(stderrSpy).toHaveBeenCalledWith(
+      expect.stringContaining("--prompt and --prompt-file are mutually exclusive"),
+    );
+  });
+});
+
+// TC-DISPATCH-011: job resume with --prompt-file reads file content and passes to runResume
+describe("TC-DISPATCH-011: --prompt-file reads file content and passes to runResume", () => {
+  it("passes file content as prompt", async () => {
+    const { runResume } = await import("../../../src/cli/resume.js");
+    const tmpFile = path.join(os.tmpdir(), `tc-dispatch-011-${Date.now()}.md`);
+    await fs.writeFile(tmpFile, "fix content");
+    try {
+      await runMain(["job", "resume", "my-slug", `--prompt-file=${tmpFile}`]);
+      expect(runResume).toHaveBeenCalledWith(
+        "my-slug",
+        expect.objectContaining({ prompt: "fix content" }),
+      );
+    } finally {
+      await fs.rm(tmpFile, { force: true });
+    }
+  });
+});
+
+// TC-DISPATCH-012: job resume with --prompt-file pointing to nonexistent path → exit 1
+describe("TC-DISPATCH-012: --prompt-file with nonexistent path → exit 1", () => {
+  it("exits with code 1 and writes error to stderr", async () => {
+    const error = await runMain([
+      "job", "resume", "my-slug",
+      "--prompt-file=./nonexistent-file-99999.md",
+    ]);
+    expect(error).toBe("process.exit(1)");
+    expect(stderrSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Cannot read prompt file"),
+    );
   });
 });

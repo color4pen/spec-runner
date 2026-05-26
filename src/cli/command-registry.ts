@@ -26,6 +26,7 @@ import { showUsage } from "../core/command/usage-show.js";
 import { showUsageSummary } from "../core/command/usage-summary.js";
 import { resolveWithFallback as storeResolve } from "../core/request/store.js";
 import { AGENT_STEP_NAMES, CLI_STEP_NAMES } from "../core/step/step-names.js";
+import { FlagParseError } from "./flag-parser.js";
 import type { FlagDef, ParsedArgs } from "./flag-parser.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
@@ -393,15 +394,37 @@ export const COMMANDS: Record<string, CommandEntry> = {
           from: { type: "string", values: [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES, "critic", "fixer", "creator"] as const },
           force: { type: "boolean" },
           verbose: { type: "boolean" },
+          prompt: { type: "string" },
+          "prompt-file": { type: "string" },
         },
         positional: { name: "slug", required: true },
         handler: async (parsed) => {
+          const promptText = parsed.flags["prompt"] as string | undefined;
+          const promptFile = parsed.flags["prompt-file"] as string | undefined;
+
+          if (promptText !== undefined && promptFile !== undefined) {
+            throw new FlagParseError("--prompt and --prompt-file are mutually exclusive.");
+          }
+
+          let resolvedPrompt: string | undefined;
+          if (promptFile !== undefined) {
+            try {
+              resolvedPrompt = fs.readFileSync(path.resolve(process.cwd(), promptFile), "utf-8");
+            } catch (err) {
+              process.stderr.write(`Error: Cannot read prompt file '${promptFile}': ${(err as Error).message}\n`);
+              process.exit(1);
+            }
+          } else {
+            resolvedPrompt = promptText;
+          }
+
           try {
             await runResume(parsed.positional!, {
               from: parsed.flags["from"] as string | undefined,
               force: !!parsed.flags["force"],
               verbose: !!parsed.flags["verbose"],
               cwd: process.cwd(),
+              prompt: resolvedPrompt,
             });
           } catch (err: unknown) {
             process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);

@@ -26,6 +26,7 @@ export interface ResumeOptions {
   force?: boolean;
   verbose?: boolean;
   cwd?: string;
+  prompt?: string;
 }
 
 /**
@@ -224,6 +225,7 @@ export class ResumeCommand extends CommandRunner {
         existingWorktreePath: updatedState.worktreePath ?? null,
         baseBranch: request.baseBranch,
       },
+      resumePrompt: this.options.prompt,
     };
   }
 }

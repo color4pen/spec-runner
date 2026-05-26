@@ -146,9 +146,12 @@ export class ClaudeCodeRunner implements AgentRunner {
     const baseMessage = step.buildMessage(state, stepCtx);
 
     const additionalInstructions = buildAdditionalInstructions(ctx);
+    const resumeSection = ctx.resumePrompt
+      ? `\n\n<resume-context>\n${ctx.resumePrompt}\n</resume-context>`
+      : "";
     const fullPrompt = additionalInstructions
-      ? `${baseMessage}\n\n${additionalInstructions}`
-      : baseMessage;
+      ? `${baseMessage}${resumeSection}\n\n${additionalInstructions}`
+      : `${baseMessage}${resumeSection}`;
 
     // Resolve execution config: step-level > config defaults > step hardcoded > SDK default
     // D2/D3 (design.md): getStepExecutionConfig() resolves model, maxTurns, timeoutMs

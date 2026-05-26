@@ -1843,3 +1843,94 @@ describe("TC-EMIT: ClaudeCodeRunner emits step:progress on tool_use messages", (
     expect(progressCalls[0]?.[1]).toMatchObject({ step: "implementer", tool: "Bash" });
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-10c: resumePrompt injection (T-10c)
+// ---------------------------------------------------------------------------
+
+describe("TC-10c: ClaudeCodeRunner — resumePrompt injection", () => {
+  it("ctx.resumePrompt が設定されているとき、fullPrompt に <resume-context> セクションが含まれる", async () => {
+    let capturedPrompt: string | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { capturedPrompt = params.prompt; },
+    });
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc10c-job-001"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "base request",
+      config: makeConfig(),
+      emit: vi.fn(),
+      resumePrompt: "手動で foo.ts の import を修正済み",
+    };
+
+    await runner.run(ctx);
+
+    expect(capturedPrompt).toBeDefined();
+    expect(capturedPrompt).toContain("<resume-context>");
+    expect(capturedPrompt).toContain("手動で foo.ts の import を修正済み");
+    expect(capturedPrompt).toContain("</resume-context>");
+  });
+
+  it("ctx.resumePrompt が未設定のとき、fullPrompt に <resume-context> が含まれない", async () => {
+    let capturedPrompt: string | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { capturedPrompt = params.prompt; },
+    });
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc10c-job-002"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "base request",
+      config: makeConfig(),
+      emit: vi.fn(),
+      // resumePrompt intentionally absent
+    };
+
+    await runner.run(ctx);
+
+    expect(capturedPrompt).toBeDefined();
+    expect(capturedPrompt).not.toContain("<resume-context>");
+  });
+
+  it("resumePrompt は baseMessage と additionalInstructions の間に挿入される", async () => {
+    let capturedPrompt: string | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { capturedPrompt = params.prompt; },
+    });
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep({ buildMessage: () => "BASE_MESSAGE" }),
+      state: makeJobState("tc10c-job-003", "feat/branch"),
+      branch: "feat/branch",
+      slug: "test-slug",
+      cwd: tempDir,
+      requestContent: "base request",
+      config: makeConfig(),
+      emit: vi.fn(),
+      resumePrompt: "RESUME_CONTEXT",
+    };
+
+    await runner.run(ctx);
+
+    expect(capturedPrompt).toBeDefined();
+    // resumePrompt appears before additionalInstructions (which contains RUNTIME INSTRUCTIONS)
+    const resumeIdx = capturedPrompt!.indexOf("<resume-context>");
+    const runtimeIdx = capturedPrompt!.indexOf("RUNTIME INSTRUCTIONS");
+    expect(resumeIdx).toBeGreaterThan(-1);
+    expect(runtimeIdx).toBeGreaterThan(-1);
+    expect(resumeIdx).toBeLessThan(runtimeIdx);
+  });
+});

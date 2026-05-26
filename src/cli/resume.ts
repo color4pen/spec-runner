@@ -32,6 +32,7 @@ export interface ResumeOptions {
   force?: boolean;
   verbose?: boolean;
   cwd?: string;
+  prompt?: string;
 }
 
 export async function runResumeCore(slug: string, options: ResumeOptions): Promise<number> {

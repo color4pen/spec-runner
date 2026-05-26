@@ -160,12 +160,18 @@ export class StepExecutor {
       dynamicContext: deps.dynamicContext,
       projectContext,
       resumeSessionId,
+      resumePrompt: deps.resumePrompt,
       followUpPrompts: allFollowUpPrompts.length > 0 ? allFollowUpPrompts : undefined,
       emit: (event: DomainEvent, payload: Record<string, unknown>) => {
         // Forward adapter events to the event bus
         this.events.emit(event, payload as never);
       },
     };
+
+    // One-shot: 最初の agent ステップで消費し、後続ステップには引き継がない
+    if (deps.resumePrompt) {
+      deps.resumePrompt = undefined;
+    }
 
     // Capture HEAD SHA before agent executes (local runtime only, for self-commit detection).
     // gitExec returns null on failure (non-git dir, etc.) — safe to use without try/catch.
