@@ -2,7 +2,8 @@ import * as readline from "node:readline";
 import { createAnthropicClient } from "../adapter/managed-agent/client.js";
 import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
 import { createEnvironment, retrieveEnvironment } from "../adapter/managed-agent/environments.js";
-import { loadConfig, saveConfig } from "../config/store.js";
+import { saveConfig } from "../config/store.js";
+import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
 import { AgentRegistry, AgentSyncer } from "../core/agent/index.js";
 import type { AgentSyncerConfig } from "../core/agent/syncer.js";
 import { AnthropicClientAdapter } from "../adapter/managed-agent/index.js";
@@ -47,7 +48,7 @@ export async function runManagedSetup(): Promise<void> {
 
   let existingConfig: Partial<SpecRunnerConfig> = {};
   try {
-    existingConfig = await loadConfig();
+    existingConfig = await loadConfigWithOverlay();
   } catch {
     // No existing config — OK for first run
   }
@@ -148,7 +149,7 @@ export async function runManagedSetup(): Promise<void> {
 export async function runManagedStatus(): Promise<void> {
   let config: SpecRunnerConfig;
   try {
-    config = await loadConfig();
+    config = await loadConfigWithOverlay();
   } catch {
     process.stdout.write("Runtime: local (no config found)\n");
     return;
@@ -197,7 +198,7 @@ export async function runManagedReset(opts: { force: boolean }): Promise<void> {
 
   let config: SpecRunnerConfig;
   try {
-    config = await loadConfig();
+    config = await loadConfigWithOverlay();
   } catch (err) {
     process.stderr.write(`Error loading config: ${(err as Error).message}\n`);
     process.exit(1);

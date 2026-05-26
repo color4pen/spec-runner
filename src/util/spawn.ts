@@ -60,6 +60,12 @@ export function spawnCommand(
     proc.stderr.on("data", (chunk: Buffer) => {
       stderr += chunk.toString();
     });
+    // Handle spawn errors (e.g. ENOENT when executable not found).
+    // Without this handler, Node.js emits an uncaught exception.
+    proc.on("error", (err) => {
+      if (timeoutHandle !== undefined) clearTimeout(timeoutHandle);
+      resolve({ exitCode: null, stdout, stderr: err.message });
+    });
     proc.on("close", (code) => {
       if (timeoutHandle !== undefined) {
         clearTimeout(timeoutHandle);

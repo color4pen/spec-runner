@@ -24,7 +24,7 @@ export class DispatchingAgentRunner implements AgentRunner {
     const resolvedConfig = getStepExecutionConfig(ctx.config, ctx.step.name, {
       model: ctx.step.agent.model,
       maxTurns: dynamicMaxTurns ?? ctx.step.maxTurns,
-    });
+    }, ctx.requestType);
 
     const merged = mergeModelRegistry(ctx.config);
     const provider = resolveProvider(resolvedConfig.model, merged);

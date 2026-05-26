@@ -151,6 +151,7 @@ export class StepExecutor {
       cwd,
       requestContent: deps.request.content,
       requestAdr: deps.request.adr,
+      requestType: deps.request.type,
       config: deps.config,
       dynamicContext: deps.dynamicContext,
       projectContext,

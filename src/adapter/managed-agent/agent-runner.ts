@@ -108,9 +108,10 @@ export class ManagedAgentRunner implements AgentRunner {
   /**
    * Resolve effective timeout from step config with DEFAULT_POLL_TIMEOUT_MS fallback.
    * Used in design fallback (3 places: design/polling/follow-up).
+   * requestType is passed through to enable byRequestType resolution at levels 1 & 3.
    */
-  private resolveEffectiveTimeout(config: SpecRunnerConfig, stepName: string, model: string): number {
-    const resolved = getStepExecutionConfig(config, stepName, { model });
+  private resolveEffectiveTimeout(config: SpecRunnerConfig, stepName: string, model: string, requestType?: string): number {
+    const resolved = getStepExecutionConfig(config, stepName, { model }, requestType);
     return resolved.timeoutMs && resolved.timeoutMs > 0 ? resolved.timeoutMs : DEFAULT_POLL_TIMEOUT_MS;
   }
 
@@ -167,7 +168,7 @@ export class ManagedAgentRunner implements AgentRunner {
     if ("completionReason" in streamResult) return streamResult; // timeout early return
 
     const { sseEndTurn } = streamResult;
-    const effectiveTimeoutMs = this.resolveEffectiveTimeout(ctx.config, ctx.step.name, ctx.step.agent.model);
+    const effectiveTimeoutMs = this.resolveEffectiveTimeout(ctx.config, ctx.step.name, ctx.step.agent.model, ctx.requestType);
 
     if (sseEndTurn && shouldRunFollowUp(ctx, "success")) {
       for (const followPrompt of ctx.followUpPrompts!) {
@@ -263,7 +264,7 @@ export class ManagedAgentRunner implements AgentRunner {
 
     if (needsPollingFallback) {
       stderrWrite("SSE disconnected; falling back to polling.");
-      const effectiveTimeoutMs = this.resolveEffectiveTimeout(config, step.name, step.agent.model);
+      const effectiveTimeoutMs = this.resolveEffectiveTimeout(config, step.name, step.agent.model, ctx.requestType);
 
       const pollResult = await this.sessionClient.pollUntilComplete(sessionId, {
         abortSignal: abortController.signal,
@@ -339,7 +340,7 @@ export class ManagedAgentRunner implements AgentRunner {
 
     const sessionId = await this.createOrResumePollingSession(ctx, agentId, initialMessage);
 
-    const effectiveTimeoutMs = this.resolveEffectiveTimeout(ctx.config, ctx.step.name, ctx.step.agent.model);
+    const effectiveTimeoutMs = this.resolveEffectiveTimeout(ctx.config, ctx.step.name, ctx.step.agent.model, ctx.requestType);
     const pollResult = await this.sessionClient.pollUntilComplete(sessionId, { timeoutMs: effectiveTimeoutMs });
     const completedAt = new Date().toISOString();
 

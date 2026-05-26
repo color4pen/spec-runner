@@ -78,6 +78,63 @@ specrunner runtime reset                   Reset managed runtime config
 specrunner run <slug|file>                 Alias for: job start <slug|file>
 ```
 
+## Configuration
+
+### User global config
+
+SpecRunner stores its configuration at `~/.config/specrunner/config.json` (XDG_CONFIG_HOME).
+Run `specrunner init` to create the initial scaffold.
+
+### Project local config (per-repo override)
+
+Place a partial config at `<repo-root>/.specrunner/config.json` to override settings for a specific repository.
+The project local config is **deep-merged** on top of the user global config — you only need to specify the fields you want to change.
+
+```jsonc
+// <repo-root>/.specrunner/config.json
+{
+  "version": 1,
+  "steps": {
+    "defaults": { "model": "claude-sonnet-4-6" },
+    "design": {
+      "byRequestType": {
+        "spec-change": { "model": "claude-opus-4-6[1m]" },
+        "new-feature": { "model": "claude-opus-4-6[1m]" }
+      }
+    }
+  }
+}
+```
+
+This example uses opus for design on `spec-change` / `new-feature` requests and sonnet for everything else (from user global).
+
+### byRequestType — per-request-type model selection
+
+Each step config supports a `byRequestType` object to select a different model based on the request type:
+
+```jsonc
+{
+  "steps": {
+    "code-review": {
+      "model": "claude-sonnet-4-6",
+      "byRequestType": {
+        "spec-change": { "model": "claude-opus-4-6[1m]" }
+      }
+    }
+  }
+}
+```
+
+Resolution order (first defined wins):
+1. `steps.<step>.byRequestType.<requestType>.<field>`
+2. `steps.<step>.<field>`
+3. `steps.defaults.byRequestType.<requestType>.<field>`
+4. `steps.defaults.<field>`
+5. Step hardcoded default
+6. SDK default
+
+> Note: under the **managed** runtime, `model` / `byRequestType.model` are ignored — managed agents use their pre-registered model. These fields are effective only under the **local** runtime.
+
 ## Runtime Modes
 
 ### Local runtime (default)

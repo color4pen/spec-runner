@@ -79,6 +79,8 @@ spec-runner の path 真理:
 - **Change folder**: \`specrunner/changes/<slug>/\`
 - **Job state**: \`.specrunner/jobs/<jobId>.json\`
 - **Verbose log**: \`.specrunner/logs/<jobId>.log\`
+- **User global config**: \`~/.config/specrunner/config.json\` (XDG_CONFIG_HOME 準拠)
+- **Project local config**: \`<repo-root>/.specrunner/config.json\` (repo 単位の step model カスタマイズ — user global の上に deep merge される)
 - **Baseline edit detection**: authority spec の直接編集は delta-spec-validation の \`no-authority-spec-direct-edit\` rule が検出し、delta-spec-fixer が自動修正する。code-review 後にも delta-spec-validation が再実行され、code-fixer loop で発生した baseline 編集も捕捉される。
 
 ---

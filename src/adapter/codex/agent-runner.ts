@@ -116,7 +116,7 @@ export class CodexAgentRunner implements AgentRunner {
     const resolvedConfig = getStepExecutionConfig(ctx.config, step.name, {
       model: step.agent.model,
       maxTurns: dynamicMaxTurns ?? step.maxTurns,
-    });
+    }, ctx.requestType);
 
     const abortController = new AbortController();
     let timeoutId: ReturnType<typeof setTimeout> | undefined;

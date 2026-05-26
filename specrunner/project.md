@@ -43,12 +43,54 @@ CLI-first の dual runtime アーキテクチャ。
 
 ### 設定
 
-- 設定ファイル: `~/.config/specrunner/config.json`（XDG_CONFIG_HOME 準拠）
-- Step-config resolution chain（4 レベル）:
-  1. `config.steps[stepName][field]` — ステップ単位のオーバーライド
-  2. `config.steps.defaults[field]` — config レベルのデフォルト
-  3. ステップ定義のハードコードデフォルト
-  4. SDK デフォルト
+#### Config ファイル（2 層）
+
+| 層 | パス | 用途 |
+|----|------|------|
+| User global | `~/.config/specrunner/config.json`（XDG_CONFIG_HOME 準拠） | ユーザー全体の設定 |
+| Project local | `<repo-root>/.specrunner/config.json` | リポジトリ単位の上書き（partial overlay） |
+
+両方存在する場合は **deep merge** で project local が user global の値を上書きする。
+不在 key は user global を継承するため、project local には差分のみ記述すればよい。
+
+#### Step-config resolution chain（6 レベル）
+
+1. `config.steps[stepName].byRequestType[requestType][field]` — request type 別 step 設定（最優先）
+2. `config.steps[stepName][field]` — ステップ単位のオーバーライド
+3. `config.steps.defaults.byRequestType[requestType][field]` — request type 別デフォルト
+4. `config.steps.defaults[field]` — config レベルのデフォルト
+5. ステップ定義のハードコードデフォルト
+6. SDK デフォルト
+
+#### byRequestType 設定例
+
+```jsonc
+// <repo-root>/.specrunner/config.json
+{
+  "version": 1,
+  "steps": {
+    "defaults": { "model": "claude-sonnet-4-6" },
+    "design": {
+      "model": "claude-sonnet-4-6",
+      "byRequestType": {
+        "spec-change": { "model": "claude-opus-4-6[1m]" },
+        "new-feature": { "model": "claude-opus-4-6[1m]" }
+      }
+    },
+    "code-review": {
+      "model": "claude-sonnet-4-6",
+      "byRequestType": {
+        "spec-change": { "model": "claude-opus-4-6[1m]" }
+      }
+    }
+  }
+}
+```
+
+この例では `spec-change` / `new-feature` タイプの request で design と code-review に opus を使い、
+`bug-fix` など他のタイプでは sonnet を使う。
+
+> Note: **managed** runtime では `model` / `byRequestType.model` は無視される（managed agent は事前登録済の model を使う）。これらのフィールドは **local** runtime でのみ有効。
 
 ## Directory Structure
 

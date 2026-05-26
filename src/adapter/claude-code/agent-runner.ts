@@ -154,7 +154,7 @@ export class ClaudeCodeRunner implements AgentRunner {
     const resolvedConfig = getStepExecutionConfig(ctx.config, step.name, {
       model: step.agent.model,
       maxTurns: dynamicMaxTurns ?? step.maxTurns,
-    });
+    }, ctx.requestType);
 
     // TC-006/TC-007: maxTurns: null → omit maxTurns from options (unlimited)
     // TC-012: step.maxTurns ?? 30 fallback is replaced by getStepExecutionConfig resolution chain

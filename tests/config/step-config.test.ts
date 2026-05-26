@@ -488,3 +488,130 @@ describe("validateConfig steps — 有効な値はエラーなし", () => {
     expect(() => validateConfig(raw)).not.toThrow();
   });
 });
+
+// ---------------------------------------------------------------------------
+// byRequestType resolution — 6-level chain
+// ---------------------------------------------------------------------------
+
+describe("getStepExecutionConfig — byRequestType resolution (level 1: type-aware step)", () => {
+  it("type-aware step level is highest priority (beats step level)", () => {
+    const config = makeBaseConfig({
+      steps: {
+        "code-review": {
+          model: "claude-sonnet-4-6",
+          byRequestType: {
+            "spec-change": { model: "claude-opus-4" },
+          },
+        },
+      },
+    });
+
+    const resolved = getStepExecutionConfig(config, "code-review", { model: "claude-haiku-3" }, "spec-change");
+    expect(resolved.model).toBe("claude-opus-4");
+  });
+
+  it("step level is used when requestType does not match any byRequestType key", () => {
+    const config = makeBaseConfig({
+      steps: {
+        "code-review": {
+          model: "claude-sonnet-4-6",
+          byRequestType: {
+            "spec-change": { model: "claude-opus-4" },
+          },
+        },
+      },
+    });
+
+    const resolved = getStepExecutionConfig(config, "code-review", { model: "claude-haiku-3" }, "bug-fix");
+    expect(resolved.model).toBe("claude-sonnet-4-6");
+  });
+
+  it("type-aware step level maxTurns beats step level maxTurns", () => {
+    const config = makeBaseConfig({
+      steps: {
+        implementer: {
+          maxTurns: 30,
+          byRequestType: {
+            "spec-change": { maxTurns: 60 },
+          },
+        },
+      },
+    });
+
+    const resolved = getStepExecutionConfig(config, "implementer", { model: "claude-haiku-3" }, "spec-change");
+    expect(resolved.maxTurns).toBe(60);
+  });
+});
+
+describe("getStepExecutionConfig — byRequestType resolution (level 3: type-aware defaults)", () => {
+  it("type-aware defaults is used when step has no byRequestType override", () => {
+    const config = makeBaseConfig({
+      steps: {
+        defaults: {
+          model: "claude-sonnet-4-6",
+          byRequestType: {
+            "spec-change": { model: "claude-opus-4" },
+          },
+        },
+      },
+    });
+
+    const resolved = getStepExecutionConfig(config, "implementer", { model: "claude-haiku-3" }, "spec-change");
+    expect(resolved.model).toBe("claude-opus-4");
+  });
+
+  it("step-level model beats type-aware defaults", () => {
+    const config = makeBaseConfig({
+      steps: {
+        defaults: {
+          byRequestType: {
+            "spec-change": { model: "claude-opus-4" },
+          },
+        },
+        implementer: { model: "claude-sonnet-4-6" },
+      },
+    });
+
+    const resolved = getStepExecutionConfig(config, "implementer", { model: "claude-haiku-3" }, "spec-change");
+    // Level 2 (step-level model) beats level 3 (type-aware defaults)
+    expect(resolved.model).toBe("claude-sonnet-4-6");
+  });
+});
+
+describe("getStepExecutionConfig — requestType undefined (existing 4-level behavior)", () => {
+  it("requestType undefined skips levels 1 and 3 — returns same as before", () => {
+    const config = makeBaseConfig({
+      steps: {
+        defaults: { model: "claude-sonnet-4-6" },
+        implementer: {
+          model: "claude-opus-4",
+          byRequestType: {
+            "spec-change": { model: "claude-haiku-3" },
+          },
+        },
+      },
+    });
+
+    // No requestType → byRequestType is ignored
+    const resolved = getStepExecutionConfig(config, "implementer", { model: "claude-haiku-3" });
+    expect(resolved.model).toBe("claude-opus-4");
+  });
+});
+
+describe("getStepExecutionConfig — byRequestType null maxTurns is valid (stops fallback)", () => {
+  it("byRequestType entry with maxTurns: null resolves to null (unlimited)", () => {
+    const config = makeBaseConfig({
+      steps: {
+        implementer: {
+          maxTurns: 30,
+          byRequestType: {
+            "spec-change": { maxTurns: null },
+          },
+        },
+      },
+    });
+
+    const resolved = getStepExecutionConfig(config, "implementer", { model: "claude-haiku-3", maxTurns: 30 }, "spec-change");
+    expect(resolved.maxTurns).toBeNull();
+  });
+});

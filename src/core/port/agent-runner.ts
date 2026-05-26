@@ -64,6 +64,12 @@ export interface AgentRunContext {
    * 未指定 / 空配列: adapter は作業 turn のみで返す (既存挙動)。
    */
   followUpPrompts?: string[];
+  /**
+   * Request type (e.g. "bug-fix", "spec-change", "new-feature").
+   * Used by adapters to select the appropriate model via byRequestType in step config resolution.
+   * Propagated from ParsedRequest.type at executor level.
+   */
+  requestType?: string;
 }
 
 /**

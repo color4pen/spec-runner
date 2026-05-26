@@ -16,11 +16,18 @@ import type { AgentStepName } from "../state/schema.js";
  * maxTurns: null = unlimited (do not pass maxTurns to SDK)
  * maxTurns: undefined = not set at this priority level, fall back to next
  * timeoutMs: null = no timeout
+ *
+ * byRequestType: per-request-type model override. Keys are request type names
+ * (e.g. "bug-fix", "spec-change", "new-feature"). Values are StepExecutionConfig
+ * objects — 1 level deep only, nested byRequestType is prohibited (CONFIG_INVALID).
+ * When requestType matches a key, the corresponding config takes highest priority
+ * over the step-level config.
  */
 export interface StepExecutionConfig {
   model?: string;
   maxTurns?: number | null;
   timeoutMs?: number | null;
+  byRequestType?: Record<string, StepExecutionConfig>;
 }
 
 export interface ModelEntry {
@@ -254,6 +261,86 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
           }
         }
       }
+
+      // Validate byRequestType: object, non-empty string keys, valid StepExecutionConfig values (no nested byRequestType)
+      if (stepCfg["byRequestType"] !== undefined) {
+        const byRT = stepCfg["byRequestType"];
+        if (typeof byRT !== "object" || byRT === null) {
+          throw Object.assign(
+            new Error(`CONFIG_INVALID: steps.${stepKey}.byRequestType must be an object.`),
+            { code: "CONFIG_INVALID" },
+          );
+        }
+        const knownTypes = new Set(["bug-fix", "spec-change", "new-feature", "refactoring", "chore"]);
+        for (const [typeKey, typeVal] of Object.entries(byRT as Record<string, unknown>)) {
+          // Empty string key → CONFIG_INVALID
+          if (typeKey.length === 0) {
+            throw Object.assign(
+              new Error(`CONFIG_INVALID: steps.${stepKey}.byRequestType contains an empty string key.`),
+              { code: "CONFIG_INVALID" },
+            );
+          }
+          // Unknown type key → warning only
+          if (!knownTypes.has(typeKey)) {
+            process.stderr.write(
+              `[specrunner] warn: steps.${stepKey}.byRequestType.${typeKey} is not a known request type. Known types: ${[...knownTypes].join(", ")}.\n`,
+            );
+          }
+          if (typeVal === undefined || typeVal === null) continue;
+          if (typeof typeVal !== "object") {
+            throw Object.assign(
+              new Error(`CONFIG_INVALID: steps.${stepKey}.byRequestType.${typeKey} must be an object.`),
+              { code: "CONFIG_INVALID" },
+            );
+          }
+          const typeCfg = typeVal as Record<string, unknown>;
+
+          // Nested byRequestType → CONFIG_INVALID (1-level limit)
+          if (typeCfg["byRequestType"] !== undefined) {
+            throw Object.assign(
+              new Error(`CONFIG_INVALID: steps.${stepKey}.byRequestType.${typeKey}.byRequestType is not allowed (1-level limit).`),
+              { code: "CONFIG_INVALID" },
+            );
+          }
+
+          // Validate maxTurns inside byRequestType entry
+          if (typeCfg["maxTurns"] !== undefined) {
+            const maxTurns = typeCfg["maxTurns"];
+            if (maxTurns !== null) {
+              if (typeof maxTurns !== "number" || !Number.isInteger(maxTurns) || maxTurns < 1) {
+                throw Object.assign(
+                  new Error(`CONFIG_INVALID: steps.${stepKey}.byRequestType.${typeKey}.maxTurns must be a positive integer or null.`),
+                  { code: "CONFIG_INVALID" },
+                );
+              }
+            }
+          }
+
+          // Validate model inside byRequestType entry
+          if (typeCfg["model"] !== undefined) {
+            const model = typeCfg["model"];
+            if (typeof model !== "string" || model.length === 0) {
+              throw Object.assign(
+                new Error(`CONFIG_INVALID: steps.${stepKey}.byRequestType.${typeKey}.model must be a non-empty string.`),
+                { code: "CONFIG_INVALID" },
+              );
+            }
+          }
+
+          // Validate timeoutMs inside byRequestType entry
+          if (typeCfg["timeoutMs"] !== undefined) {
+            const timeoutMs = typeCfg["timeoutMs"];
+            if (timeoutMs !== null) {
+              if (typeof timeoutMs !== "number" || !Number.isInteger(timeoutMs) || timeoutMs < 0) {
+                throw Object.assign(
+                  new Error(`CONFIG_INVALID: steps.${stepKey}.byRequestType.${typeKey}.timeoutMs must be a non-negative integer or null.`),
+                  { code: "CONFIG_INVALID" },
+                );
+              }
+            }
+          }
+        }
+      }
     }
   }
 
@@ -326,25 +413,40 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
       return undefined;
     };
 
-    for (const [stepKey, stepVal] of Object.entries(stepsObj)) {
-      const model = collectStepModel(stepKey, stepVal);
-      if (model === undefined) continue;
+    const isManagedRuntime = runtime === "managed";
 
-      // Guard: unknown model
+    const checkModel = (model: string, path: string): void => {
       if (!allModelNames.has(model)) {
         throw Object.assign(
-          new Error(`CONFIG_INVALID: steps.${stepKey}.model "${model}" is not in the model registry. Add it to config.models.`),
+          new Error(`CONFIG_INVALID: ${path} "${model}" is not in the model registry. Add it to config.models.`),
           { code: "CONFIG_INVALID" },
         );
       }
-
-      // Guard: managed + openai
-      const isManagedRuntime = runtime === "managed";
       if (isManagedRuntime && openaiModels.has(model)) {
         throw Object.assign(
           new Error(`CONFIG_INVALID: OpenAI model "${model}" cannot be used with runtime "managed".`),
           { code: "CONFIG_INVALID" },
         );
+      }
+    };
+
+    for (const [stepKey, stepVal] of Object.entries(stepsObj)) {
+      const model = collectStepModel(stepKey, stepVal);
+      if (model !== undefined) {
+        checkModel(model, `steps.${stepKey}.model`);
+      }
+
+      // Also validate models inside byRequestType entries
+      if (typeof stepVal === "object" && stepVal !== null) {
+        const byRT = (stepVal as Record<string, unknown>)["byRequestType"];
+        if (typeof byRT === "object" && byRT !== null) {
+          for (const [typeKey, typeVal] of Object.entries(byRT as Record<string, unknown>)) {
+            const typeModel = collectStepModel(`${stepKey}.byRequestType.${typeKey}`, typeVal);
+            if (typeModel !== undefined) {
+              checkModel(typeModel, `steps.${stepKey}.byRequestType.${typeKey}.model`);
+            }
+          }
+        }
       }
     }
   }

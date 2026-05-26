@@ -5,6 +5,7 @@
  * start step, and transitions job to "running" status.
  */
 import { loadConfig } from "../../config/store.js";
+import { resolveRepoRoot } from "../../util/repo-root.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { logInfo, setVerbose } from "../../logger/stdout.js";
 import { SpecRunnerError } from "../../errors.js";
@@ -196,10 +197,11 @@ export class ResumeCommand extends CommandRunner {
       throw new PrepareError(1, "Failed to update state");
     }
 
-    // Load config
+    // Load config with project local overlay (resolve repo root from cwd first)
     let config;
     try {
-      config = await loadConfig();
+      const repoRoot = await resolveRepoRoot(cwd);
+      config = await loadConfig(repoRoot ?? undefined);
     } catch (err) {
       if (err instanceof SpecRunnerError) {
         process.stderr.write(`Error: ${err.message}\n`);

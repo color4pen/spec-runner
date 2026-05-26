@@ -1,3 +1,4 @@
+import * as path from "node:path";
 import * as fs from "node:fs/promises";
 import { getConfigPath } from "../util/xdg.js";
 import { atomicWriteJson } from "../util/atomic-write.js";
@@ -7,55 +8,43 @@ import type { AgentStepName } from "../state/schema.js";
 import { configMissingError, configIncompleteError } from "../errors.js";
 import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 import { applyMigration } from "./migrate.js";
+import { deepMergeConfig } from "./merge.js";
 
 const CONFIG_MODE = 0o600;
 
 /**
- * Load config from disk. Applies migration (legacy/intermediate → new schema)
- * and validates the result.
- * Throws SpecRunnerError if config is missing or invalid.
+ * Parse raw JSON string, apply migration, and return the migrated unknown object.
+ * Throws SpecRunnerError on JSON parse failure or migration failure.
  */
-export async function loadConfig(): Promise<SpecRunnerConfig> {
-  const configPath = getConfigPath();
-
-  let raw: string;
-  try {
-    raw = await fs.readFile(configPath, "utf-8");
-  } catch (err: unknown) {
-    const code = (err as NodeJS.ErrnoException).code;
-    if (code === "ENOENT") {
-      throw configMissingError();
-    }
-    throw err;
-  }
-
+function parseAndMigrate(content: string, label: string): unknown {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(raw);
+    parsed = JSON.parse(content);
   } catch {
     throw new SpecRunnerError(
       ERROR_CODES.CONFIG_INVALID,
       "Delete the config and run 'specrunner init' again.",
-      "JSON parse error in config file.",
+      `JSON parse error in ${label}.`,
     );
   }
-
-  // Apply migration: legacy/intermediate → canonical new schema
-  let migrated: SpecRunnerConfig;
   try {
-    migrated = applyMigration(parsed);
+    return applyMigration(parsed);
   } catch (err: unknown) {
     throw new SpecRunnerError(
       ERROR_CODES.CONFIG_INVALID,
       "Delete the config and run 'specrunner init' again.",
-      `Config migration failed: ${(err as Error).message}`,
+      `Config migration failed in ${label}: ${(err as Error).message}`,
     );
   }
+}
 
+/**
+ * Validate a migrated config object, wrapping errors as SpecRunnerError.
+ */
+function validateAndWrap(migrated: unknown): SpecRunnerConfig {
   try {
     return validateConfig(migrated);
   } catch (err: unknown) {
-    // TC-034: CONFIG_INVALID errors (e.g. invalid runtime value) propagate as CONFIG_INVALID
     const code = (err as { code?: string }).code;
     if (code === "CONFIG_INVALID") {
       throw new SpecRunnerError(
@@ -66,6 +55,75 @@ export async function loadConfig(): Promise<SpecRunnerConfig> {
     }
     throw configIncompleteError((err as Error).message);
   }
+}
+
+/**
+ * Load config from disk. Applies migration (legacy/intermediate → new schema)
+ * and validates the result.
+ *
+ * Load order:
+ *   1. User global: ~/.config/specrunner/config.json (XDG_CONFIG_HOME)
+ *   2. Project local: <repoRoot>/.specrunner/config.json (when repoRoot provided)
+ *
+ * Overlay behavior:
+ *   - Both exist: deep merge (project local overlays user global), then validate merged result.
+ *     Project local may be a partial config — missing keys are inherited from user global.
+ *   - Only project local: validate as a standalone full config (version: 1 + required fields).
+ *   - Only user global: existing behavior (validate user global).
+ *   - Neither: throw CONFIG_MISSING.
+ *
+ * Throws SpecRunnerError if config is missing or invalid.
+ */
+export async function loadConfig(repoRoot?: string): Promise<SpecRunnerConfig> {
+  const userGlobalPath = getConfigPath();
+
+  // Try to read user global config
+  let userGlobalMigrated: unknown | null = null;
+  try {
+    const content = await fs.readFile(userGlobalPath, "utf-8");
+    userGlobalMigrated = parseAndMigrate(content, "user global config");
+  } catch (err: unknown) {
+    if (err instanceof SpecRunnerError) throw err;
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code !== "ENOENT") throw err;
+    // ENOENT → user global does not exist, continue
+  }
+
+  // Try to read project local config (only when repoRoot is provided)
+  let projectLocalMigrated: unknown | null = null;
+  if (repoRoot) {
+    const projectLocalPath = path.join(repoRoot, ".specrunner", "config.json");
+    try {
+      const content = await fs.readFile(projectLocalPath, "utf-8");
+      projectLocalMigrated = parseAndMigrate(content, "project local config");
+    } catch (err: unknown) {
+      if (err instanceof SpecRunnerError) throw err;
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") throw err;
+      // ENOENT → project local does not exist, continue
+    }
+  }
+
+  if (userGlobalMigrated !== null && projectLocalMigrated !== null) {
+    // Both exist: validate user global first, then deep merge with project local overlay,
+    // then validate the merged result (project local may be partial).
+    const userGlobal = validateAndWrap(userGlobalMigrated);
+    const merged = deepMergeConfig(userGlobal, projectLocalMigrated as Partial<SpecRunnerConfig>);
+    return validateAndWrap(merged);
+  }
+
+  if (projectLocalMigrated !== null) {
+    // Only project local: must be a complete standalone config (version: 1 + required fields).
+    return validateAndWrap(projectLocalMigrated);
+  }
+
+  if (userGlobalMigrated !== null) {
+    // Only user global: existing behavior.
+    return validateAndWrap(userGlobalMigrated);
+  }
+
+  // Neither exists
+  throw configMissingError();
 }
 
 /**
@@ -87,14 +145,30 @@ export async function saveConfig(cfg: SpecRunnerConfig): Promise<void> {
 }
 
 /**
+ * Save a project local config overlay to <repoRoot>/.specrunner/config.json.
+ * Uses atomic write + 0600 permissions (same as saveConfig).
+ * The saved config may be a partial overlay — only fields that differ from user global
+ * need to be included.
+ *
+ * Note: this function is provided for future CLI commands. No CLI command calls it yet.
+ */
+export async function saveProjectConfig(
+  repoRoot: string,
+  cfg: Partial<SpecRunnerConfig>,
+): Promise<void> {
+  const projectLocalPath = path.join(repoRoot, ".specrunner", "config.json");
+  await atomicWriteJson(projectLocalPath, cfg, { mode: CONFIG_MODE });
+}
+
+/**
  * ConfigStore class implementation for use as a port.
  * Wraps loadConfig/saveConfig with in-memory caching and getAgentId.
  */
 export class FileConfigStore {
   private cachedConfig: SpecRunnerConfig | undefined;
 
-  async load(): Promise<SpecRunnerConfig> {
-    this.cachedConfig = await loadConfig();
+  async load(repoRoot?: string): Promise<SpecRunnerConfig> {
+    this.cachedConfig = await loadConfig(repoRoot);
     return this.cachedConfig;
   }
 

@@ -30,8 +30,8 @@ import type { FlagDef, ParsedArgs } from "./flag-parser.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { ClaudeCodeOneShotQueryClient } from "../adapter/claude-code/one-shot-query-client.js";
-import { loadConfig } from "../config/store.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
+import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const UUID_REGEX = /^[a-f0-9-]{36}$/;
@@ -212,7 +212,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
         handler: async (parsed) => {
           let config: SpecRunnerConfig;
           try {
-            config = await loadConfig();
+            config = await loadConfigWithOverlay();
           } catch {
             config = {} as SpecRunnerConfig;
           }
@@ -301,7 +301,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
           }
           let config: SpecRunnerConfig;
           try {
-            config = await loadConfig();
+            config = await loadConfigWithOverlay();
           } catch {
             config = {} as SpecRunnerConfig;
           }

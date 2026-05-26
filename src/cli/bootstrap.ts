@@ -14,6 +14,7 @@ import { createGitHubClient } from "../adapter/github/github-client.js";
 import { createAnthropicClient } from "../adapter/managed-agent/client.js";
 import { createAnthropicSessionClient } from "../adapter/managed-agent/session-client.js";
 import { createRuntime } from "../core/runtime/index.js";
+import { resolveRepoRoot } from "../util/repo-root.js";
 import type { OriginInfo } from "../git/remote.js";
 import type { RuntimeStrategy } from "../core/runtime/strategy.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
@@ -31,7 +32,8 @@ export interface BootstrapResult {
  * Throws on config load failure or missing GitHub token — callers handle the error.
  */
 export async function bootstrap(cwd: string, repo: OriginInfo): Promise<BootstrapResult> {
-  const config = await loadConfig();
+  const repoRoot = await resolveRepoRoot(cwd);
+  const config = await loadConfig(repoRoot ?? undefined);
   const { token: githubToken } = await resolveGitHubToken(process.env as Record<string, string | undefined>);
   const githubClient = createGitHubClient(fetch, githubToken);
   const anthropicResult = config.runtime === "managed"

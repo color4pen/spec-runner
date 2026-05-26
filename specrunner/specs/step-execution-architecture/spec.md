@@ -59,9 +59,9 @@ For `kind: "agent"` steps:
 
 1. Emit `step:start`
 2. Call `store.update(state, { step: step.name })` to record current step for `specrunner ps`
-3. Delegate to `AgentRunner.run(ctx)` which handles session creation, polling, and result fetching
+3. Delegate to `AgentRunner.run(ctx)` which handles session creation, polling, and result fetching. The `AgentRunContext` SHALL include `requestType` from `deps.request.type` so that adapters can pass it to `getStepExecutionConfig()` for type-aware model resolution.
 4. Receive `AgentRunResult` containing `completionReason`, `resultContent`, `sessionId?`, `agentBranch?`, `error?`
-5. **[NEW] For local runtime: call `commitAndPush(step, state, deps)` to stage, commit, and push agent-written files**
+5. **For local runtime: call `commitAndPush(step, state, deps)` to stage, commit, and push agent-written files**
 6. On success: parse verdict from `resultContent` via `step.parseResult` (or derive verdict from `step.completionVerdict` when `resultContent` is null; if `completionVerdict` is also undefined, fall back to `"escalation"`)
 7. Emit `verdict:parsed`
 8. Persist the `StepRun` via `JobStateStore.appendStepRun` (recording `sessionId` from result)
@@ -71,6 +71,13 @@ For `kind: "agent"` steps:
 The `commitAndPush` step (step 5) SHALL only execute when the runtime configuration is `"local"`. For `"managed"` runtime, step 5 SHALL be skipped. All other lifecycle steps remain unchanged.
 
 `StepExecutor` SHALL accept an optional `SpawnFn` via constructor injection for git subprocess execution. This dependency is used exclusively by `commitAndPush` and SHALL NOT affect the existing `EventBus` and `AgentRunner` constructor parameters.
+
+#### Scenario: AgentRunContext includes requestType
+
+- **GIVEN** a request with `type: "bug-fix"` and a design step
+- **WHEN** `StepExecutor.runAgentStep(step, state, deps)` constructs the `AgentRunContext`
+- **THEN** `ctx.requestType` equals `"bug-fix"`
+- **AND** the adapter can pass `ctx.requestType` to `getStepExecutionConfig()` for type-aware model resolution
 
 #### Scenario: Agent step lifecycle with commitAndPush (local runtime)
 

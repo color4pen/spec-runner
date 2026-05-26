@@ -12,6 +12,7 @@ import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
 import { requirementsFor } from "../core/credentials/requirements.js";
 import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 import { logInfo } from "../logger/stdout.js";
+import { resolveRepoRoot } from "../util/repo-root.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import type { OriginInfo } from "../git/remote.js";
 import type { ParsedRequest } from "../parser/request-md.js";
@@ -81,8 +82,11 @@ export async function runPreflight(
   requestMdPath: string,
   cwd: string,
 ): Promise<PreflightResult> {
-  // Step 1: Config exists
-  const config = await loadConfig();
+  // Step 1: Config exists (load user global + project local overlay from repo root)
+  // Resolve repo root from cwd for project local config overlay support.
+  // resolveRepoRoot returns null gracefully when not in a git repo (loadConfig handles null → user-global-only).
+  const repoRoot = await resolveRepoRoot(cwd);
+  const config = await loadConfig(repoRoot ?? undefined);
 
   // Step 2: Config complete (all required fields present — github check moved here)
   const incomplete = checkConfigComplete(config);

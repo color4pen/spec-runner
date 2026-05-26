@@ -148,3 +148,180 @@ describe("validateConfig — step model registry validation", () => {
     expect(() => validateConfig(raw)).not.toThrow();
   });
 });
+
+// ---------------------------------------------------------------------------
+// byRequestType validation
+// ---------------------------------------------------------------------------
+
+describe("validateConfig — byRequestType validation", () => {
+  it("accepts step with valid byRequestType config", () => {
+    const raw = makeMinimalRawConfig({
+      steps: {
+        "code-review": {
+          model: "claude-sonnet-4-5",
+          byRequestType: {
+            "spec-change": { model: "claude-sonnet-4-5" },
+          },
+        },
+      },
+    });
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("throws CONFIG_INVALID when byRequestType key is empty string", () => {
+    const raw = makeMinimalRawConfig({
+      steps: {
+        "code-review": {
+          byRequestType: {
+            "": { model: "claude-sonnet-4-5" },
+          },
+        },
+      },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/empty string key/);
+  });
+
+  it("throws CONFIG_INVALID when byRequestType entry model is empty string (with path in message)", () => {
+    const raw = makeMinimalRawConfig({
+      steps: {
+        "code-review": {
+          byRequestType: {
+            "spec-change": { model: "" },
+          },
+        },
+      },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/code-review.*byRequestType.*spec-change.*model/);
+  });
+
+  it("throws CONFIG_INVALID when byRequestType entry model is not a string (TC-26)", () => {
+    const raw = makeMinimalRawConfig({
+      steps: {
+        "code-review": {
+          byRequestType: {
+            "spec-change": { model: 123 as unknown as string },
+          },
+        },
+      },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/code-review.*byRequestType.*spec-change.*model/);
+  });
+
+  it("throws CONFIG_INVALID for nested byRequestType (1-level limit)", () => {
+    const raw = makeMinimalRawConfig({
+      steps: {
+        "code-review": {
+          byRequestType: {
+            "spec-change": {
+              model: "claude-sonnet-4-5",
+              byRequestType: { "nested": { model: "claude-sonnet-4-5" } },
+            },
+          },
+        },
+      },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/1-level limit/);
+  });
+
+  it("throws CONFIG_INVALID when byRequestType entry has invalid maxTurns", () => {
+    const raw = makeMinimalRawConfig({
+      steps: {
+        implementer: {
+          byRequestType: {
+            "bug-fix": { maxTurns: 0 },
+          },
+        },
+      },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/implementer.*byRequestType.*bug-fix.*maxTurns/);
+  });
+
+  it("throws CONFIG_INVALID when byRequestType entry has invalid timeoutMs", () => {
+    const raw = makeMinimalRawConfig({
+      steps: {
+        implementer: {
+          byRequestType: {
+            "bug-fix": { timeoutMs: -1 },
+          },
+        },
+      },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/implementer.*byRequestType.*bug-fix.*timeoutMs/);
+  });
+
+  it("unknown type key passes with no error (warning only)", () => {
+    const raw = makeMinimalRawConfig({
+      steps: {
+        "code-review": {
+          byRequestType: {
+            "unknown-custom-type": { model: "claude-sonnet-4-5" },
+          },
+        },
+      },
+    });
+    // Should not throw — unknown keys emit a warning but are not rejected
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("throws CONFIG_INVALID when byRequestType entry model is not in registry", () => {
+    const raw = makeMinimalRawConfig({
+      steps: {
+        "code-review": {
+          byRequestType: {
+            "spec-change": { model: "nonexistent-model-xyz" },
+          },
+        },
+      },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/not in the model registry/);
+  });
+
+  it("throws CONFIG_INVALID when managed runtime uses openai model in byRequestType", () => {
+    const raw = {
+      version: 1,
+      runtime: "managed",
+      steps: {
+        implementer: {
+          byRequestType: {
+            "bug-fix": { model: "o3" },
+          },
+        },
+      },
+    };
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/cannot be used with runtime "managed"/);
+  });
+
+  it("accepts byRequestType with null maxTurns (unlimited)", () => {
+    const raw = makeMinimalRawConfig({
+      steps: {
+        implementer: {
+          byRequestType: {
+            "bug-fix": { maxTurns: null },
+          },
+        },
+      },
+    });
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("accepts byRequestType with null timeoutMs (no timeout)", () => {
+    const raw = makeMinimalRawConfig({
+      steps: {
+        implementer: {
+          byRequestType: {
+            "spec-change": { timeoutMs: null },
+          },
+        },
+      },
+    });
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+});
