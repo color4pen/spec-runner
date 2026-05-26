@@ -273,3 +273,42 @@ describe("TC-RR-014: REQUEST_REVIEW_SYSTEM_PROMPT contains spec-merge / read-onl
   });
 });
 
+// ---------------------------------------------------------------------------
+// TC-RR-015: REQUEST_REVIEW_SYSTEM_PROMPT — contains complexity evaluation perspectives
+// ---------------------------------------------------------------------------
+describe("TC-RR-015: REQUEST_REVIEW_SYSTEM_PROMPT contains complexity evaluation perspectives", () => {
+  it("includes complexity risk, DRY violation, and existing asset reuse perspectives", () => {
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("Complexity risk");
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("DRY violation");
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("Existing asset reuse");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RR-016: REQUEST_REVIEW_SYSTEM_PROMPT — contains multi-approach recommendation rule
+// ---------------------------------------------------------------------------
+describe("TC-RR-016: REQUEST_REVIEW_SYSTEM_PROMPT contains multi-approach recommendation rule", () => {
+  it("instructs to recommend ONE approach instead of parallel listing", () => {
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("recommend ONE approach");
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("Do NOT list them in parallel");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RR-017: REQUEST_REVIEW_SYSTEM_PROMPT — caps Step 5 findings at MEDIUM
+// ---------------------------------------------------------------------------
+describe("TC-RR-017: REQUEST_REVIEW_SYSTEM_PROMPT caps Step 5 findings at MEDIUM", () => {
+  it("states MEDIUM severity cap for complexity findings", () => {
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("capped at MEDIUM severity");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RR-018: REQUEST_REVIEW_SYSTEM_PROMPT — final decision deferred to request author
+// ---------------------------------------------------------------------------
+describe("TC-RR-018: REQUEST_REVIEW_SYSTEM_PROMPT defers final decision to request author", () => {
+  it("states that the final decision remains with the request author", () => {
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("The final decision remains with the request author");
+  });
+});
+

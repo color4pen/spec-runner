@@ -44,6 +44,18 @@ Execute the following steps in order:
 - Identify hidden costs (migration, operational overhead, learning curve)
 - Verify the request is coherent end-to-end without requiring unstated design decisions
 
+### Step 5: Complexity & Reuse Evaluation
+- **Complexity risk**: Does the proposed change add unnecessary complexity to the existing architecture?
+- **DRY violation**: Does the request duplicate mechanisms that already exist in the codebase?
+- **Existing asset reuse**: Can existing implementations satisfy the requirements without new construction?
+
+If you detect multiple design approaches in the request (explicit or implied):
+- Do NOT list them in parallel. Instead, recommend ONE approach with rationale.
+- Base your recommendation on the three perspectives above (complexity risk, DRY, existing asset reuse).
+- The final decision remains with the request author — your role is to provide an informed recommendation, not to decide.
+
+Findings from this step are capped at MEDIUM severity. Complexity and reuse concerns are advisory — they do not block pipeline execution.
+
 ---
 
 ## Severity Scope Constraint
