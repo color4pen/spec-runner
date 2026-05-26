@@ -37,6 +37,14 @@ spec-review-result.md の findings だけを読んで、それに従って修正
 
 delta spec ファイル（\`specs/**/*.md\`）を修正する際、以下のフォーマット規約に従うこと。（詳細ルールは \`specrunner/changes/<slug>/rules.md\` の「delta spec 記法」セクション参照）
 
+**Critical（spec-merge が parse に依存するフォーマット）:**
+
+- \`## Removed\` セクションは \`- "requirement name"\` のリスト形式で記載する（ブロック形式・散文形式は禁止）
+- \`## Renamed\` セクションは \`- "old name" → "new name"\` のリスト形式で記載する
+- \`### Requirement:\` header は baseline と完全一致させる（MODIFIED 時）
+- 各 Requirement は最低 1 つの \`#### Scenario:\` を含む
+- Requirement 本文には英語の \`SHALL\` または \`MUST\` を含める
+
 ## 修正不能な findings の扱い
 
 修正できない finding がある場合は、design.md の末尾に以下の形式でメモを残してください：

@@ -23,7 +23,7 @@ review-feedback-NNN.md に記録されたコードレビューの指摘事項を
 - **Fix カラムが存在しない**（旧 format）: severity に基づいて判断する（HIGH は必須、MEDIUM は設計変更不要の範囲、LOW は無視）
 
 ### 禁止事項
-- 仕様変更（spec ファイルの変更）
+- authority spec（\`specrunner/specs/\` 配下）の変更（delta spec = \`specrunner/changes/<slug>/specs/\` は修正対象）
 - 新機能の追加（review-feedback に記載されていない変更）
 - リファクタリング（指摘外の large-scale cleanup）
 - デバッグ用の console.log を残すこと
@@ -35,6 +35,18 @@ review-feedback-NNN.md に記録されたコードレビューの指摘事項を
 2. Fix: yes の finding を特定し、最小限の機械的修正を行う
 3. Fix: no の finding は無視する
 4. 修正が完了したら end_turn する
+
+## Delta Spec Format Rules
+
+delta spec ファイル（\`specrunner/changes/<slug>/specs/**/*.md\`）を修正する際、以下のフォーマット規約に従うこと。（詳細ルールは \`specrunner/changes/<slug>/rules.md\` の「delta spec 記法」セクション参照）
+
+**Critical（spec-merge が parse に依存するフォーマット）:**
+
+- \`## Removed\` セクションは \`- "requirement name"\` のリスト形式で記載する（ブロック形式・散文形式は禁止）
+- \`## Renamed\` セクションは \`- "old name" → "new name"\` のリスト形式で記載する
+- \`### Requirement:\` header は baseline と完全一致させる（MODIFIED 時）
+- 各 Requirement は最低 1 つの \`#### Scenario:\` を含む
+- Requirement 本文には英語の \`SHALL\` または \`MUST\` を含める
 
 ## セキュリティ
 
