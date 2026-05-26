@@ -1,12 +1,17 @@
 /**
  * Unit tests for ensureDotSpecrunnerGitignore().
  *
- * TC-GI-01: Appends .specrunner/ to existing .gitignore that does not contain it
- * TC-GI-02: Idempotent — does not append if .specrunner/ already present
- * TC-GI-03: Creates .gitignore if it does not exist
- * TC-GI-04: Handles empty .gitignore file
- * TC-GI-05: Does not add duplicate when .specrunner/ is a comment line
- * TC-GI-06: Adds newline before entry when file does not end with newline
+ * TC-GI-01: Appends .specrunner/* + !.specrunner/config.json to existing .gitignore that does not contain them
+ * TC-GI-02: Idempotent — does not change if both new-format lines already present
+ * TC-GI-03: Creates .gitignore with 2-line format if it does not exist
+ * TC-GI-04: Handles empty .gitignore file — writes 2-line format
+ * TC-GI-05: Does not treat a commented .specrunner/ line as presence — still appends
+ * TC-GI-06: Adds newline before entries when file does not end with newline
+ * TC-GI-07: Migrates old format (.specrunner/) to new 2-line format
+ * TC-GI-08: Idempotent when new 2-line format already present (explicit check)
+ * TC-GI-09: Adds missing exception line when only .specrunner/* present
+ * TC-GI-10: Adds .specrunner/* before existing !.specrunner/config.json
+ * TC-GI-11: Deduplicates multiple old-format .specrunner/ lines to 2-line format
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
@@ -33,53 +38,118 @@ async function writeGitignore(content: string): Promise<void> {
 }
 
 describe("ensureDotSpecrunnerGitignore", () => {
-  it("TC-GI-01: appends .specrunner/ to existing .gitignore that does not contain it", async () => {
+  it("TC-GI-01: appends .specrunner/* and !.specrunner/config.json to existing .gitignore that does not contain them", async () => {
     await writeGitignore("node_modules/\ndist/\n");
     await ensureDotSpecrunnerGitignore(tempDir);
     const content = await readGitignore();
-    expect(content).toContain(".specrunner/");
     const lines = content.split("\n");
-    expect(lines.some((l) => l.trim() === ".specrunner/")).toBe(true);
+    expect(lines.some((l) => l.trim() === ".specrunner/*")).toBe(true);
+    expect(lines.some((l) => l.trim() === "!.specrunner/config.json")).toBe(true);
   });
 
-  it("TC-GI-02: is idempotent — does not append if .specrunner/ already present", async () => {
-    await writeGitignore("node_modules/\n.specrunner/\ndist/\n");
+  it("TC-GI-02: is idempotent — does not change file if new-format 2 lines already present", async () => {
+    const initial = "node_modules/\n.specrunner/*\n!.specrunner/config.json\ndist/\n";
+    await writeGitignore(initial);
     await ensureDotSpecrunnerGitignore(tempDir);
     const content = await readGitignore();
-    // Should appear exactly once
-    const occurrences = content.split("\n").filter((l) => l.trim() === ".specrunner/").length;
-    expect(occurrences).toBe(1);
-    // Content unchanged
-    expect(content).toBe("node_modules/\n.specrunner/\ndist/\n");
+    expect(content).toBe(initial);
   });
 
-  it("TC-GI-03: creates .gitignore if it does not exist", async () => {
+  it("TC-GI-03: creates .gitignore with 2-line format if it does not exist", async () => {
     // No .gitignore in tempDir
     await ensureDotSpecrunnerGitignore(tempDir);
     const content = await readGitignore();
-    expect(content.trim()).toBe(".specrunner/");
+    const lines = content.split("\n");
+    expect(lines.some((l) => l.trim() === ".specrunner/*")).toBe(true);
+    expect(lines.some((l) => l.trim() === "!.specrunner/config.json")).toBe(true);
   });
 
-  it("TC-GI-04: handles empty .gitignore file", async () => {
+  it("TC-GI-04: handles empty .gitignore file — writes 2-line format", async () => {
     await writeGitignore("");
     await ensureDotSpecrunnerGitignore(tempDir);
     const content = await readGitignore();
-    expect(content.trim()).toBe(".specrunner/");
+    const lines = content.split("\n");
+    expect(lines.some((l) => l.trim() === ".specrunner/*")).toBe(true);
+    expect(lines.some((l) => l.trim() === "!.specrunner/config.json")).toBe(true);
   });
 
   it("TC-GI-05: does not treat a commented line as presence — still appends", async () => {
     await writeGitignore("# .specrunner/\nnode_modules/\n");
     await ensureDotSpecrunnerGitignore(tempDir);
     const content = await readGitignore();
-    const nonCommentLines = content.split("\n").filter((l) => !l.trim().startsWith("#") && l.trim() === ".specrunner/");
-    expect(nonCommentLines.length).toBe(1);
+    const nonCommentGlob = content.split("\n").filter((l) => !l.trim().startsWith("#") && l.trim() === ".specrunner/*");
+    const exception = content.split("\n").filter((l) => l.trim() === "!.specrunner/config.json");
+    expect(nonCommentGlob.length).toBe(1);
+    expect(exception.length).toBe(1);
   });
 
-  it("TC-GI-06: adds a newline before entry when file does not end with newline", async () => {
+  it("TC-GI-06: adds a newline before entries when file does not end with newline", async () => {
     await writeGitignore("node_modules/");
     await ensureDotSpecrunnerGitignore(tempDir);
     const content = await readGitignore();
-    expect(content).toBe("node_modules/\n.specrunner/\n");
+    expect(content).toBe("node_modules/\n.specrunner/*\n!.specrunner/config.json\n");
+  });
+
+  it("TC-GI-07: migrates old format (.specrunner/) to new 2-line format", async () => {
+    await writeGitignore("node_modules/\n.specrunner/\ndist/\n");
+    await ensureDotSpecrunnerGitignore(tempDir);
+    const content = await readGitignore();
+    const lines = content.split("\n");
+    // Old line must be gone
+    expect(lines.some((l) => !l.trim().startsWith("#") && l.trim() === ".specrunner/")).toBe(false);
+    // New lines must be present
+    expect(lines.some((l) => l.trim() === ".specrunner/*")).toBe(true);
+    expect(lines.some((l) => l.trim() === "!.specrunner/config.json")).toBe(true);
+    // Other content preserved
+    expect(content).toContain("node_modules/");
+    expect(content).toContain("dist/");
+  });
+
+  it("TC-GI-08: is idempotent — calling twice produces the same result as calling once", async () => {
+    await writeGitignore("node_modules/\n");
+    await ensureDotSpecrunnerGitignore(tempDir);
+    const afterFirst = await readGitignore();
+    await ensureDotSpecrunnerGitignore(tempDir);
+    const afterSecond = await readGitignore();
+    expect(afterSecond).toBe(afterFirst);
+  });
+
+  it("TC-GI-09: adds missing !.specrunner/config.json immediately after .specrunner/*", async () => {
+    await writeGitignore("node_modules/\n.specrunner/*\ndist/\n");
+    await ensureDotSpecrunnerGitignore(tempDir);
+    const content = await readGitignore();
+    const lines = content.split("\n");
+    const globIdx = lines.findIndex((l) => l.trim() === ".specrunner/*");
+    const exceptionIdx = lines.findIndex((l) => l.trim() === "!.specrunner/config.json");
+    expect(globIdx).toBeGreaterThanOrEqual(0);
+    // Exception must appear immediately after glob (= no intervening lines)
+    expect(exceptionIdx).toBe(globIdx + 1);
+  });
+
+  it("TC-GI-10: adds .specrunner/* immediately before existing !.specrunner/config.json", async () => {
+    await writeGitignore("node_modules/\n!.specrunner/config.json\ndist/\n");
+    await ensureDotSpecrunnerGitignore(tempDir);
+    const content = await readGitignore();
+    const lines = content.split("\n");
+    const globIdx = lines.findIndex((l) => l.trim() === ".specrunner/*");
+    const exceptionIdx = lines.findIndex((l) => l.trim() === "!.specrunner/config.json");
+    expect(globIdx).toBeGreaterThanOrEqual(0);
+    // Glob must appear immediately before exception (= no intervening lines)
+    expect(globIdx).toBe(exceptionIdx - 1);
+  });
+
+  it("TC-GI-11: deduplicates multiple old-format .specrunner/ lines and produces 2-line format", async () => {
+    await writeGitignore(".specrunner/\nnode_modules/\n.specrunner/\n");
+    await ensureDotSpecrunnerGitignore(tempDir);
+    const content = await readGitignore();
+    const lines = content.split("\n");
+    // Exactly one glob line
+    const globLines = lines.filter((l) => !l.trim().startsWith("#") && l.trim() === ".specrunner/*");
+    expect(globLines.length).toBe(1);
+    // Exception line present
+    expect(lines.some((l) => l.trim() === "!.specrunner/config.json")).toBe(true);
+    // No old-format line
+    expect(lines.some((l) => !l.trim().startsWith("#") && l.trim() === ".specrunner/")).toBe(false);
   });
 
   it("preserves existing content when appending", async () => {
@@ -87,7 +157,10 @@ describe("ensureDotSpecrunnerGitignore", () => {
     await writeGitignore(original);
     await ensureDotSpecrunnerGitignore(tempDir);
     const content = await readGitignore();
-    expect(content.startsWith(original)).toBe(true);
-    expect(content).toContain(".specrunner/");
+    expect(content).toContain("node_modules/");
+    expect(content).toContain("dist/");
+    expect(content).toContain(".env");
+    expect(content).toContain(".specrunner/*");
+    expect(content).toContain("!.specrunner/config.json");
   });
 });

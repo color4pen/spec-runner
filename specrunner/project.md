@@ -60,6 +60,10 @@ exit 時 invariant として `process.on('beforeExit')` が running 状態の jo
 両方存在する場合は **deep merge** で project local が user global の値を上書きする。
 不在 key は user global を継承するため、project local には差分のみ記述すればよい。
 
+#### Project local config の team 共有設計
+
+`.specrunner/config.json` のみ git commit して team で共有できる設計になっている。`.gitignore` は `specrunner init` が自動的に `.specrunner/*`（全要素 ignore）+ `!.specrunner/config.json`（例外）の 2 行構成で設定する。これにより `jobs/`・`logs/` 等の machine-generated state は ignore を維持しながら、verify pipeline や step model の設定だけを commit できる。旧形式（`.specrunner/` 単体）が存在する `.gitignore` も次回 `specrunner init` 実行時に自動 migrate される。
+
 #### Step-config resolution chain（6 レベル）
 
 1. `config.steps[stepName].byRequestType[requestType][field]` — request type 別 step 設定（最優先）

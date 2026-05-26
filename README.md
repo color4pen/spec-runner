@@ -90,6 +90,8 @@ Run `specrunner init` to create the initial scaffold.
 Place a partial config at `<repo-root>/.specrunner/config.json` to override settings for a specific repository.
 The project local config is **deep-merged** on top of the user global config — you only need to specify the fields you want to change.
 
+`specrunner init` configures `.gitignore` with `.specrunner/*` + `!.specrunner/config.json`, so `config.json` can be committed and shared with your team while machine-generated state (`jobs/`, `logs/`, etc.) stays ignored.
+
 ```jsonc
 // <repo-root>/.specrunner/config.json
 {
