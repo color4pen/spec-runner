@@ -1,10 +1,22 @@
 {
-  "name": "spec-runner",
+  "name": "@color4pen/specrunner",
   "version": "0.2.0",
   "description": "AI CI/CD runner — submit request.md, get a PR back",
-  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/color4pen/spec-runner"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": ["dist/", "README.md", "LICENSE"],
+  "exports": {
+    ".": "./dist/bin/specrunner.js"
+  },
   "engines": {
-    "bun": ">=1.0.0"
+    "bun": ">=1.0.0",
+    "node": ">=20"
   },
   "type": "module",
   "bin": {
