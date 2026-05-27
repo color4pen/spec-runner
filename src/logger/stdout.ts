@@ -140,9 +140,8 @@ export function getVerboseLogFilePath(): string | null {
 
 const MASK_PATTERNS: RegExp[] = [
   /\bsk-ant-[A-Za-z0-9_-]+/g,
-  /\bgho_[A-Za-z0-9]+/g,
-  /\bghp_[A-Za-z0-9]+/g,
-  /\bghr_[A-Za-z0-9]+/g,
+  /\b(gh[oprsu])_[A-Za-z0-9]+/g,
+  /\bgithub_pat_[A-Za-z0-9_]+/g,
 ];
 
 /**
