@@ -22,10 +22,10 @@ jobs:
       - run: bun run build
 
       - name: node --help
-        run: node dist/bin/specrunner.js --help
+        run: node dist/specrunner.js --help
 
       - name: node doctor (startup smoke test)
-        run: node dist/bin/specrunner.js doctor --json || true
+        run: node dist/specrunner.js doctor --json || true
 
       - name: Check for Bun-specific API imports in dist/
         run: |
