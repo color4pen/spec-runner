@@ -69,6 +69,6 @@ export class AnthropicClientAdapter implements AnthropicClient {
  * Factory function to create AnthropicClientAdapter from API key.
  */
 export function createAnthropicClientAdapter(apiKey: string): AnthropicClient {
-  const sdk = new Anthropic({ apiKey });
+  const sdk = new Anthropic({ apiKey, baseURL: "https://api.anthropic.com" });
   return new AnthropicClientAdapter(sdk);
 }

@@ -8,6 +8,7 @@ export type AnthropicClient = Anthropic;
 export function createAnthropicClient(apiKey: string): AnthropicClient {
   return new Anthropic({
     apiKey,
+    baseURL: "https://api.anthropic.com",
     defaultHeaders: {
       "anthropic-beta": "managed-agents-2026-04-01",
     },
