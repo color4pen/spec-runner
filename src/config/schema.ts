@@ -117,6 +117,19 @@ export interface PipelineConfig {
   maxRetries?: number;
 }
 
+/**
+ * Log retention settings.
+ * Controls how many job logs are retained in .specrunner/logs/.
+ */
+export interface LogsConfig {
+  /**
+   * Maximum number of job log entries to retain.
+   * Oldest logs are deleted when this limit is exceeded.
+   * Valid range: 1-1000. Default: 20.
+   */
+  maxJobs?: number;
+}
+
 export interface SpecRunnerConfig {
   version: 1;
   /**
@@ -167,6 +180,12 @@ export interface SpecRunnerConfig {
    * When absent, the existing phase-detection fallback is used (package.json scripts).
    */
   verification?: VerificationConfig;
+  /**
+   * Log retention settings.
+   * Controls how many job logs are kept in .specrunner/logs/.
+   * When absent, defaults to 20 jobs retained.
+   */
+  logs?: LogsConfig;
 }
 
 /**
@@ -531,6 +550,26 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
             }
           }
         }
+      }
+    }
+  }
+
+  // Validate logs section if provided
+  if (obj["logs"] !== undefined && obj["logs"] !== null) {
+    if (typeof obj["logs"] !== "object") {
+      throw Object.assign(
+        new Error("CONFIG_INVALID: logs must be an object."),
+        { code: "CONFIG_INVALID" },
+      );
+    }
+    const logsObj = obj["logs"] as Record<string, unknown>;
+    if (logsObj["maxJobs"] !== undefined) {
+      const maxJobs = logsObj["maxJobs"];
+      if (typeof maxJobs !== "number" || !Number.isInteger(maxJobs) || maxJobs < 1 || maxJobs > 1000) {
+        throw Object.assign(
+          new Error("CONFIG_INVALID: logs.maxJobs must be an integer between 1 and 1000."),
+          { code: "CONFIG_INVALID" },
+        );
       }
     }
   }

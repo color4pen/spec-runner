@@ -21,6 +21,8 @@ import { createGitHubClient } from "../adapter/github/github-client.js";
 import { SpecRunnerError } from "../errors.js";
 import { registerExitGuard } from "../core/lifecycle/exit-guard.js";
 import { logResult, logError, stderrWrite } from "../logger/stdout.js";
+import { initPipelineLog, logPipelineEvent, closePipelineLog } from "../logger/pipeline-logger.js";
+import { JobStateStore } from "../store/job-state-store.js";
 
 /**
  * Build a FinishFs from real fs modules.
@@ -121,36 +123,67 @@ export async function runFinish(opts: RunFinishOptions): Promise<number> {
     }
   }
 
-  const result = await runFinishOrchestrator(
-    {
-      slug: opts.slug,
-      prNumber: opts.prNumber,
-      jobId: opts.jobId,
-      baseBranch,
-      flags: {
-        force: opts.force,
-        dryRun: opts.dryRun ?? false,
-      },
-      cwd: opts.cwd,
-      spawn: spawnCommand,
-      fs: buildRealFs(),
-      githubClient,
-      owner,
-      repo: repoName,
-    },
-    logResult,
-  );
+  // Resolve jobId for pipeline log initialization (best-effort — skip if unavailable)
+  const repoRoot = opts.cwd;
+  let resolvedJobIdForLog: string | undefined;
+  if (opts.jobId) {
+    resolvedJobIdForLog = opts.jobId;
+  } else if (opts.slug) {
+    try {
+      resolvedJobIdForLog = await JobStateStore.resolveId(repoRoot, opts.slug);
+    } catch {
+      // Resolution failed — skip pipeline log init
+    }
+  }
 
-  if (result.exitCode === 0) {
+  if (resolvedJobIdForLog) {
+    initPipelineLog(repoRoot, resolvedJobIdForLog);
+    logPipelineEvent({ type: "finish:start", jobId: resolvedJobIdForLog, slug: opts.slug });
+  }
+
+  let finishResult;
+  try {
+    finishResult = await runFinishOrchestrator(
+      {
+        slug: opts.slug,
+        prNumber: opts.prNumber,
+        jobId: opts.jobId,
+        baseBranch,
+        flags: {
+          force: opts.force,
+          dryRun: opts.dryRun ?? false,
+        },
+        cwd: opts.cwd,
+        spawn: spawnCommand,
+        fs: buildRealFs(),
+        githubClient,
+        owner,
+        repo: repoName,
+      },
+      logResult,
+    );
+    if (resolvedJobIdForLog) {
+      logPipelineEvent({ type: "finish:complete", jobId: resolvedJobIdForLog, exitCode: finishResult.exitCode });
+    }
+  } catch (err) {
+    if (resolvedJobIdForLog) {
+      logPipelineEvent({ type: "finish:error", jobId: resolvedJobIdForLog, error: (err as Error).message });
+    }
+    throw err;
+  } finally {
+    closePipelineLog();
+  }
+
+  if (finishResult.exitCode === 0) {
     return 0;
   }
 
-  if (result.exitCode === 1) {
-    stderrWrite(result.escalation);
+  if (finishResult.exitCode === 1) {
+    stderrWrite(finishResult.escalation);
     return 1;
   }
 
   // exitCode === 2
-  stderrWrite(result.message);
+  stderrWrite(finishResult.message);
   return 2;
 }

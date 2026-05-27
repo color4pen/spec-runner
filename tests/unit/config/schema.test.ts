@@ -82,3 +82,70 @@ describe("validateConfig: verification section", () => {
     expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID.*verification/);
   });
 });
+
+// T-035 to T-040: logs.maxJobs validation
+describe("validateConfig: logs section", () => {
+  it("T-036: logs section absent → defaults to 20 (no error)", () => {
+    expect(() => validateConfig(baseConfig)).not.toThrow();
+    const result = validateConfig(baseConfig);
+    // When absent, logs field is not present (consumer uses ?? 20)
+    expect(result.logs).toBeUndefined();
+  });
+
+  it("T-035: logs.maxJobs valid value → passes validation", () => {
+    const raw = { ...baseConfig, logs: { maxJobs: 5 } };
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("T-040: logs.maxJobs=1 → valid (lower boundary)", () => {
+    const raw = { ...baseConfig, logs: { maxJobs: 1 } };
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("T-040: logs.maxJobs=1000 → valid (upper boundary)", () => {
+    const raw = { ...baseConfig, logs: { maxJobs: 1000 } };
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("T-037: logs.maxJobs=0 → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, logs: { maxJobs: 0 } };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe("CONFIG_INVALID");
+    expect(err!.message).toContain("logs.maxJobs");
+  });
+
+  it("T-038: logs.maxJobs=-1 → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, logs: { maxJobs: -1 } };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe("CONFIG_INVALID");
+  });
+
+  it("T-039: logs.maxJobs=1001 → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, logs: { maxJobs: 1001 } };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe("CONFIG_INVALID");
+  });
+
+  it("logs.maxJobs non-integer → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, logs: { maxJobs: 3.5 } };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe("CONFIG_INVALID");
+  });
+
+  it("logs is not an object → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, logs: "invalid" };
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID.*logs/);
+  });
+});

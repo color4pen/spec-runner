@@ -489,31 +489,29 @@ subcommand dispatch path は MUST top-level command と同じ worktree guard を
 
 ### Requirement: `specrunner job show <jobId|slug>` は job state の詳細を表示する
 
-`specrunner job show <jobId|slug>` は MUST 以下の 6 フィールドを stdout に出力する:
+`specrunner job show <jobId|slug>` は MUST 以下の 7 フィールドを stdout に出力する（baseline の 6 フィールドに `Log:` フィールドを追加）:
 
-- `Job ID`: 完全な UUID
-- `Status`: job の現在ステータス
-- `Branch`: 関連ブランチ名（未設定時は `(none)`）
-- `Step`: 現在/最終ステップ名（未設定時は `(none)`）
-- `Created`: createdAt タイムスタンプ
-- `Updated`: updatedAt タイムスタンプ
+- Job ID
+- Status
+- Branch
+- Step
+- Created
+- Updated
+- Log
 
-入力が jobId（UUID 形式）の場合は直接 load する。slug の場合は全 job を走査し `getJobSlug()` で一致するものを解決する（複数該当時は最新 `updatedAt` 優先）。対象が存在しない場合は stderr にエラーを出力し exit code 1 で終了する。
+`Log:` フィールドはログファイルのパスを表示する。ログファイルが存在する場合は repoRoot からの相対パスを、存在しない場合は `(none)` を表示する。
 
-#### Scenario: jobId で job show（6 フィールド表示）
+#### Scenario: job show にログパスが表示される
 
-- **WHEN** `specrunner job show abcd1234-...` を実行し、対応する job が存在する
-- **THEN** Job ID / Status / Branch / Step / Created / Updated の 6 フィールドが stdout に出力され、exit code 0
+- **WHEN** `specrunner job show <slug>` を実行する
+- **AND** `.specrunner/logs/<jobId>.log` が存在する
+- **THEN** stdout に `Log:     .specrunner/logs/<jobId>.log` が出力される
 
-#### Scenario: slug で job show
+#### Scenario: ログファイルが存在しない場合
 
-- **WHEN** `specrunner job show my-feature` を実行し、slug が `my-feature` の job が存在する
-- **THEN** 6 フィールドが stdout に出力され、exit code 0
-
-#### Scenario: 存在しない入力で job show
-
-- **WHEN** `specrunner job show nonexistent` を実行し、該当 job が存在しない
-- **THEN** stderr にエラーメッセージを出力し、exit code 1
+- **WHEN** `specrunner job show <slug>` を実行する
+- **AND** 対応するログファイルが存在しない
+- **THEN** stdout に `Log:     (none)` が出力される
 
 ### Requirement: job サブコマンドは jobId 引数を UUID 形式で検証する
 
@@ -1125,3 +1123,22 @@ handler 関数は SHOULD `Promise<number>` を返し、`command-registry.ts` ま
 
 - **WHEN** `init` コマンドハンドラが `Promise<2>` を返す
 - **THEN** `bin/specrunner.ts` が `process.exit(2)` を呼ぶ（handler 内部では呼ばない）
+
+### Requirement: finish / cancel コマンドの pipeline ログ出力
+
+`specrunner finish <slug>` および `specrunner job cancel <jobId>` は、jobId 解決後に pipeline ログを初期化し、コマンドの開始 / 完了 / エラーイベントを `.specrunner/logs/<jobId>.log` に JSONL で記録しなければならない（MUST）。
+
+- finish: slug → jobId 解決後に初期化する
+- cancel (single job): jobId 解決後に初期化する
+- cancel --all-terminated: bulk 操作のため個別の pipeline ログ初期化は行わない
+- doctor: job に紐づかないため pipeline ログ対象外
+
+#### Scenario: finish で pipeline ログが記録される
+
+- **WHEN** `specrunner finish <slug>` を実行する
+- **THEN** 解決された jobId の `.specrunner/logs/<jobId>.log` に finish の開始/完了イベントが JSONL で記録される
+
+#### Scenario: cancel で pipeline ログが記録される
+
+- **WHEN** `specrunner job cancel <jobId>` を実行する
+- **THEN** `.specrunner/logs/<jobId>.log` に cancel の開始/完了イベントが JSONL で記録される

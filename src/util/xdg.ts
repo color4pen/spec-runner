@@ -66,3 +66,12 @@ export function getVerboseLogDir(repoRoot: string): string {
 export function getVerboseLogPath(repoRoot: string, jobId: string): string {
   return path.join(getVerboseLogDir(repoRoot), `${jobId}.log`);
 }
+
+/**
+ * Get the path to a specific job's agent session log directory.
+ * Agent session logs for a job are stored under <repoRoot>/.specrunner/logs/<jobId>/
+ * Each step/attempt produces a separate file: <stepName>-<attempt>.jsonl
+ */
+export function getAgentLogDir(repoRoot: string, jobId: string): string {
+  return path.join(getVerboseLogDir(repoRoot), jobId);
+}

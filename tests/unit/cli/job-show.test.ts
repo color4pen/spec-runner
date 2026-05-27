@@ -1,10 +1,12 @@
 /**
  * Tests for src/cli/job-show.ts
  *
- * TC-JSHOW-001: UUID input loads by jobId and prints 6 fields
- * TC-JSHOW-002: slug input resolves by slug and prints 6 fields
+ * TC-JSHOW-001: UUID input loads by jobId and prints 7 fields (incl. Log)
+ * TC-JSHOW-002: slug input resolves by slug and prints 7 fields
  * TC-JSHOW-003: unknown slug → exit 1
  * TC-JSHOW-004: multiple jobs with same slug → latest updatedAt wins
+ * T-047: Log: shows relative path when log file exists
+ * T-048: Log: shows (none) when log file does not exist
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { JobState } from "../../../src/state/schema.js";
@@ -73,9 +75,9 @@ async function invokeRunJobShow(input: string) {
   return runJobShow(input);
 }
 
-// TC-JSHOW-001: UUID input → load by jobId, print 6 fields
-describe("TC-JSHOW-001: UUID input loads job by jobId and prints 6 fields", () => {
-  it("prints Job ID, Status, Branch, Step, Created, Updated", async () => {
+// TC-JSHOW-001: UUID input → load by jobId, print 7 fields
+describe("TC-JSHOW-001: UUID input loads job by jobId and prints 7 fields", () => {
+  it("prints Job ID, Status, Branch, Step, Created, Updated, Log", async () => {
     const job = makeJob();
     mockLoad.mockResolvedValue(job);
 
@@ -88,6 +90,8 @@ describe("TC-JSHOW-001: UUID input loads job by jobId and prints 6 fields", () =
     expect(output).toContain("Step:    design");
     expect(output).toContain("Created: 2026-01-01T00:00:00.000Z");
     expect(output).toContain("Updated: 2026-01-01T01:00:00.000Z");
+    // T-048: Log shows (none) when log file does not exist (fake repo path in tests)
+    expect(output).toContain("Log:");
     expect(mockLoad).toHaveBeenCalled();
   });
 });
@@ -169,5 +173,50 @@ describe("TC-JSHOW-006: null branch displays as (none)", () => {
 
     const output = (stdoutSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
     expect(output).toContain("Branch:  (none)");
+  });
+});
+
+// T-048: Log: shows (none) when log file does not exist
+describe("T-048: Log field shows (none) when log file does not exist", () => {
+  it("shows 'Log:     (none)' when no log file exists", async () => {
+    const job = makeJob();
+    mockLoad.mockResolvedValue(job);
+
+    await invokeRunJobShow(VALID_UUID);
+
+    const output = (stdoutSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
+    expect(output).toContain("Log:     (none)");
+  });
+});
+
+// T-047: Log: shows relative path when log file exists
+// This test directly tests printJobState with a real file system
+describe("T-047: Log field shows relative path when log file exists", () => {
+  it("shows relative log path when log file exists", async () => {
+    const { printJobState } = await import("../../../src/cli/job-show.js");
+    const job = makeJob();
+
+    // Create a temporary dir to simulate the log file existing
+    const os = await import("node:os");
+    const pathMod = await import("node:path");
+    const fsMod = await import("node:fs/promises");
+
+    const tmpDir = await fsMod.mkdtemp(pathMod.join(os.tmpdir(), "job-show-log-test-"));
+    try {
+      // Create the log file at the expected path
+      const logsDir = pathMod.join(tmpDir, ".specrunner", "logs");
+      await fsMod.mkdir(logsDir, { recursive: true });
+      await fsMod.writeFile(pathMod.join(logsDir, `${VALID_UUID}.log`), "{}");
+
+      printJobState(job, tmpDir);
+
+      const output = (stdoutSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
+      expect(output).toContain("Log:");
+      // Should contain a relative path, not "(none)"
+      expect(output).not.toContain("Log:     (none)");
+      expect(output).toContain(".specrunner");
+    } finally {
+      await fsMod.rm(tmpDir, { recursive: true, force: true });
+    }
   });
 });

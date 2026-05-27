@@ -34,6 +34,7 @@ import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
 import { logVerbose, stderrWrite } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../../core/lifecycle/diagnostic.js";
+import { SessionLogWriter } from "./session-log-writer.js";
 
 export type { SpawnFn } from "./git-exec.js";
 
@@ -194,12 +195,25 @@ export class ClaudeCodeRunner implements AgentRunner {
 
     const agentRedirectCounter = { count: 0 };
 
+    // Open session log writer if sessionLogPath is configured (debug level)
+    const sessionLogWriter = ctx.sessionLogPath ? new SessionLogWriter(ctx.sessionLogPath) : null;
+
     const runQuery = async (): Promise<{ lastResult: SDKResultMessage | null }> => {
       let lastResult: SDKResultMessage | null = null;
       logPipelineDiag("query:start", `step=${step.name}`);
       const messages = this.queryFn({ prompt: fullPrompt, options: queryOptions });
       for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
         emitToolProgress(message, ctx.emit, step.name);
+        // Write message to session log if enabled
+        if (sessionLogWriter) {
+          const msgAny = message as Record<string, unknown>;
+          sessionLogWriter.write({
+            type: msgAny["type"],
+            subtype: msgAny["subtype"],
+            event: msgAny["event"],
+            content: msgAny["content"],
+          });
+        }
         if (isToolUse(message)) {
           const toolName = message.event.content_block.name;
           if (toolName === "Agent" || toolName === "Task") {
@@ -243,6 +257,7 @@ export class ClaudeCodeRunner implements AgentRunner {
 
       // If agent redirect limit exceeded, return error without proceeding.
       if (agentRedirectCounter.count > 3) {
+        sessionLogWriter?.close();
         return {
           completionReason: "error",
           resultContent: null,
@@ -257,6 +272,7 @@ export class ClaudeCodeRunner implements AgentRunner {
 
       if (lastResult && lastResult.subtype !== "success") {
         const errorResult = lastResult as SDKResultMessage & { errors?: string[] };
+        sessionLogWriter?.close();
         return {
           completionReason: "error",
           resultContent: null,
@@ -339,10 +355,21 @@ export class ClaudeCodeRunner implements AgentRunner {
       }
 
       logVerbose("session", "query completed", { stepName: step.name, runtime: "local", sessionId: extractedSessionId });
+
+      // Write session summary to session log (session ID, model, token usage)
+      if (sessionLogWriter) {
+        sessionLogWriter.writeSummary({
+          sessionId: extractedSessionId,
+          model: resolvedConfig.model,
+          modelUsage: extractedModelUsage,
+        });
+        sessionLogWriter.close();
+      }
     } catch (err) {
       if (abortController.signal.aborted && timeoutId !== undefined) {
         clearTimeout(timeoutId);
         logVerbose("session", "query timeout", { stepName: step.name, runtime: "local", timeoutMs: resolvedConfig.timeoutMs });
+        sessionLogWriter?.close();
         return {
           completionReason: "timeout",
           resultContent: null,
@@ -354,6 +381,7 @@ export class ClaudeCodeRunner implements AgentRunner {
       }
       const cause = err as Error;
       logVerbose("session", "query error", { stepName: step.name, runtime: "local", error: cause.message });
+      sessionLogWriter?.close();
       return {
         completionReason: "error",
         resultContent: null,

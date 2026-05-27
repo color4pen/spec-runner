@@ -8,7 +8,9 @@ import type { DomainEvent } from "../event/types.js";
 import type { AgentRunner } from "../port/agent-runner.js";
 import type { JobStateStore } from "../../store/job-state-store.js";
 import { pushStepResult } from "../../state/helpers.js";
-import { stderrWrite, logVerbose } from "../../logger/stdout.js";
+import { stderrWrite, logVerbose, isLevelEnabled } from "../../logger/stdout.js";
+import { getAgentLogDir } from "../../util/xdg.js";
+import * as nodePath from "node:path";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import {
   recordFailedStepResult,
@@ -147,6 +149,14 @@ export class StepExecutor {
       ? getPreviousSessionId(state, step.name) ?? undefined
       : undefined;
 
+    // Compute session log path if debug level and repoRoot is available
+    let sessionLogPath: string | undefined;
+    if (isLevelEnabled("debug") && deps.repoRoot) {
+      const attempt = (state.steps?.[step.name]?.length ?? 0) + 1;
+      const agentLogDir = getAgentLogDir(deps.repoRoot, state.jobId);
+      sessionLogPath = nodePath.join(agentLogDir, `${step.name}-${attempt}.jsonl`);
+    }
+
     const ctx = {
       step,
       state,
@@ -162,6 +172,7 @@ export class StepExecutor {
       resumeSessionId,
       resumePrompt: deps.resumePrompt,
       followUpPrompts: allFollowUpPrompts.length > 0 ? allFollowUpPrompts : undefined,
+      sessionLogPath,
       emit: (event: DomainEvent, payload: Record<string, unknown>) => {
         // Forward adapter events to the event bus
         this.events.emit(event, payload as never);

@@ -14,6 +14,7 @@ import { cancelSingleJob, cancelAllTerminated } from "../core/cancel/runner.js";
 import { createWorktreeManager } from "../core/worktree/manager.js";
 import { spawnCommand } from "../util/spawn.js";
 import { resolveRepoRootOrFail } from "../util/repo-root.js";
+import { initPipelineLog, logPipelineEvent, closePipelineLog } from "../logger/pipeline-logger.js";
 
 export interface RunCancelOptions {
   jobId?: string;
@@ -77,22 +78,35 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
 
   const worktreeManager = createWorktreeManager();
 
-  const result = await cancelSingleJob({
-    jobId: resolvedJobId,
-    force,
-    purge,
-    deps: {
-      spawn: spawnCommand,
-      worktreeManager,
-      sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
-      kill: (pid, signal) => process.kill(pid, signal as NodeJS.Signals),
-      isAlive: (pid) => {
-        process.kill(pid, 0);
-        return true;
+  // Initialize pipeline log for the resolved job
+  initPipelineLog(repoRoot, resolvedJobId);
+  logPipelineEvent({ type: "cancel:start", jobId: resolvedJobId });
+
+  let result;
+  try {
+    result = await cancelSingleJob({
+      jobId: resolvedJobId,
+      force,
+      purge,
+      deps: {
+        spawn: spawnCommand,
+        worktreeManager,
+        sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
+        kill: (pid, signal) => process.kill(pid, signal as NodeJS.Signals),
+        isAlive: (pid) => {
+          process.kill(pid, 0);
+          return true;
+        },
+        repoRoot,
       },
-      repoRoot,
-    },
-  });
+    });
+    logPipelineEvent({ type: "cancel:complete", jobId: resolvedJobId, exitCode: result.exitCode });
+  } catch (err) {
+    logPipelineEvent({ type: "cancel:error", jobId: resolvedJobId, error: (err as Error).message });
+    throw err;
+  } finally {
+    closePipelineLog();
+  }
 
   writeResult(result);
   return result.exitCode;

@@ -77,6 +77,13 @@ export interface AgentRunContext {
    * 未指定時は undefined（既存動作と同一）。
    */
   resumePrompt?: string;
+  /**
+   * Absolute path for the agent session log file.
+   * Set by StepExecutor when log level is debug (-vv).
+   * When set, ClaudeCodeRunner writes SDK messages as JSONL to this path.
+   * Undefined at non-debug levels — no session log is written.
+   */
+  sessionLogPath?: string;
 }
 
 /**

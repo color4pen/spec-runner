@@ -90,4 +90,10 @@ export interface PipelineDeps extends StepContext {
    * StepExecutor が最初の agent ステップで消費し undefined にする。
    */
   resumePrompt?: string;
+  /**
+   * Absolute path to the git repository root.
+   * Used by StepExecutor to compute agent session log paths (debug level).
+   * Optional for backward compatibility with existing tests.
+   */
+  repoRoot?: string;
 }

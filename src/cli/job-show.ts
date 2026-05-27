@@ -8,16 +8,19 @@
  *   - UUID format (/^[a-f0-9-]{36}$/) → load by jobId directly
  *   - Otherwise → resolve by slug (all jobs, latest updatedAt wins)
  */
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { JobStateStore } from "../store/job-state-store.js";
 import { getJobSlug } from "../state/job-slug.js";
 import type { JobState } from "../state/schema.js";
 import { resolveRepoRoot } from "../util/repo-root.js";
 import { logResult, stderrWrite } from "../logger/stdout.js";
+import { getVerboseLogPath } from "../util/xdg.js";
 
 const UUID_REGEX = /^[a-f0-9-]{36}$/;
 
 /**
- * Run `job show` — print 6 key fields to stdout.
+ * Run `job show` — print key fields to stdout.
  * Returns the exit code: 0 = success, 1 = error.
  */
 export async function runJobShow(input: string): Promise<number> {
@@ -56,15 +59,24 @@ export async function runJobShow(input: string): Promise<number> {
     )[0]!;
   }
 
-  printJobState(state);
+  printJobState(state, repoRoot);
   return 0;
 }
 
-function printJobState(state: JobState): void {
+export function printJobState(state: JobState, repoRoot: string = process.cwd()): void {
   logResult(`Job ID:  ${state.jobId}`);
   logResult(`Status:  ${state.status}`);
   logResult(`Branch:  ${state.branch ?? "(none)"}`);
   logResult(`Step:    ${state.step ?? "(none)"}`);
   logResult(`Created: ${state.createdAt}`);
   logResult(`Updated: ${state.updatedAt}`);
+
+  // Show pipeline log path (relative to repoRoot for readability)
+  const logPath = getVerboseLogPath(repoRoot, state.jobId);
+  if (fs.existsSync(logPath)) {
+    const relPath = path.relative(repoRoot, logPath);
+    logResult(`Log:     ${relPath}`);
+  } else {
+    logResult(`Log:     (none)`);
+  }
 }

@@ -305,6 +305,7 @@ export class LocalRuntime implements RuntimeStrategy {
       runner: this.createAgentRunner(),
       spawn: spawnCommand,
       storeFactory: (id: string) => new JobStateStore(id, this.cwd),
+      repoRoot: this.cwd,
     };
   }
 

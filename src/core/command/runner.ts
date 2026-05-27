@@ -20,8 +20,11 @@
  *   - soft errors (awaiting-resume, failed) → teardown("error-status") + return 1
  *   - success (awaiting-merge) → teardown("awaiting-merge") + return 0
  */
-import { logInfo, logError, stderrWrite, initVerboseLog, closeVerboseLog, getVerboseLogFilePath, isLevelEnabled } from "../../logger/stdout.js";
+import { logInfo, logError, stderrWrite, logWarn, initVerboseLog, closeVerboseLog, getVerboseLogFilePath, isLevelEnabled } from "../../logger/stdout.js";
 import type { LogLevel } from "../../logger/stdout.js";
+import { initPipelineLog, closePipelineLog } from "../../logger/pipeline-logger.js";
+import { pruneOldLogs } from "../../logger/log-retention.js";
+import { getVerboseLogDir } from "../../util/xdg.js";
 import { KeepAlive } from "../lifecycle/keepalive.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
@@ -84,6 +87,18 @@ export abstract class CommandRunner {
 
     const { jobState, startStep, request, config, slug, workspaceOpts, repoRoot } = prepared;
 
+    // Prune old logs before initializing pipeline log (run 開始時 retention チェック)
+    try {
+      const logsDir = getVerboseLogDir(repoRoot);
+      await pruneOldLogs(logsDir, config.logs?.maxJobs ?? 20);
+    } catch (err) {
+      logWarn(`Failed to prune old logs: ${(err as Error).message}`);
+    }
+
+    // Initialize pipeline log (always, regardless of log level).
+    const pipelineLogger = initPipelineLog(repoRoot, jobState.jobId);
+    pipelineLogger.subscribe(this.events);
+
     // Initialize verbose log file (no-op if level < verbose)
     if (isLevelEnabled("verbose")) {
       initVerboseLog(repoRoot, jobState.jobId);
@@ -107,6 +122,7 @@ export abstract class CommandRunner {
         }, "init");
         logError(`Failed to set up workspace: ${(err as Error).message}`);
         closeVerboseLog();
+        closePipelineLog();
         return 1;
       }
 
@@ -157,6 +173,7 @@ export abstract class CommandRunner {
         }, "init");
         logError((err as Error).message);
         closeVerboseLog();
+        closePipelineLog();
         return 1;
       }
 
@@ -181,6 +198,7 @@ export abstract class CommandRunner {
         outputPipelineThrowError(err, jobState.branch);
         await this.runtime.teardown(handle, "error");
         closeVerboseLog();
+        closePipelineLog();
         return 1;
       }
 
@@ -197,6 +215,7 @@ export abstract class CommandRunner {
       await this.runtime.teardown(handle, finalState.status);
 
       closeVerboseLog();
+      closePipelineLog();
       return exitCode;
     } finally {
       keepAlive.release();

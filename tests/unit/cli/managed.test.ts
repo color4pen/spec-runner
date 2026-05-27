@@ -483,11 +483,11 @@ describe("runManagedReset", () => {
   it("does nothing when no stale config and runtime is not managed (5-h)", async () => {
     await writeConfig({ version: 1, agents: {} });
 
-    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
     const { runManagedReset } = await import("../../../src/cli/managed.js");
     await runManagedReset({ force: true });
 
-    const output = stderrSpy.mock.calls.map((c) => c[0]).join("");
+    const output = stdoutSpy.mock.calls.map((c) => c[0]).join("");
     expect(output).toContain("Nothing to reset");
   });
 

@@ -130,6 +130,11 @@ class TestCommand extends CommandRunner {
   }
 }
 
+// Mock log-retention to prevent real filesystem ops and allow override in T-033
+vi.mock("../../../../src/logger/log-retention.js", () => ({
+  pruneOldLogs: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Mock the pipeline to return a specific final state
 vi.mock("../../../../src/core/pipeline/index.js", () => ({
   createStandardPipeline: vi.fn().mockReturnValue({
@@ -433,5 +438,25 @@ describe("TC-06-03: verbose log closed on pipeline error", () => {
     await command.execute();
 
     expect(getVerboseLogFilePath()).toBeNull();
+  });
+});
+
+// T-033: pruneOldLogs exception does not abort pipeline
+describe("T-033: pruneOldLogs exception does not abort pipeline", () => {
+  it("logs warning and continues pipeline when pruneOldLogs throws", async () => {
+    const logRetention = await import("../../../../src/logger/log-retention.js");
+    (logRetention.pruneOldLogs as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("disk full"));
+
+    const runtime = buildMockRuntime();
+    const command = new TestCommand(runtime, buildPrepareResult());
+    const exitCode = await command.execute();
+
+    // Pipeline continues — exit code 0 (success)
+    expect(exitCode).toBe(0);
+
+    // logWarn writes "Warning: Failed to prune old logs: ..." to stderr
+    const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allStderr = stderrCalls.map((c) => String(c[0])).join("");
+    expect(allStderr).toMatch(/Failed to prune old logs/i);
   });
 });
