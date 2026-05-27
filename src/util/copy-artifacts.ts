@@ -9,6 +9,8 @@ import { rulesDestPath, usageJsonPath } from "./paths.js";
 import { RULES_MD_CONTENT } from "../prompts/rules.js";
 import { stderrWrite } from "../logger/stdout.js";
 import { SpecRunnerError, ERROR_CODES } from "../errors.js";
+import { getOutputTemplates } from "../templates/step-output-templates.js";
+import type { JobState } from "../state/schema.js";
 
 /**
  * Rejects a file path if it is a symbolic link.
@@ -69,6 +71,66 @@ export async function copyRulesToChangeFolder(
  * @param slug                 - The change slug (determines the change folder path).
  * @param spawnFn              - Spawn helper for git commands.
  */
+/**
+ * Write step output templates to the change folder before an agent step runs.
+ *
+ * Templates are written as plain files — they are NOT staged with `git add`.
+ * A-group templates (cleanup: false/undefined) will be overwritten by the agent.
+ * B-group templates (cleanup: true) are reference files read by the agent; they
+ * must be deleted by cleanupOutputTemplates() before commit-push.
+ *
+ * @param cwd      - Worktree root (absolute path).
+ * @param slug     - Change slug.
+ * @param stepName - Name of the step about to run.
+ * @param state    - Current job state (used to compute iteration numbers).
+ */
+export async function writeOutputTemplates(
+  cwd: string,
+  slug: string,
+  stepName: string,
+  state: JobState,
+): Promise<void> {
+  const templates = getOutputTemplates(stepName, slug, state);
+  for (const tpl of templates) {
+    const dest = path.join(cwd, tpl.path);
+    await fs.mkdir(path.dirname(dest), { recursive: true });
+    await fs.writeFile(dest, tpl.content, "utf-8");
+  }
+}
+
+/**
+ * Delete B-group (cleanup: true) templates from the change folder after a step
+ * completes, before commit-push.
+ *
+ * A-group templates are left untouched — they have already been overwritten by
+ * the agent and will be committed as final output files.
+ *
+ * ENOENT is silently ignored (idempotent).
+ *
+ * @param cwd      - Worktree root (absolute path).
+ * @param slug     - Change slug.
+ * @param stepName - Name of the step that just completed.
+ * @param state    - Current job state (used to look up the same template list).
+ */
+export async function cleanupOutputTemplates(
+  cwd: string,
+  slug: string,
+  stepName: string,
+  state: JobState,
+): Promise<void> {
+  const templates = getOutputTemplates(stepName, slug, state);
+  for (const tpl of templates) {
+    if (!tpl.cleanup) continue;
+    const dest = path.join(cwd, tpl.path);
+    try {
+      await fs.unlink(dest);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") continue;
+      throw err;
+    }
+  }
+}
+
 export async function copyDraftUsageToChangeFolder(
   draftRequestFilePath: string,
   targetCwd: string,

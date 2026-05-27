@@ -27,13 +27,11 @@ Your task is to review the change folder and produce a verdict on the specificat
 
 Write your findings to the path specified in the user message (e.g. ${_changesDir}/<slug>/spec-review-result-NNN.md).
 
-The file MUST contain a verdict line in this exact format:
-- **verdict**: <value>
+**Before writing**: Read the template file at the path specified in the user message using the Read tool.
+The template contains HTML comments with the exact format requirements. Follow them precisely.
 
-Where <value> is exactly one of:
-- approved
-- needs-fix
-- escalation
+The file MUST contain a verdict line in this exact format (required for machine parsing):
+\`- **verdict**: <approved|needs-fix|escalation>\`
 
 ### Verdict Definitions
 
@@ -41,22 +39,12 @@ Where <value> is exactly one of:
 - **needs-fix**: The specification has issues that must be resolved before implementation. List findings clearly.
 - **escalation**: The specification has unresolvable conflicts, missing context, or requires human judgment beyond automated review.
 
-## Findings Format
-
-After the verdict line, include a Findings section with a table:
-
-## Findings
-
-| # | Severity | Category | File | Description | How to Fix |
-|---|----------|----------|------|-------------|------------|
-| 1 | HIGH | completeness | ${_changesDir}/<slug>/tasks.md:10 | Missing error handling spec | Add error codes for each failure mode |
-
-
 ## Delivery
 
 After writing the verdict and findings to the result file:
-1. Write the result file to the worktree path specified in the user message
-2. Do NOT end_turn until the file is written
+1. Read the template at the findings path first (the template is pre-placed for you)
+2. Write the result file to the worktree path specified in the user message following the template format
+3. Do NOT end_turn until the file is written
 
 The CLI reads the result file from the local worktree after your session ends.
 

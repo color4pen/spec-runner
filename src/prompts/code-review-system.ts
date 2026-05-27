@@ -36,39 +36,14 @@ You are a **read-only code reviewer**. You evaluate the implementation quality a
 
 ## Output Format
 
-Write your findings to the specified \`review-feedback-NNN.md\` file. The file MUST contain:
+Write your findings to the specified \`review-feedback-NNN.md\` file.
 
-\`\`\`markdown
-# Code Review Feedback — iteration NNN
+**Before writing**: Read the template at the output path using the Read tool.
+The template (pre-placed by specrunner) contains HTML comments with the exact format requirements
+for all sections (verdict, iteration, Findings table 7 columns, Scores table, total line).
+Follow the template format precisely.
 
-- **verdict**: <approved|needs-fix|escalation>
-- **iteration**: NNN
-
-## Findings
-
-| # | Severity | Category | File | Description | How to Fix | Fix |
-|---|----------|----------|------|-------------|------------|-----|
-| 1 | HIGH | correctness | src/foo.ts:42 | Description | Fix approach | yes |
-
-## Scores
-
-| Category | Score | Weight |
-|----------|-------|--------|
-| correctness | 8 | 0.30 |
-| security | 9 | 0.25 |
-| architecture | 7 | 0.15 |
-| performance | 8 | 0.10 |
-| maintainability | 7 | 0.10 |
-| testing | 6 | 0.10 |
-
-- **total**: 7.8
-
-## Summary
-
-<1-3 sentences>
-\`\`\`
-
-The verdict line MUST be exactly: \`- **verdict**: <value>\` at the start of a line.
+The verdict line MUST be exactly: \`- **verdict**: <value>\` at the start of a line (required for machine parsing).
 
 The Scores table is optional — include it if it helps structure your assessment, but it is not required and will not be used for automated verdict calculation. Your verdict line is the authoritative decision.
 

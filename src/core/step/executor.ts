@@ -25,6 +25,7 @@ import { buildRulesFollowUpPrompts } from "./rules-followup-prompts.js";
 import { gitExec, defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
 import { FIXER_STEP_NAMES, getPreviousSessionId } from "./fixer-helpers.js";
 import { commitAndPush, type CommitPushInfra } from "./commit-push.js";
+import { writeOutputTemplates, cleanupOutputTemplates } from "../../util/copy-artifacts.js";
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -191,6 +192,11 @@ export class StepExecutor {
       headBeforeStep = await gitExec(this.spawnFn, cwd, ["rev-parse", "HEAD"]);
     }
 
+    // Place step output templates in the change folder before the agent runs (local runtime only).
+    if (deps.config.runtime === "local") {
+      await writeOutputTemplates(cwd, deps.slug, step.name, state);
+    }
+
     const startedAt = new Date().toISOString();
     logPipelineDiag("executor:agent:pre-run", `step=${step.name}`);
     const runResult = await this.runner.run(ctx).catch(async (thrownErr: unknown) => {
@@ -257,6 +263,11 @@ export class StepExecutor {
       state = await store.fail(state, errorInfo, step.name);
       await store.persist(state);
       attachStateAndRethrow(err, state);
+    }
+
+    // Delete B-group (reference) templates before commit-push so they are not included in the PR.
+    if (deps.config.runtime === "local") {
+      await cleanupOutputTemplates(cwd, deps.slug, step.name, state);
     }
 
     // Commit and push after successful agent run (local runtime only).

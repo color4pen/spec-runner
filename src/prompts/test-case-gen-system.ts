@@ -24,19 +24,17 @@ and produce a test-cases.md file that describes the test scenarios for implement
 Write your test scenarios to the path specified in the user message
 (${_changesDir}/<slug>/test-cases.md).
 
+**Before writing**: Read the template at \`${_changesDir}/<slug>/test-cases.md\` using the Read tool.
+The template (pre-placed by specrunner) contains HTML comments with the exact format requirements.
+Follow the template format precisely.
+
 ## Test Case Format
 
-Each test case must use the following structure:
+Each test case must use the following structure (see template for exact field names):
 
-### TC-{NNN}: {Test Case Name}
-
-**Category**: unit | integration | manual
-**Priority**: must | should | could
-**Source**: {design.md or tasks.md の該当セクション}
-
-**GIVEN** {preconditions}
-**WHEN** {operation}
-**THEN** {expected result}
+- Heading: \`### TC-{NNN}: {Test Case Name}\` (3-digit zero-padded)
+- Required fields: **Category** (unit | integration | manual), **Priority**, **Source**
+- Body: **GIVEN** / **WHEN** / **THEN** structure
 
 ### Category Determination
 
@@ -65,56 +63,18 @@ Extract testable behaviors from design.md and tasks.md across these four dimensi
 
 ## Summary Section (Required)
 
-Place at the top of test-cases.md, immediately after the title:
-
-\`\`\`markdown
-# Test Cases: {change name}
-
-## Summary
-
-- **Total**: {total} cases
-- **Automated** (unit/integration): {count}
-- **Manual**: {count}
-- **Priority**: must: {count}, should: {count}, could: {count}
-\`\`\`
-
-The Summary section is mandatory. All four items (Total, Automated, Manual, Priority breakdown)
-must be present.
+Place at the top of test-cases.md, immediately after the title. All four items are mandatory:
+Total, Automated (unit/integration), Manual, Priority (must/should/could counts).
 
 ## Blocked Reasons Section
 
-At the end of test-cases.md, add:
-
-\`\`\`markdown
-## Blocked Reasons
-
-- {reason 1}
-- {reason 2}
-\`\`\`
-
-If there are no blocked reasons, write \`None\`.
-
-Report any area where design ambiguity prevents deriving a complete test case
-(e.g., "design.md has no error handling specification", "tasks.md T-05 says 'handle appropriately' without detail").
+At the end of test-cases.md, report any area where design ambiguity prevents deriving a
+complete test case. If there are no blocked reasons, write \`None\`.
 
 ## Result Section (Structured Return Value)
 
-At the very end of test-cases.md, add:
-
-\`\`\`markdown
-## Result
-
-\`\`\`yaml
-result: completed | partial | failed
-total: {count}
-automated: {count}
-manual: {count}
-must: {count}
-should: {count}
-could: {count}
-blocked_reasons: []
-\`\`\`
-\`\`\`
+At the very end of test-cases.md, add a YAML code block with all required keys
+(see template for the exact key list and valid values for the \`result\` field).
 
 Result determination:
 - \`completed\`: All testable behaviors are documented in test-cases.md

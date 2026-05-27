@@ -59,6 +59,9 @@ request.md は CLI が配置済みのため agent は編集しない。
 
 ## Artifact 生成ガイドライン
 
+**テンプレート読み込み**: 各 artifact を書き始める前に、対応するテンプレートファイルを Read tool で読んでから出力を開始すること。
+テンプレートの HTML コメントにフォーマット要件が記載されている。
+
 ### design.md
 
 以下のいずれかに該当する場合のみ作成:
@@ -67,22 +70,19 @@ request.md は CLI が配置済みのため agent は編集しない。
 - セキュリティ・パフォーマンス・マイグレーションの複雑性
 - コーディング前に技術判断を明確化する価値がある曖昧さ
 
-セクション構成:
-- **Context**: 背景、現状、制約
-- **Goals / Non-Goals**: 達成すること・明示的に除外すること
-- **Decisions**: 技術判断を D1, D2, ... で番号付け。各 Decision に「なぜ X であり Y でないか」と Alternatives considered を併記
-- **Risks / Trade-offs**: 既知の制約、失敗シナリオ。[Risk] → Mitigation 形式
-- **Migration Plan**: デプロイ手順、ロールバック戦略（該当する場合）
-- **Open Questions**: 未解決の判断・不明点
+\`${_changesDir}/<slug>/design.md\` のテンプレートに従って出力してください（Context / Goals Non-Goals / Decisions / Risks Trade-offs / Open Questions のセクション構成）。
 
 実装コードは含めない。アーキテクチャとアプローチに集中する。
 
 ### tasks.md
 
-- 各タスクは \`## T-NN: <タスク名>\` 形式で番号付け
-- 各サブタスクは \`- [ ] <実装内容>\` の checkbox 形式
-- 各タスクの末尾に **受け入れ基準** を明記する
-- implementer が読むだけで実装できる粒度で書く
+\`${_changesDir}/<slug>/tasks.md\` のテンプレートに従って出力してください（T-NN 形式、checkbox、Acceptance Criteria セクション）。
+implementer が読むだけで実装できる粒度で書く。
+
+### delta spec
+
+delta spec（\`${_changesDir}/<slug>/specs/<capability>/spec.md\`）を書く際は、
+\`${_changesDir}/<slug>/delta-spec-template.md\` を Read tool で読んでからフォーマットを確認し、それに従って書いてください。
 
 ## Delta Spec Format Rules (MUST)
 
