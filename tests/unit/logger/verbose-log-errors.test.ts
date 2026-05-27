@@ -23,7 +23,7 @@ import * as path from "node:path";
 import * as nodeFs from "node:fs";
 import * as fsPromises from "node:fs/promises";
 import {
-  setVerbose,
+  setLogLevel,
   initVerboseLog,
   logVerbose,
   closeVerboseLog,
@@ -41,13 +41,13 @@ beforeEach(async () => {
   vi.mocked(nodeFs.writeSync).mockImplementation(actual.writeSync as typeof nodeFs.writeSync);
 
   tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "specrunner-verbose-err-test-"));
-  setVerbose(false);
+  setLogLevel("default");
   closeVerboseLog();
 });
 
 afterEach(async () => {
   closeVerboseLog();
-  setVerbose(false);
+  setLogLevel("default");
   await fsPromises.rm(tempDir, { recursive: true, force: true });
 });
 
@@ -67,7 +67,7 @@ describe("TC-05-01: initVerboseLog — ディレクトリ作成失敗", () => {
       throw err;
     });
 
-    setVerbose(true);
+    setLogLevel("verbose");
 
     // 例外が伝播しないことを確認
     expect(() => initVerboseLog(tempDir, "test-job-mkdir-fail")).not.toThrow();
@@ -93,7 +93,7 @@ describe("TC-05-01: initVerboseLog — ディレクトリ作成失敗", () => {
 
 describe("TC-05-02: logVerbose — 書き込み失敗", () => {
   it("例外が発生しない AND logFd が null になる AND 以降の logVerbose が no-op になる", () => {
-    setVerbose(true);
+    setLogLevel("verbose");
     initVerboseLog(tempDir, "test-job-write-fail");
 
     // initVerboseLog が成功したことを確認（logFd が設定されている）

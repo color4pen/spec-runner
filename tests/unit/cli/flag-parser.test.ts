@@ -239,3 +239,58 @@ describe("1-16: count: 2 requires two positionals", () => {
     ).not.toThrow();
   });
 });
+
+// TC-28: -q maps to quiet: true
+describe("TC-28: -q maps to quiet: true", () => {
+  it("parses -q as quiet flag", () => {
+    const result = parseFlags(["-q"], {});
+    expect(result.flags["quiet"]).toBe(true);
+  });
+});
+
+// TC-29: -v maps to verbose: true
+describe("TC-29: -v maps to verbose: true", () => {
+  it("parses -v as verbose flag", () => {
+    const result = parseFlags(["-v"], {});
+    expect(result.flags["verbose"]).toBe(true);
+  });
+});
+
+// TC-30 & TC-31: -vv maps to debug: true (not verbose)
+describe("TC-30/TC-31: -vv maps to debug: true and not verbose", () => {
+  it("parses -vv as debug flag", () => {
+    const result = parseFlags(["-vv"], {});
+    expect(result.flags["debug"]).toBe(true);
+  });
+
+  it("-vv does not set verbose flag", () => {
+    const result = parseFlags(["-vv"], {});
+    expect(result.flags["verbose"]).toBeUndefined();
+  });
+});
+
+// TC-32: -v -v (two tokens) is verbose, not debug
+describe("TC-32: -v -v (two tokens) stays verbose", () => {
+  it("two -v tokens set verbose but not debug", () => {
+    const result = parseFlags(["-v", "-v"], {});
+    expect(result.flags["verbose"]).toBe(true);
+    expect(result.flags["debug"]).toBeUndefined();
+  });
+});
+
+// TC-33: --verbose still works (backward compat)
+describe("TC-33: --verbose flag backward compat", () => {
+  it("--verbose sets verbose flag", () => {
+    const result = parseFlags(["--verbose"], { verbose: { type: "boolean" } });
+    expect(result.flags["verbose"]).toBe(true);
+  });
+});
+
+// TC-34: --debug is Unknown flag (only -vv supported)
+describe("TC-34: --debug is Unknown flag", () => {
+  it("--debug throws FlagParseError (not in flagDefs)", () => {
+    expect(() =>
+      parseFlags(["--debug"], { verbose: { type: "boolean" } }),
+    ).toThrow(FlagParseError);
+  });
+});

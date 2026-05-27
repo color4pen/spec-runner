@@ -1,5 +1,5 @@
 import { SpecRunnerError } from "../errors.js";
-import { setVerbose, resolveVerboseFlag, logError, stderrWrite } from "../logger/stdout.js";
+import { setLogLevel, logError, stderrWrite, type LogLevel } from "../logger/stdout.js";
 import { resolveJobStateBySlug } from "../core/resume/resolve-job.js";
 import { bootstrap } from "./bootstrap.js";
 import { ResumeCommand } from "../core/command/resume.js";
@@ -30,13 +30,13 @@ function resolveHeartbeatInterval(config: SpecRunnerConfig): number {
 export interface ResumeOptions {
   from?: string;
   force?: boolean;
-  verbose?: boolean;
+  logLevel?: LogLevel;
   cwd?: string;
   prompt?: string;
 }
 
 export async function runResumeCore(slug: string, options: ResumeOptions): Promise<number> {
-  setVerbose(resolveVerboseFlag(options.verbose ?? false));
+  setLogLevel(options.logLevel ?? "default");
   const cwd = options.cwd ?? process.cwd();
   registerExitGuard(cwd);
 
@@ -57,9 +57,9 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
   }
 
   const events = new EventBus();
-  const verbose = options.verbose ?? false;
+  const logLevel = options.logLevel ?? "default";
   const progress = wireProgressDisplay(events, {
-    verbose,
+    logLevel,
     slug,
     heartbeatIntervalSec: resolveHeartbeatInterval(config),
   });

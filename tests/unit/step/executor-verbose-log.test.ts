@@ -13,7 +13,7 @@ import * as os from "node:os";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
 import {
-  setVerbose,
+  setLogLevel,
   initVerboseLog,
   closeVerboseLog,
   getVerboseLogFilePath,
@@ -38,7 +38,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   closeVerboseLog();
-  setVerbose(false);
+  setLogLevel("default");
   await fsPromises.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -168,7 +168,7 @@ function readLogEntries(logPath: string): Record<string, unknown>[] {
 describe("TC-10-01: StepExecutor.execute() — logs 'step started' with step field", () => {
   it("step 実行開始時にログに 'step started' エントリと step フィールドが書き出される", async () => {
     const jobId = "tc10-01-job";
-    setVerbose(true);
+    setLogLevel("verbose");
     initVerboseLog(tempDir, jobId);
     const logPath = getVerboseLogFilePath()!;
 
@@ -190,7 +190,7 @@ describe("TC-10-01: StepExecutor.execute() — logs 'step started' with step fie
 describe("TC-10-02: StepExecutor.execute() — logs 'step completed' on success", () => {
   it("step が正常完了したとき 'step completed' エントリがログに書き出される", async () => {
     const jobId = "tc10-02-job";
-    setVerbose(true);
+    setLogLevel("verbose");
     initVerboseLog(tempDir, jobId);
     const logPath = getVerboseLogFilePath()!;
 
@@ -212,7 +212,7 @@ describe("TC-10-02: StepExecutor.execute() — logs 'step completed' on success"
 describe("TC-10-03: StepExecutor.execute() — logs 'step error' with error field on failure", () => {
   it("runner がエラーを throw したとき 'step error' エントリと error フィールドがログに書き出される", async () => {
     const jobId = "tc10-03-job";
-    setVerbose(true);
+    setLogLevel("verbose");
     initVerboseLog(tempDir, jobId);
     const logPath = getVerboseLogFilePath()!;
 

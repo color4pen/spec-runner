@@ -25,7 +25,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { retrieveSession, listEvents } from "../../../../src/adapter/managed-agent/sdk/sessions.js";
 import { pollUntilComplete } from "../../../../src/adapter/managed-agent/completion.js";
 import {
-  setVerbose,
+  setLogLevel,
   initVerboseLog,
   closeVerboseLog,
   getVerboseLogFilePath,
@@ -40,7 +40,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   closeVerboseLog();
-  setVerbose(false);
+  setLogLevel("default");
   await fsPromises.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -66,7 +66,7 @@ function readLogEntries(logPath: string): Record<string, unknown>[] {
 describe("TC-08-01: pollUntilComplete — logs 'poll attempt' with intervalMs and sessionStatus", () => {
   it("ポーリング試行ごとに 'poll attempt' エントリと intervalMs・sessionStatus フィールドがログに書き出される", async () => {
     const jobId = "tc08-01-job";
-    setVerbose(true);
+    setLogLevel("verbose");
     initVerboseLog(tempDir, jobId);
     const logPath = getVerboseLogFilePath()!;
 

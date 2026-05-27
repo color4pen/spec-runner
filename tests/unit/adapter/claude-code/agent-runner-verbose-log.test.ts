@@ -15,7 +15,7 @@ import type { JobState } from "../../../../src/state/schema.js";
 import type { AgentStep } from "../../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
 import {
-  setVerbose,
+  setLogLevel,
   initVerboseLog,
   closeVerboseLog,
   getVerboseLogFilePath,
@@ -31,7 +31,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   closeVerboseLog();
-  setVerbose(false);
+  setLogLevel("default");
   await fsPromises.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -133,7 +133,7 @@ function readLogEntries(logPath: string): Record<string, unknown>[] {
 describe("TC-09-02: ClaudeCodeRunner.run() — logs 'query started' with runtime: 'local'", () => {
   it("run() 開始時にログに 'query started' エントリと runtime: 'local' が書き出される", async () => {
     const jobId = "tc09-02-job";
-    setVerbose(true);
+    setLogLevel("verbose");
     initVerboseLog(tempDir, jobId);
     const logPath = getVerboseLogFilePath()!;
 

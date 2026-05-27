@@ -30,7 +30,7 @@ import { FlagParseError } from "./flag-parser.js";
 import type { FlagDef, ParsedArgs } from "./flag-parser.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
-import { logError, stderrWrite, stdoutWrite } from "../logger/stdout.js";
+import { logError, stderrWrite, stdoutWrite, resolveLogLevel } from "../logger/stdout.js";
 import { ClaudeCodeOneShotQueryClient } from "../adapter/claude-code/one-shot-query-client.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
@@ -183,12 +183,17 @@ export const COMMANDS: Record<string, CommandEntry> = {
   run: {
     flags: {
       verbose: { type: "boolean" },
+      quiet: { type: "boolean" },
     },
     positional: { name: "request.md|slug", required: true },
     handler: async (parsed) => {
       const requestMdPath = parsed.positional!;
-      const verbose = !!parsed.flags["verbose"];
-      await runRun(requestMdPath, { verbose });
+      const logLevel = resolveLogLevel({
+        quiet: !!parsed.flags["quiet"],
+        verbose: !!parsed.flags["verbose"],
+        debug: !!parsed.flags["debug"],
+      });
+      await runRun(requestMdPath, { logLevel });
     },
   },
 
@@ -316,12 +321,17 @@ export const COMMANDS: Record<string, CommandEntry> = {
       start: {
         flags: {
           verbose: { type: "boolean" },
+          quiet: { type: "boolean" },
         },
         positional: { name: "slug|file", required: true },
         handler: async (parsed) => {
           const requestMdPath = parsed.positional!;
-          const verbose = !!parsed.flags["verbose"];
-          await runRun(requestMdPath, { verbose });
+          const logLevel = resolveLogLevel({
+            quiet: !!parsed.flags["quiet"],
+            verbose: !!parsed.flags["verbose"],
+            debug: !!parsed.flags["debug"],
+          });
+          await runRun(requestMdPath, { logLevel });
         },
       },
       ls: {
@@ -391,6 +401,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
           from: { type: "string", values: [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES, "critic", "fixer", "creator"] as const },
           force: { type: "boolean" },
           verbose: { type: "boolean" },
+          quiet: { type: "boolean" },
           prompt: { type: "string" },
           "prompt-file": { type: "string" },
         },
@@ -415,11 +426,17 @@ export const COMMANDS: Record<string, CommandEntry> = {
             resolvedPrompt = promptText;
           }
 
+          const logLevel = resolveLogLevel({
+            quiet: !!parsed.flags["quiet"],
+            verbose: !!parsed.flags["verbose"],
+            debug: !!parsed.flags["debug"],
+          });
+
           try {
             await runResume(parsed.positional!, {
               from: parsed.flags["from"] as string | undefined,
               force: !!parsed.flags["force"],
-              verbose: !!parsed.flags["verbose"],
+              logLevel,
               cwd: process.cwd(),
               prompt: resolvedPrompt,
             });

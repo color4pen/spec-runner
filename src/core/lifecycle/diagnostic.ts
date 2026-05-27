@@ -1,12 +1,17 @@
-import { stderrWrite } from "../../logger/stdout.js";
+import { stderrWrite, isLevelEnabled } from "../../logger/stdout.js";
 
 /**
  * Pipeline diagnostic logger.
  *
  * Activated by setting SPECRUNNER_DEBUG=pipeline (comma-separated, other values ignored).
- * Zero overhead when disabled — the env var check is the only cost per call.
+ * Requires debug log level to be enabled — zero overhead when disabled.
+ * The log level check and env var check are orthogonal axes.
  */
 export function logPipelineDiag(point: string, detail?: string): void {
+  // debug level must be enabled
+  if (!isLevelEnabled("debug")) return;
+
+  // subsystem filter: SPECRUNNER_DEBUG must include "pipeline"
   const debugEnv = process.env["SPECRUNNER_DEBUG"] ?? "";
   const parts = debugEnv.split(",").map((s) => s.trim());
   if (!parts.includes("pipeline")) return;

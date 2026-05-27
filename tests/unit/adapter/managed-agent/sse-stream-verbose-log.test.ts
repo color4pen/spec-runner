@@ -26,7 +26,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { streamEvents } from "../../../../src/adapter/managed-agent/sdk/sessions.js";
 import { runSseStream } from "../../../../src/adapter/managed-agent/sse-stream.js";
 import {
-  setVerbose,
+  setLogLevel,
   initVerboseLog,
   closeVerboseLog,
   getVerboseLogFilePath,
@@ -41,7 +41,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   closeVerboseLog();
-  setVerbose(false);
+  setLogLevel("default");
   await fsPromises.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -78,7 +78,7 @@ function makeDeps(overrides: Partial<Parameters<typeof runSseStream>[0]> = {}): 
 describe("TC-07-01: runSseStream — logs 'status_idle event' on end_turn", () => {
   it("status_idle(end_turn) event 受信後、ログに 'status_idle event' エントリが書き出される", async () => {
     const jobId = "tc07-01-job";
-    setVerbose(true);
+    setLogLevel("verbose");
     initVerboseLog(tempDir, jobId);
     const logPath = getVerboseLogFilePath()!;
 
@@ -106,7 +106,7 @@ describe("TC-07-01: runSseStream — logs 'status_idle event' on end_turn", () =
 describe("TC-07-02: runSseStream — logs 'session_error event' with errorType on terminal error", () => {
   it("session_error(terminal) event 受信後、ログに component='sse' かつ errorType フィールドを持つエントリが書き出される", async () => {
     const jobId = "tc07-02-job";
-    setVerbose(true);
+    setLogLevel("verbose");
     initVerboseLog(tempDir, jobId);
     const logPath = getVerboseLogFilePath()!;
 

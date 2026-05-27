@@ -1,4 +1,5 @@
 import type { EventBus } from "../core/event/event-bus.js";
+import type { LogLevel } from "../logger/stdout.js";
 
 /** Injectable timer function type (matches setInterval signature we use). */
 type TimerSetFn = (callback: () => void, ms: number) => ReturnType<typeof setInterval>;
@@ -6,7 +7,7 @@ type TimerSetFn = (callback: () => void, ms: number) => ReturnType<typeof setInt
 type TimerClearFn = (id: ReturnType<typeof setInterval>) => void;
 
 export interface ProgressDisplayOptions {
-  verbose: boolean;
+  logLevel: LogLevel;
   slug: string;
   /** Heartbeat interval in seconds. 0 = disabled. */
   heartbeatIntervalSec: number;
@@ -27,7 +28,7 @@ export interface ProgressDisplayOptions {
 export function wireProgressDisplay(
   events: EventBus,
   opts: {
-    verbose: boolean;
+    logLevel: LogLevel;
     slug: string;
     heartbeatIntervalSec: number;
     timerFn?: TimerSetFn;
@@ -45,7 +46,12 @@ export function wireProgressDisplay(
  *
  * Design D1: CLI presentation layer. Does not belong in core pipeline.
  * Design D4: Line-append format (no ANSI cursor movement) for pipe/redirect safety,
- *            EXCEPT in TTY non-verbose mode where \r overwrite is used for heartbeat.
+ *            EXCEPT in TTY default mode where \r overwrite is used for heartbeat.
+ *
+ * Quiet level behavior:
+ * - step:start / step:complete / step:error: suppressed
+ * - pipeline:complete / pipeline:fail: always output
+ * - heartbeat: suppressed
  *
  * Heartbeat timer:
  * - Driven by setInterval inside ProgressDisplay (not core).
@@ -79,6 +85,15 @@ export class ProgressDisplay {
     this.subscribe();
   }
 
+  private get isQuiet(): boolean {
+    return this.options.logLevel === "quiet";
+  }
+
+  /** True when TTY overwrite (\r) should be used for heartbeat. Only in default level TTY. */
+  private get useCarriageReturn(): boolean {
+    return this.isTTY && this.options.logLevel === "default";
+  }
+
   private subscribe(): void {
     this.events.on("step:start", (p) => this.onStepStart(p));
     this.events.on("step:complete", (p) => this.onStepComplete(p));
@@ -99,13 +114,15 @@ export class ProgressDisplay {
     this.currentStep = p.step;
     this.progressCount = 0;
     this.lastTool = null;
+    if (this.isQuiet) return;
     process.stderr.write(`[${p.step}] running...\n`);
     this.startHeartbeat();
   }
 
   private onStepComplete(p: { step: string }): void {
     this.stopHeartbeat();
-    if (this.isTTY && !this.options.verbose) {
+    if (this.isQuiet) return;
+    if (this.useCarriageReturn) {
       process.stderr.write("\r\x1b[K");
     }
     const elapsed = this.elapsedSeconds(p.step);
@@ -115,7 +132,8 @@ export class ProgressDisplay {
 
   private onStepError(p: { step: string; error: Error }): void {
     this.stopHeartbeat();
-    if (this.isTTY && !this.options.verbose) {
+    if (this.isQuiet) return;
+    if (this.useCarriageReturn) {
       process.stderr.write("\r\x1b[K");
     }
     const elapsed = this.elapsedSeconds(p.step);
@@ -129,23 +147,27 @@ export class ProgressDisplay {
   }
 
   private onVerdictParsed(p: { step: string; outcome: { verdict: string | null } }): void {
+    if (this.isQuiet) return;
     if (p.outcome.verdict === null) return;
     process.stderr.write(`[${p.step}] verdict: ${p.outcome.verdict}\n`);
   }
 
   private onPipelineComplete(_p: unknown): void {
     this.stopHeartbeat();
+    // Always output final result, even in quiet mode
     process.stderr.write(`\nNext: specrunner job finish ${this.options.slug}\n`);
   }
 
   private onPipelineFail(p: { reason: string }): void {
     this.stopHeartbeat();
+    // Always output final result, even in quiet mode
     process.stderr.write(`Pipeline failed: ${p.reason}\n`);
   }
 
   private startHeartbeat(): void {
     this.stopHeartbeat(); // prevent double-start
     if (this.heartbeatIntervalMs <= 0) return;
+    if (this.isQuiet) return;
     this.heartbeatTimer = this.timerFn(() => {
       this.renderHeartbeat();
     }, this.heartbeatIntervalMs);
@@ -169,7 +191,7 @@ export class ProgressDisplay {
       }
     }
 
-    if (this.isTTY && !this.options.verbose) {
+    if (this.useCarriageReturn) {
       const padded = line.padEnd(process.stderr.columns || 80);
       process.stderr.write(`\r${padded}`);
     } else {
@@ -178,23 +200,28 @@ export class ProgressDisplay {
   }
 
   private onIterationStart(p: { step: string; iteration: number; maxIterations: number }): void {
+    if (this.isQuiet) return;
     process.stderr.write(`[iter ${p.iteration}/${p.maxIterations}] starting ${p.step}\n`);
   }
 
   private onIterationVerdict(p: { step: string; iteration: number; verdict: string; action: "done" | "halt" | "fixer" }): void {
+    if (this.isQuiet) return;
     const actionLabel = p.action === "done" ? "done" : p.action === "halt" ? "halt" : "spawning fixer";
     process.stderr.write(`[iter ${p.iteration}] ${p.step} verdict: ${p.verdict} → ${actionLabel}\n`);
   }
 
   private onIterationExhausted(p: { step: string; iteration: number; maxIterations: number }): void {
+    if (this.isQuiet) return;
     process.stderr.write(`[iter ${p.iteration}/${p.maxIterations}] retries exhausted on ${p.step}, escalating\n`);
   }
 
   private onPipelineSummary(p: { step: string; iterations: number; finalVerdict: string }): void {
+    if (this.isQuiet) return;
     process.stderr.write(`Pipeline finished: ${p.step} iterations=${p.iterations}, final verdict=${p.finalVerdict}\n`);
   }
 
   private onCliStep(p: { step: string; verdict?: string }): void {
+    if (this.isQuiet) return;
     if (p.verdict !== undefined) {
       process.stderr.write(`[step] ${p.step}: ${p.verdict}\n`);
     } else {

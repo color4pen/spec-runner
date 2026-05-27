@@ -21,7 +21,7 @@ import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import { JobStateStore } from "../../../../src/store/job-state-store.js";
 import {
-  setVerbose,
+  setLogLevel,
   closeVerboseLog,
   getVerboseLogFilePath,
 } from "../../../../src/logger/stdout.js";
@@ -36,7 +36,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   closeVerboseLog();
-  setVerbose(false);
+  setLogLevel("default");
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.clearAllMocks();
   vi.restoreAllMocks();
@@ -72,7 +72,7 @@ function buildPrepareResult(overrides: Partial<PrepareResult> = {}): PrepareResu
       agents: {},
     },
     slug: "test-slug",
-    verbose: false,
+    logLevel: "default",
     workspaceOpts: {},
     repoRoot: "/fake/repo",
     ...overrides,
@@ -405,10 +405,10 @@ describe("TC-CR-011: pipeline throw with awaiting-resume state does not overwrit
 // TC-06-02: verbose log is closed on pipeline success (no fd leak)
 describe("TC-06-02: verbose log closed on pipeline success", () => {
   it("execute() success path → getVerboseLogFilePath() returns null (closeVerboseLog called)", async () => {
-    setVerbose(true);
+    setLogLevel("verbose");
 
     const runtime = buildMockRuntime();
-    const command = new TestCommand(runtime, buildPrepareResult({ verbose: true }));
+    const command = new TestCommand(runtime, buildPrepareResult({ logLevel: "verbose" }));
 
     await command.execute();
 
@@ -419,10 +419,10 @@ describe("TC-06-02: verbose log closed on pipeline success", () => {
 // TC-06-03: verbose log is closed on pipeline error (no fd leak)
 describe("TC-06-03: verbose log closed on pipeline error", () => {
   it("execute() pipeline throw → getVerboseLogFilePath() returns null (closeVerboseLog called)", async () => {
-    setVerbose(true);
+    setLogLevel("verbose");
 
     const runtime = buildMockRuntime();
-    const command = new TestCommand(runtime, buildPrepareResult({ verbose: true }));
+    const command = new TestCommand(runtime, buildPrepareResult({ logLevel: "verbose" }));
 
     // Override pipeline to throw
     const { createStandardPipeline } = await import("../../../../src/core/pipeline/index.js");

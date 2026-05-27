@@ -76,7 +76,7 @@ describe("TC-DISPATCH-001: job resume with valid slug", () => {
 
     expect(runResume).toHaveBeenCalledWith(
       "my-feature-slug",
-      expect.objectContaining({ from: undefined, force: false, verbose: false }),
+      expect.objectContaining({ from: undefined, force: false, logLevel: "default" }),
     );
   });
 });

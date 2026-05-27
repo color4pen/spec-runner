@@ -1,12 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { vi } from "vitest";
 import { logPipelineDiag } from "../diagnostic.js";
+import { setLogLevel } from "../../../logger/stdout.js";
 
 let originalDebug: string | undefined;
 
 beforeEach(() => {
   originalDebug = process.env["SPECRUNNER_DEBUG"];
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+  // logPipelineDiag requires debug level — set it for tests that verify output
+  setLogLevel("debug");
 });
 
 afterEach(() => {
@@ -15,6 +18,7 @@ afterEach(() => {
   } else {
     process.env["SPECRUNNER_DEBUG"] = originalDebug;
   }
+  setLogLevel("default");
   vi.restoreAllMocks();
 });
 
@@ -60,5 +64,19 @@ describe("logPipelineDiag", () => {
     const output = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls[0]![0] as string;
     expect(output).toMatch(/\[pipeline-diag .+\] pipeline:loop:exhausted\n/);
     expect(output).not.toContain(": undefined");
+  });
+
+  it("debug レベル未設定時は SPECRUNNER_DEBUG=pipeline があっても出力されない", () => {
+    setLogLevel("default");
+    process.env["SPECRUNNER_DEBUG"] = "pipeline";
+    logPipelineDiag("pipeline:run:entry", "jobId=test");
+    expect(process.stderr.write).not.toHaveBeenCalled();
+  });
+
+  it("verbose レベルでは SPECRUNNER_DEBUG=pipeline があっても出力されない", () => {
+    setLogLevel("verbose");
+    process.env["SPECRUNNER_DEBUG"] = "pipeline";
+    logPipelineDiag("pipeline:run:entry", "jobId=test");
+    expect(process.stderr.write).not.toHaveBeenCalled();
   });
 });

@@ -1,10 +1,10 @@
 /**
  * Unit tests for verbose log functions.
  *
- * TC-VL-01: resolveVerboseFlag(true) → true regardless of env
- * TC-VL-02: resolveVerboseFlag(false) + SPECRUNNER_LOG_LEVEL=verbose → true
- * TC-VL-03: resolveVerboseFlag(false) + SPECRUNNER_LOG_LEVEL unset → false
- * TC-VL-04: resolveVerboseFlag(false) + SPECRUNNER_LOG_LEVEL=debug → false
+ * TC-VL-01: resolveLogLevel({ verbose: true }) → "verbose" regardless of env
+ * TC-VL-02: resolveLogLevel({}) + SPECRUNNER_LOG_LEVEL=verbose → "verbose"
+ * TC-VL-03: resolveLogLevel({}) + SPECRUNNER_LOG_LEVEL unset → "default"
+ * TC-VL-04: resolveLogLevel({}) + SPECRUNNER_LOG_LEVEL=debug → "debug" (not just verbose)
  * TC-VL-05: logVerbose writes JSON Lines after initVerboseLog
  * TC-VL-06: logVerbose is no-op after closeVerboseLog
  * TC-VL-07: log entry contains ts/component/message keys
@@ -17,8 +17,8 @@ import * as fsPromises from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import {
-  resolveVerboseFlag,
-  setVerbose,
+  resolveLogLevel,
+  setLogLevel,
   initVerboseLog,
   logVerbose,
   closeVerboseLog,
@@ -32,15 +32,15 @@ beforeEach(async () => {
   // Create a fresh temp dir per test
   tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "specrunner-verbose-log-test-"));
   originalLogLevel = process.env["SPECRUNNER_LOG_LEVEL"];
-  // Ensure verbose is off by default
-  setVerbose(false);
+  // Ensure default level by default
+  setLogLevel("default");
   closeVerboseLog();
 });
 
 afterEach(async () => {
   // Always close any open fd
   closeVerboseLog();
-  setVerbose(false);
+  setLogLevel("default");
   if (originalLogLevel !== undefined) {
     process.env["SPECRUNNER_LOG_LEVEL"] = originalLogLevel;
   } else {
@@ -51,33 +51,39 @@ afterEach(async () => {
 });
 
 // ---------------------------------------------------------------------------
-// resolveVerboseFlag tests
+// resolveLogLevel tests
 // ---------------------------------------------------------------------------
 
-describe("resolveVerboseFlag", () => {
-  it("TC-VL-01: returns true when cliFlag is true (env var irrelevant)", () => {
+describe("resolveLogLevel", () => {
+  it("TC-VL-01: returns 'verbose' when verbose flag is true (env var irrelevant)", () => {
     delete process.env["SPECRUNNER_LOG_LEVEL"];
-    expect(resolveVerboseFlag(true)).toBe(true);
+    expect(resolveLogLevel({ verbose: true })).toBe("verbose");
   });
 
-  it("TC-VL-01b: returns true when cliFlag is true even if SPECRUNNER_LOG_LEVEL is something else", () => {
-    process.env["SPECRUNNER_LOG_LEVEL"] = "debug";
-    expect(resolveVerboseFlag(true)).toBe(true);
+  it("TC-VL-01b: returns 'verbose' when verbose flag is true even if SPECRUNNER_LOG_LEVEL is something else", () => {
+    process.env["SPECRUNNER_LOG_LEVEL"] = "quiet";
+    expect(resolveLogLevel({ verbose: true })).toBe("verbose");
   });
 
-  it("TC-VL-02: returns true when cliFlag is false but SPECRUNNER_LOG_LEVEL=verbose", () => {
+  it("TC-VL-02: returns 'verbose' when no flags but SPECRUNNER_LOG_LEVEL=verbose", () => {
     process.env["SPECRUNNER_LOG_LEVEL"] = "verbose";
-    expect(resolveVerboseFlag(false)).toBe(true);
+    expect(resolveLogLevel({})).toBe("verbose");
   });
 
-  it("TC-VL-03: returns false when cliFlag is false and SPECRUNNER_LOG_LEVEL not set", () => {
+  it("TC-VL-03: returns 'default' when no flags and SPECRUNNER_LOG_LEVEL not set", () => {
     delete process.env["SPECRUNNER_LOG_LEVEL"];
-    expect(resolveVerboseFlag(false)).toBe(false);
+    const origDebug = process.env["DEBUG"];
+    delete process.env["DEBUG"];
+    try {
+      expect(resolveLogLevel({})).toBe("default");
+    } finally {
+      if (origDebug !== undefined) process.env["DEBUG"] = origDebug;
+    }
   });
 
-  it("TC-VL-04: returns false when cliFlag is false and SPECRUNNER_LOG_LEVEL=debug", () => {
+  it("TC-VL-04: returns 'debug' when no flags but SPECRUNNER_LOG_LEVEL=debug", () => {
     process.env["SPECRUNNER_LOG_LEVEL"] = "debug";
-    expect(resolveVerboseFlag(false)).toBe(false);
+    expect(resolveLogLevel({})).toBe("debug");
   });
 });
 
@@ -87,7 +93,7 @@ describe("resolveVerboseFlag", () => {
 
 describe("logVerbose file writes", () => {
   it("TC-VL-05: writes JSON Lines to log file after initVerboseLog", async () => {
-    setVerbose(true);
+    setLogLevel("verbose");
     initVerboseLog(tempDir, "test-job-001");
 
     logVerbose("test", "hello world");
@@ -104,7 +110,7 @@ describe("logVerbose file writes", () => {
   });
 
   it("TC-VL-06: logVerbose is no-op after closeVerboseLog", async () => {
-    setVerbose(true);
+    setLogLevel("verbose");
     initVerboseLog(tempDir, "test-job-002");
     closeVerboseLog();
 
@@ -122,7 +128,7 @@ describe("logVerbose file writes", () => {
   });
 
   it("TC-VL-07: log entry contains ts, component, message keys", async () => {
-    setVerbose(true);
+    setLogLevel("verbose");
     initVerboseLog(tempDir, "test-job-003");
 
     logVerbose("step", "step started", { jobId: "abc" });
@@ -141,7 +147,7 @@ describe("logVerbose file writes", () => {
   });
 
   it("TC-VL-08: maskSensitive masks API keys in log entries", async () => {
-    setVerbose(true);
+    setLogLevel("verbose");
     initVerboseLog(tempDir, "test-job-004");
 
     // Real Anthropic API keys use underscore separator: sk-ant-api03_xxx
@@ -156,7 +162,7 @@ describe("logVerbose file writes", () => {
   });
 
   it("TC-VL-09: append mode — two init/close cycles append two entries to same file", async () => {
-    setVerbose(true);
+    setLogLevel("verbose");
 
     // First cycle
     initVerboseLog(tempDir, "test-job-005");
@@ -176,8 +182,8 @@ describe("logVerbose file writes", () => {
     expect(JSON.parse(lines[1]!).message).toBe("entry two");
   });
 
-  it("initVerboseLog is no-op when verbose is false", async () => {
-    setVerbose(false);
+  it("initVerboseLog is no-op when level is default", async () => {
+    setLogLevel("default");
     initVerboseLog(tempDir, "test-job-006");
     logVerbose("step", "should not appear");
 
@@ -186,12 +192,12 @@ describe("logVerbose file writes", () => {
   });
 
   it("getVerboseLogFilePath returns null when not active", () => {
-    setVerbose(false);
+    setLogLevel("default");
     expect(getVerboseLogFilePath()).toBeNull();
   });
 
   it("getVerboseLogFilePath returns the log path when active", () => {
-    setVerbose(true);
+    setLogLevel("verbose");
     initVerboseLog(tempDir, "test-job-007");
     const logPath = getVerboseLogFilePath();
     expect(logPath).not.toBeNull();
@@ -200,9 +206,21 @@ describe("logVerbose file writes", () => {
   });
 
   it("getVerboseLogFilePath returns null after closeVerboseLog", () => {
-    setVerbose(true);
+    setLogLevel("verbose");
     initVerboseLog(tempDir, "test-job-008");
     closeVerboseLog();
     expect(getVerboseLogFilePath()).toBeNull();
+  });
+
+  it("TC-36: debug レベルで initVerboseLog が有効化される", async () => {
+    setLogLevel("debug");
+    initVerboseLog(tempDir, "test-job-debug");
+    logVerbose("step", "debug level entry");
+    closeVerboseLog();
+
+    const logPath = path.join(tempDir, ".specrunner", "logs", "test-job-debug.log");
+    expect(fs.existsSync(logPath)).toBe(true);
+    const content = fs.readFileSync(logPath, "utf-8");
+    expect(content).toContain("debug level entry");
   });
 });

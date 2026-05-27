@@ -6,7 +6,7 @@ import { createAnthropicClient } from "../adapter/managed-agent/client.js";
 import { createAnthropicSessionClient } from "../adapter/managed-agent/session-client.js";
 import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
 import { runPreflight } from "../core/preflight.js";
-import { setVerbose, resolveVerboseFlag, logError, stderrWrite } from "../logger/stdout.js";
+import { setLogLevel, logError, stderrWrite, type LogLevel } from "../logger/stdout.js";
 import { SpecRunnerError } from "../errors.js";
 import { createRuntime } from "../core/runtime/index.js";
 import { PipelineRunCommand } from "../core/command/pipeline-run.js";
@@ -40,9 +40,9 @@ function resolveHeartbeatInterval(config: SpecRunnerConfig): number {
 
 export async function runRunCore(
   requestMdPath: string,
-  options: { cwd?: string; verbose?: boolean },
+  options: { cwd?: string; logLevel?: LogLevel },
 ): Promise<number> {
-  setVerbose(resolveVerboseFlag(options.verbose ?? false));
+  setLogLevel(options.logLevel ?? "default");
   const cwd = options.cwd ?? process.cwd();
   registerExitGuard(cwd);
   let absolutePath = path.resolve(cwd, requestMdPath);
@@ -84,10 +84,10 @@ export async function runRunCore(
     : undefined;
   const runtime = createRuntime(config, cwd, githubClient, repo, sessionClient, githubToken);
   const events = new EventBus();
-  const verbose = options.verbose ?? false;
+  const logLevel = options.logLevel ?? "default";
   const slug = preflightResult.request.slug;
   const progress = wireProgressDisplay(events, {
-    verbose,
+    logLevel,
     slug,
     heartbeatIntervalSec: resolveHeartbeatInterval(config),
   });
@@ -103,7 +103,7 @@ export async function runRunCore(
 
 export async function runRun(
   requestMdPath: string,
-  options: { cwd?: string; verbose?: boolean },
+  options: { cwd?: string; logLevel?: LogLevel },
 ): Promise<void> {
   process.exit(await runRunCore(requestMdPath, options));
 }

@@ -17,7 +17,7 @@ import type { AgentStep } from "../../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
 import { specReviewResultPath } from "../../../../src/util/paths.js";
 import {
-  setVerbose,
+  setLogLevel,
   initVerboseLog,
   closeVerboseLog,
   getVerboseLogFilePath,
@@ -33,7 +33,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   closeVerboseLog();
-  setVerbose(false);
+  setLogLevel("default");
   await fsPromises.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -153,7 +153,7 @@ function readLogEntries(logPath: string): Record<string, unknown>[] {
 describe("TC-09-01: ManagedAgentRunner.run() — logs 'session created' with runtime: 'managed'", () => {
   it("セッション作成後にログに 'session created' エントリと runtime: 'managed' が書き出される", async () => {
     const jobId = "tc09-01-job";
-    setVerbose(true);
+    setLogLevel("verbose");
     initVerboseLog(tempDir, jobId);
     const logPath = getVerboseLogFilePath()!;
 

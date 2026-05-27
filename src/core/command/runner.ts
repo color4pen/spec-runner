@@ -20,7 +20,8 @@
  *   - soft errors (awaiting-resume, failed) → teardown("error-status") + return 1
  *   - success (awaiting-merge) → teardown("awaiting-merge") + return 0
  */
-import { logInfo, logError, stderrWrite, initVerboseLog, closeVerboseLog, getVerboseLogFilePath } from "../../logger/stdout.js";
+import { logInfo, logError, stderrWrite, initVerboseLog, closeVerboseLog, getVerboseLogFilePath, isLevelEnabled } from "../../logger/stdout.js";
+import type { LogLevel } from "../../logger/stdout.js";
 import { KeepAlive } from "../lifecycle/keepalive.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
@@ -42,7 +43,7 @@ import { STEP_NAMES } from "../step/step-names.js";
 
 /**
  * Result returned by prepare() — encapsulates all context needed for the
- * remaining execute() steps. verbose is used to configure ProgressDisplay.
+ * remaining execute() steps. logLevel is used to configure ProgressDisplay.
  */
 export interface PrepareResult {
   jobState: JobState;
@@ -50,7 +51,7 @@ export interface PrepareResult {
   request: ParsedRequest;
   config: SpecRunnerConfig;
   slug: string;
-  verbose: boolean;
+  logLevel: LogLevel;
   workspaceOpts: WorkspaceOptions;
   /** Absolute path to the git repository root. Used for job state and verbose log paths. */
   repoRoot: string;
@@ -83,8 +84,10 @@ export abstract class CommandRunner {
 
     const { jobState, startStep, request, config, slug, workspaceOpts, repoRoot } = prepared;
 
-    // Initialize verbose log file (no-op if verbose is disabled)
-    initVerboseLog(repoRoot, jobState.jobId);
+    // Initialize verbose log file (no-op if level < verbose)
+    if (isLevelEnabled("verbose")) {
+      initVerboseLog(repoRoot, jobState.jobId);
+    }
 
     // Keep the event loop alive for the duration of the pipeline execution.
     const keepAlive = new KeepAlive();

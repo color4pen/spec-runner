@@ -47,9 +47,25 @@ export function parseFlags(
   while (i < rawArgs.length) {
     const arg = rawArgs[i]!;
 
-    // Short alias: -h → help: true
+    // Short aliases: -h → help, -q → quiet, -vv → debug, -v → verbose
+    // NOTE: -vv must be checked before -v to avoid prefix collision
     if (arg === "-h") {
       flags["help"] = true;
+      i++;
+      continue;
+    }
+    if (arg === "-q") {
+      flags["quiet"] = true;
+      i++;
+      continue;
+    }
+    if (arg === "-vv") {
+      flags["debug"] = true;
+      i++;
+      continue;
+    }
+    if (arg === "-v") {
+      flags["verbose"] = true;
       i++;
       continue;
     }

@@ -7,7 +7,7 @@
  */
 import type { PreflightResult } from "../preflight.js";
 import { JobStateStore } from "../../store/job-state-store.js";
-import { logInfo, setVerbose } from "../../logger/stdout.js";
+import { logInfo, setLogLevel, type LogLevel } from "../../logger/stdout.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../runtime/strategy.js";
 import type { EventBus } from "../event/event-bus.js";
@@ -16,7 +16,7 @@ import { STEP_NAMES } from "../step/step-names.js";
 
 export interface PipelineRunOptions {
   cwd?: string;
-  verbose?: boolean;
+  logLevel?: LogLevel;
 }
 
 // Canonical path pattern: specrunner/drafts/<slug>/request.md
@@ -41,8 +41,8 @@ export class PipelineRunCommand extends CommandRunner {
   }
 
   protected async prepare(): Promise<PrepareResult> {
-    const verbose = this.options.verbose ?? false;
-    setVerbose(verbose);
+    const logLevel = this.options.logLevel ?? "default";
+    setLogLevel(logLevel);
 
     const { config, request } = this.preflightResult;
     const slug = request.slug;
@@ -82,7 +82,7 @@ export class PipelineRunCommand extends CommandRunner {
       request,
       config,
       slug,
-      verbose,
+      logLevel,
       repoRoot: cwd,
       workspaceOpts: {
         requestFilePath: this.absolutePath,

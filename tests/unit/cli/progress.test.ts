@@ -87,14 +87,14 @@ afterEach(() => {
 
 describe("TC-6.1: ProgressDisplay — EventBus emit → stdout 出力", () => {
   it("step:start イベントで '[step] running...' を出力する", () => {
-    new ProgressDisplay(bus, { verbose: false, slug: "my-slug", heartbeatIntervalSec: 0 });
+    new ProgressDisplay(bus, { logLevel: "default", slug: "my-slug", heartbeatIntervalSec: 0 });
     bus.emit("step:start", { step: "design", state: makeState() });
     const output = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(output).toContain("[design] running...");
   });
 
   it("step:complete イベントで '[step] ✓ (Ns)' を出力する", () => {
-    new ProgressDisplay(bus, { verbose: false, slug: "my-slug", heartbeatIntervalSec: 0 });
+    new ProgressDisplay(bus, { logLevel: "default", slug: "my-slug", heartbeatIntervalSec: 0 });
     bus.emit("step:start", { step: "design", state: makeState() });
     stderrSpy.mockClear();
     bus.emit("step:complete", { step: "design", state: makeState() });
@@ -104,7 +104,7 @@ describe("TC-6.1: ProgressDisplay — EventBus emit → stdout 出力", () => {
   });
 
   it("step:error イベントで '[step] ✗ error (Ns)' を出力する", () => {
-    new ProgressDisplay(bus, { verbose: false, slug: "my-slug", heartbeatIntervalSec: 0 });
+    new ProgressDisplay(bus, { logLevel: "default", slug: "my-slug", heartbeatIntervalSec: 0 });
     bus.emit("step:start", { step: "implementer", state: makeState() });
     stderrSpy.mockClear();
     bus.emit("step:error", { step: "implementer", error: new Error("oops"), state: makeState() });
@@ -115,7 +115,7 @@ describe("TC-6.1: ProgressDisplay — EventBus emit → stdout 出力", () => {
   });
 
   it("verdict:parsed イベントで verdict 値を出力する", () => {
-    new ProgressDisplay(bus, { verbose: false, slug: "my-slug", heartbeatIntervalSec: 0 });
+    new ProgressDisplay(bus, { logLevel: "default", slug: "my-slug", heartbeatIntervalSec: 0 });
     bus.emit("verdict:parsed", { step: "spec-review", outcome: { verdict: "approved" } });
     const output = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(output).toContain("[spec-review]");
@@ -123,21 +123,21 @@ describe("TC-6.1: ProgressDisplay — EventBus emit → stdout 出力", () => {
   });
 
   it("verdict:parsed で verdict が null の場合は出力しない", () => {
-    new ProgressDisplay(bus, { verbose: false, slug: "my-slug", heartbeatIntervalSec: 0 });
+    new ProgressDisplay(bus, { logLevel: "default", slug: "my-slug", heartbeatIntervalSec: 0 });
     bus.emit("verdict:parsed", { step: "spec-review", outcome: { verdict: null } });
     const output = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(output).toBe("");
   });
 
   it("pipeline:complete イベントで 'Next: specrunner job finish <slug>' を出力する", () => {
-    new ProgressDisplay(bus, { verbose: false, slug: "my-slug", heartbeatIntervalSec: 0 });
+    new ProgressDisplay(bus, { logLevel: "default", slug: "my-slug", heartbeatIntervalSec: 0 });
     bus.emit("pipeline:complete", { state: makeState({ status: "awaiting-merge" }) });
     const output = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(output).toContain("Next: specrunner job finish my-slug");
   });
 
   it("pipeline:fail イベントで failure reason を出力する", () => {
-    new ProgressDisplay(bus, { verbose: false, slug: "my-slug", heartbeatIntervalSec: 0 });
+    new ProgressDisplay(bus, { logLevel: "default", slug: "my-slug", heartbeatIntervalSec: 0 });
     bus.emit("pipeline:fail", { state: makeState({ status: "failed" }), reason: "test failure" });
     const output = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(output).toContain("test failure");
@@ -152,7 +152,7 @@ describe("TC-HB-1: step:start starts heartbeat timer", () => {
   it("timerFn is called once on step:start when interval > 0", () => {
     const fake = makeFakeTimer();
     new ProgressDisplay(bus, {
-      verbose: false,
+      logLevel: "default",
       slug: "s",
       heartbeatIntervalSec: 30,
       timerFn: fake.timerFn,
@@ -167,7 +167,7 @@ describe("TC-HB-1: step:start starts heartbeat timer", () => {
     let now = 1000;
     const fake = makeFakeTimer();
     new ProgressDisplay(bus, {
-      verbose: false,
+      logLevel: "default",
       slug: "s",
       heartbeatIntervalSec: 30,
       timerFn: fake.timerFn,
@@ -196,7 +196,7 @@ describe("TC-HB-2: step:progress accumulates into heartbeat output", () => {
     let now = 1000;
     const fake = makeFakeTimer();
     new ProgressDisplay(bus, {
-      verbose: false,
+      logLevel: "default",
       slug: "s",
       heartbeatIntervalSec: 30,
       timerFn: fake.timerFn,
@@ -222,7 +222,7 @@ describe("TC-HB-2: step:progress accumulates into heartbeat output", () => {
     let now = 1000;
     const fake = makeFakeTimer();
     new ProgressDisplay(bus, {
-      verbose: false,
+      logLevel: "default",
       slug: "s",
       heartbeatIntervalSec: 30,
       timerFn: fake.timerFn,
@@ -251,7 +251,7 @@ describe("TC-HB-3: step:complete stops the heartbeat timer", () => {
   it("clearTimerFn is called on step:complete", () => {
     const fake = makeFakeTimer();
     new ProgressDisplay(bus, {
-      verbose: false,
+      logLevel: "default",
       slug: "s",
       heartbeatIntervalSec: 30,
       timerFn: fake.timerFn,
@@ -268,7 +268,7 @@ describe("TC-HB-3: step:complete stops the heartbeat timer", () => {
   it("no output on tick after step:complete (timer cleared)", () => {
     const fake = makeFakeTimer();
     new ProgressDisplay(bus, {
-      verbose: false,
+      logLevel: "default",
       slug: "s",
       heartbeatIntervalSec: 30,
       timerFn: fake.timerFn,
@@ -297,7 +297,7 @@ describe("TC-HB-4: pipeline:fail stops heartbeat (safety net)", () => {
   it("clearTimerFn is called when pipeline:fail fires during a step", () => {
     const fake = makeFakeTimer();
     new ProgressDisplay(bus, {
-      verbose: false,
+      logLevel: "default",
       slug: "s",
       heartbeatIntervalSec: 30,
       timerFn: fake.timerFn,
@@ -313,7 +313,7 @@ describe("TC-HB-4: pipeline:fail stops heartbeat (safety net)", () => {
   it("clearTimerFn is called when pipeline:complete fires", () => {
     const fake = makeFakeTimer();
     new ProgressDisplay(bus, {
-      verbose: false,
+      logLevel: "default",
       slug: "s",
       heartbeatIntervalSec: 30,
       timerFn: fake.timerFn,
@@ -338,7 +338,7 @@ describe("TC-HB-5: dispose() clears the heartbeat timer", () => {
   it("dispose() calls clearTimerFn when a timer is active", () => {
     const fake = makeFakeTimer();
     const display = new ProgressDisplay(bus, {
-      verbose: false,
+      logLevel: "default",
       slug: "s",
       heartbeatIntervalSec: 30,
       timerFn: fake.timerFn,
@@ -355,7 +355,7 @@ describe("TC-HB-5: dispose() clears the heartbeat timer", () => {
   it("dispose() is idempotent when no timer is active", () => {
     const fake = makeFakeTimer();
     const display = new ProgressDisplay(bus, {
-      verbose: false,
+      logLevel: "default",
       slug: "s",
       heartbeatIntervalSec: 0,
       timerFn: fake.timerFn,
@@ -377,7 +377,7 @@ describe("TC-HB-6: heartbeatIntervalSec = 0 disables the timer", () => {
   it("timerFn is not called when heartbeatIntervalSec is 0", () => {
     const fake = makeFakeTimer();
     new ProgressDisplay(bus, {
-      verbose: false,
+      logLevel: "default",
       slug: "s",
       heartbeatIntervalSec: 0,
       timerFn: fake.timerFn,
@@ -398,7 +398,7 @@ describe("TC-HB-7: TTY=true non-verbose → \\r overwrite", () => {
     let now = 1000;
     const fake = makeFakeTimer();
     new ProgressDisplay(bus, {
-      verbose: false,
+      logLevel: "default",
       slug: "s",
       heartbeatIntervalSec: 30,
       timerFn: fake.timerFn,
@@ -421,7 +421,7 @@ describe("TC-HB-7: TTY=true non-verbose → \\r overwrite", () => {
   it("step:complete in TTY mode writes \\r\\x1b[K to clear the overwrite line", () => {
     const fake = makeFakeTimer();
     new ProgressDisplay(bus, {
-      verbose: false,
+      logLevel: "default",
       slug: "s",
       heartbeatIntervalSec: 30,
       timerFn: fake.timerFn,
@@ -448,7 +448,7 @@ describe("TC-HB-8: TTY=false → \\n append", () => {
     let now = 1000;
     const fake = makeFakeTimer();
     new ProgressDisplay(bus, {
-      verbose: false,
+      logLevel: "default",
       slug: "s",
       heartbeatIntervalSec: 30,
       timerFn: fake.timerFn,
@@ -472,7 +472,7 @@ describe("TC-HB-8: TTY=false → \\n append", () => {
     let now = 1000;
     const fake = makeFakeTimer();
     new ProgressDisplay(bus, {
-      verbose: true,
+      logLevel: "verbose",
       slug: "s",
       heartbeatIntervalSec: 30,
       timerFn: fake.timerFn,
@@ -501,7 +501,7 @@ describe("TC-HB-9: step:error stops the heartbeat timer", () => {
   it("clearTimerFn is called on step:error", () => {
     const fake = makeFakeTimer();
     new ProgressDisplay(bus, {
-      verbose: false,
+      logLevel: "default",
       slug: "s",
       heartbeatIntervalSec: 30,
       timerFn: fake.timerFn,
@@ -523,7 +523,7 @@ describe("TC-HB-10: consecutive steps do not leak timers", () => {
   it("second step:start stops first timer before starting new one", () => {
     const fake = makeFakeTimer();
     new ProgressDisplay(bus, {
-      verbose: false,
+      logLevel: "default",
       slug: "s",
       heartbeatIntervalSec: 30,
       timerFn: fake.timerFn,
@@ -545,7 +545,7 @@ describe("TC-HB-10: consecutive steps do not leak timers", () => {
   it("wireProgressDisplay returns a ProgressDisplay with dispose()", () => {
     const fake = makeFakeTimer();
     const display = wireProgressDisplay(bus, {
-      verbose: false,
+      logLevel: "default",
       slug: "s",
       heartbeatIntervalSec: 30,
       timerFn: fake.timerFn,

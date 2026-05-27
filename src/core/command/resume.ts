@@ -7,7 +7,7 @@
 import { loadConfig } from "../../config/store.js";
 import { resolveRepoRoot } from "../../util/repo-root.js";
 import { JobStateStore } from "../../store/job-state-store.js";
-import { logInfo, setVerbose, logError, stderrWrite } from "../../logger/stdout.js";
+import { logInfo, setLogLevel, logError, stderrWrite, type LogLevel } from "../../logger/stdout.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
 import { parseRequestMd } from "../../parser/request-md.js";
@@ -24,7 +24,7 @@ import type { EventBus } from "../event/event-bus.js";
 export interface ResumeOptions {
   from?: string;
   force?: boolean;
-  verbose?: boolean;
+  logLevel?: LogLevel;
   cwd?: string;
   prompt?: string;
 }
@@ -67,8 +67,8 @@ export class ResumeCommand extends CommandRunner {
   }
 
   protected async prepare(): Promise<PrepareResult> {
-    const verbose = this.options.verbose ?? false;
-    setVerbose(verbose);
+    const logLevel = this.options.logLevel ?? "default";
+    setLogLevel(logLevel);
     const cwd = this.options.cwd ?? process.cwd();
 
     // Resolve job state by slug, with short Job ID fallback
@@ -205,7 +205,7 @@ export class ResumeCommand extends CommandRunner {
       request,
       config,
       slug: this.slug,
-      verbose,
+      logLevel,
       repoRoot: cwd,
       workspaceOpts: {
         existingWorktreePath: updatedState.worktreePath ?? null,

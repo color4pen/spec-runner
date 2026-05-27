@@ -19,7 +19,7 @@ import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import { JobStateStore } from "../../../../src/store/job-state-store.js";
-import { closeVerboseLog, setVerbose } from "../../../../src/logger/stdout.js";
+import { closeVerboseLog, setLogLevel } from "../../../../src/logger/stdout.js";
 
 let tempDir: string;
 
@@ -31,7 +31,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   closeVerboseLog();
-  setVerbose(false);
+  setLogLevel("default");
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.clearAllMocks();
   vi.restoreAllMocks();
@@ -72,7 +72,7 @@ function buildPrepareResult(overrides: Partial<PrepareResult> = {}): PrepareResu
       agents: {},
     },
     slug: "test-slug",
-    verbose: false,
+    logLevel: "default",
     workspaceOpts: {},
     repoRoot: "/fake/repo",
     ...overrides,

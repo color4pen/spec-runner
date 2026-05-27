@@ -5,8 +5,27 @@
 import { openSync, writeSync, closeSync, mkdirSync } from "node:fs";
 import { getVerboseLogDir, getVerboseLogPath } from "../util/xdg.js";
 
-/** Module-level verbose flag. Set via setVerbose() at process startup. */
-let verbose = false;
+// ---------------------------------------------------------------------------
+// LogLevel type and ordering
+// ---------------------------------------------------------------------------
+
+export type LogLevel = "quiet" | "default" | "verbose" | "debug";
+
+export const LEVEL_ORDER: Record<LogLevel, number> = {
+  quiet: 0,
+  default: 1,
+  verbose: 2,
+  debug: 3,
+};
+
+export interface LogLevelFlags {
+  quiet?: boolean;
+  verbose?: boolean;   // -v or --verbose
+  debug?: boolean;     // -vv
+}
+
+/** Module-level log level. Set via setLogLevel() at process startup. */
+let currentLevel: LogLevel = "default";
 
 /** File descriptor for verbose log output. null when verbose logging is inactive. */
 let logFd: number | null = null;
@@ -15,38 +34,57 @@ let logFd: number | null = null;
 let currentLogPath: string | null = null;
 
 /**
- * Set the global verbose flag.
- * When verbose=false (default), logWarn calls are suppressed.
- * Call setVerbose(true) when --verbose flag is passed.
+ * Set the global log level.
  */
-export function setVerbose(v: boolean): void {
-  verbose = v;
+export function setLogLevel(level: LogLevel): void {
+  currentLevel = level;
 }
 
 /**
- * Return current verbose state.
+ * Return current log level.
  */
-export function isVerbose(): boolean {
-  return verbose;
+export function getLogLevel(): LogLevel {
+  return currentLevel;
 }
 
 /**
- * Resolve verbose flag from CLI flag and SPECRUNNER_LOG_LEVEL env var.
- * Returns true if either source enables verbose mode.
+ * Return true if the given level is enabled (currentLevel >= level in LEVEL_ORDER).
+ * e.g., isLevelEnabled("verbose") returns true when currentLevel is "verbose" or "debug".
  */
-export function resolveVerboseFlag(cliFlag: boolean): boolean {
-  if (cliFlag) return true;
-  return process.env["SPECRUNNER_LOG_LEVEL"] === "verbose";
+export function isLevelEnabled(level: LogLevel): boolean {
+  return LEVEL_ORDER[currentLevel] >= LEVEL_ORDER[level];
+}
+
+/**
+ * Resolve log level from CLI flags and environment variables.
+ * Priority: CLI flags > SPECRUNNER_LOG_LEVEL > DEBUG env > default
+ */
+export function resolveLogLevel(flags: LogLevelFlags): LogLevel {
+  // CLI flags take precedence (mutually exclusive; debug > verbose > quiet)
+  if (flags.debug) return "debug";
+  if (flags.verbose) return "verbose";
+  if (flags.quiet) return "quiet";
+
+  // Env: SPECRUNNER_LOG_LEVEL
+  const envLevel = process.env["SPECRUNNER_LOG_LEVEL"];
+  if (envLevel === "quiet" || envLevel === "verbose" || envLevel === "debug") {
+    return envLevel;
+  }
+
+  // Env: DEBUG (legacy alias for debug)
+  if (process.env["DEBUG"]) return "debug";
+
+  return "default";
 }
 
 /**
  * Initialize verbose log file for a job.
  * Creates the log directory if it doesn't exist and opens the log file in append mode.
- * No-op if verbose mode is not enabled (verbose === false).
+ * No-op if verbose mode is not enabled (level < verbose).
  * Errors are caught and logged to stderr — verbose log failure must not block the pipeline.
  */
 export function initVerboseLog(repoRoot: string, jobId: string): void {
-  if (!verbose) return;
+  if (!isLevelEnabled("verbose")) return;
   try {
     const dir = getVerboseLogDir(repoRoot);
     mkdirSync(dir, { recursive: true });
@@ -61,11 +99,12 @@ export function initVerboseLog(repoRoot: string, jobId: string): void {
 
 /**
  * Write a verbose log entry to the log file.
- * No-op if verbose log is not initialized (logFd === null).
+ * No-op if verbose log is not initialized (logFd === null) or level < verbose.
  * On write failure, closes the fd and stops further writes (pipeline must not be blocked).
  */
 export function logVerbose(component: string, message: string, data?: Record<string, unknown>): void {
   if (logFd === null) return;
+  if (!isLevelEnabled("verbose")) return;
   const fd = logFd;
   try {
     const entry: Record<string, unknown> = { ts: new Date().toISOString(), component, message, ...data };
@@ -122,49 +161,54 @@ export function maskSensitive(text: string): string {
 }
 
 /**
- * Log a progress message to stderr. Sensitive values are masked.
+ * Log a progress message to stderr.
+ * Suppressed at quiet level.
  */
 export function logInfo(message: string): void {
+  if (!isLevelEnabled("default")) return;
   process.stderr.write(maskSensitive(message) + "\n");
 }
 
 /**
  * Log a step progress with a bullet point.
+ * Suppressed at quiet level.
  */
 export function logStep(message: string): void {
+  if (!isLevelEnabled("default")) return;
   process.stderr.write("  " + maskSensitive(message) + "\n");
 }
 
 /**
  * Log a success message to stderr.
+ * Suppressed at quiet level.
  */
 export function logSuccess(message: string): void {
+  if (!isLevelEnabled("default")) return;
   process.stderr.write("OK " + maskSensitive(message) + "\n");
 }
 
 /**
  * Log a warning message to stderr.
- * Suppressed when verbose=false (default). Use setVerbose(true) to enable.
+ * Output at default level and above (quiet suppresses it).
  */
 export function logWarn(message: string): void {
-  if (!verbose) return;
+  if (!isLevelEnabled("default")) return;
   process.stderr.write("Warning: " + maskSensitive(message) + "\n");
 }
 
 /**
- * Log an error message to stderr.
+ * Log an error message to stderr. Always output regardless of log level.
  */
 export function logError(message: string): void {
   process.stderr.write("Error: " + maskSensitive(message) + "\n");
 }
 
 /**
- * Log a debug message to stderr (only if DEBUG env is set).
+ * Log a debug message to stderr. Only output at debug level.
  */
 export function logDebug(message: string): void {
-  if (process.env["DEBUG"]) {
-    process.stderr.write("[debug] " + maskSensitive(message) + "\n");
-  }
+  if (!isLevelEnabled("debug")) return;
+  process.stderr.write("[debug] " + maskSensitive(message) + "\n");
 }
 
 /**
