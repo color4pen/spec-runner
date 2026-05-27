@@ -6,36 +6,58 @@ A self-hosted CLI that drives multi-step development pipelines using Anthropic C
 
 Self-host pipeline complete as of 2026-04-30 (PR #40 merged).
 
+## Installation
+
+SpecRunner is published to GitHub Packages. Add the registry entry to your `.npmrc` first:
+
+```
+@color4pen:registry=https://npm.pkg.github.com
+```
+
+Then install:
+
+```bash
+# As a dev dependency (recommended for project use)
+npm install -D @color4pen/specrunner
+
+# Or globally
+npm install -g @color4pen/specrunner
+```
+
 ## Quick Start
 
 ```bash
-# 1. Initialize config scaffold
-specrunner init
+# 1. Initialize config scaffold + project directories
+npx specrunner init
 
 # 2. Authenticate with GitHub
-specrunner login
+npx specrunner login
 
 # 3. Create a new request from template
-specrunner request new my-feature
+npx specrunner request new my-feature
 
-# 4. (Edit specrunner/drafts/my-feature.md)
+# 4. Edit the generated request file
+#    specrunner/drafts/my-feature/request.md
 
 # 5. Start the pipeline
-specrunner job start my-feature
+npx specrunner run my-feature
 
-# 6. Check job status
-specrunner job ls
-
-# 7. Finish (PR merge + archive) when awaiting-merge
-specrunner job finish my-feature
+# 6. Finish (PR merge + archive) when awaiting-merge
+npx specrunner job finish my-feature
 ```
 
 ### Failure / resume flow
 
 ```bash
-specrunner job ls               # Find the failed job
-specrunner job resume my-feature  # Resume from last checkpoint
+npx specrunner job ls                    # Find the failed job
+npx specrunner job resume my-feature     # Resume from last checkpoint
 ```
+
+## Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `SPECRUNNER_API_KEY` | Managed runtime only | Anthropic API key. Not needed for local runtime. |
 
 ## Command Reference
 

@@ -1,3 +1,5 @@
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import { loadConfig, saveConfig } from "../config/store.js";
 import { logInfo, logSuccess, logError } from "../logger/stdout.js";
 import { spawnCommand } from "../util/spawn.js";
@@ -59,12 +61,15 @@ export async function runInit(options: {
   logSuccess("Config saved.");
   logInfo("Run 'specrunner login' to authenticate with GitHub (required for PR creation).");
 
-  // Append .specrunner/ to .gitignore if CWD is a git repository (idempotent)
+  // Append .specrunner/ to .gitignore and create project scaffold if CWD is a git repository (idempotent)
   try {
     const result = await spawnCommand("git", ["rev-parse", "--show-toplevel"], { cwd: process.cwd() });
     if (result.exitCode === 0) {
       const repoRoot = result.stdout.trim();
       await ensureDotSpecrunnerGitignore(repoRoot);
+      // Create project scaffold directories (idempotent — recursive:true is no-op if exists)
+      await fs.mkdir(path.join(repoRoot, "specrunner", "drafts"), { recursive: true });
+      await fs.mkdir(path.join(repoRoot, "specrunner", "changes"), { recursive: true });
     }
     // Non-zero exit = not a git repo; skip silently
   } catch {

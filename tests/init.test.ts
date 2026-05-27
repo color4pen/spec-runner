@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import * as path from "node:path";
 import * as os from "node:os";
 
@@ -129,5 +130,78 @@ describe("TC-011: specrunner init で既存の steps は上書きされない", 
 
     expect(config.steps.defaults.maxTurns).toBe(90);
     expect(config.steps.defaults.model).toBe("claude-haiku-4-5");
+  });
+});
+
+// TC-002: init で git repo 外では specrunner/ ディレクトリが作成されない
+describe("TC-002: specrunner init — git repo 外では specrunner/ が作成されない", () => {
+  let nonGitTempDir: string;
+
+  beforeEach(async () => {
+    nonGitTempDir = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-init-nongit-test-"));
+  });
+
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await fs.rm(nonGitTempDir, { recursive: true, force: true });
+  });
+
+  it("git repo 外の dir で init しても specrunner/ は作成されない", async () => {
+    vi.spyOn(process, "cwd").mockReturnValue(nonGitTempDir);
+
+    const { runInit } = await import("../src/cli/init.js");
+    const result = await runInit({});
+
+    expect(result).toBe(0);
+
+    await expect(fs.access(path.join(nonGitTempDir, "specrunner"))).rejects.toThrow();
+  });
+});
+
+// T-01/T-02: init で git repo 内にプロジェクトディレクトリが作成される
+describe("T-01: specrunner init でプロジェクトディレクトリが作成される", () => {
+  let gitTempDir: string;
+
+  beforeEach(async () => {
+    gitTempDir = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-init-git-test-"));
+    spawnSync("git", ["init"], { cwd: gitTempDir });
+    spawnSync("git", ["config", "user.email", "test@test.com"], { cwd: gitTempDir });
+    spawnSync("git", ["config", "user.name", "Test"], { cwd: gitTempDir });
+  });
+
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await fs.rm(gitTempDir, { recursive: true, force: true });
+  });
+
+  it("git repo 内で init すると specrunner/drafts/ と specrunner/changes/ が作成される", async () => {
+    vi.spyOn(process, "cwd").mockReturnValue(gitTempDir);
+
+    const { runInit } = await import("../src/cli/init.js");
+    const result = await runInit({});
+
+    expect(result).toBe(0);
+
+    const draftsDir = path.join(gitTempDir, "specrunner", "drafts");
+    const changesDir = path.join(gitTempDir, "specrunner", "changes");
+
+    await expect(fs.access(draftsDir)).resolves.toBeUndefined();
+    await expect(fs.access(changesDir)).resolves.toBeUndefined();
+  });
+
+  it("冪等性: 2 回 runInit しても正常に完了する", async () => {
+    vi.spyOn(process, "cwd").mockReturnValue(gitTempDir);
+
+    const { runInit } = await import("../src/cli/init.js");
+    await runInit({});
+    const result = await runInit({});
+
+    expect(result).toBe(0);
+
+    const draftsDir = path.join(gitTempDir, "specrunner", "drafts");
+    const changesDir = path.join(gitTempDir, "specrunner", "changes");
+
+    await expect(fs.access(draftsDir)).resolves.toBeUndefined();
+    await expect(fs.access(changesDir)).resolves.toBeUndefined();
   });
 });
