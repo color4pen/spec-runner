@@ -269,8 +269,8 @@ describe("TC-CR-006: awaiting-merge with pullRequest.url outputs PR URL", () => 
     const exitCode = await command.execute();
 
     expect(exitCode).toBe(0);
-    const stdoutCalls = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls;
-    const allOutput = stdoutCalls.map((c) => String(c[0])).join("");
+    const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allOutput = stderrCalls.map((c) => String(c[0])).join("");
     expect(allOutput).toContain("https://github.com/owner/repo/pull/42");
     expect(allOutput).toContain("PR:");
   });
@@ -286,8 +286,8 @@ describe("TC-CR-007: awaiting-merge without pullRequest outputs branch line only
     const exitCode = await command.execute();
 
     expect(exitCode).toBe(0);
-    const stdoutCalls = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls;
-    const allOutput = stdoutCalls.map((c) => String(c[0])).join("");
+    const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allOutput = stderrCalls.map((c) => String(c[0])).join("");
     expect(allOutput).toContain("feat/test");
     expect(allOutput).not.toContain("PR:");
   });

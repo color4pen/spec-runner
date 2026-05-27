@@ -1,19 +1,20 @@
 import * as manager from "../request/manager.js";
+import { stdoutWrite } from "../../logger/stdout.js";
 
 export async function executeList(cwd: string): Promise<number> {
   const requests = await manager.list(cwd);
 
   if (requests.length === 0) {
-    process.stdout.write("(no active requests)\n");
+    stdoutWrite("(no active requests)\n");
     return 0;
   }
 
   const header = `${"SLUG".padEnd(24)}TYPE\n`;
-  process.stdout.write(header);
+  stdoutWrite(header);
 
   for (const req of requests) {
     const line = `${req.slug.padEnd(24)}${req.type}\n`;
-    process.stdout.write(line);
+    stdoutWrite(line);
   }
 
   return 0;

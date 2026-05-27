@@ -8,6 +8,7 @@
  */
 import { BUILTIN_MODEL_REGISTRY } from "./model-registry.js";
 import type { AgentStepName } from "../state/schema.js";
+import { stderrWrite } from "../logger/stdout.js";
 
 /**
  * Per-step execution config: model, maxTurns, timeoutMs.
@@ -315,8 +316,8 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
           }
           // Unknown type key → warning only
           if (!knownTypes.has(typeKey)) {
-            process.stderr.write(
-              `[specrunner] warn: steps.${stepKey}.byRequestType.${typeKey} is not a known request type. Known types: ${[...knownTypes].join(", ")}.\n`,
+            stderrWrite(
+              `[specrunner] warn: steps.${stepKey}.byRequestType.${typeKey} is not a known request type. Known types: ${[...knownTypes].join(", ")}.`,
             );
           }
           if (typeVal === undefined || typeVal === null) continue;

@@ -17,6 +17,7 @@ import type { GitHubClient } from "../../core/port/github-client.js";
 import { githubApiError, githubTokenExpiredError } from "../../errors.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import { retryWithBackoff } from "../../util/retry.js";
+import { stderrWrite } from "../../logger/stdout.js";
 
 /** Current stable GitHub REST API version (D5). */
 const API_VERSION = "2022-11-28";
@@ -413,7 +414,7 @@ export class GitHubApiClient implements GitHubClient {
       onRetry: (attempt, info) => {
         const msg = info.result?.message ?? "unknown error";
         const maxRetries = this.mergeMaxAttempts - 1;
-        process.stdout.write(`GitHub PR merge retry: ${msg}, retrying (${attempt}/${maxRetries})...\n`);
+        stderrWrite(`GitHub PR merge retry: ${msg}, retrying (${attempt}/${maxRetries})...`);
       },
     });
   }

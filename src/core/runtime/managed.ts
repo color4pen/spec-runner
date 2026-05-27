@@ -22,6 +22,7 @@ import { JobStateStore } from "../../store/job-state-store.js";
 import { changeFolderPath } from "../../util/paths.js";
 import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder } from "../../util/copy-artifacts.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./strategy.js";
+import { stderrWrite } from "../../logger/stdout.js";
 
 export class ManagedRuntime implements RuntimeStrategy {
   private readonly spawnFn: SpawnFn;
@@ -115,8 +116,8 @@ export class ManagedRuntime implements RuntimeStrategy {
       );
       if (gitAddChangeFolderResult.exitCode !== 0) {
         // Non-fatal: log warning but don't fail setup
-        process.stderr.write(
-          `Warning: failed to stage change folder request.md: ${gitAddChangeFolderResult.stderr.trim()}\n`,
+        stderrWrite(
+          `Warning: failed to stage change folder request.md: ${gitAddChangeFolderResult.stderr.trim()}`,
         );
       }
 
@@ -142,8 +143,8 @@ export class ManagedRuntime implements RuntimeStrategy {
           await fs.rm(opts.requestFilePath);
         }
       } catch {
-        process.stderr.write(
-          `Warning: failed to delete draft file ${opts.requestFilePath} from main worktree. Remove it manually.\n`,
+        stderrWrite(
+          `Warning: failed to delete draft file ${opts.requestFilePath} from main worktree. Remove it manually.`,
         );
       }
 

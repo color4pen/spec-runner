@@ -13,6 +13,7 @@
 
 import { JobStateStore } from "../../store/job-state-store.js";
 import { transitionJob } from "../../state/lifecycle.js";
+import { stdoutWrite } from "../../logger/stdout.js";
 import { ERROR_CODES, SpecRunnerError } from "../../errors.js";
 import { gracefulKill } from "./pid-kill.js";
 import type { WorktreeManager } from "../worktree/manager.js";
@@ -283,7 +284,7 @@ export async function cancelAllTerminated(opts: {
  */
 function promptConfirm(stream: NodeJS.ReadableStream, prompt: string): Promise<boolean> {
   return new Promise((resolve) => {
-    process.stdout.write(prompt);
+    stdoutWrite(prompt);
 
     let answer = "";
     const onData = (chunk: Buffer | string) => {

@@ -1,7 +1,7 @@
 import { SpecRunnerError } from "../../errors.js";
 import * as manager from "../request/manager.js";
 import type { OneShotQueryClient } from "../port/one-shot-query-client.js";
-import { stderrWrite } from "../../logger/stdout.js";
+import { stderrWrite, logResult, logError } from "../../logger/stdout.js";
 
 export async function executeCreate(
   text: string | null,
@@ -21,7 +21,7 @@ export async function executeCreate(
 
   // (c) Error if neither text nor --stdin
   if (resolvedText === null) {
-    process.stderr.write(`Error: テキスト引数（"<text>"）または --stdin フラグが必要です\n`);
+    logError(`テキスト引数（"<text>"）または --stdin フラグが必要です`);
     return 1;
   }
 
@@ -30,14 +30,15 @@ export async function executeCreate(
     stderrWrite("Generating request.md...");
     const slug = await manager.create(resolvedText, opts.cwd, client);
     stderrWrite("✓ Generated " + slug);
-    process.stdout.write(`${slug}\n`);
+    logResult(slug);
     return 0;
   } catch (err) {
     stderrWrite("✗ Failed: " + (err instanceof Error ? err.message : String(err)));
     if (err instanceof SpecRunnerError) {
-      process.stderr.write(`Error: ${err.message}\nHint: ${err.hint}\n`);
+      logError(err.message);
+      stderrWrite(`Hint: ${err.hint}`);
     } else {
-      process.stderr.write(`Error: ${err instanceof Error ? err.message : String(err)}\n`);
+      logError(err instanceof Error ? err.message : String(err));
     }
     return 1;
   }

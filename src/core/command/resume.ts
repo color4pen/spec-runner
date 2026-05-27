@@ -7,7 +7,7 @@
 import { loadConfig } from "../../config/store.js";
 import { resolveRepoRoot } from "../../util/repo-root.js";
 import { JobStateStore } from "../../store/job-state-store.js";
-import { logInfo, setVerbose } from "../../logger/stdout.js";
+import { logInfo, setVerbose, logError, stderrWrite } from "../../logger/stdout.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
 import { parseRequestMd } from "../../parser/request-md.js";
@@ -82,10 +82,10 @@ export class ResumeCommand extends CommandRunner {
           fullId = await JobStateStore.resolveId(cwd, this.slug);
         } catch (err) {
           if (err instanceof SpecRunnerError) {
-            process.stderr.write(`Error: ${err.message}\n`);
-            if (err.hint) process.stderr.write(`Hint: ${err.hint}\n`);
+            logError(err.message);
+            if (err.hint) stderrWrite(`Hint: ${err.hint}`);
           } else {
-            process.stderr.write(`Error: ${(err as Error).message}\n`);
+            logError((err as Error).message);
           }
           throw new PrepareError(1, "Job not found");
         }
@@ -95,7 +95,7 @@ export class ResumeCommand extends CommandRunner {
       }
     } catch (err) {
       if (err instanceof PrepareError) throw err;
-      process.stderr.write(`Error: ${(err as Error).message}\n`);
+      logError((err as Error).message);
       throw new PrepareError(2, "Failed to resolve job");
     }
 
@@ -110,22 +110,16 @@ export class ResumeCommand extends CommandRunner {
         });
         await new JobStateStore(state.jobId, cwd).persist(recovered);
         state = recovered;
-        process.stderr.write(
-          `Warning: Job '${this.slug}' was running but the process is no longer alive. Recovering.\n`,
-        );
+        stderrWrite(`Warning: Job '${this.slug}' was running but the process is no longer alive. Recovering.`);
       } else {
-        process.stderr.write(
-          `Error: Job '${this.slug}' is currently running. Cannot resume a running job.\n`,
-        );
+        logError(`Job '${this.slug}' is currently running. Cannot resume a running job.`);
         throw new PrepareError(1, "Job is running");
       }
     }
 
     // Status gate: reject if transition to "running" is not allowed
     if (!canTransition(state.status, "running")) {
-      process.stderr.write(
-        `Error: Job '${this.slug}' has status '${state.status}', cannot transition to 'running'.\n`,
-      );
+      logError(`Job '${this.slug}' has status '${state.status}', cannot transition to 'running'.`);
       throw new PrepareError(1, `Cannot resume from status '${state.status}'`);
     }
 
@@ -136,24 +130,18 @@ export class ResumeCommand extends CommandRunner {
     if (startStepForCheck) {
       const hasConsecutiveEscalations = checkConsecutiveEscalations(state, startStepForCheck);
       if (hasConsecutiveEscalations && !this.options.force) {
-        process.stderr.write(
-          `Error: Step '${startStepForCheck}' has escalated 3 consecutive times. Use --force to override.\n`,
-        );
+        logError(`Step '${startStepForCheck}' has escalated 3 consecutive times. Use --force to override.`);
         throw new PrepareError(1, "Consecutive escalations");
       }
     }
 
     if (checkStaleState(state)) {
-      process.stderr.write(
-        `Warning: Job '${this.slug}' was last updated more than 24 hours ago. The branch may have drifted.\n`,
-      );
+      stderrWrite(`Warning: Job '${this.slug}' was last updated more than 24 hours ago. The branch may have drifted.`);
     }
 
     // resumePoint guard + resume step resolution
     if (resumePoint === null && this.options.from === undefined) {
-      process.stderr.write(
-        `Error: 再開位置が不明です。\`--from\` で再開 step を指定してください\n`,
-      );
+      logError("再開位置が不明です。`--from` で再開 step を指定してください");
       throw new PrepareError(1, "No resume point");
     }
 
@@ -163,7 +151,7 @@ export class ResumeCommand extends CommandRunner {
     try {
       startStep = resolveResumeStep(this.options.from, resumePoint, fallbackStep, state.steps);
     } catch (err) {
-      process.stderr.write(`Error: ${(err as Error).message}\n`);
+      logError((err as Error).message);
       throw new PrepareError(1, "Failed to resolve resume step");
     }
 
@@ -177,9 +165,7 @@ export class ResumeCommand extends CommandRunner {
     try {
       request = await parseRequestMd(resolvedPath);
     } catch (err) {
-      process.stderr.write(
-        `Error: Failed to read request.md at '${resolvedPath}': ${(err as Error).message}\n`,
-      );
+      logError(`Failed to read request.md at '${resolvedPath}': ${(err as Error).message}`);
       throw new PrepareError(1, "Failed to parse request.md");
     }
 
@@ -194,7 +180,7 @@ export class ResumeCommand extends CommandRunner {
       await new JobStateStore(state.jobId, cwd).persist(transitioned);
       updatedState = transitioned;
     } catch (err) {
-      process.stderr.write(`Error: Failed to update job state: ${(err as Error).message}\n`);
+      logError(`Failed to update job state: ${(err as Error).message}`);
       throw new PrepareError(1, "Failed to update state");
     }
 
@@ -205,10 +191,10 @@ export class ResumeCommand extends CommandRunner {
       config = await loadConfig(repoRoot ?? undefined);
     } catch (err) {
       if (err instanceof SpecRunnerError) {
-        process.stderr.write(`Error: ${err.message}\n`);
-        if (err.hint) process.stderr.write(`Hint: ${err.hint}\n`);
+        logError(err.message);
+        if (err.hint) stderrWrite(`Hint: ${err.hint}`);
       } else {
-        process.stderr.write(`Error: ${(err as Error).message}\n`);
+        logError((err as Error).message);
       }
       throw new PrepareError(1, "Failed to load config");
     }

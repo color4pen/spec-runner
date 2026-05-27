@@ -8,7 +8,6 @@ import type { EventBus } from "../event/event-bus.js";
 import { StepExecutor } from "../step/executor.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { transitionJob } from "../../state/lifecycle.js";
-import { stdoutWrite } from "../../logger/stdout.js";
 import { STEP_NAMES } from "../step/step-names.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 
@@ -164,7 +163,7 @@ export class Pipeline {
 
         if (isAnyLoopStep) {
           const loopIter = newIter;
-          stdoutWrite(`[iter ${loopIter}/${this.maxIterations}] starting ${currentStep}\n`);
+          this.events.emit("pipeline:iteration:start", { step: currentStep, iteration: loopIter, maxIterations: this.maxIterations });
         }
 
         // Append history: loop iteration started
@@ -186,7 +185,7 @@ export class Pipeline {
       // --- Non-loop CliStep entry announcement ---
       const isNonLoopCliStep = step.kind === "cli" && !isAnyLoopStep;
       if (isNonLoopCliStep) {
-        stdoutWrite(`[step] ${currentStep}\n`);
+        this.events.emit("pipeline:cli-step", { step: currentStep });
       }
 
       // --- Execute the step ---
@@ -225,7 +224,7 @@ export class Pipeline {
       if (isNonLoopCliStep) {
         const stepVerdict = getLatestStepResult(state, currentStep)?.verdict;
         if (stepVerdict != null) {
-          stdoutWrite(`[step] ${currentStep}: ${stepVerdict}\n`);
+          this.events.emit("pipeline:cli-step", { step: currentStep, verdict: stepVerdict });
         }
       }
 
@@ -262,9 +261,9 @@ export class Pipeline {
         // Print loop verdict line for primary loop steps
         if (isAnyLoopStep) {
           if (outcome === "approved") {
-            stdoutWrite(`[iter ${loopIter}] ${currentStep} verdict: approved → done\n`);
+            this.events.emit("pipeline:iteration:verdict", { step: currentStep, iteration: loopIter, verdict: "approved", action: "done" });
           } else if (outcome === "escalation" || outcome === "error") {
-            stdoutWrite(`[iter ${loopIter}] ${currentStep} verdict: escalation → halt\n`);
+            this.events.emit("pipeline:iteration:verdict", { step: currentStep, iteration: loopIter, verdict: outcome, action: "halt" });
           }
         }
 
@@ -319,7 +318,7 @@ export class Pipeline {
           if (!fixerAtMax) {
             // Conventional exhaustion (no fixer bypass)
             logPipelineDiag("pipeline:loop:exhausted", `step=${nextStep}, iter=${nextLoopIter}, max=${this.maxIterations}`);
-            stdoutWrite(`[iter ${nextLoopIter}/${this.maxIterations}] retries exhausted on ${nextStep}, escalating\n`);
+            this.events.emit("pipeline:iteration:exhausted", { step: nextStep as string, iteration: nextLoopIter, maxIterations: this.maxIterations });
             state = await this.handleExhausted(state, deps, nextStep as string, "review-exhausted");
             this.printPipelineFinished(state);
             break;
@@ -338,7 +337,7 @@ export class Pipeline {
           const pairedReview = Object.entries(this.loopFixerPairs)
             .find(([_, fixer]) => fixer === nextStep)?.[0];
           const exhaustedLoopName = pairedReview ?? (nextStep as string);
-          stdoutWrite(`[iter ${this.maxIterations}/${this.maxIterations}] retries exhausted on ${exhaustedLoopName}, escalating\n`);
+          this.events.emit("pipeline:iteration:exhausted", { step: exhaustedLoopName, iteration: this.maxIterations, maxIterations: this.maxIterations });
           state = await this.handleExhausted(state, deps, exhaustedLoopName, "review-after-final-fix");
           this.printPipelineFinished(state);
           break;
@@ -347,7 +346,7 @@ export class Pipeline {
 
       // Print needs-fix transition message for loop steps
       if (isAnyLoopStep && outcome === "needs-fix") {
-        stdoutWrite(`[iter ${loopIter}] ${currentStep} verdict: needs-fix → spawning fixer\n`);
+        this.events.emit("pipeline:iteration:verdict", { step: currentStep, iteration: loopIter, verdict: "needs-fix", action: "fixer" });
       }
 
       // --- Append transition history ---
@@ -369,14 +368,12 @@ export class Pipeline {
     return state;
   }
 
-  /** Print the "Pipeline finished" summary line if spec-review was in the pipeline. */
+  /** Emit the "pipeline:summary" event if spec-review was in the pipeline. */
   private printPipelineFinished(state: JobState): void {
     if (!this.steps.has(STEP_NAMES.SPEC_REVIEW)) return;
     const specReviewResults = state.steps?.[STEP_NAMES.SPEC_REVIEW] ?? [];
     const finalVerdict = getLatestStepResult(state, STEP_NAMES.SPEC_REVIEW)?.verdict ?? "escalation";
-    stdoutWrite(
-      `Pipeline finished: spec-review iterations=${specReviewResults.length}, final verdict=${finalVerdict}\n`,
-    );
+    this.events.emit("pipeline:summary", { step: STEP_NAMES.SPEC_REVIEW, iterations: specReviewResults.length, finalVerdict });
   }
 
   /**

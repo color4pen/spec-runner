@@ -20,6 +20,7 @@ import { getOriginInfo } from "../git/remote.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { SpecRunnerError } from "../errors.js";
 import { registerExitGuard } from "../core/lifecycle/exit-guard.js";
+import { logResult, logError, stderrWrite } from "../logger/stdout.js";
 
 /**
  * Build a FinishFs from real fs modules.
@@ -85,10 +86,10 @@ export async function runFinish(opts: RunFinishOptions): Promise<number> {
     githubToken = resolved.token;
   } catch (err) {
     if (err instanceof SpecRunnerError) {
-      process.stderr.write(`Error: ${err.message}\n`);
-      process.stderr.write(`Hint: ${err.hint}\n`);
+      logError(err.message);
+      stderrWrite(`Hint: ${err.hint}`);
     } else {
-      process.stderr.write(`Error: GitHub token not found. Run 'specrunner login' to authenticate.\n`);
+      logError("GitHub token not found. Run 'specrunner login' to authenticate.");
     }
     return 2;
   }
@@ -102,7 +103,7 @@ export async function runFinish(opts: RunFinishOptions): Promise<number> {
     repoName = originInfo.name;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    process.stderr.write(`Error: ${message}\n`);
+    logError(message);
     return 2;
   }
 
@@ -137,7 +138,7 @@ export async function runFinish(opts: RunFinishOptions): Promise<number> {
       owner,
       repo: repoName,
     },
-    (msg) => process.stdout.write(msg + "\n"),
+    logResult,
   );
 
   if (result.exitCode === 0) {
@@ -145,11 +146,11 @@ export async function runFinish(opts: RunFinishOptions): Promise<number> {
   }
 
   if (result.exitCode === 1) {
-    process.stderr.write(result.escalation + "\n");
+    stderrWrite(result.escalation);
     return 1;
   }
 
   // exitCode === 2
-  process.stderr.write(result.message + "\n");
+  stderrWrite(result.message);
   return 2;
 }

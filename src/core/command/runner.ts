@@ -20,7 +20,7 @@
  *   - soft errors (awaiting-resume, failed) → teardown("error-status") + return 1
  *   - success (awaiting-merge) → teardown("awaiting-merge") + return 0
  */
-import { logInfo, logError, initVerboseLog, closeVerboseLog, getVerboseLogFilePath } from "../../logger/stdout.js";
+import { logInfo, logError, stderrWrite, initVerboseLog, closeVerboseLog, getVerboseLogFilePath } from "../../logger/stdout.js";
 import { KeepAlive } from "../lifecycle/keepalive.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
@@ -102,7 +102,7 @@ export abstract class CommandRunner {
           message: (err as Error).message,
           hint: "",
         }, "init");
-        process.stderr.write(`Error: Failed to set up workspace: ${(err as Error).message}\n`);
+        logError(`Failed to set up workspace: ${(err as Error).message}`);
         closeVerboseLog();
         return 1;
       }
@@ -152,7 +152,7 @@ export abstract class CommandRunner {
           message: (err as Error).message,
           hint: "",
         }, "init");
-        process.stderr.write(`Error: ${(err as Error).message}\n`);
+        logError((err as Error).message);
         closeVerboseLog();
         return 1;
       }
@@ -218,11 +218,9 @@ export abstract class CommandRunner {
 async function handleResult(finalState: JobState, slug: string): Promise<number> {
   if (finalState.error?.code === "SPEC_REVIEW_RESULT_NOT_FOUND") {
     const branch = finalState.branch ?? "unknown";
-    process.stderr.write(
-      `Error: Spec-review result file not found on branch '${branch}'.\n`,
-    );
+    logError(`Spec-review result file not found on branch '${branch}'.`);
     if (finalState.error.hint) {
-      process.stderr.write(`Hint: ${finalState.error.hint}\n`);
+      stderrWrite(`Hint: ${finalState.error.hint}`);
     }
     return 1;
   }
@@ -285,32 +283,28 @@ export function parseSpecReviewFindingsSummary(
 }
 
 /**
- * Output spec-review verdict information to stdout.
+ * Output spec-review verdict information to stderr (diagnostic info).
  */
 function outputSpecReviewVerdict(finalState: JobState, slug: string): void {
   const specReviewResult = getLatestStepResult(finalState, STEP_NAMES.SPEC_REVIEW);
   if (!specReviewResult?.verdict) return;
 
   const verdict = specReviewResult.verdict;
-  process.stdout.write(`Spec review verdict: ${verdict}\n`);
+  stderrWrite(`Spec review verdict: ${verdict}`);
 
   if (verdict === "needs-fix") {
     const findingsSummary = parseSpecReviewFindingsSummary(specReviewResult.fileContent ?? undefined);
     if (findingsSummary && findingsSummary.count > 0) {
-      process.stdout.write(`Findings: ${findingsSummary.count} issue(s) found.\n`);
+      stderrWrite(`Findings: ${findingsSummary.count} issue(s) found.`);
       for (const finding of findingsSummary.topFindings) {
-        process.stdout.write(`  - ${finding}\n`);
+        stderrWrite(`  - ${finding}`);
       }
     }
-    process.stdout.write(
-      `Review findings at: ${specReviewResult.findingsPath ?? specReviewResultPath(slug, 1)}\n`,
-    );
+    stderrWrite(`Review findings at: ${specReviewResult.findingsPath ?? specReviewResultPath(slug, 1)}`);
   } else if (verdict === "escalation") {
-    process.stdout.write(
-      "Spec review requires human judgment. Check the findings file for details.\n",
-    );
+    stderrWrite("Spec review requires human judgment. Check the findings file for details.");
     if (specReviewResult.findingsPath) {
-      process.stdout.write(`Findings at: ${specReviewResult.findingsPath}\n`);
+      stderrWrite(`Findings at: ${specReviewResult.findingsPath}`);
     }
   }
 }
@@ -322,15 +316,13 @@ function outputSpecReviewVerdict(finalState: JobState, slug: string): void {
 export function outputPipelineThrowError(err: unknown, branch?: string | null): void {
   if (err instanceof SpecRunnerError) {
     if (err.code === "SPEC_REVIEW_RESULT_NOT_FOUND") {
-      process.stderr.write(
-        `Error: Spec-review result file not found on branch '${branch ?? "unknown"}'.\n`,
-      );
-      if (err.hint) process.stderr.write(`Hint: ${err.hint}\n`);
+      logError(`Spec-review result file not found on branch '${branch ?? "unknown"}'.`);
+      if (err.hint) stderrWrite(`Hint: ${err.hint}`);
     } else {
-      process.stderr.write(`Error: ${err.message}\n`);
-      if (err.hint) process.stderr.write(`Hint: ${err.hint}\n`);
+      logError(err.message);
+      if (err.hint) stderrWrite(`Hint: ${err.hint}`);
     }
   } else {
-    process.stderr.write(`Error: ${(err as Error).message}\n`);
+    logError((err as Error).message);
   }
 }

@@ -8,6 +8,7 @@
 import * as fs from "node:fs/promises";
 import { parseRequestMdContent } from "../../parser/request-md.js";
 import { SpecRunnerError } from "../../errors.js";
+import { stdoutWrite, logError, stderrWrite } from "../../logger/stdout.js";
 
 /**
  * Build a scaffold template for request.md.
@@ -65,7 +66,7 @@ export function executeTemplate(type: string): number {
     type,
     slug: "<slug を記入>",
   });
-  process.stdout.write(content);
+  stdoutWrite(content);
   return 0;
 }
 
@@ -80,7 +81,7 @@ export async function executeValidate(filePath: string): Promise<number> {
     content = await fs.readFile(filePath, "utf-8");
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    process.stderr.write(`Error: ${message}\n`);
+    logError(message);
     return 1;
   }
 
@@ -89,10 +90,10 @@ export async function executeValidate(filePath: string): Promise<number> {
     return 0;
   } catch (err) {
     if (err instanceof SpecRunnerError) {
-      process.stderr.write(`Error: ${err.message}\n`);
-      process.stderr.write(`Hint: ${err.hint}\n`);
+      logError(err.message);
+      stderrWrite(`Hint: ${err.hint}`);
     } else {
-      process.stderr.write(`Error: ${(err as Error).message}\n`);
+      logError((err as Error).message);
     }
     return 1;
   }

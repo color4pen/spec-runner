@@ -9,6 +9,7 @@
  */
 import { JobStateStore } from "../store/job-state-store.js";
 import { SpecRunnerError } from "../errors.js";
+import { logResult, logError, stderrWrite } from "../logger/stdout.js";
 import { cancelSingleJob, cancelAllTerminated } from "../core/cancel/runner.js";
 import { createWorktreeManager } from "../core/worktree/manager.js";
 import { spawnCommand } from "../util/spawn.js";
@@ -32,15 +33,15 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
 
   // Arg validation: exclusivity checks
   if (!allTerminated && !jobId) {
-    process.stderr.write("Error: specrunner job cancel requires a <jobId> or --all-terminated.\n");
+    logError("specrunner job cancel requires a <jobId> or --all-terminated.");
     return 2;
   }
   if (allTerminated && jobId) {
-    process.stderr.write("Error: --all-terminated cannot be combined with a <jobId> argument.\n");
+    logError("--all-terminated cannot be combined with a <jobId> argument.");
     return 2;
   }
   if (purge && allTerminated) {
-    process.stderr.write("Error: --purge cannot be combined with --all-terminated (bulk cleanup always removes state files).\n");
+    logError("--purge cannot be combined with --all-terminated (bulk cleanup always removes state files).");
     return 2;
   }
 
@@ -49,7 +50,7 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
   try {
     repoRoot = await resolveRepoRootOrFail();
   } catch (err: unknown) {
-    process.stderr.write(`Error: ${(err as Error).message}\n`);
+    logError((err as Error).message);
     return 1;
   }
 
@@ -66,10 +67,10 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
     resolvedJobId = await JobStateStore.resolveId(repoRoot, jobId!);
   } catch (err: unknown) {
     if (err instanceof SpecRunnerError) {
-      process.stderr.write(`Error: ${err.message}\n`);
-      if (err.hint) process.stderr.write(`Hint: ${err.hint}\n`);
+      logError(err.message);
+      if (err.hint) stderrWrite(`Hint: ${err.hint}`);
     } else {
-      process.stderr.write(`Error: ${(err as Error).message}\n`);
+      logError((err as Error).message);
     }
     return 1;
   }
@@ -103,16 +104,16 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
  */
 function writeResult(result: { exitCode: number; message?: string; warnings?: string[]; info?: string[] }): void {
   for (const msg of result.info ?? []) {
-    process.stdout.write(`${msg}\n`);
+    logResult(msg);
   }
   for (const warn of result.warnings ?? []) {
-    process.stderr.write(`${warn}\n`);
+    stderrWrite(warn);
   }
   if (result.message) {
     if (result.exitCode === 0) {
-      process.stdout.write(`${result.message}\n`);
+      logResult(result.message);
     } else {
-      process.stderr.write(`Error: ${result.message}\n`);
+      logError(result.message);
     }
   }
 }

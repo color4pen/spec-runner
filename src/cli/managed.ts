@@ -14,7 +14,7 @@ import { ImplementerStep } from "../core/step/implementer.js";
 import { BuildFixerStep } from "../core/step/build-fixer.js";
 import { CodeReviewStep } from "../core/step/code-review.js";
 import { CodeFixerStep } from "../core/step/code-fixer.js";
-import { logInfo, logStep, logSuccess, logError, stderrWrite } from "../logger/stdout.js";
+import { logInfo, logStep, logSuccess, logError, stderrWrite, logResult } from "../logger/stdout.js";
 import type { SpecRunnerConfig, AgentRecord } from "../config/schema.js";
 import type { AgentStepName } from "../state/schema.js";
 
@@ -151,19 +151,19 @@ export async function runManagedStatus(): Promise<void> {
   try {
     config = await loadConfigWithOverlay();
   } catch {
-    process.stdout.write("Runtime: local (no config found)\n");
+    logResult("Runtime: local (no config found)");
     return;
   }
 
   if (config.runtime !== "managed") {
-    process.stdout.write("Runtime: local (managed setup not required)\n");
+    logResult("Runtime: local (managed setup not required)");
     if (hasStaleManagedConfig(config)) {
-      process.stdout.write("Stale managed config detected:\n");
+      logResult("Stale managed config detected:");
       if (config.environment?.id) {
-        process.stdout.write(`  - environment.id: ${config.environment.id}\n`);
+        logResult(`  - environment.id: ${config.environment.id}`);
       }
       for (const [role, record] of Object.entries(config.agents ?? {})) {
-        process.stdout.write(`  - agents.${role}: ${record.agentId}\n`);
+        logResult(`  - agents.${role}: ${record.agentId}`);
       }
     }
     return;
@@ -174,17 +174,17 @@ export async function runManagedStatus(): Promise<void> {
     { optional: true },
   );
   const apiKeyPresent = !!anthropicResult;
-  process.stdout.write("Runtime: managed\n");
-  process.stdout.write(`SPECRUNNER_API_KEY: ${apiKeyPresent ? "set" : "NOT SET"}\n`);
-  process.stdout.write(`environment.id: ${config.environment?.id ?? "(not set)"}\n`);
+  logResult("Runtime: managed");
+  logResult(`SPECRUNNER_API_KEY: ${apiKeyPresent ? "set" : "NOT SET"}`);
+  logResult(`environment.id: ${config.environment?.id ?? "(not set)"}`);
 
   const agentEntries = Object.entries(config.agents ?? {});
   if (agentEntries.length === 0) {
-    process.stdout.write("agents: (none registered)\n");
+    logResult("agents: (none registered)");
   } else {
-    process.stdout.write("agents:\n");
+    logResult("agents:");
     for (const [role, record] of agentEntries) {
-      process.stdout.write(`  ${role}: ${record.agentId}\n`);
+      logResult(`  ${role}: ${record.agentId}`);
     }
   }
 }
@@ -200,30 +200,30 @@ export async function runManagedReset(opts: { force: boolean }): Promise<void> {
   try {
     config = await loadConfigWithOverlay();
   } catch (err) {
-    process.stderr.write(`Error loading config: ${(err as Error).message}\n`);
+    logError(`Error loading config: ${(err as Error).message}`);
     process.exit(1);
   }
 
   // --- runtime mismatch guard: handle stale managed fields when runtime != managed ---
   if (config.runtime !== "managed") {
     if (!hasStaleManagedConfig(config)) {
-      process.stdout.write("No stale managed config. Nothing to reset.\n");
+      stderrWrite("No stale managed config. Nothing to reset.");
       return;
     }
 
-    process.stderr.write(
-      `Warning: runtime is "${config.runtime ?? "local"}", not "managed". This will reset stale managed fields only.\n`,
+    stderrWrite(
+      `Warning: runtime is "${config.runtime ?? "local"}", not "managed". This will reset stale managed fields only.`,
     );
 
     if (!opts.force) {
       const isTTY = (process.stdin as NodeJS.ReadStream).isTTY ?? false;
       if (!isTTY) {
-        process.stdout.write("Non-interactive mode requires --force to reset stale config.\n");
+        logResult("Non-interactive mode requires --force to reset stale config.");
         return;
       }
       const confirmed = await promptConfirm("Proceed? [y/N] ");
       if (!confirmed) {
-        process.stdout.write("Aborted.\n");
+        logResult("Aborted.");
         return;
       }
     }
@@ -243,7 +243,7 @@ export async function runManagedReset(opts: { force: boolean }): Promise<void> {
         }
       }
     } else if (config.environment?.id && !apiKey) {
-      process.stderr.write("Warning: SPECRUNNER_API_KEY not set — skipping provider-side environment deletion.\n");
+      stderrWrite("Warning: SPECRUNNER_API_KEY not set — skipping provider-side environment deletion.");
     }
 
     // Clear stale fields
@@ -261,7 +261,7 @@ export async function runManagedReset(opts: { force: boolean }): Promise<void> {
       "This will delete the Anthropic Environment and clear managed config. Continue? [y/N] ",
     );
     if (!confirmed) {
-      process.stdout.write("Aborted.\n");
+      logResult("Aborted.");
       return;
     }
   }
@@ -281,7 +281,7 @@ export async function runManagedReset(opts: { force: boolean }): Promise<void> {
       }
     }
   } else if (config.environment?.id && !apiKey) {
-    process.stderr.write("Warning: SPECRUNNER_API_KEY not set — skipping provider-side environment deletion.\n");
+    stderrWrite("Warning: SPECRUNNER_API_KEY not set — skipping provider-side environment deletion.");
   }
 
   // Reset config: remove runtime, clear agents to {}, remove environment
@@ -295,9 +295,7 @@ export async function runManagedReset(opts: { force: boolean }): Promise<void> {
 
   await saveConfig(managedNewConfig);
   logSuccess("Config reset.");
-  process.stdout.write(
-    "Note: Anthropic-side agent resources are NOT deleted (no delete API available) and remain as orphans.\n",
-  );
+  logResult("Note: Anthropic-side agent resources are NOT deleted (no delete API available) and remain as orphans.");
 }
 
 async function createNewEnvironment(

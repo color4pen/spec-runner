@@ -15,6 +15,7 @@ import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from "../../core/port/agent-runner.js";
 import type { StepContext } from "../../core/types.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
+import { stderrWrite } from "../../logger/stdout.js";
 
 // Minimal interface for the Codex SDK types used here (avoids deep SDK type dependency in tests)
 interface Turn {
@@ -142,8 +143,8 @@ export class CodexAgentRunner implements AgentRunner {
         try {
           thread = codex.resumeThread(ctx.resumeSessionId);
         } catch (resumeErr) {
-          process.stderr.write(
-            `[specrunner] warn: codex session resume failed for '${step.name}' (thread: ${ctx.resumeSessionId}): ${(resumeErr as Error).message}. Falling back to new thread.\n`,
+          stderrWrite(
+            `[specrunner] warn: codex session resume failed for '${step.name}' (thread: ${ctx.resumeSessionId}): ${(resumeErr as Error).message}. Falling back to new thread.`,
           );
           thread = startFreshThread();
         }
@@ -158,8 +159,8 @@ export class CodexAgentRunner implements AgentRunner {
       } catch (runErr) {
         // If resume was used and thread.run() failed, retry with a fresh thread.
         if (ctx.resumeSessionId && !abortController.signal.aborted) {
-          process.stderr.write(
-            `[specrunner] warn: codex thread.run() failed for '${step.name}' after resume (thread: ${ctx.resumeSessionId}): ${(runErr as Error).message}. Falling back to new thread.\n`,
+          stderrWrite(
+            `[specrunner] warn: codex thread.run() failed for '${step.name}' after resume (thread: ${ctx.resumeSessionId}): ${(runErr as Error).message}. Falling back to new thread.`,
           );
           const freshThread = startFreshThread();
           activeThread = freshThread;
@@ -219,7 +220,7 @@ export class CodexAgentRunner implements AgentRunner {
     const fileChanges = turn.items.filter((i): i is FileChangeItem => i.type === "file_change");
     if (fileChanges.length > 0) {
       const paths = fileChanges.flatMap((fc) => fc.changes.map((c) => c.path));
-      process.stderr.write(`[codex] file changes: ${paths.join(", ")}\n`);
+      stderrWrite(`[codex] file changes: ${paths.join(", ")}`);
     }
 
     // Read result file from local fs (same as ClaudeCodeRunner — D1)

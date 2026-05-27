@@ -14,8 +14,35 @@ import type { SpawnFn } from "../src/util/spawn.js";
 import type { SpawnFn as GitSpawnFn } from "../src/util/git-exec.js";
 import { JobStateStore } from "../src/store/job-state-store.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
+import { EventBus } from "../src/core/event/event-bus.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
+
+/** Create an EventBus with inline progress-style subscribers that write pipeline events to stderr. */
+function makeEventsWithProgress(): EventBus {
+  const events = new EventBus();
+  events.on("pipeline:iteration:start", (p) => {
+    process.stderr.write(`[iter ${p.iteration}/${p.maxIterations}] starting ${p.step}\n`);
+  });
+  events.on("pipeline:iteration:verdict", (p) => {
+    const actionLabel = p.action === "done" ? "done" : p.action === "halt" ? "halt" : "spawning fixer";
+    process.stderr.write(`[iter ${p.iteration}] ${p.step} verdict: ${p.verdict} → ${actionLabel}\n`);
+  });
+  events.on("pipeline:iteration:exhausted", (p) => {
+    process.stderr.write(`[iter ${p.iteration}/${p.maxIterations}] retries exhausted on ${p.step}, escalating\n`);
+  });
+  events.on("pipeline:summary", (p) => {
+    process.stderr.write(`Pipeline finished: ${p.step} iterations=${p.iterations}, final verdict=${p.finalVerdict}\n`);
+  });
+  events.on("pipeline:cli-step", (p) => {
+    if (p.verdict !== undefined) {
+      process.stderr.write(`[step] ${p.step}: ${p.verdict}\n`);
+    } else {
+      process.stderr.write(`[step] ${p.step}\n`);
+    }
+  });
+  return events;
+}
 
 // Mock validateDeltaSpecPaths so integration tests don't read real fs for delta-spec validation.
 // Default: returns { ok: true } (approved). Override per-test for needs-fix scenarios.
@@ -520,8 +547,8 @@ describe("TC-015: runPipeline — fresh session IDs per iteration", () => {
 });
 
 // TC-016: runPipeline — retries exhausted 時の stdout 出力
-describe("TC-016: runPipeline — stdout contains 'retries exhausted, escalating' when limit reached", () => {
-  it("writes retries exhausted message to stdout", async () => {
+describe("TC-016: runPipeline — stderr contains 'retries exhausted, escalating' when limit reached", () => {
+  it("writes retries exhausted message to stderr", async () => {
 
     const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
@@ -531,12 +558,13 @@ describe("TC-016: runPipeline — stdout contains 'retries exhausted, escalating
     });
     const githubClient = buildMockGithubClient({ specReviewVerdicts: ["needs-fix", "needs-fix"] });
 
-    const stdoutLines: string[] = [];
-    vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
-      stdoutLines.push(String(chunk));
+    const stderrLines: string[] = [];
+    vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      stderrLines.push(String(chunk));
       return true;
     });
 
+    const events = makeEventsWithProgress();
     await runPipeline(jobState, {
       client: client,
       config: buildConfig({ pipeline: { maxRetries: 2 } }),
@@ -549,15 +577,15 @@ describe("TC-016: runPipeline — stdout contains 'retries exhausted, escalating
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-    });
+    }, events);
 
-    const stdout = stdoutLines.join("");
+    const stdout = stderrLines.join("");
     expect(stdout).toContain("retries exhausted on spec-review, escalating");
   });
 });
 
 // TC-017: runPipeline — Pipeline finished サマリ行の出力
-describe("TC-017: runPipeline — Pipeline finished summary line in stdout", () => {
+describe("TC-017: runPipeline — Pipeline finished summary line in stderr", () => {
   it("outputs 'Pipeline finished' summary with iterations and verdict", async () => {
 
     const { runPipeline } = await import("../src/core/pipeline/index.js");
@@ -568,12 +596,13 @@ describe("TC-017: runPipeline — Pipeline finished summary line in stdout", () 
     });
     const githubClient = buildMockGithubClient({ specReviewVerdicts: ["needs-fix", "approved"] });
 
-    const stdoutLines: string[] = [];
-    vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
-      stdoutLines.push(String(chunk));
+    const stderrLines: string[] = [];
+    vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      stderrLines.push(String(chunk));
       return true;
     });
 
+    const events = makeEventsWithProgress();
     await runPipeline(jobState, {
       client: client,
       config: buildConfig(),
@@ -586,9 +615,9 @@ describe("TC-017: runPipeline — Pipeline finished summary line in stdout", () 
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-    });
+    }, events);
 
-    const stdout = stdoutLines.join("");
+    const stdout = stderrLines.join("");
     expect(stdout).toContain("Pipeline finished: spec-review iterations=2, final verdict=approved");
   });
 });
@@ -609,12 +638,13 @@ describe("TC-018: runPipeline — stdout log order for needs-fix → approved pa
     });
     const githubClient = buildMockGithubClient({ specReviewVerdicts: ["needs-fix", "approved"] });
 
-    const stdoutLines: string[] = [];
-    vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
-      stdoutLines.push(String(chunk));
+    const stderrLines: string[] = [];
+    vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      stderrLines.push(String(chunk));
       return true;
     });
 
+    const events = makeEventsWithProgress();
     await runPipeline(jobState, {
       client: client,
       config: buildConfig({ pipeline: { maxRetries: 2 } }),
@@ -627,9 +657,9 @@ describe("TC-018: runPipeline — stdout log order for needs-fix → approved pa
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-    });
+    }, events);
 
-    const stdout = stdoutLines.join("");
+    const stdout = stderrLines.join("");
     // Verify key log lines are present and in order
     const iter1StartIdx = stdout.indexOf("[iter 1/2] starting spec-review");
     const iter1NeedsFixIdx = stdout.indexOf("[iter 1] spec-review verdict: needs-fix → spawning fixer");

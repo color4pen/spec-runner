@@ -16,7 +16,7 @@ export interface ProgressDisplayOptions {
   clearTimerFn?: TimerClearFn;
   /** Injectable clock (default: Date.now). For testing. */
   nowFn?: () => number;
-  /** Override TTY detection (default: process.stdout.isTTY === true). For testing. */
+  /** Override TTY detection (default: process.stderr.isTTY === true). For testing. */
   isTTY?: boolean;
 }
 
@@ -75,7 +75,7 @@ export class ProgressDisplay {
     this.clearTimerFn = options.clearTimerFn ?? (clearInterval as unknown as TimerClearFn);
     this.nowFn = options.nowFn ?? (() => Date.now());
     this.heartbeatIntervalMs = (options.heartbeatIntervalSec ?? 0) * 1000;
-    this.isTTY = options.isTTY !== undefined ? options.isTTY : process.stdout.isTTY === true;
+    this.isTTY = options.isTTY !== undefined ? options.isTTY : process.stderr.isTTY === true;
     this.subscribe();
   }
 
@@ -87,6 +87,11 @@ export class ProgressDisplay {
     this.events.on("verdict:parsed", (p) => this.onVerdictParsed(p));
     this.events.on("pipeline:complete", (p) => this.onPipelineComplete(p));
     this.events.on("pipeline:fail", (p) => this.onPipelineFail(p));
+    this.events.on("pipeline:iteration:start", (p) => this.onIterationStart(p));
+    this.events.on("pipeline:iteration:verdict", (p) => this.onIterationVerdict(p));
+    this.events.on("pipeline:iteration:exhausted", (p) => this.onIterationExhausted(p));
+    this.events.on("pipeline:summary", (p) => this.onPipelineSummary(p));
+    this.events.on("pipeline:cli-step", (p) => this.onCliStep(p));
   }
 
   private onStepStart(p: { step: string }): void {
@@ -94,27 +99,27 @@ export class ProgressDisplay {
     this.currentStep = p.step;
     this.progressCount = 0;
     this.lastTool = null;
-    process.stdout.write(`[${p.step}] running...\n`);
+    process.stderr.write(`[${p.step}] running...\n`);
     this.startHeartbeat();
   }
 
   private onStepComplete(p: { step: string }): void {
     this.stopHeartbeat();
     if (this.isTTY && !this.options.verbose) {
-      process.stdout.write("\r\x1b[K");
+      process.stderr.write("\r\x1b[K");
     }
     const elapsed = this.elapsedSeconds(p.step);
-    process.stdout.write(`[${p.step}] ✓ (${elapsed}s)\n`);
+    process.stderr.write(`[${p.step}] ✓ (${elapsed}s)\n`);
     this.currentStep = null;
   }
 
   private onStepError(p: { step: string; error: Error }): void {
     this.stopHeartbeat();
     if (this.isTTY && !this.options.verbose) {
-      process.stdout.write("\r\x1b[K");
+      process.stderr.write("\r\x1b[K");
     }
     const elapsed = this.elapsedSeconds(p.step);
-    process.stdout.write(`[${p.step}] ✗ error (${elapsed}s)\n`);
+    process.stderr.write(`[${p.step}] ✗ error (${elapsed}s)\n`);
     this.currentStep = null;
   }
 
@@ -125,17 +130,17 @@ export class ProgressDisplay {
 
   private onVerdictParsed(p: { step: string; outcome: { verdict: string | null } }): void {
     if (p.outcome.verdict === null) return;
-    process.stdout.write(`[${p.step}] verdict: ${p.outcome.verdict}\n`);
+    process.stderr.write(`[${p.step}] verdict: ${p.outcome.verdict}\n`);
   }
 
   private onPipelineComplete(_p: unknown): void {
     this.stopHeartbeat();
-    process.stdout.write(`\nNext: specrunner job finish ${this.options.slug}\n`);
+    process.stderr.write(`\nNext: specrunner job finish ${this.options.slug}\n`);
   }
 
   private onPipelineFail(p: { reason: string }): void {
     this.stopHeartbeat();
-    process.stdout.write(`Pipeline failed: ${p.reason}\n`);
+    process.stderr.write(`Pipeline failed: ${p.reason}\n`);
   }
 
   private startHeartbeat(): void {
@@ -165,10 +170,35 @@ export class ProgressDisplay {
     }
 
     if (this.isTTY && !this.options.verbose) {
-      const padded = line.padEnd(process.stdout.columns || 80);
-      process.stdout.write(`\r${padded}`);
+      const padded = line.padEnd(process.stderr.columns || 80);
+      process.stderr.write(`\r${padded}`);
     } else {
-      process.stdout.write(`${line}\n`);
+      process.stderr.write(`${line}\n`);
+    }
+  }
+
+  private onIterationStart(p: { step: string; iteration: number; maxIterations: number }): void {
+    process.stderr.write(`[iter ${p.iteration}/${p.maxIterations}] starting ${p.step}\n`);
+  }
+
+  private onIterationVerdict(p: { step: string; iteration: number; verdict: string; action: "done" | "halt" | "fixer" }): void {
+    const actionLabel = p.action === "done" ? "done" : p.action === "halt" ? "halt" : "spawning fixer";
+    process.stderr.write(`[iter ${p.iteration}] ${p.step} verdict: ${p.verdict} → ${actionLabel}\n`);
+  }
+
+  private onIterationExhausted(p: { step: string; iteration: number; maxIterations: number }): void {
+    process.stderr.write(`[iter ${p.iteration}/${p.maxIterations}] retries exhausted on ${p.step}, escalating\n`);
+  }
+
+  private onPipelineSummary(p: { step: string; iterations: number; finalVerdict: string }): void {
+    process.stderr.write(`Pipeline finished: ${p.step} iterations=${p.iterations}, final verdict=${p.finalVerdict}\n`);
+  }
+
+  private onCliStep(p: { step: string; verdict?: string }): void {
+    if (p.verdict !== undefined) {
+      process.stderr.write(`[step] ${p.step}: ${p.verdict}\n`);
+    } else {
+      process.stderr.write(`[step] ${p.step}\n`);
     }
   }
 

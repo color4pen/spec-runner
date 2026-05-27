@@ -6,7 +6,7 @@ import { createAnthropicClient } from "../adapter/managed-agent/client.js";
 import { createAnthropicSessionClient } from "../adapter/managed-agent/session-client.js";
 import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
 import { runPreflight } from "../core/preflight.js";
-import { setVerbose, resolveVerboseFlag } from "../logger/stdout.js";
+import { setVerbose, resolveVerboseFlag, logError, stderrWrite } from "../logger/stdout.js";
 import { SpecRunnerError } from "../errors.js";
 import { createRuntime } from "../core/runtime/index.js";
 import { PipelineRunCommand } from "../core/command/pipeline-run.js";
@@ -50,8 +50,8 @@ export async function runRunCore(
   if (!fs.existsSync(absolutePath)) {
     const slugResolved = storeResolve(cwd, requestMdPath);
     if (!fs.existsSync(slugResolved)) {
-      process.stderr.write(`Error: '${requestMdPath}' is neither a file path nor an active request slug.\n`);
-      process.stderr.write("Hint: Use 'specrunner request ls' to see available slugs.\n");
+      logError(`'${requestMdPath}' is neither a file path nor an active request slug.`);
+      stderrWrite("Hint: Use 'specrunner request ls' to see available slugs.");
       return 1;
     }
     absolutePath = slugResolved;
@@ -62,10 +62,10 @@ export async function runRunCore(
     preflightResult = await runPreflight(absolutePath, cwd);
   } catch (err) {
     if (err instanceof SpecRunnerError) {
-      process.stderr.write(`Error: ${err.message}\n`);
-      if (err.hint) process.stderr.write(`Hint: ${err.hint}\n`);
+      logError(err.message);
+      if (err.hint) stderrWrite(`Hint: ${err.hint}`);
     } else {
-      process.stderr.write(`Error: ${(err as Error).message}\n`);
+      logError((err as Error).message);
     }
     return 1;
   }
@@ -94,7 +94,7 @@ export async function runRunCore(
   try {
     return await new PipelineRunCommand(runtime, events, absolutePath, preflightResult, options).execute();
   } catch (err) {
-    process.stderr.write(`Error: ${(err as Error).message}\n`);
+    logError((err as Error).message);
     return 1;
   } finally {
     progress.dispose();

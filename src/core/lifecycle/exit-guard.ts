@@ -1,4 +1,5 @@
 import { JobStateStore } from "../../store/job-state-store.js";
+import { stderrWrite } from "../../logger/stdout.js";
 
 /**
  * Returns a handler that can be called multiple times but only executes once (fired guard).
@@ -16,9 +17,7 @@ export function createExitGuardHandler(repoRoot: string): () => void {
         for (const state of states) {
           if (state.status !== "running") continue;
           try {
-            process.stderr.write(
-              `[specrunner] warn: process exiting with running job ${state.jobId}, transitioning to awaiting-resume\n`,
-            );
+            stderrWrite(`[specrunner] warn: process exiting with running job ${state.jobId}, transitioning to awaiting-resume`);
             const store = new JobStateStore(state.jobId, repoRoot);
             await store.persist({
               ...state,

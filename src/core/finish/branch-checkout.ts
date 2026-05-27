@@ -8,6 +8,7 @@
 import type { SpawnFn } from "../../util/spawn.js";
 import { spawnOrEscalate } from "./spawn-helper.js";
 import { formatEscalation } from "./escalation.js";
+import { stderrWrite } from "../../logger/stdout.js";
 
 export interface CheckoutForValidationInput {
   branch: string;
@@ -86,7 +87,7 @@ export interface RestoreBranchInput {
  */
 export async function restoreBranch(input: RestoreBranchInput): Promise<void> {
   const { originalBranch, cwd, spawn } = input;
-  const warn = input.warnFn ?? ((m: string) => process.stderr.write(m));
+  const warn = input.warnFn ?? stderrWrite;
   const result = await spawn("git", ["checkout", originalBranch], { cwd });
   if (result.exitCode !== 0) {
     warn(

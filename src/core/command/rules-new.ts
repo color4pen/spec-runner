@@ -7,6 +7,7 @@ import { AGENT_STEP_NAMES } from "../step/step-names.js";
 import { stepRulesDirRel } from "../../util/paths.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { logResult, logError, stderrWrite } from "../../logger/stdout.js";
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
@@ -39,10 +40,8 @@ export async function executeRulesNew(
 ): Promise<number> {
   // 1. step-name validation
   if (!(AGENT_STEP_NAMES as readonly string[]).includes(stepName)) {
-    process.stderr.write(
-      `Error: Unknown step name '${stepName}'.\n` +
-      `Valid agent step names: ${AGENT_STEP_NAMES.join(", ")}\n`,
-    );
+    logError(`Unknown step name '${stepName}'.`);
+    stderrWrite(`Valid agent step names: ${AGENT_STEP_NAMES.join(", ")}`);
     return 2;
   }
 
@@ -52,29 +51,21 @@ export async function executeRulesNew(
 
   if (sanitized.includes("_")) {
     sanitized = sanitized.replace(/_/g, "-");
-    process.stderr.write(
-      `Warning: '_' in slug replaced with '-'. Using '${sanitized}'.\n`,
-    );
+    stderrWrite(`Warning: '_' in slug replaced with '-'. Using '${sanitized}'.`);
     warned = true;
   }
 
   if (sanitized.includes(" ")) {
     sanitized = sanitized.replace(/ /g, "-");
     if (!warned) {
-      process.stderr.write(
-        `Warning: spaces in slug replaced with '-'. Using '${sanitized}'.\n`,
-      );
+      stderrWrite(`Warning: spaces in slug replaced with '-'. Using '${sanitized}'.`);
     } else {
-      process.stderr.write(
-        `Warning: spaces in slug replaced with '-'. Using '${sanitized}'.\n`,
-      );
+      stderrWrite(`Warning: spaces in slug replaced with '-'. Using '${sanitized}'.`);
     }
   }
 
   if (!SLUG_REGEX.test(sanitized)) {
-    process.stderr.write(
-      `Error: Invalid rule slug '${sanitized}'. Must match /^[a-z0-9][a-z0-9-]{0,63}$/\n`,
-    );
+    logError(`Invalid rule slug '${sanitized}'. Must match /^[a-z0-9][a-z0-9-]{0,63}$/`);
     return 2;
   }
 
@@ -107,10 +98,8 @@ export async function executeRulesNew(
   const slugSuffix = `-${sanitized}.md`;
   const existing = entries.filter((e) => e.endsWith(slugSuffix));
   if (existing.length > 0) {
-    process.stderr.write(
-      `Error: A rule file for '${sanitized}' already exists in ${dirRel}/: ${existing.join(", ")}\n` +
-      `Hint: Choose a different rule slug or rename the existing file.\n`,
-    );
+    logError(`A rule file for '${sanitized}' already exists in ${dirRel}/: ${existing.join(", ")}`);
+    stderrWrite(`Hint: Choose a different rule slug or rename the existing file.`);
     return 1;
   }
 
@@ -123,6 +112,6 @@ export async function executeRulesNew(
 
   // 8. Output created path
   const relativePath = `${dirRel}/${fileName}`;
-  process.stdout.write(relativePath + "\n");
+  logResult(relativePath);
   return 0;
 }

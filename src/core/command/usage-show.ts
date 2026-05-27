@@ -10,6 +10,7 @@ import * as path from "node:path";
 import { readUsageFile } from "../usage/store.js";
 import { usageJsonPath, archivedChangesDirRel, parseArchiveDirName } from "../../util/paths.js";
 import type { ModelUsage } from "../port/model-usage.js";
+import { stdoutWrite, stderrWrite } from "../../logger/stdout.js";
 
 /**
  * Show usage details for a slug.
@@ -21,29 +22,29 @@ export async function showUsage(slug: string, cwd: string): Promise<number> {
   // Resolve the usage.json path
   const usagePath = await resolveUsagePath(slug, cwd);
   if (!usagePath) {
-    process.stderr.write(`No usage data found for slug '${slug}'\n`);
+    stderrWrite(`No usage data found for slug '${slug}'`);
     return 1;
   }
 
   const usageFile = await readUsageFile(usagePath);
   if (usageFile.commandInvocations.length === 0) {
-    process.stdout.write(`No invocations recorded for '${slug}'\n`);
+    stdoutWrite(`No invocations recorded for '${slug}'\n`);
     return 0;
   }
 
   // Aggregate totals by model
   const modelTotals: Record<string, ModelUsage> = {};
 
-  process.stdout.write(`Usage for: ${slug}\n`);
-  process.stdout.write(`${"─".repeat(60)}\n`);
+  stdoutWrite(`Usage for: ${slug}\n`);
+  stdoutWrite(`${"─".repeat(60)}\n`);
 
   for (const inv of usageFile.commandInvocations) {
     const label = inv.stepName ? `${inv.command} / ${inv.stepName}` : inv.command;
-    process.stdout.write(`[${inv.timestamp}] ${label}\n`);
+    stdoutWrite(`[${inv.timestamp}] ${label}\n`);
 
     if (inv.modelUsage) {
       for (const [model, usage] of Object.entries(inv.modelUsage)) {
-        process.stdout.write(
+        stdoutWrite(
           `  ${model}: in=${usage.inputTokens} out=${usage.outputTokens} cacheRead=${usage.cacheReadInputTokens} cacheCreate=${usage.cacheCreationInputTokens}\n`,
         );
         // Accumulate totals
@@ -57,17 +58,17 @@ export async function showUsage(slug: string, cwd: string): Promise<number> {
         t.cacheCreationInputTokens += usage.cacheCreationInputTokens;
       }
     } else {
-      process.stdout.write(`  (no usage data)\n`);
+      stdoutWrite(`  (no usage data)\n`);
     }
   }
 
-  process.stdout.write(`\n${"─".repeat(60)}\n`);
-  process.stdout.write(`Totals by model:\n`);
+  stdoutWrite(`\n${"─".repeat(60)}\n`);
+  stdoutWrite(`Totals by model:\n`);
   if (Object.keys(modelTotals).length === 0) {
-    process.stdout.write(`  (no usage data)\n`);
+    stdoutWrite(`  (no usage data)\n`);
   } else {
     for (const [model, usage] of Object.entries(modelTotals)) {
-      process.stdout.write(
+      stdoutWrite(
         `  ${model}: in=${usage.inputTokens} out=${usage.outputTokens} cacheRead=${usage.cacheReadInputTokens} cacheCreate=${usage.cacheCreationInputTokens}\n`,
       );
     }

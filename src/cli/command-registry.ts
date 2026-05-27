@@ -30,6 +30,7 @@ import { FlagParseError } from "./flag-parser.js";
 import type { FlagDef, ParsedArgs } from "./flag-parser.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
+import { logError, stderrWrite, stdoutWrite } from "../logger/stdout.js";
 import { ClaudeCodeOneShotQueryClient } from "../adapter/claude-code/one-shot-query-client.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
@@ -252,15 +253,13 @@ export const COMMANDS: Record<string, CommandEntry> = {
           if (!fs.existsSync(filePath)) {
             // Try as slug
             if (!SLUG_REGEX.test(input)) {
-              process.stderr.write(
-                `Error: Invalid slug '${input}'. Must match /^[a-z0-9][a-z0-9-]{0,63}$/\n`,
-              );
+              logError(`Invalid slug '${input}'. Must match /^[a-z0-9][a-z0-9-]{0,63}$/`);
               process.exit(2);
             }
             const slugResolved = storeResolve(process.cwd(), input);
             if (!fs.existsSync(slugResolved)) {
-              process.stderr.write(`Error: '${input}' is neither a file path nor an active request slug.\n`);
-              process.stderr.write("Hint: Use 'specrunner request ls' to see available slugs.\n");
+              logError(`'${input}' is neither a file path nor an active request slug.`);
+              stderrWrite("Hint: Use 'specrunner request ls' to see available slugs.");
               process.exit(1);
             }
             filePath = slugResolved;
@@ -280,15 +279,13 @@ export const COMMANDS: Record<string, CommandEntry> = {
           if (!fs.existsSync(filePath)) {
             // Try as slug
             if (!SLUG_REGEX.test(input)) {
-              process.stderr.write(
-                `Error: Invalid slug '${input}'. Must match /^[a-z0-9][a-z0-9-]{0,63}$/\n`,
-              );
+              logError(`Invalid slug '${input}'. Must match /^[a-z0-9][a-z0-9-]{0,63}$/`);
               process.exit(2);
             }
             const slugResolved = storeResolve(process.cwd(), input);
             if (!fs.existsSync(slugResolved)) {
-              process.stderr.write(`Error: '${input}' is neither a file path nor an active request slug.\n`);
-              process.stderr.write("Hint: Use 'specrunner request ls' to see available slugs.\n");
+              logError(`'${input}' is neither a file path nor an active request slug.`);
+              stderrWrite("Hint: Use 'specrunner request ls' to see available slugs.");
               process.exit(1);
             }
             filePath = slugResolved;
@@ -370,7 +367,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
           const jobId = parsed.positional;
           // Security: path-traversal guard; short prefixes are allowed (resolveId handles lookup)
           if (jobId !== undefined && !VALID_JOB_ID_CHARS.test(jobId)) {
-            process.stderr.write(`Error: invalid jobId format\n`);
+            logError("invalid jobId format");
             process.exit(1);
           }
           try {
@@ -384,7 +381,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
               }),
             );
           } catch (err: unknown) {
-            process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);
+            stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
             process.exit(1);
           }
         },
@@ -411,7 +408,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
             try {
               resolvedPrompt = fs.readFileSync(path.resolve(process.cwd(), promptFile), "utf-8");
             } catch (err) {
-              process.stderr.write(`Error: Cannot read prompt file '${promptFile}': ${(err as Error).message}\n`);
+              logError(`Cannot read prompt file '${promptFile}': ${(err as Error).message}`);
               process.exit(1);
             }
           } else {
@@ -427,7 +424,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
               prompt: resolvedPrompt,
             });
           } catch (err: unknown) {
-            process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);
+            stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
             process.exit(1);
           }
         },
@@ -444,13 +441,13 @@ export const COMMANDS: Record<string, CommandEntry> = {
         usage: FINISH_USAGE,
         handler: async (parsed) => {
           if (parsed.flags["help"]) {
-            process.stdout.write(FINISH_USAGE);
+            stdoutWrite(FINISH_USAGE);
             process.exit(0);
           }
           // UUID validation for --job flag
           const jobFlagValue = parsed.flags["job"] as string | undefined;
           if (jobFlagValue !== undefined && !UUID_REGEX.test(jobFlagValue)) {
-            process.stderr.write(`Error: invalid jobId format\n`);
+            logError("invalid jobId format");
             process.exit(1);
           }
           const prRaw = parsed.flags["pr"] as string | undefined;
@@ -467,7 +464,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
               }),
             );
           } catch (err: unknown) {
-            process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);
+            stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
             process.exit(1);
           }
         },
@@ -511,7 +508,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
         },
         handler: async (parsed) => {
           if (parsed.flags["help"]) {
-            process.stdout.write(RUNTIME_RESET_USAGE);
+            stdoutWrite(RUNTIME_RESET_USAGE);
             process.exit(0);
           }
           await runManagedReset({ force: !!parsed.flags["force"] });
@@ -528,7 +525,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
       try {
         process.exit(await runDoctor({ json: !!parsed.flags["json"] }));
       } catch (err: unknown) {
-        process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);
+        stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
         process.exit(2);
       }
     },

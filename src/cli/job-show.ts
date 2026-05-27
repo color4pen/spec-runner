@@ -12,6 +12,7 @@ import { JobStateStore } from "../store/job-state-store.js";
 import { getJobSlug } from "../state/job-slug.js";
 import type { JobState } from "../state/schema.js";
 import { resolveRepoRoot } from "../util/repo-root.js";
+import { logResult, stderrWrite } from "../logger/stdout.js";
 
 const UUID_REGEX = /^[a-f0-9-]{36}$/;
 
@@ -34,11 +35,11 @@ export async function runJobShow(input: string): Promise<void> {
     } catch (err: unknown) {
       const code = (err as NodeJS.ErrnoException).code;
       if (code === "ENOENT") {
-        process.stderr.write(`Error: Job not found: ${input}\n`);
+        stderrWrite(`Error: Job not found: ${input}`);
         process.exit(1);
       }
       const msg = err instanceof Error ? err.message : String(err);
-      process.stderr.write(`Error: ${msg}\n`);
+      stderrWrite(`Error: ${msg}`);
       process.exit(1);
     }
   } else {
@@ -46,7 +47,7 @@ export async function runJobShow(input: string): Promise<void> {
     const allJobs = await JobStateStore.list(repoRoot);
     const matching = allJobs.filter((j) => getJobSlug(j) === input);
     if (matching.length === 0) {
-      process.stderr.write(`Error: Job not found for slug: ${input}\n`);
+      stderrWrite(`Error: Job not found for slug: ${input}`);
       process.exit(1);
     }
     // Pick most recently updated
@@ -59,10 +60,10 @@ export async function runJobShow(input: string): Promise<void> {
 }
 
 function printJobState(state: JobState): void {
-  process.stdout.write(`Job ID:  ${state.jobId}\n`);
-  process.stdout.write(`Status:  ${state.status}\n`);
-  process.stdout.write(`Branch:  ${state.branch ?? "(none)"}\n`);
-  process.stdout.write(`Step:    ${state.step ?? "(none)"}\n`);
-  process.stdout.write(`Created: ${state.createdAt}\n`);
-  process.stdout.write(`Updated: ${state.updatedAt}\n`);
+  logResult(`Job ID:  ${state.jobId}`);
+  logResult(`Status:  ${state.status}`);
+  logResult(`Branch:  ${state.branch ?? "(none)"}`);
+  logResult(`Step:    ${state.step ?? "(none)"}`);
+  logResult(`Created: ${state.createdAt}`);
+  logResult(`Updated: ${state.updatedAt}`);
 }

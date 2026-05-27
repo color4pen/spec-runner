@@ -97,10 +97,36 @@ function makeMinimalDeps(): PipelineDeps {
   };
 }
 
-function getCapturedStdout(): string {
-  return (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+function getCapturedStderr(): string {
+  return (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls
     .map((args: unknown[]) => String(args[0]))
     .join("");
+}
+
+/** Create an EventBus with inline progress-style subscribers that write to stderr. */
+function makeEventsWithProgress(): EventBus {
+  const events = new EventBus();
+  events.on("pipeline:iteration:start", (p) => {
+    process.stderr.write(`[iter ${p.iteration}/${p.maxIterations}] starting ${p.step}\n`);
+  });
+  events.on("pipeline:iteration:verdict", (p) => {
+    const actionLabel = p.action === "done" ? "done" : p.action === "halt" ? "halt" : "spawning fixer";
+    process.stderr.write(`[iter ${p.iteration}] ${p.step} verdict: ${p.verdict} → ${actionLabel}\n`);
+  });
+  events.on("pipeline:iteration:exhausted", (p) => {
+    process.stderr.write(`[iter ${p.iteration}/${p.maxIterations}] retries exhausted on ${p.step}, escalating\n`);
+  });
+  events.on("pipeline:summary", (p) => {
+    process.stderr.write(`Pipeline finished: ${p.step} iterations=${p.iterations}, final verdict=${p.finalVerdict}\n`);
+  });
+  events.on("pipeline:cli-step", (p) => {
+    if (p.verdict !== undefined) {
+      process.stderr.write(`[step] ${p.step}: ${p.verdict}\n`);
+    } else {
+      process.stderr.write(`[step] ${p.step}\n`);
+    }
+  });
+  return events;
 }
 
 /** Build a CliStep that writes the given verdict to state when executed. */
@@ -159,7 +185,7 @@ describe("TC-S01: dsv entry emits [step] delta-spec-validation", () => {
       if (step.name === "delta-spec-validation") return dsvResult;
       throw new Error(`Unexpected step: ${step.name}`);
     });
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([
         ["delta-spec-validation", makeCliStepWithVerdict("delta-spec-validation", "approved")],
@@ -178,7 +204,7 @@ describe("TC-S01: dsv entry emits [step] delta-spec-validation", () => {
 
     await pipeline.run("delta-spec-validation", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     expect(stdout).toContain("[step] delta-spec-validation");
   });
 });
@@ -194,7 +220,7 @@ describe("TC-S02: dsv completion emits [step] delta-spec-validation: approved", 
       if (step.name === "delta-spec-validation") return dsvResult;
       throw new Error(`Unexpected step: ${step.name}`);
     });
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([
         ["delta-spec-validation", makeCliStepWithVerdict("delta-spec-validation", "approved")],
@@ -213,7 +239,7 @@ describe("TC-S02: dsv completion emits [step] delta-spec-validation: approved", 
 
     await pipeline.run("delta-spec-validation", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     expect(stdout).toContain("[step] delta-spec-validation: approved");
   });
 });
@@ -229,7 +255,7 @@ describe("TC-S03: pr-create entry emits [step] pr-create", () => {
       if (step.name === "pr-create") return prResult;
       throw new Error(`Unexpected step: ${step.name}`);
     });
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([
         ["pr-create", makeCliStepWithVerdict("pr-create", "success")],
@@ -247,7 +273,7 @@ describe("TC-S03: pr-create entry emits [step] pr-create", () => {
 
     await pipeline.run("pr-create", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     expect(stdout).toContain("[step] pr-create");
   });
 });
@@ -263,7 +289,7 @@ describe("TC-S04: pr-create success emits [step] pr-create: success", () => {
       if (step.name === "pr-create") return prResult;
       throw new Error(`Unexpected step: ${step.name}`);
     });
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([
         ["pr-create", makeCliStepWithVerdict("pr-create", "success")],
@@ -281,7 +307,7 @@ describe("TC-S04: pr-create success emits [step] pr-create: success", () => {
 
     await pipeline.run("pr-create", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     expect(stdout).toContain("[step] pr-create: success");
   });
 });
@@ -297,7 +323,7 @@ describe("TC-B03: dsv needs-fix completion emits [step] delta-spec-validation: n
       if (step.name === "delta-spec-validation") return dsvResult;
       throw new Error(`Unexpected step: ${step.name}`);
     });
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([
         ["delta-spec-validation", makeCliStepWithVerdict("delta-spec-validation", "needs-fix")],
@@ -316,7 +342,7 @@ describe("TC-B03: dsv needs-fix completion emits [step] delta-spec-validation: n
 
     await pipeline.run("delta-spec-validation", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     expect(stdout).toContain("[step] delta-spec-validation: needs-fix");
   });
 });
@@ -332,7 +358,7 @@ describe("TC-B06: pr-create error completion emits [step] pr-create: error", () 
       if (step.name === "pr-create") return prResult;
       throw new Error(`Unexpected step: ${step.name}`);
     });
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([
         ["pr-create", makeCliStepWithVerdict("pr-create", "error")],
@@ -350,7 +376,7 @@ describe("TC-B06: pr-create error completion emits [step] pr-create: error", () 
 
     await pipeline.run("pr-create", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     expect(stdout).toContain("[step] pr-create: error");
   });
 });
@@ -366,7 +392,7 @@ describe("TC-S05: CliStep with verdict null emits no completion line", () => {
       if (step.name === "mock-cli") return { ...state, status: "running" };
       throw new Error(`Unexpected step: ${step.name}`);
     });
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([
         // parseResult returns null verdict — getStepOutcome falls through to completionVerdict
@@ -392,7 +418,7 @@ describe("TC-S05: CliStep with verdict null emits no completion line", () => {
 
     await pipeline.run("mock-cli", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     // Entry line appears
     expect(stdout).toContain("[step] mock-cli");
     // But NO completion line (verdict is null in state.steps → getLatestStepResult returns undefined)
@@ -417,7 +443,7 @@ describe("TC-S06: verification (loopNames CliStep) does NOT emit [step] line", (
       if (step.name === "verification") return verificationResult;
       throw new Error(`Unexpected step: ${step.name}`);
     });
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([
         ["verification", {
@@ -442,7 +468,7 @@ describe("TC-S06: verification (loopNames CliStep) does NOT emit [step] line", (
 
     await pipeline.run("verification", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     // iter format appears (loop step)
     expect(stdout).toContain("[iter 1/3] starting verification");
     // [step] format does NOT appear (verification is a loop step, not a non-loop CliStep)
@@ -461,7 +487,7 @@ describe("TC-S07: design (AgentStep non-loopNames) does NOT emit [step] line", (
       if (step.name === "design") return designResult;
       throw new Error(`Unexpected step: ${step.name}`);
     });
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([
         ["design", makeAgentStep("design", "success")],
@@ -479,7 +505,7 @@ describe("TC-S07: design (AgentStep non-loopNames) does NOT emit [step] line", (
 
     await pipeline.run("design", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     // AgentStep non-loopNames: no [step] output (outside scope of this request)
     expect(stdout).not.toContain("[step] design");
     // Also no iter output (not a loop step)

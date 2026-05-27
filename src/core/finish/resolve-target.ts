@@ -14,6 +14,7 @@ import { getJobSlug, stripBranchPrefix, stripJobIdSuffix } from "../../state/job
 import type { JobState } from "../../state/schema.js";
 import type { ResolvedTarget } from "./types.js";
 import type { GitHubClient } from "../../core/port/github-client.js";
+import { logResult } from "../../logger/stdout.js";
 
 export interface ResolveTargetInput {
   /** Positional <slug> argument (first priority). */
@@ -42,7 +43,7 @@ export type ResolveTargetResult =
  */
 export async function resolveTarget(
   input: ResolveTargetInput,
-  stdoutWrite: (msg: string) => void = (m) => process.stdout.write(m + "\n"),
+  stdoutWrite: (msg: string) => void = logResult,
 ): Promise<ResolveTargetResult> {
   const repoRoot = input.cwd ?? process.cwd();
 

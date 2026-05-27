@@ -7,6 +7,7 @@ import { buildScaffoldTemplate } from "./request.js";
 import { checkSlugCollision, write as storeWrite } from "../request/store.js";
 import { draftPath } from "../../util/paths.js";
 import { SpecRunnerError } from "../../errors.js";
+import { stderrWrite, logError } from "../../logger/stdout.js";
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
@@ -22,9 +23,7 @@ export async function executeNew(
 ): Promise<number> {
   // slug validation (path traversal prevention)
   if (!SLUG_REGEX.test(slug)) {
-    process.stderr.write(
-      `Error: Invalid slug '${slug}'. Must match /^[a-z0-9][a-z0-9-]{0,63}$/\n`,
-    );
+    logError(`Invalid slug '${slug}'. Must match /^[a-z0-9][a-z0-9-]{0,63}$/`);
     return 2;
   }
 
@@ -33,7 +32,8 @@ export async function executeNew(
     await checkSlugCollision(cwd, slug);
   } catch (err) {
     if (err instanceof SpecRunnerError) {
-      process.stderr.write(`Error: ${err.message}\nHint: ${err.hint}\n`);
+      logError(err.message);
+      stderrWrite(`Hint: ${err.hint}`);
       return 1;
     }
     throw err;
@@ -49,6 +49,6 @@ export async function executeNew(
   // Write file
   await storeWrite(cwd, slug, content);
 
-  process.stderr.write(`Created: ${draftPath(slug)}\n`);
+  stderrWrite(`Created: ${draftPath(slug)}`);
   return 0;
 }

@@ -69,11 +69,11 @@ function makeFakeTimer() {
   return { timerFn, clearTimerFn, callbacks, clearedIds, activeIds, tick };
 }
 
-let stdoutSpy: ReturnType<typeof vi.spyOn>;
+let stderrSpy: ReturnType<typeof vi.spyOn>;
 let bus: EventBus;
 
 beforeEach(() => {
-  stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+  stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   bus = new EventBus();
 });
 
@@ -89,16 +89,16 @@ describe("TC-6.1: ProgressDisplay — EventBus emit → stdout 出力", () => {
   it("step:start イベントで '[step] running...' を出力する", () => {
     new ProgressDisplay(bus, { verbose: false, slug: "my-slug", heartbeatIntervalSec: 0 });
     bus.emit("step:start", { step: "design", state: makeState() });
-    const output = stdoutSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
+    const output = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(output).toContain("[design] running...");
   });
 
   it("step:complete イベントで '[step] ✓ (Ns)' を出力する", () => {
     new ProgressDisplay(bus, { verbose: false, slug: "my-slug", heartbeatIntervalSec: 0 });
     bus.emit("step:start", { step: "design", state: makeState() });
-    stdoutSpy.mockClear();
+    stderrSpy.mockClear();
     bus.emit("step:complete", { step: "design", state: makeState() });
-    const output = stdoutSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
+    const output = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(output).toContain("[design] ✓");
     expect(output).toMatch(/\d+s/);
   });
@@ -106,9 +106,9 @@ describe("TC-6.1: ProgressDisplay — EventBus emit → stdout 出力", () => {
   it("step:error イベントで '[step] ✗ error (Ns)' を出力する", () => {
     new ProgressDisplay(bus, { verbose: false, slug: "my-slug", heartbeatIntervalSec: 0 });
     bus.emit("step:start", { step: "implementer", state: makeState() });
-    stdoutSpy.mockClear();
+    stderrSpy.mockClear();
     bus.emit("step:error", { step: "implementer", error: new Error("oops"), state: makeState() });
-    const output = stdoutSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
+    const output = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(output).toContain("[implementer] ✗");
     expect(output).toContain("error");
     expect(output).toMatch(/\d+s/);
@@ -117,7 +117,7 @@ describe("TC-6.1: ProgressDisplay — EventBus emit → stdout 出力", () => {
   it("verdict:parsed イベントで verdict 値を出力する", () => {
     new ProgressDisplay(bus, { verbose: false, slug: "my-slug", heartbeatIntervalSec: 0 });
     bus.emit("verdict:parsed", { step: "spec-review", outcome: { verdict: "approved" } });
-    const output = stdoutSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
+    const output = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(output).toContain("[spec-review]");
     expect(output).toContain("approved");
   });
@@ -125,21 +125,21 @@ describe("TC-6.1: ProgressDisplay — EventBus emit → stdout 出力", () => {
   it("verdict:parsed で verdict が null の場合は出力しない", () => {
     new ProgressDisplay(bus, { verbose: false, slug: "my-slug", heartbeatIntervalSec: 0 });
     bus.emit("verdict:parsed", { step: "spec-review", outcome: { verdict: null } });
-    const output = stdoutSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
+    const output = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(output).toBe("");
   });
 
   it("pipeline:complete イベントで 'Next: specrunner job finish <slug>' を出力する", () => {
     new ProgressDisplay(bus, { verbose: false, slug: "my-slug", heartbeatIntervalSec: 0 });
     bus.emit("pipeline:complete", { state: makeState({ status: "awaiting-merge" }) });
-    const output = stdoutSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
+    const output = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(output).toContain("Next: specrunner job finish my-slug");
   });
 
   it("pipeline:fail イベントで failure reason を出力する", () => {
     new ProgressDisplay(bus, { verbose: false, slug: "my-slug", heartbeatIntervalSec: 0 });
     bus.emit("pipeline:fail", { state: makeState({ status: "failed" }), reason: "test failure" });
-    const output = stdoutSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
+    const output = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(output).toContain("test failure");
   });
 });
@@ -177,12 +177,12 @@ describe("TC-HB-1: step:start starts heartbeat timer", () => {
     });
 
     bus.emit("step:start", { step: "implementer", state: makeState() });
-    stdoutSpy.mockClear();
+    stderrSpy.mockClear();
 
     now = 1000 + 45_000; // 45s later
     fake.tick(0);
 
-    const output = stdoutSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
+    const output = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(output).toContain("[implementer] 45s");
   });
 });
@@ -208,12 +208,12 @@ describe("TC-HB-2: step:progress accumulates into heartbeat output", () => {
     bus.emit("step:start", { step: "implementer", state: makeState() });
     bus.emit("step:progress", { step: "implementer", tool: "Edit", target: "src/foo.ts" });
     bus.emit("step:progress", { step: "implementer", tool: "Bash" });
-    stdoutSpy.mockClear();
+    stderrSpy.mockClear();
 
     now += 60_000;
     fake.tick(0);
 
-    const output = stdoutSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
+    const output = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(output).toContain("2 actions");
     expect(output).toContain("last: Bash");
   });
@@ -233,12 +233,12 @@ describe("TC-HB-2: step:progress accumulates into heartbeat output", () => {
 
     bus.emit("step:start", { step: "implementer", state: makeState() });
     bus.emit("step:progress", { step: "implementer", tool: "Read", target: "src/bar.ts" });
-    stdoutSpy.mockClear();
+    stderrSpy.mockClear();
 
     now += 30_000;
     fake.tick(0);
 
-    const output = stdoutSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
+    const output = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(output).toContain("last: Read src/bar.ts");
   });
 });
@@ -278,12 +278,12 @@ describe("TC-HB-3: step:complete stops the heartbeat timer", () => {
 
     bus.emit("step:start", { step: "implementer", state: makeState() });
     bus.emit("step:complete", { step: "implementer", state: makeState() });
-    stdoutSpy.mockClear();
+    stderrSpy.mockClear();
 
     // Timer was cleared, but we simulate a tick to verify currentStep is null
     fake.tick(0);
 
-    const output = stdoutSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
+    const output = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     // Should produce no heartbeat line (currentStep is null)
     expect(output).not.toContain("implementer] ");
   });
@@ -408,12 +408,12 @@ describe("TC-HB-7: TTY=true non-verbose → \\r overwrite", () => {
     });
 
     bus.emit("step:start", { step: "implementer", state: makeState() });
-    stdoutSpy.mockClear();
+    stderrSpy.mockClear();
 
     now += 30_000;
     fake.tick(0);
 
-    const written = stdoutSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
+    const written = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(written).toMatch(/^\r/);
     expect(written).not.toContain("\n");
   });
@@ -430,10 +430,10 @@ describe("TC-HB-7: TTY=true non-verbose → \\r overwrite", () => {
     });
 
     bus.emit("step:start", { step: "implementer", state: makeState() });
-    stdoutSpy.mockClear();
+    stderrSpy.mockClear();
     bus.emit("step:complete", { step: "implementer", state: makeState() });
 
-    const written = stdoutSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
+    const written = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(written).toContain("\r\x1b[K");
     expect(written).toContain("[implementer] ✓");
   });
@@ -458,12 +458,12 @@ describe("TC-HB-8: TTY=false → \\n append", () => {
     });
 
     bus.emit("step:start", { step: "implementer", state: makeState() });
-    stdoutSpy.mockClear();
+    stderrSpy.mockClear();
 
     now += 30_000;
     fake.tick(0);
 
-    const written = stdoutSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
+    const written = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(written).toContain("\n");
     expect(written).not.toMatch(/^\r/);
   });
@@ -482,12 +482,12 @@ describe("TC-HB-8: TTY=false → \\n append", () => {
     });
 
     bus.emit("step:start", { step: "implementer", state: makeState() });
-    stdoutSpy.mockClear();
+    stderrSpy.mockClear();
 
     now += 30_000;
     fake.tick(0);
 
-    const written = stdoutSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
+    const written = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
     expect(written).toContain("\n");
     expect(written).not.toMatch(/^\r/);
   });

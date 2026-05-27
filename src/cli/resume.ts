@@ -1,5 +1,5 @@
 import { SpecRunnerError } from "../errors.js";
-import { setVerbose, resolveVerboseFlag } from "../logger/stdout.js";
+import { setVerbose, resolveVerboseFlag, logError, stderrWrite } from "../logger/stdout.js";
 import { resolveJobStateBySlug } from "../core/resume/resolve-job.js";
 import { bootstrap } from "./bootstrap.js";
 import { ResumeCommand } from "../core/command/resume.js";
@@ -51,8 +51,8 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
     ({ runtime, config } = await bootstrap(cwd, repo));
   } catch (err) {
     const e = err as Error & { hint?: string };
-    process.stderr.write(`Error: ${e.message}\n`);
-    if (err instanceof SpecRunnerError && e.hint) process.stderr.write(`Hint: ${e.hint}\n`);
+    logError(e.message);
+    if (err instanceof SpecRunnerError && e.hint) stderrWrite(`Hint: ${e.hint}`);
     return 1;
   }
 
@@ -66,7 +66,7 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
   try {
     return await new ResumeCommand(runtime, events, slug, options).execute();
   } catch (err) {
-    process.stderr.write(`Error: ${(err as Error).message}\n`);
+    logError((err as Error).message);
     return 1;
   } finally {
     progress.dispose();

@@ -136,13 +136,13 @@ export async function runDeviceFlow(
 ): Promise<{ accessToken: string; scopes: string[] }> {
   const deviceCode = await requestDeviceCode(fetchFn);
 
-  process.stdout.write(
-    `Open ${deviceCode.verification_uri} and enter code: ${deviceCode.user_code}\n`,
+  stderrWrite(
+    `Open ${deviceCode.verification_uri} and enter code: ${deviceCode.user_code}`,
   );
-  process.stdout.write(
-    `Code expires in ${deviceCode.expires_in} seconds.\n`,
+  stderrWrite(
+    `Code expires in ${deviceCode.expires_in} seconds.`,
   );
-  process.stdout.write("Waiting for authorization...\n");
+  stderrWrite("Waiting for authorization...");
 
   const token = await pollAccessToken(
     deviceCode.device_code,

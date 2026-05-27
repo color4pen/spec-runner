@@ -7,6 +7,7 @@ import * as path from "node:path";
 import { readUsageFile } from "../usage/store.js";
 import { archivedChangesDirRel, parseArchiveDirName } from "../../util/paths.js";
 import type { ModelUsage } from "../port/model-usage.js";
+import { stdoutWrite } from "../../logger/stdout.js";
 
 /**
  * Show a summary of token usage across all archived change folders.
@@ -20,7 +21,7 @@ export async function showUsageSummary(cwd: string): Promise<number> {
   try {
     archiveEntries = await fs.readdir(archiveDir);
   } catch {
-    process.stdout.write("No archive directory found.\n");
+    stdoutWrite("No archive directory found.\n");
     return 0;
   }
 
@@ -87,39 +88,39 @@ export async function showUsageSummary(cwd: string): Promise<number> {
   }
 
   if (slugRows.length === 0) {
-    process.stdout.write("No usage data found in archive.\n");
+    stdoutWrite("No usage data found in archive.\n");
     if (skippedCount > 0) {
-      process.stdout.write(`(${skippedCount} archive entries skipped — no usage.json)\n`);
+      stdoutWrite(`(${skippedCount} archive entries skipped — no usage.json)\n`);
     }
     return 0;
   }
 
-  process.stdout.write(`Usage Summary (${slugRows.length} archive entries)\n`);
-  process.stdout.write(`${"─".repeat(60)}\n`);
+  stdoutWrite(`Usage Summary (${slugRows.length} archive entries)\n`);
+  stdoutWrite(`${"─".repeat(60)}\n`);
 
   for (const { slug, totals } of slugRows) {
-    process.stdout.write(`${slug}:\n`);
+    stdoutWrite(`${slug}:\n`);
     for (const [model, usage] of Object.entries(totals)) {
-      process.stdout.write(
+      stdoutWrite(
         `  ${model}: in=${usage.inputTokens} out=${usage.outputTokens} cacheRead=${usage.cacheReadInputTokens} cacheCreate=${usage.cacheCreationInputTokens}\n`,
       );
     }
   }
 
-  process.stdout.write(`\n${"─".repeat(60)}\n`);
-  process.stdout.write(`Grand Total:\n`);
+  stdoutWrite(`\n${"─".repeat(60)}\n`);
+  stdoutWrite(`Grand Total:\n`);
   if (Object.keys(grandTotals).length === 0) {
-    process.stdout.write(`  (no usage data)\n`);
+    stdoutWrite(`  (no usage data)\n`);
   } else {
     for (const [model, usage] of Object.entries(grandTotals)) {
-      process.stdout.write(
+      stdoutWrite(
         `  ${model}: in=${usage.inputTokens} out=${usage.outputTokens} cacheRead=${usage.cacheReadInputTokens} cacheCreate=${usage.cacheCreationInputTokens}\n`,
       );
     }
   }
 
   if (skippedCount > 0) {
-    process.stdout.write(`\n(${skippedCount} archive entries skipped — no usage.json)\n`);
+    stdoutWrite(`\n(${skippedCount} archive entries skipped — no usage.json)\n`);
   }
 
   return 0;

@@ -28,6 +28,30 @@ import { makeStoreFactory } from "../../helpers/store-factory.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
+/** Subscribe inline progress-style handlers that write pipeline events to stderr. */
+function subscribeProgressToEvents(events: EventBus): void {
+  events.on("pipeline:iteration:start", (p) => {
+    process.stderr.write(`[iter ${p.iteration}/${p.maxIterations}] starting ${p.step}\n`);
+  });
+  events.on("pipeline:iteration:verdict", (p) => {
+    const actionLabel = p.action === "done" ? "done" : p.action === "halt" ? "halt" : "spawning fixer";
+    process.stderr.write(`[iter ${p.iteration}] ${p.step} verdict: ${p.verdict} → ${actionLabel}\n`);
+  });
+  events.on("pipeline:iteration:exhausted", (p) => {
+    process.stderr.write(`[iter ${p.iteration}/${p.maxIterations}] retries exhausted on ${p.step}, escalating\n`);
+  });
+  events.on("pipeline:summary", (p) => {
+    process.stderr.write(`Pipeline finished: ${p.step} iterations=${p.iterations}, final verdict=${p.finalVerdict}\n`);
+  });
+  events.on("pipeline:cli-step", (p) => {
+    if (p.verdict !== undefined) {
+      process.stderr.write(`[step] ${p.step}: ${p.verdict}\n`);
+    } else {
+      process.stderr.write(`[step] ${p.step}\n`);
+    }
+  });
+}
+
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
 
@@ -111,6 +135,7 @@ function buildMockPipeline(opts: {
   maxIterations?: number;
 }): { pipeline: Pipeline; events: EventBus; executeSpy: ReturnType<typeof vi.fn> } {
   const events = new EventBus();
+  subscribeProgressToEvents(events);
 
   let specReviewCallCount = 0;
   let specFixerCallCount = 0;
@@ -428,6 +453,7 @@ describe("TC-063: Pipeline — loop exhaustion: SPEC_REVIEW_RETRIES_EXHAUSTED", 
     ]);
 
     const events = new EventBus();
+    subscribeProgressToEvents(events);
     const pipeline = new Pipeline({
       steps,
       transitions: STANDARD_TRANSITIONS,
@@ -446,7 +472,7 @@ describe("TC-063: Pipeline — loop exhaustion: SPEC_REVIEW_RETRIES_EXHAUSTED", 
     // Should have SPEC_REVIEW_RETRIES_EXHAUSTED error (dsv not in loopNames → spec-review exhausts)
     expect(result.error?.code).toBe("SPEC_REVIEW_RETRIES_EXHAUSTED");
 
-    const stdout = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+    const stdout = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))
       .join("");
     expect(stdout).toContain("[iter 2/2] retries exhausted on spec-review, escalating");
@@ -474,7 +500,7 @@ describe("TC-065: Pipeline — spec-review escalation halts without running fixe
     expect(specFixerCalls).toHaveLength(0);
 
     // Check stdout contains escalation halt message
-    const stdout = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+    const stdout = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))
       .join("");
     expect(stdout).toContain("[iter 1] spec-review verdict: escalation → halt");
@@ -623,7 +649,7 @@ describe("TC-068: Pipeline stdout — iter format bit-for-bit preserved", () => 
 
     await pipeline.run("design", state, deps);
 
-    const stdout = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+    const stdout = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))
       .join("");
 

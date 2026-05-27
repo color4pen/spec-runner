@@ -13,7 +13,7 @@ import * as path from "node:path";
 import { parseRequestMdContent } from "../../parser/request-md.js";
 import { SpecRunnerError } from "../../errors.js";
 import { runReview } from "../request/reviewer.js";
-import { stderrWrite } from "../../logger/stdout.js";
+import { stderrWrite, logError, stdoutWrite } from "../../logger/stdout.js";
 import type { OneShotQueryClient } from "../port/one-shot-query-client.js";
 import { appendInvocation } from "../usage/store.js";
 import { draftUsageJsonPath } from "../../util/paths.js";
@@ -51,7 +51,7 @@ export async function executeReview(
     content = await fs.readFile(filePath, "utf-8");
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    process.stderr.write(`Error: ${message}\n`);
+    logError(message);
     return 1;
   }
 
@@ -60,10 +60,10 @@ export async function executeReview(
     parseRequestMdContent(content, filePath);
   } catch (err) {
     if (err instanceof SpecRunnerError) {
-      process.stderr.write(`Error: ${err.message}\n`);
-      process.stderr.write(`Hint: ${err.hint}\n`);
+      logError(err.message);
+      stderrWrite(`Hint: ${err.hint}`);
     } else {
-      process.stderr.write(`Error: ${(err as Error).message}\n`);
+      logError((err as Error).message);
     }
     return 1;
   }
@@ -90,11 +90,11 @@ export async function executeReview(
   } catch (err) {
     if (err instanceof SpecRunnerError) {
       stderrWrite("✗ Failed: " + err.message);
-      process.stderr.write(`Error: ${err.message}\n`);
+      logError(err.message);
     } else {
       const message = err instanceof Error ? err.message : String(err);
       stderrWrite("✗ Failed: " + message);
-      process.stderr.write(`Error: Review session failed: ${message}\n`);
+      logError(`Review session failed: ${message}`);
     }
     return 1;
   }
@@ -102,10 +102,10 @@ export async function executeReview(
 
   // Step 10: Output
   if (opts.json) {
-    process.stdout.write(JSON.stringify(result, null, 2) + "\n");
+    stdoutWrite(JSON.stringify(result, null, 2) + "\n");
   } else {
     const { formatHumanReadable } = await import("../request/reviewer.js");
-    process.stdout.write(formatHumanReadable(result) + "\n");
+    stdoutWrite(formatHumanReadable(result) + "\n");
   }
 
   // Step 12: Return exit code based on verdict

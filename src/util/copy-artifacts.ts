@@ -7,6 +7,7 @@ import * as path from "node:path";
 import type { SpawnFn } from "./spawn.js";
 import { rulesDestPath, usageJsonPath } from "./paths.js";
 import { RULES_MD_CONTENT } from "../prompts/rules.js";
+import { stderrWrite } from "../logger/stdout.js";
 
 /**
  * Writes embedded rules content into the change folder
@@ -26,8 +27,8 @@ export async function copyRulesToChangeFolder(
   await fs.writeFile(dest, RULES_MD_CONTENT);
   const result = await spawnFn("git", ["add", rulesDestPath(slug)], { cwd: repoRoot });
   if (result.exitCode !== 0) {
-    process.stderr.write(
-      `Warning: failed to stage change folder rules.md: ${result.stderr.trim()}\n`,
+    stderrWrite(
+      `Warning: failed to stage change folder rules.md: ${result.stderr.trim()}`,
     );
   }
 }

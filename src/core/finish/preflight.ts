@@ -29,6 +29,7 @@ import { formatEscalation } from "./escalation.js";
 import { fetchPrViewWithRetry } from "./pr-status.js";
 import { checkoutForValidation, restoreBranch } from "./branch-checkout.js";
 import { changeFolderPath } from "../../util/paths.js";
+import { stderrWrite as logStderrWrite } from "../../logger/stdout.js";
 
 export type { PrViewData };
 
@@ -59,7 +60,7 @@ export type PreflightResult =
  */
 export async function runPreflight(input: PreflightInput): Promise<PreflightResult> {
   const { target, cwd, spawn, fs, dryRun, githubClient, owner, repo } = input;
-  const warn = input.warnFn ?? ((m: string) => process.stderr.write(m));
+  const warn = input.warnFn ?? logStderrWrite;
 
   // Check 2: pullRequest.number must exist (already validated in resolveTarget,
   // but re-check here for clarity in escalation messaging)

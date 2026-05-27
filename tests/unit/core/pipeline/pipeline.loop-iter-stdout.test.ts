@@ -107,10 +107,36 @@ function makeAgentStep(name: string, completionVerdict?: string): Step {
   };
 }
 
-function getCapturedStdout(): string {
-  return (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+function getCapturedStderr(): string {
+  return (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls
     .map((args: unknown[]) => String(args[0]))
     .join("");
+}
+
+/** Create an EventBus with inline progress-style subscribers that write to stderr. */
+function makeEventsWithProgress(): EventBus {
+  const events = new EventBus();
+  events.on("pipeline:iteration:start", (p) => {
+    process.stderr.write(`[iter ${p.iteration}/${p.maxIterations}] starting ${p.step}\n`);
+  });
+  events.on("pipeline:iteration:verdict", (p) => {
+    const actionLabel = p.action === "done" ? "done" : p.action === "halt" ? "halt" : "spawning fixer";
+    process.stderr.write(`[iter ${p.iteration}] ${p.step} verdict: ${p.verdict} → ${actionLabel}\n`);
+  });
+  events.on("pipeline:iteration:exhausted", (p) => {
+    process.stderr.write(`[iter ${p.iteration}/${p.maxIterations}] retries exhausted on ${p.step}, escalating\n`);
+  });
+  events.on("pipeline:summary", (p) => {
+    process.stderr.write(`Pipeline finished: ${p.step} iterations=${p.iterations}, final verdict=${p.finalVerdict}\n`);
+  });
+  events.on("pipeline:cli-step", (p) => {
+    if (p.verdict !== undefined) {
+      process.stderr.write(`[step] ${p.step}: ${p.verdict}\n`);
+    } else {
+      process.stderr.write(`[step] ${p.step}\n`);
+    }
+  });
+  return events;
 }
 
 function makeStateWithVerdict(base: JobState, stepName: string, verdict: string, iter: number): JobState {
@@ -139,7 +165,7 @@ describe("TC-L01: spec-review iter start uses currentStep name", () => {
       if (step.name === "spec-review") return specReviewResult;
       throw new Error(`Unexpected step: ${step.name}`);
     });
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([["spec-review", makeAgentStep("spec-review")]]),
       transitions: [
@@ -156,7 +182,7 @@ describe("TC-L01: spec-review iter start uses currentStep name", () => {
 
     await pipeline.run("spec-review", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     expect(stdout).toContain(`[iter 1/${maxIterations}] starting spec-review`);
   });
 });
@@ -173,7 +199,7 @@ describe("TC-L02: verification iter start uses currentStep name", () => {
       if (step.name === "verification") return verificationResult;
       throw new Error(`Unexpected step: ${step.name}`);
     });
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([
         ["verification", {
@@ -198,7 +224,7 @@ describe("TC-L02: verification iter start uses currentStep name", () => {
 
     await pipeline.run("verification", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     expect(stdout).toContain(`[iter 1/${maxIterations}] starting verification`);
   });
 });
@@ -215,7 +241,7 @@ describe("TC-L03: code-review iter start uses currentStep name", () => {
       if (step.name === "code-review") return codeReviewResult;
       throw new Error(`Unexpected step: ${step.name}`);
     });
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([["code-review", makeAgentStep("code-review")]]),
       transitions: [
@@ -232,7 +258,7 @@ describe("TC-L03: code-review iter start uses currentStep name", () => {
 
     await pipeline.run("code-review", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     expect(stdout).toContain(`[iter 1/${maxIterations}] starting code-review`);
   });
 });
@@ -248,7 +274,7 @@ describe("TC-L04: verdict display uses currentStep name for all loopNames steps"
       if (step.name === "spec-review") return specReviewResult;
       throw new Error(`Unexpected step: ${step.name}`);
     });
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([["spec-review", makeAgentStep("spec-review")]]),
       transitions: [
@@ -265,7 +291,7 @@ describe("TC-L04: verdict display uses currentStep name for all loopNames steps"
 
     await pipeline.run("spec-review", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     expect(stdout).toContain("spec-review verdict: approved → done");
   });
 
@@ -283,7 +309,7 @@ describe("TC-L04: verdict display uses currentStep name for all loopNames steps"
       if (step.name === "spec-fixer") return state;
       throw new Error(`Unexpected step: ${step.name}`);
     });
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([
         ["spec-review", makeAgentStep("spec-review")],
@@ -306,7 +332,7 @@ describe("TC-L04: verdict display uses currentStep name for all loopNames steps"
 
     await pipeline.run("spec-review", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     expect(stdout).toContain("spec-review verdict: needs-fix → spawning fixer");
   });
 
@@ -320,7 +346,7 @@ describe("TC-L04: verdict display uses currentStep name for all loopNames steps"
       if (step.name === "code-review") return codeReviewResult;
       throw new Error(`Unexpected step: ${step.name}`);
     });
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([["code-review", makeAgentStep("code-review")]]),
       transitions: [
@@ -337,7 +363,7 @@ describe("TC-L04: verdict display uses currentStep name for all loopNames steps"
 
     await pipeline.run("code-review", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     expect(stdout).toContain("code-review verdict: escalation → halt");
   });
 
@@ -357,7 +383,7 @@ describe("TC-L04: verdict display uses currentStep name for all loopNames steps"
       if (step.name === "build-fixer") return state;
       throw new Error(`Unexpected step: ${step.name}`);
     });
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([
         ["verification", {
@@ -386,7 +412,7 @@ describe("TC-L04: verdict display uses currentStep name for all loopNames steps"
 
     await pipeline.run("verification", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     // Bug-fix: should say "verification" not "spec-review" (old loopName)
     expect(stdout).toContain("verification verdict: needs-fix → spawning fixer");
     expect(stdout).not.toContain("spec-review verdict: needs-fix → spawning fixer");
@@ -419,7 +445,7 @@ describe("TC-C02: fixer exhaustion stdout uses review name not fixer name (L330 
       throw new Error(`Unexpected step: ${step.name}`);
     });
 
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([
         ["spec-review", makeAgentStep("spec-review")],
@@ -442,7 +468,7 @@ describe("TC-C02: fixer exhaustion stdout uses review name not fixer name (L330 
 
     await pipeline.run("spec-review", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     // L330 path: fixer exhausted → exhaustedLoopName = "spec-review" (the paired review)
     expect(stdout).toContain("retries exhausted on spec-review");
     // Must NOT use the fixer name
@@ -466,7 +492,7 @@ describe("TC-L05: TC-068 regression guard — spec-review iter start preserved",
       if (step.name === "spec-review") return specReviewResult;
       throw new Error(`Unexpected step: ${step.name}`);
     });
-    const events = new EventBus();
+    const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([["spec-review", makeAgentStep("spec-review")]]),
       transitions: [
@@ -483,7 +509,7 @@ describe("TC-L05: TC-068 regression guard — spec-review iter start preserved",
 
     await pipeline.run("spec-review", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     expect(stdout).toContain(`[iter 1/${maxIterations}] starting spec-review`);
   });
 });

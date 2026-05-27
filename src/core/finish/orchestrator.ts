@@ -36,6 +36,7 @@ import { TERMINAL_STATUSES } from "../../state/lifecycle.js";
 import { formatEscalation } from "./escalation.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import { createWorktreeManager } from "../worktree/manager.js";
+import { logResult, stderrWrite as logStderrWrite } from "../../logger/stdout.js";
 
 export interface FinishInput {
   /** Positional slug argument. */
@@ -73,7 +74,7 @@ export type FinishResult =
  */
 export async function runFinishOrchestrator(
   input: FinishInput,
-  stdoutWrite: (msg: string) => void = (m) => process.stdout.write(m + "\n"),
+  stdoutWrite: (msg: string) => void = logResult,
 ): Promise<FinishResult> {
   const { slug, prNumber, jobId, baseBranch, flags, cwd, spawn, fs, sleepFn, worktreeManagerFn, githubClient, owner, repo } = input;
 
@@ -285,7 +286,7 @@ async function runPhase1Archive(params: {
     if (!usageResult.skipped) stdoutWrite(usageResult.message);
   } catch {
     // Best-effort: failure must not block finish
-    process.stderr.write(`Warning: failed to derive usage for ${target.slug}. Continuing finish.\n`);
+    logStderrWrite(`Warning: failed to derive usage for ${target.slug}. Continuing finish.`);
   }
 
   // archive change folder (specrunner/changes/<slug>/ → specrunner/changes/archive/<slug>/)
@@ -375,7 +376,7 @@ async function runPhase4Finalize(params: {
       await manager.prune(cwd);
     } catch {
       // Best-effort: don't fail finish if worktree cleanup fails
-      process.stderr.write(`Warning: failed to remove worktree at ${operationCwd}. Run 'git worktree prune' manually.\n`);
+      logStderrWrite(`Warning: failed to remove worktree at ${operationCwd}. Run 'git worktree prune' manually.`);
     }
     // Clear worktreePath in state (best-effort — state is already archived)
     try {
@@ -383,7 +384,7 @@ async function runPhase4Finalize(params: {
       const current = await store.load();
       await store.persist({ ...current, worktreePath: null });
     } catch {
-      process.stderr.write(`Warning: failed to clear worktreePath for job ${target.jobId}.\n`);
+      logStderrWrite(`Warning: failed to clear worktreePath for job ${target.jobId}.`);
     }
     // main cwd is clean — no checkout/pull needed
   } else {
@@ -395,11 +396,11 @@ async function runPhase4Finalize(params: {
     if (isOnMain) {
       const checkoutResult = await spawn("git", ["checkout", baseBranch], { cwd });
       if (checkoutResult.exitCode !== 0) {
-        process.stderr.write(`Warning: failed to checkout ${baseBranch} in Phase 4. Run manually: git checkout ${baseBranch}\n`);
+        logStderrWrite(`Warning: failed to checkout ${baseBranch} in Phase 4. Run manually: git checkout ${baseBranch}`);
       } else {
         const pullResult = await spawn("git", ["pull", "--ff-only"], { cwd });
         if (pullResult.exitCode !== 0) {
-          process.stderr.write(`Warning: failed to git pull --ff-only in Phase 4. Run manually: git pull --ff-only\n`);
+          logStderrWrite(`Warning: failed to git pull --ff-only in Phase 4. Run manually: git pull --ff-only`);
         }
       }
     } else {
@@ -416,11 +417,11 @@ async function runPhase4Finalize(params: {
   // Delete feature branch (best-effort, after worktree is freed)
   const localDelResult = await spawn("git", ["branch", "-D", target.branch], { cwd });
   if (localDelResult.exitCode !== 0) {
-    process.stderr.write(`Warning: failed to delete local branch ${target.branch}\n`);
+    logStderrWrite(`Warning: failed to delete local branch ${target.branch}`);
   }
   const remoteDelResult = await spawn("git", ["push", "origin", "--delete", target.branch], { cwd });
   if (remoteDelResult.exitCode !== 0) {
-    process.stderr.write(`Warning: failed to delete remote branch ${target.branch}\n`);
+    logStderrWrite(`Warning: failed to delete remote branch ${target.branch}`);
   }
 
   return { ok: true };

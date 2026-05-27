@@ -18,6 +18,7 @@ import type { SpecRunnerConfig } from "../config/schema.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
+import { stdoutWrite } from "../logger/stdout.js";
 
 const execFileAsync = promisify(childProcess.execFile);
 
@@ -150,7 +151,7 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
 
   // Output
   const output = opts.json ? formatJson(results) : formatHuman(results);
-  process.stdout.write(output + "\n");
+  stdoutWrite(output + "\n");
 
   // Return exit code: 1 if any fail, 0 otherwise
   const hasFail = results.some((r) => r.status === "fail");

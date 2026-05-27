@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "verification": {
+    "commands": [
+      { "name": "build", "run": "bun run build" },
+      { "name": "typecheck", "run": "bun run typecheck" },
+      { "name": "test", "run": "bun run test" },
+      { "name": "lint", "run": "bun run lint" }
+    ]
+  }
+}

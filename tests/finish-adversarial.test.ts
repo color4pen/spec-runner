@@ -137,11 +137,11 @@ describe("TC-104: mergeStateStatus UNKNOWN → CLEAN after 1 retry → success",
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.prViewData.mergeStateStatus).toBe("CLEAN");
-    // stdout.write should have been called with retry message
-    const stdoutCalls = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+    // stderrWrite should have been called with retry message
+    const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))
       .join("");
-    expect(stdoutCalls).toContain("Retrying check 4");
+    expect(stderrCalls).toContain("Retrying check 4");
   });
 });
 

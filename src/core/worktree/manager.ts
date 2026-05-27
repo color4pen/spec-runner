@@ -15,6 +15,7 @@ import * as path from "node:path";
 import * as fs from "node:fs/promises";
 import type { SpawnFn } from "../../util/spawn.js";
 import { spawnCommand } from "../../util/spawn.js";
+import { stderrWrite } from "../../logger/stdout.js";
 
 export interface WorktreeManager {
   /**
@@ -107,7 +108,7 @@ export function createWorktreeManager(spawnFn?: SpawnFn, rmFn?: RmFn, sleepFn?: 
         }
 
         const delayMs = 1000 + Math.floor(Math.random() * 4000);
-        process.stderr.write(`Retrying worktree add: lock contention (attempt ${attempt}/${MAX_RETRIES})\n`);
+        stderrWrite(`Retrying worktree add: lock contention (attempt ${attempt}/${MAX_RETRIES})`);
         await sleep(delayMs);
       }
 

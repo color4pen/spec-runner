@@ -32,7 +32,7 @@ import type { StepContext } from "../../core/types.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
 import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
-import { logVerbose } from "../../logger/stdout.js";
+import { logVerbose, stderrWrite } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../../core/lifecycle/diagnostic.js";
 
 export type { SpawnFn } from "./git-exec.js";
@@ -231,8 +231,8 @@ export class ClaudeCodeRunner implements AgentRunner {
         }
         // If we were attempting a session resume, try falling back to a new session.
         if (ctx.resumeSessionId) {
-          process.stderr.write(
-            `[specrunner] warn: session resume failed for '${step.name}' (session: ${ctx.resumeSessionId}): ${(innerErr as Error).message}. Falling back to new session.\n`,
+          stderrWrite(
+            `[specrunner] warn: session resume failed for '${step.name}' (session: ${ctx.resumeSessionId}): ${(innerErr as Error).message}. Falling back to new session.`,
           );
           delete queryOptions["resume"];
           queryResult = await runQuery();

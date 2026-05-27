@@ -1,3 +1,5 @@
+import { stderrWrite } from "../../logger/stdout.js";
+
 /**
  * Pipeline diagnostic logger.
  *
@@ -12,7 +14,7 @@ export function logPipelineDiag(point: string, detail?: string): void {
   const ts = new Date().toISOString();
   const line =
     detail !== undefined
-      ? `[pipeline-diag ${ts}] ${point}: ${detail}\n`
-      : `[pipeline-diag ${ts}] ${point}\n`;
-  process.stderr.write(line);
+      ? `[pipeline-diag ${ts}] ${point}: ${detail}`
+      : `[pipeline-diag ${ts}] ${point}`;
+  stderrWrite(line);
 }

@@ -122,24 +122,24 @@ export function maskSensitive(text: string): string {
 }
 
 /**
- * Log a progress message to stdout. Sensitive values are masked.
+ * Log a progress message to stderr. Sensitive values are masked.
  */
 export function logInfo(message: string): void {
-  process.stdout.write(maskSensitive(message) + "\n");
+  process.stderr.write(maskSensitive(message) + "\n");
 }
 
 /**
  * Log a step progress with a bullet point.
  */
 export function logStep(message: string): void {
-  process.stdout.write("  " + maskSensitive(message) + "\n");
+  process.stderr.write("  " + maskSensitive(message) + "\n");
 }
 
 /**
- * Log a success message to stdout.
+ * Log a success message to stderr.
  */
 export function logSuccess(message: string): void {
-  process.stdout.write("OK " + maskSensitive(message) + "\n");
+  process.stderr.write("OK " + maskSensitive(message) + "\n");
 }
 
 /**
@@ -176,8 +176,17 @@ export function stderrWrite(message: string): void {
 
 /**
  * Write raw message to stdout (without newline append).
- * Used for iteration progress and pipeline summary lines.
+ * Sensitive values are masked before output.
  */
 export function stdoutWrite(message: string): void {
-  process.stdout.write(message);
+  process.stdout.write(maskSensitive(message));
+}
+
+/**
+ * Write a result line to stdout (with newline append).
+ * Used for program result data (PR URL, job ID, table output, etc.)
+ * that should be pipe-safe. Sensitive values are masked.
+ */
+export function logResult(message: string): void {
+  process.stdout.write(maskSensitive(message) + "\n");
 }

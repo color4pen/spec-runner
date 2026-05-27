@@ -4,6 +4,7 @@ import { getJobSlug } from "../state/job-slug.js";
 import { ACTIVE_STATUSES } from "../state/lifecycle.js";
 import type { GitHubClient } from "../core/port/github-client.js";
 import { resolveRepoRoot } from "../util/repo-root.js";
+import { stdoutWrite } from "../logger/stdout.js";
 
 /**
  * Format a job age in human-readable form.
@@ -142,7 +143,7 @@ export async function runPs(
   }
 
   if (jobs.length === 0) {
-    process.stdout.write("No jobs found.\n");
+    stdoutWrite("No jobs found.\n");
     return;
   }
 
@@ -174,17 +175,15 @@ export async function runPs(
       "BRANCH".padEnd(40),
       "AGE".padEnd(8),
     ].join("  ");
-    process.stdout.write(header + "\n");
-    process.stdout.write("-".repeat(header.length) + "\n");
+    stdoutWrite(header + "\n");
+    stdoutWrite("-".repeat(header.length) + "\n");
   } else {
-    process.stdout.write(
-      ["JOB_ID", "SLUG", "STEP", "STATUS", "BRANCH", "AGE"].join("\t") + "\n",
-    );
+    stdoutWrite(["JOB_ID", "SLUG", "STEP", "STATUS", "BRANCH", "AGE"].join("\t") + "\n");
   }
 
   const nowMs = Date.now();
   for (const job of sorted) {
     const prMerged = prMergedMap.get(job.jobId);
-    process.stdout.write(formatJobRow(job, isTty, nowMs, prMerged) + "\n");
+    stdoutWrite(formatJobRow(job, isTty, nowMs, prMerged) + "\n");
   }
 }

@@ -4,10 +4,7 @@ import { runVerification } from "../verification/runner.js";
 import { propagateVerificationResult } from "../verification/propagate.js";
 import { verificationResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
-
-const stderrWrite = (msg: string): void => {
-  process.stderr.write(msg);
-};
+import { stderrWrite } from "../../logger/stdout.js";
 
 /**
  * VerificationStep: implements the verification pipeline step as a CLI-resident step.

@@ -137,10 +137,34 @@ function makeSpecReviewState(base: JobState, verdict: "approved" | "needs-fix" |
   };
 }
 
-function getCapturedStdout(): string[] {
-  return (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+function getCapturedStderr(): string[] {
+  return (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls
     .flatMap((args: unknown[]) => String(args[0]).split("\n"))
     .filter((line: string) => line.length > 0);
+}
+
+/** Subscribe inline progress-style handlers that write pipeline events to stderr. */
+function subscribeProgressToEvents(events: EventBus): void {
+  events.on("pipeline:iteration:start", (p) => {
+    process.stderr.write(`[iter ${p.iteration}/${p.maxIterations}] starting ${p.step}\n`);
+  });
+  events.on("pipeline:iteration:verdict", (p) => {
+    const actionLabel = p.action === "done" ? "done" : p.action === "halt" ? "halt" : "spawning fixer";
+    process.stderr.write(`[iter ${p.iteration}] ${p.step} verdict: ${p.verdict} → ${actionLabel}\n`);
+  });
+  events.on("pipeline:iteration:exhausted", (p) => {
+    process.stderr.write(`[iter ${p.iteration}/${p.maxIterations}] retries exhausted on ${p.step}, escalating\n`);
+  });
+  events.on("pipeline:summary", (p) => {
+    process.stderr.write(`Pipeline finished: ${p.step} iterations=${p.iterations}, final verdict=${p.finalVerdict}\n`);
+  });
+  events.on("pipeline:cli-step", (p) => {
+    if (p.verdict !== undefined) {
+      process.stderr.write(`[step] ${p.step}: ${p.verdict}\n`);
+    } else {
+      process.stderr.write(`[step] ${p.step}\n`);
+    }
+  });
 }
 
 // TC-027: [iter N/M] format — approved verdict matches bit-for-bit
@@ -157,6 +181,7 @@ describe("TC-027: stdout [iter N/M] — approved verdict line is bit-for-bit exa
     const specReviewResult = makeSpecReviewState(designResult, "approved", 1);
 
     const events = new EventBus();
+    subscribeProgressToEvents(events);
     const executeSpy = vi.fn().mockImplementation(async (step: Step) => {
       if (step.name === "design") return designResult;
       if (step.name === "spec-review") return specReviewResult;
@@ -191,7 +216,7 @@ describe("TC-027: stdout [iter N/M] — approved verdict line is bit-for-bit exa
 
     await pipeline.run("design", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     // Exact format pinned per pipeline.ts runSpecReviewLoop:
     // - iteration start: [iter N/M] starting <loopName>
     // - verdict: [iter N] <loopName> verdict: approved → done
@@ -212,6 +237,7 @@ describe("TC-028: stdout [iter N/M] — needs-fix continuation line is bit-for-b
     const specReview2 = makeSpecReviewState(specFixerResult, "approved", 2);
 
     const events = new EventBus();
+    subscribeProgressToEvents(events);
     let specReviewCall = 0;
     const executeSpy = vi.fn().mockImplementation(async (step: Step) => {
       if (step.name === "design") return designResult;
@@ -250,7 +276,7 @@ describe("TC-028: stdout [iter N/M] — needs-fix continuation line is bit-for-b
 
     await pipeline.run("design", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     // Exact format pinned per pipeline.ts runSpecReviewLoop:
     // - [iter N] <loopName> verdict: needs-fix → spawning fixer
     expect(stdout).toContain(`[iter 1] ${LOOP_NAME} verdict: needs-fix → spawning fixer`);
@@ -270,6 +296,7 @@ describe("TC-029: stdout [iter N/M] — retries exhausted line is bit-for-bit ex
     const specReview2 = makeSpecReviewState(specReview1, "needs-fix", 2);
 
     const events = new EventBus();
+    subscribeProgressToEvents(events);
     const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       if (step.name === "design") return designResult;
       if (step.name === "spec-fixer") return { ...designResult };
@@ -301,7 +328,7 @@ describe("TC-029: stdout [iter N/M] — retries exhausted line is bit-for-bit ex
 
     await pipeline.run("design", state, deps);
 
-    const stdout = getCapturedStdout();
+    const stdout = getCapturedStderr();
     // Exact format pinned: [iter 2/2] retries exhausted, escalating
     expect(stdout).toContain(`[iter ${maxIterations}/${maxIterations}] retries exhausted on spec-review, escalating`);
   });

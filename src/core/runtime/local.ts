@@ -22,6 +22,7 @@ import { JobStateStore } from "../../store/job-state-store.js";
 import { changeFolderPath } from "../../util/paths.js";
 import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder } from "../../util/copy-artifacts.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./strategy.js";
+import { stderrWrite } from "../../logger/stdout.js";
 
 // Internal structure stored inside CleanupHandle
 interface LocalCleanupInternals {
@@ -197,8 +198,8 @@ export class LocalRuntime implements RuntimeStrategy {
     if (behindResult.exitCode === 0) {
       const behind = parseInt(behindResult.stdout.trim(), 10);
       if (!isNaN(behind) && behind > 0) {
-        process.stderr.write(
-          `Warning: local ${baseBranch} is ${behind} commit(s) behind ${remoteBaseRef}. Worktree will be created from ${remoteBaseRef}.\n`,
+        stderrWrite(
+          `Warning: local ${baseBranch} is ${behind} commit(s) behind ${remoteBaseRef}. Worktree will be created from ${remoteBaseRef}.`,
         );
       }
     }
@@ -252,8 +253,8 @@ export class LocalRuntime implements RuntimeStrategy {
           await fs.rm(opts.requestFilePath);
         }
       } catch {
-        process.stderr.write(
-          `Warning: failed to delete draft file ${opts.requestFilePath} from main worktree. Remove it manually.\n`,
+        stderrWrite(
+          `Warning: failed to delete draft file ${opts.requestFilePath} from main worktree. Remove it manually.`,
         );
       }
 

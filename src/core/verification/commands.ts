@@ -39,16 +39,24 @@ export function normalizeCommands(raw: VerificationCommand[]): NormalizedCommand
  * Uses POSIX shell (`sh -c`), which supports pipes, redirects, glob expansion,
  * environment variable expansion, and command chaining (`&&`, `||`, `;`).
  * Windows is not supported (POSIX shell assumed).
+ *
+ * Prepends `<cwd>/node_modules/.bin` to PATH so that locally-installed binaries
+ * (tsc, eslint, vitest, etc.) are found even when sh does not inherit them from
+ * the parent process environment.
  */
 export function spawnCommand(
   command: string,
   cwd: string,
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+  const localBin = `${cwd}/node_modules/.bin`;
+  const pathWithLocalBin = process.env.PATH
+    ? `${localBin}:${process.env.PATH}`
+    : localBin;
   return new Promise((resolve) => {
     const child = spawn("sh", ["-c", command], {
       cwd,
       shell: false,
-      env: process.env,
+      env: { ...process.env, PATH: pathWithLocalBin },
     });
 
     let stdoutBuf = "";

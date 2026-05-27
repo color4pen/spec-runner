@@ -10,6 +10,7 @@
 import type { GitHubClient } from "../../core/port/github-client.js";
 import type { PrViewData } from "./types.js";
 import { formatEscalation } from "./escalation.js";
+import { stderrWrite } from "../../logger/stdout.js";
 
 export type { PrViewData };
 
@@ -75,8 +76,8 @@ export async function fetchPrViewWithRetry(params: {
         return { ok: true, data: parsed };
       }
       if (attempt < UNKNOWN_RETRY_COUNT) {
-        process.stdout.write(
-          `Retrying check 4: mergeStateStatus was UNKNOWN (attempt ${attempt}/${UNKNOWN_RETRY_COUNT})...\n`,
+        stderrWrite(
+          `Retrying check 4: mergeStateStatus was UNKNOWN (attempt ${attempt}/${UNKNOWN_RETRY_COUNT})...`,
         );
         await sleepImpl(UNKNOWN_RETRY_DELAY_MS);
         continue;
@@ -162,8 +163,8 @@ export async function checkMergeableForMerge(params: {
 
     // UNKNOWN: retry with delay
     if (attempt < MERGEABLE_RETRY_COUNT) {
-      process.stdout.write(
-        `Retrying Phase 3 mergeable check: UNKNOWN (attempt ${attempt}/${MERGEABLE_RETRY_COUNT})...\n`,
+      stderrWrite(
+        `Retrying Phase 3 mergeable check: UNKNOWN (attempt ${attempt}/${MERGEABLE_RETRY_COUNT})...`,
       );
       await sleepImpl(MERGEABLE_RETRY_DELAY_MS);
       continue;
@@ -232,8 +233,8 @@ export async function pollMergeStateAfterPush(params: {
     }
 
     if (attempt < POST_PUSH_RETRY_COUNT) {
-      process.stdout.write(
-        `Post-push polling: mergeStateStatus=${status}, retrying (${attempt}/${POST_PUSH_RETRY_COUNT})...\n`,
+      stderrWrite(
+        `Post-push polling: mergeStateStatus=${status}, retrying (${attempt}/${POST_PUSH_RETRY_COUNT})...`,
       );
       await sleepImpl(POST_PUSH_RETRY_DELAY_MS);
     }
