@@ -8,8 +8,7 @@ import { stepRulesDirRel } from "../../util/paths.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { logResult, logError, stderrWrite } from "../../logger/stdout.js";
-
-const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,63}$/;
+import { SLUG_REGEX } from "../../util/validation-patterns.js";
 
 /**
  * Embedded template for generated rules files.

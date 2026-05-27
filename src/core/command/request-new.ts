@@ -8,8 +8,7 @@ import { checkSlugCollision, write as storeWrite } from "../request/store.js";
 import { draftPath } from "../../util/paths.js";
 import { SpecRunnerError } from "../../errors.js";
 import { stderrWrite, logError } from "../../logger/stdout.js";
-
-const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,63}$/;
+import { SLUG_REGEX } from "../../util/validation-patterns.js";
 
 /**
  * Execute `request new` subcommand.

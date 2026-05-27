@@ -35,8 +35,7 @@ import { SpecRunnerError, EXIT_CODE } from "../errors.js";
 import { ClaudeCodeOneShotQueryClient } from "../adapter/claude-code/one-shot-query-client.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
-
-const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,63}$/;
+import { SLUG_REGEX } from "../util/validation-patterns.js";
 const UUID_REGEX = /^[a-f0-9-]{36}$/;
 /** Path-traversal guard for jobId; accepts full UUIDs and short prefixes. */
 const VALID_JOB_ID_CHARS = /^[a-f0-9-]+$/;

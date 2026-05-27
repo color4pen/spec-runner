@@ -2,6 +2,19 @@
  * Unit tests for DispatchingAgentRunner
  */
 import { describe, it, expect, vi } from "vitest";
+
+// Mock CodexAgentRunner to prevent the real Codex SDK from spawning a subprocess
+// during tests, which causes unhandled EPIPE errors in the full test suite.
+vi.mock("../../../src/adapter/codex/agent-runner.js", () => {
+  class CodexAgentRunner {
+    run = vi.fn().mockResolvedValue({
+      completionReason: "success",
+      resultContent: "done",
+    });
+  }
+  return { CodexAgentRunner };
+});
+
 import { DispatchingAgentRunner } from "../../../src/adapter/dispatching/agent-runner.js";
 import type { AgentRunner, AgentRunContext } from "../../../src/core/port/agent-runner.js";
 import type { JobState } from "../../../src/state/schema.js";
@@ -87,14 +100,12 @@ describe("DispatchingAgentRunner", () => {
     const claudeRunner = makeMockRunner();
     const dispatcher = new DispatchingAgentRunner(claudeRunner as never);
 
-    // We can't easily mock the CodexAgentRunner constructor here,
-    // but we can verify that claudeRunner is NOT called for OpenAI model
     const ctx = makeCtx("o3");
-    // Expect it to either succeed with codex or fail with CODEX_SDK_ERROR (SDK not available)
-    const result = await dispatcher.run(ctx).catch((err: Error) => ({ error: err }));
-    // The important assertion: claude runner was NOT called
+    const result = await dispatcher.run(ctx);
+    // claude runner must NOT be called for an OpenAI model
     expect(claudeRunner.run).not.toHaveBeenCalled();
-    void result;
+    // CodexAgentRunner mock resolves with success
+    expect(result.completionReason).toBe("success");
   });
 
   it("throws CONFIG_INVALID for unknown model", async () => {
