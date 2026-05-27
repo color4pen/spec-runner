@@ -1,7 +1,7 @@
 import { runDeviceFlow } from "../auth/github-device.js";
 import { loadConfig, saveConfig } from "../config/store.js";
 import { loadCredentials, saveCredentials } from "../core/credentials/github.js";
-import { logInfo, logSuccess } from "../logger/stdout.js";
+import { logInfo, logSuccess, logWarn } from "../logger/stdout.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 
 /**
@@ -36,6 +36,13 @@ export async function runLogin(): Promise<number> {
 
   // Save config scaffold (without github field — secrets go to credentials file)
   await saveConfig(config);
+
+  // Verify repo scope presence
+  if (!result.scopes.includes("repo")) {
+    logWarn(
+      "GitHub token does not include 'repo' scope. Some operations may fail. Run 'specrunner doctor' to verify.",
+    );
+  }
 
   // Save token to credentials file (0600, provider-keyed JSON)
   const creds = await loadCredentials();

@@ -1,11 +1,16 @@
 /**
  * Regression guard for the requiresCommit flag on writing-agent steps.
  *
- * Writing agents (spec-fixer, implementer, build-fixer, code-fixer) are
- * responsible for committing + pushing their changes during a session. The
- * StepExecutor uses requiresCommit to detect the failure mode where an agent
- * ends its turn without advancing the branch HEAD. Forgetting to set this
- * flag silently disables the safeguard, so this test pins it.
+ * Writing agents (spec-fixer, implementer, build-fixer) are responsible for
+ * committing + pushing their changes during a session. The StepExecutor uses
+ * requiresCommit to detect the failure mode where an agent ends its turn
+ * without advancing the branch HEAD. Forgetting to set this flag silently
+ * disables the safeguard, so this test pins it.
+ *
+ * code-fixer intentionally sets requiresCommit = false because it may be
+ * invoked when there are no staged changes (observation auto-fix path where
+ * all findings are already resolved). Requiring a commit in that case would
+ * cause a noCommitDetectedError halt.
  *
  * Review-style steps (spec-review, code-review) and propose are NOT
  * required to advance the branch beyond writing their result file (which
@@ -32,10 +37,6 @@ describe("requiresCommit flag — writing agents must opt in", () => {
   it("BuildFixerStep.requiresCommit === true", () => {
     expect(BuildFixerStep.requiresCommit).toBe(true);
   });
-
-  it("CodeFixerStep.requiresCommit === true", () => {
-    expect(CodeFixerStep.requiresCommit).toBe(true);
-  });
 });
 
 describe("requiresCommit flag — review and design steps stay opt-out", () => {
@@ -49,5 +50,9 @@ describe("requiresCommit flag — review and design steps stay opt-out", () => {
 
   it("DesignStep.requiresCommit is falsy (change folder verification gates completion)", () => {
     expect(DesignStep.requiresCommit).toBeFalsy();
+  });
+
+  it("CodeFixerStep.requiresCommit is falsy (may be invoked with no staged changes)", () => {
+    expect(CodeFixerStep.requiresCommit).toBeFalsy();
   });
 });
