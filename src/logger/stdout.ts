@@ -89,7 +89,7 @@ export function initVerboseLog(repoRoot: string, jobId: string): void {
     const dir = getVerboseLogDir(repoRoot);
     mkdirSync(dir, { recursive: true });
     currentLogPath = getVerboseLogPath(repoRoot, jobId);
-    logFd = openSync(currentLogPath, "a");
+    logFd = openSync(currentLogPath, "a", 0o600);
   } catch (err) {
     stderrWrite(`Warning: Failed to initialize verbose log: ${(err as Error).message}`);
     logFd = null;

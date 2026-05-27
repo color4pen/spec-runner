@@ -212,6 +212,17 @@ describe("logVerbose file writes", () => {
     expect(getVerboseLogFilePath()).toBeNull();
   });
 
+  it("TC-10: initVerboseLog が verbose log ファイルを 0o600 で作成する", async () => {
+    setLogLevel("verbose");
+    initVerboseLog(tempDir, "test-job-tc10");
+    const logPath = getVerboseLogFilePath();
+    expect(logPath).not.toBeNull();
+    closeVerboseLog();
+
+    const stat = fs.statSync(logPath!);
+    expect(stat.mode & 0o777).toBe(0o600);
+  });
+
   it("TC-36: debug レベルで initVerboseLog が有効化される", async () => {
     setLogLevel("debug");
     initVerboseLog(tempDir, "test-job-debug");

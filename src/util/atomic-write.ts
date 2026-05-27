@@ -24,19 +24,13 @@ export async function atomicWriteJson(
 
   try {
     const json = JSON.stringify(data, null, 2) + "\n";
-    const mode = options?.mode;
-    if (mode !== undefined) {
-      await fs.writeFile(tmpPath, json, { mode });
-    } else {
-      await fs.writeFile(tmpPath, json);
-    }
+    const mode = options?.mode ?? 0o600;
+    await fs.writeFile(tmpPath, json, { flag: "wx", mode });
     // Note: fsync would require opening with fs.open but writeFile handles flushing.
     // For POSIX rename atomicity, this is sufficient.
     await fs.rename(tmpPath, filePath);
-    if (mode !== undefined) {
-      // Ensure mode is set on the final file (rename preserves original mode on some systems)
-      await fs.chmod(filePath, mode);
-    }
+    // Ensure mode is set on the final file (rename preserves original mode on some systems)
+    await fs.chmod(filePath, mode);
   } catch (err) {
     // Best-effort cleanup of temp file
     await fs.unlink(tmpPath).catch(() => undefined);
