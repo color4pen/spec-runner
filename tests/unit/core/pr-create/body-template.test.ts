@@ -56,12 +56,18 @@ function makeStepRun(verdict: string, attempt: number = 1, findingsPath: string 
   };
 }
 
-// TC-032: renderPrTitle — request.md の H1 見出しをそのまま返す
-describe("TC-032: renderPrTitle — request.md の H1 見出しをそのまま返す", () => {
-  it("returns title as-is from parsedRequest.title", () => {
+// TC-032: renderPrTitle — conventional commits prefix を付与して返す
+describe("TC-032: renderPrTitle — conventional commits prefix を付与して返す", () => {
+  it("prepends feat: for new-feature type", () => {
     const parsedRequest = makeParsedRequest();
     const title = renderPrTitle(parsedRequest);
-    expect(title).toBe("pr-create step 追加（self-host pipeline 完成形）");
+    expect(title).toBe("feat: pr-create step 追加（self-host pipeline 完成形）");
+  });
+
+  it("does not double-prepend when title already has a prefix", () => {
+    const parsedRequest = makeParsedRequest({ title: "feat: already prefixed" });
+    const title = renderPrTitle(parsedRequest);
+    expect(title).toBe("feat: already prefixed");
   });
 });
 

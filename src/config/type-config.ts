@@ -16,6 +16,7 @@ export interface TypeConfigEntry {
   specReviewMode: "full" | "lightweight";
   specImpact: string;
   description: string;
+  conventionalPrefix: string;
 }
 
 export const TYPE_CONFIG: Record<string, TypeConfigEntry> = {
@@ -24,30 +25,35 @@ export const TYPE_CONFIG: Record<string, TypeConfigEntry> = {
     specReviewMode: "full",
     specImpact: "`## Requirements` で新規 capability を追加（tool が全 Requirement を ADDED に自動分類）",
     description: "新機能の追加",
+    conventionalPrefix: "feat",
   },
   "spec-change": {
     branchPrefix: "change/",
     specReviewMode: "full",
     specImpact: "`## Requirements` + `## Removed` / `## Renamed` で既存 spec を変更（tool が baseline 突合で ADDED/MODIFIED を自動分類）",
     description: "既存仕様の変更",
+    conventionalPrefix: "feat",
   },
   "refactoring": {
     branchPrefix: "refactor/",
     specReviewMode: "lightweight",
     specImpact: "振る舞い不変のため通常不要",
     description: "コードの内部構造改善（振る舞い不変）",
+    conventionalPrefix: "refactor",
   },
   "bug-fix": {
     branchPrefix: "fix/",
     specReviewMode: "full",
     specImpact: "原因が spec 不備なら `## Requirements` に修正内容を記載、実装だけの問題なら不要",
     description: "バグ修正",
+    conventionalPrefix: "fix",
   },
   "chore": {
     branchPrefix: "chore/",
     specReviewMode: "lightweight",
     specImpact: "通常不要（CI/依存更新等は spec 対象外）",
     description: "CI、依存更新、ドキュメントなど",
+    conventionalPrefix: "chore",
   },
 };
 
@@ -65,4 +71,12 @@ export function getBranchPrefix(type: string): string {
  */
 export function getSpecReviewMode(type: string): "full" | "lightweight" {
   return TYPE_CONFIG[type]?.specReviewMode ?? "full";
+}
+
+/**
+ * Get the conventional commits prefix for a request type.
+ * Unknown types fall back to "feat" for backward compatibility.
+ */
+export function getConventionalPrefix(type: string): string {
+  return TYPE_CONFIG[type]?.conventionalPrefix ?? "feat";
 }

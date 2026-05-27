@@ -9,13 +9,23 @@ import type { ParsedRequest } from "../../parser/request-md.js";
 import type { JobState, StepRun } from "../../state/schema.js";
 import { specReviewResultPath, verificationResultPath, reviewFeedbackPath, changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "../step/step-names.js";
+import { getConventionalPrefix } from "../../config/type-config.js";
+
+/** Conventional commits prefix pattern — e.g. "feat:", "fix(scope):" */
+const CONVENTIONAL_PREFIX_RE = /^(feat|fix|refactor|chore|docs|style|perf|test|ci|build|revert)(\(.+\))?:/;
 
 /**
  * Render the PR title from the request.md H1 heading.
- * Returns the title as-is (truncation is out of scope for initial version).
+ * Prepends the conventional commits prefix derived from the request type,
+ * unless the title already carries a prefix.
  */
 export function renderPrTitle(parsedRequest: ParsedRequest): string {
-  return parsedRequest.title;
+  const title = parsedRequest.title;
+  if (CONVENTIONAL_PREFIX_RE.test(title)) {
+    return title;
+  }
+  const prefix = getConventionalPrefix(parsedRequest.type);
+  return `${prefix}: ${title}`;
 }
 
 /**
