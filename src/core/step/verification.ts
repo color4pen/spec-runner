@@ -32,7 +32,7 @@ export const VerificationStep: CliStep = {
   async run(state: JobState, deps: CliStepDeps): Promise<void> {
     const verificationCwd = deps.cwd ?? process.cwd();
 
-    await runVerification(deps.slug, verificationCwd, deps.config.verification);
+    await runVerification(deps.slug, verificationCwd, deps.config.verification, deps.request.baseBranch);
 
     // Propagate verification-result.md to branch so build-fixer can read it
     if (state.branch) {

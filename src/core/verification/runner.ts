@@ -163,6 +163,80 @@ async function writeVerificationResult(
 }
 
 /**
+ * Check if the worktree's package.json scripts section differs from the baseline (origin/<baseBranch>).
+ * Returns { tampered: true, diff } if scripts differ, { tampered: false } otherwise.
+ * Skips check (returns { tampered: false }) if baseline cannot be retrieved or JSON is malformed.
+ */
+async function checkPackageJsonScriptsIntegrity(
+  cwd: string,
+  baseBranch: string,
+): Promise<{ tampered: boolean; diff?: string }> {
+  // Step 1: get baseline package.json from origin/<baseBranch>
+  const baselineRaw = await new Promise<string | null>((resolve) => {
+    const child = spawn("git", ["show", `origin/${baseBranch}:package.json`], {
+      cwd,
+      shell: false,
+    });
+
+    const chunks: Buffer[] = [];
+    child.stdout.on("data", (chunk: Buffer) => {
+      chunks.push(chunk);
+    });
+
+    child.on("close", (code) => {
+      if (code !== 0) {
+        resolve(null);
+      } else {
+        resolve(Buffer.concat(chunks).toString("utf-8"));
+      }
+    });
+
+    child.on("error", () => {
+      resolve(null);
+    });
+  });
+
+  // Baseline not available → skip check (new project without package.json on base branch)
+  if (baselineRaw === null) {
+    return { tampered: false };
+  }
+
+  // Step 2: read worktree's package.json
+  let currentRaw: string;
+  try {
+    currentRaw = await fs.readFile(path.join(cwd, "package.json"), "utf-8");
+  } catch {
+    return { tampered: false };
+  }
+
+  // Step 3: parse and compare scripts sections
+  try {
+    const baselinePkg = JSON.parse(baselineRaw) as { scripts?: Record<string, string> };
+    const currentPkg = JSON.parse(currentRaw) as { scripts?: Record<string, string> };
+
+    const baselineScripts: Record<string, string> = baselinePkg.scripts ?? {};
+    const currentScripts: Record<string, string> = currentPkg.scripts ?? {};
+
+    const normalize = (s: Record<string, string>) =>
+      JSON.stringify(Object.fromEntries(Object.entries(s).sort()));
+
+    if (normalize(baselineScripts) !== normalize(currentScripts)) {
+      const diff =
+        "Baseline scripts:\n" +
+        JSON.stringify(baselineScripts, null, 2) +
+        "\n\nCurrent scripts:\n" +
+        JSON.stringify(currentScripts, null, 2);
+      return { tampered: true, diff };
+    }
+
+    return { tampered: false };
+  } catch {
+    // Malformed JSON → skip check (will be caught by build phase)
+    return { tampered: false };
+  }
+}
+
+/**
  * Run verification for the given slug.
  *
  * Two execution paths:
@@ -176,11 +250,13 @@ async function writeVerificationResult(
  * @param slug - Change slug (used for output path and result title)
  * @param cwd - Working directory (defaults to process.cwd())
  * @param verificationConfig - Optional verification config from project local config
+ * @param baseBranch - Base branch name for package.json integrity check (phase fallback path only)
  */
 export async function runVerification(
   slug: string,
   cwd: string = process.cwd(),
   verificationConfig?: VerificationConfig,
+  baseBranch?: string,
 ): Promise<VerificationResult> {
   // Dispatch to commands path if verification.commands is defined
   if (verificationConfig?.commands !== undefined) {
@@ -188,7 +264,7 @@ export async function runVerification(
   }
 
   // Fallback: phase detection path (existing behavior)
-  return runVerificationPhases(slug, cwd);
+  return runVerificationPhases(slug, cwd, baseBranch);
 }
 
 /**
@@ -263,11 +339,39 @@ async function runVerificationCommands(
 /**
  * Phase fallback path: detect and run package.json scripts in order (fail-fast).
  * Existing behavior: build → typecheck → test → lint → security → test-coverage.
+ *
+ * When baseBranch is provided, checks package.json scripts integrity before running phases.
+ * If scripts differ from origin/<baseBranch>, returns a failed result immediately.
  */
 async function runVerificationPhases(
   slug: string,
   cwd: string,
+  baseBranch?: string,
 ): Promise<VerificationResult> {
+  // Integrity check: detect package.json scripts tampering before running any phases
+  if (baseBranch) {
+    const integrity = await checkPackageJsonScriptsIntegrity(cwd, baseBranch);
+    if (integrity.tampered) {
+      const phaseResult: PhaseResult = {
+        phase: "package-json-integrity",
+        status: "failed",
+        stdout: "",
+        stderr: integrity.diff ?? "",
+        exitCode: null,
+        durationMs: 0,
+      };
+      const result: VerificationResult = {
+        slug,
+        verdict: "failed",
+        phases: [phaseResult],
+        errorCode: "PACKAGE_JSON_SCRIPTS_TAMPERED",
+      };
+      const outputPath = path.join(cwd, verificationResultPath(slug));
+      await writeVerificationResult(result, outputPath);
+      return result;
+    }
+  }
+
   const phases: PhaseResult[] = [];
   let failed = false;
 
