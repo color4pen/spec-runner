@@ -1,6 +1,3 @@
-## Purpose
-
-TBD
 ## Requirements
 
 ### Requirement: bin field points to built JS
@@ -28,18 +25,6 @@ The build script SHALL use `tsup` instead of `tsc -p tsconfig.build.json`.
 **Given** `package.json` の `scripts.build` が設定されている
 **When** `bun run build` を実行する
 **Then** tsup が実行され、`dist/specrunner.js` に single file バンドルが出力される
-
-### Requirement: start script 削除
-
-`package.json` の `scripts.start` を削除すること（現状 `node dist/cli.js` という存在しないファイルを指しており、復活させる用途もない）。
-
-### Requirement: dist/ は gitignore 済み
-
-`dist/` が `.gitignore` に含まれており、ビルド成果物が git に追跡されないこと。
-
-### Requirement: 開発時実行経路の維持
-
-`bun ./bin/specrunner.ts` による開発時実行が引き続き動作すること（TypeScript ソースは削除しない）。
 
 ### Requirement: node 実行可能
 
