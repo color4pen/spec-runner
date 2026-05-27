@@ -4,8 +4,8 @@
  * Provides a shared `request()` method with:
  *   - Authorization / Accept / X-GitHub-Api-Version headers
  *   - 401 → githubTokenExpiredError() (no retry)
- *   - 429 → Retry-After wait → retry (unlimited)
- *   - X-RateLimit-Remaining: 0 → reset wait → retry (unlimited)
+ *   - 429 → Retry-After wait → retry (max 5 retries)
+ *   - X-RateLimit-Remaining: 0 → reset wait → retry (max 5 retries)
  *   - 5xx / network error → exponential backoff (max 3 retries)
  *
  * PR operations (D1: extend existing port):
@@ -23,6 +23,7 @@ import { stderrWrite } from "../../logger/stdout.js";
 const API_VERSION = "2022-11-28";
 
 const MAX_5XX_RETRIES = 3;
+const MAX_429_RETRIES = 5;
 
 export class GitHubApiClient implements GitHubClient {
   private readonly sleepFn: (ms: number) => Promise<void>;
@@ -50,6 +51,7 @@ export class GitHubApiClient implements GitHubClient {
     init: Omit<RequestInit, "headers"> & { headers?: Record<string, string> } = {},
   ): Promise<Response> {
     let attempt5xx = 0;
+    let attempt429 = 0;
 
     while (true) {
       const callerHeaders = init.headers ?? {};
@@ -77,23 +79,31 @@ export class GitHubApiClient implements GitHubClient {
         throw githubTokenExpiredError();
       }
 
-      // 429: Too Many Requests — wait Retry-After then retry (unlimited)
+      // 429: Too Many Requests — wait Retry-After then retry (max MAX_429_RETRIES retries)
       if (response.status === 429) {
+        if (attempt429 >= MAX_429_RETRIES) {
+          throw githubApiError(429, `request(${url}): 429 after ${MAX_429_RETRIES} retries`);
+        }
         const retryAfterHeader = response.headers.get("Retry-After");
         const waitSec = retryAfterHeader ? Math.min(parseInt(retryAfterHeader, 10), 60) : 60;
         await this.sleepFn(waitSec * 1000);
+        attempt429++;
         continue;
       }
 
-      // Secondary rate limit: X-RateLimit-Remaining: 0 — wait until reset
+      // Secondary rate limit: X-RateLimit-Remaining: 0 — wait until reset (max MAX_429_RETRIES retries)
       const rateLimitRemaining = response.headers.get("X-RateLimit-Remaining");
       if (rateLimitRemaining === "0") {
+        if (attempt429 >= MAX_429_RETRIES) {
+          throw githubApiError(429, `request(${url}): X-RateLimit-Remaining=0 after ${MAX_429_RETRIES} retries`);
+        }
         const resetHeader = response.headers.get("X-RateLimit-Reset");
         const resetEpochSec = resetHeader ? parseInt(resetHeader, 10) : 0;
         const waitMs = resetEpochSec
           ? Math.min(Math.max(resetEpochSec * 1000 - Date.now(), 0), 300_000)
           : 60_000;
         if (waitMs > 0) await this.sleepFn(waitMs);
+        attempt429++;
         continue;
       }
 

@@ -141,23 +141,22 @@ The GitHubClient port SHALL provide a method to merge a pull request, with built
 
 ### Requirement: Retry and Rate Limit Handling
 
-All GitHub REST API calls SHALL respect rate limits and retry on transient errors.
+The client SHALL cap 429 and `X-RateLimit-Remaining: 0` retries at `MAX_429_RETRIES` (5) using a single shared counter, and MUST throw `SpecRunnerError(GITHUB_API_ERROR)` when the limit is exceeded.
 
-#### Scenario: 5xx server error with retry
-- **WHEN** a REST API call returns 5xx
-- **THEN** the client retries with exponential backoff (base=1s, factor=2, jitter) up to 3 times before throwing
+#### Scenario: 429 retry exhausted
 
-#### Scenario: Network error with retry
-- **WHEN** a REST API call fails with a network error (e.g., ECONNRESET)
-- **THEN** the client retries with the same exponential backoff policy
+- **WHEN** a REST API call returns 429 Too Many Requests continuously
+- **THEN** the client retries up to `MAX_429_RETRIES` (5) times, and throws `SpecRunnerError(GITHUB_API_ERROR)` when exhausted
 
-#### Scenario: Rate limit exceeded (429)
-- **WHEN** a REST API call returns 429 Too Many Requests
-- **THEN** the client waits for the duration specified by the `Retry-After` header before retrying
+#### Scenario: Rate limit remaining exhausted
 
-#### Scenario: Primary rate limit exhausted
-- **WHEN** `X-RateLimit-Remaining` is `0`
-- **THEN** the client waits until the timestamp in `X-RateLimit-Reset` before making the next request
+- **WHEN** `X-RateLimit-Remaining` is `0` on consecutive responses
+- **THEN** the client retries up to `MAX_429_RETRIES` (5) times (counter shared with 429), and throws `SpecRunnerError(GITHUB_API_ERROR)` when exhausted
+
+#### Scenario: 429 and rate-limit share retry counter
+
+- **WHEN** 429 responses and `X-RateLimit-Remaining: 0` responses occur in any combination
+- **THEN** a single shared counter tracks both, and the total retries do not exceed `MAX_429_RETRIES` (5)
 
 ### Requirement: API Version Header
 

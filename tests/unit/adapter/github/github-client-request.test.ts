@@ -12,6 +12,9 @@
  * TC-RC-006: X-RateLimit-Remaining: 0 → wait until X-RateLimit-Reset, then retry
  * TC-RC-007: 5xx → exponential backoff, succeeds on eventual 200
  * TC-RC-008: 5xx retry exhausted (4 total attempts) → throws GITHUB_API_ERROR
+ * TC-RC-009: 429 retry exhausted (6 total attempts) → throws GITHUB_API_ERROR
+ * TC-RC-010: X-RateLimit-Remaining=0 retry exhausted (6 total attempts) → throws GITHUB_API_ERROR
+ * TC-RC-011: 429 and rate-limit mixed, total 6 attempts → throws GITHUB_API_ERROR
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GitHubApiClient } from "../../../../src/adapter/github/github-client.js";
@@ -297,5 +300,86 @@ describe("TC-RC-008: 5xx retry exhausted → throw", () => {
     });
 
     expect(mockFetch).toHaveBeenCalledTimes(4);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RC-009: 429 retry exhausted → throws GITHUB_API_ERROR
+// ---------------------------------------------------------------------------
+describe("TC-RC-009: 429 retry exhausted → throw", () => {
+  it("throws GITHUB_API_ERROR after 5 retries (6 total attempts) on persistent 429", async () => {
+    // 6 responses: initial + 5 retries → all 429
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(makeResponse(429, {}, { "Retry-After": "1" }));
+
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const client = buildClient(mockFetch as unknown as typeof fetch, sleepFn);
+
+    await expect(client.getRefSha(OWNER, REPO, BRANCH)).rejects.toMatchObject({
+      code: ERROR_CODES.GITHUB_API_ERROR,
+    });
+
+    // 6 total fetch calls (initial + 5 retries)
+    expect(mockFetch).toHaveBeenCalledTimes(6);
+    // sleepFn called 5 times (once per retry, before the 6th call which throws)
+    expect(sleepFn).toHaveBeenCalledTimes(5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RC-010: X-RateLimit-Remaining=0 retry exhausted → throws GITHUB_API_ERROR
+// ---------------------------------------------------------------------------
+describe("TC-RC-010: X-RateLimit-Remaining=0 retry exhausted → throw", () => {
+  it("throws GITHUB_API_ERROR after 5 retries (6 total attempts) on persistent rate-limit", async () => {
+    // 6 responses: all status 200 with X-RateLimit-Remaining: 0
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(
+        makeResponse(200, {}, { "X-RateLimit-Remaining": "0", "X-RateLimit-Reset": "0" }),
+      );
+
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const client = buildClient(mockFetch as unknown as typeof fetch, sleepFn);
+
+    await expect(client.getRefSha(OWNER, REPO, BRANCH)).rejects.toMatchObject({
+      code: ERROR_CODES.GITHUB_API_ERROR,
+    });
+
+    // 6 total fetch calls
+    expect(mockFetch).toHaveBeenCalledTimes(6);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RC-011: 429 and rate-limit mixed → combined attempt429 counter hits limit
+// ---------------------------------------------------------------------------
+describe("TC-RC-011: 429 and rate-limit mixed → throw after combined limit", () => {
+  it("throws GITHUB_API_ERROR when 429 and rate-limit together exhaust the retry budget", async () => {
+    // 3x 429, then 3x rate-limit (status 200 + Remaining=0) = 6 total → throw on 6th
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(makeResponse(429, {}, { "Retry-After": "1" }))
+      .mockResolvedValueOnce(makeResponse(429, {}, { "Retry-After": "1" }))
+      .mockResolvedValueOnce(makeResponse(429, {}, { "Retry-After": "1" }))
+      .mockResolvedValueOnce(
+        makeResponse(200, {}, { "X-RateLimit-Remaining": "0", "X-RateLimit-Reset": "0" }),
+      )
+      .mockResolvedValueOnce(
+        makeResponse(200, {}, { "X-RateLimit-Remaining": "0", "X-RateLimit-Reset": "0" }),
+      )
+      .mockResolvedValueOnce(
+        makeResponse(200, {}, { "X-RateLimit-Remaining": "0", "X-RateLimit-Reset": "0" }),
+      );
+
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const client = buildClient(mockFetch as unknown as typeof fetch, sleepFn);
+
+    await expect(client.getRefSha(OWNER, REPO, BRANCH)).rejects.toMatchObject({
+      code: ERROR_CODES.GITHUB_API_ERROR,
+    });
+
+    // 6 fetch calls total (initial + 5 retries)
+    expect(mockFetch).toHaveBeenCalledTimes(6);
   });
 });
