@@ -23,6 +23,7 @@ import { changeFolderPath } from "../../util/paths.js";
 import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder } from "../../util/copy-artifacts.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./strategy.js";
 import { stderrWrite } from "../../logger/stdout.js";
+import { stripSecrets } from "../../util/env-filter.js";
 
 // Internal structure stored inside CleanupHandle
 interface LocalCleanupInternals {
@@ -101,6 +102,7 @@ export class LocalRuntime implements RuntimeStrategy {
       permissionMode: "bypassPermissions",
       model: opts?.model,
       systemPrompt: opts?.systemPrompt,
+      env: stripSecrets(process.env as Record<string, string | undefined>),
     };
     // Session / dialog passthrough — only include fields that are explicitly set
     if (opts?.sessionId !== undefined) options["sessionId"] = opts.sessionId;

@@ -8,6 +8,7 @@
  */
 import { spawn } from "node:child_process";
 import * as fs from "node:fs/promises";
+import { stripSecrets } from "../../util/env-filter.js";
 import * as path from "node:path";
 import { PHASE_NAMES, PHASE_SCRIPTS } from "./phases.js";
 import type { PhaseName, ScriptPhaseName } from "./phases.js";
@@ -71,7 +72,7 @@ function spawnScript(
     const child = spawn("bun", ["run", script], {
       cwd,
       shell: false,
-      env: process.env,
+      env: stripSecrets(process.env as Record<string, string | undefined>),
     });
 
     let stdoutBuf = "";

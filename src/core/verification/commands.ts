@@ -6,6 +6,7 @@
  */
 import { spawn } from "node:child_process";
 import type { VerificationCommand } from "../../config/schema.js";
+import { stripSecrets } from "../../util/env-filter.js";
 
 /** Normalized form of a single verification command entry. */
 export interface NormalizedCommand {
@@ -56,7 +57,7 @@ export function spawnCommand(
     const child = spawn("sh", ["-c", command], {
       cwd,
       shell: false,
-      env: { ...process.env, PATH: pathWithLocalBin },
+      env: { ...stripSecrets(process.env as Record<string, string | undefined>), PATH: pathWithLocalBin },
     });
 
     let stdoutBuf = "";

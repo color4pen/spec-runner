@@ -5,6 +5,7 @@
  * Uses node:child_process.spawn (NOT bun:* / Bun.*) per project rules.
  */
 import { spawn } from "node:child_process";
+import { stripSecrets } from "./env-filter.js";
 
 export interface SpawnResult {
   exitCode: number | null;
@@ -41,7 +42,9 @@ export function spawnCommand(
     const proc = spawn(cmd, args, {
       cwd: opts.cwd,
       shell: false,
-      env: opts.env ? { ...process.env, ...opts.env } as Record<string, string> : process.env as Record<string, string>,
+      env: opts.env
+        ? { ...stripSecrets(process.env as Record<string, string | undefined>), ...opts.env } as Record<string, string>
+        : stripSecrets(process.env as Record<string, string | undefined>) as Record<string, string>,
     });
 
     let stdout = "";

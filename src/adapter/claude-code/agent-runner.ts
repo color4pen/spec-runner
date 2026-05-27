@@ -35,6 +35,7 @@ import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
 import { logVerbose, stderrWrite } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../../core/lifecycle/diagnostic.js";
 import { SessionLogWriter } from "./session-log-writer.js";
+import { stripSecrets } from "../../util/env-filter.js";
 
 export type { SpawnFn } from "./git-exec.js";
 
@@ -190,6 +191,7 @@ export class ClaudeCodeRunner implements AgentRunner {
       ...maxTurnsOption,
       model: resolvedConfig.model,
       abortController,
+      env: stripSecrets(process.env as Record<string, string | undefined>),
       ...resumeOption,
     };
 
