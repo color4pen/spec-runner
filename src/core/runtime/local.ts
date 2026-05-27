@@ -20,7 +20,7 @@ import { spawnCommand } from "../../util/spawn.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { changeFolderPath } from "../../util/paths.js";
-import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder } from "../../util/copy-artifacts.js";
+import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, rejectSymlink } from "../../util/copy-artifacts.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./strategy.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { stripSecrets } from "../../util/env-filter.js";
@@ -218,6 +218,7 @@ export class LocalRuntime implements RuntimeStrategy {
       // Only copy request.md into the change folder (no canonical path copy)
       const changeFolderRequestPath = path.join(worktreePath, changeFolderPath(slug), "request.md");
       await fs.mkdir(path.dirname(changeFolderRequestPath), { recursive: true });
+      await rejectSymlink(opts.requestFilePath);
       await fs.cp(opts.requestFilePath, changeFolderRequestPath);
 
       // Stage the change folder request.md

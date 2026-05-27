@@ -20,7 +20,7 @@ import type { SpawnFn } from "../../util/spawn.js";
 import { spawnCommand } from "../../util/spawn.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { changeFolderPath } from "../../util/paths.js";
-import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder } from "../../util/copy-artifacts.js";
+import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, rejectSymlink } from "../../util/copy-artifacts.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./strategy.js";
 import { stderrWrite } from "../../logger/stdout.js";
 
@@ -106,6 +106,7 @@ export class ManagedRuntime implements RuntimeStrategy {
       // Copy request.md into the change folder so agents can find it alongside design.md / tasks.md
       const changeFolderRequestPath = path.join(this.cwd, changeFolderPath(slug), "request.md");
       await fs.mkdir(path.dirname(changeFolderRequestPath), { recursive: true });
+      await rejectSymlink(opts.requestFilePath);
       await fs.cp(opts.requestFilePath, changeFolderRequestPath);
 
       // git add change folder request.md

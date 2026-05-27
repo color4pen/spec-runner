@@ -60,7 +60,7 @@ export const CodeFixerStep: AgentStep = {
 
   completionVerdict: "approved",
 
-  requiresCommit: true,
+  requiresCommit: false,
 
   // maxTurns: code-fixer applies review findings; 30 covers multi-finding fixes.
   // Design D3 (propose-openspec-cli-and-step-model-config).
