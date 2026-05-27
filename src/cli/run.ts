@@ -64,9 +64,9 @@ export async function runRunCore(
     if (err instanceof SpecRunnerError) {
       logError(err.message);
       if (err.hint) stderrWrite(`Hint: ${err.hint}`);
-    } else {
-      logError((err as Error).message);
+      return err.exitCode;
     }
+    logError((err as Error).message);
     return 1;
   }
 

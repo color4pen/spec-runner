@@ -61,7 +61,7 @@ function makeJob(status: JobStatus, id: string = "job-" + status): JobState {
 // stdout capture helper
 // ---------------------------------------------------------------------------
 
-function captureStdout(fn: () => Promise<void>): Promise<string> {
+function captureStdout(fn: () => Promise<number | void>): Promise<string> {
   return new Promise(async (resolve) => {
     let output = "";
     const origWrite = process.stdout.write.bind(process.stdout);

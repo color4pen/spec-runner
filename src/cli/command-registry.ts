@@ -31,6 +31,7 @@ import type { FlagDef, ParsedArgs } from "./flag-parser.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { logError, stderrWrite, stdoutWrite, resolveLogLevel } from "../logger/stdout.js";
+import { SpecRunnerError, EXIT_CODE } from "../errors.js";
 import { ClaudeCodeOneShotQueryClient } from "../adapter/claude-code/one-shot-query-client.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
@@ -168,14 +169,14 @@ export const COMMANDS: Record<string, CommandEntry> = {
     handler: async (parsed) => {
       const runtimeRaw = parsed.flags["runtime"] as string | undefined;
       const runtime = runtimeRaw as "managed" | "local" | undefined;
-      await runInit({ runtime });
+      process.exit(await runInit({ runtime }));
     },
   },
 
   login: {
     flags: {},
     handler: async () => {
-      await runLogin();
+      process.exit(await runLogin());
     },
   },
 
@@ -348,21 +349,21 @@ export const COMMANDS: Record<string, CommandEntry> = {
           } catch {
             // No token available — PR merge check will be skipped
           }
-          await runPs(
+          process.exit(await runPs(
             {
               active: !!parsed.flags["active"],
               all: !!parsed.flags["all"],
               status: parsed.flags["status"] as string | undefined,
             },
             githubClient,
-          );
+          ));
         },
       },
       show: {
         flags: {},
         positional: { name: "jobId|slug", required: true },
         handler: async (parsed) => {
-          await runJobShow(parsed.positional!);
+          process.exit(await runJobShow(parsed.positional!));
         },
       },
       cancel: {
@@ -378,7 +379,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
           // Security: path-traversal guard; short prefixes are allowed (resolveId handles lookup)
           if (jobId !== undefined && !VALID_JOB_ID_CHARS.test(jobId)) {
             logError("invalid jobId format");
-            process.exit(1);
+            process.exit(EXIT_CODE.ARG_ERROR);
           }
           try {
             process.exit(
@@ -391,6 +392,11 @@ export const COMMANDS: Record<string, CommandEntry> = {
               }),
             );
           } catch (err: unknown) {
+            if (err instanceof SpecRunnerError) {
+              stderrWrite(`Error: ${err.message}`);
+              stderrWrite(`Hint: ${err.hint}`);
+              process.exit(err.exitCode);
+            }
             stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
             process.exit(1);
           }
@@ -441,6 +447,11 @@ export const COMMANDS: Record<string, CommandEntry> = {
               prompt: resolvedPrompt,
             });
           } catch (err: unknown) {
+            if (err instanceof SpecRunnerError) {
+              stderrWrite(`Error: ${err.message}`);
+              stderrWrite(`Hint: ${err.hint}`);
+              process.exit(err.exitCode);
+            }
             stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
             process.exit(1);
           }
@@ -465,7 +476,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
           const jobFlagValue = parsed.flags["job"] as string | undefined;
           if (jobFlagValue !== undefined && !UUID_REGEX.test(jobFlagValue)) {
             logError("invalid jobId format");
-            process.exit(1);
+            process.exit(EXIT_CODE.ARG_ERROR);
           }
           const prRaw = parsed.flags["pr"] as string | undefined;
           const prNumber = prRaw ? parseInt(prRaw, 10) : undefined;
@@ -481,6 +492,11 @@ export const COMMANDS: Record<string, CommandEntry> = {
               }),
             );
           } catch (err: unknown) {
+            if (err instanceof SpecRunnerError) {
+              stderrWrite(`Error: ${err.message}`);
+              stderrWrite(`Hint: ${err.hint}`);
+              process.exit(err.exitCode);
+            }
             stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
             process.exit(1);
           }
@@ -509,13 +525,13 @@ export const COMMANDS: Record<string, CommandEntry> = {
       setup: {
         flags: {},
         handler: async () => {
-          await runManagedSetup();
+          process.exit(await runManagedSetup());
         },
       },
       status: {
         flags: {},
         handler: async () => {
-          await runManagedStatus();
+          process.exit(await runManagedStatus());
         },
       },
       reset: {
@@ -528,7 +544,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
             stdoutWrite(RUNTIME_RESET_USAGE);
             process.exit(0);
           }
-          await runManagedReset({ force: !!parsed.flags["force"] });
+          process.exit(await runManagedReset({ force: !!parsed.flags["force"] }));
         },
       },
     },
@@ -543,7 +559,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
         process.exit(await runDoctor({ json: !!parsed.flags["json"] }));
       } catch (err: unknown) {
         stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
-        process.exit(2);
+        process.exit(EXIT_CODE.GENERAL_ERROR);
       }
     },
   },

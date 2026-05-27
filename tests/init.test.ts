@@ -72,24 +72,16 @@ describe("runInit — config scaffold generation", () => {
     expect(mode).toBe(0o600);
   });
 
-  it("--runtime managed exits with error", async () => {
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((_code?: string | number | null) => {
-      throw new Error("process.exit called");
-    });
-
+  it("--runtime managed returns exit code 2 (deprecated flag is arg error)", async () => {
     const { runInit } = await import("../src/cli/init.js");
-    await expect(runInit({ runtime: "managed" })).rejects.toThrow("process.exit called");
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    const result = await runInit({ runtime: "managed" });
+    expect(result).toBe(2);
   });
 
-  it("--runtime local exits with error", async () => {
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((_code?: string | number | null) => {
-      throw new Error("process.exit called");
-    });
-
+  it("--runtime local returns exit code 2 (deprecated flag is arg error)", async () => {
     const { runInit } = await import("../src/cli/init.js");
-    await expect(runInit({ runtime: "local" })).rejects.toThrow("process.exit called");
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    const result = await runInit({ runtime: "local" });
+    expect(result).toBe(2);
   });
 });
 

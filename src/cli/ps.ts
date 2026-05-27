@@ -122,7 +122,7 @@ export async function checkPrMerged(job: JobState, githubClient: GitHubClient | 
 export async function runPs(
   opts: { active?: boolean; all?: boolean; status?: string; repoRoot?: string } = {},
   githubClient: GitHubClient | null = null,
-): Promise<void> {
+): Promise<number> {
   // Read-only command — fallback to cwd if git unavailable
   const repoRoot = opts.repoRoot ?? (await resolveRepoRoot()) ?? process.cwd();
 
@@ -144,7 +144,7 @@ export async function runPs(
 
   if (jobs.length === 0) {
     stdoutWrite("No jobs found.\n");
-    return;
+    return 0;
   }
 
   // Sort by createdAt descending (newest first)
@@ -186,4 +186,5 @@ export async function runPs(
     const prMerged = prMergedMap.get(job.jobId);
     stdoutWrite(formatJobRow(job, isTty, nowMs, prMerged) + "\n");
   }
+  return 0;
 }

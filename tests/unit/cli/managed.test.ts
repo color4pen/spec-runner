@@ -104,15 +104,12 @@ async function readConfig(): Promise<Record<string, unknown>> {
 }
 
 describe("runManagedSetup", () => {
-  it("exits with 1 when SPECRUNNER_API_KEY is not set", async () => {
+  it("returns exit code 1 when SPECRUNNER_API_KEY is not set", async () => {
     delete process.env["SPECRUNNER_API_KEY"];
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((_code?: string | number | null) => {
-      throw new Error("process.exit called");
-    });
 
     const { runManagedSetup } = await import("../../../src/cli/managed.js");
-    await expect(runManagedSetup()).rejects.toThrow("process.exit called");
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    const result = await runManagedSetup();
+    expect(result).toBe(1);
   });
 
   it("creates agents and environment, saves config without anthropic field (TC-MS-001)", async () => {

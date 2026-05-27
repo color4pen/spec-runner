@@ -27,7 +27,7 @@ function hasStaleManagedConfig(config: SpecRunnerConfig): boolean {
   return false;
 }
 
-export async function runManagedSetup(): Promise<void> {
+export async function runManagedSetup(): Promise<number> {
   let apiKey: string;
   try {
     const resolved = await resolveSpecRunnerApiKey(
@@ -40,7 +40,7 @@ export async function runManagedSetup(): Promise<void> {
         ? err.message
         : "Anthropic API key not found. Export SPECRUNNER_API_KEY or save it to credentials.",
     );
-    process.exit(1);
+    return 1;
   }
 
   const rawSdk = createAnthropicClient(apiKey);
@@ -144,15 +144,16 @@ export async function runManagedSetup(): Promise<void> {
   await saveConfig(newConfig);
   logSuccess("Config saved.");
   logInfo("Run 'specrunner run' to start the pipeline.");
+  return 0;
 }
 
-export async function runManagedStatus(): Promise<void> {
+export async function runManagedStatus(): Promise<number> {
   let config: SpecRunnerConfig;
   try {
     config = await loadConfigWithOverlay();
   } catch {
     logResult("Runtime: local (no config found)");
-    return;
+    return 0;
   }
 
   if (config.runtime !== "managed") {
@@ -166,7 +167,7 @@ export async function runManagedStatus(): Promise<void> {
         logResult(`  - agents.${role}: ${record.agentId}`);
       }
     }
-    return;
+    return 0;
   }
 
   const anthropicResult = await resolveSpecRunnerApiKey(
@@ -187,9 +188,10 @@ export async function runManagedStatus(): Promise<void> {
       logResult(`  ${role}: ${record.agentId}`);
     }
   }
+  return 0;
 }
 
-export async function runManagedReset(opts: { force: boolean }): Promise<void> {
+export async function runManagedReset(opts: { force: boolean }): Promise<number> {
   const anthropicResult = await resolveSpecRunnerApiKey(
     process.env as Record<string, string | undefined>,
     { optional: true },
@@ -201,14 +203,14 @@ export async function runManagedReset(opts: { force: boolean }): Promise<void> {
     config = await loadConfigWithOverlay();
   } catch (err) {
     logError(`Error loading config: ${(err as Error).message}`);
-    process.exit(1);
+    return 1;
   }
 
   // --- runtime mismatch guard: handle stale managed fields when runtime != managed ---
   if (config.runtime !== "managed") {
     if (!hasStaleManagedConfig(config)) {
-      stderrWrite("No stale managed config. Nothing to reset.");
-      return;
+      logResult("No stale managed config. Nothing to reset.");
+      return 0;
     }
 
     stderrWrite(
@@ -219,12 +221,12 @@ export async function runManagedReset(opts: { force: boolean }): Promise<void> {
       const isTTY = (process.stdin as NodeJS.ReadStream).isTTY ?? false;
       if (!isTTY) {
         logResult("Non-interactive mode requires --force to reset stale config.");
-        return;
+        return 0;
       }
       const confirmed = await promptConfirm("Proceed? [y/N] ");
       if (!confirmed) {
         logResult("Aborted.");
-        return;
+        return 0;
       }
     }
 
@@ -252,7 +254,7 @@ export async function runManagedReset(opts: { force: boolean }): Promise<void> {
     delete (newConfig as unknown as Record<string, unknown>)["runtime"];
     await saveConfig(newConfig);
     logSuccess("Reset stale managed fields.");
-    return;
+    return 0;
   }
 
   // --- managed runtime path (existing behavior, unchanged) ---
@@ -262,7 +264,7 @@ export async function runManagedReset(opts: { force: boolean }): Promise<void> {
     );
     if (!confirmed) {
       logResult("Aborted.");
-      return;
+      return 0;
     }
   }
 
@@ -296,6 +298,7 @@ export async function runManagedReset(opts: { force: boolean }): Promise<void> {
   await saveConfig(managedNewConfig);
   logSuccess("Config reset.");
   logResult("Note: Anthropic-side agent resources are NOT deleted (no delete API available) and remain as orphans.");
+  return 0;
 }
 
 async function createNewEnvironment(

@@ -8,11 +8,19 @@ import type { SpecRunnerConfig } from "../config/schema.js";
  * Run the specrunner login command.
  * Runs GitHub Device Flow and saves the access token to credentials.json (0600).
  * Config is still loaded/created as a scaffold (version, agents) but no token is stored there.
+ *
+ * Returns the exit code: 0 = success, 1 = auth error (expired/denied).
  */
-export async function runLogin(): Promise<void> {
+export async function runLogin(): Promise<number> {
   logInfo("Authenticating with GitHub...");
 
-  const result = await runDeviceFlow();
+  let result: Awaited<ReturnType<typeof runDeviceFlow>>;
+  try {
+    result = await runDeviceFlow();
+  } catch {
+    // expired_token / access_denied — message already printed in github-device.ts
+    return 1;
+  }
 
   // Load or initialize config scaffold (ensures config.json exists with version + agents)
   let config: SpecRunnerConfig;
@@ -35,4 +43,5 @@ export async function runLogin(): Promise<void> {
   await saveCredentials(creds);
 
   logSuccess("GitHub authentication complete. Token saved to credentials file.");
+  return 0;
 }

@@ -7,7 +7,7 @@
 import { COMMANDS, USAGE, FINISH_USAGE, RUNTIME_RESET_USAGE } from "../src/cli/command-registry.js";
 import { parseFlags, FlagParseError } from "../src/cli/flag-parser.js";
 import { detectWorktree } from "../src/core/worktree/detection.js";
-import { SpecRunnerError, worktreeGuardError } from "../src/errors.js";
+import { SpecRunnerError, EXIT_CODE, worktreeGuardError } from "../src/errors.js";
 
 export { USAGE, FINISH_USAGE, RUNTIME_RESET_USAGE };
 
@@ -58,7 +58,7 @@ export async function main(): Promise<void> {
         const err = worktreeGuardError(`${command} ${sub}`, detection.mainWorktreePath ?? process.cwd());
         process.stderr.write(`Error: ${err.message}\n`);
         process.stderr.write(`Hint: ${err.hint}\n`);
-        process.exit(1);
+        process.exit(EXIT_CODE.ARG_ERROR);
       }
     }
 
@@ -101,7 +101,7 @@ export async function main(): Promise<void> {
     if (e instanceof SpecRunnerError) {
       process.stderr.write(`Error: ${e.message}\n`);
       process.stderr.write(`Hint: ${e.hint}\n`);
-      process.exit(1);
+      process.exit(e.exitCode);
     }
     process.stderr.write(`Fatal: ${e instanceof Error ? e.message : String(e)}\n`);
     process.exit(1);

@@ -1,16 +1,48 @@
 
+/** CLI exit code constants. */
+export const EXIT_CODE = {
+  SUCCESS: 0,
+  GENERAL_ERROR: 1,
+  ARG_ERROR: 2,
+} as const;
+
+export type ExitCode = (typeof EXIT_CODE)[keyof typeof EXIT_CODE];
+
+/**
+ * Declarative mapping from error code to exit code.
+ * Error codes not listed here default to GENERAL_ERROR (1).
+ *
+ * Exit 2 (ARG_ERROR) covers setup/prerequisite failures in addition to
+ * strictly syntactic argument errors — these are errors where the user
+ * must fix their environment or invocation before re-running.
+ */
+const EXIT_CODE_MAP: Record<string, ExitCode> = {
+  CONFIG_MISSING: EXIT_CODE.ARG_ERROR,
+  CONFIG_INCOMPLETE: EXIT_CODE.ARG_ERROR,
+  CONFIG_INVALID: EXIT_CODE.ARG_ERROR,
+  REQUEST_MD_INVALID: EXIT_CODE.ARG_ERROR,
+  NOT_GIT_REPO: EXIT_CODE.ARG_ERROR,
+  REMOTE_NOT_GITHUB: EXIT_CODE.ARG_ERROR,
+  WORKTREE_GUARD: EXIT_CODE.ARG_ERROR,
+};
+
 /**
  * Named error class for specrunner CLI.
  * Each error carries a machine-readable code and a human-readable hint for the user.
+ * The exitCode is derived declaratively from EXIT_CODE_MAP unless overridden.
  */
 export class SpecRunnerError extends Error {
+  public readonly exitCode: ExitCode;
+
   constructor(
     public readonly code: string,
     public readonly hint: string,
     message: string,
+    exitCode?: ExitCode,
   ) {
     super(message);
     this.name = "SpecRunnerError";
+    this.exitCode = exitCode ?? EXIT_CODE_MAP[code] ?? EXIT_CODE.GENERAL_ERROR;
   }
 }
 

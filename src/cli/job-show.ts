@@ -18,9 +18,9 @@ const UUID_REGEX = /^[a-f0-9-]{36}$/;
 
 /**
  * Run `job show` — print 6 key fields to stdout.
- * Calls process.exit() on error.
+ * Returns the exit code: 0 = success, 1 = error.
  */
-export async function runJobShow(input: string): Promise<void> {
+export async function runJobShow(input: string): Promise<number> {
   // Read-only command — fallback to cwd if git unavailable
   const repoRoot = (await resolveRepoRoot()) ?? process.cwd();
 
@@ -36,11 +36,11 @@ export async function runJobShow(input: string): Promise<void> {
       const code = (err as NodeJS.ErrnoException).code;
       if (code === "ENOENT") {
         stderrWrite(`Error: Job not found: ${input}`);
-        process.exit(1);
+        return 1;
       }
       const msg = err instanceof Error ? err.message : String(err);
       stderrWrite(`Error: ${msg}`);
-      process.exit(1);
+      return 1;
     }
   } else {
     // Resolve by slug
@@ -48,7 +48,7 @@ export async function runJobShow(input: string): Promise<void> {
     const matching = allJobs.filter((j) => getJobSlug(j) === input);
     if (matching.length === 0) {
       stderrWrite(`Error: Job not found for slug: ${input}`);
-      process.exit(1);
+      return 1;
     }
     // Pick most recently updated
     state = [...matching].sort(
@@ -57,6 +57,7 @@ export async function runJobShow(input: string): Promise<void> {
   }
 
   printJobState(state);
+  return 0;
 }
 
 function printJobState(state: JobState): void {

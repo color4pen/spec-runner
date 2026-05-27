@@ -65,9 +65,9 @@ async function createRequestMd() {
   return reqPath;
 }
 
-// TC-063: specrunner run — fail-fast（config 不在 → exit 1）
+// TC-063: specrunner run — fail-fast（config 不在 → exit 2, CONFIG_MISSING → ARG_ERROR）
 describe("TC-063: specrunner run — fail-fast when config missing", () => {
-  it("exits with error when config does not exist", async () => {
+  it("exits with code 2 when config does not exist (CONFIG_MISSING → ARG_ERROR)", async () => {
     // No config created — config is missing
     const exitSpy = vi.spyOn(process, "exit").mockImplementation((_code?: string | number | null) => {
       throw new Error("process.exit called");
@@ -78,7 +78,7 @@ describe("TC-063: specrunner run — fail-fast when config missing", () => {
 
     await expect(runRun(reqPath, { cwd: tempDir })).rejects.toThrow("process.exit called");
 
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(exitSpy).toHaveBeenCalledWith(2);
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
     const combined = stderrCalls.map((c: unknown[]) => String(c[0])).join("\n");
     expect(combined).toMatch(/Config file not found|init|config/i);

@@ -8,20 +8,22 @@ import type { SpecRunnerConfig } from "../config/schema.js";
  * Run the specrunner init command.
  * Generates a local-default config scaffold only.
  * Does NOT set up managed runtime — use 'managed setup' for that.
+ *
+ * Returns the exit code: 0 = success, 2 = argument error (deprecated flag).
  */
 export async function runInit(options: {
   runtime?: "managed" | "local";
-}): Promise<void> {
+}): Promise<number> {
   const { runtime } = options;
 
   if (runtime === "managed") {
     logError("init no longer sets up managed runtime. Run 'init' for config scaffold, then set SPECRUNNER_API_KEY and run 'managed setup'.");
-    process.exit(1);
+    return 2;
   }
 
   if (runtime === "local") {
     logError("--runtime flag is no longer needed. 'init' generates a local-default config scaffold.");
-    process.exit(1);
+    return 2;
   }
 
   // Load existing config (best-effort)
@@ -68,4 +70,6 @@ export async function runInit(options: {
   } catch {
     // git not available or other error — skip silently
   }
+
+  return 0;
 }

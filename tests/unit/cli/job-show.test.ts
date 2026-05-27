@@ -109,25 +109,27 @@ describe("TC-JSHOW-002: slug input resolves job by slug", () => {
   });
 });
 
-// TC-JSHOW-003: unknown slug → exit 1
-describe("TC-JSHOW-003: unknown slug exits with code 1", () => {
-  it("prints error and exits with 1", async () => {
+// TC-JSHOW-003: unknown slug → returns 1 (no longer calls process.exit directly)
+describe("TC-JSHOW-003: unknown slug returns exit code 1", () => {
+  it("prints error to stderr and returns 1", async () => {
     mockList.mockResolvedValue([]);
 
-    await expect(invokeRunJobShow("ghost-slug")).rejects.toThrow("process.exit(1)");
+    const result = await invokeRunJobShow("ghost-slug");
 
+    expect(result).toBe(1);
     const stderrOutput = (stderrSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
     expect(stderrOutput).toContain("ghost-slug");
   });
 });
 
-// TC-JSHOW-004: UUID not found → exit 1
-describe("TC-JSHOW-004: valid UUID not found exits with 1", () => {
-  it("prints error and exits with 1", async () => {
+// TC-JSHOW-004: UUID not found → returns 1 (no longer calls process.exit directly)
+describe("TC-JSHOW-004: valid UUID not found returns exit code 1", () => {
+  it("prints error to stderr and returns 1", async () => {
     mockLoad.mockRejectedValue(new Error("Job not found: " + VALID_UUID));
 
-    await expect(invokeRunJobShow(VALID_UUID)).rejects.toThrow("process.exit(1)");
+    const result = await invokeRunJobShow(VALID_UUID);
 
+    expect(result).toBe(1);
     const stderrOutput = (stderrSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
     expect(stderrOutput).toContain("Job not found");
   });

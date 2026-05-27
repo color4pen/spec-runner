@@ -81,13 +81,9 @@ describe("TC-076: slow_down — interval increases by 5", () => {
   });
 });
 
-// TC-077: expired_token — exits with error
-describe("TC-077: expired_token — exits", () => {
-  it("calls process.exit(1) with expired_token message", async () => {
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((_code) => {
-      throw new Error("process.exit called");
-    });
-
+// TC-077: expired_token — throws error (no longer calls process.exit directly)
+describe("TC-077: expired_token — throws", () => {
+  it("throws when expired_token is returned and prints timeout message", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ error: "expired_token" }),
@@ -96,23 +92,17 @@ describe("TC-077: expired_token — exits", () => {
 
     await expect(
       pollAccessToken("device_code_123", 5, mockFetch as unknown as typeof fetch, sleepFn),
-    ).rejects.toThrow("process.exit called");
+    ).rejects.toThrow();
 
     expect(process.stderr.write).toHaveBeenCalledWith(
       expect.stringContaining("Authorization timed out"),
     );
-    expect(exitSpy).toHaveBeenCalledWith(1);
-    exitSpy.mockRestore();
   });
 });
 
-// TC-078: access_denied — exits with error
-describe("TC-078: access_denied — exits", () => {
-  it("calls process.exit(1) with denied message", async () => {
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((_code) => {
-      throw new Error("process.exit called");
-    });
-
+// TC-078: access_denied — throws error (no longer calls process.exit directly)
+describe("TC-078: access_denied — throws", () => {
+  it("throws when access_denied is returned and prints denied message", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ error: "access_denied" }),
@@ -121,13 +111,11 @@ describe("TC-078: access_denied — exits", () => {
 
     await expect(
       pollAccessToken("device_code_123", 5, mockFetch as unknown as typeof fetch, sleepFn),
-    ).rejects.toThrow("process.exit called");
+    ).rejects.toThrow();
 
     expect(process.stderr.write).toHaveBeenCalledWith(
       expect.stringContaining("Authorization denied by user"),
     );
-    expect(exitSpy).toHaveBeenCalledWith(1);
-    exitSpy.mockRestore();
   });
 });
 

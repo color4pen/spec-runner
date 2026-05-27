@@ -112,13 +112,11 @@ export async function pollAccessToken(
 
       case "expired_token":
         stderrWrite("Authorization timed out. Run 'specrunner login' again.");
-        process.exit(1);
-        break;
+        throw new Error("expired_token: authorization timed out");
 
       case "access_denied":
         stderrWrite("Authorization denied by user.");
-        process.exit(1);
-        break;
+        throw new Error("access_denied: authorization denied by user");
 
       default:
         throw new Error(`Unexpected error from GitHub: ${data.error ?? "unknown"}`);

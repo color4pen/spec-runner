@@ -61,7 +61,7 @@ describe("TC-032: archived state file → ps reads without crash", () => {
     await writeStateFile(makeBaseState({ status: "archived", jobId: "archived-job-001" }));
 
     // Should not throw
-    await expect(runPs({ all: true, repoRoot: tempDir })).resolves.toBeUndefined();
+    await expect(runPs({ all: true, repoRoot: tempDir })).resolves.toBe(0);
 
     const output = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))
@@ -92,7 +92,7 @@ describe("TC-033: legacy state file with status=success → ps reads correctly",
       repository: { owner: "u", name: "r" },
     });
 
-    await expect(runPs({ repoRoot: tempDir })).resolves.toBeUndefined();
+    await expect(runPs({ repoRoot: tempDir })).resolves.toBe(0);
 
     const output = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))
