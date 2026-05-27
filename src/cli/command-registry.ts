@@ -431,6 +431,10 @@ export const COMMANDS: Record<string, CommandEntry> = {
             resolvedPrompt = promptText;
           }
 
+          if (resolvedPrompt !== undefined) {
+            stderrWrite("Warning: --prompt の内容は agent prompt に直接注入されます。外部入力をそのまま渡さないでください。");
+          }
+
           const logLevel = resolveLogLevel({
             quiet: !!parsed.flags["quiet"],
             verbose: !!parsed.flags["verbose"],
