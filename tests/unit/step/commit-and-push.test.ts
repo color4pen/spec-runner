@@ -135,12 +135,18 @@ function makeAgentStep(overrides: Partial<AgentStep> = {}): AgentStep {
 function makeSuccessRunner(): AgentRunner {
   return {
     async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
-      return { completionReason: "success", resultContent: null };
+      return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
     },
   };
 }
 
 /**
+ * TC-CAP-001 through TC-CAP-009 comments updated to reflect new behavior:
+ * - requiresCommit removed from AgentStep interface (T-05)
+ * - No staged changes + no HEAD advance → silently skip (no error)
+ * - No staged changes + HEAD advanced → push-only path
+ * - git add fail → silently return (no error)
+ *
  * Build a mock SpawnFn that simulates git commands.
  *
  * The `calls` array records each git invocation for assertion.
@@ -243,7 +249,7 @@ describe("TC-CAP-001: commitAndPush — correct git call sequence", () => {
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const step = makeAgentStep({ name: "implementer" });
     const deps = makeLocalDeps();
     await executor.execute(step, state, deps);
 
@@ -266,19 +272,20 @@ describe("TC-CAP-001: commitAndPush — correct git call sequence", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-CAP-002: requiresCommit:true + no staged changes → NO_COMMIT_DETECTED
+// TC-CAP-002: no staged changes → silent skip (new behavior: no error)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-CAP-002: requiresCommit:true + no staged changes → NO_COMMIT_DETECTED", () => {
-  it("throws NO_COMMIT_DETECTED when diff --cached shows no changes", async () => {
+describe("TC-CAP-002: no staged changes → silent skip", () => {
+  it("does not throw when diff --cached shows no changes", async () => {
     const jobId = "tc-cap-002-job";
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    const { spawnFn } = makeGitSpawnFn({
+    const { spawnFn, calls } = makeGitSpawnFn({
       responses: {
         "add": { exitCode: 0 },
         "diff": { exitCode: 0 }, // exit 0 = no staged changes
+        "rev-parse": { exitCode: 0, stdout: "abc123\n" },
       },
     });
 
@@ -286,12 +293,15 @@ describe("TC-CAP-002: requiresCommit:true + no staged changes → NO_COMMIT_DETE
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const step = makeAgentStep({ name: "implementer" });
     const deps = makeLocalDeps();
 
-    await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
-      code: "NO_COMMIT_DETECTED",
-    });
+    await expect(executor.execute(step, state, deps)).resolves.toBeDefined();
+
+    // Should skip commit and push
+    const gitSubcommands = calls.map((c) => c.args[0]);
+    expect(gitSubcommands).not.toContain("commit");
+    expect(gitSubcommands).not.toContain("push");
   });
 });
 
@@ -357,7 +367,7 @@ describe("TC-CAP-004: push failure → retry once → success on second push", (
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), overriddenSpawnFn, noopSleep);
 
     const result = await executor.execute(
-      makeAgentStep({ name: "implementer", requiresCommit: true }),
+      makeAgentStep({ name: "implementer" }),
       state,
       makeLocalDeps(),
     );
@@ -398,7 +408,7 @@ describe("TC-CAP-005: push failure → retry → second failure → PUSH_FAILED"
 
     await expect(
       executor.execute(
-        makeAgentStep({ name: "implementer", requiresCommit: true }),
+        makeAgentStep({ name: "implementer" }),
         state,
         makeLocalDeps(),
       ),
@@ -434,7 +444,7 @@ describe("TC-CAP-006: commit message format", () => {
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
-    const step = makeAgentStep({ name: "build-fixer", requiresCommit: true });
+    const step = makeAgentStep({ name: "build-fixer" });
     const deps = makeLocalDeps({ slug: "my-test-slug" });
     state.steps = {};
 
@@ -478,7 +488,7 @@ describe("TC-CAP-007: successful push emits commit:push event", () => {
       emittedEvents.push(payload);
     });
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const step = makeAgentStep({ name: "implementer" });
     await executor.execute(step, state, makeLocalDeps());
 
     expect(emittedEvents.length).toBe(1);
@@ -490,16 +500,16 @@ describe("TC-CAP-007: successful push emits commit:push event", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-CAP-008: git add failure + requiresCommit:true → NO_COMMIT_DETECTED
+// TC-CAP-008: git add failure → silent skip (new behavior)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-CAP-008: git add failure + requiresCommit:true → NO_COMMIT_DETECTED", () => {
-  it("throws NO_COMMIT_DETECTED when git add fails and step requiresCommit", async () => {
+describe("TC-CAP-008: git add failure → silent skip", () => {
+  it("does not throw when git add fails (silently skips commit+push)", async () => {
     const jobId = "tc-cap-008-job";
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    const { spawnFn } = makeGitSpawnFn({
+    const { spawnFn, calls } = makeGitSpawnFn({
       responses: {
         "add": { exitCode: 128 }, // not a git repo
       },
@@ -509,19 +519,21 @@ describe("TC-CAP-008: git add failure + requiresCommit:true → NO_COMMIT_DETECT
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
-    await expect(executor.execute(step, state, makeLocalDeps())).rejects.toMatchObject({
-      code: "NO_COMMIT_DETECTED",
-    });
+    const step = makeAgentStep({ name: "implementer" });
+    await expect(executor.execute(step, state, makeLocalDeps())).resolves.toBeDefined();
+
+    // commit and push must NOT have been attempted
+    expect(calls.map((c) => c.args[0])).not.toContain("commit");
+    expect(calls.map((c) => c.args[0])).not.toContain("push");
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-CAP-009: git add failure + requiresCommit:false → silent skip
+// TC-CAP-009: git add failure (any step) → silent skip
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-CAP-009: git add failure + requiresCommit:false → silent skip", () => {
-  it("does not throw when git add fails and step does not requiresCommit", async () => {
+describe("TC-CAP-009: git add failure (any step) → silent skip", () => {
+  it("does not throw when git add fails regardless of step name", async () => {
     const jobId = "tc-cap-009-job";
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);

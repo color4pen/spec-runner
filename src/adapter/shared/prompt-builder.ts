@@ -14,10 +14,10 @@ export function buildAdditionalInstructions(ctx: AgentRunContext): string {
     );
   }
 
-  if (ctx.projectContext) {
+  if (ctx.input.projectContext) {
     lines.push("");
     lines.push("<project-context>");
-    lines.push(ctx.projectContext);
+    lines.push(ctx.input.projectContext);
     lines.push("</project-context>");
   }
 

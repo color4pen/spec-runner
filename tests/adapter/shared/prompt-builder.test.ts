@@ -37,7 +37,9 @@ function makeCtx(overrides: Partial<AgentRunContext> = {}): AgentRunContext {
     branch: "",
     slug: "test-slug",
     cwd: "/tmp/test",
-    requestContent: "test",
+    input: { requestContent: "test" },
+    session: {},
+    policy: {},
     config: { version: 1, runtime: "local", agents: {} },
     emit: () => {},
     ...overrides,
@@ -76,7 +78,7 @@ describe("TC-PB-02: with branch → runtime instructions + prohibition", () => {
 describe("TC-PB-03: with projectContext → context + prohibition", () => {
   it("includes project context block and prohibition", () => {
     const result = buildAdditionalInstructions(makeCtx({
-      projectContext: "# Project\n\nThis is a project.",
+      input: { requestContent: "test", projectContext: "# Project\n\nThis is a project." },
     }));
     expect(result).toContain("<project-context>");
     expect(result).toContain("# Project");
@@ -90,8 +92,8 @@ describe("TC-PB-04: Agent/Task prohibition text", () => {
     const cases = [
       makeCtx(),
       makeCtx({ branch: "feat/test" }),
-      makeCtx({ projectContext: "context" }),
-      makeCtx({ branch: "feat/test", projectContext: "context" }),
+      makeCtx({ input: { requestContent: "test", projectContext: "context" } }),
+      makeCtx({ branch: "feat/test", input: { requestContent: "test", projectContext: "context" } }),
     ];
     for (const ctx of cases) {
       const result = buildAdditionalInstructions(ctx);

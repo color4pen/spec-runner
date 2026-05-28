@@ -16,6 +16,8 @@ function buildMockSessionClient() {
     pollUntilComplete: vi.fn(),
     streamEvents: vi.fn(),
     getSessionUsage: vi.fn().mockResolvedValue(undefined),
+    listEvents: vi.fn().mockResolvedValue([]),
+    sendEvents: vi.fn().mockResolvedValue(undefined),
   };
 }
 

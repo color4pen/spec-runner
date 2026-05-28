@@ -6,6 +6,7 @@ import type { JobState } from "../../state/schema.js";
 import { ADR_GEN_SYSTEM_PROMPT } from "../../prompts/adr-gen-system.js";
 import { changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
+import { REPORT_TOOL, REPORT_TOOL_CUSTOM_TOOL_SPEC } from "./report-tool.js";
 
 const ADR_GEN_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -44,6 +45,7 @@ const adrGenAgentDefinition: AgentDefinition = {
   system: ADR_GEN_SYSTEM_PROMPT,
   tools: [
     { type: AGENT_TOOLSET_TYPE },
+    REPORT_TOOL_CUSTOM_TOOL_SPEC,
   ],
   capabilities: { gitWrite: true },
 };
@@ -128,6 +130,7 @@ export const AdrGenStep: AgentStep = {
   toolHandlers: undefined,
 
   completionVerdict: "success",
+  reportTool: REPORT_TOOL,
 
   // adr-gen reads design.md / delta specs / review-feedback; 20 turns is sufficient.
   maxTurns: 20,

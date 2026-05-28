@@ -6,6 +6,7 @@ import type { AgentDefinition } from "../agent/definition.js";
 import type { ReviewScores } from "../parser/review-scores.js";
 import type { FindingSeverityCounts } from "../parser/review-findings.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
+import type { ReportToolSpec, BaseReportResult } from "../port/report-result.js";
 
 // Re-export AgentDefinition for convenience
 export type { AgentDefinition };
@@ -108,21 +109,6 @@ export interface AgentStep {
   completionVerdict?: import("../../state/schema.js").Verdict;
 
   /**
-   * If true, StepExecutor verifies the branch HEAD SHA advanced during the session.
-   * The check fetches the remote HEAD before and after the session via GitHubClient;
-   * if the SHA is unchanged, the executor throws NO_COMMIT_DETECTED.
-   *
-   * Set to true on writing-agent steps (spec-fixer, implementer, build-fixer, code-fixer)
-   * where the agent's responsibility includes producing a commit + push. Leave false
-   * (or omit) on review-style steps that may legitimately produce no commit beyond
-   * the result file (which is verified separately via parseResult).
-   *
-   * This is a stopgap mechanical guard against the failure mode where an agent ends
-   * its turn without committing — bypassing the agent's prompt-following.
-   */
-  requiresCommit?: boolean;
-
-  /**
    * Maximum number of turns for the SDK query() call.
    * When set, ClaudeCodeRunner passes this value as options.maxTurns to the SDK.
    * When absent, the default of 30 is used.
@@ -178,6 +164,15 @@ export interface AgentStep {
    * 汎用 field: 任意の AgentStep が primitive 改修なしで設定可能。
    */
   followUpPrompt?: string;
+
+  /**
+   * report_result tool specification for this step.
+   * When set, the adapter registers the tool and detects its invocation.
+   * All 10 agent steps define this in phase 1 using the BaseReportResult schema.
+   *
+   * tool-driven-step-completion: adapters halt (awaiting-resume) when toolResult is null.
+   */
+  reportTool?: ReportToolSpec<BaseReportResult>;
 
   /**
    * Enrich dynamic context with step-specific data before buildMessage is called.

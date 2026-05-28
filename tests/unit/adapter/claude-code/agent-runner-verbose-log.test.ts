@@ -144,7 +144,9 @@ describe("TC-09-02: ClaudeCodeRunner.run() — logs 'query started' with runtime
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
     };

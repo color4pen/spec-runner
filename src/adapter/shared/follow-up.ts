@@ -1,17 +1,17 @@
 import type { AgentRunContext, AgentRunResult } from "../../core/port/agent-runner.js";
 
 /**
- * follow turn を実行すべきか判定する。
- * ctx.followUpPrompts が 1 件以上かつ作業 turn が success なら true。
+ * postWork follow turn を実行すべきか判定する。
+ * ctx.policy.postWorkPrompts が 1 件以上かつ作業 turn が success なら true。
  *
  * Design: shared は runtime 型 (AsyncGenerator / Turn / poll result) と
  * usage 意味論を知らない純粋ロジックのみ。
  */
 export function shouldRunFollowUp(
-  ctx: Pick<AgentRunContext, "followUpPrompts">,
+  ctx: Pick<AgentRunContext, "policy">,
   baseCompletionReason: AgentRunResult["completionReason"],
 ): boolean {
-  return (ctx.followUpPrompts?.length ?? 0) > 0 && baseCompletionReason === "success";
+  return (ctx.policy?.postWorkPrompts?.length ?? 0) > 0 && baseCompletionReason === "success";
 }
 
 /**

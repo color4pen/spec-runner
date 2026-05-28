@@ -9,6 +9,11 @@
  * Design D5: commit+push is handled by StepExecutor.commitAndPush() (not in adapter).
  * Design D9: runtime-specific git instructions injected as additionalInstructions.
  *
+ * tool-driven-step-completion:
+ * - report_result MCP tool registered via createSdkMcpServer when ctx.policy.reportTool is set
+ * - follow-up retry when agent doesn't call report_result (up to policy.maxAttempts)
+ * - tool detection applies only to main work turn, not postWorkPrompts turns
+ *
  * TC-022: ClaudeCodeRunner implements AgentRunner interface
  * TC-023: query() receives ctx.cwd
  * TC-024: no SessionClient / @anthropic-ai/sdk import
@@ -20,6 +25,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import {
   query as sdkQuery,
+  createSdkMcpServer,
   type SDKMessage,
   type SDKResultMessage,
   type SDKResultSuccess,
@@ -36,6 +42,8 @@ import { logVerbose, stderrWrite } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../../core/lifecycle/diagnostic.js";
 import { SessionLogWriter } from "./session-log-writer.js";
 import { stripSecrets } from "../../util/env-filter.js";
+import type { BaseReportResult, ReportToolSpec } from "../../core/port/report-result.js";
+import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
 
 export type { SpawnFn } from "./git-exec.js";
 
@@ -96,10 +104,14 @@ export type QueryFn = (params: {
   options?: Record<string, unknown>;
 }) => AsyncGenerator<unknown, void>;
 
+export type CreateMcpServerFn = typeof createSdkMcpServer;
+
 export interface ClaudeCodeRunnerDeps {
   cwd?: string;
   _spawnFn?: SpawnFn;
   _queryFn?: QueryFn;
+  /** Injectable for testing: replaces createSdkMcpServer to capture tool handlers. */
+  _createMcpServerFn?: CreateMcpServerFn;
 }
 
 /**
@@ -110,11 +122,13 @@ export class ClaudeCodeRunner implements AgentRunner {
   private readonly defaultCwd: string;
   private readonly spawnFn: SpawnFn;
   private readonly queryFn: QueryFn;
+  private readonly createMcpServerFn: CreateMcpServerFn;
 
   constructor(deps: ClaudeCodeRunnerDeps = {}) {
     this.defaultCwd = deps.cwd ?? process.cwd();
     this.spawnFn = deps._spawnFn ?? defaultSpawnFn;
     this.queryFn = deps._queryFn ?? (sdkQuery as unknown as QueryFn);
+    this.createMcpServerFn = deps._createMcpServerFn ?? createSdkMcpServer;
   }
 
   async run(ctx: AgentRunContext): Promise<AgentRunResult> {
@@ -132,10 +146,10 @@ export class ClaudeCodeRunner implements AgentRunner {
         title: "",
         slug: ctx.slug,
         baseBranch: "main",
-        content: ctx.requestContent,
-        adr: ctx.requestAdr ?? false,
+        content: ctx.input.requestContent,
+        adr: ctx.input.requestAdr ?? false,
       },
-      dynamicContext: ctx.dynamicContext,
+      dynamicContext: ctx.input.dynamicContext,
     };
 
     // D3 (add-spec-review-baseline-check): call enrichContext before buildMessage.
@@ -148,8 +162,8 @@ export class ClaudeCodeRunner implements AgentRunner {
     const baseMessage = step.buildMessage(state, stepCtx);
 
     const additionalInstructions = buildAdditionalInstructions(ctx);
-    const resumeSection = ctx.resumePrompt
-      ? `\n\n<resume-context>\n${ctx.resumePrompt}\n</resume-context>`
+    const resumeSection = ctx.session.resumePrompt
+      ? `\n\n<resume-context>\n${ctx.session.resumePrompt}\n</resume-context>`
       : "";
     const fullPrompt = additionalInstructions
       ? `${baseMessage}${resumeSection}\n\n${additionalInstructions}`
@@ -181,7 +195,34 @@ export class ClaudeCodeRunner implements AgentRunner {
 
     // Build query options, adding resume if a previous session ID is available.
     const resumeOption: Record<string, unknown> =
-      ctx.resumeSessionId ? { resume: ctx.resumeSessionId } : {};
+      ctx.session.resumeSessionId ? { resume: ctx.session.resumeSessionId } : {};
+
+    // Set up report_result MCP tool if reportTool is configured.
+    // The tool result is captured via closure and accessed after the query loop.
+    let capturedToolResult: BaseReportResult | null = null;
+    let reportMcpServer: ReturnType<CreateMcpServerFn> | null = null;
+
+    const reportTool: ReportToolSpec | undefined = ctx.policy?.reportTool;
+    if (reportTool) {
+      const toolSpec = reportTool;
+      reportMcpServer = this.createMcpServerFn({
+        name: "specrunner_report",
+        tools: [
+          {
+            name: toolSpec.name,
+            description: toolSpec.description,
+            inputSchema: toolSpec.zodSchema,
+            handler: async (args: unknown) => {
+              const parseResult = toolSpec.parseInput(args);
+              if (parseResult.ok) {
+                capturedToolResult = parseResult.value;
+              }
+              return { content: [{ type: "text" as const, text: "ok" }] };
+            },
+          },
+        ],
+      });
+    }
 
     const queryOptions: Record<string, unknown> = {
       cwd,
@@ -193,12 +234,13 @@ export class ClaudeCodeRunner implements AgentRunner {
       abortController,
       env: stripSecrets(process.env as Record<string, string | undefined>),
       ...resumeOption,
+      ...(reportMcpServer ? { mcpServers: { specrunner_report: reportMcpServer } } : {}),
     };
 
     const agentRedirectCounter = { count: 0 };
 
     // Open session log writer if sessionLogPath is configured (debug level)
-    const sessionLogWriter = ctx.sessionLogPath ? new SessionLogWriter(ctx.sessionLogPath) : null;
+    const sessionLogWriter = ctx.session.logPath ? new SessionLogWriter(ctx.session.logPath) : null;
 
     const runQuery = async (): Promise<{ lastResult: SDKResultMessage | null }> => {
       let lastResult: SDKResultMessage | null = null;
@@ -246,9 +288,9 @@ export class ClaudeCodeRunner implements AgentRunner {
           throw innerErr;
         }
         // If we were attempting a session resume, try falling back to a new session.
-        if (ctx.resumeSessionId) {
+        if (ctx.session.resumeSessionId) {
           stderrWrite(
-            `[specrunner] warn: session resume failed for '${step.name}' (session: ${ctx.resumeSessionId}): ${(innerErr as Error).message}. Falling back to new session.`,
+            `[specrunner] warn: session resume failed for '${step.name}' (session: ${ctx.session.resumeSessionId}): ${(innerErr as Error).message}. Falling back to new session.`,
           );
           delete queryOptions["resume"];
           queryResult = await runQuery();
@@ -263,6 +305,8 @@ export class ClaudeCodeRunner implements AgentRunner {
         return {
           completionReason: "error",
           resultContent: null,
+          toolResult: null,
+          followUpAttempts: 0,
           error: Object.assign(
             new Error(`Step '${step.name}': Agent/Task tool redirect limit exceeded (max 3)`),
             { code: "AGENT_REDIRECT_LIMIT_EXCEEDED" },
@@ -278,6 +322,8 @@ export class ClaudeCodeRunner implements AgentRunner {
         return {
           completionReason: "error",
           resultContent: null,
+          toolResult: null,
+          followUpAttempts: 0,
           error: Object.assign(
             new Error(`Claude Code SDK query failed: ${errorResult.subtype}`),
             { code: "CLAUDE_CODE_QUERY_FAILED" },
@@ -304,13 +350,44 @@ export class ClaudeCodeRunner implements AgentRunner {
         extractedSessionId = successResult.session_id;
       }
 
-      // Follow-up turns (if configured and work turn succeeded) — N-stage loop
+      // --- report_result follow-up retry (main work turn only) ---
+      // If reportTool is configured and the agent didn't call it, retry up to maxAttempts.
+      let followUpAttempts = 0;
+      if (reportTool && capturedToolResult === null && extractedSessionId) {
+        const retryPolicy = ctx.policy?.toolReportRetry ?? DEFAULT_TOOL_RETRY;
+        for (let attempt = 1; attempt <= retryPolicy.maxAttempts; attempt++) {
+          const retryPrompt = retryPolicy.buildPrompt({ attempt, reason: "no-tool-call" });
+          const retryOptions: Record<string, unknown> = {
+            ...queryOptions,
+            resume: extractedSessionId,
+          };
+          // Remove MCP server from retry options to avoid re-registering
+          // (the closure is still active so tool calls will be captured)
+          const retryMessages = this.queryFn({ prompt: retryPrompt, options: retryOptions });
+          for await (const message of retryMessages as AsyncGenerator<SDKMessage, void>) {
+            if (message.type === "result") {
+              void (message as SDKResultMessage);
+            }
+          }
+          followUpAttempts++;
+
+          if (capturedToolResult !== null) break;
+
+          // If this was the last attempt and tool still not called, we're done
+          if (attempt === retryPolicy.maxAttempts) break;
+        }
+      }
+
+      // postWorkPrompts turns (after main work and report_result detection)
+      // tool calls in postWorkPrompts turns are intentionally NOT detected
       if (shouldRunFollowUp(ctx, "success") && extractedSessionId) {
-        for (const followPrompt of ctx.followUpPrompts!) {
+        for (const followPrompt of ctx.policy.postWorkPrompts!) {
           const followUpOptions: Record<string, unknown> = {
             ...queryOptions,
             resume: extractedSessionId,
           };
+          // Remove MCP server from postWork prompts — tool detection is main-work-turn only
+          delete followUpOptions["mcpServers"];
           const followMessages = this.queryFn({ prompt: followPrompt, options: followUpOptions });
           let followLastResult: SDKResultMessage | null = null;
           for await (const message of followMessages as AsyncGenerator<SDKMessage, void>) {
@@ -325,6 +402,8 @@ export class ClaudeCodeRunner implements AgentRunner {
             return {
               completionReason: "error",
               resultContent: null,
+              toolResult: capturedToolResult,
+              followUpAttempts,
               error: Object.assign(
                 new Error(`Claude Code SDK follow-up query failed: ${followErrorResult.subtype}`),
                 { code: "CLAUDE_CODE_QUERY_FAILED" },
@@ -367,6 +446,40 @@ export class ClaudeCodeRunner implements AgentRunner {
         });
         sessionLogWriter.close();
       }
+
+      // TC-025: read result file from local fs (not GitHub API)
+      const resultFilePath = step.resultFilePath(state, stepCtx);
+
+      let resultContent: string | null = null;
+      if (resultFilePath !== null) {
+        const absolutePath = path.isAbsolute(resultFilePath)
+          ? resultFilePath
+          : path.join(cwd, resultFilePath);
+        try {
+          resultContent = await fs.readFile(absolutePath, "utf-8");
+        } catch {
+          return {
+            completionReason: "error",
+            resultContent: null,
+            toolResult: capturedToolResult,
+            followUpAttempts,
+            error: Object.assign(
+              new Error(`result file not found: ${resultFilePath}`),
+              { code: "RESULT_FILE_NOT_FOUND" },
+            ),
+          };
+        }
+      }
+
+      const baseResult: AgentRunResult = {
+        completionReason: "success",
+        resultContent: null,
+        toolResult: capturedToolResult,
+        followUpAttempts,
+        modelUsage: extractedModelUsage,
+        sessionId: extractedSessionId,
+      };
+      return mergeFollowUpResult(baseResult, resultContent);
     } catch (err) {
       if (abortController.signal.aborted && timeoutId !== undefined) {
         clearTimeout(timeoutId);
@@ -375,6 +488,8 @@ export class ClaudeCodeRunner implements AgentRunner {
         return {
           completionReason: "timeout",
           resultContent: null,
+          toolResult: null,
+          followUpAttempts: 0,
           error: Object.assign(
             new Error(`Step '${step.name}' timed out after ${resolvedConfig.timeoutMs}ms`),
             { code: "STEP_TIMEOUT" },
@@ -387,6 +502,8 @@ export class ClaudeCodeRunner implements AgentRunner {
       return {
         completionReason: "error",
         resultContent: null,
+        toolResult: null,
+        followUpAttempts: 0,
         error: Object.assign(
           new Error(`Claude Code SDK query failed: ${cause.message}`),
           { code: "CLAUDE_CODE_QUERY_FAILED", cause },
@@ -395,36 +512,6 @@ export class ClaudeCodeRunner implements AgentRunner {
     } finally {
       if (timeoutId !== undefined) clearTimeout(timeoutId);
     }
-
-    // TC-025: read result file from local fs (not GitHub API)
-    const resultFilePath = step.resultFilePath(state, stepCtx);
-
-    let resultContent: string | null = null;
-    if (resultFilePath !== null) {
-      const absolutePath = path.isAbsolute(resultFilePath)
-        ? resultFilePath
-        : path.join(cwd, resultFilePath);
-      try {
-        resultContent = await fs.readFile(absolutePath, "utf-8");
-      } catch {
-        return {
-          completionReason: "error",
-          resultContent: null,
-          error: Object.assign(
-            new Error(`result file not found: ${resultFilePath}`),
-            { code: "RESULT_FILE_NOT_FOUND" },
-          ),
-        };
-      }
-    }
-
-    const baseResult: AgentRunResult = {
-      completionReason: "success",
-      resultContent: null,
-      modelUsage: extractedModelUsage,
-      sessionId: extractedSessionId,
-    };
-    return mergeFollowUpResult(baseResult, resultContent);
   }
 }
 

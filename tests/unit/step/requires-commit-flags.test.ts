@@ -1,20 +1,19 @@
 /**
- * Regression guard for the requiresCommit flag on writing-agent steps.
+ * Regression guard: all writing-agent steps must have reportTool defined.
  *
- * Writing agents (spec-fixer, implementer, build-fixer) are responsible for
- * committing + pushing their changes during a session. The StepExecutor uses
- * requiresCommit to detect the failure mode where an agent ends its turn
- * without advancing the branch HEAD. Forgetting to set this flag silently
- * disables the safeguard, so this test pins it.
+ * reportTool replaces the former requiresCommit guard as the structural
+ * completion signal. Steps that produce artifacts (design, spec-fixer,
+ * implementer, etc.) must declare reportTool so the StepExecutor can detect
+ * when an agent ends its turn without explicitly reporting completion.
  *
- * code-fixer intentionally sets requiresCommit = false because it may be
- * invoked when there are no staged changes (observation auto-fix path where
- * all findings are already resolved). Requiring a commit in that case would
- * cause a noCommitDetectedError halt.
- *
- * Review-style steps (spec-review, code-review) and propose are NOT
- * required to advance the branch beyond writing their result file (which
- * has a separate verification path), so they should leave the flag falsy.
+ * TC-RCF-01: SpecFixerStep.reportTool is defined
+ * TC-RCF-02: ImplementerStep.reportTool is defined
+ * TC-RCF-03: BuildFixerStep.reportTool is defined
+ * TC-RCF-04: CodeFixerStep.reportTool is defined
+ * TC-RCF-05: DesignStep.reportTool is defined
+ * TC-RCF-06: SpecReviewStep.reportTool is defined
+ * TC-RCF-07: CodeReviewStep.reportTool is defined
+ * TC-RCF-08: reportTool.name is "report_result" for all steps
  */
 import { describe, it, expect } from "vitest";
 import { SpecFixerStep } from "../../../src/core/step/spec-fixer.js";
@@ -25,34 +24,62 @@ import { SpecReviewStep } from "../../../src/core/step/spec-review.js";
 import { CodeReviewStep } from "../../../src/core/step/code-review.js";
 import { DesignStep } from "../../../src/core/step/design.js";
 
-describe("requiresCommit flag — writing agents must opt in", () => {
-  it("SpecFixerStep.requiresCommit === true", () => {
-    expect(SpecFixerStep.requiresCommit).toBe(true);
-  });
-
-  it("ImplementerStep.requiresCommit === true", () => {
-    expect(ImplementerStep.requiresCommit).toBe(true);
-  });
-
-  it("BuildFixerStep.requiresCommit === true", () => {
-    expect(BuildFixerStep.requiresCommit).toBe(true);
+describe("TC-RCF-01: SpecFixerStep.reportTool is defined", () => {
+  it("SpecFixerStep has reportTool", () => {
+    expect(SpecFixerStep.reportTool).toBeDefined();
   });
 });
 
-describe("requiresCommit flag — review and design steps stay opt-out", () => {
-  it("SpecReviewStep.requiresCommit is falsy (review file verified separately)", () => {
-    expect(SpecReviewStep.requiresCommit).toBeFalsy();
+describe("TC-RCF-02: ImplementerStep.reportTool is defined", () => {
+  it("ImplementerStep has reportTool", () => {
+    expect(ImplementerStep.reportTool).toBeDefined();
   });
+});
 
-  it("CodeReviewStep.requiresCommit is falsy (review file verified separately)", () => {
-    expect(CodeReviewStep.requiresCommit).toBeFalsy();
+describe("TC-RCF-03: BuildFixerStep.reportTool is defined", () => {
+  it("BuildFixerStep has reportTool", () => {
+    expect(BuildFixerStep.reportTool).toBeDefined();
   });
+});
 
-  it("DesignStep.requiresCommit is falsy (change folder verification gates completion)", () => {
-    expect(DesignStep.requiresCommit).toBeFalsy();
+describe("TC-RCF-04: CodeFixerStep.reportTool is defined", () => {
+  it("CodeFixerStep has reportTool", () => {
+    expect(CodeFixerStep.reportTool).toBeDefined();
   });
+});
 
-  it("CodeFixerStep.requiresCommit is falsy (may be invoked with no staged changes)", () => {
-    expect(CodeFixerStep.requiresCommit).toBeFalsy();
+describe("TC-RCF-05: DesignStep.reportTool is defined", () => {
+  it("DesignStep has reportTool", () => {
+    expect(DesignStep.reportTool).toBeDefined();
   });
+});
+
+describe("TC-RCF-06: SpecReviewStep.reportTool is defined", () => {
+  it("SpecReviewStep has reportTool", () => {
+    expect(SpecReviewStep.reportTool).toBeDefined();
+  });
+});
+
+describe("TC-RCF-07: CodeReviewStep.reportTool is defined", () => {
+  it("CodeReviewStep has reportTool", () => {
+    expect(CodeReviewStep.reportTool).toBeDefined();
+  });
+});
+
+describe("TC-RCF-08: reportTool.name is 'report_result' for all steps", () => {
+  const steps = [
+    { name: "SpecFixerStep", step: SpecFixerStep },
+    { name: "ImplementerStep", step: ImplementerStep },
+    { name: "BuildFixerStep", step: BuildFixerStep },
+    { name: "CodeFixerStep", step: CodeFixerStep },
+    { name: "DesignStep", step: DesignStep },
+    { name: "SpecReviewStep", step: SpecReviewStep },
+    { name: "CodeReviewStep", step: CodeReviewStep },
+  ];
+
+  for (const { name, step } of steps) {
+    it(`${name}.reportTool.name === "report_result"`, () => {
+      expect(step.reportTool?.name).toBe("report_result");
+    });
+  }
 });

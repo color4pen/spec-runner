@@ -17,8 +17,10 @@ import * as os from "node:os";
 import { EventEmitter } from "node:events";
 import type { SpawnOptions, ChildProcess } from "node:child_process";
 import { ClaudeCodeRunner } from "../../../../src/adapter/claude-code/agent-runner.js";
-import type { SpawnFn, QueryFn } from "../../../../src/adapter/claude-code/agent-runner.js";
+import type { SpawnFn, QueryFn, CreateMcpServerFn } from "../../../../src/adapter/claude-code/agent-runner.js";
 import type { AgentRunContext } from "../../../../src/core/port/agent-runner.js";
+import type { ReportToolSpec } from "../../../../src/core/port/report-result.js";
+import { parseBaseReportInput } from "../../../../src/core/port/report-result.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import type { AgentStep } from "../../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
@@ -181,7 +183,9 @@ describe("TC-022: ClaudeCodeRunner implements AgentRunner interface", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -213,7 +217,9 @@ describe("TC-023: ClaudeCodeRunner invokes query() with ctx.cwd", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: worktreeCwd,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -239,7 +245,9 @@ describe("TC-023: ClaudeCodeRunner invokes query() with ctx.cwd", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -279,7 +287,9 @@ describe("TC-008: config.steps なしで既存動作が維持される（後方�
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(), // no steps field
       emit: vi.fn(),
     };
@@ -307,7 +317,9 @@ describe("TC-008: config.steps なしで既存動作が維持される（後方�
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -339,7 +351,9 @@ describe("TC-006: maxTurns: null のとき SDK query() に maxTurns を渡さな
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config,
       emit: vi.fn(),
     };
@@ -372,7 +386,9 @@ describe("TC-007: maxTurns に数値が設定されているとき SDK query() �
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config,
       emit: vi.fn(),
     };
@@ -405,7 +421,9 @@ describe("TC-012: 既存の step.maxTurns ?? 30 フォールバックが削除�
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config,
       emit: vi.fn(),
     };
@@ -440,7 +458,9 @@ describe("TC-020: ClaudeCodeRunner が解決済みの model を SDK に渡す", 
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config,
       emit: vi.fn(),
     };
@@ -536,7 +556,9 @@ describe("TC-025: ClaudeCodeRunner reads resultContent from fs (not GitHub API)"
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -568,7 +590,9 @@ describe("TC-026: ClaudeCodeRunner additionalInstructions contains branch info (
       branch: "feat/foo-bar",
       slug: "foo-bar",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -633,14 +657,15 @@ describe("TC-028: ClaudeCodeRunner — no requiresCommit guard (moved to StepExe
           system: "implement",
           tools: [],
         },
-        requiresCommit: true,
         resultFilePath: () => null,
       }),
       state,
       branch: "feat/foo-bar",
       slug: "foo-bar",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -680,14 +705,15 @@ describe("TC-029: ClaudeCodeRunner — no requiresCommit guard (moved to StepExe
           system: "design",
           tools: [],
         },
-        requiresCommit: true,
         resultFilePath: () => null,
       }),
       state,
       branch: "feat/foo-bar",
       slug: "foo-bar",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -713,7 +739,9 @@ describe("ClaudeCodeRunner SDK query error handling", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -736,7 +764,9 @@ describe("ClaudeCodeRunner SDK query error handling", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -780,12 +810,13 @@ describe("ClaudeCodeRunner follow-up 2-turn execution", () => {
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const ctx: AgentRunContext = {
       step: makeAgentStep({ followUpPrompt: "fix the format" }),
-      followUpPrompts: ["fix the format"],
       state: makeJobState(),
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: { postWorkPrompts: ["fix the format"] },
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -823,12 +854,13 @@ describe("ClaudeCodeRunner follow-up 2-turn execution", () => {
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const ctx: AgentRunContext = {
       step: makeAgentStep({ followUpPrompt: "fix the format" }),
-      followUpPrompts: ["fix the format"],
       state: makeJobState(),
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: { postWorkPrompts: ["fix the format"] },
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -872,7 +904,9 @@ describe("ClaudeCodeRunner follow-up 2-turn execution", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -927,12 +961,13 @@ describe("ClaudeCodeRunner follow-up 2-turn execution", () => {
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const ctx: AgentRunContext = {
       step: makeAgentStep({ followUpPrompt: "fix format" }),
-      followUpPrompts: ["fix format"],
       state: makeJobState(),
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: { postWorkPrompts: ["fix format"] },
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -961,12 +996,13 @@ describe("ClaudeCodeRunner follow-up 2-turn execution", () => {
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const ctx: AgentRunContext = {
       step: makeAgentStep({ followUpPrompt: "fix format" }),
-      followUpPrompts: ["fix format"],
       state: makeJobState(),
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: { postWorkPrompts: ["fix format"] },
       config,
       emit: vi.fn(),
     };
@@ -1020,12 +1056,13 @@ describe("ClaudeCodeRunner follow-up 2-turn execution", () => {
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const ctx: AgentRunContext = {
       step: makeAgentStep({ followUpPrompt: "fix format" }),
-      followUpPrompts: ["fix format"],
       state: makeJobState(),
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: { postWorkPrompts: ["fix format"] },
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -1064,12 +1101,13 @@ describe("ClaudeCodeRunner follow-up 2-turn execution", () => {
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const ctx: AgentRunContext = {
       step: makeAgentStep(),
-      followUpPrompts: ["follow-rule-1", "follow-rule-2"],
       state: makeJobState(),
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: { postWorkPrompts: ["follow-rule-1", "follow-rule-2"] },
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -1134,7 +1172,9 @@ describe("ClaudeCodeRunner modelUsage propagation", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -1166,7 +1206,9 @@ describe("ClaudeCodeRunner modelUsage propagation", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -1187,7 +1229,9 @@ describe("ClaudeCodeRunner modelUsage propagation", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -1218,10 +1262,11 @@ describe("TC-016: ClaudeCodeRunner injects <project-context> when ctx.projectCon
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "base request content",
+      input: { requestContent: "base request content", projectContext: "# Project\nStack: TypeScript" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
-      projectContext: "# Project\nStack: TypeScript",
     };
 
     await runner.run(ctx);
@@ -1288,7 +1333,9 @@ describe("TC-032: timeoutMs triggers abort and returns timeout result", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config,
       emit: vi.fn(),
     };
@@ -1308,7 +1355,9 @@ describe("TC-033: timeoutMs null means no timeout (default behavior)", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(), // no steps → timeoutMs resolves to null
       emit: vi.fn(),
     };
@@ -1367,7 +1416,9 @@ describe("TC-034: step-level timeoutMs overrides defaults", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config,
       emit: vi.fn(),
     };
@@ -1393,7 +1444,9 @@ describe("TC-035: timeoutMs: 0 disables timeout", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config,
       emit: vi.fn(),
     };
@@ -1418,7 +1471,9 @@ describe("TC-017: ClaudeCodeRunner omits <project-context> when ctx.projectConte
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "base request content",
+      input: { requestContent: "base request content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
       // projectContext intentionally absent
@@ -1456,7 +1511,9 @@ describe("TC-041: Non-timeout error is not misclassified as timeout (ClaudeCodeR
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config,
       emit: vi.fn(),
     };
@@ -1516,12 +1573,13 @@ describe("TC-10-1: abort 発火で残り follow turn が中断される", () => 
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const ctx: AgentRunContext = {
       step: makeAgentStep(),
-      followUpPrompts: ["a", "b", "c"],
       state: makeJobState(),
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: { postWorkPrompts: ["a", "b", "c"] },
       config,
       emit: vi.fn(),
     };
@@ -1553,10 +1611,11 @@ describe("ClaudeCodeRunner session continuity (resumeSessionId)", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: { resumeSessionId: "sess-abc" },
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
-      resumeSessionId: "sess-abc",
     };
 
     const result = await runner.run(ctx);
@@ -1578,7 +1637,9 @@ describe("ClaudeCodeRunner session continuity (resumeSessionId)", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
       // resumeSessionId intentionally absent
@@ -1631,10 +1692,11 @@ describe("ClaudeCodeRunner session continuity (resumeSessionId)", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: { resumeSessionId: "sess-expired" },
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
-      resumeSessionId: "sess-expired",
     };
 
     const result = await runner.run(ctx);
@@ -1681,10 +1743,11 @@ describe("ClaudeCodeRunner session continuity (resumeSessionId)", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: { resumeSessionId: "sess-abc" },
+      policy: {},
       config,
       emit: vi.fn(),
-      resumeSessionId: "sess-abc",
     };
 
     const result = await runner.run(ctx);
@@ -1736,7 +1799,9 @@ describe("TC-EMIT: ClaudeCodeRunner emits step:progress on tool_use messages", (
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: emitFn,
     };
@@ -1759,7 +1824,9 @@ describe("TC-EMIT: ClaudeCodeRunner emits step:progress on tool_use messages", (
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: emitFn,
     };
@@ -1830,10 +1897,11 @@ describe("TC-EMIT: ClaudeCodeRunner emits step:progress on tool_use messages", (
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: { postWorkPrompts: ["verify your work"] },
       config: makeConfig(),
       emit: emitFn,
-      followUpPrompts: ["verify your work"],
     };
 
     await runner.run(ctx);
@@ -1863,10 +1931,11 @@ describe("TC-10c: ClaudeCodeRunner — resumePrompt injection", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "base request",
+      input: { requestContent: "base request" },
+      session: { resumePrompt: "手動で foo.ts の import を修正済み" },
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
-      resumePrompt: "手動で foo.ts の import を修正済み",
     };
 
     await runner.run(ctx);
@@ -1891,7 +1960,9 @@ describe("TC-10c: ClaudeCodeRunner — resumePrompt injection", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "base request",
+      input: { requestContent: "base request" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
       // resumePrompt intentionally absent
@@ -1917,10 +1988,11 @@ describe("TC-10c: ClaudeCodeRunner — resumePrompt injection", () => {
       branch: "feat/branch",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "base request",
+      input: { requestContent: "base request" },
+      session: { resumePrompt: "RESUME_CONTEXT" },
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
-      resumePrompt: "RESUME_CONTEXT",
     };
 
     await runner.run(ctx);
@@ -1932,5 +2004,307 @@ describe("TC-10c: ClaudeCodeRunner — resumePrompt injection", () => {
     expect(resumeIdx).toBeGreaterThan(-1);
     expect(runtimeIdx).toBeGreaterThan(-1);
     expect(resumeIdx).toBeLessThan(runtimeIdx);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Helper: makeReportTool
+// ---------------------------------------------------------------------------
+
+function makeReportTool(): ReportToolSpec {
+  return {
+    name: "report_result",
+    description: "Report completion of this step.",
+    zodSchema: {},
+    parseInput: parseBaseReportInput,
+  };
+}
+
+/**
+ * Helper: create a mock _createMcpServerFn that captures the first tool's handler.
+ * Returns a tuple [mockFn, getter] so tests can call the captured handler.
+ */
+function makeMockCreateMcpServerFn(): {
+  mockFn: CreateMcpServerFn;
+  getHandler: () => ((args: unknown) => Promise<unknown>) | null;
+} {
+  let capturedHandler: ((args: unknown) => Promise<unknown>) | null = null;
+
+  const mockFn = ((opts: unknown) => {
+    const o = opts as {
+      name: string;
+      tools: Array<{ name: string; handler: (args: unknown) => Promise<unknown> }>;
+    };
+    if (o.tools.length > 0) {
+      capturedHandler = o.tools[0]!.handler;
+    }
+    // Return a minimal McpSdkServerConfigWithInstance shape
+    return { type: "sdk" as const, name: o.name, instance: {} as unknown };
+  }) as unknown as CreateMcpServerFn;
+
+  return { mockFn, getHandler: () => capturedHandler };
+}
+
+// ---------------------------------------------------------------------------
+// TC-018/TC-019: report_result tool registration and completion (local runtime)
+// ---------------------------------------------------------------------------
+
+describe("TC-018: createSdkMcpServer is called with report_result tool when reportTool is set", () => {
+  it("_createMcpServerFn receives tool with name 'report_result'", async () => {
+    let capturedToolName: string | undefined;
+
+    const mockFn = ((opts: unknown) => {
+      const o = opts as { name: string; tools: Array<{ name: string }> };
+      capturedToolName = o.tools[0]?.name;
+      return { type: "sdk" as const, name: o.name, instance: {} as unknown };
+    }) as unknown as CreateMcpServerFn;
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: makeQueryFn(),
+      _createMcpServerFn: mockFn,
+    });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc018-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: { reportTool: makeReportTool() },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    expect(capturedToolName).toBe("report_result");
+  });
+
+  it("_createMcpServerFn is NOT called when reportTool is absent", async () => {
+    let createCalled = false;
+
+    const mockFn = ((_opts: unknown) => {
+      createCalled = true;
+      return { type: "sdk" as const, name: "x", instance: {} as unknown };
+    }) as unknown as CreateMcpServerFn;
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: makeQueryFn(),
+      _createMcpServerFn: mockFn,
+    });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc018b-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    expect(createCalled).toBe(false);
+  });
+});
+
+describe("TC-019: toolResult is {ok:true} when agent calls report_result tool with {ok:true}", () => {
+  it("result.toolResult.ok === true when captured handler is invoked with {ok:true} during query", async () => {
+    const { mockFn, getHandler } = makeMockCreateMcpServerFn();
+
+    // queryFn simulates agent calling report_result before returning result
+    const queryFn: QueryFn = async function* () {
+      const handler = getHandler();
+      if (handler) {
+        await handler({ ok: true });
+      }
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 10,
+        duration_api_ms: 10,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0,
+        usage: { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "tc019-uuid",
+        session_id: "tc019-session",
+      } as unknown;
+    } as QueryFn;
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _createMcpServerFn: mockFn,
+    });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc019-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: { reportTool: makeReportTool() },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.toolResult).not.toBeNull();
+    expect(result.toolResult?.ok).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-021/TC-022/TC-023: follow-up retry 2→halt
+// ---------------------------------------------------------------------------
+
+describe("TC-021/TC-022/TC-023: follow-up retry — followUpAttempts===2 and toolResult===null when agent never calls report_result", () => {
+  it("queryFn called 3 times (main + 2 retries); followUpAttempts===2, toolResult===null", async () => {
+    const { mockFn } = makeMockCreateMcpServerFn();
+    // handler is never called by queryFn, so capturedToolResult stays null
+
+    let callCount = 0;
+
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 10,
+        duration_api_ms: 10,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0,
+        usage: { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: `retry-uuid-${callCount}`,
+        session_id: "retry-session",
+      } as unknown;
+    } as QueryFn;
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _createMcpServerFn: mockFn,
+    });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc022-retry-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      // reportTool set → enables retry loop; toolReportRetry defaults to DEFAULT_TOOL_RETRY (maxAttempts=2)
+      policy: { reportTool: makeReportTool() },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+
+    // 1 main work call + 2 retry calls = 3 total
+    expect(callCount).toBe(3);
+    expect(result.followUpAttempts).toBe(2);
+    expect(result.toolResult).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-024: tool detection is main-work-turn only
+// postWorkPrompts turns must NOT have mcpServers in their query options
+// ---------------------------------------------------------------------------
+
+describe("TC-024: tool detection is main-work-turn only — mcpServers absent from postWorkPrompts query options", () => {
+  it("main work query has mcpServers; postWorkPrompts query does NOT have mcpServers", async () => {
+    const { mockFn, getHandler } = makeMockCreateMcpServerFn();
+
+    let callCount = 0;
+    const capturedOptions: Array<Record<string, unknown>> = [];
+
+    const queryFn: QueryFn = async function* (params) {
+      callCount++;
+      capturedOptions.push({ ...(params.options ?? {}) });
+
+      // Main work turn: simulate agent calling report_result (so retry loop is skipped)
+      if (callCount === 1) {
+        const handler = getHandler();
+        if (handler) {
+          await handler({ ok: true });
+        }
+      }
+
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 10,
+        duration_api_ms: 10,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0,
+        usage: { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: `tc024-uuid-${callCount}`,
+        session_id: "tc024-session",
+      } as unknown;
+    } as QueryFn;
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _createMcpServerFn: mockFn,
+    });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc024-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: {
+        reportTool: makeReportTool(),
+        postWorkPrompts: ["verify your changes"],
+      },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    // Two queryFn calls: main work (index 0) and postWorkPrompts (index 1)
+    expect(callCount).toBe(2);
+    // Main work query has mcpServers (report_result tool registered)
+    expect(capturedOptions[0]?.["mcpServers"]).toBeDefined();
+    // postWorkPrompts query does NOT have mcpServers (tool detection is main-work-turn only)
+    expect(capturedOptions[1]?.["mcpServers"]).toBeUndefined();
+    // toolResult comes from main work turn
+    expect(result.toolResult?.ok).toBe(true);
   });
 });

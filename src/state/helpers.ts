@@ -1,4 +1,5 @@
 import type { JobState, StepResult, StepRun, ModelUsage } from "./schema.js";
+import type { BaseReportResult } from "../core/port/report-result.js";
 
 /**
  * Convert a StepRun to StepResult shape (legacy view).
@@ -63,6 +64,16 @@ export interface StepResultInput {
    * Only present for ClaudeCodeRunner steps; absent for ManagedAgentRunner and CLI steps.
    */
   modelUsage?: Record<string, ModelUsage>;
+  /**
+   * Result from report_result tool call.
+   * null = tool was not called. Added in tool-driven-step-completion.
+   */
+  toolResult?: BaseReportResult | null;
+  /**
+   * Number of follow-up retry attempts. 0 = first turn success.
+   * Added in tool-driven-step-completion.
+   */
+  followUpAttempts?: number;
 }
 
 /**
@@ -89,6 +100,8 @@ export function pushStepResult(
       findingsPath: partial.findingsPath,
       error: partial.error,
       fileContent: partial.fileContent,
+      ...(partial.toolResult !== undefined ? { toolResult: partial.toolResult } : {}),
+      ...(partial.followUpAttempts !== undefined ? { followUpAttempts: partial.followUpAttempts } : {}),
     },
     startedAt: partial.startedAt ?? now,
     endedAt: partial.completedAt ?? now,

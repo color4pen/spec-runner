@@ -9,6 +9,7 @@ import { IMPLEMENTER_SYSTEM_PROMPT } from "../../prompts/implementer-system.js";
 import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
+import { REPORT_TOOL, REPORT_TOOL_CUSTOM_TOOL_SPEC } from "./report-tool.js";
 
 const IMPLEMENTER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -24,6 +25,7 @@ const implementerAgentDefinition: AgentDefinition = {
   system: IMPLEMENTER_SYSTEM_PROMPT,
   tools: [
     { type: AGENT_TOOLSET_TYPE },
+    REPORT_TOOL_CUSTOM_TOOL_SPEC,
   ],
   capabilities: {
     gitWrite: true,
@@ -91,10 +93,8 @@ export const ImplementerStep: AgentStep = {
   toolHandlers: undefined,
 
   completionVerdict: "success",
-
   needsProjectContext: true,
-
-  requiresCommit: true,
+  reportTool: REPORT_TOOL,
 
   // maxTurns: implementer handles complex multi-file tasks; 60 is the upper bound.
   // Design D3 (propose-openspec-cli-and-step-model-config).

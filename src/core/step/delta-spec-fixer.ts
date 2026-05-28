@@ -9,6 +9,7 @@ import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath, deltaSpecValidationResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { isFixerContinuation } from "./fixer-helpers.js";
+import { REPORT_TOOL, REPORT_TOOL_CUSTOM_TOOL_SPEC } from "./report-tool.js";
 
 const DELTA_SPEC_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -27,6 +28,7 @@ const deltaSpecFixerAgentDefinition: AgentDefinition = {
   system: SPEC_FIXER_SYSTEM_PROMPT,
   tools: [
     { type: AGENT_TOOLSET_TYPE },
+    REPORT_TOOL_CUSTOM_TOOL_SPEC,
   ],
 };
 
@@ -55,7 +57,7 @@ Please:
 3. If specs/ directory does not exist or contains no delta spec files, create a new delta spec at \`specs/<capability-name>/spec.md\` based on the request.md content and the changes made in this branch
 4. Ensure each spec.md has a \`## Requirements\` section header (new format — do NOT use \`## ADDED Requirements\`, \`## MODIFIED Requirements\`, etc.)
 5. Ensure each section contains at least one \`### Requirement:\` block
-6. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+6. When all violations are resolved, call the report_result tool to complete this step.
 7. If violations include \`authority-spec-direct-edit\`:
    a. Revert the authority spec edit: \`git checkout ${baseBranch} -- <violated-path>\`
    b. Write the intended changes to the delta path: \`specrunner/changes/${slug}/specs/<capability>/spec.md\`
@@ -81,7 +83,7 @@ function buildDeltaSpecFixerContinuationMessage(opts: {
 前回のセッションの文脈を踏まえて、残っている violations を修正してください。
 前回試みたアプローチで不十分だった箇所は別のアプローチを検討してください。
 
-ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+violations をすべて修正したら、report_result tool を呼び出してステップを完了してください。
 
 violations に \`authority-spec-direct-edit\` が含まれる場合:
 a. authority spec の編集を revert: \`git checkout ${baseBranch} -- <violated-path>\`
@@ -112,8 +114,7 @@ export const DeltaSpecFixerStep: AgentStep = {
   // completionVerdict: "approved" — delta-spec-fixer has no result file; polling completion
   // maps to "approved" (enabling delta-spec-fixer → delta-spec-validation loop).
   completionVerdict: "approved",
-
-  requiresCommit: true,
+  reportTool: REPORT_TOOL,
 
   // maxTurns: same as spec-fixer — path/format fixes are mechanical.
   maxTurns: 25,

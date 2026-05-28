@@ -152,7 +152,9 @@ function makeDesignCtx(overrides: Partial<AgentRunContext> = {}): AgentRunContex
     branch: "feat/test-slug",
     slug: "test-slug",
     cwd: "/fake/cwd",
-    requestContent: "# Request content",
+    input: { requestContent: "# Request content" },
+    session: {},
+    policy: {},
     config: makeConfig(),
     emit: vi.fn(),
     ...overrides,
@@ -166,7 +168,9 @@ function makePollingCtx(overrides: Partial<AgentRunContext> = {}): AgentRunConte
     branch: "feat/test-slug",
     slug: "test-slug",
     cwd: "/fake/cwd",
-    requestContent: "# Request content",
+    input: { requestContent: "# Request content" },
+    session: {},
+    policy: {},
     config: makeConfig(),
     emit: vi.fn(),
     ...overrides,
@@ -181,6 +185,8 @@ function makeMockSessionClient() {
     sendUserMessage: vi.fn().mockResolvedValue(undefined),
     pollUntilComplete: vi.fn().mockResolvedValue({ status: "idle" }),
     getSessionUsage: vi.fn().mockResolvedValue(undefined),
+    listEvents: vi.fn().mockResolvedValue([]),
+    sendEvents: vi.fn().mockResolvedValue(undefined),
     streamEvents: vi.fn().mockResolvedValue({
       sseDisconnected: false,
       idleEndTurnDetected: true,
@@ -486,7 +492,7 @@ describe("TC-04-01: runPollingStyle — signature preserved (AgentRunContext →
 });
 
 describe("TC-04-02: preparePollingMessage — returns required fields", () => {
-  it("returns agentId, initialMessage, preSessionHeadSha, stepCtx", async () => {
+  it("returns agentId, initialMessage, stepCtx", async () => {
     vi.mocked(getAgentId).mockReturnValue("agent-resolved-123");
     const { runner } = makeRunner();
 
@@ -495,7 +501,6 @@ describe("TC-04-02: preparePollingMessage — returns required fields", () => {
       preparePollingMessage: (ctx: AgentRunContext) => Promise<{
         agentId: string;
         initialMessage: string;
-        preSessionHeadSha: string | null;
         stepCtx: unknown;
       }>;
     }).preparePollingMessage(ctx);
@@ -504,8 +509,6 @@ describe("TC-04-02: preparePollingMessage — returns required fields", () => {
     expect(typeof result.initialMessage).toBe("string");
     expect(result.initialMessage.length).toBeGreaterThan(0);
     expect(result.stepCtx).toBeDefined();
-    // preSessionHeadSha is null when step.requiresCommit is falsy
-    expect(result.preSessionHeadSha).toBeNull();
   });
 });
 
@@ -550,7 +553,7 @@ describe("TC-04-06: createOrResumePollingSession — resume path uses existing s
   it("sends to existing session without creating a new one", async () => {
     const { runner, sessionClient } = makeRunner();
 
-    const ctx = makePollingCtx({ resumeSessionId: "resume-sid-existing" });
+    const ctx = makePollingCtx({ session: { resumeSessionId: "resume-sid-existing" } });
     const sid = await (runner as unknown as {
       createOrResumePollingSession: (ctx: AgentRunContext, agentId: string, msg: string) => Promise<string>;
     }).createOrResumePollingSession(ctx, "agent-123", "initial message");
@@ -571,7 +574,7 @@ describe("TC-04-07: createOrResumePollingSession — resume failure triggers fal
     // Fallback sendUserMessage succeeds
     sessionClient.sendUserMessage.mockResolvedValueOnce(undefined);
 
-    const ctx = makePollingCtx({ resumeSessionId: "expired-resume-sid" });
+    const ctx = makePollingCtx({ session: { resumeSessionId: "expired-resume-sid" } });
     const sid = await (runner as unknown as {
       createOrResumePollingSession: (ctx: AgentRunContext, agentId: string, msg: string) => Promise<string>;
     }).createOrResumePollingSession(ctx, "agent-123", "initial message");
@@ -589,7 +592,7 @@ describe("TC-04-08: createOrResumePollingSession — fallback createSession fail
     // Fallback createSession also fails
     sessionClient.createSession.mockRejectedValue(new Error("api unavailable"));
 
-    const ctx = makePollingCtx({ resumeSessionId: "expired-resume-sid" });
+    const ctx = makePollingCtx({ session: { resumeSessionId: "expired-resume-sid" } });
     await expect(
       (runner as unknown as {
         createOrResumePollingSession: (ctx: AgentRunContext, agentId: string, msg: string) => Promise<string>;
@@ -611,7 +614,7 @@ describe("TC-04-09: createOrResumePollingSession — fallback sendUserMessage fa
     // Fallback sendUserMessage also fails
     sessionClient.sendUserMessage.mockRejectedValueOnce(new Error("network error on fallback"));
 
-    const ctx = makePollingCtx({ resumeSessionId: "expired-resume-sid" });
+    const ctx = makePollingCtx({ session: { resumeSessionId: "expired-resume-sid" } });
     await expect(
       (runner as unknown as {
         createOrResumePollingSession: (ctx: AgentRunContext, agentId: string, msg: string) => Promise<string>;
@@ -620,49 +623,6 @@ describe("TC-04-09: createOrResumePollingSession — fallback sendUserMessage fa
       code: "SESSION_CREATE_FAILED",
       hint: "Check your network connection.",
     });
-  });
-});
-
-describe("TC-04-10: guardCommit — skips check when requiresCommit=false", () => {
-  it("does not call getRefSha when requiresCommit is false", async () => {
-    const { runner, githubClient } = makeRunner();
-    const step = makePollingStep({ requiresCommit: false });
-
-    await (runner as unknown as {
-      guardCommit: (step: AgentStep, state: JobState, preSha: string | null) => Promise<void>;
-    }).guardCommit(step, makeState(), "sha-before");
-
-    expect(githubClient.getRefSha).not.toHaveBeenCalled();
-  });
-});
-
-describe("TC-04-11: guardCommit — throws NO_COMMIT_DETECTED when HEAD SHA unchanged", () => {
-  it("throws when pre and post SHA are identical", async () => {
-    const { runner, githubClient } = makeRunner();
-    githubClient.getRefSha.mockResolvedValue("sha-same"); // post-session SHA same as pre
-
-    const step = makePollingStep({ requiresCommit: true });
-    const state = makeState("feat/test-slug");
-
-    await expect(
-      (runner as unknown as {
-        guardCommit: (step: AgentStep, state: JobState, preSha: string | null) => Promise<void>;
-      }).guardCommit(step, state, "sha-same"),
-    ).rejects.toMatchObject({ code: "NO_COMMIT_DETECTED" });
-  });
-
-  it("does not throw when HEAD SHA advanced", async () => {
-    const { runner, githubClient } = makeRunner();
-    githubClient.getRefSha.mockResolvedValue("sha-new"); // different from pre
-
-    const step = makePollingStep({ requiresCommit: true });
-    const state = makeState("feat/test-slug");
-
-    await expect(
-      (runner as unknown as {
-        guardCommit: (step: AgentStep, state: JobState, preSha: string | null) => Promise<void>;
-      }).guardCommit(step, state, "sha-old"),
-    ).resolves.toBeUndefined();
   });
 });
 
@@ -697,19 +657,18 @@ describe("TC-04-13: fetchResultFile — returns file content on success", () => 
   });
 });
 
-describe("TC-04-14: fetchResultFile — throws when file not found", () => {
-  it("throws result-file-not-found error when getRawFile returns null", async () => {
+describe("TC-04-14: fetchResultFile — returns null when file not found", () => {
+  it("returns null when getRawFile returns null (best-effort, not a hard error)", async () => {
     const { runner, githubClient } = makeRunner();
     githubClient.getRawFile.mockResolvedValue(null);
     const step = makePollingStep({ resultFilePath: () => "specrunner/changes/test-slug/missing.md" });
     const state = makeState("feat/test-slug");
 
-    await expect(
-      (runner as unknown as {
-        fetchResultFile: (step: AgentStep, state: JobState, stepCtx: unknown) => Promise<string | null>;
-      }).fetchResultFile(step, state, {}),
-    // Error code is dynamic: <STEP_UPPER>_RESULT_NOT_FOUND
-    ).rejects.toMatchObject({ code: "IMPLEMENTER_RESULT_NOT_FOUND" });
+    const result = await (runner as unknown as {
+      fetchResultFile: (step: AgentStep, state: JobState, stepCtx: unknown) => Promise<string | null>;
+    }).fetchResultFile(step, state, {});
+
+    expect(result).toBeNull();
   });
 });
 
@@ -779,7 +738,7 @@ describe("TC-02-09: design follow-up NOT called when sseEndTurn=false (polling f
     githubClient.verifyPath.mockResolvedValue(true);
 
     // followUpPrompt is set — shouldRunFollowUp would return true, but sseEndTurn=false
-    const ctx = makeDesignCtx({ followUpPrompts: ["please commit"] });
+    const ctx = makeDesignCtx({ policy: { postWorkPrompts: ["please commit"] } });
     const result = await runner.run(ctx);
 
     expect(result.completionReason).toBe("success");
@@ -798,7 +757,7 @@ describe("TC-02-10: polling follow-up IS called when shouldRunFollowUp is true",
     // Follow-up poll also succeeds
     sessionClient.pollUntilComplete.mockResolvedValueOnce({ status: "idle" });
 
-    const ctx = makePollingCtx({ followUpPrompts: ["now commit and push"] });
+    const ctx = makePollingCtx({ policy: { postWorkPrompts: ["now commit and push"] } });
     const result = await runner.run(ctx);
 
     expect(result.completionReason).toBe("success");
@@ -886,5 +845,111 @@ describe("TC-05-07: createManagedAgentRunner / ManagedAgentRunnerDeps / buildMan
     const runner = createManagedAgentRunner(deps);
     expect(runner).toBeInstanceOf(ManagedAgentRunner);
     expect(typeof runner.run).toBe("function");
+  });
+});
+
+// ─── TC-026: requires_action → report_result tool detection (Managed runtime) ─
+
+import type { ReportToolSpec } from "../../../src/core/port/report-result.js";
+import { parseBaseReportInput } from "../../../src/core/port/report-result.js";
+
+function makeReportTool(): ReportToolSpec {
+  return {
+    name: "report_result",
+    description: "Report completion of this step.",
+    zodSchema: {},
+    parseInput: parseBaseReportInput,
+  };
+}
+
+describe("TC-026: Managed runtime requires_action → listEvents → sendEvents → toolResult: {ok:true}", () => {
+  it("polls requires_action, calls listEvents to find tool use, sends tool result, returns toolResult={ok:true}", async () => {
+    const { runner, sessionClient } = makeRunner();
+
+    // Main poll returns requires_action (agent called report_result)
+    sessionClient.pollUntilComplete.mockResolvedValueOnce({ status: "requires_action" });
+    // listEvents returns the custom tool use event
+    sessionClient.listEvents.mockResolvedValueOnce([
+      {
+        type: "agent.custom_tool_use",
+        name: "report_result",
+        id: "tool-use-id-001",
+        input: { ok: true },
+      },
+    ]);
+    // Follow-up poll after sending tool result
+    sessionClient.pollUntilComplete.mockResolvedValue({ status: "idle" });
+
+    const ctx = makePollingCtx({
+      policy: { reportTool: makeReportTool() },
+    });
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    // listEvents should have been called to detect the tool use
+    expect(sessionClient.listEvents).toHaveBeenCalledWith(expect.any(String));
+    // sendEvents should have been called with user.custom_tool_result
+    expect(sessionClient.sendEvents).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "user.custom_tool_result",
+          custom_tool_use_id: "tool-use-id-001",
+          content: "ok",
+        }),
+      ]),
+    );
+    // toolResult is the parsed value from the tool call
+    expect(result.toolResult).not.toBeNull();
+    expect(result.toolResult?.ok).toBe(true);
+  });
+});
+
+// ─── TC-028/TC-029: Managed runtime follow-up retry (tool not called) ─────────
+
+describe("TC-028: Managed runtime — tool not called → follow-up sendUserMessage is sent", () => {
+  it("when pollUntilComplete returns idle and reportTool is set, executeFollowUpTurn sends follow-up prompt", async () => {
+    const { runner, sessionClient } = makeRunner();
+
+    // All polls return idle (agent never calls report_result)
+    sessionClient.pollUntilComplete.mockResolvedValue({ status: "idle" });
+    // listEvents always returns empty (no tool call)
+    sessionClient.listEvents.mockResolvedValue([]);
+
+    const ctx = makePollingCtx({
+      policy: { reportTool: makeReportTool() },
+    });
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    // sendUserMessage called: 1 initial + at least 1 follow-up retry
+    // DEFAULT_TOOL_RETRY.maxAttempts = 2, so total = 1 initial + 2 retries = 3 calls
+    expect(sessionClient.sendUserMessage.mock.calls.length).toBeGreaterThan(1);
+    // The second call should be the follow-up retry prompt
+    const [, retryCall] = sessionClient.sendUserMessage.mock.calls;
+    expect(retryCall?.[1]).toContain("report_result");
+  });
+});
+
+describe("TC-029: Managed runtime — maxAttempts exceeded → toolResult===null, followUpAttempts===2", () => {
+  it("after 2 retries with no tool call, result.toolResult is null and followUpAttempts is 2", async () => {
+    const { runner, sessionClient } = makeRunner();
+
+    // All polls return idle (agent never calls report_result)
+    sessionClient.pollUntilComplete.mockResolvedValue({ status: "idle" });
+    // listEvents always returns empty (no tool call detected)
+    sessionClient.listEvents.mockResolvedValue([]);
+
+    const ctx = makePollingCtx({
+      policy: { reportTool: makeReportTool() },
+    });
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.toolResult).toBeNull();
+    expect(result.followUpAttempts).toBe(2);
   });
 });

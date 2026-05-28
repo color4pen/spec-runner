@@ -26,6 +26,8 @@ import { gitExec, defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
 import { FIXER_STEP_NAMES, getPreviousSessionId } from "./fixer-helpers.js";
 import { commitAndPush, type CommitPushInfra } from "./commit-push.js";
 import { writeOutputTemplates, cleanupOutputTemplates } from "../../util/copy-artifacts.js";
+import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
+import { stepHaltedNoToolCallError } from "../../errors.js";
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -164,16 +166,24 @@ export class StepExecutor {
       branch: state.branch ?? "",
       slug: deps.slug,
       cwd,
-      requestContent: deps.request.content,
-      requestAdr: deps.request.adr,
       requestType: deps.request.type,
       config: deps.config,
-      dynamicContext: deps.dynamicContext,
-      projectContext,
-      resumeSessionId,
-      resumePrompt: deps.resumePrompt,
-      followUpPrompts: allFollowUpPrompts.length > 0 ? allFollowUpPrompts : undefined,
-      sessionLogPath,
+      input: {
+        requestContent: deps.request.content,
+        requestAdr: deps.request.adr,
+        dynamicContext: deps.dynamicContext,
+        projectContext,
+      },
+      session: {
+        resumeSessionId,
+        resumePrompt: deps.resumePrompt,
+        logPath: sessionLogPath,
+      },
+      policy: {
+        postWorkPrompts: allFollowUpPrompts.length > 0 ? allFollowUpPrompts : undefined,
+        reportTool: step.reportTool,
+        toolReportRetry: step.reportTool ? DEFAULT_TOOL_RETRY : undefined,
+      },
       emit: (event: DomainEvent, payload: Record<string, unknown>) => {
         // Forward adapter events to the event bus
         this.events.emit(event, payload as never);
@@ -265,6 +275,38 @@ export class StepExecutor {
       attachStateAndRethrow(err, state);
     }
 
+    // T-13: Halt when reportTool was configured but agent never called it.
+    // Transition to awaiting-resume (same as timeout) so the user can resume.
+    if (ctx.policy?.reportTool && runResult.toolResult === null) {
+      const haltErr = stepHaltedNoToolCallError(step.name);
+      const errorInfo: ErrorInfo = {
+        code: haltErr.code,
+        message: haltErr.message,
+        hint: haltErr.hint,
+      };
+      state = recordFailedStepResult(state, step.name, {
+        ...errorInfo,
+        // Include toolResult/followUpAttempts in the outcome via custom fields
+      }, { completedAt, startedAt });
+      const { state: haltState } = transitionJob(state, "awaiting-resume", {
+        trigger: "executor",
+        reason: "step-halted-no-tool-call",
+        patch: {
+          resumePoint: { step: step.name as import("../../state/schema.js").StepName, reason: "step-halted-no-tool-call", iterationsExhausted: 0 },
+          error: errorInfo,
+        },
+      });
+      state = haltState;
+      state = await store.appendHistory(state, {
+        ts: new Date().toISOString(),
+        step: `${step.name}-halted`,
+        status: "error",
+        message: `${step.name} halted: agent did not call report_result`,
+      });
+      await store.persist(state);
+      attachStateAndRethrow(haltErr, state);
+    }
+
     // Delete B-group (reference) templates before commit-push so they are not included in the PR.
     if (deps.config.runtime === "local") {
       await cleanupOutputTemplates(cwd, deps.slug, step.name, state);
@@ -296,6 +338,8 @@ export class StepExecutor {
       sessionId: runResult.sessionId,
       agentBranch: runResult.agentBranch,
       modelUsage: runResult.modelUsage,
+      toolResult: runResult.toolResult,
+      followUpAttempts: runResult.followUpAttempts,
     });
   }
 
@@ -379,6 +423,8 @@ export class StepExecutor {
       sessionId?: string;
       agentBranch?: string;
       modelUsage?: Record<string, ModelUsage>;
+      toolResult?: import("../port/report-result.js").BaseReportResult | null;
+      followUpAttempts?: number;
     },
   ): Promise<JobState> {
     const store = this.getStore(state.jobId);
@@ -396,7 +442,14 @@ export class StepExecutor {
     }
     verdict = verdict ?? "escalation";
     logVerbose("step", "verdict parsed", { step: step.name, verdict });
-    this.events.emit("verdict:parsed", { step: step.name, outcome: { verdict } });
+    this.events.emit("verdict:parsed", {
+      step: step.name,
+      outcome: {
+        verdict,
+        toolResult: agentResult?.toolResult ?? null,
+        followUpAttempts: agentResult?.followUpAttempts ?? 0,
+      },
+    });
     const sessionEntry = agentResult?.sessionId
       ? { id: agentResult.sessionId, agentId: "", environmentId: "" }
       : null;
@@ -409,6 +462,8 @@ export class StepExecutor {
       startedAt,
       error: null,
       modelUsage: agentResult?.modelUsage,
+      toolResult: agentResult?.toolResult ?? null,
+      followUpAttempts: agentResult?.followUpAttempts ?? 0,
     });
     state = await store.appendHistory(state, {
       ts: new Date().toISOString(),

@@ -109,7 +109,9 @@ function makeMockSessionClient(): PipelineDeps["client"] {
       terminationReason: "end_turn" as const,
     }),
     getSessionUsage: vi.fn().mockResolvedValue(undefined),
-  } as PipelineDeps["client"];
+    listEvents: vi.fn().mockResolvedValue([]),
+    sendEvents: vi.fn().mockResolvedValue(undefined),
+  } as unknown as PipelineDeps["client"];
 }
 
 async function setupJobState(jobId: string): Promise<JobState> {
@@ -347,9 +349,9 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
   });
 });
 
-// requiresCommit: branch HEAD must advance during the session
-describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => {
-  it("throws NO_COMMIT_DETECTED when pre and post HEAD SHAs match", async () => {
+// T-05: requiresCommit removed — executor no longer checks branch HEAD advancement
+describe("StepExecutor — commit-and-push silently skips when no SHA change (T-05 regression)", () => {
+  it("does not throw NO_COMMIT_DETECTED when pre and post HEAD SHAs match (silent skip)", async () => {
     const events = new EventBus();
 
     const state = await setupJobState("requires-commit-no-advance");
@@ -360,7 +362,6 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
       name: "spec-fixer",
       agent: makeAgentDef("spec-fixer"),
       toolHandlers: undefined,
-      requiresCommit: true,
       buildMessage: () => "fix",
       resultFilePath: () => null,
       parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
@@ -394,28 +395,10 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
     };
 
     const executor = makeExecutor(events, deps);
-    await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
-      code: "NO_COMMIT_DETECTED",
-    });
-    // Called once before the session and once after
-    expect(getRefShaSpy).toHaveBeenCalledTimes(2);
-
-    // Regression guard for review finding #1: when NO_COMMIT_DETECTED fires,
-    // history must NOT contain a `${step.name}-verdict` ok event.
-    // The HEAD verification runs BEFORE the verdict append so failed
-    // steps never leave a misleading "verdict" marker for downstream
-    // consumers (forensics, resume, status aggregation).
-    const stateFile = path.join(tempDir, ".specrunner", "jobs", "requires-commit-no-advance.json");
-    const persistedState = JSON.parse(await fs.readFile(stateFile, "utf-8")) as JobState;
-    const completedOkEvents = persistedState.history.filter(
-      (h) => h.step === "spec-fixer-verdict" && h.status === "ok",
-    );
-    expect(completedOkEvents).toHaveLength(0);
-    // Executor adds a ${step.name}-failed history entry on error for observability
-    const noCommitEvents = persistedState.history.filter(
-      (h) => h.step === "spec-fixer-failed" && h.status === "error",
-    );
-    expect(noCommitEvents).toHaveLength(1);
+    // T-05: commit-and-push now silently skips on no changes (no exception)
+    await expect(executor.execute(step, state, deps)).resolves.toBeDefined();
+    // Executor does not call getRefSha since requiresCommit was removed
+    expect(getRefShaSpy).not.toHaveBeenCalled();
   });
 
   it("passes when pre and post HEAD SHAs differ (branch advanced)", async () => {
@@ -429,7 +412,6 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
       name: "spec-fixer",
       agent: makeAgentDef("spec-fixer"),
       toolHandlers: undefined,
-      requiresCommit: true,
       buildMessage: () => "fix",
       resultFilePath: () => null,
       parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
@@ -464,7 +446,8 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
 
     const executor = makeExecutor(events, deps);
     await expect(executor.execute(step, state, deps)).resolves.toBeDefined();
-    expect(getRefShaSpy).toHaveBeenCalledTimes(2);
+    // T-05: requiresCommit removed — executor does not call getRefSha
+    expect(getRefShaSpy).not.toHaveBeenCalled();
   });
 
   it("does not call getRefSha when requiresCommit is false / undefined", async () => {
@@ -526,7 +509,6 @@ describe("StepExecutor — requiresCommit verifies branch HEAD advanced", () => 
       name: "spec-fixer",
       agent: makeAgentDef("spec-fixer"),
       toolHandlers: undefined,
-      requiresCommit: true,
       buildMessage: () => "fix",
       resultFilePath: () => null,
       parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
@@ -597,7 +579,7 @@ describe("TC-007 to TC-010: allowlist steps set ctx.projectContext from specrunn
     const runner: AgentRunner = {
       async run(ctx: AgentRunContext): Promise<AgentRunResult> {
         captured.ctx = ctx;
-        return { completionReason: "success", resultContent: null };
+        return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
       },
     };
     return { runner, captured };
@@ -668,7 +650,7 @@ describe("TC-007 to TC-010: allowlist steps set ctx.projectContext from specrunn
       await executor.execute(step, state, deps);
 
       expect(captured.ctx).toBeDefined();
-      expect(captured.ctx!.projectContext).toBe(PROJECT_MD_CONTENT);
+      expect(captured.ctx!.input.projectContext).toBe(PROJECT_MD_CONTENT);
     });
   });
 });
@@ -699,7 +681,7 @@ describe("TC-011 to TC-014: non-allowlist steps — ctx.projectContext is undefi
     const runner: AgentRunner = {
       async run(ctx: AgentRunContext): Promise<AgentRunResult> {
         captured.ctx = ctx;
-        return { completionReason: "success", resultContent: null };
+        return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
       },
     };
     return { runner, captured };
@@ -769,7 +751,7 @@ describe("TC-011 to TC-014: non-allowlist steps — ctx.projectContext is undefi
       await executor.execute(step, state, deps);
 
       expect(captured.ctx).toBeDefined();
-      expect(captured.ctx!.projectContext).toBeUndefined();
+      expect(captured.ctx!.input.projectContext).toBeUndefined();
     });
   });
 });
@@ -787,7 +769,7 @@ describe("TC-EX: StepExecutor injects resumeSessionId for fixer steps", () => {
     const runner: AgentRunner = {
       async run(ctx: AgentRunContext): Promise<AgentRunResult> {
         captured.ctx = ctx;
-        return { completionReason: "success", resultContent: null };
+        return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
       },
     };
     return { runner, captured };
@@ -859,7 +841,7 @@ describe("TC-EX: StepExecutor injects resumeSessionId for fixer steps", () => {
     await executor.execute(step, state, makeFixerTestDeps());
 
     expect(captured.ctx).toBeDefined();
-    expect(captured.ctx!.resumeSessionId).toBe("sess-prev-001");
+    expect(captured.ctx!.session.resumeSessionId).toBe("sess-prev-001");
   });
 
   // TC-EX-02: spec-fixer first run (no previous steps) → resumeSessionId is undefined
@@ -875,7 +857,7 @@ describe("TC-EX: StepExecutor injects resumeSessionId for fixer steps", () => {
     await executor.execute(step, state, makeFixerTestDeps());
 
     expect(captured.ctx).toBeDefined();
-    expect(captured.ctx!.resumeSessionId).toBeUndefined();
+    expect(captured.ctx!.session.resumeSessionId).toBeUndefined();
   });
 
   // TC-EX-03: non-fixer step → resumeSessionId is always undefined (scope boundary)
@@ -902,7 +884,7 @@ describe("TC-EX: StepExecutor injects resumeSessionId for fixer steps", () => {
     await executor.execute(step, state, makeFixerTestDeps());
 
     expect(captured.ctx).toBeDefined();
-    expect(captured.ctx!.resumeSessionId).toBeUndefined();
+    expect(captured.ctx!.session.resumeSessionId).toBeUndefined();
   });
 });
 
@@ -915,7 +897,7 @@ describe("TC-015: specrunner/project.md not found — no error, ctx.projectConte
     const runner: AgentRunner = {
       async run(ctx: AgentRunContext): Promise<AgentRunResult> {
         captured.ctx = ctx;
-        return { completionReason: "success", resultContent: null };
+        return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
       },
     };
     return { runner, captured };
@@ -974,7 +956,7 @@ describe("TC-015: specrunner/project.md not found — no error, ctx.projectConte
       await expect(executor.execute(step, state, deps)).resolves.toBeDefined();
 
       expect(captured.ctx).toBeDefined();
-      expect(captured.ctx!.projectContext).toBeUndefined();
+      expect(captured.ctx!.input.projectContext).toBeUndefined();
     } finally {
       await fs.rm(cwdWithout, { recursive: true, force: true });
     }
@@ -995,7 +977,7 @@ describe("TC-05: runAgentStep — StepRun.startedAt < StepRun.endedAt (success p
     const delayedRunner: AgentRunner = {
       async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
         await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
-        return { completionReason: "success", resultContent: null };
+        return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
       },
     };
     const executor = new StepExecutor(events, delayedRunner, makeStoreFactory(tempDir));
@@ -1057,7 +1039,7 @@ describe("TC-06: runCliStep — StepRun.startedAt < StepRun.endedAt (success pat
     // CLI step does not use the runner, but StepExecutor requires one
     const noopRunner: AgentRunner = {
       async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
-        return { completionReason: "success", resultContent: null };
+        return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
       },
     };
     const executor = new StepExecutor(events, noopRunner, makeStoreFactory(tempDir));
@@ -1180,7 +1162,7 @@ describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt
     await executor.execute(step, state, makeFollowUpDeps());
 
     expect(captured.ctx).toBeDefined();
-    expect(captured.ctx!.followUpPrompts).toContain("fix format violations");
+    expect(captured.ctx!.policy?.postWorkPrompts).toContain("fix format violations");
   });
 
   it("TC-06: followUpPrompt 未設定の step では ctx.followUpPrompts が undefined", async () => {
@@ -1204,7 +1186,7 @@ describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt
 
     expect(captured.ctx).toBeDefined();
     // No followUpPrompt on step + no rules files → undefined or empty
-    expect(!captured.ctx!.followUpPrompts || captured.ctx!.followUpPrompts.length === 0).toBe(true);
+    expect(!captured.ctx!.policy?.postWorkPrompts || captured.ctx!.policy?.postWorkPrompts.length === 0).toBe(true);
   });
 
   it("TC-06-new: getFollowUpPrompt が定義されている場合、静的 followUpPrompt より優先される", async () => {
@@ -1227,8 +1209,8 @@ describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt
     await executor.execute(step, state, makeFollowUpDeps());
 
     expect(captured.ctx).toBeDefined();
-    expect(captured.ctx!.followUpPrompts).toContain("dynamic-value");
-    expect(captured.ctx!.followUpPrompts).not.toContain("static-value");
+    expect(captured.ctx!.policy?.postWorkPrompts).toContain("dynamic-value");
+    expect(captured.ctx!.policy?.postWorkPrompts).not.toContain("static-value");
   });
 
   it("TC-07: getFollowUpPrompt が undefined を返すと静的 followUpPrompt にフォールバックする", async () => {
@@ -1251,6 +1233,6 @@ describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt
     await executor.execute(step, state, makeFollowUpDeps());
 
     expect(captured.ctx).toBeDefined();
-    expect(captured.ctx!.followUpPrompts).toContain("static-value");
+    expect(captured.ctx!.policy?.postWorkPrompts).toContain("static-value");
   });
 });

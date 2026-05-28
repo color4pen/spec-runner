@@ -6,16 +6,20 @@
  *
  * Internally split into private stages per execution style:
  *   Design-style: createDesignSession → streamWithPollingFallback → verifyDesignArtifacts
- *   Polling-style: preparePollingMessage → createOrResumePollingSession → guardCommit → fetchResultFile
+ *   Polling-style: preparePollingMessage → createOrResumePollingSession → fetchResultFile
  *
  * Shared private helpers:
  *   resolveEffectiveTimeout — timeout resolution (design/polling/follow-up)
  *   executeFollowUpTurn    — follow-up turn block (design + polling)
  *   readSessionUsage       — usage read (design + polling)
  *
+ * tool-driven-step-completion:
+ * - guardCommit / preSessionHeadSha removed
+ * - requires_action → report_result tool detection added
+ * - fetchResultFile: file-not-found returns null (no longer throws)
+ *
  * Design D3 (stepcontext-type-separation): JobStateStore removed. State management is executor's responsibility.
  * Design D4: register_branch custom tool removed. Branch is created by CLI setupWorkspace() before agent runs.
- * Design D5: verifyBranch / requiresCommit guard run inside adapter (not executor).
  *
  * TC-008: ManagedAgentRunner has no JobStateStore import
  * TC-009: runProposeStyle returns AgentRunResult only (no _updatedState)
@@ -24,7 +28,6 @@
  * TC-014: constructor accepts sessionClient, githubClient, configStore deps
  * TC-020: ctx.branch is included in the session prompt
  * TC-030: ManagedAgentRunner.verifyBranch → error when branch not found (404)
- * TC-031: result file not found → error
  */
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../core/port/agent-runner.js";
 import type { ModelUsage } from "../../core/port/model-usage.js";
@@ -34,6 +37,8 @@ import type { GitHubClient } from "../../core/port/github-client.js";
 import type { JobState, ErrorInfo } from "../../state/schema.js";
 import type { StepContext } from "../../core/types.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
+import type { BaseReportResult } from "../../core/port/report-result.js";
+import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
 import {
   throwWrappedError,
   attachStateAndRethrow,
@@ -54,8 +59,7 @@ import {
   branchNotSetError,
   sessionTerminatedError,
   changeFolderNotFoundError,
-  resultFileNotFoundError,
-  noCommitDetectedError,
+  sessionRequiresActionError,
 } from "../../errors.js";
 import { changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "../../core/step/step-names.js";
@@ -152,6 +156,49 @@ export class ManagedAgentRunner implements AgentRunner {
   }
 
   /**
+   * Handle a requires_action stop reason for report_result tool.
+   * Returns { toolResult } if the custom tool call was found and handled,
+   * or null if it's a different requires_action (caller should throw).
+   */
+  private async handleRequiresAction(
+    sessionId: string,
+    ctx: AgentRunContext,
+  ): Promise<{ toolResult: BaseReportResult } | null> {
+    const reportTool = ctx.policy?.reportTool;
+    if (!reportTool) return null;
+
+    // Look for the custom tool use event in session events
+    const events = await this.sessionClient.listEvents(sessionId);
+    const customToolUse = (events as Record<string, unknown>[])?.find(
+      (e) =>
+        e["type"] === "agent.custom_tool_use" &&
+        (e["name"] === reportTool.name || e["tool_name"] === reportTool.name),
+    ) as (Record<string, unknown> | undefined);
+
+    if (!customToolUse) return null;
+
+    const customToolUseId = customToolUse["id"] as string | undefined;
+    const rawInput = customToolUse["input"] as unknown;
+    const parseResult = reportTool.parseInput(rawInput);
+
+    if (parseResult.ok) {
+      // Send tool result to complete the action
+      if (customToolUseId) {
+        await this.sessionClient.sendEvents(sessionId, [
+          {
+            type: "user.custom_tool_result",
+            custom_tool_use_id: customToolUseId,
+            content: "ok",
+          } as Record<string, unknown>,
+        ]);
+      }
+      return { toolResult: parseResult.value };
+    }
+
+    return null;
+  }
+
+  /**
    * Design-style execution:
    * 1. Create session
    * 2. Stream SSE + handle polling fallback
@@ -170,8 +217,43 @@ export class ManagedAgentRunner implements AgentRunner {
     const { sseEndTurn } = streamResult;
     const effectiveTimeoutMs = this.resolveEffectiveTimeout(ctx.config, ctx.step.name, ctx.step.agent.model, ctx.requestType);
 
+    // Handle requires_action for report_result in design-style (SSE path)
+    let capturedToolResult: BaseReportResult | null = null;
+    let followUpAttempts = 0;
+
+    if (ctx.policy?.reportTool) {
+      // Try to detect report_result tool call from the session events
+      const handled = await this.handleRequiresAction(sessionId, ctx).catch(() => null);
+      if (handled) {
+        capturedToolResult = handled.toolResult;
+        // Poll to get session to end_turn after tool result
+        await this.sessionClient.pollUntilComplete(sessionId, { timeoutMs: effectiveTimeoutMs }).catch(() => {
+          // Best effort
+        });
+      } else if (capturedToolResult === null) {
+        // Tool not called — try follow-up retry
+        const retryPolicy = ctx.policy?.toolReportRetry ?? DEFAULT_TOOL_RETRY;
+        for (let attempt = 1; attempt <= retryPolicy.maxAttempts; attempt++) {
+          const retryPrompt = retryPolicy.buildPrompt({ attempt, reason: "no-tool-call" });
+          await this.executeFollowUpTurn(sessionId, ctx.step, retryPrompt, effectiveTimeoutMs);
+          followUpAttempts++;
+
+          // Check if tool was called after retry
+          const retryHandled = await this.handleRequiresAction(sessionId, ctx).catch(() => null);
+          if (retryHandled) {
+            capturedToolResult = retryHandled.toolResult;
+            await this.sessionClient.pollUntilComplete(sessionId, { timeoutMs: effectiveTimeoutMs }).catch(() => {
+              // Best effort
+            });
+            break;
+          }
+          if (attempt === retryPolicy.maxAttempts) break;
+        }
+      }
+    }
+
     if (sseEndTurn && shouldRunFollowUp(ctx, "success")) {
-      for (const followPrompt of ctx.followUpPrompts!) {
+      for (const followPrompt of ctx.policy.postWorkPrompts!) {
         await this.executeFollowUpTurn(sessionId, ctx.step, followPrompt, effectiveTimeoutMs);
       }
     }
@@ -181,7 +263,7 @@ export class ManagedAgentRunner implements AgentRunner {
 
     logVerbose("session", "session completed", { sessionId, stepName: ctx.step.name, runtime: "managed" });
     return mergeFollowUpResult(
-      { completionReason: "success", resultContent: null, sessionId, modelUsage },
+      { completionReason: "success", resultContent: null, sessionId, modelUsage, toolResult: capturedToolResult, followUpAttempts },
       null,
     );
   }
@@ -239,11 +321,11 @@ export class ManagedAgentRunner implements AgentRunner {
       step.toolHandlers ? [...step.toolHandlers.entries()] : [],
     );
 
-    const effectiveRequestContent = ctx.projectContext
-      ? `${ctx.requestContent}\n\n<project-context>\n${ctx.projectContext}\n</project-context>`
-      : ctx.requestContent;
-    const effectiveRequestContentWithResume = ctx.resumePrompt
-      ? `${effectiveRequestContent}\n\n<resume-context>\n${ctx.resumePrompt}\n</resume-context>`
+    const effectiveRequestContent = ctx.input.projectContext
+      ? `${ctx.input.requestContent}\n\n<project-context>\n${ctx.input.projectContext}\n</project-context>`
+      : ctx.input.requestContent;
+    const effectiveRequestContentWithResume = ctx.session.resumePrompt
+      ? `${effectiveRequestContent}\n\n<resume-context>\n${ctx.session.resumePrompt}\n</resume-context>`
       : effectiveRequestContent;
 
     const sseResult = await this.sessionClient.streamEvents(sessionId, {
@@ -277,6 +359,15 @@ export class ManagedAgentRunner implements AgentRunner {
       if (pollResult.status !== "idle") {
         if (pollResult.error?.code === "POLL_TIMEOUT") {
           return buildTimeoutResult(pollResult.error, sessionId);
+        }
+        // Check if it's requires_action for report_result
+        if (pollResult.status === "requires_action") {
+          const handled = await this.handleRequiresAction(sessionId, ctx).catch(() => null);
+          if (!handled) {
+            throwPollError(pollResult.error, state);
+          }
+          // If handled, we return { sseEndTurn: false } and the caller handles it
+          return { sseEndTurn: false };
         }
         throwPollError(pollResult.error, state);
       }
@@ -327,18 +418,18 @@ export class ManagedAgentRunner implements AgentRunner {
 
   /**
    * Polling-style execution:
-   * 1. Prepare message (agentId + stepCtx + initialMessage + guards)
+   * 1. Prepare message (agentId + stepCtx + initialMessage)
    * 2. Create or resume session
    * 3. Poll until complete
-   * 4. requiresCommit guard (design D5 + module-analysis 4-E)
-   * 5. Fetch result file
+   * 4. Handle requires_action for report_result (if applicable)
+   * 5. Fetch result file (best-effort, null on not-found)
    *
-   * TC-015: equivalent to existing lifecycle
+   * TC-015: equivalent to existing lifecycle (without guardCommit)
    */
   private async runPollingStyle(
     ctx: AgentRunContext,
   ): Promise<AgentRunResult> {
-    const { agentId, initialMessage, preSessionHeadSha, stepCtx } =
+    const { agentId, initialMessage, stepCtx } =
       await this.preparePollingMessage(ctx);
 
     const sessionId = await this.createOrResumePollingSession(ctx, agentId, initialMessage);
@@ -347,7 +438,23 @@ export class ManagedAgentRunner implements AgentRunner {
     const pollResult = await this.sessionClient.pollUntilComplete(sessionId, { timeoutMs: effectiveTimeoutMs });
     const completedAt = new Date().toISOString();
 
-    if (pollResult.status !== "idle") {
+    // Handle requires_action (report_result tool call detection)
+    let capturedToolResult: BaseReportResult | null = null;
+    let followUpAttempts = 0;
+
+    if (pollResult.status === "requires_action") {
+      const handled = await this.handleRequiresAction(sessionId, ctx).catch(() => null);
+      if (handled) {
+        capturedToolResult = handled.toolResult;
+        // Send tool result and poll for session to complete
+        await this.sessionClient.pollUntilComplete(sessionId, { timeoutMs: effectiveTimeoutMs }).catch(() => {
+          // Best effort — session may already be done
+        });
+      } else {
+        // Not a report_result call — throw the original requires_action error
+        throw sessionRequiresActionError(sessionId);
+      }
+    } else if (pollResult.status !== "idle") {
       if (pollResult.error?.code === "POLL_TIMEOUT") {
         return buildTimeoutResult(pollResult.error, sessionId);
       }
@@ -355,29 +462,50 @@ export class ManagedAgentRunner implements AgentRunner {
       throwPollError(pollResult.error, ctx.state);
     }
 
+    // Follow-up retry for report_result if not yet called
+    if (ctx.policy?.reportTool && capturedToolResult === null) {
+      const retryPolicy = ctx.policy?.toolReportRetry ?? DEFAULT_TOOL_RETRY;
+      for (let attempt = 1; attempt <= retryPolicy.maxAttempts; attempt++) {
+        const retryPrompt = retryPolicy.buildPrompt({ attempt, reason: "no-tool-call" });
+        await this.executeFollowUpTurn(sessionId, ctx.step, retryPrompt, effectiveTimeoutMs);
+        followUpAttempts++;
+
+        // Check if tool was called
+        const retryHandled = await this.handleRequiresAction(sessionId, ctx).catch(() => null);
+        if (retryHandled) {
+          capturedToolResult = retryHandled.toolResult;
+          await this.sessionClient.pollUntilComplete(sessionId, { timeoutMs: effectiveTimeoutMs }).catch(() => {
+            // Best effort
+          });
+          break;
+        }
+        if (attempt === retryPolicy.maxAttempts) break;
+      }
+    }
+
+    // postWorkPrompts turns (tool detection is main-work-turn only)
     if (shouldRunFollowUp(ctx, "success")) {
-      for (const followPrompt of ctx.followUpPrompts!) {
+      for (const followPrompt of ctx.policy.postWorkPrompts!) {
         await this.executeFollowUpTurn(sessionId, ctx.step, followPrompt, effectiveTimeoutMs);
       }
     }
 
     const modelUsage = await this.readSessionUsage(sessionId, ctx.step.agent.model);
-    await this.guardCommit(ctx.step, ctx.state, preSessionHeadSha);
     const fileContent = await this.fetchResultFile(ctx.step, ctx.state, stepCtx);
 
     void completedAt;
     logVerbose("session", "session completed", { sessionId, stepName: ctx.step.name, runtime: "managed" });
     return mergeFollowUpResult(
-      { completionReason: "success", resultContent: null, sessionId, modelUsage },
+      { completionReason: "success", resultContent: null, sessionId, modelUsage, toolResult: capturedToolResult, followUpAttempts },
       fileContent,
     );
   }
 
   /**
    * Stage 1 of polling-style: resolve agentId, build initial message, apply guards.
-   * Returns agentId, initialMessage, preSessionHeadSha, and stepCtx.
+   * Returns agentId, initialMessage, and stepCtx.
    */
-  private async preparePollingMessage(ctx: AgentRunContext): Promise<{ agentId: string; initialMessage: string; preSessionHeadSha: string | null; stepCtx: StepContext }> {
+  private async preparePollingMessage(ctx: AgentRunContext): Promise<{ agentId: string; initialMessage: string; stepCtx: StepContext }> {
     const { config, state } = ctx;
     const step = ctx.step;
 
@@ -401,10 +529,10 @@ export class ManagedAgentRunner implements AgentRunner {
         title: "",
         slug: ctx.slug,
         baseBranch: "main",
-        content: ctx.requestContent,
-        adr: ctx.requestAdr ?? false,
+        content: ctx.input.requestContent,
+        adr: ctx.input.requestAdr ?? false,
       },
-      dynamicContext: ctx.dynamicContext,
+      dynamicContext: ctx.input.dynamicContext,
     };
 
     // D3: enrichContext before buildMessage (errors propagate to StepExecutor).
@@ -423,12 +551,12 @@ export class ManagedAgentRunner implements AgentRunner {
       }, state);
     }
 
-    if (ctx.projectContext) {
-      initialMessage = `${initialMessage}\n\n<project-context>\n${ctx.projectContext}\n</project-context>`;
+    if (ctx.input.projectContext) {
+      initialMessage = `${initialMessage}\n\n<project-context>\n${ctx.input.projectContext}\n</project-context>`;
     }
 
-    if (ctx.resumePrompt) {
-      initialMessage = `${initialMessage}\n\n<resume-context>\n${ctx.resumePrompt}\n</resume-context>`;
+    if (ctx.session.resumePrompt) {
+      initialMessage = `${initialMessage}\n\n<resume-context>\n${ctx.session.resumePrompt}\n</resume-context>`;
     }
 
     // Managed agents commit+push themselves (StepExecutor.commitAndPush only runs for local runtime).
@@ -441,17 +569,7 @@ export class ManagedAgentRunner implements AgentRunner {
       throwWrappedError({ code: branchErr.code, message: branchErr.message, hint: branchErr.hint }, state);
     }
 
-    // Snapshot branch HEAD SHA before session for requiresCommit check (design D5)
-    let preSessionHeadSha: string | null = null;
-    if (step.requiresCommit) {
-      preSessionHeadSha = await this.githubClient.getRefSha(
-        this.repo.owner,
-        this.repo.name,
-        state.branch!,
-      );
-    }
-
-    return { agentId: agentId!, initialMessage: initialMessage!, preSessionHeadSha, stepCtx };
+    return { agentId: agentId!, initialMessage: initialMessage!, stepCtx };
   }
 
   /**
@@ -475,9 +593,9 @@ export class ManagedAgentRunner implements AgentRunner {
 
     let sessionId: string;
 
-    if (ctx.resumeSessionId) {
+    if (ctx.session.resumeSessionId) {
       // Session continuity: reuse existing session, fall back to new session on failure.
-      sessionId = ctx.resumeSessionId;
+      sessionId = ctx.session.resumeSessionId;
       try {
         await this.sessionClient.sendUserMessage(sessionId, initialMessage);
       } catch (resumeErr) {
@@ -534,30 +652,8 @@ export class ManagedAgentRunner implements AgentRunner {
   }
 
   /**
-   * Stage 3 of polling-style: verify a commit was made (requiresCommit guard).
-   * Throws NO_COMMIT_DETECTED if HEAD SHA is unchanged after session.
-   */
-  private async guardCommit(
-    step: AgentStep,
-    state: JobState,
-    preSessionHeadSha: string | null,
-  ): Promise<void> {
-    if (!step.requiresCommit) return;
-
-    const postSessionHeadSha = await this.githubClient.getRefSha(
-      this.repo.owner,
-      this.repo.name,
-      state.branch!,
-    );
-    if (postSessionHeadSha !== null && postSessionHeadSha === preSessionHeadSha) {
-      const noCommitErr = noCommitDetectedError(step.name, state.branch!);
-      throwWrappedError({ code: noCommitErr.code, message: noCommitErr.message, hint: noCommitErr.hint }, state);
-    }
-  }
-
-  /**
-   * Stage 4 of polling-style: fetch result file from GitHub (design D2).
-   * Returns null when step has no resultFilePath. Throws on file not found.
+   * Fetch result file from GitHub (design D2).
+   * Returns null when step has no resultFilePath or file not found (best-effort).
    */
   private async fetchResultFile(
     step: AgentStep,
@@ -576,12 +672,7 @@ export class ManagedAgentRunner implements AgentRunner {
       resultFilePath,
     );
 
-    if (fileContent === null) {
-      const notFoundErr = resultFileNotFoundError(step.name, resultFilePath, effectiveBranch);
-      stderrWrite(notFoundErr.message);
-      attachStateAndRethrow(notFoundErr, state);
-    }
-
+    // File not found → return null (best-effort, not a hard error)
     return fileContent;
   }
 

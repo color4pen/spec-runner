@@ -89,7 +89,15 @@ scenario coverage, and normative keyword presence rather than replicating the to
 - Write the verdict line BEFORE the findings table.
 - Use exactly the format shown above — the verdict line must start with \`- **verdict**:\` at the beginning of a line.
 - Findings must follow the Pipeline Rules above.
-- Do not modify any source code or spec files other than the spec-review-result file.`;
+- Do not modify any source code or spec files other than the spec-review-result file.
+
+## Completion
+
+作業完了時は必ず \`report_result\` tool を呼び出してください。
+- 正常完了: \`{ok: true}\`
+- 自発的失敗（実行不能等）: \`{ok: false, reason: "理由"}\`
+
+tool を呼ばずに turn を終了しないでください。`;
 
 export const SPEC_REVIEW_SYSTEM_PROMPT = buildSystemPrompt(SPEC_REVIEW_BASE, [
   PIPELINE_RULES,

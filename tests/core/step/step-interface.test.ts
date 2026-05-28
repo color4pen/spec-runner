@@ -88,7 +88,9 @@ function makeMockSessionClient(opts: {
       terminationReason: "end_turn" as const,
     }),
     getSessionUsage: vi.fn().mockResolvedValue(undefined),
-  } as PipelineDeps["client"];
+    listEvents: vi.fn().mockResolvedValue([]),
+    sendEvents: vi.fn().mockResolvedValue(undefined),
+  } as unknown as PipelineDeps["client"];
 }
 
 function makeMinimalDeps(clientOpts?: Parameters<typeof makeMockSessionClient>[0]): PipelineDeps {

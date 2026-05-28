@@ -6,6 +6,7 @@ import type { JobState } from "../../state/schema.js";
 import { TEST_CASE_GEN_SYSTEM_PROMPT, buildTestCaseGenInitialMessage } from "../../prompts/test-case-gen-system.js";
 import { branchNotSetError } from "../../errors.js";
 import { STEP_NAMES } from "./step-names.js";
+import { REPORT_TOOL, REPORT_TOOL_CUSTOM_TOOL_SPEC } from "./report-tool.js";
 
 const TEST_CASE_GEN_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -25,6 +26,7 @@ const testCaseGenAgentDefinition: AgentDefinition = {
   system: TEST_CASE_GEN_SYSTEM_PROMPT,
   tools: [
     { type: AGENT_TOOLSET_TYPE },
+    REPORT_TOOL_CUSTOM_TOOL_SPEC,
   ],
   capabilities: { gitWrite: true },
 };
@@ -52,6 +54,7 @@ export const TestCaseGenStep: AgentStep = {
   toolHandlers: undefined,
 
   completionVerdict: "success",
+  reportTool: REPORT_TOOL,
 
   maxTurns: 15,
 

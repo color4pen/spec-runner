@@ -88,6 +88,10 @@ function buildMockSessionClient(opts: {
     pollUntilComplete: pollUntilCompleteMock,
     streamEvents: vi.fn().mockRejectedValue(new Error("streamEvents not used by spec-review")),
     getSessionUsage: vi.fn().mockResolvedValue(undefined),
+    listEvents: vi.fn().mockResolvedValue([
+      { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true } },
+    ]),
+    sendEvents: vi.fn().mockResolvedValue(undefined),
   };
 
   return { client, createSessionMock, pollUntilCompleteMock };
@@ -157,8 +161,7 @@ describe("TC-006: runSpecReviewStep — pollUntilComplete is called with default
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    // pollUntilComplete should be called with the default timeoutMs (900000ms)
-    expect(pollUntilCompleteMock).toHaveBeenCalledTimes(1);
+    // pollUntilComplete should be called with the default timeoutMs (900000ms) on first call
     const pollCallArgs = pollUntilCompleteMock.mock.calls[0]![1] as { timeoutMs?: number } | undefined;
     expect(pollCallArgs?.timeoutMs).toBe(900_000);
 
@@ -228,28 +231,30 @@ describe("TC-018: runSpecReviewStep — SESSION_TERMINATED error handling", () =
 // TC-019 (removed): SESSION_TIMEOUT handling removed in remove-session-timeout.
 // SESSION_TIMEOUT error code no longer exists. SESSION_TERMINATED is the only terminal error.
 
-// TC-020: SPEC_REVIEW_RESULT_NOT_FOUND — githubClient.getRawFile が null を返した場合
-describe("TC-020: runSpecReviewStep — SPEC_REVIEW_RESULT_NOT_FOUND when file not found", () => {
-  it("fails with SPEC_REVIEW_RESULT_NOT_FOUND when result file is never found after retries", async () => {
+// TC-020: result file not found — fetchResultFile returns null → verdict becomes escalation (failsafe)
+describe("TC-020: runSpecReviewStep — escalation failsafe when result file not found", () => {
+  it("sets verdict='escalation' when result file is never found (getRawFile returns null)", async () => {
     const jobState = await makeJobState();
 
     const { client } = buildMockSessionClient();
-    // null simulates 404 — file not found after retries
+    // null simulates 404 — file not found; fetchResultFile returns null → escalation failsafe
 
-    await expect(
-      runSpecReviewViaExecutor(jobState, {
-        client,
-        config: buildConfig(),
-        request: buildRequest(),
-        slug: "test-slug",
-        sleepFn: vi.fn().mockResolvedValue(undefined),
-        githubClient: buildMockGithubClient(null),
-        owner: "testowner",
-        repo: "testrepo",
-        spawn: noopSpawn,
-        storeFactory: makeStoreFactory(tempDir),
-      }),
-    ).rejects.toMatchObject({ code: "SPEC_REVIEW_RESULT_NOT_FOUND" });
+    const result = await runSpecReviewViaExecutor(jobState, {
+      client,
+      config: buildConfig(),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient: buildMockGithubClient(null),
+      owner: "testowner",
+      repo: "testrepo",
+      spawn: noopSpawn,
+      storeFactory: makeStoreFactory(tempDir),
+    });
+
+    // fetchResultFile returns null → no resultContent → verdict defaults to "escalation"
+    const lastSpecReview = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
+    expect(lastSpecReview ? toLegacyStepResult(lastSpecReview).verdict : undefined).toBe("escalation");
   });
 });
 

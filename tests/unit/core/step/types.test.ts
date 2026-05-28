@@ -134,8 +134,8 @@ describe("TC-48: AbortController abort が作業 turn と follow turn の両方�
     // Here we verify the structural invariant: AbortController is set up before follow-up branching.
     const filePath = path.resolve(__dirname, "../../../../src/adapter/claude-code/agent-runner.ts");
     const content = await fs.readFile(filePath, "utf-8");
-    // followUpPrompt check and AbortController creation must both appear in run()
-    expect(content).toContain("followUpPrompt");
+    // postWorkPrompts check and AbortController creation must both appear in run()
+    expect(content).toContain("postWorkPrompts");
     expect(content).toContain("AbortController");
   });
 });

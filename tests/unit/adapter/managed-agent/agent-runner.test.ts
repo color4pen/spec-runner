@@ -122,7 +122,9 @@ function makeMockSessionClient(): SessionClient {
       terminationReason: "end_turn" as const,
     }),
     getSessionUsage: vi.fn().mockResolvedValue(undefined),
-  } as SessionClient;
+    listEvents: vi.fn().mockResolvedValue([]),
+    sendEvents: vi.fn().mockResolvedValue(undefined),
+  } as unknown as SessionClient;
 }
 
 function makeMockGithubClient(overrides: Partial<GitHubClient> = {}): GitHubClient {
@@ -151,7 +153,9 @@ function makeCtx(
     branch: "feat/test",
     slug: "test-slug",
     cwd: tempDir,
-    requestContent: "request content",
+    input: { requestContent: "request content" },
+    session: {},
+    policy: {},
     config: makeConfig(),
     emit: vi.fn(),
     ...overrides,
@@ -335,6 +339,8 @@ describe("TC-018: design role — register_branch not in toolHandlers (D4: tool 
         });
       }),
       getSessionUsage: vi.fn().mockResolvedValue(undefined),
+      listEvents: vi.fn().mockResolvedValue([]),
+      sendEvents: vi.fn().mockResolvedValue(undefined),
     };
 
     const githubClient = makeMockGithubClient();
@@ -368,7 +374,9 @@ describe("TC-018: design role — register_branch not in toolHandlers (D4: tool 
       branch: "feat/test-slug-tc018abc",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "request content",
+      input: { requestContent: "request content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
     };
@@ -428,6 +436,8 @@ describe("TC-020: ManagedAgentRunner includes ctx.branch in prompt", () => {
         });
       }),
       getSessionUsage: vi.fn().mockResolvedValue(undefined),
+      listEvents: vi.fn().mockResolvedValue([]),
+      sendEvents: vi.fn().mockResolvedValue(undefined),
     };
 
     const runner = new ManagedAgentRunner({
@@ -454,7 +464,9 @@ describe("TC-020: ManagedAgentRunner includes ctx.branch in prompt", () => {
         branch: "feat/foo-bar",
         slug: "foo-bar",
         cwd: tempDir,
-        requestContent: "content",
+        input: { requestContent: "content" },
+        session: {},
+        policy: {},
         config: makeConfig(),
         emit: vi.fn(),
       });
@@ -493,6 +505,8 @@ describe("TC-021: design uses pre-set ctx.branch from CLI (D4)", () => {
         terminationReason: "end_turn" as const,
       }),
       getSessionUsage: vi.fn().mockResolvedValue(undefined),
+      listEvents: vi.fn().mockResolvedValue([]),
+      sendEvents: vi.fn().mockResolvedValue(undefined),
     };
 
     const runner = new ManagedAgentRunner({
@@ -519,7 +533,9 @@ describe("TC-021: design uses pre-set ctx.branch from CLI (D4)", () => {
         branch: "feat/foo-bar-tc021abc",
         slug: "foo-bar",
         cwd: tempDir,
-        requestContent: "content",
+        input: { requestContent: "content" },
+        session: {},
+        policy: {},
         config: makeConfig(),
         emit: vi.fn(),
       });
@@ -594,7 +610,7 @@ describe("TC-018 (test-cases.md): polling-style — projectContext injected into
       {
         step: makePollingStyleStep("spec-review", "spec-review"),
         state,
-        projectContext: "# Project\nStack: TypeScript",
+        input: { requestContent: "request content", projectContext: "# Project\nStack: TypeScript" },
       },
       jobId,
     );
@@ -685,8 +701,7 @@ describe("TC-020 (test-cases.md): SSE/design-style — projectContext injected i
         step: designStep,
         state,
         branch: "feat/test",
-        requestContent: "base request content",
-        projectContext: "# Project\nStack: TypeScript",
+        input: { requestContent: "base request content", projectContext: "# Project\nStack: TypeScript" },
       },
       jobId,
     );
@@ -738,7 +753,7 @@ describe("TC-021 (test-cases.md): SSE/design-style — no <project-context> when
         step: designStep,
         state,
         branch: "feat/test",
-        requestContent: "base request content",
+        input: { requestContent: "base request content" },
         // projectContext intentionally absent
       },
       jobId,
@@ -778,7 +793,7 @@ describe("TC-15 (test-cases.md): polling-style — resumePrompt injected into in
       {
         step: makePollingStyleStep("spec-review", "spec-review"),
         state,
-        resumePrompt: "手動で foo.ts の import を修正済み",
+        session: { resumePrompt: "手動で foo.ts の import を修正済み" },
       },
       jobId,
     );
@@ -861,8 +876,8 @@ describe("TC-16 (test-cases.md): SSE/design-style — resumePrompt injected into
         step: designStep,
         state,
         branch: "feat/test",
-        requestContent: "base request content",
-        resumePrompt: "前回の review feedback を反映済み",
+        input: { requestContent: "base request content" },
+        session: { resumePrompt: "前回の review feedback を反映済み" },
       },
       jobId,
     );
@@ -912,7 +927,7 @@ describe("TC-16 (test-cases.md): SSE/design-style — resumePrompt injected into
         step: designStep,
         state,
         branch: "feat/test",
-        requestContent: "base request content",
+        input: { requestContent: "base request content" },
         // resumePrompt intentionally absent
       },
       jobId,
@@ -956,10 +971,10 @@ describe("TC-031: managed adapter result file not found → error", () => {
       jobId,
     );
 
-    // Result file not found should throw or return error
-    await expect(runner.run(ctx)).rejects.toMatchObject({
-      code: expect.stringMatching(/NOT_FOUND|RESULT_FILE/),
-    });
+    // fetchResultFile returns null on file-not-found (best-effort, not a hard error)
+    const result = await runner.run(ctx);
+    expect(result.completionReason).toBe("success");
+    expect(result.resultContent).toBeNull();
   });
 });
 
@@ -1121,7 +1136,7 @@ describe("ManagedAgentRunner session continuity (resumeSessionId)", () => {
     });
 
     const state = makeJobState("resume-test", "feat/test");
-    const ctx = makeCtx({ state, resumeSessionId: "sess-existing-001" });
+    const ctx = makeCtx({ state, session: { resumeSessionId: "sess-existing-001" } });
 
     const result = await runner.run(ctx);
 
@@ -1186,6 +1201,8 @@ describe("ManagedAgentRunner session continuity (resumeSessionId)", () => {
         terminationReason: "end_turn" as const,
       }),
       getSessionUsage: vi.fn().mockResolvedValue(undefined),
+      listEvents: vi.fn().mockResolvedValue([]),
+      sendEvents: vi.fn().mockResolvedValue(undefined),
     };
 
     const runner = new ManagedAgentRunner({
@@ -1196,7 +1213,7 @@ describe("ManagedAgentRunner session continuity (resumeSessionId)", () => {
     });
 
     const state = makeJobState("fallback-test", "feat/test");
-    const ctx = makeCtx({ state, resumeSessionId: "sess-expired-001" });
+    const ctx = makeCtx({ state, session: { resumeSessionId: "sess-expired-001" } });
 
     const result = await runner.run(ctx);
 
@@ -1247,7 +1264,7 @@ describe("ManagedAgentRunner SSE 経路 follow-up", () => {
 
     const ctx = makeCtx({
       step: makeDesignStep({ followUpPrompt: "fix format violations" }),
-      followUpPrompts: ["fix format violations"],
+      policy: { postWorkPrompts: ["fix format violations"] },
       branch: "feat/test",
     });
 
@@ -1286,7 +1303,7 @@ describe("ManagedAgentRunner SSE 経路 follow-up", () => {
 
     const ctx = makeCtx({
       step: makeDesignStep({ followUpPrompt: "fix format" }),
-      followUpPrompts: ["fix format"],
+      policy: { postWorkPrompts: ["fix format"] },
       branch: "feat/test",
     });
 
@@ -1341,7 +1358,7 @@ describe("ManagedAgentRunner SSE 経路 follow-up", () => {
 
     const ctx = makeCtx({
       step: makeDesignStep({ followUpPrompt: "fix format" }),
-      followUpPrompts: ["fix format"],
+      policy: { postWorkPrompts: ["fix format"] },
       branch: "feat/test",
     });
 
@@ -1368,7 +1385,7 @@ describe("ManagedAgentRunner SSE 経路 follow-up", () => {
 
     const ctx = makeCtx({
       step: makeDesignStep(),
-      followUpPrompts: ["fix-rule-1", "fix-rule-2"],
+      policy: { postWorkPrompts: ["fix-rule-1", "fix-rule-2"] },
       branch: "feat/test",
     });
 
@@ -1407,7 +1424,7 @@ describe("ManagedAgentRunner SSE 経路 follow-up", () => {
 
     const ctx = makeCtx({
       step: makeDesignStep(),
-      followUpPrompts: ["fix-rule-1", "fix-rule-2"],
+      policy: { postWorkPrompts: ["fix-rule-1", "fix-rule-2"] },
       branch: "feat/test",
     });
 
@@ -1445,7 +1462,7 @@ describe("ManagedAgentRunner polling 経路 follow-up", () => {
     const resultPath = specReviewResultPath("test-slug", 1);
     const ctx = makeCtx({
       step: { ...makePollingStyleStep("spec-review", "spec-review", resultPath), followUpPrompt: "fix format" },
-      followUpPrompts: ["fix format"],
+      policy: { postWorkPrompts: ["fix format"] },
     });
 
     const result = await runner.run(ctx);
@@ -1478,7 +1495,7 @@ describe("ManagedAgentRunner polling 経路 follow-up", () => {
 
     const ctx = makeCtx({
       step: { ...makePollingStyleStep("spec-review", "spec-review"), followUpPrompt: "fix format" },
-      followUpPrompts: ["fix format"],
+      policy: { postWorkPrompts: ["fix format"] },
     });
 
     try {
@@ -1525,7 +1542,7 @@ describe("ManagedAgentRunner polling 経路 follow-up", () => {
     const resultPath = specReviewResultPath("test-slug", 1);
     const ctx = makeCtx({
       step: { ...makePollingStyleStep("spec-review", "spec-review", resultPath), followUpPrompt: "fix format" },
-      followUpPrompts: ["fix format"],
+      policy: { postWorkPrompts: ["fix format"] },
     });
 
     const result = await runner.run(ctx);
@@ -1553,7 +1570,7 @@ describe("ManagedAgentRunner polling 経路 follow-up", () => {
     const resultPath = specReviewResultPath("test-slug", 1);
     const ctx = makeCtx({
       step: { ...makePollingStyleStep("spec-review", "spec-review", resultPath) },
-      followUpPrompts: ["rule-1", "rule-2"],
+      policy: { postWorkPrompts: ["rule-1", "rule-2"] },
     });
 
     const result = await runner.run(ctx);

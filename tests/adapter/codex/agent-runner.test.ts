@@ -64,7 +64,9 @@ function makeCtx(overrides: Partial<AgentRunContext> = {}): AgentRunContext {
     branch: "feat/test",
     slug: "test-slug",
     cwd: "/fake/cwd",
-    requestContent: "# Request\nDo something",
+    input: { requestContent: "# Request\nDo something" },
+    session: {},
+    policy: {},
     config: makeConfig(),
     emit: vi.fn(),
     ...overrides,
@@ -184,7 +186,7 @@ describe("CodexAgentRunner", () => {
     await runner.run(makeCtx({
       branch: "feat/my-feature",
       slug: "my-feature",
-      projectContext: "<project context text>",
+      input: { requestContent: "# Request\nDo something", projectContext: "<project context text>" },
     }));
 
     const promptPassed = (mockRun.mock.calls[0] as [string])[0];
@@ -288,7 +290,7 @@ describe("CodexAgentRunner", () => {
     const buildMessage = vi.fn().mockReturnValue("build message result");
 
     const step = makeAgentStep({ enrichContext, buildMessage });
-    const ctx = makeCtx({ step, dynamicContext: initialDynamicCtx });
+    const ctx = makeCtx({ step, input: { requestContent: "# Request\nDo something", dynamicContext: initialDynamicCtx } });
 
     await runner.run(ctx);
 
@@ -316,7 +318,7 @@ describe("CodexAgentRunner session continuity (resumeSessionId)", () => {
     });
     const runner = new CodexAgentRunner({ _codexFactory: factory });
 
-    const ctx = makeCtx({ resumeSessionId: "thread-existing" });
+    const ctx = makeCtx({ session: { resumeSessionId: "thread-existing" } });
     const result = await runner.run(ctx);
 
     expect(result.completionReason).toBe("success");
@@ -360,7 +362,7 @@ describe("CodexAgentRunner session continuity (resumeSessionId)", () => {
     });
     const runner = new CodexAgentRunner({ _codexFactory: factory });
 
-    const ctx = makeCtx({ resumeSessionId: "thread-expired" });
+    const ctx = makeCtx({ session: { resumeSessionId: "thread-expired" } });
     const result = await runner.run(ctx);
 
     expect(result.completionReason).toBe("success");
@@ -382,7 +384,7 @@ describe("CodexAgentRunner session continuity (resumeSessionId)", () => {
     const runner = new CodexAgentRunner({ _codexFactory: factory });
 
     // Test with resumeSessionId set
-    const ctxResume = makeCtx({ resumeSessionId: "thread-id-123" });
+    const ctxResume = makeCtx({ session: { resumeSessionId: "thread-id-123" } });
     const resumeResult = await runner.run(ctxResume);
     expect(resumeResult.sessionId).toBe("thread-id-123");
 
@@ -406,7 +408,7 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
     const factory = makeCodexFactory(thread);
     const runner = new CodexAgentRunner({ _codexFactory: factory });
 
-    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "fix format violations" }), followUpPrompts: ["fix format violations"] });
+    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "fix format violations" }), policy: { postWorkPrompts: ["fix format violations"] } });
     const result = await runner.run(ctx);
 
     expect(result.completionReason).toBe("success");
@@ -419,7 +421,7 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
     const factory = makeCodexFactory(thread);
     const runner = new CodexAgentRunner({ _codexFactory: factory });
 
-    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "read rules and fix" }), followUpPrompts: ["read rules and fix"] });
+    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "read rules and fix" }), policy: { postWorkPrompts: ["read rules and fix"] } });
     await runner.run(ctx);
 
     expect(mockRun).toHaveBeenCalledTimes(2);
@@ -466,7 +468,7 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
     });
     const runner = new CodexAgentRunner({ _codexFactory: factory });
 
-    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "fix it" }), followUpPrompts: ["fix it"] });
+    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "fix it" }), policy: { postWorkPrompts: ["fix it"] } });
     const result = await runner.run(ctx);
 
     expect(result.completionReason).toBe("success");
@@ -497,7 +499,7 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
     });
     const runner = new CodexAgentRunner({ _codexFactory: factory });
 
-    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "follow" }), followUpPrompts: ["follow"] });
+    const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "follow" }), policy: { postWorkPrompts: ["follow"] } });
     await runner.run(ctx);
 
     expect(callCount).toBe(2);
@@ -513,7 +515,7 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
     const factory = makeCodexFactory(thread);
     const runner = new CodexAgentRunner({ _codexFactory: factory });
 
-    const ctx = makeCtx({ followUpPrompts: ["rule-1", "rule-2"] });
+    const ctx = makeCtx({ policy: { postWorkPrompts: ["rule-1", "rule-2"] } });
     const result = await runner.run(ctx);
 
     expect(result.completionReason).toBe("success");

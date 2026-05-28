@@ -10,6 +10,7 @@ import { SpecRunnerError, branchNotSetError } from "../../errors.js";
 import { changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { isFixerContinuation, buildContinuationMessage } from "./fixer-helpers.js";
+import { REPORT_TOOL, REPORT_TOOL_CUSTOM_TOOL_SPEC } from "./report-tool.js";
 
 const CODE_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -28,6 +29,7 @@ const codeFixerAgentDefinition: AgentDefinition = {
   system: CODE_FIXER_SYSTEM_PROMPT,
   tools: [
     { type: AGENT_TOOLSET_TYPE },
+    REPORT_TOOL_CUSTOM_TOOL_SPEC,
   ],
   capabilities: {
     gitWrite: true,
@@ -59,8 +61,7 @@ export const CodeFixerStep: AgentStep = {
   toolHandlers: undefined,
 
   completionVerdict: "approved",
-
-  requiresCommit: false,
+  reportTool: REPORT_TOOL,
 
   // maxTurns: code-fixer applies review findings; 30 covers multi-finding fixes.
   // Design D3 (propose-openspec-cli-and-step-model-config).

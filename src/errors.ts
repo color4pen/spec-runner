@@ -89,6 +89,7 @@ export const ERROR_CODES = {
   QUERY_ONE_SHOT_TIMEOUT: "QUERY_ONE_SHOT_TIMEOUT",
   USER_CANCELED: "USER_CANCELED",
   SYMLINK_REJECTED: "SYMLINK_REJECTED",
+  STEP_HALTED_NO_TOOL_CALL: "STEP_HALTED_NO_TOOL_CALL",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -201,7 +202,7 @@ export function branchNotSetError(stepName: string): SpecRunnerError {
 export function noCommitDetectedError(stepName: string, branch: string): SpecRunnerError {
   return new SpecRunnerError(
     ERROR_CODES.NO_COMMIT_DETECTED,
-    `The agent produced no staged changes. Re-run the step or inspect the agent session log. If the step legitimately produces no changes, set requiresCommit: false on the step.`,
+    `The agent produced no staged changes. Re-run the step or inspect the agent session log.`,
     `${stepName} completed with no staged changes on branch '${branch}'.`,
   );
 }
@@ -284,6 +285,14 @@ export function sessionReschedulingExhaustedError(sessionId: string): SpecRunner
     ERROR_CODES.SESSION_RESCHEDULING_EXHAUSTED,
     "The session has been rescheduling too many times. This indicates a persistent infrastructure issue.",
     `Session ${sessionId} exceeded rescheduling limit.`,
+  );
+}
+
+export function stepHaltedNoToolCallError(stepName: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.STEP_HALTED_NO_TOOL_CALL,
+    "The agent did not call report_result after the maximum number of retries. Resume the job to retry, or check the agent session log for why the agent failed to call the tool.",
+    `Step '${stepName}' halted: agent did not call report_result tool after maximum retry attempts.`,
   );
 }
 

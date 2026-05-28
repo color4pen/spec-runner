@@ -87,6 +87,8 @@ export class PipelineLogger {
         jobId: state.jobId,
         status: state.status,
         verdict: lastRun?.outcome?.verdict ?? null,
+        toolResult: lastRun?.outcome?.toolResult ?? null,
+        followUpAttempts: lastRun?.outcome?.followUpAttempts ?? 0,
         elapsed: lastRun?.endedAt && lastRun?.startedAt
           ? new Date(lastRun.endedAt).getTime() - new Date(lastRun.startedAt).getTime()
           : null,
@@ -110,6 +112,8 @@ export class PipelineLogger {
         type: "verdict:parsed",
         step,
         verdict: outcome.verdict,
+        toolResult: outcome.toolResult ?? null,
+        followUpAttempts: outcome.followUpAttempts ?? 0,
       });
     });
 

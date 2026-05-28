@@ -136,7 +136,7 @@ function makeAgentStep(overrides: Partial<AgentStep> = {}): AgentStep {
 function makeSuccessRunner(): AgentRunner {
   return {
     async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
-      return { completionReason: "success", resultContent: null };
+      return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
     },
   };
 }
@@ -253,7 +253,7 @@ describe("TC-CAP-NEW-001: staged changes → commit + push (requiresCommit:true,
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const step = makeAgentStep({ name: "implementer" });
     const result = await executor.execute(step, state, makeLocalDeps());
     expect(result).toBeDefined();
 
@@ -272,13 +272,13 @@ describe("TC-CAP-NEW-001: staged changes → commit + push (requiresCommit:true,
 // TC-CAP-NEW-002: staged 0 + HEAD no advance + requiresCommit:true → NO_COMMIT_DETECTED
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-CAP-NEW-002: staged 0 + HEAD no advance + requiresCommit:true → NO_COMMIT_DETECTED", () => {
-  it("throws NO_COMMIT_DETECTED when no staged changes and HEAD did not advance", async () => {
+describe("TC-CAP-NEW-002: staged 0 + HEAD no advance → silent skip (no NO_COMMIT_DETECTED)", () => {
+  it("silently skips without commit or push when no staged changes and HEAD did not advance", async () => {
     const jobId = "tc-cap-new-002-job";
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    const { spawnFn } = makeGitSpawnFnWithRevParseSequence(
+    const { spawnFn, calls } = makeGitSpawnFnWithRevParseSequence(
       {
         add: { exitCode: 0 },
         diff: { exitCode: 0 }, // no staged changes
@@ -290,10 +290,14 @@ describe("TC-CAP-NEW-002: staged 0 + HEAD no advance + requiresCommit:true → N
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
-    await expect(executor.execute(step, state, makeLocalDeps())).rejects.toMatchObject({
-      code: "NO_COMMIT_DETECTED",
-    });
+    const step = makeAgentStep({ name: "implementer" });
+    // T-05: requiresCommit guard removed — no longer throws NO_COMMIT_DETECTED
+    const result = await executor.execute(step, state, makeLocalDeps());
+    expect(result).toBeDefined();
+
+    const subcommands = calls.map((c) => c.args[0]);
+    expect(subcommands).not.toContain("commit");
+    expect(subcommands).not.toContain("push");
   });
 });
 
@@ -321,7 +325,7 @@ describe("TC-CAP-NEW-003: staged 0 + HEAD advance + requiresCommit:true → push
     const noopSleep = async (_ms: number) => {};
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn, noopSleep);
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const step = makeAgentStep({ name: "implementer" });
 
     // Must NOT throw
     const result = await executor.execute(step, state, makeLocalDeps());
@@ -362,7 +366,7 @@ describe("TC-CAP-NEW-004: staged changes + HEAD advance → commit staged + push
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const step = makeAgentStep({ name: "implementer" });
     const result = await executor.execute(step, state, makeLocalDeps());
     expect(result).toBeDefined();
 
@@ -406,9 +410,9 @@ describe("TC-CAP-NEW-005: staged 0 + HEAD no advance + requiresCommit:false → 
     const subcommands = calls.map((c) => c.args[0]);
     expect(subcommands).not.toContain("commit");
     expect(subcommands).not.toContain("push");
-    // No second rev-parse (requiresCommit false → no HEAD comparison)
+    // Two rev-parse calls: one before step, one inside commitAndPush (HEAD comparison always runs)
     const revParseCalls = calls.filter((c) => c.args[0] === "rev-parse");
-    expect(revParseCalls.length).toBe(1); // only the pre-step capture
+    expect(revParseCalls.length).toBe(2);
   });
 });
 
@@ -416,37 +420,38 @@ describe("TC-CAP-NEW-005: staged 0 + HEAD no advance + requiresCommit:false → 
 // TC-CAP-NEW-006: staged 0 + HEAD advance + requiresCommit:false → silent skip (HEAD advance ignored)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-CAP-NEW-006: staged 0 + HEAD advance + requiresCommit:false → silent skip", () => {
-  it("skips silently without push when requiresCommit is false, even if HEAD advanced", async () => {
+describe("TC-CAP-NEW-006: staged 0 + HEAD advance → push only (requiresCommit removed, HEAD advance always pushes)", () => {
+  it("calls push-only when HEAD advanced and no staged changes, regardless of step config", async () => {
     const jobId = "tc-cap-new-006-job";
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    // HEAD would advance, but requiresCommit is false so HEAD comparison is never reached
+    // HEAD advances — T-05: requiresCommit removed, HEAD advance always triggers push
     const { spawnFn, calls } = makeGitSpawnFnWithRevParseSequence(
       {
         add: { exitCode: 0 },
         diff: { exitCode: 0 }, // no staged changes
+        push: { exitCode: 0 },
       },
       ["abc123before", "def456after"],
     );
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
-    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
+    const noopSleep = async (_ms: number) => {};
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn, noopSleep);
 
-    // requiresCommit not set (falsy)
     const step = makeAgentStep({ name: "spec-review" });
     const result = await executor.execute(step, state, makeLocalDeps());
     expect(result).toBeDefined();
 
     const subcommands = calls.map((c) => c.args[0]);
-    // No commit or push — silent skip
+    // HEAD advanced → push-only path (no staged, agent self-commit)
     expect(subcommands).not.toContain("commit");
-    expect(subcommands).not.toContain("push");
-    // No second rev-parse — requiresCommit false exits before HEAD comparison
+    expect(subcommands).toContain("push");
+    // Two rev-parse calls: one before step, one inside commitAndPush
     const revParseCalls = calls.filter((c) => c.args[0] === "rev-parse");
-    expect(revParseCalls.length).toBe(1);
+    expect(revParseCalls.length).toBe(2);
   });
 });
 
@@ -480,7 +485,7 @@ describe("TC-CAP-NEW-007: agent self-commit detected → detection message writt
       return true;
     });
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const step = makeAgentStep({ name: "implementer" });
     await executor.execute(step, state, makeLocalDeps());
 
     const combined = stderrMessages.join("");
@@ -518,7 +523,7 @@ describe("TC-CAP-NEW-008: commit:push event emitted after push-only path", () =>
       emittedEvents.push(payload);
     });
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const step = makeAgentStep({ name: "implementer" });
     await executor.execute(step, state, makeLocalDeps());
 
     expect(emittedEvents.length).toBe(1);
@@ -560,7 +565,7 @@ describe("TC-AUTH-01: staged authority spec → warning to stderr, commit contin
       return true;
     });
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const step = makeAgentStep({ name: "implementer" });
     // Must NOT throw
     const result = await executor.execute(step, state, makeLocalDeps());
     expect(result).toBeDefined();
@@ -603,7 +608,7 @@ describe("TC-AUTH-02: staged delta spec only → normal commit + push", () => {
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const step = makeAgentStep({ name: "implementer" });
     const result = await executor.execute(step, state, makeLocalDeps());
     expect(result).toBeDefined();
 
@@ -644,7 +649,7 @@ describe("TC-AUTH-03: staged authority + src → warning lists only authority pa
       return true;
     });
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const step = makeAgentStep({ name: "implementer" });
     const result = await executor.execute(step, state, makeLocalDeps());
     expect(result).toBeDefined();
 
@@ -690,7 +695,7 @@ describe("TC-AUTH-04: agent self-commit with authority spec in HEAD diff → war
       return true;
     });
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const step = makeAgentStep({ name: "implementer" });
     // Must NOT throw
     const result = await executor.execute(step, state, makeLocalDeps());
     expect(result).toBeDefined();
@@ -732,7 +737,7 @@ describe("TC-AUTH-05: normal step (no authority spec) — existing behavior unch
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const step = makeAgentStep({ name: "implementer" });
     const result = await executor.execute(step, state, makeLocalDeps());
     expect(result).toBeDefined();
 
@@ -767,7 +772,7 @@ describe("TC-AUTH-06: agent self-commit with delta spec only in HEAD diff → no
     const noopSleep = async (_ms: number) => {};
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn, noopSleep);
 
-    const step = makeAgentStep({ name: "implementer", requiresCommit: true });
+    const step = makeAgentStep({ name: "implementer" });
     const result = await executor.execute(step, state, makeLocalDeps());
     expect(result).toBeDefined();
 

@@ -76,10 +76,10 @@ describe("TC-034: SpecFixerStep has dedicated AgentDefinition with tools=[]", ()
   });
 
   it("custom tools array does not include register_branch", () => {
-    const hasCustom = SpecFixerStep.agent.tools.some(
-      (t) => t.type === "custom",
+    const hasRegisterBranch = SpecFixerStep.agent.tools.some(
+      (t) => t.type === "custom" && (t as { name?: string }).name === "register_branch",
     );
-    expect(hasCustom).toBe(false);
+    expect(hasRegisterBranch).toBe(false);
   });
 });
 
@@ -117,9 +117,11 @@ describe("TC-036: DesignStep is runtime-neutral — toolHandlers is undefined (d
 
 // TC-037: SpecReviewStep tools=[] means toolHandlers can be undefined/empty
 describe("TC-037: SpecReviewStep tools=[] so toolHandlers can be omitted", () => {
-  it("custom tools array is empty (no register_branch)", () => {
-    const customTools = SpecReviewStep.agent.tools.filter((t) => t.type === "custom");
-    expect(customTools.length).toBe(0);
+  it("custom tools array does not include register_branch", () => {
+    const hasRegisterBranch = SpecReviewStep.agent.tools.some(
+      (t) => t.type === "custom" && (t as { name?: string }).name === "register_branch",
+    );
+    expect(hasRegisterBranch).toBe(false);
   });
 
   it("toolHandlers is undefined or empty", () => {

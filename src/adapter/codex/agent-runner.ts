@@ -6,6 +6,11 @@
  *
  * D1 (design.md): prompt construction mirrors ClaudeCodeRunner.
  * D2 (design.md): sandboxMode "workspace-write" for all steps.
+ *
+ * tool-driven-step-completion frozen behavior:
+ * - ctx.policy.reportTool is intentionally ignored (Codex SDK custom tool support TBD).
+ * - toolResult is always null, followUpAttempts is always 0.
+ * - Existing markdown + regex parse path is maintained.
  */
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
@@ -95,10 +100,10 @@ export class CodexAgentRunner implements AgentRunner {
         title: "",
         slug: ctx.slug,
         baseBranch: "main",
-        content: ctx.requestContent,
-        adr: ctx.requestAdr ?? false,
+        content: ctx.input.requestContent,
+        adr: ctx.input.requestAdr ?? false,
       },
-      dynamicContext: ctx.dynamicContext,
+      dynamicContext: ctx.input.dynamicContext,
     };
 
     // D3 pattern: call enrichContext before buildMessage (same as ClaudeCodeRunner)
@@ -139,12 +144,12 @@ export class CodexAgentRunner implements AgentRunner {
       });
 
       let thread: CodexThread;
-      if (ctx.resumeSessionId) {
+      if (ctx.session.resumeSessionId) {
         try {
-          thread = codex.resumeThread(ctx.resumeSessionId);
+          thread = codex.resumeThread(ctx.session.resumeSessionId);
         } catch (resumeErr) {
           stderrWrite(
-            `[specrunner] warn: codex session resume failed for '${step.name}' (thread: ${ctx.resumeSessionId}): ${(resumeErr as Error).message}. Falling back to new thread.`,
+            `[specrunner] warn: codex session resume failed for '${step.name}' (thread: ${ctx.session.resumeSessionId}): ${(resumeErr as Error).message}. Falling back to new thread.`,
           );
           thread = startFreshThread();
         }
@@ -158,9 +163,9 @@ export class CodexAgentRunner implements AgentRunner {
         threadId = activeThread.id;
       } catch (runErr) {
         // If resume was used and thread.run() failed, retry with a fresh thread.
-        if (ctx.resumeSessionId && !abortController.signal.aborted) {
+        if (ctx.session.resumeSessionId && !abortController.signal.aborted) {
           stderrWrite(
-            `[specrunner] warn: codex thread.run() failed for '${step.name}' after resume (thread: ${ctx.resumeSessionId}): ${(runErr as Error).message}. Falling back to new thread.`,
+            `[specrunner] warn: codex thread.run() failed for '${step.name}' after resume (thread: ${ctx.session.resumeSessionId}): ${(runErr as Error).message}. Falling back to new thread.`,
           );
           const freshThread = startFreshThread();
           activeThread = freshThread;
@@ -172,8 +177,9 @@ export class CodexAgentRunner implements AgentRunner {
       }
 
       // Follow-up turns (N-stage loop): run on same thread for each follow prompt
+      // Frozen behavior: ctx.policy.reportTool is ignored — toolResult always null
       if (shouldRunFollowUp(ctx, "success")) {
-        for (const followPrompt of ctx.followUpPrompts!) {
+        for (const followPrompt of ctx.policy.postWorkPrompts!) {
           const prevUsage = turn.usage ? { ...turn.usage } : null;
           const followTurn = await activeThread.run(followPrompt, { signal: abortController.signal });
 
@@ -197,6 +203,8 @@ export class CodexAgentRunner implements AgentRunner {
         return {
           completionReason: "timeout",
           resultContent: null,
+          toolResult: null,
+          followUpAttempts: 0,
           error: Object.assign(
             new Error(`Step '${step.name}' timed out after ${resolvedConfig.timeoutMs}ms`),
             { code: "STEP_TIMEOUT" },
@@ -207,6 +215,8 @@ export class CodexAgentRunner implements AgentRunner {
       return {
         completionReason: "error",
         resultContent: null,
+        toolResult: null,
+        followUpAttempts: 0,
         error: Object.assign(
           new Error(cause.message),
           { code: "CODEX_SDK_ERROR", cause },
@@ -236,6 +246,8 @@ export class CodexAgentRunner implements AgentRunner {
         return {
           completionReason: "error",
           resultContent: null,
+          toolResult: null,
+          followUpAttempts: 0,
           error: Object.assign(
             new Error(`result file not found: ${resultFilePath}`),
             { code: "RESULT_FILE_NOT_FOUND" },
@@ -260,9 +272,13 @@ export class CodexAgentRunner implements AgentRunner {
       modelUsage = { [resolvedConfig.model]: usage };
     }
 
+    // Frozen behavior: toolResult = null, followUpAttempts = 0
+    // Codex SDK custom tool support is a separate change.
     const baseResult: AgentRunResult = {
       completionReason: "success",
       resultContent: null,
+      toolResult: null,
+      followUpAttempts: 0,
       modelUsage,
       sessionId: threadId ?? undefined,
     };

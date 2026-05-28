@@ -73,7 +73,7 @@ export function buildTimeoutResult(
   const timeoutErr = new Error(pollError.message) as Error & { code: string; hint: string };
   timeoutErr.code = pollError.code;
   timeoutErr.hint = pollError.hint;
-  return { completionReason: "timeout", resultContent: null, sessionId, error: timeoutErr };
+  return { completionReason: "timeout", resultContent: null, sessionId, error: timeoutErr, toolResult: null, followUpAttempts: 0 };
 }
 
 /**

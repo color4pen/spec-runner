@@ -499,8 +499,8 @@ function makeExecutorFromDeps(events: EventBus, deps: PipelineDeps): StepExecuto
   return new StepExecutor(events, runner, makeStoreFactory(tc011TempDir));
 }
 
-describe("TC-011: executor error-hint iteration — spec-review getRawFile failure", () => {
-  it("with existingResults.length=0, hint contains spec-review-result-001.md", async () => {
+describe("TC-011: executor iteration — spec-review getRawFile returns null → escalation verdict", () => {
+  it("with existingResults.length=0, step succeeds with escalation verdict (file not found is soft error)", async () => {
     const events = new EventBus();
     const state = await makeExecutorTestState("tc011-job-0", "spec-review", 0);
 
@@ -515,7 +515,9 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
         terminationReason: "end_turn" as const,
       }),
       getSessionUsage: vi.fn().mockResolvedValue(undefined),
-    } as PipelineDeps["client"];
+      listEvents: vi.fn().mockResolvedValue([]),
+      sendEvents: vi.fn().mockResolvedValue(undefined),
+    } as unknown as PipelineDeps["client"];
 
     const deps: PipelineDeps = {
       client: mockClient,
@@ -543,13 +545,15 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
     const executor = makeExecutorFromDeps(events, deps);
     const step = makeReviewStepStub("spec-review", specReviewResultPath("my-slug", 1));
 
-    await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
-      code: "SPEC_REVIEW_RESULT_NOT_FOUND",
-      hint: expect.stringContaining("spec-review-result-001.md"),
-    });
+    // fetchResultFile returns null on file-not-found → verdict defaults to "escalation"
+    const result = await executor.execute(step, state, deps);
+    const specReviewArr = result.steps?.["spec-review"];
+    const lastResult = specReviewArr?.[specReviewArr.length - 1];
+    const { toLegacyStepResult } = await import("../../../src/state/helpers.js");
+    expect(lastResult ? toLegacyStepResult(lastResult).verdict : undefined).toBe("escalation");
   });
 
-  it("with existingResults.length=1, hint contains spec-review-result-002.md", async () => {
+  it("with existingResults.length=1, step succeeds with escalation verdict (file not found is soft error)", async () => {
     const events = new EventBus();
     const state = await makeExecutorTestState("tc011-job-1", "spec-review", 1);
 
@@ -564,7 +568,9 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
         terminationReason: "end_turn" as const,
       }),
       getSessionUsage: vi.fn().mockResolvedValue(undefined),
-    } as PipelineDeps["client"];
+      listEvents: vi.fn().mockResolvedValue([]),
+      sendEvents: vi.fn().mockResolvedValue(undefined),
+    } as unknown as PipelineDeps["client"];
 
     const deps: PipelineDeps = {
       client: mockClient,
@@ -592,15 +598,17 @@ describe("TC-011: executor error-hint iteration — spec-review getRawFile failu
     const executor = makeExecutorFromDeps(events, deps);
     const step = makeReviewStepStub("spec-review", specReviewResultPath("my-slug", 2));
 
-    await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
-      code: "SPEC_REVIEW_RESULT_NOT_FOUND",
-      hint: expect.stringContaining("spec-review-result-002.md"),
-    });
+    // fetchResultFile returns null on file-not-found → verdict defaults to "escalation"
+    const result = await executor.execute(step, state, deps);
+    const specReviewArr = result.steps?.["spec-review"];
+    const lastResult = specReviewArr?.[specReviewArr.length - 1];
+    const { toLegacyStepResult } = await import("../../../src/state/helpers.js");
+    expect(lastResult ? toLegacyStepResult(lastResult).verdict : undefined).toBe("escalation");
   });
 });
 
-describe("TC-012: executor error-hint iteration — code-review getRawFile failure", () => {
-  it("with existingResults.length=0, hint contains review-feedback-001.md", async () => {
+describe("TC-012: executor iteration — code-review getRawFile returns null → escalation verdict", () => {
+  it("with existingResults.length=0, step succeeds with escalation verdict (file not found is soft error)", async () => {
     const events = new EventBus();
     const state = await makeExecutorTestState("tc012-job-0", "code-review", 0);
 
@@ -615,7 +623,9 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
         terminationReason: "end_turn" as const,
       }),
       getSessionUsage: vi.fn().mockResolvedValue(undefined),
-    } as PipelineDeps["client"];
+      listEvents: vi.fn().mockResolvedValue([]),
+      sendEvents: vi.fn().mockResolvedValue(undefined),
+    } as unknown as PipelineDeps["client"];
 
     const deps: PipelineDeps = {
       client: mockClient,
@@ -643,13 +653,15 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
     const executor = makeExecutorFromDeps(events, deps);
     const step = makeReviewStepStub("code-review", reviewFeedbackPath("my-slug", 1));
 
-    await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
-      code: "CODE_REVIEW_RESULT_NOT_FOUND",
-      hint: expect.stringContaining("review-feedback-001.md"),
-    });
+    // fetchResultFile returns null on file-not-found → verdict defaults to "escalation"
+    const result = await executor.execute(step, state, deps);
+    const codeReviewArr = result.steps?.["code-review"];
+    const lastResult = codeReviewArr?.[codeReviewArr.length - 1];
+    const { toLegacyStepResult } = await import("../../../src/state/helpers.js");
+    expect(lastResult ? toLegacyStepResult(lastResult).verdict : undefined).toBe("escalation");
   });
 
-  it("with existingResults.length=1, hint contains review-feedback-002.md", async () => {
+  it("with existingResults.length=1, step succeeds with escalation verdict (file not found is soft error)", async () => {
     const events = new EventBus();
     const state = await makeExecutorTestState("tc012-job-1", "code-review", 1);
 
@@ -664,7 +676,9 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
         terminationReason: "end_turn" as const,
       }),
       getSessionUsage: vi.fn().mockResolvedValue(undefined),
-    } as PipelineDeps["client"];
+      listEvents: vi.fn().mockResolvedValue([]),
+      sendEvents: vi.fn().mockResolvedValue(undefined),
+    } as unknown as PipelineDeps["client"];
 
     const deps: PipelineDeps = {
       client: mockClient,
@@ -692,9 +706,11 @@ describe("TC-012: executor error-hint iteration — code-review getRawFile failu
     const executor = makeExecutorFromDeps(events, deps);
     const step = makeReviewStepStub("code-review", reviewFeedbackPath("my-slug", 2));
 
-    await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
-      code: "CODE_REVIEW_RESULT_NOT_FOUND",
-      hint: expect.stringContaining("review-feedback-002.md"),
-    });
+    // fetchResultFile returns null on file-not-found → verdict defaults to "escalation"
+    const result = await executor.execute(step, state, deps);
+    const codeReviewArr = result.steps?.["code-review"];
+    const lastResult = codeReviewArr?.[codeReviewArr.length - 1];
+    const { toLegacyStepResult } = await import("../../../src/state/helpers.js");
+    expect(lastResult ? toLegacyStepResult(lastResult).verdict : undefined).toBe("escalation");
   });
 });

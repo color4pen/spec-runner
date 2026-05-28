@@ -213,6 +213,10 @@ function buildPipelineMockClient(opts: {
       },
     ),
     getSessionUsage: vi.fn().mockResolvedValue(undefined),
+    listEvents: vi.fn().mockResolvedValue([
+      { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true } },
+    ]),
+    sendEvents: vi.fn().mockResolvedValue(undefined),
   };
 
   return {
@@ -1132,10 +1136,10 @@ describe("TC-DC-101: DynamicContext forwarded to all agent steps via AgentRunCon
     // All agent steps must have received dynamicContext
     expect(capturedCtxList.length).toBeGreaterThan(0);
     for (const ctx of capturedCtxList) {
-      expect(ctx.dynamicContext).toBeDefined();
-      expect(ctx.dynamicContext?.gitLog).toBe(testDynamicContext.gitLog);
-      expect(ctx.dynamicContext?.diffStat).toBe(testDynamicContext.diffStat);
-      expect(ctx.dynamicContext?.changesList).toEqual(testDynamicContext.changesList);
+      expect(ctx.input.dynamicContext).toBeDefined();
+      expect(ctx.input.dynamicContext?.gitLog).toBe(testDynamicContext.gitLog);
+      expect(ctx.input.dynamicContext?.diffStat).toBe(testDynamicContext.diffStat);
+      expect(ctx.input.dynamicContext?.changesList).toEqual(testDynamicContext.changesList);
     }
   });
 });
@@ -1167,10 +1171,10 @@ describe("TC-DC-102: specIndex propagated to all agent steps", () => {
 
     expect(capturedCtxList.length).toBeGreaterThan(0);
     for (const ctx of capturedCtxList) {
-      expect(ctx.dynamicContext?.specIndex).toBeDefined();
-      expect(ctx.dynamicContext?.specIndex.length).toBe(2);
-      expect(ctx.dynamicContext?.specIndex[0]?.capability).toBe("cli-commands");
-      expect(ctx.dynamicContext?.specIndex[1]?.capability).toBe("pipeline-orchestrator");
+      expect(ctx.input.dynamicContext?.specIndex).toBeDefined();
+      expect(ctx.input.dynamicContext?.specIndex?.length).toBe(2);
+      expect(ctx.input.dynamicContext?.specIndex?.[0]?.capability).toBe("cli-commands");
+      expect(ctx.input.dynamicContext?.specIndex?.[1]?.capability).toBe("pipeline-orchestrator");
     }
   });
 });
@@ -1209,7 +1213,7 @@ describe("TC-DC-103: projectContext injected only for allowlist steps", () => {
     for (const stepName of allowlistNames) {
       const ctx = capturedCtxList.find((c) => c.step.name === stepName);
       expect(ctx, `Expected step '${stepName}' to be called`).toBeDefined();
-      expect(ctx?.projectContext).toBe("# Test Project Context");
+      expect(ctx?.input.projectContext).toBe("# Test Project Context");
     }
   });
 });
@@ -1247,7 +1251,7 @@ describe("TC-DC-104: projectContext undefined for non-allowlist steps", () => {
     // test-case-gen is a non-allowlist step that runs on the approved path
     const testCaseGenCtx = capturedCtxList.find((c) => c.step.name === "test-case-gen");
     expect(testCaseGenCtx, "Expected test-case-gen step to be called").toBeDefined();
-    expect(testCaseGenCtx?.projectContext).toBeUndefined();
+    expect(testCaseGenCtx?.input.projectContext).toBeUndefined();
   });
 });
 
@@ -1373,7 +1377,7 @@ describe("TC-DC-107: project.md absent — projectContext is undefined for all s
     for (const stepName of allowlistNames) {
       const ctx = capturedCtxList.find((c) => c.step.name === stepName);
       expect(ctx, `Expected step '${stepName}' to be called`).toBeDefined();
-      expect(ctx?.projectContext).toBeUndefined();
+      expect(ctx?.input.projectContext).toBeUndefined();
     }
   });
 });
@@ -1406,7 +1410,7 @@ describe("TC-DC-108: dynamicContext omitted — backward compatibility", () => {
     expect(result.status).toBe("awaiting-merge");
     expect(capturedCtxList.length).toBeGreaterThan(0);
     for (const ctx of capturedCtxList) {
-      expect(ctx.dynamicContext).toBeUndefined();
+      expect(ctx.input.dynamicContext).toBeUndefined();
     }
   });
 });
@@ -1754,7 +1758,7 @@ describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not
     // Mock AgentRunner that returns success for all steps (no real SDK required)
     const mockAgentRunner = {
       async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
-        return { completionReason: "success", resultContent: null };
+        return { completionReason: "success", resultContent: null, toolResult: { ok: true }, followUpAttempts: 0 };
       },
     };
 
@@ -1888,7 +1892,7 @@ describe("TC-AUTH-INT-01: implementer stages authority spec + delta spec → war
 
     const mockAgentRunner = {
       async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
-        return { completionReason: "success", resultContent: null };
+        return { completionReason: "success", resultContent: null, toolResult: { ok: true }, followUpAttempts: 0 };
       },
     };
 
@@ -2006,7 +2010,7 @@ describe("TC-AUTH-INT-02: implementer stages delta spec only → pipeline contin
 
     const mockAgentRunner = {
       async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
-        return { completionReason: "success", resultContent: null };
+        return { completionReason: "success", resultContent: null, toolResult: { ok: true }, followUpAttempts: 0 };
       },
     };
 

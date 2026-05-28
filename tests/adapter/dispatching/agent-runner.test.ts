@@ -72,7 +72,9 @@ function makeCtx(model: string, configOverrides: Partial<SpecRunnerConfig> = {})
     branch: "feat/test",
     slug: "test-slug",
     cwd: "/fake/cwd",
-    requestContent: "# Request",
+    input: { requestContent: "# Request" },
+    session: {},
+    policy: {},
     config: makeConfig(configOverrides),
     emit: vi.fn(),
   };

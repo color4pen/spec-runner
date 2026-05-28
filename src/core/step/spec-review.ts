@@ -8,6 +8,7 @@ import { parseReviewVerdict } from "../parser/review-verdict.js";
 import { getSpecReviewMode } from "../../config/type-config.js";
 import { specReviewResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
+import { REPORT_TOOL, REPORT_TOOL_CUSTOM_TOOL_SPEC } from "./report-tool.js";
 
 const SPEC_REVIEW_AGENT_MODEL = "claude-opus-4-6[1m]";
 
@@ -27,6 +28,7 @@ const specReviewAgentDefinition: AgentDefinition = {
   system: SPEC_REVIEW_SYSTEM_PROMPT,
   tools: [
     { type: AGENT_TOOLSET_TYPE },
+    REPORT_TOOL_CUSTOM_TOOL_SPEC,
   ],
   capabilities: { gitWrite: true },
 };
@@ -74,6 +76,7 @@ export const SpecReviewStep: AgentStep = {
 
   phase: "spec",
   needsProjectContext: true,
+  reportTool: REPORT_TOOL,
 
   // maxTurns: spec-review is read-heavy with focused judgment; 15 is sufficient.
   // Design D3 (propose-openspec-cli-and-step-model-config).

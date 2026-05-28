@@ -57,9 +57,23 @@ export interface SessionClient {
       timeoutMs?: number;
     },
   ): Promise<{
-    status: "idle" | "terminated";
+    status: "idle" | "terminated" | "requires_action";
     error?: { code: string; message: string; hint: string };
   }>;
+
+  /**
+   * List events for a session. Used to inspect custom tool calls in
+   * requires_action state (e.g. report_result tool input retrieval).
+   * Best-effort: returns empty array on failure.
+   */
+  listEvents(sessionId: string): Promise<unknown[]>;
+
+  /**
+   * Send events to a session (e.g. custom_tool_result, user.message).
+   * Used to respond to requires_action (custom tool use) and to send
+   * follow-up messages.
+   */
+  sendEvents(sessionId: string, events: Record<string, unknown>[]): Promise<void>;
 
   /**
    * Retrieve cumulative token usage for a completed session.

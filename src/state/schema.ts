@@ -5,6 +5,7 @@
 export type JobStatus = "running" | "awaiting-resume" | "awaiting-merge" | "failed" | "terminated" | "archived" | "canceled";
 
 import type { ModelUsage } from "../core/port/model-usage.js";
+import type { BaseReportResult } from "../core/port/report-result.js";
 /**
  * Re-export from canonical location in the port layer.
  * Both the port layer and state layer reference this single definition.
@@ -91,6 +92,18 @@ export interface StepOutcome {
   /** Raw file content for the result file (e.g. spec-review-result.md). Optional. */
   fileContent?: string | null;
   error: ErrorInfo | null;
+  /**
+   * Result reported by the agent via report_result tool call.
+   * null = tool was not called. undefined = field absent (legacy records).
+   * Added in tool-driven-step-completion.
+   */
+  toolResult?: BaseReportResult | null;
+  /**
+   * Number of follow-up retry attempts made to get the agent to call report_result.
+   * 0 = the agent called the tool on the first turn (or feature not applicable).
+   * Added in tool-driven-step-completion.
+   */
+  followUpAttempts?: number;
 }
 
 /**

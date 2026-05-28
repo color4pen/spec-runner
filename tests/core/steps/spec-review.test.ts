@@ -72,6 +72,10 @@ function buildDeps(opts: {
       pollUntilComplete: vi.fn().mockResolvedValue({ status: "idle" }),
       streamEvents: vi.fn().mockResolvedValue({ sseDisconnected: false, idleEndTurnDetected: true, terminated: false, terminationReason: "end_turn" }),
       getSessionUsage: vi.fn().mockResolvedValue(undefined),
+      listEvents: vi.fn().mockResolvedValue([
+        { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true } },
+      ]),
+      sendEvents: vi.fn().mockResolvedValue(undefined),
     } as unknown as PipelineDeps["client"],
     config: {
       version: 1,

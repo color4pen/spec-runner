@@ -111,7 +111,9 @@ function makeMockSessionClient(): SessionClient {
       terminationReason: "end_turn" as const,
     }),
     getSessionUsage: vi.fn().mockResolvedValue(undefined),
-  } as SessionClient;
+    listEvents: vi.fn().mockResolvedValue([]),
+    sendEvents: vi.fn().mockResolvedValue(undefined),
+  } as unknown as SessionClient;
 }
 
 function makeMockGithubClient(overrides: Partial<GitHubClient> = {}): GitHubClient {
@@ -176,7 +178,9 @@ describe("TC-09-01: ManagedAgentRunner.run() — logs 'session created' with run
       branch: "feat/test",
       slug: "test-slug",
       cwd: tempDir,
-      requestContent: "request content",
+      input: { requestContent: "request content" },
+      session: {},
+      policy: {},
       config: makeConfig(),
       emit: vi.fn(),
     };

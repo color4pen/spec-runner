@@ -84,6 +84,10 @@ function buildMockSessionClient(opts: {
     pollUntilComplete: vi.fn().mockResolvedValue({ status: "idle" }),
     streamEvents: streamEventsMock as SessionClient["streamEvents"],
     getSessionUsage: vi.fn().mockResolvedValue(undefined),
+    listEvents: vi.fn().mockResolvedValue([
+      { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true } },
+    ]),
+    sendEvents: vi.fn().mockResolvedValue(undefined),
   };
 
   return { client, createSessionMock, streamEventsMock };

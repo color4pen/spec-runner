@@ -7,7 +7,7 @@ import type { SessionClient, SessionUsage } from "../../core/port/session-client
 import type { CustomToolHandler } from "../../core/tools/types.js";
 import { pollUntilComplete } from "./completion.js";
 import { runSseStream } from "./sse-stream.js";
-import { createSession, sendEvents, retrieveSession } from "./sdk/sessions.js";
+import { createSession, sendEvents, retrieveSession, listEvents } from "./sdk/sessions.js";
 import { normalizeSessionError } from "./session-error.js";
 import { mapSessionUsage } from "./usage.js";
 
@@ -66,7 +66,7 @@ export class AnthropicSessionClient implements SessionClient {
       timeoutMs?: number;
     },
   ): Promise<{
-    status: "idle" | "terminated";
+    status: "idle" | "terminated" | "requires_action";
     error?: { code: string; message: string; hint: string };
   }> {
     try {
@@ -78,6 +78,21 @@ export class AnthropicSessionClient implements SessionClient {
     } catch (err) {
       return { status: "terminated", error: normalizeSessionError(err) };
     }
+  }
+
+  async listEvents(sessionId: string): Promise<unknown[]> {
+    try {
+      const page = await listEvents(this.client, sessionId);
+      return (page as { data?: unknown[] }).data ?? [];
+    } catch {
+      return [];
+    }
+  }
+
+  async sendEvents(sessionId: string, events: Record<string, unknown>[]): Promise<void> {
+    await sendEvents(this.client, sessionId, {
+      events: events as unknown as Parameters<Anthropic["beta"]["sessions"]["events"]["send"]>[1]["events"],
+    });
   }
 
   async streamEvents(

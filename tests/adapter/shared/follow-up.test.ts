@@ -7,34 +7,36 @@ function makeBaseResult(overrides: Partial<AgentRunResult> = {}): AgentRunResult
     completionReason: "success",
     resultContent: "base content",
     sessionId: "sess-turn1",
+    toolResult: null,
+    followUpAttempts: 0,
     modelUsage: { "claude-opus-4": { inputTokens: 100, outputTokens: 50, cacheReadInputTokens: 0, cacheCreationInputTokens: 0 } },
     ...overrides,
   };
 }
 
 describe("shouldRunFollowUp", () => {
-  it("returns true when followUpPrompts has entries and completionReason is success", () => {
-    expect(shouldRunFollowUp({ followUpPrompts: ["fix this"] }, "success")).toBe(true);
+  it("returns true when postWorkPrompts has entries and completionReason is success", () => {
+    expect(shouldRunFollowUp({ policy: { postWorkPrompts: ["fix this"] } }, "success")).toBe(true);
   });
 
-  it("returns true when followUpPrompts has multiple entries and completionReason is success", () => {
-    expect(shouldRunFollowUp({ followUpPrompts: ["a", "b"] }, "success")).toBe(true);
+  it("returns true when postWorkPrompts has multiple entries and completionReason is success", () => {
+    expect(shouldRunFollowUp({ policy: { postWorkPrompts: ["a", "b"] } }, "success")).toBe(true);
   });
 
-  it("returns false when followUpPrompts has entries and completionReason is error", () => {
-    expect(shouldRunFollowUp({ followUpPrompts: ["fix this"] }, "error")).toBe(false);
+  it("returns false when postWorkPrompts has entries and completionReason is error", () => {
+    expect(shouldRunFollowUp({ policy: { postWorkPrompts: ["fix this"] } }, "error")).toBe(false);
   });
 
-  it("returns false when followUpPrompts has entries and completionReason is timeout", () => {
-    expect(shouldRunFollowUp({ followUpPrompts: ["fix this"] }, "timeout")).toBe(false);
+  it("returns false when postWorkPrompts has entries and completionReason is timeout", () => {
+    expect(shouldRunFollowUp({ policy: { postWorkPrompts: ["fix this"] } }, "timeout")).toBe(false);
   });
 
-  it("returns false when followUpPrompts is empty array and completionReason is success", () => {
-    expect(shouldRunFollowUp({ followUpPrompts: [] }, "success")).toBe(false);
+  it("returns false when postWorkPrompts is empty array and completionReason is success", () => {
+    expect(shouldRunFollowUp({ policy: { postWorkPrompts: [] } }, "success")).toBe(false);
   });
 
-  it("returns false when followUpPrompts is undefined and completionReason is success", () => {
-    expect(shouldRunFollowUp({ followUpPrompts: undefined }, "success")).toBe(false);
+  it("returns false when postWorkPrompts is undefined and completionReason is success", () => {
+    expect(shouldRunFollowUp({ policy: { postWorkPrompts: undefined } }, "success")).toBe(false);
   });
 });
 

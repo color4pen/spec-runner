@@ -4,7 +4,7 @@ import type { PipelineDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import { gitExec, gitExecExitCode, type SpawnFn } from "../../util/git-exec.js";
 import { stderrWrite } from "../../logger/stdout.js";
-import { noCommitDetectedError, pushFailedError } from "../../errors.js";
+import { pushFailedError } from "../../errors.js";
 
 /** Prefix that identifies authority spec files. Delta specs under specrunner/changes/ are NOT violations. */
 const AUTHORITY_SPEC_PREFIX = "specrunner/specs/";
@@ -24,14 +24,14 @@ export interface CommitPushInfra {
 /**
  * Stage all changes, commit, and push to origin.
  *
- * Extended with HEAD comparison for agent self-commit tolerance:
+ * tool-driven-step-completion: requiresCommit guard removed.
+ * New behavior:
  * - git add -A
  * - git diff --cached --quiet (exit 0 = no changes)
- * - if no changes and requiresCommit:
+ * - if no changes:
  *   - compare headBeforeStep with current HEAD
  *   - if HEAD advanced (agent self-committed): push only, log detection message
- *   - otherwise: throw noCommitDetectedError
- * - if no changes and !requiresCommit: return silently
+ *   - otherwise: silently return (no commit needed, step completed via tool)
  * - git commit -m "${step.name}: ${slug}"
  * - git push origin ${branch} — retry once after 5s on failure
  * - if second push fails: throw pushFailedError
@@ -48,13 +48,11 @@ export async function commitAndPush(
   const branch = state.branch ?? "";
   const slug = deps.slug;
 
-  // Stage all changes. If git add fails (not a git repo, exit 128, etc.), handle gracefully.
+  // Stage all changes. If git add fails (not a git repo, exit 128, etc.), silently skip.
   const addExitCode = await gitExecExitCode(infra.spawnFn, cwd, ["add", "-A"]);
   if (addExitCode !== 0) {
     // git is non-functional in this directory (e.g., not a git repo).
-    if (step.requiresCommit) {
-      throw noCommitDetectedError(step.name, branch);
-    }
+    // Silently skip — no requiresCommit guard anymore.
     return;
   }
 
@@ -64,28 +62,25 @@ export async function commitAndPush(
   const hasChanges = diffExitCode === 1;
 
   if (!hasChanges) {
-    if (step.requiresCommit) {
-      // Check if HEAD advanced (agent self-committed before pipeline commit).
-      const headAfterStep = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
-      if (headBeforeStep && headAfterStep && headAfterStep !== headBeforeStep) {
-        // Agent self-commit path: inspect HEAD diff for authority spec violations.
-        // Warning only — pipeline continues; delta-spec-validation will handle the violation.
-        const headDiffOutput = await gitExec(infra.spawnFn, cwd, ["diff", `${headBeforeStep}..${headAfterStep}`, "--name-only"]);
-        if (headDiffOutput) {
-          const headFilePaths = headDiffOutput.split("\n").filter(p => p.length > 0);
-          const headViolations = findAuthoritySpecViolations(headFilePaths);
-          if (headViolations.length > 0) {
-            stderrWrite(`Warning: authority spec edit detected in agent commits: ${headViolations.join(", ")}. Continuing — delta-spec-validation will handle.\n`);
-          }
+    // Check if HEAD advanced (agent self-committed before pipeline commit).
+    const headAfterStep = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
+    if (headBeforeStep && headAfterStep && headAfterStep !== headBeforeStep) {
+      // Agent self-commit path: inspect HEAD diff for authority spec violations.
+      // Warning only — pipeline continues; delta-spec-validation will handle the violation.
+      const headDiffOutput = await gitExec(infra.spawnFn, cwd, ["diff", `${headBeforeStep}..${headAfterStep}`, "--name-only"]);
+      if (headDiffOutput) {
+        const headFilePaths = headDiffOutput.split("\n").filter(p => p.length > 0);
+        const headViolations = findAuthoritySpecViolations(headFilePaths);
+        if (headViolations.length > 0) {
+          stderrWrite(`Warning: authority spec edit detected in agent commits: ${headViolations.join(", ")}. Continuing — delta-spec-validation will handle.\n`);
         }
-        // Agent authored commit(s) since step start — push the existing commits as-is.
-        stderrWrite("Detected agent-authored commit(s) since step start; skipping pipeline commit and pushing as-is.\n");
-        await pushOnly(branch, cwd, step.name, infra);
-        return;
       }
-      throw noCommitDetectedError(step.name, branch);
+      // Agent authored commit(s) since step start — push the existing commits as-is.
+      stderrWrite("Detected agent-authored commit(s) since step start; skipping pipeline commit and pushing as-is.\n");
+      await pushOnly(branch, cwd, step.name, infra);
+      return;
     }
-    // No changes and requiresCommit is falsy — silently skip
+    // No changes and no agent self-commit — silently skip (step completed via tool, no file writes needed)
     return;
   }
 

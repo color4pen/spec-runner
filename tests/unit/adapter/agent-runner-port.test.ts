@@ -162,6 +162,8 @@ describe("TC-001: AgentRunner interface has exactly one method: run()", () => {
       run: async (_ctx: AgentRunContext): Promise<AgentRunResult> => ({
         completionReason: "success",
         resultContent: null,
+        toolResult: null,
+        followUpAttempts: 0,
       }),
     };
     expect(typeof runner.run).toBe("function");
@@ -175,6 +177,8 @@ describe("TC-001: AgentRunner interface has exactly one method: run()", () => {
       run: async (_ctx: AgentRunContext): Promise<AgentRunResult> => ({
         completionReason: "success",
         resultContent: null,
+        toolResult: null,
+        followUpAttempts: 0,
       }),
     };
     expect((runner as unknown as Record<string, unknown>)["createSession"]).toBeUndefined();
@@ -198,7 +202,9 @@ describe("TC-002: AgentRunContext fields are runtime-neutral", () => {
       branch: "feat/test",
       slug: "test-slug",
       cwd: "/tmp/test",
-      requestContent: "content",
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
       config: makeMinimalConfig(),
       emit: (_e: string, _p: Record<string, unknown>) => undefined,
     };
@@ -211,7 +217,7 @@ describe("TC-002: AgentRunContext fields are runtime-neutral", () => {
     expect(typeof ctx.branch).toBe("string");
     expect(typeof ctx.slug).toBe("string");
     expect(typeof ctx.cwd).toBe("string");
-    expect(typeof ctx.requestContent).toBe("string");
+    expect(typeof ctx.input.requestContent).toBe("string");
     expect(ctx.config).toBeDefined();
     expect(typeof ctx.emit).toBe("function");
   });
@@ -415,7 +421,7 @@ describe("TC-008: StepExecutor calls runner.run exactly once per agent step", ()
     expect(typeof ctx.branch).toBe("string");
     expect(typeof ctx.slug).toBe("string");
     expect(typeof ctx.cwd).toBe("string");
-    expect(typeof ctx.requestContent).toBe("string");
+    expect(typeof ctx.input.requestContent).toBe("string");
     expect(ctx.config).toBeDefined();
     expect(typeof ctx.emit).toBe("function");
   });
@@ -484,7 +490,7 @@ describe("TC-010: CliStep does not invoke runner.run", () => {
     const runner: AgentRunner = {
       run: async (_ctx: AgentRunContext): Promise<AgentRunResult> => {
         runCalled.push(true);
-        return { completionReason: "success", resultContent: null };
+        return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
       },
     };
 
@@ -544,7 +550,7 @@ describe("TC-012: CliStep verdict null is normalized to escalation", () => {
     const state = await setupJobState(jobId);
 
     const runner: AgentRunner = {
-      run: async (): Promise<AgentRunResult> => ({ completionReason: "success", resultContent: null }),
+      run: async (): Promise<AgentRunResult> => ({ completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 }),
     };
 
     // Write a result file (CLI step reads from disk)

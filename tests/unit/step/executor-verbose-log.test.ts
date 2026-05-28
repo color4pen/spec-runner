@@ -82,7 +82,7 @@ async function setupJobState(jobId: string): Promise<JobState> {
 function makeSuccessRunner(): AgentRunner {
   return {
     async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
-      return { completionReason: "success", resultContent: null };
+      return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
     },
   };
 }

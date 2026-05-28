@@ -20,6 +20,7 @@ import type { JobState } from "../../../../src/state/schema.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
+import { parseBaseReportInput } from "../../../../src/core/port/report-result.js";
 
 let tempDir: string;
 
@@ -117,7 +118,7 @@ function makeCapturingRunner(): { runner: AgentRunner; capturedCtxList: AgentRun
   const runner: AgentRunner = {
     run: vi.fn().mockImplementation(async (ctx: AgentRunContext) => {
       capturedCtxList.push({ ...ctx }); // shallow copy to capture snapshot
-      return { completionReason: "success" as const, resultContent: null };
+      return { completionReason: "success" as const, resultContent: null, toolResult: null, followUpAttempts: 0 };
     }),
   };
   return { runner, capturedCtxList };
@@ -142,7 +143,7 @@ describe("TC-EXEC-001: deps.resumePrompt が設定されているとき、ctx.re
     await executor.execute(step, jobState, deps);
 
     expect(capturedCtxList).toHaveLength(1);
-    expect(capturedCtxList[0]!.resumePrompt).toBe("手動で foo.ts の import を修正済み");
+    expect(capturedCtxList[0]!.session.resumePrompt).toBe("手動で foo.ts の import を修正済み");
   });
 });
 
@@ -189,8 +190,8 @@ describe("TC-EXEC-003: 2 回目以降の agent step では ctx.resumePrompt が 
     await executor.execute(step, state1, deps);
 
     expect(capturedCtxList).toHaveLength(2);
-    expect(capturedCtxList[0]!.resumePrompt).toBe("first time context");
-    expect(capturedCtxList[1]!.resumePrompt).toBeUndefined();
+    expect(capturedCtxList[0]!.session.resumePrompt).toBe("first time context");
+    expect(capturedCtxList[1]!.session.resumePrompt).toBeUndefined();
   });
 
   it("resumePrompt が未設定のとき、ctx.resumePrompt は常に undefined", async () => {
@@ -207,6 +208,82 @@ describe("TC-EXEC-003: 2 回目以降の agent step では ctx.resumePrompt が 
     await executor.execute(step, jobState, deps);
 
     expect(capturedCtxList).toHaveLength(1);
-    expect(capturedCtxList[0]!.resumePrompt).toBeUndefined();
+    expect(capturedCtxList[0]!.session.resumePrompt).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-040/TC-041/TC-042: executor halt — reportTool set + toolResult === null
+// ---------------------------------------------------------------------------
+
+/**
+ * An AgentStep with reportTool set (triggers the halt path in executor).
+ */
+function makeAgentStepWithReportTool(): AgentStep {
+  return {
+    kind: "agent",
+    name: "implementer",
+    agent: {
+      name: "specrunner-implementer",
+      role: IMPLEMENTER_ROLE,
+      model: "claude-sonnet-4-5",
+      system: "do the work",
+      tools: [],
+    },
+    buildMessage: () => "do the thing",
+    resultFilePath: () => null,
+    parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    reportTool: {
+      name: "report_result",
+      description: "Report completion of this step.",
+      zodSchema: {},
+      parseInput: parseBaseReportInput,
+    },
+  };
+}
+
+describe("TC-040: executor halts with STEP_HALTED_NO_TOOL_CALL when reportTool is set and agent returns toolResult===null", () => {
+  it("throws error with code STEP_HALTED_NO_TOOL_CALL and err.state.status==='awaiting-resume'", async () => {
+    const jobState = await createRunningJobState();
+    // makeCapturingRunner() already returns toolResult: null
+    const { runner } = makeCapturingRunner();
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
+
+    const deps = makeDeps();
+    const step = makeAgentStepWithReportTool();
+
+    let thrownError: unknown;
+    try {
+      await executor.execute(step, jobState, deps);
+    } catch (err) {
+      thrownError = err;
+    }
+
+    expect(thrownError).toBeDefined();
+    const err = thrownError as Error & { code?: string; state?: JobState };
+    expect(err.code).toBe("STEP_HALTED_NO_TOOL_CALL");
+    expect(err.state).toBeDefined();
+    expect(err.state!.status).toBe("awaiting-resume");
+  });
+});
+
+describe("TC-041: executor does NOT halt when reportTool is NOT set (Codex path)", () => {
+  it("returns success state when step has no reportTool, even though runner returns toolResult===null", async () => {
+    const jobState = await createRunningJobState();
+    // makeCapturingRunner() returns toolResult: null — but since no reportTool, no halt
+    const { runner } = makeCapturingRunner();
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
+
+    const deps = makeDeps();
+    // makeAgentStep() has no reportTool — Codex path
+    const step = makeAgentStep();
+
+    // Should complete successfully without halting
+    const finalState = await executor.execute(step, jobState, deps);
+    expect(finalState.status).not.toBe("awaiting-resume");
   });
 });

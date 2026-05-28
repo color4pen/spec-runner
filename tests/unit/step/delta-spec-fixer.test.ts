@@ -192,10 +192,6 @@ describe("TC-DSF-03: completionVerdict is 'approved'", () => {
     expect(DeltaSpecFixerStep.phase).toBe("spec");
   });
 
-  it("requiresCommit is true", () => {
-    expect(DeltaSpecFixerStep.requiresCommit).toBe(true);
-  });
-
   it("resultFilePath returns null", () => {
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
