@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.1...specrunner-v0.1.2) (2026-05-28)
+
+
+### Features
+
+* agent step の完了 signal を report_result custom tool に倒す ([#461](https://github.com/color4pen/spec-runner/issues/461)) ([cb4dfe8](https://github.com/color4pen/spec-runner/commit/cb4dfe84d78b75c29410e715f7deba3f97dbeda9))
+
 ## [0.1.1](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.0...specrunner-v0.1.1) (2026-05-27)
 
 
