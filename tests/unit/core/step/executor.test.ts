@@ -242,30 +242,31 @@ function makeAgentStepWithReportTool(): AgentStep {
   };
 }
 
-describe("TC-040: executor halts with STEP_HALTED_NO_TOOL_CALL when reportTool is set and agent returns toolResult===null", () => {
-  it("throws error with code STEP_HALTED_NO_TOOL_CALL and err.state.status==='awaiting-resume'", async () => {
+// TC-040 (updated R3 cutover): no-tool-call → proceed instead of halt.
+// When reportTool is set but agent never called it (toolResult === null),
+// executor now proceeds with step-class-based verdict instead of halting.
+describe("TC-040: executor proceeds (no halt) when reportTool is set and agent returns toolResult===null", () => {
+  it("returns success state (no STEP_HALTED_NO_TOOL_CALL, no awaiting-resume)", async () => {
     const jobState = await createRunningJobState();
-    // makeCapturingRunner() already returns toolResult: null
+    // makeCapturingRunner() returns toolResult: null
     const { runner } = makeCapturingRunner();
 
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
 
     const deps = makeDeps();
+    // makeAgentStepWithReportTool uses a base (producer-class) reportTool
     const step = makeAgentStepWithReportTool();
 
-    let thrownError: unknown;
-    try {
-      await executor.execute(step, jobState, deps);
-    } catch (err) {
-      thrownError = err;
-    }
+    // Should complete without throwing
+    const finalState = await executor.execute(step, jobState, deps);
 
-    expect(thrownError).toBeDefined();
-    const err = thrownError as Error & { code?: string; state?: JobState };
-    expect(err.code).toBe("STEP_HALTED_NO_TOOL_CALL");
-    expect(err.state).toBeDefined();
-    expect(err.state!.status).toBe("awaiting-resume");
+    // No halt: status must NOT be awaiting-resume
+    expect(finalState.status).not.toBe("awaiting-resume");
+    // Verdict is "success" (producer null-toolResult fallback, no completionVerdict set)
+    const stepRuns = finalState.steps?.["implementer"] ?? [];
+    const lastRun = stepRuns[stepRuns.length - 1];
+    expect(lastRun?.outcome?.verdict).toBe("success");
   });
 });
 

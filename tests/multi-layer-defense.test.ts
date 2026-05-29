@@ -150,11 +150,17 @@ function buildPipelineMockClient(opts: {
   } = opts;
 
   let createCallCount = 0;
+  // Track sessionId → agentId mapping for verdict-aware listEvents
+  const sessionIdToAgentId = new Map<string, string>();
+  let specReviewCount = 0;
 
   const client = {
-    createSession: vi.fn().mockImplementation(() => {
+    createSession: vi.fn().mockImplementation((params: { agentId?: string }) => {
       const sessionId = sessionIds[createCallCount] ?? `sess_unknown_${createCallCount}`;
       createCallCount++;
+      if (params?.agentId) {
+        sessionIdToAgentId.set(sessionId, params.agentId);
+      }
       return Promise.resolve({ sessionId });
     }),
     sendUserMessage: vi.fn().mockResolvedValue(undefined),
@@ -179,9 +185,32 @@ function buildPipelineMockClient(opts: {
       },
     ),
     getSessionUsage: vi.fn().mockResolvedValue(undefined),
-    listEvents: vi.fn().mockResolvedValue([
-      { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true } },
-    ]),
+    listEvents: vi.fn().mockImplementation((sessionId: string) => {
+      const agentId = sessionIdToAgentId.get(sessionId) ?? "";
+
+      // spec-review judge step
+      if (agentId === "agent_spec_review") {
+        const rawVerdict = specReviewVerdicts[specReviewCount] ?? specReviewVerdicts[specReviewVerdicts.length - 1]!;
+        specReviewCount++;
+        // "escalation" maps to approved:false in R3 (escalation transition removed)
+        const approved = rawVerdict === "approved";
+        return Promise.resolve([
+          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved } },
+        ]);
+      }
+
+      // code-review judge step — always approved in multi-layer-defense tests
+      if (agentId === "code-review-agent-id") {
+        return Promise.resolve([
+          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true } },
+        ]);
+      }
+
+      // Producer steps (design, spec-fixer, delta-spec-fixer, test-case-gen, implementer, build-fixer, code-fixer, adr-gen)
+      return Promise.resolve([
+        { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, status: "success" } },
+      ]);
+    }),
     sendEvents: vi.fn().mockResolvedValue(undefined),
   };
 

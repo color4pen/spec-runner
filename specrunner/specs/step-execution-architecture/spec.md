@@ -53,49 +53,41 @@ For Custom Tools that are **runtime-neutral** (none currently exist; reserved fo
 
 ### Requirement: StepExecutor Manages Lifecycle and Emits Events
 
-`StepExecutor` SHALL coordinate the I/O lifecycle of a `Step` execution. The lifecycle SHALL branch on `step.kind`:
+Step 8 の verdict 確定ロジックを以下のように変更する:
 
-For `kind: "agent"` steps:
+`finalizeStep` は verdict を確定する際に MUST 以下の優先順位で評価しなければならない:
 
-1. Emit `step:start`
-2. Call `store.update(state, { step: step.name })` to record current step for `specrunner ps`
-3. **For local runtime: call `writeOutputTemplates(cwd, slug, step.name, state)` to place output file templates in the change folder before agent execution**
-4. Delegate to `AgentRunner.run(ctx)` which handles session creation, polling, and result fetching. The `AgentRunContext` SHALL include `requestType` from `deps.request.type` so that adapters can pass it to `getStepExecutionConfig()` for type-aware model resolution.
-5. Receive `AgentRunResult` containing `completionReason`, `resultContent`, `sessionId?`, `agentBranch?`, `error?`
-6. **For local runtime: call `cleanupOutputTemplates(cwd, slug, step.name, state)` to remove reference-only templates (B-group) before commit**
-7. **For local runtime: call `commitAndPush(step, state, deps)` to stage, commit, and push agent-written files**
-8. On success: parse verdict from `resultContent` via `step.parseResult` (or derive verdict from `step.completionVerdict` when `resultContent` is null; if `completionVerdict` is also undefined, fall back to `"escalation"`)
-9. Emit `verdict:parsed`
-10. Persist the `StepRun` via `JobStateStore.appendStepRun` (recording `sessionId` from result)
-11. Set `state.branch` from `result.agentBranch` if present and `state.branch` is unset
-12. Emit `step:complete` on success or `step:error` on failure
+1. **toolResult が存在**: `agentResult.toolResult` の typed field から step-class に基づいて verdict を導出する。prose parse（`step.parseResult`）は verdict 確定に使用しない。
+2. **toolResult が null かつ reportTool あり**: step-class に基づいて fallback verdict を確定する（judge → `"needs-fix"`, producer → `completionVerdict`）。`stepHaltedNoToolCallError` は throw しない（proceed する）。
+3. **toolResult が null かつ reportTool なし**（grounded / CLI step）: 従来通り `step.parseResult(resultContent)` で verdict を parse する。`completionVerdict` fallback も維持。
 
-The template placement (step 3) and cleanup (step 6) SHALL only execute when the runtime configuration is `"local"`. For `"managed"` runtime, these steps SHALL be skipped.
+step-class の判別は `step.reportTool` の identity で行う（`JUDGE_REPORT_TOOL` / `CODE_REVIEW_REPORT_TOOL` → judge、それ以外 → producer）。
 
-The `commitAndPush` step (step 7) SHALL only execute when the runtime configuration is `"local"`. For `"managed"` runtime, step 7 SHALL be skipped. All other lifecycle steps remain unchanged.
+`verdict:parsed` イベントは従来通り emit される。toolResult 由来の verdict も同じイベントで通知する。
 
-`StepExecutor` SHALL accept an optional `SpawnFn` via constructor injection for git subprocess execution. This dependency is used exclusively by `commitAndPush` and SHALL NOT affect the existing `EventBus` and `AgentRunner` constructor parameters.
+#### Scenario: toolResult 存在時に prose parse をスキップ
 
-#### Scenario: Output templates are placed before agent execution (local runtime)
+**Given** agent step が `toolResult: { ok: true, approved: true }` で完了する
+**When** `finalizeStep` が verdict を確定する
+**Then** `step.parseResult` は verdict 確定のために呼ばれず、toolResult の `approved` field から `"approved"` が導出される
 
-- **GIVEN** a design step that runs under local runtime
-- **WHEN** `StepExecutor.runAgentStep(step, state, deps)` executes
-- **THEN** `writeOutputTemplates(cwd, slug, "design", state)` is called before `runner.run(ctx)`
-- **AND** template files exist in the change folder when the agent session starts
+#### Scenario: toolResult null + reportTool あり（judge）で proceed
 
-#### Scenario: Reference-only templates are cleaned up after agent execution (local runtime)
+**Given** spec-review step（reportTool = JUDGE_REPORT_TOOL）が `toolResult: null` で完了する
+**When** `finalizeStep` が verdict を確定する
+**Then** halt せず verdict `"needs-fix"` で proceed し、step result が正常に記録される
 
-- **GIVEN** a design step that completes successfully under local runtime
-- **WHEN** `StepExecutor.runAgentStep(step, state, deps)` completes the agent session
-- **THEN** `cleanupOutputTemplates(cwd, slug, "design", state)` is called before `commitAndPush`
-- **AND** `delta-spec-template.md` is removed from the change folder before git add
+#### Scenario: toolResult null + reportTool あり（producer）で proceed
 
-#### Scenario: Template placement is skipped under managed runtime
+**Given** implementer step（reportTool = PRODUCER_REPORT_TOOL, completionVerdict = "success"）が `toolResult: null` で完了する
+**When** `finalizeStep` が verdict を確定する
+**Then** halt せず verdict `"success"` で proceed する
 
-- **GIVEN** an agent step running under managed runtime
-- **WHEN** `StepExecutor.runAgentStep(step, state, deps)` executes
-- **THEN** `writeOutputTemplates` is NOT called
-- **AND** `cleanupOutputTemplates` is NOT called
+#### Scenario: grounded step は従来の prose parse path
+
+**Given** verification step（kind: "cli", reportTool なし）が result file を生成する
+**When** `finalizeStep` が verdict を確定する
+**Then** `step.parseResult(resultContent)` で verdict が parse される（toolResult path は通らない）
 
 ### Requirement: spec-review uses a dedicated Anthropic Agent, not the propose Agent
 

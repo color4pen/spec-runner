@@ -158,13 +158,14 @@ describe("TC-011: verification passed → code-review transition が存在する
   });
 });
 
-// TC-012 (new code-review transitions): TC-012 / TC-013 / TC-014 / TC-015 / TC-029
+// TC-012 (new code-review transitions): TC-012 / TC-013 / TC-014 / TC-029
+// Note: TC-015 (code-review escalation → escalate) removed in R3 cutover.
 describe("TC-012-015, TC-029: code-review / code-fixer transition rows", () => {
   const codeReviewEdges = [
     // TC-012: code-review approved now routes to delta-spec-validation (2nd phase validation)
     { step: "code-review", on: "approved",   to: "delta-spec-validation", label: "TC-012: code-review approved → delta-spec-validation" },
     { step: "code-review", on: "needs-fix",  to: "code-fixer",  label: "TC-013: code-review needs-fix → code-fixer" },
-    { step: "code-review", on: "escalation", to: "escalate",    label: "TC-015: code-review escalation → escalate" },
+    // TC-015: code-review escalation → escalate REMOVED in R3 (judge halt via loop exhaustion only)
     { step: "code-fixer",  on: "approved",   to: "code-review", label: "TC-014: code-fixer approved → code-review" },
     { step: "code-fixer",  on: "error",      to: "escalate",    label: "TC-029: code-fixer error → escalate" },
     // adr-gen transitions
@@ -183,13 +184,13 @@ describe("TC-012-015, TC-029: code-review / code-fixer transition rows", () => {
 });
 
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
-// TC-022: STANDARD_TRANSITIONS テーブルが 31 行を持つ（30 + conditional delta-spec-validation → adr-gen = 31）
+// TC-022: R3 cutover: 33 → 31 (removed spec-review escalation + code-review escalation)
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 33 rows total (31 previous + 2 new observation-auto-fix rows = 33)", () => {
-    // 31 rows (previous total including adr-gen rows and conditional delta-spec-validation → adr-gen)
-    // + 1: code-review --approved→ code-fixer (conditional, when: fixCount > 0)
-    // + 1: code-fixer --approved→ delta-spec-validation (conditional, when: last review was approved)
-    expect(STANDARD_TRANSITIONS.length).toBe(33);
+  it("has 31 rows total (33 previous - 2 escalation rows removed in R3 cutover)", () => {
+    // 33 rows (previous total)
+    // - 1: spec-review --escalation→ escalate (removed, judge halt via loop exhaustion only)
+    // - 1: code-review --escalation→ escalate (removed, judge halt via loop exhaustion only)
+    expect(STANDARD_TRANSITIONS.length).toBe(31);
   });
 
   it("verification --passed→ end does NOT exist", () => {
@@ -197,6 +198,36 @@ describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された�
       (t) => t.step === "verification" && t.on === "passed" && t.to === "end",
     );
     expect(oldRow).toBeUndefined();
+  });
+
+  // R3 cutover: spec-review and code-review escalation transitions removed
+  it("spec-review --escalation→ escalate does NOT exist (R3 cutover)", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "spec-review" && t.on === "escalation",
+    );
+    expect(row).toBeUndefined();
+  });
+
+  it("code-review --escalation→ escalate does NOT exist (R3 cutover)", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-review" && t.on === "escalation",
+    );
+    expect(row).toBeUndefined();
+  });
+
+  // R3 cutover: grounded step escalation transitions remain
+  it("delta-spec-validation --escalation→ escalate still exists (grounded step, maintained)", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "delta-spec-validation" && t.on === "escalation" && t.to === "escalate",
+    );
+    expect(row).toBeDefined();
+  });
+
+  it("verification --escalation→ escalate still exists (grounded step, maintained)", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "verification" && t.on === "escalation" && t.to === "escalate",
+    );
+    expect(row).toBeDefined();
   });
 
   it("code-review --approved→ end does NOT exist (TC-021: regression guard)", () => {

@@ -89,7 +89,8 @@ function buildMockSessionClient(opts: {
     streamEvents: vi.fn().mockRejectedValue(new Error("streamEvents not used by spec-review")),
     getSessionUsage: vi.fn().mockResolvedValue(undefined),
     listEvents: vi.fn().mockResolvedValue([
-      { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true } },
+      // R3 cutover: include approved:true so spec-review (judge) returns "approved" verdict
+      { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true } },
     ]),
     sendEvents: vi.fn().mockResolvedValue(undefined),
   };
@@ -231,13 +232,19 @@ describe("TC-018: runSpecReviewStep — SESSION_TERMINATED error handling", () =
 // TC-019 (removed): SESSION_TIMEOUT handling removed in remove-session-timeout.
 // SESSION_TIMEOUT error code no longer exists. SESSION_TERMINATED is the only terminal error.
 
-// TC-020: result file not found — fetchResultFile returns null → verdict becomes escalation (failsafe)
-describe("TC-020: runSpecReviewStep — escalation failsafe when result file not found", () => {
-  it("sets verdict='escalation' when result file is never found (getRawFile returns null)", async () => {
+// TC-020 (updated R3): result file not found — toolResult.approved determines verdict now.
+// R3 cutover: file content is no longer used for verdict determination in judge steps.
+// When toolResult.approved is undefined (conservative), verdict is "needs-fix" (not "escalation").
+describe("TC-020: runSpecReviewStep — conservative failsafe when result file not found (R3)", () => {
+  it("sets verdict='needs-fix' when result file is never found (toolResult.approved undefined → needs-fix)", async () => {
     const jobState = await makeJobState();
 
+    // Use default listEvents which has approved:true, but override with no approved to test conservative path
     const { client } = buildMockSessionClient();
-    // null simulates 404 — file not found; fetchResultFile returns null → escalation failsafe
+    // Override listEvents to return no approved field (simulates toolResult without approved)
+    (client.listEvents as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true } },
+    ]);
 
     const result = await runSpecReviewViaExecutor(jobState, {
       client,
@@ -245,26 +252,31 @@ describe("TC-020: runSpecReviewStep — escalation failsafe when result file not
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubClient: buildMockGithubClient(null),
+      githubClient: buildMockGithubClient(null), // file not found — irrelevant for verdict in R3
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    // fetchResultFile returns null → no resultContent → verdict defaults to "escalation"
+    // R3: toolResult.approved undefined → judge step → "needs-fix" (conservative failsafe)
     const lastSpecReview = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
-    expect(lastSpecReview ? toLegacyStepResult(lastSpecReview).verdict : undefined).toBe("escalation");
+    expect(lastSpecReview ? toLegacyStepResult(lastSpecReview).verdict : undefined).toBe("needs-fix");
   });
 });
 
-// TC-021: verdict 行なし — escalation フェイルセーフ
-describe("TC-021: runSpecReviewStep — escalation failsafe when verdict line absent", () => {
-  it("sets verdict='escalation' when file has no verdict line", async () => {
+// TC-021 (updated R3): verdict 行なし — toolResult.approved で判定 (R3 cutover)
+// R3 cutover: SpecReviewStep.parseResult is no longer used for verdict determination.
+// When toolResult.approved is undefined (conservative), verdict is "needs-fix".
+describe("TC-021: runSpecReviewStep — needs-fix when approved not set (R3 conservative fallback)", () => {
+  it("sets verdict='needs-fix' when toolResult.approved is absent (R3: no prose fallback for judge)", async () => {
     const jobState = await makeJobState();
 
     const { client } = buildMockSessionClient();
-    // File exists but has no verdict line
+    // Override listEvents to return no approved field (simulates agent not setting approved)
+    (client.listEvents as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true } },
+    ]);
 
     const result = await runSpecReviewViaExecutor(jobState, {
       client,
@@ -272,16 +284,16 @@ describe("TC-021: runSpecReviewStep — escalation failsafe when verdict line ab
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubClient: buildMockGithubClient("## Findings\n\nNo findings."),
+      githubClient: buildMockGithubClient("## Findings\n\nNo findings."), // file content irrelevant in R3
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    // SpecReviewStep.parseResult maps null verdict → "escalation" (failsafe)
+    // R3: toolResult.approved undefined → judge step → "needs-fix"
     const lastSpecReview2 = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
-    expect(lastSpecReview2 ? toLegacyStepResult(lastSpecReview2).verdict : undefined).toBe("escalation");
+    expect(lastSpecReview2 ? toLegacyStepResult(lastSpecReview2).verdict : undefined).toBe("needs-fix");
     // PR #72: spec-review is mid-pipeline; job-level status remains "running" after step completion.
     expect(result.status).toBe("running");
   });

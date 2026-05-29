@@ -159,8 +159,16 @@ function buildRunner(
 
 /**
  * Build a mock SessionClient that supports multiple spec-review iterations.
- * Session order: sess1=propose, sess2=spec-fixer-1, sess3=spec-review-1,
- *                sess4=spec-fixer-2, sess5=spec-review-2, etc.
+ *
+ * R3 cutover: listEvents now uses agentId (from createSession) to determine step type
+ * and returns appropriate typed toolResult:
+ *   - spec-review (judge): { ok: true, approved: boolean } based on specReviewVerdicts
+ *   - code-review (judge): { ok: true, approved: true } by default
+ *   - producer steps: { ok: true, status: "success" }
+ *
+ * "escalation" in specReviewVerdicts maps to approved:false (needs-fix in R3 — judge
+ * escalation removed). Tests relying on direct escalation verdict should use mock executor
+ * instead of managed adapter.
  *
  * Implements the SessionClient port interface (not the raw Anthropic SDK).
  */
@@ -168,12 +176,14 @@ function buildPipelineMockClient(opts: {
   designBranch?: string;
   designFailure?: boolean;
   specReviewVerdicts?: ("approved" | "needs-fix" | "escalation")[];
+  codeReviewVerdicts?: ("approved" | "needs-fix")[];
   sessionIds?: string[];
 }) {
   const {
     designBranch = "feat/test-branch",
     designFailure = false,
     specReviewVerdicts = ["approved"],
+    codeReviewVerdicts = ["approved"],
     sessionIds = [
       "sess_propose_001",
       "sess_spec_fixer_001",
@@ -184,11 +194,19 @@ function buildPipelineMockClient(opts: {
   } = opts;
 
   let createCallCount = 0;
+  // Track agentId → sessionId mapping for verdict-aware listEvents
+  const sessionIdToAgentId = new Map<string, string>();
+  // Per-step-type call counters for verdict arrays
+  let specReviewCount = 0;
+  let codeReviewCount = 0;
 
   const client = {
-    createSession: vi.fn().mockImplementation(() => {
+    createSession: vi.fn().mockImplementation((params: { agentId?: string }) => {
       const sessionId = sessionIds[createCallCount] ?? `sess_unknown_${createCallCount}`;
       createCallCount++;
+      if (params?.agentId) {
+        sessionIdToAgentId.set(sessionId, params.agentId);
+      }
       return Promise.resolve({ sessionId });
     }),
     sendUserMessage: vi.fn().mockResolvedValue(undefined),
@@ -213,9 +231,35 @@ function buildPipelineMockClient(opts: {
       },
     ),
     getSessionUsage: vi.fn().mockResolvedValue(undefined),
-    listEvents: vi.fn().mockResolvedValue([
-      { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true } },
-    ]),
+    listEvents: vi.fn().mockImplementation((sessionId: string) => {
+      const agentId = sessionIdToAgentId.get(sessionId) ?? "";
+
+      // spec-review judge step
+      if (agentId === "agent_spec_review") {
+        const rawVerdict = specReviewVerdicts[specReviewCount] ?? specReviewVerdicts[specReviewVerdicts.length - 1]!;
+        specReviewCount++;
+        // "escalation" in specReviewVerdicts maps to approved:false in R3 (escalation transition removed)
+        const approved = rawVerdict === "approved";
+        return Promise.resolve([
+          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved } },
+        ]);
+      }
+
+      // code-review judge step
+      if (agentId === "code-review-agent-id") {
+        const rawVerdict = codeReviewVerdicts[codeReviewCount] ?? codeReviewVerdicts[codeReviewVerdicts.length - 1]!;
+        codeReviewCount++;
+        const approved = rawVerdict === "approved";
+        return Promise.resolve([
+          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved } },
+        ]);
+      }
+
+      // Producer steps (design, spec-fixer, delta-spec-fixer, test-case-gen, implementer, build-fixer, code-fixer, adr-gen)
+      return Promise.resolve([
+        { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, status: "success" } },
+      ]);
+    }),
     sendEvents: vi.fn().mockResolvedValue(undefined),
   };
 
@@ -436,15 +480,19 @@ describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RE
   });
 });
 
-// TC-013: runPipeline — iter=1 escalation で spec-fixer を起動しない
-describe("TC-013: runPipeline — escalation stops loop without invoking spec-fixer", () => {
-  it("does not create spec-fixer steps when spec-review returns escalation", async () => {
+// TC-013 (updated R3 cutover): spec-review "needs-fix" → spec-fixer IS invoked.
+// R3 cutover: spec-review escalation transition removed. When spec-review is not approved,
+// verdict is "needs-fix" and the loop proceeds to spec-fixer (not immediate halt).
+// "escalation" in specReviewVerdicts maps to approved:false → needs-fix → spec-fixer runs.
+describe("TC-013: runPipeline — spec-review needs-fix invokes spec-fixer (R3: escalation removed)", () => {
+  it("creates spec-fixer steps when spec-review returns needs-fix (approved:false)", async () => {
 
     const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
-    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["escalation"] });
-    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["escalation"] });
+    // "escalation" → approved:false → needs-fix → spec-fixer runs; then approved → pipeline proceeds
+    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["escalation", "approved"] });
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["needs-fix", "approved"] });
 
     const result = await runPipeline(jobState, {
       client: client,
@@ -460,19 +508,13 @@ describe("TC-013: runPipeline — escalation stops loop without invoking spec-fi
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    // spec-fixer not created
-    expect(result.steps?.["spec-fixer"]).toBeUndefined();
+    // spec-fixer IS created (escalation → needs-fix in R3, which loops to spec-fixer)
+    expect(result.steps?.["spec-fixer"]).toBeDefined();
 
-    // spec-review: 1 entry with escalation
+    // spec-review: at least 2 entries (iter1 needs-fix, iter2 approved)
     const specReviewArr = result.steps?.["spec-review"];
     expect(specReviewArr).toBeDefined();
-    const lastItem2 = specReviewArr?.[specReviewArr.length - 1];
-    const lastVerdict = lastItem2 ? toLegacyStepResult(lastItem2).verdict : undefined;
-    expect(lastVerdict).toBe("escalation");
-
-    // Only 2 sessions (propose + 1x spec-review)
-    const createCalls = (client.createSession as ReturnType<typeof vi.fn>).mock.calls;
-    expect(createCalls.length).toBe(2);
+    expect(specReviewArr!.length).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -737,6 +779,7 @@ describe("TC-060: runPipeline — code-review needs-fix → code-fixer → code-
 
     const { client } = buildPipelineMockClient({
       specReviewVerdicts: ["approved"],
+      codeReviewVerdicts: ["needs-fix", "approved"],
       sessionIds: [
         "sess_propose_001",
         "sess_spec_review_001",
@@ -800,6 +843,7 @@ describe("TC-061: runPipeline — code-review retries exhausted: escalation + CO
     // All 3 code-review iterations return needs-fix (maxRetries=2, +1 bypass review = 3 total)
     const { client } = buildPipelineMockClient({
       specReviewVerdicts: ["approved"],
+      codeReviewVerdicts: ["needs-fix", "needs-fix", "needs-fix"],
       sessionIds: [
         "sess_propose_001",
         "sess_spec_review_001",
@@ -861,6 +905,7 @@ describe("TC-062: code-fixer final iter reviewed — approved path", () => {
     // code-review iter 3 (+1 bypass): approved → pr-create → end
     const { client } = buildPipelineMockClient({
       specReviewVerdicts: ["approved"],
+      codeReviewVerdicts: ["needs-fix", "needs-fix", "approved"],
       sessionIds: [
         "sess_propose_001",
         "sess_spec_review_001",

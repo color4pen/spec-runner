@@ -27,7 +27,9 @@ import { FIXER_STEP_NAMES, getPreviousSessionId } from "./fixer-helpers.js";
 import { commitAndPush, type CommitPushInfra } from "./commit-push.js";
 import { writeOutputTemplates, cleanupOutputTemplates } from "../../util/copy-artifacts.js";
 import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
-import { stepHaltedNoToolCallError } from "../../errors.js";
+import type { JudgeReportResult, ProducerReportResult } from "../../core/port/report-result.js";
+
+import { JUDGE_REPORT_TOOL, CODE_REVIEW_REPORT_TOOL } from "./report-tool.js";
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -275,37 +277,11 @@ export class StepExecutor {
       attachStateAndRethrow(err, state);
     }
 
-    // T-13: Halt when reportTool was configured but agent never called it.
-    // Transition to awaiting-resume (same as timeout) so the user can resume.
-    if (ctx.policy?.reportTool && runResult.toolResult === null) {
-      const haltErr = stepHaltedNoToolCallError(step.name);
-      const errorInfo: ErrorInfo = {
-        code: haltErr.code,
-        message: haltErr.message,
-        hint: haltErr.hint,
-      };
-      state = recordFailedStepResult(state, step.name, {
-        ...errorInfo,
-        // Include toolResult/followUpAttempts in the outcome via custom fields
-      }, { completedAt, startedAt });
-      const { state: haltState } = transitionJob(state, "awaiting-resume", {
-        trigger: "executor",
-        reason: "step-halted-no-tool-call",
-        patch: {
-          resumePoint: { step: step.name as import("../../state/schema.js").StepName, reason: "step-halted-no-tool-call", iterationsExhausted: 0 },
-          error: errorInfo,
-        },
-      });
-      state = haltState;
-      state = await store.appendHistory(state, {
-        ts: new Date().toISOString(),
-        step: `${step.name}-halted`,
-        status: "error",
-        message: `${step.name} halted: agent did not call report_result`,
-      });
-      await store.persist(state);
-      attachStateAndRethrow(haltErr, state);
-    }
+    // T-02 (outcome-cutover R3): no-tool-call → proceed instead of halt.
+    // When reportTool is set but agent did not call it (toolResult === null),
+    // executor proceeds to finalizeStep. Verdict is determined by step-class:
+    //   judge  → "needs-fix"  (conservative; fixer loop → loop exhaustion = grounded halt)
+    //   producer → completionVerdict (downstream grounded step verifies correctness)
 
     // Delete B-group (reference) templates before commit-push so they are not included in the PR.
     if (deps.config.runtime === "local") {
@@ -431,12 +407,53 @@ export class StepExecutor {
     const findingsPath = step.resultFilePath(state, deps);
     let verdict: Verdict | null = null;
     let parsed: import("./types.js").ParsedStepResult | null = null;
-    if (resultContent !== null) {
-      parsed = step.parseResult(resultContent, deps);
-      verdict = parsed.verdict;
-    } else if ("completionVerdict" in step) {
-      verdict = (step as { completionVerdict?: Verdict | null }).completionVerdict ?? null;
+
+    // T-01 (outcome-cutover R3): typed outcome takes priority over prose parse.
+    // Determine if this is a judge step (spec-review / code-review) by reportTool identity.
+    const stepReportTool = "reportTool" in step ? step.reportTool : undefined;
+    const isJudgeStep = stepReportTool === JUDGE_REPORT_TOOL || stepReportTool === CODE_REVIEW_REPORT_TOOL;
+
+    if (agentResult !== undefined && stepReportTool !== undefined) {
+      // Agent step with reportTool — use typed outcome exclusively.
+      const toolResult = agentResult.toolResult;
+      if (toolResult !== null && toolResult !== undefined) {
+        // Non-null toolResult: derive verdict from typed fields.
+        if (isJudgeStep) {
+          // judge: approved true → "approved", false/undefined → "needs-fix"
+          verdict = (toolResult as JudgeReportResult).approved === true ? "approved" : "needs-fix";
+        } else {
+          // producer: status "error" → "error", else completionVerdict (fallback "success")
+          const completionVerdict =
+            "completionVerdict" in step
+              ? (step as { completionVerdict?: Verdict }).completionVerdict
+              : undefined;
+          verdict =
+            (toolResult as ProducerReportResult).status === "error"
+              ? "error"
+              : (completionVerdict ?? "success");
+        }
+      } else {
+        // T-02: null toolResult (no-tool-call proceed path) — step-class based fallback.
+        if (isJudgeStep) {
+          verdict = "needs-fix";
+        } else {
+          const completionVerdict =
+            "completionVerdict" in step
+              ? (step as { completionVerdict?: Verdict }).completionVerdict
+              : undefined;
+          verdict = completionVerdict ?? "success";
+        }
+      }
+    } else {
+      // Prose parse path: grounded CLI steps or agent steps without reportTool.
+      if (resultContent !== null) {
+        parsed = step.parseResult(resultContent, deps);
+        verdict = parsed.verdict;
+      } else if ("completionVerdict" in step) {
+        verdict = (step as { completionVerdict?: Verdict | null }).completionVerdict ?? null;
+      }
     }
+
     if (verdict === null) {
       stderrWrite(`Warning: Could not parse verdict from ${step.kind} step '${step.name}'. Treating as escalation.`);
     }

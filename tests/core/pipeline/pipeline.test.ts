@@ -587,10 +587,11 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     // delta-spec-fixer → delta-spec-validation loop
     expect(find("delta-spec-fixer",      "approved")).toMatchObject({ to: "delta-spec-validation" });
     expect(find("delta-spec-fixer",      "error")).toMatchObject({ to: "escalate" });
-    // spec-review loop
+    // spec-review loop (R3 cutover: escalation transition removed — halt via loop exhaustion only)
     expect(find("spec-review",   "approved")).toMatchObject({ to: "test-case-gen" });
     expect(find("spec-review",   "needs-fix")).toMatchObject({ to: "spec-fixer" });
-    expect(find("spec-review",   "escalation")).toMatchObject({ to: "escalate" });
+    // spec-review escalation transition no longer exists (R3 cutover)
+    expect(find("spec-review",   "escalation")).toBeUndefined();
     // spec-fixer now routes to delta-spec-validation (not directly to spec-review)
     expect(find("spec-fixer",    "approved")).toMatchObject({ to: "delta-spec-validation" });
     expect(find("spec-fixer",    "error")).toMatchObject({ to: "escalate" });
@@ -615,7 +616,8 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     expect(find("code-review",  "approved")).toMatchObject({ to: "code-fixer" }); // conditional (when: fixCount > 0)
     expect(findWithTo("code-review", "approved", "delta-spec-validation")).toBeDefined(); // fallback
     expect(find("code-review",  "needs-fix")).toMatchObject({ to: "code-fixer" });
-    expect(find("code-review",  "escalation")).toMatchObject({ to: "escalate" });
+    // code-review escalation transition no longer exists (R3 cutover)
+    expect(find("code-review",  "escalation")).toBeUndefined();
     // code-fixer has two approved rows: conditional (last review approved → delta-spec-validation) + fallback (→ code-review)
     expect(find("code-fixer",   "approved")).toMatchObject({ to: "delta-spec-validation" }); // conditional first
     expect(findWithTo("code-fixer", "approved", "code-review")).toBeDefined(); // fallback exists
@@ -625,10 +627,10 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     expect(find("pr-create",    "error")).toMatchObject({ to: "escalate" });
   });
 
-  it("has exactly 33 transitions (31 previous + 2 new observation-auto-fix rows)", () => {
-    // + 1: code-review --approved→ code-fixer (conditional, when: fixCount > 0)
-    // + 1: code-fixer --approved→ delta-spec-validation (conditional, when: last review was approved)
-    expect(STANDARD_TRANSITIONS).toHaveLength(33);
+  it("has exactly 31 transitions (33 previous - 2 escalation rows removed in R3 cutover)", () => {
+    // R3 cutover: removed spec-review --escalation→ escalate and code-review --escalation→ escalate
+    // Judge halt now exclusively via loop exhaustion.
+    expect(STANDARD_TRANSITIONS).toHaveLength(31);
   });
 });
 

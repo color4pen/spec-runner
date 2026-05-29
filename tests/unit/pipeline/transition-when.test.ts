@@ -9,6 +9,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { STANDARD_TRANSITIONS } from "../../../src/core/pipeline/types.js";
+import type { BaseReportResult } from "../../../src/core/port/report-result.js";
 import { Pipeline } from "../../../src/core/pipeline/pipeline.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
@@ -421,10 +422,58 @@ describe("TC-WHEN-01: conditional transition row has `when` predicate", () => {
 // TC-WHEN-02: STANDARD_TRANSITIONS has 31 rows (30 previous + 1 new conditional)
 // ─────────────────────────────────────────────────────────────────────────────
 describe("TC-WHEN-02: STANDARD_TRANSITIONS row count", () => {
-  it("has 33 rows (31 previous + 2 new observation-auto-fix rows)", () => {
-    // 31 rows (previous total including adr-gen rows and conditional delta-spec-validation → adr-gen)
-    // + 1: code-review --approved→ code-fixer (conditional, when: fixCount > 0)
-    // + 1: code-fixer --approved→ delta-spec-validation (conditional, when: last review was approved)
-    expect(STANDARD_TRANSITIONS.length).toBe(33);
+  it("has 31 rows (33 previous - 2 escalation rows removed in R3 cutover)", () => {
+    // R3 cutover: removed spec-review --escalation→ escalate and code-review --escalation→ escalate
+    expect(STANDARD_TRANSITIONS.length).toBe(31);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-017/TC-018: code-review approved → code-fixer `when` predicate (fixable routing)
+// ─────────────────────────────────────────────────────────────────────────────
+describe("TC-017/TC-018: code-review approved → code-fixer when predicate (fixable routing)", () => {
+  function getFixableRoutingWhen() {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-review" && t.on === "approved" && t.to === "code-fixer",
+    );
+    expect(row).toBeDefined();
+    expect(typeof row!.when).toBe("function");
+    return row!.when!;
+  }
+
+  function makeStateWithCodeReviewToolResult(toolResult: BaseReportResult | null): JobState {
+    return makeMinimalState("test", {
+      "code-review": [
+        {
+          attempt: 1,
+          sessionId: null,
+          outcome: {
+            verdict: "approved" as const,
+            findingsPath: null,
+            error: null,
+            toolResult,
+          },
+          startedAt: new Date().toISOString(),
+          endedAt: new Date().toISOString(),
+        },
+      ],
+    });
+  }
+
+  it("returns true when fixableCount is 3", () => {
+    const when = getFixableRoutingWhen();
+    const toolResult = { ok: true, approved: true, fixableCount: 3 } as BaseReportResult;
+    expect(when(makeStateWithCodeReviewToolResult(toolResult))).toBe(true);
+  });
+
+  it("returns false when fixableCount is 0", () => {
+    const when = getFixableRoutingWhen();
+    const toolResult = { ok: true, approved: true, fixableCount: 0 } as BaseReportResult;
+    expect(when(makeStateWithCodeReviewToolResult(toolResult))).toBe(false);
+  });
+
+  it("returns false when toolResult is null (0 fallback)", () => {
+    const when = getFixableRoutingWhen();
+    expect(when(makeStateWithCodeReviewToolResult(null))).toBe(false);
   });
 });

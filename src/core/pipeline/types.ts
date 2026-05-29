@@ -1,6 +1,6 @@
 import type { Verdict, JobState } from "../../state/schema.js";
 import { STEP_NAMES } from "../step/step-names.js";
-import { parseFixableFindings } from "../parser/review-findings.js";
+import type { CodeReviewReportResult } from "../port/report-result.js";
 
 /**
  * A single row in the transition table.
@@ -100,7 +100,7 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.TEST_CASE_GEN,         on: "success",    to: STEP_NAMES.IMPLEMENTER },
   { step: STEP_NAMES.TEST_CASE_GEN,         on: "error",      to: "escalate" },
   { step: STEP_NAMES.SPEC_REVIEW,           on: "needs-fix",  to: STEP_NAMES.SPEC_FIXER },
-  { step: STEP_NAMES.SPEC_REVIEW,           on: "escalation", to: "escalate" },
+  // spec-review escalation removed (R3 cutover): judge halt via loop exhaustion only
   // spec-fixer → delta-spec-validation (replaces old spec-fixer → spec-review)
   { step: STEP_NAMES.SPEC_FIXER,            on: "approved",   to: STEP_NAMES.DELTA_SPEC_VALIDATION },
   { step: STEP_NAMES.SPEC_FIXER,            on: "error",      to: "escalate" },
@@ -112,20 +112,20 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.BUILD_FIXER,           on: "success",    to: STEP_NAMES.VERIFICATION },
   { step: STEP_NAMES.BUILD_FIXER,           on: "error",      to: "escalate" },
   // --- code review loop ---
-  // code-review approved + fix:yes findings → code-fixer (observation auto-fix path)
+  // code-review approved + fixableCount > 0 → code-fixer (T-04: typed routing)
   { step: STEP_NAMES.CODE_REVIEW,           on: "approved",   to: STEP_NAMES.CODE_FIXER,
     when: (s) => {
       const reviews = s.steps?.["code-review"];
       if (!reviews || reviews.length === 0) return false;
       const lastReview = reviews[reviews.length - 1];
-      if (!lastReview?.outcome?.fileContent) return false;
-      return parseFixableFindings(lastReview.outcome.fileContent) > 0;
+      if (!lastReview) return false;
+      return ((lastReview.outcome?.toolResult as CodeReviewReportResult | null | undefined)?.fixableCount ?? 0) > 0;
     },
   },
   // code-review approved (no fixable findings) → delta-spec-validation (2nd phase)
   { step: STEP_NAMES.CODE_REVIEW,           on: "approved",             to: STEP_NAMES.DELTA_SPEC_VALIDATION },
   { step: STEP_NAMES.CODE_REVIEW,           on: "needs-fix",            to: STEP_NAMES.CODE_FIXER },
-  { step: STEP_NAMES.CODE_REVIEW,           on: "escalation",           to: "escalate" },
+  // code-review escalation removed (R3 cutover): judge halt via loop exhaustion only
   // code-fixer → delta-spec-validation (when: 直前 code-review が approved = observation fix 完了)
   { step: STEP_NAMES.CODE_FIXER,            on: "approved",
     to: STEP_NAMES.DELTA_SPEC_VALIDATION,
