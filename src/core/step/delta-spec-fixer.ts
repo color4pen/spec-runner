@@ -9,7 +9,7 @@ import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath, deltaSpecValidationResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { isFixerContinuation } from "./fixer-helpers.js";
-import { REPORT_TOOL, REPORT_TOOL_CUSTOM_TOOL_SPEC } from "./report-tool.js";
+import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
 const DELTA_SPEC_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -28,7 +28,7 @@ const deltaSpecFixerAgentDefinition: AgentDefinition = {
   system: SPEC_FIXER_SYSTEM_PROMPT,
   tools: [
     { type: AGENT_TOOLSET_TYPE },
-    REPORT_TOOL_CUSTOM_TOOL_SPEC,
+    toCustomToolSpec(PRODUCER_REPORT_TOOL),
   ],
 };
 
@@ -114,7 +114,7 @@ export const DeltaSpecFixerStep: AgentStep = {
   // completionVerdict: "approved" — delta-spec-fixer has no result file; polling completion
   // maps to "approved" (enabling delta-spec-fixer → delta-spec-validation loop).
   completionVerdict: "approved",
-  reportTool: REPORT_TOOL,
+  reportTool: PRODUCER_REPORT_TOOL,
 
   // maxTurns: same as spec-fixer — path/format fixes are mechanical.
   maxTurns: 25,

@@ -21,6 +21,7 @@ import type { SpawnFn, QueryFn, CreateMcpServerFn } from "../../../../src/adapte
 import type { AgentRunContext } from "../../../../src/core/port/agent-runner.js";
 import type { ReportToolSpec } from "../../../../src/core/port/report-result.js";
 import { parseBaseReportInput } from "../../../../src/core/port/report-result.js";
+import { PRODUCER_REPORT_TOOL, JUDGE_REPORT_TOOL, CODE_REVIEW_REPORT_TOOL } from "../../../../src/core/step/report-tool.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import type { AgentStep } from "../../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
@@ -2306,5 +2307,177 @@ describe("TC-024: tool detection is main-work-turn only — mcpServers absent fr
     expect(capturedOptions[1]?.["mcpServers"]).toBeUndefined();
     // toolResult comes from main work turn
     expect(result.toolResult?.ok).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-07: Typed outcome presence integration tests (R2 expand phase)
+// Asserts that new typed fields (status / approved / fixableCount) survive
+// the adapter's parseInput path and are present in result.toolResult.
+// ---------------------------------------------------------------------------
+
+describe("T-07: typed outcome presence tests (R2 expand phase)", () => {
+  it("producer step: {ok:true, status:'success'} → toolResult.status === 'success'", async () => {
+    const { mockFn, getHandler } = makeMockCreateMcpServerFn();
+
+    const queryFn: QueryFn = async function* () {
+      const handler = getHandler();
+      if (handler) {
+        await handler({ ok: true, status: "success" });
+      }
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 10,
+        duration_api_ms: 10,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0,
+        usage: { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "t07-producer-uuid",
+        session_id: "t07-producer-session",
+      } as unknown;
+    } as QueryFn;
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _createMcpServerFn: mockFn,
+    });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep({ name: "implementer" }),
+      state: makeJobState("t07-producer-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: { reportTool: PRODUCER_REPORT_TOOL },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.toolResult).not.toBeNull();
+    expect(result.toolResult?.ok).toBe(true);
+    // Cast to access typed field
+    const toolResult = result.toolResult as unknown as Record<string, unknown>;
+    expect(toolResult["status"]).toBe("success");
+  });
+
+  it("judge step: {ok:true, approved:true} → toolResult.approved === true", async () => {
+    const { mockFn, getHandler } = makeMockCreateMcpServerFn();
+
+    const queryFn: QueryFn = async function* () {
+      const handler = getHandler();
+      if (handler) {
+        await handler({ ok: true, approved: true });
+      }
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 10,
+        duration_api_ms: 10,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0,
+        usage: { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "t07-judge-uuid",
+        session_id: "t07-judge-session",
+      } as unknown;
+    } as QueryFn;
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _createMcpServerFn: mockFn,
+    });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep({ name: "spec-review" }),
+      state: makeJobState("t07-judge-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: { reportTool: JUDGE_REPORT_TOOL },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.toolResult).not.toBeNull();
+    expect(result.toolResult?.ok).toBe(true);
+    const toolResult = result.toolResult as unknown as Record<string, unknown>;
+    expect(toolResult["approved"]).toBe(true);
+  });
+
+  it("code-review step: {ok:true, approved:true, fixableCount:2} → toolResult has both fields", async () => {
+    const { mockFn, getHandler } = makeMockCreateMcpServerFn();
+
+    const queryFn: QueryFn = async function* () {
+      const handler = getHandler();
+      if (handler) {
+        await handler({ ok: true, approved: true, fixableCount: 2 });
+      }
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 10,
+        duration_api_ms: 10,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0,
+        usage: { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "t07-codereview-uuid",
+        session_id: "t07-codereview-session",
+      } as unknown;
+    } as QueryFn;
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _createMcpServerFn: mockFn,
+    });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep({ name: "code-review" }),
+      state: makeJobState("t07-codereview-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: { reportTool: CODE_REVIEW_REPORT_TOOL },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.toolResult).not.toBeNull();
+    expect(result.toolResult?.ok).toBe(true);
+    const toolResult = result.toolResult as unknown as Record<string, unknown>;
+    expect(toolResult["approved"]).toBe(true);
+    expect(toolResult["fixableCount"]).toBe(2);
   });
 });

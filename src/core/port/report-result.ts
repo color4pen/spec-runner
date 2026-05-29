@@ -121,3 +121,103 @@ export function parseBaseReportInput(
 
   return { ok: true, value: result };
 }
+
+// ---------------------------------------------------------------------------
+// Step-class-specific typed outcome interfaces (additive / R2 expand phase)
+// These extend BaseReportResult additively — existing { ok, reason? } is preserved.
+// None of the new fields are read by executor.ts or pipeline/types.ts (R3).
+// ---------------------------------------------------------------------------
+
+/**
+ * Typed outcome for producer steps:
+ * design / implementer / spec-fixer / delta-spec-fixer / code-fixer / build-fixer / test-case-gen / adr-gen
+ *
+ * status: "success" | "error" — the semantic outcome of the producer step.
+ * Optional — undefined when the agent did not populate it (expand phase).
+ */
+export interface ProducerReportResult extends BaseReportResult {
+  status?: "success" | "error";
+}
+
+/**
+ * Typed outcome for judge steps: spec-review.
+ *
+ * approved: boolean — whether the spec/code was approved.
+ * Optional — undefined when the agent did not populate it (expand phase).
+ */
+export interface JudgeReportResult extends BaseReportResult {
+  approved?: boolean;
+}
+
+/**
+ * Typed outcome for code-review step (judge subtype with additional field).
+ *
+ * fixableCount: number — count of auto-fixable findings.
+ * Optional — undefined when the agent did not populate it (expand phase).
+ */
+export interface CodeReviewReportResult extends JudgeReportResult {
+  fixableCount?: number;
+}
+
+/**
+ * Parse ProducerReportResult from unknown tool input.
+ * Builds on parseBaseReportInput and optionally sets status when value is "success" or "error".
+ * Invalid status values (not "success" | "error") are silently ignored (not in missingFields).
+ */
+export function parseProducerReportInput(
+  raw: unknown,
+): { ok: true; value: ProducerReportResult } | { ok: false; missingFields: string[]; rawInput: unknown } {
+  const base = parseBaseReportInput(raw);
+  if (!base.ok) return base;
+
+  const obj = raw as Record<string, unknown>;
+  const result: ProducerReportResult = { ...base.value };
+
+  if (obj["status"] === "success" || obj["status"] === "error") {
+    result.status = obj["status"];
+  }
+
+  return { ok: true, value: result };
+}
+
+/**
+ * Parse JudgeReportResult from unknown tool input.
+ * Builds on parseBaseReportInput and optionally sets approved when value is a boolean.
+ * Non-boolean approved values are silently ignored (not in missingFields).
+ */
+export function parseJudgeReportInput(
+  raw: unknown,
+): { ok: true; value: JudgeReportResult } | { ok: false; missingFields: string[]; rawInput: unknown } {
+  const base = parseBaseReportInput(raw);
+  if (!base.ok) return base;
+
+  const obj = raw as Record<string, unknown>;
+  const result: JudgeReportResult = { ...base.value };
+
+  if (typeof obj["approved"] === "boolean") {
+    result.approved = obj["approved"];
+  }
+
+  return { ok: true, value: result };
+}
+
+/**
+ * Parse CodeReviewReportResult from unknown tool input.
+ * Builds on parseJudgeReportInput (includes base + approved) and optionally sets fixableCount.
+ * Non-number fixableCount values are silently ignored (not in missingFields).
+ */
+export function parseCodeReviewReportInput(
+  raw: unknown,
+): { ok: true; value: CodeReviewReportResult } | { ok: false; missingFields: string[]; rawInput: unknown } {
+  const judge = parseJudgeReportInput(raw);
+  if (!judge.ok) return judge;
+
+  const obj = raw as Record<string, unknown>;
+  const result: CodeReviewReportResult = { ...judge.value };
+
+  if (typeof obj["fixableCount"] === "number") {
+    result.fixableCount = obj["fixableCount"];
+  }
+
+  return { ok: true, value: result };
+}

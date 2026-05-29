@@ -11,7 +11,7 @@ import { extractVerificationFailures } from "../verification/parse-result.js";
 import { changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { isFixerContinuation, buildContinuationMessage } from "./fixer-helpers.js";
-import { REPORT_TOOL, REPORT_TOOL_CUSTOM_TOOL_SPEC } from "./report-tool.js";
+import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
 const BUILD_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -30,7 +30,7 @@ const buildFixerAgentDefinition: AgentDefinition = {
   system: BUILD_FIXER_SYSTEM_PROMPT,
   tools: [
     { type: AGENT_TOOLSET_TYPE },
-    REPORT_TOOL_CUSTOM_TOOL_SPEC,
+    toCustomToolSpec(PRODUCER_REPORT_TOOL),
   ],
   capabilities: {
     gitWrite: true,
@@ -58,7 +58,7 @@ export const BuildFixerStep: AgentStep = {
   toolHandlers: undefined,
 
   completionVerdict: "success",
-  reportTool: REPORT_TOOL,
+  reportTool: PRODUCER_REPORT_TOOL,
 
   // maxTurns: build-fixer iterates on compile/test errors; 35 covers complex fixes.
   // Design D3 (propose-openspec-cli-and-step-model-config).

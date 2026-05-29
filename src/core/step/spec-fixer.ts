@@ -9,7 +9,7 @@ import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath, specReviewResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { isFixerContinuation, buildContinuationMessage } from "./fixer-helpers.js";
-import { REPORT_TOOL, REPORT_TOOL_CUSTOM_TOOL_SPEC } from "./report-tool.js";
+import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
 const SPEC_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -25,7 +25,7 @@ const specFixerAgentDefinition: AgentDefinition = {
   system: SPEC_FIXER_SYSTEM_PROMPT,
   tools: [
     { type: AGENT_TOOLSET_TYPE },
-    REPORT_TOOL_CUSTOM_TOOL_SPEC,
+    toCustomToolSpec(PRODUCER_REPORT_TOOL),
   ],
 };
 
@@ -78,7 +78,7 @@ export const SpecFixerStep: AgentStep = {
   // completionVerdict: "approved" — spec-fixer has no result file; polling completion
   // maps to "approved" (enabling spec-fixer → spec-review loop via transition table).
   completionVerdict: "approved",
-  reportTool: REPORT_TOOL,
+  reportTool: PRODUCER_REPORT_TOOL,
 
   // maxTurns: spec-fixer applies findings mechanically; 25 covers multi-finding fix cycles.
   // Design D3 (propose-openspec-cli-and-step-model-config).

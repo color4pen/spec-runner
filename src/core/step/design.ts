@@ -6,7 +6,7 @@ import type { JobState } from "../../state/schema.js";
 import { buildInitialMessage, DESIGN_SYSTEM_PROMPT } from "../../prompts/design-system.js";
 import { getBranchPrefix } from "../../config/type-config.js";
 import { STEP_NAMES } from "./step-names.js";
-import { REPORT_TOOL, REPORT_TOOL_CUSTOM_TOOL_SPEC } from "./report-tool.js";
+import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
 const DESIGN_AGENT_MODEL = "claude-opus-4-6[1m]";
 
@@ -25,7 +25,7 @@ const designAgentDefinition: AgentDefinition = {
   system: DESIGN_SYSTEM_PROMPT,
   tools: [
     { type: AGENT_TOOLSET_TYPE },
-    REPORT_TOOL_CUSTOM_TOOL_SPEC,
+    toCustomToolSpec(PRODUCER_REPORT_TOOL),
   ],
 };
 
@@ -60,7 +60,7 @@ export const DesignStep: AgentStep = {
 
   phase: "spec",
   needsProjectContext: true,
-  reportTool: REPORT_TOOL,
+  reportTool: PRODUCER_REPORT_TOOL,
 
   followUpPrompt: [
     "作業完了後の self-fix pass です。",
