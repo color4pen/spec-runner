@@ -15,6 +15,10 @@ jobs:
     steps:
       - uses: google-github-actions/release-please-action@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # PAT を使う（GITHUB_TOKEN ではない）: GITHUB_TOKEN で打った tag は
+          # 連鎖 workflow を発火しないため publish.yml が走らない。PAT 由来の
+          # tag-push は publish.yml (specrunner-v* trigger) を発火させる。
+          # 必要 secret: RELEASE_PLEASE_TOKEN（Contents:write + Pull requests:write）
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
