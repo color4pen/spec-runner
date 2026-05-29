@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.3...specrunner-v0.1.4) (2026-05-29)
+
+
+### Bug Fixes
+
+* release-please に PAT を使わせ publish.yml を発火させる ([#476](https://github.com/color4pen/spec-runner/issues/476)) ([88e8ae0](https://github.com/color4pen/spec-runner/commit/88e8ae032e88269d160a92b990f9c2d27f0879a1))
+
 ## [0.1.3](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.2...specrunner-v0.1.3) (2026-05-29)
 
 
