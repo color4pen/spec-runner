@@ -1,10 +1,9 @@
 import type { AgentStep, StepDeps, ParsedStepResult } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
-import type { JobState, Verdict } from "../../state/schema.js";
+import type { JobState } from "../../state/schema.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT, buildSpecReviewInitialMessage } from "../../prompts/spec-review-system.js";
-import { parseReviewVerdict } from "../parser/review-verdict.js";
 import { getSpecReviewMode } from "../../config/type-config.js";
 import { specReviewResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
@@ -32,15 +31,6 @@ const specReviewAgentDefinition: AgentDefinition = {
   ],
   capabilities: { gitWrite: true },
 };
-
-/**
- * Parse the verdict from a spec-review-result.md file content.
- * Delegates to the shared parseReviewVerdict helper (Design D5).
- * Returns the first matched verdict (first-write-wins).
- */
-export function parseSpecReviewVerdict(content: string): Verdict | null {
-  return parseReviewVerdict(content);
-}
 
 /**
  * Build the findings file path for a given iteration.
@@ -111,10 +101,12 @@ export const SpecReviewStep: AgentStep = {
   },
 
   parseResult(content: string, _deps: StepDeps): ParsedStepResult {
-    const verdict = parseSpecReviewVerdict(content);
+    // R4 (contract lock): prose-verdict parse path is dead (executor uses typed toolResult).
+    // parseResult is kept to satisfy the Step interface; verdict: null triggers escalation fallback
+    // in the prose path, which is only reached by CLI steps without reportTool.
     return {
-      verdict: verdict ?? "escalation",
-      findingsPath: null, // filled in by StepExecutor after fetch
+      verdict: null,
+      findingsPath: null,
       fileContent: content,
     };
   },

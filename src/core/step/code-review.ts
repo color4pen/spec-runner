@@ -4,7 +4,6 @@ import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../../prompts/code-review-system.js";
-import { parseReviewVerdict } from "../parser/review-verdict.js";
 import { reviewFeedbackPath, changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { buildRequestConstraintsBlock } from "../../parser/extract-section.js";
@@ -102,7 +101,7 @@ ${opts.requestContent}
  * No custom tool handlers — code-review uses the standard agent toolset.
  * Verdict is parsed from a review-feedback-NNN.md file written by the agent.
  * Design D6: separate Agent with dedicated system prompt. Source code read-only; gitWrite for result file delivery.
- * Design D7: resultFilePath returns iteration-based path; parseResult delegates to parseReviewVerdict.
+ * Design D7: resultFilePath returns iteration-based path; parseResult is no-op (R4: verdict from typed toolResult).
  */
 export const CodeReviewStep: AgentStep = {
   kind: "agent",
@@ -161,7 +160,9 @@ export const CodeReviewStep: AgentStep = {
   },
 
   parseResult(content: string, _deps: StepDeps): ParsedStepResult {
-    const verdict = parseReviewVerdict(content) ?? "escalation";
-    return { verdict, findingsPath: null, fileContent: content };
+    // R4 (contract lock): prose-verdict parse path is dead (executor uses typed toolResult).
+    // parseResult is kept to satisfy the Step interface; verdict: null triggers escalation fallback
+    // in the prose path, which is only reached by CLI steps without reportTool.
+    return { verdict: null, findingsPath: null, fileContent: content };
   },
 };

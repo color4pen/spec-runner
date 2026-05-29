@@ -5,12 +5,11 @@
  * TC-002: CodeReviewStep の agent.name / model / tools が仕様値と一致する (must)
  * TC-003: CodeReviewStep は gitWrite capability を持たない (must)
  * TC-004: CodeReviewStep.resultFilePath が zero-padded 3 桁の iteration 番号を持つパスを返す (must)
- * TC-005: CodeReviewStep.parseResult が共通 helper 経由で verdict を抽出する (must)
- * TC-036: CodeReviewStep.parseResult が verdict 行なしのコンテンツで escalation フォールバックする (could)
+ * TC-005: CodeReviewStep.parseResult は no-op（verdict: null）を返す (R4 contract lock)
+ * TC-036: CodeReviewStep.parseResult が verdict 行なしのコンテンツでも verdict: null を返す (R4)
  */
 import { describe, it, expect } from "vitest";
 import { CodeReviewStep, buildReviewFeedbackPath, buildCodeReviewInitialMessage } from "../../../src/core/step/code-review.js";
-import { NULL_PARSE_RESULT } from "../../../src/core/step/types.js";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/code-review-system.js";
 import { AGENT_TOOLSET_TYPE } from "../../../src/core/agent/definition.js";
 import type { JobState } from "../../../src/state/schema.js";
@@ -128,37 +127,37 @@ describe("TC-004: CodeReviewStep.resultFilePath が zero-padded 3 桁の iterati
   });
 });
 
-// TC-005: parseResult via shared helper
-describe("TC-005: CodeReviewStep.parseResult が共通 helper 経由で verdict を抽出する", () => {
-  it("extracts 'needs-fix' from review-feedback content", () => {
+// TC-005: parseResult is no-op (R4 contract lock — verdict derived from typed toolResult via executor)
+describe("TC-005: CodeReviewStep.parseResult は no-op（verdict: null）を返す", () => {
+  it("returns verdict: null for any content (prose parse path is dead)", () => {
     const deps = makeMinimalDeps();
     const content = "# Code Review\n\n- **verdict**: needs-fix\n\n## Findings\n";
     const result = CodeReviewStep.parseResult(content, deps);
-    expect(result.verdict).toBe("needs-fix");
+    expect(result.verdict).toBeNull();
   });
 
-  it("extracts 'approved' from review-feedback content", () => {
+  it("returns verdict: null even for approved content", () => {
     const deps = makeMinimalDeps();
     const content = "- **verdict**: approved\n";
     const result = CodeReviewStep.parseResult(content, deps);
-    expect(result.verdict).toBe("approved");
+    expect(result.verdict).toBeNull();
   });
 
-  it("extracts 'escalation' from review-feedback content", () => {
+  it("returns verdict: null for escalation content", () => {
     const deps = makeMinimalDeps();
     const content = "- **verdict**: escalation\n";
     const result = CodeReviewStep.parseResult(content, deps);
-    expect(result.verdict).toBe("escalation");
+    expect(result.verdict).toBeNull();
   });
 });
 
-// TC-036: fallback to escalation when no verdict line
-describe("TC-036: CodeReviewStep.parseResult が verdict 行なしのコンテンツで escalation フォールバックする", () => {
-  it("returns 'escalation' when content has no verdict line", () => {
+// TC-036: verdict: null for empty content (prose parse path is dead)
+describe("TC-036: CodeReviewStep.parseResult が verdict 行なしのコンテンツでも verdict: null を返す", () => {
+  it("returns verdict: null regardless of whether content has a verdict line", () => {
     const deps = makeMinimalDeps();
     const content = "# Code Review\n\nNo verdict here.\n";
     const result = CodeReviewStep.parseResult(content, deps);
-    expect(result.verdict).toBe("escalation");
+    expect(result.verdict).toBeNull();
   });
 });
 
@@ -195,7 +194,7 @@ describe("CodeReviewStep.completionVerdict", () => {
   });
 });
 
-// Verify NULL_PARSE_RESULT is NOT used (code-review has a result file)
+// CodeReviewStep result file and parseResult semantics (R4: parseResult is no-op)
 describe("CodeReviewStep — result file semantics", () => {
   it("resultFilePath returns non-null string for any state", () => {
     const state = makeMinimalState();
@@ -205,11 +204,12 @@ describe("CodeReviewStep — result file semantics", () => {
     expect(typeof path).toBe("string");
   });
 
-  it("parseResult is not NULL_PARSE_RESULT (code-review extracts verdict)", () => {
+  it("parseResult returns NULL_PARSE_RESULT equivalent (verdict: null — R4 no-op)", () => {
     const deps = makeMinimalDeps();
     const result = CodeReviewStep.parseResult("- **verdict**: approved\n", deps);
-    expect(result).not.toEqual(NULL_PARSE_RESULT);
-    expect(result.verdict).not.toBeNull();
+    // R4: parseResult is no-op; verdict is derived from typed toolResult by executor
+    expect(result.verdict).toBeNull();
+    expect(result.findingsPath).toBeNull();
   });
 });
 
