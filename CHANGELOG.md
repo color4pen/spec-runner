@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.2...specrunner-v0.1.3) (2026-05-29)
+
+
+### Features
+
+* codex adapter を typed outcome 対応に解除する（contract 準拠 / frozen 解除） ([#475](https://github.com/color4pen/spec-runner/issues/475)) ([ffb4e09](https://github.com/color4pen/spec-runner/commit/ffb4e09ddb8f8ef1b423278096f43b7114b84219))
+* routing を typed outcome に cutover する（prose 依存を切る・agent escalation 廃止） ([#472](https://github.com/color4pen/spec-runner/issues/472)) ([d9abb9c](https://github.com/color4pen/spec-runner/commit/d9abb9c236afe383d0402b6e51d7ff7511879ae4))
+
 ## [0.1.2](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.1...specrunner-v0.1.2) (2026-05-28)
 
 
