@@ -12,6 +12,7 @@ import type { JobState } from "../../../src/state/schema.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { DynamicContext } from "../../../src/git/dynamic-context.js";
+import { REPORT_TOOL } from "../../../src/core/step/report-tool.js";
 
 function makeJobState(): JobState {
   return {
@@ -538,5 +539,178 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
 
     expect(result.completionReason).toBe("success");
     expect(result.sessionId).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// codex-typed-outcome: typed outcome via outputSchema (T-01 through T-07)
+// ---------------------------------------------------------------------------
+
+describe("CodexAgentRunner typed outcome (codex-typed-outcome)", () => {
+  // T-07 test a: reportTool set → thread.run() called with outputSchema
+  it("reportTool set → thread.run() called with outputSchema in opts", async () => {
+    const validResponse = JSON.stringify({ ok: true });
+    const thread = makeThread({ finalResponse: validResponse });
+    const mockRun = thread.run as ReturnType<typeof vi.fn>;
+    const factory = makeCodexFactory(thread);
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL } });
+    await runner.run(ctx);
+
+    const firstCallOpts = (mockRun.mock.calls[0] as [string, { signal?: AbortSignal; outputSchema?: unknown }])[1];
+    expect(firstCallOpts).toBeDefined();
+    expect(firstCallOpts.outputSchema).toBeDefined();
+    expect(typeof firstCallOpts.outputSchema).toBe("object");
+  });
+
+  // T-07 test b: finalResponse valid JSON → toolResult populated, followUpAttempts: 0
+  it("finalResponse valid JSON → toolResult populated, followUpAttempts: 0", async () => {
+    const validResponse = JSON.stringify({ ok: true });
+    const thread = makeThread({ finalResponse: validResponse });
+    const mockRun = thread.run as ReturnType<typeof vi.fn>;
+    const factory = makeCodexFactory(thread);
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL } });
+    const result = await runner.run(ctx);
+
+    expect(result.toolResult).toEqual({ ok: true });
+    expect(result.followUpAttempts).toBe(0);
+    expect(mockRun).toHaveBeenCalledTimes(1);
+  });
+
+  // T-07 test c: finalResponse invalid → follow-up retry → retry has valid JSON → toolResult populated
+  it("finalResponse invalid → retry with valid JSON → toolResult populated, followUpAttempts: 1", async () => {
+    let callCount = 0;
+    const thread: CodexThread = {
+      id: "thread-retry-success",
+      run: vi.fn().mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // Main turn: invalid JSON (no outputSchema result yet)
+          return Promise.resolve({ finalResponse: "not valid json", items: [], usage: null });
+        }
+        // First retry: valid JSON
+        return Promise.resolve({ finalResponse: JSON.stringify({ ok: true }), items: [], usage: null });
+      }),
+    };
+    const factory = vi.fn().mockReturnValue({
+      startThread: vi.fn().mockReturnValue(thread),
+      resumeThread: vi.fn().mockReturnValue(thread),
+    });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL } });
+    const result = await runner.run(ctx);
+
+    expect(result.toolResult).toEqual({ ok: true });
+    expect(result.followUpAttempts).toBe(1);
+    expect(callCount).toBe(2); // main + 1 retry
+  });
+
+  // TC-013: retry turns also receive outputSchema
+  it("retry turn → thread.run() also called with outputSchema in opts", async () => {
+    let callCount = 0;
+    const capturedOpts: Array<{ signal?: AbortSignal; outputSchema?: unknown }> = [];
+    const thread: CodexThread = {
+      id: "thread-retry-schema",
+      run: vi.fn().mockImplementation((_prompt: string, opts?: { signal?: AbortSignal; outputSchema?: unknown }) => {
+        callCount++;
+        capturedOpts.push(opts ?? {});
+        if (callCount === 1) {
+          // Main turn: invalid JSON → triggers retry
+          return Promise.resolve({ finalResponse: "not valid json", items: [], usage: null });
+        }
+        // First retry: valid JSON
+        return Promise.resolve({ finalResponse: JSON.stringify({ ok: true }), items: [], usage: null });
+      }),
+    };
+    const factory = vi.fn().mockReturnValue({
+      startThread: vi.fn().mockReturnValue(thread),
+      resumeThread: vi.fn().mockReturnValue(thread),
+    });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL } });
+    await runner.run(ctx);
+
+    expect(callCount).toBe(2); // main + 1 retry
+    // Main turn must have outputSchema
+    expect(capturedOpts[0]).toHaveProperty("outputSchema");
+    // Retry turn must also have outputSchema
+    expect(capturedOpts[1]).toHaveProperty("outputSchema");
+  });
+
+  // T-07 test d: all retries exhausted → toolResult: null, followUpAttempts: maxAttempts
+  it("all retries exhausted → toolResult: null, followUpAttempts: maxAttempts (2)", async () => {
+    const thread = makeThread({ finalResponse: "not json at all" });
+    const mockRun = thread.run as ReturnType<typeof vi.fn>;
+    const factory = makeCodexFactory(thread);
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    // DEFAULT_TOOL_RETRY.maxAttempts = 2
+    const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL } });
+    const result = await runner.run(ctx);
+
+    expect(result.toolResult).toBeNull();
+    expect(result.followUpAttempts).toBe(2);
+    // main + 2 retries = 3 calls total
+    expect(mockRun).toHaveBeenCalledTimes(3);
+  });
+
+  // T-07 test e: reportTool not set → toolResult: null, no outputSchema (backward compat)
+  it("reportTool not set → toolResult: null, followUpAttempts: 0 (backward compat)", async () => {
+    const thread = makeThread({ finalResponse: "some text content" });
+    const mockRun = thread.run as ReturnType<typeof vi.fn>;
+    const factory = makeCodexFactory(thread);
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const ctx = makeCtx(); // no reportTool
+    const result = await runner.run(ctx);
+
+    expect(result.toolResult).toBeNull();
+    expect(result.followUpAttempts).toBe(0);
+    expect(mockRun).toHaveBeenCalledTimes(1);
+
+    // outputSchema must NOT be present when reportTool is not set
+    const firstCallOpts = (mockRun.mock.calls[0] as [string, { signal?: AbortSignal; outputSchema?: unknown }])[1];
+    expect(firstCallOpts).not.toHaveProperty("outputSchema");
+  });
+
+  // Extra: postWorkPrompts turns do NOT receive outputSchema (T-06)
+  it("postWorkPrompts turns do NOT receive outputSchema", async () => {
+    const validResponse = JSON.stringify({ ok: true });
+    let callCount = 0;
+    const thread: CodexThread = {
+      id: "thread-postwork",
+      run: vi.fn().mockImplementation(() => {
+        callCount++;
+        return Promise.resolve({ finalResponse: validResponse, items: [], usage: null });
+      }),
+    };
+    const factory = vi.fn().mockReturnValue({
+      startThread: vi.fn().mockReturnValue(thread),
+      resumeThread: vi.fn().mockReturnValue(thread),
+    });
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const ctx = makeCtx({
+      policy: {
+        reportTool: REPORT_TOOL,
+        postWorkPrompts: ["follow up work"],
+      },
+    });
+    await runner.run(ctx);
+
+    expect(callCount).toBe(2); // main + 1 postWorkPrompt
+
+    // First call (main work) should have outputSchema
+    const mainCallOpts = ((thread.run as ReturnType<typeof vi.fn>).mock.calls[0] as [string, { outputSchema?: unknown }])[1];
+    expect(mainCallOpts?.outputSchema).toBeDefined();
+
+    // Second call (postWorkPrompt) should NOT have outputSchema
+    const followCallOpts = ((thread.run as ReturnType<typeof vi.fn>).mock.calls[1] as [string, { outputSchema?: unknown }])[1];
+    expect(followCallOpts).not.toHaveProperty("outputSchema");
   });
 });

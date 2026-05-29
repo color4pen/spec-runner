@@ -7,13 +7,15 @@
  * D1 (design.md): prompt construction mirrors ClaudeCodeRunner.
  * D2 (design.md): sandboxMode "workspace-write" for all steps.
  *
- * tool-driven-step-completion frozen behavior:
- * - ctx.policy.reportTool is intentionally ignored (Codex SDK custom tool support TBD).
- * - toolResult is always null, followUpAttempts is always 0.
- * - Existing markdown + regex parse path is maintained.
+ * tool-driven-step-completion (codex-typed-outcome):
+ * - ctx.policy.reportTool set → outputSchema injected into thread.run() for main work turn.
+ * - finalResponse is parsed as JSON and validated via reportTool.parseInput().
+ * - follow-up retry loop mirrors ClaudeCodeRunner (up to toolReportRetry.maxAttempts).
+ * - postWorkPrompts turns do NOT receive outputSchema (tool detection is main-work-turn only).
  */
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { object, toJSONSchema } from "zod/v4-mini";
 import { Codex } from "@openai/codex-sdk";
 import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
@@ -21,6 +23,8 @@ import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from ".
 import type { StepContext } from "../../core/types.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
 import { stderrWrite } from "../../logger/stdout.js";
+import type { BaseReportResult, ReportToolSpec } from "../../core/port/report-result.js";
+import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
 
 // Minimal interface for the Codex SDK types used here (avoids deep SDK type dependency in tests)
 interface Turn {
@@ -57,7 +61,7 @@ interface CodexUsage {
 export interface CodexThread {
   /** Unique identifier for this thread (used for session continuity). null when not yet assigned. */
   id: string | null;
-  run(prompt: string, opts?: { signal?: AbortSignal }): Promise<Turn>;
+  run(prompt: string, opts?: { signal?: AbortSignal; outputSchema?: unknown }): Promise<Turn>;
 }
 
 export interface CodexInstance {
@@ -77,6 +81,28 @@ export interface CodexInstance {
 export interface CodexAgentRunnerDeps {
   /** Injectable factory for testing. Defaults to `() => new Codex()`. */
   _codexFactory?: () => CodexInstance;
+}
+
+/**
+ * Build a JSON Schema object from a ReportToolSpec for use as outputSchema in thread.run().
+ * Uses the same zod/v4-mini toJSONSchema transformation as toCustomToolSpec() in report-tool.ts.
+ */
+function buildOutputSchema(reportTool: ReportToolSpec): object {
+  return toJSONSchema(object(reportTool.zodSchema)) as object;
+}
+
+/**
+ * Try to parse finalResponse as JSON and validate it against the reportTool.parseInput().
+ * Returns the parsed result on success, null on any failure (JSON parse error or validation failure).
+ */
+function tryParseToolResult(finalResponse: string, reportTool: ReportToolSpec): BaseReportResult | null {
+  try {
+    const json: unknown = JSON.parse(finalResponse);
+    const parseResult = reportTool.parseInput(json);
+    return parseResult.ok ? parseResult.value : null;
+  } catch {
+    return null;
+  }
 }
 
 export class CodexAgentRunner implements AgentRunner {
@@ -130,6 +156,10 @@ export class CodexAgentRunner implements AgentRunner {
       timeoutId = setTimeout(() => abortController.abort(), resolvedConfig.timeoutMs);
     }
 
+    // Build outputSchema if reportTool is configured (T-02, T-03)
+    const reportTool: ReportToolSpec | undefined = ctx.policy?.reportTool;
+    const outputSchema: object | undefined = reportTool ? buildOutputSchema(reportTool) : undefined;
+
     let turn: Turn;
     let threadId: string | null;
     let activeThread: CodexThread;
@@ -159,7 +189,8 @@ export class CodexAgentRunner implements AgentRunner {
       activeThread = thread;
 
       try {
-        turn = await activeThread.run(fullPrompt, { signal: abortController.signal });
+        // T-03: inject outputSchema into main work turn when reportTool is set
+        turn = await activeThread.run(fullPrompt, { signal: abortController.signal, ...(outputSchema ? { outputSchema } : {}) });
         threadId = activeThread.id;
       } catch (runErr) {
         // If resume was used and thread.run() failed, retry with a fresh thread.
@@ -169,18 +200,58 @@ export class CodexAgentRunner implements AgentRunner {
           );
           const freshThread = startFreshThread();
           activeThread = freshThread;
-          turn = await freshThread.run(fullPrompt, { signal: abortController.signal });
+          turn = await freshThread.run(fullPrompt, { signal: abortController.signal, ...(outputSchema ? { outputSchema } : {}) });
           threadId = freshThread.id;
         } else {
           throw runErr;
         }
       }
 
-      // Follow-up turns (N-stage loop): run on same thread for each follow prompt
-      // Frozen behavior: ctx.policy.reportTool is ignored — toolResult always null
+      // T-04: Parse finalResponse to extract typed toolResult
+      let capturedToolResult: BaseReportResult | null = null;
+      if (reportTool) {
+        capturedToolResult = tryParseToolResult(turn.finalResponse, reportTool);
+      }
+
+      // T-05: follow-up retry loop when capturedToolResult is still null
+      let followUpAttempts = 0;
+      if (capturedToolResult === null && reportTool) {
+        const retryPolicy = ctx.policy?.toolReportRetry ?? DEFAULT_TOOL_RETRY;
+        for (let attempt = 1; attempt <= retryPolicy.maxAttempts; attempt++) {
+          // Codex は report_result tool ではなく outputSchema で構造化出力するため、
+          // tool 呼び出しを促す DEFAULT_TOOL_RETRY のプロンプトではなく schema 準拠の JSON 再要求にする。
+          const retryPrompt =
+            "前の応答を出力スキーマに一致する JSON として取得できませんでした。" +
+            "説明文や追加テキストを付けず、スキーマに一致する JSON のみで返してください。" +
+            ` (attempt ${attempt}/${retryPolicy.maxAttempts})`;
+          const prevUsage = turn.usage ? { ...turn.usage } : null;
+          const retryTurn = await activeThread.run(retryPrompt, { signal: abortController.signal, outputSchema });
+          followUpAttempts++;
+
+          // Accumulate usage (per-turn addition for Codex)
+          if (retryTurn.usage && prevUsage) {
+            turn = {
+              ...retryTurn,
+              usage: {
+                input_tokens: prevUsage.input_tokens + retryTurn.usage.input_tokens,
+                output_tokens: prevUsage.output_tokens + retryTurn.usage.output_tokens,
+                cached_input_tokens: (prevUsage.cached_input_tokens ?? 0) + (retryTurn.usage.cached_input_tokens ?? 0),
+              },
+            };
+          } else {
+            turn = retryTurn;
+          }
+
+          capturedToolResult = tryParseToolResult(retryTurn.finalResponse, reportTool);
+          if (capturedToolResult !== null) break;
+        }
+      }
+
+      // T-06: Follow-up turns (postWorkPrompts loop): run on same thread — no outputSchema
       if (shouldRunFollowUp(ctx, "success")) {
         for (const followPrompt of ctx.policy.postWorkPrompts!) {
           const prevUsage = turn.usage ? { ...turn.usage } : null;
+          // Intentionally no outputSchema here — tool detection is main-work-turn only
           const followTurn = await activeThread.run(followPrompt, { signal: abortController.signal });
 
           // Accumulate usage (adapter native: per-turn addition for Codex)
@@ -197,6 +268,62 @@ export class CodexAgentRunner implements AgentRunner {
           turn = { ...followTurn, usage: accumulatedUsage };
         }
       }
+
+      // Log file changes (informational)
+      const fileChanges = turn.items.filter((i): i is FileChangeItem => i.type === "file_change");
+      if (fileChanges.length > 0) {
+        const paths = fileChanges.flatMap((fc) => fc.changes.map((c) => c.path));
+        stderrWrite(`[codex] file changes: ${paths.join(", ")}`);
+      }
+
+      // Read result file from local fs (same as ClaudeCodeRunner — D1)
+      const resultFilePath = step.resultFilePath(state, stepCtx);
+      let resultContent: string | null = null;
+      if (resultFilePath !== null) {
+        const absolutePath = path.isAbsolute(resultFilePath)
+          ? resultFilePath
+          : path.join(cwd, resultFilePath);
+        try {
+          resultContent = await fs.readFile(absolutePath, "utf-8");
+        } catch {
+          return {
+            completionReason: "error",
+            resultContent: null,
+            toolResult: capturedToolResult,
+            followUpAttempts,
+            error: Object.assign(
+              new Error(`result file not found: ${resultFilePath}`),
+              { code: "RESULT_FILE_NOT_FOUND" },
+            ),
+          };
+        }
+      } else {
+        resultContent = turn.finalResponse;
+      }
+
+      // Map Codex usage → ModelUsage
+      // cached_input_tokens → cacheReadInputTokens; cacheCreationInputTokens has no Codex equivalent → 0
+      let modelUsage: Record<string, ModelUsage> | undefined;
+      if (turn.usage) {
+        const u = turn.usage;
+        const usage: ModelUsage = {
+          inputTokens: u.input_tokens,
+          outputTokens: u.output_tokens,
+          cacheReadInputTokens: u.cached_input_tokens ?? 0,
+          cacheCreationInputTokens: 0,
+        };
+        modelUsage = { [resolvedConfig.model]: usage };
+      }
+
+      const baseResult: AgentRunResult = {
+        completionReason: "success",
+        resultContent: null,
+        toolResult: capturedToolResult,
+        followUpAttempts,
+        modelUsage,
+        sessionId: threadId ?? undefined,
+      };
+      return mergeFollowUpResult(baseResult, resultContent);
     } catch (err) {
       if (abortController.signal.aborted && timeoutId !== undefined) {
         clearTimeout(timeoutId);
@@ -225,63 +352,5 @@ export class CodexAgentRunner implements AgentRunner {
     } finally {
       if (timeoutId !== undefined) clearTimeout(timeoutId);
     }
-
-    // Log file changes (informational)
-    const fileChanges = turn.items.filter((i): i is FileChangeItem => i.type === "file_change");
-    if (fileChanges.length > 0) {
-      const paths = fileChanges.flatMap((fc) => fc.changes.map((c) => c.path));
-      stderrWrite(`[codex] file changes: ${paths.join(", ")}`);
-    }
-
-    // Read result file from local fs (same as ClaudeCodeRunner — D1)
-    const resultFilePath = step.resultFilePath(state, stepCtx);
-    let resultContent: string | null = null;
-    if (resultFilePath !== null) {
-      const absolutePath = path.isAbsolute(resultFilePath)
-        ? resultFilePath
-        : path.join(cwd, resultFilePath);
-      try {
-        resultContent = await fs.readFile(absolutePath, "utf-8");
-      } catch {
-        return {
-          completionReason: "error",
-          resultContent: null,
-          toolResult: null,
-          followUpAttempts: 0,
-          error: Object.assign(
-            new Error(`result file not found: ${resultFilePath}`),
-            { code: "RESULT_FILE_NOT_FOUND" },
-          ),
-        };
-      }
-    } else {
-      resultContent = turn.finalResponse;
-    }
-
-    // Map Codex usage → ModelUsage
-    // cached_input_tokens → cacheReadInputTokens; cacheCreationInputTokens has no Codex equivalent → 0
-    let modelUsage: Record<string, ModelUsage> | undefined;
-    if (turn.usage) {
-      const u = turn.usage;
-      const usage: ModelUsage = {
-        inputTokens: u.input_tokens,
-        outputTokens: u.output_tokens,
-        cacheReadInputTokens: u.cached_input_tokens ?? 0,
-        cacheCreationInputTokens: 0,
-      };
-      modelUsage = { [resolvedConfig.model]: usage };
-    }
-
-    // Frozen behavior: toolResult = null, followUpAttempts = 0
-    // Codex SDK custom tool support is a separate change.
-    const baseResult: AgentRunResult = {
-      completionReason: "success",
-      resultContent: null,
-      toolResult: null,
-      followUpAttempts: 0,
-      modelUsage,
-      sessionId: threadId ?? undefined,
-    };
-    return mergeFollowUpResult(baseResult, resultContent);
   }
 }
