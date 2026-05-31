@@ -74,7 +74,7 @@
 #### Scenario: retries exhausted の状態
 
 - **WHEN** maxRetries=2 で iter=1 needs-fix → iter=2 needs-fix が起きる
-- **THEN** state.error.code が `SPEC_REVIEW_RETRIES_EXHAUSTED` で、state.steps["spec-review"][1].verdict が `escalation` に書き換えられている。state.status は `success`（pipeline 自体は完走）
+- **THEN** state.error.code が `SPEC_REVIEW_RETRIES_EXHAUSTED` で、state.steps["spec-review"][1].verdict が `escalation` に書き換えられている。state.status は `awaiting-merge`（pipeline 自体は完走）
 
 ### Requirement: JobState.steps Schema is StepRun Array Per Step
 `JobState.steps` SHALL be typed as `Record<StepName, StepRun[]>` where `StepRun` records a single execution attempt of a step.
@@ -344,25 +344,45 @@ All slug consumers (`specrunner finish` の入力解決 / `specrunner ps` の SL
 
 ### Requirement: `JobStatus` includes `archived` as a terminal status
 
-`JobStatus` SHALL be typed as `"running" | "success" | "failed" | "terminated" | "archived"`. The `archived` status indicates that `specrunner finish` has completed Phase 4 (markJobArchived after `git pull --ff-only`) for this job. No intermediate `merged` status is introduced; the 1-PR model means feature PR merge and archive land in the same commit, so `success → archived` is the canonical transition.
+`JobStatus` SHALL be typed as `"running" | "awaiting-resume" | "awaiting-merge" | "failed" | "terminated" | "archived" | "canceled"`.
 
-Legacy state files with `status: "success"` SHALL load successfully; transition to `archived` happens only via `specrunner finish` Phase 4.
+**状態区分**:
+- **active** = {`running`, `awaiting-resume`} — 実行中または再開待ち。
+- **terminal** = {`archived`, `canceled`} — 出口なし。以後どこへも遷移しない。
+
+**canonical 正常完走遷移**: `awaiting-merge → archived`。`specrunner finish` が Phase 4（markJobArchived after `git pull --ff-only`）を完了した時点で遷移する。
+
+**許可遷移（VALID_TRANSITIONS）**: 下表のセルのみ許可。表に無い遷移は throw。同一 status への遷移は常に noop（許可）。
+
+| from \ to | running | awaiting-resume | awaiting-merge | failed | terminated | archived | canceled |
+|---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| **running** | — | ✓ | ✓ | ✓ | ✓ |  | ✓ |
+| **awaiting-resume** | ✓ | — |  |  |  |  | ✓ |
+| **awaiting-merge** |  |  | — |  |  | ✓ | ✓ |
+| **failed** | ✓ | ✓ |  | — |  |  | ✓ |
+| **terminated** | ✓ |  |  |  | — |  | ✓ |
+| **archived** |  |  |  |  |  | — |  |
+| **canceled** |  |  |  |  |  |  | — |
+
+`awaiting-resume` は異常終了 guard（exit-guard）が倒す checkpoint であり、`running → awaiting-resume` で記録される。`canceled` はユーザーによる明示的なジョブキャンセルを示す。
+
+Legacy state files with `status: "success"` SHALL be remapped to `"awaiting-merge"` on load（`validateJobState` 内の on-read remap）。`success` は現行コードで生成されない legacy 値であり、load 時に自動的に `awaiting-merge` へ変換される。
 
 #### Scenario: New status value `archived` persists across load/save
 
 - **WHEN** `state.status` is set to `archived` and `JobStateStore.persist()` is called, then `JobStateStore.load()` reads the same file
 - **THEN** the loaded state has `state.status === "archived"`
 
-#### Scenario: Legacy `success` state loads without migration
+#### Scenario: Legacy `success` state is remapped to `awaiting-merge` on load
 
 - **GIVEN** a state file with `status: "success"` written by a prior CLI version
 - **WHEN** `JobStateStore.load()` is invoked
-- **THEN** the loaded state has `state.status === "success"` (no automatic migration to `archived`)
+- **THEN** the loaded state has `state.status === "awaiting-merge"`（`validateJobState` が on-read remap を実行するため）
 
 #### Scenario: No intermediate `merged` status
 
 - **WHEN** `specrunner finish` Phase 3 (`gh pr merge`) succeeds but Phase 4 (markJobArchived) has not yet executed
-- **THEN** `state.status` remains `success`. After Phase 4 completes, it transitions directly to `archived`. There is no observable `merged` intermediate value.
+- **THEN** `state.status` remains `awaiting-merge`. After Phase 4 completes, it transitions directly to `archived`. There is no observable `merged` intermediate value.
 
 ### Requirement: `JobState.request.slug` は起票 path から抽出される（drafts パス対応）
 
