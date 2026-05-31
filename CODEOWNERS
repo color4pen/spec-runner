@@ -1,0 +1,23 @@
+# CODEOWNERS — out-of-loop trust root
+#
+# ここに列挙した path は、pipeline が無人で緩められないよう人間 review を必須にする。
+# これが「architecture/ が out-of-loop な構造 authority である」ことの実体。
+# 完全な無人 merge gate には、GitHub 側で branch protection の "Require review from
+# Code Owners" を main に設定する必要がある（本ファイル単体では advisory）。
+
+# --- out-of-loop authority（構造の定義。pipeline は書き込まない）---
+/architecture/                      @color4pen
+/CODEOWNERS                         @color4pen
+
+# --- enforcement（歯）。in-loop に住むが、甘くする変更を無人で通させない ---
+/tests/unit/architecture/           @color4pen
+/tests/unit/contract/               @color4pen
+/.dependency-cruiser.cjs            @color4pen
+
+# --- 構造の要 / pipeline の判断機構（変更に人間 review）---
+/src/core/pipeline/                 @color4pen
+/src/core/step/                     @color4pen
+
+# --- release / CI 構成（閉ループ防止の境界）---
+/.github/                           @color4pen
+/release-please-config.json         @color4pen

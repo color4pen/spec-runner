@@ -1,5 +1,5 @@
 /**
- * Arch test: contract/invariants.md INV-1〜3 の恒久 enforce
+ * Arch test: step-outcome の INV-1〜3 を恒久 enforce（規約の正典は本ファイル＋型。旧 contract/ は retire）
  *
  * R4 (contract lock) — prose パーサ削除後に「契約が自分自身を守る」状態を維持するため、
  * 静的検査（grep / fs.existsSync）でインバリアントを強制する。

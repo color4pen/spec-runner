@@ -1,5 +1,5 @@
 /**
- * Golden Cases — contract/golden-cases.md 対応の回帰ネット
+ * Golden Cases — step-outcome の grounded 検査の回帰ネット（旧 contract/golden-cases.md は retire）
  *
  * このファイルの目的:
  *   grounded な検査（executor typed verdict / VerificationStep.parseResult）が
