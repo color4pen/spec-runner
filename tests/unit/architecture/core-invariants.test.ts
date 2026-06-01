@@ -332,7 +332,7 @@ describe("B-6: core/ must not reference process.env directly (must use stripSecr
   });
 });
 
-describe("B-7: core/ must not write to process.stdout/stderr directly", () => {
+describe("B-7: core/ and cli/ must not write to process.stdout/stderr directly", () => {
   /**
    * B-7 (model.md §4): stdout / stderr output must pass through the
    * `maskSensitive` seam (logger/stdout).  Raw process.stdout/stderr.write
@@ -341,20 +341,33 @@ describe("B-7: core/ must not write to process.stdout/stderr directly", () => {
    * Pattern is call-site limited (`write\s*\(`) to avoid false positives from
    * JSDoc comments like `(defaults to process.stderr.write).`
    *
-   * Scope: all of src/core/ (excluding __tests__/).
-   * Current state: zero call-site violations → no allowlist entries needed.
+   * Scope: all of src/core/ and src/cli/ (excluding __tests__/).
+   * cli/ extension rationale: cli/progress.ts uses process.stderr.write for
+   *   progress output; B-7 must cover cli/ to prevent secret leakage via
+   *   p.reason / error strings in progress events.
+   * Seam exemption: lines containing `maskSensitive` are already routed
+   *   through the mask seam — same exemption structure as B-6 `stripSecrets`.
+   * Current state: zero violations after T-01 maskSensitive wrap → no allowlist entries needed.
    */
-  it("grep finds no raw process.(stdout|stderr).write call-sites in src/core/", () => {
-    const raw = grepE(
+  it("grep finds no raw process.(stdout|stderr).write call-sites in src/core/ and src/cli/", () => {
+    const rawCore = grepE(
       `"process\\.(stdout|stderr)\\.write\\s*\\("`,
       "src/core",
     );
-    const allMatches = parseGrepOutput(raw);
+    const rawCli = grepE(
+      `"process\\.(stdout|stderr)\\.write\\s*\\("`,
+      "src/cli",
+    );
+    const allMatches = [
+      ...parseGrepOutput(rawCore),
+      ...parseGrepOutput(rawCli),
+    ];
     const candidates = allMatches.filter(
-      (m) => !m.file.includes("__tests__/"),
+      (m) =>
+        !m.file.includes("__tests__/") &&
+        !m.content.includes("maskSensitive"),
     );
 
-    // No allowlist entries for B-7 — currently zero violations.
     const b7Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-7");
     const violations = filterViolations(candidates, b7Entries);
 
@@ -536,5 +549,44 @@ describe("T-04 regression guard: new forbidden edge not in allowlist triggers de
     expect(violations).toHaveLength(1);
     const first = violations.at(0);
     expect(first?.file).toBe("src/util/x.ts");
+  });
+
+  it("detects new raw process.stderr.write call-site in src/cli/ not in allowlist (B-7 regression guard / TC-021)", () => {
+    // Simulate a NEW raw process.stderr.write in a hypothetical cli file.
+    const injectedMatches: GrepMatch[] = [
+      {
+        file: "src/cli/new-feature.ts",
+        line: 10,
+        content: '  process.stderr.write("output");',
+      },
+    ];
+
+    const b7Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-7");
+    // Filter: not a maskSensitive call → must be detected.
+    const notSeam = injectedMatches.filter(
+      (m) => !m.content.includes("maskSensitive"),
+    );
+    const violations = filterViolations(notSeam, b7Entries);
+
+    expect(violations).toHaveLength(1);
+    const first = violations.at(0);
+    expect(first?.file).toBe("src/cli/new-feature.ts");
+  });
+
+  it("does not flag process.stderr.write calls that use the maskSensitive seam (B-7 seam exemption / TC-020)", () => {
+    // Simulate a compliant process.stderr.write usage going through maskSensitive.
+    const seamUsage: GrepMatch[] = [
+      {
+        file: "src/cli/progress.ts",
+        line: 42,
+        content: "  process.stderr.write(maskSensitive(content));",
+      },
+    ];
+
+    // The seam filter (applied before allowlist in the real test) removes this.
+    const notSeam = seamUsage.filter(
+      (m) => !m.content.includes("maskSensitive"),
+    );
+    expect(notSeam).toHaveLength(0);
   });
 });

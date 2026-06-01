@@ -1,5 +1,5 @@
 import type { EventBus } from "../core/event/event-bus.js";
-import type { LogLevel } from "../logger/stdout.js";
+import { maskSensitive, type LogLevel } from "../logger/stdout.js";
 
 /** Injectable timer function type (matches setInterval signature we use). */
 type TimerSetFn = (callback: () => void, ms: number) => ReturnType<typeof setInterval>;
@@ -115,7 +115,7 @@ export class ProgressDisplay {
     this.progressCount = 0;
     this.lastTool = null;
     if (this.isQuiet) return;
-    process.stderr.write(`[${p.step}] running...\n`);
+    process.stderr.write(maskSensitive(`[${p.step}] running...\n`));
     this.startHeartbeat();
   }
 
@@ -123,10 +123,10 @@ export class ProgressDisplay {
     this.stopHeartbeat();
     if (this.isQuiet) return;
     if (this.useCarriageReturn) {
-      process.stderr.write("\r\x1b[K");
+      process.stderr.write(maskSensitive("\r\x1b[K"));
     }
     const elapsed = this.elapsedSeconds(p.step);
-    process.stderr.write(`[${p.step}] ✓ (${elapsed}s)\n`);
+    process.stderr.write(maskSensitive(`[${p.step}] ✓ (${elapsed}s)\n`));
     this.currentStep = null;
   }
 
@@ -134,10 +134,10 @@ export class ProgressDisplay {
     this.stopHeartbeat();
     if (this.isQuiet) return;
     if (this.useCarriageReturn) {
-      process.stderr.write("\r\x1b[K");
+      process.stderr.write(maskSensitive("\r\x1b[K"));
     }
     const elapsed = this.elapsedSeconds(p.step);
-    process.stderr.write(`[${p.step}] ✗ error (${elapsed}s)\n`);
+    process.stderr.write(maskSensitive(`[${p.step}] ✗ error (${elapsed}s)\n`));
     this.currentStep = null;
   }
 
@@ -149,19 +149,19 @@ export class ProgressDisplay {
   private onVerdictParsed(p: { step: string; outcome: { verdict: string | null } }): void {
     if (this.isQuiet) return;
     if (p.outcome.verdict === null) return;
-    process.stderr.write(`[${p.step}] verdict: ${p.outcome.verdict}\n`);
+    process.stderr.write(maskSensitive(`[${p.step}] verdict: ${p.outcome.verdict}\n`));
   }
 
   private onPipelineComplete(_p: unknown): void {
     this.stopHeartbeat();
     // Always output final result, even in quiet mode
-    process.stderr.write(`\nNext: specrunner job finish ${this.options.slug}\n`);
+    process.stderr.write(maskSensitive(`\nNext: specrunner job finish ${this.options.slug}\n`));
   }
 
   private onPipelineFail(p: { reason: string }): void {
     this.stopHeartbeat();
     // Always output final result, even in quiet mode
-    process.stderr.write(`Pipeline failed: ${p.reason}\n`);
+    process.stderr.write(maskSensitive(`Pipeline failed: ${p.reason}\n`));
   }
 
   private startHeartbeat(): void {
@@ -193,39 +193,39 @@ export class ProgressDisplay {
 
     if (this.useCarriageReturn) {
       const padded = line.padEnd(process.stderr.columns || 80);
-      process.stderr.write(`\r${padded}`);
+      process.stderr.write(maskSensitive(`\r${padded}`));
     } else {
-      process.stderr.write(`${line}\n`);
+      process.stderr.write(maskSensitive(`${line}\n`));
     }
   }
 
   private onIterationStart(p: { step: string; iteration: number; maxIterations: number }): void {
     if (this.isQuiet) return;
-    process.stderr.write(`[iter ${p.iteration}/${p.maxIterations}] starting ${p.step}\n`);
+    process.stderr.write(maskSensitive(`[iter ${p.iteration}/${p.maxIterations}] starting ${p.step}\n`));
   }
 
   private onIterationVerdict(p: { step: string; iteration: number; verdict: string; action: "done" | "halt" | "fixer" }): void {
     if (this.isQuiet) return;
     const actionLabel = p.action === "done" ? "done" : p.action === "halt" ? "halt" : "spawning fixer";
-    process.stderr.write(`[iter ${p.iteration}] ${p.step} verdict: ${p.verdict} → ${actionLabel}\n`);
+    process.stderr.write(maskSensitive(`[iter ${p.iteration}] ${p.step} verdict: ${p.verdict} → ${actionLabel}\n`));
   }
 
   private onIterationExhausted(p: { step: string; iteration: number; maxIterations: number }): void {
     if (this.isQuiet) return;
-    process.stderr.write(`[iter ${p.iteration}/${p.maxIterations}] retries exhausted on ${p.step}, escalating\n`);
+    process.stderr.write(maskSensitive(`[iter ${p.iteration}/${p.maxIterations}] retries exhausted on ${p.step}, escalating\n`));
   }
 
   private onPipelineSummary(p: { step: string; iterations: number; finalVerdict: string }): void {
     if (this.isQuiet) return;
-    process.stderr.write(`Pipeline finished: ${p.step} iterations=${p.iterations}, final verdict=${p.finalVerdict}\n`);
+    process.stderr.write(maskSensitive(`Pipeline finished: ${p.step} iterations=${p.iterations}, final verdict=${p.finalVerdict}\n`));
   }
 
   private onCliStep(p: { step: string; verdict?: string }): void {
     if (this.isQuiet) return;
     if (p.verdict !== undefined) {
-      process.stderr.write(`[step] ${p.step}: ${p.verdict}\n`);
+      process.stderr.write(maskSensitive(`[step] ${p.step}: ${p.verdict}\n`));
     } else {
-      process.stderr.write(`[step] ${p.step}\n`);
+      process.stderr.write(maskSensitive(`[step] ${p.step}\n`));
     }
   }
 
