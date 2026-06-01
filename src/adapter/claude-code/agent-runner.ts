@@ -33,13 +33,13 @@ import {
 import { defaultSpawnFn, type SpawnFn } from "./git-exec.js";
 import { isToolUse } from "./message-types.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from "../../core/port/agent-runner.js";
-import type { DomainEvent } from "../../core/event/types.js";
-import type { StepContext } from "../../core/types.js";
+import type { DomainEvent } from "../../kernel/event-types.js";
+import type { StepContext } from "../../core/port/step-context.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
 import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
 import { logVerbose, stderrWrite } from "../../logger/stdout.js";
-import { logPipelineDiag } from "../../core/lifecycle/diagnostic.js";
+import { logPipelineDiag } from "../../logger/diagnostic.js";
 import { SessionLogWriter } from "./session-log-writer.js";
 import { stripSecrets } from "../../util/env-filter.js";
 import type { BaseReportResult, ReportToolSpec } from "../../core/port/report-result.js";

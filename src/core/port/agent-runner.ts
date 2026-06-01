@@ -9,11 +9,11 @@
  *  - ManagedAgentRunner (src/adapter/managed-agent/agent-runner.ts)
  *  - ClaudeCodeRunner   (src/adapter/claude-code/agent-runner.ts)
  */
-import type { AgentStep } from "../step/types.js";
+import type { AgentStep } from "./step-types.js";
 import type { JobState } from "../../state/schema.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
-import type { DomainEvent } from "../event/types.js";
+import type { DomainEvent } from "../../kernel/event-types.js";
 import type { BaseReportResult, ReportToolSpec, FollowUpPolicy } from "./report-result.js";
 
 import type { ModelUsage } from "./model-usage.js";

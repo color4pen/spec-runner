@@ -8,7 +8,7 @@
  */
 import type { JobState, ErrorInfo } from "../../state/schema.js";
 import type { AgentRunResult } from "../../core/port/agent-runner.js";
-import { throwWrappedError } from "../../core/step/executor-helpers.js";
+import { throwWrappedError } from "../../core/port/error-helpers.js";
 import { sessionTerminatedError } from "../../errors.js";
 
 /**

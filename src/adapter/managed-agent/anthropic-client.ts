@@ -8,8 +8,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { BetaManagedAgentsAgentToolset20260401Params, BetaManagedAgentsCustomToolParams } from "@anthropic-ai/sdk/resources/beta/agents/agents.js";
 import type { AnthropicClient, AgentData } from "../../core/port/anthropic-client.js";
-import type { AgentDefinition, ToolSpec } from "../../core/agent/definition.js";
-import { AGENT_TOOLSET_TYPE } from "../../core/agent/definition.js";
+import type { AgentDefinition, ToolSpec } from "../../kernel/agent-definition.js";
+import { AGENT_TOOLSET_TYPE } from "../../kernel/agent-definition.js";
 
 /**
  * Convert a core ToolSpec to the SDK's tool parameter shape.

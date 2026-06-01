@@ -4,7 +4,7 @@
  */
 import type Anthropic from "@anthropic-ai/sdk";
 import type { SessionClient, SessionUsage } from "../../core/port/session-client.js";
-import type { CustomToolHandler } from "../../core/tools/types.js";
+import type { CustomToolHandler } from "../../kernel/tool-types.js";
 import { pollUntilComplete } from "./completion.js";
 import { runSseStream } from "./sse-stream.js";
 import { createSession, sendEvents, retrieveSession, listEvents } from "./sdk/sessions.js";

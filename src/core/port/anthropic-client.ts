@@ -5,7 +5,7 @@
  * Only Agent CRUD operations are exposed here.
  * Session operations remain in SessionClient port.
  */
-import type { AgentDefinition } from "../agent/definition.js";
+import type { AgentDefinition } from "../../kernel/agent-definition.js";
 
 /**
  * Runtime record of a retrieved/created agent.

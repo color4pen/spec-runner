@@ -31,18 +31,15 @@
  */
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../core/port/agent-runner.js";
 import type { ModelUsage } from "../../core/port/model-usage.js";
-import type { AgentStep } from "../../core/step/types.js";
+import type { AgentStep } from "../../core/port/step-types.js";
 import type { SessionClient } from "../../core/port/session-client.js";
 import type { GitHubClient } from "../../core/port/github-client.js";
 import type { JobState, ErrorInfo } from "../../state/schema.js";
-import type { StepContext } from "../../core/types.js";
+import type { StepContext } from "../../core/port/step-context.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { BaseReportResult } from "../../core/port/report-result.js";
 import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
-import {
-  throwWrappedError,
-  attachStateAndRethrow,
-} from "../../core/step/executor-helpers.js";
+import { throwWrappedError, attachStateAndRethrow } from "../../core/port/error-helpers.js";
 import { getAgentId } from "../../config/getAgentId.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
 import { DEFAULT_POLL_TIMEOUT_MS } from "./completion.js";
@@ -62,7 +59,7 @@ import {
   sessionRequiresActionError,
 } from "../../errors.js";
 import { changeFolderPath } from "../../util/paths.js";
-import { STEP_NAMES } from "../../core/step/step-names.js";
+import { STEP_NAMES } from "../../kernel/step-names.js";
 
 /** Build git push instruction injected into managed agent initial messages (see Design D4). */
 function buildManagedGitPushInstruction(branch: string): string {

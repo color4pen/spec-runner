@@ -1,25 +1,8 @@
 import type { JobState } from "../../state/schema.js";
-import type { BaseReportResult } from "../port/report-result.js";
+import type { BaseReportResult } from "../../kernel/report-result.js";
 
-/**
- * All domain events emitted by the pipeline and step executor.
- * Design D6: EventBus reservation seat for v2 learning layer.
- */
-export type DomainEvent =
-  | "pipeline:start"
-  | "pipeline:complete"
-  | "pipeline:fail"
-  | "pipeline:iteration:start"
-  | "pipeline:iteration:verdict"
-  | "pipeline:iteration:exhausted"
-  | "pipeline:summary"
-  | "pipeline:cli-step"
-  | "step:start"
-  | "step:complete"
-  | "step:error"
-  | "step:progress"
-  | "verdict:parsed"
-  | "commit:push";
+export type { DomainEvent } from "../../kernel/event-types.js";
+import type { DomainEvent } from "../../kernel/event-types.js";
 
 /**
  * Payload types for each DomainEvent.

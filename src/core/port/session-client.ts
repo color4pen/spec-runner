@@ -1,4 +1,4 @@
-import type { CustomToolHandler } from "../tools/types.js";
+import type { CustomToolHandler } from "../../kernel/tool-types.js";
 
 /**
  * SDK-agnostic token usage for a completed session.

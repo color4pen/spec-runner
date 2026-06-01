@@ -20,7 +20,7 @@ import { Codex } from "@openai/codex-sdk";
 import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from "../../core/port/agent-runner.js";
-import type { StepContext } from "../../core/types.js";
+import type { StepContext } from "../../core/port/step-context.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import type { BaseReportResult, ReportToolSpec } from "../../core/port/report-result.js";

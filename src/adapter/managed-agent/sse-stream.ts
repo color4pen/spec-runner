@@ -18,7 +18,7 @@ import {
 import { assertBreakAfterCompletion } from "./completion.js";
 import { buildInitialMessage } from "../../prompts/design-system.js";
 import { stderrWrite, logVerbose } from "../../logger/stdout.js";
-import type { CustomToolContext, CustomToolHandler } from "../../core/tools/types.js";
+import type { CustomToolContext, CustomToolHandler } from "../../kernel/tool-types.js";
 
 export type TerminationReason =
   | "end_turn"
