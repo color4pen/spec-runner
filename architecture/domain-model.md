@@ -49,7 +49,7 @@
   - `awaiting-merge → archived` が正常完走の最終遷移（finish の 1-PR モデル）。`running → awaiting-resume` は異常終了 guard（exit-guard）が倒す checkpoint。
 - → `src/state/lifecycle.ts`（VALID_TRANSITIONS / TERMINAL_STATUSES / ACTIVE_STATUSES / transitionJob が正典）／ `src/state/schema.ts`（`JobStatus`。legacy の `success` は load 時に `awaiting-merge` へ remap）
 
-> **現状 divergence（target vs actual）**: 「status mutation は `transitionJob` 経由のみ」は **target であって未達**。`transitionJob` を経由せず `patch + persist` で status を直接書く raw 経路が複数現存する（`store.fail()` / `exit-guard` / signal-handler 等）。この単一 mutator 不変の機械強制は `model.md` §6 の歯（E1: arch test を core 全体へ拡張）へ委譲する。
+> **単一 mutator 不変**: `JobState.status` の変更は `transitionJob` 経由のみ。`patch + persist` での status 直書きは禁止（不正遷移を `VALID_TRANSITIONS` で弾き、status mutation を単一 mutator に集約）。この不変は `model.md` B-9 ＝ `tests/unit/architecture/core-invariants.test.ts` が機械強制する。
 
 ### StepRun / StepOutcome — 1 step の 1 実行
 ```ts

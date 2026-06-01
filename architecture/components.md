@@ -154,4 +154,4 @@ interface FollowUpPolicy { maxAttempts; buildPrompt(input): string }  // DEFAULT
 ## 使い方（write / review の入口）
 
 - **書く**: 新 step を足す → `Step`（AgentStep|CliStep）契約を実装。新 IO 先 → `core/port` に interface を足し adapter で実装（B-1）。型は domain-model.md。
-- **レビューする**: この責務・interface に沿っているか（判断レビュー）＋ 依存方向（B-1〜B-5、決定的レビュー＝歯）。詳細は `conformance.md`。
+- **レビューする**: この責務・interface に沿っているか（判断レビュー）＋ 依存方向（B-1〜B-9、決定的レビュー＝歯）。詳細は `conformance.md`。

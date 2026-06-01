@@ -14,10 +14,10 @@ trust root は、ループが構造的に届かない場所に固定して初め
 
 | ファイル | 粒度（View）| 内容 |
 |---|---|---|
-| **`model.md`** | 層・依存（Development）| 様式 / 層 / 許可された依存（DSM）/ B-1〜B-5 / divergence |
+| **`model.md`** | 層・依存（Development）| 様式 / 層 / 許可された依存（DSM）/ B-1〜B-9 |
 | **`components.md`** | コンポーネント（Logical / C4 Component）| 各コンポーネントの責務 ＋ 公開インターフェース ＋ 協調相手 |
 | **`domain-model.md`** | 型/データ（Logical / DDD）| Aggregate（JobState）/ Value Object（Verdict 等）/ 不変条件 |
-| **`conformance.md`** | 接続仕様 | write 注入内容 / review 観点 / 歯（B-1〜B-5）の assert 仕様＝**実装ハンドオフ** |
+| **`conformance.md`** | 接続仕様 | write 注入内容 / review 観点 / 歯（B-1〜B-9 + closure）の assert 仕様 |
 
 > 正確な signature/型は **コードが正典**（`src/core/port/*.ts`, `src/state/schema.ts` 等）。上記は陳腐化しない粒度（責務・契約の形・不変条件）まで。C4 Code level は生成/参照。
 
@@ -30,21 +30,17 @@ trust root は、ループが構造的に届かない場所に固定して初め
 | **決定記録** | `specrunner/adr/2026-05-31-structure-rulings.md` | 人間 | append-only |
 | **計測（reconcile）** | enforcement の**生成出力**（手書きしない）| 生成物 | — |
 
+> `architecture/divergence-status.md` は上記の authority ではなく **状況断面（snapshot・mutable）**。設計書をクリーンに保つため、現状の divergence・burn-down 履歴・配線状況をここに分離する。live な真実は歯（`arch-allowlist.ts` / `core-invariants.test.ts`）。
+
 ## 使い方
 
 - **コード/振る舞いを書く** → `model.md`（どこに）＋ `components.md`（何を実装）＋ `domain-model.md`（どの型）を読む。注入仕様は `conformance.md` 消費点1
-- **request 出力が構造に沿うか review** → 決定的＝歯（B-1〜B-5）/ 判断＝`conformance.md` 消費点2 の観点
+- **request 出力が構造に沿うか review** → 決定的＝歯（B-1〜B-9）/ 判断＝`conformance.md` 消費点2 の観点
 - **構造を変えたい** → 該当 doc を人間が編集（CODEOWNERS review）＋ 理由を ADR に追記
 
 ## 残りの作業（gated な次ステップ。本ディレクトリの外で行う）
 
-`model.md` §5/§6 の課題。**いずれも CODEOWNERS-gated**（無人 merge させない）:
-
-1. **E1 歯の core 全体拡張** — `tests/unit/architecture/` を `core/request` scoped から core 全体へ。dependency-cruiser 導入は任意（TS native）。B-1〜B-8（credential/出力 seam・runtime 分岐集約を含む）・単一 mutator（status 書きは `transitionJob` 経由のみ）・循環検出を機械化。併せて `tests/` 二重構造の整理
-2. **R1 core↔parser 循環の解消** — `ParsedRequest`/`ParsedRequestSections` を core/request→shared-kernel へ降格（★最初の一歩・最高 ROI）
-3. **R2 runtime の SDK 直 import 追い出し** — `src/core/runtime/local.ts:17` の生 SDK `query` を adapters へ
-4. **R3** — `step-names` を kernel へ降格 / `util` を真の leaf に
-5. **T1 trust 完成** — branch protection（GitHub 側設定）＋ `finish-respect-branch-protection`（別 draft）で無人 merge を gate に委ねる
+構造の定義・歯・divergence の burn-down は一巡している。残るのは **`conformance.md` の配線**（design/implementer への `architecture/` 注入・reviewer criteria への B-1〜B-9 追加）と **`tests/` 二重構造の整理**。**いずれも CODEOWNERS-gated**（無人 merge させない）。各項目の現状は `divergence-status.md` を参照。
 
 これらは `model.md` を消費する側であり、本ディレクトリの「形成」とは分離している。
 
