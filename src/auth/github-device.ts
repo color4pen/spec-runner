@@ -32,7 +32,6 @@ export async function requestDeviceCode(
     },
     body: new URLSearchParams({
       client_id: clientId,
-      scope: GITHUB_SCOPE,
     }).toString(),
   });
 

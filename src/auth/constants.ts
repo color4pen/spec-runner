@@ -1,14 +1,14 @@
 /**
- * SpecRunner 公式 GitHub OAuth App の client_id。
+ * SpecRunner 公式 GitHub App の client_id。
  *
  * GitHub Device Flow は client_secret を必要としないため、client_id は
  * CLI コードに固定で埋め込まれる（spec: github-device-flow-auth/spec.md）。
  * テスト用に SPECRUNNER_GITHUB_CLIENT_ID 環境変数で上書き可能。
  */
-const GITHUB_CLIENT_ID = "Ov23liiRKtu99i4njRSS";
+const GITHUB_CLIENT_ID = "Iv23liyDmS0r1qxXDewd";
 
 /**
- * GitHub OAuth App client_id を返す。
+ * GitHub App client_id を返す。
  *
  * SPECRUNNER_GITHUB_CLIENT_ID が設定されていればその値を使用する（テスト用）。
  * 未設定の場合は CLI に埋め込まれた client_id を返す（既定動作）。
