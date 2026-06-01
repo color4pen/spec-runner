@@ -683,3 +683,220 @@ describe("T-04 regression guard: new forbidden edge not in allowlist triggers de
   });
 
 });
+
+// ─── DSM closure: §3 全層 whitelist enforcement ───────────────────────────────
+
+/**
+ * Layer names as defined in architecture/model.md §2.
+ * "ext-sdk" is not a physical src/ layer but used as a target classification
+ * for @anthropic-ai/* and @openai/* imports.
+ */
+type LayerName =
+  | "composition-root"
+  | "domain"
+  | "ports"
+  | "adapters"
+  | "persistence"
+  | "shared-kernel"
+  | "leaf"
+  | "ext-sdk";
+
+/**
+ * Classify a src/ file path into its architectural layer (model.md §2).
+ * Uses longest-match prefix; more specific paths are listed first.
+ * Returns null for paths that cannot be classified (unrecognised src/ subdir).
+ */
+function classifyLayer(filePath: string): LayerName | null {
+  // composition-root (more specific core/ paths first)
+  if (filePath.startsWith("src/core/runtime/")) return "composition-root";
+  if (filePath.startsWith("src/cli/")) return "composition-root";
+  // ports (more specific than remaining core/)
+  if (filePath.startsWith("src/core/port/")) return "ports";
+  // domain (remaining core/)
+  if (filePath.startsWith("src/core/")) return "domain";
+  // adapters
+  if (filePath.startsWith("src/adapter/")) return "adapters";
+  if (filePath.startsWith("src/auth/")) return "adapters";
+  // persistence
+  if (filePath.startsWith("src/store/")) return "persistence";
+  // shared-kernel
+  if (filePath.startsWith("src/config/")) return "shared-kernel";
+  if (filePath.startsWith("src/state/")) return "shared-kernel";
+  if (filePath.startsWith("src/git/")) return "shared-kernel";
+  if (filePath.startsWith("src/parser/")) return "shared-kernel";
+  if (filePath.startsWith("src/prompts/")) return "shared-kernel";
+  if (filePath.startsWith("src/logger/")) return "shared-kernel";
+  if (filePath.startsWith("src/templates/")) return "shared-kernel";
+  if (filePath === "src/errors.ts" || filePath === "src/errors.js") return "shared-kernel";
+  // leaf
+  if (filePath.startsWith("src/util/")) return "leaf";
+  if (filePath.startsWith("src/kernel/")) return "leaf";
+  return null;
+}
+
+/**
+ * §3 DSM closure model: allowed import edges per source layer.
+ * Same-layer imports (— diagonal) are handled separately in scanImportEdges.
+ * "ext-sdk" is included for type completeness; no src/ file classifies as ext-sdk.
+ */
+const DSM_WHITELIST: Record<LayerName, Set<LayerName>> = {
+  "composition-root": new Set<LayerName>([
+    "domain",
+    "ports",
+    "adapters",
+    "persistence",
+    "shared-kernel",
+    "leaf",
+  ]),
+  domain: new Set<LayerName>(["ports", "persistence", "shared-kernel", "leaf"]),
+  ports: new Set<LayerName>(["shared-kernel", "leaf"]),
+  adapters: new Set<LayerName>(["ports", "shared-kernel", "leaf", "ext-sdk"]),
+  persistence: new Set<LayerName>(["shared-kernel", "leaf"]),
+  "shared-kernel": new Set<LayerName>(["shared-kernel", "leaf"]),
+  leaf: new Set<LayerName>(),
+  "ext-sdk": new Set<LayerName>(),
+};
+
+/** A forbidden import edge detected by DSM closure scan. */
+interface ForbiddenEdge {
+  source: GrepMatch;
+  sourceLayer: LayerName;
+  targetLayer: LayerName;
+}
+
+/**
+ * Scan all src/ import statements and return edges that violate the §3 DSM
+ * whitelist.  Same-layer imports (— diagonal) are always allowed.
+ *
+ * Only relative paths and external SDK imports (anthropic-ai / openai) are
+ * classified.  Node built-ins, zod, vitest, and other packages are skipped.
+ */
+function scanImportEdges(): ForbiddenEdge[] {
+  // Grep all double-quoted import-from statements in src/.
+  // No single-quoted imports exist in this codebase (confirmed by project lint).
+  const raw = grepE(`'from "'`, "src");
+  const matches = parseGrepOutput(raw);
+
+  // Exclude test files — production dependency violations only.
+  const candidates = matches.filter(
+    (m) => !m.file.includes("__tests__/") && !m.file.includes(".test.ts"),
+  );
+
+  const forbidden: ForbiddenEdge[] = [];
+
+  for (const match of candidates) {
+    // Classify the source file's layer.
+    const sourceLayer = classifyLayer(match.file);
+    if (sourceLayer === null) continue;
+
+    // Extract the import path from the line content.
+    const importMatch = match.content.match(/from\s+['"]([^'"]+)['"]/);
+    if (!importMatch) continue;
+    const importPath = importMatch[1];
+    if (!importPath) continue; // Regex group unmatched — skip.
+
+    let targetLayer: LayerName;
+
+    if (
+      importPath.startsWith("@anthropic-ai/") ||
+      importPath.startsWith("@openai/")
+    ) {
+      targetLayer = "ext-sdk";
+    } else if (importPath.startsWith("./") || importPath.startsWith("../")) {
+      // Resolve the relative path from the source file's directory.
+      const absSourceDir = path.dirname(path.join(ROOT, match.file));
+      const absResolved = path.resolve(absSourceDir, importPath);
+      const relPath = path.relative(ROOT, absResolved);
+
+      if (!relPath.startsWith("src/")) continue; // Outside src/ — skip.
+      const tl = classifyLayer(relPath);
+      if (tl === null) continue; // Unclassifiable target — skip.
+      targetLayer = tl;
+    } else {
+      // node:*, zod, vitest, and other npm packages — skip.
+      continue;
+    }
+
+    // Same-layer self-reference is always allowed (— in §3 matrix).
+    if (sourceLayer === targetLayer) continue;
+
+    // Check against the DSM whitelist.
+    if (!DSM_WHITELIST[sourceLayer].has(targetLayer)) {
+      forbidden.push({ source: match, sourceLayer, targetLayer });
+    }
+  }
+
+  return forbidden;
+}
+
+describe("DSM closure — §3 全層 whitelist enforcement", () => {
+  /**
+   * Verifies that the §3 DSM matrix is fully enforced across all src/ layers,
+   * including adapter/ and kernel/ (previously unscanned by B-1~B-9 tests).
+   *
+   * Current divergences are grandfather'd in ARCH_ALLOWLIST (invariant "DSM").
+   * New forbidden edges NOT in the allowlist will cause this test to fail —
+   * demonstrating the ratchet is one-directional (only shrinks via removal).
+   */
+  it("§3 whitelist に無い import edge は存在しない（allowlist 除外後）", () => {
+    const forbiddenEdges = scanImportEdges();
+    const forbiddenMatches = forbiddenEdges.map((e) => e.source);
+    const dsmEntries = ARCH_ALLOWLIST.filter((e) => e.invariant === "DSM");
+    // Liveness guard: scan must detect at least as many forbidden edges as the
+    // number of allowlisted DSM entries.  If classifyLayer or path.resolve
+    // regresses and returns 0 edges, this assertion catches the silent failure
+    // before filterViolations masks it with an empty violations list.
+    expect(forbiddenEdges.length).toBeGreaterThanOrEqual(dsmEntries.length);
+    const violations = filterViolations(forbiddenMatches, dsmEntries);
+    expect(violationLines(violations)).toEqual([]);
+  });
+
+  it("src/kernel/ は import ゼロ（leaf 相当）", () => {
+    // kernel/ is a newly established physical directory with an explicit
+    // "zero-import" principle.  No allowlist — strict assertion.
+    const raw = grepE(`'from "'`, "src/kernel");
+    const matches = parseGrepOutput(raw);
+    const candidates = matches.filter(
+      (m) => !m.file.includes("__tests__/") && !m.file.includes(".test.ts"),
+    );
+    expect(violationLines(candidates)).toEqual([]);
+  });
+});
+
+describe("DSM regression guard: new forbidden edge not in allowlist triggers detection", () => {
+  /**
+   * Verifies the DETECTION MECHANISM for DSM closure violations.
+   * Synthetic forbidden edges are injected to confirm that:
+   *   (a) Violations NOT in the DSM allowlist are correctly flagged.
+   *   (b) The ratchet applies to DSM the same way it applies to B-1/B-2/etc.
+   */
+
+  it("detects new forbidden adapter→domain import not in allowlist (DSM regression guard)", () => {
+    // Inject a synthetic adapter→domain edge that is NOT in the allowlist.
+    const syntheticEdge: GrepMatch = {
+      file: "src/adapter/claude-code/new-feature.ts",
+      line: 5,
+      content:
+        'import type { Pipeline } from "../../core/pipeline/types.js";',
+    };
+    const dsmEntries = ARCH_ALLOWLIST.filter((e) => e.invariant === "DSM");
+    const violations = filterViolations([syntheticEdge], dsmEntries);
+    // This file and pattern are NOT in the allowlist — must be detected.
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.file).toBe("src/adapter/claude-code/new-feature.ts");
+  });
+
+  it("detects new forbidden shared-kernel→domain import not in allowlist (DSM regression guard)", () => {
+    // Inject a synthetic shared-kernel→domain edge that is NOT in the allowlist.
+    const syntheticEdge: GrepMatch = {
+      file: "src/config/new-helper.ts",
+      line: 3,
+      content: 'import type { Step } from "../core/step/types.js";',
+    };
+    const dsmEntries = ARCH_ALLOWLIST.filter((e) => e.invariant === "DSM");
+    const violations = filterViolations([syntheticEdge], dsmEntries);
+    // This file and pattern are NOT in the allowlist — must be detected.
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.file).toBe("src/config/new-helper.ts");
+  });
+});
