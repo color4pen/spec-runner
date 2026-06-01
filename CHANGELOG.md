@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.5](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.4...specrunner-v0.1.5) (2026-06-01)
+
+
+### Features
+
+* closure の上向き edge（B-3/B-4）を ratchet で歯付けし R1/R3/R4 を凍結する ([#483](https://github.com/color4pen/spec-runner/issues/483)) ([fbdd23e](https://github.com/color4pen/spec-runner/commit/fbdd23e9a8808806501562e620e94162f085d202))
+* job-state-store spec の JobStatus 状態機械をコード／構造 authority に同期する ([#480](https://github.com/color4pen/spec-runner/issues/480)) ([ea6d130](https://github.com/color4pen/spec-runner/commit/ea6d13023752dae6bb9f067403a6fcdac1f86946))
+* アーキ構造不変条件（B-1〜B-8 + closure）を core 全体に ratchet 方式で歯付けする ([#482](https://github.com/color4pen/spec-runner/issues/482)) ([a40dbe8](https://github.com/color4pen/spec-runner/commit/a40dbe874e3641a81db69ab32f48ece39e6f1206))
+
 ## [0.1.4](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.3...specrunner-v0.1.4) (2026-05-29)
 
 
