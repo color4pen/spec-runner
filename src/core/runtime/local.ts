@@ -18,6 +18,7 @@ import { createWorktreeManager } from "../worktree/manager.js";
 import { spawnCommand } from "../../util/spawn.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { JobStateStore } from "../../store/job-state-store.js";
+import { transitionJob } from "../../state/lifecycle.js";
 import { changeFolderPath } from "../../util/paths.js";
 import {
   copyRulesToChangeFolder,
@@ -390,17 +391,19 @@ export class LocalRuntime implements RuntimeStrategy {
       try {
         const store = new JobStateStore(jobId, cwd);
         const current = await store.load();
-        await store.persist({
-          ...current,
-          status: "awaiting-resume" as const,
-          pid: null,
-          resumePoint: {
-            step: startStep as StepName,
-            reason: "Interrupted by signal",
-            iterationsExhausted: 0,
+        const { state: updated } = transitionJob(current as JobState, "awaiting-resume", {
+          trigger: "signal-handler",
+          reason: "Interrupted by signal",
+          patch: {
+            pid: null,
+            resumePoint: {
+              step: startStep as StepName,
+              reason: "Interrupted by signal",
+              iterationsExhausted: 0,
+            },
           },
-          updatedAt: new Date().toISOString(),
-        } as JobState);
+        });
+        await store.persist(updated);
       } catch {
         // Best-effort persist; state file (layer 2) handles residuals
       }

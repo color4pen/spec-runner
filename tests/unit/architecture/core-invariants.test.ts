@@ -682,20 +682,4 @@ describe("T-04 regression guard: new forbidden edge not in allowlist triggers de
     expect(first?.file).toBe("src/core/command/new-feature.ts");
   });
 
-  it("does not flag status writes that are correctly allowlisted (B-9 allowlist suppression)", () => {
-    // Simulate the known B-9 bypass in job-state-store.ts (B9-store-fail) that is already allowlisted.
-    const allowlistedMatch: GrepMatch[] = [
-      {
-        file: "src/store/job-state-store.ts",
-        line: 249,
-        content: '      status: "failed" as JobStatus,',
-      },
-    ];
-
-    const b9Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-9");
-    const violations = filterViolations(allowlistedMatch, b9Entries);
-
-    // The known violation IS in the allowlist — it must be suppressed.
-    expect(violations).toHaveLength(0);
-  });
 });

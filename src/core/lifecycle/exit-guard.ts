@@ -1,4 +1,5 @@
 import { JobStateStore } from "../../store/job-state-store.js";
+import { transitionJob } from "../../state/lifecycle.js";
 import { stderrWrite } from "../../logger/stdout.js";
 
 /**
@@ -19,11 +20,11 @@ export function createExitGuardHandler(repoRoot: string): () => void {
           try {
             stderrWrite(`[specrunner] warn: process exiting with running job ${state.jobId}, transitioning to awaiting-resume`);
             const store = new JobStateStore(state.jobId, repoRoot);
-            await store.persist({
-              ...state,
-              status: "awaiting-resume",
-              updatedAt: new Date().toISOString(),
+            const { state: updated } = transitionJob(state, "awaiting-resume", {
+              trigger: "exit-guard",
+              reason: `process exiting with running job ${state.jobId}`,
             });
+            await store.persist(updated);
           } catch {
             // best-effort — ignore per-job errors
           }

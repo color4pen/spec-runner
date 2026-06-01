@@ -4,7 +4,8 @@ import { randomUUID } from "node:crypto";
 import { getJobStatePath, getJobsDir } from "../util/xdg.js";
 import { atomicWriteJson } from "../util/atomic-write.js";
 import { appendHistoryEntry, validateJobState } from "../state/schema.js";
-import type { JobState, StepRun, ErrorInfo, HistoryEntry, JobStatus, RequestInfo, RepositoryInfo } from "../state/schema.js";
+import type { JobState, StepRun, ErrorInfo, HistoryEntry, RequestInfo, RepositoryInfo } from "../state/schema.js";
+import { transitionJob } from "../state/lifecycle.js";
 import { stderrWrite } from "../logger/stdout.js";
 import { SpecRunnerError, ERROR_CODES, ambiguousJobIdError } from "../errors.js";
 
@@ -244,13 +245,11 @@ export class JobStateStore {
     errorInfo: ErrorInfo,
     step?: string,
   ): Promise<JobState> {
-    const updated: JobState = {
-      ...state,
-      status: "failed" as JobStatus,
-      updatedAt: new Date().toISOString(),
-      error: errorInfo,
-      step: step ?? state.step,
-    };
+    const { state: updated } = transitionJob(state, "failed", {
+      trigger: "store-fail",
+      reason: errorInfo.message,
+      patch: { error: errorInfo, step: step ?? state.step },
+    });
     await this.persist(updated);
     return updated;
   }
