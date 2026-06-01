@@ -4,13 +4,13 @@
  */
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import type { SpawnFn } from "./spawn.js";
-import { rulesDestPath, usageJsonPath } from "./paths.js";
-import { RULES_MD_CONTENT } from "../prompts/rules.js";
-import { stderrWrite } from "../logger/stdout.js";
-import { SpecRunnerError, ERROR_CODES } from "../errors.js";
-import { getOutputTemplates } from "../templates/step-output-templates.js";
-import type { JobState } from "../state/schema.js";
+import type { SpawnFn } from "../../util/spawn.js";
+import { rulesDestPath, usageJsonPath } from "../../util/paths.js";
+import { RULES_MD_CONTENT } from "../../prompts/rules.js";
+import { stderrWrite } from "../../logger/stdout.js";
+import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
+import { getOutputTemplates } from "../../templates/step-output-templates.js";
+import type { JobState } from "../../state/schema.js";
 
 /**
  * Rejects a file path if it is a symbolic link.

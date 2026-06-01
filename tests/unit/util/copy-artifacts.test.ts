@@ -15,7 +15,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { rejectSymlink, copyDraftUsageToChangeFolder } from "../../../src/util/copy-artifacts.js";
+import { rejectSymlink, copyDraftUsageToChangeFolder } from "../../../src/core/artifact/copy-artifacts.js";
 import { SpecRunnerError, ERROR_CODES, EXIT_CODE } from "../../../src/errors.js";
 
 let tempDir: string;

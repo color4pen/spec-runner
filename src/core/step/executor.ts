@@ -25,7 +25,7 @@ import { buildRulesFollowUpPrompts } from "./rules-followup-prompts.js";
 import { gitExec, defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
 import { FIXER_STEP_NAMES, getPreviousSessionId } from "./fixer-helpers.js";
 import { commitAndPush, type CommitPushInfra } from "./commit-push.js";
-import { writeOutputTemplates, cleanupOutputTemplates } from "../../util/copy-artifacts.js";
+import { writeOutputTemplates, cleanupOutputTemplates } from "../artifact/copy-artifacts.js";
 import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
 import type { JudgeReportResult, ProducerReportResult } from "../../core/port/report-result.js";
 

@@ -6,7 +6,8 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { slugify, checkSlugCollision } from "../../../src/util/slugify.js";
+import { slugify } from "../../../src/util/slugify.js";
+import { checkSlugCollision } from "../../../src/core/request/store.js";
 
 describe("slugify", () => {
   it("TC-SL-001: converts English description to kebab-case", () => {

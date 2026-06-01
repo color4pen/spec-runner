@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { writeOutputTemplates, cleanupOutputTemplates } from "../../src/util/copy-artifacts.js";
+import { writeOutputTemplates, cleanupOutputTemplates } from "../../src/core/artifact/copy-artifacts.js";
 import type { JobState } from "../../src/state/schema.js";
 
 function makeState(overrides: Partial<JobState> = {}): JobState {

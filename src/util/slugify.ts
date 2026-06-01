@@ -3,8 +3,6 @@
  * Used for deriving request slugs from natural-language descriptions.
  */
 
-export { checkSlugCollision } from "../core/request/store.js";
-
 /**
  * Convert a description string to a kebab-case slug.
  *
