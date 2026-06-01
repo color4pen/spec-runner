@@ -27,10 +27,30 @@ trust root は、ループが構造的に届かない場所に固定して初め
 |---|---|---|---|
 | **定義（SoT）** | `architecture/{model,components,domain-model,conformance}.md` | 人間 | out-of-loop（CODEOWNERS）|
 | **歯（enforcement）** | `tests/unit/architecture/` ＋（将来）`.dependency-cruiser.cjs` | code（定義から derive）| in-loop だが CODEOWNERS-gated |
-| **決定記録** | `specrunner/adr/2026-05-31-structure-rulings.md` | 人間 | append-only |
+| **決定記録** | `architecture/adr/`（構造 ADR）| 人間 | out-of-loop（CODEOWNERS）・append-only |
 | **計測（reconcile）** | enforcement の**生成出力**（手書きしない）| 生成物 | — |
 
 > `architecture/divergence-status.md` は上記の authority ではなく **状況断面（snapshot・mutable）**。設計書をクリーンに保つため、現状の divergence・burn-down 履歴・配線状況をここに分離する。live な真実は歯（`arch-allowlist.ts` / `core-invariants.test.ts`）。
+
+### ADR の書き方（`architecture/adr/`）
+
+構造判断の ADR は `architecture/adr/` に置く。`architecture/` が out-of-loop なのと同じ理由で、**pipeline が自分を縛る構造の「根拠」まで自分で書き換えられない**ようにするため。`/architecture/` は CODEOWNERS で覆われているので本ディレクトリも自動的に人間 review 必須。
+
+**何を書くか（構造のみ）**: 層の割り当て / 依存方向（DSM の edge）/ port・seam の境界 / 不変条件（B-x）/ 型の所在 / ADR governance。「常に保つ形」を書く。
+
+**何を書かないか（振る舞いは別 authority）**: メソッド・step が「何をするか」＝ アルゴリズム / 解決順 / 手順 / routing / product 選択 / 実装の段階計画。これらは spec（`specrunner/specs/`）と request、または pipeline 振る舞いの ADR（`specrunner/adr/`）に置き、構造 ADR からは**参照に留める**。
+
+**litmus test**: 「層・依存・境界・不変条件の話か？」→ YES なら構造 ADR。「関数/step が何をするかの話か？」→ YES なら spec/behavior 側。迷ったら architecture には書かない。
+
+**置き場の使い分け**:
+- `architecture/adr/` … 構造判断（out-of-loop）。
+- `specrunner/adr/` … pipeline の振る舞い・実装判断（in-loop）。2026-05-31 の `structure-rulings` ADR も本ディレクトリ新設前のものとしてここに残る（移設しない）。
+
+**フォーマット**（既存様式に合わせる）:
+- ファイル名: `YYYY-MM-DD-<kebab-slug>.md`
+- 見出し: `# ADR-YYYYMMDD: <一行タイトル>`
+- 節: `## ステータス`（proposed / accepted）→ `## コンテキスト` → `## 決定`（D1, D2… の ruling 単位）→ `## 構造的含意`（層 / edge / 不変条件への影響）→ `## 検討した代替案` → `## 結果`（Positive / Negative）
+- 不変条件（B-x）を新設・変更する ADR は、歯（`tests/unit/architecture/core-invariants.test.ts`）と**同時に** `model.md` §4 へ昇格する。歯を後追いにする場合は ADR 内で「提案・ratify 待ち」と明記する（歯の無い invariant を §4 に置かない）。
 
 ## 使い方
 
