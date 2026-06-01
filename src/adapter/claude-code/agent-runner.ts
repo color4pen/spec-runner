@@ -104,6 +104,9 @@ export type QueryFn = (params: {
   options?: Record<string, unknown>;
 }) => AsyncGenerator<unknown, void>;
 
+/** Default QueryFn backed by the Claude Agent SDK. Exported for injection into composition-root (local.ts). */
+export const defaultQueryFn: QueryFn = sdkQuery as unknown as QueryFn;
+
 export type CreateMcpServerFn = typeof createSdkMcpServer;
 
 export interface ClaudeCodeRunnerDeps {

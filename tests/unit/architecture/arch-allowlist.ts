@@ -85,25 +85,6 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
       "Documented for completeness — not caught by B-1 test (runtime/ excluded from domain scope).",
   },
 
-  // ── B-2: external SDK types must not leak outside adapter/ ────────────────
-  //
-  // core/runtime/local.ts imports the claude-agent-sdk `query` function
-  // directly. This violates B-2 (SDK should be confined to adapter/).
-  // However, because runtime/ = composition-root (§2), this is a lower-
-  // severity B-2 instance than if it were in pure domain code.
-  //
-  // Burn-down: R2 (runtime-sdk-to-adapter) — move the SDK import to
-  // adapter/claude-code or a new adapter/, inject via port.
-  {
-    file: "src/core/runtime/local.ts",
-    pattern: "@anthropic-ai/claude-agent-sdk",
-    invariant: "B-2",
-    tracking: "R2",
-    comment:
-      "local.ts imports @anthropic-ai/claude-agent-sdk `query` directly (line 17). " +
-      "Must be moved to adapter/ once the SDK seam is extracted (R2 burn-down).",
-  },
-
   // ── B-6: process.env must pass through stripSecrets seam ─────────────────
   //
   // B-6 (model.md §4): subprocess / SDK query env must go through the

@@ -12,9 +12,8 @@ import type { PipelineDeps } from "../types.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { JobState, StepName } from "../../state/schema.js";
-import { createClaudeCodeRunner, type QueryFn } from "../../adapter/claude-code/agent-runner.js";
+import { createClaudeCodeRunner, defaultQueryFn, type QueryFn } from "../../adapter/claude-code/agent-runner.js";
 import { DispatchingAgentRunner } from "../../adapter/dispatching/agent-runner.js";
-import { query as sdkQuery } from "@anthropic-ai/claude-agent-sdk";
 import { createWorktreeManager } from "../worktree/manager.js";
 import { spawnCommand } from "../../util/spawn.js";
 import type { SpawnFn } from "../../util/spawn.js";
@@ -77,7 +76,7 @@ export class LocalRuntime implements RuntimeStrategy {
     this.repo = opts.repo ?? "";
     this.manager = opts.manager ?? createWorktreeManager();
     this.spawnFn = opts.spawnFn ?? spawnCommand;
-    this.queryFn = opts.queryFn ?? (sdkQuery as unknown as QueryFn);
+    this.queryFn = opts.queryFn ?? defaultQueryFn;
   }
 
   /**
