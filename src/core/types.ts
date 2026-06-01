@@ -6,6 +6,7 @@ import type { ParsedRequest } from "../parser/request-md.js";
 import type { DynamicContext } from "../git/dynamic-context.js";
 import type { SpawnFn } from "../util/spawn.js";
 import type { JobStateStore } from "../store/job-state-store.js";
+import type { RuntimeStrategy } from "./runtime/strategy.js";
 
 /**
  * Minimal context required by Step methods (buildMessage, resultFilePath, parseResult).
@@ -96,4 +97,10 @@ export interface PipelineDeps extends StepContext {
    * Optional for backward compatibility with existing tests.
    */
   repoRoot?: string;
+  /**
+   * Runtime strategy for step artifact lifecycle delegation (B-8 seam).
+   * Injected by RuntimeStrategy.buildDeps() so executor stays runtime-agnostic.
+   * Optional for backward compatibility with existing tests that don't inject it.
+   */
+  runtimeStrategy?: RuntimeStrategy;
 }

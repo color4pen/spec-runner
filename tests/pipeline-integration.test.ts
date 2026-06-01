@@ -11,7 +11,16 @@ import { verificationResultPath, prCreateResultPath } from "../src/util/paths.js
 import type { AgentRunContext, AgentRunResult } from "../src/core/port/agent-runner.js";
 import type { DynamicContext } from "../src/git/dynamic-context.js";
 import type { SpawnFn } from "../src/util/spawn.js";
+import { gitExec } from "../src/util/git-exec.js";
 import type { SpawnFn as GitSpawnFn } from "../src/util/git-exec.js";
+import type { RuntimeStrategy } from "../src/core/runtime/strategy.js";
+import type { AgentStep } from "../src/core/step/types.js";
+import type { JobState } from "../src/state/schema.js";
+import type { PipelineDeps } from "../src/core/types.js";
+import type { AgentRunner } from "../src/core/port/agent-runner.js";
+import { commitAndPush } from "../src/core/step/commit-push.js";
+import type { CommitPushInfra } from "../src/core/step/commit-push.js";
+import { cleanupOutputTemplates } from "../src/core/artifact/copy-artifacts.js";
 import { JobStateStore } from "../src/store/job-state-store.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
 import { EventBus } from "../src/core/event/event-bus.js";
@@ -108,6 +117,43 @@ afterEach(async () => {
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
+
+/**
+ * Build a minimal RuntimeStrategy that delegates git operations to the test's
+ * gitSpawnFn (synchronous ChildProcess-based, from git-exec.ts). Mirrors
+ * LocalRuntime semantics without requiring a real worktree.
+ */
+function makeTestRuntimeStrategy(spawnFn: GitSpawnFn): RuntimeStrategy {
+  return {
+    async *query() {},
+    createAgentRunner(): AgentRunner {
+      return {
+        async run() {
+          return { completionReason: "success" as const, resultContent: null, toolResult: null, followUpAttempts: 0 };
+        },
+      };
+    },
+    async setupWorkspace() { return { cwd: "" }; },
+    buildDeps() { return {} as PipelineDeps; },
+    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
+    async teardown() {},
+    async captureHeadSha(cwd: string): Promise<string | null> {
+      return gitExec(spawnFn, cwd, ["rev-parse", "HEAD"]);
+    },
+    async prepareStepArtifacts(): Promise<void> { /* no-op */ },
+    async finalizeStepArtifacts(
+      step: AgentStep,
+      state: JobState,
+      deps: PipelineDeps,
+      headBeforeStep: string | null,
+      infra: CommitPushInfra,
+    ): Promise<void> {
+      const cwd = deps.cwd ?? process.cwd();
+      await cleanupOutputTemplates(cwd, deps.slug, step.name, state);
+      await commitAndPush(step, state, deps, headBeforeStep, infra);
+    },
+  };
+}
 
 async function makeJobState() {
   return JobStateStore.create(tempDir, {
@@ -1865,6 +1911,7 @@ describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      runtimeStrategy: makeTestRuntimeStrategy(gitSpawnFn),
     });
 
     // Implementer must have completed (no halt)
@@ -1989,6 +2036,7 @@ describe("TC-AUTH-INT-01: implementer stages authority spec + delta spec → war
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      runtimeStrategy: makeTestRuntimeStrategy(gitSpawnFn),
     });
 
     // Pipeline must NOT halt — warning behavior: pipeline continues
@@ -2112,6 +2160,7 @@ describe("TC-AUTH-INT-02: implementer stages delta spec only → pipeline contin
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      runtimeStrategy: makeTestRuntimeStrategy(gitSpawnFn),
     });
 
     // Implementer completed (no halt)

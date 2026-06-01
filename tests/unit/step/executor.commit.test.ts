@@ -21,9 +21,14 @@ import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
+import type { RuntimeStrategy } from "../../../src/core/runtime/strategy.js";
 import type { SpawnFn } from "../../../src/util/git-exec.js";
+import { gitExec } from "../../../src/util/git-exec.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import type { SpawnFn as PipelineSpawnFn } from "../../../src/util/spawn.js";
+import { commitAndPush } from "../../../src/core/step/commit-push.js";
+import type { CommitPushInfra } from "../../../src/core/step/commit-push.js";
+import { cleanupOutputTemplates } from "../../../src/core/artifact/copy-artifacts.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test lifecycle
@@ -54,6 +59,49 @@ afterEach(async () => {
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Build a minimal RuntimeStrategy mock that delegates git operations to the
+ * test's spawnFn (from git-exec.ts). This mirrors what LocalRuntime does at
+ * runtime, but uses the test's injectable spawnFn so the test retains control
+ * over git responses.
+ */
+function makeTestRuntimeStrategy(spawnFn: SpawnFn): RuntimeStrategy {
+  return {
+    async *query() {},
+    createAgentRunner(): AgentRunner {
+      return {
+        async run(): Promise<AgentRunResult> {
+          return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
+        },
+      };
+    },
+    async setupWorkspace() { return { cwd: "" }; },
+    buildDeps() { return {} as PipelineDeps; },
+    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
+    async teardown() {},
+
+    // Step artifact lifecycle: use test spawnFn for git operations.
+    async captureHeadSha(cwd: string): Promise<string | null> {
+      return gitExec(spawnFn, cwd, ["rev-parse", "HEAD"]);
+    },
+    async prepareStepArtifacts(): Promise<void> {
+      // no-op: tests don't exercise output template file writes
+    },
+    async finalizeStepArtifacts(
+      step: AgentStep,
+      state: JobState,
+      deps: PipelineDeps,
+      headBeforeStep: string | null,
+      infra: CommitPushInfra,
+    ): Promise<void> {
+      // Mirrors LocalRuntime.finalizeStepArtifacts but without logPipelineDiag
+      const cwd = deps.cwd ?? process.cwd();
+      await cleanupOutputTemplates(cwd, deps.slug, step.name, state);
+      await commitAndPush(step, state, deps, headBeforeStep, infra);
+    },
+  };
+}
+
 async function seedJobState(jobId: string, state: JobState): Promise<void> {
   const jobsDir = path.join(tempDir, "specrunner", "jobs");
   await fs.mkdir(jobsDir, { recursive: true });
@@ -78,7 +126,7 @@ function makeJobState(jobId: string, branch = "feat/test-slug"): JobState {
   };
 }
 
-function makeLocalDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
+function makeLocalDeps(overrides: Partial<PipelineDeps> = {}, gitSpawnFn?: SpawnFn): PipelineDeps {
   return {
     config: {
       version: 1,
@@ -109,6 +157,7 @@ function makeLocalDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     owner: "user",
     repo: "repo",
     spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as PipelineSpawnFn,
+    runtimeStrategy: gitSpawnFn ? makeTestRuntimeStrategy(gitSpawnFn) : undefined,
     ...overrides,
     storeFactory: overrides.storeFactory ?? makeStoreFactory(tempDir),
   };
@@ -254,7 +303,7 @@ describe("TC-CAP-NEW-001: staged changes → commit + push (requiresCommit:true,
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const step = makeAgentStep({ name: "implementer" });
-    const result = await executor.execute(step, state, makeLocalDeps());
+    const result = await executor.execute(step, state, makeLocalDeps({}, spawnFn));
     expect(result).toBeDefined();
 
     const subcommands = calls.map((c) => c.args[0]);
@@ -292,7 +341,7 @@ describe("TC-CAP-NEW-002: staged 0 + HEAD no advance → silent skip (no NO_COMM
 
     const step = makeAgentStep({ name: "implementer" });
     // T-05: requiresCommit guard removed — no longer throws NO_COMMIT_DETECTED
-    const result = await executor.execute(step, state, makeLocalDeps());
+    const result = await executor.execute(step, state, makeLocalDeps({}, spawnFn));
     expect(result).toBeDefined();
 
     const subcommands = calls.map((c) => c.args[0]);
@@ -328,7 +377,7 @@ describe("TC-CAP-NEW-003: staged 0 + HEAD advance + requiresCommit:true → push
     const step = makeAgentStep({ name: "implementer" });
 
     // Must NOT throw
-    const result = await executor.execute(step, state, makeLocalDeps());
+    const result = await executor.execute(step, state, makeLocalDeps({}, spawnFn));
     expect(result).toBeDefined();
 
     const subcommands = calls.map((c) => c.args[0]);
@@ -367,7 +416,7 @@ describe("TC-CAP-NEW-004: staged changes + HEAD advance → commit staged + push
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const step = makeAgentStep({ name: "implementer" });
-    const result = await executor.execute(step, state, makeLocalDeps());
+    const result = await executor.execute(step, state, makeLocalDeps({}, spawnFn));
     expect(result).toBeDefined();
 
     const subcommands = calls.map((c) => c.args[0]);
@@ -404,7 +453,7 @@ describe("TC-CAP-NEW-005: staged 0 + HEAD no advance + requiresCommit:false → 
 
     // requiresCommit omitted (falsy)
     const step = makeAgentStep({ name: "spec-review" });
-    const result = await executor.execute(step, state, makeLocalDeps());
+    const result = await executor.execute(step, state, makeLocalDeps({}, spawnFn));
     expect(result).toBeDefined();
 
     const subcommands = calls.map((c) => c.args[0]);
@@ -442,7 +491,7 @@ describe("TC-CAP-NEW-006: staged 0 + HEAD advance → push only (requiresCommit 
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn, noopSleep);
 
     const step = makeAgentStep({ name: "spec-review" });
-    const result = await executor.execute(step, state, makeLocalDeps());
+    const result = await executor.execute(step, state, makeLocalDeps({}, spawnFn));
     expect(result).toBeDefined();
 
     const subcommands = calls.map((c) => c.args[0]);
@@ -486,7 +535,7 @@ describe("TC-CAP-NEW-007: agent self-commit detected → detection message writt
     });
 
     const step = makeAgentStep({ name: "implementer" });
-    await executor.execute(step, state, makeLocalDeps());
+    await executor.execute(step, state, makeLocalDeps({}, spawnFn));
 
     const combined = stderrMessages.join("");
     expect(combined).toContain("Detected agent-authored commit(s) since step start");
@@ -524,7 +573,7 @@ describe("TC-CAP-NEW-008: commit:push event emitted after push-only path", () =>
     });
 
     const step = makeAgentStep({ name: "implementer" });
-    await executor.execute(step, state, makeLocalDeps());
+    await executor.execute(step, state, makeLocalDeps({}, spawnFn));
 
     expect(emittedEvents.length).toBe(1);
     expect(emittedEvents[0]).toMatchObject({
@@ -567,7 +616,7 @@ describe("TC-AUTH-01: staged authority spec → warning to stderr, commit contin
 
     const step = makeAgentStep({ name: "implementer" });
     // Must NOT throw
-    const result = await executor.execute(step, state, makeLocalDeps());
+    const result = await executor.execute(step, state, makeLocalDeps({}, spawnFn));
     expect(result).toBeDefined();
 
     // Warning must be written to stderr
@@ -609,7 +658,7 @@ describe("TC-AUTH-02: staged delta spec only → normal commit + push", () => {
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const step = makeAgentStep({ name: "implementer" });
-    const result = await executor.execute(step, state, makeLocalDeps());
+    const result = await executor.execute(step, state, makeLocalDeps({}, spawnFn));
     expect(result).toBeDefined();
 
     const subcommands = calls.map((c) => c.args[0]);
@@ -650,7 +699,7 @@ describe("TC-AUTH-03: staged authority + src → warning lists only authority pa
     });
 
     const step = makeAgentStep({ name: "implementer" });
-    const result = await executor.execute(step, state, makeLocalDeps());
+    const result = await executor.execute(step, state, makeLocalDeps({}, spawnFn));
     expect(result).toBeDefined();
 
     const combined = stderrMessages.join("");
@@ -697,7 +746,7 @@ describe("TC-AUTH-04: agent self-commit with authority spec in HEAD diff → war
 
     const step = makeAgentStep({ name: "implementer" });
     // Must NOT throw
-    const result = await executor.execute(step, state, makeLocalDeps());
+    const result = await executor.execute(step, state, makeLocalDeps({}, spawnFn));
     expect(result).toBeDefined();
 
     // Warning must be written to stderr
@@ -738,7 +787,7 @@ describe("TC-AUTH-05: normal step (no authority spec) — existing behavior unch
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const step = makeAgentStep({ name: "implementer" });
-    const result = await executor.execute(step, state, makeLocalDeps());
+    const result = await executor.execute(step, state, makeLocalDeps({}, spawnFn));
     expect(result).toBeDefined();
 
     const subcommands = calls.map((c) => c.args[0]);
@@ -773,7 +822,7 @@ describe("TC-AUTH-06: agent self-commit with delta spec only in HEAD diff → no
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn, noopSleep);
 
     const step = makeAgentStep({ name: "implementer" });
-    const result = await executor.execute(step, state, makeLocalDeps());
+    const result = await executor.execute(step, state, makeLocalDeps({}, spawnFn));
     expect(result).toBeDefined();
 
     const subcommands = calls.map((c) => c.args[0]);

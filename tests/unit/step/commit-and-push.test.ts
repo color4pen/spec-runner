@@ -21,11 +21,16 @@ import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
+import type { RuntimeStrategy } from "../../../src/core/runtime/strategy.js";
 import type { SpawnFn } from "../../../src/util/git-exec.js";
+import { gitExec } from "../../../src/util/git-exec.js";
 import type { SpawnFn as PipelineSpawnFn } from "../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import type { SpawnOptions, ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
+import { commitAndPush } from "../../../src/core/step/commit-push.js";
+import type { CommitPushInfra } from "../../../src/core/step/commit-push.js";
+import { cleanupOutputTemplates } from "../../../src/core/artifact/copy-artifacts.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -76,7 +81,40 @@ function makeJobState(jobId: string, branch = "feat/test-slug"): JobState {
   };
 }
 
-function makeLocalDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
+/** Minimal RuntimeStrategy mock that uses the test's git spawnFn for artifact lifecycle. */
+function makeTestRuntimeStrategy(spawnFn: SpawnFn): RuntimeStrategy {
+  return {
+    async *query() {},
+    createAgentRunner(): AgentRunner {
+      return {
+        async run(): Promise<AgentRunResult> {
+          return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
+        },
+      };
+    },
+    async setupWorkspace() { return { cwd: "" }; },
+    buildDeps() { return {} as PipelineDeps; },
+    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
+    async teardown() {},
+    async captureHeadSha(cwd: string): Promise<string | null> {
+      return gitExec(spawnFn, cwd, ["rev-parse", "HEAD"]);
+    },
+    async prepareStepArtifacts(): Promise<void> {},
+    async finalizeStepArtifacts(
+      step: AgentStep,
+      state: JobState,
+      deps: PipelineDeps,
+      headBeforeStep: string | null,
+      infra: CommitPushInfra,
+    ): Promise<void> {
+      const cwd = deps.cwd ?? process.cwd();
+      await cleanupOutputTemplates(cwd, deps.slug, step.name, state);
+      await commitAndPush(step, state, deps, headBeforeStep, infra);
+    },
+  };
+}
+
+function makeLocalDeps(overrides: Partial<PipelineDeps> = {}, gitSpawnFn?: SpawnFn): PipelineDeps {
   return {
     config: {
       version: 1,
@@ -107,6 +145,7 @@ function makeLocalDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     owner: "user",
     repo: "repo",
     spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as PipelineSpawnFn,
+    runtimeStrategy: gitSpawnFn ? makeTestRuntimeStrategy(gitSpawnFn) : undefined,
     ...overrides,
     storeFactory: overrides.storeFactory ?? makeStoreFactory(tempDir),
   };
@@ -250,7 +289,7 @@ describe("TC-CAP-001: commitAndPush — correct git call sequence", () => {
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const step = makeAgentStep({ name: "implementer" });
-    const deps = makeLocalDeps();
+    const deps = makeLocalDeps({}, spawnFn);
     await executor.execute(step, state, deps);
 
     const gitSubcommands = calls.map((c) => c.args[0]);
@@ -294,7 +333,7 @@ describe("TC-CAP-002: no staged changes → silent skip", () => {
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const step = makeAgentStep({ name: "implementer" });
-    const deps = makeLocalDeps();
+    const deps = makeLocalDeps({}, spawnFn);
 
     await expect(executor.execute(step, state, deps)).resolves.toBeDefined();
 
@@ -328,7 +367,7 @@ describe("TC-CAP-003: requiresCommit:false + no staged changes → silent skip",
 
     // requiresCommit omitted (falsy)
     const step = makeAgentStep({ name: "spec-review" });
-    const deps = makeLocalDeps();
+    const deps = makeLocalDeps({}, spawnFn);
 
     await expect(executor.execute(step, state, deps)).resolves.toBeDefined();
 
@@ -369,7 +408,7 @@ describe("TC-CAP-004: push failure → retry once → success on second push", (
     const result = await executor.execute(
       makeAgentStep({ name: "implementer" }),
       state,
-      makeLocalDeps(),
+      makeLocalDeps({}, overriddenSpawnFn),
     );
 
     expect(result).toBeDefined();
@@ -410,7 +449,7 @@ describe("TC-CAP-005: push failure → retry → second failure → PUSH_FAILED"
       executor.execute(
         makeAgentStep({ name: "implementer" }),
         state,
-        makeLocalDeps(),
+        makeLocalDeps({}, overriddenSpawnFn),
       ),
     ).rejects.toMatchObject({
       code: "PUSH_FAILED",
@@ -445,10 +484,10 @@ describe("TC-CAP-006: commit message format", () => {
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const step = makeAgentStep({ name: "build-fixer" });
-    const deps = makeLocalDeps({ slug: "my-test-slug" });
+    const deps = makeLocalDeps({ slug: "my-test-slug" }, spawnFn);
     state.steps = {};
 
-    await executor.execute(step, state, makeLocalDeps({ slug: "my-test-slug" }));
+    await executor.execute(step, state, makeLocalDeps({ slug: "my-test-slug" }, spawnFn));
 
     const commitCall = calls.find((c) => c.args[0] === "commit");
     expect(commitCall).toBeDefined();
@@ -489,7 +528,7 @@ describe("TC-CAP-007: successful push emits commit:push event", () => {
     });
 
     const step = makeAgentStep({ name: "implementer" });
-    await executor.execute(step, state, makeLocalDeps());
+    await executor.execute(step, state, makeLocalDeps({}, spawnFn));
 
     expect(emittedEvents.length).toBe(1);
     expect(emittedEvents[0]).toMatchObject({
@@ -520,7 +559,7 @@ describe("TC-CAP-008: git add failure → silent skip", () => {
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const step = makeAgentStep({ name: "implementer" });
-    await expect(executor.execute(step, state, makeLocalDeps())).resolves.toBeDefined();
+    await expect(executor.execute(step, state, makeLocalDeps({}, spawnFn))).resolves.toBeDefined();
 
     // commit and push must NOT have been attempted
     expect(calls.map((c) => c.args[0])).not.toContain("commit");
@@ -549,7 +588,7 @@ describe("TC-CAP-009: git add failure (any step) → silent skip", () => {
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const step = makeAgentStep({ name: "spec-review" }); // requiresCommit not set
-    await expect(executor.execute(step, state, makeLocalDeps())).resolves.toBeDefined();
+    await expect(executor.execute(step, state, makeLocalDeps({}, spawnFn))).resolves.toBeDefined();
 
     // commit and push must NOT have been attempted
     expect(calls.map((c) => c.args[0])).not.toContain("commit");

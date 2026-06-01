@@ -85,56 +85,6 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
       "Documented for completeness — not caught by B-1 test (runtime/ excluded from domain scope).",
   },
 
-  // ── B-8: config.runtime branching must be confined to createRuntime ────────
-  //
-  // B-8 (model.md §4): only the createRuntime factory (core/runtime/factory.ts)
-  // should branch on config.runtime. Branching scattered elsewhere violates
-  // the single-point-of-change principle and makes runtime additions harder.
-  //
-  // Burn-down: B8-preflight / B8-executor — convert branches to runtime-
-  // polymorphic calls or move branching into the factory / strategy.
-
-  // preflight.ts line 43: cfg.runtime ?? "local" (checkRuntimePrereqs parameter name is `cfg`)
-  {
-    file: "src/core/preflight.ts",
-    pattern: 'cfg.runtime ?? "local"',
-    invariant: "B-8",
-    tracking: "B8-preflight-checkRuntimePrereqs",
-    comment:
-      "checkRuntimePrereqs() reads cfg.runtime (parameter name cfg: SpecRunnerConfig) to derive " +
-      "the requirements matrix. Fix: push the runtime-conditional logic into a strategy / factory seam.",
-  },
-  // preflight.ts line 59: cfg.runtime === "managed" (checkRuntimePrereqs parameter name is `cfg`)
-  {
-    file: "src/core/preflight.ts",
-    pattern: 'cfg.runtime === "managed"',
-    invariant: "B-8",
-    tracking: "B8-preflight-checkRuntimePrereqs",
-    comment:
-      "checkRuntimePrereqs() branches on cfg.runtime === \"managed\" to check agents/environment config. " +
-      "Fix: push the runtime-conditional logic into a strategy / factory seam.",
-  },
-  // preflight.ts line 133: if (config.runtime === "managed") { ... }
-  {
-    file: "src/core/preflight.ts",
-    pattern: 'config.runtime === "managed"',
-    invariant: "B-8",
-    tracking: "B8-preflight",
-    comment:
-      "runPreflight() branches on config.runtime to conditionally resolve the API key. " +
-      "Fix: push the runtime-conditional logic into a strategy / factory seam.",
-  },
-  // executor.ts lines 203, 208, 287, 295: if (deps.config.runtime === "local") { ... }
-  {
-    file: "src/core/step/executor.ts",
-    pattern: 'deps.config.runtime === "local"',
-    invariant: "B-8",
-    tracking: "B8-executor",
-    comment:
-      "StepExecutor has four config.runtime branches guarding local-only operations " +
-      "(headBeforeStep capture, template write, template cleanup, commit-and-push). " +
-      "Fix: extract to a RuntimeStrategy seam so the executor stays runtime-agnostic.",
-  },
 
   // ── B-3: shared-kernel / persistence must not import domain (core/) ──────────
   //

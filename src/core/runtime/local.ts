@@ -19,9 +19,19 @@ import { spawnCommand } from "../../util/spawn.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { changeFolderPath } from "../../util/paths.js";
-import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, rejectSymlink } from "../artifact/copy-artifacts.js";
+import {
+  copyRulesToChangeFolder,
+  copyDraftUsageToChangeFolder,
+  rejectSymlink,
+  writeOutputTemplates,
+  cleanupOutputTemplates,
+} from "../artifact/copy-artifacts.js";
+import { commitAndPush } from "../step/commit-push.js";
+import type { CommitPushInfra } from "../step/commit-push.js";
+import type { AgentStep } from "../step/types.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./strategy.js";
 import { stderrWrite } from "../../logger/stdout.js";
+import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import { stripSecrets } from "../../util/env-filter.js";
 
 // Internal structure stored inside CleanupHandle
@@ -308,7 +318,45 @@ export class LocalRuntime implements RuntimeStrategy {
       spawn: spawnCommand,
       storeFactory: (id: string) => new JobStateStore(id, this.cwd),
       repoRoot: this.cwd,
+      runtimeStrategy: this,
     };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Step artifact lifecycle (B-8 seam)
+  // ---------------------------------------------------------------------------
+
+  async captureHeadSha(cwd: string): Promise<string | null> {
+    try {
+      const result = await this.spawnFn("git", ["rev-parse", "HEAD"], { cwd });
+      if (result.exitCode !== 0) return null;
+      return result.stdout.trim() || null;
+    } catch {
+      return null;
+    }
+  }
+
+  async prepareStepArtifacts(
+    cwd: string,
+    slug: string,
+    stepName: string,
+    state: JobState,
+  ): Promise<void> {
+    await writeOutputTemplates(cwd, slug, stepName, state);
+  }
+
+  async finalizeStepArtifacts(
+    step: AgentStep,
+    state: JobState,
+    deps: PipelineDeps,
+    headBeforeStep: string | null,
+    commitPushInfra: CommitPushInfra,
+  ): Promise<void> {
+    const cwd = deps.cwd ?? process.cwd();
+    await cleanupOutputTemplates(cwd, deps.slug, step.name, state);
+    logPipelineDiag("executor:commit:pre", `step=${step.name}`);
+    await commitAndPush(step, state, deps, headBeforeStep, commitPushInfra);
+    logPipelineDiag("executor:commit:post", `step=${step.name}`);
   }
 
   registerCleanup(jobId: string, startStep: string): CleanupHandle {

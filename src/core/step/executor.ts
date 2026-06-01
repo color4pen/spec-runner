@@ -22,10 +22,9 @@ import { transitionJob } from "../../state/lifecycle.js";
 import { projectMdPath } from "../../util/paths.js";
 import { resolveStepRules } from "./rules-resolve.js";
 import { buildRulesFollowUpPrompts } from "./rules-followup-prompts.js";
-import { gitExec, defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
+import { defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
 import { FIXER_STEP_NAMES, getPreviousSessionId } from "./fixer-helpers.js";
-import { commitAndPush, type CommitPushInfra } from "./commit-push.js";
-import { writeOutputTemplates, cleanupOutputTemplates } from "../artifact/copy-artifacts.js";
+import type { CommitPushInfra } from "./commit-push.js";
 import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
 import type { JudgeReportResult, ProducerReportResult } from "../../core/port/report-result.js";
 
@@ -197,17 +196,14 @@ export class StepExecutor {
       deps.resumePrompt = undefined;
     }
 
-    // Capture HEAD SHA before agent executes (local runtime only, for self-commit detection).
-    // gitExec returns null on failure (non-git dir, etc.) — safe to use without try/catch.
-    let headBeforeStep: string | null = null;
-    if (deps.config.runtime === "local") {
-      headBeforeStep = await gitExec(this.spawnFn, cwd, ["rev-parse", "HEAD"]);
-    }
+    // Capture HEAD SHA before agent executes (delegated to RuntimeStrategy seam).
+    // LocalRuntime: git rev-parse HEAD. ManagedRuntime / no strategy: null (safe).
+    const headBeforeStep: string | null = deps.runtimeStrategy
+      ? await deps.runtimeStrategy.captureHeadSha(cwd)
+      : null;
 
-    // Place step output templates in the change folder before the agent runs (local runtime only).
-    if (deps.config.runtime === "local") {
-      await writeOutputTemplates(cwd, deps.slug, step.name, state);
-    }
+    // Place step output templates in the change folder before the agent runs (delegated to RuntimeStrategy).
+    await deps.runtimeStrategy?.prepareStepArtifacts(cwd, deps.slug, step.name, state);
 
     const startedAt = new Date().toISOString();
     logPipelineDiag("executor:agent:pre-run", `step=${step.name}`);
@@ -283,18 +279,11 @@ export class StepExecutor {
     //   judge  → "needs-fix"  (conservative; fixer loop → loop exhaustion = grounded halt)
     //   producer → completionVerdict (downstream grounded step verifies correctness)
 
-    // Delete B-group (reference) templates before commit-push so they are not included in the PR.
-    if (deps.config.runtime === "local") {
-      await cleanupOutputTemplates(cwd, deps.slug, step.name, state);
-    }
-
-    // Commit and push after successful agent run (local runtime only).
-    // commitAndPush errors (e.g. AUTHORITY_SPEC_EDIT_VIOLATION, PUSH_FAILED) must be recorded in
-    // state and have state attached to the thrown error so the pipeline can propagate the error
-    // code correctly (otherwise the pipeline safety net overwrites it with UNEXPECTED_STEP_ERROR).
-    if (deps.config.runtime === "local") {
-      logPipelineDiag("executor:commit:pre", `step=${step.name}`);
-      await commitAndPush(step, state, deps, headBeforeStep, this.commitPushInfra).catch(async (thrownErr: unknown) => {
+    // Delete B-group templates and commit-push (delegated to RuntimeStrategy seam).
+    // LocalRuntime: cleanupOutputTemplates() + commitAndPush(). ManagedRuntime / no strategy: no-op.
+    // commitAndPush errors are recorded in state here (executor owns state), then rethrown.
+    await (deps.runtimeStrategy?.finalizeStepArtifacts(step, state, deps, headBeforeStep, this.commitPushInfra) ?? Promise.resolve())
+      .catch(async (thrownErr: unknown) => {
         const err = thrownErr as Error & { code?: string; hint?: string };
         const errorInfo: ErrorInfo = {
           code: err.code ?? "COMMIT_AND_PUSH_FAILED",
@@ -307,8 +296,6 @@ export class StepExecutor {
         attachStateAndRethrow(err, state);
         return null as never;
       });
-      logPipelineDiag("executor:commit:post", `step=${step.name}`);
-    }
 
     return this.finalizeStep(step, state, deps, runResult.resultContent, completedAt, startedAt, {
       sessionId: runResult.sessionId,

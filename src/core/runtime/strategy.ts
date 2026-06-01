@@ -11,6 +11,9 @@ import type { AgentRunner } from "../port/agent-runner.js";
 import type { PipelineDeps } from "../types.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
+import type { JobState } from "../../state/schema.js";
+import type { AgentStep } from "../step/types.js";
+import type { CommitPushInfra } from "../step/commit-push.js";
 
 // ---------------------------------------------------------------------------
 // Supporting types
@@ -128,4 +131,43 @@ export interface RuntimeStrategy {
    * - managed: no-op
    */
   teardown(handle: CleanupHandle, finalStatus: string): Promise<void>;
+
+  // ---------------------------------------------------------------------------
+  // Step artifact lifecycle (B-8 seam)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Capture the current HEAD SHA before an agent step runs.
+   * - local: `git rev-parse HEAD` (returns null on failure)
+   * - managed: returns null (no local worktree)
+   */
+  captureHeadSha(cwd: string): Promise<string | null>;
+
+  /**
+   * Place step output templates in the change folder before an agent runs.
+   * - local: calls writeOutputTemplates()
+   * - managed: no-op
+   */
+  prepareStepArtifacts(
+    cwd: string,
+    slug: string,
+    stepName: string,
+    state: JobState,
+  ): Promise<void>;
+
+  /**
+   * Clean up B-group reference templates and commit+push after a successful agent run.
+   * - local: cleanupOutputTemplates() → commitAndPush()
+   * - managed: no-op
+   *
+   * commitAndPush errors are re-thrown (not caught here); the executor's .catch()
+   * block records the error in state and rethrows with attached state.
+   */
+  finalizeStepArtifacts(
+    step: AgentStep,
+    state: JobState,
+    deps: PipelineDeps,
+    headBeforeStep: string | null,
+    commitPushInfra: CommitPushInfra,
+  ): Promise<void>;
 }

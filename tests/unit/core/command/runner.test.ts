@@ -111,6 +111,9 @@ function buildMockRuntime(opts: {
     } as unknown as PipelineDeps),
     registerCleanup: vi.fn().mockReturnValue(NOOP_HANDLE),
     teardown: vi.fn().mockResolvedValue(undefined),
+    captureHeadSha: vi.fn().mockResolvedValue(null),
+    prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
+    finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
   };
 }
 

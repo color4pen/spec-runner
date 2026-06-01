@@ -22,6 +22,8 @@ import { JobStateStore } from "../../store/job-state-store.js";
 import { changeFolderPath } from "../../util/paths.js";
 import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, rejectSymlink } from "../artifact/copy-artifacts.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./strategy.js";
+import type { AgentStep } from "../step/types.js";
+import type { CommitPushInfra } from "../step/commit-push.js";
 import { stderrWrite } from "../../logger/stdout.js";
 
 export class ManagedRuntime implements RuntimeStrategy {
@@ -197,7 +199,35 @@ export class ManagedRuntime implements RuntimeStrategy {
       runner: this.createAgentRunner(),
       spawn: spawnCommand,
       storeFactory: (id: string) => new JobStateStore(id, this.cwd),
+      runtimeStrategy: this,
     };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Step artifact lifecycle (B-8 seam) — managed: all no-ops
+  // ---------------------------------------------------------------------------
+
+  async captureHeadSha(_cwd: string): Promise<string | null> {
+    return null;
+  }
+
+  async prepareStepArtifacts(
+    _cwd: string,
+    _slug: string,
+    _stepName: string,
+    _state: JobState,
+  ): Promise<void> {
+    // no-op: managed runtime has no local worktree artifacts
+  }
+
+  async finalizeStepArtifacts(
+    _step: AgentStep,
+    _state: JobState,
+    _deps: PipelineDeps,
+    _headBeforeStep: string | null,
+    _commitPushInfra: CommitPushInfra,
+  ): Promise<void> {
+    // no-op: managed runtime does not commit/push from the CLI
   }
 
   registerCleanup(jobId: string, startStep: string): CleanupHandle {
