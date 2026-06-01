@@ -424,25 +424,6 @@ describe("T-04 regression guard: new forbidden edge not in allowlist triggers de
     expect(first?.file).toBe("src/core/command/new-feature.ts");
   });
 
-  it("does not flag violations that are correctly allowlisted (B-6 allowlist suppression)", () => {
-    // R2 burn-down (runtime-sdk-to-adapter) completed: B-2 allowlist is now empty.
-    // Demonstrate suppression using a B-6 entry (still allowlisted).
-    const allowlistedMatch: GrepMatch[] = [
-      {
-        file: "src/core/preflight.ts",
-        line: 105,
-        content:
-          '  const token = resolveGitHubToken(process.env as Record<string, string | undefined>);',
-      },
-    ];
-
-    const b6Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-6");
-    const violations = filterViolations(allowlistedMatch, b6Entries);
-
-    // The known B-6 violation IS in the allowlist — it must be suppressed.
-    expect(violations).toHaveLength(0);
-  });
-
   it("detects new forbidden SDK import not in allowlist (B-2 regression guard)", () => {
     // Simulate a NEW @anthropic-ai import added to a domain file (NOT allowlisted).
     const injectedMatches: GrepMatch[] = [

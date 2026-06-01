@@ -81,6 +81,7 @@ export async function checkRuntimePrereqs(
 export async function runPreflight(
   requestMdPath: string,
   cwd: string,
+  env: Record<string, string | undefined>,
 ): Promise<PreflightResult> {
   // Step 1: Config exists (load user global + project local overlay from repo root)
   // Resolve repo root from cwd for project local config overlay support.
@@ -102,7 +103,7 @@ export async function runPreflight(
   let githubToken: string;
   let githubTokenSource: "credentials" | "env";
   try {
-    const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>);
+    const resolved = await resolveGitHubToken(env);
     githubToken = resolved.token;
     githubTokenSource = resolved.source;
     logInfo(`GitHub token source: ${resolved.source}`);
@@ -118,7 +119,7 @@ export async function runPreflight(
   }
 
   // Step 2.7: Runtime prerequisites (managed-specific)
-  const prereq = await checkRuntimePrereqs(config, process.env as Record<string, string | undefined>);
+  const prereq = await checkRuntimePrereqs(config, env);
   if (prereq) {
     throw new SpecRunnerError(
       ERROR_CODES.RUNTIME_PREREQ_MISSING,
@@ -133,7 +134,7 @@ export async function runPreflight(
   if (config.runtime === "managed") {
     try {
       const resolved = await resolveSpecRunnerApiKey(
-        process.env as Record<string, string | undefined>,
+        env,
         { optional: true },
       );
       if (resolved) {

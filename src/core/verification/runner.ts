@@ -296,7 +296,7 @@ async function runVerificationCommands(
     }
 
     const startMs = Date.now();
-    const { exitCode, stdout, stderr } = await spawnCommand(cmd.run, cwd);
+    const { exitCode, stdout, stderr } = await spawnCommand(cmd.run, cwd, stripSecrets(process.env as Record<string, string | undefined>));
     const durationMs = Date.now() - startMs;
 
     const status = exitCode === 0 ? "passed" : "failed";

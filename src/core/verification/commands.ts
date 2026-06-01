@@ -48,16 +48,17 @@ export function normalizeCommands(raw: VerificationCommand[]): NormalizedCommand
 export function spawnCommand(
   command: string,
   cwd: string,
+  env: Record<string, string | undefined>,
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   const localBin = `${cwd}/node_modules/.bin`;
-  const pathWithLocalBin = process.env.PATH
-    ? `${localBin}:${process.env.PATH}`
+  const pathWithLocalBin = env.PATH
+    ? `${localBin}:${env.PATH}`
     : localBin;
   return new Promise((resolve) => {
     const child = spawn("sh", ["-c", command], {
       cwd,
       shell: false,
-      env: { ...stripSecrets(process.env as Record<string, string | undefined>), PATH: pathWithLocalBin },
+      env: { ...stripSecrets(env), PATH: pathWithLocalBin },
     });
 
     let stdoutBuf = "";

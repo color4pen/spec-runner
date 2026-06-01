@@ -17,6 +17,14 @@ export const SECRET_DENYLIST = [
 ] as const;
 
 /**
+ * Return the current SPECRUNNER_DEBUG env-var value (comma-separated subsystem list).
+ * Centralises the single process.env read for diagnostic subsystem filtering.
+ */
+export function getDebugSubsystems(): string {
+  return process.env["SPECRUNNER_DEBUG"] ?? "";
+}
+
+/**
  * Return a shallow copy of `env` with all SECRET_DENYLIST keys removed.
  * The original object is never mutated.
  *

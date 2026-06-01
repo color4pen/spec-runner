@@ -52,17 +52,17 @@ describe("spawnCommand", () => {
   const cwd = os.tmpdir();
 
   it("C-01: exit 0 command → exitCode 0", async () => {
-    const { exitCode } = await spawnCommand("exit 0", cwd);
+    const { exitCode } = await spawnCommand("exit 0", cwd, process.env as Record<string, string | undefined>);
     expect(exitCode).toBe(0);
   });
 
   it("C-02: exit 1 command → exitCode 1", async () => {
-    const { exitCode } = await spawnCommand("exit 1", cwd);
+    const { exitCode } = await spawnCommand("exit 1", cwd, process.env as Record<string, string | undefined>);
     expect(exitCode).toBe(1);
   });
 
   it("C-03: && chained commands execute via shell (true && true → exitCode 0)", async () => {
-    const { exitCode } = await spawnCommand("true && true", cwd);
+    const { exitCode } = await spawnCommand("true && true", cwd, process.env as Record<string, string | undefined>);
     expect(exitCode).toBe(0);
   });
 });

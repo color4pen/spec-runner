@@ -1,4 +1,5 @@
 import { stderrWrite, isLevelEnabled } from "../../logger/stdout.js";
+import { getDebugSubsystems } from "../../util/env-filter.js";
 
 /**
  * Pipeline diagnostic logger.
@@ -12,7 +13,7 @@ export function logPipelineDiag(point: string, detail?: string): void {
   if (!isLevelEnabled("debug")) return;
 
   // subsystem filter: SPECRUNNER_DEBUG must include "pipeline"
-  const debugEnv = process.env["SPECRUNNER_DEBUG"] ?? "";
+  const debugEnv = getDebugSubsystems();
   const parts = debugEnv.split(",").map((s) => s.trim());
   if (!parts.includes("pipeline")) return;
 

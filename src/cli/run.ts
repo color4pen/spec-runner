@@ -59,7 +59,7 @@ export async function runRunCore(
 
   let preflightResult: Awaited<ReturnType<typeof runPreflight>>;
   try {
-    preflightResult = await runPreflight(absolutePath, cwd);
+    preflightResult = await runPreflight(absolutePath, cwd, process.env as Record<string, string | undefined>);
   } catch (err) {
     if (err instanceof SpecRunnerError) {
       logError(err.message);
