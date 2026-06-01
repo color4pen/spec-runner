@@ -2,8 +2,8 @@ import * as fs from "node:fs/promises";
 import { requestMdInvalidError } from "../errors.js";
 import { stderrWrite } from "../logger/stdout.js";
 
-export type { ParsedRequest, ParsedRequestSections } from "../core/request/types.js";
-import type { ParsedRequest, ParsedRequestSections } from "../core/request/types.js";
+export type { ParsedRequest, ParsedRequestSections } from "./types.js";
+import type { ParsedRequest, ParsedRequestSections } from "./types.js";
 
 import type { ParsedRequestRaw } from "./rules/types.js";
 export type { ParsedRequestRaw } from "./rules/types.js";

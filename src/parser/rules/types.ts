@@ -1,4 +1,4 @@
-import type { ParsedRequestSections } from "../../core/request/types.js";
+import type { ParsedRequestSections } from "../types.js";
 
 /**
  * Union of all parser-layer validation rule names.

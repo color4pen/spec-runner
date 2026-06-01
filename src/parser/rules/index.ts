@@ -1,4 +1,4 @@
-import { RuleRegistry } from "../../core/validation/registry.js";
+import { RuleRegistry } from "../validation/registry.js";
 import type { ParsedRequestRaw, RequestMdRuleName, RequestMdViolation } from "./types.js";
 import { titleRequired } from "./title-required.js";
 import { typeRequired } from "./type-required.js";

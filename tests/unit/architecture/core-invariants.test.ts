@@ -521,13 +521,13 @@ describe("T-04 regression guard: new forbidden edge not in allowlist triggers de
   });
 
   it("does not flag violations that are correctly allowlisted (B-3 allowlist suppression)", () => {
-    // Simulate the known B-3 violation in request-md.ts that is already allowlisted.
+    // Simulate the known B-3 violation in config/migrate.ts (R3) that is already allowlisted.
     const allowlistedMatch: GrepMatch[] = [
       {
-        file: "src/parser/request-md.ts",
-        line: 6,
+        file: "src/config/migrate.ts",
+        line: 3,
         content:
-          'import type { ParsedRequest, ParsedRequestSections } from "../core/request/types.js";',
+          'import { STEP_NAMES } from "../core/step/step-names.js";',
       },
     ];
 

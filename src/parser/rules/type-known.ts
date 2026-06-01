@@ -1,4 +1,4 @@
-import type { ValidationRule } from "../../core/validation/types.js";
+import type { ValidationRule } from "../validation/types.js";
 import { TYPE_CONFIG } from "../../config/type-config.js";
 import type { ParsedRequestRaw, RequestMdRuleName, RequestMdViolation } from "./types.js";
 

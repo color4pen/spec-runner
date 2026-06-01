@@ -1,4 +1,4 @@
-import type { ValidationRule } from "../../core/validation/types.js";
+import type { ValidationRule } from "../validation/types.js";
 import type { ParsedRequestRaw, RequestMdRuleName, RequestMdViolation } from "./types.js";
 
 export const adrRequired: ValidationRule<ParsedRequestRaw, RequestMdViolation, RequestMdRuleName> = {
