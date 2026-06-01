@@ -6,14 +6,19 @@
  * - ManagedRuntime: SessionClient, ManagedAgentRunner, no-op workspace
  *
  * All config.runtime branching is confined to createRuntime() factory (factory.ts).
+ *
+ * Moved from core/runtime/strategy.ts to core/port/runtime-strategy.ts to satisfy
+ * the §3 DSM closure rule: domain → composition-root is ✗, domain → ports is ✓.
+ *
+ * Domain-typed parameters (PipelineDeps, AgentStep, CommitPushInfra) are declared as
+ * `unknown` here to keep this ports file free of domain→ports back-edges. Callers in
+ * domain layers use the concrete types; TypeScript's bivariant method checking allows
+ * implementations in core/runtime/ to declare the concrete types.
  */
-import type { AgentRunner } from "../port/agent-runner.js";
-import type { PipelineDeps } from "../types.js";
+import type { AgentRunner } from "./agent-runner.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { JobState } from "../../state/schema.js";
-import type { AgentStep } from "../step/types.js";
-import type { CommitPushInfra } from "../step/commit-push.js";
 
 // ---------------------------------------------------------------------------
 // Supporting types
@@ -84,6 +89,12 @@ export type CleanupHandle = { readonly __brand: unique symbol } & Record<string,
  * Implementations:
  * - LocalRuntime  — local worktree, ClaudeCodeRunner, signal-handler cleanup
  * - ManagedRuntime — SessionClient, ManagedAgentRunner, no-op workspace/cleanup
+ *
+ * Note on domain-typed parameters: `buildDeps()` returns `unknown` and
+ * `finalizeStepArtifacts()` accepts `unknown` for domain-type parameters (PipelineDeps,
+ * AgentStep, CommitPushInfra). This keeps the port layer free of ports→domain imports.
+ * Domain-layer callers cast `buildDeps()` results to `PipelineDeps`; implementations
+ * in core/runtime/ use concrete types (TypeScript bivariant method checking allows this).
  */
 export interface RuntimeStrategy {
   /**
@@ -110,13 +121,15 @@ export interface RuntimeStrategy {
 
   /**
    * Assemble PipelineDeps for the resolved workspace.
+   * Returns `unknown` at the port level; domain callers cast to `PipelineDeps`.
+   * Implementations in core/runtime/ declare the concrete PipelineDeps return type.
    */
   buildDeps(
     config: SpecRunnerConfig,
     request: ParsedRequest,
     slug: string,
     workspace: WorkspaceContext,
-  ): PipelineDeps;
+  ): unknown;
 
   /**
    * Register cleanup handlers (signal, failure).
@@ -160,14 +173,19 @@ export interface RuntimeStrategy {
    * - local: cleanupOutputTemplates() → commitAndPush()
    * - managed: no-op
    *
+   * Parameters `step`, `deps`, and `commitPushInfra` are typed as `unknown` at the port
+   * level to avoid ports→domain imports. Implementations in core/runtime/ use concrete
+   * types (AgentStep, PipelineDeps, CommitPushInfra). TypeScript bivariant method
+   * checking allows this.
+   *
    * commitAndPush errors are re-thrown (not caught here); the executor's .catch()
    * block records the error in state and rethrows with attached state.
    */
   finalizeStepArtifacts(
-    step: AgentStep,
+    step: unknown,
     state: JobState,
-    deps: PipelineDeps,
+    deps: unknown,
     headBeforeStep: string | null,
-    commitPushInfra: CommitPushInfra,
+    commitPushInfra: unknown,
   ): Promise<void>;
 }

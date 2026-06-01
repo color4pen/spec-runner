@@ -7,6 +7,7 @@
 import { resolveSpecRunnerApiKey } from "../credentials/anthropic.js";
 import { requirementsFor } from "../credentials/requirements.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
+import type { RuntimeCredentials } from "../port/runtime-prereqs.js";
 
 // ---------------------------------------------------------------------------
 // checkRuntimePrereqs
@@ -59,10 +60,7 @@ export async function checkRuntimePrereqs(
 // resolveRuntimeCredentials
 // ---------------------------------------------------------------------------
 
-export interface RuntimeCredentials {
-  specRunnerApiKey?: string;
-  specRunnerApiKeySource?: "credentials" | "env";
-}
+export type { RuntimeCredentials } from "../port/runtime-prereqs.js";
 
 /**
  * Resolve runtime-specific credentials.

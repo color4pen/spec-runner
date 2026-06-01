@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { checkRuntimePrereqs } from "../../../src/core/preflight.js";
+import { checkRuntimePrereqs } from "../../../src/core/runtime/prereqs.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 
 // Mock the anthropic resolver so tests don't hit the filesystem
@@ -12,6 +12,14 @@ vi.mock("../../../src/core/credentials/anthropic.js", () => ({
       throw new Error("ANTHROPIC_KEY_MISSING");
     },
   ),
+}));
+vi.mock("../../../src/core/credentials/requirements.js", () => ({
+  requirementsFor: vi.fn().mockImplementation((runtime: string) => {
+    if (runtime === "managed") {
+      return [{ key: "anthropic.apiKey", envVar: "SPECRUNNER_API_KEY" }];
+    }
+    return [];
+  }),
 }));
 
 beforeEach(() => {

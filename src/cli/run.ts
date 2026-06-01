@@ -6,6 +6,7 @@ import { createAnthropicClient } from "../adapter/managed-agent/client.js";
 import { createAnthropicSessionClient } from "../adapter/managed-agent/session-client.js";
 import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
 import { runPreflight } from "../core/preflight.js";
+import { checkRuntimePrereqs, resolveRuntimeCredentials } from "../core/runtime/prereqs.js";
 import { setLogLevel, logError, stderrWrite, type LogLevel } from "../logger/stdout.js";
 import { SpecRunnerError } from "../errors.js";
 import { createRuntime } from "../core/runtime/index.js";
@@ -59,7 +60,10 @@ export async function runRunCore(
 
   let preflightResult: Awaited<ReturnType<typeof runPreflight>>;
   try {
-    preflightResult = await runPreflight(absolutePath, cwd, process.env as Record<string, string | undefined>);
+    preflightResult = await runPreflight(absolutePath, cwd, process.env as Record<string, string | undefined>, {
+      prereqChecker: { check: checkRuntimePrereqs },
+      credentialsResolver: { resolve: resolveRuntimeCredentials },
+    });
   } catch (err) {
     if (err instanceof SpecRunnerError) {
       logError(err.message);

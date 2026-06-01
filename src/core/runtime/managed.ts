@@ -21,7 +21,7 @@ import { spawnCommand } from "../../util/spawn.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { changeFolderPath } from "../../util/paths.js";
 import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, rejectSymlink } from "../artifact/copy-artifacts.js";
-import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./strategy.js";
+import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "../port/runtime-strategy.js";
 import type { AgentStep } from "../step/types.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import { stderrWrite } from "../../logger/stdout.js";

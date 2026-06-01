@@ -32,7 +32,7 @@ import { JobStateStore } from "../../store/job-state-store.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { EventBus } from "../event/event-bus.js";
 import { createStandardPipeline } from "../pipeline/index.js";
-import type { CleanupHandle, RuntimeStrategy, WorkspaceOptions } from "../runtime/strategy.js";
+import type { CleanupHandle, RuntimeStrategy, WorkspaceOptions } from "../port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { PipelineDeps } from "../types.js";
@@ -145,7 +145,7 @@ export abstract class CommandRunner {
       // Step 4: registerCleanup
       let handle: CleanupHandle;
       try {
-        deps = this.runtime.buildDeps(config, request, slug, workspace);
+        deps = this.runtime.buildDeps(config, request, slug, workspace) as PipelineDeps;
 
         // Step 3c: propagate resumePrompt from prepare() into deps (one-shot injection)
         if (prepared.resumePrompt) {

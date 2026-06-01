@@ -6,7 +6,7 @@ import type { ParsedRequest } from "../parser/request-md.js";
 import type { DynamicContext } from "../git/dynamic-context.js";
 import type { SpawnFn } from "../util/spawn.js";
 import type { JobStateStore } from "../store/job-state-store.js";
-import type { RuntimeStrategy } from "./runtime/strategy.js";
+import type { RuntimeStrategy } from "./port/runtime-strategy.js";
 
 /**
  * Minimal context required by Step methods (buildMessage, resultFilePath, parseResult).

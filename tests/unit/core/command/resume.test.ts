@@ -14,7 +14,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { CommandRunner } from "../../../../src/core/command/runner.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
-import type { RuntimeStrategy, WorkspaceContext, CleanupHandle } from "../../../../src/core/runtime/strategy.js";
+import type { RuntimeStrategy, WorkspaceContext, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { JobState } from "../../../../src/state/schema.js";

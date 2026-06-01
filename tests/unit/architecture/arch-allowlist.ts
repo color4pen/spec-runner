@@ -236,58 +236,6 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
       "Fix: helper を ports 経由で公開するか、adapter 内に複製する。",
   },
 
-  // ── C) domain → composition-root ─────────────────────────────────────────────
-  //
-  // domain は composition-root を import できない（§3: domain → comp-root ✗）。
-  // src/core/ の一部ファイルが src/core/runtime/ の型・関数を直接 import している divergence。
-  // Fix: RuntimeStrategy 等の型を shared-kernel または ports に降格する。
-
-  {
-    file: "src/core/preflight.ts",
-    pattern: "runtime/prereqs.js",
-    invariant: "DSM",
-    tracking: "DSM-domain-comp-root-preflight-prereqs",
-    comment:
-      "domain → composition-root: core/preflight.ts が core/runtime/prereqs を直接 import (import + re-export の2行)。" +
-      "Fix: checkRuntimePrereqs / resolveRuntimeCredentials を ports に移動するか cli 側でのみ使う。",
-  },
-  {
-    file: "src/core/types.ts",
-    pattern: "runtime/strategy.js",
-    invariant: "DSM",
-    tracking: "DSM-domain-comp-root-types-strategy",
-    comment:
-      "domain → composition-root: core/types.ts が core/runtime/strategy (RuntimeStrategy) を直接 import。" +
-      "Fix: RuntimeStrategy を shared-kernel or ports に降格する。",
-  },
-  {
-    file: "src/core/command/resume.ts",
-    pattern: "runtime/strategy.js",
-    invariant: "DSM",
-    tracking: "DSM-domain-comp-root-resume-strategy",
-    comment:
-      "domain → composition-root: core/command/resume.ts が core/runtime/strategy (RuntimeStrategy) を直接 import。" +
-      "Fix: RuntimeStrategy を shared-kernel or ports に降格する。",
-  },
-  {
-    file: "src/core/command/runner.ts",
-    pattern: "runtime/strategy.js",
-    invariant: "DSM",
-    tracking: "DSM-domain-comp-root-runner-strategy",
-    comment:
-      "domain → composition-root: core/command/runner.ts が core/runtime/strategy (RuntimeStrategy 等) を直接 import。" +
-      "Fix: RuntimeStrategy を shared-kernel or ports に降格する。",
-  },
-  {
-    file: "src/core/command/pipeline-run.ts",
-    pattern: "runtime/strategy.js",
-    invariant: "DSM",
-    tracking: "DSM-domain-comp-root-pipeline-strategy",
-    comment:
-      "domain → composition-root: core/command/pipeline-run.ts が core/runtime/strategy (RuntimeStrategy) を直接 import。" +
-      "Fix: RuntimeStrategy を shared-kernel or ports に降格する。",
-  },
-
   // ── B) ports → domain (△ strict) ─────────────────────────────────────────────
 
   {

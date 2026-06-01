@@ -18,7 +18,7 @@ import { resolveResumeStep } from "../resume/resolve-step.js";
 import { checkConsecutiveEscalations, checkStaleState, isStaleRunning } from "../resume/safety.js";
 import { canTransition, transitionJob } from "../../state/lifecycle.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
-import type { RuntimeStrategy } from "../runtime/strategy.js";
+import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { EventBus } from "../event/event-bus.js";
 
 export interface ResumeOptions {

@@ -30,7 +30,7 @@ import {
 import { commitAndPush } from "../step/commit-push.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
-import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./strategy.js";
+import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "../port/runtime-strategy.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import { stripSecrets } from "../../util/env-filter.js";

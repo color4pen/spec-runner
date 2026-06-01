@@ -16,7 +16,7 @@ import { createAnthropicSessionClient } from "../adapter/managed-agent/session-c
 import { createRuntime } from "../core/runtime/index.js";
 import { resolveRepoRoot } from "../util/repo-root.js";
 import type { OriginInfo } from "../git/remote.js";
-import type { RuntimeStrategy } from "../core/runtime/strategy.js";
+import type { RuntimeStrategy } from "../core/port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import type { GitHubClient } from "../core/port/github-client.js";
 

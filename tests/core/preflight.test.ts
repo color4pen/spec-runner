@@ -51,7 +51,10 @@ describe("runPreflight — githubTokenSource propagation", () => {
       source: "credentials",
     });
 
-    const result = await runPreflight("/fake/request.md", "/fake/cwd", {});
+    const result = await runPreflight("/fake/request.md", "/fake/cwd", {}, {
+      prereqChecker: { check: vi.fn().mockResolvedValue(null) },
+      credentialsResolver: { resolve: vi.fn().mockResolvedValue({}) },
+    });
     expect(result.githubTokenSource).toBe("credentials");
     expect(result.githubToken).toBe("ghp_test");
   });
@@ -63,7 +66,10 @@ describe("runPreflight — githubTokenSource propagation", () => {
       source: "env",
     });
 
-    const result = await runPreflight("/fake/request.md", "/fake/cwd", {});
+    const result = await runPreflight("/fake/request.md", "/fake/cwd", {}, {
+      prereqChecker: { check: vi.fn().mockResolvedValue(null) },
+      credentialsResolver: { resolve: vi.fn().mockResolvedValue({}) },
+    });
     expect(result.githubTokenSource).toBe("env");
     expect(result.githubToken).toBe("ghp_envtoken");
   });
@@ -75,7 +81,10 @@ describe("runPreflight — githubTokenSource propagation", () => {
       source: "credentials",
     });
 
-    await runPreflight("/fake/request.md", "/fake/cwd", {});
+    await runPreflight("/fake/request.md", "/fake/cwd", {}, {
+      prereqChecker: { check: vi.fn().mockResolvedValue(null) },
+      credentialsResolver: { resolve: vi.fn().mockResolvedValue({}) },
+    });
     expect(vi.mocked(logInfo)).toHaveBeenCalledWith("GitHub token source: credentials");
   });
 
@@ -86,7 +95,10 @@ describe("runPreflight — githubTokenSource propagation", () => {
       source: "env",
     });
 
-    await runPreflight("/fake/request.md", "/fake/cwd", {});
+    await runPreflight("/fake/request.md", "/fake/cwd", {}, {
+      prereqChecker: { check: vi.fn().mockResolvedValue(null) },
+      credentialsResolver: { resolve: vi.fn().mockResolvedValue({}) },
+    });
     expect(vi.mocked(logInfo)).toHaveBeenCalledWith("GitHub token source: env");
   });
 });

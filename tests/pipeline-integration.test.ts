@@ -13,7 +13,7 @@ import type { DynamicContext } from "../src/git/dynamic-context.js";
 import type { SpawnFn } from "../src/util/spawn.js";
 import { gitExec } from "../src/util/git-exec.js";
 import type { SpawnFn as GitSpawnFn } from "../src/util/git-exec.js";
-import type { RuntimeStrategy } from "../src/core/runtime/strategy.js";
+import type { RuntimeStrategy } from "../src/core/port/runtime-strategy.js";
 import type { AgentStep } from "../src/core/step/types.js";
 import type { JobState } from "../src/state/schema.js";
 import type { PipelineDeps } from "../src/core/types.js";

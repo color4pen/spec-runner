@@ -11,7 +11,7 @@ import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { GitHubClient } from "../port/github-client.js";
 import type { OriginInfo } from "../../git/remote.js";
 import type { SessionClient } from "../port/session-client.js";
-import type { RuntimeStrategy } from "./strategy.js";
+import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import { LocalRuntime } from "./local.js";
 import { ManagedRuntime } from "./managed.js";
 

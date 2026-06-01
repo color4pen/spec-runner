@@ -11,13 +11,10 @@ import { resolveGitHubToken } from "../core/credentials/github.js";
 import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 import { logInfo } from "../logger/stdout.js";
 import { resolveRepoRoot } from "../util/repo-root.js";
-import { checkRuntimePrereqs, resolveRuntimeCredentials } from "./runtime/prereqs.js";
+import type { RuntimePrereqChecker, RuntimeCredentialsResolver, RuntimeCredentials } from "./port/runtime-prereqs.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import type { OriginInfo } from "../git/remote.js";
 import type { ParsedRequest } from "../parser/request-md.js";
-
-// Re-export for backward compatibility (tests import checkRuntimePrereqs from this module)
-export { checkRuntimePrereqs } from "./runtime/prereqs.js";
 
 export interface PreflightResult {
   config: SpecRunnerConfig;
@@ -41,6 +38,7 @@ export async function runPreflight(
   requestMdPath: string,
   cwd: string,
   env: Record<string, string | undefined>,
+  deps: { prereqChecker: RuntimePrereqChecker; credentialsResolver: RuntimeCredentialsResolver },
 ): Promise<PreflightResult> {
   // Step 1: Config exists (load user global + project local overlay from repo root)
   // Resolve repo root from cwd for project local config overlay support.
@@ -78,7 +76,7 @@ export async function runPreflight(
   }
 
   // Step 2.7: Runtime prerequisites (managed-specific)
-  const prereq = await checkRuntimePrereqs(config, env);
+  const prereq = await deps.prereqChecker.check(config, env);
   if (prereq) {
     throw new SpecRunnerError(
       ERROR_CODES.RUNTIME_PREREQ_MISSING,
@@ -88,7 +86,7 @@ export async function runPreflight(
   }
 
   // Resolve runtime-specific credentials (managed: Anthropic API key; local: empty)
-  const { specRunnerApiKey, specRunnerApiKeySource } = await resolveRuntimeCredentials(
+  const { specRunnerApiKey, specRunnerApiKeySource }: RuntimeCredentials = await deps.credentialsResolver.resolve(
     config,
     env,
   );

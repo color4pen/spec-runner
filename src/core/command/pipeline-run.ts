@@ -9,7 +9,7 @@ import type { PreflightResult } from "../preflight.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { logInfo, setLogLevel, type LogLevel } from "../../logger/stdout.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
-import type { RuntimeStrategy } from "../runtime/strategy.js";
+import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { EventBus } from "../event/event-bus.js";
 import { getBranchPrefix } from "../../config/type-config.js";
 import { STEP_NAMES } from "../step/step-names.js";
