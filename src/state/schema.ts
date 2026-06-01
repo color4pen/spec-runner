@@ -4,13 +4,13 @@
 
 export type JobStatus = "running" | "awaiting-resume" | "awaiting-merge" | "failed" | "terminated" | "archived" | "canceled";
 
-import type { ModelUsage } from "../core/port/model-usage.js";
-import type { BaseReportResult } from "../core/port/report-result.js";
+import type { ModelUsage } from "../kernel/model-usage.js";
+import type { BaseReportResult } from "../kernel/report-result.js";
 /**
- * Re-export from canonical location in the port layer.
+ * Re-export from canonical location in the kernel layer.
  * Both the port layer and state layer reference this single definition.
  */
-export type { ModelUsage } from "../core/port/model-usage.js";
+export type { ModelUsage } from "../kernel/model-usage.js";
 
 import { AGENT_STEP_NAMES, CLI_STEP_NAMES, STEP_NAMES } from "../kernel/step-names.js";
 

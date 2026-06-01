@@ -1,5 +1,5 @@
 import type { JobState, StepResult, StepRun, ModelUsage } from "./schema.js";
-import type { BaseReportResult } from "../core/port/report-result.js";
+import type { BaseReportResult } from "../kernel/report-result.js";
 
 /**
  * Convert a StepRun to StepResult shape (legacy view).

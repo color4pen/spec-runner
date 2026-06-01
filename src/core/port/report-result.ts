@@ -9,15 +9,8 @@ import type { ZodRawShape } from "zod/v4";
 
 export type { ZodRawShape };
 
-/**
- * Minimal completion result reported by the agent via report_result tool.
- * ok: true  = normal completion
- * ok: false = agent's voluntary failure declaration (with reason)
- */
-export interface BaseReportResult {
-  ok: boolean;
-  reason?: string;
-}
+import type { BaseReportResult } from "../../kernel/report-result.js";
+export type { BaseReportResult } from "../../kernel/report-result.js";
 
 /**
  * Specification for the report_result custom tool that an agent step registers.

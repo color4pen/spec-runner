@@ -209,38 +209,8 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
   // into the domain (core/) are forbidden per the §3 closure table.
   //
   // These entries are grandfather'd at arch-upward-edge-ratchet.
-  // Burn-down requests: parser-kernel-demote (R1 — DONE), step-names-kernel-demote (R3 — DONE).
-  // R1 (parser→core) と R3 (config/state→core/step) のエントリは解消済み。
-  // 以下は ratchet が surface した B3-* triage エントリ（accept/fix は別途判断）。
-  // B3-state-helpers: state/helpers.ts → core/port/report-result
-  {
-    file: "src/state/helpers.ts",
-    pattern: "core/port/report-result.js",
-    invariant: "B-3",
-    tracking: "B3-state-helpers",
-    comment:
-      "state/helpers.ts imports BaseReportResult from core/port/report-result. " +
-      "Fix: canonical re-export or move type to shared-kernel.",
-  },
-  // B3-state-port: state/schema.ts → core/port/*
-  {
-    file: "src/state/schema.ts",
-    pattern: "core/port/model-usage.js",
-    invariant: "B-3",
-    tracking: "B3-state-port",
-    comment:
-      "state/schema.ts imports and re-exports ModelUsage from core/port/model-usage. " +
-      "Fix: canonical re-export or move type to shared-kernel.",
-  },
-  {
-    file: "src/state/schema.ts",
-    pattern: "core/port/report-result.js",
-    invariant: "B-3",
-    tracking: "B3-state-port",
-    comment:
-      "state/schema.ts imports BaseReportResult from core/port/report-result. " +
-      "Fix: canonical re-export or move type to shared-kernel.",
-  },
+  // Burn-down requests: parser-kernel-demote (R1 — DONE), step-names-kernel-demote (R3 — DONE),
+  // port-types-kernel-demote (B3-state-port / B3-state-helpers — DONE).
   // B3-logger: logger/ → core/event/event-bus
   {
     file: "src/logger/pipeline-logger.ts",
