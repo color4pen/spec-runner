@@ -12,7 +12,7 @@ import type { BaseReportResult } from "../core/port/report-result.js";
  */
 export type { ModelUsage } from "../core/port/model-usage.js";
 
-import { AGENT_STEP_NAMES, CLI_STEP_NAMES, STEP_NAMES } from "../core/step/step-names.js";
+import { AGENT_STEP_NAMES, CLI_STEP_NAMES, STEP_NAMES } from "../kernel/step-names.js";
 
 export type StepName = typeof STEP_NAMES[keyof typeof STEP_NAMES];
 

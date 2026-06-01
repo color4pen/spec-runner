@@ -13,7 +13,7 @@
  *   prevent unauthorized expansion by the pipeline.
  *
  * Burn-down priority (from architecture/model.md §5):
- *   R1 (parser→core circular) → R4 (util leaf) → R2 (SDK) → R3 (step-names)
+ *   R1 (parser→core circular) → R4 (util leaf) → R2 (SDK)
  *
  * MATCHING SEMANTICS (used by core-invariants.test.ts):
  * An allowlist entry covers a grep match iff:
@@ -209,27 +209,9 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
   // into the domain (core/) are forbidden per the §3 closure table.
   //
   // These entries are grandfather'd at arch-upward-edge-ratchet.
-  // Burn-down requests: parser-kernel-demote (R1 — DONE), step-names-kernel-demote (R3).
-  //
-  // R3: config/ and state/ → core/step/step-names
-  {
-    file: "src/config/migrate.ts",
-    pattern: "core/step/step-names.js",
-    invariant: "B-3",
-    tracking: "R3",
-    comment:
-      "config/migrate.ts imports STEP_NAMES from core/step/step-names (back-edge). " +
-      "Fix: move step-names constant to shared-kernel (step-names-kernel-demote).",
-  },
-  {
-    file: "src/state/schema.ts",
-    pattern: "core/step/step-names.js",
-    invariant: "B-3",
-    tracking: "R3",
-    comment:
-      "state/schema.ts imports AGENT_STEP_NAMES/CLI_STEP_NAMES/STEP_NAMES from " +
-      "core/step/step-names (back-edge). Fix: move step-names to shared-kernel (step-names-kernel-demote).",
-  },
+  // Burn-down requests: parser-kernel-demote (R1 — DONE), step-names-kernel-demote (R3 — DONE).
+  // R1 (parser→core) と R3 (config/state→core/step) のエントリは解消済み。
+  // 以下は ratchet が surface した B3-* triage エントリ（accept/fix は別途判断）。
   // B3-state-helpers: state/helpers.ts → core/port/report-result
   {
     file: "src/state/helpers.ts",

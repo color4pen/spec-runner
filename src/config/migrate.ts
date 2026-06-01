@@ -10,7 +10,7 @@
  * The result is a canonical `agents: Record<string, AgentRecord>` shape.
  */
 import type { RawConfig, AgentRecord, SpecRunnerConfig } from "./schema.js";
-import { STEP_NAMES } from "../core/step/step-names.js";
+import { STEP_NAMES } from "../kernel/step-names.js";
 
 /**
  * camelCase intermediate key → kebab-case canonical key map.
