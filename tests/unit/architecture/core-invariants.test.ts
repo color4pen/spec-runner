@@ -210,39 +210,69 @@ describe("B-3: closure model — upward imports into core/ from shared-kernel/le
    * domain (core/).  This prevents upward edges that break the non-circular
    * layer hierarchy.
    *
-   * Scope for this change: the B-3 violations originate in files OUTSIDE
-   * core/ (parser/, config/, state/ importing from core/).  Because this
-   * change scopes enforcement to core/, the direct scan for up-edge origins
-   * is deferred to the src-wide enforcement change.
+   * Scope: non-core directories that are upstream in the call graph —
+   *   src/parser/, src/config/, src/state/, src/git/, src/prompts/,
+   *   src/logger/, src/templates/, src/store/
+   * These are scanned for any `from "...core/"` relative import.
    *
-   * What we CAN assert from core/ outward: core/ itself does not import from
-   * shared-kernel in a *downward* closure-violating way.  Per the §3 table,
-   * domain → shared-kernel is ✓ (allowed), so no assertion is needed here.
-   *
-   * This test documents the coverage gap and intentional deferral.
+   * Known violations are grandfather'd in arch-allowlist.ts (B-3 entries).
+   * New upward edges NOT in the allowlist will cause this test to fail.
    */
-  it("B-3 src-wide scan deferred to future change (core-scoped enforcement has no assertion)", () => {
-    // No grep needed — see docstring.
-    // The closure model test below (forbidden edges) covers the core-outward
-    // direction; the inward direction (parser→core etc.) is out of scope here.
-    expect(true).toBe(true);
+  it("grep finds no upward imports into core/ from shared-kernel/persistence beyond the allowlist", () => {
+    const dirs = [
+      "src/parser",
+      "src/config",
+      "src/state",
+      "src/git",
+      "src/prompts",
+      "src/logger",
+      "src/templates",
+      "src/store",
+    ];
+
+    const allMatches: GrepMatch[] = dirs.flatMap((dir) => {
+      const raw = grepE(`"from ['\\"](\\.\\./)*(core)/"`, dir);
+      return parseGrepOutput(raw);
+    });
+
+    // Exclude test files — production dependency violations only.
+    const candidates = allMatches.filter(
+      (m) =>
+        !m.file.includes("__tests__/") && !m.file.includes(".test.ts"),
+    );
+
+    const b3Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-3");
+    const violations = filterViolations(candidates, b3Entries);
+
+    expect(violationLines(violations)).toEqual([]);
   });
 });
 
-describe("B-4: closure model — core/ leaf imports are direction-compliant", () => {
+describe("B-4: closure model — leaf (util/) must not import any other src/ module", () => {
   /**
-   * B-4 (model.md §4): leaf (util/) must not import anything.  The inverse
-   * (core/ importing util/) is ALLOWED (domain → leaf is ✓ in §3 table).
+   * B-4 (model.md §4): util/ is the leaf layer and must not import upward.
+   * Any `from "../` relative import in src/util/ indicates a dependency on
+   * a higher-level module and violates the leaf constraint.
    *
-   * The B-4 violations (util/slugify.ts re-exporting core/request/store,
-   * util/copy-artifacts.ts importing domain modules) originate in util/ files,
-   * not in core/.  A full scan of util/ is deferred to the src-wide change.
+   * Scope: src/util/ — all relative imports that traverse upward (`../`).
    *
-   * From core/'s perspective: core/ importing util/ is compliant.  This test
-   * documents the deferral.
+   * Known violations are grandfather'd in arch-allowlist.ts (B-4 entries).
+   * New upward edges NOT in the allowlist will cause this test to fail.
    */
-  it("B-4 src-wide scan deferred to future change (util/ violations are outside core/)", () => {
-    expect(true).toBe(true);
+  it("grep finds no external imports in src/util/ beyond the allowlist", () => {
+    const raw = grepE(`"from ['\\"]\\.\\."`, "src/util");
+    const allMatches = parseGrepOutput(raw);
+
+    // Exclude test files — production dependency violations only.
+    const candidates = allMatches.filter(
+      (m) =>
+        !m.file.includes("__tests__/") && !m.file.includes(".test.ts"),
+    );
+
+    const b4Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-4");
+    const violations = filterViolations(candidates, b4Entries);
+
+    expect(violationLines(violations)).toEqual([]);
   });
 });
 
@@ -468,5 +498,61 @@ describe("T-04 regression guard: new forbidden edge not in allowlist triggers de
       (m) => !m.content.includes("stripSecrets"),
     );
     expect(notSeam).toHaveLength(0);
+  });
+
+  it("detects new upward import into core/ not in allowlist (B-3 regression guard)", () => {
+    // Simulate discovering a NEW upward import in a hypothetical shared-kernel file.
+    const injectedMatches: GrepMatch[] = [
+      {
+        file: "src/parser/x.ts",
+        line: 5,
+        content: '  import { Foo } from "../core/y.js";',
+      },
+    ];
+
+    const b3Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-3");
+    const violations = filterViolations(injectedMatches, b3Entries);
+
+    // The new import is NOT in the allowlist — it must be detected.
+    expect(violations).toHaveLength(1);
+    const first = violations.at(0);
+    expect(first?.file).toBe("src/parser/x.ts");
+  });
+
+  it("does not flag violations that are correctly allowlisted (B-3 allowlist suppression)", () => {
+    // Simulate the known B-3 violation in request-md.ts that is already allowlisted.
+    const allowlistedMatch: GrepMatch[] = [
+      {
+        file: "src/parser/request-md.ts",
+        line: 6,
+        content:
+          'import type { ParsedRequest, ParsedRequestSections } from "../core/request/types.js";',
+      },
+    ];
+
+    const b3Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-3");
+    const violations = filterViolations(allowlistedMatch, b3Entries);
+
+    // The known violation IS in the allowlist — it must be suppressed.
+    expect(violations).toHaveLength(0);
+  });
+
+  it("detects new external import in util/ not in allowlist (B-4 regression guard)", () => {
+    // Simulate discovering a NEW external import in a hypothetical util file.
+    const injectedMatches: GrepMatch[] = [
+      {
+        file: "src/util/x.ts",
+        line: 3,
+        content: '  import { bar } from "../state/baz.js";',
+      },
+    ];
+
+    const b4Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-4");
+    const violations = filterViolations(injectedMatches, b4Entries);
+
+    // The new import is NOT in the allowlist — it must be detected.
+    expect(violations).toHaveLength(1);
+    const first = violations.at(0);
+    expect(first?.file).toBe("src/util/x.ts");
   });
 });

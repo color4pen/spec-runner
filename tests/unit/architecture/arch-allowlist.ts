@@ -220,4 +220,225 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
       "(headBeforeStep capture, template write, template cleanup, commit-and-push). " +
       "Fix: extract to a RuntimeStrategy seam so the executor stays runtime-agnostic.",
   },
+
+  // ── B-3: shared-kernel / persistence must not import domain (core/) ──────────
+  //
+  // B-3 (model.md §4): upward edges from shared-kernel (parser/, config/,
+  // state/, git/, prompts/, logger/, templates/) and persistence (store/)
+  // into the domain (core/) are forbidden per the §3 closure table.
+  //
+  // These entries are grandfather'd at arch-upward-edge-ratchet.
+  // Burn-down requests: parser-kernel-demote (R1), step-names-kernel-demote (R3).
+  //
+  // R1: parser/ → core/request/ and core/validation/
+  {
+    file: "src/parser/request-md.ts",
+    pattern: "core/request/types.js",
+    invariant: "B-3",
+    tracking: "R1",
+    comment:
+      "request-md.ts re-exports and imports ParsedRequest/ParsedRequestSections from " +
+      "core/request/types. Fix: move types to shared-kernel (parser-kernel-demote).",
+  },
+  {
+    file: "src/parser/rules/adr-required.ts",
+    pattern: "core/validation/types.js",
+    invariant: "B-3",
+    tracking: "R1",
+    comment:
+      "parser/rules/* import ValidationRule from core/validation/types. " +
+      "Fix: move ValidationRule to shared-kernel (parser-kernel-demote).",
+  },
+  {
+    file: "src/parser/rules/adr-valid.ts",
+    pattern: "core/validation/types.js",
+    invariant: "B-3",
+    tracking: "R1",
+    comment:
+      "parser/rules/* import ValidationRule from core/validation/types. " +
+      "Fix: move ValidationRule to shared-kernel (parser-kernel-demote).",
+  },
+  {
+    file: "src/parser/rules/base-branch-required.ts",
+    pattern: "core/validation/types.js",
+    invariant: "B-3",
+    tracking: "R1",
+    comment:
+      "parser/rules/* import ValidationRule from core/validation/types. " +
+      "Fix: move ValidationRule to shared-kernel (parser-kernel-demote).",
+  },
+  {
+    file: "src/parser/rules/index.ts",
+    pattern: "core/validation/registry.js",
+    invariant: "B-3",
+    tracking: "R1",
+    comment:
+      "parser/rules/index.ts imports RuleRegistry from core/validation/registry. " +
+      "Fix: move RuleRegistry to shared-kernel (parser-kernel-demote).",
+  },
+  {
+    file: "src/parser/rules/slug-required.ts",
+    pattern: "core/validation/types.js",
+    invariant: "B-3",
+    tracking: "R1",
+    comment:
+      "parser/rules/* import ValidationRule from core/validation/types. " +
+      "Fix: move ValidationRule to shared-kernel (parser-kernel-demote).",
+  },
+  {
+    file: "src/parser/rules/title-required.ts",
+    pattern: "core/validation/types.js",
+    invariant: "B-3",
+    tracking: "R1",
+    comment:
+      "parser/rules/* import ValidationRule from core/validation/types. " +
+      "Fix: move ValidationRule to shared-kernel (parser-kernel-demote).",
+  },
+  {
+    file: "src/parser/rules/type-known.ts",
+    pattern: "core/validation/types.js",
+    invariant: "B-3",
+    tracking: "R1",
+    comment:
+      "parser/rules/* import ValidationRule from core/validation/types. " +
+      "Fix: move ValidationRule to shared-kernel (parser-kernel-demote).",
+  },
+  {
+    file: "src/parser/rules/type-required.ts",
+    pattern: "core/validation/types.js",
+    invariant: "B-3",
+    tracking: "R1",
+    comment:
+      "parser/rules/* import ValidationRule from core/validation/types. " +
+      "Fix: move ValidationRule to shared-kernel (parser-kernel-demote).",
+  },
+  {
+    file: "src/parser/rules/types.ts",
+    pattern: "core/request/types.js",
+    invariant: "B-3",
+    tracking: "R1",
+    comment:
+      "parser/rules/types.ts imports ParsedRequestSections from core/request/types. " +
+      "Fix: move type to shared-kernel (parser-kernel-demote).",
+  },
+  // R3: config/ and state/ → core/step/step-names
+  {
+    file: "src/config/migrate.ts",
+    pattern: "core/step/step-names.js",
+    invariant: "B-3",
+    tracking: "R3",
+    comment:
+      "config/migrate.ts imports STEP_NAMES from core/step/step-names (back-edge). " +
+      "Fix: move step-names constant to shared-kernel (step-names-kernel-demote).",
+  },
+  {
+    file: "src/state/schema.ts",
+    pattern: "core/step/step-names.js",
+    invariant: "B-3",
+    tracking: "R3",
+    comment:
+      "state/schema.ts imports AGENT_STEP_NAMES/CLI_STEP_NAMES/STEP_NAMES from " +
+      "core/step/step-names (back-edge). Fix: move step-names to shared-kernel (step-names-kernel-demote).",
+  },
+  // B3-state-helpers: state/helpers.ts → core/port/report-result
+  {
+    file: "src/state/helpers.ts",
+    pattern: "core/port/report-result.js",
+    invariant: "B-3",
+    tracking: "B3-state-helpers",
+    comment:
+      "state/helpers.ts imports BaseReportResult from core/port/report-result. " +
+      "Fix: canonical re-export or move type to shared-kernel.",
+  },
+  // B3-state-port: state/schema.ts → core/port/*
+  {
+    file: "src/state/schema.ts",
+    pattern: "core/port/model-usage.js",
+    invariant: "B-3",
+    tracking: "B3-state-port",
+    comment:
+      "state/schema.ts imports and re-exports ModelUsage from core/port/model-usage. " +
+      "Fix: canonical re-export or move type to shared-kernel.",
+  },
+  {
+    file: "src/state/schema.ts",
+    pattern: "core/port/report-result.js",
+    invariant: "B-3",
+    tracking: "B3-state-port",
+    comment:
+      "state/schema.ts imports BaseReportResult from core/port/report-result. " +
+      "Fix: canonical re-export or move type to shared-kernel.",
+  },
+  // B3-logger: logger/ → core/event/event-bus
+  {
+    file: "src/logger/pipeline-logger.ts",
+    pattern: "core/event/event-bus.js",
+    invariant: "B-3",
+    tracking: "B3-logger",
+    comment:
+      "pipeline-logger.ts imports EventBus type from core/event/event-bus. " +
+      "Fix: move EventBus interface to shared-kernel or core/port.",
+  },
+
+  // ── B-4: leaf (util/) must not import any other src/ module ──────────────────
+  //
+  // B-4 (model.md §4): util/ is the leaf layer; it must not import upward.
+  // These entries are grandfather'd at arch-upward-edge-ratchet.
+  // Burn-down request: util-leaf-purify (R4).
+  //
+  // R4: util/ → any src/ module
+  {
+    file: "src/util/copy-artifacts.ts",
+    pattern: "../errors.js",
+    invariant: "B-4",
+    tracking: "R4",
+    comment:
+      "copy-artifacts.ts imports SpecRunnerError/ERROR_CODES from errors.js. " +
+      "Fix: remove dependency or move copy-artifacts to a higher layer (util-leaf-purify).",
+  },
+  {
+    file: "src/util/copy-artifacts.ts",
+    pattern: "../logger/stdout.js",
+    invariant: "B-4",
+    tracking: "R4",
+    comment:
+      "copy-artifacts.ts imports stderrWrite from logger/stdout. " +
+      "Fix: inject logger or move copy-artifacts to a higher layer (util-leaf-purify).",
+  },
+  {
+    file: "src/util/copy-artifacts.ts",
+    pattern: "../prompts/rules.js",
+    invariant: "B-4",
+    tracking: "R4",
+    comment:
+      "copy-artifacts.ts imports RULES_MD_CONTENT from prompts/rules. " +
+      "Fix: pass content as parameter or move copy-artifacts to a higher layer (util-leaf-purify).",
+  },
+  {
+    file: "src/util/copy-artifacts.ts",
+    pattern: "../state/schema.js",
+    invariant: "B-4",
+    tracking: "R4",
+    comment:
+      "copy-artifacts.ts imports JobState type from state/schema. " +
+      "Fix: pass type as parameter or move copy-artifacts to a higher layer (util-leaf-purify).",
+  },
+  {
+    file: "src/util/copy-artifacts.ts",
+    pattern: "../templates/step-output-templates.js",
+    invariant: "B-4",
+    tracking: "R4",
+    comment:
+      "copy-artifacts.ts imports getOutputTemplates from templates/step-output-templates. " +
+      "Fix: pass templates as parameter or move copy-artifacts to a higher layer (util-leaf-purify).",
+  },
+  {
+    file: "src/util/slugify.ts",
+    pattern: "../core/request/store.js",
+    invariant: "B-4",
+    tracking: "R4",
+    comment:
+      "slugify.ts re-exports checkSlugCollision from core/request/store. " +
+      "Fix: remove re-export; callers should import from core/request/store directly (util-leaf-purify).",
+  },
 ];
