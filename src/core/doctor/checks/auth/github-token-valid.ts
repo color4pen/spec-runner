@@ -1,8 +1,7 @@
 /**
- * TC-022, TC-023, TC-024, TC-065
+ * TC-022, TC-024, TC-065
  * Validate GitHub token via GitHubClient port verifyTokenScopes().
- * Must contain "repo" scope.
- * Timeout = warn, not fail (network may be unreachable).
+ * HTTP 200 = valid, HTTP 401 = invalid/expired, timeout = warn.
  */
 import type { DoctorCheck, DoctorContext } from "../../types.js";
 
@@ -40,18 +39,9 @@ export const githubTokenValidCheck: DoctorCheck = {
         };
       }
 
-      const hasRepoScope = result.scopes.includes("repo");
-      if (!hasRepoScope) {
-        return {
-          status: "fail",
-          message: `GitHub token is missing required scope 'repo'. Current scopes: ${result.scopes.join(", ") || "(none)"}`,
-          hint: "Run 'specrunner login' to re-authenticate with the correct scopes.",
-        };
-      }
-
       return {
         status: "pass",
-        message: `GitHub token is valid with required scopes (repo ✓)`,
+        message: "GitHub token is valid",
       };
     } catch (err: unknown) {
       const isAbort =

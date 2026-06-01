@@ -29,23 +29,12 @@
 
 ### Requirement: `specrunner login` は GitHub Device Flow OAuth でトークンを取得する
 
-`specrunner login` は MUST GitHub OAuth Device Flow を実行し、`repo` スコープのアクセストークンを credentials file に SHALL 保存する。トークン取得後、`saveCredentials` の前に `runDeviceFlow()` が返す `scopes` を検査し、`repo` scope が含まれない場合は warning を表示する SHALL。scope 不足でも token は保存する（token 自体は有効であり、後から scope を拡張できるため）。
+`specrunner login` は MUST GitHub App の Device Flow（[OAuth 2.0 Device Authorization Grant](https://datatracker.ietf.org/doc/html/rfc8628)）を実行し、user access token を credentials file に SHALL 保存する。GitHub App は scope を使用しないため、scope の検査・警告は行わない。
 
-#### Scenario: 通常成功フロー（repo scope あり）
+#### Scenario: 通常成功フロー
 
 - **WHEN** ユーザーが `specrunner login` を実行し、表示された `verification_uri` で `user_code` を入力し承認する
-- **AND** GitHub が返す scope に `repo` が含まれる
-- **THEN** access token を credentials file に保存し、warning なしで `GitHub authentication complete.` を stderr に表示し exit code 0 で終了する
-
-#### Scenario: scope 不足（repo scope なし）
-
-- **WHEN** ユーザーが `specrunner login` を実行し、GitHub が返す scope に `repo` が含まれない
-- **THEN** `Warning: GitHub token does not include 'repo' scope.` を stderr に表示し、token は credentials file に保存し、exit code 0 で終了する
-
-#### Scenario: scope fallback（GitHub が scope を返さない場合）
-
-- **WHEN** GitHub の token レスポンスに `scope` フィールドが含まれない
-- **THEN** `runDeviceFlow()` の fallback により scopes は `["repo"]` となり、warning なしで token が保存される
+- **THEN** access token を credentials file に保存し、`GitHub authentication complete.` を stderr に表示し exit code 0 で終了する
 
 #### Scenario: 認証コード期限切れ
 
@@ -279,7 +268,7 @@ interface DoctorResult {
 - credentials.json 由来: `GitHub token is available (source: credentials)`
 - `GITHUB_TOKEN` env var 由来: `GitHub token is available (source: env)`
 
-`github-token-valid` check は scope 検証が責務のため source を出力しない。
+`github-token-valid` check は token 有効性検証が責務のため source を出力しない。
 
 #### Scenario: credentials.json から token が解決される
 

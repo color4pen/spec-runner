@@ -1,4 +1,4 @@
-import { getGithubClientId, GITHUB_DEVICE_CODE_URL, GITHUB_TOKEN_URL, GITHUB_SCOPE } from "./constants.js";
+import { getGithubClientId, GITHUB_DEVICE_CODE_URL, GITHUB_TOKEN_URL } from "./constants.js";
 import { stderrWrite } from "../logger/stdout.js";
 
 export interface DeviceCodeResponse {
@@ -12,7 +12,6 @@ export interface DeviceCodeResponse {
 export interface AccessTokenResponse {
   access_token: string;
   token_type: string;
-  scope: string;
 }
 
 type FetchFn = typeof fetch;
@@ -83,7 +82,6 @@ export async function pollAccessToken(
     const data = (await response.json()) as {
       access_token?: string;
       token_type?: string;
-      scope?: string;
       error?: string;
       interval?: number;
     };
@@ -92,7 +90,6 @@ export async function pollAccessToken(
       return {
         access_token: data.access_token,
         token_type: data.token_type ?? "bearer",
-        scope: data.scope ?? GITHUB_SCOPE,
       };
     }
 
@@ -130,7 +127,7 @@ export async function pollAccessToken(
 export async function runDeviceFlow(
   fetchFn: FetchFn = fetch,
   sleepFn: SleepFn = defaultSleep,
-): Promise<{ accessToken: string; scopes: string[] }> {
+): Promise<{ accessToken: string }> {
   const deviceCode = await requestDeviceCode(fetchFn);
 
   stderrWrite(
@@ -150,6 +147,5 @@ export async function runDeviceFlow(
 
   return {
     accessToken: token.access_token,
-    scopes: token.scope.split(",").map((s) => s.trim()),
   };
 }

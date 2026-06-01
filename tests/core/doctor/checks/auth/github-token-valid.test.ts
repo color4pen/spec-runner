@@ -1,6 +1,5 @@
 /**
- * TC-022: 200 + repo scope → pass
- * TC-023: 200 + no repo scope → fail
+ * TC-022: 200 (any scopes) → pass
  * TC-024: AbortError → warn
  * TC-065: uses githubClient.verifyTokenScopes not fetch
  */
@@ -10,24 +9,25 @@ import { buildMockContext, buildMockConfig, buildMockGitHubClient } from "../../
 
 describe("githubTokenValidCheck", () => {
   // TC-022
-  it("returns pass when verifyTokenScopes returns 200 + repo scope", async () => {
+  it("returns pass when verifyTokenScopes returns 200", async () => {
     const githubClient = buildMockGitHubClient({
       verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo", "read:org"] }),
     });
     const ctx = buildMockContext({ githubClient, resolvedGitHubToken: "ghp_test" });
     const result = await githubTokenValidCheck.check(ctx);
     expect(result.status).toBe("pass");
+    expect(result.message).toBe("GitHub token is valid");
   });
 
-  // TC-023
-  it("returns fail when repo scope is missing", async () => {
+  // TC-022b: GitHub App token (ghu_) has no classic scopes — must still pass
+  it("returns pass when verifyTokenScopes returns 200 with no scopes (GitHub App token)", async () => {
     const githubClient = buildMockGitHubClient({
-      verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["read:user"] }),
+      verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: [] }),
     });
-    const ctx = buildMockContext({ githubClient, resolvedGitHubToken: "ghp_test" });
+    const ctx = buildMockContext({ githubClient, resolvedGitHubToken: "ghu_test" });
     const result = await githubTokenValidCheck.check(ctx);
-    expect(result.status).toBe("fail");
-    expect(result.message).toMatch(/scope/i);
+    expect(result.status).toBe("pass");
+    expect(result.message).toBe("GitHub token is valid");
   });
 
   // TC-024

@@ -36,7 +36,7 @@ describe("TC-075: authorization_pending — continues polling", () => {
       }
       return Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({ access_token: "gho_test", token_type: "bearer", scope: "repo" }),
+        json: () => Promise.resolve({ access_token: "gho_test", token_type: "bearer" }),
       });
     });
 
@@ -62,7 +62,7 @@ describe("TC-076: slow_down — interval increases by 5", () => {
       }
       return Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({ access_token: "gho_test", token_type: "bearer", scope: "repo" }),
+        json: () => Promise.resolve({ access_token: "gho_test", token_type: "bearer" }),
       });
     });
 

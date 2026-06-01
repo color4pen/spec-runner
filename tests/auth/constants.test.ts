@@ -9,7 +9,7 @@ describe("getGithubClientId", () => {
   it("returns hardcoded client_id when env is unset", () => {
     delete process.env["SPECRUNNER_GITHUB_CLIENT_ID"];
     const result = getGithubClientId();
-    expect(result).toMatch(/^Ov23li/); // GitHub OAuth App client_id prefix
+    expect(result).toMatch(/^Iv23li/); // GitHub App client_id prefix
     expect(result.length).toBeGreaterThan(0);
   });
 
@@ -22,6 +22,6 @@ describe("getGithubClientId", () => {
   it("returns hardcoded client_id when env is empty string", () => {
     process.env["SPECRUNNER_GITHUB_CLIENT_ID"] = "";
     const result = getGithubClientId();
-    expect(result).toMatch(/^Ov23li/);
+    expect(result).toMatch(/^Iv23li/); // GitHub App client_id prefix
   });
 });
