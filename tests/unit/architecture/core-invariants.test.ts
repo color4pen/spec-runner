@@ -403,6 +403,67 @@ describe("B-8: config.runtime branching must be confined to createRuntime factor
   });
 });
 
+// ─── B-9: single mutator enforcement ─────────────────────────────────────────
+
+describe("B-9: status 直書き禁止 — JobState.status changes must go through transitionJob", () => {
+  /**
+   * B-9 (architecture/model.md §4): JobState.status must only be mutated via
+   * transitionJob (src/state/lifecycle.ts).  Direct `status: "..."` writes in
+   * patches or persist calls bypass the valid-transition table and risk illegal
+   * state mutations.
+   *
+   * Scope: src/store/ and src/core/ (two directories scanned separately).
+   *
+   * Exclusions applied before allowlist filtering:
+   *   - src/core/verification/ — PhaseResult.status ("passed"|"failed"|"skipped"),
+   *     not JobState.status; different type entirely.
+   *   - Test files (__tests__/ / .test.ts) — not production code.
+   *   - store/job-state-store.ts lines containing '"running"' — this is the
+   *     create() initialisation (no prior state, so not a transition).
+   *   - Comment lines — handled by isCommentLine() inside filterViolations().
+   *
+   * src/state/lifecycle.ts (transitionJob definition) is naturally excluded
+   * because it is not under src/store/ or src/core/.
+   */
+  it("grep finds no direct JobState.status writes in src/store/ and src/core/ beyond the allowlist", () => {
+    const pattern =
+      `'status:\\s*"(running|failed|awaiting-resume|awaiting-merge|terminated|archived|canceled)"'`;
+
+    const rawStore = grepE(pattern, "src/store");
+    const rawCore = grepE(pattern, "src/core");
+
+    const allMatches: GrepMatch[] = [
+      ...parseGrepOutput(rawStore),
+      ...parseGrepOutput(rawCore),
+    ];
+
+    // Exclude test files — production violations only.
+    const withoutTests = allMatches.filter(
+      (m) => !m.file.includes("__tests__/") && !m.file.includes(".test.ts"),
+    );
+
+    // Exclude src/core/verification/ — those are PhaseResult.status, not JobState.status.
+    const withoutVerification = withoutTests.filter(
+      (m) => !m.file.includes("core/verification/"),
+    );
+
+    // Exclude the create() initialisation in job-state-store.ts — this sets the
+    // *initial* status (no prior state), so it is not a transition.
+    const withoutInit = withoutVerification.filter(
+      (m) =>
+        !(
+          m.file.includes("store/job-state-store.ts") &&
+          m.content.includes('"running"')
+        ),
+    );
+
+    const b9Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-9");
+    const violations = filterViolations(withoutInit, b9Entries);
+
+    expect(violationLines(violations)).toEqual([]);
+  });
+});
+
 // ─── T-04: regression guard ───────────────────────────────────────────────────
 
 describe("T-04 regression guard: new forbidden edge not in allowlist triggers detection", () => {
@@ -588,5 +649,41 @@ describe("T-04 regression guard: new forbidden edge not in allowlist triggers de
       (m) => !m.content.includes("maskSensitive"),
     );
     expect(notSeam).toHaveLength(0);
+  });
+
+  it("detects new direct status write not in allowlist (B-9 regression guard)", () => {
+    // Simulate a NEW direct status write in a hypothetical domain file (NOT allowlisted).
+    const injectedMatches: GrepMatch[] = [
+      {
+        file: "src/core/command/new-feature.ts",
+        line: 7,
+        content: '  status: "failed",',
+      },
+    ];
+
+    const b9Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-9");
+    const violations = filterViolations(injectedMatches, b9Entries);
+
+    // The new status write is NOT in the allowlist — it must be detected.
+    expect(violations).toHaveLength(1);
+    const first = violations.at(0);
+    expect(first?.file).toBe("src/core/command/new-feature.ts");
+  });
+
+  it("does not flag status writes that are correctly allowlisted (B-9 allowlist suppression)", () => {
+    // Simulate the known B-9 bypass in job-state-store.ts (B9-store-fail) that is already allowlisted.
+    const allowlistedMatch: GrepMatch[] = [
+      {
+        file: "src/store/job-state-store.ts",
+        line: 249,
+        content: '      status: "failed" as JobStatus,',
+      },
+    ];
+
+    const b9Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-9");
+    const violations = filterViolations(allowlistedMatch, b9Entries);
+
+    // The known violation IS in the allowlist — it must be suppressed.
+    expect(violations).toHaveLength(0);
   });
 });

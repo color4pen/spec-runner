@@ -86,6 +86,42 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
   },
 
 
+  // ── B-9: JobState.status must only be mutated via transitionJob ──────────────
+  //
+  // B-9 (architecture/model.md §4): JobState.status changes must flow through
+  // transitionJob (src/state/lifecycle.ts) to enforce the valid-transition table
+  // and prevent illegal state mutations.  The entries below are grandfather'd
+  // bypass sites that write status directly (enforce-then-burn-down ratchet).
+  //
+  // Burn-down: replace each bypass with transitionJob call (separate change).
+  {
+    file: "src/store/job-state-store.ts",
+    pattern: '"failed" as JobStatus',
+    invariant: "B-9",
+    tracking: "B9-store-fail",
+    comment:
+      "fail() が transitionJob を経由せず status: \"failed\" を直書き。" +
+      "Fix: replace with transitionJob({ trigger: 'store-fail', reason: ... }) call.",
+  },
+  {
+    file: "src/core/lifecycle/exit-guard.ts",
+    pattern: '"awaiting-resume"',
+    invariant: "B-9",
+    tracking: "B9-exit-guard",
+    comment:
+      "exit-guard が transitionJob を経由せず status: \"awaiting-resume\" を直書き。" +
+      "Fix: replace with transitionJob({ trigger: 'exit-guard', reason: ... }) call.",
+  },
+  {
+    file: "src/core/runtime/local.ts",
+    pattern: '"awaiting-resume" as const',
+    invariant: "B-9",
+    tracking: "B9-signal-handler",
+    comment:
+      "signal-handler が transitionJob を経由せず status: \"awaiting-resume\" を直書き。" +
+      "Fix: replace with transitionJob({ trigger: 'signal-handler', reason: ... }) call.",
+  },
+
   // ── B-3: shared-kernel / persistence must not import domain (core/) ──────────
   //
   // B-3 (model.md §4): upward edges from shared-kernel (parser/, config/,
