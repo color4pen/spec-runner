@@ -575,21 +575,33 @@ describe("T-04 regression guard: new forbidden edge not in allowlist triggers de
     expect(first?.file).toBe("src/parser/x.ts");
   });
 
-  it("does not flag violations that are correctly allowlisted (B-3 allowlist suppression)", () => {
-    // Simulate the known B-3 violation in logger/pipeline-logger.ts (B3-logger) that is already allowlisted.
-    const allowlistedMatch: GrepMatch[] = [
+  it("does not flag violations that are correctly allowlisted (B-3 suppression mechanism — synthetic entry)", () => {
+    // Verify filterViolations suppression mechanism using a locally-defined hypothetical entry.
+    // This test is decoupled from the real ARCH_ALLOWLIST contents so it remains valid
+    // even as real entries are removed via burn-down requests.
+    const syntheticEntry: AllowlistEntry[] = [
       {
-        file: "src/logger/pipeline-logger.ts",
-        line: 20,
-        content:
-          'import type { EventBus } from "../core/event/event-bus.js";',
+        file: "src/hypothetical/some-module.ts",
+        pattern: "core/hypothetical/some-service.js",
+        invariant: "B-3",
+        tracking: "B3-synthetic-suppression-demo",
+        comment: "Synthetic entry for suppression mechanism verification only.",
       },
     ];
 
-    const b3Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-3");
-    const violations = filterViolations(allowlistedMatch, b3Entries);
+    // A grep match that exactly matches the synthetic allowlist entry.
+    const allowlistedMatch: GrepMatch[] = [
+      {
+        file: "src/hypothetical/some-module.ts",
+        line: 5,
+        content:
+          'import type { SomeService } from "../core/hypothetical/some-service.js";',
+      },
+    ];
 
-    // The known violation IS in the allowlist — it must be suppressed.
+    const violations = filterViolations(allowlistedMatch, syntheticEntry);
+
+    // The match IS covered by the synthetic entry — it must be suppressed.
     expect(violations).toHaveLength(0);
   });
 

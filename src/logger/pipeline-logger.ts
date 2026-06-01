@@ -17,7 +17,7 @@
 import { openSync, writeSync, closeSync, mkdirSync } from "node:fs";
 import { getVerboseLogDir, getVerboseLogPath } from "../util/xdg.js";
 import { maskSensitive } from "./stdout.js";
-import type { EventBus } from "../core/event/event-bus.js";
+import type { IEventBus } from "../kernel/event-bus.js";
 
 // ---------------------------------------------------------------------------
 // PipelineLogger class
@@ -59,7 +59,7 @@ export class PipelineLogger {
    *   pipeline:iteration:verdict / pipeline:iteration:exhausted / pipeline:summary /
    *   pipeline:cli-step
    */
-  subscribe(events: EventBus): void {
+  subscribe(events: IEventBus): void {
     events.on("pipeline:start", ({ state }) => {
       this.write({
         type: "pipeline:start",

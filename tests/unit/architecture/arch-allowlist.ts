@@ -130,16 +130,9 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
   //
   // These entries are grandfather'd at arch-upward-edge-ratchet.
   // Burn-down requests: parser-kernel-demote (R1 — DONE), step-names-kernel-demote (R3 — DONE),
-  // port-types-kernel-demote (B3-state-port / B3-state-helpers — DONE).
-  // B3-logger: logger/ → core/event/event-bus
-  {
-    file: "src/logger/pipeline-logger.ts",
-    pattern: "core/event/event-bus.js",
-    invariant: "B-3",
-    tracking: "B3-logger",
-    comment:
-      "pipeline-logger.ts imports EventBus type from core/event/event-bus. " +
-      "Fix: move EventBus interface to shared-kernel or core/port.",
-  },
+  // port-types-kernel-demote (B3-state-port / B3-state-helpers — DONE),
+  // event-bus-interface-demote (B3-logger — DONE).
+  //
+  // B-3 実違反ゼロ達成: 全エントリ burn-down 完了。
 
 ];
