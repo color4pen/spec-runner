@@ -4,7 +4,7 @@
 
 ## なぜ out-of-loop なのか
 
-spec-runner は自分自身を pipeline で開発する（dogfooding）。pipeline は `specrunner/specs/` を書き、`specrunner/adr/` を生成し、`src/` を書き換える。つまり構造定義を pipeline が触れる空間に置くと、**pipeline が自分を縛る構造定義を自分で書き換えられる**（閉ループ）。
+spec-runner は自分自身を pipeline で開発する（dogfooding）。pipeline は `specrunner/changes/` に delta を書き、`specrunner/adr/` を生成し、`src/` を書き換える。つまり構造定義を pipeline が触れる空間に置くと、**pipeline が自分を縛る構造定義を自分で書き換えられる**（閉ループ）。
 
 trust root は、ループが構造的に届かない場所に固定して初めて意味を持つ。ここを `CODEOWNERS` + branch protection で人間 review に固定する（trust の歯はディレクトリ名でなく `CODEOWNERS`）。
 
@@ -38,7 +38,7 @@ trust root は、ループが構造的に届かない場所に固定して初め
 
 **何を書くか（構造のみ）**: 層の割り当て / 依存方向（DSM の edge）/ port・seam の境界 / 不変条件（B-x）/ 型の所在 / ADR governance。「常に保つ形」を書く。
 
-**何を書かないか（振る舞いは別 authority）**: メソッド・step が「何をするか」＝ アルゴリズム / 解決順 / 手順 / routing / product 選択 / 実装の段階計画。これらは spec（`specrunner/specs/`）と request、または pipeline 振る舞いの ADR（`specrunner/adr/`）に置き、構造 ADR からは**参照に留める**。
+**何を書かないか（振る舞いは別 authority）**: メソッド・step が「何をするか」＝ アルゴリズム / 解決順 / 手順 / routing / product 選択 / 実装の段階計画。これらは spec（`specrunner/changes/`）と request、または pipeline 振る舞いの ADR（`specrunner/adr/`）に置き、構造 ADR からは**参照に留める**。
 
 **litmus test**: 「層・依存・境界・不変条件の話か？」→ YES なら構造 ADR。「関数/step が何をするかの話か？」→ YES なら spec/behavior 側。迷ったら architecture には書かない。
 

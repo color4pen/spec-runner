@@ -3,8 +3,9 @@
 > **これは構造の定規（the structural authority）**。「コードがどう組まれているべきか」（層・依存方向）を positive・self-standing に宣言する。
 > **out-of-loop**: pipeline はここに書き込まない。`CODEOWNERS` で人間 review に固定する。
 > **対になるもの**:
-> - この `architecture/model.md` = **コードがどう構造化されているか**の authority
-> - `specrunner/specs/`（振る舞いの actual state 写し）の構造側の対
+> - この `architecture/model.md`（構造の authority）= **コードがどう構造化されているか**
+> - **test suite**（振る舞いの authority）= **振る舞いがどう確定しているか**
+> - `specrunner/specs/` は authority ではない
 >
 > rulings の出自は module-architect 推奨（`specrunner/adr/2026-05-31-structure-rulings.md`）。改訂は ADR 経由。
 
@@ -20,7 +21,7 @@
 - tactical DDD は 4 概念のみ: Aggregate=`JobState`+`StepRun[]` / Repository=`JobStateStore`,`ConfigStore` / Value Object=`Verdict`,`StepOutcome`,`StepName` / Domain Event=`EventBus`。
 - 制約: solo dogfood・TS・重い ceremony（DI コンテナ / フル DDD / 未使用 port）を入れない。
 
-> **被覆スコープ（静的構造のみ）**: step 間の制御 / データの時系列フロー（誰が `JobState` のどのフィールドを書き、どの routing が読むか）は **spec（pipeline-orchestrator / step-execution-architecture）が authority**。本書は静的構造（層・依存・不変条件）のみを縛り、dynamic view（C4 Dynamic / シーケンス）は持たない。
+> **被覆スコープ（静的構造のみ）**: step 間の制御 / データの時系列フロー（誰が `JobState` のどのフィールドを書き、どの routing が読むか）は **振る舞いの authority（test suite）が担う**。本書は静的構造（層・依存・不変条件）のみを縛り、dynamic view（C4 Dynamic / シーケンス）は持たない。
 
 ---
 

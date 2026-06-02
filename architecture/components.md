@@ -59,8 +59,8 @@ interface AgentDefinition { readonly name: string; readonly role: AgentStepName;
 - → `src/core/event/types.ts`（`DomainEvent` / `EventPayloadMap` が正典）
 
 ### FinishOrchestrator — finish（merge + archive）編成
-- **責務**: `awaiting-merge` の PR を squash merge し、change folder を archive、delta spec を baseline へ merge（spec-merge）、`awaiting-merge → archived` を確定。Phase 構成で GitHubClient(port) / WorktreeManager / JobStateStore を編成。
-- **不変条件**: merge は不可逆。成功直後に archived へ遷移（forward-only）。merge gate（branch protection）は bypass せず尊重する方針（draft `finish-respect-branch-protection`）。`specrunner/specs/` への書き込み点（spec-merge）＝ pipeline→specs の閉ループ点であり最も trust load-bearing。
+- **責務**: `awaiting-merge` の PR を squash merge し、change folder を archive、`awaiting-merge → archived` を確定。Phase 構成で GitHubClient(port) / WorktreeManager / JobStateStore を編成。
+- **不変条件**: merge は不可逆。成功直後に archived へ遷移（forward-only）。merge gate（branch protection）は bypass せず尊重する方針（draft `finish-respect-branch-protection`）。
 - → `src/core/finish/orchestrator.ts`（`runFinishOrchestrator` / `FinishInput` / `FinishResult`）
 
 ### WorktreeManager — 並列実行の isolation seam
