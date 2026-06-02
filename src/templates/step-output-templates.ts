@@ -127,7 +127,7 @@ Test Case heading format: \`### TC-{NNN}: {Name}\` (3-digit zero-padded, e.g. TC
 Required fields per test case:
   **Category**: unit | integration | manual
   **Priority**: must | should | could
-  **Source**: reference to design.md or tasks.md section
+  **Source**: reference to delta spec Scenario (specs/<capability>/spec.md > Requirement: <name> > Scenario: <name>) or design.md / tasks.md section
 
 GIVEN/WHEN/THEN structure (required for each test case):
   **GIVEN** <preconditions>
@@ -167,7 +167,7 @@ Result section MUST appear at the very end as a YAML code block:
   result determination:
     completed — all testable behaviors are documented
     partial   — some cases could not be derived due to design ambiguity
-    failed    — required design artifacts (design.md, tasks.md) are missing
+    failed    — delta spec is absent AND design.md / tasks.md are also missing
 -->
 
 ## Summary

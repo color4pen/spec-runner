@@ -240,6 +240,10 @@ describe("TC-T005: template constants contain HTML comment format constraints", 
     expect(TEST_CASES_TEMPLATE).toContain("TC-{NNN}");
   });
 
+  it("TEST_CASES_TEMPLATE Source field references delta spec Scenario path format", () => {
+    expect(TEST_CASES_TEMPLATE).toContain("specs/<capability>/spec.md > Requirement: <name> > Scenario: <name>");
+  });
+
   it("TEST_CASES_TEMPLATE contains GIVEN/WHEN/THEN structure", () => {
     expect(TEST_CASES_TEMPLATE).toContain("GIVEN");
     expect(TEST_CASES_TEMPLATE).toContain("WHEN");
