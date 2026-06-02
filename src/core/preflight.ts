@@ -8,6 +8,7 @@ import { checkConfigComplete } from "../config/schema.js";
 import { getOriginInfo } from "../git/remote.js";
 import { parseRequestMd } from "../parser/request-md.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
+import { resolveGitHubHost } from "../config/github-host.js";
 import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 import { logInfo } from "../logger/stdout.js";
 import { resolveRepoRoot } from "../util/repo-root.js";
@@ -57,10 +58,11 @@ export async function runPreflight(
   }
 
   // Step 2.5: GitHub token (required for PR operations via REST API)
+  const githubHost = resolveGitHubHost(config.github);
   let githubToken: string;
   let githubTokenSource: "credentials" | "env" | "gh";
   try {
-    const resolved = await resolveGitHubToken(env);
+    const resolved = await resolveGitHubToken(env, { host: githubHost });
     githubToken = resolved.token;
     githubTokenSource = resolved.source;
     logInfo(`GitHub token source: ${resolved.source}`);
@@ -92,7 +94,7 @@ export async function runPreflight(
   );
 
   // Step 3 & 4: Git repo + GitHub remote
-  const repo = await getOriginInfo(cwd);
+  const repo = await getOriginInfo(cwd, githubHost);
 
   // Step 5: request.md parseable
   const request = await parseRequestMd(requestMdPath);

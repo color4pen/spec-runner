@@ -3,6 +3,7 @@ import { loadConfig, saveConfig } from "../config/store.js";
 import { loadCredentials, saveCredentials } from "../core/credentials/github.js";
 import { logInfo, logSuccess } from "../logger/stdout.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
+import { resolveGitHubHost } from "../config/github-host.js";
 
 /**
  * Run the specrunner login command.
@@ -14,9 +15,18 @@ import type { SpecRunnerConfig } from "../config/schema.js";
 export async function runLogin(): Promise<number> {
   logInfo("Authenticating with GitHub...");
 
+  // Load config to get GitHub host (best-effort)
+  let githubHost = "github.com";
+  try {
+    const cfg = await loadConfig();
+    githubHost = resolveGitHubHost(cfg.github);
+  } catch {
+    // Config not available — use default host
+  }
+
   let result: Awaited<ReturnType<typeof runDeviceFlow>>;
   try {
-    result = await runDeviceFlow();
+    result = await runDeviceFlow(fetch, undefined, githubHost);
   } catch {
     // expired_token / access_denied — message already printed in github-device.ts
     return 1;

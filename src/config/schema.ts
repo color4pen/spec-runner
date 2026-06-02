@@ -130,6 +130,14 @@ export interface LogsConfig {
   maxJobs?: number;
 }
 
+/** GitHub host and API base URL configuration. */
+export interface GitHubHostConfig {
+  /** GitHub host (e.g. "github.com" or "ghes.corp.example.com"). Default: "github.com". */
+  host?: string;
+  /** Override API base URL (e.g. "https://ghes.corp.example.com/api/v3"). Derived from host when absent. */
+  apiBaseUrl?: string;
+}
+
 export interface SpecRunnerConfig {
   version: 1;
   /**
@@ -186,6 +194,11 @@ export interface SpecRunnerConfig {
    * When absent, defaults to 20 jobs retained.
    */
   logs?: LogsConfig;
+  /**
+   * GitHub host configuration.
+   * When absent, defaults to github.com / api.github.com (public GitHub).
+   */
+  github?: GitHubHostConfig;
 }
 
 /**
@@ -217,6 +230,8 @@ export interface RawConfig {
   progress?: Partial<Record<string, unknown>>;
   /** Verification configuration — passed through as-is. Validated in validateConfig(). */
   verification?: unknown;
+  /** GitHub host configuration — passed through as-is. Validated in validateConfig(). */
+  github?: Partial<Record<string, unknown>>;
 }
 
 /**
@@ -550,6 +565,41 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
             }
           }
         }
+      }
+    }
+  }
+
+  // Validate github section if provided
+  if (obj["github"] !== undefined && obj["github"] !== null) {
+    if (typeof obj["github"] !== "object") {
+      throw Object.assign(
+        new Error("CONFIG_INVALID: github must be an object."),
+        { code: "CONFIG_INVALID" },
+      );
+    }
+    const githubObj = obj["github"] as Record<string, unknown>;
+    if (githubObj["host"] !== undefined) {
+      const host = githubObj["host"];
+      if (typeof host !== "string" || host.length === 0) {
+        throw Object.assign(
+          new Error("CONFIG_INVALID: github.host must be a non-empty string."),
+          { code: "CONFIG_INVALID" },
+        );
+      }
+    }
+    if (githubObj["apiBaseUrl"] !== undefined) {
+      const apiBaseUrl = githubObj["apiBaseUrl"];
+      if (typeof apiBaseUrl !== "string" || apiBaseUrl.length === 0) {
+        throw Object.assign(
+          new Error("CONFIG_INVALID: github.apiBaseUrl must be a non-empty string."),
+          { code: "CONFIG_INVALID" },
+        );
+      }
+      if (!apiBaseUrl.startsWith("https://")) {
+        throw Object.assign(
+          new Error("CONFIG_INVALID: github.apiBaseUrl must start with https://."),
+          { code: "CONFIG_INVALID" },
+        );
       }
     }
   }

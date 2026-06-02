@@ -16,9 +16,12 @@ export interface OriginInfo {
  * Strips credentials from HTTPS URLs.
  *
  * Throws NOT_GIT_REPO if not a git repository.
- * Throws REMOTE_NOT_GITHUB if remote is not github.com.
+ * Throws REMOTE_NOT_GITHUB if remote does not match the configured host.
+ *
+ * @param cwd   Working directory for git commands.
+ * @param host  Expected GitHub host (default: "github.com").
  */
-export async function getOriginInfo(cwd: string): Promise<OriginInfo> {
+export async function getOriginInfo(cwd: string, host: string = "github.com"): Promise<OriginInfo> {
   let remoteUrl: string;
   try {
     const { stdout } = await execFileAsync(
@@ -70,22 +73,26 @@ export async function getOriginInfo(cwd: string): Promise<OriginInfo> {
     );
   }
 
-  return parseRemoteUrl(remoteUrl);
+  return parseRemoteUrl(remoteUrl, host);
 }
 
 /**
  * Parse a git remote URL into owner/name.
  * Exported for testing.
+ *
+ * @param remoteUrl  The git remote URL (HTTPS or SSH format).
+ * @param host       Expected GitHub host (default: "github.com").
  */
-export function parseRemoteUrl(remoteUrl: string): OriginInfo {
-  // SSH format: git@github.com:owner/repo.git
-  const sshPattern = /^git@github\.com:([^/]+)\/(.+?)(?:\.git)?$/;
+export function parseRemoteUrl(remoteUrl: string, host: string = "github.com"): OriginInfo {
+  // SSH format: git@{host}:owner/repo.git
+  const escapedHost = host.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const sshPattern = new RegExp(`^git@${escapedHost}:([^/]+)/(.+?)(?:\\.git)?$`);
   const sshMatch = sshPattern.exec(remoteUrl);
   if (sshMatch?.[1] && sshMatch?.[2]) {
     return { owner: sshMatch[1], name: sshMatch[2] };
   }
 
-  // HTTPS format: https://[user:token@]github.com/owner/repo[.git]
+  // HTTPS format: https://[user:token@]{host}/owner/repo[.git]
   let url: URL;
   try {
     url = new URL(remoteUrl);
@@ -93,7 +100,7 @@ export function parseRemoteUrl(remoteUrl: string): OriginInfo {
     throw remoteNotGitHubError();
   }
 
-  if (url.hostname !== "github.com") {
+  if (url.hostname !== host) {
     throw remoteNotGitHubError();
   }
 

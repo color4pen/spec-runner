@@ -98,3 +98,76 @@ describe("resolveGitHubToken", () => {
     expect(result.source).toBe("gh");
   });
 });
+
+describe("resolveGitHubToken — enterprise host (B-10)", () => {
+  it("resolves GH_ENTERPRISE_TOKEN for non-github.com host", async () => {
+    const result = await resolveGitHubToken(
+      { GH_ENTERPRISE_TOKEN: "ghe_token" },
+      { host: "ghes.example.com" },
+    );
+    expect(result).toEqual({ token: "ghe_token", source: "env" });
+  });
+
+  it("resolves GITHUB_ENTERPRISE_TOKEN when GH_ENTERPRISE_TOKEN is absent", async () => {
+    const result = await resolveGitHubToken(
+      { GITHUB_ENTERPRISE_TOKEN: "ghe_token2" },
+      { host: "ghes.corp.example.com" },
+    );
+    expect(result).toEqual({ token: "ghe_token2", source: "env" });
+  });
+
+  it("prefers GH_ENTERPRISE_TOKEN over GITHUB_ENTERPRISE_TOKEN", async () => {
+    const result = await resolveGitHubToken(
+      { GH_ENTERPRISE_TOKEN: "ghe_primary", GITHUB_ENTERPRISE_TOKEN: "ghe_secondary" },
+      { host: "ghes.example.com" },
+    );
+    expect(result).toEqual({ token: "ghe_primary", source: "env" });
+  });
+
+  it("does NOT use GH_TOKEN for enterprise host (B-10)", async () => {
+    const spawn: SpawnFn = vi.fn().mockResolvedValue({ exitCode: 1, stdout: "", stderr: "" });
+    mockLoadCredentials.mockResolvedValue({});
+
+    const error = await resolveGitHubToken(
+      { GH_TOKEN: "ghp_public_token" },
+      { host: "ghes.example.com", spawn },
+    ).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(Error);
+    expect((error as { hint?: string }).hint).toContain("GH_ENTERPRISE_TOKEN");
+  });
+
+  it("resolves via gh auth token --hostname for enterprise host", async () => {
+    const spawn: SpawnFn = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      stdout: "ghe_from_gh_cli\n",
+      stderr: "",
+    });
+
+    const result = await resolveGitHubToken({}, { host: "ghes.example.com", spawn });
+    expect(result).toEqual({ token: "ghe_from_gh_cli", source: "gh" });
+    expect(spawn).toHaveBeenCalledWith(
+      "gh",
+      ["auth", "token", "--hostname", "ghes.example.com"],
+      expect.objectContaining({ timeoutMs: 5000 }),
+    );
+  });
+
+  it("github.com host uses GH_TOKEN (not enterprise vars)", async () => {
+    const result = await resolveGitHubToken(
+      { GH_TOKEN: "ghp_public", GH_ENTERPRISE_TOKEN: "ghe_should_not_use" },
+      { host: "github.com" },
+    );
+    expect(result).toEqual({ token: "ghp_public", source: "env" });
+  });
+
+  it("throws with host-specific message when no enterprise token found", async () => {
+    const spawn: SpawnFn = vi.fn().mockResolvedValue({ exitCode: 1, stdout: "", stderr: "" });
+    mockLoadCredentials.mockResolvedValue({});
+
+    const error = await resolveGitHubToken({}, { host: "ghes.example.com", spawn }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(Error);
+    const hint = (error as { hint?: string }).hint ?? "";
+    expect(hint).toContain("GH_ENTERPRISE_TOKEN");
+    expect(hint).toContain("ghes.example.com");
+  });
+});

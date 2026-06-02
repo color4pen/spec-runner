@@ -58,7 +58,7 @@ function buildClient(
   mockFetch: typeof fetch,
   sleepFn: (ms: number) => Promise<void> = () => Promise.resolve(),
 ): GitHubApiClient {
-  return new GitHubApiClient(mockFetch, TOKEN, { sleepFn });
+  return new GitHubApiClient(mockFetch, TOKEN, "https://api.github.com", { sleepFn });
 }
 
 // ---------------------------------------------------------------------------

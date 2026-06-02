@@ -74,6 +74,31 @@ describe("TC-013: getOriginInfo with no git repo", () => {
   });
 });
 
+// TC-016: GHES host — HTTPS and SSH parsing
+describe("TC-016: GHES host parsing", () => {
+  it("parses GHES HTTPS URL with custom host", () => {
+    const result = parseRemoteUrl(
+      "https://ghes.corp.example.com/o/r.git",
+      "ghes.corp.example.com",
+    );
+    expect(result).toEqual({ owner: "o", name: "r" });
+  });
+
+  it("parses GHES SSH URL with custom host", () => {
+    const result = parseRemoteUrl(
+      "git@ghes.corp.example.com:o/r.git",
+      "ghes.corp.example.com",
+    );
+    expect(result).toEqual({ owner: "o", name: "r" });
+  });
+
+  it("throws REMOTE_NOT_GITHUB when github.com URL is parsed with GHES host", () => {
+    expect(() =>
+      parseRemoteUrl("https://github.com/o/r.git", "ghes.example.com"),
+    ).toThrow();
+  });
+});
+
 // TC-015: execFile を使う（grep check）
 describe("TC-015: uses execFile not exec", () => {
   it("git/remote.ts uses execFile for shell injection prevention", async () => {

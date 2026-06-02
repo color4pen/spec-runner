@@ -30,6 +30,7 @@ import { FlagParseError } from "./flag-parser.js";
 import type { FlagDef, ParsedArgs } from "./flag-parser.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
+import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
 import { logError, stderrWrite, stdoutWrite, resolveLogLevel } from "../logger/stdout.js";
 import { SpecRunnerError, EXIT_CODE } from "../errors.js";
 import { ClaudeCodeOneShotQueryClient } from "../adapter/claude-code/one-shot-query-client.js";
@@ -343,8 +344,17 @@ export const COMMANDS: Record<string, CommandEntry> = {
         handler: async (parsed) => {
           let githubClient = null;
           try {
-            const { token } = await resolveGitHubToken(process.env as Record<string, string | undefined>);
-            githubClient = createGitHubClient(fetch, token);
+            let githubHost = "github.com";
+            let githubApiBaseUrl = "https://api.github.com";
+            try {
+              const cfg = await loadConfigWithOverlay();
+              githubHost = resolveGitHubHost(cfg.github);
+              githubApiBaseUrl = resolveGitHubApiBaseUrl(cfg.github);
+            } catch {
+              // Config not available — use defaults
+            }
+            const { token } = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
+            githubClient = createGitHubClient(fetch, token, githubApiBaseUrl);
           } catch {
             // No token available — PR merge check will be skipped
           }

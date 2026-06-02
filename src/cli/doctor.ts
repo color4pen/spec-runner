@@ -17,6 +17,7 @@ import { loadConfig } from "../config/store.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
+import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
 import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
 import { stdoutWrite } from "../logger/stdout.js";
 
@@ -89,11 +90,14 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
     configLoadError = err instanceof Error ? err.message : String(err);
   }
 
+  const githubHost = resolveGitHubHost(rawConfig?.github);
+  const githubApiBaseUrl = resolveGitHubApiBaseUrl(rawConfig?.github);
+
   // Resolve GitHub token (best-effort — doctor works even without token)
   let resolvedGitHubToken: string | null = null;
   let githubTokenSource: "credentials" | "env" | "gh" | null = null;
   try {
-    const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>);
+    const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
     resolvedGitHubToken = resolved.token;
     githubTokenSource = resolved.source;
   } catch {
@@ -117,10 +121,7 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
   }
 
   // Build GitHub client (uses resolved token — may be null → empty string fallback)
-  const githubClient: DoctorGitHubClient = createGitHubClient(
-    globalThis.fetch,
-    resolvedGitHubToken ?? "",
-  );
+  const githubClient: DoctorGitHubClient = createGitHubClient(globalThis.fetch, resolvedGitHubToken ?? "", githubApiBaseUrl);
 
   // Assemble DoctorContext
   const ctx: DoctorContext = {

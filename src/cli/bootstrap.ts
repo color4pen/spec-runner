@@ -11,6 +11,7 @@ import { loadConfig } from "../config/store.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
+import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
 import { createAnthropicClient } from "../adapter/managed-agent/client.js";
 import { createAnthropicSessionClient } from "../adapter/managed-agent/session-client.js";
 import { createRuntime } from "../core/runtime/index.js";
@@ -34,8 +35,10 @@ export interface BootstrapResult {
 export async function bootstrap(cwd: string, repo: OriginInfo): Promise<BootstrapResult> {
   const repoRoot = await resolveRepoRoot(cwd);
   const config = await loadConfig(repoRoot ?? undefined);
-  const { token: githubToken } = await resolveGitHubToken(process.env as Record<string, string | undefined>);
-  const githubClient = createGitHubClient(fetch, githubToken);
+  const githubHost = resolveGitHubHost(config.github);
+  const githubApiBaseUrl = resolveGitHubApiBaseUrl(config.github);
+  const { token: githubToken } = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
+  const githubClient = createGitHubClient(fetch, githubToken, githubApiBaseUrl);
   const anthropicResult = config.runtime === "managed"
     ? await resolveSpecRunnerApiKey(process.env as Record<string, string | undefined>)
     : await resolveSpecRunnerApiKey(process.env as Record<string, string | undefined>, { optional: true });

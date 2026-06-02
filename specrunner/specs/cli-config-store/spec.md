@@ -55,6 +55,9 @@ config の作成・更新時、CLI は MUST ファイルパーミッションを
 - `models` (`ModelsConfig`, optional)
 - `verification` (`VerificationConfig`, optional) — verification step の実行方法を設定。以下の構造を持つ:
   - `verification.commands` (`(string | { name?: string; run: string })[]`, optional) — 順次実行する command 配列。各 command は `sh -c` 経由で実行される。fail-fast（1 件失敗で残り skip）。未定義時は既存の phase 検出 fallback（`package.json` script → `bun run`）を使用する
+- `github` (`GitHubHostConfig`, optional) — GitHub host 設定。以下の構造を持つ:
+  - `github.host` (string, optional) — GitHub ホスト名。既定 `"github.com"`。GHES 等の別ホストを指定する
+  - `github.apiBaseUrl` (string, optional) — GitHub REST API の base URL。未設定時は `host` から導出する（`github.com` → `https://api.github.com`、それ以外 → `https://{host}/api/v3`）。設定時は host からの導出より優先する。MUST `https://` で始まる非空文字列
 
 `jobs` section は廃止された。旧 config に `jobs` section が残っていても SHALL 未知 field として無視される（error にならない）。`JobsConfig` 型は削除される。
 
@@ -78,23 +81,36 @@ config の作成・更新時、CLI は MUST ファイルパーミッションを
 - **GIVEN** 既存の config に `byRequestType` が含まれない steps 設定がある
 - **WHEN** config を読み込む
 - **THEN** 読み込みは正常に完了する
-- **AND** 既存の step config resolution（4 レベル）と同等の挙動が維持される
 
-#### Scenario: verification.commands を含む config が読み込まれる
+#### Scenario: github.host の設定
 
-- **GIVEN** config に以下が設定されている:
-  ```json
-  { "verification": { "commands": ["bun run build", "bun run test", { "name": "lint", "run": "eslint ./src" }] } }
-  ```
+- **GIVEN** config に `{ "github": { "host": "ghes.corp.example.com" } }` が設定されている
 - **WHEN** config を読み込む
-- **THEN** `config.verification.commands` は 3 要素の配列として取得される
+- **THEN** `config.github.host` は `"ghes.corp.example.com"` である
 
-#### Scenario: verification section なしの後方互換
+#### Scenario: github.apiBaseUrl の設定
 
-- **GIVEN** 既存の config に `verification` section が含まれない
+- **GIVEN** config に `{ "github": { "apiBaseUrl": "https://custom-proxy.example.com/gh" } }` が設定されている
 - **WHEN** config を読み込む
-- **THEN** 読み込みは正常に完了する
-- **AND** `config.verification` は `undefined` である
+- **THEN** `config.github.apiBaseUrl` は `"https://custom-proxy.example.com/gh"` である
+
+#### Scenario: github セクション未設定の後方互換
+
+- **GIVEN** 既存の config に `github` セクションが含まれない
+- **WHEN** config を読み込む
+- **THEN** 読み込みは正常に完了する（github は undefined）
+
+#### Scenario: github.host が空文字の場合
+
+- **GIVEN** config に `{ "github": { "host": "" } }` が設定されている
+- **WHEN** config を読み込む
+- **THEN** `CONFIG_INVALID` エラーが発生する
+
+#### Scenario: github.apiBaseUrl が https:// で始まらない場合
+
+- **GIVEN** config に `{ "github": { "apiBaseUrl": "http://insecure.example.com" } }` が設定されている
+- **WHEN** config を読み込む
+- **THEN** `CONFIG_INVALID` エラーが発生する
 
 ### Requirement: 設定の更新は atomic に行う
 

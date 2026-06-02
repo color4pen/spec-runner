@@ -1,4 +1,4 @@
-import { getGithubClientId, GITHUB_DEVICE_CODE_URL, GITHUB_TOKEN_URL } from "./constants.js";
+import { getGithubClientId, getDeviceCodeUrl, getTokenUrl } from "./constants.js";
 import { stderrWrite } from "../logger/stdout.js";
 
 export interface DeviceCodeResponse {
@@ -21,9 +21,10 @@ type FetchFn = typeof fetch;
  */
 export async function requestDeviceCode(
   fetchFn: FetchFn = fetch,
+  host: string = "github.com",
 ): Promise<DeviceCodeResponse> {
   const clientId = getGithubClientId();
-  const response = await fetchFn(GITHUB_DEVICE_CODE_URL, {
+  const response = await fetchFn(getDeviceCodeUrl(host), {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -55,6 +56,7 @@ export async function pollAccessToken(
   intervalSeconds: number,
   fetchFn: FetchFn = fetch,
   sleepFn: SleepFn = defaultSleep,
+  host: string = "github.com",
 ): Promise<AccessTokenResponse> {
   const clientId = getGithubClientId();
   let currentInterval = intervalSeconds;
@@ -62,7 +64,7 @@ export async function pollAccessToken(
   while (true) {
     await sleepFn(currentInterval * 1000);
 
-    const response = await fetchFn(GITHUB_TOKEN_URL, {
+    const response = await fetchFn(getTokenUrl(host), {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -127,8 +129,9 @@ export async function pollAccessToken(
 export async function runDeviceFlow(
   fetchFn: FetchFn = fetch,
   sleepFn: SleepFn = defaultSleep,
+  host: string = "github.com",
 ): Promise<{ accessToken: string }> {
-  const deviceCode = await requestDeviceCode(fetchFn);
+  const deviceCode = await requestDeviceCode(fetchFn, host);
 
   stderrWrite(
     `Open ${deviceCode.verification_uri} and enter code: ${deviceCode.user_code}`,
@@ -143,6 +146,7 @@ export async function runDeviceFlow(
     deviceCode.interval,
     fetchFn,
     sleepFn,
+    host,
   );
 
   return {

@@ -2,6 +2,7 @@ import * as path from "node:path";
 import * as fs from "node:fs";
 import { resolveWithFallback as storeResolve } from "../core/request/store.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
+import { resolveGitHubApiBaseUrl } from "../config/github-host.js";
 import { createAnthropicClient } from "../adapter/managed-agent/client.js";
 import { createAnthropicSessionClient } from "../adapter/managed-agent/session-client.js";
 import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
@@ -79,7 +80,8 @@ export async function runRunCore(
   // Ensure .gitignore covers .specrunner/ (idempotent)
   await ensureDotSpecrunnerGitignore(cwd);
 
-  const githubClient = createGitHubClient(fetch, githubToken);
+  const githubApiBaseUrl = resolveGitHubApiBaseUrl(config.github);
+  const githubClient = createGitHubClient(fetch, githubToken, githubApiBaseUrl);
   const anthropicResult = config.runtime === "managed"
     ? await resolveSpecRunnerApiKey(process.env as Record<string, string | undefined>)
     : await resolveSpecRunnerApiKey(process.env as Record<string, string | undefined>, { optional: true });

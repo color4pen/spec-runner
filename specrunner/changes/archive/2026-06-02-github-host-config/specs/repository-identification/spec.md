@@ -1,6 +1,3 @@
-## Purpose
-
-Identify the target repository from the current working directory's git remote.
 ## Requirements
 
 ### Requirement: cwd の git remote から owner/name を解決する
@@ -60,25 +57,6 @@ origin が設定された GitHub host 以外を指す場合、CLI は MUST `REMO
 - **AND** host パラメータが `"ghes.corp.example.com"`
 - **THEN** `REMOTE_NOT_GITHUB` エラーを発生させる（host 不一致）
 
-### Requirement: cwd が git repo でない場合はエラーとなる
+## Renamed
 
-`git remote get-url origin` がエラー終了する、または cwd の上位に `.git` ディレクトリが存在しない場合、CLI は MUST `NOT_GIT_REPO` エラーで `Not a git repository.` を返す。CLI は SHALL git 未初期化ディレクトリで処理を継続しない。
-
-#### Scenario: git 未初期化ディレクトリ
-
-- **WHEN** cwd またはその親に `.git` が無い
-- **THEN** `NOT_GIT_REPO` エラーを返す
-
-#### Scenario: origin remote が無い
-
-- **WHEN** git repo だが origin remote が未設定
-- **THEN** `Origin remote not configured. Run 'git remote add origin <url>' first.` を返す
-
-### Requirement: 解析は外部 npm 依存なしで行う
-
-URL のパースは MUST Node 標準の `URL` クラスと正規表現で実装され、`git`、`url-parse`、`@octokit/url` 等の追加依存を導入しない。`git` コマンドの呼び出しは SHALL `node:child_process` の `execFile` を使う（shell injection 回避のため `exec` ではなく `execFile`）。
-
-#### Scenario: child_process 利用
-
-- **WHEN** git remote を取得する
-- **THEN** `child_process.execFile("git", ["remote", "get-url", "origin"])` で取得し、shell injection を避ける（`exec` ではなく `execFile`）
+- "GitHub 以外の remote はエラーとなる" → "設定 host 以外の remote はエラーとなる"

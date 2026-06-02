@@ -684,6 +684,120 @@ describe("T-04 regression guard: new forbidden edge not in allowlist triggers de
 
 });
 
+// ─── B-10: host↔token 束縛 ───────────────────────────────────────────────────
+
+describe("B-10: host↔token 束縛 — composition-root の全呼び出しで host / baseUrl が渡される", () => {
+  /**
+   * B-10: github.com 用 token を別 host へ送るのは security advisory パターン。
+   * composition-root (src/cli/, src/core/preflight.ts) の全 resolveGitHubToken 呼び出しに
+   * host 引数が存在し、全 createGitHubClient 呼び出しに baseUrl 引数が存在することを検証する。
+   *
+   * 検証方法: grep で呼び出し行を取得し、それぞれに必要な引数が含まれることを確認する。
+   */
+
+  const COMPOSITION_ROOT_DIRS = ["src/cli", "src/core/preflight.ts"];
+
+  /**
+   * grep for a pattern across composition-root directories.
+   */
+  function grepCompositionRoot(pattern: string): string {
+    return COMPOSITION_ROOT_DIRS.reduce((acc, dir) => {
+      return acc + grepE(`"${pattern}"`, dir);
+    }, "");
+  }
+
+  it("全 resolveGitHubToken 呼び出しに host 引数がある (B-10)", () => {
+    // Find all lines that call resolveGitHubToken (but not the import line)
+    const raw = grepCompositionRoot("resolveGitHubToken\\(");
+    const matches = parseGrepOutput(raw);
+
+    // Exclude comment lines and import statements
+    const callSites = matches.filter(
+      (m) =>
+        !isCommentLine(m.content) &&
+        !m.content.includes("import ") &&
+        m.content.includes("resolveGitHubToken("),
+    );
+
+    // Every call site must contain "host:" to pass the host option
+    const missingHost = callSites.filter((m) => !m.content.includes("host:") && !m.content.includes("host,"));
+
+    expect(violationLines(missingHost)).toEqual([]);
+    // Liveness: at least one call site must exist
+    expect(callSites.length).toBeGreaterThan(0);
+  });
+
+  it("全 createGitHubClient 呼び出しに baseUrl 引数がある (B-10 adapter host-aware)", () => {
+    const raw = grepCompositionRoot("createGitHubClient\\(");
+    const matches = parseGrepOutput(raw);
+
+    // Exclude comment lines and import statements
+    const callSites = matches.filter(
+      (m) =>
+        !isCommentLine(m.content) &&
+        !m.content.includes("import ") &&
+        m.content.includes("createGitHubClient("),
+    );
+
+    // Each call should have at least 3 args (fetchFn, token, baseUrl).
+    // We verify by checking that the line is not a 2-arg call (no trailing ")") or
+    // that githubApiBaseUrl / baseUrl appears within a few lines.
+    // Simplest approach: check that none of them end with just (fetch, token) pattern.
+    const missingBaseUrl = callSites.filter(
+      (m) =>
+        // A 2-arg call ends with just the token variable then close paren
+        // A 3-arg call has a 3rd comma-separated argument
+        !m.content.match(/createGitHubClient\s*\([^,]+,[^,]+,[^,)]+/),
+    );
+
+    expect(violationLines(missingBaseUrl)).toEqual([]);
+    // Liveness: at least one call site must exist
+    expect(callSites.length).toBeGreaterThan(0);
+  });
+
+  it("B-10 regression guard: resolveGitHubToken without host argument is detected", () => {
+    // Simulate a call without host option
+    const injectedMatches: GrepMatch[] = [
+      {
+        file: "src/cli/some-new-command.ts",
+        line: 10,
+        content: "  const { token } = await resolveGitHubToken(process.env);",
+      },
+    ];
+
+    // This call has no "host:" — should be flagged
+    const violating = injectedMatches.filter(
+      (m) =>
+        !isCommentLine(m.content) &&
+        !m.content.includes("import ") &&
+        m.content.includes("resolveGitHubToken(") &&
+        !m.content.includes("host:") &&
+        !m.content.includes("host,"),
+    );
+    expect(violating).toHaveLength(1);
+  });
+
+  it("B-10 regression guard: createGitHubClient without baseUrl argument is detected", () => {
+    // Simulate a 2-arg call without baseUrl
+    const injectedMatches: GrepMatch[] = [
+      {
+        file: "src/cli/some-new-command.ts",
+        line: 15,
+        content: "  const client = createGitHubClient(fetch, token);",
+      },
+    ];
+
+    const violating = injectedMatches.filter(
+      (m) =>
+        !isCommentLine(m.content) &&
+        !m.content.includes("import ") &&
+        m.content.includes("createGitHubClient(") &&
+        !m.content.match(/createGitHubClient\s*\([^,]+,[^,]+,[^,)]+/),
+    );
+    expect(violating).toHaveLength(1);
+  });
+});
+
 // ─── DSM closure: §3 全層 whitelist enforcement ───────────────────────────────
 
 /**

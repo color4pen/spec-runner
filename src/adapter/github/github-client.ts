@@ -28,12 +28,15 @@ const MAX_429_RETRIES = 5;
 export class GitHubApiClient implements GitHubClient {
   private readonly sleepFn: (ms: number) => Promise<void>;
   private readonly mergeMaxAttempts: number;
+  private readonly baseUrl: string;
 
   constructor(
     private readonly fetchFn: typeof globalThis.fetch,
     private readonly token: string,
+    baseUrl: string,
     opts?: { sleepFn?: (ms: number) => Promise<void>; mergeMaxAttempts?: number },
   ) {
+    this.baseUrl = baseUrl;
     this.sleepFn = opts?.sleepFn ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
     this.mergeMaxAttempts = opts?.mergeMaxAttempts ?? 4;
   }
@@ -128,7 +131,7 @@ export class GitHubApiClient implements GitHubClient {
   // ---------------------------------------------------------------------------
 
   async verifyBranch(owner: string, repo: string, branch: string): Promise<boolean> {
-    const url = `https://api.github.com/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}`;
+    const url = `${this.baseUrl}/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}`;
     const resp = await this.request(url);
     // 401 → already thrown by request()
     // 5xx exhausted → already thrown by request()
@@ -149,7 +152,7 @@ export class GitHubApiClient implements GitHubClient {
     const localSleepFn = opts?.sleepFn ?? this.sleepFn;
 
     const encodedPath = filePath.split("/").map(encodeURIComponent).join("/");
-    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}?ref=${encodeURIComponent(branch)}`;
+    const url = `${this.baseUrl}/repos/${owner}/${repo}/contents/${encodedPath}?ref=${encodeURIComponent(branch)}`;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       if (attempt > 0) {
@@ -202,7 +205,7 @@ export class GitHubApiClient implements GitHubClient {
     const timer = setTimeout(() => controller.abort(), 5000);
 
     try {
-      const resp = await this.request("https://api.github.com/user", {
+      const resp = await this.request(`${this.baseUrl}/user`, {
         signal: controller.signal,
       });
       clearTimeout(timer);
@@ -232,7 +235,7 @@ export class GitHubApiClient implements GitHubClient {
    * - any other status (5xx 含む) → throws SpecRunnerError(GITHUB_API_ERROR)
    */
   async getRefSha(owner: string, repo: string, branch: string): Promise<string | null> {
-    const url = `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${encodeURIComponent(branch)}`;
+    const url = `${this.baseUrl}/repos/${owner}/${repo}/git/refs/heads/${encodeURIComponent(branch)}`;
     const resp = await this.request(url);
 
     if (resp.status === 200) {
@@ -250,7 +253,7 @@ export class GitHubApiClient implements GitHubClient {
 
   async verifyPath(owner: string, repo: string, branch: string, folderPath: string): Promise<boolean> {
     const encodedPath = folderPath.split("/").map(encodeURIComponent).join("/");
-    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}?ref=${encodeURIComponent(branch)}`;
+    const url = `${this.baseUrl}/repos/${owner}/${repo}/contents/${encodedPath}?ref=${encodeURIComponent(branch)}`;
 
     const resp = await this.request(url);
 
@@ -276,7 +279,7 @@ export class GitHubApiClient implements GitHubClient {
   ): Promise<Array<{ url: string; number: number; state: string }>> {
     // GitHub REST requires head as "owner:branch"
     const headParam = `${owner}:${head}`;
-    const url = `https://api.github.com/repos/${owner}/${repo}/pulls?head=${encodeURIComponent(headParam)}&base=${encodeURIComponent(base)}&state=all&per_page=10`;
+    const url = `${this.baseUrl}/repos/${owner}/${repo}/pulls?head=${encodeURIComponent(headParam)}&base=${encodeURIComponent(base)}&state=all&per_page=10`;
 
     const resp = await this.request(url);
     if (resp.status !== 200) {
@@ -308,7 +311,7 @@ export class GitHubApiClient implements GitHubClient {
     title: string,
     body: string,
   ): Promise<{ url: string; number: number }> {
-    const url = `https://api.github.com/repos/${owner}/${repo}/pulls`;
+    const url = `${this.baseUrl}/repos/${owner}/${repo}/pulls`;
     const resp = await this.request(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -338,7 +341,7 @@ export class GitHubApiClient implements GitHubClient {
     headRefName?: string;
     mergeable?: string;
   }> {
-    const url = `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}`;
+    const url = `${this.baseUrl}/repos/${owner}/${repo}/pulls/${prNumber}`;
     const resp = await this.request(url);
 
     if (resp.status === 404) {
@@ -381,7 +384,7 @@ export class GitHubApiClient implements GitHubClient {
     prNumber: number,
     opts: { mergeMethod: "squash" },
   ): Promise<{ merged: boolean; message: string }> {
-    const url = `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/merge`;
+    const url = `${this.baseUrl}/repos/${owner}/${repo}/pulls/${prNumber}/merge`;
 
     const attemptMerge = async (): Promise<{ merged: boolean; message: string }> => {
       const resp = await this.request(url, {
@@ -500,7 +503,8 @@ function jitterDelay(attempt: number): number {
 export function createGitHubClient(
   fetchFn: typeof globalThis.fetch,
   token: string,
+  baseUrl: string,
   opts?: { sleepFn?: (ms: number) => Promise<void> },
 ): GitHubApiClient {
-  return new GitHubApiClient(fetchFn, token, opts);
+  return new GitHubApiClient(fetchFn, token, baseUrl, opts);
 }

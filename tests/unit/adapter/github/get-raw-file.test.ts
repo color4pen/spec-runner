@@ -21,7 +21,7 @@ const BRANCH = "feat/test";
 const FILE_PATH = specReviewResultPath("test-slug", 1);
 
 function buildClient(mockFetch: typeof fetch): GitHubApiClient {
-  return new GitHubApiClient(mockFetch, "ghp_test", { sleepFn: () => Promise.resolve() });
+  return new GitHubApiClient(mockFetch, "ghp_test", "https://api.github.com", { sleepFn: () => Promise.resolve() });
 }
 
 /** Minimal headers stub — returns null for all rate-limit headers. */

@@ -17,5 +17,16 @@ export function getGithubClientId(): string {
   return process.env["SPECRUNNER_GITHUB_CLIENT_ID"] || GITHUB_CLIENT_ID;
 }
 
-export const GITHUB_DEVICE_CODE_URL = "https://github.com/login/device/code";
-export const GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token";
+/**
+ * Get the GitHub device code URL for the given host.
+ */
+export function getDeviceCodeUrl(host: string): string {
+  return `https://${host}/login/device/code`;
+}
+
+/**
+ * Get the GitHub token URL for the given host.
+ */
+export function getTokenUrl(host: string): string {
+  return `https://${host}/login/oauth/access_token`;
+}

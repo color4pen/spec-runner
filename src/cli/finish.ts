@@ -18,6 +18,8 @@ import { requestMdPath } from "../util/paths.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { getOriginInfo } from "../git/remote.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
+import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
+import { loadConfig } from "../config/store.js";
 import { SpecRunnerError } from "../errors.js";
 import { registerExitGuard } from "../core/lifecycle/exit-guard.js";
 import { logResult, logError, stderrWrite } from "../logger/stdout.js";
@@ -81,10 +83,22 @@ export interface RunFinishOptions {
  */
 export async function runFinish(opts: RunFinishOptions): Promise<number> {
   registerExitGuard(opts.cwd);
+
+  // Load config (best-effort) to resolve GitHub host
+  let githubHost = "github.com";
+  let githubApiBaseUrl = "https://api.github.com";
+  try {
+    const config = await loadConfig();
+    githubHost = resolveGitHubHost(config.github);
+    githubApiBaseUrl = resolveGitHubApiBaseUrl(config.github);
+  } catch {
+    // Config not available — use defaults
+  }
+
   // Resolve GitHub token — required for REST API calls
   let githubToken: string;
   try {
-    const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>);
+    const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
     githubToken = resolved.token;
   } catch (err) {
     if (err instanceof SpecRunnerError) {
@@ -100,7 +114,7 @@ export async function runFinish(opts: RunFinishOptions): Promise<number> {
   let owner: string;
   let repoName: string;
   try {
-    const originInfo = await getOriginInfo(opts.cwd);
+    const originInfo = await getOriginInfo(opts.cwd, githubHost);
     owner = originInfo.owner;
     repoName = originInfo.name;
   } catch (err) {
@@ -109,7 +123,7 @@ export async function runFinish(opts: RunFinishOptions): Promise<number> {
     return 2;
   }
 
-  const githubClient = createGitHubClient(fetch, githubToken);
+  const githubClient = createGitHubClient(fetch, githubToken, githubApiBaseUrl);
 
   // Resolve baseBranch from request.md if slug is available
   let baseBranch = "main"; // fallback for slug-less paths (--pr, --job)

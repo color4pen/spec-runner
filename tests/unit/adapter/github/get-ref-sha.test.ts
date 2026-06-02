@@ -17,7 +17,7 @@ const BRANCH = "feat/test";
 const SHA = "0123456789abcdef0123456789abcdef01234567";
 
 function buildClient(mockFetch: typeof fetch): GitHubApiClient {
-  return new GitHubApiClient(mockFetch, "ghp_test", { sleepFn: () => Promise.resolve() });
+  return new GitHubApiClient(mockFetch, "ghp_test", "https://api.github.com", { sleepFn: () => Promise.resolve() });
 }
 
 /** Minimal headers stub — returns null for all rate-limit headers. */

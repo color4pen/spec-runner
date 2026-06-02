@@ -30,7 +30,7 @@ const noopSleep = () => Promise.resolve();
 
 /** Build a client with a stub fetch and no-op sleep. */
 function buildClient(mockFetch: typeof fetch): GitHubApiClient {
-  return new GitHubApiClient(mockFetch, "ghp_test", { sleepFn: noopSleep });
+  return new GitHubApiClient(mockFetch, "ghp_test", "https://api.github.com", { sleepFn: noopSleep });
 }
 
 /** Build a Response stub for getPullRequest. */
@@ -416,7 +416,7 @@ describe("TC-PM: mergePullRequest status code handling", () => {
 describe("TC-423: 423 Locked message handling", () => {
   /** Build a client with retry disabled (maxAttempts=1) for single-response assertions. */
   function buildNoRetryClient(mockFetch: typeof fetch): GitHubApiClient {
-    return new GitHubApiClient(mockFetch, "ghp_test", { sleepFn: noopSleep, mergeMaxAttempts: 1 });
+    return new GitHubApiClient(mockFetch, "ghp_test", "https://api.github.com", { sleepFn: noopSleep, mergeMaxAttempts: 1 });
   }
 
   it("TC-423-001: 423 + JSON body → message preserved in return value", async () => {
