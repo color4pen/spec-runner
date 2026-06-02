@@ -152,9 +152,9 @@ describe("TC-006: must TC 全件が tests/ に存在するとき status: passed"
     await writeTestFile(
       "tests/unit/a.test.ts",
       `
-it("TC-001: first", () => {});
-it("TC-002: second", () => {});
-it("TC-003: third", () => {});
+it("TC-001: first", () => { expect(true).toBe(true); });
+it("TC-002: second", () => { expect(true).toBe(true); });
+it("TC-003: third", () => { expect(true).toBe(true); });
 `,
     );
 
@@ -237,7 +237,7 @@ describe("TC-009: フラット型 TC-NNN を must TC として検出", () => {
 **Priority**: must
 `,
     );
-    await writeTestFile("tests/unit/a.test.ts", `it("TC-010: flat format", () => {});`);
+    await writeTestFile("tests/unit/a.test.ts", `it("TC-010: flat format", () => { expect(true).toBe(true); });`);
 
     const result = await runTestCoveragePhase(slug, tempDir);
     expect(result.status).toBe("passed");
@@ -261,7 +261,7 @@ describe("TC-010: 階層型 TC-NN-NN を must TC として検出", () => {
 **Priority**: must
 `,
     );
-    await writeTestFile("tests/unit/a.test.ts", `it("TC-10-01: hierarchical", () => {});`);
+    await writeTestFile("tests/unit/a.test.ts", `it("TC-10-01: hierarchical", () => { expect(true).toBe(true); });`);
 
     const result = await runTestCoveragePhase(slug, tempDir);
     expect(result.status).toBe("passed");
@@ -340,8 +340,8 @@ describe("TC-013: should/could TC は test-coverage 検証の対象外", () => {
     // Implement only must TCs; should/could are NOT in tests/
     await writeTestFile(
       "tests/unit/a.test.ts",
-      `it("TC-001: must 1", () => {});
-it("TC-002: must 2", () => {});`,
+      `it("TC-001: must 1", () => { expect(true).toBe(true); });
+it("TC-002: must 2", () => { expect(true).toBe(true); });`,
     );
 
     const result = await runTestCoveragePhase(slug, tempDir);
@@ -408,9 +408,9 @@ describe("runTestCoveragePhase — 複数ファイルにまたがる TC 検出 (
 **Priority**: must
 `,
     );
-    await writeTestFile("tests/unit/a.test.ts", `it("TC-001: a", () => {});`);
-    await writeTestFile("tests/unit/b.test.ts", `it("TC-002: b", () => {});`);
-    await writeTestFile("tests/integration/c.test.ts", `it("TC-003: c", () => {});`);
+    await writeTestFile("tests/unit/a.test.ts", `it("TC-001: a", () => { expect(true).toBe(true); });`);
+    await writeTestFile("tests/unit/b.test.ts", `it("TC-002: b", () => { expect(true).toBe(true); });`);
+    await writeTestFile("tests/integration/c.test.ts", `it("TC-003: c", () => { expect(true).toBe(true); });`);
 
     const result = await runTestCoveragePhase(slug, tempDir);
     expect(result.status).toBe("passed");
@@ -466,5 +466,181 @@ describe("large-change tests", () => {
     expect(result.foundTcIds).toContain("TC-001");
     expect(result.foundTcIds).toContain("TC-002");
     expect(result.stdout).toContain("test-coverage: 2/5 must TCs covered");
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Assertion-existence (faithfulness gate) tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe("faithfulness gate: 空 stub → status: failed + assertionlessTcIds", () => {
+  it("TC-ID はあるが assertion 無しの stub → assertionlessTcIds に含まれ status: 'failed'", async () => {
+    const slug = "my-change";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-001: Stub test
+**Priority**: must
+`,
+    );
+    await writeTestFile("tests/unit/a.test.ts", `it("TC-001", () => {});`);
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("failed");
+    expect(result.assertionlessTcIds).toContain("TC-001");
+    expect(result.missingTcIds).toEqual([]); // TC-001 は found
+    expect(result.foundTcIds).toContain("TC-001");
+  });
+});
+
+describe("faithfulness gate: assertion あり → status: passed + assertionlessTcIds 空", () => {
+  it("TC-ID + expect( 存在 → status: 'passed' かつ assertionlessTcIds: []", async () => {
+    const slug = "my-change";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-001: Real test
+**Priority**: must
+`,
+    );
+    await writeTestFile(
+      "tests/unit/a.test.ts",
+      `it("TC-001: real", () => { expect(true).toBe(true); });`,
+    );
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("passed");
+    expect(result.assertionlessTcIds).toEqual([]);
+  });
+});
+
+describe("faithfulness gate: 複数ファイル — 1 ファイルに assertion があれば assertionless ではない", () => {
+  it("TC-001 が 2 ファイルに出現し、1 ファイルに assertion がある → assertionlessTcIds に含まれない", async () => {
+    const slug = "my-change";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-001: Multi-file test
+**Priority**: must
+`,
+    );
+    // File 1: TC-001 あり、assertion なし
+    await writeTestFile("tests/unit/stub.test.ts", `it("TC-001: stub", () => {});`);
+    // File 2: TC-001 あり、assertion あり
+    await writeTestFile(
+      "tests/unit/real.test.ts",
+      `it("TC-001: real", () => { expect(true).toBe(true); });`,
+    );
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("passed");
+    expect(result.assertionlessTcIds).not.toContain("TC-001");
+  });
+});
+
+describe("faithfulness gate: missing と assertionless の混在", () => {
+  it("missing TC と assertionless TC が同時に存在 → 両方報告、status: 'failed'", async () => {
+    const slug = "my-change";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-001: Has assertion
+**Priority**: must
+
+## TC-002: Assertionless stub
+**Priority**: must
+
+## TC-003: Missing
+**Priority**: must
+`,
+    );
+    // TC-001 in its own file with assertion; TC-002 in its own file without assertion
+    await writeTestFile(
+      "tests/unit/tc001.test.ts",
+      `it("TC-001: real", () => { expect(true).toBe(true); });`,
+    );
+    await writeTestFile(
+      "tests/unit/tc002.test.ts",
+      `it("TC-002: stub", () => {});`,
+    );
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("failed");
+    expect(result.missingTcIds).toContain("TC-003");
+    expect(result.assertionlessTcIds).toContain("TC-002");
+    expect(result.assertionlessTcIds).not.toContain("TC-001");
+    expect(result.stdout).toContain("Missing:");
+    expect(result.stdout).toContain("Assertionless:");
+    expect(result.stdout).toContain("TC-003");
+    expect(result.stdout).toContain("TC-002");
+  });
+});
+
+describe("faithfulness gate: stdout に Assertionless 行が含まれる", () => {
+  it("assertionless TC がある場合 stdout に 'Assertionless:' 行が含まれる", async () => {
+    const slug = "my-change";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-001: Stub
+**Priority**: must
+`,
+    );
+    await writeTestFile("tests/unit/a.test.ts", `it("TC-001", () => {});`);
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.stdout).toContain("Assertionless:");
+    expect(result.stdout).toContain("TC-001");
+  });
+});
+
+describe("faithfulness gate: assert( パターンでも assertion 検出される", () => {
+  it("assert( を含む test → assertionless ではない", async () => {
+    const slug = "my-change";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-001: assert( style
+**Priority**: must
+`,
+    );
+    await writeTestFile(
+      "tests/unit/a.test.ts",
+      `import assert from "node:assert";
+it("TC-001: assert style", () => { assert(true); });`,
+    );
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("passed");
+    expect(result.assertionlessTcIds).toEqual([]);
+  });
+});
+
+describe("faithfulness gate: assert. パターンでも assertion 検出される", () => {
+  it("assert.strictEqual を含む test → assertionless ではない", async () => {
+    const slug = "my-change";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-001: assert.* style
+**Priority**: must
+`,
+    );
+    await writeTestFile(
+      "tests/unit/a.test.ts",
+      `import assert from "node:assert";
+it("TC-001: assert.strictEqual", () => { assert.strictEqual(1, 1); });`,
+    );
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("passed");
+    expect(result.assertionlessTcIds).toEqual([]);
   });
 });

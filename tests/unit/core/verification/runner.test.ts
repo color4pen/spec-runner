@@ -44,6 +44,7 @@ beforeEach(async () => {
   vi.mocked(runTestCoveragePhase).mockResolvedValue({
     status: "passed",
     missingTcIds: [],
+    assertionlessTcIds: [],
     totalMustTcs: 3,
     foundTcIds: ["TC-001", "TC-002", "TC-003"],
     stdout: "test-coverage: 3/3 must TCs covered",
@@ -215,6 +216,7 @@ describe("TC-008: runVerification — 全 phase skipped → verdict failed", () 
     vi.mocked(runTestCoveragePhase).mockResolvedValue({
       status: "skipped",
       missingTcIds: [],
+      assertionlessTcIds: [],
       totalMustTcs: 0,
       foundTcIds: [],
       stdout: "test-cases.md not found at specrunner/changes/my-change/test-cases.md",
@@ -288,6 +290,7 @@ describe("TC-017: runVerification — test-coverage failed → verdict 'failed'"
     vi.mocked(runTestCoveragePhase).mockResolvedValue({
       status: "failed",
       missingTcIds: ["TC-003", "TC-004"],
+      assertionlessTcIds: [],
       totalMustTcs: 4,
       foundTcIds: ["TC-001", "TC-002"],
       stdout: "test-coverage: 2/4 must TCs covered\nMissing: TC-003, TC-004",
@@ -352,6 +355,7 @@ describe("TC-019: runVerification — test-cases.md 不在 → test-coverage ski
     vi.mocked(runTestCoveragePhase).mockResolvedValue({
       status: "skipped",
       missingTcIds: [],
+      assertionlessTcIds: [],
       totalMustTcs: 0,
       foundTcIds: [],
       stdout: "test-cases.md not found at specrunner/changes/my-change/test-cases.md",
@@ -384,6 +388,7 @@ describe("TC-020: test-coverage skipped + stdout non-empty → verification-resu
     vi.mocked(runTestCoveragePhase).mockResolvedValue({
       status: "skipped",
       missingTcIds: [],
+      assertionlessTcIds: [],
       totalMustTcs: 0,
       foundTcIds: [],
       stdout: skipReason,
@@ -422,6 +427,7 @@ describe("TC-021: test-coverage failed → verification-result.md に missing TC
     vi.mocked(runTestCoveragePhase).mockResolvedValue({
       status: "failed",
       missingTcIds: ["TC-003", "TC-012", "TC-017"],
+      assertionlessTcIds: [],
       totalMustTcs: 5,
       foundTcIds: ["TC-001", "TC-002"],
       stdout: "test-coverage: 2/5 must TCs covered\nMissing: TC-003, TC-012, TC-017",

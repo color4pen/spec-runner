@@ -13,6 +13,7 @@ import * as path from "node:path";
 export interface TestCoverageResult {
   status: "passed" | "failed" | "skipped";
   missingTcIds: string[];
+  assertionlessTcIds: string[];
   totalMustTcs: number;
   foundTcIds: string[];
   /** Human-readable summary for verification-result.md. */
@@ -133,6 +134,7 @@ export async function runTestCoveragePhase(
     return {
       status: "skipped",
       missingTcIds: [],
+      assertionlessTcIds: [],
       totalMustTcs: 0,
       foundTcIds: [],
       stdout: `test-cases.md not found at ${relPath}`,
@@ -146,6 +148,7 @@ export async function runTestCoveragePhase(
     return {
       status: "passed",
       missingTcIds: [],
+      assertionlessTcIds: [],
       totalMustTcs: 0,
       foundTcIds: [],
       stdout: "test-coverage: 0/0 must TCs covered (no must TCs defined)",
@@ -180,19 +183,39 @@ export async function runTestCoveragePhase(
     }
   }
 
+  // Step 5b: Assertion existence check — found TC IDs must have at least one
+  // file containing a substantive assertion (expect( / assert( / assert.)
+  const ASSERTION_RE = /expect\(|assert\(|assert\./;
+  const assertionlessTcIds: string[] = [];
+
+  for (const tcId of foundTcIds) {
+    const filesWithTc = fileContents.filter((text) => text.includes(tcId));
+    const hasAssertion = filesWithTc.some((text) => ASSERTION_RE.test(text));
+    if (!hasAssertion) {
+      assertionlessTcIds.push(tcId);
+    }
+  }
+
   // Step 6: Build human-readable stdout summary
   const total = mustTcIds.length;
   const foundCount = foundTcIds.length;
-  const status = missingTcIds.length === 0 ? "passed" : "failed";
+  const status =
+    missingTcIds.length === 0 && assertionlessTcIds.length === 0
+      ? "passed"
+      : "failed";
 
   let stdout = `test-coverage: ${foundCount}/${total} must TCs covered`;
   if (missingTcIds.length > 0) {
     stdout += `\nMissing: ${missingTcIds.join(", ")}`;
   }
+  if (assertionlessTcIds.length > 0) {
+    stdout += `\nAssertionless: ${assertionlessTcIds.join(", ")}`;
+  }
 
   return {
     status,
     missingTcIds,
+    assertionlessTcIds,
     totalMustTcs: total,
     foundTcIds,
     stdout,

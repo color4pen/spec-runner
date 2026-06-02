@@ -43,6 +43,7 @@ beforeEach(async () => {
   vi.mocked(runTestCoveragePhase).mockResolvedValue({
     status: "skipped",
     missingTcIds: [],
+    assertionlessTcIds: [],
     totalMustTcs: 0,
     foundTcIds: [],
     stdout: "test-cases.md not found",
