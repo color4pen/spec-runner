@@ -1,7 +1,7 @@
 /**
  * Commit archive step for finish command.
  *
- * Commits the staged changes produced by mergeSpecsForChange + archiveChangeFolder
+ * Commits the staged changes produced by archiveChangeFolder
  * as a single archive commit. Idempotent: if no staged changes, commit is skipped.
  *
  * TC-CA-001: staging あり → commit 実行 → ok: true, skipped: false
@@ -17,7 +17,7 @@ export type CommitArchiveResult =
   | { ok: false; escalation: string; exitCode: 1 };
 
 /**
- * Commit staged changes (spec-merge + archive) as a single archive commit.
+ * Commit staged changes (archive) as a single archive commit.
  *
  * Uses `git diff --cached --quiet` to detect staging:
  * - exit 0 → no staged changes → skip commit (idempotent)

@@ -31,7 +31,7 @@ Execute the following steps in order:
 - Authority path intent: if the request body references a path under \`specrunner/specs/\`, assess the intent of that reference as an agent:
   - Reference/mention (read-only reference, policy statement, past incident citation) → NOT a HIGH finding
   - Design reflection via delta spec → NOT a HIGH finding
-  - Direct operation (intent to directly edit or modify the baseline) → HIGH severity finding. When reporting, recommend: authority specs are auto-updated by \`specrunner finish\` spec-merge from the delta; the baseline is read-only within the PR. Write Requirements in the delta spec and verify baseline state in AC via grep assertions rather than direct edits.
+  - Direct operation (intent to directly edit or modify the baseline) → HIGH severity finding. When reporting, recommend: the baseline is not updated by \`specrunner finish\`; it is read-only within the PR. Write Requirements in the delta spec and verify behavior via test assertions rather than direct edits.
 
 ### Step 3: External Dependency Check
 - Identify any external SDKs, APIs, or third-party services mentioned in the request

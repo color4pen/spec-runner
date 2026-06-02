@@ -105,7 +105,9 @@ describe("TC-CRED-006: resolveGitHubToken() from credentials file", () => {
   it("returns token from credentials file when present", async () => {
     await writeCredentials({ github: { token: "ghp_fromfile" } });
     const { resolveGitHubToken } = await import("../../../src/core/credentials/github.js");
-    const result = await resolveGitHubToken({});
+    // gh auth token subprocess must fail so credentials file (priority 4) is reached
+    const spawn = vi.fn().mockResolvedValue({ exitCode: 1, stdout: "", stderr: "" });
+    const result = await resolveGitHubToken({}, { spawn });
     expect(result.token).toBe("ghp_fromfile");
     expect(result.source).toBe("credentials");
   });
@@ -125,7 +127,9 @@ describe("TC-CRED-007: resolveGitHubToken() falls back to GITHUB_TOKEN env", () 
 describe("TC-CRED-008: resolveGitHubToken() throws when no token found", () => {
   it("throws SpecRunnerError with GITHUB_TOKEN_MISSING code", async () => {
     const { resolveGitHubToken } = await import("../../../src/core/credentials/github.js");
-    await expect(resolveGitHubToken({})).rejects.toMatchObject({
+    // gh auth token subprocess must fail so the function reaches the throw path
+    const spawn = vi.fn().mockResolvedValue({ exitCode: 1, stdout: "", stderr: "" });
+    await expect(resolveGitHubToken({}, { spawn })).rejects.toMatchObject({
       code: "GITHUB_TOKEN_MISSING",
     });
   });

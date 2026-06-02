@@ -70,7 +70,7 @@ async function makeJobWithPr(
   return { jobId: state.jobId, slug: slug ?? "test-slug" };
 }
 
-// Valid request.md content used by makeStubFs so spec-merge can parse type
+// Valid request.md content used by makeStubFs for orchestrator tests
 const STUB_REQUEST_MD = [
   "# Test Change",
   "",

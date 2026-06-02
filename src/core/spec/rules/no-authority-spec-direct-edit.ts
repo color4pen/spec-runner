@@ -14,7 +14,7 @@ const DELTA_SPEC_PREFIX = "specrunner/changes/";
  * any path that starts with `specrunner/specs/` but NOT `specrunner/changes/`.
  *
  * Rationale: authority specs are read-only during a PR. They must only be
- * updated via `specrunner finish` (spec-merge). Direct edits by agents must
+ * updated via `specrunner finish`. Direct edits by agents must
  * be rolled back and the intended changes moved to the delta spec path.
  *
  * When `changedFiles` is undefined (git diff unavailable), the rule is skipped

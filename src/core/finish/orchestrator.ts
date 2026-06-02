@@ -28,7 +28,6 @@ import { runLocalConflictCheck } from "./local-conflict-check.js";
 import { pollMergeStateAfterPush, checkMergeableForMerge } from "./pr-status.js";
 import { spawnOrEscalate } from "./spawn-helper.js";
 import { archiveChangeFolder } from "./archive-change-folder.js";
-import { mergeSpecsForChange } from "./spec-merge.js";
 import { commitArchive } from "./commit-archive.js";
 import { deriveAndWriteUsage } from "./derive-usage.js";
 import { assertJobFinishable, markJobArchived } from "./job-state-update.js";
@@ -268,11 +267,6 @@ async function runPhase1Archive(params: {
 
   const archiveCwd = operationCwd ?? cwd;
 
-  // merge delta specs into baseline specs before archive
-  const mergeResult = await mergeSpecsForChange({ slug: target.slug, cwd: archiveCwd, spawn, fs });
-  if (!mergeResult.ok) return { ok: false, escalation: mergeResult.escalation, exitCode: 1 };
-  if (!mergeResult.skipped) stdoutWrite(mergeResult.message);
-
   // derive pipeline usage into changes/<slug>/usage.json (before archive moves it)
   try {
     const usageResult = await deriveAndWriteUsage({
@@ -294,7 +288,7 @@ async function runPhase1Archive(params: {
   if (!archiveResult.ok) return { ok: false, escalation: archiveResult.escalation, exitCode: 1 };
   if (!archiveResult.skipped) stdoutWrite(archiveResult.message);
 
-  // commit staged changes (spec-merge + archive) as a single commit
+  // commit staged changes (archive) as a single commit
   const commitResult = await commitArchive({ slug: target.slug, cwd: archiveCwd, spawn });
   if (!commitResult.ok) return { ok: false, escalation: commitResult.escalation, exitCode: 1 };
   if (!commitResult.skipped) stdoutWrite(commitResult.message);
