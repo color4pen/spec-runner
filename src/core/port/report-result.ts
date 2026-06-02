@@ -123,7 +123,7 @@ export function parseBaseReportInput(
 
 /**
  * Typed outcome for producer steps:
- * design / implementer / spec-fixer / delta-spec-fixer / code-fixer / build-fixer / test-case-gen / adr-gen
+ * design / implementer / spec-fixer / code-fixer / build-fixer / test-case-gen / adr-gen
  *
  * status: "success" | "error" — the semantic outcome of the producer step.
  * Optional — undefined when the agent did not populate it (expand phase).

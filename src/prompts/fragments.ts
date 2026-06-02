@@ -7,7 +7,7 @@
  * Dependency direction: prompt files → fragments (one-way).
  * Fragment files do not know which prompts use them.
  *
- * NOTE: SPEC_RUNNER_COMMON_CONTEXT, AUTHORITY_SPEC_GUARD, and DELTA_SPEC_FORMAT
+ * NOTE: SPEC_RUNNER_COMMON_CONTEXT, AUTHORITY_SPEC_GUARD, and SPEC_FORMAT
  * have been moved to specrunner/rules.md. Agents read rules.md via Read tool
  * (identity priming) rather than receiving it as a static system prompt fragment.
  */

@@ -75,10 +75,10 @@ describe("TC-43: DesignStep.followUpPrompt が非 undefined の string", () => {
   });
 });
 
-describe("TC-44: DesignStep.followUpPrompt に rules.md の Read 指示が含まれる", () => {
-  it("TC-44: followUpPrompt 文面に rules.md を Read tool で読む指示が含まれる", () => {
+describe("TC-44: DesignStep.followUpPrompt に spec.md の self-check 指示が含まれる", () => {
+  it("TC-44: followUpPrompt 文面に spec.md のチェック指示が含まれる", () => {
     const prompt = DesignStep.followUpPrompt ?? "";
-    expect(prompt).toContain("rules.md");
+    expect(prompt).toContain("spec.md");
   });
 });
 

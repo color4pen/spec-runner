@@ -53,15 +53,6 @@ function makeEventsWithProgress(): EventBus {
   return events;
 }
 
-// Mock validateDeltaSpecPaths so integration tests don't read real fs for delta-spec validation.
-// Default: returns { ok: true } (approved). Override per-test for needs-fix scenarios.
-vi.mock("../src/core/spec/delta-spec-validator.js", () => ({
-  validateDeltaSpecPaths: vi.fn().mockResolvedValue({ ok: true }),
-}));
-
-import { validateDeltaSpecPaths } from "../src/core/spec/delta-spec-validator.js";
-const mockDeltaSpecValidator = validateDeltaSpecPaths as ReturnType<typeof vi.fn>;
-
 // Mock the verification runner so pipeline-integration tests don't spawn real processes.
 // VerificationStep.run() calls runVerification() internally.
 // Default: returns "passed" verdict and writes a minimal verification-result.md.
@@ -109,8 +100,6 @@ beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "pipeline-integration-test-"));
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
-  // Reset delta-spec-validator mock to default (approved) before each test
-  mockDeltaSpecValidator.mockResolvedValue({ ok: true });
 });
 
 afterEach(async () => {
@@ -174,7 +163,6 @@ function buildConfig(overrides: Record<string, unknown> = {}) {
       "build-fixer": { agentId: "build-fixer-agent-id", definitionHash: "sha256:bfx", lastSyncedAt: new Date().toISOString() },
       "code-review": { agentId: "code-review-agent-id", definitionHash: "sha256:crv", lastSyncedAt: new Date().toISOString() },
       "code-fixer": { agentId: "code-fixer-agent-id", definitionHash: "sha256:cfx", lastSyncedAt: new Date().toISOString() },
-      "delta-spec-fixer": { agentId: "delta-spec-fixer-agent-id", definitionHash: "sha256:dsf", lastSyncedAt: new Date().toISOString() },
       "adr-gen": { agentId: "adr-gen-agent-id", definitionHash: "sha256:adr", lastSyncedAt: new Date().toISOString() },
     },
     pipeline: { maxRetries: 2 },
@@ -301,7 +289,7 @@ function buildPipelineMockClient(opts: {
         ]);
       }
 
-      // Producer steps (design, spec-fixer, delta-spec-fixer, test-case-gen, implementer, build-fixer, code-fixer, adr-gen)
+      // Producer steps (design, spec-fixer, test-case-gen, implementer, build-fixer, code-fixer, adr-gen)
       return Promise.resolve([
         { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, status: "success" } },
       ]);
@@ -1391,18 +1379,18 @@ describe("TC-DC-105: enrichContext is called for spec-review step", () => {
   });
 });
 
-// TC-DC-106: enrichContext returns unmodified dynamicContext when no delta specs dir
-describe("TC-DC-106: enrichContext returns unmodified dynamicContext when no delta specs dir", () => {
-  it("baselineSpecs is undefined when specrunner/changes/test-slug/specs/ does not exist", async () => {
+// TC-DC-106: enrichContext returns unmodified dynamicContext when no spec context available
+describe("TC-DC-106: enrichContext returns unmodified dynamicContext when no spec context available", () => {
+  it("baselineSpecs is undefined when no spec context is available", async () => {
     const { SpecReviewStep } = await import("../src/core/step/spec-review.js");
     const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
-    // No delta spec directory — enrichContext should return dynamicContext unchanged
+    // No spec context — enrichContext should return dynamicContext unchanged
     let capturedEnrichResult: DynamicContext | undefined;
     const enrichSpy = vi.spyOn(SpecReviewStep, "enrichContext").mockImplementation(
       async (dynamicContext: DynamicContext, _cwd: string, _slug: string) => {
-        // Simulate: no delta specs dir → return as-is
+        // Simulate: no spec context → return as-is
         capturedEnrichResult = dynamicContext;
         return dynamicContext;
       },
@@ -1506,292 +1494,6 @@ describe("TC-DC-108: dynamicContext omitted — backward compatibility", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// T-14: Delta-spec-validation pipeline integration tests
-// ---------------------------------------------------------------------------
-
-// TC-DSV-INT-01: design → delta-spec-validation approved → spec-review → awaiting-merge
-describe("TC-DSV-INT-01: delta-spec-validation approved is inserted between design and spec-review", () => {
-  it("pipeline runs delta-spec-validation with approved verdict and proceeds to spec-review", async () => {
-    const { runPipeline } = await import("../src/core/pipeline/index.js");
-    const jobState = await makeJobState();
-
-    // Default: mockDeltaSpecValidator returns { ok: true } → approved
-    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["approved"] });
-    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
-
-    const result = await runPipeline(jobState, {
-      client,
-      config: buildConfig(),
-      request: buildRequest(),
-      slug: "test-slug",
-      sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubClient,
-      runner: buildRunner(client, githubClient),
-      owner: "testowner",
-      repo: "testrepo",
-      spawn: noopSpawn,
-      storeFactory: makeStoreFactory(tempDir),
-    });
-
-    expect(result.status).toBe("awaiting-merge");
-
-    // delta-spec-validation runs twice: once in 1st phase (after design) and once in 2nd phase (after code-review)
-    const dsvSteps = result.steps?.["delta-spec-validation"];
-    expect(dsvSteps, "delta-spec-validation step should be present").toBeDefined();
-    expect(dsvSteps?.length).toBeGreaterThanOrEqual(1);
-    // 1st phase run is always approved (default mock)
-    expect(toLegacyStepResult(dsvSteps![0]!).verdict).toBe("approved");
-
-    // spec-review must also have run (proving the pipeline proceeded past delta-spec-validation)
-    expect(result.steps?.["spec-review"]).toBeDefined();
-
-    // delta-spec-fixer must NOT have run (no violations)
-    expect(result.steps?.["delta-spec-fixer"]).toBeUndefined();
-  });
-});
-
-// TC-DSV-INT-02: design → delta-spec-validation needs-fix → delta-spec-fixer → delta-spec-validation approved → spec-review
-describe("TC-DSV-INT-02: delta-spec-validation needs-fix triggers delta-spec-fixer then re-validation", () => {
-  it("runs fixer once and re-validates, then proceeds to spec-review", async () => {
-    const { runPipeline } = await import("../src/core/pipeline/index.js");
-    const jobState = await makeJobState();
-
-    // First call: violations (needs-fix). Second call: clean (approved).
-    mockDeltaSpecValidator
-      .mockResolvedValueOnce({
-        ok: false,
-        violations: [
-          {
-            path: "/tmp/changes/test-slug/delta-spec.md",
-            reason: "legacy-flat-file",
-            suggested: "Move to specs/<capability>/spec.md",
-          },
-        ],
-      })
-      .mockResolvedValueOnce({ ok: true });
-
-    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["approved"] });
-    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
-
-    const result = await runPipeline(jobState, {
-      client,
-      config: buildConfig(),
-      request: buildRequest(),
-      slug: "test-slug",
-      sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubClient,
-      runner: buildRunner(client, githubClient),
-      owner: "testowner",
-      repo: "testrepo",
-      spawn: noopSpawn,
-      storeFactory: makeStoreFactory(tempDir),
-    });
-
-    expect(result.status).toBe("awaiting-merge");
-
-    // delta-spec-validation ran at least twice: iter 1 needs-fix, iter 2 approved (1st phase),
-    // plus once more in 2nd phase after code-review.
-    const dsvSteps = result.steps?.["delta-spec-validation"];
-    expect(dsvSteps).toBeDefined();
-    expect(dsvSteps?.length).toBeGreaterThanOrEqual(2);
-    expect(toLegacyStepResult(dsvSteps![0]!).verdict).toBe("needs-fix");
-    expect(toLegacyStepResult(dsvSteps![1]!).verdict).toBe("approved");
-
-    // delta-spec-fixer ran exactly once
-    const dsfSteps = result.steps?.["delta-spec-fixer"];
-    expect(dsfSteps).toBeDefined();
-    expect(dsfSteps?.length).toBe(1);
-
-    // Pipeline proceeded past delta-spec-validation → spec-review ran
-    expect(result.steps?.["spec-review"]).toBeDefined();
-  });
-});
-
-// TC-DSV-INT-03: delta-spec-validation exceeds maxRetries → DELTA_SPEC_VALIDATION_RETRIES_EXHAUSTED
-describe("TC-DSV-INT-03: delta-spec-validation retries exhausted → DELTA_SPEC_VALIDATION_RETRIES_EXHAUSTED", () => {
-  it("sets error.code=DELTA_SPEC_VALIDATION_RETRIES_EXHAUSTED and status=awaiting-resume", async () => {
-    const { runPipeline } = await import("../src/core/pipeline/index.js");
-    const jobState = await makeJobState();
-
-    // Always returns violations so delta-spec-validation always needs-fix
-    mockDeltaSpecValidator.mockResolvedValue({
-      ok: false,
-      violations: [
-        {
-          path: "/tmp/changes/test-slug/delta-spec.md",
-          reason: "legacy-flat-file",
-          suggested: "Move to specs/<capability>/spec.md",
-        },
-      ],
-    });
-
-    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["approved"] });
-    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
-
-    // maxRetries: 2 → delta-spec-validation can run at most 2 iterations
-    const result = await runPipeline(jobState, {
-      client,
-      config: buildConfig({ pipeline: { maxRetries: 2 } }),
-      request: buildRequest(),
-      slug: "test-slug",
-      sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubClient,
-      runner: buildRunner(client, githubClient),
-      owner: "testowner",
-      repo: "testrepo",
-      spawn: noopSpawn,
-      storeFactory: makeStoreFactory(tempDir),
-    });
-
-    expect(result.status).toBe("awaiting-resume");
-    expect(result.error?.code).toBe("DELTA_SPEC_VALIDATION_RETRIES_EXHAUSTED");
-
-    // delta-spec-validation ran maxRetries + 1 times: 2 needs-fix entries feed delta-spec-fixer
-    // (which exhausts at fixerIters = 2), plus 1 "last entry overwritten to escalation" entry
-    // produced by handleExhausted. dsv is not in loopNames, so its retry is gated by the
-    // delta-spec-fixer fixerIters check, not by dsv's own loopIters.
-    const dsvSteps = result.steps?.["delta-spec-validation"];
-    expect(dsvSteps).toBeDefined();
-    expect(dsvSteps?.length).toBe(3);
-
-    // spec-review must NOT have run (exhausted before reaching it)
-    expect(result.steps?.["spec-review"]).toBeUndefined();
-  });
-});
-
-// TC-P-06 / TC-DSV-INT-05: managed-reset-status-stale-guard regression reproduction
-// Observed regression: designer wrote delta-spec/<cap>.md (legacy-flat-dir) with "## ADDED" header
-// (missing "Requirements" suffix → missing-requirements-section). Both violations in 1 cycle,
-// fixer resolves them, pipeline reaches spec-review and completes.
-describe("TC-P-06: managed-reset-status-stale-guard scenario — legacy-flat-dir + missing-requirements-section resolved in one cycle", () => {
-  it("resolves both legacy-flat-dir and missing-requirements-section violations and reaches spec-review", async () => {
-    const { runPipeline } = await import("../src/core/pipeline/index.js");
-    const jobState = await makeJobState();
-
-    // First call: two violations matching the observed regression in managed-reset-status-stale-guard:
-    //   1. legacy-flat-dir  (delta-spec/<cap>.md instead of specs/<cap>/spec.md)
-    //   2. missing-requirements-section  ("## ADDED" without "Requirements" suffix)
-    // Second call: clean (approved) after fixer corrects both.
-    mockDeltaSpecValidator
-      .mockResolvedValueOnce({
-        ok: false,
-        violations: [
-          {
-            path: "specrunner/changes/managed-reset-status-stale-guard/delta-spec/managed-cli-commands.md",
-            reason: "legacy-flat-dir" as const,
-            suggested: "Move to specs/managed-cli-commands/spec.md",
-          },
-          {
-            path: "specrunner/changes/managed-reset-status-stale-guard/delta-spec/managed-cli-commands.md",
-            reason: "missing-requirements-section" as const,
-            suggested: "Replace '## ADDED' with '## ADDED Requirements'",
-          },
-        ],
-      })
-      .mockResolvedValueOnce({ ok: true });
-
-    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["approved"] });
-    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
-
-    const result = await runPipeline(jobState, {
-      client,
-      config: buildConfig(),
-      request: buildRequest(),
-      slug: "test-slug",
-      sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubClient,
-      runner: buildRunner(client, githubClient),
-      owner: "testowner",
-      repo: "testrepo",
-      spawn: noopSpawn,
-      storeFactory: makeStoreFactory(tempDir),
-    });
-
-    expect(result.status).toBe("awaiting-merge");
-
-    // delta-spec-validation ran at least twice (1st phase: needs-fix + approved; 2nd phase: approved after code-review)
-    const dsvSteps = result.steps?.["delta-spec-validation"];
-    expect(dsvSteps).toBeDefined();
-    expect(dsvSteps?.length).toBeGreaterThanOrEqual(2);
-    expect(toLegacyStepResult(dsvSteps![0]!).verdict).toBe("needs-fix");
-    expect(toLegacyStepResult(dsvSteps![1]!).verdict).toBe("approved");
-
-    // delta-spec-fixer ran exactly once to fix both violations
-    const dsfSteps = result.steps?.["delta-spec-fixer"];
-    expect(dsfSteps).toBeDefined();
-    expect(dsfSteps?.length).toBe(1);
-
-    // Pipeline proceeded to spec-review after both violations were resolved
-    expect(result.steps?.["spec-review"]).toBeDefined();
-  });
-});
-
-// TC-DSV-INT-04: delta-spec-validation and spec-review maintain independent iteration counters
-describe("TC-DSV-INT-04: delta-spec-validation and spec-review loops are independently counted", () => {
-  it("both loops run to completion with separate counters, neither prevents the other", async () => {
-    const { runPipeline } = await import("../src/core/pipeline/index.js");
-    const jobState = await makeJobState();
-
-    // delta-spec-validation: needs-fix on first call (initial phase), approved on subsequent calls
-    mockDeltaSpecValidator
-      .mockResolvedValueOnce({
-        ok: false,
-        violations: [
-          {
-            path: "/tmp/changes/test-slug/delta-spec.md",
-            reason: "legacy-flat-file",
-            suggested: "Move to specs/<capability>/spec.md",
-          },
-        ],
-      })
-      .mockResolvedValue({ ok: true });
-
-    // spec-review: needs-fix on first call, approved on second
-    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["needs-fix", "approved"] });
-    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["needs-fix", "approved"] });
-
-    // maxRetries: 4 — higher budget so delta-spec-validation running 3 times (1 needs-fix +
-    // 2 approved in spec-review cycle) and spec-review running 2 times don't exhaust the shared budget.
-    // This proves that the two loops' counters are tracked independently: dsv's 3 runs do NOT
-    // prevent spec-review from getting 2 runs.
-    const result = await runPipeline(jobState, {
-      client,
-      config: buildConfig({ pipeline: { maxRetries: 4 } }),
-      request: buildRequest(),
-      slug: "test-slug",
-      sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubClient,
-      runner: buildRunner(client, githubClient),
-      owner: "testowner",
-      repo: "testrepo",
-      spawn: noopSpawn,
-      storeFactory: makeStoreFactory(tempDir),
-    });
-
-    // Pipeline must complete normally — both loops resolved within their budgets
-    expect(result.status).toBe("awaiting-merge");
-
-    // delta-spec-validation ran at least 3 times (2nd phase adds one more after code-review):
-    //   iter 1: needs-fix (initial phase) → delta-spec-fixer
-    //   iter 2: approved → spec-review (1st iter, 1st phase)
-    //   iter 3: approved (after spec-fixer) → spec-review (2nd iter, 1st phase)
-    //   iter 4: approved (2nd phase, after code-review)
-    const dsvSteps = result.steps?.["delta-spec-validation"];
-    expect(dsvSteps).toBeDefined();
-    expect(dsvSteps?.length).toBeGreaterThanOrEqual(3);
-    expect(toLegacyStepResult(dsvSteps![0]!).verdict).toBe("needs-fix");
-    expect(toLegacyStepResult(dsvSteps![1]!).verdict).toBe("approved");
-    expect(toLegacyStepResult(dsvSteps![2]!).verdict).toBe("approved");
-
-    // spec-review ran 2 times independently — delta-spec-validation's 3 runs did not prevent this
-    const specReviewSteps = result.steps?.["spec-review"];
-    expect(specReviewSteps).toBeDefined();
-    expect(specReviewSteps?.length).toBe(2);
-    expect(toLegacyStepResult(specReviewSteps![0]!).verdict).toBe("needs-fix");
-    expect(toLegacyStepResult(specReviewSteps![1]!).verdict).toBe("approved");
-  });
-});
 
 // ---------------------------------------------------------------------------
 // TC-AGENT-COMMIT-INT-001: implementer self-commit → pipeline does not halt
@@ -1933,12 +1635,11 @@ describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not
 
 // ---------------------------------------------------------------------------
 // TC-AUTH-INT-01: PR #289 / #291 同型 reproduction
-// implementer が authority spec + delta spec 両方 staged → warning ログ + commit 続行 (halt しない)
-// (Task 11: halt → warning 変更により、pipeline は続行し delta-spec-validation が検出する)
+// implementer が authority spec + change spec 両方 staged → warning ログ + commit 続行 (halt しない)
 // ---------------------------------------------------------------------------
-describe("TC-AUTH-INT-01: implementer stages authority spec + delta spec → warning to stderr, pipeline continues", () => {
-  it("pipeline continues with warning when implementer stages authority spec alongside delta spec", async () => {
-    // Git mock: implementer staged diff includes both authority spec and delta spec
+describe("TC-AUTH-INT-01: implementer stages authority spec + change spec → warning to stderr, pipeline continues", () => {
+  it("pipeline continues with warning when implementer stages authority spec alongside change spec", async () => {
+    // Git mock: implementer staged diff includes both authority spec and change spec
     let revParseCallCount = 0;
     const gitCallLog: string[][] = [];
 
@@ -1956,9 +1657,9 @@ describe("TC-AUTH-INT-01: implementer stages authority spec + delta spec → war
         const hasNameOnly = args.includes("--name-only");
         const hasCached = args.includes("--cached");
         if (hasNameOnly && hasCached) {
-          // staged file list: authority spec + delta spec
+          // staged file list: authority spec + change spec
           exitCode = 0;
-          stdout = "specrunner/specs/some-cap/spec.md\nspecrunner/changes/test-slug/specs/some-cap/spec.md";
+          stdout = "specrunner/specs/some-cap/spec.md\nspecrunner/changes/test-slug/spec.md";
         } else {
           // --cached --quiet: exit 1 = staged changes present
           exitCode = 1;
@@ -2040,7 +1741,6 @@ describe("TC-AUTH-INT-01: implementer stages authority spec + delta spec → war
     });
 
     // Pipeline must NOT halt — warning behavior: pipeline continues
-    // (delta-spec-validation will handle authority spec violations downstream)
     expect(result.status).toBe("awaiting-merge");
 
     // No AUTHORITY_SPEC_EDIT_VIOLATION error code — halt was converted to warning
@@ -2053,11 +1753,11 @@ describe("TC-AUTH-INT-01: implementer stages authority spec + delta spec → war
 });
 
 // ---------------------------------------------------------------------------
-// TC-AUTH-INT-02: delta spec のみ staged の spec-change pipeline は正常完了する（対照）
+// TC-AUTH-INT-02: change spec のみ staged の spec-change pipeline は正常完了する（対照）
 // ---------------------------------------------------------------------------
-describe("TC-AUTH-INT-02: implementer stages delta spec only → pipeline continues normally", () => {
-  it("pipeline completes normally when implementer stages only delta spec path", async () => {
-    // Git mock: implementer staged diff includes only delta spec (no authority spec)
+describe("TC-AUTH-INT-02: implementer stages change spec only → pipeline continues normally", () => {
+  it("pipeline completes normally when implementer stages only change spec path", async () => {
+    // Git mock: implementer staged diff includes only change spec (no authority spec)
     let revParseCallCount = 0;
     const gitCallLog: string[][] = [];
 
@@ -2075,9 +1775,9 @@ describe("TC-AUTH-INT-02: implementer stages delta spec only → pipeline contin
         const hasNameOnly = args.includes("--name-only");
         const hasCached = args.includes("--cached");
         if (hasNameOnly && hasCached) {
-          // staged file list: delta spec only — no authority spec violation
+          // staged file list: change spec only — no authority spec violation
           exitCode = 0;
-          stdout = "specrunner/changes/test-slug/specs/some-cap/spec.md";
+          stdout = "specrunner/changes/test-slug/spec.md";
         } else {
           // --cached --quiet: exit 1 = staged changes present
           exitCode = 1;
@@ -2139,7 +1839,7 @@ describe("TC-AUTH-INT-02: implementer stages delta spec only → pipeline contin
     });
 
     const jobState = await makeJobState();
-    const stateWithBranch = { ...jobState, branch: "change/test-slug-delta-only" };
+    const stateWithBranch = { ...jobState, branch: "change/test-slug-change-spec-only" };
     const { JobStateStore } = await import("../src/store/job-state-store.js");
     const store = new JobStateStore(stateWithBranch.jobId, tempDir);
     await store.persist(stateWithBranch);
@@ -2170,89 +1870,24 @@ describe("TC-AUTH-INT-02: implementer stages delta spec only → pipeline contin
     // Verification ran (pipeline continued past implementer)
     expect(result.steps?.["verification"]).toBeDefined();
 
-    // Commit was called (delta spec path allowed)
+    // Commit was called (change spec path allowed)
     const commitCalls = gitCallLog.filter((args) => args[0] === "commit");
     expect(commitCalls.length).toBeGreaterThanOrEqual(1);
   });
 });
 
-// ---------------------------------------------------------------------------
-// TC-INT-01: dsv Step 5 fail (no-specs-for-required-type) → delta-spec-fixer transition
-// ---------------------------------------------------------------------------
-describe("TC-INT-01: Step 5 fail (no-specs-for-required-type) → pipeline transitions to delta-spec-fixer without escalation", () => {
-  it("dsv needs-fix on first call triggers delta-spec-fixer; second call approves and pipeline proceeds", async () => {
-    const { runPipeline } = await import("../src/core/pipeline/index.js");
-    const jobState = await makeJobState();
-
-    // First call: Step 5 fail (specs/ absent). Second call: approved after fixer creates specs/.
-    mockDeltaSpecValidator
-      .mockResolvedValueOnce({
-        ok: false,
-        violations: [
-          {
-            path: "/tmp/changes/test-slug/specs/",
-            reason: "no-specs-for-required-type",
-            suggested: "Request type 'spec-change' requires a delta spec. Add a file under /tmp/changes/test-slug/specs/<capability>/spec.md",
-          },
-        ],
-      })
-      .mockResolvedValueOnce({ ok: true });
-
-    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["approved"] });
-    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
-
-    const result = await runPipeline(jobState, {
-      client,
-      config: buildConfig(),
-      request: buildRequest(),
-      slug: "test-slug",
-      sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubClient,
-      runner: buildRunner(client, githubClient),
-      owner: "testowner",
-      repo: "testrepo",
-      spawn: noopSpawn,
-      storeFactory: makeStoreFactory(tempDir),
-    });
-
-    // Pipeline did NOT escalate
-    expect(result.status).toBe("awaiting-merge");
-
-    // dsv ran at least twice in 1st phase (iter 1 needs-fix, iter 2 approved),
-    // plus once more in 2nd phase after code-review approved (iter 3 approved).
-    const dsvSteps = result.steps?.["delta-spec-validation"];
-    expect(dsvSteps).toBeDefined();
-    expect(dsvSteps?.length).toBeGreaterThanOrEqual(2);
-    expect(toLegacyStepResult(dsvSteps![0]!).verdict).toBe("needs-fix");
-    expect(toLegacyStepResult(dsvSteps![1]!).verdict).toBe("approved");
-    // 3rd run (2nd phase, after code-review) also approved:
-    if (dsvSteps!.length >= 3) {
-      expect(toLegacyStepResult(dsvSteps![2]!).verdict).toBe("approved");
-    }
-
-    // delta-spec-fixer ran exactly once (= triggered by needs-fix transition)
-    const dsfSteps = result.steps?.["delta-spec-fixer"];
-    expect(dsfSteps).toBeDefined();
-    expect(dsfSteps?.length).toBe(1);
-
-    // Pipeline proceeded past delta-spec-validation → spec-review ran
-    expect(result.steps?.["spec-review"]).toBeDefined();
-  });
-});
-
 // TC-ADR-INT-01: STANDARD_TRANSITIONS includes adr-gen transitions and removes old code-review→pr-create
 describe("TC-ADR-INT-01: STANDARD_TRANSITIONS adr-gen wiring", () => {
-  it("code-review --approved→ delta-spec-validation (2nd-phase gate, not adr-gen or pr-create directly)", async () => {
+  it("code-review --approved→ adr-gen (direct, no intermediate validation step)", async () => {
     const { STANDARD_TRANSITIONS } = await import("../src/core/pipeline/types.js");
-    // Find the fallback (no `when`) transition: code-review approved → delta-spec-validation
+    // Find the fallback (no `when`) transition: code-review approved → adr-gen
     const codeReviewApproved = STANDARD_TRANSITIONS.find(
       (t) => t.step === "code-review" && t.on === "approved" && !t.when
     );
     expect(codeReviewApproved).toBeDefined();
-    // code-review approved now routes through delta-spec-validation (2nd phase) before adr-gen
-    expect(codeReviewApproved!.to).toBe("delta-spec-validation");
-    // Must NOT go directly to adr-gen or pr-create
-    expect(codeReviewApproved!.to).not.toBe("adr-gen");
+    // code-review approved routes directly to adr-gen
+    expect(codeReviewApproved!.to).toBe("adr-gen");
+    // Must NOT go to pr-create directly (adr-gen is the intermediary)
     expect(codeReviewApproved!.to).not.toBe("pr-create");
   });
 

@@ -35,44 +35,42 @@ describe("TC-003: AgentStep interface has optional enrichContext", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-015: system prompt contains MODIFIED consistency check instruction
+// TC-015: system prompt contains semantic review of spec.md
 // ---------------------------------------------------------------------------
-describe("TC-015: spec-review system prompt contains MODIFIED requirement check", () => {
-  it("mentions MODIFIED requirements and HIGH severity + consistency category", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("MODIFIED");
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("HIGH");
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("consistency");
+describe("TC-015: spec-review system prompt contains Semantic Review of spec.md", () => {
+  it("mentions Semantic Review of spec.md", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("Semantic Review of spec.md");
   });
 
-  it("states MODIFIED requirements must exist in baseline", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toMatch(/MODIFIED.*exist.*baseline|MODIFIED.*baseline.*exist/s);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-016: system prompt handles ## Removed section in new delta spec format
-// (Updated: REMOVED classification is now tool-side; spec-review checks new-capability guard)
-// ---------------------------------------------------------------------------
-describe("TC-016: spec-review system prompt contains ## Removed handling instruction", () => {
-  it("mentions ## Removed section", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toMatch(/##\s*Removed/);
+  it("mentions normative keywords SHALL/MUST", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("SHALL");
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("MUST");
   });
 
-  it("states new-capability + ## Removed results in HIGH finding", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toMatch(/baseline.*does not exist.*Removed|Removed.*baseline.*does not exist/s);
+  it("mentions Layer-1 focus check", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("Layer-1");
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-017: system prompt contains ADDED consistency check instruction
+// TC-016: system prompt contains Scenario coverage check
 // ---------------------------------------------------------------------------
-describe("TC-017: spec-review system prompt contains ADDED requirement check", () => {
-  it("mentions ADDED requirements", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("ADDED");
+describe("TC-016: spec-review system prompt contains Scenario coverage check", () => {
+  it("mentions Scenario coverage", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("Scenario");
   });
 
-  it("states ADDED requirements must NOT already exist in baseline", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toMatch(/ADDED.*NOT.*exist|ADDED.*must not.*exist/is);
+  it("mentions Given/When/Then format", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toMatch(/Given\/When\/Then|Given.*When.*Then/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-017: system prompt contains completeness check
+// ---------------------------------------------------------------------------
+describe("TC-017: spec-review system prompt contains completeness check", () => {
+  it("mentions completeness", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("completeness");
   });
 });
 
@@ -96,29 +94,26 @@ describe("TC-010: SpecReviewStep.enrichContext returns dynamicContext unchanged 
 });
 
 // ---------------------------------------------------------------------------
-// Delta Spec Presence Check — prompt keyword tests
+// Spec Presence Check — prompt keyword tests
 // ---------------------------------------------------------------------------
-describe("Delta Spec Presence Check: system prompt contains presence check instructions", () => {
-  it("contains 'Delta Spec Presence Check' section header", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("Delta Spec Presence Check");
+describe("Spec Presence Check: system prompt contains presence check instructions", () => {
+  it("contains 'Spec Presence Check' section header", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("Spec Presence Check");
   });
 
-  it("mentions spec-change and new-feature as types requiring delta specs", () => {
+  it("mentions spec-change and new-feature as types requiring spec.md", () => {
     expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("spec-change");
     expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("new-feature");
   });
 
-  it("specifies HIGH severity for missing delta specs", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toMatch(/specs\/.*directory.*empty.*missing.*HIGH/s);
+  it("specifies HIGH severity for missing spec.md", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("HIGH");
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("spec.md");
   });
 
   it("instructs to skip check for bug-fix and refactoring types", () => {
     expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("bug-fix");
     expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("refactoring");
-  });
-
-  it("mentions this check is independent of dsv", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toMatch(/independent.*dsv|dsv.*independent/is);
   });
 });
 
@@ -136,27 +131,11 @@ describe("AgentStep interface compliance with enrichContext", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-NEW-001: Read-tool-pull model — system prompt instructs agent to Read baseline
+// TC-NEW-001: system prompt instructs agent to use Read tool for templates
 // ---------------------------------------------------------------------------
-describe("TC-NEW-001: Read-tool-pull model: system prompt instructs agent to use Read tool", () => {
+describe("TC-NEW-001: system prompt instructs agent to use Read tool for template", () => {
   it("system prompt contains 'Read tool' instruction", () => {
     expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("Read tool");
-  });
-
-  it("contains 'Identify the capability name' step", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("Identify the capability name");
-  });
-
-  it("contains 'Read `specrunner/specs/' instruction", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("Read `specrunner/specs/");
-  });
-
-  it("contains 'Extract existing' instruction", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("Extract existing");
-  });
-
-  it("contains 'category: consistency' keyword", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("category: consistency");
   });
 
   it("does NOT contain 'skip this check entirely'", () => {

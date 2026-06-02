@@ -14,7 +14,6 @@ type AgentStepName =
   | "design"
   | "spec-review"
   | "spec-fixer"
-  | "delta-spec-fixer"
   | "test-case-gen"
   | "implementer"
   | "build-fixer"

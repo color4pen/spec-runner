@@ -48,40 +48,28 @@ After writing the verdict and findings to the result file:
 
 The CLI reads the result file from the local worktree after your session ends.
 
-## Delta Spec Presence Check
+## Spec Presence Check
 
 When the request type (stated in the initial message as "Request type: <type>") is \`spec-change\` or \`new-feature\`:
-- The change folder MUST contain at least one delta spec file under \`specs/<capability>/spec.md\`
-- If the \`specs/\` directory is empty or missing in the change folder, report a HIGH severity finding:
+- The change folder MUST contain \`spec.md\` at \`specrunner/changes/<slug>/spec.md\`
+- If \`spec.md\` is absent or empty, report a HIGH severity finding:
   - Severity: HIGH
   - Category: completeness
-  - File: \`specrunner/changes/<slug>/specs/\`
-  - Description: "Request type '<type>' requires a delta spec, but specs/ directory contains no .md files in the change folder."
-  - How to Fix: "Add delta specs under specs/<capability>/spec.md before re-reviewing."
-- This check is independent of the dsv (delta-spec-validation) machine check and serves as a redundant layer.
+  - File: \`specrunner/changes/<slug>/spec.md\`
+  - Description: "Request type '<type>' requires a spec.md, but the file is absent or empty."
+  - How to Fix: "Add spec.md describing the Layer-1 behaviors this change achieves."
 
 When the request type is \`bug-fix\`, \`refactoring\`, or any other type, this check does not apply — skip it.
 
-## Baseline Spec Consistency Check
+## Semantic Review of spec.md
 
-When the delta spec contains \`## Requirements\` sections, follow these steps:
+When \`spec.md\` is present, review each definition segment for semantic quality:
 
-1. Identify the capability name from the delta spec path
-   (\`specrunner/changes/<slug>/specs/<capability>/spec.md\`)
-2. Read \`specrunner/specs/<capability>/spec.md\` using the Read tool
-3. Extract existing \`### Requirement:\` headers from the baseline
-4. For each Requirement header in \`## Requirements\`: verify that the header is semantically
-   appropriate (i.e., baseline-matching headers exist in the baseline, new headers do not
-   duplicate existing ones). Note: ADDED / MODIFIED classification is handled by the tool
-   at \`specrunner finish\` time — spec-review focuses on semantic quality and header consistency.
-5. If the baseline file does not exist and the delta has \`## Removed\` / \`## Renamed\` sections,
-   report a HIGH severity finding (category: consistency).
-6. If the baseline file does not exist and the delta only has \`## Requirements\` (no \`## Removed\`
-   or \`## Renamed\`), this is expected (new capability) — no finding needed.
-
-Note: ADDED / MODIFIED classification is performed by \`classifyDeltaSpec()\` at \`specrunner finish\`
-time using baseline comparison. Spec-review should focus on Requirement semantic quality,
-scenario coverage, and normative keyword presence rather than replicating the tool\'s classification.
+1. **Requirement correctness**: Does each \`### Requirement:\` accurately describe a behavior this change achieves? Is the description unambiguous?
+2. **Scenario coverage**: Does each Requirement have at least one \`#### Scenario:\` in Given/When/Then format? Do the scenarios describe the actual behavior (not just implementation steps)?
+3. **Normative keywords**: Does each Requirement body contain \`SHALL\` or \`MUST\`?
+4. **Completeness**: Are there important behaviors introduced by this change that are not captured in spec.md?
+5. **Layer-1 focus**: Are the Requirements describing intent-based choices (not behaviors enforced by types/FSM structure)?
 
 ## Important Constraints
 
@@ -117,7 +105,7 @@ Request type: {{REQUEST_TYPE}}
 {{REQUEST_CONTENT}}
 </user-request>
 
-Review all spec files in the change folder (request.md, design.md, tasks.md, specs/). Write your verdict and findings to:
+Review all spec files in the change folder (request.md, design.md, tasks.md, spec.md). Write your verdict and findings to:
 {{FINDINGS_PATH}}
 
 The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escalation>\`

@@ -59,7 +59,7 @@ export function toCustomToolSpec(spec: ReportToolSpec): CustomToolSpec {
 
 /**
  * Typed ReportToolSpec for producer steps:
- * design / implementer / spec-fixer / delta-spec-fixer / code-fixer / build-fixer / test-case-gen / adr-gen
+ * design / implementer / spec-fixer / code-fixer / build-fixer / test-case-gen / adr-gen
  *
  * Adds status: "success" | "error" to the base schema (additive — existing ok/reason preserved).
  * status is optional — agents are encouraged but not required to populate it in R2.

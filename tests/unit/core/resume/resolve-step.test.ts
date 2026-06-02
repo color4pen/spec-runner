@@ -244,13 +244,6 @@ describe("resolveResumeStep - fixer-empty detection (issue #236)", () => {
       .toBe("code-fixer");
   });
 
-  it("resumePoint=delta-spec-fixer + steps[delta-spec-fixer] empty + steps[delta-spec-validation] needs-fix → delta-spec-validation", () => {
-    const steps: Record<string, StepRun[]> = {
-      "delta-spec-validation": [makeVerdictRun("needs-fix")],
-    };
-    expect(resolveResumeStep(undefined, { step: "delta-spec-fixer", reason: "kill", iterationsExhausted: 0 }, undefined, steps))
-      .toBe("delta-spec-validation");
-  });
 });
 
 // ============================================================
@@ -266,11 +259,6 @@ describe("resolveResumeStep - --from with step name", () => {
   // TC-RESUME-FROM-02: step name direct
   it("--from code-review → code-review", () => {
     expect(resolveResumeStep("code-review", makeResumePoint("implementer"))).toBe("code-review");
-  });
-
-  // TC-RESUME-FROM-03: deterministic step name direct
-  it("--from delta-spec-validation → delta-spec-validation", () => {
-    expect(resolveResumeStep("delta-spec-validation", makeResumePoint("spec-review"))).toBe("delta-spec-validation");
   });
 
   // TC-RESUME-FROM-04: legacy alias critic is still phase-aware

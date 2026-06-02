@@ -40,18 +40,18 @@ describe("TC-CATG-03: LLM/API exclusion rule is present", () => {
   });
 });
 
-describe("delta spec Scenario as primary test source", () => {
-  it("system prompt mentions delta spec Scenarios as primary input source", () => {
+describe("spec Scenario as primary test source", () => {
+  it("system prompt mentions spec Scenarios as primary input source", () => {
     expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("Primary input source");
     expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("Scenario");
   });
 
-  it("system prompt contains specs/ path reference", () => {
-    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("specs/");
+  it("system prompt contains spec.md path reference", () => {
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("spec.md");
   });
 
-  it("system prompt contains fallback instruction for delta spec absent", () => {
-    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("delta spec absent");
+  it("system prompt contains fallback instruction for spec absent", () => {
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("spec absent");
     expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("fall back");
   });
 
@@ -59,45 +59,45 @@ describe("delta spec Scenario as primary test source", () => {
     expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("Supplementary");
   });
 
-  it("Coverage Requirements requires every Scenario to have at least one test case when delta spec is present", () => {
+  it("Coverage Requirements requires every Scenario to have at least one test case when spec is present", () => {
     expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain(
-      "Every Scenario in the delta spec must have at least one test case",
+      "Every Scenario in spec.md must have at least one test case",
     );
   });
 
-  it("Source field description includes delta spec Scenario reference format", () => {
+  it("Source field description includes spec Scenario reference format", () => {
     expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain(
-      "specs/<capability>/spec.md > Requirement: <name> > Scenario: <name>",
+      "spec.md > Requirement: <name> > Scenario: <name>",
     );
   });
 
-  it("failed result condition covers delta spec absent AND design artifacts missing", () => {
-    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("Delta spec is absent AND");
+  it("failed result condition covers spec absent AND design artifacts missing", () => {
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("spec absent");
   });
 });
 
-describe("buildTestCaseGenInitialMessage — delta spec reading step", () => {
+describe("buildTestCaseGenInitialMessage — spec reading step", () => {
   const msg = buildTestCaseGenInitialMessage({
     slug: "my-change",
     branch: "change/my-change-abc123",
     requestContent: "# Request",
   });
 
-  it("includes a step to read delta spec files under specs/", () => {
-    expect(msg).toContain("specs/");
+  it("includes a step to read spec.md for Scenarios", () => {
+    expect(msg).toContain("spec.md");
     expect(msg).toContain("Scenarios as primary test source");
   });
 
-  it("delta spec step appears before design.md step", () => {
-    const specsIdx = msg.indexOf("specs/");
+  it("spec.md step appears before design.md step", () => {
+    const specIdx = msg.indexOf("spec.md");
     const designIdx = msg.indexOf("design.md");
-    expect(specsIdx).toBeLessThan(designIdx);
+    expect(specIdx).toBeLessThan(designIdx);
   });
 
-  it("delta spec step appears before tasks.md step", () => {
-    const specsIdx = msg.indexOf("specs/");
+  it("spec.md step appears before tasks.md step", () => {
+    const specIdx = msg.indexOf("spec.md");
     const tasksIdx = msg.indexOf("tasks.md");
-    expect(specsIdx).toBeLessThan(tasksIdx);
+    expect(specIdx).toBeLessThan(tasksIdx);
   });
 
   it("step 5 does not contain unconditional 'in GIVEN/WHEN/THEN format'", () => {

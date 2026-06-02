@@ -102,7 +102,7 @@ Arguments:
 Valid agent step names:
   ${AGENT_STEP_NAMES.join(", ")}
 
-  Note: CLI steps (verification, pr-create, delta-spec-validation) are not accepted
+  Note: CLI steps (verification, pr-create) are not accepted
   because the executor ignores rules for CLI steps.
 
 Numbering:

@@ -14,8 +14,6 @@ import type { SpecRunnerConfig, AgentRecord } from "../../../../src/config/schem
 import { DesignStep } from "../../../../src/core/step/design.js";
 import { SpecReviewStep } from "../../../../src/core/step/spec-review.js";
 import { SpecFixerStep } from "../../../../src/core/step/spec-fixer.js";
-import { DeltaSpecValidationStep } from "../../../../src/core/step/delta-spec-validation.js";
-import { DeltaSpecFixerStep } from "../../../../src/core/step/delta-spec-fixer.js";
 import { TestCaseGenStep } from "../../../../src/core/step/test-case-gen.js";
 import { ImplementerStep } from "../../../../src/core/step/implementer.js";
 import { VerificationStep } from "../../../../src/core/step/verification.js";
@@ -34,8 +32,6 @@ const ALL_STEPS = [
   DesignStep,
   SpecReviewStep,
   SpecFixerStep,
-  DeltaSpecValidationStep,
-  DeltaSpecFixerStep,
   TestCaseGenStep,
   ImplementerStep,
   VerificationStep,
@@ -84,26 +80,22 @@ describe("step name arrays", () => {
     const _bad1: AgentStepName = "verification";
     // @ts-expect-error - "pr-create" is a CliStep, not AgentStepName
     const _bad2: AgentStepName = "pr-create";
-    // @ts-expect-error - "delta-spec-validation" is a CliStep, not AgentStepName
-    const _bad3: AgentStepName = "delta-spec-validation";
 
     // Should compile: AgentStepName accepts agent step names
     const _ok: AgentStepName = "design";
     expect(_ok).toBe("design");
 
     // Suppress unused variable warnings
-    void _bad1; void _bad2; void _bad3;
+    void _bad1; void _bad2;
   });
 
   // TC-CFG-02/03: config.agents must reject CliStep keys
   it("TC-CFG-02/03: type-level: config.agents rejects CliStep keys", () => {
-    // @ts-expect-error - "delta-spec-validation" is a CliStep, not allowed in config.agents
-    const _cfgBad1: SpecRunnerConfig["agents"] = { "delta-spec-validation": {} as AgentRecord };
     // @ts-expect-error - "verification" is a CliStep, not allowed in config.agents
-    const _cfgBad2: SpecRunnerConfig["agents"] = { "verification": {} as AgentRecord };
+    const _cfgBad: SpecRunnerConfig["agents"] = { "verification": {} as AgentRecord };
 
     // Suppress unused variable warnings
-    void _cfgBad1; void _cfgBad2;
+    void _cfgBad;
     expect(true).toBe(true);
   });
 });

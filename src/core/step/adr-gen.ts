@@ -90,7 +90,7 @@ Please read the following (if they exist) to make your judgment:
 
 1. request.md: ${changeFolder}/request.md
 2. design.md: ${changeFolder}/design.md
-3. delta specs: ${changeFolder}/specs/ (directory listing)
+3. spec: ${changeFolder}/spec.md
 4. review-feedback: ${changeFolder}/review-feedback-*.md (any numbered files)
 5. git diff: Run \`git diff ${baseBranch}..HEAD --stat\` to understand the scope of changes
 
@@ -132,7 +132,7 @@ export const AdrGenStep: AgentStep = {
   completionVerdict: "success",
   reportTool: PRODUCER_REPORT_TOOL,
 
-  // adr-gen reads design.md / delta specs / review-feedback; 20 turns is sufficient.
+  // adr-gen reads design.md / spec.md / review-feedback; 20 turns is sufficient.
   maxTurns: 20,
 
   needsProjectContext: false,

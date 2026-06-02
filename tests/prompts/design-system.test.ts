@@ -162,9 +162,8 @@ describe("TC-SP-001: DESIGN_SYSTEM_PROMPT contains Baseline Spec 参照 section"
     expect(DESIGN_SYSTEM_PROMPT).toContain("Read は許可");
   });
 
-  it("instructs to read baseline spec before writing delta spec", () => {
-    expect(DESIGN_SYSTEM_PROMPT).toContain("delta spec");
-    expect(DESIGN_SYSTEM_PROMPT).toMatch(/baseline spec.*Read|Read.*baseline spec/);
+  it("instructs to read baseline spec for context", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toMatch(/baseline spec.*Read|Read.*baseline spec|baseline.*spec/i);
   });
 });
 
@@ -174,8 +173,8 @@ describe("TC-CL-001: DESIGN_SYSTEM_PROMPT contains Completion Checklist section"
     expect(DESIGN_SYSTEM_PROMPT).toContain("Completion Checklist");
   });
 
-  it("contains 'delta spec' and 'REQUIRED' in the same section", () => {
-    expect(DESIGN_SYSTEM_PROMPT).toContain("delta spec");
+  it("contains 'spec.md' and 'REQUIRED' in the same section", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toContain("spec.md");
     expect(DESIGN_SYSTEM_PROMPT).toContain("REQUIRED");
     // Both must appear within the Completion Checklist section
     const checklistIdx = DESIGN_SYSTEM_PROMPT.indexOf("Completion Checklist");

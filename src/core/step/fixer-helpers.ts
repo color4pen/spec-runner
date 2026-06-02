@@ -12,7 +12,6 @@ import type { JobState } from "../../state/schema.js";
 /** fixer ステップ名の集合 */
 export const FIXER_STEP_NAMES: ReadonlySet<string> = new Set([
   STEP_NAMES.SPEC_FIXER,
-  STEP_NAMES.DELTA_SPEC_FIXER,
   STEP_NAMES.BUILD_FIXER,
   STEP_NAMES.CODE_FIXER,
 ]);

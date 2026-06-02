@@ -303,7 +303,7 @@ export function authoritySpecEditViolationError(
   const pathList = violatedPaths.map(p => `  - ${p}`).join("\n");
   return new SpecRunnerError(
     ERROR_CODES.AUTHORITY_SPEC_EDIT_VIOLATION,
-    `Authority spec files must be modified via delta spec under specrunner/changes/<slug>/specs/<capability>/spec.md.\nViolating paths:\n${pathList}`,
+    `Authority spec files must not be edited directly. Use specrunner/changes/<slug>/spec.md to describe spec changes.\nViolating paths:\n${pathList}`,
     `Agent step '${stepName}' attempted to edit authority spec files directly.`,
   );
 }

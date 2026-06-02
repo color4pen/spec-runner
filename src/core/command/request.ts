@@ -30,7 +30,7 @@ export function buildScaffoldTemplate(params: {
 
 <!-- adr 判断基準: 新しい port/adapter 追加、既存パターンと異なる設計選択、振る舞い/契約を変える修正、構造的リファクタリング → true。いずれにも該当しない → false -->
 
-<!-- spec 変更を伴う場合: authority path (specrunner/specs/...) を編集対象として記述しないこと。delta spec path (specrunner/changes/<slug>/specs/<capability>/spec.md) で表現する -->
+<!-- spec 変更を伴う場合: authority path (specrunner/specs/...) を編集対象として記述しないこと。spec path (specrunner/changes/<slug>/spec.md) で表現する -->
 
 ## 背景
 

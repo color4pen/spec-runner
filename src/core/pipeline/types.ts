@@ -8,7 +8,7 @@ import type { CodeReviewReportResult } from "../port/report-result.js";
  *
  * `when` is an optional context predicate. When defined, the transition only
  * fires if `when(state)` returns true. This enables context-aware routing
- * (e.g. 2nd-phase delta-spec-validation → adr-gen after code-review).
+ * (e.g. code-review approved with fixableCount > 0 → code-fixer).
  */
 export interface Transition {
   step: string;
@@ -48,72 +48,43 @@ export const LOOP_ERROR_CODES: Record<string, LoopErrorShape> = {
     message: (n) => `code-review did not approve after ${n} iterations`,
     hint: (nnn) => `Review review-feedback-${nnn}.md and address findings manually.`,
   },
-  [STEP_NAMES.DELTA_SPEC_VALIDATION]: {
-    code: "DELTA_SPEC_VALIDATION_RETRIES_EXHAUSTED",
-    message: (n) => `delta-spec-validation did not pass after ${n} iterations`,
-    // _nnn is intentionally unused: the result file is delta-spec-validation-result.md
-    // (no iteration suffix) because it is overwritten each iteration with the latest violations.
-    hint: (_nnn) => `Review delta-spec-validation-result.md and fix path/format violations manually.`,
-  },
 };
 
 /**
- * Standard pipeline transition table for the design → delta-spec-validation → spec-review
- * flow, extended with the implementer → verification ↔ build-fixer flow and a 2nd-phase
- * delta-spec-validation after code-review.
+ * Standard pipeline transition table.
  *
  * design uses "success" / "error" rather than Verdict because it has no file-based verdict.
  * spec-review and spec-fixer use standard Verdict values.
- * delta-spec-validation uses "approved" / "needs-fix" / "escalation".
- * delta-spec-fixer uses "approved" / "error".
  * implementer / build-fixer use "success" / "error" (no result file).
  * verification uses "passed" / "failed" / "escalation".
  *
  * Drives Pipeline.runInternal: after each step completes, the table is consulted to
  * determine the next step. "end" terminates the pipeline; "escalate" also terminates
  * (but with escalation semantics). Any other value is the name of the next step to run.
- *
- * Context-aware routing:
- * - delta-spec-validation approved → adr-gen (2nd phase, after code-review): fires when
- *   state.steps["code-review"] has at least one attempt (i.e. code-review already ran).
- * - delta-spec-validation approved → spec-review (1st phase, after design): fallback when
- *   the conditional above does not match.
- * - The delta-spec-fixer loop (needs-fix → delta-spec-fixer → delta-spec-validation) works
- *   identically in both phases because its rows have no `when` predicate.
  */
 export const STANDARD_TRANSITIONS: Transition[] = [
-  // design → delta-spec-validation (replaces old design → spec-review)
-  { step: STEP_NAMES.DESIGN,                on: "success",    to: STEP_NAMES.DELTA_SPEC_VALIDATION },
-  { step: STEP_NAMES.DESIGN,                on: "error",      to: "escalate" },
-  // --- delta-spec-validation loop ---
-  // 2nd phase (after code-review): approved → adr-gen (conditional — must precede the fallback row)
-  { step: STEP_NAMES.DELTA_SPEC_VALIDATION, on: "approved",   to: STEP_NAMES.ADR_GEN,
-    when: (s) => (s.steps?.["code-review"]?.length ?? 0) > 0 },
-  // 1st phase (after design): approved → spec-review (fallback, no `when`)
-  { step: STEP_NAMES.DELTA_SPEC_VALIDATION, on: "approved",   to: STEP_NAMES.SPEC_REVIEW },
-  { step: STEP_NAMES.DELTA_SPEC_VALIDATION, on: "needs-fix",  to: STEP_NAMES.DELTA_SPEC_FIXER },
-  { step: STEP_NAMES.DELTA_SPEC_VALIDATION, on: "escalation", to: "escalate" },
-  { step: STEP_NAMES.DELTA_SPEC_FIXER,      on: "approved",   to: STEP_NAMES.DELTA_SPEC_VALIDATION },
-  { step: STEP_NAMES.DELTA_SPEC_FIXER,      on: "error",      to: "escalate" },
+  // design → spec-review (direct)
+  { step: STEP_NAMES.DESIGN,      on: "success",   to: STEP_NAMES.SPEC_REVIEW },
+  { step: STEP_NAMES.DESIGN,      on: "error",     to: "escalate" },
   // --- spec-review loop ---
-  { step: STEP_NAMES.SPEC_REVIEW,           on: "approved",   to: STEP_NAMES.TEST_CASE_GEN },
-  { step: STEP_NAMES.TEST_CASE_GEN,         on: "success",    to: STEP_NAMES.IMPLEMENTER },
-  { step: STEP_NAMES.TEST_CASE_GEN,         on: "error",      to: "escalate" },
-  { step: STEP_NAMES.SPEC_REVIEW,           on: "needs-fix",  to: STEP_NAMES.SPEC_FIXER },
+  { step: STEP_NAMES.SPEC_REVIEW, on: "approved",  to: STEP_NAMES.TEST_CASE_GEN },
+  { step: STEP_NAMES.SPEC_REVIEW, on: "needs-fix", to: STEP_NAMES.SPEC_FIXER },
   // spec-review escalation removed (R3 cutover): judge halt via loop exhaustion only
-  // spec-fixer → delta-spec-validation (replaces old spec-fixer → spec-review)
-  { step: STEP_NAMES.SPEC_FIXER,            on: "approved",   to: STEP_NAMES.DELTA_SPEC_VALIDATION },
-  { step: STEP_NAMES.SPEC_FIXER,            on: "error",      to: "escalate" },
-  { step: STEP_NAMES.IMPLEMENTER,           on: "success",    to: STEP_NAMES.VERIFICATION },
-  { step: STEP_NAMES.IMPLEMENTER,           on: "error",      to: "escalate" },
-  { step: STEP_NAMES.VERIFICATION,          on: "passed",     to: STEP_NAMES.CODE_REVIEW },
-  { step: STEP_NAMES.VERIFICATION,          on: "failed",     to: STEP_NAMES.BUILD_FIXER },
-  { step: STEP_NAMES.VERIFICATION,          on: "escalation", to: "escalate" },
-  { step: STEP_NAMES.BUILD_FIXER,           on: "success",    to: STEP_NAMES.VERIFICATION },
-  { step: STEP_NAMES.BUILD_FIXER,           on: "error",      to: "escalate" },
+  { step: STEP_NAMES.TEST_CASE_GEN, on: "success", to: STEP_NAMES.IMPLEMENTER },
+  { step: STEP_NAMES.TEST_CASE_GEN, on: "error",   to: "escalate" },
+  // spec-fixer → spec-review (direct)
+  { step: STEP_NAMES.SPEC_FIXER,  on: "approved",  to: STEP_NAMES.SPEC_REVIEW },
+  { step: STEP_NAMES.SPEC_FIXER,  on: "error",     to: "escalate" },
+  { step: STEP_NAMES.IMPLEMENTER, on: "success",   to: STEP_NAMES.VERIFICATION },
+  { step: STEP_NAMES.IMPLEMENTER, on: "error",     to: "escalate" },
+  { step: STEP_NAMES.VERIFICATION, on: "passed",   to: STEP_NAMES.CODE_REVIEW },
+  { step: STEP_NAMES.VERIFICATION, on: "failed",   to: STEP_NAMES.BUILD_FIXER },
+  { step: STEP_NAMES.VERIFICATION, on: "escalation", to: "escalate" },
+  { step: STEP_NAMES.BUILD_FIXER, on: "success",   to: STEP_NAMES.VERIFICATION },
+  { step: STEP_NAMES.BUILD_FIXER, on: "error",     to: "escalate" },
   // --- code review loop ---
-  // code-review approved + fixableCount > 0 → code-fixer (T-04: typed routing)
-  { step: STEP_NAMES.CODE_REVIEW,           on: "approved",   to: STEP_NAMES.CODE_FIXER,
+  // code-review approved + fixableCount > 0 → code-fixer (typed routing)
+  { step: STEP_NAMES.CODE_REVIEW, on: "approved",  to: STEP_NAMES.CODE_FIXER,
     when: (s) => {
       const reviews = s.steps?.["code-review"];
       if (!reviews || reviews.length === 0) return false;
@@ -122,13 +93,12 @@ export const STANDARD_TRANSITIONS: Transition[] = [
       return ((lastReview.outcome?.toolResult as CodeReviewReportResult | null | undefined)?.fixableCount ?? 0) > 0;
     },
   },
-  // code-review approved (no fixable findings) → delta-spec-validation (2nd phase)
-  { step: STEP_NAMES.CODE_REVIEW,           on: "approved",             to: STEP_NAMES.DELTA_SPEC_VALIDATION },
-  { step: STEP_NAMES.CODE_REVIEW,           on: "needs-fix",            to: STEP_NAMES.CODE_FIXER },
+  // code-review approved (no fixable findings) → adr-gen (direct)
+  { step: STEP_NAMES.CODE_REVIEW, on: "approved",  to: STEP_NAMES.ADR_GEN },
+  { step: STEP_NAMES.CODE_REVIEW, on: "needs-fix", to: STEP_NAMES.CODE_FIXER },
   // code-review escalation removed (R3 cutover): judge halt via loop exhaustion only
-  // code-fixer → delta-spec-validation (when: 直前 code-review が approved = observation fix 完了)
-  { step: STEP_NAMES.CODE_FIXER,            on: "approved",
-    to: STEP_NAMES.DELTA_SPEC_VALIDATION,
+  // code-fixer → adr-gen (when: 直前 code-review が approved = observation fix 完了)
+  { step: STEP_NAMES.CODE_FIXER,  on: "approved",  to: STEP_NAMES.ADR_GEN,
     when: (s) => {
       const reviews = s.steps?.["code-review"];
       if (!reviews || reviews.length === 0) return false;
@@ -137,12 +107,12 @@ export const STANDARD_TRANSITIONS: Transition[] = [
     },
   },
   // code-fixer → code-review (needs-fix 由来 — fallback, when なし)
-  { step: STEP_NAMES.CODE_FIXER,            on: "approved",   to: STEP_NAMES.CODE_REVIEW },
-  { step: STEP_NAMES.CODE_FIXER,            on: "error",      to: "escalate" },
-  // --- adr-gen (single shot, after 2nd-phase delta-spec-validation approved) ---
-  { step: STEP_NAMES.ADR_GEN,              on: "success",    to: STEP_NAMES.PR_CREATE },
-  { step: STEP_NAMES.ADR_GEN,              on: "error",      to: "escalate" },
+  { step: STEP_NAMES.CODE_FIXER,  on: "approved",  to: STEP_NAMES.CODE_REVIEW },
+  { step: STEP_NAMES.CODE_FIXER,  on: "error",     to: "escalate" },
+  // --- adr-gen (single shot, after code-review approved) ---
+  { step: STEP_NAMES.ADR_GEN,     on: "success",   to: STEP_NAMES.PR_CREATE },
+  { step: STEP_NAMES.ADR_GEN,     on: "error",     to: "escalate" },
   // --- pr-create (single shot, no loop) ---
-  { step: STEP_NAMES.PR_CREATE,             on: "success",    to: "end" },
-  { step: STEP_NAMES.PR_CREATE,             on: "error",      to: "escalate" },
+  { step: STEP_NAMES.PR_CREATE,   on: "success",   to: "end" },
+  { step: STEP_NAMES.PR_CREATE,   on: "error",     to: "escalate" },
 ];

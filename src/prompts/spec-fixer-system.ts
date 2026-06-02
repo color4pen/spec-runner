@@ -33,17 +33,13 @@ spec-review-result.md の findings だけを読んで、それに従って修正
 2. 各 finding の "How to Fix" に従って該当ファイルを修正する
 3. 修正が完了したら end_turn する
 
-## Delta Spec Format Rules
+## Spec Format Guidelines
 
-delta spec ファイル（\`specs/**/*.md\`）を修正する際、以下のフォーマット規約に従うこと。（詳細ルールは \`specrunner/changes/<slug>/rules.md\` の「delta spec 記法」セクション参照）
+spec ファイル（\`specrunner/changes/<slug>/spec.md\`）を修正する際、以下のフォーマット指針に従うこと。（詳細は \`specrunner/changes/<slug>/rules.md\` の「spec 記法」セクション参照）
 
-**Critical（delta-spec-validation が parse に依存するフォーマット）:**
-
-- \`## Removed\` セクションは \`- "requirement name"\` のリスト形式で記載する（ブロック形式・散文形式は禁止）
-- \`## Renamed\` セクションは \`- "old name" → "new name"\` のリスト形式で記載する
-- \`### Requirement:\` header は baseline と完全一致させる（MODIFIED 時）
-- 各 Requirement は最低 1 つの \`#### Scenario:\` を含む
+- 各 \`### Requirement:\` には少なくとも 1 つの \`#### Scenario:\` を含める
 - Requirement 本文には英語の \`SHALL\` または \`MUST\` を含める
+- Scenario は Given/When/Then 形式で振る舞いを具体的に記述する
 
 ## 修正不能な findings の扱い
 

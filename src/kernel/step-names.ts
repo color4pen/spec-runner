@@ -12,7 +12,6 @@ export const AGENT_STEP_NAMES = [
   "design",
   "spec-review",
   "spec-fixer",
-  "delta-spec-fixer",
   "test-case-gen",
   "implementer",
   "build-fixer",
@@ -28,15 +27,12 @@ export const AGENT_STEP_NAMES = [
 export const CLI_STEP_NAMES = [
   "verification",
   "pr-create",
-  "delta-spec-validation",
 ] as const;
 
 export const STEP_NAMES = {
   DESIGN: "design",
   SPEC_REVIEW: "spec-review",
   SPEC_FIXER: "spec-fixer",
-  DELTA_SPEC_VALIDATION: "delta-spec-validation",
-  DELTA_SPEC_FIXER: "delta-spec-fixer",
   TEST_CASE_GEN: "test-case-gen",
   IMPLEMENTER: "implementer",
   VERIFICATION: "verification",

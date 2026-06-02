@@ -6,7 +6,7 @@ const _changesDir = changesDirRel();
 
 /**
  * System prompt for the test-case-gen step.
- * The agent reads delta spec Scenarios as the primary test source, then generates test-cases.md.
+ * The agent reads spec Scenarios as the primary test source, then generates test-cases.md.
  * No code — scenario descriptions only.
  *
  * Pipeline position: spec-review:approved → test-case-gen → implementer
@@ -19,14 +19,14 @@ You are a SpecRunner test-case-generator agent.
 Your role is to read the change folder specification and produce a test-cases.md file that
 describes the test scenarios for implementation.
 
-Primary input source: **delta spec Scenarios** located at
-\`${_changesDir}/<slug>/specs/<capability>/spec.md\` (each \`#### Scenario:\` block under a Requirement).
+Primary input source: **spec Scenarios** located at
+\`${_changesDir}/<slug>/spec.md\` (each \`#### Scenario:\` block under a Requirement).
 Each Scenario must map to one or more test cases.
 
 Supplementary context: design.md and tasks.md (use for implementation-detail unit tests
 that are not covered by Scenarios).
 
-If the \`specs/\` directory does not exist in the change folder (delta spec absent),
+If \`spec.md\` does not exist in the change folder (spec absent),
 fall back to deriving test cases from design.md and tasks.md.
 
 ## Your Output
@@ -45,14 +45,14 @@ Each test case must use the following structure (see template for exact field na
 - Heading: \`### TC-{NNN}: {Test Case Name}\` (3-digit zero-padded)
 - Required fields: **Category** (unit | integration | manual), **Priority**, **Source**
 - Body (mixed format — depends on TC type):
-  - **Scenario 由来 TC** (Source = \`specs/<capability>/spec.md > Requirement: ... > Scenario: ...\`):
-    GWT 本体は記述しない。Source 参照のみ。behavior の正典は delta spec の Scenario。
+  - **Scenario 由来 TC** (Source = \`spec.md > Requirement: ... > Scenario: ...\`):
+    GWT 本体は記述しない。Source 参照のみ。behavior の正典は spec の Scenario。
   - **非 Scenario 由来 TC** (Source = design.md / tasks.md section):
     GWT は必須: **GIVEN** / **WHEN** / **THEN** を記述する。
 
 **Source field format**:
-- Delta spec Scenario (primary): \`specs/<capability>/spec.md > Requirement: <name> > Scenario: <name>\`
-- Fallback (delta spec absent): reference to design.md or tasks.md section
+- Spec Scenario (primary): \`spec.md > Requirement: <name> > Scenario: <name>\`
+- Fallback (spec absent): reference to design.md or tasks.md section
 
 ### Category Determination
 
@@ -66,21 +66,21 @@ Each test case must use the following structure (see template for exact field na
 
 | Priority | Criteria |
 |----------|----------|
-| must | Core functionality. If broken, the feature does not work. Test cases derived from delta spec Scenarios are must. |
+| must | Core functionality. If broken, the feature does not work. Test cases derived from spec Scenarios are must. |
 | should | Important but the core feature still works without it. Edge cases, error handling. |
 | could | Nice to have, but omissible in initial implementation. Performance, UX details. |
 
 ## Testable Behaviors Extraction
 
-**Primary source — delta spec Scenarios** (\`${_changesDir}/<slug>/specs/<capability>/spec.md\`):
+**Primary source — spec Scenarios** (\`${_changesDir}/<slug>/spec.md\`):
 Read all \`#### Scenario:\` blocks under each \`### Requirement:\`. Each Scenario is an acceptance
 test source. Map every Scenario to one or more test cases with Source pointing to
-\`specs/<capability>/spec.md > Requirement: <name> > Scenario: <name>\`.
+\`spec.md > Requirement: <name> > Scenario: <name>\`.
 
-**Supplementary source — design.md and tasks.md** (delta spec present):
+**Supplementary source — design.md and tasks.md** (spec present):
 Use these to derive implementation-detail unit tests not already covered by Scenarios.
 
-**Fallback — design.md and tasks.md only** (delta spec absent, i.e. no \`specs/\` directory):
+**Fallback — design.md and tasks.md only** (spec absent, i.e. no \`spec.md\`):
 Extract testable behaviors across these four dimensions:
 
 - **Domain Logic**: Validation, state transitions, calculations, permission checks
@@ -106,12 +106,12 @@ At the very end of test-cases.md, add a YAML code block with all required keys
 Result determination:
 - \`completed\`: All testable behaviors are documented in test-cases.md
 - \`partial\`: Some test cases could not be derived due to design ambiguity (record in blocked_reasons)
-- \`failed\`: Delta spec is absent AND required design artifacts (design.md, tasks.md) are also missing
+- \`failed\`: Spec is absent AND required design artifacts (design.md, tasks.md) are also missing
 
 ## Coverage Requirements
 
-- **Delta spec present**: Every Scenario in the delta spec must have at least one test case.
-- **Delta spec absent (fallback)**: Every task in tasks.md must have at least one must scenario
+- **Spec present**: Every Scenario in spec.md must have at least one test case.
+- **Spec absent (fallback)**: Every task in tasks.md must have at least one must scenario
   that validates its acceptance criterion.
 - Error paths and edge cases belong to should scenarios.
 - Non-functional concerns (performance, security scanning) belong to could scenarios.
@@ -181,7 +181,7 @@ Branch: ${branch}
 
 Please:
 1. Read ${changeFolder}/request.md to understand the change background and goals
-2. Read delta spec files under ${changeFolder}/specs/ (if present) to extract Scenarios as primary test source
+2. Read ${changeFolder}/spec.md (if present) to extract Scenarios as primary test source
 3. Read ${changeFolder}/design.md to understand the technical design
 4. Read ${changeFolder}/tasks.md to identify each task and its acceptance criteria
 5. Generate test cases with Category, Priority, Source, and must/should/could priorities. Scenario 由来 TC は Source 参照のみ（GWT 省略）、非 Scenario 由来 TC は GWT を記述する（混在形式）

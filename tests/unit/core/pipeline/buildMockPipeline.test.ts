@@ -9,12 +9,11 @@ describe("STANDARD_LOOP_NAMES", () => {
 });
 
 describe("STANDARD_LOOP_FIXER_PAIRS", () => {
-  it("maps all four review steps to their fixers", () => {
+  it("maps all three review steps to their fixers", () => {
     expect(STANDARD_LOOP_FIXER_PAIRS).toEqual({
       "code-review": "code-fixer",
       "spec-review": "spec-fixer",
       "verification": "build-fixer",
-      "delta-spec-validation": "delta-spec-fixer",
     });
   });
 });

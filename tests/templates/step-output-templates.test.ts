@@ -15,7 +15,7 @@ import {
   TEST_CASES_TEMPLATE,
   DESIGN_TEMPLATE,
   TASKS_TEMPLATE,
-  DELTA_SPEC_TEMPLATE,
+  SPEC_TEMPLATE,
 } from "../../src/templates/step-output-templates.js";
 import type { JobState } from "../../src/state/schema.js";
 
@@ -42,14 +42,14 @@ function makeState(overrides: Partial<JobState> = {}): JobState {
 // TC-T001: getOutputTemplates returns correct list for each agent step
 // ---------------------------------------------------------------------------
 describe("TC-T001: getOutputTemplates returns correct list per step", () => {
-  it("design step returns design.md, tasks.md, delta-spec-template.md", () => {
+  it("design step returns design.md, tasks.md, spec.md", () => {
     const state = makeState();
     const templates = getOutputTemplates("design", "my-slug", state);
     expect(templates).toHaveLength(3);
     const paths = templates.map((t) => t.path);
     expect(paths).toContain("specrunner/changes/my-slug/design.md");
     expect(paths).toContain("specrunner/changes/my-slug/tasks.md");
-    expect(paths).toContain("specrunner/changes/my-slug/delta-spec-template.md");
+    expect(paths).toContain("specrunner/changes/my-slug/spec.md");
   });
 
   it("spec-review step returns spec-review-result-001.md for first iteration", () => {
@@ -145,10 +145,8 @@ describe("TC-T003: steps without templates return empty array", () => {
     "build-fixer",
     "code-fixer",
     "adr-gen",
-    "delta-spec-fixer",
     "verification",
     "pr-create",
-    "delta-spec-validation",
     "unknown-step",
   ];
 
@@ -161,15 +159,15 @@ describe("TC-T003: steps without templates return empty array", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-T004: delta-spec-template.md has cleanup: true in design step
+// TC-T004: design step templates are all A-group (no cleanup: true)
 // ---------------------------------------------------------------------------
-describe("TC-T004: delta-spec-template.md has cleanup: true", () => {
-  it("cleanup is true for delta-spec-template.md", () => {
+describe("TC-T004: design step templates are A-group (no cleanup)", () => {
+  it("spec.md does NOT have cleanup: true (A-group)", () => {
     const state = makeState();
     const templates = getOutputTemplates("design", "my-slug", state);
-    const deltaSpec = templates.find((t) => t.path.endsWith("delta-spec-template.md"));
-    expect(deltaSpec).toBeDefined();
-    expect(deltaSpec!.cleanup).toBe(true);
+    const specMd = templates.find((t) => t.path.endsWith("spec.md"));
+    expect(specMd).toBeDefined();
+    expect(specMd!.cleanup).toBeFalsy();
   });
 
   it("design.md does NOT have cleanup: true (A-group)", () => {
@@ -240,8 +238,8 @@ describe("TC-T005: template constants contain HTML comment format constraints", 
     expect(TEST_CASES_TEMPLATE).toContain("TC-{NNN}");
   });
 
-  it("TEST_CASES_TEMPLATE Source field references delta spec Scenario path format", () => {
-    expect(TEST_CASES_TEMPLATE).toContain("specs/<capability>/spec.md > Requirement: <name> > Scenario: <name>");
+  it("TEST_CASES_TEMPLATE Source field references spec Scenario path format", () => {
+    expect(TEST_CASES_TEMPLATE).toContain("spec.md > Requirement: <name> > Scenario: <name>");
   });
 
   it("TEST_CASES_TEMPLATE contains GIVEN/WHEN/THEN structure", () => {
@@ -282,27 +280,25 @@ describe("TC-T005: template constants contain HTML comment format constraints", 
     expect(TASKS_TEMPLATE).toContain("Acceptance Criteria");
   });
 
-  it("DELTA_SPEC_TEMPLATE contains ## Requirements section format", () => {
-    expect(DELTA_SPEC_TEMPLATE).toContain("## Requirements");
-    expect(DELTA_SPEC_TEMPLATE).toContain("### Requirement:");
-    expect(DELTA_SPEC_TEMPLATE).toContain("#### Scenario:");
+  it("SPEC_TEMPLATE contains ## Requirements section format", () => {
+    expect(SPEC_TEMPLATE).toContain("## Requirements");
+    expect(SPEC_TEMPLATE).toContain("### Requirement:");
+    expect(SPEC_TEMPLATE).toContain("#### Scenario:");
   });
 
-  it("DELTA_SPEC_TEMPLATE contains SHALL/MUST normative keyword requirement", () => {
-    expect(DELTA_SPEC_TEMPLATE).toContain("SHALL");
-    expect(DELTA_SPEC_TEMPLATE).toContain("MUST");
+  it("SPEC_TEMPLATE contains SHALL/MUST normative keyword requirement", () => {
+    expect(SPEC_TEMPLATE).toContain("SHALL");
+    expect(SPEC_TEMPLATE).toContain("MUST");
   });
 
-  it("DELTA_SPEC_TEMPLATE contains ## Removed format", () => {
-    expect(DELTA_SPEC_TEMPLATE).toContain("## Removed");
-  });
-
-  it("DELTA_SPEC_TEMPLATE contains ## Renamed format", () => {
-    expect(DELTA_SPEC_TEMPLATE).toContain("## Renamed");
+  it("SPEC_TEMPLATE contains Given/When/Then structure", () => {
+    expect(SPEC_TEMPLATE).toContain("Given");
+    expect(SPEC_TEMPLATE).toContain("When");
+    expect(SPEC_TEMPLATE).toContain("Then");
   });
 
   it("all templates contain HTML comment markers", () => {
-    for (const tpl of [SPEC_REVIEW_RESULT_TEMPLATE, REVIEW_FEEDBACK_TEMPLATE, TEST_CASES_TEMPLATE, DESIGN_TEMPLATE, TASKS_TEMPLATE, DELTA_SPEC_TEMPLATE]) {
+    for (const tpl of [SPEC_REVIEW_RESULT_TEMPLATE, REVIEW_FEEDBACK_TEMPLATE, TEST_CASES_TEMPLATE, DESIGN_TEMPLATE, TASKS_TEMPLATE, SPEC_TEMPLATE]) {
       expect(tpl).toContain("<!--");
     }
   });
@@ -328,7 +324,7 @@ describe("TC-004: TEST_CASES_TEMPLATE mixed format documentation", () => {
   });
 
   it("Source reference format for Scenario-derived TCs is shown", () => {
-    expect(TEST_CASES_TEMPLATE).toContain("specs/<capability>/spec.md > Requirement: <name> > Scenario: <name>");
+    expect(TEST_CASES_TEMPLATE).toContain("spec.md > Requirement: <name> > Scenario: <name>");
   });
 });
 

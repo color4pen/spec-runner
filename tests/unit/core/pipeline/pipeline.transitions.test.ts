@@ -162,8 +162,8 @@ describe("TC-011: verification passed → code-review transition が存在する
 // Note: TC-015 (code-review escalation → escalate) removed in R3 cutover.
 describe("TC-012-015, TC-029: code-review / code-fixer transition rows", () => {
   const codeReviewEdges = [
-    // TC-012: code-review approved now routes to delta-spec-validation (2nd phase validation)
-    { step: "code-review", on: "approved",   to: "delta-spec-validation", label: "TC-012: code-review approved → delta-spec-validation" },
+    // TC-012: code-review approved routes directly to adr-gen (delta-spec-validation removed)
+    { step: "code-review", on: "approved",   to: "adr-gen", label: "TC-012: code-review approved → adr-gen" },
     { step: "code-review", on: "needs-fix",  to: "code-fixer",  label: "TC-013: code-review needs-fix → code-fixer" },
     // TC-015: code-review escalation → escalate REMOVED in R3 (judge halt via loop exhaustion only)
     { step: "code-fixer",  on: "approved",   to: "code-review", label: "TC-014: code-fixer approved → code-review" },
@@ -186,11 +186,9 @@ describe("TC-012-015, TC-029: code-review / code-fixer transition rows", () => {
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
 // TC-022: R3 cutover: 33 → 31 (removed spec-review escalation + code-review escalation)
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 31 rows total (33 previous - 2 escalation rows removed in R3 cutover)", () => {
-    // 33 rows (previous total)
-    // - 1: spec-review --escalation→ escalate (removed, judge halt via loop exhaustion only)
-    // - 1: code-review --escalation→ escalate (removed, judge halt via loop exhaustion only)
-    expect(STANDARD_TRANSITIONS.length).toBe(31);
+  it("has 25 rows total (delta-spec-validation/fixer steps removed)", () => {
+    // 31 previous - 6 (delta-spec-validation + delta-spec-fixer rows)
+    expect(STANDARD_TRANSITIONS.length).toBe(25);
   });
 
   it("verification --passed→ end does NOT exist", () => {
@@ -215,12 +213,11 @@ describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された�
     expect(row).toBeUndefined();
   });
 
-  // R3 cutover: grounded step escalation transitions remain
-  it("delta-spec-validation --escalation→ escalate still exists (grounded step, maintained)", () => {
+  it("delta-spec-validation --escalation→ escalate does NOT exist (step removed)", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) => t.step === "delta-spec-validation" && t.on === "escalation" && t.to === "escalate",
     );
-    expect(row).toBeDefined();
+    expect(row).toBeUndefined();
   });
 
   it("verification --escalation→ escalate still exists (grounded step, maintained)", () => {
@@ -251,18 +248,18 @@ describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された�
     expect(row).toBeDefined();
   });
 
-  it("code-review --approved→ delta-spec-validation exists (TC-018 updated: 2nd-phase route)", () => {
+  it("code-review --approved→ delta-spec-validation does NOT exist (step removed)", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) => t.step === "code-review" && t.on === "approved" && t.to === "delta-spec-validation",
     );
-    expect(row).toBeDefined();
+    expect(row).toBeUndefined();
   });
 
-  it("code-review --approved→ adr-gen does NOT exist directly (replaced by 2nd-phase route)", () => {
+  it("code-review --approved→ adr-gen exists (conditional, with `when`)", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) => t.step === "code-review" && t.on === "approved" && t.to === "adr-gen",
     );
-    expect(row).toBeUndefined();
+    expect(row).toBeDefined();
   });
 
   it("code-review --approved→ pr-create does NOT exist (direct route removed)", () => {
@@ -272,20 +269,18 @@ describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された�
     expect(row).toBeUndefined();
   });
 
-  it("delta-spec-validation --approved→ adr-gen exists as conditional row", () => {
+  it("delta-spec-validation --approved→ adr-gen does NOT exist (step removed)", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) => t.step === "delta-spec-validation" && t.on === "approved" && t.to === "adr-gen",
     );
-    expect(row).toBeDefined();
-    expect(typeof row!.when).toBe("function");
+    expect(row).toBeUndefined();
   });
 
-  it("delta-spec-validation --approved→ spec-review exists as fallback row (no `when`)", () => {
+  it("delta-spec-validation --approved→ spec-review does NOT exist (step removed)", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) => t.step === "delta-spec-validation" && t.on === "approved" && t.to === "spec-review",
     );
-    expect(row).toBeDefined();
-    expect(row!.when).toBeUndefined();
+    expect(row).toBeUndefined();
   });
 });
 
@@ -569,14 +564,14 @@ describe("TC-023: Pipeline loopNames — pr-create が loopNames に含まれな
 
 // TC-024b: LOOP_ERROR_CODES — pr-create が含まれない
 describe("TC-024: LOOP_ERROR_CODES — pr-create が含まれない", () => {
-  it("LOOP_ERROR_CODES keys do not include pr-create but include delta-spec-validation", () => {
+  it("LOOP_ERROR_CODES keys do not include pr-create or delta-spec-validation", () => {
     const keys = Object.keys(LOOP_ERROR_CODES);
     expect(keys).toContain("spec-review");
     expect(keys).toContain("verification");
     expect(keys).toContain("code-review");
-    expect(keys).toContain("delta-spec-validation");
+    expect(keys).not.toContain("delta-spec-validation");
     expect(keys).not.toContain("pr-create");
-    expect(keys).toHaveLength(4);
+    expect(keys).toHaveLength(3);
   });
 });
 

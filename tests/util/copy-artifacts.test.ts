@@ -45,7 +45,7 @@ afterEach(async () => {
 // TC-CA001: writeOutputTemplates writes template files
 // ---------------------------------------------------------------------------
 describe("TC-CA001: writeOutputTemplates writes template files", () => {
-  it("design step writes design.md, tasks.md, delta-spec-template.md", async () => {
+  it("design step writes design.md, tasks.md, spec.md", async () => {
     const slug = "my-slug";
     const state = makeState();
     await writeOutputTemplates(tempDir, slug, "design", state);
@@ -53,11 +53,11 @@ describe("TC-CA001: writeOutputTemplates writes template files", () => {
     const changeFolder = path.join(tempDir, "specrunner", "changes", slug);
     const designExists = await fs.access(path.join(changeFolder, "design.md")).then(() => true).catch(() => false);
     const tasksExists = await fs.access(path.join(changeFolder, "tasks.md")).then(() => true).catch(() => false);
-    const deltaExists = await fs.access(path.join(changeFolder, "delta-spec-template.md")).then(() => true).catch(() => false);
+    const specExists = await fs.access(path.join(changeFolder, "spec.md")).then(() => true).catch(() => false);
 
     expect(designExists).toBe(true);
     expect(tasksExists).toBe(true);
-    expect(deltaExists).toBe(true);
+    expect(specExists).toBe(true);
   });
 
   it("design step template files have non-empty content", async () => {
@@ -68,11 +68,11 @@ describe("TC-CA001: writeOutputTemplates writes template files", () => {
     const changeFolder = path.join(tempDir, "specrunner", "changes", slug);
     const designContent = await fs.readFile(path.join(changeFolder, "design.md"), "utf-8");
     const tasksContent = await fs.readFile(path.join(changeFolder, "tasks.md"), "utf-8");
-    const deltaContent = await fs.readFile(path.join(changeFolder, "delta-spec-template.md"), "utf-8");
+    const specContent = await fs.readFile(path.join(changeFolder, "spec.md"), "utf-8");
 
     expect(designContent.length).toBeGreaterThan(0);
     expect(tasksContent.length).toBeGreaterThan(0);
-    expect(deltaContent.length).toBeGreaterThan(0);
+    expect(specContent.length).toBeGreaterThan(0);
   });
 
   it("spec-review step writes spec-review-result-001.md", async () => {
@@ -131,7 +131,7 @@ describe("TC-CA001: writeOutputTemplates writes template files", () => {
 // TC-CA002: cleanupOutputTemplates deletes cleanup: true files only
 // ---------------------------------------------------------------------------
 describe("TC-CA002: cleanupOutputTemplates deletes B-group files only", () => {
-  it("deletes delta-spec-template.md but not design.md or tasks.md", async () => {
+  it("does not delete design.md, tasks.md, or spec.md (all A-group in design step)", async () => {
     const slug = "my-slug";
     const state = makeState();
 
@@ -143,17 +143,15 @@ describe("TC-CA002: cleanupOutputTemplates deletes B-group files only", () => {
     // Verify all files exist before cleanup
     expect(await fs.access(path.join(changeFolder, "design.md")).then(() => true).catch(() => false)).toBe(true);
     expect(await fs.access(path.join(changeFolder, "tasks.md")).then(() => true).catch(() => false)).toBe(true);
-    expect(await fs.access(path.join(changeFolder, "delta-spec-template.md")).then(() => true).catch(() => false)).toBe(true);
+    expect(await fs.access(path.join(changeFolder, "spec.md")).then(() => true).catch(() => false)).toBe(true);
 
     // Cleanup
     await cleanupOutputTemplates(tempDir, slug, "design", state);
 
-    // delta-spec-template.md should be gone
-    expect(await fs.access(path.join(changeFolder, "delta-spec-template.md")).then(() => true).catch(() => false)).toBe(false);
-
-    // design.md and tasks.md should still exist (A-group)
+    // All design step files should still exist (all A-group — no cleanup: true)
     expect(await fs.access(path.join(changeFolder, "design.md")).then(() => true).catch(() => false)).toBe(true);
     expect(await fs.access(path.join(changeFolder, "tasks.md")).then(() => true).catch(() => false)).toBe(true);
+    expect(await fs.access(path.join(changeFolder, "spec.md")).then(() => true).catch(() => false)).toBe(true);
   });
 
   it("cleanupOutputTemplates for spec-review does not delete anything (all A-group)", async () => {

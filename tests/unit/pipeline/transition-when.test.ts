@@ -1,11 +1,12 @@
 /**
  * Unit tests for context-aware (`when`) pipeline transitions.
  *
- * TC-1: delta-spec-validation approved + code-review 未実行 → spec-review (1st phase)
- * TC-2: delta-spec-validation approved + code-review 実行済み → adr-gen (2nd phase)
- * TC-3: code-review approved → delta-spec-validation (新 transition)
+ * TC-1: code-review approved + fixableCount > 0 → code-fixer (conditional routing)
+ * TC-2: code-fixer approved + prior code-review approved → adr-gen
+ * TC-3: code-review approved (no fixable) → adr-gen directly
  * TC-4: `when` なしの既存 transition は従来通り動作 (regression)
- * TC-5: delta-spec-validation needs-fix → delta-spec-fixer (phase に関係なく同一)
+ * TC-WHEN-01: code-review approved → code-fixer conditional row has `when` predicate
+ * TC-WHEN-02: STANDARD_TRANSITIONS row count
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { STANDARD_TRANSITIONS } from "../../../src/core/pipeline/types.js";
@@ -115,97 +116,127 @@ async function seedJobState(jobId: string, state: JobState): Promise<void> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-1: delta-spec-validation approved, code-review 未実行 → spec-review
+// TC-3: code-review approved → adr-gen (direct)
 // ─────────────────────────────────────────────────────────────────────────────
-describe("TC-1: delta-spec-validation approved (no code-review yet) → spec-review", () => {
-  it("routes to spec-review when code-review has zero attempts", async () => {
-    const jobId = "tc-when-01";
-    const state = makeMinimalState(jobId, {}); // no code-review entries
-    await seedJobState(jobId, state);
+describe("TC-3: code-review approved → adr-gen exists in STANDARD_TRANSITIONS", () => {
+  it("STANDARD_TRANSITIONS has code-review --approved→ adr-gen (fallback, no `when`)", () => {
+    const found = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-review" && t.on === "approved" && t.to === "adr-gen" && !t.when,
+    );
+    expect(found).toBeDefined();
+    // No `when` predicate — fires unconditionally (after fixable routing check)
+    expect(found!.when).toBeUndefined();
+  });
 
-    const events = new EventBus();
-    const executeSpy = vi.fn().mockImplementation(async (step: Step, s: JobState): Promise<JobState> => {
-      if (step.name === "delta-spec-validation") {
-        return {
-          ...s,
-          steps: {
-            ...s.steps,
-            "delta-spec-validation": [
-              ...(s.steps?.["delta-spec-validation"] ?? []),
-              {
-                attempt: 1,
-                sessionId: null,
-                outcome: { verdict: "approved" as const, findingsPath: null, error: null },
-                startedAt: new Date().toISOString(),
-                endedAt: new Date().toISOString(),
-              },
-            ],
-          },
-        };
-      }
-      // spec-review: end pipeline
-      if (step.name === "spec-review") {
-        return {
-          ...s,
-          steps: {
-            ...s.steps,
-            "spec-review": [
-              ...(s.steps?.["spec-review"] ?? []),
-              {
-                attempt: 1,
-                sessionId: null,
-                outcome: { verdict: "approved" as const, findingsPath: null, error: null },
-                startedAt: new Date().toISOString(),
-                endedAt: new Date().toISOString(),
-              },
-            ],
-          },
-        };
-      }
-      throw new Error(`Unexpected step: ${step.name}`);
-    });
-    const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
-
-    // Minimal transition table that mirrors the context-aware logic
-    const pipeline = new Pipeline({
-      steps: new Map([
-        ["delta-spec-validation", makeStepObject("delta-spec-validation")],
-        ["spec-review", makeStepObject("spec-review")],
-      ]),
-      transitions: [
-        // 2nd-phase conditional (code-review ran) → adr-gen
-        { step: "delta-spec-validation", on: "approved", to: "adr-gen",
-          when: (s) => (s.steps?.["code-review"]?.length ?? 0) > 0 },
-        // 1st-phase fallback → spec-review
-        { step: "delta-spec-validation", on: "approved", to: "spec-review" },
-        // Terminate after spec-review approved
-        { step: "spec-review", on: "approved", to: "end" },
-        { step: "spec-review", on: "needs-fix", to: "escalate" },
-        { step: "spec-review", on: "escalation", to: "escalate" },
-      ],
-      maxIterations: 3,
-      executor: mockExecutor,
-      events,
-      loopName: "spec-review",
-      loopNames: ["spec-review", "delta-spec-validation"],
-    });
-
-    const result = await pipeline.run("delta-spec-validation", state, makeMinimalDeps());
-    // pipeline should have transitioned through spec-review
-    expect(executeSpy).toHaveBeenCalledWith(expect.objectContaining({ name: "spec-review" }), expect.anything(), expect.anything());
-    // adr-gen must NOT have been called
-    expect(executeSpy).not.toHaveBeenCalledWith(expect.objectContaining({ name: "adr-gen" }), expect.anything(), expect.anything());
-    expect(result.status).toBe("awaiting-merge");
+  it("code-review --approved→ delta-spec-validation does NOT exist (removed step)", () => {
+    const dsvRoute = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-review" && t.on === "approved" && t.to === "delta-spec-validation",
+    );
+    expect(dsvRoute).toBeUndefined();
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-2: delta-spec-validation approved, code-review 実行済み → adr-gen
+// TC-4: `when` なしの既存 transition は従来通り動作 (regression)
 // ─────────────────────────────────────────────────────────────────────────────
-describe("TC-2: delta-spec-validation approved (code-review done) → adr-gen", () => {
-  it("routes to adr-gen when code-review has at least one attempt in state.steps", async () => {
+describe("TC-4: existing transitions without `when` still work (regression)", () => {
+  it("verification --passed→ code-review has no `when` and is found", () => {
+    const found = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "verification" && t.on === "passed" && t.to === "code-review",
+    );
+    expect(found).toBeDefined();
+    expect(found!.when).toBeUndefined();
+  });
+
+  it("implementer --success→ verification has no `when` and is found", () => {
+    const found = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "implementer" && t.on === "success" && t.to === "verification",
+    );
+    expect(found).toBeDefined();
+    expect(found!.when).toBeUndefined();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-WHEN-01: code-review approved → code-fixer conditional row has `when` predicate
+// ─────────────────────────────────────────────────────────────────────────────
+describe("TC-WHEN-01: conditional transition row has `when` predicate", () => {
+  it("code-review --approved→ code-fixer row has a `when` function (fixable routing)", () => {
+    const conditionalRow = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-review" && t.on === "approved" && t.to === "code-fixer",
+    );
+    expect(conditionalRow).toBeDefined();
+    expect(typeof conditionalRow!.when).toBe("function");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-WHEN-02: STANDARD_TRANSITIONS has expected row count
+// ─────────────────────────────────────────────────────────────────────────────
+describe("TC-WHEN-02: STANDARD_TRANSITIONS row count", () => {
+  it("has correct number of rows (delta-spec-validation/fixer removed)", () => {
+    // delta-spec-validation and delta-spec-fixer removed: 6 rows removed from original 31
+    expect(STANDARD_TRANSITIONS.length).toBe(25);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-017/TC-018: code-review approved → code-fixer `when` predicate (fixable routing)
+// ─────────────────────────────────────────────────────────────────────────────
+describe("TC-017/TC-018: code-review approved → code-fixer when predicate (fixable routing)", () => {
+  function getFixableRoutingWhen() {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-review" && t.on === "approved" && t.to === "code-fixer",
+    );
+    expect(row).toBeDefined();
+    expect(typeof row!.when).toBe("function");
+    return row!.when!;
+  }
+
+  function makeStateWithCodeReviewToolResult(toolResult: BaseReportResult | null): JobState {
+    return makeMinimalState("test", {
+      "code-review": [
+        {
+          attempt: 1,
+          sessionId: null,
+          outcome: {
+            verdict: "approved" as const,
+            findingsPath: null,
+            error: null,
+            toolResult,
+          },
+          startedAt: new Date().toISOString(),
+          endedAt: new Date().toISOString(),
+        },
+      ],
+    });
+  }
+
+  it("returns true when fixableCount is 3", () => {
+    const when = getFixableRoutingWhen();
+    const toolResult = { ok: true, approved: true, fixableCount: 3 } as BaseReportResult;
+    expect(when(makeStateWithCodeReviewToolResult(toolResult))).toBe(true);
+  });
+
+  it("returns false when fixableCount is 0", () => {
+    const when = getFixableRoutingWhen();
+    const toolResult = { ok: true, approved: true, fixableCount: 0 } as BaseReportResult;
+    expect(when(makeStateWithCodeReviewToolResult(toolResult))).toBe(false);
+  });
+
+  it("returns false when toolResult is null (0 fallback)", () => {
+    const when = getFixableRoutingWhen();
+    expect(when(makeStateWithCodeReviewToolResult(null))).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-2: code-fixer approved + prior code-review approved → adr-gen
+// ─────────────────────────────────────────────────────────────────────────────
+describe("TC-2: code-fixer approved (code-review done) → adr-gen", () => {
+  it("routes to adr-gen when code-review was previously approved", async () => {
     const jobId = "tc-when-02";
-    // Pre-seed code-review with one completed attempt
+    // Pre-seed code-review with one approved attempt
     const state = makeMinimalState(jobId, {
       "code-review": [
         {
@@ -221,13 +252,13 @@ describe("TC-2: delta-spec-validation approved (code-review done) → adr-gen", 
 
     const events = new EventBus();
     const executeSpy = vi.fn().mockImplementation(async (step: Step, s: JobState): Promise<JobState> => {
-      if (step.name === "delta-spec-validation") {
+      if (step.name === "code-fixer") {
         return {
           ...s,
           steps: {
             ...s.steps,
-            "delta-spec-validation": [
-              ...(s.steps?.["delta-spec-validation"] ?? []),
+            "code-fixer": [
+              ...(s.steps?.["code-fixer"] ?? []),
               {
                 attempt: 1,
                 sessionId: null,
@@ -281,7 +312,7 @@ describe("TC-2: delta-spec-validation approved (code-review done) → adr-gen", 
 
     const pipeline = new Pipeline({
       steps: new Map([
-        ["delta-spec-validation", makeStepObject("delta-spec-validation")],
+        ["code-fixer", makeStepObject("code-fixer")],
         ["adr-gen", makeStepObject("adr-gen")],
         ["pr-create", makeStepObject("pr-create")],
       ]),
@@ -289,191 +320,15 @@ describe("TC-2: delta-spec-validation approved (code-review done) → adr-gen", 
       maxIterations: 3,
       executor: mockExecutor,
       events,
-      loopName: "delta-spec-validation",
-      loopNames: ["delta-spec-validation"],
+      loopName: "code-fixer",
+      loopNames: ["code-fixer"],
     });
 
-    await pipeline.run("delta-spec-validation", state, makeMinimalDeps());
+    await pipeline.run("code-fixer", state, makeMinimalDeps());
 
     // adr-gen must have been called
     expect(executeSpy).toHaveBeenCalledWith(expect.objectContaining({ name: "adr-gen" }), expect.anything(), expect.anything());
-    // spec-review must NOT have been called
-    expect(executeSpy).not.toHaveBeenCalledWith(expect.objectContaining({ name: "spec-review" }), expect.anything(), expect.anything());
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TC-3: code-review approved → delta-spec-validation (新 transition)
-// ─────────────────────────────────────────────────────────────────────────────
-describe("TC-3: code-review approved → delta-spec-validation exists in STANDARD_TRANSITIONS", () => {
-  it("STANDARD_TRANSITIONS has code-review --approved→ delta-spec-validation", () => {
-    const found = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "code-review" && t.on === "approved" && t.to === "delta-spec-validation",
-    );
-    expect(found).toBeDefined();
-    // No `when` predicate — fires unconditionally
-    expect(found!.when).toBeUndefined();
-  });
-
-  it("code-review --approved→ adr-gen does NOT exist unconditionally in STANDARD_TRANSITIONS", () => {
-    // The direct code-review → adr-gen row has been replaced with code-review → delta-spec-validation
-    const unconditional = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "code-review" && t.on === "approved" && t.to === "adr-gen",
-    );
-    expect(unconditional).toBeUndefined();
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TC-4: `when` なしの既存 transition は従来通り動作 (regression)
-// ─────────────────────────────────────────────────────────────────────────────
-describe("TC-4: existing transitions without `when` still work (regression)", () => {
-  it("verification --passed→ code-review has no `when` and is found", () => {
-    const found = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "verification" && t.on === "passed" && t.to === "code-review",
-    );
-    expect(found).toBeDefined();
-    expect(found!.when).toBeUndefined();
-  });
-
-  it("implementer --success→ verification has no `when` and is found", () => {
-    const found = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "implementer" && t.on === "success" && t.to === "verification",
-    );
-    expect(found).toBeDefined();
-    expect(found!.when).toBeUndefined();
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TC-5: delta-spec-validation needs-fix → delta-spec-fixer (phase に関係なく同一)
-// ─────────────────────────────────────────────────────────────────────────────
-describe("TC-5: delta-spec-validation needs-fix → delta-spec-fixer (both phases)", () => {
-  it("STANDARD_TRANSITIONS has delta-spec-validation --needs-fix→ delta-spec-fixer", () => {
-    const found = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "delta-spec-validation" && t.on === "needs-fix" && t.to === "delta-spec-fixer",
-    );
-    expect(found).toBeDefined();
-    expect(found!.when).toBeUndefined(); // no `when` — fires in both phases
-  });
-
-  it("delta-spec-fixer --approved→ delta-spec-validation exists (loop back)", () => {
-    const found = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "delta-spec-fixer" && t.on === "approved" && t.to === "delta-spec-validation",
-    );
-    expect(found).toBeDefined();
-    expect(found!.when).toBeUndefined();
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TC-WHEN-01: delta-spec-validation approved conditional row has `when` predicate
-// ─────────────────────────────────────────────────────────────────────────────
-describe("TC-WHEN-01: conditional transition row has `when` predicate", () => {
-  it("delta-spec-validation --approved→ adr-gen row has a `when` function", () => {
-    const conditionalRow = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "delta-spec-validation" && t.on === "approved" && t.to === "adr-gen",
-    );
-    expect(conditionalRow).toBeDefined();
-    expect(typeof conditionalRow!.when).toBe("function");
-  });
-
-  it("when predicate returns false when code-review has 0 attempts", () => {
-    const conditionalRow = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "delta-spec-validation" && t.on === "approved" && t.to === "adr-gen",
-    );
-    expect(conditionalRow!.when).toBeDefined();
-    const stateNoCodeReview = makeMinimalState("test", {});
-    expect(conditionalRow!.when!(stateNoCodeReview)).toBe(false);
-  });
-
-  it("when predicate returns true when code-review has 1 attempt", () => {
-    const conditionalRow = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "delta-spec-validation" && t.on === "approved" && t.to === "adr-gen",
-    );
-    expect(conditionalRow!.when).toBeDefined();
-    const stateWithCodeReview = makeMinimalState("test", {
-      "code-review": [
-        {
-          attempt: 1,
-          sessionId: null,
-          outcome: { verdict: "approved" as const, findingsPath: null, error: null },
-          startedAt: new Date().toISOString(),
-          endedAt: new Date().toISOString(),
-        },
-      ],
-    });
-    expect(conditionalRow!.when!(stateWithCodeReview)).toBe(true);
-  });
-
-  it("when predicate returns false when state.steps is undefined", () => {
-    const conditionalRow = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "delta-spec-validation" && t.on === "approved" && t.to === "adr-gen",
-    );
-    const stateNoSteps: JobState = {
-      ...makeMinimalState("test"),
-      steps: undefined,
-    };
-    expect(conditionalRow!.when!(stateNoSteps)).toBe(false);
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TC-WHEN-02: STANDARD_TRANSITIONS has 31 rows (30 previous + 1 new conditional)
-// ─────────────────────────────────────────────────────────────────────────────
-describe("TC-WHEN-02: STANDARD_TRANSITIONS row count", () => {
-  it("has 31 rows (33 previous - 2 escalation rows removed in R3 cutover)", () => {
-    // R3 cutover: removed spec-review --escalation→ escalate and code-review --escalation→ escalate
-    expect(STANDARD_TRANSITIONS.length).toBe(31);
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TC-017/TC-018: code-review approved → code-fixer `when` predicate (fixable routing)
-// ─────────────────────────────────────────────────────────────────────────────
-describe("TC-017/TC-018: code-review approved → code-fixer when predicate (fixable routing)", () => {
-  function getFixableRoutingWhen() {
-    const row = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "code-review" && t.on === "approved" && t.to === "code-fixer",
-    );
-    expect(row).toBeDefined();
-    expect(typeof row!.when).toBe("function");
-    return row!.when!;
-  }
-
-  function makeStateWithCodeReviewToolResult(toolResult: BaseReportResult | null): JobState {
-    return makeMinimalState("test", {
-      "code-review": [
-        {
-          attempt: 1,
-          sessionId: null,
-          outcome: {
-            verdict: "approved" as const,
-            findingsPath: null,
-            error: null,
-            toolResult,
-          },
-          startedAt: new Date().toISOString(),
-          endedAt: new Date().toISOString(),
-        },
-      ],
-    });
-  }
-
-  it("returns true when fixableCount is 3", () => {
-    const when = getFixableRoutingWhen();
-    const toolResult = { ok: true, approved: true, fixableCount: 3 } as BaseReportResult;
-    expect(when(makeStateWithCodeReviewToolResult(toolResult))).toBe(true);
-  });
-
-  it("returns false when fixableCount is 0", () => {
-    const when = getFixableRoutingWhen();
-    const toolResult = { ok: true, approved: true, fixableCount: 0 } as BaseReportResult;
-    expect(when(makeStateWithCodeReviewToolResult(toolResult))).toBe(false);
-  });
-
-  it("returns false when toolResult is null (0 fallback)", () => {
-    const when = getFixableRoutingWhen();
-    expect(when(makeStateWithCodeReviewToolResult(null))).toBe(false);
+    // code-review must NOT have been called again
+    expect(executeSpy).not.toHaveBeenCalledWith(expect.objectContaining({ name: "code-review" }), expect.anything(), expect.anything());
   });
 });

@@ -247,8 +247,7 @@ export class Pipeline {
 
       // --- Look up next step from transition table ---
       // `when` predicate (if defined) must return true for the transition to fire.
-      // Rows without `when` always match — enabling context-aware conditional routing
-      // (e.g. 2nd-phase delta-spec-validation → adr-gen after code-review runs).
+      // Rows without `when` always match — enabling context-aware conditional routing.
       const transition = this.transitions.find(
         (t) => t.step === currentStep && t.on === outcome && (!t.when || t.when(state)),
       );
@@ -309,8 +308,8 @@ export class Pipeline {
           // Check bypass: fixer has reached its max iterations → allow one more review.
           // Condition is based on fixer iteration count, not the immediately preceding step,
           // so the bypass survives intermediate deterministic steps that the transition table
-          // inserts between the fixer and the review (e.g. spec-fixer → delta-spec-validation
-          // → spec-review). Per loop, the review is only re-entered through its paired fixer,
+          // inserts between the fixer and the review (e.g. spec-fixer → spec-review).
+          // Per loop, the review is only re-entered through its paired fixer,
           // so this counter-based check is correct for any path that reaches the review.
           const pairedFixer = this.loopFixerPairs[nextStep as string];
           const fixerAtMax = pairedFixer !== undefined && (fixerIters.get(pairedFixer) ?? 0) >= this.maxIterations;

@@ -120,14 +120,6 @@ export function projectMdPath(): string {
 }
 
 /**
- * Returns the relative path to the delta-spec-validation result file for the given slug.
- * Example: deltaSpecValidationResultPath("my-change") → "specrunner/changes/my-change/delta-spec-validation-result.md"
- */
-export function deltaSpecValidationResultPath(slug: string): string {
-  return `${CHANGES_DIR}/${slug}/delta-spec-validation-result.md`;
-}
-
-/**
  * Returns the relative path to the rules.md copy inside the change folder.
  * Example: rulesDestPath("my-change") → "specrunner/changes/my-change/rules.md"
  */

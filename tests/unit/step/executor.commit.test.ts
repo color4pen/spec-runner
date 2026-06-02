@@ -623,7 +623,7 @@ describe("TC-AUTH-01: staged authority spec → warning to stderr, commit contin
     const combined = stderrMessages.join("");
     expect(combined).toContain("Warning: authority spec edit detected in staged files");
     expect(combined).toContain("specrunner/specs/foo/spec.md");
-    expect(combined).toContain("delta-spec-validation will handle");
+    expect(combined).toContain("Authority spec edits are not permitted.");
 
     // Commit must still be called
     const subcommands = calls.map((c) => c.args[0]);
@@ -753,7 +753,7 @@ describe("TC-AUTH-04: agent self-commit with authority spec in HEAD diff → war
     const combined = stderrMessages.join("");
     expect(combined).toContain("Warning: authority spec edit detected in agent commits");
     expect(combined).toContain("specrunner/specs/foo/spec.md");
-    expect(combined).toContain("delta-spec-validation will handle");
+    expect(combined).toContain("Authority spec edits are not permitted.");
 
     // Push must still be called
     const subcommands = calls.map((c) => c.args[0]);

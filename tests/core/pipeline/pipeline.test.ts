@@ -194,34 +194,6 @@ function buildMockPipeline(opts: {
       if (result instanceof Error) throw result;
       return result;
     }
-    if (step.name === "delta-spec-validation") {
-      // Default: delta-spec-validation approves immediately (no violations)
-      return {
-        ...currentState,
-        status: "running",
-        steps: {
-          ...currentState.steps,
-          "delta-spec-validation": [
-            ...(currentState.steps?.["delta-spec-validation"] ?? []),
-            { attempt: (currentState.steps?.["delta-spec-validation"]?.length ?? 0) + 1, sessionId: null, outcome: { verdict: "approved" as const, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" },
-          ],
-        },
-      };
-    }
-    if (step.name === "delta-spec-fixer") {
-      // Default: delta-spec-fixer completes successfully
-      return {
-        ...currentState,
-        status: "running",
-        steps: {
-          ...currentState.steps,
-          "delta-spec-fixer": [
-            ...(currentState.steps?.["delta-spec-fixer"] ?? []),
-            { attempt: (currentState.steps?.["delta-spec-fixer"]?.length ?? 0) + 1, sessionId: null, outcome: { verdict: "approved" as const, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" },
-          ],
-        },
-      };
-    }
     if (step.name === "test-case-gen") {
       // Default: test-case-gen succeeds (completionVerdict: success)
       return {
@@ -285,19 +257,17 @@ function buildMockPipeline(opts: {
   const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
 
   const steps = new Map<string, Step>([
-    ["design",                { kind: "agent", name: "design",                agent: { name: "test", role: "design", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-    ["delta-spec-validation", { kind: "cli",   name: "delta-spec-validation", run: async () => {}, resultFilePath: () => changeFolderPath("test-slug") + "/delta-spec-validation-result.md", parseResult: () => ({ verdict: "approved" as const, findingsPath: null }) }],
-    ["delta-spec-fixer",      { kind: "agent", name: "delta-spec-fixer",      agent: { name: "test", role: "delta-spec-fixer", model: "claude-sonnet-4-6", system: "", tools: [] }, completionVerdict: "approved", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-    ["spec-review",           { kind: "agent", name: "spec-review",           agent: { name: "test", role: "spec-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-    ["spec-fixer",            { kind: "agent", name: "spec-fixer",            agent: { name: "test", role: "spec-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-    ["test-case-gen",         { kind: "agent", name: "test-case-gen",         agent: { name: "test", role: "test-case-gen", model: "claude-sonnet-4-6", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-    ["implementer",           { kind: "agent", name: "implementer",           agent: { name: "test", role: "implementer", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-    ["verification",          { kind: "cli",   name: "verification",           run: async () => {}, resultFilePath: () => verificationResultPath("test"), parseResult: () => ({ verdict: "passed" as const, findingsPath: null }) }],
-    ["build-fixer",           { kind: "agent", name: "build-fixer",           agent: { name: "test", role: "build-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-    ["code-review",           { kind: "agent", name: "code-review",           agent: { name: "test", role: "code-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => reviewFeedbackPath("test", 1), parseResult: () => ({ verdict: "approved" as const, findingsPath: null }) }],
-    ["code-fixer",            { kind: "agent", name: "code-fixer",            agent: { name: "test", role: "code-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "approved", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-    ["adr-gen",               { kind: "agent", name: "adr-gen",               agent: { name: "test", role: "adr-gen", model: "claude-sonnet-4-6", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-    ["pr-create",             { kind: "cli",   name: "pr-create",             run: async () => {}, resultFilePath: () => prCreateResultPath("test"), parseResult: () => ({ verdict: "success" as const, findingsPath: null }) }],
+    ["design",       { kind: "agent", name: "design",       agent: { name: "test", role: "design",       model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["spec-review",  { kind: "agent", name: "spec-review",  agent: { name: "test", role: "spec-review",  model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["spec-fixer",   { kind: "agent", name: "spec-fixer",   agent: { name: "test", role: "spec-fixer",   model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["test-case-gen",{ kind: "agent", name: "test-case-gen",agent: { name: "test", role: "test-case-gen",model: "claude-sonnet-4-6", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["implementer",  { kind: "agent", name: "implementer",  agent: { name: "test", role: "implementer",  model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["verification", { kind: "cli",   name: "verification", run: async () => {}, resultFilePath: () => verificationResultPath("test"), parseResult: () => ({ verdict: "passed" as const, findingsPath: null }) }],
+    ["build-fixer",  { kind: "agent", name: "build-fixer",  agent: { name: "test", role: "build-fixer",  model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["code-review",  { kind: "agent", name: "code-review",  agent: { name: "test", role: "code-review",  model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => reviewFeedbackPath("test", 1), parseResult: () => ({ verdict: "approved" as const, findingsPath: null }) }],
+    ["code-fixer",   { kind: "agent", name: "code-fixer",   agent: { name: "test", role: "code-fixer",   model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "approved", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["adr-gen",      { kind: "agent", name: "adr-gen",      agent: { name: "test", role: "adr-gen",      model: "claude-sonnet-4-6", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["pr-create",    { kind: "cli",   name: "pr-create",    run: async () => {}, resultFilePath: () => prCreateResultPath("test"), parseResult: () => ({ verdict: "success" as const, findingsPath: null }) }],
   ]);
 
   const pipeline = new Pipeline({
@@ -436,20 +406,13 @@ describe("TC-063: Pipeline — loop exhaustion: SPEC_REVIEW_RETRIES_EXHAUSTED", 
         return specReviewResults[callCount++] ?? specReviewResults[specReviewResults.length - 1];
       }
       if (step.name === "spec-fixer") return specFixerResult;
-      // delta-spec-validation always approves (returns state unchanged — no verdict recorded,
-      // so getStepOutcome falls through to the default "approved" outcome)
-      if (step.name === "delta-spec-validation") return currentState;
-      // delta-spec-fixer completes successfully (completionVerdict "approved")
-      if (step.name === "delta-spec-fixer") return currentState;
       throw new Error(`Unknown: ${step.name}`);
     });
 
     const steps = new Map<string, Step>([
-      ["design",             { kind: "agent", name: "design",             agent: { name: "test", role: "design",             model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success",   buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-      ["spec-review",        { kind: "agent", name: "spec-review",        agent: { name: "test", role: "spec-review",        model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-      ["spec-fixer",         { kind: "agent", name: "spec-fixer",         agent: { name: "test", role: "spec-fixer",         model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-      ["delta-spec-validation", { kind: "cli", name: "delta-spec-validation", run: async () => {}, resultFilePath: () => "dsv-result.md", parseResult: () => ({ verdict: "approved" as const, findingsPath: null }) }],
-      ["delta-spec-fixer",   { kind: "agent", name: "delta-spec-fixer",   agent: { name: "test", role: "delta-spec-fixer",   model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "approved",  buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["design",      { kind: "agent", name: "design",      agent: { name: "test", role: "design",      model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["spec-review", { kind: "agent", name: "spec-review", agent: { name: "test", role: "spec-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["spec-fixer",  { kind: "agent", name: "spec-fixer",  agent: { name: "test", role: "spec-fixer",  model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ]);
 
     const events = new EventBus();
@@ -461,10 +424,6 @@ describe("TC-063: Pipeline — loop exhaustion: SPEC_REVIEW_RETRIES_EXHAUSTED", 
       executor: { execute: executeSpy } as unknown as StepExecutor,
       events,
       loopName: "spec-review",
-      // Note: delta-spec-validation is NOT in loopNames here — only spec-review is the loop.
-      // This allows spec-review to exhaust normally (SPEC_REVIEW_RETRIES_EXHAUSTED).
-      // The standard pipeline (createStandardPipeline) does NOT include dsv in loopNames
-      // (PR #274), so dsv runs as a deterministic non-loop step.
     });
 
     const result = await pipeline.run("design", state, deps);
@@ -569,34 +528,23 @@ describe("TC-066: Pipeline — lifecycle events emitted", () => {
 
 // TC-067: STANDARD_TRANSITIONS table — correct entries
 describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
-  it("contains all required spec-layer transitions (with delta-spec-validation gate)", () => {
+  it("contains all required spec-layer transitions", () => {
     const find = (step: string, on: string) =>
       STANDARD_TRANSITIONS.find((t) => t.step === step && t.on === on);
 
-    // design now routes to delta-spec-validation (not directly to spec-review)
-    expect(find("design",                "success")).toMatchObject({ to: "delta-spec-validation" });
-    expect(find("design",                "error")).toMatchObject({ to: "escalate" });
-    // delta-spec-validation loop
-    // Two approved rows: conditional (→ adr-gen, 2nd phase) and fallback (→ spec-review, 1st phase).
-    // find() returns first match — the conditional row with `when` predicate.
-    expect(find("delta-spec-validation", "approved")).toMatchObject({ to: "adr-gen" });
-    // The fallback row (→ spec-review) also exists:
-    expect(STANDARD_TRANSITIONS.find((t) => t.step === "delta-spec-validation" && t.on === "approved" && t.to === "spec-review")).toBeDefined();
-    expect(find("delta-spec-validation", "needs-fix")).toMatchObject({ to: "delta-spec-fixer" });
-    expect(find("delta-spec-validation", "escalation")).toMatchObject({ to: "escalate" });
-    // delta-spec-fixer → delta-spec-validation loop
-    expect(find("delta-spec-fixer",      "approved")).toMatchObject({ to: "delta-spec-validation" });
-    expect(find("delta-spec-fixer",      "error")).toMatchObject({ to: "escalate" });
+    // design routes directly to spec-review
+    expect(find("design",       "success")).toMatchObject({ to: "spec-review" });
+    expect(find("design",       "error")).toMatchObject({ to: "escalate" });
     // spec-review loop (R3 cutover: escalation transition removed — halt via loop exhaustion only)
-    expect(find("spec-review",   "approved")).toMatchObject({ to: "test-case-gen" });
-    expect(find("spec-review",   "needs-fix")).toMatchObject({ to: "spec-fixer" });
+    expect(find("spec-review",  "approved")).toMatchObject({ to: "test-case-gen" });
+    expect(find("spec-review",  "needs-fix")).toMatchObject({ to: "spec-fixer" });
     // spec-review escalation transition no longer exists (R3 cutover)
-    expect(find("spec-review",   "escalation")).toBeUndefined();
-    // spec-fixer now routes to delta-spec-validation (not directly to spec-review)
-    expect(find("spec-fixer",    "approved")).toMatchObject({ to: "delta-spec-validation" });
-    expect(find("spec-fixer",    "error")).toMatchObject({ to: "escalate" });
-    expect(find("test-case-gen", "success")).toMatchObject({ to: "implementer" });
-    expect(find("test-case-gen", "error")).toMatchObject({ to: "escalate" });
+    expect(find("spec-review",  "escalation")).toBeUndefined();
+    // spec-fixer routes directly to spec-review
+    expect(find("spec-fixer",   "approved")).toMatchObject({ to: "spec-review" });
+    expect(find("spec-fixer",   "error")).toMatchObject({ to: "escalate" });
+    expect(find("test-case-gen","success")).toMatchObject({ to: "implementer" });
+    expect(find("test-case-gen","error")).toMatchObject({ to: "escalate" });
   });
 
   it("contains all required implementation-layer transitions (TC-012)", () => {
@@ -612,25 +560,33 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     expect(find("verification", "escalation")).toMatchObject({ to: "escalate" });
     expect(find("build-fixer",  "success")).toMatchObject({ to: "verification" });
     expect(find("build-fixer",  "error")).toMatchObject({ to: "escalate" });
-    // code-review loop rows: first approved row is conditional (fixCount > 0 → code-fixer), second is fallback → delta-spec-validation
+    // code-review loop rows: first approved row is conditional (fixCount > 0 → code-fixer), second is fallback → adr-gen
     expect(find("code-review",  "approved")).toMatchObject({ to: "code-fixer" }); // conditional (when: fixCount > 0)
-    expect(findWithTo("code-review", "approved", "delta-spec-validation")).toBeDefined(); // fallback
+    expect(findWithTo("code-review", "approved", "adr-gen")).toBeDefined(); // fallback
     expect(find("code-review",  "needs-fix")).toMatchObject({ to: "code-fixer" });
     // code-review escalation transition no longer exists (R3 cutover)
     expect(find("code-review",  "escalation")).toBeUndefined();
-    // code-fixer has two approved rows: conditional (last review approved → delta-spec-validation) + fallback (→ code-review)
-    expect(find("code-fixer",   "approved")).toMatchObject({ to: "delta-spec-validation" }); // conditional first
+    // code-fixer has two approved rows: conditional (last review approved → adr-gen) + fallback (→ code-review)
+    expect(find("code-fixer",   "approved")).toMatchObject({ to: "adr-gen" }); // conditional first
     expect(findWithTo("code-fixer", "approved", "code-review")).toBeDefined(); // fallback exists
     expect(find("code-fixer",   "error")).toMatchObject({ to: "escalate" });
+    // adr-gen rows
+    expect(find("adr-gen",      "success")).toMatchObject({ to: "pr-create" });
+    expect(find("adr-gen",      "error")).toMatchObject({ to: "escalate" });
     // pr-create rows
     expect(find("pr-create",    "success")).toMatchObject({ to: "end" });
     expect(find("pr-create",    "error")).toMatchObject({ to: "escalate" });
   });
 
-  it("has exactly 31 transitions (33 previous - 2 escalation rows removed in R3 cutover)", () => {
-    // R3 cutover: removed spec-review --escalation→ escalate and code-review --escalation→ escalate
-    // Judge halt now exclusively via loop exhaustion.
-    expect(STANDARD_TRANSITIONS).toHaveLength(31);
+  it("has the correct number of transitions after removing delta-spec steps", () => {
+    // Removed: delta-spec-validation rows (5) + delta-spec-fixer rows (2) = 7 rows removed
+    // New: adr-gen rows were already present, no new rows added
+    expect(STANDARD_TRANSITIONS.length).toBeGreaterThan(0);
+    // Verify no delta-spec entries remain
+    const deltaRows = STANDARD_TRANSITIONS.filter(
+      t => t.step.includes("delta") || t.to.toString().includes("delta")
+    );
+    expect(deltaRows).toHaveLength(0);
   });
 });
 
@@ -696,34 +652,13 @@ describe("TC-069: Pipeline — loop step without paired fixer retains convention
       if (step.name === "spec-fixer") {
         return currentState;
       }
-      if (step.name === "delta-spec-validation") {
-        // Stub: always return approved so the pipeline routes through to spec-review
-        return {
-          ...currentState,
-          status: "running" as const,
-          steps: {
-            ...currentState.steps,
-            "delta-spec-validation": [
-              ...(currentState.steps?.["delta-spec-validation"] ?? []),
-              {
-                attempt: (currentState.steps?.["delta-spec-validation"]?.length ?? 0) + 1,
-                sessionId: null,
-                outcome: { verdict: "approved" as const, findingsPath: null, error: null },
-                startedAt: "2026-01-01",
-                endedAt: "2026-01-01",
-              },
-            ],
-          },
-        };
-      }
       throw new Error(`Unexpected step: ${step.name}`);
     });
 
     const stepsMap = new Map<string, Step>([
-      ["design",      { kind: "agent", name: "design",      agent: { name: "test", role: "design", model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["design",      { kind: "agent", name: "design",      agent: { name: "test", role: "design",      model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
       ["spec-review", { kind: "agent", name: "spec-review", agent: { name: "test", role: "spec-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-      ["spec-fixer",  { kind: "agent", name: "spec-fixer",  agent: { name: "test", role: "spec-fixer", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-      ["delta-spec-validation", { kind: "cli", name: "delta-spec-validation", run: async () => {}, resultFilePath: () => "/tmp/dsv-result.md", parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["spec-fixer",  { kind: "agent", name: "spec-fixer",  agent: { name: "test", role: "spec-fixer",  model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ]);
 
     const events = new EventBus();

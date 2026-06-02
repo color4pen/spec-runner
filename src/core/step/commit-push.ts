@@ -66,13 +66,13 @@ export async function commitAndPush(
     const headAfterStep = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
     if (headBeforeStep && headAfterStep && headAfterStep !== headBeforeStep) {
       // Agent self-commit path: inspect HEAD diff for authority spec violations.
-      // Warning only — pipeline continues; delta-spec-validation will handle the violation.
+      // Warning only — pipeline continues; authority spec edits are not permitted.
       const headDiffOutput = await gitExec(infra.spawnFn, cwd, ["diff", `${headBeforeStep}..${headAfterStep}`, "--name-only"]);
       if (headDiffOutput) {
         const headFilePaths = headDiffOutput.split("\n").filter(p => p.length > 0);
         const headViolations = findAuthoritySpecViolations(headFilePaths);
         if (headViolations.length > 0) {
-          stderrWrite(`Warning: authority spec edit detected in agent commits: ${headViolations.join(", ")}. Continuing — delta-spec-validation will handle.\n`);
+          stderrWrite(`Warning: authority spec edit detected in agent commits: ${headViolations.join(", ")}. Authority spec edits are not permitted.\n`);
         }
       }
       // Agent authored commit(s) since step start — push the existing commits as-is.
@@ -85,13 +85,13 @@ export async function commitAndPush(
   }
 
   // Staged changes exist — check for authority spec violations.
-  // Warning only — pipeline continues; delta-spec-validation will handle the violation.
+  // Warning only — pipeline continues; authority spec edits are not permitted.
   const stagedFilesOutput = await gitExec(infra.spawnFn, cwd, ["diff", "--cached", "--name-only"]);
   if (stagedFilesOutput) {
     const stagedFilePaths = stagedFilesOutput.split("\n").filter(p => p.length > 0);
     const stagedViolations = findAuthoritySpecViolations(stagedFilePaths);
     if (stagedViolations.length > 0) {
-      stderrWrite(`Warning: authority spec edit detected in staged files: ${stagedViolations.join(", ")}. Continuing — delta-spec-validation will handle.\n`);
+      stderrWrite(`Warning: authority spec edit detected in staged files: ${stagedViolations.join(", ")}. Authority spec edits are not permitted.\n`);
     }
   }
 

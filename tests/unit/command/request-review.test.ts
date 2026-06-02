@@ -265,10 +265,10 @@ describe("TC-RR-013: REQUEST_REVIEW_SYSTEM_PROMPT intent-based detection covers 
 // ---------------------------------------------------------------------------
 // TC-RR-014: REQUEST_REVIEW_SYSTEM_PROMPT — HIGH finding recommendation guidance
 // ---------------------------------------------------------------------------
-describe("TC-RR-014: REQUEST_REVIEW_SYSTEM_PROMPT — HIGH finding recommendation guidance (read-only / delta spec)", () => {
-  it("contains read-only within the PR and delta spec guidance in recommendation", () => {
+describe("TC-RR-014: REQUEST_REVIEW_SYSTEM_PROMPT — HIGH finding recommendation guidance (read-only / spec.md)", () => {
+  it("contains read-only within the PR and spec.md guidance in recommendation", () => {
     expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("read-only within the PR");
-    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("delta spec");
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("spec.md");
   });
 });
 

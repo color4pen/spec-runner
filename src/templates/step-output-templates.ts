@@ -127,11 +127,11 @@ Test Case heading format: \`### TC-{NNN}: {Name}\` (3-digit zero-padded, e.g. TC
 Required fields per test case:
   **Category**: unit | integration | manual
   **Priority**: must | should | could
-  **Source**: reference to delta spec Scenario (specs/<capability>/spec.md > Requirement: <name> > Scenario: <name>) or design.md / tasks.md section
+  **Source**: reference to spec Scenario (spec.md > Requirement: <name> > Scenario: <name>) or design.md / tasks.md section
 
 GIVEN/WHEN/THEN structure (mixed format — depends on TC type):
-  Scenario 由来 TC (Source = specs/<capability>/spec.md > Requirement: <name> > Scenario: <name>):
-    GWT は記述しない。Source 参照のみ。behavior の正典は delta spec の Scenario。
+  Scenario 由来 TC (Source = spec.md > Requirement: <name> > Scenario: <name>):
+    GWT は記述しない。Source 参照のみ。behavior の正典は spec の Scenario。
   非 Scenario 由来 TC (Source = design.md or tasks.md section):
     GWT は必須:
     **GIVEN** <preconditions>
@@ -171,7 +171,7 @@ Result section MUST appear at the very end as a YAML code block:
   result determination:
     completed — all testable behaviors are documented
     partial   — some cases could not be derived due to design ambiguity
-    failed    — delta spec is absent AND design.md / tasks.md are also missing
+    failed    — spec is absent AND design.md / tasks.md are also missing
 -->
 
 ## Summary
@@ -245,62 +245,35 @@ Tasks must be granular enough for the implementer to execute without additional 
 `;
 
 /**
- * Template for delta-spec-template.md (B-group, cleanup: true).
+ * Template for spec.md (A-group).
  *
- * Reference template placed in the change folder for the design step.
- * The agent reads this to understand the delta spec format, then writes
- * the actual delta spec under specs/<capability>/spec.md.
- * Deleted by specrunner after the design step completes (before commit-push).
+ * Placed in the change folder before the design step runs.
+ * The agent overwrites this file with the self-contained spec for the change.
+ * HTML comments carry writing guidance for Requirement / Scenario structure.
  */
-export const DELTA_SPEC_TEMPLATE = `<!-- DELTA SPEC FORMAT REQUIREMENTS (reference template — do NOT use this file as output)
+export const SPEC_TEMPLATE = `# Spec:
 
-This template describes the required format for delta spec files.
-Write your delta spec at: specs/<capability-name>/spec.md
+<!-- SPEC WRITING GUIDANCE
+
+This file is the self-contained spec for this change.
+Write Layer-1 behaviors — choices the structure/types/FSM do not enforce automatically.
 
 ════════════════════════════════════════════════════════
-STRUCTURE
+REQUIREMENT FORMAT
 ════════════════════════════════════════════════════════
-
-## Requirements
-  The only top-level section for requirement additions/changes.
-  Do NOT use legacy headers: ## ADDED Requirements, ## MODIFIED Requirements, etc.
 
 ### Requirement: <name>
-  Each requirement. When MODIFYING an existing requirement, the header MUST
-  exactly match the baseline (tool auto-classifies as MODIFIED).
-  When ADDING a new requirement, use a new unique name.
+
+Each requirement describes a behavior this change introduces or modifies.
+The body MUST contain a normative keyword: SHALL or MUST (English).
+
+At least one Scenario per Requirement (Given/When/Then format):
 
 #### Scenario: <name>
-  At least one scenario per Requirement. Describes behavior in Given/When/Then.
-
-## Removed
-  List requirements removed from the baseline (one per line):
-    - "requirement name"
-
-## Renamed
-  List requirements renamed (one per line):
-    - "old name" → "new name"
-
-════════════════════════════════════════════════════════
-NORMATIVE KEYWORDS (MUST)
-════════════════════════════════════════════════════════
-
-Each Requirement body MUST contain \`SHALL\` or \`MUST\` (English normative keywords).
-
-════════════════════════════════════════════════════════
-SCENARIO FORMAT
-════════════════════════════════════════════════════════
 
 **Given** <preconditions>
 **When** <action>
 **Then** <expected result>
-
-════════════════════════════════════════════════════════
-FILE PATH REQUIREMENT
-════════════════════════════════════════════════════════
-
-Output file MUST be: specs/<capability-name>/spec.md
-NOT:                  specs/<name>.md (flat file — invalid)
 
 ════════════════════════════════════════════════════════
 EXAMPLE
@@ -308,17 +281,21 @@ EXAMPLE
 
 ## Requirements
 
-### Requirement: The system shall support template injection
+### Requirement: The system shall place spec.md before the design step
 
-The system SHALL inject output templates into the change folder before each agent step.
+The system SHALL place a spec.md scaffold in the change folder before the design
+agent runs, so the agent has a pre-structured output destination.
 
-#### Scenario: Template placed before agent runs
+#### Scenario: spec.md exists before design agent starts
 
 **Given** the pipeline is about to execute the design step
-**When** the executor invokes writeOutputTemplates for the design step
-**Then** design.md, tasks.md, and delta-spec-template.md exist in the change folder
+**When** the executor calls writeOutputTemplates for the design step
+**Then** spec.md exists in the change folder at specrunner/changes/<slug>/spec.md
 
 -->
+
+## Requirements
+
 `;
 
 // ---------------------------------------------------------------------------
@@ -349,7 +326,7 @@ export interface OutputTemplate {
  * Iteration numbers are computed from state.steps to handle retries correctly.
  *
  * Step → template mapping:
- *   design       → design.md (A), tasks.md (A), delta-spec-template.md (B, cleanup)
+ *   design       → design.md (A), tasks.md (A), spec.md (A)
  *   spec-review  → spec-review-result-NNN.md (A)
  *   test-case-gen → test-cases.md (A)
  *   code-review  → review-feedback-NNN.md (A)
@@ -374,9 +351,8 @@ export function getOutputTemplates(
           content: TASKS_TEMPLATE,
         },
         {
-          path: `${changeFolder}/delta-spec-template.md`,
-          content: DELTA_SPEC_TEMPLATE,
-          cleanup: true,
+          path: `${changeFolder}/spec.md`,
+          content: SPEC_TEMPLATE,
         },
       ];
     }
@@ -410,7 +386,7 @@ export function getOutputTemplates(
       ];
     }
 
-    // spec-fixer, implementer, build-fixer, code-fixer, adr-gen, delta-spec-fixer:
+    // spec-fixer, implementer, build-fixer, code-fixer, adr-gen:
     // no output templates needed
     default:
       return [];

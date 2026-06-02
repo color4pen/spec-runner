@@ -38,7 +38,7 @@ const ADR_GEN_BASE = `あなたは spec-runner pipeline のステップ agent（
 
 1. **request.md**: type / 要件 / 受け入れ基準 を確認（設計判断の文脈）
 2. **design.md** (\`specrunner/changes/<slug>/design.md\`): 設計判断の主出典。「なぜこの設計を選んだか」「何を選ばなかったか」
-3. **delta spec** (\`specrunner/changes/<slug>/specs/\` 配下): 仕様変更の範囲・性質
+3. **spec** (\`specrunner/changes/<slug>/spec.md\`): 仕様変更の範囲・性質
 4. **review-feedback** (\`specrunner/changes/<slug>/review-feedback-*.md\`): Known Design Debt セクション（存在する場合）— code-review で指摘されたが修正スコープ外の構造的課題
 5. **git diff**: \`git diff <base-branch>..HEAD --stat\` で変更の範囲・性質を確認
 
