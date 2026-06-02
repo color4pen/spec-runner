@@ -92,3 +92,26 @@ describe("IMPLEMENTER_SYSTEM_PROMPT — basic requirements", () => {
     expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("end_turn");
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-007: implementer system prompt に delta spec Scenario 参照フローが記載されている
+// Source: tasks.md > T-03: implementer system prompt を delta spec Scenario 参照フローに更新
+// ---------------------------------------------------------------------------
+describe("TC-007: IMPLEMENTER_SYSTEM_PROMPT — delta spec Scenario reference flow", () => {
+  it("Scenario-derived TC flow: instructs to read Source path from delta spec", () => {
+    // Must instruct implementer to open specs/<capability>/spec.md via Read tool
+    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("Scenario 由来 TC");
+    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("specs/<capability>/spec.md");
+  });
+
+  it("Scenario-derived TC flow: instructs to read Scenario GWT from delta spec", () => {
+    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("Read tool");
+    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("GIVEN/WHEN/THEN");
+  });
+
+  it("non-Scenario-derived TC flow: instructs to use GWT from test-cases.md", () => {
+    // Must preserve the old flow for non-Scenario TCs
+    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("非 Scenario 由来 TC");
+    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("test-cases.md");
+  });
+});

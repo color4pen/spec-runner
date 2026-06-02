@@ -40,7 +40,12 @@ change folder の tasks.md に記載されたタスクを実装します。
 2. 関連する specs/ ファイルを読み込んで仕様を理解する
 3. 各タスクを実装する（TDD: テストを先に書く）
    - test-cases.md が存在する場合、must のテストケースは全て実装する
-   - test-cases.md の GIVEN/WHEN/THEN をテストコードに変換する。テストフレームワークやモック方法はプロジェクトの既存テストに合わせる
+   - test-cases.md の各 TC を以下のルールでテストコードに変換する（混在形式）:
+     - **Scenario 由来 TC**（Source フィールドが \`specs/<capability>/spec.md > ...\` 形式）:
+       test-cases.md に GWT が記載されていない。Source フィールドのパス（\`specs/<capability>/spec.md\`）を Read tool で開き、対応する Scenario の GIVEN/WHEN/THEN を読んでテストコードに変換する。
+     - **非 Scenario 由来 TC**（Source フィールドが design.md / tasks.md セクション参照）:
+       従来通り test-cases.md に記載された GIVEN/WHEN/THEN をテストコードに変換する。
+   - テストフレームワークやモック方法はプロジェクトの既存テストに合わせる
    - test-cases.md が存在しない場合は従来通り tasks.md ベースで TDD を行う
    - **test 関数名または直前のコメントに TC ID を必ず記載する**
      - 例: \`it("TC-070: Agent 定義ハッシュ — 同一定義は同一ハッシュ", ...)\`

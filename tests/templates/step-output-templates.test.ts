@@ -309,6 +309,30 @@ describe("TC-T005: template constants contain HTML comment format constraints", 
 });
 
 // ---------------------------------------------------------------------------
+// TC-004: TEST_CASES_TEMPLATE contains mixed format rule
+// Source: specs/test-case-generator/spec.md > Requirement: TEST_CASES_TEMPLATE のコメントに混在形式を明記しなければならない > Scenario: テンプレートコメントに混在形式が記載されている
+// ---------------------------------------------------------------------------
+describe("TC-004: TEST_CASES_TEMPLATE mixed format documentation", () => {
+  it("documents that Scenario-derived TCs omit GWT (Source reference only)", () => {
+    expect(TEST_CASES_TEMPLATE).toContain("Scenario 由来 TC");
+    expect(TEST_CASES_TEMPLATE).toContain("GWT は記述しない");
+  });
+
+  it("documents that non-Scenario-derived TCs must include GWT", () => {
+    expect(TEST_CASES_TEMPLATE).toContain("非 Scenario 由来 TC");
+    expect(TEST_CASES_TEMPLATE).toContain("GWT は必須");
+  });
+
+  it("mixed format label is present in the HTML comment", () => {
+    expect(TEST_CASES_TEMPLATE).toContain("mixed format");
+  });
+
+  it("Source reference format for Scenario-derived TCs is shown", () => {
+    expect(TEST_CASES_TEMPLATE).toContain("specs/<capability>/spec.md > Requirement: <name> > Scenario: <name>");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // path correctness: slug is included in all returned paths
 // ---------------------------------------------------------------------------
 describe("path correctness", () => {

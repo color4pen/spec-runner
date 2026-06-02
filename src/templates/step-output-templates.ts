@@ -129,10 +129,14 @@ Required fields per test case:
   **Priority**: must | should | could
   **Source**: reference to delta spec Scenario (specs/<capability>/spec.md > Requirement: <name> > Scenario: <name>) or design.md / tasks.md section
 
-GIVEN/WHEN/THEN structure (required for each test case):
-  **GIVEN** <preconditions>
-  **WHEN** <action>
-  **THEN** <expected result>
+GIVEN/WHEN/THEN structure (mixed format — depends on TC type):
+  Scenario 由来 TC (Source = specs/<capability>/spec.md > Requirement: <name> > Scenario: <name>):
+    GWT は記述しない。Source 参照のみ。behavior の正典は delta spec の Scenario。
+  非 Scenario 由来 TC (Source = design.md or tasks.md section):
+    GWT は必須:
+    **GIVEN** <preconditions>
+    **WHEN** <action>
+    **THEN** <expected result>
 
 Category determination:
   unit        — pure logic, validation, helper functions (automated)

@@ -99,4 +99,30 @@ describe("buildTestCaseGenInitialMessage — delta spec reading step", () => {
     const tasksIdx = msg.indexOf("tasks.md");
     expect(specsIdx).toBeLessThan(tasksIdx);
   });
+
+  it("step 5 does not contain unconditional 'in GIVEN/WHEN/THEN format'", () => {
+    // After the change, step 5 must not instruct to generate in GIVEN/WHEN/THEN format unconditionally
+    // It should instead express the mixed format rule
+    expect(msg).not.toContain("in GIVEN/WHEN/THEN format");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-006: TEST_CASE_GEN_BASE Test Case Format has GWT-omit instruction for Scenario-derived TCs
+// Source: tasks.md > T-02: test-case-gen system prompt を GWT 省略指示に更新
+// ---------------------------------------------------------------------------
+describe("TC-006: TEST_CASE_GEN_SYSTEM_PROMPT — Scenario-derived TC GWT omit instruction", () => {
+  it("Test Case Format section instructs Scenario-derived TCs to omit GWT", () => {
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("Scenario 由来 TC");
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("GWT 本体は記述しない");
+  });
+
+  it("Test Case Format section instructs non-Scenario-derived TCs to retain GWT", () => {
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("非 Scenario 由来 TC");
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("GWT は必須");
+  });
+
+  it("mixed format label is present in the system prompt", () => {
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("mixed format");
+  });
 });

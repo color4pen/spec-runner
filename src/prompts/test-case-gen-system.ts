@@ -44,7 +44,11 @@ Each test case must use the following structure (see template for exact field na
 
 - Heading: \`### TC-{NNN}: {Test Case Name}\` (3-digit zero-padded)
 - Required fields: **Category** (unit | integration | manual), **Priority**, **Source**
-- Body: **GIVEN** / **WHEN** / **THEN** structure
+- Body (mixed format — depends on TC type):
+  - **Scenario 由来 TC** (Source = \`specs/<capability>/spec.md > Requirement: ... > Scenario: ...\`):
+    GWT 本体は記述しない。Source 参照のみ。behavior の正典は delta spec の Scenario。
+  - **非 Scenario 由来 TC** (Source = design.md / tasks.md section):
+    GWT は必須: **GIVEN** / **WHEN** / **THEN** を記述する。
 
 **Source field format**:
 - Delta spec Scenario (primary): \`specs/<capability>/spec.md > Requirement: <name> > Scenario: <name>\`
@@ -180,7 +184,7 @@ Please:
 2. Read delta spec files under ${changeFolder}/specs/ (if present) to extract Scenarios as primary test source
 3. Read ${changeFolder}/design.md to understand the technical design
 4. Read ${changeFolder}/tasks.md to identify each task and its acceptance criteria
-5. Generate test scenarios in GIVEN/WHEN/THEN format with Category, Priority, Source, and must/should/could priorities
+5. Generate test cases with Category, Priority, Source, and must/should/could priorities. Scenario 由来 TC は Source 参照のみ（GWT 省略）、非 Scenario 由来 TC は GWT を記述する（混在形式）
 6. Write the scenarios to ${outputPath}
 7. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
 
