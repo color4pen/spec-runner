@@ -11,11 +11,11 @@ import { requirementsFor } from "../../../src/core/credentials/requirements.js";
 
 // TC-REQ-001
 describe("TC-REQ-001: requirementsFor('local') contains only github.token", () => {
-  it("includes github.token key with GITHUB_TOKEN envVar", () => {
+  it("includes github.token key with GH_TOKEN env var", () => {
     const reqs = requirementsFor("local");
     const githubReq = reqs.find((r) => r.key === "github.token");
     expect(githubReq).toBeDefined();
-    expect(githubReq!.envVar).toBe("GITHUB_TOKEN");
+    expect(githubReq!.envVar).toBe("GH_TOKEN");
 
     const anthropicReq = reqs.find((r) => r.key === "anthropic.apiKey");
     expect(anthropicReq).toBeUndefined();
@@ -28,7 +28,7 @@ describe("TC-REQ-002: requirementsFor('managed') contains github.token and anthr
     const reqs = requirementsFor("managed");
     const githubReq = reqs.find((r) => r.key === "github.token");
     expect(githubReq).toBeDefined();
-    expect(githubReq!.envVar).toBe("GITHUB_TOKEN");
+    expect(githubReq!.envVar).toBe("GH_TOKEN");
 
     const anthropicReq = reqs.find((r) => r.key === "anthropic.apiKey");
     expect(anthropicReq).toBeDefined();

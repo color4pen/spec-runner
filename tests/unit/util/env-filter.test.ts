@@ -12,6 +12,7 @@ import { stripSecrets, SECRET_DENYLIST } from "../../../src/util/env-filter.js";
 describe("stripSecrets", () => {
   it("(a) removes all denylist keys", () => {
     const env: Record<string, string | undefined> = {
+      GH_TOKEN: "ghp_secret",
       GITHUB_TOKEN: "ghp_abc",
       SPECRUNNER_API_KEY: "sk-sr",
       ANTHROPIC_API_KEY: "sk-ant",
@@ -22,6 +23,7 @@ describe("stripSecrets", () => {
     for (const key of SECRET_DENYLIST) {
       expect(result[key]).toBeUndefined();
     }
+    expect(result["GH_TOKEN"]).toBeUndefined();
   });
 
   it("(b) preserves non-denylist keys", () => {

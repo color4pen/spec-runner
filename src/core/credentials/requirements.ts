@@ -12,11 +12,11 @@ export interface RequiredCredential {
 }
 
 const LOCAL_REQUIREMENTS: RequiredCredential[] = [
-  { key: "github.token", envVar: "GITHUB_TOKEN" },
+  { key: "github.token", envVar: "GH_TOKEN" },
 ];
 
 const MANAGED_REQUIREMENTS: RequiredCredential[] = [
-  { key: "github.token", envVar: "GITHUB_TOKEN" },
+  { key: "github.token", envVar: "GH_TOKEN" },
   { key: "anthropic.apiKey", envVar: "SPECRUNNER_API_KEY" },
 ];
 

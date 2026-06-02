@@ -20,8 +20,8 @@ export const githubTokenPresentCheck: DoctorCheck = {
 
     return {
       status: "fail",
-      message: "GitHub token not found in credentials file or GITHUB_TOKEN env var",
-      hint: "Run 'specrunner login' to authenticate with GitHub.",
+      message: "GitHub token not found",
+      hint: "Set GH_TOKEN env var, run 'gh auth login', or run 'specrunner login'.",
     };
   },
 };

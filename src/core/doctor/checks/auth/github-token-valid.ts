@@ -15,8 +15,8 @@ export const githubTokenValidCheck: DoctorCheck = {
     if (typeof token !== "string" || token.length === 0) {
       return {
         status: "fail",
-        message: "GitHub token not found in credentials file or GITHUB_TOKEN env var — cannot validate",
-        hint: "Run 'specrunner login' first.",
+        message: "GitHub token not found — cannot validate",
+        hint: "Set GH_TOKEN env var, run 'gh auth login', or run 'specrunner login'.",
       };
     }
 

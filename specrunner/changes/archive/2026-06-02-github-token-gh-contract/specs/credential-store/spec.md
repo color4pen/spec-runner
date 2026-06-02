@@ -1,38 +1,4 @@
-## Purpose
-
-TBD
 ## Requirements
-
-### Requirement: Credential は credentials.json に provider-keyed で格納される
-
-`~/.config/specrunner/credentials.json` (permission 0600) が credential の SOT (Single Source of Truth) である。ファイルは MUST provider をトップレベルキーとする JSON object で、各 provider は自身の credential fields を持つ。
-
-```json
-{
-  "github": { "token": "ghp_..." },
-  "anthropic": { "apiKey": "sk-ant-..." }
-}
-```
-
-書き込みは SHALL atomic write で行われ、ファイルパーミッションは 0600 を維持する。`saveCredentials` は既存の provider key を保持する deep merge を行う（shallow merge で他 provider の key が消えない）。
-
-#### Scenario: GitHub token のみ保存済み
-
-- **GIVEN** credentials.json に `{ "github": { "token": "ghp_abc" } }` が保存されている
-- **WHEN** `saveSpecRunnerApiKey("sk-ant-xyz")` を呼ぶ
-- **THEN** credentials.json は `{ "github": { "token": "ghp_abc" }, "anthropic": { "apiKey": "sk-ant-xyz" } }` になる
-- **AND** 既存の github.token は保持される
-
-#### Scenario: Anthropic key のみ保存済み
-
-- **GIVEN** credentials.json に `{ "anthropic": { "apiKey": "sk-ant-old" } }` が保存されている
-- **WHEN** `saveCredentials({ github: { token: "ghp_new" } })` を呼ぶ
-- **THEN** credentials.json に github.token と anthropic.apiKey の両方が存在する
-
-#### Scenario: credentials.json が存在しない
-
-- **WHEN** credentials.json が存在しない状態で `loadCredentials()` を呼ぶ
-- **THEN** 空 object `{}` が返る
 
 ### Requirement: Resolver は env → gh auth → credentials → error の優先順位で解決する
 
@@ -114,6 +80,35 @@ env var は SHALL `credentials.json` より優先される。`GH_TOKEN` は SHAL
 - **THEN** credentials.json の値が返る（env より優先）
 - **AND** `source` は `"credentials"` である
 
+### Requirement: GH_TOKEN は SECRET_DENYLIST に含まれる
+
+`GH_TOKEN` は MUST `src/util/env-filter.ts` の `SECRET_DENYLIST` に含まれ、`stripSecrets` によって子プロセス / 外部 SDK へ継承されない。`GITHUB_TOKEN` と同等の第一級 credential として B-6 の credential 封じ込めに含める。
+
+#### Scenario: stripSecrets が GH_TOKEN を除去する
+
+- **GIVEN** env に `GH_TOKEN=ghp_xxx` が含まれている
+- **WHEN** `stripSecrets(env)` を呼ぶ
+- **THEN** 返却された object に `GH_TOKEN` key が存在しない
+
+### Requirement: DoctorContext は pre-resolved credential を注入する
+
+`DoctorContext` は MUST `resolvedSpecRunnerApiKey: string | null` と `specRunnerApiKeySource: "credentials" | "env" | null` field を持つ。`DoctorContext.githubTokenSource` は MUST `"credentials" | "env" | "gh" | null` 型である。`cli/doctor.ts` が SHALL resolver を呼んで pre-resolve した値を注入する。
+
+#### Scenario: gh auth token から解決した場合
+
+- **GIVEN** `gh auth token` 経由で GitHub token が解決された
+- **WHEN** `specrunner doctor` が実行される
+- **THEN** `DoctorContext.githubTokenSource` は `"gh"` である
+
+### Requirement: callsite は process.env を直読しない
+
+`src/` 配下で `process.env["GH_TOKEN"]` および `process.env["GITHUB_TOKEN"]` の直読は MUST resolver 関数内部の 1 箇所のみに制限される。他の callsite は SHALL resolver 関数を呼んで credential を取得する。
+
+#### Scenario: GH_TOKEN env 直読の排除
+
+- **WHEN** `grep 'process\.env\["GH_TOKEN"\]' src/` を実行する
+- **THEN** マッチは存在しない（resolver は引数の env dict を参照するため process.env を直読しない）
+
 ### Requirement: Runtime ごとの必要 credential は declarative に定義される
 
 `core/credentials/requirements.ts` が runtime → required credential keys の matrix を MUST export する。
@@ -147,31 +142,6 @@ preflight / doctor / bootstrap は SHALL この matrix を参照して必要 cre
 - **WHEN** `requirementsFor("local")` を呼ぶ
 - **THEN** `github.token` の `envVar` は `"GH_TOKEN"` である
 
-### Requirement: DoctorContext は pre-resolved credential を注入する
+## Renamed
 
-`DoctorContext` は MUST `resolvedSpecRunnerApiKey: string | null` と `specRunnerApiKeySource: "credentials" | "env" | null` field を持つ。`DoctorContext.githubTokenSource` は MUST `"credentials" | "env" | "gh" | null` 型である。`cli/doctor.ts` が SHALL resolver を呼んで pre-resolve した値を注入する。
-
-#### Scenario: gh auth token から解決した場合
-
-- **GIVEN** `gh auth token` 経由で GitHub token が解決された
-- **WHEN** `specrunner doctor` が実行される
-- **THEN** `DoctorContext.githubTokenSource` は `"gh"` である
-
-### Requirement: callsite は process.env を直読しない
-
-`src/` 配下で `process.env["GH_TOKEN"]` および `process.env["GITHUB_TOKEN"]` の直読は MUST resolver 関数内部の 1 箇所のみに制限される。他の callsite は SHALL resolver 関数を呼んで credential を取得する。
-
-#### Scenario: GH_TOKEN env 直読の排除
-
-- **WHEN** `grep 'process\.env\["GH_TOKEN"\]' src/` を実行する
-- **THEN** マッチは存在しない（resolver は引数の env dict を参照するため process.env を直読しない）
-
-### Requirement: GH_TOKEN は SECRET_DENYLIST に含まれる
-
-`GH_TOKEN` は MUST `src/util/env-filter.ts` の `SECRET_DENYLIST` に含まれ、`stripSecrets` によって子プロセス / 外部 SDK へ継承されない。`GITHUB_TOKEN` と同等の第一級 credential として B-6 の credential 封じ込めに含める。
-
-#### Scenario: stripSecrets が GH_TOKEN を除去する
-
-- **GIVEN** env に `GH_TOKEN=ghp_xxx` が含まれている
-- **WHEN** `stripSecrets(env)` を呼ぶ
-- **THEN** 返却された object に `GH_TOKEN` key が存在しない
+- "Resolver は credentials → env → error の優先順位で解決する" → "Resolver は env → gh auth → credentials → error の優先順位で解決する"

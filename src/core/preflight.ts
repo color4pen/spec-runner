@@ -23,7 +23,7 @@ export interface PreflightResult {
   /** Resolved GitHub token (from credentials file or GITHUB_TOKEN env var). */
   githubToken: string;
   /** Source of the resolved GitHub token. */
-  githubTokenSource: "credentials" | "env";
+  githubTokenSource: "credentials" | "env" | "gh";
   /** Resolved Anthropic API key (present only for managed runtime). */
   specRunnerApiKey?: string;
   /** Source of the resolved Anthropic API key. */
@@ -58,7 +58,7 @@ export async function runPreflight(
 
   // Step 2.5: GitHub token (required for PR operations via REST API)
   let githubToken: string;
-  let githubTokenSource: "credentials" | "env";
+  let githubTokenSource: "credentials" | "env" | "gh";
   try {
     const resolved = await resolveGitHubToken(env);
     githubToken = resolved.token;

@@ -10,6 +10,7 @@
 
 /** Keys that must never be inherited by subprocesses. */
 export const SECRET_DENYLIST = [
+  "GH_TOKEN",
   "GITHUB_TOKEN",
   "SPECRUNNER_API_KEY",
   "ANTHROPIC_API_KEY",

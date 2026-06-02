@@ -68,5 +68,8 @@ describe("githubTokenValidCheck", () => {
     });
     const result = await githubTokenValidCheck.check(ctx);
     expect(result.status).toBe("fail");
+    expect(result.hint).toContain("GH_TOKEN");
+    expect(result.hint).toContain("gh auth login");
+    expect(result.hint).toContain("specrunner login");
   });
 });

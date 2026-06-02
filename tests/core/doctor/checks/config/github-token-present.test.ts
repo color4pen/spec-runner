@@ -23,6 +23,9 @@ describe("githubTokenPresentCheck", () => {
     });
     const result = await githubTokenPresentCheck.check(ctx);
     expect(result.status).toBe("fail");
+    expect(result.hint).toContain("GH_TOKEN");
+    expect(result.hint).toContain("gh auth login");
+    expect(result.hint).toContain("specrunner login");
   });
 
   it("returns fail when resolvedGitHubToken is empty string", async () => {
@@ -31,6 +34,9 @@ describe("githubTokenPresentCheck", () => {
     });
     const result = await githubTokenPresentCheck.check(ctx);
     expect(result.status).toBe("fail");
+    expect(result.hint).toContain("GH_TOKEN");
+    expect(result.hint).toContain("gh auth login");
+    expect(result.hint).toContain("specrunner login");
   });
 
   // TC-05: source: credentials in pass message
@@ -64,6 +70,9 @@ describe("githubTokenPresentCheck", () => {
     const result = await githubTokenPresentCheck.check(ctx);
     expect(result.status).toBe("fail");
     expect(result.message).not.toContain("(source:");
+    expect(result.hint).toContain("GH_TOKEN");
+    expect(result.hint).toContain("gh auth login");
+    expect(result.hint).toContain("specrunner login");
   });
 
   // TC-08: githubTokenSource null but token present — pass without source label
