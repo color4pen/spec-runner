@@ -84,6 +84,30 @@ implementer が読むだけで実装できる粒度で書く。
 delta spec（\`${_changesDir}/<slug>/specs/<capability>/spec.md\`）を書く際は、
 \`${_changesDir}/<slug>/delta-spec-template.md\` を Read tool で読んでからフォーマットを確認し、それに従って書いてください。
 
+## Delta Spec Content Guidance (Layer-1 litmus)
+
+delta spec に書く Requirement / Scenario は **Layer-1（構造が強制しない振る舞いの選択）のみ**とする。
+
+### litmus（各 Requirement を書く前に自問する）
+
+> **「この振る舞いは構造（型 / 状態機械 / 不変条件）が強制するか？」**
+>
+> - **YES → Layer-0**: 歯（型 / FSM / invariant）が担う。delta spec の Requirement / Scenario として書かない。
+> - **NO → Layer-1**: 構造は強制しない intent 由来の選択。delta spec に書く。
+
+### 具体例
+
+**Layer-0（書かない）**: pipeline の state が \`completed\` に遷移したら \`idle\` に戻れない
+→ FSM の状態遷移表が強制する → spec に書かない（歯が担う）
+
+**Layer-1（書く）**: verification 失敗時に build-fixer へ遷移する（skip せず即失敗にしない）
+→ FSM は「遷移先を build-fixer にする」という意図の選択を強制しない → spec に書く
+
+### architecture/ 参照
+
+litmus を適用するにあたり、\`architecture/\` 配下の構造定義（歯・型・FSM）を Read tool で読んで確認してよい。
+ただし **Layer-0 の内容を delta spec へ複製しない**こと。
+
 ## Delta Spec Format Rules (MUST)
 
 delta spec ファイル（\`${_changesDir}/<slug>/specs/**/*.md\`）を生成する際、以下の規約は MUST である。（詳細ルールは \`specrunner/changes/<slug>/rules.md\` の「delta spec 記法」セクション参照）

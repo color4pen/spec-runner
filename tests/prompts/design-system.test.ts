@@ -240,6 +240,27 @@ describe("TC-CL-003: buildInitialMessage injects requestType into output", () =>
   });
 });
 
+// TC-001: DESIGN_SYSTEM_PROMPT に "Layer-1 litmus" セクションが含まれる
+describe("TC-001: Layer-1 litmus section is present in DESIGN_SYSTEM_PROMPT", () => {
+  it("contains 'Layer-1 litmus' string", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toContain("Layer-1 litmus");
+  });
+});
+
+// TC-002: DESIGN_SYSTEM_PROMPT に Layer-0 禁止指示が含まれる
+describe("TC-002: Layer-0 prohibition is present in DESIGN_SYSTEM_PROMPT", () => {
+  it("contains Layer-0 spec 禁止指示", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toMatch(/Layer-0.*spec に書かない|SHALL NOT.*Requirement/s);
+  });
+});
+
+// TC-003: DESIGN_SYSTEM_PROMPT に architecture/ 参照 guidance が含まれる
+describe("TC-003: architecture/ reference guidance is present in DESIGN_SYSTEM_PROMPT", () => {
+  it("contains 'architecture/' reference", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toContain("architecture/");
+  });
+});
+
 // TC-SP-002: "Baseline Spec 参照" is placed after path-fence and before 禁止事項
 describe("TC-SP-002: Baseline Spec 参照 is placed between CRITICAL BOUNDARY and 禁止事項", () => {
   it("Baseline Spec 参照 appears after CRITICAL BOUNDARY and before 禁止事項", () => {
