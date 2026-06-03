@@ -29,15 +29,15 @@
 - → `src/state/schema.ts`
 
 ### JobStatus 状態機械（lifecycle）— JobState の遷移不変条件
-- **状態集合（7値）**: `running | awaiting-resume | awaiting-merge | failed | terminated | archived | canceled`。
+- **状態集合（7値）**: `running | awaiting-resume | awaiting-archive | failed | terminated | archived | canceled`。
 - **区分**: active = {`running`, `awaiting-resume`}（実行中・再開待ち）／ terminal = {`archived`, `canceled`}（出口なし。以後どこへも遷移しない）。
 - **許可遷移（VALID_TRANSITIONS）**: 下表のセルのみ許可。表に無い遷移は throw（同一 status への遷移は常に noop=許可）。
 
-  | from \ to | running | awaiting-resume | awaiting-merge | failed | terminated | archived | canceled |
+  | from \ to | running | awaiting-resume | awaiting-archive | failed | terminated | archived | canceled |
   |---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
   | **running** | — | ✓ | ✓ | ✓ | ✓ |  | ✓ |
   | **awaiting-resume** | ✓ | — |  |  |  |  | ✓ |
-  | **awaiting-merge** |  |  | — |  |  | ✓ | ✓ |
+  | **awaiting-archive** |  |  | — |  |  | ✓ | ✓ |
   | **failed** | ✓ | ✓ |  | — |  |  | ✓ |
   | **terminated** | ✓ |  |  |  | — |  | ✓ |
   | **archived** |  |  |  |  |  | — |  |
@@ -46,8 +46,8 @@
 - **不変条件**:
   - 遷移の**計算**は `transitionJob`（pure・I/O なし）が VALID_TRANSITIONS を引いて行う。不正遷移は throw・同 status は noop。
   - Aggregate への**永続化**は `JobStateStore` 経由のみ（JobState 不変と同じ。計算と永続化は別レイヤ）。
-  - `awaiting-merge → archived` が正常完走の最終遷移（finish の 1-PR モデル）。`running → awaiting-resume` は異常終了 guard（exit-guard）が倒す checkpoint。
-- → `src/state/lifecycle.ts`（VALID_TRANSITIONS / TERMINAL_STATUSES / ACTIVE_STATUSES / transitionJob が正典）／ `src/state/schema.ts`（`JobStatus`。legacy の `success` は load 時に `awaiting-merge` へ remap）
+  - `awaiting-archive → archived` が正常完走の最終遷移（archive が client-closed に確定）。**merge は GitHub 上の外部イベントであり job status の遷移ではない**（CLI は merge を status 遷移として持たない）。`running → awaiting-resume` は異常終了 guard（exit-guard）が倒す checkpoint。
+- → `src/state/lifecycle.ts`（VALID_TRANSITIONS / TERMINAL_STATUSES / ACTIVE_STATUSES / transitionJob が正典）／ `src/state/schema.ts`（`JobStatus`。legacy の `success` / `awaiting-merge` は load 時に `awaiting-archive` へ remap）
 
 > **単一 mutator 不変**: `JobState.status` の変更は `transitionJob` 経由のみ。`patch + persist` での status 直書きは禁止（不正遷移を `VALID_TRANSITIONS` で弾き、status mutation を単一 mutator に集約）。この不変は `model.md` B-9 ＝ `tests/unit/architecture/core-invariants.test.ts` が機械強制する。
 

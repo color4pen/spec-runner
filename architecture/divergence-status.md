@@ -37,3 +37,7 @@
 - **reviewer 注入**（review criteria に B-1〜B-10 を追加）: 未着手。
 - **`tests/` 二重構造（`tests/core/` と `tests/unit/`）整理**: 未着手。
 - T1 trust（branch protection）: private repo・owner 手動 gate のため対象外。
+
+## should-be ↔ code 乖離（未収束）
+
+- **archive lifecycle**（ADR `2026-06-03-client-closed-archive`）: should-be は更新済み（`domain-model.md` の status `awaiting-archive` ＋ `awaiting-archive → archived`、`components.md` の `ArchiveOrchestrator`(client-closed)、`model.md` の trust placement）。**code は未追従** —— 実コードは `src/core/finish/orchestrator.ts` が merge+archive 一体（1-PR モデル）・status は `awaiting-merge`。実装は request `archive-command` で追従する。

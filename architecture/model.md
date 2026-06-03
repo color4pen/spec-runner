@@ -29,7 +29,7 @@
 | 層 | 責務 | 含む（mapping）|
 |---|---|---|
 | **composition-root** | 実装を new し依存を組み立てる。実行戦略の分岐 | `cli/`, `core/runtime/` |
-| **domain** | pipeline / step / 判定 / finish / request 等 | `core/`（`runtime`・`port` を除く）|
+| **domain** | pipeline / step / 判定 / archive / request 等 | `core/`（`runtime`・`port` を除く）|
 | **ports** | domain が要求する外部 I/O の interface | `core/port/` |
 | **adapters** | ports の実装。外部 SDK はここだけ | `adapter/`, `auth/` |
 | **persistence** | standalone Repository（port を持たない、§5-4）| `store/` |
@@ -100,7 +100,7 @@ composition-root ─→ (all)
 ## 6. 強制（歯）と trust placement
 
 - **歯**: `tests/unit/architecture/core-invariants.test.ts` が §4 の B-1〜B-10 と §3 closure（DSM）を **src 全体**で grep / import 検査する。既知 divergence は `arch-allowlist.ts` に grandfather し、allowlist は**削除のみで縮む ratchet**（許可されない edge / seam 違反 / status 直書きを新たに足すと red）。`module-boundary.test.ts` も併存。
-- **trust placement**: CI の required check に入れ、`finish` が gate を尊重（`finish-respect-branch-protection`）＋ **`CODEOWNERS` でこの model.md と歯をループ外固定**。
+- **trust placement**: CI の required check に入れ、**merge は GitHub gate（branch protection）に委ね、CLI(archive) は merge を持たない**（`finish-respect-branch-protection` → `archive-command`）＋ **`CODEOWNERS` でこの model.md と歯をループ外固定**。
 - 現状の divergence・burn-down 履歴は構造でなく状況断面 → `divergence-status.md` を参照。
 
 ---
