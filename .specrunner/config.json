@@ -10,5 +10,8 @@
   },
   "steps": {
     "design": { "model": "claude-opus-4-8[1m]" }
+  },
+  "archive": {
+    "mergeWaitTimeoutMs": null
   }
 }
