@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.7](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.6...specrunner-v0.1.7) (2026-06-03)
+
+
+### Features
+
+* `job archive --with-merge` の `none`（check 未出現）早期マージを grace 待しで塞ぐ ([#523](https://github.com/color4pen/spec-runner/issues/523)) ([45ab0c6](https://github.com/color4pen/spec-runner/commit/45ab0c655ddb2ceb0cebeb1191501179ff33dad4))
+* `job archive --with-merge` を「check が解決するまで待つ」本物の wait ループにする ([#521](https://github.com/color4pen/spec-runner/issues/521)) ([0b43f65](https://github.com/color4pen/spec-runner/commit/0b43f6592332d9ecd982493637f147e1a8822a7c))
+* finish はプロジェクトの merge gate を bypass せず尊重する ([#516](https://github.com/color4pen/spec-runner/issues/516)) ([2d35fa0](https://github.com/color4pen/spec-runner/commit/2d35fa0bf0f48549aff734cafa91f6d35be1ccff))
+* finish を分解し、archive を client-closed な最終片づけコマンドにする ([#518](https://github.com/color4pen/spec-runner/issues/518)) ([4a8f5c8](https://github.com/color4pen/spec-runner/commit/4a8f5c8883f0e3b3326884226592285ac6212bd2))
+* 実装が request を達成したかを確認する conformance review step を追加する ([#513](https://github.com/color4pen/spec-runner/issues/513)) ([21dbd5c](https://github.com/color4pen/spec-runner/commit/21dbd5c926abb1b3e7c80168252d473929728fd7))
+
+
+### Bug Fixes
+
+* **config:** model registry に claude-opus-4-8 を登録する ([#520](https://github.com/color4pen/spec-runner/issues/520)) ([afa402b](https://github.com/color4pen/spec-runner/commit/afa402bf82969251383ce2122c19cb53a9fa2c62))
+
 ## [0.1.6](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.5...specrunner-v0.1.6) (2026-06-03)
 
 
