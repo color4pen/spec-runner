@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.6](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.5...specrunner-v0.1.6) (2026-06-03)
+
+
+### Features
+
+* **auth:** migrate GitHub device flow to GitHub App client ([6751ea9](https://github.com/color4pen/spec-runner/commit/6751ea9c319c1c7cffccc7a76bd0c29648959abf))
+* baseline corpus を削除し、残存する読み手と guard を撤去する ([#511](https://github.com/color4pen/spec-runner/issues/511)) ([b3efd4b](https://github.com/color4pen/spec-runner/commit/b3efd4b16dcfde967f0a71871efae4983252c099))
+* design は Layer-1（構造が決めない振る舞い）だけを spec に書く ([#506](https://github.com/color4pen/spec-runner/issues/506)) ([ce5073f](https://github.com/color4pen/spec-runner/commit/ce5073f14f4cbee54545c1c10b713b54227e7773))
+* GitHub device flow を GitHub App 前提に整合する（spec / doctor / login） ([#500](https://github.com/color4pen/spec-runner/issues/500)) ([0c4223c](https://github.com/color4pen/spec-runner/commit/0c4223c716fef4a64bfd533e7f4a21ba77075f07))
+* GitHub host を config 駆動にし port を host 非依存に保つ（+ host↔token 束縛 B-10） ([#502](https://github.com/color4pen/spec-runner/issues/502)) ([8a80684](https://github.com/color4pen/spec-runner/commit/8a80684dda56be48f8435d7763a2d46f4e1f977f))
+* GitHub token 解決を gh CLI の env 契約に整合する ([#501](https://github.com/color4pen/spec-runner/issues/501)) ([b6d4a26](https://github.com/color4pen/spec-runner/commit/b6d4a26307219cfe62d2baabaec00b9ea4c8c202))
+* scenario→test の「中身の歯」：must TC の test に実質的な assertion を要求する ([#507](https://github.com/color4pen/spec-runner/issues/507)) ([8183a4a](https://github.com/color4pen/spec-runner/commit/8183a4ac0121b0812877d56719ba37c5d6037aca))
+* spec を自己完結 Layer-1 spec に再定義し、rule 検証を廃止する ([#510](https://github.com/color4pen/spec-runner/issues/510)) ([8416319](https://github.com/color4pen/spec-runner/commit/84163198da4e0b6af5530633d89b3f2593508c14))
+* spec-merge を廃止し finish の pipeline→specs 閉ループを断つ ([#508](https://github.com/color4pen/spec-runner/issues/508)) ([0478c48](https://github.com/color4pen/spec-runner/commit/0478c48d779efb0c76a5eccca1c662d3f835ca48))
+* test-case-gen を delta spec の Scenario 起点にし、scenario→test の橋を作る ([#504](https://github.com/color4pen/spec-runner/issues/504)) ([71a62fa](https://github.com/color4pen/spec-runner/commit/71a62faa8e9a8a81977e499fc8aa15711910bebc))
+* test-cases.md を「scenario の写し」から「scenario 参照 + テスト戦略」へ（GWT 二重持ち解消） ([#505](https://github.com/color4pen/spec-runner/issues/505)) ([3f2e5db](https://github.com/color4pen/spec-runner/commit/3f2e5dbb5be65966603de82360aa2c27b0350c61))
+
 ## [0.1.5](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.4...specrunner-v0.1.5) (2026-06-01)
 
 
