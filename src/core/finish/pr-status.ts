@@ -232,6 +232,12 @@ export async function pollMergeStateAfterPush(params: {
       return { mergeStateStatus: status };
     }
 
+    // BLOCKED / UNSTABLE = branch protection not satisfied — retrying won't resolve this.
+    // Return immediately so the orchestrator can escalate without retrying.
+    if (status === "BLOCKED" || status === "UNSTABLE") {
+      return { mergeStateStatus: status };
+    }
+
     if (attempt < POST_PUSH_RETRY_COUNT) {
       stderrWrite(
         `Post-push polling: mergeStateStatus=${status}, retrying (${attempt}/${POST_PUSH_RETRY_COUNT})...`,

@@ -195,7 +195,7 @@ describe("TC-123: 1-PR model normal success flow (archive present, CLEAN)", () =
       {
         slug: "test-slug",
         baseBranch: "main",
-        flags: { force: false, dryRun: false },
+        flags: { dryRun: false },
         cwd: tempDir,
         spawn,
         fs: stubFs,
@@ -1151,5 +1151,218 @@ describe("TC-LCC-ORCH-7 (tasks TC-LCC-ORCH-DRYRUN): dry-run skips local conflict
 
     const mergeTreeCalls = calls.filter(([c, a]) => c === "git" && a[0] === "merge-tree");
     expect(mergeTreeCalls).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-BLOCKED-001: mergeStateStatus BLOCKED after push → escalation, no merge
+// ---------------------------------------------------------------------------
+
+describe("TC-BLOCKED-001: BLOCKED mergeStateStatus after push → escalation without merge", () => {
+  it("returns exitCode 1 with branch protection hint and does NOT call mergePullRequest", async () => {
+    const { jobId } = await makeJobWithPr({ worktreePath: null });
+
+    let getPrCallCount = 0;
+    const githubClient = {
+      ...makeHappyPathGitHubClient("OPEN"),
+      getPullRequest: vi.fn().mockImplementation(() => {
+        getPrCallCount++;
+        if (getPrCallCount <= 1) {
+          // Phase 0: CLEAN
+          return Promise.resolve({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug", mergeable: "MERGEABLE" });
+        }
+        // Phase 2 poll: BLOCKED
+        return Promise.resolve({ state: "OPEN", mergeStateStatus: "BLOCKED", headRefName: "feat/test-slug", mergeable: "MERGEABLE" });
+      }),
+    };
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    const stubFs = makeStubFs({ changeFolderExists: false });
+
+    const result = await runFinishOrchestrator(
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, githubClient, owner: "user", repo: "repo" },
+    );
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode !== 1) return;
+    expect(result.escalation).toContain("BLOCKED");
+    expect(result.escalation.toLowerCase()).toContain("branch protection");
+    expect(result.escalation).toContain("specrunner finish");
+    // merge must NOT have been called
+    expect((githubClient.mergePullRequest as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-UNSTABLE-001: mergeStateStatus UNSTABLE after push → escalation, no merge
+// ---------------------------------------------------------------------------
+
+describe("TC-UNSTABLE-001: UNSTABLE mergeStateStatus after push → escalation without merge", () => {
+  it("returns exitCode 1 with branch protection hint and does NOT call mergePullRequest", async () => {
+    const { jobId } = await makeJobWithPr({ worktreePath: null });
+
+    let getPrCallCount = 0;
+    const githubClient = {
+      ...makeHappyPathGitHubClient("OPEN"),
+      getPullRequest: vi.fn().mockImplementation(() => {
+        getPrCallCount++;
+        if (getPrCallCount <= 1) {
+          // Phase 0: CLEAN
+          return Promise.resolve({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "feat/test-slug", mergeable: "MERGEABLE" });
+        }
+        // Phase 2 poll: UNSTABLE
+        return Promise.resolve({ state: "OPEN", mergeStateStatus: "UNSTABLE", headRefName: "feat/test-slug", mergeable: "MERGEABLE" });
+      }),
+    };
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      const happySpawn = makeHappyPathSpawn("OPEN") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    const stubFs = makeStubFs({ changeFolderExists: false });
+
+    const result = await runFinishOrchestrator(
+      { slug: "test-slug", baseBranch: "main", flags: {}, cwd: tempDir, spawn, fs: stubFs, githubClient, owner: "user", repo: "repo" },
+    );
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode !== 1) return;
+    expect(result.escalation).toContain("UNSTABLE");
+    expect(result.escalation.toLowerCase()).toContain("branch protection");
+    expect(result.escalation).toContain("specrunner finish");
+    // merge must NOT have been called
+    expect((githubClient.mergePullRequest as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-ALREADY-MERGED-ARCHIVE-001: PR already merged + change folder exists → archive executed
+// ---------------------------------------------------------------------------
+
+describe("TC-ALREADY-MERGED-ARCHIVE-001: PR already merged + change folder exists → archive executed before markJobArchived", () => {
+  it("runs git mv (archive) and then marks job archived", async () => {
+    const { jobId } = await makeJobWithPr({ status: "awaiting-merge" });
+
+    const calls: Array<[string, string[]]> = [];
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      calls.push([cmd, [...args]]);
+      const happySpawn = makeHappyPathSpawn("MERGED") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    // change folder exists → archive should run
+    const stubFs = makeStubFs({ changeFolderExists: true });
+
+    const githubClient = makeHappyPathGitHubClient("MERGED");
+    const messages: string[] = [];
+    const result = await runFinishOrchestrator(
+      {
+        slug: "test-slug",
+        baseBranch: "main",
+        flags: {},
+        cwd: tempDir,
+        spawn,
+        fs: stubFs,
+        githubClient,
+        owner: "user",
+        repo: "repo",
+      },
+      (m) => messages.push(m),
+    );
+
+    expect(result.exitCode).toBe(0);
+    // git mv must have been called (archive)
+    const mvCalls = calls.filter(([c, a]) => c === "git" && a[0] === "mv");
+    expect(mvCalls.length).toBeGreaterThan(0);
+    // job should be archived
+    const store = new JobStateStore(jobId, tempDir);
+    const finalState = await store.load();
+    expect(finalState.status).toBe("archived");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-ALREADY-MERGED-ARCHIVE-002: PR already merged + change folder absent → skip archive → markJobArchived
+// ---------------------------------------------------------------------------
+
+describe("TC-ALREADY-MERGED-ARCHIVE-002: PR already merged + change folder absent → archive skip → markJobArchived", () => {
+  it("does not run git mv but still marks job archived", async () => {
+    const { jobId } = await makeJobWithPr({ status: "awaiting-merge" });
+
+    const calls: Array<[string, string[]]> = [];
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      calls.push([cmd, [...args]]);
+      const happySpawn = makeHappyPathSpawn("MERGED") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    // change folder absent
+    const stubFs = makeStubFs({ changeFolderExists: false });
+
+    const githubClient = makeHappyPathGitHubClient("MERGED");
+    const result = await runFinishOrchestrator(
+      {
+        slug: "test-slug",
+        baseBranch: "main",
+        flags: {},
+        cwd: tempDir,
+        spawn,
+        fs: stubFs,
+        githubClient,
+        owner: "user",
+        repo: "repo",
+      },
+    );
+
+    expect(result.exitCode).toBe(0);
+    // git mv should NOT have been called
+    const mvCalls = calls.filter(([c, a]) => c === "git" && a[0] === "mv");
+    expect(mvCalls).toHaveLength(0);
+    // job should be archived
+    const store = new JobStateStore(jobId, tempDir);
+    const finalState = await store.load();
+    expect(finalState.status).toBe("archived");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-012: PR already merged + archive fails → escalation, markJobArchived NOT called
+// ---------------------------------------------------------------------------
+
+describe("TC-012: PR already merged + archive fails → escalation without marking archived", () => {
+  it("returns exitCode 1 and does not set job status to archived when archive fails", async () => {
+    const { jobId } = await makeJobWithPr({ status: "awaiting-merge" });
+
+    const spawn: SpawnFn = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      // Fail git mv → archiveChangeFolder returns { ok: false }
+      if (cmd === "git" && args[0] === "mv") {
+        return Promise.resolve({ exitCode: 1, stdout: "", stderr: "error: not under version control" });
+      }
+      const happySpawn = makeHappyPathSpawn("MERGED") as SpawnFn;
+      return happySpawn(cmd, args, { cwd: "" });
+    });
+    // change folder exists → archive will be attempted
+    const stubFs = makeStubFs({ changeFolderExists: true });
+
+    const githubClient = makeHappyPathGitHubClient("MERGED");
+    const result = await runFinishOrchestrator(
+      {
+        slug: "test-slug",
+        baseBranch: "main",
+        flags: {},
+        cwd: tempDir,
+        spawn,
+        fs: stubFs,
+        githubClient,
+        owner: "user",
+        repo: "repo",
+      },
+    );
+
+    expect(result.exitCode).toBe(1);
+
+    // Job status must NOT be archived
+    const store = new JobStateStore(jobId, tempDir);
+    const finalState = await store.load();
+    expect(finalState.status).not.toBe("archived");
   });
 });

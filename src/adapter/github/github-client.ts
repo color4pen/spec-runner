@@ -372,9 +372,9 @@ export class GitHubApiClient implements GitHubClient {
 
   /**
    * Merge a pull request (squash).
-   * D4: REST API does not have --admin equivalent; admin token bypasses implicitly.
+   * Merge depends on branch protection being satisfied — no admin bypass is performed.
    *
-   * Transient failures (405 + "Base branch was modified" / "unstable state", 423 Locked)
+   * Transient failures (405 + "Base branch was modified" / "unstable state" / "is expected", 423 Locked)
    * are retried with exponential backoff (1 s → 2 s → 4 s, up to 3 retries).
    * Permanent failures (403, 409, non-transient 405) are returned immediately without retry.
    */
@@ -442,28 +442,37 @@ export class GitHubApiClient implements GitHubClient {
  * that should be retried with exponential backoff.
  *
  * Transient conditions (retry):
- *   - 405 + "Base branch was modified"    — GitHub TOCTOU race during squash merge
- *   - 405 + "unstable state"              — GitHub internal consistency lag
- *   - 423 Locked                          — branch protection temporary lock
- *   - 405 + "not mergeable"               — GitHub metadata recalculation lag after push
- *   - 405 + "head branch was modified"    — push/merge race condition
- *   - 405 + "required status check"       — CI completion race
+ *   - 405 + "Base branch was modified"        — GitHub TOCTOU race during squash merge
+ *   - 405 + "unstable state"                  — GitHub internal consistency lag
+ *   - 423 Locked                              — branch protection temporary lock
+ *   - 405 + "not mergeable"                   — GitHub metadata recalculation lag after push
+ *   - 405 + "head branch was modified"        — push/merge race condition
+ *   - 405 + "required status check...is expected" — CI pending race (check not yet reported)
  *
  * Permanent conditions (no retry — returned as-is):
  *   - 403 permission denied
  *   - 409 actual merge conflict
+ *   - 405 + "required status check...has failed" — CI failed (branch protection blocks merge)
  *   - 5xx are handled upstream by request() and never reach here
  */
 function isMergeTransientFailure(result: { merged: boolean; message: string }): boolean {
   if (result.merged) return false;
   const msg = result.message.toLowerCase();
+
+  // "required status check" requires careful classification:
+  //   "is expected" — CI pending race; retry may succeed once CI reports
+  //   "has failed"  — CI explicitly failed; retry won't help (escalate)
+  //   other         — unknown state; treat as permanent (safe side)
+  if (msg.includes("required status check")) {
+    return msg.includes("is expected");
+  }
+
   return (
     msg.includes("base branch was modified") ||
     msg.includes("unstable state") ||
     msg.includes("locked") ||
     msg.includes("not mergeable") ||
-    msg.includes("head branch was modified") ||
-    msg.includes("required status check")
+    msg.includes("head branch was modified")
   );
 }
 

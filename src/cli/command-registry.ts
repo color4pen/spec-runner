@@ -157,7 +157,6 @@ Options:
   --pr=<num>        Reverse-lookup slug via GitHub REST API (PR <num>)
   --job=<jobId>     Direct job ID lookup (forensics / debug only)
   --dry-run         Phase 0 pre-flight only — no commits, pushes, or merges
-  --force           Force merge even with failing checks (relies on admin token)
   --help, -h        Show this help message
 `;
 
@@ -475,7 +474,6 @@ export const COMMANDS: Record<string, CommandEntry> = {
           pr: { type: "string" },
           job: { type: "string" },
           "dry-run": { type: "boolean" },
-          force: { type: "boolean" },
           help: { type: "boolean" },
         },
         positional: { name: "slug", required: false },
@@ -500,7 +498,6 @@ export const COMMANDS: Record<string, CommandEntry> = {
                 prNumber,
                 jobId: jobFlagValue,
                 dryRun: !!parsed.flags["dry-run"],
-                force: !!parsed.flags["force"],
                 cwd: process.cwd(),
               }),
             );

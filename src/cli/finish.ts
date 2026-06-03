@@ -6,7 +6,7 @@
  * No LLM involvement — purely deterministic.
  *
  * CLI input contract (B chapter):
- *   specrunner finish [<slug>] [--pr=<num>] [--job=<jobId>] [--dry-run] [--force]
+ *   specrunner finish [<slug>] [--pr=<num>] [--job=<jobId>] [--dry-run]
  */
 import * as nodeFsPromises from "node:fs/promises";
 import * as path from "node:path";
@@ -71,8 +71,6 @@ export interface RunFinishOptions {
   jobId?: string;
   /** --dry-run: Phase 0 pre-flight only, no destructive ops. */
   dryRun?: boolean;
-  /** --force: use admin token for blocked PRs. */
-  force: boolean;
   cwd: string;
 }
 
@@ -164,7 +162,6 @@ export async function runFinish(opts: RunFinishOptions): Promise<number> {
         jobId: opts.jobId,
         baseBranch,
         flags: {
-          force: opts.force,
           dryRun: opts.dryRun ?? false,
         },
         cwd: opts.cwd,

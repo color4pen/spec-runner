@@ -59,7 +59,6 @@ export interface FinishContext {
  * Input flags for the finish command.
  */
 export interface FinishFlags {
-  force?: boolean;
   /** dry-run: Phase 0 only, no destructive ops */
   dryRun?: boolean;
 }

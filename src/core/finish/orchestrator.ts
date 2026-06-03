@@ -220,6 +220,27 @@ export async function runFinishOrchestrator(
     stdoutWrite(`Job ${target.jobId} marked as archived.`);
   } else {
     stdoutWrite(`PR #${target.prNumber} already merged. Skipping Phase 1-3.`);
+    // Archive the change folder before marking the job archived.
+    // This ensures "archived" status implies the change folder is archived.
+    const archiveCwd = operationCwd ?? cwd;
+    const archiveResult = await archiveChangeFolder({ slug: target.slug, cwd: archiveCwd, spawn, fs });
+    if (!archiveResult.ok) {
+      // Archive failed — escalate without marking archived (keep status consistent with reality)
+      return {
+        exitCode: 1,
+        escalation: archiveResult.escalation,
+      };
+    }
+    if (!archiveResult.skipped) {
+      stdoutWrite(archiveResult.message);
+      // Commit the archive move (best-effort — failure must not block markJobArchived)
+      try {
+        const commitResult = await commitArchive({ slug: target.slug, cwd: archiveCwd, spawn });
+        if (commitResult.ok && !commitResult.skipped) stdoutWrite(commitResult.message);
+      } catch {
+        logStderrWrite(`Warning: failed to commit archive for ${target.slug} in already-merged path. Continuing.`);
+      }
+    }
     await markJobArchived(target.jobId, cwd);
     stdoutWrite(`Job ${target.jobId} marked as archived.`);
   }
@@ -338,6 +359,36 @@ async function runPhase2Push(params: {
         failedStep: "Phase 3 guard (mergeStateStatus DIRTY)",
         detectedState: "mergeStateStatus is DIRTY (merge conflicts exist)",
         recommendedAction: `PR has merge conflicts (DIRTY). Rebase the feature branch onto ${baseBranch} and re-run: specrunner finish ${target.slug}`,
+        resumeCommand: `specrunner finish ${target.slug}`,
+      }),
+      exitCode: 1,
+    };
+  }
+
+  // BLOCKED = required check / required review not satisfied (branch protection).
+  // Retrying won't resolve this — escalate with actionable hint.
+  if (mergeStateAfterPush === "BLOCKED") {
+    return {
+      ok: false,
+      escalation: formatEscalation({
+        failedStep: "Phase 3 guard (mergeStateStatus BLOCKED)",
+        detectedState: "mergeStateStatus is BLOCKED (branch protection requirements not met)",
+        recommendedAction: `Branch protection requirements are not met (required checks or reviews pending). Satisfy all branch protection rules, then re-run:\n  specrunner finish ${target.slug}`,
+        resumeCommand: `specrunner finish ${target.slug}`,
+      }),
+      exitCode: 1,
+    };
+  }
+
+  // UNSTABLE = required check failed (branch protection).
+  // Retrying won't resolve this — escalate with actionable hint.
+  if (mergeStateAfterPush === "UNSTABLE") {
+    return {
+      ok: false,
+      escalation: formatEscalation({
+        failedStep: "Phase 3 guard (mergeStateStatus UNSTABLE)",
+        detectedState: "mergeStateStatus is UNSTABLE (required checks failed)",
+        recommendedAction: `Branch protection requirements are not met (required checks failed). Fix the failing checks, then re-run:\n  specrunner finish ${target.slug}`,
         resumeCommand: `specrunner finish ${target.slug}`,
       }),
       exitCode: 1,
@@ -502,7 +553,8 @@ interface MergePhase3Params {
 
 /**
  * Merge feature PR (Phase 3) via REST API.
- * D4: --admin equivalent is handled implicitly by admin token; 405 → escalation.
+ * Merge succeeds only when branch protection requirements are satisfied.
+ * 405 / 409 branch-protection rejection → escalation (no admin retry).
  */
 async function mergeFeaturePrPhase3(params: MergePhase3Params): Promise<PhaseResult> {
   const { prNumber, githubClient, owner, repo, slug, baseBranch, sleepFn } = params;
@@ -521,7 +573,7 @@ async function mergeFeaturePrPhase3(params: MergePhase3Params): Promise<PhaseRes
     return { ok: false, escalation: mergeableResult.escalation, exitCode: 1 };
   }
 
-  // REST API squash merge (D4: admin bypass is implicit via token permissions)
+  // REST API squash merge — succeeds only when branch protection requirements are met
   let mergeResult: { merged: boolean; message: string };
   try {
     mergeResult = await githubClient.mergePullRequest(owner, repo, prNumber, { mergeMethod: "squash" });
@@ -532,7 +584,7 @@ async function mergeFeaturePrPhase3(params: MergePhase3Params): Promise<PhaseRes
       escalation: formatEscalation({
         failedStep: "Phase 3 (REST API squash merge)",
         detectedState: `mergePullRequest #${prNumber} threw: ${detail}`,
-        recommendedAction: `Check GitHub token permissions and re-run: specrunner finish ${slug}`,
+        recommendedAction: `Branch protection requirements may not be met. Ensure required checks pass and required reviews are approved, then re-run:\n  specrunner finish ${slug}`,
         resumeCommand: `specrunner finish ${slug}`,
       }),
       exitCode: 1,
@@ -545,7 +597,7 @@ async function mergeFeaturePrPhase3(params: MergePhase3Params): Promise<PhaseRes
       escalation: formatEscalation({
         failedStep: "Phase 3 (REST API squash merge)",
         detectedState: `merge failed: ${mergeResult.message}`,
-        recommendedAction: `${mergeResult.message}\n\nCheck branch protection rules or token permissions, then re-run: specrunner finish ${slug}`,
+        recommendedAction: `Branch protection requirements may not be met. Ensure required checks pass and required reviews are approved, then re-run:\n  specrunner finish ${slug}`,
         resumeCommand: `specrunner finish ${slug}`,
       }),
       exitCode: 1,

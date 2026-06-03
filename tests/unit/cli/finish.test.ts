@@ -72,7 +72,7 @@ describe("T-041: initPipelineLog called with correct args when slug resolves", (
     const { runFinish } = await import("../../../src/cli/finish.js");
     const { initPipelineLog } = await import("../../../src/logger/pipeline-logger.js");
 
-    await runFinish({ slug: "test-slug", force: false, cwd: "/repo" });
+    await runFinish({ slug: "test-slug", cwd: "/repo" });
 
     expect(initPipelineLog).toHaveBeenCalledWith("/repo", "test-job-id-finish-1234");
   });
@@ -84,7 +84,7 @@ describe("T-042: finish:start and finish:complete events recorded", () => {
     const { runFinish } = await import("../../../src/cli/finish.js");
     const { logPipelineEvent } = await import("../../../src/logger/pipeline-logger.js");
 
-    await runFinish({ slug: "test-slug", force: false, cwd: "/repo" });
+    await runFinish({ slug: "test-slug", cwd: "/repo" });
 
     const eventTypes = (logPipelineEvent as ReturnType<typeof vi.fn>).mock.calls.map(
       (c) => (c[0] as Record<string, unknown>)["type"],
@@ -103,7 +103,7 @@ describe("T-043: finish:error event recorded on orchestrator exception", () => {
     const { runFinish } = await import("../../../src/cli/finish.js");
     const { logPipelineEvent, closePipelineLog } = await import("../../../src/logger/pipeline-logger.js");
 
-    await expect(runFinish({ slug: "test-slug", force: false, cwd: "/repo" })).rejects.toThrow("merge failed");
+    await expect(runFinish({ slug: "test-slug", cwd: "/repo" })).rejects.toThrow("merge failed");
 
     const eventTypes = (logPipelineEvent as ReturnType<typeof vi.fn>).mock.calls.map(
       (c) => (c[0] as Record<string, unknown>)["type"],
@@ -120,7 +120,7 @@ describe("T-041b: initPipelineLog not called when no slug or jobId provided", ()
     const { initPipelineLog } = await import("../../../src/logger/pipeline-logger.js");
 
     // No slug or jobId — resolvedJobIdForLog remains undefined
-    await runFinish({ force: false, cwd: "/repo" });
+    await runFinish({ cwd: "/repo" });
 
     expect(initPipelineLog).not.toHaveBeenCalled();
   });

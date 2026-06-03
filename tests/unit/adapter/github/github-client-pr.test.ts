@@ -407,6 +407,47 @@ describe("TC-PM: mergePullRequest status code handling", () => {
     expect(result.merged).toBe(false);
     expect(mockFetch).toHaveBeenCalledTimes(4);
   });
+
+  it("TC-PM-020: 405 'Required status check has failed' → no retry (permanent)", async () => {
+    // "has failed" = CI explicitly failed; branch protection blocks merge — no retry
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(mergeResponse(405, { message: 'Required status check "ci/build" has failed' }));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result.merged).toBe(false);
+    // Must not retry — only 1 fetch call
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("TC-PM-021: 405 'Required status check is expected' → retry → 2nd attempt 200 (pending race)", async () => {
+    // "is expected" = CI not yet reported (pending); retry may succeed once CI completes
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(mergeResponse(405, { message: 'Required status check "ci/build" is expected' }))
+      .mockResolvedValueOnce(mergeResponse(200, { sha: "xyz", merged: true, message: "Pull request successfully merged" }));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result.merged).toBe(true);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("TC-PM-022: 405 'Required status check something unknown' → no retry (safe side)", async () => {
+    // Unknown "required status check" message variant — treat as permanent (safe side)
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(mergeResponse(405, { message: "Required status check something unknown" }));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result.merged).toBe(false);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
 });
 
 // ---------------------------------------------------------------------------
