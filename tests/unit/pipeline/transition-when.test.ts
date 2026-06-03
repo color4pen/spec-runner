@@ -116,16 +116,23 @@ async function seedJobState(jobId: string, state: JobState): Promise<void> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-3: code-review approved → adr-gen (direct)
+// TC-3: code-review approved → conformance (direct)
 // ─────────────────────────────────────────────────────────────────────────────
-describe("TC-3: code-review approved → adr-gen exists in STANDARD_TRANSITIONS", () => {
-  it("STANDARD_TRANSITIONS has code-review --approved→ adr-gen (fallback, no `when`)", () => {
+describe("TC-3: code-review approved → conformance exists in STANDARD_TRANSITIONS", () => {
+  it("STANDARD_TRANSITIONS has code-review --approved→ conformance (fallback, no `when`)", () => {
     const found = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "code-review" && t.on === "approved" && t.to === "adr-gen" && !t.when,
+      (t) => t.step === "code-review" && t.on === "approved" && t.to === "conformance" && !t.when,
     );
     expect(found).toBeDefined();
     // No `when` predicate — fires unconditionally (after fixable routing check)
     expect(found!.when).toBeUndefined();
+  });
+
+  it("code-review --approved→ adr-gen does NOT exist (now via conformance)", () => {
+    const directRoute = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-review" && t.on === "approved" && t.to === "adr-gen",
+    );
+    expect(directRoute).toBeUndefined();
   });
 
   it("code-review --approved→ delta-spec-validation does NOT exist (removed step)", () => {
@@ -174,9 +181,9 @@ describe("TC-WHEN-01: conditional transition row has `when` predicate", () => {
 // TC-WHEN-02: STANDARD_TRANSITIONS has expected row count
 // ─────────────────────────────────────────────────────────────────────────────
 describe("TC-WHEN-02: STANDARD_TRANSITIONS row count", () => {
-  it("has correct number of rows (delta-spec-validation/fixer removed)", () => {
-    // delta-spec-validation and delta-spec-fixer removed: 6 rows removed from original 31
-    expect(STANDARD_TRANSITIONS.length).toBe(25);
+  it("has correct number of rows (conformance step adds 2 rows)", () => {
+    // 25 previous + 2 (conformance approved→adr-gen, conformance needs-fix→implementer)
+    expect(STANDARD_TRANSITIONS.length).toBe(27);
   });
 });
 
@@ -231,10 +238,10 @@ describe("TC-017/TC-018: code-review approved → code-fixer when predicate (fix
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-2: code-fixer approved + prior code-review approved → adr-gen
+// TC-2: code-fixer approved + prior code-review approved → conformance → adr-gen
 // ─────────────────────────────────────────────────────────────────────────────
-describe("TC-2: code-fixer approved (code-review done) → adr-gen", () => {
-  it("routes to adr-gen when code-review was previously approved", async () => {
+describe("TC-2: code-fixer approved (code-review done) → conformance → adr-gen", () => {
+  it("routes to conformance (then adr-gen) when code-review was previously approved", async () => {
     const jobId = "tc-when-02";
     // Pre-seed code-review with one approved attempt
     const state = makeMinimalState(jobId, {
@@ -259,6 +266,24 @@ describe("TC-2: code-fixer approved (code-review done) → adr-gen", () => {
             ...s.steps,
             "code-fixer": [
               ...(s.steps?.["code-fixer"] ?? []),
+              {
+                attempt: 1,
+                sessionId: null,
+                outcome: { verdict: "approved" as const, findingsPath: null, error: null },
+                startedAt: new Date().toISOString(),
+                endedAt: new Date().toISOString(),
+              },
+            ],
+          },
+        };
+      }
+      if (step.name === "conformance") {
+        return {
+          ...s,
+          steps: {
+            ...s.steps,
+            "conformance": [
+              ...(s.steps?.["conformance"] ?? []),
               {
                 attempt: 1,
                 sessionId: null,
@@ -313,6 +338,7 @@ describe("TC-2: code-fixer approved (code-review done) → adr-gen", () => {
     const pipeline = new Pipeline({
       steps: new Map([
         ["code-fixer", makeStepObject("code-fixer")],
+        ["conformance", makeStepObject("conformance")],
         ["adr-gen", makeStepObject("adr-gen")],
         ["pr-create", makeStepObject("pr-create")],
       ]),
@@ -321,11 +347,13 @@ describe("TC-2: code-fixer approved (code-review done) → adr-gen", () => {
       executor: mockExecutor,
       events,
       loopName: "code-fixer",
-      loopNames: ["code-fixer"],
+      loopNames: ["code-fixer", "conformance"],
     });
 
     await pipeline.run("code-fixer", state, makeMinimalDeps());
 
+    // conformance must have been called
+    expect(executeSpy).toHaveBeenCalledWith(expect.objectContaining({ name: "conformance" }), expect.anything(), expect.anything());
     // adr-gen must have been called
     expect(executeSpy).toHaveBeenCalledWith(expect.objectContaining({ name: "adr-gen" }), expect.anything(), expect.anything());
     // code-review must NOT have been called again

@@ -17,6 +17,7 @@ import {
   changeFolderPath,
   specReviewResultPath,
   reviewFeedbackPath,
+  conformanceResultPath,
 } from "../util/paths.js";
 
 // ---------------------------------------------------------------------------
@@ -298,6 +299,35 @@ agent runs, so the agent has a pre-structured output destination.
 
 `;
 
+/**
+ * Template for conformance-result-NNN.md (A-group).
+ *
+ * Placed in the change folder before the conformance step runs. The agent
+ * overwrites it with the per-artifact conformance findings and verdict.
+ */
+export const CONFORMANCE_RESULT_TEMPLATE = `# Conformance Result
+
+<!-- FORMAT REQUIREMENTS (machine-parsed):
+- verdict line format (exact): \`- **verdict**: <value>\` at the start of a line
+- Valid verdict values: approved | needs-fix | escalation
+  - approved:   implementation conforms to tasks.md, design.md, spec.md, and request.md
+  - needs-fix:  one or more upstream artifacts are not satisfied by the implementation
+  - escalation: conformance cannot be determined (missing artifacts, unresolvable ambiguity)
+- The Findings table records the per-artifact judgment.
+-->
+
+- **verdict**:
+
+## Conformance Findings
+
+| Artifact | Conforms | Notes |
+|----------|----------|-------|
+| tasks.md |  |  |
+| design.md |  |  |
+| spec.md |  |  |
+| request.md |  |  |
+`;
+
 // ---------------------------------------------------------------------------
 // Template lookup
 // ---------------------------------------------------------------------------
@@ -330,6 +360,7 @@ export interface OutputTemplate {
  *   spec-review  → spec-review-result-NNN.md (A)
  *   test-case-gen → test-cases.md (A)
  *   code-review  → review-feedback-NNN.md (A)
+ *   conformance  → conformance-result-NNN.md (A)
  *   all others   → [] (no templates needed)
  */
 export function getOutputTemplates(
@@ -382,6 +413,16 @@ export function getOutputTemplates(
         {
           path: reviewFeedbackPath(slug, iteration),
           content: REVIEW_FEEDBACK_TEMPLATE,
+        },
+      ];
+    }
+
+    case "conformance": {
+      const iteration = (state.steps?.["conformance"]?.length ?? 0) + 1;
+      return [
+        {
+          path: conformanceResultPath(slug, iteration),
+          content: CONFORMANCE_RESULT_TEMPLATE,
         },
       ];
     }

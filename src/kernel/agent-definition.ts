@@ -19,6 +19,7 @@ type AgentStepName =
   | "build-fixer"
   | "code-review"
   | "code-fixer"
+  | "conformance"
   | "adr-gen";
 
 /**

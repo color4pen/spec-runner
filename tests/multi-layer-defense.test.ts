@@ -85,6 +85,7 @@ function buildConfig(overrides: Record<string, unknown> = {}) {
       "build-fixer": { agentId: "build-fixer-agent-id", definitionHash: "sha256:bfx", lastSyncedAt: new Date().toISOString() },
       "code-review": { agentId: "code-review-agent-id", definitionHash: "sha256:crv", lastSyncedAt: new Date().toISOString() },
       "code-fixer": { agentId: "code-fixer-agent-id", definitionHash: "sha256:cfx", lastSyncedAt: new Date().toISOString() },
+      "conformance": { agentId: "conformance-agent-id", definitionHash: "sha256:cnf", lastSyncedAt: new Date().toISOString() },
       "adr-gen": { agentId: "adr-gen-agent-id", definitionHash: "sha256:adr", lastSyncedAt: new Date().toISOString() },
     },
     pipeline: { maxRetries: 2 },
@@ -188,6 +189,13 @@ function buildPipelineMockClient(opts: {
         ]);
       }
 
+      // conformance judge step — always approved in these tests
+      if (agentId === "conformance-agent-id") {
+        return Promise.resolve([
+          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true } },
+        ]);
+      }
+
       // Producer steps (design, spec-fixer, test-case-gen, implementer, build-fixer, code-fixer, adr-gen)
       return Promise.resolve([
         { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, status: "success" } },
@@ -240,6 +248,10 @@ function buildMockGithubClient(opts: {
         const verdict = codeReviewVerdicts[codeReviewCallCount] ?? codeReviewVerdicts[codeReviewVerdicts.length - 1]!;
         codeReviewCallCount++;
         return `- **verdict**: ${verdict}\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|---|---|---|---|---|\n`;
+      }
+      // Conformance result file: path ends with conformance-result-NNN.md
+      if (/conformance-result-\d{3}\.md$/.test(filePath)) {
+        return `- **verdict**: approved\n\n## Findings\n\nAll 4 artifacts satisfied.\n`;
       }
       return null;
     }),

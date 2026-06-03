@@ -48,6 +48,11 @@ export const LOOP_ERROR_CODES: Record<string, LoopErrorShape> = {
     message: (n) => `code-review did not approve after ${n} iterations`,
     hint: (nnn) => `Review review-feedback-${nnn}.md and address findings manually.`,
   },
+  [STEP_NAMES.CONFORMANCE]: {
+    code: "CONFORMANCE_RETRIES_EXHAUSTED",
+    message: (n) => `conformance did not approve after ${n} iterations`,
+    hint: (nnn) => `Review conformance-result-${nnn}.md and fix the implementation manually.`,
+  },
 };
 
 /**
@@ -93,12 +98,12 @@ export const STANDARD_TRANSITIONS: Transition[] = [
       return ((lastReview.outcome?.toolResult as CodeReviewReportResult | null | undefined)?.fixableCount ?? 0) > 0;
     },
   },
-  // code-review approved (no fixable findings) → adr-gen (direct)
-  { step: STEP_NAMES.CODE_REVIEW, on: "approved",  to: STEP_NAMES.ADR_GEN },
+  // code-review approved (no fixable findings) → conformance
+  { step: STEP_NAMES.CODE_REVIEW, on: "approved",  to: STEP_NAMES.CONFORMANCE },
   { step: STEP_NAMES.CODE_REVIEW, on: "needs-fix", to: STEP_NAMES.CODE_FIXER },
   // code-review escalation removed (R3 cutover): judge halt via loop exhaustion only
-  // code-fixer → adr-gen (when: 直前 code-review が approved = observation fix 完了)
-  { step: STEP_NAMES.CODE_FIXER,  on: "approved",  to: STEP_NAMES.ADR_GEN,
+  // code-fixer → conformance (when: 直前 code-review が approved = observation fix 完了)
+  { step: STEP_NAMES.CODE_FIXER,  on: "approved",  to: STEP_NAMES.CONFORMANCE,
     when: (s) => {
       const reviews = s.steps?.["code-review"];
       if (!reviews || reviews.length === 0) return false;
@@ -109,7 +114,10 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   // code-fixer → code-review (needs-fix 由来 — fallback, when なし)
   { step: STEP_NAMES.CODE_FIXER,  on: "approved",  to: STEP_NAMES.CODE_REVIEW },
   { step: STEP_NAMES.CODE_FIXER,  on: "error",     to: "escalate" },
-  // --- adr-gen (single shot, after code-review approved) ---
+  // --- conformance (acceptance gate, after code-review approved) ---
+  { step: STEP_NAMES.CONFORMANCE, on: "approved",  to: STEP_NAMES.ADR_GEN },
+  { step: STEP_NAMES.CONFORMANCE, on: "needs-fix", to: STEP_NAMES.IMPLEMENTER },
+  // --- adr-gen (single shot, after conformance approved) ---
   { step: STEP_NAMES.ADR_GEN,     on: "success",   to: STEP_NAMES.PR_CREATE },
   { step: STEP_NAMES.ADR_GEN,     on: "error",     to: "escalate" },
   // --- pr-create (single shot, no loop) ---

@@ -16,6 +16,7 @@ import { VerificationStep } from "../step/verification.js";
 import { BuildFixerStep } from "../step/build-fixer.js";
 import { CodeReviewStep } from "../step/code-review.js";
 import { CodeFixerStep } from "../step/code-fixer.js";
+import { ConformanceStep } from "../step/conformance.js";
 import { AdrGenStep } from "../step/adr-gen.js";
 import { PrCreateStep } from "../step/pr-create.js";
 import { TestCaseGenStep } from "../step/test-case-gen.js";
@@ -26,6 +27,7 @@ export const STANDARD_LOOP_NAMES: readonly string[] = [
   STEP_NAMES.SPEC_REVIEW,
   STEP_NAMES.VERIFICATION,
   STEP_NAMES.CODE_REVIEW,
+  STEP_NAMES.CONFORMANCE,
 ];
 
 /** Review → fixer step mapping used by the standard pipeline. */
@@ -63,6 +65,7 @@ export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): P
     [STEP_NAMES.BUILD_FIXER, BuildFixerStep],
     [STEP_NAMES.CODE_REVIEW, CodeReviewStep],
     [STEP_NAMES.CODE_FIXER,  CodeFixerStep],
+    [STEP_NAMES.CONFORMANCE, ConformanceStep],
     [STEP_NAMES.ADR_GEN,     AdrGenStep],
     [STEP_NAMES.PR_CREATE,   PrCreateStep],
   ]);

@@ -18,7 +18,7 @@ import type { SpawnFn } from "../../../../src/util/spawn.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { changeFolderPath, verificationResultPath, reviewFeedbackPath } from "../../../../src/util/paths.js";
+import { changeFolderPath, verificationResultPath, reviewFeedbackPath, conformanceResultPath } from "../../../../src/util/paths.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
 
 let tempDir: string;
@@ -162,8 +162,8 @@ describe("TC-011: verification passed → code-review transition が存在する
 // Note: TC-015 (code-review escalation → escalate) removed in R3 cutover.
 describe("TC-012-015, TC-029: code-review / code-fixer transition rows", () => {
   const codeReviewEdges = [
-    // TC-012: code-review approved routes directly to adr-gen (delta-spec-validation removed)
-    { step: "code-review", on: "approved",   to: "adr-gen", label: "TC-012: code-review approved → adr-gen" },
+    // TC-012: code-review approved routes to conformance (not adr-gen directly)
+    { step: "code-review", on: "approved",   to: "conformance", label: "TC-012: code-review approved → conformance" },
     { step: "code-review", on: "needs-fix",  to: "code-fixer",  label: "TC-013: code-review needs-fix → code-fixer" },
     // TC-015: code-review escalation → escalate REMOVED in R3 (judge halt via loop exhaustion only)
     { step: "code-fixer",  on: "approved",   to: "code-review", label: "TC-014: code-fixer approved → code-review" },
@@ -183,12 +183,63 @@ describe("TC-012-015, TC-029: code-review / code-fixer transition rows", () => {
   }
 });
 
+// TC-001: code-review approved (no fixable) → conformance
+// TC-002: code-fixer approved after observation-fix → conformance
+// TC-005: no direct edge from code-review to adr-gen
+// TC-006: no direct edge from code-fixer to adr-gen
+// TC-007: conformance needs-fix → implementer
+// TC-015: conformance approved → adr-gen
+describe("TC-001/002/005/006/007/015: conformance transition rows", () => {
+  it("TC-001: code-review approved (no fixable) → conformance", () => {
+    const found = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-review" && t.on === "approved" && t.to === "conformance",
+    );
+    expect(found).toBeDefined();
+  });
+
+  it("TC-002: code-fixer approved (observation-fix) → conformance (with when predicate)", () => {
+    const found = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-fixer" && t.on === "approved" && t.to === "conformance",
+    );
+    expect(found).toBeDefined();
+    expect(found!.when).toBeDefined();
+  });
+
+  it("TC-005: no direct edge from code-review to adr-gen", () => {
+    const found = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-review" && t.on === "approved" && t.to === "adr-gen",
+    );
+    expect(found).toBeUndefined();
+  });
+
+  it("TC-006: no direct edge from code-fixer to adr-gen", () => {
+    const found = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "code-fixer" && t.to === "adr-gen",
+    );
+    expect(found).toBeUndefined();
+  });
+
+  it("TC-007: conformance needs-fix → implementer", () => {
+    const found = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "conformance" && t.on === "needs-fix" && t.to === "implementer",
+    );
+    expect(found).toBeDefined();
+  });
+
+  it("TC-015: conformance approved → adr-gen", () => {
+    const found = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "conformance" && t.on === "approved" && t.to === "adr-gen",
+    );
+    expect(found).toBeDefined();
+  });
+});
+
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
 // TC-022: R3 cutover: 33 → 31 (removed spec-review escalation + code-review escalation)
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 25 rows total (delta-spec-validation/fixer steps removed)", () => {
-    // 31 previous - 6 (delta-spec-validation + delta-spec-fixer rows)
-    expect(STANDARD_TRANSITIONS.length).toBe(25);
+  it("has 27 rows total (conformance step adds 2 rows: approved→adr-gen, needs-fix→implementer)", () => {
+    // 25 previous + 2 (conformance approved→adr-gen, conformance needs-fix→implementer)
+    expect(STANDARD_TRANSITIONS.length).toBe(27);
   });
 
   it("verification --passed→ end does NOT exist", () => {
@@ -255,9 +306,9 @@ describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された�
     expect(row).toBeUndefined();
   });
 
-  it("code-review --approved→ adr-gen exists (conditional, with `when`)", () => {
+  it("code-review --approved→ conformance exists (conditional, no `when` for no-fixable path)", () => {
     const row = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "code-review" && t.on === "approved" && t.to === "adr-gen",
+      (t) => t.step === "code-review" && t.on === "approved" && t.to === "conformance",
     );
     expect(row).toBeDefined();
   });
@@ -542,36 +593,134 @@ describe("TC-024: runPipeline の loopNames に code-review が含まれる", ()
 });
 
 // TC-023: loopNames — pr-create が loopNames に含まれない
-describe("TC-023: Pipeline loopNames — pr-create が loopNames に含まれない", () => {
-  it("run.ts の loopNames に pr-create が含まれない", async () => {
+// TC-016: conformance が STANDARD_LOOP_NAMES に含まれる
+describe("TC-023/016: Pipeline loopNames — pr-create が含まれない、conformance が含まれる", () => {
+  it("run.ts の loopNames に conformance が含まれ、pr-create が含まれない", async () => {
     const fs = await import("node:fs/promises");
     const source = await fs.readFile(
       new URL("../../../../src/core/pipeline/run.ts", import.meta.url).pathname,
       "utf-8",
     );
 
-    // loopNames should include spec-review, verification, code-review (via STEP_NAMES constants)
+    // loopNames should include spec-review, verification, code-review, conformance (via STEP_NAMES constants)
     expect(source).toContain('STEP_NAMES.SPEC_REVIEW');
     expect(source).toContain('STEP_NAMES.VERIFICATION');
     expect(source).toContain('STEP_NAMES.CODE_REVIEW');
+    expect(source).toContain('STEP_NAMES.CONFORMANCE');
 
     // loopNames array should NOT contain pr-create
     const loopNamesMatch = /loopNames:\s*\[([^\]]+)\]/.exec(source);
     expect(loopNamesMatch).not.toBeNull();
     expect(loopNamesMatch![1]).not.toContain("pr-create");
   });
+
+  it("TC-016: STANDARD_LOOP_NAMES contains conformance", async () => {
+    const { STANDARD_LOOP_NAMES } = await import("../../../../src/core/pipeline/run.js");
+    expect(STANDARD_LOOP_NAMES).toContain("conformance");
+  });
 });
 
 // TC-024b: LOOP_ERROR_CODES — pr-create が含まれない
 describe("TC-024: LOOP_ERROR_CODES — pr-create が含まれない", () => {
-  it("LOOP_ERROR_CODES keys do not include pr-create or delta-spec-validation", () => {
+  it("LOOP_ERROR_CODES keys include conformance and do not include pr-create or delta-spec-validation", () => {
     const keys = Object.keys(LOOP_ERROR_CODES);
     expect(keys).toContain("spec-review");
     expect(keys).toContain("verification");
     expect(keys).toContain("code-review");
+    expect(keys).toContain("conformance");
     expect(keys).not.toContain("delta-spec-validation");
     expect(keys).not.toContain("pr-create");
-    expect(keys).toHaveLength(3);
+    expect(keys).toHaveLength(4);
+  });
+});
+
+// TC-008: conformance loop guard → CONFORMANCE_RETRIES_EXHAUSTED
+describe("TC-008: conformance loop guard → CONFORMANCE_RETRIES_EXHAUSTED", () => {
+  it("conformance が 3 回 needs-fix → CONFORMANCE_RETRIES_EXHAUSTED で escalation", async () => {
+    const maxIterations = 3;
+
+    const jobState = makeMinimalState("test-conformance-loop-guard");
+    await fs.mkdir(path.join(tempDir, "specrunner", "jobs"), { recursive: true });
+    await fs.writeFile(
+      path.join(tempDir, "specrunner", "jobs", `${jobState.jobId}.json`),
+      JSON.stringify(jobState),
+      "utf-8",
+    );
+
+    const events = new EventBus();
+    let conformanceCallCount = 0;
+
+    const executeSpy = vi.fn().mockImplementation(async (step: Step, state: JobState): Promise<JobState> => {
+      if (step.name === "conformance") {
+        conformanceCallCount++;
+        return {
+          ...state,
+          status: "running",
+          step: "conformance",
+          steps: {
+            ...state.steps,
+            "conformance": [
+              ...(state.steps?.["conformance"] ?? []),
+              {
+                attempt: conformanceCallCount,
+                sessionId: null,
+                outcome: {
+                  verdict: "needs-fix" as const,
+                  findingsPath: conformanceResultPath("test-slug", conformanceCallCount),
+                  error: null,
+                },
+                startedAt: new Date().toISOString(),
+                endedAt: new Date().toISOString(),
+              },
+            ],
+          },
+        };
+      }
+      throw new Error(`Unexpected step: ${step.name}`);
+    });
+    const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
+
+    const pipeline = new Pipeline({
+      steps: new Map([
+        ["conformance", makeStepObject("conformance")],
+      ]),
+      transitions: [
+        { step: "conformance", on: "approved",  to: "end" },
+        { step: "conformance", on: "needs-fix", to: "conformance" },
+      ],
+      maxIterations,
+      executor: mockExecutor,
+      events,
+      loopName: "conformance",
+      loopNames: ["conformance"],
+    });
+
+    const result = await pipeline.run("conformance", jobState, makeMinimalDeps());
+
+    expect(result.error?.code).toBe("CONFORMANCE_RETRIES_EXHAUSTED");
+    expect(result.error?.message).toBe("conformance did not approve after 3 iterations");
+    const conformanceSteps = result.steps?.["conformance"] ?? [];
+    const lastStep = conformanceSteps[conformanceSteps.length - 1];
+    expect(lastStep?.outcome?.verdict).toBe("escalation");
+  });
+});
+
+// TC-014: LOOP_ERROR_CODES — conformance cycle
+describe("TC-014-conformance: LOOP_ERROR_CODES — conformance cycle", () => {
+  it("LOOP_ERROR_CODES['conformance'].code === 'CONFORMANCE_RETRIES_EXHAUSTED'", () => {
+    const entry = LOOP_ERROR_CODES["conformance"];
+    expect(entry).toBeDefined();
+    expect(entry!.code).toBe("CONFORMANCE_RETRIES_EXHAUSTED");
+  });
+
+  it("message(3) === 'conformance did not approve after 3 iterations'", () => {
+    const entry = LOOP_ERROR_CODES["conformance"];
+    expect(entry!.message(3)).toBe("conformance did not approve after 3 iterations");
+  });
+
+  it("hint('003') contains 'conformance-result-003.md'", () => {
+    const entry = LOOP_ERROR_CODES["conformance"];
+    expect(entry!.hint("003")).toContain("conformance-result-003.md");
   });
 });
 

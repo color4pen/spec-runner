@@ -231,6 +231,16 @@ function buildMockPipeline(opts: {
     if (step.name === "code-fixer") {
       return currentState;
     }
+    if (step.name === "conformance") {
+      // Default: conformance approves
+      return {
+        ...currentState,
+        steps: {
+          ...currentState.steps,
+          "conformance": [{ attempt: 1, sessionId: null, outcome: { verdict: "approved" as const, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" }],
+        },
+      };
+    }
     if (step.name === "adr-gen") {
       // Default: adr-gen succeeds (no ADR file in mock — completionVerdict: success)
       return {
@@ -266,6 +276,7 @@ function buildMockPipeline(opts: {
     ["build-fixer",  { kind: "agent", name: "build-fixer",  agent: { name: "test", role: "build-fixer",  model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["code-review",  { kind: "agent", name: "code-review",  agent: { name: "test", role: "code-review",  model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => reviewFeedbackPath("test", 1), parseResult: () => ({ verdict: "approved" as const, findingsPath: null }) }],
     ["code-fixer",   { kind: "agent", name: "code-fixer",   agent: { name: "test", role: "code-fixer",   model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "approved", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["conformance",  { kind: "agent", name: "conformance",  agent: { name: "test", role: "conformance",  model: "claude-opus-4-6",   system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["adr-gen",      { kind: "agent", name: "adr-gen",      agent: { name: "test", role: "adr-gen",      model: "claude-sonnet-4-6", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["pr-create",    { kind: "cli",   name: "pr-create",    run: async () => {}, resultFilePath: () => prCreateResultPath("test"), parseResult: () => ({ verdict: "success" as const, findingsPath: null }) }],
   ]);
@@ -560,16 +571,19 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     expect(find("verification", "escalation")).toMatchObject({ to: "escalate" });
     expect(find("build-fixer",  "success")).toMatchObject({ to: "verification" });
     expect(find("build-fixer",  "error")).toMatchObject({ to: "escalate" });
-    // code-review loop rows: first approved row is conditional (fixCount > 0 → code-fixer), second is fallback → adr-gen
+    // code-review loop rows: first approved row is conditional (fixCount > 0 → code-fixer), second is fallback → conformance
     expect(find("code-review",  "approved")).toMatchObject({ to: "code-fixer" }); // conditional (when: fixCount > 0)
-    expect(findWithTo("code-review", "approved", "adr-gen")).toBeDefined(); // fallback
+    expect(findWithTo("code-review", "approved", "conformance")).toBeDefined(); // fallback (no-fixable → conformance)
     expect(find("code-review",  "needs-fix")).toMatchObject({ to: "code-fixer" });
     // code-review escalation transition no longer exists (R3 cutover)
     expect(find("code-review",  "escalation")).toBeUndefined();
-    // code-fixer has two approved rows: conditional (last review approved → adr-gen) + fallback (→ code-review)
-    expect(find("code-fixer",   "approved")).toMatchObject({ to: "adr-gen" }); // conditional first
+    // code-fixer has two approved rows: conditional (last review approved → conformance) + fallback (→ code-review)
+    expect(find("code-fixer",   "approved")).toMatchObject({ to: "conformance" }); // conditional first
     expect(findWithTo("code-fixer", "approved", "code-review")).toBeDefined(); // fallback exists
     expect(find("code-fixer",   "error")).toMatchObject({ to: "escalate" });
+    // conformance rows
+    expect(find("conformance",  "approved")).toMatchObject({ to: "adr-gen" });
+    expect(find("conformance",  "needs-fix")).toMatchObject({ to: "implementer" });
     // adr-gen rows
     expect(find("adr-gen",      "success")).toMatchObject({ to: "pr-create" });
     expect(find("adr-gen",      "error")).toMatchObject({ to: "escalate" });

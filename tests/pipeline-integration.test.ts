@@ -163,6 +163,7 @@ function buildConfig(overrides: Record<string, unknown> = {}) {
       "build-fixer": { agentId: "build-fixer-agent-id", definitionHash: "sha256:bfx", lastSyncedAt: new Date().toISOString() },
       "code-review": { agentId: "code-review-agent-id", definitionHash: "sha256:crv", lastSyncedAt: new Date().toISOString() },
       "code-fixer": { agentId: "code-fixer-agent-id", definitionHash: "sha256:cfx", lastSyncedAt: new Date().toISOString() },
+      "conformance": { agentId: "conformance-agent-id", definitionHash: "sha256:cnf", lastSyncedAt: new Date().toISOString() },
       "adr-gen": { agentId: "adr-gen-agent-id", definitionHash: "sha256:adr", lastSyncedAt: new Date().toISOString() },
     },
     pipeline: { maxRetries: 2 },
@@ -289,6 +290,13 @@ function buildPipelineMockClient(opts: {
         ]);
       }
 
+      // conformance judge step (always approves by default in integration tests)
+      if (agentId === "conformance-agent-id") {
+        return Promise.resolve([
+          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true } },
+        ]);
+      }
+
       // Producer steps (design, spec-fixer, test-case-gen, implementer, build-fixer, code-fixer, adr-gen)
       return Promise.resolve([
         { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, status: "success" } },
@@ -350,6 +358,10 @@ function buildMockGithubClient(opts: {
         codeReviewCallCount++;
         return `- **verdict**: ${verdict}\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|---|---|---|---|---|\n`;
       }
+      // Conformance result file: path ends with conformance-result-NNN.md
+      if (/conformance-result-\d{3}\.md$/.test(filePath)) {
+        return `- **verdict**: approved\n\n## Findings\n\nAll 4 artifacts satisfied.\n`;
+      }
       return null;
     }),
     verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
@@ -401,10 +413,10 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
     expect(result.steps?.["spec-fixer"]).toBeUndefined();
 
     // After spec-review approved, pipeline continues:
-    // design(1) + spec-review(1) + test-case-gen(1) + implementer(1) + code-review(1) + adr-gen(1) = 6 sessions
-    // VerificationStep is CLI (no session). Total = 6 createSession calls.
+    // design(1) + spec-review(1) + test-case-gen(1) + implementer(1) + code-review(1) + conformance(1) + adr-gen(1) = 7 sessions
+    // VerificationStep is CLI (no session). Total = 7 createSession calls.
     const createCalls = (client.createSession as ReturnType<typeof vi.fn>).mock.calls;
-    expect(createCalls.length).toBe(6);
+    expect(createCalls.length).toBe(7);
 
     // implementer should have run
     expect(result.steps?.["implementer"]).toBeDefined();
@@ -786,7 +798,7 @@ describe("TC-050: state.step updated: spec-fixer → spec-review within loop", (
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    // After spec-review approved → implementer → verification → code-review → pr-create → end.
+    // After spec-review approved → implementer → verification → code-review → conformance → adr-gen → pr-create → end.
     // The final step in state is "pr-create" (last step before pipeline ends).
     expect(result.step).toBe("pr-create");
 
@@ -1598,16 +1610,18 @@ describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not
 
 // TC-ADR-INT-01: STANDARD_TRANSITIONS includes adr-gen transitions and removes old code-review→pr-create
 describe("TC-ADR-INT-01: STANDARD_TRANSITIONS adr-gen wiring", () => {
-  it("code-review --approved→ adr-gen (direct, no intermediate validation step)", async () => {
+  it("code-review --approved→ conformance (via conformance gate, no direct adr-gen)", async () => {
     const { STANDARD_TRANSITIONS } = await import("../src/core/pipeline/types.js");
-    // Find the fallback (no `when`) transition: code-review approved → adr-gen
+    // Find the fallback (no `when`) transition: code-review approved → conformance
     const codeReviewApproved = STANDARD_TRANSITIONS.find(
       (t) => t.step === "code-review" && t.on === "approved" && !t.when
     );
     expect(codeReviewApproved).toBeDefined();
-    // code-review approved routes directly to adr-gen
-    expect(codeReviewApproved!.to).toBe("adr-gen");
-    // Must NOT go to pr-create directly (adr-gen is the intermediary)
+    // code-review approved now routes to conformance (not adr-gen directly)
+    expect(codeReviewApproved!.to).toBe("conformance");
+    // Must NOT go to adr-gen directly (conformance is the intermediary)
+    expect(codeReviewApproved!.to).not.toBe("adr-gen");
+    // Must NOT go to pr-create directly
     expect(codeReviewApproved!.to).not.toBe("pr-create");
   });
 

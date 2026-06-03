@@ -301,6 +301,25 @@ export class Pipeline {
         break;
       }
 
+      // --- Check current loop step exhaustion (for loop steps without a paired fixer) ---
+      // Loop steps that route to a non-loop step on needs-fix (e.g. conformance → implementer)
+      // bypass the "entering next loop step" guard below: the retry path traverses other loop
+      // steps (verification, code-review) whose counters reach maxIterations first.
+      // Detect exhaustion immediately when the current loop step has no paired fixer.
+      if (isAnyLoopStep && nextStep !== "end" && nextStep !== "escalate" && outcome !== "approved" && outcome !== "passed") {
+        const pairedFixer = this.loopFixerPairs[currentStep];
+        if (pairedFixer === undefined) {
+          const currentLoopIter = loopIters.get(currentStep) ?? 0;
+          if (currentLoopIter >= this.maxIterations) {
+            logPipelineDiag("pipeline:loop:exhausted", `step=${currentStep}, iter=${currentLoopIter}, max=${this.maxIterations}`);
+            this.events.emit("pipeline:iteration:exhausted", { step: currentStep, iteration: currentLoopIter, maxIterations: this.maxIterations });
+            state = await this.handleExhausted(state, deps, currentStep, "review-exhausted");
+            this.printPipelineFinished(state);
+            break;
+          }
+        }
+      }
+
       // --- Check loop exhaustion before entering next loop iteration ---
       if (this.loopNames.includes(nextStep as string)) {
         const nextLoopIter = loopIters.get(nextStep as string) ?? 0;

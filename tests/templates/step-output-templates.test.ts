@@ -72,6 +72,13 @@ describe("TC-T001: getOutputTemplates returns correct list per step", () => {
     expect(templates).toHaveLength(1);
     expect(templates[0]!.path).toBe("specrunner/changes/my-slug/review-feedback-001.md");
   });
+
+  it("conformance step returns conformance-result-001.md for first iteration", () => {
+    const state = makeState();
+    const templates = getOutputTemplates("conformance", "my-slug", state);
+    expect(templates).toHaveLength(1);
+    expect(templates[0]!.path).toBe("specrunner/changes/my-slug/conformance-result-001.md");
+  });
 });
 
 // ---------------------------------------------------------------------------

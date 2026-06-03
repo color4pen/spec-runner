@@ -31,6 +31,16 @@ export function specReviewResultPath(slug: string, iteration: number): string {
 }
 
 /**
+ * Returns the relative path to the conformance result file for the given slug and iteration.
+ * Iteration is zero-padded to 3 digits.
+ * Example: conformanceResultPath("foo", 1) → "specrunner/changes/foo/conformance-result-001.md"
+ */
+export function conformanceResultPath(slug: string, iteration: number): string {
+  const nnn = String(iteration).padStart(3, "0");
+  return `${CHANGES_DIR}/${slug}/conformance-result-${nnn}.md`;
+}
+
+/**
  * Returns the relative path to the review feedback file for the given slug and iteration.
  * Iteration is zero-padded to 3 digits.
  * Example: reviewFeedbackPath("my-change", 2) → "specrunner/changes/my-change/review-feedback-002.md"
