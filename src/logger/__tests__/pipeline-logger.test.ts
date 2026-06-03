@@ -194,13 +194,13 @@ describe("EventBus event recording", () => {
     const events = new EventBus();
     logger.subscribe(events);
 
-    events.emit("pipeline:complete", { state: makeMinimalJobState({ status: "awaiting-merge" }) });
+    events.emit("pipeline:complete", { state: makeMinimalJobState({ status: "awaiting-archive" }) });
     logger.close();
 
     const lines = readJsonLines(logFile);
     expect(lines).toHaveLength(1);
     expect(lines[0]!["type"]).toBe("pipeline:complete");
-    expect(lines[0]!["status"]).toBe("awaiting-merge");
+    expect(lines[0]!["status"]).toBe("awaiting-archive");
   });
 
   it("T-013: records pipeline:fail events", () => {

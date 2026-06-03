@@ -27,9 +27,9 @@ describe("TC-44: README の最短フローが新体系で記述されている",
     expect(content).toContain("job ls");
   });
 
-  it("README.md に 'job finish' が含まれる", async () => {
+  it("README.md に 'job archive' が含まれる", async () => {
     const content = await fs.readFile(path.join(CWD, "README.md"), "utf-8");
-    expect(content).toContain("job finish");
+    expect(content).toContain("job archive");
   });
 
   it("README.md に 'request new' が含まれる", async () => {

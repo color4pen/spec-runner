@@ -269,9 +269,9 @@ export class Pipeline {
         // Print final pipeline summary if spec-review was in the pipeline
         this.printPipelineFinished(state);
 
-        // Normal completion → awaiting-merge
+        // Normal completion → awaiting-archive
         if (nextStep === "end" && state.status === "running") {
-          const { state: mergeState } = transitionJob(state, "awaiting-merge", {
+          const { state: mergeState } = transitionJob(state, "awaiting-archive", {
             trigger: "pipeline",
             reason: "pipeline complete",
           });

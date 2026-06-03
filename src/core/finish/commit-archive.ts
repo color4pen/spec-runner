@@ -46,8 +46,8 @@ export async function commitArchive(params: {
       escalation: formatEscalation({
         failedStep: "commit-archive",
         detectedState: `git diff --cached --quiet exited with unexpected code ${diffResult.exitCode}: ${diffResult.stderr.trim()}`,
-        recommendedAction: `Check git status and re-run: specrunner finish ${slug}`,
-        resumeCommand: `specrunner finish ${slug}`,
+        recommendedAction: `Check git status and re-run: specrunner job archive --with-merge ${slug}`,
+        resumeCommand: `specrunner job archive --with-merge ${slug}`,
       }),
       exitCode: 1,
     };
@@ -62,8 +62,8 @@ export async function commitArchive(params: {
       escalation: formatEscalation({
         failedStep: "commit-archive",
         detectedState: `git commit failed (exit ${commitResult.exitCode}): ${commitResult.stderr.trim()}`,
-        recommendedAction: `Check git error and re-run: specrunner finish ${slug}`,
-        resumeCommand: `specrunner finish ${slug}`,
+        recommendedAction: `Check git error and re-run: specrunner job archive --with-merge ${slug}`,
+        resumeCommand: `specrunner job archive --with-merge ${slug}`,
       }),
       exitCode: 1,
     };

@@ -62,7 +62,7 @@ describe("TC-11: reconcile.ts module structure", () => {
 describe("TC-01: reconcileStaleRunning — running 以外は null を返す", () => {
   const nonRunningStatuses: JobStatus[] = [
     "awaiting-resume",
-    "awaiting-merge",
+    "awaiting-archive",
     "failed",
     "terminated",
     "archived",
@@ -213,7 +213,7 @@ describe("TC-07: reconcilePrState — awaiting-merge 以外は null", () => {
 
 describe("TC-08: reconcilePrState — awaiting-merge + OPEN は null", () => {
   it("returns null when status=awaiting-merge and prStatus=OPEN", () => {
-    const state = makeState("awaiting-merge");
+    const state = makeState("awaiting-archive");
     expect(reconcilePrState(state, "OPEN")).toBeNull();
   });
 });
@@ -224,7 +224,7 @@ describe("TC-08: reconcilePrState — awaiting-merge + OPEN は null", () => {
 
 describe("TC-09: reconcilePrState — awaiting-merge + CLOSED は null", () => {
   it("returns null when status=awaiting-merge and prStatus=CLOSED", () => {
-    const state = makeState("awaiting-merge");
+    const state = makeState("awaiting-archive");
     expect(reconcilePrState(state, "CLOSED")).toBeNull();
   });
 });
@@ -235,7 +235,7 @@ describe("TC-09: reconcilePrState — awaiting-merge + CLOSED は null", () => {
 
 describe("TC-10: reconcilePrState — awaiting-merge + MERGED は TransitionResult", () => {
   it("returns TransitionResult with status=archived", () => {
-    const state = makeState("awaiting-merge");
+    const state = makeState("awaiting-archive");
     const result = reconcilePrState(state, "MERGED");
     expect(result).not.toBeNull();
     expect(result!.state.status).toBe("archived");
@@ -243,7 +243,7 @@ describe("TC-10: reconcilePrState — awaiting-merge + MERGED は TransitionResu
   });
 
   it("history entry has trigger=reconcile and reason=PR merged externally", () => {
-    const state = makeState("awaiting-merge");
+    const state = makeState("awaiting-archive");
     const result = reconcilePrState(state, "MERGED");
     expect(result).not.toBeNull();
     const lastEntry = result!.state.history[result!.state.history.length - 1]!;

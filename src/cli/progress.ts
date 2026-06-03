@@ -155,7 +155,7 @@ export class ProgressDisplay {
   private onPipelineComplete(_p: unknown): void {
     this.stopHeartbeat();
     // Always output final result, even in quiet mode
-    process.stderr.write(maskSensitive(`\nNext: specrunner job finish ${this.options.slug}\n`));
+    process.stderr.write(maskSensitive(`\nNext: specrunner job archive ${this.options.slug}\n`));
   }
 
   private onPipelineFail(p: { reason: string }): void {

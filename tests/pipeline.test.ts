@@ -186,7 +186,7 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    expect(result.status).toBe("awaiting-merge");
+    expect(result.status).toBe("awaiting-archive");
 
     const steps = result.history.map((h) => h.step);
     // Executor adds step-start and step-complete entries (design D3 mitigation)
@@ -225,7 +225,7 @@ describe("TC-036: propose pipeline — pre-set branch from CLI is used (D4)", ()
 
     // With branch pre-set, propose should succeed
     expect(result.branch).toBe("feat/test-cli-branch-d4");
-    expect(result.status).toBe("awaiting-merge");
+    expect(result.status).toBe("awaiting-archive");
   });
 });
 
@@ -366,7 +366,7 @@ describe("TC-040: propose pipeline — branch not found on GitHub is warning onl
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    expect(result.status).toBe("awaiting-merge");
+    expect(result.status).toBe("awaiting-archive");
     // Branch verification warning is logged to stderr (no longer a history entry)
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
     const combined = stderrCalls.map((c: unknown[]) => String(c[0])).join("\n");

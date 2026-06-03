@@ -2,7 +2,7 @@
  * Integration tests for the worktree guard in bin/specrunner.ts
  *
  * TC-WG-001: job start from worktree → exit 1 with WORKTREE_GUARD error
- * TC-WG-002: job finish from worktree → exit 1 with WORKTREE_GUARD error
+ * TC-WG-002: job archive from worktree → exit 1 with WORKTREE_GUARD error
  * TC-WG-003: job resume from worktree → exit 1 with WORKTREE_GUARD error
  * TC-WG-004: job ls from worktree → NOT guarded, proceeds normally
  * TC-WG-005: error message includes hint with main worktree path
@@ -18,7 +18,7 @@ vi.mock("../../../src/core/worktree/detection.js", () => ({
 }));
 
 vi.mock("../../../src/cli/run.js", () => ({ runRun: vi.fn(), handlePostPipelineState: vi.fn() }));
-vi.mock("../../../src/cli/finish.js", () => ({ runFinish: vi.fn() }));
+vi.mock("../../../src/cli/archive.js", () => ({ runArchive: vi.fn() }));
 vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn() }));
 vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(0) }));
 vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn().mockResolvedValue(0) }));
@@ -79,12 +79,12 @@ describe("TC-WG-001: job start from inside a worktree", () => {
   });
 });
 
-// TC-WG-002: job finish from worktree → rejected with exit 2 (ARG_ERROR)
-describe("TC-WG-002: job finish from inside a worktree", () => {
+// TC-WG-002: job archive from worktree → rejected with exit 2 (ARG_ERROR)
+describe("TC-WG-002: job archive from inside a worktree", () => {
   it("exits with code 2 and prints worktree guard error", async () => {
     await setWorktreeDetection(true, "/home/user/my-project");
 
-    const result = await runMain(["job", "finish"]);
+    const result = await runMain(["job", "archive"]);
 
     expect(result).toBe("process.exit(2)");
     expect(exitSpy).toHaveBeenCalledWith(2);

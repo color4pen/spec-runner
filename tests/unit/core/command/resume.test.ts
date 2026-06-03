@@ -136,7 +136,7 @@ vi.mock("../../../../src/core/pipeline/index.js", () => ({
       repository: { owner: "testowner", name: "testrepo" },
       session: null,
       step: "pr-create",
-      status: "awaiting-merge",
+      status: "awaiting-archive",
       branch: "feat/test",
       history: [],
       error: null,

@@ -430,8 +430,8 @@ export class LocalRuntime implements RuntimeStrategy {
     process.off("SIGINT", internals.signalCleanup);
     process.off("SIGTERM", internals.signalCleanup);
 
-    // Cleanup worktree on failure (on success, finish handles worktree cleanup)
-    if (finalStatus !== "awaiting-merge") {
+    // Cleanup worktree on failure (on success, archive handles worktree cleanup)
+    if (finalStatus !== "awaiting-archive") {
       await internals.cleanupWorktreeOnFailure();
     }
   }

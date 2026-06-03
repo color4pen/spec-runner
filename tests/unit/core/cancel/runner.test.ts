@@ -124,7 +124,7 @@ describe("cancelSingleJob — archived status", () => {
 
 describe("cancelSingleJob — awaiting-merge status", () => {
   it("rejects without --force", async () => {
-    const { jobId } = await makeJob("awaiting-merge");
+    const { jobId } = await makeJob("awaiting-archive");
     const result = await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
 
     expect(result.exitCode).toBe(1);
@@ -132,7 +132,7 @@ describe("cancelSingleJob — awaiting-merge status", () => {
   });
 
   it("succeeds with --force", async () => {
-    const { jobId } = await makeJob("awaiting-merge");
+    const { jobId } = await makeJob("awaiting-archive");
     const result = await cancelSingleJob({ jobId, force: true, purge: false, deps: makeDeps() });
 
     expect(result.exitCode).toBe(0);
@@ -395,7 +395,7 @@ describe("cancelAllTerminated", () => {
     const { jobId: j2 } = await makeJob("terminated");
     const { jobId: j3 } = await makeJob("canceled");
     await makeJob("running");        // should NOT be removed
-    await makeJob("awaiting-merge"); // should NOT be removed
+    await makeJob("awaiting-archive"); // should NOT be removed
 
     const result = await cancelAllTerminated({ yes: true, repoRoot: tempDir });
 
@@ -458,7 +458,7 @@ describe("cancelAllTerminated", () => {
   it("only targets failed/terminated/canceled, not archived/running/awaiting-merge/awaiting-resume", async () => {
     await makeJob("running");
     await makeJob("awaiting-resume");
-    await makeJob("awaiting-merge");
+    await makeJob("awaiting-archive");
     await makeJob("archived");
     await makeJob("failed");
 

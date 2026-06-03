@@ -86,8 +86,8 @@ function captureStdout(fn: () => Promise<number | void>): Promise<string> {
 describe("TC-14: ps --status awaiting-merge", () => {
   beforeEach(() => {
     mockedListJobStates.mockResolvedValue([
-      makeJob("awaiting-merge", "job-am-1"),
-      makeJob("awaiting-merge", "job-am-2"),
+      makeJob("awaiting-archive", "job-am-1"),
+      makeJob("awaiting-archive", "job-am-2"),
       makeJob("running", "job-run-1"),
     ]);
   });
@@ -97,7 +97,7 @@ describe("TC-14: ps --status awaiting-merge", () => {
   });
 
   it("shows only awaiting-merge jobs", async () => {
-    const output = await captureStdout(() => runPs({ status: "awaiting-merge" }));
+    const output = await captureStdout(() => runPs({ status: "awaiting-archive" }));
     expect(output).toContain("job-am-1");
     expect(output).toContain("job-am-2");
     expect(output).not.toContain("job-run-1");
@@ -134,7 +134,7 @@ describe("TC-15: ps --status archived", () => {
 describe("TC-16: ps --status が --active より優先される", () => {
   beforeEach(() => {
     mockedListJobStates.mockResolvedValue([
-      makeJob("awaiting-merge", "job-am-1"),
+      makeJob("awaiting-archive", "job-am-1"),
       makeJob("running", "job-run-1"),
     ]);
   });
@@ -145,7 +145,7 @@ describe("TC-16: ps --status が --active より優先される", () => {
 
   it("shows only awaiting-merge when --status=awaiting-merge --active are both set", async () => {
     const output = await captureStdout(() =>
-      runPs({ status: "awaiting-merge", active: true }),
+      runPs({ status: "awaiting-archive", active: true }),
     );
     expect(output).toContain("job-am-1");
     expect(output).not.toContain("job-run-1");
@@ -161,7 +161,7 @@ describe("TC-17: ps --status が --all より優先される", () => {
     mockedListJobStates.mockResolvedValue([
       makeJob("running", "job-run-1"),
       makeJob("archived", "job-arch-1"),
-      makeJob("awaiting-merge", "job-am-1"),
+      makeJob("awaiting-archive", "job-am-1"),
     ]);
   });
 
@@ -281,7 +281,7 @@ describe("TC-36: ps --active backward compatibility", () => {
     mockedListJobStates.mockResolvedValue([
       makeJob("running", "job-run-1"),
       makeJob("awaiting-resume", "job-ar-1"),
-      makeJob("awaiting-merge", "job-am-1"),
+      makeJob("awaiting-archive", "job-am-1"),
       makeJob("archived", "job-arch-1"),
     ]);
   });

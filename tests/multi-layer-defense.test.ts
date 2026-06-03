@@ -291,7 +291,7 @@ describe("TC-01: happy path — spec-review approved, pipeline completes", () =>
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    expect(result.status).toBe("awaiting-merge");
+    expect(result.status).toBe("awaiting-archive");
 
     // spec-review: 1 run, approved
     const specReviewArr = result.steps?.["spec-review"];
@@ -335,7 +335,7 @@ describe("TC-02: spec-review catches insufficient spec — spec-fixer repairs, r
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    expect(result.status).toBe("awaiting-merge");
+    expect(result.status).toBe("awaiting-archive");
 
     // spec-review: 2 runs (needs-fix → approved)
     const specReviewArr = result.steps?.["spec-review"];

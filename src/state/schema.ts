@@ -2,7 +2,7 @@
  * Job state schema and types for specrunner state files.
  */
 
-export type JobStatus = "running" | "awaiting-resume" | "awaiting-merge" | "failed" | "terminated" | "archived" | "canceled";
+export type JobStatus = "running" | "awaiting-resume" | "awaiting-archive" | "failed" | "terminated" | "archived" | "canceled";
 
 import type { ModelUsage } from "../kernel/model-usage.js";
 import type { BaseReportResult } from "../kernel/report-result.js";
@@ -327,15 +327,19 @@ export function validateJobState(raw: unknown): JobState {
     obj["step"] = "design";
   }
 
-  // Backward compat: remap legacy status="success" to "awaiting-merge"
-  // TODO: Remove this migration after 2026-06 release
+  // Backward compat: remap legacy status="success" to "awaiting-archive"
   if (obj["status"] === "success") {
-    obj["status"] = "awaiting-merge";
+    obj["status"] = "awaiting-archive";
+  }
+
+  // Backward compat: remap legacy status="awaiting-merge" to "awaiting-archive"
+  if (obj["status"] === "awaiting-merge") {
+    obj["status"] = "awaiting-archive";
   }
 
   // Validate status is a known value
   const VALID_STATUSES: Set<string> = new Set([
-    "running", "awaiting-resume", "awaiting-merge", "failed", "terminated", "archived", "canceled",
+    "running", "awaiting-resume", "awaiting-archive", "failed", "terminated", "archived", "canceled",
   ]);
   if (!VALID_STATUSES.has(obj["status"] as string)) {
     throw new Error(`Invalid status: ${obj["status"] as string}`);

@@ -400,7 +400,7 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    expect(result.status).toBe("awaiting-merge");
+    expect(result.status).toBe("awaiting-archive");
 
     // spec-review: length 1, verdict=approved
     const specReviewArr = result.steps?.["spec-review"];
@@ -451,7 +451,7 @@ describe("TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 app
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    expect(result.status).toBe("awaiting-merge");
+    expect(result.status).toBe("awaiting-archive");
 
     // spec-review: 2 entries
     const specReviewArr = result.steps?.["spec-review"];
@@ -854,7 +854,7 @@ describe("TC-060: runPipeline — code-review needs-fix → code-fixer → code-
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    expect(result.status).toBe("awaiting-merge");
+    expect(result.status).toBe("awaiting-archive");
 
     // code-review: 2 entries
     const codeReviewArr = result.steps?.["code-review"];
@@ -983,7 +983,7 @@ describe("TC-062: code-fixer final iter reviewed — approved path", () => {
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    expect(result.status).toBe("awaiting-merge");
+    expect(result.status).toBe("awaiting-archive");
 
     // code-review: 3 entries (iter1 needs-fix, iter2 needs-fix, iter3 +1 bypass approved)
     const codeReviewArr = result.steps?.["code-review"];
@@ -1041,7 +1041,7 @@ describe("TC-063: spec-review / spec-fixer pair — fixer final iter reviewed an
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    expect(result.status).toBe("awaiting-merge");
+    expect(result.status).toBe("awaiting-archive");
 
     // spec-review: 3 entries (iter1 needs-fix, iter2 needs-fix, iter3 +1 bypass approved)
     const specReviewArr = result.steps?.["spec-review"];
@@ -1116,7 +1116,7 @@ describe("TC-064: verification / build-fixer pair — fixer final iter verificat
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    expect(result.status).toBe("awaiting-merge");
+    expect(result.status).toBe("awaiting-archive");
 
     // verification: 3 entries (iter1 failed, iter2 failed, iter3 +1 bypass passed)
     const verificationArr = result.steps?.["verification"];
@@ -1391,7 +1391,7 @@ describe("TC-DC-106: enrichContext returns unmodified dynamicContext when no spe
     });
 
     expect(enrichSpy).toHaveBeenCalledOnce();
-    expect(result.status).toBe("awaiting-merge");
+    expect(result.status).toBe("awaiting-archive");
   });
 });
 
@@ -1424,7 +1424,7 @@ describe("TC-DC-107: project.md absent — projectContext is undefined for all s
     });
 
     // Pipeline must not throw — project.md absence is not an error
-    expect(result.status).toBe("awaiting-merge");
+    expect(result.status).toBe("awaiting-archive");
 
     const allowlistNames = ["design", "spec-review", "implementer", "code-review"];
     for (const stepName of allowlistNames) {
@@ -1460,7 +1460,7 @@ describe("TC-DC-108: dynamicContext omitted — backward compatibility", () => {
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    expect(result.status).toBe("awaiting-merge");
+    expect(result.status).toBe("awaiting-archive");
     expect(capturedCtxList.length).toBeGreaterThan(0);
     for (const ctx of capturedCtxList) {
       expect(ctx.input.dynamicContext).toBeUndefined();

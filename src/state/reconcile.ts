@@ -77,17 +77,17 @@ export function reconcileStaleRunning(state: JobState): TransitionResult | null 
 }
 
 /**
- * Reconcile a PR-merged "awaiting-merge" job.
+ * Reconcile a PR-merged "awaiting-archive" job.
  *
- * Returns a TransitionResult (awaiting-merge → archived) if the job is in
- * "awaiting-merge" status and the PR has been merged externally.
+ * Returns a TransitionResult (awaiting-archive → archived) if the job is in
+ * "awaiting-archive" status and the PR has been merged externally.
  * Returns null otherwise.
  */
 export function reconcilePrState(
   state: JobState,
   prStatus: "MERGED" | "CLOSED" | "OPEN",
 ): TransitionResult | null {
-  if (state.status !== "awaiting-merge") return null;
+  if (state.status !== "awaiting-archive") return null;
   if (prStatus !== "MERGED") return null;
 
   return transitionJob(state, "archived", {

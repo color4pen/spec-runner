@@ -129,11 +129,11 @@ describe("TC-6.1: ProgressDisplay — EventBus emit → stdout 出力", () => {
     expect(output).toBe("");
   });
 
-  it("pipeline:complete イベントで 'Next: specrunner job finish <slug>' を出力する", () => {
+  it("pipeline:complete イベントで 'Next: specrunner job archive <slug>' を出力する", () => {
     new ProgressDisplay(bus, { logLevel: "default", slug: "my-slug", heartbeatIntervalSec: 0 });
-    bus.emit("pipeline:complete", { state: makeState({ status: "awaiting-merge" }) });
+    bus.emit("pipeline:complete", { state: makeState({ status: "awaiting-archive" }) });
     const output = stderrSpy.mock.calls.map((c: [string | Uint8Array, ...unknown[]]) => String(c[0])).join("");
-    expect(output).toContain("Next: specrunner job finish my-slug");
+    expect(output).toContain("Next: specrunner job archive my-slug");
   });
 
   it("pipeline:fail イベントで failure reason を出力する", () => {
@@ -324,7 +324,7 @@ describe("TC-HB-4: pipeline:fail stops heartbeat (safety net)", () => {
     bus.emit("step:complete", { step: "implementer", state: makeState() });
     // Timer already cleared by step:complete; pipeline:complete should be safe to call
     const countAfterStep = fake.clearedIds.length;
-    bus.emit("pipeline:complete", { state: makeState({ status: "awaiting-merge" }) });
+    bus.emit("pipeline:complete", { state: makeState({ status: "awaiting-archive" }) });
     // No additional clear expected (timer was already null)
     expect(fake.clearedIds.length).toBe(countAfterStep);
   });

@@ -58,7 +58,7 @@ export function formatJobRow(
 
   let status: string;
   if (prMerged) {
-    status = "awaiting-merge (PR merged, run finish)";
+    status = "awaiting-archive (PR merged, run archive)";
   } else if (isStale) {
     status = "running (stale?)";
   } else {
@@ -152,10 +152,10 @@ export async function runPs(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 
-  // Check PR status for awaiting-merge jobs only (rate limit: typically 0-2 such jobs)
+  // Check PR status for awaiting-archive jobs only (rate limit: typically 0-2 such jobs)
   const prMergedMap = new Map<string, boolean>();
   for (const job of sorted) {
-    if (job.status === "awaiting-merge") {
+    if (job.status === "awaiting-archive") {
       const merged = await checkPrMerged(job, githubClient);
       if (merged === true) {
         prMergedMap.set(job.jobId, true);

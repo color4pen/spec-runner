@@ -51,7 +51,7 @@ vi.mock("../../../src/core/pipeline/index.js", () => ({
     run: vi.fn().mockResolvedValue({
       version: 1,
       jobId: "test-job",
-      status: "awaiting-merge",
+      status: "awaiting-archive",
       step: "pr-create",
       branch: "feat/test",
       history: [],

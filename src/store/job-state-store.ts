@@ -190,7 +190,7 @@ export class JobStateStore {
    * Load and validate a job state from disk.
    * Uses validateJobState() for normalization and backward compat:
    *   - legacy step formats normalized to StepRun[]
-   *   - status "success" remapped to "awaiting-merge"
+   *   - status "success" / "awaiting-merge" remapped to "awaiting-archive"
    *   - error.code "SESSION_TIMEOUT" remapped to "SESSION_TERMINATED"
    *   - missing slug defaulted to null
    *

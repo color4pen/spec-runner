@@ -42,8 +42,8 @@ npx specrunner request new my-feature
 # 5. Start the pipeline
 npx specrunner run my-feature
 
-# 6. Finish (PR merge + archive) when awaiting-merge
-npx specrunner job finish my-feature
+# 6. Archive when awaiting-archive (merge + archive in one step)
+npx specrunner job archive --with-merge my-feature
 ```
 
 ### Failure / resume flow
@@ -80,7 +80,7 @@ specrunner job ls                          List all jobs
 specrunner job show <jobId|slug>           Show job state details
 specrunner job cancel <jobId>              Cancel job and cleanup
 specrunner job resume <slug>               Resume a halted job
-specrunner job finish <slug>               Squash-merge PR + archive (1-PR model)
+specrunner job archive <slug>              Archive change folder, teardown worktree, update status
 ```
 
 ### Environment commands

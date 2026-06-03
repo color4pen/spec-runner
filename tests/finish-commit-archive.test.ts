@@ -91,7 +91,7 @@ describe("TC-CA-003: commit 失敗 → escalation", () => {
     if (result.ok) return;
     expect(result.exitCode).toBe(1);
     expect(result.escalation).toContain("commit-archive");
-    expect(result.escalation).toContain("specrunner finish test-slug");
+    expect(result.escalation).toContain("specrunner job archive --with-merge test-slug");
   });
 });
 
@@ -106,7 +106,7 @@ describe("TC-CA-004: git diff 異常 exit code → escalation", () => {
     if (result.ok) return;
     expect(result.exitCode).toBe(1);
     expect(result.escalation).toContain("commit-archive");
-    expect(result.escalation).toContain("specrunner finish test-slug");
+    expect(result.escalation).toContain("specrunner job archive --with-merge test-slug");
 
     // git commit must NOT have been called
     const calls = (spawn as ReturnType<typeof vi.fn>).mock.calls as [string, string[], unknown][];

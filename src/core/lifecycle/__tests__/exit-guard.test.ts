@@ -61,7 +61,7 @@ describe("createExitGuardHandler", () => {
 
   it("non-running job → unchanged", async () => {
     const jobId = "aaaaaaaa-0000-0000-0000-000000000002";
-    await createJobState(tempDir, jobId, "awaiting-merge");
+    await createJobState(tempDir, jobId, "awaiting-archive");
 
     const handler = createExitGuardHandler(tempDir);
     handler();
@@ -70,7 +70,7 @@ describe("createExitGuardHandler", () => {
 
     const store = new JobStateStore(jobId, tempDir);
     const state = await store.load();
-    expect(state.status).toBe("awaiting-merge");
+    expect(state.status).toBe("awaiting-archive");
   });
 
   it("handler called twice → only first execution runs (fired guard)", async () => {

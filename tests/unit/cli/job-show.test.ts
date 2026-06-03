@@ -150,7 +150,7 @@ describe("TC-JSHOW-005: multiple jobs with same slug picks latest updatedAt", ()
     const newer = makeJob({
       jobId: "ccccdddd-0000-0000-0000-000000000002",
       updatedAt: "2026-02-01T00:00:00.000Z",
-      status: "awaiting-merge",
+      status: "awaiting-archive",
       request: { path: "/req.md", title: "Feature", type: "new-feature", slug: "my-feature" },
     });
     mockList.mockResolvedValue([older, newer]);
@@ -159,7 +159,7 @@ describe("TC-JSHOW-005: multiple jobs with same slug picks latest updatedAt", ()
 
     const output = (stdoutSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
     expect(output).toContain("ccccdddd");
-    expect(output).toContain("awaiting-merge");
+    expect(output).toContain("awaiting-archive");
   });
 });
 

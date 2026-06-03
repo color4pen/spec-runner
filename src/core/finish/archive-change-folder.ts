@@ -53,8 +53,8 @@ export async function archiveChangeFolder(params: {
     const escalation = formatEscalation({
       failedStep: "archive-change-folder",
       detectedState: `git mv ${sourcePath} → ${archivePath} failed (exit ${mvResult.exitCode})`,
-      recommendedAction: `Check git error: ${mvResult.stderr.trim()}. Then re-run: specrunner finish ${slug}`,
-      resumeCommand: `specrunner finish ${slug}`,
+      recommendedAction: `Check git error: ${mvResult.stderr.trim()}. Then re-run: specrunner job archive --with-merge ${slug}`,
+      resumeCommand: `specrunner job archive --with-merge ${slug}`,
     });
     return { ok: false, escalation, exitCode: 1 };
   }
@@ -66,8 +66,8 @@ export async function archiveChangeFolder(params: {
     const escalation = formatEscalation({
       failedStep: "archive-change-folder",
       detectedState: `git add ${changesDirRel()}/ failed (exit ${gitAddResult.exitCode})`,
-      recommendedAction: `Check git error: ${gitAddResult.stderr.trim()}. Then re-run: specrunner finish ${slug}`,
-      resumeCommand: `specrunner finish ${slug}`,
+      recommendedAction: `Check git error: ${gitAddResult.stderr.trim()}. Then re-run: specrunner job archive --with-merge ${slug}`,
+      resumeCommand: `specrunner job archive --with-merge ${slug}`,
     });
     return { ok: false, escalation, exitCode: 1 };
   }

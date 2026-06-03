@@ -34,7 +34,7 @@ describe("TC-41: --help — 主語別グルーピング表示", () => {
     const { USAGE } = await import("../../../src/cli/command-registry.js");
     expect(USAGE).toContain("job start");
     expect(USAGE).toContain("job ls");
-    expect(USAGE).toContain("job finish");
+    expect(USAGE).toContain("job archive");
   });
 
   it("USAGE には runtime subcommands が含まれる", async () => {

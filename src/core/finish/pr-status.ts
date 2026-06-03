@@ -62,7 +62,7 @@ export async function fetchPrViewWithRetry(params: {
           failedStep: "Phase 0 check 3 (getPullRequest)",
           detectedState: `getPullRequest #${prNumber} failed: ${detail}`,
           recommendedAction: `Check GitHub token: specrunner login. Error: ${detail}`,
-          resumeCommand: `specrunner finish ${slug}`,
+          resumeCommand: `specrunner job archive --with-merge ${slug}`,
         }),
       };
     }
@@ -89,8 +89,8 @@ export async function fetchPrViewWithRetry(params: {
           failedStep: "Phase 0 check 4 (mergeStateStatus UNKNOWN)",
           detectedState: `mergeStateStatus is UNKNOWN after ${UNKNOWN_RETRY_COUNT} retries`,
           recommendedAction:
-            `GitHub's merge state is still computing. Wait a moment and re-run:\n  specrunner finish ${slug}`,
-          resumeCommand: `specrunner finish ${slug}`,
+            `GitHub's merge state is still computing. Wait a moment and re-run:\n  specrunner job archive --with-merge ${slug}`,
+          resumeCommand: `specrunner job archive --with-merge ${slug}`,
         }),
       };
     }
@@ -104,8 +104,8 @@ export async function fetchPrViewWithRetry(params: {
     escalation: formatEscalation({
       failedStep: "Phase 0 check 4 (mergeStateStatus UNKNOWN)",
       detectedState: `mergeStateStatus is UNKNOWN after ${UNKNOWN_RETRY_COUNT} retries`,
-      recommendedAction: `Wait a moment and re-run: specrunner finish ${slug}`,
-      resumeCommand: `specrunner finish ${slug}`,
+      recommendedAction: `Wait a moment and re-run: specrunner job archive --with-merge ${slug}`,
+      resumeCommand: `specrunner job archive --with-merge ${slug}`,
     }),
   };
 }
@@ -138,7 +138,7 @@ export async function checkMergeableForMerge(params: {
           failedStep: "Phase 3 guard (getPullRequest for mergeable)",
           detectedState: `getPullRequest #${prNumber} failed: ${detail}`,
           recommendedAction: `Check GitHub token: specrunner login. Error: ${detail}`,
-          resumeCommand: `specrunner finish ${slug}`,
+          resumeCommand: `specrunner job archive --with-merge ${slug}`,
         }),
       };
     }
@@ -155,8 +155,8 @@ export async function checkMergeableForMerge(params: {
         escalation: formatEscalation({
           failedStep: "Phase 3 guard (mergeable CONFLICTING)",
           detectedState: `mergeable is CONFLICTING (PR has merge conflicts)`,
-          recommendedAction: `Rebase the feature branch onto ${baseBranch} and re-run:\n  git rebase ${baseBranch}\n  git push --force-with-lease\n  specrunner finish ${slug}`,
-          resumeCommand: `specrunner finish ${slug}`,
+          recommendedAction: `Rebase the feature branch onto ${baseBranch} and re-run:\n  git rebase ${baseBranch}\n  git push --force-with-lease\n  specrunner job archive --with-merge ${slug}`,
+          resumeCommand: `specrunner job archive --with-merge ${slug}`,
         }),
       };
     }
@@ -176,8 +176,8 @@ export async function checkMergeableForMerge(params: {
       escalation: formatEscalation({
         failedStep: "Phase 3 guard (mergeable UNKNOWN)",
         detectedState: `mergeable is UNKNOWN after ${MERGEABLE_RETRY_COUNT} retries`,
-        recommendedAction: `GitHub's merge state is still computing. Wait a moment and re-run:\n  specrunner finish ${slug}`,
-        resumeCommand: `specrunner finish ${slug}`,
+        recommendedAction: `GitHub's merge state is still computing. Wait a moment and re-run:\n  specrunner job archive --with-merge ${slug}`,
+        resumeCommand: `specrunner job archive --with-merge ${slug}`,
       }),
     };
   }
@@ -188,8 +188,8 @@ export async function checkMergeableForMerge(params: {
     escalation: formatEscalation({
       failedStep: "Phase 3 guard (mergeable UNKNOWN)",
       detectedState: `mergeable is UNKNOWN after ${MERGEABLE_RETRY_COUNT} retries`,
-      recommendedAction: `Wait a moment and re-run: specrunner finish ${slug}`,
-      resumeCommand: `specrunner finish ${slug}`,
+      recommendedAction: `Wait a moment and re-run: specrunner job archive --with-merge ${slug}`,
+      resumeCommand: `specrunner job archive --with-merge ${slug}`,
     }),
   };
 }

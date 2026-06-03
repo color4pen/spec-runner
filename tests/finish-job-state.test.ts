@@ -29,7 +29,7 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-async function makeJob(status: JobState["status"] = "awaiting-merge") {
+async function makeJob(status: JobState["status"] = "awaiting-archive") {
   const job = await JobStateStore.create(tempDir, {
     request: { path: "/test/request.md", title: "Test", type: "new-feature" },
     repository: { owner: "user", name: "repo" },
@@ -66,12 +66,12 @@ async function loadJobState(jobId: string): Promise<JobState> {
 // TC-029
 describe("TC-029: awaiting-merge → status: archived + history entry", () => {
   it("marks job as archived and appends finish history entry", async () => {
-    const job = await makeJob("awaiting-merge");
+    const job = await makeJob("awaiting-archive");
 
     const updated = await markJobArchived(job.jobId, tempDir);
 
     expect(updated.status).toBe("archived");
-    const finishEntry = updated.history.find((h) => h.step === "finish");
+    const finishEntry = updated.history.find((h) => h.step === "archive");
     expect(finishEntry).toBeDefined();
     expect(finishEntry?.status).toBe("ok");
   });
@@ -80,11 +80,11 @@ describe("TC-029: awaiting-merge → status: archived + history entry", () => {
 // TC-030
 describe("TC-030: escalation → state unchanged", () => {
   it("state status remains unchanged when escalation occurs (no markJobArchived called)", async () => {
-    const job = await makeJob("awaiting-merge");
+    const job = await makeJob("awaiting-archive");
 
     // Simulate escalation by NOT calling markJobArchived
     const stateAfter = await loadJobState(job.jobId);
-    expect(stateAfter.status).toBe("awaiting-merge"); // unchanged
+    expect(stateAfter.status).toBe("awaiting-archive"); // unchanged
   });
 });
 
@@ -99,7 +99,7 @@ describe("TC-031: status=running → reject (JOB_NOT_FINISHABLE)", () => {
   });
 
   it("does not throw for awaiting-merge status", async () => {
-    const job = await makeJob("awaiting-merge");
+    const job = await makeJob("awaiting-archive");
     const state = await loadJobState(job.jobId);
 
     expect(() => assertJobFinishable(state)).not.toThrow();
@@ -132,7 +132,7 @@ describe("TC-031: status=running → reject (JOB_NOT_FINISHABLE)", () => {
 // Backward compatibility: legacy status=success
 describe("Backward compatibility: legacy status=success", () => {
   it("loads legacy success state as awaiting-merge", async () => {
-    const job = await makeJob("awaiting-merge");
+    const job = await makeJob("awaiting-archive");
     const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     const statePath = path.join(jobsDir, `${job.jobId}.json`);
     
@@ -143,7 +143,7 @@ describe("Backward compatibility: legacy status=success", () => {
     
     // Load and verify migration
     const loaded = await loadJobState(job.jobId);
-    expect(loaded.status).toBe("awaiting-merge");
+    expect(loaded.status).toBe("awaiting-archive");
   });
 });
 
@@ -204,7 +204,7 @@ describe("TC-NEW-04: assertJobFinishable — canceled → no action needed", () 
 // TC-041
 describe("TC-041: updateJobState atomic write protocol", () => {
   it("writes via atomic tmp+rename (no .tmp files remain)", async () => {
-    const job = await makeJob("awaiting-merge");
+    const job = await makeJob("awaiting-archive");
 
     const store = new JobStateStore(job.jobId, tempDir);
     const current = await store.load();

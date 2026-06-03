@@ -4,7 +4,7 @@
  * TC-CR-001: execute() calls prepare → setupWorkspace → buildDeps → registerCleanup → pipeline → handleResult → teardown
  * TC-CR-002: pipeline throw → outputPipelineThrowError + teardown("error") + return 1
  * TC-CR-003: prepare() throw propagates (allows subclass exit code control)
- * TC-CR-004: success path → teardown("awaiting-merge") + return 0
+ * TC-CR-004: success path → teardown("awaiting-archive") + return 0
  * TC-CR-005: awaiting-resume path → teardown("awaiting-resume") + return 1
  * TC-06-02: pipeline success → closeVerboseLog() called (getVerboseLogFilePath() returns null)
  * TC-06-03: pipeline throw → closeVerboseLog() called (getVerboseLogFilePath() returns null)
@@ -88,7 +88,7 @@ function buildMockRuntime(opts: {
   pipelineThrow?: Error;
   setupThrow?: Error;
 } = {}): RuntimeStrategy {
-  const finalJobState = buildJobState(opts.finalState ?? { status: "awaiting-merge", branch: "feat/test" });
+  const finalJobState = buildJobState(opts.finalState ?? { status: "awaiting-archive", branch: "feat/test" });
 
   return {
     query: vi.fn(),
@@ -152,7 +152,7 @@ vi.mock("../../../../src/core/pipeline/index.js", () => ({
         repository: { owner: "testowner", name: "testrepo" },
         session: null,
         step: "pr-create",
-        status: "awaiting-merge",
+        status: "awaiting-archive",
         branch: "feat/test",
         history: [],
         error: null,
@@ -211,7 +211,7 @@ describe("TC-CR-003: prepare() throw propagates to caller", () => {
   });
 });
 
-// TC-CR-004: success path → teardown("awaiting-merge")
+// TC-CR-004: success path → teardown("awaiting-archive")
 describe("TC-CR-004: success path calls teardown with awaiting-merge status", () => {
   it("calls teardown with 'awaiting-merge' and returns 0 on success", async () => {
     const runtime = buildMockRuntime();
@@ -219,7 +219,7 @@ describe("TC-CR-004: success path calls teardown with awaiting-merge status", ()
     const exitCode = await command.execute();
 
     expect(exitCode).toBe(0);
-    expect(runtime.teardown).toHaveBeenCalledWith(NOOP_HANDLE, "awaiting-merge");
+    expect(runtime.teardown).toHaveBeenCalledWith(NOOP_HANDLE, "awaiting-archive");
   });
 });
 
@@ -268,7 +268,7 @@ describe("TC-CR-006: awaiting-merge with pullRequest.url outputs PR URL", () => 
         version: 1, jobId: "test-job-id", createdAt: "", updatedAt: "",
         request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
         repository: { owner: "testowner", name: "testrepo" },
-        session: null, step: "pr-create", status: "awaiting-merge",
+        session: null, step: "pr-create", status: "awaiting-archive",
         branch: "feat/test", history: [], error: null, steps: {},
         pullRequest: { url: "https://github.com/owner/repo/pull/42", number: 42 },
       }),
@@ -315,7 +315,7 @@ describe("TC-CR-008: worktreePath from workspace is reflected in jobState passed
       version: 1, jobId: "test-job-id", createdAt: "", updatedAt: "",
       request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
       repository: { owner: "testowner", name: "testrepo" },
-      session: null, step: "pr-create", status: "awaiting-merge",
+      session: null, step: "pr-create", status: "awaiting-archive",
       branch: "feat/test", history: [], error: null, steps: {},
     });
     (createStandardPipeline as ReturnType<typeof vi.fn>).mockReturnValueOnce({

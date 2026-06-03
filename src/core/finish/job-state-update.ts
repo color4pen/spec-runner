@@ -1,7 +1,7 @@
 /**
- * Job state update step for finish command.
+ * Job state update step for finish/archive command.
  *
- * TC-029: awaiting-merge → status: "archived" + history entry
+ * TC-029: awaiting-archive → status: "archived" + history entry
  * TC-030: escalation → state unchanged
  * TC-031: status=running → reject (JOB_NOT_FINISHABLE)
  */
@@ -11,8 +11,8 @@ import type { JobState } from "../../state/schema.js";
 import { canTransition, transitionJob } from "../../state/lifecycle.js";
 
 export const STATUS_HINTS: Record<string, string> = {
-  running: "Wait for the running job to complete before finishing.",
-  "awaiting-resume": "Run 'specrunner job resume' to continue the halted job before finishing.",
+  running: "Wait for the running job to complete before archiving.",
+  "awaiting-resume": "Run 'specrunner job resume' to continue the halted job before archiving.",
   canceled: "Job is already canceled. No action needed.",
   failed: "Run 'specrunner job cancel <jobId>' to cancel the failed job.",
   terminated: "Run 'specrunner job cancel <jobId>' to cancel the terminated job.",
@@ -44,8 +44,8 @@ export async function markJobArchived(jobId: string, repoRoot: string): Promise<
   const store = new JobStateStore(jobId, repoRoot);
   const current = await store.load();
   const { state: updated, noop } = transitionJob(current as JobState, "archived", {
-    trigger: "finish",
-    reason: "PR merged",
+    trigger: "archive",
+    reason: "change archived",
   });
   if (noop) return current as JobState; // 既に archived → 変更なし
   await store.persist(updated);

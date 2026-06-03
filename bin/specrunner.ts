@@ -4,12 +4,12 @@
  * Registry-based dispatch — no switch/case.
  */
 
-import { COMMANDS, USAGE, FINISH_USAGE, RUNTIME_RESET_USAGE } from "../src/cli/command-registry.js";
+import { COMMANDS, USAGE, RUNTIME_RESET_USAGE } from "../src/cli/command-registry.js";
 import { parseFlags, FlagParseError } from "../src/cli/flag-parser.js";
 import { detectWorktree } from "../src/core/worktree/detection.js";
 import { SpecRunnerError, EXIT_CODE, worktreeGuardError } from "../src/errors.js";
 
-export { USAGE, FINISH_USAGE, RUNTIME_RESET_USAGE };
+export { USAGE, RUNTIME_RESET_USAGE };
 
 export async function main(): Promise<void> {
   const args = process.argv.slice(2);

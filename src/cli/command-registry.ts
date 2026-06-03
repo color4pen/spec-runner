@@ -12,7 +12,7 @@ import { runLogin } from "./login.js";
 import { runRun } from "./run.js";
 import { runPs } from "./ps.js";
 import { runDoctor } from "./doctor.js";
-import { runFinish } from "./finish.js";
+import { runArchive } from "./archive.js";
 import { runCancel } from "./cancel.js";
 import { runResume } from "./resume.js";
 import { runJobShow } from "./job-show.js";
@@ -37,7 +37,6 @@ import { ClaudeCodeOneShotQueryClient } from "../adapter/claude-code/one-shot-qu
 import type { SpecRunnerConfig } from "../config/schema.js";
 import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
 import { SLUG_REGEX } from "../util/validation-patterns.js";
-const UUID_REGEX = /^[a-f0-9-]{36}$/;
 /** Path-traversal guard for jobId; accepts full UUIDs and short prefixes. */
 const VALID_JOB_ID_CHARS = /^[a-f0-9-]+$/;
 
@@ -73,7 +72,7 @@ Job commands:
   job show <jobId|slug>           job state 詳細
   job cancel <jobId>              job を cancel して cleanup
   job resume <slug>               halted job を再開
-  job finish <slug>               PR merge + archive
+  job archive <slug>              change folder 移動・worktree 撤去・status 更新
 
 Rules commands:
   rules new <step> <slug>         step 用の rules ファイルを scaffold
@@ -145,18 +144,17 @@ Options:
 /** @deprecated Use RUNTIME_RESET_USAGE */
 export const MANAGED_RESET_USAGE = RUNTIME_RESET_USAGE;
 
-export const FINISH_USAGE = `Usage: specrunner job finish [<slug>] [options]
+export const ARCHIVE_USAGE = `Usage: specrunner job archive <slug> [options]
 
-Squash-merge feature PR and archive the completed job (1-PR model).
+Archive the completed change folder, remove worktree, and update job status.
+Merge must already be done before running this command (or use --with-merge).
 
 Arguments:
-  <slug>            Slug of the request to finish (recommended first form).
-                    If omitted, auto-detects from awaiting-merge/ directory.
+  <slug>            Slug of the request to archive (required).
 
 Options:
-  --pr=<num>        Reverse-lookup slug via GitHub REST API (PR <num>)
-  --job=<jobId>     Direct job ID lookup (forensics / debug only)
-  --dry-run         Phase 0 pre-flight only — no commits, pushes, or merges
+  --with-merge      Wait for PR to be mergeable (CLEAN), merge, then archive
+  --dry-run         Reserved for future use
   --help, -h        Show this help message
 `;
 
@@ -316,7 +314,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
   },
 
   job: {
-    guardedSubcommands: new Set(["start", "resume", "finish"]),
+    guardedSubcommands: new Set(["start", "resume", "archive"]),
     subcommands: {
       start: {
         flags: {
@@ -338,7 +336,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
         flags: {
           active: { type: "boolean" },
           all: { type: "boolean" },
-          status: { type: "string", values: ["running", "awaiting-resume", "awaiting-merge", "failed", "terminated", "archived", "canceled"] as const },
+          status: { type: "string", values: ["running", "awaiting-resume", "awaiting-archive", "failed", "terminated", "archived", "canceled"] as const },
         },
         handler: async (parsed) => {
           let githubClient = null;
@@ -469,34 +467,25 @@ export const COMMANDS: Record<string, CommandEntry> = {
           }
         },
       },
-      finish: {
+      archive: {
         flags: {
-          pr: { type: "string" },
-          job: { type: "string" },
+          "with-merge": { type: "boolean" },
           "dry-run": { type: "boolean" },
           help: { type: "boolean" },
         },
-        positional: { name: "slug", required: false },
-        usage: FINISH_USAGE,
+        positional: { name: "slug", required: true },
+        usage: ARCHIVE_USAGE,
         handler: async (parsed) => {
           if (parsed.flags["help"]) {
-            stdoutWrite(FINISH_USAGE);
+            stdoutWrite(ARCHIVE_USAGE);
             process.exit(0);
           }
-          // UUID validation for --job flag
-          const jobFlagValue = parsed.flags["job"] as string | undefined;
-          if (jobFlagValue !== undefined && !UUID_REGEX.test(jobFlagValue)) {
-            logError("invalid jobId format");
-            process.exit(EXIT_CODE.ARG_ERROR);
-          }
-          const prRaw = parsed.flags["pr"] as string | undefined;
-          const prNumber = prRaw ? parseInt(prRaw, 10) : undefined;
+          const slug = parsed.positional!;
           try {
             process.exit(
-              await runFinish({
-                slug: parsed.positional,
-                prNumber,
-                jobId: jobFlagValue,
+              await runArchive({
+                slug,
+                withMerge: !!parsed.flags["with-merge"],
                 dryRun: !!parsed.flags["dry-run"],
                 cwd: process.cwd(),
               }),

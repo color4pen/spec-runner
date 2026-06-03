@@ -73,7 +73,7 @@ function makeCtx(overrides: Partial<TransitionContext> = {}): TransitionContext 
 const ALL_STATUSES: JobStatus[] = [
   "running",
   "awaiting-resume",
-  "awaiting-merge",
+  "awaiting-archive",
   "failed",
   "terminated",
   "archived",
@@ -130,14 +130,14 @@ describe("TC-01: VALID_TRANSITIONS — 許可遷移の網羅検証", () => {
   // Expected allowed transitions (non-noop)
   const ALLOWED: [JobStatus, JobStatus][] = [
     ["running", "awaiting-resume"],
-    ["running", "awaiting-merge"],
+    ["running", "awaiting-archive"],
     ["running", "failed"],
     ["running", "terminated"],
     ["running", "canceled"],
     ["awaiting-resume", "running"],
     ["awaiting-resume", "canceled"],
-    ["awaiting-merge", "archived"],
-    ["awaiting-merge", "canceled"],
+    ["awaiting-archive", "archived"],
+    ["awaiting-archive", "canceled"],
     ["failed", "running"],
     ["failed", "canceled"],
     ["failed", "awaiting-resume"],
@@ -172,7 +172,7 @@ describe("TC-02: VALID_TRANSITIONS — 禁止遷移の代表パターン", () =>
     ["canceled", "running"],
     ["canceled", "awaiting-resume"],
     ["running", "archived"],
-    ["awaiting-merge", "running"],
+    ["awaiting-archive", "running"],
   ];
 
   for (const [from, to] of FORBIDDEN) {
@@ -208,7 +208,7 @@ describe("TC-04: isTerminal — terminal status の判定", () => {
   });
 
   it("returns false for non-terminal statuses", () => {
-    const nonTerminal: JobStatus[] = ["running", "awaiting-resume", "awaiting-merge", "failed", "terminated"];
+    const nonTerminal: JobStatus[] = ["running", "awaiting-resume", "awaiting-archive", "failed", "terminated"];
     for (const status of nonTerminal) {
       expect(isTerminal(status)).toBe(false);
     }
@@ -253,14 +253,14 @@ describe("TC-07: transitionJob — 正常遷移でステータスと updatedAt �
 describe("TC-08: transitionJob — 許可された全遷移パターンで noop: false (14 patterns)", () => {
   const ALLOWED: [JobStatus, JobStatus][] = [
     ["running", "awaiting-resume"],
-    ["running", "awaiting-merge"],
+    ["running", "awaiting-archive"],
     ["running", "failed"],
     ["running", "terminated"],
     ["running", "canceled"],
     ["awaiting-resume", "running"],
     ["awaiting-resume", "canceled"],
-    ["awaiting-merge", "archived"],
-    ["awaiting-merge", "canceled"],
+    ["awaiting-archive", "archived"],
+    ["awaiting-archive", "canceled"],
     ["failed", "running"],
     ["failed", "canceled"],
     ["failed", "awaiting-resume"],
@@ -385,7 +385,7 @@ describe("TC-11: transitionJob — 不正遷移エラーに from / to / trigger 
 // ---------------------------------------------------------------------------
 
 describe("TC-12: transitionJob — terminal status からの非 noop 遷移は throw", () => {
-  const nonArchivedStatuses: JobStatus[] = ["running", "awaiting-resume", "awaiting-merge", "failed", "terminated", "canceled"];
+  const nonArchivedStatuses: JobStatus[] = ["running", "awaiting-resume", "awaiting-archive", "failed", "terminated", "canceled"];
 
   for (const to of nonArchivedStatuses) {
     it(`archived → ${to} throws`, () => {
@@ -396,7 +396,7 @@ describe("TC-12: transitionJob — terminal status からの非 noop 遷移は t
     });
   }
 
-  const nonCanceledStatuses: JobStatus[] = ["running", "awaiting-resume", "awaiting-merge", "failed", "terminated", "archived"];
+  const nonCanceledStatuses: JobStatus[] = ["running", "awaiting-resume", "awaiting-archive", "failed", "terminated", "archived"];
 
   for (const to of nonCanceledStatuses) {
     it(`canceled → ${to} throws`, () => {
@@ -417,12 +417,12 @@ describe("TC-13: transitionJob — history エントリが追記される", () =
     const state = makeState("running", { history: [] });
     const ctx = makeCtx({ trigger: "pipeline", reason: "step done" });
 
-    const result = transitionJob(state, "awaiting-merge", ctx);
+    const result = transitionJob(state, "awaiting-archive", ctx);
 
     expect(result.state.history.length).toBe(1);
     const entry = result.state.history[0]!;
     expect(entry.step).toBe("pipeline");  // ctx.trigger
-    expect(entry.message).toContain("running → awaiting-merge");
+    expect(entry.message).toContain("running → awaiting-archive");
     expect(entry.message).toContain("step done");  // ctx.reason
   });
 });

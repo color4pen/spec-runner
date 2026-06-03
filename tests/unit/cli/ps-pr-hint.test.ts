@@ -1,7 +1,7 @@
 /**
  * Tests for ps PR hint display (Phase 3).
  *
- * TC-23: formatJobRow に prMerged: true を渡すと "(PR merged, run finish)" が含まれる
+ * TC-23: formatJobRow に prMerged: true を渡すと "(PR merged, run archive)" が含まれる
  * TC-24: prMerged が false の場合は通常表示
  * TC-25: prMerged が undefined の場合は通常表示
  */
@@ -14,7 +14,7 @@ import type { JobState } from "../../../src/state/schema.js";
 // Test fixture
 // ---------------------------------------------------------------------------
 
-function makeAwaitingMergeJob(overrides: Partial<JobState> = {}): JobState {
+function makeAwaitingArchiveJob(overrides: Partial<JobState> = {}): JobState {
   return {
     version: 1,
     jobId: "abcd1234efgh5678",
@@ -24,7 +24,7 @@ function makeAwaitingMergeJob(overrides: Partial<JobState> = {}): JobState {
     repository: { owner: "testowner", name: "testrepo" },
     session: null,
     step: "pr-create",
-    status: "awaiting-merge",
+    status: "awaiting-archive",
     branch: "feat/test",
     history: [],
     error: null,
@@ -39,22 +39,22 @@ function makeAwaitingMergeJob(overrides: Partial<JobState> = {}): JobState {
 // ---------------------------------------------------------------------------
 
 describe("TC-23: formatJobRow with prMerged=true", () => {
-  it("includes (PR merged, run finish) in output (TTY mode)", () => {
-    const job = makeAwaitingMergeJob();
+  it("includes (PR merged, run archive) in output (TTY mode)", () => {
+    const job = makeAwaitingArchiveJob();
     const row = formatJobRow(job, true, Date.now(), true);
-    expect(row).toContain("(PR merged, run finish)");
+    expect(row).toContain("(PR merged, run archive)");
   });
 
-  it("includes (PR merged, run finish) in output (non-TTY mode)", () => {
-    const job = makeAwaitingMergeJob();
+  it("includes (PR merged, run archive) in output (non-TTY mode)", () => {
+    const job = makeAwaitingArchiveJob();
     const row = formatJobRow(job, false, Date.now(), true);
-    expect(row).toContain("(PR merged, run finish)");
+    expect(row).toContain("(PR merged, run archive)");
   });
 
-  it("status column is awaiting-merge (PR merged, run finish)", () => {
-    const job = makeAwaitingMergeJob();
+  it("status column is awaiting-archive (PR merged, run archive)", () => {
+    const job = makeAwaitingArchiveJob();
     const row = formatJobRow(job, false, Date.now(), true);
-    expect(row).toContain("awaiting-merge (PR merged, run finish)");
+    expect(row).toContain("awaiting-archive (PR merged, run archive)");
   });
 });
 
@@ -63,17 +63,17 @@ describe("TC-23: formatJobRow with prMerged=true", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-24: formatJobRow with prMerged=false", () => {
-  it("does not include (PR merged, run finish) in output", () => {
-    const job = makeAwaitingMergeJob();
+  it("does not include (PR merged, run archive) in output", () => {
+    const job = makeAwaitingArchiveJob();
     const row = formatJobRow(job, true, Date.now(), false);
-    expect(row).not.toContain("(PR merged, run finish)");
+    expect(row).not.toContain("(PR merged, run archive)");
   });
 
-  it("shows normal awaiting-merge status", () => {
-    const job = makeAwaitingMergeJob();
+  it("shows normal awaiting-archive status", () => {
+    const job = makeAwaitingArchiveJob();
     const row = formatJobRow(job, false, Date.now(), false);
-    expect(row).toContain("awaiting-merge");
-    expect(row).not.toContain("(PR merged, run finish)");
+    expect(row).toContain("awaiting-archive");
+    expect(row).not.toContain("(PR merged, run archive)");
   });
 });
 
@@ -82,16 +82,16 @@ describe("TC-24: formatJobRow with prMerged=false", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-25: formatJobRow with prMerged=undefined", () => {
-  it("does not include (PR merged, run finish) when prMerged is not passed", () => {
-    const job = makeAwaitingMergeJob();
+  it("does not include (PR merged, run archive) when prMerged is not passed", () => {
+    const job = makeAwaitingArchiveJob();
     const row = formatJobRow(job, true, Date.now());
-    expect(row).not.toContain("(PR merged, run finish)");
+    expect(row).not.toContain("(PR merged, run archive)");
   });
 
-  it("shows normal awaiting-merge status without the hint", () => {
-    const job = makeAwaitingMergeJob();
+  it("shows normal awaiting-archive status without the hint", () => {
+    const job = makeAwaitingArchiveJob();
     const row = formatJobRow(job, false, Date.now());
-    expect(row).toContain("awaiting-merge");
-    expect(row).not.toContain("(PR merged, run finish)");
+    expect(row).toContain("awaiting-archive");
+    expect(row).not.toContain("(PR merged, run archive)");
   });
 });

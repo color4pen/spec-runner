@@ -141,7 +141,7 @@ export async function cancelSingleJob(opts: {
     };
   }
 
-  if (state.status === "awaiting-merge" && !force) {
+  if (state.status === "awaiting-archive" && !force) {
     return {
       exitCode: 1,
       message: "PR is open. Use --force to cancel.",
