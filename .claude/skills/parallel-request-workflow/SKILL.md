@@ -93,7 +93,7 @@ sleep 6 && bun ./bin/specrunner.ts run <slug-3>  # background
 ## Escalation
 
 - review 3 サイクル繰り返しでも approve 出ない → 設計を疑う、構造変更検討
-- run で escalation 発生 (= delta-spec-validation needs-fix maxRetries 等) → design 段に戻る判断仰ぐ
+- run で escalation 発生 (= spec-review needs-fix maxRetries / conformance escalation 等) → design 段に戻る判断仰ぐ
 - ユーザーが「待って」「止めて」と言った → 即停止
 
 ## Related

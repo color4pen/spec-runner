@@ -3,7 +3,7 @@ name: rebase-finish
 description: >-
   完走済 request を順次 finish して main にマージする。各 finish の前に worktree 内で手動 rebase が必要。
   「rebase しながら finish」「順次 merge」「3 件 finish」と言われたら使うこと。
-  spec-runner project 専用 (= `bun ./bin/specrunner.ts finish` 前提)。
+  spec-runner project 専用 (= `bun ./bin/specrunner.ts job finish` 前提)。
 ---
 
 # rebase-finish — 順次 finish + 手動 rebase + merge
@@ -54,12 +54,12 @@ cd ~/Documents/GitHub/spec-runner
 ### 2. finish 実行
 
 ```bash
-bun ./bin/specrunner.ts finish <slug>
+bun ./bin/specrunner.ts job finish <slug>
 ```
 
 finish の内部処理:
 1. Phase 0 pre-flight checks (= mergeable / PR status)
-2. Phase 1 archive on feature branch (= delta spec を baseline に merge、archive 移動)
+2. Phase 1 archive on feature branch (= change folder を archive へ移動、archive commit)
 3. Phase 2 git push (= feature branch を origin に push)
 4. Phase 3 PR merge (= squash merge)
 5. Phase 4 finalize (= job state を archived に更新)
@@ -85,51 +85,18 @@ git push --force-with-lease origin HEAD:<branch-name>
 cd ~/Documents/GitHub/spec-runner
 
 # 次の finish
-bun ./bin/specrunner.ts finish <next-slug>
+bun ./bin/specrunner.ts job finish <next-slug>
 ```
 
 ### 4. 失敗時の対応
 
-#### 4.1 spec-merge escalation
-
-```
-=== specrunner finish: escalation ===
-Failed Step:    spec-merge
-Detected State: [<capability>] MODIFIED: Requirement "..." cannot apply to non-existent baseline
-```
-
-原因の典型例:
-
-- 新規 capability に MODIFIED Requirements (= 全 Requirement を ADDED に統合)
-- 既存 capability の MODIFIED header が baseline と不一致 (= baseline と完全一致するよう header 修正)
-- REMOVED Requirements の対象が baseline に不在 (= 該当 Requirement を REMOVED から外す)
-- RENAMED の old → new が baseline と不整合 (= old name を baseline の実 header と一致させる)
-- **self-referential format incompatibility** (= delta spec format を変える PR で、main の spec-merge が PR の format を読めない / 逆も)
-
-手動修正手順:
-
-```bash
-# 1. worktree 内で delta spec を編集
-cd .git/specrunner-worktrees/<slug>-<job-id>
-# 該当ファイル: specrunner/changes/<slug>/specs/<capability>/spec.md を編集
-
-# 2. commit + push
-git add specrunner/changes/<slug>/specs/<capability>/spec.md
-git commit -m "<修正内容を簡潔に>"
-git push --force-with-lease origin HEAD:<branch-name>
-
-# 3. main worktree に戻って finish 再実行
-cd ~/Documents/GitHub/spec-runner
-bun ./bin/specrunner.ts finish <slug>
-```
-
-#### 4.2 rebase 衝突
+#### 4.1 rebase 衝突
 
 worktree 内で衝突解消 → `git add` + `git rebase --continue` → `git push --force-with-lease origin HEAD:<branch>` → main worktree に戻って finish 再実行。
 
 衝突解消は openspec-workflow の `conflict-resolver` skill 起動も検討可。
 
-#### 4.3 PR status UNKNOWN retry
+#### 4.2 PR status UNKNOWN retry
 
 `mergeStateStatus was UNKNOWN (attempt 1/3)` は GitHub 側メタデータ計算待ち。finish が内部で自動 retry (= 最大 3 回) するのでそのまま待つ。
 
@@ -151,7 +118,6 @@ bun run build
 
 ## Escalation
 
-- spec-merge escalation で原因が典型例に該当しない → 報告 + 判断仰ぐ
 - rebase 衝突で意味的に矛盾 (= 両側の意図が両立しない) → 報告 + 判断仰ぐ
 - PR の CI 失敗で merge 不能 → 報告 + 判断仰ぐ
 - ユーザーが「待って」「確認したい」と言った → 即停止
