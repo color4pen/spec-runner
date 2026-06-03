@@ -153,9 +153,11 @@ Arguments:
   <slug>            Slug of the request to archive (required).
 
 Options:
-  --with-merge      Wait for PR to be mergeable (CLEAN), merge, then archive
-  --dry-run         Reserved for future use
-  --help, -h        Show this help message
+  --with-merge           Wait for PR checks to pass, merge, then archive
+  --merge-wait-ms <ms>   Override the wait timeout for --with-merge (in milliseconds).
+                         For unlimited wait, set archive.mergeWaitTimeoutMs: null in config.
+  --dry-run              Reserved for future use
+  --help, -h             Show this help message
 `;
 
 export const COMMANDS: Record<string, CommandEntry> = {
@@ -470,6 +472,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
       archive: {
         flags: {
           "with-merge": { type: "boolean" },
+          "merge-wait-ms": { type: "string" },
           "dry-run": { type: "boolean" },
           help: { type: "boolean" },
         },
@@ -481,6 +484,16 @@ export const COMMANDS: Record<string, CommandEntry> = {
             process.exit(0);
           }
           const slug = parsed.positional!;
+          // Parse --merge-wait-ms: must be a positive integer if provided
+          let mergeWaitMs: number | undefined;
+          const mergeWaitMsRaw = parsed.flags["merge-wait-ms"];
+          if (mergeWaitMsRaw !== undefined && mergeWaitMsRaw !== true && mergeWaitMsRaw !== false) {
+            const parsed_ms = parseInt(String(mergeWaitMsRaw), 10);
+            if (!Number.isNaN(parsed_ms) && parsed_ms >= 0) {
+              mergeWaitMs = parsed_ms;
+            }
+            // Ignore invalid values (non-numeric)
+          }
           try {
             process.exit(
               await runArchive({
@@ -488,6 +501,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
                 withMerge: !!parsed.flags["with-merge"],
                 dryRun: !!parsed.flags["dry-run"],
                 cwd: process.cwd(),
+                mergeWaitMs,
               }),
             );
           } catch (err: unknown) {

@@ -487,3 +487,258 @@ describe("TC-423: 423 Locked message handling", () => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-FM-HS: getPullRequest headSha mapping
+// ---------------------------------------------------------------------------
+
+describe("TC-FM-HS: getPullRequest headSha mapping", () => {
+  it("TC-FM-HS-001: head.sha present → headSha in result", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      prResponse({
+        state: "open",
+        merged: false,
+        merged_at: null,
+        mergeable_state: "clean",
+        mergeable: true,
+        head: { ref: "feat/my-feature", sha: "abc123def456" },
+      }),
+    );
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getPullRequest(OWNER, REPO, PR_NUMBER);
+
+    expect(result.headSha).toBe("abc123def456");
+  });
+
+  it("TC-FM-HS-002: head.sha absent → headSha undefined", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      prResponse({
+        state: "open",
+        merged: false,
+        merged_at: null,
+        mergeable_state: "clean",
+        mergeable: true,
+        head: { ref: "feat/my-feature" },
+      }),
+    );
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getPullRequest(OWNER, REPO, PR_NUMBER);
+
+    expect(result.headSha).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-CS: getCheckStatus
+// ---------------------------------------------------------------------------
+
+const REF = "abc123";
+
+/** Build a check-runs response stub. */
+function checkRunsResponse(
+  runs: Array<{ name: string; status: string; conclusion: string | null }>,
+  linkHeader?: string,
+): Response {
+  return {
+    status: 200,
+    headers: {
+      get: (name: string) => {
+        if (name.toLowerCase() === "link") return linkHeader ?? null;
+        return null;
+      },
+    },
+    json: () => Promise.resolve({ check_runs: runs }),
+    text: () => Promise.resolve(""),
+  } as unknown as Response;
+}
+
+/** Build a combined status response stub. */
+function commitStatusResponse(
+  statuses: Array<{ context: string; state: string }>,
+): Response {
+  return {
+    status: 200,
+    headers: { get: () => null },
+    json: () => Promise.resolve({ statuses }),
+    text: () => Promise.resolve(""),
+  } as unknown as Response;
+}
+
+describe("TC-CS: getCheckStatus", () => {
+  it("TC-CS-001: all check runs success → state: 'success'", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(checkRunsResponse([
+        { name: "ci/build", status: "completed", conclusion: "success" },
+        { name: "ci/test", status: "completed", conclusion: "success" },
+      ]))
+      .mockResolvedValueOnce(commitStatusResponse([]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getCheckStatus(OWNER, REPO, REF);
+
+    expect(result).toMatchObject({ state: "success", total: 2, failing: [], pending: [] });
+  });
+
+  it("TC-CS-002: check run in_progress (pending) with no failure → state: 'pending'", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(checkRunsResponse([
+        { name: "ci/build", status: "completed", conclusion: "success" },
+        { name: "ci/test", status: "in_progress", conclusion: null },
+      ]))
+      .mockResolvedValueOnce(commitStatusResponse([]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getCheckStatus(OWNER, REPO, REF);
+
+    expect(result.state).toBe("pending");
+    expect(result.pending).toContain("ci/test");
+    expect(result.failing).toEqual([]);
+  });
+
+  it("TC-CS-003: check run failure → state: 'failure', failing contains name", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(checkRunsResponse([
+        { name: "ci/build", status: "completed", conclusion: "failure" },
+        { name: "ci/test", status: "completed", conclusion: "success" },
+      ]))
+      .mockResolvedValueOnce(commitStatusResponse([]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getCheckStatus(OWNER, REPO, REF);
+
+    expect(result.state).toBe("failure");
+    expect(result.failing).toContain("ci/build");
+  });
+
+  it("TC-CS-004: combined status failure → state: 'failure', failing contains context", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(checkRunsResponse([]))
+      .mockResolvedValueOnce(commitStatusResponse([
+        { context: "my-status/check", state: "failure" },
+      ]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getCheckStatus(OWNER, REPO, REF);
+
+    expect(result.state).toBe("failure");
+    expect(result.failing).toContain("my-status/check");
+  });
+
+  it("TC-CS-005: no check runs and no statuses → state: 'none'", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(checkRunsResponse([]))
+      .mockResolvedValueOnce(commitStatusResponse([]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getCheckStatus(OWNER, REPO, REF);
+
+    expect(result).toMatchObject({ state: "none", total: 0, failing: [], pending: [] });
+  });
+
+  it("TC-CS-006: check run 'neutral' conclusion → success", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(checkRunsResponse([
+        { name: "ci/lint", status: "completed", conclusion: "neutral" },
+      ]))
+      .mockResolvedValueOnce(commitStatusResponse([]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getCheckStatus(OWNER, REPO, REF);
+
+    expect(result.state).toBe("success");
+  });
+
+  it("TC-CS-007: check run 'skipped' conclusion → success", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(checkRunsResponse([
+        { name: "ci/optional", status: "completed", conclusion: "skipped" },
+      ]))
+      .mockResolvedValueOnce(commitStatusResponse([]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getCheckStatus(OWNER, REPO, REF);
+
+    expect(result.state).toBe("success");
+  });
+
+  it("TC-CS-008: failure and pending mixed → state: 'failure' (failure wins)", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(checkRunsResponse([
+        { name: "ci/build", status: "completed", conclusion: "failure" },
+        { name: "ci/test", status: "in_progress", conclusion: null },
+      ]))
+      .mockResolvedValueOnce(commitStatusResponse([]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getCheckStatus(OWNER, REPO, REF);
+
+    expect(result.state).toBe("failure");
+    expect(result.failing).toContain("ci/build");
+  });
+
+  it("TC-CS-009: combined status pending → state: 'pending'", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(checkRunsResponse([]))
+      .mockResolvedValueOnce(commitStatusResponse([
+        { context: "ci/deploy", state: "pending" },
+      ]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getCheckStatus(OWNER, REPO, REF);
+
+    expect(result.state).toBe("pending");
+    expect(result.pending).toContain("ci/deploy");
+  });
+
+  it("TC-CS-010: check run conclusion null (completed but no conclusion) → pending (defensive)", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(checkRunsResponse([
+        { name: "ci/check", status: "completed", conclusion: null },
+      ]))
+      .mockResolvedValueOnce(commitStatusResponse([]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getCheckStatus(OWNER, REPO, REF);
+
+    expect(result.state).toBe("pending");
+    expect(result.pending).toContain("ci/check");
+  });
+
+  it("TC-CS-011: timed_out conclusion → failure", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(checkRunsResponse([
+        { name: "ci/build", status: "completed", conclusion: "timed_out" },
+      ]))
+      .mockResolvedValueOnce(commitStatusResponse([]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getCheckStatus(OWNER, REPO, REF);
+
+    expect(result.state).toBe("failure");
+    expect(result.failing).toContain("ci/build");
+  });
+
+  it("TC-CS-012: pagination — follows Link: next header", async () => {
+    const page1Runs = [{ name: "ci/build", status: "completed", conclusion: "success" }];
+    const page2Runs = [{ name: "ci/test", status: "completed", conclusion: "success" }];
+
+    const mockFetch = vi.fn()
+      // Page 1 of check-runs with Link: next
+      .mockResolvedValueOnce(checkRunsResponse(
+        page1Runs,
+        '<https://api.github.com/repos/testowner/testrepo/commits/abc123/check-runs?page=2>; rel="next"',
+      ))
+      // Page 2 of check-runs (no Link header)
+      .mockResolvedValueOnce(checkRunsResponse(page2Runs))
+      // Combined status
+      .mockResolvedValueOnce(commitStatusResponse([]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getCheckStatus(OWNER, REPO, REF);
+
+    expect(result.state).toBe("success");
+    expect(result.total).toBe(2);
+  });
+});

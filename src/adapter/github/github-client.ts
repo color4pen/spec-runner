@@ -13,7 +13,7 @@
  *
  * Field mapping (D2): adapter boundary absorbs REST → internal naming.
  */
-import type { GitHubClient } from "../../core/port/github-client.js";
+import type { GitHubClient, CheckRollup } from "../../core/port/github-client.js";
 import { githubApiError, githubTokenExpiredError } from "../../errors.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import { retryWithBackoff } from "../../util/retry.js";
@@ -340,6 +340,7 @@ export class GitHubApiClient implements GitHubClient {
     mergeStateStatus?: string;
     headRefName?: string;
     mergeable?: string;
+    headSha?: string;
   }> {
     const url = `${this.baseUrl}/repos/${owner}/${repo}/pulls/${prNumber}`;
     const resp = await this.request(url);
@@ -357,7 +358,7 @@ export class GitHubApiClient implements GitHubClient {
       merged_at: string | null;
       mergeable_state: string | null;
       mergeable: boolean | null;
-      head: { ref: string };
+      head: { ref: string; sha?: string };
     };
 
     return {
@@ -367,7 +368,83 @@ export class GitHubApiClient implements GitHubClient {
         : undefined,
       headRefName: data.head?.ref,
       mergeable: mapMergeable(data.mergeable),
+      headSha: data.head?.sha,
     };
+  }
+
+  /**
+   * Get the aggregated check status for a commit ref.
+   *
+   * Fetches all check runs (all pages via Link header) and combined commit statuses,
+   * then aggregates into a CheckRollup.
+   */
+  async getCheckStatus(owner: string, repo: string, ref: string): Promise<CheckRollup> {
+    // Fetch all check run pages
+    const checkRuns: Array<{ name: string; status: string; conclusion: string | null }> = [];
+    let checkRunsUrl: string | null =
+      `${this.baseUrl}/repos/${owner}/${repo}/commits/${encodeURIComponent(ref)}/check-runs?per_page=100`;
+
+    while (checkRunsUrl !== null) {
+      const resp = await this.request(checkRunsUrl);
+      if (resp.status !== 200) {
+        throw githubApiError(resp.status, `getCheckStatus check-runs(${owner}/${repo}@${ref})`);
+      }
+      const data = (await resp.json()) as {
+        check_runs: Array<{ name: string; status: string; conclusion: string | null }>;
+      };
+      checkRuns.push(...data.check_runs);
+
+      // Follow Link: rel="next" for pagination
+      const linkHeader = resp.headers.get("Link");
+      checkRunsUrl = parseNextLink(linkHeader);
+    }
+
+    // Fetch combined commit statuses (no pagination support needed — max 100)
+    const statusUrl =
+      `${this.baseUrl}/repos/${owner}/${repo}/commits/${encodeURIComponent(ref)}/status`;
+    const statusResp = await this.request(statusUrl);
+    if (statusResp.status !== 200) {
+      throw githubApiError(statusResp.status, `getCheckStatus status(${owner}/${repo}@${ref})`);
+    }
+    const statusData = (await statusResp.json()) as {
+      statuses: Array<{ context: string; state: string }>;
+    };
+    const commitStatuses = statusData.statuses;
+
+    const total = checkRuns.length + commitStatuses.length;
+
+    if (total === 0) {
+      return { state: "none", total: 0, failing: [], pending: [] };
+    }
+
+    const failingNames: string[] = [];
+    const pendingNames: string[] = [];
+
+    for (const run of checkRuns) {
+      const normalized = normalizeCheckRun(run.status, run.conclusion);
+      if (normalized === "failure") {
+        failingNames.push(run.name);
+      } else if (normalized === "pending") {
+        pendingNames.push(run.name);
+      }
+    }
+
+    for (const status of commitStatuses) {
+      const normalized = normalizeCommitStatus(status.state);
+      if (normalized === "failure") {
+        failingNames.push(status.context);
+      } else if (normalized === "pending") {
+        pendingNames.push(status.context);
+      }
+    }
+
+    if (failingNames.length > 0) {
+      return { state: "failure", total, failing: failingNames, pending: pendingNames };
+    }
+    if (pendingNames.length > 0) {
+      return { state: "pending", total, failing: [], pending: pendingNames };
+    }
+    return { state: "success", total, failing: [], pending: [] };
   }
 
   /**
@@ -504,6 +581,54 @@ function mapMergeable(mergeable: boolean | null | undefined): string {
 function jitterDelay(attempt: number): number {
   const base = 1000 * Math.pow(2, attempt);
   return base + Math.random() * 500;
+}
+
+/**
+ * Normalize a GitHub Check Run into a 3-value state.
+ *
+ * - status !== "completed" → pending (still running)
+ * - completed + conclusion ∈ {success, neutral, skipped} → success
+ * - completed + conclusion ∈ {failure, timed_out, cancelled, action_required, startup_failure, stale} → failure
+ * - completed + conclusion null → pending (defensive: completed but no conclusion yet)
+ */
+function normalizeCheckRun(
+  status: string,
+  conclusion: string | null,
+): "success" | "pending" | "failure" {
+  if (status !== "completed") return "pending";
+  if (conclusion === null) return "pending";
+  if (conclusion === "success" || conclusion === "neutral" || conclusion === "skipped") {
+    return "success";
+  }
+  return "failure";
+}
+
+/**
+ * Normalize a GitHub Commit Status into a 3-value state.
+ *
+ * - "success" → success
+ * - "pending" → pending
+ * - "failure" | "error" → failure
+ */
+function normalizeCommitStatus(state: string): "success" | "pending" | "failure" {
+  if (state === "success") return "success";
+  if (state === "pending") return "pending";
+  return "failure";
+}
+
+/**
+ * Parse the `next` URL from a GitHub Link header.
+ * Returns null if no next page is present.
+ */
+function parseNextLink(linkHeader: string | null): string | null {
+  if (!linkHeader) return null;
+  // Link header format: <url>; rel="next", <url>; rel="last"
+  const parts = linkHeader.split(",");
+  for (const part of parts) {
+    const match = part.match(/<([^>]+)>;\s*rel="next"/);
+    if (match) return match[1]!;
+  }
+  return null;
 }
 
 /**

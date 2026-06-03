@@ -130,6 +130,36 @@ export interface LogsConfig {
   maxJobs?: number;
 }
 
+/**
+ * Default wait timeout for --with-merge (10 minutes).
+ * Covers most typical CI pipelines. Set archive.mergeWaitTimeoutMs: null for unlimited.
+ */
+export const DEFAULT_MERGE_WAIT_TIMEOUT_MS = 600_000;
+
+/**
+ * Default poll interval for --with-merge check status polling (15 seconds).
+ */
+export const DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS = 15_000;
+
+/**
+ * Archive-specific configuration.
+ * Controls --with-merge wait behaviour.
+ */
+export interface ArchiveConfig {
+  /**
+   * Maximum time in milliseconds to wait for PR checks to become green before giving up.
+   * null = wait indefinitely (no timeout) — aligns with maxTurns: null convention.
+   * undefined / absent = use DEFAULT_MERGE_WAIT_TIMEOUT_MS (600_000 ms = 10 minutes).
+   * 0 = no wait (attempt merge immediately after first check-status poll).
+   */
+  mergeWaitTimeoutMs?: number | null;
+  /**
+   * Interval in milliseconds between check-status polls while waiting for green.
+   * undefined / absent = use DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS (15_000 ms = 15 seconds).
+   */
+  mergeWaitPollIntervalMs?: number;
+}
+
 /** GitHub host and API base URL configuration. */
 export interface GitHubHostConfig {
   /** GitHub host (e.g. "github.com" or "ghes.corp.example.com"). Default: "github.com". */
@@ -199,6 +229,11 @@ export interface SpecRunnerConfig {
    * When absent, defaults to github.com / api.github.com (public GitHub).
    */
   github?: GitHubHostConfig;
+  /**
+   * Archive command configuration.
+   * Controls --with-merge wait behaviour (timeout, poll interval).
+   */
+  archive?: ArchiveConfig;
 }
 
 /**
@@ -232,6 +267,8 @@ export interface RawConfig {
   verification?: unknown;
   /** GitHub host configuration — passed through as-is. Validated in validateConfig(). */
   github?: Partial<Record<string, unknown>>;
+  /** Archive configuration — passed through as-is. Validated in validateConfig(). */
+  archive?: Partial<Record<string, unknown>>;
 }
 
 /**
@@ -618,6 +655,39 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
       if (typeof maxJobs !== "number" || !Number.isInteger(maxJobs) || maxJobs < 1 || maxJobs > 1000) {
         throw Object.assign(
           new Error("CONFIG_INVALID: logs.maxJobs must be an integer between 1 and 1000."),
+          { code: "CONFIG_INVALID" },
+        );
+      }
+    }
+  }
+
+  // Validate archive section if provided
+  if (obj["archive"] !== undefined && obj["archive"] !== null) {
+    if (typeof obj["archive"] !== "object") {
+      throw Object.assign(
+        new Error("CONFIG_INVALID: archive must be an object."),
+        { code: "CONFIG_INVALID" },
+      );
+    }
+    const archiveObj = obj["archive"] as Record<string, unknown>;
+
+    if (archiveObj["mergeWaitTimeoutMs"] !== undefined) {
+      const v = archiveObj["mergeWaitTimeoutMs"];
+      if (v !== null) {
+        if (typeof v !== "number" || !Number.isInteger(v) || v < 0) {
+          throw Object.assign(
+            new Error("CONFIG_INVALID: archive.mergeWaitTimeoutMs must be a non-negative integer or null."),
+            { code: "CONFIG_INVALID" },
+          );
+        }
+      }
+    }
+
+    if (archiveObj["mergeWaitPollIntervalMs"] !== undefined) {
+      const v = archiveObj["mergeWaitPollIntervalMs"];
+      if (typeof v !== "number" || !Number.isInteger(v) || v < 1) {
+        throw Object.assign(
+          new Error("CONFIG_INVALID: archive.mergeWaitPollIntervalMs must be a positive integer."),
           { code: "CONFIG_INVALID" },
         );
       }

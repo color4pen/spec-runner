@@ -141,6 +141,7 @@ function makeLocalDeps(overrides: Partial<PipelineDeps> = {}, gitSpawnFn?: Spawn
       createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
       getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
       mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
+      getCheckStatus: vi.fn().mockResolvedValue({ state: "success", total: 0, failing: [], pending: [] }),
     },
     owner: "user",
     repo: "repo",

@@ -127,6 +127,7 @@ function makeMockGithubClient(overrides: Partial<GitHubClient> = {}): GitHubClie
     createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
     getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN" as const, mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" as const }),
     mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
+    getCheckStatus: vi.fn().mockResolvedValue({ state: "success" as const, total: 0, failing: [], pending: [] }),
     ...overrides,
   };
 }

@@ -1,4 +1,23 @@
 /**
+ * Aggregated check status for a commit ref.
+ *
+ * `state` interpretation:
+ *   - "success": all checks (check runs + combined statuses) are in a non-blocking terminal state
+ *   - "pending": at least one check is still running or has not yet reported a conclusion
+ *   - "failure": at least one check has confirmed a failing terminal state (failure, timed_out, cancelled, etc.)
+ *   - "none": no check runs and no commit statuses exist for the ref (branch protection absent)
+ *
+ * `failing`: names of checks in a failure terminal state (check run `name` / status `context`)
+ * `pending`: names of checks that are still running or pending
+ */
+export interface CheckRollup {
+  state: "success" | "pending" | "failure" | "none";
+  total: number;
+  failing: string[];
+  pending: string[];
+}
+
+/**
  * Port interface for GitHub API interactions.
  * Adapter (src/adapter/github/) implements this; core never imports the adapter.
  */
@@ -97,6 +116,7 @@ export interface GitHubClient {
    * - mergeStateStatus: "CLEAN" / "BLOCKED" / "DIRTY" / "UNKNOWN" etc. (uppercased)
    * - headRefName: branch name
    * - mergeable: "MERGEABLE" / "CONFLICTING" / "UNKNOWN"
+   * - headSha: HEAD commit SHA of the PR's head branch (REST `head.sha`)
    */
   getPullRequest(
     owner: string,
@@ -107,7 +127,20 @@ export interface GitHubClient {
     mergeStateStatus?: string;
     headRefName?: string;
     mergeable?: string;
+    headSha?: string;
   }>;
+
+  /**
+   * Get the aggregated check status for a commit ref (SHA or branch name).
+   *
+   * Combines GitHub Check Runs (`GET /repos/{owner}/{repo}/commits/{ref}/check-runs`)
+   * and Commit Statuses (`GET /repos/{owner}/{repo}/commits/{ref}/status`) into a
+   * single `CheckRollup`. All pages of check-runs are fetched (Link header pagination).
+   *
+   * Returns `state: "none"` when no checks exist (branch protection not configured).
+   * Returns `state: "failure"` if any check has confirmed failure, even if others are pending.
+   */
+  getCheckStatus(owner: string, repo: string, ref: string): Promise<CheckRollup>;
 
   /**
    * Merge a pull request via squash merge.

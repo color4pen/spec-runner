@@ -1,1 +1,1 @@
-export type { GitHubClient } from "../../kernel/github-client.js";
+export type { GitHubClient, CheckRollup } from "../../kernel/github-client.js";

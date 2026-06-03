@@ -4,7 +4,6 @@
  *
  * Responsibilities:
  *   - fetchPrViewWithRetry: Check 3+4 (getPullRequest + UNKNOWN retry)
- *   - pollMergeStateAfterPush: Phase 2 post-push mergeStateStatus polling
  *   - checkMergeableForMerge: Phase 3 guard (MERGEABLE check)
  */
 import type { GitHubClient } from "../../core/port/github-client.js";
@@ -28,8 +27,6 @@ const UNKNOWN_RETRY_DELAY_MS = 3000;
 export const MERGEABLE_RETRY_COUNT = 3;
 export const MERGEABLE_RETRY_DELAY_MS = 5000;
 
-const POST_PUSH_RETRY_COUNT = 5;
-const POST_PUSH_RETRY_DELAY_MS = 3000;
 
 /**
  * Fetch PR view from GitHub REST API with retry on UNKNOWN mergeStateStatus.
@@ -192,62 +189,6 @@ export async function checkMergeableForMerge(params: {
       resumeCommand: `specrunner job archive --with-merge ${slug}`,
     }),
   };
-}
-
-/**
- * Poll mergeStateStatus after Phase 2 push until CLEAN or retries exhausted.
- *
- * Unlike fetchPrViewWithRetry (Phase 0), this function:
- * - Retries on ANY non-CLEAN status (not just UNKNOWN)
- * - Does NOT escalate on exhaustion — returns current state for Phase 3 to attempt merge
- */
-export async function pollMergeStateAfterPush(params: {
-  prNumber: number;
-  githubClient: GitHubClient;
-  owner: string;
-  repo: string;
-  slug: string;
-  sleepFn?: (ms: number) => Promise<void>;
-}): Promise<{ mergeStateStatus: string }> {
-  const { prNumber, githubClient, owner, repo, slug: _slug } = params;
-  const sleepImpl = params.sleepFn ?? sleep;
-
-  for (let attempt = 1; attempt <= POST_PUSH_RETRY_COUNT; attempt++) {
-    let parsed: { mergeStateStatus?: string };
-    try {
-      parsed = await githubClient.getPullRequest(owner, repo, prNumber);
-    } catch {
-      // getPullRequest failed — return empty string so Phase 3 attempts merge without --admin
-      return { mergeStateStatus: "" };
-    }
-
-    const status = (parsed.mergeStateStatus ?? "").toUpperCase();
-    if (status === "CLEAN") {
-      return { mergeStateStatus: status };
-    }
-
-    // DIRTY means merge conflicts exist — this is a confirmed state that won't resolve itself.
-    // Return immediately so the orchestrator can escalate without retrying.
-    if (status === "DIRTY") {
-      return { mergeStateStatus: status };
-    }
-
-    // BLOCKED / UNSTABLE = branch protection not satisfied — retrying won't resolve this.
-    // Return immediately so the orchestrator can escalate without retrying.
-    if (status === "BLOCKED" || status === "UNSTABLE") {
-      return { mergeStateStatus: status };
-    }
-
-    if (attempt < POST_PUSH_RETRY_COUNT) {
-      stderrWrite(
-        `Post-push polling: mergeStateStatus=${status}, retrying (${attempt}/${POST_PUSH_RETRY_COUNT})...`,
-      );
-      await sleepImpl(POST_PUSH_RETRY_DELAY_MS);
-    }
-  }
-
-  // Exhausted — return empty string so Phase 3 attempts merge anyway (no escalation)
-  return { mergeStateStatus: "" };
 }
 
 function sleep(ms: number): Promise<void> {

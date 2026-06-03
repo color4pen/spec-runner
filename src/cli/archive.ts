@@ -21,6 +21,7 @@ import { getOriginInfo } from "../git/remote.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
 import { loadConfig } from "../config/store.js";
+import { DEFAULT_MERGE_WAIT_TIMEOUT_MS, DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS } from "../config/schema.js";
 import { SpecRunnerError } from "../errors.js";
 import { registerExitGuard } from "../core/lifecycle/exit-guard.js";
 import { logResult, logError, stderrWrite } from "../logger/stdout.js";
@@ -72,6 +73,8 @@ export interface RunArchiveOptions {
   /** --dry-run: reserved for future use (currently no-op). */
   dryRun?: boolean;
   cwd: string;
+  /** Override merge wait timeout in ms (from --merge-wait-ms flag). */
+  mergeWaitMs?: number;
 }
 
 /**
@@ -134,12 +137,29 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
       // --with-merge: resolve GitHub credentials and run merge-then-archive
       let githubHost = "github.com";
       let githubApiBaseUrl = "https://api.github.com";
+      let waitTimeoutMs: number | null | undefined = undefined;
+      let pollIntervalMs: number | undefined = undefined;
       try {
         const config = await loadConfig();
         githubHost = resolveGitHubHost(config.github);
         githubApiBaseUrl = resolveGitHubApiBaseUrl(config.github);
+        // Resolve wait timeout: flag override > config > default
+        if (opts.mergeWaitMs !== undefined) {
+          waitTimeoutMs = opts.mergeWaitMs;
+        } else if (config.archive?.mergeWaitTimeoutMs !== undefined) {
+          waitTimeoutMs = config.archive.mergeWaitTimeoutMs;
+        } else {
+          waitTimeoutMs = DEFAULT_MERGE_WAIT_TIMEOUT_MS;
+        }
+        pollIntervalMs = config.archive?.mergeWaitPollIntervalMs ?? DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS;
       } catch {
         // Config not available — use defaults
+        if (opts.mergeWaitMs !== undefined) {
+          waitTimeoutMs = opts.mergeWaitMs;
+        } else {
+          waitTimeoutMs = DEFAULT_MERGE_WAIT_TIMEOUT_MS;
+        }
+        pollIntervalMs = DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS;
       }
 
       let githubToken: string;
@@ -185,6 +205,8 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
           owner,
           repo: repoName,
           baseBranch,
+          waitTimeoutMs,
+          pollIntervalMs,
         },
         logResult,
       );

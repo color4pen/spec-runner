@@ -207,6 +207,7 @@ function makeMockGithubClient() {
     createPullRequest: vi.fn().mockResolvedValue({ url: "https://github.com/pr/1", number: 1 }),
     getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN" }),
     mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "merged" }),
+    getCheckStatus: vi.fn().mockResolvedValue({ state: "success", total: 0, failing: [], pending: [] }),
   } satisfies GitHubClient;
 }
 

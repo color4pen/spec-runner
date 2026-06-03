@@ -79,7 +79,7 @@ interface AgentDefinition { readonly name: string; readonly role: AgentStepName;
 |---|---|---|
 | **AgentRunner** | `run(ctx: AgentRunContext): Promise<AgentRunResult>` —— agent step の全 lifecycle を1メソッドで | claude-code / managed-agent / dispatching / codex |
 | **SessionClient** | `createSession` / `sendUserMessage` / `pollUntilComplete` / `streamEvents` / `getSessionUsage` …（managed session 操作）| managed-agent |
-| **GitHubClient** | `verifyBranch` / `getRawFile` / `getRefSha` / `createPullRequest` / `getPullRequest`（`mergeStateStatus`/`mergeable`）/ `mergePullRequest({mergeMethod:"squash"})` | github |
+| **GitHubClient** | `verifyBranch` / `getRawFile` / `getRefSha` / `createPullRequest` / `getPullRequest`（`mergeStateStatus`/`mergeable`/`headSha`）/ `mergePullRequest({mergeMethod:"squash"})` / `getCheckStatus` → `CheckRollup`（check runs + commit statuses を集約し success/pending/failure/none を返す） | github |
 | **ConfigStore** | `load()` / `save()` / `getAgentId(role: AgentStepName)` / `upsertAgent` | config |
 | **AnthropicClient** / **OneShotQueryClient** | managed agent 登録 / 一発 query | managed-agent / claude-code |
 

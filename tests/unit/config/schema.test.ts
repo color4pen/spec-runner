@@ -149,3 +149,88 @@ describe("validateConfig: logs section", () => {
     expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID.*logs/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// archive section validation
+// ---------------------------------------------------------------------------
+describe("validateConfig: archive section", () => {
+  it("TC-ARCH-01: archive section absent → valid", () => {
+    expect(() => validateConfig(baseConfig)).not.toThrow();
+    const result = validateConfig(baseConfig);
+    expect(result.archive).toBeUndefined();
+  });
+
+  it("TC-ARCH-02: archive.mergeWaitTimeoutMs valid number → passes", () => {
+    const raw = { ...baseConfig, archive: { mergeWaitTimeoutMs: 600_000 } };
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("TC-ARCH-03: archive.mergeWaitTimeoutMs null → passes (unlimited)", () => {
+    const raw = { ...baseConfig, archive: { mergeWaitTimeoutMs: null } };
+    expect(() => validateConfig(raw)).not.toThrow();
+    const result = validateConfig(raw);
+    expect(result.archive?.mergeWaitTimeoutMs).toBeNull();
+  });
+
+  it("TC-ARCH-04: archive.mergeWaitTimeoutMs 0 → passes (0 = no wait)", () => {
+    const raw = { ...baseConfig, archive: { mergeWaitTimeoutMs: 0 } };
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("TC-ARCH-05: archive.mergeWaitTimeoutMs negative → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, archive: { mergeWaitTimeoutMs: -1 } };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe("CONFIG_INVALID");
+    expect(err!.message).toContain("mergeWaitTimeoutMs");
+  });
+
+  it("TC-ARCH-06: archive.mergeWaitTimeoutMs non-integer → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, archive: { mergeWaitTimeoutMs: 1.5 } };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe("CONFIG_INVALID");
+  });
+
+  it("TC-ARCH-07: archive.mergeWaitPollIntervalMs valid → passes", () => {
+    const raw = { ...baseConfig, archive: { mergeWaitPollIntervalMs: 15_000 } };
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("TC-ARCH-08: archive.mergeWaitPollIntervalMs 0 → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, archive: { mergeWaitPollIntervalMs: 0 } };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe("CONFIG_INVALID");
+    expect(err!.message).toContain("mergeWaitPollIntervalMs");
+  });
+
+  it("TC-ARCH-09: archive.mergeWaitPollIntervalMs negative → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, archive: { mergeWaitPollIntervalMs: -5 } };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe("CONFIG_INVALID");
+  });
+
+  it("TC-ARCH-10: archive is not an object → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, archive: "invalid" };
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID.*archive/);
+  });
+
+  it("TC-ARCH-11: no 'unlimited' string keyword accepted as mergeWaitTimeoutMs", () => {
+    const raw = { ...baseConfig, archive: { mergeWaitTimeoutMs: "unlimited" } };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe("CONFIG_INVALID");
+  });
+});

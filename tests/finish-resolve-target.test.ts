@@ -115,6 +115,7 @@ describe("TC-109: --pr <num> → headRefName → slug resolved", () => {
       createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
       getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", headRefName: "feat/readme-status-section", mergeStateStatus: "CLEAN", mergeable: "MERGEABLE" }),
       mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
+      getCheckStatus: vi.fn().mockResolvedValue({ state: "success", total: 0, failing: [], pending: [] }),
     };
 
     const result = await resolveTarget({ prNumber: 48, cwd: tempDir, githubClient: mockClient, owner: "user", repo: "repo" });

@@ -82,6 +82,7 @@ function makeMinimalDeps(slug: string = "my-change"): CliStepDeps {
       createPullRequest: vi.fn().mockResolvedValue({ url: "https://github.com/user/repo/pull/1", number: 1 }),
       getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
       mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
+      getCheckStatus: vi.fn().mockResolvedValue({ state: "success", total: 0, failing: [], pending: [] }),
     },
     owner: "testowner",
     repo: "testrepo",
