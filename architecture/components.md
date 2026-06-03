@@ -62,7 +62,7 @@ interface AgentDefinition { readonly name: string; readonly role: AgentStepName;
 - **責務**: merge 済み change の片づけ。change folder を archive 配置・worktree を撤去・`awaiting-archive → archived` を確定。WorktreeManager / JobStateStore / git seam(spawn) を編成。
 - **不変条件**: **client-closed** — GitHubClient(port) に依存しない（merge も PR status 問い合わせも持たない）。外部状態の待ち・polling を含まず決定的に完結する。`archived` は change が実際に archive 済みであることを含意（forward-only）。
 - **merge の所在**: merge は CLI の片づけ責務の外（GitHub / 人が行う外部イベント・job status 遷移ではない）。opt-in の merge 便利経路のみ GitHubClient(port) に依存し、green 充足を前提に merge → archive を編成する（archive 本体とは別 path・client-closed 性はこの path を含まない）。
-- → `src/core/archive/`（should-be。現状は `src/core/finish/orchestrator.ts` が merge+archive 一体 ＝ `divergence-status.md` 参照）
+- → `src/core/archive/orchestrator.ts`（archive 本体）／ `src/core/archive/merge-then-archive.ts`（opt-in merge 経路）
 
 ### WorktreeManager — 並列実行の isolation seam
 - **責務**: job ごとに `.git/specrunner-worktrees/<slug>-<jobId>` の専用 worktree を作り（`create` / `remove` / `prune`）、main checkout を汚さない。lock 競合 retry・`bun install`・失敗時 cleanup を内包。

@@ -101,8 +101,8 @@ git rebase origin/main
 git push --force-with-lease origin HEAD:<branch-name>
 cd ~/Documents/GitHub/spec-runner
 
-# 次の archive
-bun ./bin/specrunner.ts job archive <next-slug>
+# 次の archive（merge も一緒に）
+bun ./bin/specrunner.ts job archive --with-merge <next-slug>
 ```
 
 ### 4. 失敗時の対応

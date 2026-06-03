@@ -2,10 +2,6 @@
 
 A self-hosted CLI that drives multi-step development pipelines using Anthropic Claude.
 
-## Status
-
-Self-host pipeline complete as of 2026-04-30 (PR #40 merged).
-
 ## Installation
 
 SpecRunner is published to GitHub Packages. Add the registry entry to your `.npmrc` first:
