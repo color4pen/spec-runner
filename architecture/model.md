@@ -5,7 +5,6 @@
 > **対になるもの**:
 > - この `architecture/model.md`（構造の authority）= **コードがどう構造化されているか**
 > - **test suite**（振る舞いの authority）= **振る舞いがどう確定しているか**
-> - `specrunner/specs/` は authority ではない
 >
 > rulings の出自は module-architect 推奨（`specrunner/adr/2026-05-31-structure-rulings.md`）。改訂は ADR 経由。
 
