@@ -148,24 +148,6 @@ describe("TC-012: DESIGN_INITIAL_MESSAGE_TEMPLATE maintains slug and branch inje
   });
 });
 
-// TC-SP-001: DESIGN_SYSTEM_PROMPT に "Baseline Spec 参照" セクションが含まれる
-describe("TC-SP-001: DESIGN_SYSTEM_PROMPT contains Baseline Spec 参照 section", () => {
-  it("contains 'Baseline Spec 参照' section header", () => {
-    expect(DESIGN_SYSTEM_PROMPT).toContain("Baseline Spec 参照");
-  });
-
-  it("contains 'specrunner/specs/' reference", () => {
-    expect(DESIGN_SYSTEM_PROMPT).toContain("specrunner/specs/");
-  });
-
-  it("contains Read 許可 statement", () => {
-    expect(DESIGN_SYSTEM_PROMPT).toContain("Read は許可");
-  });
-
-  it("instructs to read baseline spec for context", () => {
-    expect(DESIGN_SYSTEM_PROMPT).toMatch(/baseline spec.*Read|Read.*baseline spec|baseline.*spec/i);
-  });
-});
 
 // TC-CL-001: DESIGN_SYSTEM_PROMPT に Completion Checklist セクションが含まれる
 describe("TC-CL-001: DESIGN_SYSTEM_PROMPT contains Completion Checklist section", () => {
@@ -260,18 +242,3 @@ describe("TC-003: architecture/ reference guidance is present in DESIGN_SYSTEM_P
   });
 });
 
-// TC-SP-002: "Baseline Spec 参照" is placed after path-fence and before 禁止事項
-describe("TC-SP-002: Baseline Spec 参照 is placed between CRITICAL BOUNDARY and 禁止事項", () => {
-  it("Baseline Spec 参照 appears after CRITICAL BOUNDARY and before 禁止事項", () => {
-    const pathFenceIdx = DESIGN_SYSTEM_PROMPT.indexOf("CRITICAL BOUNDARY (path-fence)");
-    const baselineIdx = DESIGN_SYSTEM_PROMPT.indexOf("Baseline Spec 参照");
-    const forbiddenIdx = DESIGN_SYSTEM_PROMPT.indexOf("## 禁止事項");
-
-    expect(pathFenceIdx).toBeGreaterThan(-1);
-    expect(baselineIdx).toBeGreaterThan(-1);
-    expect(forbiddenIdx).toBeGreaterThan(-1);
-
-    expect(baselineIdx).toBeGreaterThan(pathFenceIdx);
-    expect(baselineIdx).toBeLessThan(forbiddenIdx);
-  });
-});

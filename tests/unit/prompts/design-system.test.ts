@@ -125,7 +125,6 @@ describe("TC-16: 配置順が <user-request> → Request Constraints → Reposit
       gitLog: "",
       diffStat: "",
       changesList: ["design-request-followup"],
-      specIndex: [],
     };
     const message = buildInitialMessage(
       REQUEST_WITH_CONSTRAINTS,
@@ -145,7 +144,6 @@ describe("TC-16: 配置順が <user-request> → Request Constraints → Reposit
       gitLog: "",
       diffStat: "",
       changesList: ["design-request-followup"],
-      specIndex: [],
     };
     const message = buildInitialMessage(
       REQUEST_WITH_CONSTRAINTS,

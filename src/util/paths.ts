@@ -92,25 +92,6 @@ export function archivedChangeFolderPath(datedSlug: string): string {
   return `${ARCHIVE_DIR}/${datedSlug}`;
 }
 
-/** Base directory for all baseline specs. */
-const SPECS_DIR = "specrunner/specs";
-
-/**
- * Returns the relative path to the specs directory (no trailing slash).
- * Example: specsDirRel() → "specrunner/specs"
- */
-export function specsDirRel(): string {
-  return SPECS_DIR;
-}
-
-/**
- * Returns the relative path to the baseline spec file for a given capability.
- * Example: baselineSpecPath("cli-commands") → "specrunner/specs/cli-commands/spec.md"
- */
-export function baselineSpecPath(capability: string): string {
-  return `${SPECS_DIR}/${capability}/spec.md`;
-}
-
 /**
  * Returns the relative path to the project-level context file.
  * Example: projectMdPath() → "specrunner/project.md"

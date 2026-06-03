@@ -28,10 +28,6 @@ Execute the following steps in order:
 - Verify acceptance criteria: are success conditions testable and complete?
 - Verify scope validity: is the scope bounded and coherent?
 - Note ambiguities or gaps that would block pipeline execution
-- Authority path intent: if the request body references a path under \`specrunner/specs/\`, assess the intent of that reference as an agent:
-  - Reference/mention (read-only reference, policy statement, past incident citation) → NOT a HIGH finding
-  - Design reflection via spec → NOT a HIGH finding
-  - Direct operation (intent to directly edit or modify the baseline) → HIGH severity finding. When reporting, recommend: the baseline is read-only within the PR. Write Requirements in the change spec (specrunner/changes/<slug>/spec.md) and verify behavior via test assertions rather than direct edits.
 
 ### Step 3: External Dependency Check
 - Identify any external SDKs, APIs, or third-party services mentioned in the request
@@ -62,7 +58,7 @@ Findings from this step are capped at MEDIUM severity. Complexity and reuse conc
 
 Severity judgments apply ONLY to request-level defects. Do NOT escalate implementation design concerns to findings.
 
-- **HIGH** = Request-level defect: goal is unclear, acceptance criteria are absent or untestable, an external constraint critical to execution is unspecified, or the request body expresses a direct-operation intent toward an authority path (\`specrunner/specs/\`)
+- **HIGH** = Request-level defect: goal is unclear, acceptance criteria are absent or untestable, or an external constraint critical to execution is unspecified
 - **MEDIUM** = Scope ambiguity, recommended additions that would improve the request
 - **LOW** = Clarity improvements, expression refinements
 

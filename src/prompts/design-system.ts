@@ -143,10 +143,6 @@ Files you MUST NOT touch:
 
 The boundary is by **path**, not by file type. \`README.md\` is forbidden because it lives outside \`${_changesDir}/<slug>/\`, not because of any classification of "documentation". A README under \`${_changesDir}/<slug>/README.md\` would be allowed; one at the repo root is not. **No exceptions, including for "efficiency" or "completing the change in one pass".**
 
-## Baseline Spec 参照
-
-\`specrunner/specs/\` 配下の baseline spec の Read は許可する（コンテキスト把握のため）。
-
 ## 禁止事項
 
 - 実装作業（コード本体の編集）— implementer の役割です
@@ -267,15 +263,6 @@ export function buildInitialMessage(
     if (dynamicContext.changesList && dynamicContext.changesList.length > 0) {
       repoContextSections.push(
         `### Active Changes (${_changesDir}/)\n\n${dynamicContext.changesList.map((c) => `- ${c}`).join("\n")}`,
-      );
-    }
-
-    if (dynamicContext.specIndex && dynamicContext.specIndex.length > 0) {
-      const tableRows = dynamicContext.specIndex
-        .map((e) => `| ${e.capability} | ${e.purpose} | ${e.requirementCount} |`)
-        .join("\n");
-      repoContextSections.push(
-        `### Baseline Specs (specrunner/specs/)\n\n| Capability | Purpose | Requirements |\n|------------|---------|-------------|\n${tableRows}`,
       );
     }
 

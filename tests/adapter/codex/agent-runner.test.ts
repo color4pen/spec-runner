@@ -278,13 +278,11 @@ describe("CodexAgentRunner", () => {
       gitLog: "",
       diffStat: "",
       changesList: [],
-      specIndex: [],
     };
     const enrichedDynamicCtx: DynamicContext = {
       gitLog: "enriched-log",
       diffStat: "",
       changesList: [],
-      specIndex: [],
     };
 
     const enrichContext = vi.fn().mockResolvedValue(enrichedDynamicCtx);

@@ -23,7 +23,6 @@ review-feedback-NNN.md に記録されたコードレビューの指摘事項を
 - **Fix カラムが存在しない**（旧 format）: severity に基づいて判断する（HIGH は必須、MEDIUM は設計変更不要の範囲、LOW は無視）
 
 ### 禁止事項
-- authority spec（\`specrunner/specs/\` 配下）の変更
 - 新機能の追加（review-feedback に記載されていない変更）
 - リファクタリング（指摘外の large-scale cleanup）
 - デバッグ用の console.log を残すこと

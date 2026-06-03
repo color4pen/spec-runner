@@ -264,7 +264,7 @@ describe("TC-21: 配置順 </user-request> → Request Constraints → Branch Co
       iteration: 1,
       findingsPath: reviewFeedbackPath("my-change", 1),
       requestContent: REQUEST_WITH_CONSTRAINTS,
-      dynamicContext: { diffStat: "2 files changed", gitLog: "", changesList: [], specIndex: [] },
+      dynamicContext: { diffStat: "2 files changed", gitLog: "", changesList: [] },
     });
     const closeTagIdx = message.indexOf("</user-request>");
     const constraintsIdx = message.indexOf("## Request Constraints (CLI-injected)");

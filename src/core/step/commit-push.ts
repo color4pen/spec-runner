@@ -6,14 +6,6 @@ import { gitExec, gitExecExitCode, type SpawnFn } from "../../util/git-exec.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { pushFailedError } from "../../errors.js";
 
-/** Prefix that identifies authority spec files. Delta specs under specrunner/changes/ are NOT violations. */
-const AUTHORITY_SPEC_PREFIX = "specrunner/specs/";
-
-/** Return paths that start with the authority spec prefix. */
-export function findAuthoritySpecViolations(filePaths: string[]): string[] {
-  return filePaths.filter(p => p.startsWith(AUTHORITY_SPEC_PREFIX));
-}
-
 /** Infrastructure deps for commit/push operations. */
 export interface CommitPushInfra {
   spawnFn: SpawnFn;
@@ -65,16 +57,6 @@ export async function commitAndPush(
     // Check if HEAD advanced (agent self-committed before pipeline commit).
     const headAfterStep = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
     if (headBeforeStep && headAfterStep && headAfterStep !== headBeforeStep) {
-      // Agent self-commit path: inspect HEAD diff for authority spec violations.
-      // Warning only — pipeline continues; authority spec edits are not permitted.
-      const headDiffOutput = await gitExec(infra.spawnFn, cwd, ["diff", `${headBeforeStep}..${headAfterStep}`, "--name-only"]);
-      if (headDiffOutput) {
-        const headFilePaths = headDiffOutput.split("\n").filter(p => p.length > 0);
-        const headViolations = findAuthoritySpecViolations(headFilePaths);
-        if (headViolations.length > 0) {
-          stderrWrite(`Warning: authority spec edit detected in agent commits: ${headViolations.join(", ")}. Authority spec edits are not permitted.\n`);
-        }
-      }
       // Agent authored commit(s) since step start — push the existing commits as-is.
       stderrWrite("Detected agent-authored commit(s) since step start; skipping pipeline commit and pushing as-is.\n");
       await pushOnly(branch, cwd, step.name, infra);
@@ -82,17 +64,6 @@ export async function commitAndPush(
     }
     // No changes and no agent self-commit — silently skip (step completed via tool, no file writes needed)
     return;
-  }
-
-  // Staged changes exist — check for authority spec violations.
-  // Warning only — pipeline continues; authority spec edits are not permitted.
-  const stagedFilesOutput = await gitExec(infra.spawnFn, cwd, ["diff", "--cached", "--name-only"]);
-  if (stagedFilesOutput) {
-    const stagedFilePaths = stagedFilesOutput.split("\n").filter(p => p.length > 0);
-    const stagedViolations = findAuthoritySpecViolations(stagedFilePaths);
-    if (stagedViolations.length > 0) {
-      stderrWrite(`Warning: authority spec edit detected in staged files: ${stagedViolations.join(", ")}. Authority spec edits are not permitted.\n`);
-    }
   }
 
   // Commit
