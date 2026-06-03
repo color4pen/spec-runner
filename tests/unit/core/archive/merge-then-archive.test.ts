@@ -3,7 +3,7 @@
  *
  * TC-014: PR が既に MERGED → merge スキップして archive を実行
  * TC-MTA-001: all checks success → merge → archive
- * TC-MTA-002: check state "none" → merge → archive (branch protection 無し repo)
+ * TC-MTA-002: check state "none" → grace 後に merge → archive (branch protection 無し repo)
  * TC-MTA-003: check pending → success (2回目) → merge → archive
  * TC-MTA-004: check failure → exit 1 escalation, merge/archive 呼ばれない
  * TC-MTA-005: pending のまま timeout 超過 → timeout escalation, merge/archive 呼ばれない
@@ -12,6 +12,9 @@
  * TC-MTA-008: BLOCKED → escalation, merge 呼ばれない
  * TC-MTA-009: headSha missing → escalation
  * TC-MTA-010: waitTimeoutMs: null → no timeout (unlimited wait)
+ * TC-MTA-011: none → pending → success (grace内にcheck出現 → 既存ループに合流)
+ * TC-MTA-012: none → failure (grace内にcheck出現 → failure → escalation)
+ * TC-MTA-013: waitTimeoutMs null (無制限) + 常にnone → grace後にmerge（永久hangしない）
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { GitHubClient, CheckRollup } from "../../../../src/core/port/github-client.js";
@@ -190,11 +193,11 @@ describe("TC-MTA-001: all checks success → merge → archive", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-MTA-002: check state "none" → merge → archive (branch protection 無し)
+// TC-MTA-002: check state "none" → grace 後に merge → archive (branch protection 無し)
 // ---------------------------------------------------------------------------
 
-describe("TC-MTA-002: check state 'none' → merge → archive", () => {
-  it("getCheckStatus none (no checks) → proceeds to merge", async () => {
+describe("TC-MTA-002: check state 'none' → grace 後に merge → archive", () => {
+  it("none が続いても grace 期間経過後に merge へ進む（初回 none では即 merge しない）", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
 
@@ -213,6 +216,12 @@ describe("TC-MTA-002: check state 'none' → merge → archive", () => {
       mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "merged" }),
     });
 
+    // nowFn: start=0, first-none=0 (grace starts, elapsed=0), second-none=70_000 (grace exceeded)
+    const times = [0, 0, 70_000];
+    let timeIdx = 0;
+    const nowFn = () => times[timeIdx++] ?? 70_000;
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
     const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
 
     const result = await runMergeThenArchive({
@@ -223,12 +232,17 @@ describe("TC-MTA-002: check state 'none' → merge → archive", () => {
       githubClient: client,
       owner: "user",
       repo: "repo",
-      waitTimeoutMs: 60_000,
+      sleepFn,
+      nowFn,
+      waitTimeoutMs: 120_000,
+      pollIntervalMs: 5_000,
     });
 
     expect(result).toEqual({ exitCode: 0 });
     expect(client.mergePullRequest).toHaveBeenCalled();
     expect(runArchiveOrchestrator).toHaveBeenCalled();
+    // 初回 none で即 merge せず、少なくとも 1 回 sleep していること
+    expect(sleepFn).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -615,5 +629,173 @@ describe("TC-MTA-010: waitTimeoutMs null → unlimited wait", () => {
     expect(result).toEqual({ exitCode: 0 });
     expect(client.mergePullRequest).toHaveBeenCalled();
     expect(runArchiveOrchestrator).toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MTA-011: none → pending → success (grace 内に check 出現 → 既存ループに合流)
+// ---------------------------------------------------------------------------
+
+describe("TC-MTA-011: none → pending → success (grace 内に check 出現)", () => {
+  it("check が grace 内に出現したら既存の pending→success ループに合流して merge する", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0 });
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        headRefName: "change/my-slug",
+        mergeable: "MERGEABLE",
+        headSha: "abc123",
+      }),
+      getCheckStatus: vi.fn()
+        .mockResolvedValueOnce(NONE_ROLLUP)    // 1st poll: CI not yet created
+        .mockResolvedValueOnce(PENDING_ROLLUP) // 2nd poll: CI appeared, still running
+        .mockResolvedValueOnce(SUCCESS_ROLLUP), // 3rd poll: CI passed
+      mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "merged" }),
+    });
+
+    // Time stays at 0: grace never exceeds (elapsed always 0)
+    let time = 0;
+    const nowFn = () => time;
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      sleepFn,
+      nowFn,
+      waitTimeoutMs: 120_000,
+      pollIntervalMs: 5_000,
+    });
+
+    expect(result).toEqual({ exitCode: 0 });
+    expect(client.mergePullRequest).toHaveBeenCalled();
+    expect(runArchiveOrchestrator).toHaveBeenCalled();
+    // none 待し (1 sleep) + pending 待し (1 sleep) = 2 sleeps
+    expect(sleepFn).toHaveBeenCalledTimes(2);
+    expect(sleepFn).toHaveBeenCalledWith(5_000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MTA-012: none → failure (grace 内に check 出現 → failure → escalation)
+// ---------------------------------------------------------------------------
+
+describe("TC-MTA-012: none → failure (grace 内に check 出現 → failure escalation)", () => {
+  it("grace 内に failure check が出現したら merge せず escalation で終了する", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0 });
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        headRefName: "change/my-slug",
+        mergeable: "MERGEABLE",
+        headSha: "abc123",
+      }),
+      getCheckStatus: vi.fn()
+        .mockResolvedValueOnce(NONE_ROLLUP)    // 1st poll: CI not yet created
+        .mockResolvedValueOnce(FAILURE_ROLLUP), // 2nd poll: CI appeared and failed
+    });
+
+    // Time stays at 0: grace never exceeds
+    let time = 0;
+    const nowFn = () => time;
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      sleepFn,
+      nowFn,
+      waitTimeoutMs: 120_000,
+      pollIntervalMs: 5_000,
+    });
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode === 1) {
+      expect(result.escalation).toContain("ci/test");
+    }
+    expect(client.mergePullRequest).not.toHaveBeenCalled();
+    expect(runArchiveOrchestrator).not.toHaveBeenCalled();
+    // none の後に 1 回 sleep してから failure を検出
+    expect(sleepFn).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MTA-013: waitTimeoutMs null (無制限) + 常に none → grace 後に merge（永久 hang しない）
+// ---------------------------------------------------------------------------
+
+describe("TC-MTA-013: waitTimeoutMs null + 常に none → grace 後に merge（bounded）", () => {
+  it("無制限 timeout でも grace 経過後に merge へ進み永久 hang しない", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0 });
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        headRefName: "change/my-slug",
+        mergeable: "MERGEABLE",
+        headSha: "abc123",
+      }),
+      getCheckStatus: vi.fn().mockResolvedValue(NONE_ROLLUP),
+      mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "merged" }),
+    });
+
+    // nowFn: start=0, first-none=0 (grace starts), second-none=70_000 (grace exceeded)
+    const times = [0, 0, 70_000];
+    let timeIdx = 0;
+    const nowFn = () => times[timeIdx++] ?? 70_000;
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      sleepFn,
+      nowFn,
+      waitTimeoutMs: null, // unlimited — grace は独立して bounded
+      pollIntervalMs: 5_000,
+    });
+
+    expect(result).toEqual({ exitCode: 0 });
+    expect(client.mergePullRequest).toHaveBeenCalled();
+    expect(runArchiveOrchestrator).toHaveBeenCalled();
+    // 少なくとも 1 回 sleep していること（初回 none で即 merge していない）
+    expect(sleepFn).toHaveBeenCalledTimes(1);
   });
 });

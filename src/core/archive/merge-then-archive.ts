@@ -9,7 +9,8 @@
  *    - DIRTY / CONFLICTING → conflict escalation (no merge)
  *    - BLOCKED → branch protection escalation (no merge)
  *    - check failure → escalation (no merge)
- *    - check success or none → proceed to merge
+ *    - check success → proceed to merge
+ *    - check none → grace wait (NONE_CHECK_GRACE_MS); if exhausted → proceed to merge
  *    - check pending → wait (sleepFn), check deadline, repeat
  *    - timeout → escalation (no merge)
  * 5. checkMergeableForMerge + squash merge
@@ -27,6 +28,14 @@ import { checkMergeableForMerge } from "../finish/pr-status.js";
 import { formatEscalation } from "../finish/escalation.js";
 import { logResult } from "../../logger/stdout.js";
 import { DEFAULT_MERGE_WAIT_TIMEOUT_MS, DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS } from "../../config/schema.js";
+
+/**
+ * Grace period (ms) to wait for the first check run to appear after a push.
+ * If the rollup stays "none" longer than this, the repo is assumed to have no CI
+ * and the merge proceeds. Independent of mergeWaitTimeoutMs and always bounded
+ * (prevents permanent hang even when mergeWaitTimeoutMs is null). Not configurable.
+ */
+const NONE_CHECK_GRACE_MS = 60_000;
 
 export interface MergeThenArchiveInput {
   /** Slug of the job to archive. */
@@ -145,6 +154,8 @@ export async function runMergeThenArchive(
   // Step 4: Wait loop — poll check status until terminal or timeout
   // ---------------------------------------------------------------------------
   const start = nowFn();
+  /** Set-once timestamp (ms) of the first "none" observation. Never reset. */
+  let noneGraceStart: number | null = null;
 
   stdoutWrite(`Waiting for PR #${prNumber} checks to resolve...`);
 
@@ -242,10 +253,33 @@ export async function runMergeThenArchive(
       };
     }
 
-    if (rollup.state === "success" || rollup.state === "none") {
-      // Checks are green (or no checks exist) — proceed to merge
+    if (rollup.state === "success") {
+      // Checks are green — proceed to merge
       stdoutWrite(`PR #${prNumber} checks passed. Proceeding to merge...`);
       break;
+    }
+
+    if (rollup.state === "none") {
+      // No checks found on this head commit yet.
+      // Record grace start on first observation (set-once; never reset).
+      const now = nowFn();
+      if (noneGraceStart === null) {
+        noneGraceStart = now;
+      }
+      const elapsed = now - noneGraceStart;
+      if (elapsed >= NONE_CHECK_GRACE_MS) {
+        // Grace period exhausted: no CI on this repo — proceed to merge.
+        stdoutWrite(
+          `PR #${prNumber} no checks appeared after ${NONE_CHECK_GRACE_MS / 1000}s. Assuming CI-less repo; proceeding to merge...`,
+        );
+        break;
+      }
+      // Grace still running: wait for checks to appear.
+      stdoutWrite(
+        `PR #${prNumber} no checks yet (${Math.round(elapsed / 1000)}s / ${NONE_CHECK_GRACE_MS / 1000}s grace). Waiting ${pollIntervalMs / 1000}s...`,
+      );
+      await sleepFn(pollIntervalMs);
+      continue;
     }
 
     // rollup.state === "pending" — check deadline
