@@ -646,6 +646,50 @@ describe("TC-LR-014: setupWorkspace writes rules.md to change folder via string 
   });
 });
 
+// TC-LR-015: signal handler records the in-progress step (not the launch step)
+describe("TC-LR-015: signalCleanup records in-progress step in resumePoint", () => {
+  it("persists resumePoint.step = current.step (code-review), not startStep (design)", async () => {
+    const { manager } = buildMockManager();
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager });
+
+    // Create a job state
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    const jobState = await makeJobState();
+
+    // Persist an update so the in-progress step is "code-review" (running)
+    const store = new JobStateStore(jobState.jobId, tempDir);
+    const current = await store.load();
+    await store.persist({ ...current, step: "code-review", status: "running" } as import("../../../../src/state/schema.js").JobState);
+
+    // Stub process.exit so it doesn't actually exit
+    const originalExit = process.exit;
+    (process as { exit: (code?: number) => void }).exit = vi.fn();
+
+    // Capture the SIGINT listener added by registerCleanup
+    const listenersBefore = process.listeners("SIGINT");
+    runtime.registerCleanup(jobState.jobId, "design");
+    const listenersAfter = process.listeners("SIGINT");
+    const newListeners = listenersAfter.filter((l) => !listenersBefore.includes(l));
+    const listener = newListeners[newListeners.length - 1] as () => Promise<void>;
+
+    try {
+      // Invoke the signal handler and wait for it to complete
+      await listener();
+
+      // Load state from disk and assert
+      const finalState = await new JobStateStore(jobState.jobId, tempDir).load();
+      expect(finalState?.status).toBe("awaiting-resume");
+      expect(finalState?.resumePoint?.step).toBe("code-review");
+      expect(finalState?.resumePoint?.step).not.toBe("design");
+    } finally {
+      // Restore and deregister
+      (process as { exit: (code?: number) => void }).exit = originalExit;
+      process.off("SIGINT", listener);
+    }
+  });
+});
+
 // TC-LR-013: query() passthrough of session fields
 describe("TC-LR-013: query() passthroughs sessionId/continue/resume/includePartialMessages to SDK", () => {
   it("passes sessionId, continue, resume, includePartialMessages to queryFn options", async () => {

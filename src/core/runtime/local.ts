@@ -430,7 +430,7 @@ export class LocalRuntime implements RuntimeStrategy {
           patch: {
             pid: null,
             resumePoint: {
-              step: startStep as StepName,
+              step: (current.step ?? startStep) as StepName,
               reason: "Interrupted by signal",
               iterationsExhausted: 0,
             },
