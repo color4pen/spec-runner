@@ -1,11 +1,13 @@
-import type { AgentStep, StepDeps } from "./types.js";
+import type { AgentStep, StepDeps, IoRef } from "./types.js";
 import { NULL_PARSE_RESULT } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { ADR_GEN_SYSTEM_PROMPT } from "../../prompts/adr-gen-system.js";
-import { changeFolderPath } from "../../util/paths.js";
+import { changeFolderPath, requestMdPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
+import { latestIteration } from "./io-iteration.js";
+import { reviewFeedbackPath } from "../../util/paths.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
 const ADR_GEN_AGENT_MODEL = "claude-sonnet-4-6";
@@ -136,6 +138,30 @@ export const AdrGenStep: AgentStep = {
   maxTurns: 20,
 
   needsProjectContext: false,
+
+  reads(state: JobState, deps: StepDeps): IoRef[] {
+    const folder = changeFolderPath(deps.slug);
+    const reviewCount = latestIteration(state, STEP_NAMES.CODE_REVIEW);
+    const reviewRefs: IoRef[] = reviewCount > 0
+      ? [{ path: reviewFeedbackPath(deps.slug, reviewCount), required: false }]
+      : [];
+    return [
+      { path: requestMdPath(deps.slug) },
+      { path: `${folder}/design.md` },
+      { path: `${folder}/spec.md` },
+      ...reviewRefs,
+    ];
+  },
+
+  writes(_state: JobState, deps: StepDeps): IoRef[] {
+    // ADR 成果物の path は adr-gen 内の宣言にのみ置く（プロジェクト規律）。
+    // Path format: specrunner/adr/{YYYY-MM-DD}-{slug}.md (date is runtime-resolved by agent).
+    // Declared as the canonical output directory to document adr-gen's ownership.
+    if (!deps.request.adr) return [];
+    return [
+      { path: `specrunner/adr/${deps.slug}.md` },
+    ];
+  },
 
   buildMessage(state: JobState, deps: StepDeps): string {
     return buildAdrGenInitialMessage({

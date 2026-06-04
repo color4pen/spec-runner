@@ -29,7 +29,9 @@ interface Transition { step: string; on: Verdict | string; to: string | "end" | 
   buildMessage(state, deps): string;        // pure（I/O 禁止）
   resultFilePath(state, deps): string | null;
   parseResult(content, deps): ParsedStepResult;  // pure（I/O 禁止）
-  reportTool?: ReportToolSpec; completionVerdict?: Verdict; phase?: "spec" | "impl"; ...
+  reads?(state, deps): IoRef[];             // pure — 入力宣言（util/paths 由来 path、{n} 解決済み）
+  writes?(state, deps): IoRef[];            // pure — 出力宣言（宣言のみ、事前検証なし）
+  reportTool?: ReportToolSpec; completionVerdict?: Verdict; ...
   ```
 - **CliStep 契約**（deterministic に動く step）:
   ```ts
@@ -37,8 +39,11 @@ interface Transition { step: string; on: Verdict | string; to: string | "end" | 
   run(state, deps: CliStepDeps): Promise<void>;   // 副作用あり（spawn 注入）
   resultFilePath(state, deps): string;            // 非 null
   parseResult(content, deps): ParsedStepResult;   // pure
+  reads?(state, deps): IoRef[];             // pure — 入力宣言
+  writes?(state, deps): IoRef[];            // pure — 出力宣言
   ```
-- **不変条件**: `buildMessage`/`parseResult` は pure（判定系の I/O 禁止＝B-5）。CLI step だけ `spawn` を注入で受ける。
+- **不変条件**: `buildMessage`/`parseResult`/`reads`/`writes` は pure（I/O 禁止＝B-5）。CLI step だけ `spawn` を注入で受ける。
+- **I/O 契約**: `reads` の required 入力は StepExecutor が実行前に `RuntimeStrategy.validateStepInputs` で存在を検証（欠落時 `STEP_INPUT_MISSING`）。`writes` は宣言のみ（事前検証なし）。
 - → `src/core/step/types.ts`
 
 ### StepExecutor — step 実行エンジン

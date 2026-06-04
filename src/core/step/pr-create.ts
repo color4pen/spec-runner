@@ -9,7 +9,7 @@
  * Design D5: resultFilePath → specrunner/changes/<slug>/pr-create-result.md
  * Design D6: failure → escalation (no retry loop).
  */
-import type { CliStep } from "./types.js";
+import type { CliStep, IoRef } from "./types.js";
 import type { JobState } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
 import * as fs from "node:fs/promises";
@@ -90,6 +90,19 @@ export const PrCreateStep: CliStep = {
 
       await fs.writeFile(path.resolve(cwd, resultFilePath), content, "utf-8");
     }
+  },
+
+  reads(state: JobState, _deps: StepDeps): IoRef[] {
+    if (!state.branch) return [];
+    return [
+      { path: state.branch, artifact: "gitState" },
+    ];
+  },
+
+  writes(_state: JobState, deps: StepDeps): IoRef[] {
+    return [
+      { path: prCreateResultPath(deps.slug) },
+    ];
   },
 
   resultFilePath(state: JobState, deps: StepDeps): string {

@@ -1,0 +1,22 @@
+{
+  "commandInvocations": [
+    {
+      "command": "request-review",
+      "timestamp": "2026-06-04T11:33:50.763Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 4345,
+          "outputTokens": 17,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 1380,
+          "outputTokens": 7485,
+          "cacheReadInputTokens": 298234,
+          "cacheCreationInputTokens": 48354
+        }
+      }
+    }
+  ]
+}

@@ -1,10 +1,11 @@
-import type { AgentStep, StepDeps, ParsedStepResult } from "./types.js";
+import type { AgentStep, StepDeps, ParsedStepResult, IoRef } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../../prompts/code-review-system.js";
 import { reviewFeedbackPath, changeFolderPath } from "../../util/paths.js";
+import { nextIteration } from "./io-iteration.js";
 import { STEP_NAMES } from "./step-names.js";
 import { buildRequestConstraintsBlock } from "../../parser/extract-section.js";
 import { CODE_REVIEW_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
@@ -113,6 +114,22 @@ export const CodeReviewStep: AgentStep = {
 
   needsProjectContext: true,
   reportTool: CODE_REVIEW_REPORT_TOOL,
+
+  reads(_state: JobState, deps: StepDeps): IoRef[] {
+    const folder = changeFolderPath(deps.slug);
+    return [
+      { path: `${folder}/design.md` },
+      { path: `${folder}/tasks.md` },
+      { path: `${folder}/test-cases.md` },
+      { path: ".", artifact: "gitState" },
+    ];
+  },
+
+  writes(state: JobState, deps: StepDeps): IoRef[] {
+    return [
+      { path: reviewFeedbackPath(deps.slug, nextIteration(state, STEP_NAMES.CODE_REVIEW)) },
+    ];
+  },
 
   followUpPrompt: [
     "作業完了後の self-check pass です。",

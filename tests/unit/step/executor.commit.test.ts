@@ -99,6 +99,7 @@ function makeTestRuntimeStrategy(spawnFn: SpawnFn): RuntimeStrategy {
       await cleanupOutputTemplates(cwd, deps.slug, step.name, state);
       await commitAndPush(step, state, deps, headBeforeStep, infra);
     },
+    async validateStepInputs(): Promise<void> {},
   };
 }
 

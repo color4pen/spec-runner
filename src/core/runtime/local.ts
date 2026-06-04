@@ -30,7 +30,8 @@ import {
 import { commitAndPush } from "../step/commit-push.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
-import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "../port/runtime-strategy.js";
+import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput } from "../port/runtime-strategy.js";
+import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import { stripSecrets } from "../../util/env-filter.js";
@@ -358,6 +359,38 @@ export class LocalRuntime implements RuntimeStrategy {
     logPipelineDiag("executor:commit:pre", `step=${step.name}`);
     await commitAndPush(step, state, deps, headBeforeStep, commitPushInfra);
     logPipelineDiag("executor:commit:post", `step=${step.name}`);
+  }
+
+  async validateStepInputs(inputs: RequiredInput[], cwd: string, branch: string | null): Promise<void> {
+    if (inputs.length === 0) return;
+    const missing: string[] = [];
+    for (const input of inputs) {
+      if (input.artifact === "gitState") {
+        // gitState: verify the working directory is a valid git repo (minimal check)
+        try {
+          const result = await this.spawnFn("git", ["rev-parse", "--git-dir"], { cwd });
+          if (result.exitCode !== 0) missing.push(input.path);
+        } catch {
+          missing.push(input.path);
+        }
+      } else {
+        // file: check filesystem presence
+        try {
+          await fs.access(path.join(cwd, input.path));
+        } catch {
+          missing.push(input.path);
+        }
+      }
+    }
+    if (missing.length > 0) {
+      const pathList = missing.map(p => `  - ${p}`).join("\n");
+      const branchNote = branch ? ` on branch '${branch}'` : "";
+      throw new SpecRunnerError(
+        ERROR_CODES.STEP_INPUT_MISSING,
+        `Required step input(s) not found${branchNote}. Ensure prior steps have completed successfully.\nMissing:\n${pathList}`,
+        `Required step input(s) not found: ${missing.join(", ")}`,
+      );
+    }
   }
 
   registerCleanup(jobId: string, startStep: string): CleanupHandle {

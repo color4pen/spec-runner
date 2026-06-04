@@ -1,10 +1,11 @@
-import type { AgentStep, StepDeps } from "./types.js";
+import type { AgentStep, StepDeps, IoRef } from "./types.js";
 import { NULL_PARSE_RESULT } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { buildInitialMessage, DESIGN_SYSTEM_PROMPT } from "../../prompts/design-system.js";
 import { getBranchPrefix } from "../../config/type-config.js";
+import { requestMdPath, changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
@@ -72,6 +73,21 @@ export const DesignStep: AgentStep = {
     "3. 違反があれば修正してください",
     "4. 違反がなければ変更せず end_turn してください",
   ].join("\n"),
+
+  reads(_state: JobState, deps: StepDeps): IoRef[] {
+    return [
+      { path: requestMdPath(deps.slug) },
+    ];
+  },
+
+  writes(_state: JobState, deps: StepDeps): IoRef[] {
+    const folder = changeFolderPath(deps.slug);
+    return [
+      { path: `${folder}/design.md` },
+      { path: `${folder}/tasks.md` },
+      { path: `${folder}/spec.md` },
+    ];
+  },
 
   buildMessage(state: JobState, deps: StepDeps): string {
     // Use state.branch if already set by CLI (setupWorkspace early recording, D3).

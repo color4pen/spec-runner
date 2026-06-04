@@ -1,10 +1,11 @@
-import type { AgentStep, StepDeps } from "./types.js";
+import type { AgentStep, StepDeps, IoRef } from "./types.js";
 import { NULL_PARSE_RESULT } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { TEST_CASE_GEN_SYSTEM_PROMPT, buildTestCaseGenInitialMessage } from "../../prompts/test-case-gen-system.js";
 import { branchNotSetError } from "../../errors.js";
+import { changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
@@ -57,6 +58,20 @@ export const TestCaseGenStep: AgentStep = {
   reportTool: PRODUCER_REPORT_TOOL,
 
   maxTurns: 15,
+
+  reads(_state: JobState, deps: StepDeps): IoRef[] {
+    const folder = changeFolderPath(deps.slug);
+    return [
+      { path: `${folder}/design.md` },
+      { path: `${folder}/tasks.md` },
+    ];
+  },
+
+  writes(_state: JobState, deps: StepDeps): IoRef[] {
+    return [
+      { path: `${changeFolderPath(deps.slug)}/test-cases.md` },
+    ];
+  },
 
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.TEST_CASE_GEN);

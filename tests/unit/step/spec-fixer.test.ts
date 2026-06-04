@@ -72,12 +72,15 @@ describe("TC-BM-01: SpecFixerStep.buildMessage returns full prompt on first run"
     expect(message).not.toContain("前回の修正に対して");
   });
 
-  it("full prompt uses fallback findingsPath when no spec-review result exists", () => {
+  it("uses spec-review-result-000.md (iteration=0) when no spec-review result exists", () => {
+    // D4: findingsPath is derived purely from latestIteration(state, "spec-review").
+    // When spec-review has not run yet, latestIteration = 0 → spec-review-result-000.md.
+    // Existence is guaranteed by pre-execution validation (STEP_INPUT_MISSING).
     const state = makeMinimalState({ steps: {} });
     const deps = makeMinimalDeps("my-change");
     const message = SpecFixerStep.buildMessage(state, deps);
 
-    expect(message).toContain(specReviewResultPath("my-change", 1));
+    expect(message).toContain(specReviewResultPath("my-change", 0));
   });
 
   it("full prompt contains <user-request> tags", () => {

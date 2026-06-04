@@ -141,6 +141,7 @@ function makeTestRuntimeStrategy(spawnFn: GitSpawnFn): RuntimeStrategy {
       await cleanupOutputTemplates(cwd, deps.slug, step.name, state);
       await commitAndPush(step, state, deps, headBeforeStep, infra);
     },
+    async validateStepInputs(): Promise<void> {},
   };
 }
 

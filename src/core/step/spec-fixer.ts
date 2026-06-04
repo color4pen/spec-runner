@@ -1,13 +1,13 @@
-import type { AgentStep, StepDeps } from "./types.js";
+import type { AgentStep, StepDeps, IoRef } from "./types.js";
 import { NULL_PARSE_RESULT } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
-import { getLatestStepResult } from "../../state/helpers.js";
 import { SPEC_FIXER_SYSTEM_PROMPT } from "../../prompts/spec-fixer-system.js";
 import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath, specReviewResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
+import { latestIteration } from "./io-iteration.js";
 import { isFixerContinuation, buildContinuationMessage } from "./fixer-helpers.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
@@ -82,13 +82,30 @@ export const SpecFixerStep: AgentStep = {
   // Design D3 (propose-openspec-cli-and-step-model-config).
   maxTurns: 25,
 
+  reads(state: JobState, deps: StepDeps): IoRef[] {
+    // reads the most recent spec-review result (required — executor validates before running)
+    return [
+      { path: specReviewResultPath(deps.slug, latestIteration(state, STEP_NAMES.SPEC_REVIEW)) },
+    ];
+  },
+
+  writes(_state: JobState, deps: StepDeps): IoRef[] {
+    const folder = changeFolderPath(deps.slug);
+    return [
+      { path: `${folder}/design.md` },
+      { path: `${folder}/spec.md` },
+    ];
+  },
+
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.SPEC_FIXER);
 
+    // Derive findingsPath from reads declaration (D4: replace state-lookup halt).
+    // Existence is guaranteed by pre-execution validation (STEP_INPUT_MISSING).
+    const findingsPath = specReviewResultPath(deps.slug, latestIteration(state, STEP_NAMES.SPEC_REVIEW));
+
     // Session 継続の場合は短縮 prompt（前回コンテキストが session に残っているため）
     if (isFixerContinuation(state, STEP_NAMES.SPEC_FIXER)) {
-      const specReviewResult = getLatestStepResult(state, STEP_NAMES.SPEC_REVIEW);
-      const findingsPath = specReviewResult?.findingsPath ?? specReviewResultPath(deps.slug, 1);
       return buildContinuationMessage({
         stepName: STEP_NAMES.SPEC_FIXER,
         findingsPath,
@@ -97,8 +114,6 @@ export const SpecFixerStep: AgentStep = {
     }
 
     // 初回は現行の full prompt
-    const specReviewResult = getLatestStepResult(state, STEP_NAMES.SPEC_REVIEW);
-    const findingsPath = specReviewResult?.findingsPath ?? specReviewResultPath(deps.slug, 1);
     return buildSpecFixerInitialMessage({
       slug: deps.slug,
       branch: state.branch,

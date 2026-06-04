@@ -21,7 +21,8 @@ import { spawnCommand } from "../../util/spawn.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { changeFolderPath } from "../../util/paths.js";
 import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, rejectSymlink } from "../artifact/copy-artifacts.js";
-import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle } from "../port/runtime-strategy.js";
+import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput } from "../port/runtime-strategy.js";
+import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import type { AgentStep } from "../step/types.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import { stderrWrite } from "../../logger/stdout.js";
@@ -228,6 +229,55 @@ export class ManagedRuntime implements RuntimeStrategy {
     _commitPushInfra: CommitPushInfra,
   ): Promise<void> {
     // no-op: managed runtime does not commit/push from the CLI
+  }
+
+  async validateStepInputs(inputs: RequiredInput[], cwd: string, branch: string | null): Promise<void> {
+    if (inputs.length === 0) return;
+
+    // Fetch origin branch to ensure latest refs are available (stdout not emitted).
+    // Ignore fetch errors — cat-file will catch missing refs below.
+    if (branch) {
+      await this.spawnFn("git", ["fetch", "origin", branch], { cwd }).catch(() => {});
+    }
+
+    const missing: string[] = [];
+    for (const input of inputs) {
+      if (input.artifact === "gitState") {
+        // gitState: verify the remote branch reference exists
+        if (!branch) {
+          missing.push(input.path);
+          continue;
+        }
+        const result = await this.spawnFn(
+          "git",
+          ["cat-file", "-e", `origin/${branch}`],
+          { cwd },
+        );
+        if (result.exitCode !== 0) missing.push(input.path);
+      } else {
+        // file: check existence on origin/<branch> via git cat-file
+        if (!branch) {
+          missing.push(input.path);
+          continue;
+        }
+        const result = await this.spawnFn(
+          "git",
+          ["cat-file", "-e", `origin/${branch}:${input.path}`],
+          { cwd },
+        );
+        if (result.exitCode !== 0) missing.push(input.path);
+      }
+    }
+
+    if (missing.length > 0) {
+      const pathList = missing.map(p => `  - ${p}`).join("\n");
+      const branchNote = branch ? ` on branch '${branch}'` : "";
+      throw new SpecRunnerError(
+        ERROR_CODES.STEP_INPUT_MISSING,
+        `Required step input(s) not found${branchNote}. Ensure prior steps have completed successfully.\nMissing:\n${pathList}`,
+        `Required step input(s) not found: ${missing.join(", ")}`,
+      );
+    }
   }
 
   registerCleanup(jobId: string, startStep: string): CleanupHandle {

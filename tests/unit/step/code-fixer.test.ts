@@ -10,7 +10,7 @@
  * TC-026: CodeFixerStep.buildMessage が前段 review-feedback 不在時に CODE_FIXER_NO_REVIEW_RESULT を throw する (should)
  */
 import { describe, it, expect } from "vitest";
-import { CodeFixerStep, CODE_FIXER_NO_REVIEW_RESULT } from "../../../src/core/step/code-fixer.js";
+import { CodeFixerStep } from "../../../src/core/step/code-fixer.js";
 import { NULL_PARSE_RESULT } from "../../../src/core/step/types.js";
 import { CODE_FIXER_SYSTEM_PROMPT } from "../../../src/prompts/code-fixer-system.js";
 import { AGENT_TOOLSET_TYPE } from "../../../src/core/agent/definition.js";
@@ -42,19 +42,17 @@ function makeStateWithCodeReviewResult(slug: string, iteration: number = 2): Job
   const findingsPath = reviewFeedbackPath(slug, iteration);
   return makeMinimalState({
     steps: {
-      "code-review": [
-        {
-          attempt: iteration,
-          sessionId: null,
-          outcome: {
-            verdict: "needs-fix",
-            findingsPath,
-            error: null,
-          },
-          startedAt: "2026-01-01T00:00:00.000Z",
-          endedAt: "2026-01-01T00:00:00.000Z",
+      "code-review": Array.from({ length: iteration }, (_, i) => ({
+        attempt: i + 1,
+        sessionId: null,
+        outcome: {
+          verdict: "needs-fix" as const,
+          findingsPath: i + 1 === iteration ? findingsPath : null,
+          error: null,
         },
-      ],
+        startedAt: "2026-01-01T00:00:00.000Z",
+        endedAt: "2026-01-01T00:00:00.000Z",
+      })),
     },
   });
 }
@@ -187,70 +185,26 @@ describe("TC-025: CodeFixerStep.buildMessage が直近の review-feedback パス
   });
 });
 
-// TC-026: buildMessage throws CODE_FIXER_NO_REVIEW_RESULT when no code-review result
-describe("TC-026: CodeFixerStep.buildMessage が前段 review-feedback 不在時に CODE_FIXER_NO_REVIEW_RESULT を throw する", () => {
-  it("throws SpecRunnerError with CODE_FIXER_NO_REVIEW_RESULT when state has no code-review steps", () => {
+// TC-026: buildMessage NO LONGER throws when code-review result is absent
+// (D4 replacement: halt is handled by pre-execution validation → STEP_INPUT_MISSING)
+describe("TC-026: CodeFixerStep.buildMessage は code-review 不在でも throw しない（D4 後）", () => {
+  it("does NOT throw when state has no code-review steps", () => {
     const state = makeMinimalState({ steps: {} });
     const deps = makeMinimalDeps("my-change");
-
-    expect(() => CodeFixerStep.buildMessage(state, deps)).toThrow();
+    expect(() => CodeFixerStep.buildMessage(state, deps)).not.toThrow();
   });
 
-  it("thrown error has code === CODE_FIXER_NO_REVIEW_RESULT", () => {
+  it("returns a message containing review-feedback-000.md when code-review has not run (iteration=0)", () => {
     const state = makeMinimalState({ steps: {} });
     const deps = makeMinimalDeps("my-change");
-
-    let thrown: unknown;
-    try {
-      CodeFixerStep.buildMessage(state, deps);
-    } catch (err) {
-      thrown = err;
-    }
-
-    expect(thrown).toBeDefined();
-    expect((thrown as { code?: string }).code).toBe(CODE_FIXER_NO_REVIEW_RESULT);
+    const message = CodeFixerStep.buildMessage(state, deps);
+    expect(message).toContain("review-feedback-000.md");
   });
 
-  it("thrown error message contains 'code-fixer requires code-review result'", () => {
+  it("pure function contract: state is NOT mutated", () => {
     const state = makeMinimalState({ steps: {} });
     const deps = makeMinimalDeps("my-change");
-
-    let thrown: unknown;
-    try {
-      CodeFixerStep.buildMessage(state, deps);
-    } catch (err) {
-      thrown = err;
-    }
-
-    expect((thrown as Error).message).toContain("code-fixer requires code-review result");
-  });
-
-  it("error hint contains slug and review-feedback.md", () => {
-    const state = makeMinimalState({ steps: {} });
-    const deps = makeMinimalDeps("my-change");
-
-    let thrown: unknown;
-    try {
-      CodeFixerStep.buildMessage(state, deps);
-    } catch (err) {
-      thrown = err;
-    }
-
-    const hint = (thrown as { hint?: string }).hint ?? "";
-    expect(hint).toContain("my-change");
-    expect(hint).toContain("review-feedback-NNN.md");
-  });
-
-  it("pure function contract: state is NOT mutated on error", () => {
-    const state = makeMinimalState({ steps: {} });
-    const deps = makeMinimalDeps("my-change");
-
-    try {
-      CodeFixerStep.buildMessage(state, deps);
-    } catch {
-      // expected
-    }
-
+    CodeFixerStep.buildMessage(state, deps);
     expect(state.status).toBe("running");
     expect(state.error).toBeNull();
   });
@@ -286,15 +240,13 @@ describe("TC-BM-03: CodeFixerStep.buildMessage returns short prompt when previou
             endedAt: "2026-01-01T00:00:00.000Z",
           },
         ],
-        "code-review": [
-          {
-            attempt: iteration,
-            sessionId: null,
-            outcome: { verdict: "needs-fix", findingsPath, error: null },
-            startedAt: "2026-01-01T00:00:00.000Z",
-            endedAt: "2026-01-01T00:00:00.000Z",
-          },
-        ],
+        "code-review": Array.from({ length: iteration }, (_, i) => ({
+          attempt: i + 1,
+          sessionId: null,
+          outcome: { verdict: "needs-fix" as const, findingsPath: i + 1 === iteration ? findingsPath : null, error: null },
+          startedAt: "2026-01-01T00:00:00.000Z",
+          endedAt: "2026-01-01T00:00:00.000Z",
+        })),
       },
     });
   }
@@ -341,13 +293,12 @@ describe("TC-BM-03: CodeFixerStep.buildMessage returns short prompt when previou
 });
 
 // ---------------------------------------------------------------------------
-// TC-BM-04: code-fixer continuation + code-review result absent → CODE_FIXER_NO_REVIEW_RESULT
+// TC-BM-04: code-fixer continuation + code-review absent → does NOT throw (D4 replacement)
+// Halt is now handled by pre-execution validation via STEP_INPUT_MISSING, not buildMessage.
 // ---------------------------------------------------------------------------
 
-describe("TC-BM-04: CodeFixerStep.buildMessage throws CODE_FIXER_NO_REVIEW_RESULT even in continuation mode", () => {
+describe("TC-BM-04: CodeFixerStep.buildMessage does NOT throw even in continuation + no code-review (D4)", () => {
   function makeStateWithFixerRunButNoReview(sessionId: string): JobState {
-    // code-fixer has been run before (continuation scenario),
-    // but code-review result is absent (guard must still throw)
     return makeMinimalState({
       steps: {
         "code-fixer": [
@@ -359,31 +310,21 @@ describe("TC-BM-04: CodeFixerStep.buildMessage throws CODE_FIXER_NO_REVIEW_RESUL
             endedAt: "2026-01-01T00:00:00.000Z",
           },
         ],
-        // code-review is intentionally absent
+        // code-review intentionally absent
       },
     });
   }
 
-  it("throws SpecRunnerError with CODE_FIXER_NO_REVIEW_RESULT", () => {
+  it("does NOT throw in continuation mode when code-review is absent", () => {
     const state = makeStateWithFixerRunButNoReview("sess-code-xyz");
     const deps = makeMinimalDeps("my-change");
-
-    let thrown: unknown;
-    try {
-      CodeFixerStep.buildMessage(state, deps);
-    } catch (err) {
-      thrown = err;
-    }
-
-    expect(thrown).toBeDefined();
-    expect((thrown as { code?: string }).code).toBe(CODE_FIXER_NO_REVIEW_RESULT);
+    expect(() => CodeFixerStep.buildMessage(state, deps)).not.toThrow();
   });
 
-  it("guard runs before continuation check — throws even when code-fixer sessionId is set", () => {
-    // Verify that having a previous sessionId does NOT bypass the code-review guard
+  it("uses review-feedback-000.md when code-review has not run", () => {
     const state = makeStateWithFixerRunButNoReview("sess-code-xyz");
     const deps = makeMinimalDeps("my-change");
-
-    expect(() => CodeFixerStep.buildMessage(state, deps)).toThrow();
+    const message = CodeFixerStep.buildMessage(state, deps);
+    expect(message).toContain("review-feedback-000.md");
   });
 });

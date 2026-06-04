@@ -25,6 +25,20 @@ import type { JobState } from "../../state/schema.js";
 // ---------------------------------------------------------------------------
 
 /**
+ * Port DTO for a required step input to be validated before step execution.
+ * Domain-neutral — only the resolved path and artifact type.
+ * Derived from step.reads() by filtering required !== false entries.
+ *
+ * D3 (step-io-contracts): executor projects IoRef[] → RequiredInput[] for strategy.
+ */
+export interface RequiredInput {
+  /** Worktree-relative path to the required artifact. */
+  path: string;
+  /** Artifact type: "file" (filesystem) or "gitState" (git branch/repo validity). */
+  artifact: "file" | "gitState";
+}
+
+/**
  * Options for agent query execution.
  */
 export interface QueryOptions {
@@ -188,4 +202,20 @@ export interface RuntimeStrategy {
     headBeforeStep: string | null,
     commitPushInfra: unknown,
   ): Promise<void>;
+
+  /**
+   * Validate that all required step inputs exist before executing a step.
+   * Called by StepExecutor before runner.run() / step.run() to enforce I/O contracts.
+   *
+   * - local: "file" → fs.access(path.join(cwd, relPath)); "gitState" → git repo validity check
+   * - managed: git fetch origin <branch> then "file" → git cat-file -e <branch>:<relPath>;
+   *            "gitState" → git cat-file -e origin/<branch>
+   *
+   * fetch and cat-file operations must not write to process stdout.
+   * Throws SpecRunnerError("STEP_INPUT_MISSING", hint, message) if any required input is absent.
+   * hint and message include the missing paths.
+   *
+   * D3 (step-io-contracts): pre-execution validation seam in RuntimeStrategy.
+   */
+  validateStepInputs(inputs: RequiredInput[], cwd: string, branch: string | null): Promise<void>;
 }

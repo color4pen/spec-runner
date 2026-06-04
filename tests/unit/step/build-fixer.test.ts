@@ -6,7 +6,7 @@
  * TC-016: BUILD_FIXER_NO_VERIFICATION_RESULT error shape
  */
 import { describe, it, expect } from "vitest";
-import { BuildFixerStep, BUILD_FIXER_NO_VERIFICATION_RESULT } from "../../../src/core/step/build-fixer.js";
+import { BuildFixerStep } from "../../../src/core/step/build-fixer.js";
 import { NULL_PARSE_RESULT } from "../../../src/core/step/types.js";
 import { BUILD_FIXER_SYSTEM_PROMPT } from "../../../src/prompts/build-fixer-system.js";
 import { AGENT_TOOLSET_TYPE } from "../../../src/core/agent/definition.js";
@@ -138,49 +138,28 @@ describe("TC-024: BuildFixerStep.resultFilePath と parseResult", () => {
   });
 });
 
-// TC-016: BUILD_FIXER_NO_VERIFICATION_RESULT error shape
-describe("TC-016: BUILD_FIXER_NO_VERIFICATION_RESULT error shape", () => {
-  it("verification result が不在の場合 SpecRunnerError を throw する（state を変更しない）", () => {
-    // state.steps["verification"] が空
+// TC-016: buildMessage NO LONGER throws when verification result is absent
+// (D4 replacement: halt is handled by pre-execution validation → STEP_INPUT_MISSING)
+describe("TC-016: BuildFixerStep.buildMessage は verification 不在でも throw しない（D4 後）", () => {
+  it("does NOT throw when state has no verification steps", () => {
     const state = makeMinimalState({ steps: {} });
     const deps = makeMinimalDeps("my-change");
+    expect(() => BuildFixerStep.buildMessage(state, deps)).not.toThrow();
+  });
 
-    expect(() => BuildFixerStep.buildMessage(state, deps)).toThrow();
+  it("returns a message containing verification-result.md when verification has not run", () => {
+    const state = makeMinimalState({ steps: {} });
+    const deps = makeMinimalDeps("my-change");
+    const message = BuildFixerStep.buildMessage(state, deps);
+    expect(message).toContain("verification-result.md");
+  });
 
-    // Pure function contract: state must NOT be mutated
+  it("pure function contract: state is NOT mutated", () => {
+    const state = makeMinimalState({ steps: {} });
+    const deps = makeMinimalDeps("my-change");
+    BuildFixerStep.buildMessage(state, deps);
     expect(state.status).toBe("running");
     expect(state.error).toBeNull();
-  });
-
-  it("throw した error.code が BUILD_FIXER_NO_VERIFICATION_RESULT", () => {
-    const state = makeMinimalState({ steps: {} });
-    const deps = makeMinimalDeps("my-change");
-
-    let thrown: unknown;
-    try {
-      BuildFixerStep.buildMessage(state, deps);
-    } catch (err) {
-      thrown = err;
-    }
-
-    expect(thrown).toBeDefined();
-    expect((thrown as { code?: string }).code).toBe(BUILD_FIXER_NO_VERIFICATION_RESULT);
-    expect((thrown as Error).message).toContain("build-fixer requires verification result");
-  });
-
-  it("error.hint が slug を含む", () => {
-    const state = makeMinimalState({ steps: {} });
-    const deps = makeMinimalDeps("my-change");
-
-    let thrown: unknown;
-    try {
-      BuildFixerStep.buildMessage(state, deps);
-    } catch (err) {
-      thrown = err;
-    }
-
-    expect((thrown as { hint?: string }).hint).toContain("my-change");
-    expect((thrown as { hint?: string }).hint).toContain("verification-result.md");
   });
 });
 
@@ -403,13 +382,12 @@ describe("TC-BM-05: BuildFixerStep.buildMessage returns short prompt when previo
 });
 
 // ---------------------------------------------------------------------------
-// TC-BM-06: build-fixer continuation + verification result absent → BUILD_FIXER_NO_VERIFICATION_RESULT
+// TC-BM-06: build-fixer continuation + verification absent → does NOT throw (D4 replacement)
+// Halt is now handled by pre-execution validation via STEP_INPUT_MISSING, not buildMessage.
 // ---------------------------------------------------------------------------
 
-describe("TC-BM-06: BuildFixerStep.buildMessage throws BUILD_FIXER_NO_VERIFICATION_RESULT even in continuation mode", () => {
+describe("TC-BM-06: BuildFixerStep.buildMessage does NOT throw even in continuation + no verification (D4)", () => {
   function makeStateWithFixerRunButNoVerification(sessionId: string): JobState {
-    // build-fixer has been run before (continuation scenario),
-    // but verification result is absent (guard must still throw)
     return makeMinimalState({
       steps: {
         "build-fixer": [
@@ -421,31 +399,21 @@ describe("TC-BM-06: BuildFixerStep.buildMessage throws BUILD_FIXER_NO_VERIFICATI
             endedAt: "2026-01-01T00:00:00.000Z",
           },
         ],
-        // verification is intentionally absent
+        // verification intentionally absent
       },
     });
   }
 
-  it("throws SpecRunnerError with BUILD_FIXER_NO_VERIFICATION_RESULT", () => {
+  it("does NOT throw in continuation mode when verification is absent", () => {
     const state = makeStateWithFixerRunButNoVerification("sess-build-xyz");
     const deps = makeMinimalDeps("my-change");
-
-    let thrown: unknown;
-    try {
-      BuildFixerStep.buildMessage(state, deps);
-    } catch (err) {
-      thrown = err;
-    }
-
-    expect(thrown).toBeDefined();
-    expect((thrown as { code?: string }).code).toBe(BUILD_FIXER_NO_VERIFICATION_RESULT);
+    expect(() => BuildFixerStep.buildMessage(state, deps)).not.toThrow();
   });
 
-  it("guard runs before continuation check — throws even when build-fixer sessionId is set", () => {
-    // Verify that having a previous sessionId does NOT bypass the verification guard
+  it("continuation message still contains verification-result.md path", () => {
     const state = makeStateWithFixerRunButNoVerification("sess-build-xyz");
     const deps = makeMinimalDeps("my-change");
-
-    expect(() => BuildFixerStep.buildMessage(state, deps)).toThrow();
+    const message = BuildFixerStep.buildMessage(state, deps);
+    expect(message).toContain("verification-result.md");
   });
 });

@@ -1,21 +1,18 @@
-import type { AgentStep } from "./types.js";
+import type { AgentStep, IoRef } from "./types.js";
 import { NULL_PARSE_RESULT } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
 import { CODE_FIXER_SYSTEM_PROMPT } from "../../prompts/code-fixer-system.js";
-import { getLatestStepResult } from "../../state/helpers.js";
-import { SpecRunnerError, branchNotSetError } from "../../errors.js";
-import { changeFolderPath } from "../../util/paths.js";
+import { branchNotSetError } from "../../errors.js";
+import { changeFolderPath, reviewFeedbackPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
+import { latestIteration } from "./io-iteration.js";
 import { isFixerContinuation, buildContinuationMessage } from "./fixer-helpers.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
 const CODE_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
-
-/** Error code when no code-review result is available for code-fixer to reference. */
-export const CODE_FIXER_NO_REVIEW_RESULT = "CODE_FIXER_NO_REVIEW_RESULT";
 
 /**
  * Full AgentDefinition owned by CodeFixerStep.
@@ -46,8 +43,8 @@ const codeFixerAgentDefinition: AgentDefinition = {
  * (enabling code-fixer --approved→ code-review loop).
  *
  * Reads the latest code-review result to provide context to the agent.
- * If no code-review result is found, throws SpecRunnerError with CODE_FIXER_NO_REVIEW_RESULT.
- * The caller (runPollingStyleStep) catches this and halts the pipeline before creating a session.
+ * Required input existence is validated by StepExecutor before runner.run() is called
+ * (STEP_INPUT_MISSING). The step itself does not perform state-lookup halts.
  *
  * Design D7: resultFilePath = null, parseResult = NULL_PARSE_RESULT, completionVerdict = "approved".
  * Design D6: separate Agent with dedicated system prompt (gitWrite: true).
@@ -67,23 +64,25 @@ export const CodeFixerStep: AgentStep = {
   // Design D3 (propose-openspec-cli-and-step-model-config).
   maxTurns: 30,
 
+  reads(state: JobState, deps: StepDeps): IoRef[] {
+    return [
+      { path: reviewFeedbackPath(deps.slug, latestIteration(state, STEP_NAMES.CODE_REVIEW)) },
+    ];
+  },
+
+  writes(_state: JobState, deps: StepDeps): IoRef[] {
+    return [
+      { path: changeFolderPath(deps.slug), artifact: "gitState" },
+    ];
+  },
+
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.CODE_FIXER);
     const branch = state.branch;
-    const codeReviewResult = getLatestStepResult(state, STEP_NAMES.CODE_REVIEW);
 
-    // Pure function — must not mutate state.
-    // Throw if code-review result is absent so the caller can halt before creating a session.
-    // This check runs regardless of whether this is a continuation.
-    if (!codeReviewResult || !codeReviewResult.findingsPath) {
-      throw new SpecRunnerError(
-        CODE_FIXER_NO_REVIEW_RESULT,
-        `Ensure code-review step produced ${changeFolderPath(deps.slug)}/review-feedback-NNN.md before invoking code-fixer.`,
-        "code-fixer requires code-review result but none found",
-      );
-    }
-
-    const findingsPath = codeReviewResult.findingsPath;
+    // Derive findingsPath from reads declaration (D4: replace state-lookup halt).
+    // Existence is guaranteed by pre-execution validation (STEP_INPUT_MISSING).
+    const findingsPath = reviewFeedbackPath(deps.slug, latestIteration(state, STEP_NAMES.CODE_REVIEW));
 
     // Session 継続の場合は短縮 prompt（前回コンテキストが session に残っているため）
     if (isFixerContinuation(state, STEP_NAMES.CODE_FIXER)) {

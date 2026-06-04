@@ -108,6 +108,7 @@ function buildMockRuntime(): RuntimeStrategy {
     captureHeadSha: vi.fn().mockResolvedValue(null),
     prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
     finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
+    validateStepInputs: vi.fn().mockResolvedValue(undefined),
   };
 }
 

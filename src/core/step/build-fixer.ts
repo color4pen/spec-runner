@@ -1,4 +1,4 @@
-import type { AgentStep } from "./types.js";
+import type { AgentStep, IoRef } from "./types.js";
 import { NULL_PARSE_RESULT } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
@@ -6,17 +6,14 @@ import type { JobState } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
 import { BUILD_FIXER_SYSTEM_PROMPT } from "../../prompts/build-fixer-system.js";
 import { getLatestStepResult } from "../../state/helpers.js";
-import { SpecRunnerError, branchNotSetError } from "../../errors.js";
+import { branchNotSetError } from "../../errors.js";
 import { extractVerificationFailures } from "../verification/parse-result.js";
-import { changeFolderPath } from "../../util/paths.js";
+import { changeFolderPath, verificationResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { isFixerContinuation, buildContinuationMessage } from "./fixer-helpers.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
 const BUILD_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
-
-/** Error code when no verification result is available for build-fixer to reference. */
-export const BUILD_FIXER_NO_VERIFICATION_RESULT = "BUILD_FIXER_NO_VERIFICATION_RESULT";
 
 /**
  * Full AgentDefinition owned by BuildFixerStep.
@@ -46,8 +43,8 @@ const buildFixerAgentDefinition: AgentDefinition = {
  * completionVerdict: "success" — session completion maps to "success" for transitions.
  *
  * Reads the latest verification result to provide context to the agent.
- * If no verification result is found, throws SpecRunnerError with BUILD_FIXER_NO_VERIFICATION_RESULT.
- * The caller (runPollingStyleStep) catches this and halts the pipeline before creating a session.
+ * Required input existence is validated by StepExecutor before runner.run() is called
+ * (STEP_INPUT_MISSING). The step itself does not perform state-lookup halts.
  */
 export const BuildFixerStep: AgentStep = {
   kind: "agent",
@@ -64,23 +61,28 @@ export const BuildFixerStep: AgentStep = {
   // Design D3 (propose-openspec-cli-and-step-model-config).
   maxTurns: 35,
 
+  reads(_state: JobState, deps: StepDeps): IoRef[] {
+    return [
+      { path: verificationResultPath(deps.slug) },
+    ];
+  },
+
+  writes(_state: JobState, deps: StepDeps): IoRef[] {
+    return [
+      { path: changeFolderPath(deps.slug), artifact: "gitState" },
+    ];
+  },
+
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.BUILD_FIXER);
     const branch = state.branch;
+
+    // Derive findingsPath from reads declaration (D4: replace state-lookup halt).
+    // Existence is guaranteed by pre-execution validation (STEP_INPUT_MISSING).
+    const findingsPath = verificationResultPath(deps.slug);
+
+    // fileContent for failure section is still sourced from state (existence guaranteed by pre-validation).
     const verificationResult = getLatestStepResult(state, STEP_NAMES.VERIFICATION);
-
-    // Pure function — must not mutate state.
-    // Throw if verification result is absent so the caller can halt before creating a session.
-    // This check runs regardless of whether this is a continuation.
-    if (!verificationResult || !verificationResult.findingsPath) {
-      throw new SpecRunnerError(
-        BUILD_FIXER_NO_VERIFICATION_RESULT,
-        `Ensure verification step produced ${changeFolderPath(deps.slug)}/verification-result.md before invoking build-fixer.`,
-        "build-fixer requires verification result but none found",
-      );
-    }
-
-    const findingsPath = verificationResult.findingsPath;
 
     // Session 継続の場合は短縮 prompt（前回コンテキストが session に残っているため）
     if (isFixerContinuation(state, STEP_NAMES.BUILD_FIXER)) {
@@ -92,7 +94,7 @@ export const BuildFixerStep: AgentStep = {
     }
 
     // 初回は現行の full prompt（インライン failure context を含む）
-    const failureSection = buildFailureSection(verificationResult.fileContent);
+    const failureSection = buildFailureSection(verificationResult?.fileContent);
 
     return `<user-request>
 You are the build-fixer for the following change:

@@ -1,9 +1,10 @@
-import type { AgentStep, StepDeps, ParsedStepResult } from "./types.js";
+import type { AgentStep, StepDeps, ParsedStepResult, IoRef } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { CONFORMANCE_SYSTEM_PROMPT } from "../../prompts/conformance-system.js";
-import { conformanceResultPath, changeFolderPath } from "../../util/paths.js";
+import { conformanceResultPath, changeFolderPath, requestMdPath } from "../../util/paths.js";
+import { nextIteration } from "./io-iteration.js";
 import { STEP_NAMES } from "./step-names.js";
 import { JUDGE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
@@ -58,6 +59,22 @@ export const ConformanceStep: AgentStep = {
   // maxTurns: conformance is read-heavy with focused judgment; 15 is sufficient.
   // Same as spec-review (read + judgment only).
   maxTurns: 15,
+
+  reads(_state: JobState, deps: StepDeps): IoRef[] {
+    const folder = changeFolderPath(deps.slug);
+    return [
+      { path: `${folder}/tasks.md` },
+      { path: `${folder}/design.md` },
+      { path: `${folder}/spec.md` },
+      { path: requestMdPath(deps.slug) },
+    ];
+  },
+
+  writes(state: JobState, deps: StepDeps): IoRef[] {
+    return [
+      { path: conformanceResultPath(deps.slug, nextIteration(state, STEP_NAMES.CONFORMANCE)) },
+    ];
+  },
 
   buildMessage(state: JobState, deps: StepDeps): string {
     const iteration = computeConformanceIteration(state);

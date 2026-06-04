@@ -1,11 +1,12 @@
-import type { AgentStep, StepDeps, ParsedStepResult } from "./types.js";
+import type { AgentStep, StepDeps, ParsedStepResult, IoRef } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT, buildSpecReviewInitialMessage } from "../../prompts/spec-review-system.js";
 import { getSpecReviewMode } from "../../config/type-config.js";
-import { specReviewResultPath } from "../../util/paths.js";
+import { specReviewResultPath, changeFolderPath } from "../../util/paths.js";
+import { nextIteration } from "./io-iteration.js";
 import { STEP_NAMES } from "./step-names.js";
 import { JUDGE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
@@ -74,6 +75,21 @@ export const SpecReviewStep: AgentStep = {
   getMaxTurns(state: JobState): number | undefined {
     const mode = getSpecReviewMode(state.request.type);
     return mode === "lightweight" ? 10 : undefined;
+  },
+
+  reads(state: JobState, deps: StepDeps): IoRef[] {
+    const folder = changeFolderPath(deps.slug);
+    return [
+      { path: `${folder}/spec.md` },
+      { path: `${folder}/design.md` },
+      { path: `${folder}/tasks.md` },
+    ];
+  },
+
+  writes(state: JobState, deps: StepDeps): IoRef[] {
+    return [
+      { path: specReviewResultPath(deps.slug, nextIteration(state, STEP_NAMES.SPEC_REVIEW)) },
+    ];
   },
 
   async enrichContext(dynamicContext: DynamicContext, _cwd: string, _slug: string): Promise<DynamicContext> {

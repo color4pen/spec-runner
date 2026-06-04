@@ -90,6 +90,7 @@ export const ERROR_CODES = {
   USER_CANCELED: "USER_CANCELED",
   SYMLINK_REJECTED: "SYMLINK_REJECTED",
   STEP_HALTED_NO_TOOL_CALL: "STEP_HALTED_NO_TOOL_CALL",
+  STEP_INPUT_MISSING: "STEP_INPUT_MISSING",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -293,6 +294,16 @@ export function stepHaltedNoToolCallError(stepName: string): SpecRunnerError {
     ERROR_CODES.STEP_HALTED_NO_TOOL_CALL,
     "The agent did not call report_result after the maximum number of retries. Resume the job to retry, or check the agent session log for why the agent failed to call the tool.",
     `Step '${stepName}' halted: agent did not call report_result tool after maximum retry attempts.`,
+  );
+}
+
+export function stepInputMissingError(missingPaths: string[], branch: string | null): SpecRunnerError {
+  const pathList = missingPaths.map(p => `  - ${p}`).join("\n");
+  const branchNote = branch ? ` on branch '${branch}'` : "";
+  return new SpecRunnerError(
+    ERROR_CODES.STEP_INPUT_MISSING,
+    `Required step input(s) not found${branchNote}. Ensure prior steps have completed successfully.\nMissing:\n${pathList}`,
+    `Required step input(s) not found: ${missingPaths.join(", ")}`,
   );
 }
 

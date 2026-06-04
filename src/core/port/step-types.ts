@@ -12,6 +12,27 @@ import type { ReportToolSpec, BaseReportResult } from "./report-result.js";
 export type { AgentDefinition };
 
 /**
+ * A resolved I/O reference for a step's reads/writes declaration.
+ * path is worktree-relative (resolved from util/paths; {n} substituted from state).
+ *
+ * D1 (step-io-contracts): steps declare their I/O via reads/writes pure methods.
+ */
+export interface IoRef {
+  /** Worktree-relative path resolved from util/paths (no {n} placeholders). */
+  path: string;
+  /**
+   * Whether this input is required (reads only; ignored for writes).
+   * Default: true. false = optional input; absence does not halt the step.
+   */
+  required?: boolean;
+  /**
+   * Artifact type for pre-execution validation.
+   * Default: "file". "gitState" = git state (branch/worktree) rather than a file.
+   */
+  artifact?: "file" | "gitState";
+}
+
+/**
  * Dependencies injected into Step methods (buildMessage, resultFilePath, parseResult).
  * Aliased to StepContext — the minimal set of fields Step implementations actually need.
  *
@@ -167,6 +188,28 @@ export interface AgentStep {
   reportTool?: ReportToolSpec<BaseReportResult>;
 
   /**
+   * Declare the input files this step reads (I/O contract).
+   * Pure function — no I/O allowed (invariant B-5).
+   * Returns resolved worktree-relative paths (util/paths functions, {n} resolved via io-iteration helpers).
+   * Required inputs (required !== false) are validated before the step executes.
+   * Optional for type compatibility; all 12 standard pipeline steps implement this.
+   *
+   * D1 (step-io-contracts): machine-readable declaration replaces prompt-prose data dependencies.
+   */
+  reads?(state: JobState, deps: StepDeps): IoRef[];
+
+  /**
+   * Declare the output files this step writes (I/O contract).
+   * Pure function — no I/O allowed (invariant B-5).
+   * Returns resolved worktree-relative paths (util/paths functions, {n} resolved via io-iteration helpers).
+   * Declaration only — writes are not validated (only reads are pre-validated).
+   * Optional for type compatibility; all 12 standard pipeline steps implement this.
+   *
+   * D1 (step-io-contracts): machine-readable declaration makes data flow explicit.
+   */
+  writes?(state: JobState, deps: StepDeps): IoRef[];
+
+  /**
    * Enrich dynamic context with step-specific data before buildMessage is called.
    * Async — I/O is allowed (unlike buildMessage which is pure).
    * Returns a new DynamicContext with additional fields populated.
@@ -202,6 +245,26 @@ export interface CliStep {
    * Pure function — no I/O allowed.
    */
   parseResult(content: string, deps: StepDeps): ParsedStepResult;
+
+  /**
+   * Declare the input files this step reads (I/O contract).
+   * Pure function — no I/O allowed (invariant B-5).
+   * Returns resolved worktree-relative paths; required inputs are pre-validated.
+   * Optional for type compatibility; all 12 standard pipeline steps implement this.
+   *
+   * D1 (step-io-contracts): machine-readable declaration replaces prompt-prose data dependencies.
+   */
+  reads?(state: JobState, deps: StepDeps): IoRef[];
+
+  /**
+   * Declare the output files this step writes (I/O contract).
+   * Pure function — no I/O allowed (invariant B-5).
+   * Returns resolved worktree-relative paths. Declaration only — not pre-validated.
+   * Optional for type compatibility; all 12 standard pipeline steps implement this.
+   *
+   * D1 (step-io-contracts): machine-readable declaration makes data flow explicit.
+   */
+  writes?(state: JobState, deps: StepDeps): IoRef[];
 }
 
 /**

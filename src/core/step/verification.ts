@@ -1,5 +1,6 @@
-import type { CliStep, CliStepDeps } from "./types.js";
+import type { CliStep, CliStepDeps, IoRef } from "./types.js";
 import type { JobState } from "../../state/schema.js";
+import type { StepDeps } from "./types.js";
 import { runVerification } from "../verification/runner.js";
 import { propagateVerificationResult } from "../verification/propagate.js";
 import { verificationResultPath } from "../../util/paths.js";
@@ -53,6 +54,18 @@ export const VerificationStep: CliStep = {
         );
       }
     }
+  },
+
+  reads(_state: JobState, _deps: StepDeps): IoRef[] {
+    return [
+      { path: ".", artifact: "gitState" },
+    ];
+  },
+
+  writes(_state: JobState, deps: StepDeps): IoRef[] {
+    return [
+      { path: verificationResultPath(deps.slug) },
+    ];
   },
 
   resultFilePath(_state: JobState, deps): string {

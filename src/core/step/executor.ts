@@ -6,6 +6,7 @@ import type { PipelineDeps, StoreFactory } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import type { DomainEvent } from "../event/types.js";
 import type { AgentRunner } from "../port/agent-runner.js";
+import type { RequiredInput } from "../port/runtime-strategy.js";
 import type { JobStateStore } from "../../store/job-state-store.js";
 import { pushStepResult } from "../../state/helpers.js";
 import { stderrWrite, logVerbose, isLevelEnabled } from "../../logger/stdout.js";
@@ -109,6 +110,48 @@ export class StepExecutor {
    * Agent step: delegate to AgentRunner.run(). Executor owns all state persistence.
    * TC-012: store.update before runner.run so `specrunner ps` shows current step.
    */
+  /**
+   * Pre-validate required step inputs before execution (D3, step-io-contracts).
+   * Projects step.reads() → RequiredInput[] and delegates existence checks to the
+   * RuntimeStrategy. Records a failed step result and rethrows (with state attached)
+   * when a required input is absent.
+   */
+  private async validateRequiredInputs(
+    step: Step,
+    state: JobState,
+    deps: PipelineDeps,
+    store: JobStateStore,
+    cwd: string,
+    startedAt: string,
+  ): Promise<void> {
+    if (!deps.runtimeStrategy || !step.reads) return;
+    const reads = step.reads(state, deps);
+    const required: RequiredInput[] = reads
+      .filter((r) => r.required !== false)
+      .map((r) => ({ path: r.path, artifact: r.artifact ?? "file" }));
+    if (required.length === 0) return;
+    await deps.runtimeStrategy.validateStepInputs(required, cwd, state.branch ?? null)
+      .catch(async (thrownErr: unknown) => {
+        const err = thrownErr as Error & { code?: string; hint?: string };
+        const errorInfo: ErrorInfo = {
+          code: err.code ?? "STEP_INPUT_MISSING",
+          message: err.message,
+          hint: (err as { hint?: string }).hint ?? "",
+        };
+        let failed = recordFailedStepResult(state, step.name, errorInfo, { startedAt });
+        failed = await store.fail(failed, errorInfo, step.name);
+        failed = await store.appendHistory(failed, {
+          ts: new Date().toISOString(),
+          step: `${step.name}-failed`,
+          status: "error",
+          message: `${step.name} failed: ${errorInfo.code} — ${errorInfo.message}`,
+        });
+        await store.persist(failed);
+        attachStateAndRethrow(err, failed);
+        return null as never;
+      });
+  }
+
   private async runAgentStep(
     step: AgentStep,
     jobState: JobState,
@@ -206,6 +249,11 @@ export class StepExecutor {
     await deps.runtimeStrategy?.prepareStepArtifacts(cwd, deps.slug, step.name, state);
 
     const startedAt = new Date().toISOString();
+
+    // Pre-validate required step inputs (D3, step-io-contracts).
+    // Runs before runner.run() so the agent session is never started on missing inputs.
+    await this.validateRequiredInputs(step, state, deps, store, cwd, startedAt);
+
     logPipelineDiag("executor:agent:pre-run", `step=${step.name}`);
     const runResult = await this.runner.run(ctx).catch(async (thrownErr: unknown) => {
       const err = thrownErr as Error & { code?: string; hint?: string };
@@ -337,6 +385,9 @@ export class StepExecutor {
     });
 
     const startedAt = new Date().toISOString();
+
+    // Pre-validate required step inputs (D3, step-io-contracts).
+    await this.validateRequiredInputs(step, state, deps, store, deps.cwd ?? process.cwd(), startedAt);
 
     try {
       await step.run(state, deps);

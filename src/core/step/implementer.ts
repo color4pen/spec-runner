@@ -1,4 +1,4 @@
-import type { AgentStep } from "./types.js";
+import type { AgentStep, IoRef } from "./types.js";
 import { NULL_PARSE_RESULT } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
@@ -99,6 +99,21 @@ export const ImplementerStep: AgentStep = {
   // maxTurns: implementer handles complex multi-file tasks; 60 is the upper bound.
   // Design D3 (propose-openspec-cli-and-step-model-config).
   maxTurns: 60,
+
+  reads(_state: JobState, deps: StepDeps): IoRef[] {
+    const folder = changeFolderPath(deps.slug);
+    return [
+      { path: `${folder}/tasks.md` },
+      { path: `${folder}/spec.md` },
+    ];
+  },
+
+  writes(_state: JobState, deps: StepDeps): IoRef[] {
+    return [
+      { path: changeFolderPath(deps.slug), artifact: "gitState" },
+      { path: `${changeFolderPath(deps.slug)}/tasks.md` },
+    ];
+  },
 
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.IMPLEMENTER);
