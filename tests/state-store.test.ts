@@ -3,7 +3,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { JobStateStore } from "../src/store/job-state-store.js";
-import { appendHistoryEntry, MAX_HISTORY_SIZE } from "../src/state/schema.js";
+import { appendHistoryEntry, MAX_HISTORY_SIZE, validateJobState } from "../src/state/schema.js";
 import type { JobState } from "../src/state/schema.js";
 
 // Setup temp directory for tests
@@ -203,6 +203,87 @@ describe("TC-051: config atomic write and 0600 permission", () => {
         delete process.env["XDG_CONFIG_HOME"];
       }
     }
+  });
+});
+
+// TC-PIPID-010: pipelineId round-trip — persist → load で値が保たれる
+describe("TC-PIPID-010: pipelineId round-trip — persist then load preserves value", () => {
+  it("pipelineId is preserved after create and load", async () => {
+    const state = await JobStateStore.create(tempDir, makeBaseState());
+    expect(state.pipelineId).toBe("standard");
+
+    const store = new JobStateStore(state.jobId, tempDir);
+    const loaded = await store.load();
+    expect(loaded.pipelineId).toBe("standard");
+  });
+});
+
+// TC-PIPID-011: 後方互換 — pipelineId を持たない state を読んでもエラーにならない
+describe("TC-PIPID-011: backward compat — pipelineId absent in legacy state does not throw", () => {
+  it("validateJobState succeeds for state without pipelineId, preserving other fields", () => {
+    const raw = {
+      version: 1,
+      jobId: "legacy-job-id",
+      createdAt: "2025-01-01T00:00:00.000Z",
+      updatedAt: "2025-01-01T00:00:00.000Z",
+      request: { path: "/req.md", title: "Legacy", type: "new-feature" },
+      repository: { owner: "u", name: "r" },
+      session: null,
+      step: "implementer",
+      status: "awaiting-archive",
+      branch: "feat/legacy",
+      history: [],
+      error: null,
+    };
+
+    const state = validateJobState(raw);
+    expect(state.jobId).toBe("legacy-job-id");
+    expect(state.pipelineId).toBeUndefined();
+    expect(state.step).toBe("implementer");
+  });
+
+  it("JobStateStore.load succeeds for state file without pipelineId", async () => {
+    const jobId = "legacy-no-pipeline-id";
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
+    await fs.mkdir(jobsDir, { recursive: true });
+    await fs.writeFile(
+      path.join(jobsDir, `${jobId}.json`),
+      JSON.stringify({
+        version: 1,
+        jobId,
+        createdAt: "2025-01-01T00:00:00.000Z",
+        updatedAt: "2025-01-01T00:00:00.000Z",
+        request: { path: "/req.md", title: "Legacy", type: "new-feature" },
+        repository: { owner: "u", name: "r" },
+        session: null,
+        step: "implementer",
+        status: "awaiting-archive",
+        branch: "feat/legacy",
+        history: [],
+        error: null,
+      }),
+    );
+
+    const store = new JobStateStore(jobId, tempDir);
+    const loaded = await store.load();
+    expect(loaded.jobId).toBe(jobId);
+    expect(loaded.pipelineId).toBeUndefined();
+  });
+});
+
+// TC-PIPID-012: JobStateStore.create のデフォルト pipelineId は "standard"
+describe("TC-PIPID-012: JobStateStore.create default pipelineId is standard", () => {
+  it("creates state with pipelineId 'standard' when not specified", async () => {
+    const state = await JobStateStore.create(tempDir, makeBaseState());
+    expect(state.pipelineId).toBe("standard");
+  });
+
+  it("creates state with explicit pipelineId when provided", async () => {
+    const state = await JobStateStore.create(tempDir, {
+      ...makeBaseState(),
+      pipelineId: "standard",
+    });
+    expect(state.pipelineId).toBe("standard");
   });
 });
 

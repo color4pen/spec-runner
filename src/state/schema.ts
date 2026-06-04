@@ -168,6 +168,13 @@ export interface JobState {
    * Optional for backward compat — absent in legacy state files → treated as undefined.
    */
   worktreePath?: string | null;
+  /**
+   * Identifies which pipeline definition was used to execute this job.
+   * Recorded at job creation; absent in legacy state files.
+   * When missing, getPipelineId resolves to "standard".
+   * Optional for backward compat — absent in legacy state is valid.
+   */
+  pipelineId?: string;
   resumePoint?: ResumePoint | null;
   /** PID of the process that set status to "running". Optional for backward compat. */
   pid?: number | null;

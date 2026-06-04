@@ -13,6 +13,7 @@ import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { EventBus } from "../event/event-bus.js";
 import { getBranchPrefix } from "../../config/type-config.js";
 import { STEP_NAMES } from "../step/step-names.js";
+import { STANDARD_PIPELINE_ID } from "../../kernel/pipeline-ids.js";
 
 export interface PipelineRunOptions {
   cwd?: string;
@@ -68,6 +69,7 @@ export class PipelineRunCommand extends CommandRunner {
         slug: requestSlug,
       },
       repository: { owner: this.preflightResult.repo.owner, name: this.preflightResult.repo.name },
+      pipelineId: STANDARD_PIPELINE_ID,
     });
 
     logInfo(`Job ID: ${jobState.jobId}`);

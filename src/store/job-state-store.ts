@@ -5,6 +5,7 @@ import { getJobStatePath, getJobsDir } from "../util/xdg.js";
 import { atomicWriteJson } from "../util/atomic-write.js";
 import { appendHistoryEntry, validateJobState } from "../state/schema.js";
 import type { JobState, StepRun, ErrorInfo, HistoryEntry, RequestInfo, RepositoryInfo } from "../state/schema.js";
+import { STANDARD_PIPELINE_ID } from "../kernel/pipeline-ids.js";
 import { transitionJob } from "../state/lifecycle.js";
 import { stderrWrite } from "../logger/stdout.js";
 import { SpecRunnerError, ERROR_CODES, ambiguousJobIdError } from "../errors.js";
@@ -56,10 +57,12 @@ export class JobStateStore {
   /**
    * Create a new job state file and persist it atomically.
    * request.slug defaults to null if not provided (backward compat).
+   * pipelineId defaults to STANDARD_PIPELINE_ID if not provided.
    */
   static async create(repoRoot: string, params: {
     request: RequestInfo;
     repository: RepositoryInfo;
+    pipelineId?: string;
   }): Promise<JobState> {
     const jobId = randomUUID();
     const now = new Date().toISOString();
@@ -87,6 +90,7 @@ export class JobStateStore {
         },
       ],
       error: null,
+      pipelineId: params.pipelineId ?? STANDARD_PIPELINE_ID,
     };
 
     const filePath = getJobStatePath(repoRoot, state.jobId);
