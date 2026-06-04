@@ -58,7 +58,6 @@ export const DesignStep: AgentStep = {
   // Design D2: declarative flag replaces step-name-based branch detection (TC-003 / TC-006).
   setsBranch: true,
 
-  phase: "spec",
   needsProjectContext: true,
   reportTool: PRODUCER_REPORT_TOOL,
 

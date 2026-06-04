@@ -4,6 +4,24 @@ import type { CodeReviewReportResult } from "../port/report-result.js";
 import type { Step } from "../step/types.js";
 
 /**
+ * Pipeline-level role of a step (convergence / resume semantics).
+ * creator  — generates the phase artifact; one per phase.
+ * reviewer — verdict-driven loop step; one per phase; retry exhaustion re-routes to paired fixer.
+ * fixer    — repairs findings from a reviewer or gate; may have multiple per phase.
+ * gate     — deterministic check or linear-progress step (verification, pr-create, etc.).
+ */
+export type StepRole = "creator" | "reviewer" | "fixer" | "gate";
+
+/** Pipeline phase a step belongs to. */
+export type StepPhase = "spec" | "impl";
+
+/** Role and phase declared per step in a PipelineDescriptor. */
+export interface StepRoleEntry {
+  role: StepRole;
+  phase: StepPhase;
+}
+
+/**
  * Declarative description of a complete pipeline configuration.
  * Registry maps pipeline identifiers to their corresponding descriptor.
  * Consumers build Pipeline instances from a descriptor via buildPipeline().
@@ -25,6 +43,18 @@ export interface PipelineDescriptor {
   startStep: string;
   /** Override for Pipeline's maxIterations. When absent, resolved from config. */
   maxIterations?: number;
+  /**
+   * Role and phase for each step in the pipeline.
+   * Used by resume resolution and pipeline convergence semantics.
+   * Keys are step names; values declare the role and phase.
+   * Invariant: each phase has exactly one creator and exactly one reviewer.
+   */
+  roles: Readonly<Record<string, StepRoleEntry>>;
+  /**
+   * Step name used for the pipeline summary output (pipeline:summary event).
+   * When absent (or the step is not in the pipeline), no summary is emitted.
+   */
+  summaryStep?: string;
 }
 
 /**

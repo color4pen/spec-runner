@@ -8,7 +8,6 @@ import type { EventBus } from "../event/event-bus.js";
 import { StepExecutor } from "../step/executor.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { transitionJob } from "../../state/lifecycle.js";
-import { STEP_NAMES } from "../step/step-names.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 
 /** Error codes that indicate truly fatal pipeline failures (not resumable). */
@@ -40,12 +39,13 @@ export class Pipeline {
   private readonly executor: StepExecutor;
   private readonly events: EventBus;
   /** Loop name for stdout progress output (matches legacy runLoopUntil output). */
-  /** Loop name for stdout progress output (matches legacy runLoopUntil output). */
   private readonly loopName: string;
   /** All loop step names (loopName + additional loops). */
   private readonly loopNames: string[];
   /** Mapping: review step name → paired fixer step name. */
   private readonly loopFixerPairs: Record<string, string>;
+  /** Step name used for the pipeline summary (pipeline:summary event). */
+  private readonly summaryStep: string | undefined;
 
   constructor(params: {
     steps: Map<string, Step>;
@@ -56,15 +56,17 @@ export class Pipeline {
     loopName?: string;
     loopNames?: string[];
     loopFixerPairs?: Record<string, string>;  // review → fixer mapping
+    summaryStep?: string;
   }) {
     this.steps = params.steps;
     this.transitions = params.transitions;
     this.maxIterations = params.maxIterations;
     this.executor = params.executor;
     this.events = params.events;
-    this.loopName = params.loopName ?? STEP_NAMES.SPEC_REVIEW;
-    this.loopNames = params.loopNames ?? [this.loopName];
+    this.loopName = params.loopName ?? (params.loopNames?.[0] ?? "");
+    this.loopNames = params.loopNames ?? (this.loopName ? [this.loopName] : []);
     this.loopFixerPairs = params.loopFixerPairs ?? {};
+    this.summaryStep = params.summaryStep;
   }
 
   /**
@@ -97,7 +99,7 @@ export class Pipeline {
           patch: {
             pid: null,
             resumePoint: {
-              step: (finalState.step ?? STEP_NAMES.DESIGN) as StepName,
+              step: (finalState.step ?? startStep) as StepName,
               reason: (err as Error).message ?? String(err),
               iterationsExhausted: 0,
             },
@@ -386,12 +388,12 @@ export class Pipeline {
     return state;
   }
 
-  /** Emit the "pipeline:summary" event if spec-review was in the pipeline. */
+  /** Emit the "pipeline:summary" event if summaryStep is configured and present in the pipeline. */
   private printPipelineFinished(state: JobState): void {
-    if (!this.steps.has(STEP_NAMES.SPEC_REVIEW)) return;
-    const specReviewResults = state.steps?.[STEP_NAMES.SPEC_REVIEW] ?? [];
-    const finalVerdict = getLatestStepResult(state, STEP_NAMES.SPEC_REVIEW)?.verdict ?? "escalation";
-    this.events.emit("pipeline:summary", { step: STEP_NAMES.SPEC_REVIEW, iterations: specReviewResults.length, finalVerdict });
+    if (!this.summaryStep || !this.steps.has(this.summaryStep)) return;
+    const summaryStepResults = state.steps?.[this.summaryStep] ?? [];
+    const finalVerdict = getLatestStepResult(state, this.summaryStep)?.verdict ?? "escalation";
+    this.events.emit("pipeline:summary", { step: this.summaryStep, iterations: summaryStepResults.length, finalVerdict });
   }
 
   /**

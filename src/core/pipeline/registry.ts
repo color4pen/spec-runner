@@ -56,6 +56,21 @@ export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
     [STEP_NAMES.VERIFICATION]: STEP_NAMES.BUILD_FIXER,
   },
   startStep: STEP_NAMES.DESIGN,
+  roles: {
+    [STEP_NAMES.DESIGN]:       { role: "creator",  phase: "spec" },
+    [STEP_NAMES.SPEC_REVIEW]:  { role: "reviewer", phase: "spec" },
+    [STEP_NAMES.SPEC_FIXER]:   { role: "fixer",    phase: "spec" },
+    [STEP_NAMES.TEST_CASE_GEN]:{ role: "gate",     phase: "impl" },
+    [STEP_NAMES.IMPLEMENTER]:  { role: "creator",  phase: "impl" },
+    [STEP_NAMES.VERIFICATION]: { role: "gate",     phase: "impl" },
+    [STEP_NAMES.BUILD_FIXER]:  { role: "fixer",    phase: "impl" },
+    [STEP_NAMES.CODE_REVIEW]:  { role: "reviewer", phase: "impl" },
+    [STEP_NAMES.CODE_FIXER]:   { role: "fixer",    phase: "impl" },
+    [STEP_NAMES.CONFORMANCE]:  { role: "gate",     phase: "impl" },
+    [STEP_NAMES.ADR_GEN]:      { role: "gate",     phase: "impl" },
+    [STEP_NAMES.PR_CREATE]:    { role: "gate",     phase: "impl" },
+  },
+  summaryStep: STEP_NAMES.SPEC_REVIEW,
 };
 
 /**
@@ -76,6 +91,10 @@ export const DESIGN_ONLY_DESCRIPTOR: PipelineDescriptor = {
   loopFixerPairs: {},
   startStep: STEP_NAMES.DESIGN,
   maxIterations: 1,
+  roles: {
+    [STEP_NAMES.DESIGN]: { role: "creator", phase: "spec" },
+  },
+  // summaryStep intentionally omitted: design-only pipeline emits no summary
 };
 
 /**

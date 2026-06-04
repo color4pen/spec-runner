@@ -291,6 +291,7 @@ function buildMockPipeline(opts: {
     loopName: "spec-review",
     loopNames: [...STANDARD_LOOP_NAMES],
     loopFixerPairs: { ...STANDARD_LOOP_FIXER_PAIRS },
+    summaryStep: "spec-review",
   });
 
   return { pipeline, events, executeSpy };

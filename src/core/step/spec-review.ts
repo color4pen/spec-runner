@@ -64,7 +64,6 @@ export const SpecReviewStep: AgentStep = {
   // No custom tool handlers for spec-review
   toolHandlers: undefined,
 
-  phase: "spec",
   needsProjectContext: true,
   reportTool: JUDGE_REPORT_TOOL,
 

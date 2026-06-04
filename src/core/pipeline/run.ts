@@ -64,6 +64,7 @@ export function buildPipeline(
     loopName: descriptor.loopName,
     loopNames: [...descriptor.loopNames],
     loopFixerPairs: { ...descriptor.loopFixerPairs },
+    summaryStep: descriptor.summaryStep,
   });
 }
 

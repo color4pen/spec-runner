@@ -144,14 +144,6 @@ export interface AgentStep {
   setsBranch?: boolean;
 
   /**
-   * Pipeline phase this step belongs to.
-   * Used by resolve-step.ts to determine resume phase without hardcoding step names.
-   * Omit (or set "impl") for implementation-phase steps.
-   * Core layer only — do not add managed-runtime concerns here.
-   */
-  phase?: "spec" | "impl";
-
-  /**
    * If true, StepExecutor reads project.md from the working directory and
    * injects it as projectContext into AgentRunContext before calling runner.run().
    * Replaces the PROJECT_CONTEXT_STEPS Set in executor.ts.

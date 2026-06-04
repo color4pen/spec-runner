@@ -1,14 +1,6 @@
 import type { StepName, ResumePoint, StepRun } from "../../state/schema.js";
-import { STEP_NAMES, AGENT_STEP_NAMES, CLI_STEP_NAMES } from "../step/step-names.js";
-import { DesignStep } from "../step/design.js";
-import { SpecReviewStep } from "../step/spec-review.js";
-import { SpecFixerStep } from "../step/spec-fixer.js";
-import { TestCaseGenStep } from "../step/test-case-gen.js";
-import { ImplementerStep } from "../step/implementer.js";
-import { BuildFixerStep } from "../step/build-fixer.js";
-import { CodeReviewStep } from "../step/code-review.js";
-import { CodeFixerStep } from "../step/code-fixer.js";
-import { STANDARD_LOOP_FIXER_PAIRS } from "../pipeline/run.js";
+import { AGENT_STEP_NAMES, CLI_STEP_NAMES } from "../step/step-names.js";
+import type { PipelineDescriptor } from "../pipeline/types.js";
 
 /**
  * Legacy resume role aliases accepted by --from flag (for backward compatibility).
@@ -30,57 +22,104 @@ export type ResumeFrom = StepName | LegacyResumeRole;
 const ALL_STEP_NAMES_SET = new Set<string>([...AGENT_STEP_NAMES, ...CLI_STEP_NAMES]);
 
 /**
- * Reverse map of STANDARD_LOOP_FIXER_PAIRS: fixer step → loop step.
- * e.g. { "code-fixer": "code-review", "spec-fixer": "spec-review", "build-fixer": "verification", ... }
+ * Convert a step-name string to StepName, validating membership.
+ * Throws if the name is not a registered step, so an unknown name fails loudly
+ * instead of an unchecked cast producing an invalid StepName.
  */
-const FIXER_TO_LOOP: Record<string, string> = Object.fromEntries(
-  Object.entries(STANDARD_LOOP_FIXER_PAIRS).map(([loop, fixer]) => [fixer, loop]),
-);
+function toStepName(name: string): StepName {
+  if (!ALL_STEP_NAMES_SET.has(name)) {
+    throw new Error(`Resolved step "${name}" is not a registered step name.`);
+  }
+  return name as StepName;
+}
+
+// ---------------------------------------------------------------------------
+// Descriptor-derived helpers (pure, no I/O)
+// ---------------------------------------------------------------------------
 
 /**
- * Phase map derived from step definitions.
- * Keys are step names; values are the declared phase (defaulting to "impl").
- * Replaces the hardcoded SPEC_PHASE_STEPS and CODE_PHASE_STEPS Sets.
+ * Determine whether a step belongs to the spec phase, derived from descriptor roles.
+ * Unrecognized steps default to impl phase.
  */
-const STEP_PHASE_MAP = new Map<string, "spec" | "impl">(
-  [DesignStep, SpecReviewStep, SpecFixerStep,
-   TestCaseGenStep, ImplementerStep, BuildFixerStep, CodeReviewStep, CodeFixerStep]
-  .map(s => [s.name, s.phase ?? "impl"]),
-);
-
-/**
- * Steps that are reviewers (critic role). Used to distinguish crash from review exhaustion.
- */
-const REVIEWER_STEPS = new Set<StepName>([STEP_NAMES.SPEC_REVIEW, STEP_NAMES.CODE_REVIEW]);
-
-/**
- * Determine whether a step belongs to the spec phase.
- * Unrecognized steps default to code (impl) phase.
- */
-function isSpecPhase(stepName: string): boolean {
-  return STEP_PHASE_MAP.get(stepName) === "spec";
+function isSpecPhase(descriptor: PipelineDescriptor, stepName: string): boolean {
+  return (descriptor.roles[stepName]?.phase ?? "impl") === "spec";
 }
 
 /**
- * Mapping: (phase, role) → StepName
- * Design D2 mapping table.
+ * Set of reviewer step names derived from descriptor roles.
  */
-const STEP_MAPPING: Record<"spec" | "code", Record<LegacyResumeRole, StepName>> = {
-  spec: {
-    critic: STEP_NAMES.SPEC_REVIEW,
-    fixer: STEP_NAMES.SPEC_FIXER,
-    creator: STEP_NAMES.DESIGN,
-  },
-  code: {
-    critic: STEP_NAMES.CODE_REVIEW,
-    fixer: STEP_NAMES.CODE_FIXER,
-    creator: STEP_NAMES.IMPLEMENTER,
-  },
-};
+function getReviewerSteps(descriptor: PipelineDescriptor): Set<string> {
+  return new Set(
+    Object.entries(descriptor.roles)
+      .filter(([, entry]) => entry.role === "reviewer")
+      .map(([name]) => name),
+  );
+}
+
+/**
+ * Reverse map of descriptor.loopFixerPairs: fixer step → loop step.
+ * e.g. code-fixer → code-review, spec-fixer → spec-review, build-fixer → verification
+ */
+function getFixerToLoop(descriptor: PipelineDescriptor): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(descriptor.loopFixerPairs).map(([loop, fixer]) => [fixer, loop]),
+  );
+}
+
+/**
+ * Find the unique reviewer step for the given phase.
+ * Returns undefined if no reviewer exists for that phase.
+ */
+function reviewerOf(descriptor: PipelineDescriptor, phase: "spec" | "impl"): string | undefined {
+  return Object.entries(descriptor.roles).find(
+    ([, entry]) => entry.role === "reviewer" && entry.phase === phase,
+  )?.[0];
+}
+
+/**
+ * Find the unique creator step for the given phase.
+ * Returns undefined if no creator exists for that phase.
+ */
+function creatorOf(descriptor: PipelineDescriptor, phase: "spec" | "impl"): string | undefined {
+  return Object.entries(descriptor.roles).find(
+    ([, entry]) => entry.role === "creator" && entry.phase === phase,
+  )?.[0];
+}
+
+/**
+ * Build the STEP_MAPPING table from the descriptor.
+ * STEP_MAPPING[phase][role] = step name.
+ *
+ * impl-phase fixer is uniquely determined by loopFixerPairs[reviewerOf(impl)],
+ * which resolves to code-fixer (not build-fixer) for the standard pipeline.
+ */
+function buildStepMapping(
+  descriptor: PipelineDescriptor,
+): Record<"spec" | "impl", Partial<Record<LegacyResumeRole, string>>> {
+  const specReviewer = reviewerOf(descriptor, "spec");
+  const implReviewer = reviewerOf(descriptor, "impl");
+  return {
+    spec: {
+      critic:  specReviewer,
+      creator: creatorOf(descriptor, "spec"),
+      fixer:   specReviewer !== undefined ? descriptor.loopFixerPairs[specReviewer] : undefined,
+    },
+    impl: {
+      critic:  implReviewer,
+      creator: creatorOf(descriptor, "impl"),
+      fixer:   implReviewer !== undefined ? descriptor.loopFixerPairs[implReviewer] : undefined,
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// resolveResumeStep
+// ---------------------------------------------------------------------------
 
 /**
  * Resolve the concrete start step for pipeline resume.
  *
+ * @param descriptor - the pipeline descriptor supplying role/phase information.
  * @param from - optional --from flag value ("critic" | "fixer" | "creator").
  *               When specified, role-based mapping takes highest priority.
  * @param resumePoint - the ResumePoint recorded in state, or null.
@@ -103,6 +142,7 @@ const STEP_MAPPING: Record<"spec" | "code", Record<LegacyResumeRole, StepName>> 
  * 3. from undefined + resumePoint null: fallback phase → critic step
  */
 export function resolveResumeStep(
+  descriptor: PipelineDescriptor,
   from: string | undefined,
   resumePoint: ResumePoint | null,
   fallbackStep?: string,
@@ -118,8 +158,19 @@ export function resolveResumeStep(
     if (from === "fixer" || from === "creator" || from === "critic") {
       const role: LegacyResumeRole = from;
       const phaseStep = resumePoint?.step ?? fallbackStep;
-      const phase = phaseStep && isSpecPhase(phaseStep) ? "spec" : "code";
-      return STEP_MAPPING[phase][role];
+      const phase: "spec" | "impl" = phaseStep && isSpecPhase(descriptor, phaseStep) ? "spec" : "impl";
+      const stepMapping = buildStepMapping(descriptor);
+      const resolved = stepMapping[phase][role];
+      if (resolved === undefined) {
+        const phaseLabel = phase;
+        const roleLabel = role === "critic" ? "reviewer" : role;
+        throw new Error(
+          `Cannot resolve --from "${from}": no ${roleLabel} step found in ${phaseLabel} phase ` +
+          `of pipeline "${descriptor.id}". ` +
+          `Check the descriptor's roles configuration.`,
+        );
+      }
+      return toStepName(resolved);
     }
     // 1c. Unknown value: throw with available values listed
     const availableSteps = [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES].join(", ");
@@ -137,7 +188,8 @@ export function resolveResumeStep(
     // This happens when the pipeline transitioned from loop step → fixer but was killed
     // before fixer could execute. Resume should go back to the loop step (reviewer) instead.
     if (steps !== undefined) {
-      const pairedLoop = FIXER_TO_LOOP[resumePoint.step];
+      const fixerToLoop = getFixerToLoop(descriptor);
+      const pairedLoop = fixerToLoop[resumePoint.step];
       if (pairedLoop !== undefined) {
         const fixerRuns = steps[resumePoint.step] ?? [];
         if (fixerRuns.length === 0) {
@@ -146,23 +198,40 @@ export function resolveResumeStep(
           const lastLoopRun = loopRuns[loopRuns.length - 1];
           const lastLoopVerdict = lastLoopRun !== undefined ? lastLoopRun.outcome.verdict : null;
           if (lastLoopVerdict === "needs-fix" || lastLoopVerdict === "failed") {
-            return pairedLoop as StepName;
+            return toStepName(pairedLoop);
           }
         }
       }
     }
 
-    const isReviewer = REVIEWER_STEPS.has(resumePoint.step);
+    const reviewerSteps = getReviewerSteps(descriptor);
+    const isReviewer = reviewerSteps.has(resumePoint.step);
     if (resumePoint.iterationsExhausted > 0 && isReviewer) {
       // Review exhaustion: restart from corresponding fixer
-      const phase = isSpecPhase(resumePoint.step) ? "spec" : "code";
-      return STEP_MAPPING[phase]["fixer"];
+      const phase: "spec" | "impl" = isSpecPhase(descriptor, resumePoint.step) ? "spec" : "impl";
+      const stepMapping = buildStepMapping(descriptor);
+      const fixerStep = stepMapping[phase]["fixer"];
+      if (fixerStep !== undefined) {
+        return toStepName(fixerStep);
+      }
     }
     // Crash/error: restart from the same step that failed
     return resumePoint.step;
   }
 
   // 3. from undefined + resumePoint null: fallback to critic for the phase
-  const phase = fallbackStep && isSpecPhase(fallbackStep) ? "spec" : "code";
-  return STEP_MAPPING[phase]["critic"];
+  const phase: "spec" | "impl" = fallbackStep && isSpecPhase(descriptor, fallbackStep) ? "spec" : "impl";
+  const stepMapping = buildStepMapping(descriptor);
+  const criticStep = stepMapping[phase]["critic"];
+  if (criticStep !== undefined) {
+    return toStepName(criticStep);
+  }
+  // No critic in this phase — fall back to impl critic, or throw
+  const implCritic = stepMapping["impl"]["critic"];
+  if (implCritic !== undefined) {
+    return toStepName(implCritic);
+  }
+  throw new Error(
+    `Cannot resolve resume step: no critic (reviewer) step found in pipeline "${descriptor.id}".`,
+  );
 }

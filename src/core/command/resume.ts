@@ -15,6 +15,8 @@ import { resolveJobStateBySlug } from "../resume/resolve-job.js";
 import { resolveRequestPath } from "../resume/resolve-request-path.js";
 import { getJobSlug } from "../../state/job-slug.js";
 import { resolveResumeStep } from "../resume/resolve-step.js";
+import { getPipelineDescriptor } from "../pipeline/registry.js";
+import { getPipelineId } from "../../state/pipeline-id.js";
 import { checkConsecutiveEscalations, checkStaleState, isStaleRunning } from "../resume/safety.js";
 import { canTransition, transitionJob } from "../../state/lifecycle.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
@@ -147,9 +149,11 @@ export class ResumeCommand extends CommandRunner {
 
     const fallbackStep = resumePoint === null ? state.step : undefined;
 
+    const descriptor = getPipelineDescriptor(getPipelineId(state));
+
     let startStep: StepName;
     try {
-      startStep = resolveResumeStep(this.options.from, resumePoint, fallbackStep, state.steps);
+      startStep = resolveResumeStep(descriptor, this.options.from, resumePoint, fallbackStep, state.steps);
     } catch (err) {
       logError((err as Error).message);
       throw new PrepareError(1, "Failed to resolve resume step");
