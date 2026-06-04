@@ -1,51 +1,49 @@
 import type { JobState } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
-import type { Step } from "../step/types.js";
+import type { PipelineDescriptor } from "./types.js";
 import { getMaxRetries } from "../../config/getAgentId.js";
 import { Pipeline } from "./pipeline.js";
-import { STANDARD_TRANSITIONS } from "./types.js";
-import type { Transition } from "./types.js";
 import { EventBus } from "../event/event-bus.js";
 import { StepExecutor } from "../step/executor.js";
 import type { AgentRunner } from "../port/agent-runner.js";
-import { DesignStep } from "../step/design.js";
-import { SpecReviewStep } from "../step/spec-review.js";
-import { SpecFixerStep } from "../step/spec-fixer.js";
-import { ImplementerStep } from "../step/implementer.js";
-import { VerificationStep } from "../step/verification.js";
-import { BuildFixerStep } from "../step/build-fixer.js";
-import { CodeReviewStep } from "../step/code-review.js";
-import { CodeFixerStep } from "../step/code-fixer.js";
-import { ConformanceStep } from "../step/conformance.js";
-import { AdrGenStep } from "../step/adr-gen.js";
-import { PrCreateStep } from "../step/pr-create.js";
-import { TestCaseGenStep } from "../step/test-case-gen.js";
-import { STEP_NAMES } from "../step/step-names.js";
-
-/** Loop step names used by the standard pipeline. */
-export const STANDARD_LOOP_NAMES: readonly string[] = [
-  STEP_NAMES.SPEC_REVIEW,
-  STEP_NAMES.VERIFICATION,
-  STEP_NAMES.CODE_REVIEW,
-  STEP_NAMES.CONFORMANCE,
-];
-
-/** Review → fixer step mapping used by the standard pipeline. */
-export const STANDARD_LOOP_FIXER_PAIRS: Readonly<Record<string, string>> = {
-  [STEP_NAMES.CODE_REVIEW]: STEP_NAMES.CODE_FIXER,
-  [STEP_NAMES.SPEC_REVIEW]: STEP_NAMES.SPEC_FIXER,
-  [STEP_NAMES.VERIFICATION]: STEP_NAMES.BUILD_FIXER,
-};
+import { getPipelineId } from "../../state/pipeline-id.js";
+import {
+  STANDARD_DESCRIPTOR,
+  DESIGN_ONLY_DESCRIPTOR,
+  getPipelineDescriptor,
+} from "./registry.js";
 
 /**
- * Construct the standard Pipeline with all steps and transitions.
- * Extracted so that resume.ts can call pipeline.run(startStep, ...) directly.
+ * Loop step names used by the standard pipeline.
+ * Re-exported as a view of STANDARD_DESCRIPTOR.loopNames for backward compatibility.
+ * resolve-step.ts and tests import from this module — export name and type are preserved.
+ */
+export const STANDARD_LOOP_NAMES: readonly string[] = STANDARD_DESCRIPTOR.loopNames;
+
+/**
+ * Review → fixer step mapping used by the standard pipeline.
+ * Re-exported as a view of STANDARD_DESCRIPTOR.loopFixerPairs for backward compatibility.
+ * resolve-step.ts imports STANDARD_LOOP_FIXER_PAIRS from this module — preserved.
+ */
+export const STANDARD_LOOP_FIXER_PAIRS: Readonly<Record<string, string>> = STANDARD_DESCRIPTOR.loopFixerPairs;
+
+// ---------------------------------------------------------------------------
+// buildPipeline — core builder (descriptor → Pipeline)
+// ---------------------------------------------------------------------------
+
+/**
+ * Construct a Pipeline from a PipelineDescriptor.
+ * Resolves executor from deps.runner and maxIterations from descriptor or config.
  *
+ * @param descriptor - pipeline configuration descriptor from the registry
  * @param deps - pipeline dependencies (config, runtime, etc.)
  * @param events - optional EventBus (creates a new one if not provided)
  */
-export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): Pipeline {
-  const maxIterations = getMaxRetries(deps.config);
+export function buildPipeline(
+  descriptor: PipelineDescriptor,
+  deps: PipelineDeps,
+  events?: EventBus,
+): Pipeline {
   const bus = events ?? new EventBus();
 
   // Design D8: runner is injected by RuntimeStrategy.buildDeps() — no runtime branch here.
@@ -55,39 +53,63 @@ export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): P
 
   const executor = new StepExecutor(bus, runner, deps.storeFactory);
 
-  const steps = new Map<string, Step>([
-    [STEP_NAMES.DESIGN,      DesignStep],
-    [STEP_NAMES.SPEC_REVIEW, SpecReviewStep],
-    [STEP_NAMES.SPEC_FIXER,  SpecFixerStep],
-    [STEP_NAMES.TEST_CASE_GEN, TestCaseGenStep],
-    [STEP_NAMES.IMPLEMENTER, ImplementerStep],
-    [STEP_NAMES.VERIFICATION, VerificationStep],
-    [STEP_NAMES.BUILD_FIXER, BuildFixerStep],
-    [STEP_NAMES.CODE_REVIEW, CodeReviewStep],
-    [STEP_NAMES.CODE_FIXER,  CodeFixerStep],
-    [STEP_NAMES.CONFORMANCE, ConformanceStep],
-    [STEP_NAMES.ADR_GEN,     AdrGenStep],
-    [STEP_NAMES.PR_CREATE,   PrCreateStep],
-  ]);
+  const maxIterations = descriptor.maxIterations ?? getMaxRetries(deps.config);
 
   return new Pipeline({
-    steps,
-    transitions: STANDARD_TRANSITIONS,
+    steps: new Map(descriptor.steps),
+    transitions: [...descriptor.transitions],
     maxIterations,
     executor,
     events: bus,
-    loopName: STEP_NAMES.SPEC_REVIEW,
-    loopNames: [...STANDARD_LOOP_NAMES],
-    loopFixerPairs: { ...STANDARD_LOOP_FIXER_PAIRS },
+    loopName: descriptor.loopName,
+    loopNames: [...descriptor.loopNames],
+    loopFixerPairs: { ...descriptor.loopFixerPairs },
   });
 }
 
+// ---------------------------------------------------------------------------
+// buildPipelineForJob — convenience wrapper for job-state-driven construction
+// ---------------------------------------------------------------------------
+
 /**
- * Run the full pipeline: design → spec-review loop (with spec-fixer on needs-fix).
+ * Resolve the pipeline descriptor from jobState.pipelineId and construct a Pipeline.
+ * Used by CommandRunner to build the pipeline for a specific job.
  *
- * This is a thin wrapper that constructs the Pipeline class with the standard
- * transition table and calls pipeline.run(). The function signature is preserved
- * bit-for-bit so existing callers (CLI) work unchanged.
+ * @param jobState - job state carrying the pipelineId (defaults to "standard" if absent)
+ * @param deps - pipeline dependencies
+ * @param events - optional EventBus
+ */
+export function buildPipelineForJob(
+  jobState: JobState,
+  deps: PipelineDeps,
+  events?: EventBus,
+): Pipeline {
+  const descriptor = getPipelineDescriptor(getPipelineId(jobState));
+  return buildPipeline(descriptor, deps, events);
+}
+
+// ---------------------------------------------------------------------------
+// createStandardPipeline — backward-compat wrapper
+// ---------------------------------------------------------------------------
+
+/**
+ * Construct the standard Pipeline with all steps and transitions.
+ * Delegates to buildPipeline(STANDARD_DESCRIPTOR, ...) for backward compatibility.
+ * Existing callers (tests, resume.ts) work unchanged.
+ *
+ * @param deps - pipeline dependencies (config, runtime, etc.)
+ * @param events - optional EventBus (creates a new one if not provided)
+ */
+export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): Pipeline {
+  return buildPipeline(STANDARD_DESCRIPTOR, deps, events);
+}
+
+// ---------------------------------------------------------------------------
+// runPipeline — thin wrapper for the full pipeline
+// ---------------------------------------------------------------------------
+
+/**
+ * Run the full pipeline: resolves pipelineId from jobState → descriptor → Pipeline → run.
  *
  * Behavior invariants maintained:
  * - stdout `[iter N/M]` format is bit-for-bit unchanged
@@ -100,53 +122,29 @@ export async function runPipeline(
   events?: EventBus,
 ): Promise<JobState> {
   const bus = events ?? new EventBus();
-  const pipeline = createStandardPipeline(deps, bus);
-  return pipeline.run(STEP_NAMES.DESIGN, jobState, deps);
+  const descriptor = getPipelineDescriptor(getPipelineId(jobState));
+  const pipeline = buildPipeline(descriptor, deps, bus);
+  return pipeline.run(descriptor.startStep, jobState, deps);
 }
+
+// ---------------------------------------------------------------------------
+// runDesignPipeline — design-only pipeline
+// ---------------------------------------------------------------------------
 
 /**
  * Run only the design step (no spec-review loop).
  *
- * Uses the Pipeline class with a design-only step map and a transition table
- * that terminates after design completes. Preserves all error semantics of the
- * original implementation via StepExecutor.
+ * Delegates to buildPipeline(DESIGN_ONLY_DESCRIPTOR, ...). Preserves all error
+ * semantics of the original implementation via StepExecutor.
  *
- * Note: Unlike the old runDesignStepLegacy, errors from the design step are
- * surfaced via err.state (attached by StepExecutor) rather than re-thrown directly.
- * Tests that relied on the legacy re-throw behavior should use the err.state path.
+ * Note: Errors from the design step are surfaced via err.state (attached by
+ * StepExecutor) rather than re-thrown directly.
  */
 export async function runDesignPipeline(
   jobState: JobState,
   deps: PipelineDeps,
   events?: EventBus,
 ): Promise<JobState> {
-  const bus = events ?? new EventBus();
-
-  // Design D8: runner is injected by RuntimeStrategy.buildDeps() — no runtime branch here.
-  const designRunner: AgentRunner = deps.runner ?? (() => {
-    throw new Error("PipelineDeps.runner is required. Use createRuntime().buildDeps() to construct PipelineDeps.");
-  })();
-
-  const executor = new StepExecutor(bus, designRunner, deps.storeFactory);
-
-  const steps = new Map([
-    [STEP_NAMES.DESIGN, DesignStep],
-  ]);
-
-  // Design-only transition table: design always terminates (success or error → end)
-  const designOnlyTransitions: Transition[] = [
-    { step: STEP_NAMES.DESIGN, on: "success", to: "end" },
-    { step: STEP_NAMES.DESIGN, on: "error",   to: "escalate" },
-  ];
-
-  const pipeline = new Pipeline({
-    steps,
-    transitions: designOnlyTransitions,
-    maxIterations: 1,
-    executor,
-    events: bus,
-    loopName: STEP_NAMES.DESIGN,
-  });
-
-  return pipeline.run(STEP_NAMES.DESIGN, jobState, deps);
+  const pipeline = buildPipeline(DESIGN_ONLY_DESCRIPTOR, deps, events);
+  return pipeline.run(DESIGN_ONLY_DESCRIPTOR.startStep, jobState, deps);
 }

@@ -46,25 +46,31 @@ vi.mock("../../../src/core/worktree/manager.js", () => ({
   }),
 }));
 
-vi.mock("../../../src/core/pipeline/index.js", () => ({
-  createStandardPipeline: vi.fn().mockReturnValue({
-    run: vi.fn().mockResolvedValue({
-      version: 1,
-      jobId: "test-job",
-      status: "awaiting-archive",
-      step: "pr-create",
-      branch: "feat/test",
-      history: [],
-      error: null,
-      steps: {},
-      createdAt: "2026-01-01T00:00:00.000Z",
-      updatedAt: "2026-01-01T00:00:00.000Z",
-      request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test" },
-      repository: { owner: "user", name: "repo" },
-      session: null,
+vi.mock("../../../src/core/pipeline/index.js", () => {
+  const defaultState = {
+    version: 1,
+    jobId: "test-job",
+    status: "awaiting-archive",
+    step: "pr-create",
+    branch: "feat/test",
+    history: [],
+    error: null,
+    steps: {},
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test" },
+    repository: { owner: "user", name: "repo" },
+    session: null,
+  };
+  return {
+    createStandardPipeline: vi.fn().mockReturnValue({
+      run: vi.fn().mockResolvedValue(defaultState),
     }),
-  }),
-}));
+    buildPipelineForJob: vi.fn().mockReturnValue({
+      run: vi.fn().mockResolvedValue(defaultState),
+    }),
+  };
+});
 
 vi.mock("../../../src/cli/progress.js", () => ({
   ProgressDisplay: vi.fn(),
@@ -345,8 +351,8 @@ describe("TC-RESUME-013: exact #236 — fixer-empty mismatch detected at command
     expect(exitCode).toBe(0);
 
     // Verify the pipeline was invoked with startStep = "code-review", not "code-fixer"
-    const { createStandardPipeline } = await import("../../../src/core/pipeline/index.js");
-    const pipelineMock = vi.mocked(createStandardPipeline);
+    const { buildPipelineForJob } = await import("../../../src/core/pipeline/index.js");
+    const pipelineMock = vi.mocked(buildPipelineForJob);
     // pipeline.run(startStep, jobState, deps) — first arg is startStep
     const runFn = pipelineMock.mock.results[0]?.value.run as ReturnType<typeof vi.fn>;
     expect(runFn.mock.calls[0]?.[0]).toBe("code-review");

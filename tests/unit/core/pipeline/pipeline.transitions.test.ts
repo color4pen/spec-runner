@@ -596,28 +596,10 @@ describe("TC-024: runPipeline の loopNames に code-review が含まれる", ()
 // TC-023: loopNames — pr-create が loopNames に含まれない
 // TC-016: conformance が STANDARD_LOOP_NAMES に含まれる
 describe("TC-023/016: Pipeline loopNames — pr-create が含まれない、conformance が含まれる", () => {
-  it("run.ts の loopNames に conformance が含まれ、pr-create が含まれない", async () => {
-    const fs = await import("node:fs/promises");
-    const source = await fs.readFile(
-      new URL("../../../../src/core/pipeline/run.ts", import.meta.url).pathname,
-      "utf-8",
-    );
-
-    // loopNames should include spec-review, verification, code-review, conformance (via STEP_NAMES constants)
-    expect(source).toContain('STEP_NAMES.SPEC_REVIEW');
-    expect(source).toContain('STEP_NAMES.VERIFICATION');
-    expect(source).toContain('STEP_NAMES.CODE_REVIEW');
-    expect(source).toContain('STEP_NAMES.CONFORMANCE');
-
-    // loopNames array should NOT contain pr-create
-    const loopNamesMatch = /loopNames:\s*\[([^\]]+)\]/.exec(source);
-    expect(loopNamesMatch).not.toBeNull();
-    expect(loopNamesMatch![1]).not.toContain("pr-create");
-  });
-
-  it("TC-016: STANDARD_LOOP_NAMES contains conformance", async () => {
+  it("STANDARD_LOOP_NAMES に conformance が含まれ、pr-create が含まれない", async () => {
     const { STANDARD_LOOP_NAMES } = await import("../../../../src/core/pipeline/run.js");
     expect(STANDARD_LOOP_NAMES).toContain("conformance");
+    expect(STANDARD_LOOP_NAMES).not.toContain("pr-create");
   });
 });
 

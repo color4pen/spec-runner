@@ -125,25 +125,31 @@ class TestCommand extends CommandRunner {
 }
 
 // Mock pipeline to return a successful state
-vi.mock("../../../../src/core/pipeline/index.js", () => ({
-  createStandardPipeline: vi.fn().mockReturnValue({
-    run: vi.fn().mockResolvedValue({
-      version: 1,
-      jobId: "test-job-id",
-      createdAt: "2026-01-01",
-      updatedAt: "2026-01-01",
-      request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
-      repository: { owner: "testowner", name: "testrepo" },
-      session: null,
-      step: "pr-create",
-      status: "awaiting-archive",
-      branch: "feat/test",
-      history: [],
-      error: null,
-      steps: {},
+vi.mock("../../../../src/core/pipeline/index.js", () => {
+  const defaultState = {
+    version: 1,
+    jobId: "test-job-id",
+    createdAt: "2026-01-01",
+    updatedAt: "2026-01-01",
+    request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
+    repository: { owner: "testowner", name: "testrepo" },
+    session: null,
+    step: "pr-create",
+    status: "awaiting-archive",
+    branch: "feat/test",
+    history: [],
+    error: null,
+    steps: {},
+  };
+  return {
+    createStandardPipeline: vi.fn().mockReturnValue({
+      run: vi.fn().mockResolvedValue(defaultState),
     }),
-  }),
-}));
+    buildPipelineForJob: vi.fn().mockReturnValue({
+      run: vi.fn().mockResolvedValue(defaultState),
+    }),
+  };
+});
 
 // ---------------------------------------------------------------------------
 // TC-RESUME-PROMPT-001: resumePrompt が PrepareResult に設定されているとき deps に伝播する

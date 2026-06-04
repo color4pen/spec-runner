@@ -1,6 +1,31 @@
 import type { Verdict, JobState } from "../../state/schema.js";
 import { STEP_NAMES } from "../step/step-names.js";
 import type { CodeReviewReportResult } from "../port/report-result.js";
+import type { Step } from "../step/types.js";
+
+/**
+ * Declarative description of a complete pipeline configuration.
+ * Registry maps pipeline identifiers to their corresponding descriptor.
+ * Consumers build Pipeline instances from a descriptor via buildPipeline().
+ */
+export interface PipelineDescriptor {
+  /** Unique pipeline identifier (matches PIPELINE_IDS entries). */
+  id: string;
+  /** Ordered step entries: [stepName, Step] pairs that form the pipeline's Map. */
+  steps: readonly (readonly [string, Step])[];
+  /** Transition table driving the state machine. */
+  transitions: readonly Transition[];
+  /** Primary loop step name used for stdout progress output. */
+  loopName: string;
+  /** All loop step names (includes loopName and any additional loops). */
+  loopNames: readonly string[];
+  /** Mapping: review step name → paired fixer step name. */
+  loopFixerPairs: Readonly<Record<string, string>>;
+  /** Step name where pipeline.run() begins for a fresh execution. */
+  startStep: string;
+  /** Override for Pipeline's maxIterations. When absent, resolved from config. */
+  maxIterations?: number;
+}
 
 /**
  * A single row in the transition table.

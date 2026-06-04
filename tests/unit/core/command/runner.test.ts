@@ -139,28 +139,31 @@ vi.mock("../../../../src/logger/log-retention.js", () => ({
 }));
 
 // Mock the pipeline to return a specific final state
-vi.mock("../../../../src/core/pipeline/index.js", () => ({
-  createStandardPipeline: vi.fn().mockReturnValue({
-    run: vi.fn().mockResolvedValue(
-      // Default: awaiting-merge success state
-      {
-        version: 1,
-        jobId: "test-job-id",
-        createdAt: "2026-01-01",
-        updatedAt: "2026-01-01",
-        request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
-        repository: { owner: "testowner", name: "testrepo" },
-        session: null,
-        step: "pr-create",
-        status: "awaiting-archive",
-        branch: "feat/test",
-        history: [],
-        error: null,
-        steps: {},
-      }
-    ),
-  }),
-}));
+vi.mock("../../../../src/core/pipeline/index.js", () => {
+  const defaultState = {
+    version: 1,
+    jobId: "test-job-id",
+    createdAt: "2026-01-01",
+    updatedAt: "2026-01-01",
+    request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
+    repository: { owner: "testowner", name: "testrepo" },
+    session: null,
+    step: "pr-create",
+    status: "awaiting-archive",
+    branch: "feat/test",
+    history: [],
+    error: null,
+    steps: {},
+  };
+  return {
+    createStandardPipeline: vi.fn().mockReturnValue({
+      run: vi.fn().mockResolvedValue(defaultState),
+    }),
+    buildPipelineForJob: vi.fn().mockReturnValue({
+      run: vi.fn().mockResolvedValue(defaultState),
+    }),
+  };
+});
 
 // TC-CR-001: execute() follows the template method sequence
 describe("TC-CR-001: execute() calls template method steps in order", () => {
@@ -185,8 +188,8 @@ describe("TC-CR-002: pipeline throw → outputPipelineThrowError + teardown + re
     const command = new TestCommand(runtime, buildPrepareResult());
 
     // Override pipeline mock to throw
-    const { createStandardPipeline } = await import("../../../../src/core/pipeline/index.js");
-    (createStandardPipeline as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+    const { buildPipelineForJob } = await import("../../../../src/core/pipeline/index.js");
+    (buildPipelineForJob as ReturnType<typeof vi.fn>).mockReturnValueOnce({
       run: vi.fn().mockRejectedValue(pipelineError),
     });
 
@@ -230,8 +233,8 @@ describe("TC-CR-005: awaiting-resume path returns 1", () => {
     const command = new TestCommand(runtime, buildPrepareResult());
 
     // Override pipeline to return awaiting-resume
-    const { createStandardPipeline } = await import("../../../../src/core/pipeline/index.js");
-    (createStandardPipeline as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+    const { buildPipelineForJob } = await import("../../../../src/core/pipeline/index.js");
+    (buildPipelineForJob as ReturnType<typeof vi.fn>).mockReturnValueOnce({
       run: vi.fn().mockResolvedValue({
         version: 1, jobId: "test", createdAt: "", updatedAt: "",
         request: { path: "/req.md", title: "T", type: "t", slug: "s" },
@@ -262,8 +265,8 @@ describe("TC-CR-006: awaiting-merge with pullRequest.url outputs PR URL", () => 
     const runtime = buildMockRuntime();
     const command = new TestCommand(runtime, buildPrepareResult());
 
-    const { createStandardPipeline } = await import("../../../../src/core/pipeline/index.js");
-    (createStandardPipeline as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+    const { buildPipelineForJob } = await import("../../../../src/core/pipeline/index.js");
+    (buildPipelineForJob as ReturnType<typeof vi.fn>).mockReturnValueOnce({
       run: vi.fn().mockResolvedValue({
         version: 1, jobId: "test-job-id", createdAt: "", updatedAt: "",
         request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
@@ -310,7 +313,7 @@ describe("TC-CR-008: worktreePath from workspace is reflected in jobState passed
 
     const command = new TestCommand(runtime, buildPrepareResult());
 
-    const { createStandardPipeline } = await import("../../../../src/core/pipeline/index.js");
+    const { buildPipelineForJob } = await import("../../../../src/core/pipeline/index.js");
     const pipelineRunSpy = vi.fn().mockResolvedValue({
       version: 1, jobId: "test-job-id", createdAt: "", updatedAt: "",
       request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
@@ -318,7 +321,7 @@ describe("TC-CR-008: worktreePath from workspace is reflected in jobState passed
       session: null, step: "pr-create", status: "awaiting-archive",
       branch: "feat/test", history: [], error: null, steps: {},
     });
-    (createStandardPipeline as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+    (buildPipelineForJob as ReturnType<typeof vi.fn>).mockReturnValueOnce({
       run: pipelineRunSpy,
     });
 
@@ -364,8 +367,8 @@ describe("TC-CR-010: pipeline throw with running disk state marks job as failed"
     const runtime = buildMockRuntime();
     const command = new TestCommand(runtime, buildPrepareResult({ jobState: realJobState, repoRoot: tempDir }));
 
-    const { createStandardPipeline } = await import("../../../../src/core/pipeline/index.js");
-    (createStandardPipeline as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+    const { buildPipelineForJob } = await import("../../../../src/core/pipeline/index.js");
+    (buildPipelineForJob as ReturnType<typeof vi.fn>).mockReturnValueOnce({
       run: vi.fn().mockRejectedValue(new Error("Pipeline crashed unexpectedly")),
     });
 
@@ -392,8 +395,8 @@ describe("TC-CR-011: pipeline throw with awaiting-resume state does not overwrit
     const runtime = buildMockRuntime();
     const command = new TestCommand(runtime, buildPrepareResult({ jobState: realJobState }));
 
-    const { createStandardPipeline } = await import("../../../../src/core/pipeline/index.js");
-    (createStandardPipeline as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+    const { buildPipelineForJob } = await import("../../../../src/core/pipeline/index.js");
+    (buildPipelineForJob as ReturnType<typeof vi.fn>).mockReturnValueOnce({
       run: vi.fn().mockImplementation(async () => {
         // Simulate pipeline safety net: transition state to awaiting-resume before throwing
         await store.update(realJobState, { status: "awaiting-resume" });
@@ -433,8 +436,8 @@ describe("TC-06-03: verbose log closed on pipeline error", () => {
     const command = new TestCommand(runtime, buildPrepareResult({ logLevel: "verbose" }));
 
     // Override pipeline to throw
-    const { createStandardPipeline } = await import("../../../../src/core/pipeline/index.js");
-    (createStandardPipeline as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+    const { buildPipelineForJob } = await import("../../../../src/core/pipeline/index.js");
+    (buildPipelineForJob as ReturnType<typeof vi.fn>).mockReturnValueOnce({
       run: vi.fn().mockRejectedValue(new Error("pipeline error")),
     });
 

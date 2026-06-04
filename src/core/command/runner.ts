@@ -9,7 +9,7 @@
  *   2. runtime.setupWorkspace()
  *   3. runtime.buildDeps()
  *   4. runtime.registerCleanup()
- *   5. runPipeline (via createStandardPipeline + pipeline.run)
+ *   5. runPipeline (via buildPipelineForJob + pipeline.run)
  *   6. handleResult()
  *   7. runtime.teardown()
  *
@@ -31,7 +31,7 @@ import type { JobState, StepName } from "../../state/schema.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { EventBus } from "../event/event-bus.js";
-import { createStandardPipeline } from "../pipeline/index.js";
+import { buildPipelineForJob } from "../pipeline/index.js";
 import type { CleanupHandle, RuntimeStrategy, WorkspaceOptions } from "../port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
@@ -180,7 +180,7 @@ export abstract class CommandRunner {
       // Step 5: runPipeline
       let finalState: JobState;
       try {
-        const pipeline = createStandardPipeline(deps, this.events);
+        const pipeline = buildPipelineForJob(jobState, deps, this.events);
         finalState = await pipeline.run(startStep, jobState, deps);
       } catch (err) {
         // Defensive: if pipeline safety net did not transition state, mark as failed

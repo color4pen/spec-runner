@@ -8,22 +8,15 @@ import { describe, it, expect, vi } from "vitest";
 
 // TC-025: Pipeline steps Map — pr-create が登録されている
 describe("TC-025: Pipeline steps Map — pr-create が登録されている", () => {
-  it("steps Map contains 9 entries including pr-create", async () => {
-    // Read run.ts source to verify pr-create is in the steps Map
-    const fs = await import("node:fs/promises");
-    const source = await fs.readFile(
-      new URL("../../../../src/core/pipeline/run.ts", import.meta.url).pathname,
-      "utf-8",
-    );
+  it("STANDARD_DESCRIPTOR has at least 9 steps including pr-create", async () => {
+    const { STANDARD_DESCRIPTOR } = await import("../../../../src/core/pipeline/registry.js");
 
-    // Verify pr-create is included in the steps Map (via STEP_NAMES constant)
-    expect(source).toContain('STEP_NAMES.PR_CREATE');
-    expect(source).toContain("PrCreateStep");
+    // Verify STANDARD_DESCRIPTOR has at least 9 steps (runtime check)
+    expect(STANDARD_DESCRIPTOR.steps.length).toBeGreaterThanOrEqual(9);
 
-    // Count entries in the steps Map by counting [STEP_NAMES.*, Step] patterns
-    const mapEntries = source.match(/\[STEP_NAMES\.\w+,\s+\w+Step\]/g);
-    expect(mapEntries).not.toBeNull();
-    expect(mapEntries!.length).toBeGreaterThanOrEqual(9);
+    // Verify pr-create is included in the steps
+    const prCreateEntry = STANDARD_DESCRIPTOR.steps.find(([name]) => name === "pr-create");
+    expect(prCreateEntry).toBeDefined();
   });
 });
 
