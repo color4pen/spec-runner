@@ -20,7 +20,7 @@
 - tactical DDD は 4 概念のみ: Aggregate=`JobState`+`StepRun[]` / Repository=`JobStateStore`,`ConfigStore` / Value Object=`Verdict`,`StepOutcome`,`StepName` / Domain Event=`EventBus`。
 - 制約: solo dogfood・TS・重い ceremony（DI コンテナ / フル DDD / 未使用 port）を入れない。
 
-> **被覆スコープ（静的構造のみ）**: step 間の制御 / データの時系列フロー（誰が `JobState` のどのフィールドを書き、どの routing が読むか）は **振る舞いの authority（test suite）が担う**。本書は静的構造（層・依存・不変条件）のみを縛り、dynamic view（C4 Dynamic / シーケンス）は持たない。
+> **被覆スコープ**: 本書は静的構造（層・依存・不変条件）のみを縛る。
 
 ---
 

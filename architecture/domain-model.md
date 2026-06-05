@@ -20,8 +20,6 @@
   - `version` は常に 1。`status` は `JobStatus` の列挙内（validateJobState が強制）。
 - → `src/state/schema.ts`（正確なフィールドはコードが正典）
 
-> **lifecycle（状態遷移）と liveness（実行時束縛）は動的構造** ＝ `dynamic-model.md`。本書は静的なデータの形のみを持つ。
-
 ### StepRun / StepOutcome — 1 step の 1 実行（journal の record）
 ```ts
 interface StepRun { attempt: number; sessionId: string | null; outcome: StepOutcome; startedAt; endedAt }
