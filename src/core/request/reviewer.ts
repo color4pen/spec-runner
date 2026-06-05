@@ -38,6 +38,14 @@ export interface RequestReviewResult {
 
 const VALID_VERDICTS: readonly RequestReviewVerdict[] = ["approve", "needs-discussion", "reject"];
 
+/**
+ * Fixed diagnostic message used when structured JSON output cannot be parsed.
+ * Must not contain any input-derived text so it is clearly distinguishable from
+ * a real review result.
+ */
+export const PARSE_FAILURE_SUMMARY =
+  "Structured reviewer output could not be parsed as JSON. This is not a confirmed verdict — please re-run the review.";
+
 function isValidVerdict(value: unknown): value is RequestReviewVerdict {
   return typeof value === "string" && (VALID_VERDICTS as readonly string[]).includes(value);
 }
@@ -89,7 +97,7 @@ export function parseReviewOutput(text: string): RequestReviewResult {
         description: "Could not parse structured output from reviewer",
       },
     ],
-    summary: text.slice(0, 500),
+    summary: PARSE_FAILURE_SUMMARY,
   };
 }
 

@@ -19,6 +19,7 @@ import {
   buildInitialMessage,
   type RequestReviewResult,
 } from "../../../src/core/command/request-review.js";
+import { PARSE_FAILURE_SUMMARY } from "../../../src/core/request/reviewer.js";
 import { REQUEST_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/request-review-system.js";
 
 // ---------------------------------------------------------------------------
@@ -72,7 +73,9 @@ describe("TC-RR-002: parseReviewOutput with no JSON block", () => {
     const finding = result.findings[0];
     expect(finding?.severity).toBe("HIGH");
     expect(finding?.category).toBe("parse-error");
-    expect(result.summary).toBe(text.slice(0, 500));
+    // summary must be the fixed diagnostic string, not a raw echo of the input
+    expect(result.summary).toBe(PARSE_FAILURE_SUMMARY);
+    expect(result.summary).not.toContain(text);
   });
 });
 

@@ -27,6 +27,7 @@ import {
   buildInitialMessage,
   formatHumanReadable,
   runReview,
+  PARSE_FAILURE_SUMMARY,
   type RequestReviewResult,
 } from "../../../../src/core/request/reviewer.js";
 
@@ -73,7 +74,9 @@ describe("TC-RVR-002: parseReviewOutput with no JSON block", () => {
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0]?.severity).toBe("HIGH");
     expect(result.findings[0]?.category).toBe("parse-error");
-    expect(result.summary).toBe(text.slice(0, 500));
+    // summary must be the fixed diagnostic string, not a raw echo of the input
+    expect(result.summary).toBe(PARSE_FAILURE_SUMMARY);
+    expect(result.summary).not.toContain(text);
   });
 });
 
@@ -436,4 +439,86 @@ describe("TC-RVR-018: formatHumanReadable — summary #N references match findin
     expect(output).toContain("#1 [HIGH]");
     expect(output).toContain("#2 [MEDIUM]");
   });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RVR-019: parseReviewOutput — truncated JSON (fence opened, body cut off)
+// ---------------------------------------------------------------------------
+describe("TC-RVR-019: parseReviewOutput — truncated/incomplete JSON block", () => {
+  it("falls back when ```json fence is open but content is cut off mid-object", () => {
+    // Simulate a truncated response: the JSON fence is opened but the closing
+    // brace and closing fence are missing (truncation at output limit).
+    const text = `Reviewing the request...
+
+\`\`\`json
+{
+  "verdict": "approve",
+  "findings": [
+    {
+      "number": 1,
+      "severity": "LOW",
+      "category": "clarity",
+      "description": "Minor wording issue"
+    }
+  ],
+  "summary": "All good.
+`;
+    const result = parseReviewOutput(text);
+
+    // Must fall back — no complete ```json...``` block exists
+    expect(result.verdict).toBe("needs-discussion");
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0]?.category).toBe("parse-error");
+    expect(result.findings[0]?.severity).toBe("HIGH");
+
+    // Summary must be the fixed diagnostic string, not raw input content
+    expect(result.summary).toBe(PARSE_FAILURE_SUMMARY);
+    expect(result.summary).not.toContain("All good.");
+    expect(result.summary).not.toContain("Minor wording issue");
+  });
+
+  it("falls back when JSON block is present but body is incomplete (malformed truncation)", () => {
+    // Fence is properly closed but the JSON itself is incomplete (missing closing brace)
+    const text = `\`\`\`json
+{
+  "verdict": "approve",
+  "findings": [
+\`\`\``;
+    const result = parseReviewOutput(text);
+
+    expect(result.verdict).toBe("needs-discussion");
+    expect(result.findings[0]?.category).toBe("parse-error");
+    expect(result.summary).toBe(PARSE_FAILURE_SUMMARY);
+    expect(result.summary).not.toContain("approve");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RVR-020: fallback always has parse-error finding for all failure modes
+// ---------------------------------------------------------------------------
+describe("TC-RVR-020: parse-error finding present in all fallback modes", () => {
+  const failureCases = [
+    { label: "no JSON block", text: "Plain text with no fences." },
+    { label: "malformed JSON", text: "```json\n{ verdict: approve }\n```" },
+    {
+      label: "invalid verdict",
+      text: "```json\n" + JSON.stringify({ verdict: "maybe", findings: [], summary: "x" }) + "\n```",
+    },
+    {
+      label: "truncated — open fence only",
+      text: "```json\n{ \"verdict\": \"approve\"\n",
+    },
+  ];
+
+  for (const { label, text } of failureCases) {
+    it(`includes category:'parse-error' finding for: ${label}`, () => {
+      const result = parseReviewOutput(text);
+      expect(result.verdict).toBe("needs-discussion");
+      const parseErrorFinding = result.findings.find((f) => f.category === "parse-error");
+      expect(parseErrorFinding).toBeDefined();
+      expect(result.summary).toBe(PARSE_FAILURE_SUMMARY);
+      // Ensure raw input is not echoed in summary
+      expect(result.summary).not.toBe(text.slice(0, 500));
+    });
+  }
 });

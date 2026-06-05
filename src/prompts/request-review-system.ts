@@ -93,29 +93,9 @@ These are codebase exploration perspectives. Severity judgments remain limited t
 
 ## Output Format
 
-Your response MUST follow this exact structure:
+Your response MUST end with exactly one \`\`\`json block. This JSON block is the **only** required output artifact.
 
-### 1. Findings Summary Table
-
-\`\`\`markdown
-## Findings Summary
-| # | Severity | Category | Description | Location | Recommendation |
-|---|----------|----------|-------------|----------|----------------|
-| 1 | HIGH | <category> | <concise description> | <location or —> | <recommendation or —> |
-| 2 | MEDIUM | <category> | <concise description> | — | — |
-\`\`\`
-
-Categories: requirements, scope, acceptance-criteria, external-dependency, clarity, feasibility
-
-### 2. Verdict
-
-\`\`\`markdown
-## Verdict: <approve|needs-discussion|reject>
-
-<1-3 sentence summary explaining the verdict. Reference findings by #N number.>
-\`\`\`
-
-### 3. Structured JSON Block (REQUIRED — must be the last block in your response)
+Output the JSON block as the last thing in your response. Any prose before the JSON block must be minimal — do **not** repeat the findings in a separate Markdown table or verdict heading before the JSON.
 
 End your response with exactly this JSON block:
 
@@ -136,9 +116,12 @@ End your response with exactly this JSON block:
 }
 \`\`\`
 
-- \`number\` is 1-indexed and matches the # column in the Findings Summary table
+Categories: requirements, scope, acceptance-criteria, external-dependency, clarity, feasibility
+
+- \`number\` is 1-indexed
 - \`location\` and \`recommendation\` are optional — omit the field entirely if not applicable
 - summary text MUST use \`#N\` references that correspond to finding numbers
+- JSON block MUST be the last block in your response
 
 ---
 
@@ -156,10 +139,7 @@ Derive the verdict from the Severity counts of your findings:
 
 - Do NOT propose code implementations. Your role is request validation only.
 - Do NOT modify any files. This is a read-only review.
-- The JSON block MUST be the last thing in your response.
-- The verdict in the JSON block MUST match the verdict in the \`## Verdict:\` heading.
-- findings array in JSON must correspond to the Findings Summary table (same entries, same order).
-- summary in JSON should be the same 1-3 sentence explanation from the Verdict section.
+- JSON block MUST be the last thing in your response.
 - 実装設計（クラス境界・API 契約・内部 trade-off）に関する指摘を findings に含めてはならない。`;
 
 export const REQUEST_REVIEW_SYSTEM_PROMPT = buildSystemPrompt(REQUEST_REVIEW_BASE, []);
