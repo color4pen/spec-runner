@@ -11,7 +11,7 @@
 
 ## doc ↔ code 断面（transient・in-loop change が解消）
 
-- `domain-model.md` §Aggregate / `components.md` §JobStateStore は **event-sourced target** を記述（`JobState` を event journal / projection / liveness に分解、`StepOutcome.fileContent` 除去・`modelUsage` を Aggregate 外へ、branch-borne slug 配置）。**コード（`src/state/schema.ts`・`src/store/job-state-store.ts`）はまだ旧 monolithic**（`fileContent`/`modelUsage` 現存、`.specrunner/jobs/<jobId>.json` 配置）。
+- `domain-model.md` §Aggregate / `components.md` §JobStateStore は **event-sourced target** を記述（`JobState` を event journal / projection に分解、liveness は state でなく動的構造として非永続、`StepOutcome.fileContent` 除去・`modelUsage` を Aggregate 外へ、branch-borne slug 配置）。**コード（`src/state/schema.ts`・`src/store/job-state-store.ts`）はまだ旧 monolithic**（`fileContent`/`modelUsage` 現存、`.specrunner/jobs/<jobId>.json` 配置）。
 - realize は in-loop change `minimal-state-slug-dir`。land で解消。
 - 新不変条件の歯は **ratify 待ち**（構造 ADR `2026-06-05-event-sourced-branch-tracked-state.md` の B-11 候補 ＝ journal append / projection overwrite は `JobStateStore` 経由のみ）。
 

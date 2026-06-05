@@ -9,14 +9,14 @@
 ## Aggregate
 
 ### JobState — 1 作業単位（slug）の状態（event-sourced）— 整合性境界
-- **役割**: 1 作業単位（slug）の状態。**変更は `JobStateStore` 経由のみ**（外から直接書かない＝Aggregate 不変）。durability で 3 つに分解する:
+- **役割**: 1 作業単位（slug）の状態。**変更は `JobStateStore` 経由のみ**（外から直接書かない＝Aggregate 不変）。durability で 2 つに分解する。liveness は state でなく動的構造として Aggregate の外に置く:
   - **event journal（truth・append-only・branch-borne）**: step attempt（`verdict` / `toolResult` / 時刻）＋ transition（旧 `history`）＝ `changes/<slug>/events.jsonl`。起きた事実であり上書きしない。
   - **projection（cache・overwrite・branch-borne）**: descriptor（`jobId` / `request` / `repository` / `branch` / `pipelineId` / `version` / `createdAt`）＋ cursor（`step` / `status` / `resumePoint` / `updatedAt`）＋ `pullRequest`（pr-created event の materialize）＝ `changes/<slug>/state.json`。journal の fold で再構成できる cache であり truth ではない。
-  - **liveness（machine-local・gitignored・Aggregate 外）**: `worktreePath` / `pid` / `session` ＝ `.specrunner/local/<slug>/`。別マシンで無効。
+  - **liveness は state でない（動的構造・非永続）**: `worktreePath` / `pid` / `session` は「論理ジョブが今どの物理コンテキスト（プロセス / worktree / session）に宿るか」の実行時束縛であり、Aggregate に持たず永続もしない。各 run で導出/再生成する（worktreePath は規約 `.git/specrunner-worktrees/<slug>-<jobId8>` から、pid / session は新規）。
 - **identity**: slug ＝ 作業単位の identity（配置キー）。jobId ＝ run/attempt の identity（branch `<prefix><slug>-<jobId8>`・worktree 名に内在。同一 slug の attempt は複数併存しうる）。
 - **不変条件**:
   - `events.jsonl` は append-only ＝ truth。projection は journal の fold で再構成可能な cache（truth ではない）。
-  - liveness（`worktreePath` / `pid` / `session`）は Aggregate に属さない（losable・git から再生成・branch に同伴しない）。
+  - liveness（`worktreePath` / `pid` / `session`）は state でない ―― 論理↔物理の実行時束縛（動的構造）であり、永続せず各 run で導出/再生成する。
   - state は branch-borne（step ごと commit）＝ **git が唯一の durable source**（clone / CI checkout で完全。cross-env resume は machine-local を要さない）。
   - resume・routing が読む `verdict`・`toolResult` は journal の fold で保持される。
   - `version` は常に 1。`status` は `JobStatus` の列挙内（validateJobState が強制）。
