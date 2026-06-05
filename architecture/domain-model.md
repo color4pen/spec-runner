@@ -8,25 +8,19 @@
 
 ## Aggregate
 
-### JobState（＋ StepRun[]）— 整合性境界
-- **役割**: 1 ジョブの全状態。**変更は `JobStateStore` 経由のみ**（外から直接書かない＝Aggregate 不変）。
-- **主フィールド**:
-  ```ts
-  interface JobState {
-    version: 1; jobId; createdAt; updatedAt;
-    request: RequestInfo; repository: RepositoryInfo; session: SessionInfo | null;
-    step: string; status: JobStatus; branch: string | null;
-    history: HistoryEntry[]; error: ErrorInfo | null;
-    steps?: Record<string, StepRun[]>;   // step 名 → 実行履歴
-    pullRequest?: PullRequestInfo; worktreePath?: string | null;
-    resumePoint?: ResumePoint | null; pid?: number | null; canceledAt?;
-  }
-  ```
+### JobState — 1 作業単位（slug）の状態（event-sourced）— 整合性境界
+- **役割**: 1 作業単位（slug）の状態。**変更は `JobStateStore` 経由のみ**（外から直接書かない＝Aggregate 不変）。durability で 3 つに分解する:
+  - **event journal（truth・append-only・branch-borne）**: step attempt（`verdict` / `toolResult` / 時刻）＋ transition（旧 `history`）＝ `changes/<slug>/events.jsonl`。cost ＝ `changes/<slug>/usage.json`。起きた事実であり上書きしない。
+  - **projection（cache・overwrite・branch-borne）**: descriptor（`jobId` / `request` / `repository` / `branch` / `pipelineId` / `version` / `createdAt`）＋ cursor（`step` / `status` / `resumePoint` / `updatedAt`）＋ `pullRequest`（pr-created event の materialize）＝ `changes/<slug>/state.json`。journal の fold で再構成できる cache であり truth ではない。
+  - **liveness（machine-local・gitignored・Aggregate 外）**: `worktreePath` / `pid` / `session` ＝ `.specrunner/local/<slug>/`。別マシンで無効。
+- **identity**: slug ＝ 作業単位の identity（配置キー）。jobId ＝ run/attempt の identity（branch `<prefix><slug>-<jobId8>`・worktree 名に内在。同一 slug の attempt は複数併存しうる）。
 - **不変条件**:
+  - `events.jsonl` は append-only ＝ truth。projection は journal の fold で再構成可能な cache（truth ではない）。
+  - liveness（`worktreePath` / `pid` / `session`）は Aggregate に属さない（losable・git から再生成・branch に同伴しない）。
+  - state は branch-borne（step ごと commit）＝ **git が唯一の durable source**（clone / CI checkout で完全。cross-env resume は machine-local を要さない）。
+  - resume・routing が読む `verdict`・`toolResult` は journal の fold で保持される。
   - `version` は常に 1。`status` は `JobStatus` の列挙内（validateJobState が強制）。
-  - `history` は `MAX_HISTORY_SIZE`(100) で truncate。
-  - `steps[name]` は **StepRun[]**（attempt 昇順）。append-only journal。
-- → `src/state/schema.ts`
+- → `src/state/schema.ts`（正確なフィールドはコードが正典）
 
 ### JobStatus 状態機械（lifecycle）— JobState の遷移不変条件
 - **状態集合（7値）**: `running | awaiting-resume | awaiting-archive | failed | terminated | archived | canceled`。
@@ -51,14 +45,15 @@
 
 > **単一 mutator 不変**: `JobState.status` の変更は `transitionJob` 経由のみ。`patch + persist` での status 直書きは禁止（不正遷移を `VALID_TRANSITIONS` で弾き、status mutation を単一 mutator に集約）。この不変は `model.md` B-9 ＝ `tests/unit/architecture/core-invariants.test.ts` が機械強制する。
 
-### StepRun / StepOutcome — 1 step の 1 実行
+### StepRun / StepOutcome — 1 step の 1 実行（journal の record）
 ```ts
-interface StepRun { attempt: number; sessionId: string | null; outcome: StepOutcome; startedAt; endedAt; modelUsage? }
-interface StepOutcome { verdict: Verdict | null; findingsPath: string | null; fileContent?: string | null;
+interface StepRun { attempt: number; sessionId: string | null; outcome: StepOutcome; startedAt; endedAt }
+interface StepOutcome { verdict: Verdict | null; findingsPath: string | null;
   error: ErrorInfo | null; toolResult?: BaseReportResult | null; followUpAttempts? }
 ```
-- **不変条件**: `attempt` は 1-origin 連番。append-only。
-- → `src/state/schema.ts`
+- **不変条件**: `attempt` は 1-origin 連番。`events.jsonl`（append-only journal）の record。
+- **truth の所在**: 成果物の中身は実ファイル（worktree / git）が正典 ―― `fileContent` は Aggregate に持たない。cost（`modelUsage`）は cost ledger `changes/<slug>/usage.json` に分離する。
+- → `src/state/schema.ts`（正確なフィールドはコードが正典）
 
 ---
 
