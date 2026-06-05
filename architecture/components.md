@@ -134,7 +134,7 @@ interface FollowUpPolicy { maxAttempts; buildPrompt(input): string }  // DEFAULT
 ## persistence
 
 ### JobStateStore（standalone Repository）
-- **責務**: `JobState`（Aggregate）の読み書き。整合性境界の唯一の出入口。state は作業単位（slug）ごとの branch-borne な分割（journal `events.jsonl` ＋ projection `state.json`、`changes/<slug>/`）として永続する。cost（`usage.json`）は state でなく Aggregate 外（`usageStore` が書く別管理）。active job の列挙（`list`）は git から導出 ― local は worktree 走査、managed は remote branch（`git ls-remote`）、machine-local index は持たない。**core/port を implements しない**（ruling D5、`architecture/adr` 2026-05-31）。
+- **責務**: `JobState`（Aggregate）の読み書き。整合性境界の唯一の出入口。state は作業単位（slug）ごとの branch-borne な分割（journal `events.jsonl` ＋ projection `state.json`、`changes/<slug>/`）として永続する。cost（`usage.json`）は state でなく Aggregate 外（`usageStore` が書く別管理）。liveness（worktreePath / pid / session）と managed の enumeration marker は `.specrunner/local/<slug>/` sidecar に machine-local metadata（regenerable・truth でない）として持つ。active job の列挙（`list`）は local＝worktree 走査、managed＝sidecar marker。**core/port を implements しない**（ruling D5、`architecture/adr` 2026-05-31）。
 - **協調**: state schema（型）/ util（atomic write）/ git seam（branch 同伴の commit）。上位を import しない。
 - → `src/store/job-state-store.ts`
 

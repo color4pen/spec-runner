@@ -41,7 +41,7 @@
 
 ### liveness — 論理ジョブ ↔ 物理実行コンテキストの束縛
 - **束縛**: 論理ジョブ（`JobState` Aggregate）↔ 物理実行コンテキスト（process `pid` / worktree `worktreePath` / agent `session`）。
-- **寿命**: run 開始で establish・run 終了で破棄・resume で再 establish。**永続しない**（state でない・branch にも load しない）。
+- **寿命**: run 開始で establish、resume で再利用 or 再 establish。**branch-borne state（truth）には載せず**、machine-local sidecar（`.specrunner/local/<slug>/`、gitignore・regenerable）に metadata として持つ。
 - **再導出**: `worktreePath` は規約 `.git/specrunner-worktrees/<slug>-<jobId8>` から、`pid` / `session` は run ごと新規。
 - **binder**: runtime ＋ `WorktreeManager`（worktree）。
 - **不変条件**: liveness は Aggregate に属さない。失っても（別マシン・CI・掃除）git から論理ジョブを復元でき、束縛は再 establish される。
