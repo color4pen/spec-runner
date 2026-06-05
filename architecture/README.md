@@ -16,7 +16,8 @@ trust root は、ループが構造的に届かない場所に固定して初め
 |---|---|---|
 | **`model.md`** | 層・依存（Development）| 様式 / 層 / 許可された依存（DSM）/ B-1〜B-9 |
 | **`components.md`** | コンポーネント（Logical / C4 Component）| 各コンポーネントの責務 ＋ 公開インターフェース ＋ 協調相手 |
-| **`domain-model.md`** | 型/データ（Logical / DDD）| Aggregate（JobState）/ Value Object（Verdict 等）/ 不変条件 |
+| **`domain-model.md`** | 型/データ（Logical / DDD）| Aggregate（JobState）/ Value Object（Verdict 等）/ 静的データの不変条件 |
+| **`dynamic-model.md`** | 動的構造（Logical / Dynamic）| 状態機械（JobStatus / Pipeline）/ 実行時束縛（liveness）/ 遷移不変条件 |
 | **`conformance.md`** | 接続仕様 | write 注入内容 / review 観点 / 歯（B-1〜B-9 + closure）の assert 仕様 |
 
 > 正確な signature/型は **コードが正典**（`src/core/port/*.ts`, `src/state/schema.ts` 等）。上記は陳腐化しない粒度（責務・契約の形・不変条件）まで。C4 Code level は生成/参照。
@@ -25,7 +26,7 @@ trust root は、ループが構造的に届かない場所に固定して初め
 
 | 役割 | 置き場 | 著者 | trust |
 |---|---|---|---|
-| **定義（SoT）** | `architecture/{model,components,domain-model,conformance}.md` | 人間 | out-of-loop（CODEOWNERS）|
+| **定義（SoT）** | `architecture/{model,components,domain-model,dynamic-model,conformance}.md` | 人間 | out-of-loop（CODEOWNERS）|
 | **歯（enforcement）** | `tests/unit/architecture/` ＋（将来）`.dependency-cruiser.cjs` | code（定義から derive）| in-loop だが CODEOWNERS-gated |
 | **決定記録** | `architecture/adr/`（構造 ADR）| 人間 | out-of-loop（CODEOWNERS）・append-only |
 | **計測（reconcile）** | enforcement の**生成出力**（手書きしない）| 生成物 | — |

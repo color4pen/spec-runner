@@ -9,41 +9,18 @@
 ## Aggregate
 
 ### JobState — 1 作業単位（slug）の状態（event-sourced）— 整合性境界
-- **役割**: 1 作業単位（slug）の状態。**変更は `JobStateStore` 経由のみ**（外から直接書かない＝Aggregate 不変）。durability で 2 つに分解する。liveness は state でなく動的構造として Aggregate の外に置く:
+- **役割**: 1 作業単位（slug）の状態。**変更は `JobStateStore` 経由のみ**（外から直接書かない＝Aggregate 不変）。durability で 2 つに分解する:
   - **event journal（truth・append-only・branch-borne）**: step attempt（`verdict` / `toolResult` / 時刻）＋ transition（旧 `history`）＝ `changes/<slug>/events.jsonl`。起きた事実であり上書きしない。
   - **projection（cache・overwrite・branch-borne）**: descriptor（`jobId` / `request` / `repository` / `branch` / `pipelineId` / `version` / `createdAt`）＋ cursor（`step` / `status` / `resumePoint` / `updatedAt`）＋ `pullRequest`（pr-created event の materialize）＝ `changes/<slug>/state.json`。journal の fold で再構成できる cache であり truth ではない。
-  - **liveness は state でない（動的構造・非永続）**: `worktreePath` / `pid` / `session` は「論理ジョブが今どの物理コンテキスト（プロセス / worktree / session）に宿るか」の実行時束縛であり、Aggregate に持たず永続もしない。各 run で導出/再生成する（worktreePath は規約 `.git/specrunner-worktrees/<slug>-<jobId8>` から、pid / session は新規）。
 - **identity**: slug ＝ 作業単位の identity（配置キー）。jobId ＝ run/attempt の identity（branch `<prefix><slug>-<jobId8>`・worktree 名に内在。同一 slug の attempt は複数併存しうる）。
 - **不変条件**:
   - `events.jsonl` は append-only ＝ truth。projection は journal の fold で再構成可能な cache（truth ではない）。
-  - liveness（`worktreePath` / `pid` / `session`）は state でない ―― 論理↔物理の実行時束縛（動的構造）であり、永続せず各 run で導出/再生成する。
-  - state は branch-borne（step ごと commit）＝ **git が唯一の durable source**（clone / CI checkout で完全。cross-env resume は machine-local を要さない）。
+  - state は branch-borne（step ごと commit）＝ **git が唯一の durable source**（clone / CI checkout で完全）。
   - resume・routing が読む `verdict`・`toolResult` は journal の fold で保持される。
   - `version` は常に 1。`status` は `JobStatus` の列挙内（validateJobState が強制）。
 - → `src/state/schema.ts`（正確なフィールドはコードが正典）
 
-### JobStatus 状態機械（lifecycle）— JobState の遷移不変条件
-- **状態集合（7値）**: `running | awaiting-resume | awaiting-archive | failed | terminated | archived | canceled`。
-- **区分**: active = {`running`, `awaiting-resume`}（実行中・再開待ち）／ terminal = {`archived`, `canceled`}（出口なし。以後どこへも遷移しない）。
-- **許可遷移（VALID_TRANSITIONS）**: 下表のセルのみ許可。表に無い遷移は throw（同一 status への遷移は常に noop=許可）。
-
-  | from \ to | running | awaiting-resume | awaiting-archive | failed | terminated | archived | canceled |
-  |---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-  | **running** | — | ✓ | ✓ | ✓ | ✓ |  | ✓ |
-  | **awaiting-resume** | ✓ | — |  |  |  |  | ✓ |
-  | **awaiting-archive** |  |  | — |  |  | ✓ | ✓ |
-  | **failed** | ✓ | ✓ |  | — |  |  | ✓ |
-  | **terminated** | ✓ |  |  |  | — |  | ✓ |
-  | **archived** |  |  |  |  |  | — |  |
-  | **canceled** |  |  |  |  |  |  | — |
-
-- **不変条件**:
-  - 遷移の**計算**は `transitionJob`（pure・I/O なし）が VALID_TRANSITIONS を引いて行う。不正遷移は throw・同 status は noop。
-  - Aggregate への**永続化**は `JobStateStore` 経由のみ（JobState 不変と同じ。計算と永続化は別レイヤ）。
-  - `awaiting-archive → archived` が正常完走の最終遷移（archive が client-closed に確定）。**merge は GitHub 上の外部イベントであり job status の遷移ではない**（CLI は merge を status 遷移として持たない）。`running → awaiting-resume` は異常終了 guard（exit-guard）が倒す checkpoint。
-- → `src/state/lifecycle.ts`（VALID_TRANSITIONS / TERMINAL_STATUSES / ACTIVE_STATUSES / transitionJob が正典）／ `src/state/schema.ts`（`JobStatus`。legacy の `success` / `awaiting-merge` は load 時に `awaiting-archive` へ remap）
-
-> **単一 mutator 不変**: `JobState.status` の変更は `transitionJob` 経由のみ。`patch + persist` での status 直書きは禁止（不正遷移を `VALID_TRANSITIONS` で弾き、status mutation を単一 mutator に集約）。この不変は `model.md` B-9 ＝ `tests/unit/architecture/core-invariants.test.ts` が機械強制する。
+> **lifecycle（状態遷移）と liveness（実行時束縛）は動的構造** ＝ `dynamic-model.md`。本書は静的なデータの形のみを持つ。
 
 ### StepRun / StepOutcome — 1 step の 1 実行（journal の record）
 ```ts
