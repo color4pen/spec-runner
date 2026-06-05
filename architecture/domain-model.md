@@ -10,7 +10,7 @@
 
 ### JobState — 1 作業単位（slug）の状態（event-sourced）— 整合性境界
 - **役割**: 1 作業単位（slug）の状態。**変更は `JobStateStore` 経由のみ**（外から直接書かない＝Aggregate 不変）。durability で 3 つに分解する:
-  - **event journal（truth・append-only・branch-borne）**: step attempt（`verdict` / `toolResult` / 時刻）＋ transition（旧 `history`）＝ `changes/<slug>/events.jsonl`。cost ＝ `changes/<slug>/usage.json`。起きた事実であり上書きしない。
+  - **event journal（truth・append-only・branch-borne）**: step attempt（`verdict` / `toolResult` / 時刻）＋ transition（旧 `history`）＝ `changes/<slug>/events.jsonl`。起きた事実であり上書きしない。
   - **projection（cache・overwrite・branch-borne）**: descriptor（`jobId` / `request` / `repository` / `branch` / `pipelineId` / `version` / `createdAt`）＋ cursor（`step` / `status` / `resumePoint` / `updatedAt`）＋ `pullRequest`（pr-created event の materialize）＝ `changes/<slug>/state.json`。journal の fold で再構成できる cache であり truth ではない。
   - **liveness（machine-local・gitignored・Aggregate 外）**: `worktreePath` / `pid` / `session` ＝ `.specrunner/local/<slug>/`。別マシンで無効。
 - **identity**: slug ＝ 作業単位の identity（配置キー）。jobId ＝ run/attempt の identity（branch `<prefix><slug>-<jobId8>`・worktree 名に内在。同一 slug の attempt は複数併存しうる）。
@@ -52,7 +52,7 @@ interface StepOutcome { verdict: Verdict | null; findingsPath: string | null;
   error: ErrorInfo | null; toolResult?: BaseReportResult | null; followUpAttempts? }
 ```
 - **不変条件**: `attempt` は 1-origin 連番。`events.jsonl`（append-only journal）の record。
-- **truth の所在**: 成果物の中身は実ファイル（worktree / git）が正典 ―― `fileContent` は Aggregate に持たない。cost（`modelUsage`）は cost ledger `changes/<slug>/usage.json` に分離する。
+- **truth の所在**: 成果物の中身は実ファイル（worktree / git）が正典 ―― `fileContent` は Aggregate に持たない。cost（`modelUsage`）は **state ではない** ―― Aggregate 外の cost 追跡ファイル `changes/<slug>/usage.json`（`usageStore` が書く・`JobStateStore` 経由でない）が持つ。
 - → `src/state/schema.ts`（正確なフィールドはコードが正典）
 
 ---
