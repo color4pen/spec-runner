@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "f9461d0f-87e9-4614-80d8-e12bbeaa82d0",
   "createdAt": "2026-06-06T12:05:09.860Z",
-  "updatedAt": "2026-06-06T14:24:06.961Z",
+  "updatedAt": "2026-06-06T14:31:25.956Z",
   "request": {
     "title": "local runtime の state 書き込みを slug/sidecar に一本化する",
     "type": "spec-change"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/decouple-jobs-dir-writes-f9461d0f",
   "error": null,
   "pipelineId": "standard",
@@ -23,7 +23,7 @@
     "createdAt": "2026-06-06T14:24:06.952Z"
   },
   "_journal": {
-    "historyCount": 55,
+    "historyCount": 56,
     "stepCounts": {
       "design": 1,
       "spec-review": 2,
