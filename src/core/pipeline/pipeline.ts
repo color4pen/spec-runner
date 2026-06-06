@@ -303,6 +303,22 @@ export class Pipeline {
         break;
       }
 
+      // --- Fresh convergence episode reset (fixer-pair loops only) ---
+      // A loop step that has a dedicated fixer starts a NEW convergence episode whenever
+      // it is (re-)entered from a step that is NOT its paired fixer (initial arrival,
+      // conformance re-entry, resume). Reset BOTH the gate's iteration budget and its
+      // fixer's iteration budget so the new episode gets a fresh maxIterations budget.
+      // Loops WITHOUT a dedicated fixer (conformance) are intentionally excluded:
+      // pairedFixerForNext is undefined → their lifetime counter is preserved
+      // (termination guarantee for whole-phase re-execution).
+      const pairedFixerForNext = this.loopNames.includes(nextStep as string)
+        ? this.loopFixerPairs[nextStep as string]
+        : undefined;
+      if (pairedFixerForNext !== undefined && currentStep !== pairedFixerForNext) {
+        loopIters.set(nextStep as string, 0);
+        fixerIters.set(pairedFixerForNext, 0);
+      }
+
       // --- Check current loop step exhaustion (for loop steps without a paired fixer) ---
       // Loop steps that route to a non-loop step on needs-fix (e.g. conformance → implementer)
       // bypass the "entering next loop step" guard below: the retry path traverses other loop

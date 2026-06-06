@@ -1,0 +1,388 @@
+/**
+ * Pipeline episode-reset regression tests.
+ *
+ * TC-070: Conformance re-entry gives verification a fresh convergence budget
+ *         (regression for observed bug: loop-iteration-budget-reset)
+ * TC-071: Conformance (no paired fixer) retains lifetime counter and exhausts at maxIterations
+ *         (termination guarantee: episode reset does NOT apply to conformance)
+ * TC-072: Single-episode exhaustion within a fixer-pair loop is unchanged
+ *         (within-episode budget continuity)
+ */
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { Pipeline } from "../../../../src/core/pipeline/pipeline.js";
+import { STANDARD_TRANSITIONS } from "../../../../src/core/pipeline/types.js";
+import { STANDARD_LOOP_NAMES, STANDARD_LOOP_FIXER_PAIRS } from "../../../../src/core/pipeline/run.js";
+import { EventBus } from "../../../../src/core/event/event-bus.js";
+import { StepExecutor } from "../../../../src/core/step/executor.js";
+import type { Step } from "../../../../src/core/step/types.js";
+import type { JobState, StepRun } from "../../../../src/state/schema.js";
+import type { PipelineDeps } from "../../../../src/core/types.js";
+import type { SpawnFn } from "../../../../src/util/spawn.js";
+import { makeStoreFactory } from "../../../helpers/store-factory.js";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import * as os from "node:os";
+
+let tempDir: string;
+let originalXdgDataHome: string | undefined;
+
+beforeEach(async () => {
+  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "pipeline-episode-reset-test-"));
+  originalXdgDataHome = process.env["XDG_DATA_HOME"];
+  process.env["XDG_DATA_HOME"] = tempDir;
+  vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+  vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+});
+
+afterEach(async () => {
+  if (originalXdgDataHome !== undefined) {
+    process.env["XDG_DATA_HOME"] = originalXdgDataHome;
+  } else {
+    delete process.env["XDG_DATA_HOME"];
+  }
+  await fs.rm(tempDir, { recursive: true, force: true });
+  vi.restoreAllMocks();
+});
+
+const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
+
+function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
+  return {
+    version: 1,
+    jobId: "test-episode-reset-job",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    request: { path: "/req.md", title: "Test", type: "bug-fix" },
+    repository: { owner: "testowner", name: "testrepo" },
+    session: null,
+    step: "implementer",
+    status: "running",
+    branch: "fix/test-branch",
+    history: [],
+    error: null,
+    steps: {},
+    ...overrides,
+  };
+}
+
+function makeMinimalDeps(): PipelineDeps {
+  return {
+    client: {} as PipelineDeps["client"],
+    config: {
+      version: 1,
+      agents: {},
+      environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
+    },
+    request: { type: "bug-fix", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false },
+    slug: "test-slug",
+    sleepFn: vi.fn().mockResolvedValue(undefined),
+    githubClient: {
+      verifyBranch: vi.fn().mockResolvedValue(true),
+      getRawFile: vi.fn().mockResolvedValue(null),
+      verifyPath: vi.fn().mockResolvedValue(true),
+      verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
+      getRefSha: vi.fn().mockResolvedValue(null),
+      listPullRequests: vi.fn().mockResolvedValue([]),
+      createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+      getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+      mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
+      getCheckStatus: vi.fn().mockResolvedValue({ state: "success", total: 0, failing: [], pending: [] }),
+    },
+    owner: "user",
+    repo: "repo",
+    spawn: noopSpawn,
+    storeFactory: makeStoreFactory(tempDir),
+  };
+}
+
+/** Append a StepRun with the given verdict to state.steps[stepName]. */
+function appendStepResult(state: JobState, stepName: string, verdict: string): JobState {
+  const existing = state.steps?.[stepName] ?? [];
+  const run: StepRun = {
+    attempt: existing.length + 1,
+    sessionId: null,
+    outcome: {
+      verdict: verdict as import("../../../../src/state/schema.js").Verdict,
+      findingsPath: null,
+      error: null,
+    },
+    startedAt: "2026-01-01T00:00:00.000Z",
+    endedAt: "2026-01-01T00:00:00.000Z",
+  };
+  return {
+    ...state,
+    status: "running",
+    steps: { ...state.steps, [stepName]: [...existing, run] },
+  };
+}
+
+function makeAgentStep(
+  name: string,
+  completionVerdict?: string,
+): Step {
+  return {
+    kind: "agent",
+    name,
+    agent: {
+      name: `specrunner-${name}`,
+      role: name as import("../../../../src/state/schema.js").AgentStepName,
+      model: "claude-sonnet-4-5",
+      system: "",
+      tools: [],
+    },
+    buildMessage: () => "",
+    resultFilePath: () => null,
+    parseResult: () => ({ verdict: null, findingsPath: null }),
+    ...(completionVerdict !== undefined
+      ? { completionVerdict: completionVerdict as import("../../../../src/state/schema.js").Verdict }
+      : {}),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// TC-070: Conformance re-entry gives verification a fresh convergence budget
+// Observed bug: implementer→verification episode 1 depleted verification's
+// loopIters + fixerIters[build-fixer]. conformance(needs-fix)→implementer→
+// verification reentry had zero budget left and immediately exhausted.
+// ---------------------------------------------------------------------------
+describe("TC-070: conformance re-entry gives verification fresh budget (regression)", () => {
+  it("build-fixer is invoked 3 times: 2 in episode 1, 1 in re-entry episode 2", async () => {
+    const maxIterations = 2;
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+
+    let verificationCallCount = 0;
+    let buildFixerCallCount = 0;
+    let conformanceCallCount = 0;
+
+    // driver sequence (call-count indexed)
+    // episode 1: verification(fail) → build-fixer(ok) → verification(fail) → build-fixer(ok) → verification(pass/bypass)
+    // → code-review(approved) → conformance(needs-fix)
+    // → implementer(2nd) → verification(fail, reentry) → build-fixer(ok, 3rd) → verification(pass)
+    // → code-review(approved) → conformance(approved) → adr-gen → pr-create → end
+    const verificationVerdicts = ["failed", "failed", "passed", "failed", "passed"] as const;
+
+    const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
+      if (step.name === "implementer") {
+        return appendStepResult(currentState, "implementer", "success");
+      }
+      if (step.name === "verification") {
+        const verdict = verificationVerdicts[verificationCallCount] ?? "passed";
+        verificationCallCount++;
+        return appendStepResult(currentState, "verification", verdict);
+      }
+      if (step.name === "build-fixer") {
+        buildFixerCallCount++;
+        return appendStepResult(currentState, "build-fixer", "success");
+      }
+      if (step.name === "code-review") {
+        // approved with no fixable findings → routes to conformance (not code-fixer)
+        return appendStepResult(currentState, "code-review", "approved");
+      }
+      if (step.name === "code-fixer") {
+        return appendStepResult(currentState, "code-fixer", "approved");
+      }
+      if (step.name === "conformance") {
+        conformanceCallCount++;
+        const verdict = conformanceCallCount === 1 ? "needs-fix" : "approved";
+        return appendStepResult(currentState, "conformance", verdict);
+      }
+      if (step.name === "adr-gen") {
+        return appendStepResult(currentState, "adr-gen", "success");
+      }
+      if (step.name === "pr-create") {
+        return appendStepResult(currentState, "pr-create", "success");
+      }
+      throw new Error(`Unexpected step in TC-070: ${step.name}`);
+    });
+
+    const steps = new Map<string, Step>([
+      ["implementer",  makeAgentStep("implementer", "success")],
+      ["verification", {
+        kind: "cli",
+        name: "verification",
+        run: async () => {},
+        resultFilePath: () => "/tmp/verification-result.md",
+        parseResult: () => ({ verdict: "passed" as const, findingsPath: null }),
+      }],
+      ["build-fixer",  makeAgentStep("build-fixer", "success")],
+      ["code-review",  makeAgentStep("code-review")],
+      ["code-fixer",   makeAgentStep("code-fixer", "approved")],
+      ["conformance",  makeAgentStep("conformance")],
+      ["adr-gen",      makeAgentStep("adr-gen", "success")],
+      ["pr-create",    {
+        kind: "cli",
+        name: "pr-create",
+        run: async () => {},
+        resultFilePath: () => "/tmp/pr-create-result.md",
+        parseResult: () => ({ verdict: "success" as const, findingsPath: null }),
+      }],
+    ]);
+
+    const events = new EventBus();
+    const pipeline = new Pipeline({
+      steps,
+      transitions: STANDARD_TRANSITIONS,
+      maxIterations,
+      executor: { execute: executeSpy } as unknown as StepExecutor,
+      events,
+      loopName: "spec-review",
+      loopNames: [...STANDARD_LOOP_NAMES],
+      loopFixerPairs: { ...STANDARD_LOOP_FIXER_PAIRS },
+    });
+
+    const result = await pipeline.run("implementer", state, deps);
+
+    // build-fixer must be invoked in re-entry episode (3rd call), not skipped
+    expect(buildFixerCallCount).toBe(3);
+    // pipeline completes normally — not escalated
+    expect(result.status).toBe("awaiting-archive");
+    // no verification exhaustion error
+    expect(result.error?.code).not.toBe("VERIFICATION_RETRIES_EXHAUSTED");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-071: Conformance retains its lifetime counter and exhausts at maxIterations
+// Ensures the episode-reset logic does NOT apply to conformance (which has no
+// paired fixer), preserving the termination guarantee for the outer impl loop.
+// ---------------------------------------------------------------------------
+describe("TC-071: conformance lifetime counter bounds impl-phase re-execution", () => {
+  it("escalates with CONFORMANCE_RETRIES_EXHAUSTED after exactly maxIterations conformance calls", async () => {
+    const maxIterations = 2;
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+
+    let conformanceCallCount = 0;
+
+    // verification always passes, code-review always approves (no fixable),
+    // conformance always needs-fix → should exhaust after maxIterations
+    const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
+      if (step.name === "implementer") {
+        return appendStepResult(currentState, "implementer", "success");
+      }
+      if (step.name === "verification") {
+        return appendStepResult(currentState, "verification", "passed");
+      }
+      if (step.name === "code-review") {
+        return appendStepResult(currentState, "code-review", "approved");
+      }
+      if (step.name === "conformance") {
+        conformanceCallCount++;
+        return appendStepResult(currentState, "conformance", "needs-fix");
+      }
+      throw new Error(`Unexpected step in TC-071: ${step.name}`);
+    });
+
+    const steps = new Map<string, Step>([
+      ["implementer",  makeAgentStep("implementer", "success")],
+      ["verification", {
+        kind: "cli",
+        name: "verification",
+        run: async () => {},
+        resultFilePath: () => "/tmp/verification-result.md",
+        parseResult: () => ({ verdict: "passed" as const, findingsPath: null }),
+      }],
+      ["build-fixer",  makeAgentStep("build-fixer", "success")],
+      ["code-review",  makeAgentStep("code-review")],
+      ["code-fixer",   makeAgentStep("code-fixer", "approved")],
+      ["conformance",  makeAgentStep("conformance")],
+      ["adr-gen",      makeAgentStep("adr-gen", "success")],
+      ["pr-create",    {
+        kind: "cli",
+        name: "pr-create",
+        run: async () => {},
+        resultFilePath: () => "/tmp/pr-create-result.md",
+        parseResult: () => ({ verdict: "success" as const, findingsPath: null }),
+      }],
+    ]);
+
+    const events = new EventBus();
+    const pipeline = new Pipeline({
+      steps,
+      transitions: STANDARD_TRANSITIONS,
+      maxIterations,
+      executor: { execute: executeSpy } as unknown as StepExecutor,
+      events,
+      loopName: "spec-review",
+      loopNames: [...STANDARD_LOOP_NAMES],
+      loopFixerPairs: { ...STANDARD_LOOP_FIXER_PAIRS },
+    });
+
+    const result = await pipeline.run("implementer", state, deps);
+
+    // conformance lifetime counter exhausts at exactly maxIterations
+    expect(result.error?.code).toBe("CONFORMANCE_RETRIES_EXHAUSTED");
+    expect(result.status).toBe("awaiting-resume");
+    // conformance called exactly maxIterations times — no infinite loop
+    expect(conformanceCallCount).toBe(maxIterations);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-072: Single-episode exhaustion within a fixer-pair loop is unchanged
+// Verifies that within one convergence episode (no re-entry), verification's
+// iteration counter still accumulates and triggers exhaustion at maxIterations.
+// ---------------------------------------------------------------------------
+describe("TC-072: single-episode exhaustion within verification loop is unchanged", () => {
+  it("escalates with VERIFICATION_RETRIES_EXHAUSTED after the expected number of fixer cycles", async () => {
+    const maxIterations = 2;
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+
+    let verificationCallCount = 0;
+    let buildFixerCallCount = 0;
+
+    // implementer succeeds once; verification always fails; build-fixer always succeeds
+    // Expected: verification(iter1,fail) → build-fixer(iter1) → verification(iter2,fail)
+    //           → build-fixer(iter2) → verification(bypass,fail) → fixer-exhausted → escalate
+    const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
+      if (step.name === "implementer") {
+        return appendStepResult(currentState, "implementer", "success");
+      }
+      if (step.name === "verification") {
+        verificationCallCount++;
+        return appendStepResult(currentState, "verification", "failed");
+      }
+      if (step.name === "build-fixer") {
+        buildFixerCallCount++;
+        // build-fixer returns success but verification will fail again next iteration
+        return appendStepResult(currentState, "build-fixer", "success");
+      }
+      throw new Error(`Unexpected step in TC-072: ${step.name}`);
+    });
+
+    const steps = new Map<string, Step>([
+      ["implementer",  makeAgentStep("implementer", "success")],
+      ["verification", {
+        kind: "cli",
+        name: "verification",
+        run: async () => {},
+        resultFilePath: () => "/tmp/verification-result.md",
+        parseResult: () => ({ verdict: "failed" as const, findingsPath: null }),
+      }],
+      ["build-fixer",  makeAgentStep("build-fixer", "success")],
+    ]);
+
+    const events = new EventBus();
+    const pipeline = new Pipeline({
+      steps,
+      transitions: STANDARD_TRANSITIONS,
+      maxIterations,
+      executor: { execute: executeSpy } as unknown as StepExecutor,
+      events,
+      loopName: "spec-review",
+      loopNames: [...STANDARD_LOOP_NAMES],
+      loopFixerPairs: { ...STANDARD_LOOP_FIXER_PAIRS },
+    });
+
+    const result = await pipeline.run("implementer", state, deps);
+
+    // single-episode exhaustion: verification called 3 times (iter1, iter2, bypass),
+    // build-fixer called 2 times (at max), then fixer-entry-guard fires
+    expect(result.error?.code).toBe("VERIFICATION_RETRIES_EXHAUSTED");
+    expect(result.status).toBe("awaiting-resume");
+    expect(verificationCallCount).toBe(3);   // iter1 + iter2 + bypass
+    expect(buildFixerCallCount).toBe(2);     // fixer exhausted at maxIterations
+  });
+});
