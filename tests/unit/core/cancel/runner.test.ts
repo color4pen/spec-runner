@@ -47,7 +47,7 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-/** Create a job state with a specific status patched directly into the file. */
+/** Create a job state with a specific status patched via the store. */
 async function makeJob(
   status: JobStatus = "failed",
   extras: Partial<{ pid: number | null | undefined; branch: string; worktreePath: string }> = {},
@@ -57,14 +57,14 @@ async function makeJob(
     repository: { owner: "user", name: "repo" },
   });
 
-  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-  const statePath = path.join(jobsDir, `${state.jobId}.json`);
-  const raw = JSON.parse(await nodefs.readFile(statePath, "utf-8")) as Record<string, unknown>;
-  raw["status"] = status;
-  if ("pid" in extras) raw["pid"] = extras.pid ?? null;
-  if (extras.branch !== undefined) raw["branch"] = extras.branch;
-  if (extras.worktreePath !== undefined) raw["worktreePath"] = extras.worktreePath;
-  await nodefs.writeFile(statePath, JSON.stringify(raw, null, 2));
+  // Patch via the store (split layout)
+  const store = new JobStateStore(state.jobId, tempDir);
+  const loaded = await store.load();
+  const patch: Record<string, unknown> = { status };
+  if ("pid" in extras) patch["pid"] = extras.pid ?? null;
+  if (extras.branch !== undefined) patch["branch"] = extras.branch;
+  if (extras.worktreePath !== undefined) patch["worktreePath"] = extras.worktreePath;
+  await store.update(loaded, patch as Parameters<typeof store.update>[1]);
   return { jobId: state.jobId };
 }
 
@@ -95,7 +95,8 @@ async function loadState(jobId: string): Promise<JobState> {
 async function stateFileExists(jobId: string): Promise<boolean> {
   const jobsDir = path.join(tempDir, ".specrunner", "jobs");
   try {
-    await nodefs.access(path.join(jobsDir, `${jobId}.json`));
+    // Check split-layout subdirectory (new format)
+    await nodefs.access(path.join(jobsDir, jobId, "state.json"));
     return true;
   } catch {
     return false;

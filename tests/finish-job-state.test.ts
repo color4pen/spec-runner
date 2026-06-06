@@ -35,13 +35,11 @@ async function makeJob(status: JobState["status"] = "awaiting-archive") {
     repository: { owner: "user", name: "repo" },
   });
 
-  // Patch status
+  // Patch status via the store (split layout)
   if (status !== "running") {
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    const statePath = path.join(jobsDir, `${job.jobId}.json`);
-    const raw = JSON.parse(await fs.readFile(statePath, "utf-8"));
-    raw.status = status;
-    await fs.writeFile(statePath, JSON.stringify(raw, null, 2));
+    const store = new JobStateStore(job.jobId, tempDir);
+    const current = await store.load();
+    await store.update(current, { status });
   }
 
   return job;
@@ -134,7 +132,7 @@ describe("Backward compatibility: legacy status=success", () => {
   it("loads legacy success state as awaiting-merge", async () => {
     const job = await makeJob("awaiting-archive");
     const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    const statePath = path.join(jobsDir, `${job.jobId}.json`);
+    const statePath = path.join(jobsDir, job.jobId, "state.json");
     
     // Write legacy state with status="success"
     const raw = JSON.parse(await fs.readFile(statePath, "utf-8"));

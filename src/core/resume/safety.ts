@@ -1,3 +1,4 @@
+import * as fs from "node:fs";
 import type { JobState } from "../../state/schema.js";
 
 /**
@@ -28,15 +29,39 @@ const STALE_RUNNING_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
  * Determine if a "running" job state is orphaned (the runner process is dead).
  *
  * Returns false for any non-"running" status.
- * PID probe path: checks whether the recorded PID is alive.
- * Fallback path (no PID): compares updatedAt against a 15-minute threshold.
+ * PID resolution order (highest priority first):
+ *   1. state.pid (direct PID in state) — unchanged from Stage 1
+ *   2. sidecarPath (liveness sidecar, T-13): used when state.pid is absent
+ *      - sidecar missing → stale (CI fresh checkout with no running process)
+ *      - sidecar present, pid → probe liveness
+ *      - sidecar present, no pid → stale
+ *   3. Fallback: updatedAt age threshold (15 min)
  */
-export function isStaleRunning(state: JobState): boolean {
+export function isStaleRunning(state: JobState, sidecarPath?: string): boolean {
   if (state.status !== "running") return false;
+
+  // Priority 1: pid in state (backward compat, Stage 1 behavior)
   if (state.pid != null) {
     return !isProcessAlive(state.pid);
   }
-  // Fallback: no PID recorded (legacy state file)
+
+  // Priority 2: pid from liveness sidecar (slug mode, T-13)
+  if (sidecarPath) {
+    try {
+      const sidecar = JSON.parse(fs.readFileSync(sidecarPath, "utf-8")) as Record<string, unknown>;
+      const pid = sidecar["pid"];
+      if (pid != null && typeof pid === "number") {
+        return !isProcessAlive(pid);
+      }
+      // Sidecar present but no pid field → treat as stale
+      return true;
+    } catch {
+      // Sidecar missing or unreadable → stale (CI fresh checkout)
+      return true;
+    }
+  }
+
+  // Priority 3: fallback: no PID anywhere (legacy state file)
   const elapsed = Date.now() - new Date(state.updatedAt).getTime();
   return elapsed > STALE_RUNNING_THRESHOLD_MS;
 }

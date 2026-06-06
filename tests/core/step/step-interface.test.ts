@@ -250,7 +250,7 @@ describe("TC-013: StepExecutor lifecycle events fire in correct order on success
       toolHandlers: undefined,
       buildMessage: () => "test message",
       resultFilePath: () => null, // no result file — skips file fetch
-      parseResult: () => ({ verdict: "approved" as const, findingsPath: null, fileContent: null }),
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
     };
 
     // deps with a mock SessionClient that returns idle
@@ -318,7 +318,7 @@ describe("TC-014: StepExecutor error path emits step:error and decorates excepti
       toolHandlers: undefined,
       buildMessage: () => "test message",
       resultFilePath: () => null,
-      parseResult: () => ({ verdict: null, findingsPath: null, fileContent: null }),
+      parseResult: () => ({ verdict: null, findingsPath: null }),
     };
 
     // deps with a mock SessionClient that returns terminated (timeout removed in remove-session-timeout)

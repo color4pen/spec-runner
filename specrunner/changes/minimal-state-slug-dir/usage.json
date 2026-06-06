@@ -1,0 +1,94 @@
+{
+  "commandInvocations": [
+    {
+      "command": "request-review",
+      "timestamp": "2026-06-05T00:27:26.461Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 5492,
+          "outputTokens": 16,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 19,
+          "outputTokens": 14235,
+          "cacheReadInputTokens": 711878,
+          "cacheCreationInputTokens": 61354
+        }
+      }
+    },
+    {
+      "command": "request-review",
+      "timestamp": "2026-06-05T05:19:48.386Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 7757,
+          "outputTokens": 5667,
+          "cacheReadInputTokens": 543747,
+          "cacheCreationInputTokens": 59142
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 57,
+          "outputTokens": 9573,
+          "cacheReadInputTokens": 159082,
+          "cacheCreationInputTokens": 50234
+        }
+      }
+    },
+    {
+      "command": "request-review",
+      "timestamp": "2026-06-05T05:27:29.328Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 6721,
+          "outputTokens": 21,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 16,
+          "outputTokens": 15705,
+          "cacheReadInputTokens": 592735,
+          "cacheCreationInputTokens": 51851
+        }
+      }
+    },
+    {
+      "command": "request-review",
+      "timestamp": "2026-06-05T05:50:53.846Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 7473,
+          "outputTokens": 24,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 11,
+          "outputTokens": 10122,
+          "cacheReadInputTokens": 306976,
+          "cacheCreationInputTokens": 39515
+        }
+      }
+    },
+    {
+      "command": "request-review",
+      "timestamp": "2026-06-05T05:55:21.320Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 7473,
+          "outputTokens": 18,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 195,
+          "outputTokens": 11632,
+          "cacheReadInputTokens": 626103,
+          "cacheCreationInputTokens": 48216
+        }
+      }
+    }
+  ]
+}

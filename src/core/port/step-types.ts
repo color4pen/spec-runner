@@ -60,7 +60,6 @@ export interface CliStepDeps extends StepDeps {
 export interface ParsedStepResult {
   verdict: import("../../state/schema.js").Verdict | null;
   findingsPath: string | null;
-  fileContent?: string | null;
   /**
    * Structured scores extracted from the agent's review output.
    * Only set by CodeReviewStep when the agent outputs a Scores table.
@@ -86,7 +85,6 @@ export type { ReviewScores, FindingSeverityCounts };
 export const NULL_PARSE_RESULT: ParsedStepResult = {
   verdict: null,
   findingsPath: null,
-  fileContent: null,
 };
 
 /**

@@ -16,7 +16,7 @@ export const jobsWritableCheck: DoctorCheck = {
   required: true,
 
   async check(ctx: DoctorContext) {
-    const jobsDir = path.join(ctx.homeDir, ".local", "share", "specrunner", "jobs");
+    const jobsDir = path.join(ctx.cwd, ".specrunner", "jobs");
     const W_OK = ctx.fs.constants.W_OK;
 
     // Check if jobs dir is accessible (exists and writable)

@@ -171,6 +171,114 @@ async function makeJobStateForManaged(slug = "test-slug") {
   });
 }
 
+// Helper: read marker.json if it exists, else null
+async function readMarker(slug: string): Promise<Record<string, unknown> | null> {
+  const markerPath = path.join(tempDir, ".specrunner", "local", slug, "marker.json");
+  try {
+    const raw = await fs.readFile(markerPath, "utf-8");
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+// TC-036: managed marker.json が D7 スキーマ・write/clear タイミングに準拠する
+describe("TC-036: managed marker write/clear タイミングと D7 スキーマ準拠", () => {
+  it("setupWorkspace (resume path, no branchName) が marker.json を書き込む", async () => {
+    const sessionClient = buildMockSessionClient();
+    const githubClient = buildMockGitHubClient();
+    const jobState = await makeJobStateForManaged("marker-test");
+    const runtime = new ManagedRuntime(tempDir, sessionClient, githubClient, buildRepo(), undefined, "");
+
+    // No branchName → resume path
+    await runtime.setupWorkspace("marker-test", jobState.jobId);
+
+    const marker = await readMarker("marker-test");
+    expect(marker).not.toBeNull();
+    expect(marker!["slug"]).toBe("marker-test");
+    expect(marker!["jobId"]).toBe(jobState.jobId);
+    expect(marker!["status"]).toBe("running");
+    expect(typeof marker!["createdAt"]).toBe("string");
+  });
+
+  it("setupWorkspace (run path, with branchName) が marker.json を書き込む", async () => {
+    const sessionClient = buildMockSessionClient();
+    const githubClient = buildMockGitHubClient();
+    const { spawnFn } = buildManagedMockSpawnFn();
+    const jobState = await makeJobStateForManaged("marker-run-test");
+    const runtime = new ManagedRuntime(tempDir, sessionClient, githubClient, buildRepo(), spawnFn, "");
+
+    await runtime.setupWorkspace("marker-run-test", jobState.jobId, {
+      branchName: "feat/marker-run-test-abcd1234",
+    });
+
+    const marker = await readMarker("marker-run-test");
+    expect(marker).not.toBeNull();
+    expect(marker!["slug"]).toBe("marker-run-test");
+    expect(marker!["jobId"]).toBe(jobState.jobId);
+    expect(marker!["status"]).toBe("running");
+    expect(typeof marker!["createdAt"]).toBe("string");
+  });
+
+  it("teardown が終端ステータス(archived)で marker.json を削除する", async () => {
+    const sessionClient = buildMockSessionClient();
+    const githubClient = buildMockGitHubClient();
+    const jobState = await makeJobStateForManaged("teardown-clear-test");
+    const runtime = new ManagedRuntime(tempDir, sessionClient, githubClient, buildRepo(), undefined, "");
+
+    // Write marker first
+    await runtime.setupWorkspace("teardown-clear-test", jobState.jobId);
+    expect(await readMarker("teardown-clear-test")).not.toBeNull();
+
+    // Register cleanup (stores slug in handle)
+    const handle = runtime.registerCleanup(jobState.jobId, "design");
+
+    // teardown with terminal status → clears marker
+    await runtime.teardown(handle, "archived");
+    expect(await readMarker("teardown-clear-test")).toBeNull();
+  });
+
+  it("teardown が終端ステータス(canceled)で marker.json を削除する", async () => {
+    const sessionClient = buildMockSessionClient();
+    const githubClient = buildMockGitHubClient();
+    const jobState = await makeJobStateForManaged("teardown-cancel-test");
+    const runtime = new ManagedRuntime(tempDir, sessionClient, githubClient, buildRepo(), undefined, "");
+
+    await runtime.setupWorkspace("teardown-cancel-test", jobState.jobId);
+    const handle = runtime.registerCleanup(jobState.jobId, "design");
+
+    await runtime.teardown(handle, "canceled");
+    expect(await readMarker("teardown-cancel-test")).toBeNull();
+  });
+
+  it("teardown が非終端ステータス(awaiting-resume)では marker.json を保持する", async () => {
+    const sessionClient = buildMockSessionClient();
+    const githubClient = buildMockGitHubClient();
+    const jobState = await makeJobStateForManaged("teardown-keep-test");
+    const runtime = new ManagedRuntime(tempDir, sessionClient, githubClient, buildRepo(), undefined, "");
+
+    await runtime.setupWorkspace("teardown-keep-test", jobState.jobId);
+    const handle = runtime.registerCleanup(jobState.jobId, "design");
+
+    // Non-terminal status → marker is preserved
+    await runtime.teardown(handle, "awaiting-resume");
+    expect(await readMarker("teardown-keep-test")).not.toBeNull();
+  });
+
+  it("teardown が非終端ステータス(awaiting-archive)では marker.json を保持する", async () => {
+    const sessionClient = buildMockSessionClient();
+    const githubClient = buildMockGitHubClient();
+    const jobState = await makeJobStateForManaged("teardown-keep2-test");
+    const runtime = new ManagedRuntime(tempDir, sessionClient, githubClient, buildRepo(), undefined, "");
+
+    await runtime.setupWorkspace("teardown-keep2-test", jobState.jobId);
+    const handle = runtime.registerCleanup(jobState.jobId, "design");
+
+    await runtime.teardown(handle, "awaiting-archive");
+    expect(await readMarker("teardown-keep2-test")).not.toBeNull();
+  });
+});
+
 // TC-MR-005: setupWorkspace writes rules.md to change folder via writeFile (string constant)
 describe("TC-MR-005: setupWorkspace writes rules.md to change folder via string constant", () => {
   it("writes RULES_MD_CONTENT to change folder and stages it with git add", async () => {

@@ -94,7 +94,7 @@ function makeMinimalJudgeStep(): AgentStep {
     reportTool: JUDGE_REPORT_TOOL,
     buildMessage: () => "review message",
     resultFilePath: () => null,
-    parseResult: () => ({ verdict: null, findingsPath: null, fileContent: null }),
+    parseResult: () => ({ verdict: null, findingsPath: null }),
   };
 }
 

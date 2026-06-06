@@ -222,10 +222,8 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
 
     expect(verdictEvents).toContain("spec-review:approved");
 
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    const persisted = JSON.parse(
-      await fs.readFile(path.join(jobsDir, `${jobId}.json`), "utf-8"),
-    ) as JobState;
+    const { JobStateStore: JSS } = await import("../../../../src/store/job-state-store.js");
+    const persisted = await new JSS(jobId, tempDir).load();
     expect(persisted.steps?.["spec-review"]).toBeDefined();
   });
 
@@ -291,11 +289,9 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
       code: "CLAUDE_CODE_QUERY_FAILED",
     });
 
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    const persisted = JSON.parse(
-      await fs.readFile(path.join(jobsDir, `${jobId}.json`), "utf-8"),
-    ) as JobState;
-    const stepResults = persisted.steps?.["spec-review"];
+    const { JobStateStore: JSS2 } = await import("../../../../src/store/job-state-store.js");
+    const persisted2 = await new JSS2(jobId, tempDir).load();
+    const stepResults = persisted2.steps?.["spec-review"];
     expect(stepResults).toBeDefined();
     expect(Array.isArray(stepResults)).toBe(true);
     expect(stepResults!.length).toBeGreaterThan(0);

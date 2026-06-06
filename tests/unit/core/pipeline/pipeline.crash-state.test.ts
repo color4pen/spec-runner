@@ -220,10 +220,8 @@ describe("T3.2: runInternal throws (unknown step) → pipeline.run() catch → a
 
     // pipeline.run() re-throws after persisting, so we check via the persisted state
     // The state should have been persisted as awaiting-resume before re-throw
-    const { default: fs2 } = await import("node:fs/promises");
-    const statePath = path.join(tempDir, ".specrunner", "jobs", `${jobState.jobId}.json`);
-    const raw = await fs2.readFile(statePath, "utf-8");
-    const persisted = JSON.parse(raw) as JobState;
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    const persisted = await new JobStateStore(jobState.jobId, tempDir).load();
 
     // pipeline.run() rethrows, so result is undefined
     expect(result).toBeUndefined();

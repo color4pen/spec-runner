@@ -134,7 +134,6 @@ describe("TC-009: CodeFixerStep.parseResult が NULL_PARSE_RESULT を返す", ()
     expect(result).toEqual(NULL_PARSE_RESULT);
     expect(result.verdict).toBeNull();
     expect(result.findingsPath).toBeNull();
-    expect(result.fileContent).toBeNull();
   });
 
   it("returns NULL_PARSE_RESULT for empty string", () => {

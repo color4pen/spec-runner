@@ -8,6 +8,8 @@
  * Phase 2: worktree remove + feature branch delete (best-effort)
  * Phase 3: status → archived
  */
+import * as fs from "node:fs/promises";
+import * as nodePath from "node:path";
 import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs } from "../finish/types.js";
 import type { WorktreeManager } from "../worktree/manager.js";
@@ -18,11 +20,12 @@ import { assertJobFinishable, markJobArchived } from "../finish/job-state-update
 import { deriveAndWriteUsage } from "../finish/derive-usage.js";
 import { archiveChangeFolder } from "../finish/archive-change-folder.js";
 import { commitArchive } from "../finish/commit-archive.js";
-import { createWorktreeManager } from "../worktree/manager.js";
+import { buildWorktreePath, createWorktreeManager } from "../worktree/manager.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import { formatEscalation } from "../finish/escalation.js";
 import { logResult, stderrWrite } from "../../logger/stdout.js";
 import { KeepAlive } from "../lifecycle/keepalive.js";
+import { livenessJsonPath } from "../../util/paths.js";
 
 export interface ArchiveInput {
   /** Slug of the job to archive. */
@@ -41,6 +44,36 @@ export type ArchiveResult =
   | { exitCode: 0 }
   | { exitCode: 1; escalation: string }
   | { exitCode: 2; message: string };
+
+/**
+ * Resolve worktree path for archive Phase 2 cleanup.
+ * Falls back from state.worktreePath → liveness sidecar → buildWorktreePath convention.
+ */
+async function resolveWorktreePathForArchive(
+  state: import("../../state/schema.js").JobState,
+  cwd: string,
+): Promise<string | null> {
+  // 1. Already present in state (split-layout mode)
+  if (state.worktreePath) return state.worktreePath;
+
+  const slug = getJobSlug(state);
+  if (!slug) return null;
+
+  // 2. Liveness sidecar
+  try {
+    const sidecarPath = nodePath.join(cwd, livenessJsonPath(slug));
+    const raw = await fs.readFile(sidecarPath, "utf-8");
+    const sidecar = JSON.parse(raw) as Record<string, unknown>;
+    if (typeof sidecar["worktreePath"] === "string" && sidecar["jobId"] === state.jobId) {
+      return sidecar["worktreePath"];
+    }
+  } catch {
+    // No sidecar — fall through
+  }
+
+  // 3. Convention-derived path (best-effort; remove() is already wrapped in try-catch)
+  return buildWorktreePath(cwd, slug, state.jobId);
+}
 
 /**
  * Run the archive orchestration.
@@ -74,7 +107,7 @@ export async function runArchiveOrchestrator(
     const state = matching[0]!;
 
     jobId = state.jobId;
-    worktreePath = state.worktreePath ?? null;
+    worktreePath = await resolveWorktreePathForArchive(state, cwd);
     branch = state.branch;
 
     // Terminal status → no-op

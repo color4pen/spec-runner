@@ -26,7 +26,6 @@ export function toLegacyStepResult(step: StepRun | StepResult): StepResult {
     findingsPath: run.outcome.findingsPath ?? null,
     completedAt: run.endedAt,
     error: run.outcome.error,
-    fileContent: run.outcome.fileContent,
   };
 }
 
@@ -58,7 +57,6 @@ export interface StepResultInput {
   completedAt?: string | null;
   startedAt?: string | null;
   error: import("./schema.js").ErrorInfo | null;
-  fileContent?: string | null;
   /**
    * Per-model token usage from the agent run.
    * Only present for ClaudeCodeRunner steps; absent for ManagedAgentRunner and CLI steps.
@@ -99,7 +97,6 @@ export function pushStepResult(
       verdict: partial.verdict,
       findingsPath: partial.findingsPath,
       error: partial.error,
-      fileContent: partial.fileContent,
       ...(partial.toolResult !== undefined ? { toolResult: partial.toolResult } : {}),
       ...(partial.followUpAttempts !== undefined ? { followUpAttempts: partial.followUpAttempts } : {}),
     },

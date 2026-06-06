@@ -1144,8 +1144,6 @@ describe("TC-030: runPipeline — persistence: both propose and spec-review step
     const { client } = buildPipelineMockClient({ specReviewVerdicts: ["approved"] });
     const githubClient = buildMockGithubClient({ specReviewVerdicts: ["approved"] });
 
-    const stateFilePath = path.join(tempDir, ".specrunner", "jobs", `${jobState.jobId}.json`);
-
     await runPipeline(jobState, {
       client: client,
       config: buildConfig(),
@@ -1160,9 +1158,9 @@ describe("TC-030: runPipeline — persistence: both propose and spec-review step
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    // Verify the final persisted state has both steps recorded
-    const finalStateRaw = await fs.readFile(stateFilePath, "utf-8");
-    const finalState = JSON.parse(finalStateRaw);
+    // Verify the final persisted state has both steps recorded — reload via store
+    const { JobStateStore } = await import("../src/store/job-state-store.js");
+    const finalState = await new JobStateStore(jobState.jobId, tempDir).load();
     expect(finalState.steps?.["design"]).toBeDefined();
     expect(finalState.steps?.["spec-review"]).toBeDefined();
   });

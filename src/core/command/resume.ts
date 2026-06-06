@@ -4,6 +4,8 @@
  * Design D7: prepare() resolves job state, checks safety gates, determines
  * start step, and transitions job to "running" status.
  */
+import * as nodePath from "node:path";
+import * as nodeFs from "node:fs/promises";
 import { loadConfig } from "../../config/store.js";
 import { resolveRepoRoot } from "../../util/repo-root.js";
 import { JobStateStore } from "../../store/job-state-store.js";
@@ -18,6 +20,7 @@ import { resolveResumeStep } from "../resume/resolve-step.js";
 import { getPipelineDescriptor } from "../pipeline/registry.js";
 import { getPipelineId } from "../../state/pipeline-id.js";
 import { checkConsecutiveEscalations, checkStaleState, isStaleRunning } from "../resume/safety.js";
+import { livenessJsonPath } from "../../util/paths.js";
 import { canTransition, transitionJob } from "../../state/lifecycle.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../port/runtime-strategy.js";
@@ -102,8 +105,13 @@ export class ResumeCommand extends CommandRunner {
     }
 
     // Status gate: stale detection for "running" state
+    // Pass sidecarPath when slug is known (T-13: liveness check via sidecar)
+    const resolvedSlugForSidecar = getJobSlug(state);
+    const sidecarPath = resolvedSlugForSidecar
+      ? nodePath.join(cwd, livenessJsonPath(resolvedSlugForSidecar))
+      : undefined;
     if (state.status === "running") {
-      if (isStaleRunning(state)) {
+      if (isStaleRunning(state, sidecarPath)) {
         // Orphaned running state — transition to awaiting-resume and continue
         const { state: recovered } = transitionJob(state, "awaiting-resume", {
           trigger: "stale-detection",
@@ -203,6 +211,26 @@ export class ResumeCommand extends CommandRunner {
       throw new PrepareError(1, "Failed to load config");
     }
 
+    // Resolve existing worktree path: prefer state field, fall back to liveness sidecar (T-09).
+    // In slug-mode, state.worktreePath is stripped from branch-coupled state.json.
+    // The sidecar (.specrunner/local/<slug>/liveness.json) stores the machine-local value.
+    let resolvedWorktreePath: string | null = updatedState.worktreePath ?? null;
+    if (!resolvedWorktreePath && resolvedSlug) {
+      try {
+        const sidecarAbsPath = nodePath.join(cwd, livenessJsonPath(resolvedSlug));
+        const raw = await nodeFs.readFile(sidecarAbsPath, "utf-8");
+        const sidecar = JSON.parse(raw) as Record<string, unknown>;
+        if (
+          typeof sidecar["worktreePath"] === "string" &&
+          sidecar["jobId"] === updatedState.jobId
+        ) {
+          resolvedWorktreePath = sidecar["worktreePath"];
+        }
+      } catch {
+        // No sidecar or mismatch — will create a new worktree on resume
+      }
+    }
+
     return {
       jobState: updatedState,
       startStep,
@@ -212,7 +240,7 @@ export class ResumeCommand extends CommandRunner {
       logLevel,
       repoRoot: cwd,
       workspaceOpts: {
-        existingWorktreePath: updatedState.worktreePath ?? null,
+        existingWorktreePath: resolvedWorktreePath,
         baseBranch: request.baseBranch,
       },
       resumePrompt: this.options.prompt,

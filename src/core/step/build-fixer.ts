@@ -4,8 +4,8 @@ import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
+import type { DynamicContext } from "../../git/dynamic-context.js";
 import { BUILD_FIXER_SYSTEM_PROMPT } from "../../prompts/build-fixer-system.js";
-import { getLatestStepResult } from "../../state/helpers.js";
 import { branchNotSetError } from "../../errors.js";
 import { extractVerificationFailures } from "../verification/parse-result.js";
 import { changeFolderPath, verificationResultPath } from "../../util/paths.js";
@@ -73,6 +73,18 @@ export const BuildFixerStep: AgentStep = {
     ];
   },
 
+  async enrichContext(dynamicContext: DynamicContext, cwd: string, slug: string): Promise<DynamicContext> {
+    const findingsPath = verificationResultPath(slug);
+    try {
+      const { readFile } = await import("node:fs/promises");
+      const { resolve } = await import("node:path");
+      const content = await readFile(resolve(cwd, findingsPath), "utf-8");
+      return { ...dynamicContext, verificationContent: content };
+    } catch {
+      return dynamicContext;
+    }
+  },
+
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.BUILD_FIXER);
     const branch = state.branch;
@@ -80,9 +92,6 @@ export const BuildFixerStep: AgentStep = {
     // Derive findingsPath from reads declaration (D4: replace state-lookup halt).
     // Existence is guaranteed by pre-execution validation (STEP_INPUT_MISSING).
     const findingsPath = verificationResultPath(deps.slug);
-
-    // fileContent for failure section is still sourced from state (existence guaranteed by pre-validation).
-    const verificationResult = getLatestStepResult(state, STEP_NAMES.VERIFICATION);
 
     // Session 継続の場合は短縮 prompt（前回コンテキストが session に残っているため）
     if (isFixerContinuation(state, STEP_NAMES.BUILD_FIXER)) {
@@ -94,7 +103,8 @@ export const BuildFixerStep: AgentStep = {
     }
 
     // 初回は現行の full prompt（インライン failure context を含む）
-    const failureSection = buildFailureSection(verificationResult?.fileContent);
+    // verificationContent is pre-read by enrichContext from the actual result file.
+    const failureSection = buildFailureSection(deps.dynamicContext?.verificationContent);
 
     return `<user-request>
 You are the build-fixer for the following change:

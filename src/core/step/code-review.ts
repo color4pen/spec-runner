@@ -176,10 +176,10 @@ export const CodeReviewStep: AgentStep = {
     return buildReviewFeedbackPath(deps.slug, iteration);
   },
 
-  parseResult(content: string, _deps: StepDeps): ParsedStepResult {
+  parseResult(_content: string, _deps: StepDeps): ParsedStepResult {
     // R4 (contract lock): prose-verdict parse path is dead (executor uses typed toolResult).
     // parseResult is kept to satisfy the Step interface; verdict: null triggers escalation fallback
     // in the prose path, which is only reached by CLI steps without reportTool.
-    return { verdict: null, findingsPath: null, fileContent: content };
+    return { verdict: null, findingsPath: null };
   },
 };

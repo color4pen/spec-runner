@@ -26,6 +26,7 @@ import { initPipelineLog, closePipelineLog } from "../../logger/pipeline-logger.
 import { pruneOldLogs } from "../../logger/log-retention.js";
 import { getVerboseLogDir } from "../../util/xdg.js";
 import { KeepAlive } from "../lifecycle/keepalive.js";
+import { createExitGuardHandler } from "../lifecycle/exit-guard.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
 import { JobStateStore } from "../../store/job-state-store.js";
@@ -86,6 +87,9 @@ export abstract class CommandRunner {
     const prepared = await this.prepare();
 
     const { jobState, startStep, request, config, slug, workspaceOpts, repoRoot } = prepared;
+
+    // Register per-job exit guard so that beforeExit writes awaiting-resume to slug-based state.
+    process.on("beforeExit", createExitGuardHandler(repoRoot, jobState.jobId));
 
     // Prune old logs before initializing pipeline log (run 開始時 retention チェック)
     try {
@@ -272,37 +276,6 @@ async function handleResult(finalState: JobState, slug: string): Promise<number>
 // Output helpers (moved from run.ts / resume.ts)
 // ---------------------------------------------------------------------------
 
-/**
- * Parse spec-review findings summary from spec-review-result.md content.
- * Returns findings summary or null if not available. Best-effort — never throws.
- */
-export function parseSpecReviewFindingsSummary(
-  content: string | undefined,
-): { count: number; topFindings: string[] } | null {
-  if (!content) return null;
-  try {
-    const tableMatch = /\| #.*\n\|[-| ]+\n((?:\|.*\n?)*)/m.exec(content);
-    if (!tableMatch || !tableMatch[1]) return null;
-
-    const rows = tableMatch[1]
-      .split("\n")
-      .filter((line) => line.trim().startsWith("|") && line.trim() !== "|");
-
-    const findings = rows
-      .map((row) => {
-        const cells = row.split("|").filter(Boolean).map((c) => c.trim());
-        return cells[4] ?? ""; // Description column
-      })
-      .filter(Boolean);
-
-    return {
-      count: findings.length,
-      topFindings: findings.slice(0, 3),
-    };
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Output spec-review verdict information to stderr (diagnostic info).
@@ -315,13 +288,6 @@ function outputSpecReviewVerdict(finalState: JobState, slug: string): void {
   stderrWrite(`Spec review verdict: ${verdict}`);
 
   if (verdict === "needs-fix") {
-    const findingsSummary = parseSpecReviewFindingsSummary(specReviewResult.fileContent ?? undefined);
-    if (findingsSummary && findingsSummary.count > 0) {
-      stderrWrite(`Findings: ${findingsSummary.count} issue(s) found.`);
-      for (const finding of findingsSummary.topFindings) {
-        stderrWrite(`  - ${finding}`);
-      }
-    }
     stderrWrite(`Review findings at: ${specReviewResult.findingsPath ?? specReviewResultPath(slug, 1)}`);
   } else if (verdict === "escalation") {
     stderrWrite("Spec review requires human judgment. Check the findings file for details.");

@@ -89,7 +89,6 @@ describe("TC-022: ImplementerStep.resultFilePath と parseResult", () => {
     expect(result).toEqual(NULL_PARSE_RESULT);
     expect(result.verdict).toBeNull();
     expect(result.findingsPath).toBeNull();
-    expect(result.fileContent).toBeNull();
   });
 });
 

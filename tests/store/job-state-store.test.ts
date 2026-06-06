@@ -259,7 +259,7 @@ describe("TC-003: pre-PR24 fixture round-trip — load → normalize → save", 
 // TC-004: Fixture round-trip — post-PR24 legacy JSON
 // ---------------------------------------------------------------------------
 describe("TC-004: post-PR24 fixture round-trip — load → normalize → save", () => {
-  it("loads post-pr24 fixture, normalizes, saved JSON uses StepRun[] shape", async () => {
+  it("loads post-pr24 fixture, normalizes, reloaded state uses StepRun[] shape", async () => {
     const fixturePath = path.resolve(
       __dirname,
       "../fixtures/legacy-job-state-post-pr24.json",
@@ -276,27 +276,23 @@ describe("TC-004: post-PR24 fixture round-trip — load → normalize → save",
     const state = await store.load();
     await store.persist(state);
 
-    const savedRaw = await fs.readFile(
-      path.join(jobsDir, `${jobId}.json`),
-      "utf-8",
-    );
-    const saved = JSON.parse(savedRaw) as Record<string, unknown>;
-    const stepsRecord = saved["steps"] as Record<string, unknown[]>;
+    // After persist, reload via store (now uses split layout)
+    const reloaded = await store.load();
+    const specReviewRuns = reloaded.steps["spec-review"];
 
-    const specReviewRuns = stepsRecord["spec-review"];
     expect(Array.isArray(specReviewRuns)).toBe(true);
     expect(specReviewRuns!.length).toBe(2);
 
-    const first = specReviewRuns![0] as Record<string, unknown>;
-    expect(first["attempt"]).toBe(1);
-    expect(first["outcome"]).toBeDefined();
-    expect((first["outcome"] as Record<string, unknown>)["verdict"]).toBe("needs-fix");
-    expect(first["endedAt"]).toBe("2026-02-01T00:30:00.000Z");
+    const first = specReviewRuns![0]!;
+    expect(first.attempt).toBe(1);
+    expect(first.outcome).toBeDefined();
+    expect(first.outcome.verdict).toBe("needs-fix");
+    expect(first.endedAt).toBe("2026-02-01T00:30:00.000Z");
 
-    // No legacy field names
-    expect(first["iteration"]).toBeUndefined();
-    expect(first["completedAt"]).toBeUndefined();
-    expect(first["session"]).toBeUndefined();
+    // No legacy field names (StepRun shape)
+    expect((first as unknown as Record<string, unknown>)["iteration"]).toBeUndefined();
+    expect((first as unknown as Record<string, unknown>)["completedAt"]).toBeUndefined();
+    expect((first as unknown as Record<string, unknown>)["session"]).toBeUndefined();
   });
 });
 
@@ -311,7 +307,7 @@ describe("TC-005: appendStepRun — appends and auto-increments attempt", () => 
     const existingRun: StepRun = {
       attempt: 1,
       sessionId: "sess_001",
-      outcome: { verdict: "needs-fix", findingsPath: null, fileContent: null, error: null },
+      outcome: { verdict: "needs-fix", findingsPath: null, error: null },
       startedAt: "2026-01-01T00:00:00.000Z",
       endedAt: "2026-01-01T00:05:00.000Z",
     };
@@ -331,7 +327,7 @@ describe("TC-005: appendStepRun — appends and auto-increments attempt", () => 
     const store = new JobStateStore(jobId, tempDir);
     const newRun: Omit<StepRun, "attempt"> = {
       sessionId: "sess_002",
-      outcome: { verdict: "approved", findingsPath: null, fileContent: null, error: null },
+      outcome: { verdict: "approved", findingsPath: null, error: null },
       startedAt: "2026-01-01T00:10:00.000Z",
       endedAt: "2026-01-01T00:15:00.000Z",
     };
@@ -349,7 +345,7 @@ describe("TC-005: appendStepRun — appends and auto-increments attempt", () => 
 // TC-006: appendStepRun persists atomically
 // ---------------------------------------------------------------------------
 describe("TC-006: appendStepRun — persists atomically (write-and-rename)", () => {
-  it("file is fully updated after appendStepRun — no partial write", async () => {
+  it("state is fully updated after appendStepRun — no partial write (split layout)", async () => {
     const jobId = "tc006-job";
     const state = makeMinimalNormalizedState(jobId);
 
@@ -363,24 +359,21 @@ describe("TC-006: appendStepRun — persists atomically (write-and-rename)", () 
     const store = new JobStateStore(jobId, tempDir);
     const run: Omit<StepRun, "attempt"> = {
       sessionId: "sess_001",
-      outcome: { verdict: "approved", findingsPath: null, fileContent: null, error: null },
+      outcome: { verdict: "approved", findingsPath: null, error: null },
       startedAt: "2026-01-01T00:00:00.000Z",
       endedAt: "2026-01-01T00:05:00.000Z",
     };
     await store.appendStepRun(state, "design", run);
 
-    // Verify file on disk is valid JSON with the appended run
-    const diskContent = await fs.readFile(
-      path.join(jobsDir, `${jobId}.json`),
-      "utf-8",
-    );
-    const diskState = JSON.parse(diskContent) as Record<string, unknown>;
-    const designRuns = (diskState["steps"] as Record<string, unknown>)?.["design"];
+    // After persist, reload via store to verify
+    const reloaded = await store.load();
+    const designRuns = reloaded.steps["design"];
     expect(Array.isArray(designRuns)).toBe(true);
-    expect((designRuns as unknown[]).length).toBe(1);
+    expect(designRuns!.length).toBe(1);
 
-    // No tmp files left
-    const files = await fs.readdir(jobsDir);
+    // No tmp files left in the split-layout directory
+    const jobDir = path.join(jobsDir, jobId);
+    const files = await fs.readdir(jobDir);
     const tmpFiles = files.filter((f) => f.includes(".tmp."));
     expect(tmpFiles).toHaveLength(0);
   });
@@ -407,7 +400,7 @@ describe("TC-007: StepRun captures startedAt and endedAt timestamps", () => {
     const store = new JobStateStore(jobId, tempDir);
     const run: Omit<StepRun, "attempt"> = {
       sessionId: null,
-      outcome: { verdict: "approved", findingsPath: null, fileContent: null, error: null },
+      outcome: { verdict: "approved", findingsPath: null, error: null },
       startedAt,
       endedAt,
     };
@@ -458,25 +451,81 @@ describe("TC-008: persist after legacy load writes new format only", () => {
     const normalized = await store.load();
     await store.persist(normalized);
 
-    const savedRaw = await fs.readFile(
-      path.join(tempDir, ".specrunner", "jobs", `${jobId}.json`),
-      "utf-8",
-    );
-    const saved = JSON.parse(savedRaw) as Record<string, unknown>;
-    const stepsRecord = saved["steps"] as Record<string, unknown[]>;
-    const runs = stepsRecord["spec-review"];
-    const first = runs![0] as Record<string, unknown>;
+    // After persist, reload via store (now uses split layout)
+    const reloaded = await store.load();
+    const runs = reloaded.steps["spec-review"];
+    const first = runs![0]!;
 
     // Must have StepRun fields
-    expect(first["attempt"]).toBe(1);
-    expect(first["outcome"]).toBeDefined();
-    expect(first["startedAt"]).toBeTruthy();
-    expect(first["endedAt"]).toBeTruthy();
+    expect(first.attempt).toBe(1);
+    expect(first.outcome).toBeDefined();
+    expect(first.startedAt).toBeTruthy();
+    expect(first.endedAt).toBeTruthy();
 
     // Must NOT have legacy fields
-    expect(first["iteration"]).toBeUndefined();
-    expect(first["completedAt"]).toBeUndefined();
+    expect((first as unknown as Record<string, unknown>)["iteration"]).toBeUndefined();
+    expect((first as unknown as Record<string, unknown>)["completedAt"]).toBeUndefined();
     // session as sub-object should not appear at top level of StepRun
-    expect(typeof first["session"]).not.toBe("object");
+    expect(typeof (first as unknown as Record<string, unknown>)["session"]).not.toBe("object");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-009: slug-mode persist strips machine-local values from state.json
+// ---------------------------------------------------------------------------
+describe("TC-009: slug-mode persist — worktreePath / pid / session absent from state.json", () => {
+  it("state.json written in slug mode does not contain worktreePath, pid, or session", async () => {
+    const jobId = "tc009-slug-strip";
+    const slug = "tc009-slug";
+
+    // Set up slug-based layout: {tempDir}/specrunner/changes/{slug}/
+    const changeDir = path.join(tempDir, "specrunner", "changes", slug);
+    await fs.mkdir(changeDir, { recursive: true });
+    const stateJsonPath = path.join(changeDir, "state.json");
+    const eventsJsonlPath = path.join(changeDir, "events.jsonl");
+
+    // Write an initial minimal state.json (slug mode — no machine-local fields)
+    const initialStateJson = {
+      version: 1,
+      jobId,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      request: { title: "Test", type: "feature" },
+      repository: { owner: "testowner", name: "testrepo" },
+      step: "design",
+      status: "running",
+      branch: `change/${slug}-${jobId.slice(0, 8)}`,
+      error: null,
+      _journal: { historyCount: 0, stepCounts: {} },
+    };
+    await fs.writeFile(stateJsonPath, JSON.stringify(initialStateJson), "utf-8");
+    await fs.writeFile(eventsJsonlPath, "", "utf-8");
+
+    // Create slug-mode store and persist a state that includes machine-local values
+    const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir });
+    const loaded = await store.load();
+
+    // Augment with machine-local values (as would exist in split-layout / legacy mode)
+    const stateWithLocals = {
+      ...loaded,
+      worktreePath: "/some/local/path",
+      pid: 12345,
+      session: { id: "sess_001", agentId: "agent_001", environmentId: "env_001" },
+    };
+
+    // Persist in slug mode — machine-local fields must be stripped
+    await store.persist(stateWithLocals);
+
+    // Read raw bytes of state.json and verify no machine-local keys
+    const rawJson = await fs.readFile(stateJsonPath, "utf-8");
+    const parsed = JSON.parse(rawJson) as Record<string, unknown>;
+
+    expect(parsed["worktreePath"]).toBeUndefined();
+    expect(parsed["pid"]).toBeUndefined();
+    expect(parsed["session"]).toBeUndefined();
+
+    // Sanity: cursor fields (status, step) must still be present
+    expect(parsed["status"]).toBe("running");
+    expect(parsed["jobId"]).toBe(jobId);
   });
 });

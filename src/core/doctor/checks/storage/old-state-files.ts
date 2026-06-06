@@ -13,7 +13,7 @@ export const oldStateFilesCheck: DoctorCheck = {
   required: false,
 
   async check(ctx: DoctorContext) {
-    const jobsDir = path.join(ctx.homeDir, ".local", "share", "specrunner", "jobs");
+    const jobsDir = path.join(ctx.cwd, ".specrunner", "jobs");
 
     let files: string[];
     try {

@@ -11,11 +11,16 @@
  * D7: All I/O deps injected for testability
  */
 
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { stdoutWrite } from "../../logger/stdout.js";
 import { ERROR_CODES, SpecRunnerError } from "../../errors.js";
 import { gracefulKill } from "./pid-kill.js";
+import { buildWorktreePath } from "../worktree/manager.js";
+import { getJobSlug } from "../../state/job-slug.js";
+import { livenessJsonPath, managedMarkerPath } from "../../util/paths.js";
 import type { WorktreeManager } from "../worktree/manager.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import type { JobState } from "../../state/schema.js";
@@ -55,6 +60,40 @@ const GRACEFUL_KILL_TIMEOUT_MS = 5000;
 // ---------------------------------------------------------------------------
 
 /**
+ * Resolve the worktree path for a job using a 3-step fallback:
+ * 1. state.worktreePath (split-layout mode — already set)
+ * 2. liveness sidecar (.specrunner/local/<slug>/liveness.json)
+ * 3. buildWorktreePath convention (<repoRoot>/.git/specrunner-worktrees/<slug>-<jobId8>)
+ *
+ * Returns null when the slug cannot be determined (legacy job with no slug/branch).
+ */
+async function resolveWorktreePathForJob(
+  state: JobState,
+  repoRoot: string,
+): Promise<string | null> {
+  // 1. Already present in state (split-layout mode)
+  if (state.worktreePath) return state.worktreePath;
+
+  const slug = getJobSlug(state);
+  if (!slug) return null;
+
+  // 2. Liveness sidecar
+  try {
+    const sidecarPath = path.join(repoRoot, livenessJsonPath(slug));
+    const raw = await fs.readFile(sidecarPath, "utf-8");
+    const sidecar = JSON.parse(raw) as Record<string, unknown>;
+    if (typeof sidecar["worktreePath"] === "string" && sidecar["jobId"] === state.jobId) {
+      return sidecar["worktreePath"];
+    }
+  } catch {
+    // No sidecar — fall through
+  }
+
+  // 3. Convention-derived path (best-effort; remove() is already wrapped in try-catch)
+  return buildWorktreePath(repoRoot, slug, state.jobId);
+}
+
+/**
  * Best-effort cleanup: worktree removal + local/remote branch deletion.
  * Failures append warnings but never throw.
  */
@@ -72,8 +111,8 @@ async function cleanupJobResources(
     warnings.push(`Warning: git worktree prune failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  // 2. Remove the job's worktree if path is set
-  const worktreePath = state.worktreePath;
+  // 2. Remove the job's worktree if path is set (slug-mode: resolve via sidecar → convention)
+  const worktreePath = await resolveWorktreePathForJob(state, repoRoot);
   if (worktreePath) {
     try {
       await worktreeManager.remove(worktreePath, repoRoot);
@@ -82,7 +121,18 @@ async function cleanupJobResources(
     }
   }
 
-  // 3. Delete local branch (best-effort)
+  // 3. Clear managed job marker (best-effort — no-op for local runtime)
+  const slugForMarker = getJobSlug(state);
+  if (slugForMarker) {
+    const markerAbsPath = path.join(repoRoot, managedMarkerPath(slugForMarker));
+    try {
+      await fs.unlink(markerAbsPath);
+    } catch {
+      // Best-effort — ENOENT is fine (local runtime has no marker)
+    }
+  }
+
+  // 4. Delete local branch (best-effort)
   const branch = state.branch;
   if (branch) {
     const localResult = await spawn("git", ["branch", "-D", branch], { cwd: repoRoot });

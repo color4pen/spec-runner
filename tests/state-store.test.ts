@@ -28,22 +28,21 @@ function makeBaseState() {
 
 // TC-043: atomic write（temp+rename）
 describe("TC-043: atomic write — temp+rename", () => {
-  it("writes job state atomically and final file is valid JSON", async () => {
+  it("writes job state atomically and final file is valid JSON (split layout)", async () => {
     const state = await JobStateStore.create(tempDir, makeBaseState());
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    const files = await fs.readdir(jobsDir);
-    const jsonFile = files.find((f) => f.endsWith(".json"));
-    expect(jsonFile).toBeDefined();
+    const jobDir = path.join(tempDir, ".specrunner", "jobs", state.jobId);
 
-    const content = await fs.readFile(path.join(jobsDir, jsonFile!), "utf-8");
+    // Split layout: subdirectory with state.json + events.jsonl
+    const stateJsonPath = path.join(jobDir, "state.json");
+    const content = await fs.readFile(stateJsonPath, "utf-8");
     const parsed = JSON.parse(content);
     expect(parsed.jobId).toBe(state.jobId);
   });
 
   it("no .tmp files remain after successful write", async () => {
-    await JobStateStore.create(tempDir, makeBaseState());
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    const files = await fs.readdir(jobsDir);
+    const state = await JobStateStore.create(tempDir, makeBaseState());
+    const jobDir = path.join(tempDir, ".specrunner", "jobs", state.jobId);
+    const files = await fs.readdir(jobDir);
     const tmpFiles = files.filter((f) => f.includes(".tmp."));
     expect(tmpFiles).toHaveLength(0);
   });
@@ -51,19 +50,16 @@ describe("TC-043: atomic write — temp+rename", () => {
 
 // TC-044: SIGINT 中断耐性
 describe("TC-044: SIGINT resilience", () => {
-  it("original file remains intact when temp file exists but rename hasn't happened", async () => {
+  it("original state.json remains intact when temp file exists but rename hasn't happened", async () => {
     const state = await JobStateStore.create(tempDir, makeBaseState());
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
+    const jobDir = path.join(tempDir, ".specrunner", "jobs", state.jobId);
 
-    // Simulate having a temp file alongside the real file (crash scenario)
-    const tmpFile = path.join(jobsDir, `${state.jobId}.json.tmp.abcdef`);
+    // Simulate having a temp file alongside the real state.json (crash scenario)
+    const tmpFile = path.join(jobDir, "state.json.tmp.abcdef");
     await fs.writeFile(tmpFile, "INCOMPLETE DATA");
 
-    // Reading the job file should still work
-    const content = await fs.readFile(
-      path.join(jobsDir, `${state.jobId}.json`),
-      "utf-8",
-    );
+    // Reading the job state should still work (state.json is intact)
+    const content = await fs.readFile(path.join(jobDir, "state.json"), "utf-8");
     const parsed = JSON.parse(content);
     expect(parsed.jobId).toBe(state.jobId);
   });
@@ -94,9 +90,10 @@ describe("TC-045: concurrent ps and write", () => {
 });
 
 // TC-046: history append-only と最大 100 entry truncate
-describe("TC-046: history append-only and max 100 truncate", () => {
-  it("truncates history to 100 entries", () => {
-    // Create a state with 100 history entries
+// TC-046: history append-only (Design D4: no persistent truncation)
+describe("TC-046: history append-only — no persistent truncation (Design D4)", () => {
+  it("does NOT truncate history — all entries preserved in journal (D4)", () => {
+    // Create a state with MAX_HISTORY_SIZE history entries
     let state: JobState = {
       version: 1,
       jobId: "test-id",
@@ -108,7 +105,7 @@ describe("TC-046: history append-only and max 100 truncate", () => {
       step: "init",
       status: "running",
       branch: null,
-      history: Array.from({ length: 100 }, (_, i) => ({
+      history: Array.from({ length: MAX_HISTORY_SIZE }, (_, i) => ({
         ts: new Date().toISOString(),
         step: `step-${i}`,
         status: "ok" as const,
@@ -117,7 +114,7 @@ describe("TC-046: history append-only and max 100 truncate", () => {
       error: null,
     };
 
-    // Add one more entry
+    // Add one more entry — should NOT be truncated (D4)
     const updated = appendHistoryEntry(state, {
       ts: new Date().toISOString(),
       step: "step-100",
@@ -125,12 +122,12 @@ describe("TC-046: history append-only and max 100 truncate", () => {
       message: "Entry 100",
     });
 
-    // Should still be 100 (oldest dropped)
-    expect(updated.history).toHaveLength(MAX_HISTORY_SIZE);
+    // All entries retained — history grows beyond MAX_HISTORY_SIZE
+    expect(updated.history).toHaveLength(MAX_HISTORY_SIZE + 1);
     // Latest entry should be at the end
     expect(updated.history[updated.history.length - 1]?.step).toBe("step-100");
-    // First entry of original should be dropped
-    expect(updated.history[0]?.step).toBe("step-1");
+    // First entry of original is preserved
+    expect(updated.history[0]?.step).toBe("step-0");
   });
 });
 

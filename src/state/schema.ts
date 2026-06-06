@@ -89,8 +89,6 @@ export interface ResumePoint {
 export interface StepOutcome {
   verdict: Verdict | null;
   findingsPath: string | null;
-  /** Raw file content for the result file (e.g. spec-review-result.md). Optional. */
-  fileContent?: string | null;
   error: ErrorInfo | null;
   /**
    * Result reported by the agent via report_result tool call.
@@ -135,8 +133,6 @@ export interface StepResult {
   findingsPath: string | null;
   completedAt: string | null;
   error: ErrorInfo | null;
-  /** Raw file content for the step result file (e.g. spec-review-result.md). Optional. */
-  fileContent?: string | null;
 }
 
 export interface PullRequestInfo {
@@ -182,17 +178,20 @@ export interface JobState {
   canceledAt?: string;
 }
 
+/**
+ * Maximum number of history entries shown in display/UI (e.g. job show).
+ * Persistent storage (events.jsonl) retains the full journal without truncation (D4).
+ * Display layer uses this cap to limit output.
+ */
 export const MAX_HISTORY_SIZE = 100;
 
 /**
  * Append a history entry to a job state (pure transform — returns new state).
- * Truncates oldest entries when history exceeds MAX_HISTORY_SIZE.
+ * Design D4: no persistent truncation — the full history is retained in the journal.
+ * Callers that need display truncation should apply cap at presentation time.
  */
 export function appendHistoryEntry(state: JobState, entry: HistoryEntry): JobState {
   const history = [...state.history, entry];
-  if (history.length > MAX_HISTORY_SIZE) {
-    history.splice(0, history.length - MAX_HISTORY_SIZE);
-  }
   return {
     ...state,
     history,
@@ -260,7 +259,6 @@ function legacyObjectToStepRun(
     outcome: {
       verdict: (obj["verdict"] as StepRun["outcome"]["verdict"]) ?? null,
       findingsPath: (obj["findingsPath"] as string | null) ?? null,
-      fileContent: (obj["fileContent"] as string | null) ?? null,
       error: (obj["error"] as StepRun["outcome"]["error"]) ?? null,
     },
     startedAt: endedAt,

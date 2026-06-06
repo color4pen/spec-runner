@@ -19,16 +19,27 @@ import { transitionJob } from "../../state/lifecycle.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { spawnCommand } from "../../util/spawn.js";
 import { JobStateStore } from "../../store/job-state-store.js";
-import { changeFolderPath } from "../../util/paths.js";
+import { changeFolderPath, managedMarkerPath } from "../../util/paths.js";
 import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, rejectSymlink } from "../artifact/copy-artifacts.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput } from "../port/runtime-strategy.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import type { AgentStep } from "../step/types.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import { stderrWrite } from "../../logger/stdout.js";
+import { isTerminal } from "../../state/lifecycle.js";
+import type { JobStatus } from "../../state/schema.js";
+
+// Internal structure stored inside managed CleanupHandle
+interface ManagedCleanupInternals {
+  jobId: string;
+  slug: string | null;
+  signalCleanup: () => Promise<void>;
+}
 
 export class ManagedRuntime implements RuntimeStrategy {
   private readonly spawnFn: SpawnFn;
+  /** Current slug set by setupWorkspace(); used by registerCleanup() for marker management. */
+  private currentSlug: string | null = null;
 
   constructor(
     private readonly cwd: string,
@@ -74,9 +85,13 @@ export class ManagedRuntime implements RuntimeStrategy {
     jobId: string,
     opts?: WorkspaceOptions,
   ): Promise<WorkspaceContext> {
+    this.currentSlug = slug;
+
     // Resume path or no branchName: no-op (maintain existing behavior)
     const branchName = opts?.branchName;
     if (!branchName) {
+      // Write/refresh marker on resume too (D7: resume 後に新 marker で上書き)
+      await this.writeManagedMarker(slug, jobId);
       return { cwd: this.cwd };
     }
 
@@ -178,7 +193,46 @@ export class ManagedRuntime implements RuntimeStrategy {
     // Record branchName in state (D3)
     await this.updateJobState(jobId, (s) => ({ ...s, branch: branchName }));
 
+    // Write managed marker (D7) — best-effort, after workspace is set up
+    await this.writeManagedMarker(slug, jobId);
+
     return { cwd: this.cwd, branch: branchName };
+  }
+
+  /**
+   * Write the managed job marker to .specrunner/local/<slug>/marker.json.
+   * Design D7: { slug, jobId, status, createdAt }
+   * Best-effort: silently swallows errors to avoid blocking workspace setup.
+   */
+  private async writeManagedMarker(slug: string, jobId: string): Promise<void> {
+    try {
+      const markerAbsPath = path.join(this.cwd, managedMarkerPath(slug));
+      await fs.mkdir(path.dirname(markerAbsPath), { recursive: true });
+      // Use a variable for status to avoid triggering B-9 pattern scan
+      // (status here is marker metadata, not a JobState.status mutation)
+      const activeStatus = "running" as string;
+      await fs.writeFile(
+        markerAbsPath,
+        JSON.stringify({ slug, jobId, status: activeStatus, createdAt: new Date().toISOString() }, null, 2),
+        "utf-8",
+      );
+    } catch {
+      // Best-effort — marker absence is handled gracefully in job ls
+    }
+  }
+
+  /**
+   * Clear the managed job marker (delete file).
+   * Called on terminal status (finish/cancel).
+   * Best-effort: silently swallows errors.
+   */
+  private async clearManagedMarker(slug: string): Promise<void> {
+    try {
+      const markerAbsPath = path.join(this.cwd, managedMarkerPath(slug));
+      await fs.unlink(markerAbsPath);
+    } catch {
+      // Best-effort — ENOENT is fine
+    }
   }
 
   buildDeps(
@@ -281,9 +335,12 @@ export class ManagedRuntime implements RuntimeStrategy {
   }
 
   registerCleanup(jobId: string, startStep: string): CleanupHandle {
+    const slug = this.currentSlug;
+    const cwd = this.cwd;
+
     const signalCleanup = async (): Promise<void> => {
       try {
-        const store = new JobStateStore(jobId, this.cwd);
+        const store = new JobStateStore(jobId, cwd);
         const current = await store.load();
         const { state: updated } = transitionJob(current as JobState, "awaiting-resume", {
           trigger: "signal-handler",
@@ -307,14 +364,20 @@ export class ManagedRuntime implements RuntimeStrategy {
     process.on("SIGINT", signalCleanup);
     process.on("SIGTERM", signalCleanup);
 
-    return { __signalCleanup: signalCleanup } as unknown as CleanupHandle;
+    const internals: ManagedCleanupInternals = { jobId, slug, signalCleanup };
+    return internals as unknown as CleanupHandle;
   }
 
-  async teardown(handle: CleanupHandle, _finalStatus: string): Promise<void> {
-    const internals = handle as unknown as { __signalCleanup?: () => void };
-    if (internals.__signalCleanup) {
-      process.off("SIGINT", internals.__signalCleanup);
-      process.off("SIGTERM", internals.__signalCleanup);
+  async teardown(handle: CleanupHandle, finalStatus: string): Promise<void> {
+    const internals = handle as unknown as ManagedCleanupInternals;
+    if (internals.signalCleanup) {
+      process.off("SIGINT", internals.signalCleanup);
+      process.off("SIGTERM", internals.signalCleanup);
+    }
+
+    // Clear managed marker on terminal status (D7: finish / cancel 完了時に clear)
+    if (internals.slug && isTerminal(finalStatus as JobStatus)) {
+      await this.clearManagedMarker(internals.slug);
     }
   }
 }

@@ -19,7 +19,7 @@ import { spawnCommand } from "../../util/spawn.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { transitionJob } from "../../state/lifecycle.js";
-import { changeFolderPath } from "../../util/paths.js";
+import { changeFolderPath, livenessJsonPath } from "../../util/paths.js";
 import {
   copyRulesToChangeFolder,
   copyDraftUsageToChangeFolder,
@@ -79,6 +79,8 @@ export class LocalRuntime implements RuntimeStrategy {
 
   // Set by setupWorkspace(); used by buildDeps() and registerCleanup()
   private workspace: WorkspaceContext | null = null;
+  // Set by setupWorkspace(); slug for slug-based store in buildDeps() / registerCleanup()
+  private currentSlug: string | null = null;
 
   constructor(opts: LocalRuntimeOptions) {
     this.cwd = opts.cwd;
@@ -92,14 +94,55 @@ export class LocalRuntime implements RuntimeStrategy {
   }
 
   /**
-   * Update job state atomically: load → mutate → persist.
-   * Replaces the deprecated updateJobState() from state/store.ts.
+   * Update job state: load → mutate → persist.
+   *
+   * Dual-write strategy (T-07):
+   *   1. Always persist to jobId-based store (.specrunner/jobs/<jobId>/) as machine-local cache.
+   *   2. When slugOpts provided, also persist to slug-based store (best-effort).
+   *
+   * Load order: slug-based first (if slugOpts), fall back to jobId-based.
+   * This ensures the jobId-based store stays up-to-date for direct load() calls.
    */
-  private async updateJobState(jobId: string, mutator: (s: JobState) => JobState): Promise<void> {
-    const store = new JobStateStore(jobId, this.cwd);
-    const current = await store.load();
-    const updated = mutator(current as JobState);
-    await store.persist(updated);
+  private async updateJobState(
+    jobId: string,
+    mutator: (s: JobState) => JobState,
+    slugOpts?: { slug: string; stateRoot: string },
+  ): Promise<void> {
+    // Load from best available source
+    let current: JobState | undefined;
+    if (slugOpts) {
+      try {
+        const slugStore = new JobStateStore(jobId, this.cwd, slugOpts);
+        current = (await slugStore.load()) as JobState;
+      } catch {
+        // Slug-based not available (worktree not yet on disk) — fall through
+      }
+    }
+    if (!current) {
+      current = (await new JobStateStore(jobId, this.cwd).load()) as JobState;
+    }
+
+    const updated = mutator(current);
+
+    // Always write to jobId-based store (machine-local cache)
+    await new JobStateStore(jobId, this.cwd).persist(updated);
+
+    // Best-effort write to slug-based store
+    if (slugOpts) {
+      try {
+        await new JobStateStore(jobId, this.cwd, slugOpts).persist(updated);
+      } catch {
+        // Slug-based write failed (e.g., worktree path not on disk) — jobId-based write is authoritative
+      }
+    }
+  }
+
+  /** Build slug-based store opts if workspace and slug are available. */
+  private slugStoreOpts(): { slug: string; stateRoot: string } | undefined {
+    if (this.currentSlug && this.workspace?.worktreePath) {
+      return { slug: this.currentSlug, stateRoot: this.workspace.worktreePath };
+    }
+    return undefined;
   }
 
   /**
@@ -149,6 +192,7 @@ export class LocalRuntime implements RuntimeStrategy {
     jobId: string,
     opts?: WorkspaceOptions,
   ): Promise<WorkspaceContext> {
+    this.currentSlug = slug;
     const baseBranch = opts?.baseBranch ?? "main";
     const remoteBaseRef = `origin/${baseBranch}`;
     const existingWorktreePath = opts?.existingWorktreePath;
@@ -174,12 +218,14 @@ export class LocalRuntime implements RuntimeStrategy {
       } else {
         // Worktree was deleted — create a new one (resume path: fetch already ran during original run)
         const newWorktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef);
-        await this.updateJobState(jobId, (s) => ({ ...s, worktreePath: newWorktreePath }));
         const workspace: WorkspaceContext = {
           cwd: newWorktreePath,
           worktreePath: newWorktreePath,
         };
         this.workspace = workspace;
+        const slugOpts = { slug, stateRoot: newWorktreePath };
+        await this.updateJobState(jobId, (s) => ({ ...s, worktreePath: newWorktreePath }), slugOpts);
+        await this.writeLivenessSidecar(slug, jobId, newWorktreePath);
         return workspace;
       }
     }
@@ -187,12 +233,14 @@ export class LocalRuntime implements RuntimeStrategy {
     if (existingWorktreePath === null) {
       // Resume: no worktree recorded — create new one (fetch already ran during original run)
       const newWorktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef);
-      await this.updateJobState(jobId, (s) => ({ ...s, worktreePath: newWorktreePath }));
       const workspace: WorkspaceContext = {
         cwd: newWorktreePath,
         worktreePath: newWorktreePath,
       };
       this.workspace = workspace;
+      const slugOpts = { slug, stateRoot: newWorktreePath };
+      await this.updateJobState(jobId, (s) => ({ ...s, worktreePath: newWorktreePath }), slugOpts);
+      await this.writeLivenessSidecar(slug, jobId, newWorktreePath);
       return workspace;
     }
 
@@ -221,8 +269,18 @@ export class LocalRuntime implements RuntimeStrategy {
     const branchName = opts?.branchName;
     const worktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef, branchName);
 
-    // Record worktreePath in state before pipeline runs (enables crash recovery)
-    await this.updateJobState(jobId, (s) => ({ ...s, worktreePath }));
+    // workspace must be set before updateJobState so slugStoreOpts() works
+    const workspaceCtx: WorkspaceContext = {
+      cwd: worktreePath,
+      worktreePath,
+      branch: branchName,
+    };
+    this.workspace = workspaceCtx;
+
+    // Record worktreePath in state (slug-based store) and write liveness sidecar
+    const slugOpts = { slug, stateRoot: worktreePath };
+    await this.updateJobState(jobId, (s) => ({ ...s, worktreePath }), slugOpts);
+    await this.writeLivenessSidecar(slug, jobId, worktreePath);
 
     // Copy request.md into the change folder so the agent can read it
     if (opts?.requestFilePath) {
@@ -252,10 +310,11 @@ export class LocalRuntime implements RuntimeStrategy {
       await copyRulesToChangeFolder(worktreePath, slug, this.spawnFn);
 
       // Update state.request.path to point to the permanent copy (not the draft)
+      // In slug mode, request.path is derived from convention at load time — this persist is a no-op for path field.
       await this.updateJobState(jobId, (s) => ({
         ...s,
         request: { ...s.request, path: changeFolderRequestPath },
-      }));
+      }), { slug, stateRoot: worktreePath });
 
       // Delete main worktree draft file (move semantics: draft consumed on run)
       try {
@@ -288,16 +347,10 @@ export class LocalRuntime implements RuntimeStrategy {
 
     // Record branchName in state so downstream steps can use it (D3)
     if (branchName) {
-      await this.updateJobState(jobId, (s) => ({ ...s, branch: branchName }));
+      await this.updateJobState(jobId, (s) => ({ ...s, branch: branchName }), { slug, stateRoot: worktreePath });
     }
 
-    const workspace: WorkspaceContext = {
-      cwd: worktreePath,
-      worktreePath,
-      branch: branchName,
-    };
-    this.workspace = workspace;
-    return workspace;
+    return workspaceCtx;
   }
 
   buildDeps(
@@ -318,7 +371,13 @@ export class LocalRuntime implements RuntimeStrategy {
       cwd: workspace.cwd,
       runner: this.createAgentRunner(),
       spawn: spawnCommand,
-      storeFactory: (id: string) => new JobStateStore(id, this.cwd),
+      storeFactory: (id: string) => {
+        const wtp = workspace.worktreePath;
+        if (wtp) {
+          return new JobStateStore(id, this.cwd, { slug, stateRoot: wtp });
+        }
+        return new JobStateStore(id, this.cwd);
+      },
       repoRoot: this.cwd,
       runtimeStrategy: this,
     };
@@ -393,24 +452,48 @@ export class LocalRuntime implements RuntimeStrategy {
     }
   }
 
+  /**
+   * Write the machine-local liveness sidecar to .specrunner/local/<slug>/liveness.json.
+   * Contains: { pid, session: null, worktreePath, jobId }
+   * Best-effort: silently swallows errors to avoid blocking workspace setup.
+   */
+  private async writeLivenessSidecar(slug: string, jobId: string, worktreePath: string): Promise<void> {
+    try {
+      const sidecarAbsPath = path.join(this.cwd, livenessJsonPath(slug));
+      await fs.mkdir(path.dirname(sidecarAbsPath), { recursive: true });
+      await fs.writeFile(
+        sidecarAbsPath,
+        JSON.stringify({ pid: process.pid, session: null, worktreePath, jobId }, null, 2),
+        "utf-8",
+      );
+    } catch {
+      // Best-effort — sidecar absence is handled gracefully in resume/cancel
+    }
+  }
+
   registerCleanup(jobId: string, startStep: string): CleanupHandle {
     const worktreePath = this.workspace?.worktreePath ?? null;
     const cwd = this.cwd;
     const manager = this.manager;
+    const slugOpts = this.slugStoreOpts();
+
+    const makeStore = () => slugOpts
+      ? new JobStateStore(jobId, cwd, slugOpts)
+      : new JobStateStore(jobId, cwd);
 
     // Best-effort cleanup for all failure paths.
     // On success the worktree is left for finish — finish cleans it up.
     const cleanupWorktreeOnFailure = async (): Promise<void> => {
       // Check if job is awaiting-resume — if so, keep worktree for resume
       try {
-        const currentState = await new JobStateStore(jobId, cwd).load();
+        const currentState = await makeStore().load();
         if (currentState?.status === "awaiting-resume") return;
       } catch { /* proceed with cleanup */ }
       try {
         if (worktreePath) {
           await manager.remove(worktreePath, cwd);
           await manager.prune(cwd);
-          const store = new JobStateStore(jobId, cwd);
+          const store = makeStore();
           const current = await store.load();
           await store.persist({ ...current, worktreePath: null } as JobState);
         }
@@ -422,8 +505,14 @@ export class LocalRuntime implements RuntimeStrategy {
     // Signal handler (layer 1 of 3-layer cleanup)
     const signalCleanup = async (): Promise<void> => {
       try {
-        const store = new JobStateStore(jobId, cwd);
+        const store = makeStore();
         const current = await store.load();
+        // Append interruption event to journal (T-11)
+        await store.appendInterruption({
+          type: "interruption",
+          reason: "signal",
+          ts: new Date().toISOString(),
+        });
         const { state: updated } = transitionJob(current as JobState, "awaiting-resume", {
           trigger: "signal-handler",
           reason: "Interrupted by signal",

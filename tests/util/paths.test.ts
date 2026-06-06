@@ -11,6 +11,10 @@ import {
   stepRulesDirRel,
   draftUsageJsonPath,
   usageJsonPath,
+  slugStateJsonPath,
+  slugEventsPath,
+  livenessJsonPath,
+  managedMarkerPath,
 } from "../../src/util/paths.js";
 
 describe("changeFolderPath", () => {
@@ -161,5 +165,46 @@ describe("usageJsonPath", () => {
 
   it("handles slugs with hyphens", () => {
     expect(usageJsonPath("my-feature")).toBe("specrunner/changes/my-feature/usage.json");
+  });
+});
+
+// TC-034: slug-based split layout path helpers
+describe("slugStateJsonPath", () => {
+  it("returns state.json path relative to stateRoot", () => {
+    expect(slugStateJsonPath("foo")).toBe("specrunner/changes/foo/state.json");
+  });
+
+  it("handles slugs with hyphens", () => {
+    expect(slugStateJsonPath("my-feature")).toBe("specrunner/changes/my-feature/state.json");
+  });
+});
+
+describe("slugEventsPath", () => {
+  it("returns events.jsonl path relative to stateRoot", () => {
+    expect(slugEventsPath("foo")).toBe("specrunner/changes/foo/events.jsonl");
+  });
+
+  it("handles slugs with hyphens", () => {
+    expect(slugEventsPath("my-feature")).toBe("specrunner/changes/my-feature/events.jsonl");
+  });
+});
+
+describe("livenessJsonPath", () => {
+  it("returns liveness.json path relative to repoRoot", () => {
+    expect(livenessJsonPath("foo")).toBe(".specrunner/local/foo/liveness.json");
+  });
+
+  it("handles slugs with hyphens", () => {
+    expect(livenessJsonPath("my-feature")).toBe(".specrunner/local/my-feature/liveness.json");
+  });
+});
+
+describe("managedMarkerPath", () => {
+  it("returns marker.json path relative to repoRoot", () => {
+    expect(managedMarkerPath("foo")).toBe(".specrunner/local/foo/marker.json");
+  });
+
+  it("handles slugs with hyphens", () => {
+    expect(managedMarkerPath("my-feature")).toBe(".specrunner/local/my-feature/marker.json");
   });
 });

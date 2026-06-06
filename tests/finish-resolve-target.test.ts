@@ -33,16 +33,16 @@ async function makeJobWithPr(slug: string, updatedAt?: string) {
     repository: { owner: "user", name: "repo" },
   });
 
-  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-  const statePath = path.join(jobsDir, `${state.jobId}.json`);
-  const raw = JSON.parse(await fs.readFile(statePath, "utf-8"));
-  raw.pullRequest = { url: `https://github.com/user/repo/pull/42`, number: 42, createdAt: "2026-01-01" };
-  raw.branch = `feat/${slug}`;
-  if (updatedAt) {
-    raw.updatedAt = updatedAt;
-  }
-  await fs.writeFile(statePath, JSON.stringify(raw, null, 2));
-  return { ...raw, jobId: state.jobId };
+  // Patch via the store (split layout)
+  const store = new JobStateStore(state.jobId, tempDir);
+  const current = await store.load();
+  const patch: Parameters<typeof store.update>[1] = {
+    pullRequest: { url: `https://github.com/user/repo/pull/42`, number: 42, createdAt: "2026-01-01" },
+    branch: `feat/${slug}`,
+    ...(updatedAt ? { updatedAt } : {}),
+  };
+  const updated = await store.update(current, patch);
+  return { ...updated, jobId: state.jobId };
 }
 
 describe("TC-001: --job resolves state file", () => {

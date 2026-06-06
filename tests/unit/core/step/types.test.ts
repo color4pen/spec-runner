@@ -178,11 +178,10 @@ describe("TC-55: bun run test が green", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-010: NULL_PARSE_RESULT 定数の共有 — 4 step 適合性", () => {
-  it("NULL_PARSE_RESULT の shape は { verdict: null, findingsPath: null, fileContent: null }", () => {
+  it("NULL_PARSE_RESULT の shape は { verdict: null, findingsPath: null }", () => {
     expect(NULL_PARSE_RESULT).toEqual({
       verdict: null,
       findingsPath: null,
-      fileContent: null,
     });
   });
 

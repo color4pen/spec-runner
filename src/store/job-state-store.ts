@@ -1,7 +1,21 @@
 import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import type { Dirent } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { getJobStatePath, getJobsDir } from "../util/xdg.js";
+import {
+  getJobStatePath,
+  getJobsDir,
+  getJobDir,
+  getJobStateJsonPath,
+  getJobEventsPath,
+} from "../util/xdg.js";
+import {
+  slugStateJsonPath,
+  slugEventsPath,
+  changeFolderPath,
+  parseArchiveDirName,
+  managedMarkerPath,
+} from "../util/paths.js";
 import { atomicWriteJson } from "../util/atomic-write.js";
 import { appendHistoryEntry, validateJobState } from "../state/schema.js";
 import type { JobState, StepRun, ErrorInfo, HistoryEntry, RequestInfo, RepositoryInfo } from "../state/schema.js";
@@ -9,6 +23,13 @@ import { STANDARD_PIPELINE_ID } from "../kernel/pipeline-ids.js";
 import { transitionJob } from "../state/lifecycle.js";
 import { stderrWrite } from "../logger/stdout.js";
 import { SpecRunnerError, ERROR_CODES, ambiguousJobIdError } from "../errors.js";
+import {
+  fold,
+  appendEventRecord,
+  stepRunToRecord,
+  historyEntryToRecord,
+} from "./event-journal.js";
+import type { FoldResult, InterruptionRecord } from "./event-journal.js";
 
 /**
  * Normalized view of a JobState with steps as StepRun[].
@@ -19,35 +40,90 @@ export type NormalizedJobState = Omit<JobState, "steps"> & {
 };
 
 // ---------------------------------------------------------------------------
+// Internal journal counter structure stored in state.json
+// ---------------------------------------------------------------------------
+
+/**
+ * Journal counters stored inside state.json under the `_journal` key.
+ * Used for O(1) delta detection in persist().
+ */
+interface JournalCounters {
+  /** Total transition records in events.jsonl. */
+  historyCount: number;
+  /** Per-step record counts in events.jsonl. */
+  stepCounts: Record<string, number>;
+}
+
+// ---------------------------------------------------------------------------
+// Slug inject options for loadSplitLayout
+// ---------------------------------------------------------------------------
+
+interface SlugInjectOptions {
+  slug: string;
+  stateRoot: string;
+}
+
+// ---------------------------------------------------------------------------
 // JobStateStore class
 // ---------------------------------------------------------------------------
 
 /**
- * JobStateStore wraps the JSON state file with typed read/write operations.
- * It is the sole persistence authority for job state files.
+ * JobStateStore wraps the job state with typed read/write operations.
+ *
+ * Storage layouts:
+ *   Slug-based (Stage 2):
+ *                {stateRoot}/specrunner/changes/{slug}/events.jsonl
+ *                {stateRoot}/specrunner/changes/{slug}/state.json
+ *   Split layout (Stage 1):
+ *                .specrunner/jobs/<jobId>/events.jsonl
+ *                .specrunner/jobs/<jobId>/state.json
+ *   Legacy:      .specrunner/jobs/<jobId>.json (read-only)
  *
  * Static methods (class-level operations):
- * - create(): create a new job state and persist atomically
- * - delete(): delete a job state file (ENOENT idempotent)
- * - list(): list all valid job states from the jobs directory
+ * - create(): create a new job state in the split layout
+ * - delete(): delete a job state (ENOENT idempotent)
+ * - list(): list all valid job states (slug-based, split-layout dirs, legacy .json files)
  * - resolveId(): resolve a short prefix to a full jobId
  *
  * Instance methods (per-job operations):
- * - load(): read from disk, validate and normalize via validateJobState()
- * - persist(): atomically write the current state
- * - appendHistory(): append a history entry and persist
- * - update(): update fields and persist
+ * - load(): read from disk (slug-based, split or legacy), validate and normalize
+ * - persist(): delta-append to journal + atomically overwrite state.json
+ * - appendHistory(): append a history entry to journal and return updated state
+ * - appendInterruption(): append an interruption record to the journal
+ * - update(): update fields and persist atomically
  * - fail(): mark as failed and persist
- * - appendStepRun(): append a StepRun and persist
+ * - appendStepRun(): append a StepRun to journal and persist
  * - getLatestStepRun(): return the most recent StepRun for a step
  */
 export class JobStateStore {
   private readonly jobId: string;
-  private readonly filePath: string;
+  private readonly repoRoot: string;
+  private readonly slug?: string;
+  private readonly stateRoot?: string;
 
-  constructor(jobId: string, repoRoot: string) {
+  constructor(jobId: string, repoRoot: string, opts?: { slug?: string; stateRoot?: string }) {
     this.jobId = jobId;
-    this.filePath = getJobStatePath(repoRoot, jobId);
+    this.repoRoot = repoRoot;
+    this.slug = opts?.slug;
+    this.stateRoot = opts?.stateRoot;
+  }
+
+  private isSlugMode(): boolean {
+    return !!(this.slug && this.stateRoot);
+  }
+
+  private getEventsPath(): string {
+    if (this.isSlugMode()) {
+      return path.join(this.stateRoot!, slugEventsPath(this.slug!));
+    }
+    return getJobEventsPath(this.repoRoot, this.jobId);
+  }
+
+  private getStateJsonPath(): string {
+    if (this.isSlugMode()) {
+      return path.join(this.stateRoot!, slugStateJsonPath(this.slug!));
+    }
+    return getJobStateJsonPath(this.repoRoot, this.jobId);
   }
 
   // -------------------------------------------------------------------------
@@ -55,9 +131,12 @@ export class JobStateStore {
   // -------------------------------------------------------------------------
 
   /**
-   * Create a new job state file and persist it atomically.
-   * request.slug defaults to null if not provided (backward compat).
-   * pipelineId defaults to STANDARD_PIPELINE_ID if not provided.
+   * Create a new job state in the split layout.
+   * Creates:
+   *   .specrunner/jobs/<jobId>/state.json    (descriptor + cursor + counters)
+   *   .specrunner/jobs/<jobId>/events.jsonl  (initial transition record)
+   *
+   * Returns the initial JobState (with history/steps populated from the journal).
    */
   static async create(repoRoot: string, params: {
     request: RequestInfo;
@@ -66,6 +145,14 @@ export class JobStateStore {
   }): Promise<JobState> {
     const jobId = randomUUID();
     const now = new Date().toISOString();
+
+    const initialHistoryEntry: HistoryEntry = {
+      ts: now,
+      step: "init",
+      status: "started",
+      message: "job created",
+    };
+
     const state: JobState = {
       version: 1,
       jobId,
@@ -81,28 +168,43 @@ export class JobStateStore {
       status: "running",
       pid: process.pid,
       branch: null,
-      history: [
-        {
-          ts: now,
-          step: "init",
-          status: "started",
-          message: "job created",
-        },
-      ],
+      history: [initialHistoryEntry],
       error: null,
       pipelineId: params.pipelineId ?? STANDARD_PIPELINE_ID,
     };
 
-    const filePath = getJobStatePath(repoRoot, state.jobId);
-    await atomicWriteJson(filePath, state);
+    const eventsPath = getJobEventsPath(repoRoot, jobId);
+    const stateJsonPath = getJobStateJsonPath(repoRoot, jobId);
+
+    // Write initial transition record to events.jsonl
+    await appendEventRecord(eventsPath, historyEntryToRecord(initialHistoryEntry));
+
+    // Write state.json (without history/steps — those live in events.jsonl)
+    const initialCounters: JournalCounters = {
+      historyCount: 1,
+      stepCounts: {},
+    };
+    await atomicWriteJson(stateJsonPath, { ...stateToStateJson(state), _journal: initialCounters });
+
     return state;
   }
 
   /**
-   * Delete a job state file by jobId.
+   * Delete a job state (split layout directory or legacy .json file).
    * Idempotent: ENOENT is silently ignored. Other errors propagate.
    */
   static async delete(repoRoot: string, jobId: string): Promise<void> {
+    // Try split layout directory first
+    const jobDir = getJobDir(repoRoot, jobId);
+    try {
+      await fs.rm(jobDir, { recursive: true });
+      return;
+    } catch (err: unknown) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") throw err;
+    }
+
+    // Try legacy flat file
     const filePath = getJobStatePath(repoRoot, jobId);
     try {
       await fs.unlink(filePath);
@@ -116,41 +218,178 @@ export class JobStateStore {
   }
 
   /**
-   * List all valid job states from the jobs directory.
-   * Skips malformed files and logs them to stderr.
+   * List all valid job states from all known layouts.
+   * Scans (1) slug-based states in current checkout and local worktrees,
+   * (2) split-layout subdirectories (.specrunner/jobs/<jobId>/),
+   * (3) legacy flat files (.specrunner/jobs/<jobId>.json).
+   * Deduplicates by jobId: newest updatedAt wins.
    */
   static async list(repoRoot: string): Promise<JobState[]> {
-    const jobsDir = getJobsDir(repoRoot);
+    const stateMap = new Map<string, JobState>(); // jobId → most-recent state
 
+    const tryMerge = (state: JobState) => {
+      const existing = stateMap.get(state.jobId);
+      if (!existing || new Date(state.updatedAt) > new Date(existing.updatedAt)) {
+        stateMap.set(state.jobId, state);
+      }
+    };
+
+    // 1. Slug-based states in current checkout (specrunner/changes/*/state.json)
+    const changesDir = path.join(repoRoot, "specrunner", "changes");
+    try {
+      const entries = await fs.readdir(changesDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory() || entry.name === "archive") continue;
+        const slug = entry.name;
+        const stateJsonPath = path.join(repoRoot, slugStateJsonPath(slug));
+        const eventsPath = path.join(repoRoot, slugEventsPath(slug));
+        try {
+          const state = await loadSplitLayout(stateJsonPath, eventsPath, { slug, stateRoot: repoRoot });
+          tryMerge(state);
+        } catch {
+          // Skip malformed slug state in current checkout
+        }
+      }
+    } catch (err: unknown) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") throw err;
+    }
+
+    // 1b. Archived states in current checkout (specrunner/changes/archive/*/state.json)
+    // Archived state files (status="archived") are included in --all listings.
+    const archiveDir = path.join(repoRoot, "specrunner", "changes", "archive");
+    try {
+      const archiveEntries = await fs.readdir(archiveDir, { withFileTypes: true });
+      for (const entry of archiveEntries) {
+        if (!entry.isDirectory()) continue;
+        const datedSlug = entry.name;
+        // Extract slug from "<YYYY-MM-DD>-<slug>" (strip date prefix if present)
+        const { slug: archiveSlug } = parseArchiveDirName(datedSlug);
+        const stateJsonPath = path.join(archiveDir, datedSlug, "state.json");
+        const eventsPath = path.join(archiveDir, datedSlug, "events.jsonl");
+        try {
+          const state = await loadSplitLayout(stateJsonPath, eventsPath, { slug: archiveSlug, stateRoot: repoRoot });
+          tryMerge(state);
+        } catch {
+          // Skip malformed archive state
+        }
+      }
+    } catch (err: unknown) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") throw err;
+    }
+
+    // 2. Slug-based states in local worktrees (.git/specrunner-worktrees/*/specrunner/changes/*/state.json)
+    const worktreesDir = path.join(repoRoot, ".git", "specrunner-worktrees");
+    try {
+      const worktreeDirs = await fs.readdir(worktreesDir, { withFileTypes: true });
+      for (const worktreeEntry of worktreeDirs) {
+        if (!worktreeEntry.isDirectory()) continue;
+        const worktreePath = path.join(worktreesDir, worktreeEntry.name);
+        const changesInWorktree = path.join(worktreePath, "specrunner", "changes");
+        try {
+          const slugEntries = await fs.readdir(changesInWorktree, { withFileTypes: true });
+          for (const slugEntry of slugEntries) {
+            if (!slugEntry.isDirectory() || slugEntry.name === "archive") continue;
+            const slug = slugEntry.name;
+            const stateJsonPath = path.join(worktreePath, slugStateJsonPath(slug));
+            const eventsPath = path.join(worktreePath, slugEventsPath(slug));
+            try {
+              const state = await loadSplitLayout(stateJsonPath, eventsPath, { slug, stateRoot: worktreePath });
+              tryMerge(state);
+            } catch {
+              // Skip malformed worktree slug state
+            }
+          }
+        } catch {
+          // Worktree has no changes dir — skip
+        }
+      }
+    } catch (err: unknown) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") throw err;
+    }
+
+    // 3. Legacy: .specrunner/jobs/<jobId>/ split-layout and flat files
+    const jobsDir = getJobsDir(repoRoot);
     let entries: Dirent[];
     try {
       entries = await fs.readdir(jobsDir, { withFileTypes: true });
     } catch (err: unknown) {
       const code = (err as NodeJS.ErrnoException).code;
       if (code === "ENOENT") {
-        return [];
+        entries = [];
+      } else {
+        throw err;
       }
-      throw err;
     }
 
-    const jsonFiles = entries.filter(
-      (e) => e.isFile() && e.name.endsWith(".json") && !e.name.includes(".tmp."),
-    );
+    // Split-layout subdirectories
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const jobId = entry.name;
+      const stateJsonPath = getJobStateJsonPath(repoRoot, jobId);
+      const eventsPath = getJobEventsPath(repoRoot, jobId);
+      try {
+        const state = await loadSplitLayout(stateJsonPath, eventsPath);
+        tryMerge(state);
+      } catch {
+        stderrWrite(`Skipping malformed split-layout dir: ${jobsDir}/${jobId}`);
+      }
+    }
 
-    const states: JobState[] = [];
-    for (const entry of jsonFiles) {
+    // Legacy flat files
+    for (const entry of entries) {
+      if (!entry.isFile() || !entry.name.endsWith(".json") || entry.name.includes(".tmp.")) continue;
       const filePath = `${jobsDir}/${entry.name}`;
       try {
         const raw = await fs.readFile(filePath, "utf-8");
         const parsed = JSON.parse(raw);
         const state = validateJobState(parsed);
-        states.push(state);
+        tryMerge(state);
       } catch {
         stderrWrite(`Skipping malformed file: ${filePath}`);
       }
     }
 
-    return states;
+    // 4. Managed markers (.specrunner/local/<slug>/marker.json) — D7
+    // Enumerate local managed job markers to find managed active jobs.
+    // For each marker, try to load state from the jobId-based store.
+    const localSidecarBase = path.join(repoRoot, ".specrunner", "local");
+    try {
+      const localEntries = await fs.readdir(localSidecarBase, { withFileTypes: true });
+      for (const localEntry of localEntries) {
+        if (!localEntry.isDirectory()) continue;
+        const slug = localEntry.name;
+        const markerAbsPath = path.join(repoRoot, managedMarkerPath(slug));
+        try {
+          const markerRaw = await fs.readFile(markerAbsPath, "utf-8");
+          const marker = JSON.parse(markerRaw) as Record<string, unknown>;
+          const markerJobId = typeof marker["jobId"] === "string" ? marker["jobId"] : null;
+          if (!markerJobId) continue;
+
+          // Skip if already found by another scan (dedup by jobId)
+          if (stateMap.has(markerJobId)) continue;
+
+          // Try to load via jobId-based split-layout store
+          const markerStateJsonPath = getJobStateJsonPath(repoRoot, markerJobId);
+          const markerEventsPath = getJobEventsPath(repoRoot, markerJobId);
+          try {
+            const state = await loadSplitLayout(markerStateJsonPath, markerEventsPath);
+            tryMerge(state);
+          } catch {
+            // State file not found locally — skip; marker alone cannot reconstruct full state
+          }
+        } catch {
+          // Skip malformed or missing marker
+        }
+      }
+    } catch (err: unknown) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") throw err;
+    }
+
+    return Array.from(stateMap.values());
   }
 
   /**
@@ -192,28 +431,148 @@ export class JobStateStore {
 
   /**
    * Load and validate a job state from disk.
-   * Uses validateJobState() for normalization and backward compat:
-   *   - legacy step formats normalized to StepRun[]
-   *   - status "success" / "awaiting-merge" remapped to "awaiting-archive"
-   *   - error.code "SESSION_TIMEOUT" remapped to "SESSION_TERMINATED"
-   *   - missing slug defaulted to null
    *
-   * Does NOT handle ENOENT — callers that require JOB_NOT_FOUND semantics
-   * should wrap (e.g. the deprecated loadJobState() in state/store.ts).
+   * In slug mode: reads from {stateRoot}/specrunner/changes/{slug}/.
+   * Falls back to split layout (.specrunner/jobs/<jobId>/) then legacy flat file.
+   *
+   * Crash recovery (D3): if fold row count > stored counter, resets counter to
+   * fold count before computing any delta.
    */
   async load(): Promise<NormalizedJobState> {
-    const raw = await fs.readFile(this.filePath, "utf-8");
+    if (this.isSlugMode()) {
+      try {
+        return await loadSplitLayout(
+          this.getStateJsonPath(),
+          this.getEventsPath(),
+          { slug: this.slug!, stateRoot: this.stateRoot! },
+        );
+      } catch (err: unknown) {
+        const code = (err as NodeJS.ErrnoException).code;
+        if (code !== "ENOENT") throw err;
+        // Fall through to jobId-based paths
+      }
+    }
+
+    const stateJsonPath = getJobStateJsonPath(this.repoRoot, this.jobId);
+    const eventsPath = getJobEventsPath(this.repoRoot, this.jobId);
+
+    // Try split layout first
+    try {
+      return await loadSplitLayout(stateJsonPath, eventsPath) as NormalizedJobState;
+    } catch (err: unknown) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") throw err;
+    }
+
+    // Fallback to legacy flat file
+    const legacyPath = getJobStatePath(this.repoRoot, this.jobId);
+    const raw = await fs.readFile(legacyPath, "utf-8");
     const parsed = JSON.parse(raw) as unknown;
     const state = validateJobState(parsed);
     return state as NormalizedJobState;
   }
 
   /**
-   * Atomically persist the state to disk.
+   * Atomically persist the state to disk using the appropriate layout.
+   *
+   * For each call:
+   * 1. Compute history delta = entries after stored historyCount
+   * 2. Compute steps delta = runs after stored stepCounts per step
+   * 3. Append delta records to events.jsonl
+   * 4. Update counters
+   * 5. Atomically overwrite state.json
+   *
    * Accepts both NormalizedJobState and plain JobState.
    */
   async persist(state: JobState): Promise<void> {
-    await atomicWriteJson(this.filePath, state);
+    const stateJsonPath = this.getStateJsonPath();
+    const eventsPath = this.getEventsPath();
+    const inSlugMode = this.isSlugMode();
+
+    // Check if split layout exists; if not, write both files fresh
+    let existingCounters: JournalCounters | null = null;
+    try {
+      const rawState = await fs.readFile(stateJsonPath, "utf-8");
+      const parsed = JSON.parse(rawState) as Record<string, unknown>;
+      const journalField = parsed["_journal"];
+      if (journalField && typeof journalField === "object") {
+        existingCounters = journalField as JournalCounters;
+      }
+    } catch (err: unknown) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") throw err;
+      // File doesn't exist yet — write fresh
+    }
+
+    if (existingCounters === null) {
+      // Fresh write: append all history and steps to events.jsonl
+      await writeAllToJournal(eventsPath, state);
+      const counters: JournalCounters = {
+        historyCount: state.history.length,
+        stepCounts: buildStepCounts(state.steps),
+      };
+      await atomicWriteJson(stateJsonPath, { ...stateToStateJson(state, { slugMode: inSlugMode }), _journal: counters });
+      return;
+    }
+
+    // Fast path: if stored counters already cover all in-memory events, skip the O(n) fold.
+    const stepsForFastPath = (state as NormalizedJobState).steps ?? {};
+    const inMemoryStepCounts = buildStepCounts(stepsForFastPath);
+    const fastPathEligible =
+      existingCounters.historyCount >= state.history.length &&
+      Object.keys(inMemoryStepCounts).every(
+        (s) => (existingCounters.stepCounts[s] ?? 0) >= (inMemoryStepCounts[s] ?? 0),
+      );
+    if (fastPathEligible) {
+      // No new events since last persist — only cursor fields may have changed.
+      await atomicWriteJson(stateJsonPath, { ...stateToStateJson(state, { slugMode: inSlugMode }), _journal: existingCounters });
+      return;
+    }
+
+    // Fold current journal to get true counts (for crash recovery, D3).
+    let foldResult: FoldResult;
+    try {
+      const eventsContent = await fs.readFile(eventsPath, "utf-8");
+      foldResult = fold(eventsContent);
+    } catch (err: unknown) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === "ENOENT") {
+        foldResult = { steps: {}, history: [], stepsTotal: 0, stepCounts: {}, historyCount: 0 };
+      } else {
+        throw err;
+      }
+    }
+
+    // Crash recovery: if fold count > stored counter, reset counters (D3)
+    const recoveredCounters: JournalCounters = {
+      historyCount: Math.max(existingCounters.historyCount, foldResult.historyCount),
+      stepCounts: mergeStepCountsMax(existingCounters.stepCounts, foldResult.stepCounts),
+    };
+
+    // Compute and append history delta
+    const historyDelta = state.history.slice(recoveredCounters.historyCount);
+    for (const entry of historyDelta) {
+      await appendEventRecord(eventsPath, historyEntryToRecord(entry));
+    }
+
+    // Compute and append steps delta
+    const steps = (state as NormalizedJobState).steps ?? {};
+    for (const [stepName, runs] of Object.entries(steps)) {
+      const storedCount = recoveredCounters.stepCounts[stepName] ?? 0;
+      const deltaRuns = runs.slice(storedCount);
+      for (const run of deltaRuns) {
+        await appendEventRecord(eventsPath, stepRunToRecord(stepName, run));
+      }
+    }
+
+    // Update counters
+    const newCounters: JournalCounters = {
+      historyCount: recoveredCounters.historyCount + historyDelta.length,
+      stepCounts: buildStepCounts(steps, recoveredCounters.stepCounts),
+    };
+
+    // Write state.json
+    await atomicWriteJson(stateJsonPath, { ...stateToStateJson(state, { slugMode: inSlugMode }), _journal: newCounters });
   }
 
   /**
@@ -223,6 +582,14 @@ export class JobStateStore {
     const updated = appendHistoryEntry(state, entry);
     await this.persist(updated);
     return updated;
+  }
+
+  /**
+   * Append an interruption record to the events journal.
+   * Does not update state.json — callers should persist() separately if needed.
+   */
+  async appendInterruption(record: InterruptionRecord): Promise<void> {
+    await appendEventRecord(this.getEventsPath(), record);
   }
 
   /**
@@ -290,4 +657,178 @@ export class JobStateStore {
     if (!runs || runs.length === 0) return undefined;
     return runs[runs.length - 1];
   }
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Load a split-layout job state from state.json + events.jsonl.
+ * Performs crash recovery if fold count > stored counter.
+ * If slugInject is provided, injects request.slug and request.path from convention,
+ * and materializes resumePoint from lastInterruption if present in fold result.
+ */
+async function loadSplitLayout(
+  stateJsonPath: string,
+  eventsPath: string,
+  slugInject?: SlugInjectOptions,
+): Promise<NormalizedJobState> {
+  // Read state.json
+  const rawState = await fs.readFile(stateJsonPath, "utf-8");
+  const parsedState = JSON.parse(rawState) as Record<string, unknown>;
+
+  // Extract journal counters (internal — not part of JobState)
+  let storedCounters: JournalCounters = {
+    historyCount: 0,
+    stepCounts: {},
+  };
+  if (parsedState["_journal"] && typeof parsedState["_journal"] === "object") {
+    storedCounters = parsedState["_journal"] as JournalCounters;
+  }
+
+  // Strip internal fields before validation
+  const { _journal: _j, ...stateWithoutJournal } = parsedState as Record<string, unknown> & { _journal?: unknown };
+  void _j; // suppress unused warning
+
+  // Inject request fields from slug convention before validation (slug mode)
+  if (slugInject) {
+    const { slug, stateRoot } = slugInject;
+    const reqObj = stateWithoutJournal["request"] as Record<string, unknown> | undefined;
+    if (reqObj) {
+      const requestMdAbsPath = path.join(stateRoot, changeFolderPath(slug), "request.md");
+      if (!reqObj["slug"]) reqObj["slug"] = slug;
+      if (!reqObj["path"]) reqObj["path"] = requestMdAbsPath;
+    }
+  }
+
+  // Fold events.jsonl
+  let foldResult: FoldResult = { steps: {}, history: [], stepsTotal: 0, stepCounts: {}, historyCount: 0 };
+  try {
+    const eventsContent = await fs.readFile(eventsPath, "utf-8");
+    foldResult = fold(eventsContent);
+  } catch (err: unknown) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code !== "ENOENT") throw err;
+    // No events.jsonl yet — start with empty fold result
+  }
+
+  // Crash recovery (D3): if fold count > stored counter, journal has more data
+  // than state.json knows about.
+  if (
+    foldResult.historyCount > storedCounters.historyCount ||
+    foldResult.stepsTotal > Object.values(storedCounters.stepCounts).reduce((a, b) => a + b, 0)
+  ) {
+    // Counters are stale — use fold result (next persist will fix counters)
+  }
+
+  // Validate state.json fields (minus steps/history which come from journal)
+  // Inject empty arrays so validateJobState doesn't fail
+  const rawForValidation = { ...stateWithoutJournal, history: [], steps: {} };
+  const validated = validateJobState(rawForValidation);
+
+  // Materialize resumePoint from lastInterruption if present (T-11)
+  // Journal is the truth; state.json resumePoint is a rebuildable cache.
+  if (foldResult.lastInterruption) {
+    const intr = foldResult.lastInterruption;
+    validated.resumePoint = {
+      step: (validated.step ?? "init") as import("../state/schema.js").StepName,
+      reason: intr.reason,
+      iterationsExhausted: intr.reason === "exhaustion" ? 1 : 0,
+      ...(intr.exhaustionPhase ? { exhaustionPhase: intr.exhaustionPhase as import("../state/schema.js").ResumePoint["exhaustionPhase"] } : {}),
+    };
+  }
+
+  // Compose NormalizedJobState with journal-derived data
+  const composed: NormalizedJobState = {
+    ...validated,
+    history: foldResult.history,
+    steps: foldResult.steps,
+  };
+
+  return composed;
+}
+
+/**
+ * Write ALL history entries and step runs to events.jsonl (used for fresh writes).
+ */
+async function writeAllToJournal(eventsPath: string, state: JobState): Promise<void> {
+  for (const entry of state.history) {
+    await appendEventRecord(eventsPath, historyEntryToRecord(entry));
+  }
+  const steps = (state as NormalizedJobState).steps ?? {};
+  for (const [stepName, runs] of Object.entries(steps)) {
+    for (const run of runs) {
+      await appendEventRecord(eventsPath, stepRunToRecord(stepName, run));
+    }
+  }
+}
+
+/**
+ * Extract the state fields that go into state.json.
+ * In slug mode, strips machine-local fields (worktreePath, pid, session)
+ * and derived fields (request.slug, request.path).
+ */
+function stateToStateJson(
+  state: JobState,
+  opts?: { slugMode?: boolean },
+): Omit<JobState, "history" | "steps"> {
+  const { history: _h, steps: _s, ...rest } = state as JobState & { history: unknown; steps: unknown };
+  void _h; void _s;
+
+  if (!opts?.slugMode) {
+    return rest as Omit<JobState, "history" | "steps">;
+  }
+
+  // Slug mode: strip machine-local fields
+  const {
+    worktreePath: _wt,
+    pid: _pid,
+    session: _sess,
+    ...withoutMachineLocal
+  } = rest as typeof rest & { worktreePath?: unknown; pid?: unknown; session?: unknown };
+  void _wt; void _pid; void _sess;
+
+  // Strip request.slug and request.path (derived from location convention)
+  if (withoutMachineLocal.request) {
+    const reqUnknown = withoutMachineLocal.request as unknown as Record<string, unknown>;
+    const { slug: _rslug, path: _rpath, ...requestWithout } = reqUnknown;
+    void _rslug; void _rpath;
+    return {
+      ...withoutMachineLocal,
+      request: requestWithout as unknown as RequestInfo,
+    } as Omit<JobState, "history" | "steps">;
+  }
+
+  return withoutMachineLocal as Omit<JobState, "history" | "steps">;
+}
+
+/**
+ * Build a stepCounts record from a steps object.
+ * If baseCounters provided, ensures result[step] >= base[step].
+ */
+function buildStepCounts(
+  steps: Record<string, StepRun[]> | undefined,
+  baseCounters?: Record<string, number>,
+): Record<string, number> {
+  const result: Record<string, number> = { ...(baseCounters ?? {}) };
+  if (!steps) return result;
+  for (const [stepName, runs] of Object.entries(steps)) {
+    result[stepName] = runs.length;
+  }
+  return result;
+}
+
+/**
+ * Merge two stepCounts records, taking the max value for each step.
+ */
+function mergeStepCountsMax(
+  a: Record<string, number>,
+  b: Record<string, number>,
+): Record<string, number> {
+  const result: Record<string, number> = { ...a };
+  for (const [step, count] of Object.entries(b)) {
+    result[step] = Math.max(result[step] ?? 0, count);
+  }
+  return result;
 }

@@ -187,3 +187,50 @@ export function draftUsageJsonPath(slug: string): string {
 export function usageJsonPath(slug: string): string {
   return `${CHANGES_DIR}/${slug}/usage.json`;
 }
+
+/**
+ * Returns the relative path to state.json for the slug-based split layout
+ * (relative to worktreePath / stateRoot).
+ * Example: slugStateJsonPath("foo") → "specrunner/changes/foo/state.json"
+ */
+export function slugStateJsonPath(slug: string): string {
+  return `${CHANGES_DIR}/${slug}/state.json`;
+}
+
+/**
+ * Returns the relative path to events.jsonl for the slug-based split layout
+ * (relative to worktreePath / stateRoot).
+ * Example: slugEventsPath("foo") → "specrunner/changes/foo/events.jsonl"
+ */
+export function slugEventsPath(slug: string): string {
+  return `${CHANGES_DIR}/${slug}/events.jsonl`;
+}
+
+/** Base directory for machine-local sidecar files (relative to repoRoot). */
+const LOCAL_SIDECAR_BASE = ".specrunner/local";
+
+/**
+ * Returns the directory path for the machine-local sidecar for a slug
+ * (relative to repoRoot).
+ * Example: localSidecarDir("foo") → ".specrunner/local/foo"
+ */
+export function localSidecarDir(slug: string): string {
+  return `${LOCAL_SIDECAR_BASE}/${slug}`;
+}
+
+/**
+ * Returns the path to liveness.json sidecar for a slug (relative to repoRoot).
+ * Contains: { pid, session, worktreePath, jobId }
+ * Example: livenessJsonPath("foo") → ".specrunner/local/foo/liveness.json"
+ */
+export function livenessJsonPath(slug: string): string {
+  return `${LOCAL_SIDECAR_BASE}/${slug}/liveness.json`;
+}
+
+/**
+ * Returns the path to marker.json for a managed job slug (relative to repoRoot).
+ * Example: managedMarkerPath("foo") → ".specrunner/local/foo/marker.json"
+ */
+export function managedMarkerPath(slug: string): string {
+  return `${LOCAL_SIDECAR_BASE}/${slug}/marker.json`;
+}

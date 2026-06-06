@@ -153,7 +153,6 @@ describe("TC-003: TestCaseGenStep.resultFilePath と parseResult", () => {
     expect(result).toEqual(NULL_PARSE_RESULT);
     expect(result.verdict).toBeNull();
     expect(result.findingsPath).toBeNull();
-    expect(result.fileContent).toBeNull();
   });
 
   it("parseResult は空文字列で呼ばれても NULL_PARSE_RESULT を返す", () => {

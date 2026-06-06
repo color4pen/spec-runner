@@ -46,6 +46,7 @@ vi.mock("../../../../src/core/finish/commit-archive.js", () => ({
 
 vi.mock("../../../../src/core/worktree/manager.js", () => ({
   createWorktreeManager: vi.fn(),
+  buildWorktreePath: vi.fn().mockReturnValue("/convention/worktree/path"),
 }));
 
 // ---------------------------------------------------------------------------

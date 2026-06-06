@@ -461,11 +461,11 @@ describe("TC-14: transitionJob — ctx.patch が state にマージされる", (
 });
 
 // ---------------------------------------------------------------------------
-// TC-16: transitionJob — MAX_HISTORY_SIZE に達した状態でも history が truncate される
+// TC-16: transitionJob — history is unbounded in persistent layer (Design D4)
 // ---------------------------------------------------------------------------
 
-describe("TC-16: transitionJob — MAX_HISTORY_SIZE に達した状態でも history が truncate される", () => {
-  it("history length does not exceed MAX_HISTORY_SIZE after transition", () => {
+describe("TC-16: transitionJob — history grows beyond MAX_HISTORY_SIZE (Design D4: no persistent truncation)", () => {
+  it("history length exceeds MAX_HISTORY_SIZE after transition — all entries preserved", () => {
     // Create state with history already at MAX_HISTORY_SIZE
     const history = Array.from({ length: MAX_HISTORY_SIZE }, (_, i) => ({
       ts: `2026-01-01T00:${String(i).padStart(2, "0")}:00.000Z`,
@@ -479,7 +479,8 @@ describe("TC-16: transitionJob — MAX_HISTORY_SIZE に達した状態でも his
 
     const result = transitionJob(state, "awaiting-resume", ctx);
 
-    expect(result.state.history.length).toBeLessThanOrEqual(MAX_HISTORY_SIZE);
+    // D4: no persistent truncation — history grows beyond MAX_HISTORY_SIZE
+    expect(result.state.history.length).toBe(MAX_HISTORY_SIZE + 1);
     // Newest entry should be the one we just added
     const lastEntry = result.state.history[result.state.history.length - 1]!;
     expect(lastEntry.step).toBe("pipeline");

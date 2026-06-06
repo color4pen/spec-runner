@@ -13,6 +13,8 @@ import { stderrWrite, logVerbose, isLevelEnabled } from "../../logger/stdout.js"
 import { getAgentLogDir } from "../../util/xdg.js";
 import * as nodePath from "node:path";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
+import { appendInvocation } from "../usage/store.js";
+import { usageJsonPath } from "../../util/paths.js";
 import {
   recordFailedStepResult,
   attachStateAndRethrow,
@@ -297,6 +299,12 @@ export class StepExecutor {
         },
       });
       state = timeoutState;
+      // T-11: Record interruption event in journal
+      await store.appendInterruption({
+        type: "interruption",
+        reason: "timeout",
+        ts: new Date().toISOString(),
+      });
       state = await store.appendHistory(state, {
         ts: new Date().toISOString(),
         step: `${step.name}-timeout`,
@@ -512,11 +520,9 @@ export class StepExecutor {
       session: sessionEntry,
       verdict: verdict as Verdict | null,
       findingsPath,
-      fileContent: resultContent,
       completedAt,
       startedAt,
       error: null,
-      modelUsage: agentResult?.modelUsage,
       toolResult: agentResult?.toolResult ?? null,
       followUpAttempts: agentResult?.followUpAttempts ?? 0,
     });
@@ -535,6 +541,21 @@ export class StepExecutor {
     }
     if (parsed?.pullRequest) {
       state = { ...state, pullRequest: parsed.pullRequest };
+    }
+    // T-10: Append per-step usage to changes/<slug>/usage.json before step commit
+    if (agentResult?.modelUsage && deps.cwd && deps.slug) {
+      const usageAbsPath = path.join(deps.cwd, usageJsonPath(deps.slug));
+      try {
+        await appendInvocation(usageAbsPath, {
+          command: "job",
+          timestamp: completedAt,
+          modelUsage: agentResult.modelUsage,
+          jobId: state.jobId,
+          stepName: step.name,
+        });
+      } catch {
+        // Best-effort: usage append failure must not block step completion
+      }
     }
     await store.persist(state);
     return state;

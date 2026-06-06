@@ -1,7 +1,7 @@
 import { JobStateStore } from "../store/job-state-store.js";
 import type { JobState } from "../state/schema.js";
 import { getJobSlug } from "../state/job-slug.js";
-import { ACTIVE_STATUSES } from "../state/lifecycle.js";
+import { ACTIVE_STATUSES, isTerminal } from "../state/lifecycle.js";
 import type { GitHubClient } from "../core/port/github-client.js";
 import { resolveRepoRoot } from "../util/repo-root.js";
 import { stdoutWrite } from "../logger/stdout.js";
@@ -138,8 +138,8 @@ export async function runPs(
     // TC-110: --all includes archived
     jobs = allJobs;
   } else {
-    // TC-142: default — exclude archived
-    jobs = allJobs.filter((j) => j.status !== "archived");
+    // default — active のみ（非終端）。archived / canceled は --all で含める
+    jobs = allJobs.filter((j) => !isTerminal(j.status));
   }
 
   if (jobs.length === 0) {

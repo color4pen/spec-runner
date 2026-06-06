@@ -1,0 +1,276 @@
+/**
+ * Event journal module for specrunner job state.
+ *
+ * Implements the event journal (events.jsonl) for T-01:
+ * - Tagged union record types (StepAttemptRecord | TransitionRecord)
+ * - fold(): parse all valid records from a jsonl file, ignoring partial tail
+ * - appendEventRecord(): append a single record via fs.appendFile (never rewrites)
+ *
+ * Design D2: 1 line = 1 record, partial tail is silently dropped.
+ * Design D3: append uses fs.appendFile only — never rewrites existing lines.
+ */
+
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import type { StepRun, HistoryEntry, ErrorInfo } from "../state/schema.js";
+import type { BaseReportResult } from "../kernel/report-result.js";
+import type { Verdict } from "../state/schema.js";
+
+// ---------------------------------------------------------------------------
+// Record types (tagged union)
+// ---------------------------------------------------------------------------
+
+/**
+ * Records a single execution attempt of a named step.
+ * Equivalent to StepRun (excluding attempt — derived from fold position).
+ * Stage 1 includes modelUsage; Stage 2 removes it when finish-batch-derive is abolished.
+ */
+export interface StepAttemptRecord {
+  type: "step-attempt";
+  /** Step name (e.g. "spec-review", "code-fixer"). */
+  step: string;
+  sessionId: string | null;
+  outcome: {
+    verdict: Verdict | null;
+    findingsPath: string | null;
+    error: ErrorInfo | null;
+    /** Result from report_result tool call. */
+    toolResult?: BaseReportResult | null;
+    /** Follow-up retry attempts to get tool call. */
+    followUpAttempts?: number;
+  };
+  startedAt: string;
+  endedAt: string;
+}
+
+/**
+ * Records a single status/lifecycle transition (equivalent to HistoryEntry).
+ */
+export interface TransitionRecord {
+  type: "transition";
+  ts: string;
+  step: string;
+  status: "started" | "ok" | "error" | "warning";
+  message: string;
+}
+
+/**
+ * Records a job interruption event (Stage 2, T-11).
+ * Recorded when a job is interrupted by timeout / signal / failure / exhaustion.
+ */
+export interface InterruptionRecord {
+  type: "interruption";
+  reason: "timeout" | "signal" | "failure" | "exhaustion";
+  /** Error code for failure (optional). */
+  errorCode?: string;
+  /** Phase name for exhaustion (optional). */
+  exhaustionPhase?: string;
+  ts: string;
+}
+
+/** All valid event record types. */
+export type EventRecord = StepAttemptRecord | TransitionRecord | InterruptionRecord;
+
+// ---------------------------------------------------------------------------
+// Fold result
+// ---------------------------------------------------------------------------
+
+export interface FoldResult {
+  /** Reconstructed steps journal: Record<stepName, StepRun[]> */
+  steps: Record<string, StepRun[]>;
+  /** Reconstructed history: HistoryEntry[] in chronological order */
+  history: HistoryEntry[];
+  /** Total step-attempt records parsed (used for delta tracking). */
+  stepsTotal: number;
+  /** Per-step counts (stepName → count). Used for precise delta tracking. */
+  stepCounts: Record<string, number>;
+  /** Total transition records parsed (used for delta tracking). */
+  historyCount: number;
+  /**
+   * Last interruption record seen in the journal, if any (Stage 2 / T-11).
+   * Used to materialize resumePoint cache in state.json on load.
+   */
+  lastInterruption?: InterruptionRecord;
+}
+
+// ---------------------------------------------------------------------------
+// fold — parse events.jsonl
+// ---------------------------------------------------------------------------
+
+/**
+ * Fold all valid records from a jsonl string (file contents).
+ *
+ * Algorithm:
+ * 1. Split into lines.
+ * 2. Skip the last line if it does not parse as valid JSON (partial write).
+ * 3. For each line: parse and dispatch by `type` field.
+ * 4. step-attempt records: group by step, assign attempt = groupIndex + 1.
+ * 5. transition records: append to history array.
+ * 6. interruption records: tracked but not used in fold output (Stage 2 uses them).
+ *
+ * Partial tail: only the last line can be partial. If any non-last line fails to
+ * parse, it is silently skipped (best-effort recovery for multi-record corruption).
+ */
+export function fold(content: string): FoldResult {
+  const lines = content.split("\n");
+
+  // Remove the last line if it is empty (trailing newline) or partial
+  // "Partial" = the last non-empty line fails JSON.parse
+  const nonEmptyLines: string[] = [];
+  for (const line of lines) {
+    if (line.trim().length > 0) {
+      nonEmptyLines.push(line);
+    }
+  }
+
+  // Try to determine if the last line is a complete JSON record
+  // If it fails to parse, drop it (partial write detection)
+  let validLines: string[];
+  if (nonEmptyLines.length === 0) {
+    validLines = [];
+  } else {
+    const lastLine = nonEmptyLines[nonEmptyLines.length - 1]!;
+    let lastLineValid = true;
+    try {
+      JSON.parse(lastLine);
+    } catch {
+      lastLineValid = false;
+    }
+    if (lastLineValid) {
+      validLines = nonEmptyLines;
+    } else {
+      // Drop partial tail
+      validLines = nonEmptyLines.slice(0, -1);
+    }
+  }
+
+  // Group step attempts by step name (in order of appearance)
+  const stepGroups: Record<string, StepAttemptRecord[]> = {};
+  const historyRecords: TransitionRecord[] = [];
+  let lastInterruption: InterruptionRecord | undefined;
+
+  for (const line of validLines) {
+    let record: unknown;
+    try {
+      record = JSON.parse(line);
+    } catch {
+      // Skip malformed line (not just tail)
+      continue;
+    }
+
+    if (typeof record !== "object" || record === null) continue;
+    const obj = record as Record<string, unknown>;
+
+    if (obj["type"] === "step-attempt") {
+      const stepName = typeof obj["step"] === "string" ? obj["step"] : null;
+      if (stepName === null) continue;
+      if (!stepGroups[stepName]) stepGroups[stepName] = [];
+      stepGroups[stepName]!.push(obj as unknown as StepAttemptRecord);
+    } else if (obj["type"] === "transition") {
+      historyRecords.push(obj as unknown as TransitionRecord);
+    } else if (obj["type"] === "interruption") {
+      // Track last interruption record (Stage 2 T-11: used for resumePoint materialization)
+      lastInterruption = obj as unknown as InterruptionRecord;
+    }
+  }
+
+  // Build steps: Record<stepName, StepRun[]>
+  const steps: Record<string, StepRun[]> = {};
+  const stepCounts: Record<string, number> = {};
+  let stepsTotal = 0;
+
+  for (const [stepName, records] of Object.entries(stepGroups)) {
+    steps[stepName] = records.map((r, idx): StepRun => ({
+      attempt: idx + 1,
+      sessionId: r.sessionId,
+      outcome: {
+        verdict: r.outcome.verdict,
+        findingsPath: r.outcome.findingsPath,
+        error: r.outcome.error,
+        ...(r.outcome.toolResult !== undefined ? { toolResult: r.outcome.toolResult } : {}),
+        ...(r.outcome.followUpAttempts !== undefined ? { followUpAttempts: r.outcome.followUpAttempts } : {}),
+      },
+      startedAt: r.startedAt,
+      endedAt: r.endedAt,
+    }));
+    stepCounts[stepName] = records.length;
+    stepsTotal += records.length;
+  }
+
+  // Build history: HistoryEntry[]
+  const history: HistoryEntry[] = historyRecords.map((r) => ({
+    ts: r.ts,
+    step: r.step,
+    status: r.status,
+    message: r.message,
+  }));
+
+  return {
+    steps,
+    history,
+    stepsTotal,
+    stepCounts,
+    historyCount: historyRecords.length,
+    ...(lastInterruption !== undefined ? { lastInterruption } : {}),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// appendEventRecord — append a single record to events.jsonl
+// ---------------------------------------------------------------------------
+
+/**
+ * Append a single event record to the given events.jsonl file.
+ * Uses fs.appendFile to add exactly one line — never rewrites existing content.
+ *
+ * Creates parent directories if they don't exist.
+ *
+ * Design D3: fs.appendFile only. No reads, no rewrites.
+ */
+export async function appendEventRecord(
+  filePath: string,
+  record: EventRecord,
+): Promise<void> {
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  const line = JSON.stringify(record) + "\n";
+  await fs.appendFile(filePath, line, "utf-8");
+}
+
+// ---------------------------------------------------------------------------
+// stateRecordToEventRecord — convert StepRun to StepAttemptRecord
+// ---------------------------------------------------------------------------
+
+/**
+ * Convert a StepRun to a StepAttemptRecord for journal append.
+ * Note: `attempt` is NOT stored in the record — it is derived from fold position.
+ */
+export function stepRunToRecord(step: string, run: StepRun): StepAttemptRecord {
+  const outcome = run.outcome ?? { verdict: null, findingsPath: null, error: null };
+  return {
+    type: "step-attempt",
+    step,
+    sessionId: run.sessionId,
+    outcome: {
+      verdict: outcome.verdict,
+      findingsPath: outcome.findingsPath,
+      error: outcome.error,
+      ...(outcome.toolResult !== undefined ? { toolResult: outcome.toolResult } : {}),
+      ...(outcome.followUpAttempts !== undefined ? { followUpAttempts: outcome.followUpAttempts } : {}),
+    },
+    startedAt: run.startedAt,
+    endedAt: run.endedAt,
+  };
+}
+
+/**
+ * Convert a HistoryEntry to a TransitionRecord for journal append.
+ */
+export function historyEntryToRecord(entry: HistoryEntry): TransitionRecord {
+  return {
+    type: "transition",
+    ts: entry.ts,
+    step: entry.step,
+    status: entry.status,
+    message: entry.message,
+  };
+}

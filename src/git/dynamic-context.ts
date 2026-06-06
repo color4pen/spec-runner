@@ -26,6 +26,11 @@ export interface DynamicContext {
   diffStat: string;
   /** Directories under specrunner/changes/ (excluding "archive") */
   changesList: string[];
+  /**
+   * Pre-read content of the verification result file (for build-fixer inline failure section).
+   * Populated by BuildFixerStep.enrichContext(); absent for other steps.
+   */
+  verificationContent?: string;
 }
 
 /**
