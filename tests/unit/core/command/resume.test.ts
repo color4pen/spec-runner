@@ -110,6 +110,8 @@ function buildMockRuntime(): RuntimeStrategy {
     finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
     validateStepInputs: vi.fn().mockResolvedValue(undefined),
     commitFinalState: vi.fn().mockResolvedValue(undefined),
+    bootstrapJob: vi.fn().mockRejectedValue(new Error("not implemented in test")),
+    persistJobState: vi.fn().mockResolvedValue(undefined),
   };
 }
 

@@ -167,6 +167,30 @@ describe("TC-LR-001: setupWorkspace creates worktree for run command", () => {
     expect(workspace.cwd).toBe(createdPaths[0]);
     expect(workspace.worktreePath).toBe(createdPaths[0]);
   });
+
+  // TC-020: slug state.json must not contain machine-local fields
+  it("TC-020: slug state.json does not contain worktreePath, pid, or session fields", async () => {
+    const { manager, createdPaths } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn();
+    const githubClient = buildMockGitHubClient();
+    const slug = "test-slug";
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const jobState = await makeJobState(slug);
+    await runtime.setupWorkspace(slug, jobState.jobId, {
+      bootstrapState: jobState,
+    });
+
+    const worktreePath = createdPaths[0]!;
+    const { slugStateJsonPath } = await import("../../../../src/util/paths.js");
+    const stateFilePath = path.join(worktreePath, slugStateJsonPath(slug));
+    const raw = await fs.readFile(stateFilePath, "utf-8");
+    const written = JSON.parse(raw) as Record<string, unknown>;
+
+    expect(Object.keys(written)).not.toContain("worktreePath");
+    expect(Object.keys(written)).not.toContain("pid");
+    expect(Object.keys(written)).not.toContain("session");
+  });
 });
 
 // TC-LR-008: setupWorkspace(run) — calls fetch + passes origin/main as baseRef
@@ -274,6 +298,38 @@ describe("TC-LR-002: setupWorkspace reuses existing worktree", () => {
     expect(createdPaths.length).toBe(0);
     expect(workspace.cwd).toBe(existingPath);
     expect(workspace.worktreePath).toBe(existingPath);
+  });
+
+  // TC-019: resume-reuse refreshes sidecar pid to current process
+  it("TC-019: refreshes liveness.json pid to process.pid after worktree reuse", async () => {
+    const { manager } = buildMockManager();
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager });
+
+    const slug = "test-slug";
+    const jobState = await makeJobState(slug);
+
+    // Create an existing worktree directory
+    const existingPath = path.join(tempDir, "existing-worktree");
+    await fs.mkdir(existingPath, { recursive: true });
+
+    // Write a stale liveness sidecar with a different pid
+    const sidecarDir = path.join(tempDir, ".specrunner", "local", slug);
+    await fs.mkdir(sidecarDir, { recursive: true });
+    await fs.writeFile(
+      path.join(sidecarDir, "liveness.json"),
+      JSON.stringify({ pid: 99999, session: null, worktreePath: existingPath, jobId: jobState.jobId }),
+      "utf-8",
+    );
+
+    await runtime.setupWorkspace(slug, jobState.jobId, {
+      existingWorktreePath: existingPath,
+    });
+
+    // Liveness sidecar pid must now equal the current process pid
+    const raw = await fs.readFile(path.join(sidecarDir, "liveness.json"), "utf-8");
+    const sidecar = JSON.parse(raw) as { pid: number };
+    expect(sidecar.pid).toBe(process.pid);
   });
 });
 
@@ -598,7 +654,11 @@ describe("TC-LR-010: setupWorkspace run path commits request.md", () => {
     });
 
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    const finalState = await new JobStateStore(jobState.jobId, tempDir).load();
+    // State is written to the slug store (in worktree), not the jobId store
+    const finalState = await new JobStateStore(jobState.jobId, tempDir, {
+      slug: "test-slug",
+      stateRoot: createdPaths[0]!,
+    }).load();
     const expectedPath = path.join(createdPaths[0]!, "specrunner", "changes", "test-slug", "request.md");
     expect(finalState?.request.path).toBe(expectedPath);
   });

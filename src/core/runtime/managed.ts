@@ -14,7 +14,7 @@ import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { OriginInfo } from "../../git/remote.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import { createManagedAgentRunner } from "../../adapter/managed-agent/agent-runner.js";
-import type { JobState, StepName } from "../../state/schema.js";
+import type { JobState, StepName, RequestInfo, RepositoryInfo } from "../../state/schema.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { spawnCommand } from "../../util/spawn.js";
@@ -78,6 +78,29 @@ export class ManagedRuntime implements RuntimeStrategy {
     const current = await store.load();
     const updated = mutator(current as JobState);
     await store.persist(updated);
+  }
+
+  /**
+   * Bootstrap a new job: delegates to JobStateStore.create() (persists to jobs-dir as before).
+   * Managed runtime has no worktree, so initial state must be persisted immediately.
+   */
+  async bootstrapJob(
+    repoRoot: string,
+    params: { request: RequestInfo; repository: RepositoryInfo; pipelineId?: string },
+  ): Promise<JobState> {
+    return JobStateStore.create(repoRoot, params);
+  }
+
+  /**
+   * Persist job state to the jobId-based store (managed runtime preserves existing behavior).
+   */
+  async persistJobState(
+    jobId: string,
+    _slug: string,
+    _workspace: import("../port/runtime-strategy.js").WorkspaceContext | null,
+    state: JobState,
+  ): Promise<void> {
+    await new JobStateStore(jobId, this.cwd).persist(state);
   }
 
   async setupWorkspace(

@@ -87,6 +87,8 @@ function buildMockRuntime(opts: {
   finalState?: Partial<JobState>;
   pipelineThrow?: Error;
   setupThrow?: Error;
+  /** When set, the mock buildDeps will include a real storeFactory pointing to this dir. */
+  storeRootDir?: string;
 } = {}): RuntimeStrategy {
   const finalJobState = buildJobState(opts.finalState ?? { status: "awaiting-archive", branch: "feat/test" });
 
@@ -108,6 +110,9 @@ function buildMockRuntime(opts: {
           ? vi.fn().mockRejectedValue(opts.pipelineThrow)
           : vi.fn().mockResolvedValue({ completionReason: "success", resultContent: null }),
       },
+      storeFactory: opts.storeRootDir
+        ? (id: string) => new JobStateStore(id, opts.storeRootDir!)
+        : undefined,
     } as unknown as PipelineDeps),
     registerCleanup: vi.fn().mockReturnValue(NOOP_HANDLE),
     teardown: vi.fn().mockResolvedValue(undefined),
@@ -116,6 +121,8 @@ function buildMockRuntime(opts: {
     finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
     validateStepInputs: vi.fn().mockResolvedValue(undefined),
     commitFinalState: vi.fn().mockResolvedValue(undefined),
+    bootstrapJob: vi.fn().mockResolvedValue(buildJobState()),
+    persistJobState: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -336,9 +343,9 @@ describe("TC-CR-008: worktreePath from workspace is reflected in jobState passed
   });
 });
 
-// TC-CR-009: setupWorkspace failure marks job as failed
-describe("TC-CR-009: setupWorkspace failure marks job status as failed on disk", () => {
-  it("persists status=failed with WORKSPACE_SETUP_FAILED when setupWorkspace throws", async () => {
+// TC-CR-009: setupWorkspace failure calls persistJobState with failed state
+describe("TC-CR-009: setupWorkspace failure calls persistJobState with failed state", () => {
+  it("calls persistJobState with status=failed + WORKSPACE_SETUP_FAILED when setupWorkspace throws", async () => {
     const realJobState = await JobStateStore.create(tempDir, {
       request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
       repository: { owner: "testowner", name: "testrepo" },
@@ -350,11 +357,15 @@ describe("TC-CR-009: setupWorkspace failure marks job status as failed on disk",
     const exitCode = await command.execute();
 
     expect(exitCode).toBe(1);
-
-    const store = new JobStateStore(realJobState.jobId, tempDir);
-    const diskState = await store.load();
-    expect(diskState.status).toBe("failed");
-    expect(diskState.error?.code).toBe("WORKSPACE_SETUP_FAILED");
+    expect(runtime.persistJobState).toHaveBeenCalledWith(
+      realJobState.jobId,
+      "test-slug",
+      null,
+      expect.objectContaining({
+        status: "failed",
+        error: expect.objectContaining({ code: "WORKSPACE_SETUP_FAILED" }),
+      }),
+    );
   });
 });
 
@@ -366,7 +377,7 @@ describe("TC-CR-010: pipeline throw with running disk state marks job as failed"
       repository: { owner: "testowner", name: "testrepo" },
     });
 
-    const runtime = buildMockRuntime();
+    const runtime = buildMockRuntime({ storeRootDir: tempDir });
     const command = new TestCommand(runtime, buildPrepareResult({ jobState: realJobState, repoRoot: tempDir }));
 
     const { buildPipelineForJob } = await import("../../../../src/core/pipeline/index.js");

@@ -105,6 +105,8 @@ function makeFailingValidationStrategy(errorToThrow: Error): RuntimeStrategy {
       throw errorToThrow;
     },
     async commitFinalState(): Promise<void> {},
+    async bootstrapJob(): Promise<import("../../../src/state/schema.js").JobState> { throw new Error("not implemented in test"); },
+    async persistJobState(): Promise<void> {},
   };
 }
 

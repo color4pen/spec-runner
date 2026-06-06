@@ -2,6 +2,7 @@ import * as path from "node:path";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { stderrWrite } from "../../logger/stdout.js";
+import { resolveStateStoreByJobId } from "../job-access/resolve-state-store.js";
 
 /**
  * Returns a handler that can be called multiple times but only executes once (fired guard).
@@ -112,7 +113,8 @@ async function handleGlobalExit(repoRoot: string): Promise<void> {
     if (state.status !== "running") continue;
     try {
       stderrWrite(`[specrunner] warn: process exiting with running job ${state.jobId}, transitioning to awaiting-resume`);
-      const store = new JobStateStore(state.jobId, repoRoot);
+      const store = await resolveStateStoreByJobId(repoRoot, state.jobId);
+      if (!store) continue;
       const { state: updated } = transitionJob(state, "awaiting-resume", {
         trigger: "exit-guard",
         reason: `process exiting with running job ${state.jobId}`,

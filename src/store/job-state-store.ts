@@ -62,6 +62,52 @@ interface SlugInjectOptions {
 }
 
 // ---------------------------------------------------------------------------
+// buildInitialJobState — pure factory (no I/O)
+// ---------------------------------------------------------------------------
+
+/**
+ * Build an initial JobState object without performing any I/O.
+ * Pure function: generates a new jobId and constructs the in-memory state.
+ * Callers (LocalRuntime.bootstrapJob) use this to defer persistence to after
+ * worktree establishment. JobStateStore.create() also uses this internally.
+ */
+export function buildInitialJobState(params: {
+  request: RequestInfo;
+  repository: RepositoryInfo;
+  pipelineId?: string;
+}): JobState {
+  const jobId = randomUUID();
+  const now = new Date().toISOString();
+
+  const initialHistoryEntry: HistoryEntry = {
+    ts: now,
+    step: "init",
+    status: "started",
+    message: "job created",
+  };
+
+  return {
+    version: 1,
+    jobId,
+    createdAt: now,
+    updatedAt: now,
+    request: {
+      ...params.request,
+      slug: params.request.slug !== undefined ? params.request.slug : null,
+    },
+    repository: params.repository,
+    session: null,
+    step: "init",
+    status: "running",
+    pid: process.pid,
+    branch: null,
+    history: [initialHistoryEntry],
+    error: null,
+    pipelineId: params.pipelineId ?? STANDARD_PIPELINE_ID,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // JobStateStore class
 // ---------------------------------------------------------------------------
 
@@ -158,35 +204,9 @@ export class JobStateStore {
     repository: RepositoryInfo;
     pipelineId?: string;
   }): Promise<JobState> {
-    const jobId = randomUUID();
-    const now = new Date().toISOString();
-
-    const initialHistoryEntry: HistoryEntry = {
-      ts: now,
-      step: "init",
-      status: "started",
-      message: "job created",
-    };
-
-    const state: JobState = {
-      version: 1,
-      jobId,
-      createdAt: now,
-      updatedAt: now,
-      request: {
-        ...params.request,
-        slug: params.request.slug !== undefined ? params.request.slug : null,
-      },
-      repository: params.repository,
-      session: null,
-      step: "init",
-      status: "running",
-      pid: process.pid,
-      branch: null,
-      history: [initialHistoryEntry],
-      error: null,
-      pipelineId: params.pipelineId ?? STANDARD_PIPELINE_ID,
-    };
+    const state = buildInitialJobState(params);
+    const { jobId } = state;
+    const initialHistoryEntry = state.history[0]!;
 
     const eventsPath = getJobEventsPath(repoRoot, jobId);
     const stateJsonPath = getJobStateJsonPath(repoRoot, jobId);

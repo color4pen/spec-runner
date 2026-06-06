@@ -101,6 +101,8 @@ function makeTestRuntimeStrategy(spawnFn: SpawnFn): RuntimeStrategy {
     },
     async validateStepInputs(): Promise<void> {},
     async commitFinalState(): Promise<void> { /* no-op in tests */ },
+    async bootstrapJob(): Promise<import("../../../src/state/schema.js").JobState> { throw new Error("not implemented in test"); },
+    async persistJobState(): Promise<void> {},
   };
 }
 

@@ -10,6 +10,7 @@ import { loadConfig } from "../../config/store.js";
 import { resolveRepoRoot } from "../../util/repo-root.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { loadStateByJobId } from "../job-access/load-by-job-id.js";
+import { resolveStateStoreByJobId } from "../job-access/resolve-state-store.js";
 import { logInfo, setLogLevel, logError, stderrWrite, type LogLevel } from "../../logger/stdout.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
@@ -120,7 +121,8 @@ export class ResumeCommand extends CommandRunner {
           reason: "Process not running",
           patch: { pid: null },
         });
-        await new JobStateStore(state.jobId, cwd).persist(recovered);
+        const staleStore = await resolveStateStoreByJobId(cwd, state.jobId);
+        if (staleStore) await staleStore.persist(recovered);
         state = recovered;
         stderrWrite(`Warning: Job '${this.slug}' was running but the process is no longer alive. Recovering.`);
       } else {
@@ -191,7 +193,8 @@ export class ResumeCommand extends CommandRunner {
         reason: `Resuming from step '${startStep}'`,
         patch: { error: null, resumePoint: null, pid: process.pid },
       });
-      await new JobStateStore(state.jobId, cwd).persist(transitioned);
+      const runStore = await resolveStateStoreByJobId(cwd, state.jobId);
+      if (runStore) await runStore.persist(transitioned);
       updatedState = transitioned;
     } catch (err) {
       logError(`Failed to update job state: ${(err as Error).message}`);
@@ -244,6 +247,7 @@ export class ResumeCommand extends CommandRunner {
       workspaceOpts: {
         existingWorktreePath: resolvedWorktreePath,
         baseBranch: request.baseBranch,
+        bootstrapState: updatedState,
       },
       resumePrompt: this.options.prompt,
       json: this.options.json ?? false,

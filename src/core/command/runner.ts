@@ -29,7 +29,6 @@ import { KeepAlive } from "../lifecycle/keepalive.js";
 import { createExitGuardHandler } from "../lifecycle/exit-guard.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
-import { JobStateStore } from "../../store/job-state-store.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { EventBus } from "../event/event-bus.js";
 import { buildPipelineForJob } from "../pipeline/index.js";
@@ -123,9 +122,13 @@ export abstract class CommandRunner {
       try {
         workspace = await this.runtime.setupWorkspace(slug, jobState.jobId, workspaceOpts);
       } catch (err) {
-        const store = new JobStateStore(jobState.jobId, repoRoot);
         const wsError = { code: "WORKSPACE_SETUP_FAILED", message: (err as Error).message, hint: "" };
-        const wsFailedState = await store.fail(jobState, wsError, "init");
+        const { state: wsFailedState } = transitionJob(jobState, "failed", {
+          trigger: "store-fail",
+          reason: wsError.message,
+          patch: { error: wsError, step: "init" },
+        });
+        await this.runtime.persistJobState(jobState.jobId, slug, null, wsFailedState);
         logError(`Failed to set up workspace: ${(err as Error).message}`);
         if (json) {
           stdoutWrite(formatRunResultJson(buildRunResult(wsFailedState, slug)));
@@ -174,9 +177,13 @@ export abstract class CommandRunner {
 
         handle = this.runtime.registerCleanup(jobState.jobId, startStep);
       } catch (err) {
-        const store = new JobStateStore(jobState.jobId, repoRoot);
         const initError = { code: "INIT_FAILED", message: (err as Error).message, hint: "" };
-        const initFailedState = await store.fail(jobState, initError, "init");
+        const { state: initFailedState } = transitionJob(jobState, "failed", {
+          trigger: "store-fail",
+          reason: initError.message,
+          patch: { error: initError, step: "init" },
+        });
+        await this.runtime.persistJobState(jobState.jobId, slug, workspace ?? null, initFailedState);
         logError((err as Error).message);
         if (json) {
           stdoutWrite(formatRunResultJson(buildRunResult(initFailedState, slug)));
@@ -198,7 +205,7 @@ export abstract class CommandRunner {
         const crashErrorInfo = { code: crashCode, message: crashMessage, hint: "" };
         let crashState: JobState | null = null;
         try {
-          const store = new JobStateStore(jobState.jobId, repoRoot);
+          const store = deps.storeFactory(jobState.jobId);
           const diskState = await store.load();
           if (diskState.status === "running") {
             crashState = await store.fail(diskState as JobState, crashErrorInfo, jobState.step);

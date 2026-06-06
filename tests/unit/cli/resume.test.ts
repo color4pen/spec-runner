@@ -161,6 +161,17 @@ async function makeAwaitingResumeJob(slug: string, overrides: Partial<JobState> 
     await fs.writeFile(path.join(slugDir, "events.jsonl"), "");
   }
 
+  // Write liveness sidecar pointing to slugDir as worktreePath.
+  // This lets ResumeCommand.prepare() resolve a non-null existingWorktreePath,
+  // so setupWorkspace() enters the reuse path (slugDir exists) instead of trying
+  // to create a worktree at the mock path "/fake/worktree".
+  const livenessDir = path.join(tempDir, ".specrunner", "local", slug);
+  await fs.mkdir(livenessDir, { recursive: true });
+  await fs.writeFile(
+    path.join(livenessDir, "liveness.json"),
+    JSON.stringify({ jobId: state.jobId, worktreePath: slugDir, pid: 99999 }),
+  );
+
   return updated;
 }
 

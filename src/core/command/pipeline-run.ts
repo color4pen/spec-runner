@@ -6,7 +6,6 @@
  * the result to the constructor, per spec-review finding #1.
  */
 import type { PreflightResult } from "../preflight.js";
-import { JobStateStore } from "../../store/job-state-store.js";
 import { logInfo, setLogLevel, type LogLevel } from "../../logger/stdout.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../port/runtime-strategy.js";
@@ -60,9 +59,9 @@ export class PipelineRunCommand extends CommandRunner {
       CANONICAL_PATTERN_LEGACY.exec(this.absolutePath);
     const requestSlug: string | null = canonicalMatch ? (canonicalMatch[1] ?? null) : null;
 
-    // Create job state
+    // Bootstrap job state (local: no I/O; managed: persists to jobs-dir)
     const cwd = this.options.cwd ?? process.cwd();
-    const jobState = await JobStateStore.create(cwd, {
+    const jobState = await this.runtime.bootstrapJob(cwd, {
       request: {
         path: this.absolutePath,
         title: request.title,
@@ -92,6 +91,7 @@ export class PipelineRunCommand extends CommandRunner {
         branchName,
         requestType: request.type,
         baseBranch: request.baseBranch,
+        bootstrapState: jobState,
       },
       json: this.options.json ?? false,
     };

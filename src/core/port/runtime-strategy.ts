@@ -18,7 +18,7 @@
 import type { AgentRunner } from "./agent-runner.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
-import type { JobState } from "../../state/schema.js";
+import type { JobState, RequestInfo, RepositoryInfo } from "../../state/schema.js";
 
 // ---------------------------------------------------------------------------
 // Supporting types
@@ -70,6 +70,13 @@ export interface WorkspaceOptions {
   requestType?: string;
   /** Base branch for worktree creation (e.g. "main" or "master"). Defaults to "main" if omitted. */
   baseBranch?: string;
+  /**
+   * Initial state to seed into the new worktree's slug store immediately after creation.
+   * Provided by PipelineRunCommand (run path) and ResumeCommand (recreate/null path).
+   * LocalRuntime uses this to defer initial persistence from bootstrapJob() to setupWorkspace().
+   * If absent, seeding is skipped (managed runtime ignores this field).
+   */
+  bootstrapState?: JobState;
 }
 
 /**
@@ -111,6 +118,38 @@ export type CleanupHandle = { readonly __brand: unique symbol } & Record<string,
  * in core/runtime/ use concrete types (TypeScript bivariant method checking allows this).
  */
 export interface RuntimeStrategy {
+  /**
+   * Bootstrap a new job: generate jobId + build initial JobState.
+   *
+   * - local:   pure in-memory; does NOT persist to .specrunner/jobs/. Persistence
+   *            is deferred to setupWorkspace() which seeds the slug store after worktree
+   *            creation (bootstrapState in WorkspaceOptions).
+   * - managed: delegates to JobStateStore.create() — persists to jobs-dir as before.
+   *
+   * Returns the initial JobState (jobId already set, status=running, step=init).
+   */
+  bootstrapJob(
+    repoRoot: string,
+    params: { request: RequestInfo; repository: RepositoryInfo; pipelineId?: string },
+  ): Promise<JobState>;
+
+  /**
+   * Persist a terminal or transitional job state to the canonical store.
+   *
+   * - local:   resolves the slug store (workspace.worktreePath → sidecar → canonicalStateDir).
+   *            Persists portable state to slug store. Skips (best-effort) if no store found.
+   *            Does NOT write to .specrunner/jobs/<jobId>/.
+   * - managed: persists to the jobId-based store (existing behavior).
+   *
+   * workspace may be null when the worktree was never established (WORKSPACE_SETUP_FAILED).
+   */
+  persistJobState(
+    jobId: string,
+    slug: string,
+    workspace: WorkspaceContext | null,
+    state: JobState,
+  ): Promise<void>;
+
   /**
    * Agent execution primitive (future dialog use).
    * pipeline steps use createAgentRunner() instead.

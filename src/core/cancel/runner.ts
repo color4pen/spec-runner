@@ -15,6 +15,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { loadStateByJobId } from "../job-access/load-by-job-id.js";
+import { resolveStateStoreByJobId } from "../job-access/resolve-state-store.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { stdoutWrite } from "../../logger/stdout.js";
 import { ERROR_CODES, SpecRunnerError } from "../../errors.js";
@@ -241,7 +242,8 @@ export async function cancelSingleJob(opts: {
     });
 
     if (!purge) {
-      await new JobStateStore(jobId, deps.repoRoot).persist(updated);
+      const cancelStore = await resolveStateStoreByJobId(deps.repoRoot, jobId);
+      if (cancelStore) await cancelStore.persist(updated);
     }
   }
 
