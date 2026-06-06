@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "8cf27e1c-e0fc-43ce-b7de-8a3ac8b13a8e",
   "createdAt": "2026-06-06T08:09:45.351Z",
-  "updatedAt": "2026-06-06T09:37:11.772Z",
+  "updatedAt": "2026-06-06T09:57:35.284Z",
   "request": {
     "title": "`.specrunner/jobs/` への読み取り依存を slug/sidecar 起点に移行する",
     "type": "spec-change"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/decouple-jobs-dir-reads-8cf27e1c",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-06T09:37:11.763Z"
   },
   "_journal": {
-    "historyCount": 52,
+    "historyCount": 53,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
