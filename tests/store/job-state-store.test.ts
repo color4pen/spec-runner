@@ -529,3 +529,83 @@ describe("TC-009: slug-mode persist — worktreePath / pid / session absent from
     expect(parsed["jobId"]).toBe(jobId);
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-017: changeDir 単独ストアが load() で changeDir/state.json を読む (D2)
+// ---------------------------------------------------------------------------
+describe("TC-017: changeDir-only store load() reads changeDir/state.json", () => {
+  it("loads from changeDir/state.json when only changeDir is set (isSlugMode=false)", async () => {
+    const jobId = "tc017-changeDir-load";
+
+    // Write state.json to an arbitrary changeDir (simulates .specrunner/local/<slug>/)
+    const changeDir = path.join(tempDir, ".specrunner", "local", "tc017-slug");
+    await fs.mkdir(changeDir, { recursive: true });
+    const stateJson = {
+      version: 1,
+      jobId,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      request: { path: "/req.md", title: "Test", type: "new-feature" },
+      repository: { owner: "testowner", name: "testrepo" },
+      session: null,
+      step: "design",
+      status: "running",
+      branch: "change/tc017-slug",
+      error: null,
+      _journal: { historyCount: 0, stepCounts: {} },
+    };
+    await fs.writeFile(path.join(changeDir, "state.json"), JSON.stringify(stateJson), "utf-8");
+    await fs.writeFile(path.join(changeDir, "events.jsonl"), "", "utf-8");
+
+    // Construct store with changeDir only (no slug, no stateRoot → isSlugMode=false)
+    const store = new JobStateStore(jobId, tempDir, { changeDir });
+    const loaded = await store.load();
+
+    expect(loaded.jobId).toBe(jobId);
+    expect(loaded.status).toBe("running");
+
+    // Verify jobs-dir was NOT accessed (no file there)
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs", jobId);
+    await expect(fs.access(jobsDir)).rejects.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-018: changeDir + slug + stateRoot (isSlugMode=true) load() 挙動が不変 (D2)
+// ---------------------------------------------------------------------------
+describe("TC-018: changeDir + slug + stateRoot (isSlugMode=true) load() is unchanged", () => {
+  it("loads via slug-mode (slugInject) when all three options are provided", async () => {
+    const slug = "tc018-slug";
+    const jobId = "tc018-slug-load";
+
+    // Write state.json to changeDir (simulates archive or canonical dir)
+    const changeDir = path.join(tempDir, "specrunner", "changes", slug);
+    await fs.mkdir(changeDir, { recursive: true });
+    const stateJson = {
+      version: 1,
+      jobId,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      request: { title: "Test", type: "new-feature" },
+      repository: { owner: "testowner", name: "testrepo" },
+      session: null,
+      step: "design",
+      status: "awaiting-resume",
+      branch: `change/${slug}`,
+      error: null,
+      _journal: { historyCount: 0, stepCounts: {} },
+    };
+    await fs.writeFile(path.join(changeDir, "state.json"), JSON.stringify(stateJson), "utf-8");
+    await fs.writeFile(path.join(changeDir, "events.jsonl"), "", "utf-8");
+
+    // changeDir + slug + stateRoot: isSlugMode()=true, slugInject should inject request fields
+    const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir, changeDir });
+    const loaded = await store.load();
+
+    expect(loaded.jobId).toBe(jobId);
+    expect(loaded.status).toBe("awaiting-resume");
+    // slugInject: request.slug and request.path injected from convention
+    expect(loaded.request.slug).toBe(slug);
+    expect(loaded.request.path).toContain(slug);
+  });
+});

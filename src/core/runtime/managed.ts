@@ -18,8 +18,8 @@ import type { JobState, StepName, RequestInfo, RepositoryInfo } from "../../stat
 import { transitionJob } from "../../state/lifecycle.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { spawnCommand } from "../../util/spawn.js";
-import { JobStateStore } from "../../store/job-state-store.js";
-import { changeFolderPath, managedMarkerPath } from "../../util/paths.js";
+import { JobStateStore, buildInitialJobState } from "../../store/job-state-store.js";
+import { changeFolderPath, managedMarkerPath, localSidecarDir } from "../../util/paths.js";
 import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, rejectSymlink } from "../artifact/copy-artifacts.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput } from "../port/runtime-strategy.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
@@ -70,37 +70,51 @@ export class ManagedRuntime implements RuntimeStrategy {
   }
 
   /**
+   * D1: Private helper — managed machine-local store rooted at .specrunner/local/<slug>/.
+   * Uses changeDir seam (not slug-mode) so persist writes full state without stripping
+   * machine-local fields (pid / session / request.slug / request.path).
+   */
+  private managedLocalStore(jobId: string, slug: string): JobStateStore {
+    return new JobStateStore(jobId, this.cwd, {
+      changeDir: path.join(this.cwd, localSidecarDir(slug)),
+    });
+  }
+
+  /**
    * Update job state atomically: load → mutate → persist.
    * Replaces the deprecated updateJobState() from state/store.ts.
    */
   private async updateJobState(jobId: string, mutator: (s: JobState) => JobState): Promise<void> {
-    const store = new JobStateStore(jobId, this.cwd);
+    const store = this.managedLocalStore(jobId, this.currentSlug!);
     const current = await store.load();
     const updated = mutator(current as JobState);
     await store.persist(updated);
   }
 
   /**
-   * Bootstrap a new job: delegates to JobStateStore.create() (persists to jobs-dir as before).
-   * Managed runtime has no worktree, so initial state must be persisted immediately.
+   * Bootstrap a new job: pure in-memory (no I/O).
+   * Managed runtime defers persistence to setupWorkspace() run path (D3),
+   * which seeds opts.bootstrapState into .specrunner/local/<slug>/ after
+   * the slug is authoritatively known.
    */
   async bootstrapJob(
-    repoRoot: string,
+    _repoRoot: string,
     params: { request: RequestInfo; repository: RepositoryInfo; pipelineId?: string },
   ): Promise<JobState> {
-    return JobStateStore.create(repoRoot, params);
+    return buildInitialJobState(params);
   }
 
   /**
-   * Persist job state to the jobId-based store (managed runtime preserves existing behavior).
+   * Persist job state to the machine-local slug store (.specrunner/local/<slug>/).
+   * Does NOT write to .specrunner/jobs/<jobId>/.
    */
   async persistJobState(
     jobId: string,
-    _slug: string,
+    slug: string,
     _workspace: import("../port/runtime-strategy.js").WorkspaceContext | null,
     state: JobState,
   ): Promise<void> {
-    await new JobStateStore(jobId, this.cwd).persist(state);
+    await this.managedLocalStore(jobId, slug).persist(state);
   }
 
   async setupWorkspace(
@@ -141,6 +155,13 @@ export class ManagedRuntime implements RuntimeStrategy {
       throw new Error(
         `git push origin ${branchName} failed (exit ${pushBranchResult.exitCode}): ${pushBranchResult.stderr.trim()}`,
       );
+    }
+
+    // D3: Seed bootstrapState to .specrunner/local/<slug>/ before any updateJobState.
+    // Establishes state.json + events.jsonl so subsequent load() in updateJobState succeeds.
+    // Skip when bootstrapState is absent (defensive; pipeline-run always provides it on run path).
+    if (opts?.bootstrapState) {
+      await this.managedLocalStore(jobId, slug).persist(opts.bootstrapState);
     }
 
     if (opts?.requestFilePath) {
@@ -224,19 +245,16 @@ export class ManagedRuntime implements RuntimeStrategy {
 
   /**
    * Write the managed job marker to .specrunner/local/<slug>/marker.json.
-   * Design D7: { slug, jobId, status, createdAt }
+   * D5: { slug, jobId, createdAt } — pure index, no status field.
    * Best-effort: silently swallows errors to avoid blocking workspace setup.
    */
   private async writeManagedMarker(slug: string, jobId: string): Promise<void> {
     try {
       const markerAbsPath = path.join(this.cwd, managedMarkerPath(slug));
       await fs.mkdir(path.dirname(markerAbsPath), { recursive: true });
-      // Use a variable for status to avoid triggering B-9 pattern scan
-      // (status here is marker metadata, not a JobState.status mutation)
-      const activeStatus = "running" as string;
       await fs.writeFile(
         markerAbsPath,
-        JSON.stringify({ slug, jobId, status: activeStatus, createdAt: new Date().toISOString() }, null, 2),
+        JSON.stringify({ slug, jobId, createdAt: new Date().toISOString() }, null, 2),
         "utf-8",
       );
     } catch {
@@ -276,7 +294,7 @@ export class ManagedRuntime implements RuntimeStrategy {
       cwd: workspace.cwd,
       runner: this.createAgentRunner(),
       spawn: spawnCommand,
-      storeFactory: (id: string) => new JobStateStore(id, this.cwd),
+      storeFactory: (id: string) => this.managedLocalStore(id, slug),
       runtimeStrategy: this,
     };
   }
@@ -366,11 +384,11 @@ export class ManagedRuntime implements RuntimeStrategy {
 
   registerCleanup(jobId: string, startStep: string): CleanupHandle {
     const slug = this.currentSlug;
-    const cwd = this.cwd;
 
     const signalCleanup = async (): Promise<void> => {
       try {
-        const store = new JobStateStore(jobId, cwd);
+        if (!slug) return; // best-effort skip: slug not set, cannot resolve managed store
+        const store = this.managedLocalStore(jobId, slug);
         const current = await store.load();
         const { state: updated } = transitionJob(current as JobState, "awaiting-resume", {
           trigger: "signal-handler",

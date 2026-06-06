@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "jobId": "b95b12aa-10b6-4d25-bb55-4aa1f0d6bb38",
+  "createdAt": "2026-06-06T14:41:49.511Z",
+  "updatedAt": "2026-06-06T15:36:42.214Z",
+  "request": {
+    "title": "managed runtime の machine-local state を slug キーに移す",
+    "type": "spec-change"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/managed-slug-keyed-state-b95b12aa",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/541",
+    "number": 541,
+    "createdAt": "2026-06-06T15:36:42.204Z"
+  },
+  "_journal": {
+    "historyCount": 36,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

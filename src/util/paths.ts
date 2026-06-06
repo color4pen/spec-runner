@@ -242,3 +242,21 @@ export function managedMarkerPath(slug: string): string {
 export function localSidecarBaseDirRel(): string {
   return LOCAL_SIDECAR_BASE;
 }
+
+/**
+ * Returns the relative path to state.json for the machine-local managed job store.
+ * (relative to repoRoot)
+ * Example: localSlugStateJsonPath("foo") → ".specrunner/local/foo/state.json"
+ */
+export function localSlugStateJsonPath(slug: string): string {
+  return `${LOCAL_SIDECAR_BASE}/${slug}/state.json`;
+}
+
+/**
+ * Returns the relative path to events.jsonl for the machine-local managed job store.
+ * (relative to repoRoot)
+ * Example: localSlugEventsPath("foo") → ".specrunner/local/foo/events.jsonl"
+ */
+export function localSlugEventsPath(slug: string): string {
+  return `${LOCAL_SIDECAR_BASE}/${slug}/events.jsonl`;
+}

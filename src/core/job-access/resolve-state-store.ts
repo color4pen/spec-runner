@@ -6,7 +6,7 @@
  *   1. sidecar entry kind="local": worktree slug dir (worktreePath, verified) →
  *                                  resolveCanonicalStateDir (archive / main-checkout)
  *                                  → null (no accessible store found)
- *   2. sidecar entry kind="managed": jobId-based store
+ *   2. sidecar entry kind="managed": .specrunner/local/<slug>/ (changeDir seam)
  *   3. No sidecar entry: jobId-based store (legacy safety net)
  *
  * Returns null when no writable slug store is accessible (local, degraded).
@@ -16,7 +16,7 @@ import * as path from "node:path";
 import { resolveJobIdToSlug } from "../../store/local-job-index.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { resolveCanonicalStateDir } from "../finish/resolve-canonical-state-dir.js";
-import { slugStateJsonPath } from "../../util/paths.js";
+import { slugStateJsonPath, localSidecarDir } from "../../util/paths.js";
 
 /**
  * Resolve a writable JobStateStore for the given jobId.
@@ -64,8 +64,10 @@ export async function resolveStateStoreByJobId(
       // No accessible slug store for this local job
       return null;
     } else if (sidecarEntry.kind === "managed") {
-      // Step 2: managed jobs use jobId-based store
-      return new JobStateStore(jobId, repoRoot);
+      // Step 2: managed jobs use .specrunner/local/<slug>/ (D4)
+      return new JobStateStore(jobId, repoRoot, {
+        changeDir: path.join(repoRoot, localSidecarDir(sidecarEntry.slug)),
+      });
     }
   }
 

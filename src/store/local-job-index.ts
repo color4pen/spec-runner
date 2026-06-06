@@ -72,7 +72,7 @@ export async function listLocalSidecars(repoRoot: string): Promise<LocalSidecarE
       // No liveness.json or broken — fall through to marker.json
     }
 
-    // 2. Try marker.json (managed runtime)
+    // 2. Try marker.json (managed runtime) — schema: { slug, jobId, createdAt }
     try {
       const markerAbsPath = path.join(repoRoot, managedMarkerPath(slug));
       const raw = await fs.readFile(markerAbsPath, "utf-8");

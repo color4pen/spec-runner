@@ -13,6 +13,8 @@ import {
   changeFolderPath,
   parseArchiveDirName,
   managedMarkerPath,
+  localSlugStateJsonPath,
+  localSlugEventsPath,
 } from "../util/paths.js";
 import { listLocalSidecars } from "./local-job-index.js";
 import { atomicWriteJson } from "../util/atomic-write.js";
@@ -369,7 +371,7 @@ export class JobStateStore {
 
     // 4. Managed markers (.specrunner/local/<slug>/marker.json) — D7
     // Enumerate local managed job markers to find managed active jobs.
-    // For each marker, try to load state from the jobId-based store.
+    // For each marker, try to load state from the co-located .specrunner/local/<slug>/state.json.
     const localSidecarBase = path.join(repoRoot, ".specrunner", "local");
     try {
       const localEntries = await fs.readdir(localSidecarBase, { withFileTypes: true });
@@ -386,9 +388,9 @@ export class JobStateStore {
           // Skip if already found by another scan (dedup by jobId)
           if (stateMap.has(markerJobId)) continue;
 
-          // Try to load via jobId-based split-layout store
-          const markerStateJsonPath = getJobStateJsonPath(repoRoot, markerJobId);
-          const markerEventsPath = getJobEventsPath(repoRoot, markerJobId);
+          // Try to load from co-located .specrunner/local/<slug>/state.json (D4)
+          const markerStateJsonPath = path.join(repoRoot, localSlugStateJsonPath(slug));
+          const markerEventsPath = path.join(repoRoot, localSlugEventsPath(slug));
           try {
             const state = await loadSplitLayout(markerStateJsonPath, markerEventsPath);
             tryMerge(state);
@@ -467,12 +469,12 @@ export class JobStateStore {
    * fold count before computing any delta.
    */
   async load(): Promise<NormalizedJobState> {
-    if (this.isSlugMode()) {
+    if (this.changeDir || this.isSlugMode()) {
       try {
         return await loadSplitLayout(
           this.getStateJsonPath(),
           this.getEventsPath(),
-          { slug: this.slug!, stateRoot: this.stateRoot! },
+          this.isSlugMode() ? { slug: this.slug!, stateRoot: this.stateRoot! } : undefined,
         );
       } catch (err: unknown) {
         const code = (err as NodeJS.ErrnoException).code;

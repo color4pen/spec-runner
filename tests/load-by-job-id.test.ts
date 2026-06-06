@@ -126,17 +126,17 @@ describe("TC-022: archived local job loads from changes/archive/", () => {
   });
 });
 
-// TC-023: managed job loads from jobs-dir (preserved)
-describe("TC-023: managed job loads from jobs-dir (preserved)", () => {
-  it("loads from jobs-dir split layout for managed jobs", async () => {
+// TC-023: managed job loads from .specrunner/local/<slug>/ (D4)
+describe("TC-023: managed job loads from .specrunner/local/<slug>/", () => {
+  it("loads from local/slug split layout for managed jobs", async () => {
     const slug = "my-managed-slug";
     const jobId = "cccc1111-0000-0000-0000-000000000001";
 
-    // Write state to jobs-dir (managed uses jobId-based store)
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs", jobId);
-    await writeSlugState(jobsDir, jobId, "running", slug);
+    // Write state to .specrunner/local/<slug>/ (co-located with marker)
+    const localSlugDir = path.join(tempDir, ".specrunner", "local", slug);
+    await writeSlugState(localSlugDir, jobId, "running", slug);
 
-    // Write managed marker (kind="managed")
+    // Write managed marker (kind="managed") in the same directory
     await writeMarker(slug, jobId);
 
     const loaded = await loadStateByJobId(tempDir, jobId);

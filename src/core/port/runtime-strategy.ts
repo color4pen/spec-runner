@@ -121,10 +121,12 @@ export interface RuntimeStrategy {
   /**
    * Bootstrap a new job: generate jobId + build initial JobState.
    *
-   * - local:   pure in-memory; does NOT persist to .specrunner/jobs/. Persistence
-   *            is deferred to setupWorkspace() which seeds the slug store after worktree
-   *            creation (bootstrapState in WorkspaceOptions).
-   * - managed: delegates to JobStateStore.create() — persists to jobs-dir as before.
+   * - local:   pure in-memory; does NOT persist. Persistence is deferred to
+   *            setupWorkspace() which seeds the slug store after worktree creation
+   *            (bootstrapState in WorkspaceOptions).
+   * - managed: pure in-memory; does NOT persist. Seed is deferred to setupWorkspace()
+   *            run path (bootstrapState in WorkspaceOptions) into
+   *            .specrunner/local/<slug>/ — after the slug is authoritatively known.
    *
    * Returns the initial JobState (jobId already set, status=running, step=init).
    */
@@ -139,7 +141,8 @@ export interface RuntimeStrategy {
    * - local:   resolves the slug store (workspace.worktreePath → sidecar → canonicalStateDir).
    *            Persists portable state to slug store. Skips (best-effort) if no store found.
    *            Does NOT write to .specrunner/jobs/<jobId>/.
-   * - managed: persists to the jobId-based store (existing behavior).
+   * - managed: persists full state to .specrunner/local/<slug>/ (machine-local, changeDir seam).
+   *            Does NOT write to .specrunner/jobs/<jobId>/.
    *
    * workspace may be null when the worktree was never established (WORKSPACE_SETUP_FAILED).
    */

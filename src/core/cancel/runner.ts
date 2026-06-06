@@ -22,7 +22,7 @@ import { ERROR_CODES, SpecRunnerError } from "../../errors.js";
 import { gracefulKill } from "./pid-kill.js";
 import { buildWorktreePath } from "../worktree/manager.js";
 import { getJobSlug } from "../../state/job-slug.js";
-import { livenessJsonPath, managedMarkerPath } from "../../util/paths.js";
+import { livenessJsonPath, managedMarkerPath, localSidecarDir } from "../../util/paths.js";
 import type { WorktreeManager } from "../worktree/manager.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import type { JobState } from "../../state/schema.js";
@@ -123,16 +123,7 @@ async function cleanupJobResources(
     }
   }
 
-  // 3. Clear managed job marker (best-effort — no-op for local runtime)
-  const slugForMarker = getJobSlug(state);
-  if (slugForMarker) {
-    const markerAbsPath = path.join(repoRoot, managedMarkerPath(slugForMarker));
-    try {
-      await fs.unlink(markerAbsPath);
-    } catch {
-      // Best-effort — ENOENT is fine (local runtime has no marker)
-    }
-  }
+  // 3. (Managed marker unlink is deferred to after canceled-state persist — D6)
 
   // 4. Delete local branch (best-effort)
   const branch = state.branch;
@@ -248,11 +239,37 @@ export async function cancelSingleJob(opts: {
   }
 
   // ---------------------------------------------------------------------------
+  // Managed marker unlink — D6: after canceled-state persist, best-effort
+  // (idempotent canceled path also runs this; local runtime marker is no-op)
+  // ---------------------------------------------------------------------------
+
+  const slugForMarker = getJobSlug(state);
+  if (slugForMarker) {
+    const markerAbsPath = path.join(deps.repoRoot, managedMarkerPath(slugForMarker));
+    try {
+      await fs.unlink(markerAbsPath);
+    } catch {
+      // Best-effort — ENOENT is fine (local runtime has no marker)
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Purge (state file physical deletion)
   // ---------------------------------------------------------------------------
 
   if (purge) {
     await JobStateStore.delete(deps.repoRoot, jobId);
+    // Also purge .specrunner/local/<slug>/ for managed jobs (D6)
+    if (slugForMarker) {
+      try {
+        await fs.rm(path.join(deps.repoRoot, localSidecarDir(slugForMarker)), {
+          recursive: true,
+          force: true,
+        });
+      } catch {
+        // Best-effort — directory may not exist
+      }
+    }
   }
 
   return {

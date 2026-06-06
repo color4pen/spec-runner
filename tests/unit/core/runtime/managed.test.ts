@@ -157,10 +157,10 @@ function buildManagedMockSpawnFn() {
   return { spawnFn: fn as unknown as import("../../../../src/util/spawn.js").SpawnFn, calls };
 }
 
-// Helper: create a minimal job state in tempDir
+// Helper: create a minimal job state in memory (no I/O — D3 bootstrap is I/O-less)
 async function makeJobStateForManaged(slug = "test-slug") {
-  const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-  return JobStateStore.create(tempDir, {
+  const { buildInitialJobState } = await import("../../../../src/store/job-state-store.js");
+  return buildInitialJobState({
     request: {
       path: path.join(tempDir, "request.md"),
       title: "Test",
@@ -197,7 +197,8 @@ describe("TC-036: managed marker write/clear タイミングと D7 スキーマ�
     expect(marker).not.toBeNull();
     expect(marker!["slug"]).toBe("marker-test");
     expect(marker!["jobId"]).toBe(jobState.jobId);
-    expect(marker!["status"]).toBe("running");
+    // D5: marker is pure index — no status field
+    expect(marker!["status"]).toBeUndefined();
     expect(typeof marker!["createdAt"]).toBe("string");
   });
 
@@ -210,13 +211,15 @@ describe("TC-036: managed marker write/clear タイミングと D7 スキーマ�
 
     await runtime.setupWorkspace("marker-run-test", jobState.jobId, {
       branchName: "feat/marker-run-test-abcd1234",
+      bootstrapState: jobState, // D3: seed local/slug before updateJobState
     });
 
     const marker = await readMarker("marker-run-test");
     expect(marker).not.toBeNull();
     expect(marker!["slug"]).toBe("marker-run-test");
     expect(marker!["jobId"]).toBe(jobState.jobId);
-    expect(marker!["status"]).toBe("running");
+    // D5: marker is pure index — no status field
+    expect(marker!["status"]).toBeUndefined();
     expect(typeof marker!["createdAt"]).toBe("string");
   });
 
@@ -294,6 +297,7 @@ describe("TC-MR-005: setupWorkspace writes rules.md to change folder via string 
     await runtime.setupWorkspace("test-slug", jobState.jobId, {
       requestFilePath: path.join(tempDir, "test-slug.md"),
       branchName: "feat/test-slug-abcd1234",
+      bootstrapState: jobState, // D3: seed local/slug before updateJobState
     });
 
     // Verify rules.md was written to the change folder
@@ -321,10 +325,14 @@ describe("TC-MR-005: setupWorkspace writes rules.md to change folder via string 
     await runtime.setupWorkspace("test-slug", jobState.jobId, {
       requestFilePath: path.join(tempDir, "test-slug.md"),
       branchName: "feat/test-slug-abcd1234",
+      bootstrapState: jobState, // D3: seed local/slug before updateJobState
     });
 
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    const finalState = await new JobStateStore(jobState.jobId, tempDir).load();
+    // Load from .specrunner/local/<slug>/ (managed machine-local store, D1)
+    const finalState = await new JobStateStore(jobState.jobId, tempDir, {
+      changeDir: path.join(tempDir, ".specrunner", "local", "test-slug"),
+    }).load();
     const expectedPath = path.join(tempDir, "specrunner", "changes", "test-slug", "request.md");
     expect(finalState?.request.path).toBe(expectedPath);
   });

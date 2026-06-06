@@ -134,11 +134,11 @@ describe("TC-021: resolveStateStoreByJobId — kind=local + worktree present →
 });
 
 // ---------------------------------------------------------------------------
-// TC-024: kind=managed → jobId-based store returned
+// TC-024: kind=managed → .specrunner/local/<slug>/ store returned (D4)
 // ---------------------------------------------------------------------------
 
-describe("TC-024: resolveStateStoreByJobId — kind=managed → jobId-based store", () => {
-  it("returns a non-null store that persists to .specrunner/jobs/<jobId>/", async () => {
+describe("TC-024: resolveStateStoreByJobId — kind=managed → local/slug store", () => {
+  it("returns a non-null store that persists to .specrunner/local/<slug>/", async () => {
     const slug = "managed-job";
     const jobId = "bbbb0001-0000-0000-0000-000000000001";
 
@@ -168,11 +168,15 @@ describe("TC-024: resolveStateStoreByJobId — kind=managed → jobId-based stor
     };
     await store!.persist(minimalState);
 
-    // Verify the write landed in the jobId-based path
-    const jobStateFile = getJobStateJsonPath(tempDir, jobId);
+    // Verify the write landed in .specrunner/local/<slug>/ (not jobs-dir)
+    const localSlugDir = path.join(tempDir, ".specrunner", "local", slug);
+    const jobStateFile = path.join(localSlugDir, "state.json");
     const raw = await fs.readFile(jobStateFile, "utf-8");
     const written = JSON.parse(raw) as { jobId: string; status: string };
     expect(written.jobId).toBe(jobId);
     expect(written.status).toBe("awaiting-resume");
+
+    // Verify no jobs-dir entry was created
+    await expect(fs.access(getJobStateJsonPath(tempDir, jobId))).rejects.toThrow();
   });
 });

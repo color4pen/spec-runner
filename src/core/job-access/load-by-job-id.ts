@@ -5,7 +5,7 @@
  *   1. resolveJobIdToSlug(repoRoot, jobId) → sidecar entry
  *   2a. kind="local", worktreePath set: try {worktreePath}/specrunner/changes/{slug}/state.json
  *   2b. kind="local", worktree not found: resolveCanonicalStateDir(slug, repoRoot) → archive / main-checkout
- *   3.  kind="managed": load from jobs-dir (managed scope preserved)
+ *   3.  kind="managed": load from .specrunner/local/<slug>/ (changeDir seam)
  *   4.  No sidecar entry: fallback to jobs-dir + legacy readFile (safety net, not a readdir scan)
  *
  * Read-only: never calls persist().
@@ -16,7 +16,7 @@ import { resolveJobIdToSlug } from "../../store/local-job-index.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import type { NormalizedJobState } from "../../store/job-state-store.js";
 import { resolveCanonicalStateDir } from "../finish/resolve-canonical-state-dir.js";
-import { slugStateJsonPath } from "../../util/paths.js";
+import { slugStateJsonPath, localSidecarDir } from "../../util/paths.js";
 
 /**
  * Load job state by jobId, routing through the sidecar index to the canonical slug dir.
@@ -63,8 +63,10 @@ export async function loadStateByJobId(
 
       // No slug state found — fall through to jobs-dir fallback
     } else if (sidecarEntry.kind === "managed") {
-      // Step 3: managed jobs use jobs-dir (managed scope preserved)
-      return new JobStateStore(jobId, repoRoot).load();
+      // Step 3: managed jobs use .specrunner/local/<slug>/ (D4)
+      return new JobStateStore(jobId, repoRoot, {
+        changeDir: path.join(repoRoot, localSidecarDir(sidecarEntry.slug)),
+      }).load();
     }
   }
 

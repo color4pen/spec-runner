@@ -163,16 +163,16 @@ describe("TC-037: separate-branch active local job visible in list()", () => {
 
 // TC-038: active managed job appears in list()
 describe("TC-038: active managed job visible in list()", () => {
-  it("managed job with marker → jobs-dir state is in list()", async () => {
+  it("managed job with marker → local/slug state is in list()", async () => {
     const slug = "managed-active-slug";
     const jobId = "dddd1111-0000-0000-0000-000000000001";
 
     // Write managed marker
     await writeMarker(slug, jobId);
 
-    // Write managed state to jobs-dir (section 4 reads this via readFile, not readdir)
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs", jobId);
-    await writeSlugState(jobsDir, jobId, "running", slug);
+    // Write managed state to .specrunner/local/<slug>/ (co-located with marker, D4)
+    const localSlugDir = path.join(tempDir, ".specrunner", "local", slug);
+    await writeSlugState(localSlugDir, jobId, "running", slug);
 
     const states = await JobStateStore.list(tempDir);
     expect(states.some((s) => s.jobId === jobId)).toBe(true);
@@ -187,8 +187,9 @@ describe("TC-039: managed section 4 preserved — no jobs-dir readdir", () => {
 
     await writeMarker(slug, jobId);
 
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs", jobId);
-    await writeSlugState(jobsDir, jobId, "running", slug);
+    // Write managed state to .specrunner/local/<slug>/ (D4 — not jobs-dir)
+    const localSlugDir = path.join(tempDir, ".specrunner", "local", slug);
+    await writeSlugState(localSlugDir, jobId, "running", slug);
 
     const jobsDirRoot = getJobsDir(tempDir);
     await fs.mkdir(jobsDirRoot, { recursive: true });
