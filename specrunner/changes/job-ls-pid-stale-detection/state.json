@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "jobId": "c5fa3aad-d5ac-490a-805c-7d32429db856",
+  "createdAt": "2026-06-06T12:51:45.636Z",
+  "updatedAt": "2026-06-06T13:16:44.248Z",
+  "request": {
+    "title": "`job ls` がプロセス死亡済みの job を `running` と表示する",
+    "type": "bug-fix"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "fix/job-ls-pid-stale-detection-c5fa3aad",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/537",
+    "number": 537,
+    "createdAt": "2026-06-06T13:16:44.236Z"
+  },
+  "_journal": {
+    "historyCount": 44,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 2,
+      "spec-fixer": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

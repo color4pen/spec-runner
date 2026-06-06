@@ -57,6 +57,7 @@ async function writeStateFile(state: JobState): Promise<void> {
     status: state.status,
     branch: state.branch,
     error: state.error,
+    ...(state.pid != null ? { pid: state.pid } : {}),
     _journal: { historyCount: 0, stepCounts: {} },
   };
 
@@ -243,38 +244,33 @@ describe("TC-NEW-07: ps --active includes awaiting-resume", () => {
   });
 });
 
-// TC-NEW-08: ps stale detection — 古い running job に (stale?) が付く
-describe("TC-NEW-08: ps stale detection", () => {
-  it("adds (stale?) to running jobs with updatedAt > 1 hour ago", () => {
-    const staleUpdatedAt = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(); // 2 hours ago
-    const state = makeBaseState({
-      status: "running",
-      updatedAt: staleUpdatedAt,
-    });
-    const row = formatJobRow(state, false, Date.now());
-
+// TC-NEW-08: ps stale detection — formatJobRow が isStale 引数を参照する
+describe("TC-NEW-08: ps stale detection via isStale argument", () => {
+  it("adds (stale?) when isStale=true is passed", () => {
+    const state = makeBaseState({ status: "running" });
+    const row = formatJobRow(state, false, Date.now(), undefined, true);
     expect(row).toContain("stale?");
   });
 
-  it("does NOT add (stale?) to recently updated running jobs", () => {
-    const recentUpdatedAt = new Date(Date.now() - 30 * 60 * 1000).toISOString(); // 30 min ago
-    const state = makeBaseState({
-      status: "running",
-      updatedAt: recentUpdatedAt,
-    });
-    const row = formatJobRow(state, false, Date.now());
-
+  it("does NOT add (stale?) when isStale=false (default)", () => {
+    const state = makeBaseState({ status: "running" });
+    const row = formatJobRow(state, false, Date.now(), undefined, false);
     expect(row).not.toContain("stale?");
   });
 
-  it("does NOT add (stale?) to awaiting-resume jobs regardless of age", () => {
+  it("does NOT add (stale?) when isStale is omitted", () => {
+    const state = makeBaseState({ status: "running" });
+    const row = formatJobRow(state, false, Date.now());
+    expect(row).not.toContain("stale?");
+  });
+
+  it("does NOT add (stale?) to awaiting-resume jobs when isStale=false", () => {
     const oldUpdatedAt = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // 24 hours ago
     const state = makeBaseState({
       status: "awaiting-resume" as JobState["status"],
       updatedAt: oldUpdatedAt,
     });
-    const row = formatJobRow(state, false, Date.now());
-
+    const row = formatJobRow(state, false, Date.now(), undefined, false);
     expect(row).not.toContain("stale?");
   });
 });
@@ -373,5 +369,107 @@ describe("TC-D6-DEDUP: dedup regression — archived (newest updatedAt) wins ove
       .join("");
     expect(allOutput).toContain("archived");
     expect(allOutput).not.toContain("running");
+  });
+});
+
+// TC-STALE-PID: runPs level pid/sidecar stale detection tests
+describe("TC-STALE-PID: runPs stale detection via pid/sidecar", () => {
+  it("shows 'running (stale?)' for a running job with a dead pid", async () => {
+    // Use a pid that is very unlikely to exist (large number)
+    const deadPid = 999999999;
+    const state = makeBaseState({
+      jobId: "stale-pid-00000000-0000-0000-0000-000000000001",
+      status: "running",
+      pid: deadPid,
+    });
+    await writeStateFile(state);
+
+    await runPs({ repoRoot: tempDir });
+
+    const output = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+      .map((c: unknown[]) => String(c[0]))
+      .join("");
+
+    expect(output).toContain("running (stale?)");
+  });
+
+  it("does NOT show 'running (stale?)' for a running job with the current process pid", async () => {
+    const alivePid = process.pid;
+    const state = makeBaseState({
+      jobId: "alive-pid-0000-0000-0000-0000-000000000001",
+      status: "running",
+      pid: alivePid,
+    });
+    await writeStateFile(state);
+
+    await runPs({ repoRoot: tempDir });
+
+    const output = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+      .map((c: unknown[]) => String(c[0]))
+      .join("");
+
+    expect(output).not.toContain("stale?");
+  });
+
+  it("shows 'running (stale?)' for a running job with no pid and updatedAt 16 min ago (15 min fallback)", async () => {
+    const sixteenMinAgo = new Date(Date.now() - 16 * 60 * 1000).toISOString();
+    const state = makeBaseState({
+      jobId: "fallback-stale-00-0000-0000-0000-000000000001",
+      status: "running",
+      updatedAt: sixteenMinAgo,
+    });
+    await writeStateFile(state);
+
+    await runPs({ repoRoot: tempDir });
+
+    const output = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+      .map((c: unknown[]) => String(c[0]))
+      .join("");
+
+    expect(output).toContain("running (stale?)");
+  });
+
+  it("does NOT show 'running (stale?)' for a running job with no pid and updatedAt 5 min ago", async () => {
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const state = makeBaseState({
+      jobId: "fallback-fresh-00-0000-0000-0000-000000000001",
+      status: "running",
+      updatedAt: fiveMinAgo,
+    });
+    await writeStateFile(state);
+
+    await runPs({ repoRoot: tempDir });
+
+    const output = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+      .map((c: unknown[]) => String(c[0]))
+      .join("");
+
+    expect(output).not.toContain("stale?");
+  });
+
+  it("shows 'running (stale?)' for a running job whose sidecar has a dead pid", async () => {
+    const slug = "sidecar-dead-pid-test";
+    const state = makeBaseState({
+      jobId: "sidecar-dead-pid-0000-0000-0000-000000000001",
+      status: "running",
+      request: { path: "/test/request.md", title: "Test", type: "new-feature", slug },
+    });
+    await writeStateFile(state);
+
+    // Write sidecar with a dead pid
+    const sidecarDir = path.join(tempDir, ".specrunner", "local", slug);
+    await fs.mkdir(sidecarDir, { recursive: true });
+    await fs.writeFile(
+      path.join(sidecarDir, "liveness.json"),
+      JSON.stringify({ pid: 999999999, session: null, worktreePath: "/tmp/test", jobId: state.jobId }),
+    );
+
+    await runPs({ repoRoot: tempDir });
+
+    const output = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+      .map((c: unknown[]) => String(c[0]))
+      .join("");
+
+    expect(output).toContain("running (stale?)");
   });
 });

@@ -1,3 +1,5 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { JobStateStore } from "../store/job-state-store.js";
 import type { JobState } from "../state/schema.js";
 import { getJobSlug } from "../state/job-slug.js";
@@ -5,6 +7,8 @@ import { ACTIVE_STATUSES, isTerminal } from "../state/lifecycle.js";
 import type { GitHubClient } from "../core/port/github-client.js";
 import { resolveRepoRoot } from "../util/repo-root.js";
 import { stdoutWrite } from "../logger/stdout.js";
+import { isStaleRunning } from "../core/resume/safety.js";
+import { livenessJsonPath } from "../util/paths.js";
 
 /**
  * Format a job age in human-readable form.
@@ -32,9 +36,6 @@ export function truncate(str: string, maxLength: number): string {
   return str.slice(0, maxLength - 3) + "...";
 }
 
-/** Jobs with status "running" but not updated for this long are marked stale. */
-const STALE_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour
-
 /** Width of the STATUS column in TTY mode — wide enough for the PR hint suffix. */
 const STATUS_COLUMN_WIDTH = 40;
 
@@ -50,11 +51,11 @@ export function formatJobRow(
   isTty: boolean,
   nowMs?: number,
   prMerged?: boolean,
+  isStale = false,
 ): string {
   const jobIdShort = job.jobId.slice(0, 8);
   const slug = getJobSlug(job);
   const step = job.step;
-  const isStale = job.status === "running" && ((nowMs ?? Date.now()) - new Date(job.updatedAt).getTime()) > STALE_THRESHOLD_MS;
 
   let status: string;
   if (prMerged) {
@@ -184,7 +185,10 @@ export async function runPs(
   const nowMs = Date.now();
   for (const job of sorted) {
     const prMerged = prMergedMap.get(job.jobId);
-    stdoutWrite(formatJobRow(job, isTty, nowMs, prMerged) + "\n");
+    const sidecarCandidate = path.join(repoRoot, livenessJsonPath(getJobSlug(job)));
+    const sidecarPath = fs.existsSync(sidecarCandidate) ? sidecarCandidate : undefined;
+    const isStale = isStaleRunning(job, sidecarPath);
+    stdoutWrite(formatJobRow(job, isTty, nowMs, prMerged, isStale) + "\n");
   }
   return 0;
 }
