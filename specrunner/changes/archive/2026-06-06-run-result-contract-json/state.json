@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "7cd6c357-54ce-462d-bec6-adf26ac5d7d6",
   "createdAt": "2026-06-06T03:35:13.142Z",
-  "updatedAt": "2026-06-06T04:19:02.984Z",
+  "updatedAt": "2026-06-06T12:18:18.219Z",
   "request": {
     "title": "run / resume の終端結果を機械可読な --json 契約で出す",
     "type": "new-feature"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "feat/run-result-contract-json-7cd6c357",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-06T04:19:02.973Z"
   },
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 37,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
