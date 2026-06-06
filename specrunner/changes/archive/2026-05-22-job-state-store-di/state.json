@@ -1,0 +1,554 @@
+{
+  "version": 1,
+  "jobId": "d9ccbe93-1832-4345-9021-c05ba7c1d35b",
+  "createdAt": "2026-05-22T11:58:02.538Z",
+  "updatedAt": "2026-05-22T13:18:45.370Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/job-state-store-di.md",
+    "title": "JobStateStore を依存注入に統一し pipeline の inline new を排除する",
+    "type": "spec-change",
+    "slug": "job-state-store-di"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 39839,
+  "branch": "change/job-state-store-di-d9ccbe93",
+  "history": [
+    {
+      "ts": "2026-05-22T11:58:02.538Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-22T11:58:04.073Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-22T12:03:55.313Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-22T12:03:55.317Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-22T12:03:55.318Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-22T12:03:55.325Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T12:03:55.325Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-22T12:03:55.326Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-22T12:03:55.326Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-22T12:06:36.257Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T12:06:36.262Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T12:06:36.262Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-22T12:06:36.263Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-22T12:08:03.816Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-22T12:08:03.819Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-22T12:08:03.820Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-22T12:34:58.213Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-22T12:34:58.217Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-22T12:34:58.218Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-22T12:34:58.218Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-22T12:35:11.183Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-22T12:35:11.185Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-22T12:35:11.185Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-22T12:35:11.186Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-22T12:35:11.186Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-22T12:38:46.152Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-22T12:38:46.157Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-22T12:38:46.157Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-22T12:38:46.158Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-22T12:43:44.878Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T12:43:44.881Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-22T12:43:44.882Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-22T12:43:44.882Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-22T12:47:06.920Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T12:47:06.925Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T12:47:06.925Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → adr-gen"
+    },
+    {
+      "ts": "2026-05-22T12:47:06.926Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-22T12:49:00.390Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-22T12:49:00.394Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-22T12:49:00.395Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-22T12:49:04.333Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-22T12:49:04.337Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-22T13:18:45.370Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "b06df8e2-d5bd-4a42-86f6-17cd7bdb8930",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-22T11:58:04.079Z",
+        "endedAt": "2026-05-22T12:03:53.576Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6313,
+            "outputTokens": 8046,
+            "cacheReadInputTokens": 823323,
+            "cacheCreationInputTokens": 131560
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 23,
+            "outputTokens": 10377,
+            "cacheReadInputTokens": 1417049,
+            "cacheCreationInputTokens": 106017
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/job-state-store-di/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-22T12:03:55.318Z",
+        "endedAt": "2026-05-22T12:03:55.324Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "3d8d8c43-2942-4e97-9d9a-8ef47ea2bd2d",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/job-state-store-di/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result\n\n- **change**: job-state-store-di\n- **verdict**: approved\n\n## Summary\n\n仕様全体として整合が取れており、実装に踏み切れる品質。設計判断の根拠が明確で、タスク粒度も十分。\n\n## Findings\n\n### ✅ 問題定義とコードの一致\n\nrequest.md の行番号指摘（L93/203/213/278/296/367/470）は実際の `pipeline.ts` と一致。`executor.ts` L366-368 の `new JobStateStore(jobId)` in `getStore()` も確認済み。「DI と素 new が混在」という診断は正確。\n\n### ✅ 設計選択の妥当性\n\n- **factory 注入（vs インスタンス注入）**: `buildDeps()` のシグネチャが jobId を取らない制約から factory が唯一の合理的選択。`spawn: SpawnFn` との対称性も正しい。\n- **composition root**: `local.ts` / `managed.ts` の `buildDeps()` に確定。`run.ts` の `const executor = new StepExecutor(bus, runner)` (L57/L132) が更新対象として正確に特定されている。\n- **port 化しない**: 具象 factory 差し替えでテスタビリティが達成される。interface 抽出は over-abstraction であり却下は正当。\n- **`StoreFactory` 型を export**: cancel/finish/resume が将来同一 seam に乗れる布石として適切。\n\n### ✅ tasks.md の実装指針の完全性\n\n- 各タスクに before/after コードスニペットあり\n- `handleExhausted` へ `deps` パラメータ追加（Task 4 steps 3-4）と 3 call site 更新を明示——private メソッドシグネチャ変更の見落とし防止として重要\n- `storeFactory` を required な 3rd positional parameter として `spawnFn?` より前に置く決定が型安全（`(jobId: string) => JobStateStore` と `SpawnFn` は型が異なるため TypeScript がすべての未更新呼び出しを検出する）\n- Task 7 の grep 検証コマンドが受け入れ基準と 1:1 で対応\n\n### ✅ Delta Spec の品質\n\n両 delta spec（step-execution-architecture / pipeline-orchestrator）とも：\n- `## Requirements` + `### Requirement:` ヘッダー形式 ✓\n- `SHALL` キーワード含む normative 記述 ✓\n- `#### Scenario:` Given/When/Then 形式 ✓\n- grep-based シナリオ（「zero matches」）で CI 検証可能 ✓\n\n### ✅ スコープ外の正当性\n\ncancel/finish/resume の `new JobStateStore` を除外する理由（`PipelineDeps` チェーン外の短命経路）は妥当。`StoreFactory` 型を export することで将来の統一経路を閉じていない点も適切。\n\n### ✅ セキュリティ\n\n純粋な構造リファクタリングであり、外部入力処理・認証・API 公開面に変更なし。OWASP 上の懸念事項なし。\n\n## 軽微な観察（need-fix には至らない）\n\n1. **Task 6c の網羅性**: 「typecheck でエラーが出るファイルを洗い出し」という方針は実行可能だが、既知の影響ファイル（executor の unit test、pipeline の unit test 等）を事前に列挙していれば実装者の認知負荷がさらに下がった。Task 7 の typecheck green が最終ゲートとして機能するため問題はない。\n\n2. **`local.ts` の `spawn: spawnCommand` ハードコード**: `buildDeps()` が `this.spawnFn` ではなく直 `spawnCommand` を使っている既存の不整合は本 request のスコープ外で正しく扱われている。\n"
+        },
+        "startedAt": "2026-05-22T12:03:55.333Z",
+        "endedAt": "2026-05-22T12:06:34.565Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4037,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 12,
+            "outputTokens": 6264,
+            "cacheReadInputTokens": 272392,
+            "cacheCreationInputTokens": 48171
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "935639da-146b-4e11-969f-79807aa88dc8",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-22T12:06:36.272Z",
+        "endedAt": "2026-05-22T12:08:02.008Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2782,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 5375,
+            "cacheReadInputTokens": 55118,
+            "cacheCreationInputTokens": 20108
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "84b25c80-b42d-48fa-8dd6-1fe552fa9457",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-22T12:08:03.827Z",
+        "endedAt": "2026-05-22T12:34:56.367Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4141,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 194,
+            "outputTokens": 61756,
+            "cacheReadInputTokens": 19849461,
+            "cacheCreationInputTokens": 280517
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/job-state-store-di/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — job-state-store-di — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.4s | 0 |\n| 2 | typecheck | passed | 2.3s | 0 |\n| 3 | test | passed | 7.7s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n| 6 | test-coverage | passed | 0.0s | 0 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/job-state-store-di-d9ccbe93\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t141d\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n\n Test Files  238 passed (238)\n      Tests  2592 passed (2592)\n   Start at  21:35:02\n   Duration  7.35s (transform 4.83s, setup 0ms, import 9.84s, tests 14.03s, environment 15ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-ANV2Bp/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-0zfcSA/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/job-state-store-di-d9ccbe93/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n\n## Phase: test-coverage\n\n```\ntest-coverage: 25/25 must TCs covered\n```\n"
+        },
+        "startedAt": "2026-05-22T12:34:58.219Z",
+        "endedAt": "2026-05-22T12:35:11.181Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "e93d8f34-9cb4-450d-9dfb-b73f94c1ccf6",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/job-state-store-di/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Review Feedback: job-state-store-di\n\n- **reviewer**: code-review agent\n- **date**: 2026-05-22\n- **verdict**: needs-fix\n\n---\n\n## Summary\n\n実装は設計の主要目的（pipeline.ts / executor.ts の inline `new JobStateStore` 排除、`storeFactory` の DI 統一）を達成している。`bun run typecheck && bun run test` は green（238 test files, 2592 tests all passed）。以下に見つかった問題を記載する。\n\n---\n\n## Findings\n\n### P2-01: executor.ts の value import を `import type` に変更すべき\n\n- **severity**: P2\n- **file**: `src/core/step/executor.ts` L8\n- **detail**: `import { JobStateStore } from \"../../store/job-state-store.js\";` が value import のまま残っている。delta spec（step-execution-architecture/spec.md）は「StepExecutor SHALL NOT import ... JobStateStore」と記述しており、tasks.md は「型参照で必要なので残す」と書いているが、それなら `import type { JobStateStore }` に変更すれば spec の意図（値として構築しない）と実装を一致させられる。現状は `new` を呼んでいないため機能上の問題はないが、spec の文言と齟齬がある。\n- **fix**: `import { JobStateStore }` → `import type { JobStateStore }`\n\n---\n\n### P2-02: `pipeline-integration.test.ts` に `storeFactory` が 33 箇所個別にインライン記述されている（TC-22 違反）\n\n- **severity**: P2\n- **file**: `tests/pipeline-integration.test.ts` L288, L339, L395 … (計 33 箇所)\n- **detail**: test-cases.md TC-22（should）は「テストヘルパーに default storeFactory が 1 箇所のみ定義されている」を要求する。design.md D6 も「pipeline-integration test 等のテストヘルパーに `(id: string) => new JobStateStore(id)` の default factory を 1 箇所定義する」と明記している。実装では共通ヘルパーに集約されておらず、`storeFactory: (id: string) => new JobStateStore(id)` が 33 回個別にインライン記述されている。将来 store の生成方法が変わった場合に 33 箇所を修正する必要が生じる。\n- **fix**: `buildDeps` ヘルパー関数（`pipeline-integration.test.ts` 内）に `storeFactory` を 1 箇所まとめるか、`const defaultStoreFactory: StoreFactory = (id) => new JobStateStore(id);` をファイル先頭に定義して参照させる。\n\n---\n\n### P2-03: TC-13 / TC-14（getStore キャッシュの単体テスト）が未追加\n\n- **severity**: P2\n- **file**: 該当テストファイルなし\n- **detail**: test-cases.md TC-13（must）「getStore() を同じ jobId で 3 回呼ぶと storeFactory が 1 回のみ呼ばれる」、TC-14（should）「異なる jobId で新しいインスタンスが生成される」は、いずれも `pipeline.storeFactory.test.ts` や他のテストファイルで直接カバーされていない。verification-result.md は `25/25 must TCs covered` と報告しているが、TC-13 は must 扱いであり、getStore キャッシュの動作は delta spec にも明記されている。`pipeline.storeFactory.test.ts` のカバー対象は TC-19/20/21 のみ（ファイルヘッダコメントに明記）。\n- **fix**: `executor.ts` の `getStore()` キャッシュ挙動を直接テストする unit test を追加する（`StepExecutor` を `storeFactory` spy 付きで構築し、`getStore` を public にするか executor 内部呼び出し経由で検証）。\n\n---\n\n### P3-01: `pipeline-integration.test.ts` に `storeFactory` を複数回インラインで書いていると将来の `StoreFactory` 型変更時に全件修正が必要\n\n- **severity**: P3\n- **file**: `tests/pipeline-integration.test.ts`\n- **detail**: P2-02 と関連。型が変わった場合の保守負担として記録する。P2-02 の修正により解消される。\n\n---\n\n## Must-scenario カバレッジ確認\n\n| TC | 優先度 | 実装状況 |\n|----|--------|---------|\n| TC-01 StoreFactory 型が export されている | must | OK (`src/core/types.ts` L42) |\n| TC-02 PipelineDeps に storeFactory が存在する | must | OK (L87) |\n| TC-03 storeFactory は必須フィールド | must | OK (required、typecheck green) |\n| TC-04 pipeline.ts に `new JobStateStore` なし | must | OK (grep 0 件確認済み) |\n| TC-05 catch block が storeFactory 経由 | must | OK (`pipeline.ts` L92) |\n| TC-06 escalation 時に storeFactory 経由 | must | OK (`pipeline.ts` L295) |\n| TC-07 loop exhaustion 時に storeFactory 経由 | must | OK (`pipeline.ts` L470) |\n| TC-08 end → awaiting-merge 遷移時 | must | OK (`pipeline.ts` L277) |\n| TC-09 post-step persist | must | OK (`pipeline.ts` L212) |\n| TC-11 executor.ts に `new JobStateStore` なし | must | OK (grep 0 件確認済み) |\n| TC-12 StepExecutor constructor が storeFactory 受け取る | must | OK (`executor.ts` L47) |\n| TC-13 getStore() キャッシュが storeFactory を 1 回のみ呼ぶ | must | **未テスト** (P2-03) |\n| TC-15 pipeline と executor が同一 storeFactory を共有 | must | OK (run.ts で `deps.storeFactory` を渡している) |\n| TC-16 local.ts buildDeps が storeFactory を返す | must | OK (`local.ts` L281) |\n| TC-17 managed.ts buildDeps が storeFactory を返す | must | OK (`managed.ts` L172) |\n| TC-19 fake storeFactory で escalation 観測 | must | OK (pipeline.storeFactory.test.ts) |\n| TC-20 fake storeFactory で loop exhaustion 観測 | must | OK (pipeline.storeFactory.test.ts) |\n| TC-21 fake storeFactory でファイル I/O 抑制 | must | OK (pipeline.storeFactory.test.ts) |\n| TC-23 既存結合テストが green | must | OK (238 files, 2592 tests passed) |\n| TC-24 typecheck green | must | OK |\n| TC-25 runner.test.ts の deps mock に storeFactory 含む | must | OK |\n| TC-26 全テスト green | must | OK |\n| TC-29 JobStateStore public メソッド契約不変 | must | OK (`src/store/job-state-store.ts` 変更なし) |\n| TC-31 step-execution-architecture spec に注入契約記述 | must | OK (delta spec 確認済み) |\n| TC-32 pipeline-orchestrator spec に storeFactory 追加記述 | must | OK (delta spec 確認済み) |\n\n---\n\n## スコープ外ファイルの確認\n\n- `src/core/cancel/runner.ts`, `src/core/finish/`, `src/core/command/runner.ts`, `src/core/command/resume.ts` に `new JobStateStore` が残っていることを確認。スコープ外として正しく未変更。\n- `src/store/job-state-store.ts` 変更なし（TC-29 OK）。\n- `src/state/store.ts` 変更なし（TC-30 OK）。\n\n---\n\n## 総評\n\nP0/P1 は存在しない。P2 が 2 件（executor.ts の `import type` 未適用、pipeline-integration.test.ts のヘルパー未集約）と、must TC-13 の単体テスト欠落が 1 件（P2-03）。\n\nP2-03（TC-13 must テスト未追加）については、verification-result.md が `25/25 must TCs covered` と報告しており、getStore キャッシュ挙動が統合テスト経由で間接的にカバーされている可能性もある。ただし TC-13 の記述は「storeFactory の呼び出し回数が 1 回」という明示的な assertion を求めており、現状のテストでその点を直接検証するものは存在しない。\n\n- **verdict**: needs-fix\n"
+        },
+        "startedAt": "2026-05-22T12:35:11.199Z",
+        "endedAt": "2026-05-22T12:38:44.476Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4185,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 26,
+            "outputTokens": 9243,
+            "cacheReadInputTokens": 1175019,
+            "cacheCreationInputTokens": 86408
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "2ea10f16-c723-442e-85bd-ee57d55d5eee",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/job-state-store-di/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Review Feedback: job-state-store-di — Iteration 2\n\n- **reviewer**: code-review agent\n- **date**: 2026-05-22\n- **verdict**: approved\n\n---\n\n## Summary\n\niteration 1 で指摘した P2 3 件（P2-01 / P2-02 / P2-03）がすべて修正されている。新たな P0/P1/P2 は存在しない。\n\ncode-fixer commit (`3c18ac4`) の変更内容:\n- `src/core/step/executor.ts`: `import { JobStateStore }` → `import type { JobStateStore }` (P2-01 解消)\n- `tests/pipeline-integration.test.ts`: `defaultStoreFactory` 定数を L21 に 1 箇所定義し全テストで参照 (P2-02 解消)\n- `tests/unit/step/executor.store-cache.test.ts`: TC-13 / TC-14 の単体テストを新規追加 (P2-03 解消)\n\n---\n\n## Findings\n\n### P3-01: executor.test.ts に inline storeFactory が 5 箇所残っている\n\n- **severity**: P3\n- **file**: `tests/unit/step/executor.test.ts` L32, L165, L226, L285, L336, L390\n- **detail**: `makeExecutor` ヘルパー内と各テストの `deps` オブジェクトに `(id: string) => new JobStateStore(id)` がインライン記述されている。TC-22 は pipeline-integration.test.ts を対象としており、本ファイルは要件外。機能上の問題はなく、将来の保守負担の記録として P3 扱い。\n- **fix**: 必要になった時点で `makeExecutor` 内の factory をファイル先頭の定数に抽出する程度でよい。本 iteration での修正は不要。\n\n---\n\n## iteration 1 指摘の対応確認\n\n| 指摘 | 内容 | 対応状況 |\n|------|------|---------|\n| P2-01 | executor.ts の `import type` 未適用 | ✅ 修正済み (`import type { JobStateStore }`) |\n| P2-02 | pipeline-integration.test.ts storeFactory 未集約 | ✅ 修正済み (`defaultStoreFactory` 定数に集約) |\n| P2-03 | TC-13/TC-14 getStore キャッシュの単体テスト欠落 | ✅ `executor.store-cache.test.ts` で TC-13/TC-14 を直接カバー |\n\n---\n\n## Must-scenario カバレッジ確認\n\n| TC | 優先度 | 実装状況 |\n|----|--------|---------|\n| TC-01 StoreFactory 型が export されている | must | OK |\n| TC-02 PipelineDeps に storeFactory が存在する | must | OK |\n| TC-03 storeFactory は必須フィールド | must | OK (required、typecheck green) |\n| TC-04 pipeline.ts に `new JobStateStore` なし | must | OK (grep 0 件確認済み) |\n| TC-05 catch block が storeFactory 経由 | must | OK |\n| TC-06 escalation 時に storeFactory 経由 | must | OK |\n| TC-07 loop exhaustion 時に storeFactory 経由 | must | OK |\n| TC-08 end → awaiting-merge 遷移時 | must | OK |\n| TC-09 post-step persist | must | OK |\n| TC-11 executor.ts に `new JobStateStore` なし | must | OK (grep 0 件確認済み) |\n| TC-12 StepExecutor constructor が storeFactory 受け取る | must | OK |\n| TC-13 getStore() キャッシュが storeFactory を 1 回のみ呼ぶ | must | OK (executor.store-cache.test.ts TC-13) |\n| TC-15 pipeline と executor が同一 storeFactory を共有 | must | OK |\n| TC-16 local.ts buildDeps が storeFactory を返す | must | OK |\n| TC-17 managed.ts buildDeps が storeFactory を返す | must | OK |\n| TC-19 fake storeFactory で escalation 観測 | must | OK (pipeline.storeFactory.test.ts) |\n| TC-20 fake storeFactory で loop exhaustion 観測 | must | OK (pipeline.storeFactory.test.ts) |\n| TC-21 fake storeFactory でファイル I/O 抑制 | must | OK (pipeline.storeFactory.test.ts) |\n| TC-23 既存結合テストが green | must | OK (238 files, 2592 tests passed) |\n| TC-24 typecheck green | must | OK |\n| TC-25 runner.test.ts の deps mock に storeFactory 含む | must | OK |\n| TC-26 全テスト green | must | OK |\n| TC-29 JobStateStore public メソッド契約不変 | must | OK |\n| TC-31 step-execution-architecture spec に注入契約記述 | must | OK |\n| TC-32 pipeline-orchestrator spec に storeFactory 追加記述 | must | OK |\n\n---\n\n## 受け入れ基準の最終確認\n\n- [x] pipeline run 経路（pipeline.ts / executor.ts）で `JobStateStore` を inline `new` していない（grep 0 件確認）\n- [x] pipeline と executor が同一の注入された store 依存を共有している（`run.ts` で `deps.storeFactory` を渡す）\n- [x] 永続化分岐をモック store で検証する test が追加されている（pipeline.storeFactory.test.ts / executor.store-cache.test.ts）\n- [x] 注入 seam が delta spec に記述されている（step-execution-architecture / pipeline-orchestrator）\n- [x] `bun run typecheck && bun run test` が green（iter 1 verification: 238 files, 2592 tests passed）\n"
+        },
+        "startedAt": "2026-05-22T12:43:44.890Z",
+        "endedAt": "2026-05-22T12:47:05.233Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4185,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 15,
+            "outputTokens": 9966,
+            "cacheReadInputTokens": 509872,
+            "cacheCreationInputTokens": 48304
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "d05bd125-176b-4dad-bc2f-f23f5c4f6f63",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-22T12:38:46.167Z",
+        "endedAt": "2026-05-22T12:43:43.177Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2764,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 40,
+            "outputTokens": 15085,
+            "cacheReadInputTokens": 1714441,
+            "cacheCreationInputTokens": 50341
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "1c53ba63-e014-40bd-bc2d-2c51338038d0",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-22T12:47:06.936Z",
+        "endedAt": "2026-05-22T12:48:58.778Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2890,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 14,
+            "outputTokens": 5138,
+            "cacheReadInputTokens": 274613,
+            "cacheCreationInputTokens": 29936
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/job-state-store-di/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — job-state-store-di\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/365\n- **Number**: 365\n- **CreatedAt**: 2026-05-22T12:49:04.331Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-22T12:49:00.396Z",
+        "endedAt": "2026-05-22T12:49:04.332Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/365",
+    "number": 365,
+    "createdAt": "2026-05-22T12:49:04.331Z"
+  }
+}

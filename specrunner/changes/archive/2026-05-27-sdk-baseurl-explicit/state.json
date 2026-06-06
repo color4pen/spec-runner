@@ -1,0 +1,482 @@
+{
+  "version": 1,
+  "jobId": "eea03da7-dd90-4583-b7f9-8deefe9514ca",
+  "createdAt": "2026-05-27T07:27:08.127Z",
+  "updatedAt": "2026-05-27T08:11:03.846Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/sdk-baseurl-explicit/request.md",
+    "title": "Anthropic SDK の baseURL を明示して env override を防止する",
+    "type": "bug-fix",
+    "slug": "sdk-baseurl-explicit"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 29611,
+  "branch": "fix/sdk-baseurl-explicit-eea03da7",
+  "history": [
+    {
+      "ts": "2026-05-27T07:27:08.127Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-27T07:27:09.666Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-27T07:28:15.415Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-27T07:28:15.417Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-27T07:28:15.419Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-27T07:28:15.437Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T07:28:15.438Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-27T07:28:15.438Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-27T07:28:15.439Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-27T07:29:16.440Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T07:29:16.442Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T07:29:16.443Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-27T07:29:16.444Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-27T07:29:56.239Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-27T07:29:56.242Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-27T07:29:56.244Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-27T07:30:46.160Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-27T07:30:46.162Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-27T07:30:46.163Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-27T07:30:46.163Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-27T07:31:00.724Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-27T07:31:00.727Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-27T07:31:00.727Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-27T07:31:00.728Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-27T07:31:00.728Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-27T07:33:27.650Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T07:33:27.651Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T07:33:27.651Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-27T07:33:27.652Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-27T07:33:27.663Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T07:33:27.664Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → adr-gen"
+    },
+    {
+      "ts": "2026-05-27T07:33:27.665Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-27T07:33:33.907Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-27T07:33:33.912Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-27T07:33:33.916Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-27T07:33:35.633Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-27T07:33:35.638Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-27T08:11:03.846Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "4715d812-0aaa-4a36-98fb-dc8bf50762d8",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T07:27:09.672Z",
+        "endedAt": "2026-05-27T07:28:13.471Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6309,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 13,
+            "outputTokens": 2822,
+            "cacheReadInputTokens": 204370,
+            "cacheCreationInputTokens": 24540
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/sdk-baseurl-explicit/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-27T07:28:15.419Z",
+        "endedAt": "2026-05-27T07:28:15.437Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/sdk-baseurl-explicit/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-27T07:33:27.652Z",
+        "endedAt": "2026-05-27T07:33:27.663Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "97e566bb-6021-460e-a85f-875328e3f76d",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/sdk-baseurl-explicit/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: sdk-baseurl-explicit\n\n- **verdict**: approved\n\n## Summary\n\n仕様・設計・タスクの一貫性に問題なし。変更対象が正確に特定されており、実装範囲が最小限に収まっている。\n\n## Findings\n\n### 事実確認\n\n- `new Anthropic(` の出現は `src/adapter/managed-agent/client.ts:9` と `src/adapter/managed-agent/anthropic-client.ts:72` の 2 箇所のみ（grep で確認）\n- request/design/tasks がすべてこの 2 箇所を指定しており、漏れなし\n\n### セキュリティ評価\n\n- **脅威は実在する**: `ANTHROPIC_BASE_URL` env が設定されると Anthropic SDK が内部でそれを使い、API key を任意エンドポイントに送出する。CI/CD 環境で攻撃者が env を注入できる場合、資格情報漏洩になる。\n- **修正は構造的に正しい**: `baseURL` をコンストラクタ引数で明示することで、env の値より引数が優先され（SDK 仕様）、env override が構造的に無効化される。\n- **ハードコードの正当性**: 本 project の Anthropic API 接続先は常に `https://api.anthropic.com` であり、可変にする理由がない。設定可能にすると同じ attack surface が再現するため、固定が正しい。\n- **OWASP A05 (Security Misconfiguration)**: 修正はこのリスクを閉じる方向に作用する。\n\n### 設計・仕様面\n\n- delta spec なし（設計判断として明記）: `baseURL` の追加はコード引数の変更であり、既存の spec 要件の振る舞いに影響しない。妥当。\n- type: bug-fix は適切。セキュリティ上の欠陥修正。\n- tasks の受け入れ基準が明確で、実装者が迷う余地がない。\n\n### 懸念点\n\nなし。\n"
+        },
+        "startedAt": "2026-05-27T07:28:15.446Z",
+        "endedAt": "2026-05-27T07:29:14.936Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3837,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 10,
+            "outputTokens": 2800,
+            "cacheReadInputTokens": 149074,
+            "cacheCreationInputTokens": 28107
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "2eea87a4-eeab-46d1-8383-3b19f1f2a7e4",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T07:29:16.457Z",
+        "endedAt": "2026-05-27T07:29:54.637Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1205,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 6,
+            "outputTokens": 2360,
+            "cacheReadInputTokens": 55132,
+            "cacheCreationInputTokens": 11702
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "75d6c768-a27a-496a-9af8-53d1c9474eeb",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T07:29:56.256Z",
+        "endedAt": "2026-05-27T07:30:44.619Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3965,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 11,
+            "outputTokens": 1660,
+            "cacheReadInputTokens": 161969,
+            "cacheCreationInputTokens": 14346
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/sdk-baseurl-explicit/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — sdk-baseurl-explicit — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.4s | 0 |\n| 2 | typecheck | passed | 2.3s | 0 |\n| 3 | test | passed | 7.5s | 0 |\n| 4 | lint | passed | 1.7s | 0 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/sdk-baseurl-explicit-eea03da7\n\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t146d\n\n Test Files  276 passed (276)\n      Tests  3132 passed (3132)\n   Start at  16:30:50\n   Duration  7.29s (transform 4.16s, setup 0ms, import 9.22s, tests 13.41s, environment 16ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-b7uVjW/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-IOUTtl/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...\nGitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Required status check \"ci/build\" is expected, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\n[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/sdk-baseurl-explicit-eea03da7/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n```\n$ eslint ./src --max-warnings 0\n\n```\n"
+        },
+        "startedAt": "2026-05-27T07:30:46.164Z",
+        "endedAt": "2026-05-27T07:31:00.721Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "8cbc83c2-7b59-407b-9413-575ea8c0f60c",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/sdk-baseurl-explicit/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback: sdk-baseurl-explicit — iter 1\n\n- **verdict**: approved\n\n## Summary\n\n実装は正確で受け入れ基準をすべて満たしている。2 箇所の `new Anthropic({...})` に `baseURL: \"https://api.anthropic.com\"` が追加され、`ANTHROPIC_BASE_URL` env override が構造的に無効化されている。verification も全フェーズ green。\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix | Fix |\n|---|----------|----------|------|-------------|------------|-----|\n| 1 | MEDIUM | Test Coverage | — | `test-cases.md` の must 優先度テスト TC-01〜TC-04（`baseURL` 明示と `ANTHROPIC_BASE_URL` 無視の検証）が未実装。将来 `baseURL` が誤って削除されても回帰が検出されない。`design.md` が「既存テストの green 確認のみ」と明記し spec-review が approved しているため、今回スコープでは設計上許容された gap。 | TC-01〜TC-04 に対応する unit test を追加し、`ANTHROPIC_BASE_URL` env が設定された状態で両関数の `baseURL` が固定値であることを検証する | no |\n\n## Acceptance Criteria Check\n\n| 基準 | 結果 |\n|------|------|\n| `createAnthropicClient()` が `baseURL: \"https://api.anthropic.com\"` を明示する | ✅ `client.ts:11` |\n| `createAnthropicClientAdapter()` も同様に `baseURL` を明示する | ✅ `anthropic-client.ts:72` |\n| `bun run typecheck && bun run test` が green | ✅ 全フェーズ pass（verification-result.md 参照） |\n"
+        },
+        "startedAt": "2026-05-27T07:31:00.743Z",
+        "endedAt": "2026-05-27T07:33:26.129Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4230,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 21,
+            "outputTokens": 7621,
+            "cacheReadInputTokens": 424571,
+            "cacheCreationInputTokens": 29356
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "c6afeaa1-0bcb-4081-a9b3-017024a84786",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T07:33:27.673Z",
+        "endedAt": "2026-05-27T07:33:33.853Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 561,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 3,
+            "outputTokens": 70,
+            "cacheReadInputTokens": 7568,
+            "cacheCreationInputTokens": 5774
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/sdk-baseurl-explicit/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — sdk-baseurl-explicit\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/438\n- **Number**: 438\n- **CreatedAt**: 2026-05-27T07:33:35.631Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-27T07:33:33.917Z",
+        "endedAt": "2026-05-27T07:33:35.632Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/438",
+    "number": 438,
+    "createdAt": "2026-05-27T07:33:35.631Z"
+  }
+}

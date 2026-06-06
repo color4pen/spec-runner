@@ -1,0 +1,374 @@
+{
+  "version": 1,
+  "jobId": "60d72ef9-2aee-4d15-ba57-7eb4252f1173",
+  "createdAt": "2026-05-09T13:32:19.970Z",
+  "updatedAt": "2026-05-09T14:01:12.940Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/persistence-unification/request.md",
+    "title": "永続化パスを JobStateStore に一元化する",
+    "type": "refactoring",
+    "slug": "persistence-unification"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 85118,
+  "branch": "refactor/persistence-unification-60d72ef9",
+  "history": [
+    {
+      "ts": "2026-05-09T13:32:19.970Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-09T13:32:21.127Z",
+      "step": "propose-started",
+      "status": "started",
+      "message": "Starting propose step"
+    },
+    {
+      "ts": "2026-05-09T13:38:40.704Z",
+      "step": "propose-verdict",
+      "status": "ok",
+      "message": "propose verdict: success"
+    },
+    {
+      "ts": "2026-05-09T13:38:40.705Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "propose → spec-review"
+    },
+    {
+      "ts": "2026-05-09T13:38:40.706Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T13:38:40.706Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-09T13:41:38.305Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T13:41:38.307Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T13:41:38.307Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-09T13:41:38.308Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-09T13:44:29.936Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-09T13:44:29.938Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-09T13:44:29.940Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-09T13:53:07.087Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-09T13:53:07.088Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-09T13:53:07.089Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T13:53:07.089Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-09T13:53:15.662Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-09T13:53:15.664Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-09T13:53:15.664Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-09T13:53:15.665Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T13:53:15.666Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-09T13:58:07.581Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T13:58:07.583Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T13:58:07.583Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-09T13:58:07.584Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-09T13:58:10.423Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-09T13:58:10.425Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-09T14:01:12.940Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "propose": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T13:32:21.127Z",
+        "endedAt": "2026-05-09T13:32:21.127Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 9236,
+            "outputTokens": 15634,
+            "cacheReadInputTokens": 853161,
+            "cacheCreationInputTokens": 114814
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 25,
+            "outputTokens": 9556,
+            "cacheReadInputTokens": 1103567,
+            "cacheCreationInputTokens": 55180
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "openspec/changes/persistence-unification/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result — persistence-unification\n\n- **reviewer**: spec-reviewer\n- **date**: 2026-05-09\n- **verdict**: approved\n\n## Summary\n\nbehavior-preserving リファクタリングとして設計は妥当。永続化パスの `JobStateStore` 一元化、正規化ロジックの `schema.ts` 統一、`state/store.ts` の deprecated facade 化の三本柱が明確に構造化されている。タスク分解は要件を網羅しており、依存順序も正しい。MEDIUM 2 件は実装時に対処可能。\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | correctness | design.md:49-53, tasks.md:17 | D2 で `static load(jobId)` を追加すると記述しているが、delta spec の Static Methods には含まれず、Task 3.2 は `new JobStateStore(jobId).load()`（instance method）を使用。設計とタスクで実装パスが不一致 | D2 の記述を instance method 委譲に修正するか、delta spec に static `load` を追加してタスクと整合させる |\n| 2 | MEDIUM | correctness | design.md:96-98, tasks.md:26-28 | finish/resume の移行後、`JobStateStore.load()` を直接呼ぶ箇所で ENOENT → `JOB_NOT_FOUND` のエラーラッピングが失われる。現在の `loadJobState` は ENOENT/JSON parse error を `SpecRunnerError` でラップしユーザー向け hint を付与している。`JobStateStore.load()` にはこのラッピングがない | `JobStateStore.load()` に ENOENT → `JOB_NOT_FOUND`、JSON parse → `STATE_FILE_INVALID` のエラーラッピングを追加する。または Task 4.x/5.x の移行先で個別にラッピングする方針を tasks.md に明記する |\n| 3 | LOW | correctness | design.md:102 | `normalizeSteps`（schema.ts:194）の fallback timestamp は `new Date().toISOString()` だが、`normalizeStepsToStepRuns`（job-state-store.ts:219）は `updatedAt` を使用。統一後はレガシーデータの step run timestamp が state の `updatedAt` ではなく読み込み時刻になる | Risks で言及済みだが具体差分が未特定。`normalizeSteps` に `fallbackTs` 引数を追加するか、差分を許容する判断を明記する |\n\n## Evaluation\n\n### Architecture\n\n設計パターンは適切。`JobStateStore` を単一永続化 authority とし、`schema.ts` を canonical な validation + normalization レイヤー、`state/store.ts` を deprecated re-export facade とする三層構造は責務分離が明確。static メソッド（`create`, `delete`, `list`, `resolveId`）と instance メソッド（`load`, `persist`, `update`, `fail`）の分割基準（jobId の有無）も一貫している。依存方向は CLI layer → `JobStateStore` → `schema.ts` で循環なし。\n\n### Correctness\n\nD1 の正規化統一は `validateJobState` が既に backward compat 処理（status remap, error code remap, slug default, `normalizeSteps`）を一括実行しているため、`load()` からの呼び出しで網羅できる。D3 の `updateJobState` 委譲は read-modify-write パターンを維持しており安全。D4-D6 の static メソッド移動はロジック同一で import パスが変わるのみ。Finding #1, #2 は実装時に解決可能な粒度。\n\n### Completeness (task decomposition)\n\nrequest.md の 7 要件すべてに対応するタスクが存在する。受け入れ基準 5 項目はタスク 7（typecheck + test）で検証される。タスク順序（正規化統一 → static メソッド追加 → 委譲化 → caller 移行 → delta spec → 検証）は依存関係を正しく反映している。\n"
+        },
+        "startedAt": "2026-05-09T13:38:40.707Z",
+        "endedAt": "2026-05-09T13:38:40.707Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1733,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 13,
+            "outputTokens": 7833,
+            "cacheReadInputTokens": 484312,
+            "cacheCreationInputTokens": 50012
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T13:41:38.309Z",
+        "endedAt": "2026-05-09T13:41:38.309Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1644,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 12,
+            "outputTokens": 10103,
+            "cacheReadInputTokens": 380749,
+            "cacheCreationInputTokens": 43492
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T13:44:29.940Z",
+        "endedAt": "2026-05-09T13:44:29.940Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1688,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 29,
+            "outputTokens": 31463,
+            "cacheReadInputTokens": 2088905,
+            "cacheCreationInputTokens": 95671
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "openspec/changes/persistence-unification/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — persistence-unification — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.9s | 0 |\n| 2 | typecheck | passed | 1.6s | 0 |\n| 3 | test | passed | 3.6s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/persistence-unification-60d72ef9\n\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n\n Test Files  138 passed (138)\n      Tests  1489 passed (1489)\n   Start at  22:53:10\n   Duration  3.33s (transform 2.43s, setup 0ms, import 4.31s, tests 5.29s, environment 8ms)\n\n\n$ vitest run\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/persistence-unification-60d72ef9/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-09T13:53:07.090Z",
+        "endedAt": "2026-05-09T13:53:07.090Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "openspec/changes/persistence-unification/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review — persistence-unification — Iteration 1\n\n## Summary\n\n永続化パスを `JobStateStore` に一元化するリファクタリング。実装は設計書（design.md）に忠実で、6 つの自由関数を `JobStateStore` の static/instance メソッドに委譲化し、`state/store.ts` を re-export ファイルとして整理。レガシー正規化ロジック（`normalizeStepsToStepRuns` + 6 ヘルパー）の削除と `validateJobState` への統一も正しく実行されている。全 1489 テスト PASS、typecheck green。\n\n## Scores\n\n| Category | Score | Weight | Weighted |\n|----------|-------|--------|----------|\n| correctness | 9 | 0.30 | 2.70 |\n| security | 9 | 0.25 | 2.25 |\n| architecture | 9 | 0.15 | 1.35 |\n| performance | 9 | 0.10 | 0.90 |\n| maintainability | 8 | 0.10 | 0.80 |\n| testing | 7 | 0.10 | 0.70 |\n| **Total** | | | **8.70** |\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | maintainability | src/core/command/resume.ts:105,185 | `new JobStateStore(state.jobId)` が同一関数内で 2 回インスタンス化されている。stale detection（L105）と running transition（L185）で別々に生成 | 関数冒頭で `const store = new JobStateStore(state.jobId)` を 1 回生成し、両箇所で共有する。ただし L76 の `resolveId` 時点では `state` 未確定のため、state 確定後（L86-88 以降）に生成 |\n| 2 | MEDIUM | maintainability | src/core/finish/orchestrator.ts:273-275 | Phase 4 の `store.load()` → spread → `store.persist()` パターンで、`worktreePath: null` だけを更新するために全 state を再読込している。`store.update()` メソッドが既に存在するが未使用 | `const store = new JobStateStore(target.jobId); const current = await store.load(); await store.update(current as JobState, { worktreePath: null });` に変更。ただし best-effort ブロック内なので影響は軽微 |\n| 3 | LOW | maintainability | src/core/command/resume.ts:86, src/core/finish/job-state-update.ts:46,50, src/core/finish/orchestrator.ts:275 | `load()` が `NormalizedJobState` を返すが、呼び出し元が `as JobState` でキャストする箇所が 4 つに増加。design.md Risks に記載済みの \"型の嘘\" だが、キャスト箇所の拡散は将来の保守負担 | 将来課題として `load()` の overload（`load(): NormalizedJobState` + `loadAsJobState(): JobState`）を検討。本 PR のスコープ外 |\n| 4 | LOW | testing | tests/ | test-cases.md に must シナリオが 22 件定義されているが、新規テストファイルは追加されていない。TC-102（既存テスト green 維持）、TC-137（typecheck green）、TC-160/161（全テスト PASS）で間接的にカバーされている。TC-103（ヘルパー削除確認）、TC-136（不要 import 確認）は構造的検証で確認済み | リファクタリングの性質上、既存テストによる回帰検証で十分。新テスト追加は任意 |\n\n## Scenario Coverage (test-cases.md)\n\n| TC | Priority | Status | Coverage Method |\n|----|----------|--------|-----------------|\n| TC-100 | must | covered | TC-001 (pre-PR24 normalization via validateJobState) |\n| TC-101 | must | covered | TC-002 (post-PR24 normalization via validateJobState) |\n| TC-102 | must | covered | TC-001〜TC-008 all PASS (1489 tests green) |\n| TC-103 | must | covered | grep confirms 0 matches for deleted helpers |\n| TC-110 | must | covered | Existing createJobState tests via delegation |\n| TC-112 | must | covered | Existing deleteJobState tests via delegation |\n| TC-113 | must | covered | Existing deleteJobState ENOENT tests |\n| TC-114 | must | covered | Existing listJobStates tests via delegation |\n| TC-115 | must | covered | Existing listJobStates malformed skip tests |\n| TC-117 | must | covered | Existing resolveJobId full UUID tests |\n| TC-118 | must | covered | Existing resolveJobId prefix tests |\n| TC-119 | must | covered | Existing resolveJobId not found tests |\n| TC-120 | must | covered | Existing resolveJobId ambiguous tests |\n| TC-130 | must | covered | Delegation verified by code inspection + typecheck |\n| TC-131 | must | covered | Delegation verified + TC-001 PASS |\n| TC-132 | must | covered | Delegation verified + existing updateJobState tests |\n| TC-133 | must | covered | Delegation verified + existing deleteJobState tests |\n| TC-134 | must | covered | Delegation verified + existing listJobStates tests |\n| TC-135 | must | covered | Delegation verified + existing resolveJobId tests |\n| TC-137 | must | covered | `bun run typecheck` green |\n| TC-140 | must | covered | grep: no `updateJobState` import in job-state-update.ts |\n| TC-141 | must | covered | Existing finish orchestrator tests (TC-123, TC-124) |\n| TC-142 | must | covered | grep: no `loadJobState`/`updateJobState` import in orchestrator.ts |\n| TC-150 | must | covered | grep: no legacy imports in resume.ts |\n| TC-160 | must | covered | `bun run typecheck` = 0 errors |\n| TC-161 | must | covered | `bun run test` = 1489 passed, 0 failed |\n| TC-170 | must | covered | TC-001〜TC-004 (round-trip tests confirm equivalence) |\n\n## Verdict\n\n- **verdict**: approved\n- CRITICAL: 0, HIGH: 0, MEDIUM: 2, LOW: 2\n- Total score: 8.70 (threshold: 7.0)\n- Trend: N/A (iteration 1)\n\n## Notes\n\n- `state/store.ts` の re-export 戦略は import 互換性を維持しつつ段階的移行を可能にする適切な設計\n- `normalizeStepsToStepRuns` と 6 ヘルパーの削除（〜130 行）により `job-state-store.ts` の責務が明確化\n- `validateJobState` への統一で正規化パスが 1 本に収束し、バリデーション経路の分岐が解消された\n- 残存する `state/store.ts` 経由の呼び出し元（cli/rm, cli/ps, runtime/local, runtime/managed 等）は design.md Non-Goals に記載済みのスコープ外。re-export 経由で正常動作\n"
+        },
+        "startedAt": "2026-05-09T13:53:15.666Z",
+        "endedAt": "2026-05-09T13:53:15.666Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1729,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 22,
+            "outputTokens": 10898,
+            "cacheReadInputTokens": 1144736,
+            "cacheCreationInputTokens": 65163
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "openspec/changes/persistence-unification/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — persistence-unification\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/188\n- **Number**: 188\n- **CreatedAt**: 2026-05-09T13:58:10.422Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-09T13:58:07.584Z",
+        "endedAt": "2026-05-09T13:58:07.584Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/188",
+    "number": 188,
+    "createdAt": "2026-05-09T13:58:10.422Z"
+  }
+}

@@ -1,0 +1,476 @@
+{
+  "version": 1,
+  "jobId": "4bc55a64-4f15-4b56-8595-b03cd40fe6ae",
+  "createdAt": "2026-05-16T12:51:46.238Z",
+  "updatedAt": "2026-05-16T13:51:26.033Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/codex-agent-runner-repo-ctx/request.md",
+    "title": "`StepContext.repo` フィールドを廃止し空文字ハードコードを構造解消する",
+    "type": "spec-change",
+    "slug": "codex-agent-runner-repo-ctx"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 43478,
+  "branch": "change/codex-agent-runner-repo-ctx-4bc55a64",
+  "history": [
+    {
+      "ts": "2026-05-16T12:51:46.238Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-16T12:51:47.688Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-16T12:55:59.675Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-16T12:55:59.676Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → spec-review"
+    },
+    {
+      "ts": "2026-05-16T12:55:59.676Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T12:55:59.676Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-16T12:58:46.987Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-16T12:58:46.989Z",
+      "step": "spec-review",
+      "status": "warning",
+      "message": "spec-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-16T12:58:46.989Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → spec-fixer"
+    },
+    {
+      "ts": "2026-05-16T12:58:46.990Z",
+      "step": "spec-fixer-started",
+      "status": "started",
+      "message": "Starting spec-fixer step"
+    },
+    {
+      "ts": "2026-05-16T13:00:16.184Z",
+      "step": "spec-fixer-verdict",
+      "status": "ok",
+      "message": "spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T13:00:16.186Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → spec-review (iter 2)"
+    },
+    {
+      "ts": "2026-05-16T13:00:16.187Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-16T13:00:16.187Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-16T13:03:05.773Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T13:03:05.775Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T13:03:05.775Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-16T13:03:05.776Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-16T13:04:28.923Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-16T13:04:28.926Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 2)"
+    },
+    {
+      "ts": "2026-05-16T13:04:28.927Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-16T13:16:35.089Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-16T13:16:35.093Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-16T13:16:35.093Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T13:16:35.094Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-16T13:16:45.708Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-16T13:16:45.711Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-16T13:16:45.711Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-16T13:16:45.711Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T13:16:45.712Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-16T13:19:23.677Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T13:19:23.680Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T13:19:23.680Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-16T13:19:23.681Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-16T13:19:26.169Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-16T13:19:26.173Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-16T13:51:26.032Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "5892f3c8-8288-4f9a-a251-9a63d1093b4e",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T12:51:47.688Z",
+        "endedAt": "2026-05-16T12:55:57.976Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 9245,
+            "outputTokens": 4432,
+            "cacheReadInputTokens": 383534,
+            "cacheCreationInputTokens": 60412
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 20,
+            "outputTokens": 10057,
+            "cacheReadInputTokens": 656761,
+            "cacheCreationInputTokens": 51780
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "e446066e-3266-4abb-972d-424e885eadd2",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/codex-agent-runner-repo-ctx/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: codex-agent-runner-repo-ctx\n\n- **verdict**: needs-fix\n\n## Summary\n\n設計判断・伝搬経路の分析・スコープ外の切り分けは的確。ソースコードの行番号も全て正確。ただし spec authority の更新漏れが 1 件あり、テスト影響範囲の列挙が大幅に不足している。\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | HIGH | consistency | specrunner/changes/codex-agent-runner-repo-ctx/request.md (要件9) | `specrunner/specs/step-execution-architecture/spec.md` が `StepContext` の定義 (L319: `repo: OriginInfo`) とシナリオ (L336, L354) で `repo` を明示参照している。request は `agent-runner-port/spec.md` と `spec-review-session/spec.md` のみ調査対象としており、この spec を見落としている。design.md の \"Not Changed\" セクションも「該当 spec に記述なし。MODIFIED 不要」と誤記。 | 要件 9 の調査対象に `specrunner/specs/step-execution-architecture/spec.md` を追加し、MODIFIED delta で `repo: OriginInfo` を StepContext 定義・シナリオから削除する旨を記述する。design.md の \"Not Changed\" から該当行を \"Affected Files\" に移動する。 |\n| 2 | MEDIUM | completeness | specrunner/changes/codex-agent-runner-repo-ctx/tasks.md (Task 10) | テスト fixture 更新対象が 6 ファイルしか列挙されていないが、実際には `tests/unit/step/` 配下だけで 13 ファイル (executor.test.ts, review-exit-contract.test.ts, code-review.test.ts, build-fixer.test.ts, spec-fixer.test.ts, code-fixer.test.ts, implementer.test.ts, verification.test.ts, pr-create.test.ts, code-review-verdict.test.ts, commit-and-push.test.ts, spec-review-lightweight.test.ts) + `tests/spec-review-step.test.ts` が `repo:` を含む fixture を持つ。design.md Affected Files も同様に不足。 | Task 10 のファイルリストを `grep -rn \"repo:\" tests/` の実結果で網羅的に更新する。または「`bun run typecheck` で検出される全 fixture を対象とする」と明示し、列挙を省略する方針に切り替える。 |\n| 3 | LOW | accuracy | specrunner/changes/codex-agent-runner-repo-ctx/design.md (Affected Files) | design.md Affected Files に `tests/unit/step/` 配下のテストが一切含まれていない。tasks.md 側で列挙する方針であっても、design の影響範囲表にテストディレクトリ丸ごと欠落は読み手を誤解させる。 | Affected Files に `tests/unit/step/*.test.ts` (fixture `repo:` 削除) を 1 行追加する。 |\n"
+        },
+        "startedAt": "2026-05-16T12:55:59.677Z",
+        "endedAt": "2026-05-16T12:58:45.519Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4857,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 17,
+            "outputTokens": 9089,
+            "cacheReadInputTokens": 631526,
+            "cacheCreationInputTokens": 46144
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "7d200f71-6898-4b30-873e-50f266409a94",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/codex-agent-runner-repo-ctx/spec-review-result-002.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: codex-agent-runner-repo-ctx (iteration 2)\n\n- **verdict**: approved\n\n## Summary\n\n前回レビュー (result-001) の 3 件の指摘は全て修正済み。設計判断は的確で、ソースコード参照は正確、スコープの切り分けも妥当。実装上の安全ネット (`bun run typecheck`) が残存する軽微な列挙漏れを補足するため、ブロッキング issue なしと判断。\n\n## Previous Findings Status\n\n| # | Previous Severity | Status | Note |\n|---|-------------------|--------|------|\n| 1 | HIGH | ✅ Fixed | `specrunner/specs/step-execution-architecture/spec.md` が design.md Affected Files に追加済み |\n| 2 | MEDIUM | ✅ Fixed | tasks.md Task 10 のテスト fixture リストが 20 ファイルに拡充済み。「漏れは型チェックで補足する」方針も明記 |\n| 3 | LOW | ✅ Fixed | design.md Affected Files に `tests/unit/step/*.test.ts` 行が追加済み |\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | LOW | completeness | specrunner/changes/codex-agent-runner-repo-ctx/design.md (Affected Files) | `src/core/command/pipeline-run.ts` と `src/core/command/resume.ts` が Affected Files に未記載。両ファイルの `prepare()` は `PrepareResult` に `repo` を含めて返しており、Task 9 の対象。tasks.md 側では「各 CommandRunner 実装 (PipelineRunCommand, ResumeCommand 等)」と正しく記述されているため実装に支障はない。 | design.md Affected Files に 2 行追加するか、「`PrepareResult.repo` を返す全 CommandRunner 実装」と包括記述する。ただし typecheck が補足するため blocking ではない。 |\n"
+        },
+        "startedAt": "2026-05-16T13:00:16.188Z",
+        "endedAt": "2026-05-16T13:03:04.228Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4857,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 14,
+            "outputTokens": 7081,
+            "cacheReadInputTokens": 541191,
+            "cacheCreationInputTokens": 51298
+          }
+        }
+      }
+    ],
+    "spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "fd5ed937-b3f2-4d18-affb-31d5bd5fec7c",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T12:58:46.990Z",
+        "endedAt": "2026-05-16T13:00:14.651Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 715,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 11,
+            "outputTokens": 4870,
+            "cacheReadInputTokens": 221932,
+            "cacheCreationInputTokens": 22493
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "1bf2aef8-116f-4d4c-8623-6763c3f45335",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T13:03:05.776Z",
+        "endedAt": "2026-05-16T13:04:27.407Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3610,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 5268,
+            "cacheReadInputTokens": 60300,
+            "cacheCreationInputTokens": 22920
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "71b478ca-f936-4fbf-ab35-fe4c1139d214",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T13:04:28.928Z",
+        "endedAt": "2026-05-16T13:16:33.382Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4970,
+            "outputTokens": 22,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 135,
+            "outputTokens": 44302,
+            "cacheReadInputTokens": 10388893,
+            "cacheCreationInputTokens": 321049
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/codex-agent-runner-repo-ctx/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — codex-agent-runner-repo-ctx — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.2s | 0 |\n| 2 | typecheck | passed | 1.8s | 0 |\n| 3 | test | passed | 5.1s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/codex-agent-runner-repo-ctx-4bc55a64\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t135d\n\n Test Files  162 passed (162)\n      Tests  1924 passed (1924)\n   Start at  22:16:39\n   Duration  4.80s (transform 3.44s, setup 0ms, import 6.65s, tests 9.06s, environment 10ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-Hb67UK/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-dMgQat/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/codex-agent-runner-repo-ctx-4bc55a64/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-16T13:16:35.095Z",
+        "endedAt": "2026-05-16T13:16:45.708Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "eb8e18e6-e3e7-4986-87c5-c405188069e9",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/codex-agent-runner-repo-ctx/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review: codex-agent-runner-repo-ctx — iter 1\n\n## Summary\n\n`StepContext.repo` フィールドの廃止を確認した。全 must テストケースをカバーし、build/typecheck/test すべて green。実装・型削除・fixture 更新の整合性に問題なし。1 件の low-severity 指摘あり（ドキュメント欠落）。\n\n---\n\n## Findings\n\n### [LOW] TC-29: `specrunner/specs/step-execution-architecture/spec.md` が未更新\n\n- **File**: `specrunner/specs/step-execution-architecture/spec.md`\n- **Lines**: L319, L336, L354\n\ndesign.md の Affected Files に明記されており、request.md 要件 9 の「該当 spec capability が存在する場合は MODIFIED で更新」対象にも該当する。現状:\n\n```\nL319: repo: OriginInfo;\nL336: THEN it contains exactly: config, slug, cwd?, request, repo\nL354: THEN the deps object contains only StepContext fields (config, slug, cwd, request, repo)\n```\n\nこれらから `repo` 参照を削除する必要がある。機能には無影響だが spec authority が実装と乖離した状態になる。\n\ntest-cases.md では TC-29 を \"should\" priority に分類しており、機能ブロッカーではない。\n\n---\n\n## Test Coverage Against test-cases.md\n\n| TC | Priority | Status |\n|----|----------|--------|\n| TC-01: Repository 行が含まれない | must | ✓ implicit (型レベルで `repository` フィールドが存在しないため `Repository:` 行の出力経路がない) |\n| TC-02: `SpecReviewPromptInput` に `repository` フィールドなし | must | ✓ typecheck pass |\n| TC-03: `{{REPOSITORY}}` プレースホルダーなし | must | ✓ typecheck pass |\n| TC-04: spec-review step が `repository` 引数なしで動作 | must | ✓ spec-review.test.ts pass |\n| TC-05: `StepContext` に `repo` なし | must | ✓ typecheck pass |\n| TC-06: `PipelineDeps` に `repo` なし | must | ✓ typecheck pass |\n| TC-07: claude-code runner | must | ✓ typecheck + unit test pass |\n| TC-08: codex runner | must | ✓ typecheck + unit test pass |\n| TC-09: managed-agent runner | must | ✓ typecheck + unit test pass |\n| TC-10: `buildDeps()` に `repo` パラメータなし | must | ✓ typecheck pass |\n| TC-11: LocalRuntime.buildDeps() | must | ✓ local.test.ts pass |\n| TC-12: ManagedRuntime.buildDeps() | must | ✓ managed.test.ts pass |\n| TC-13: `PrepareResult` に `repo` なし | must | ✓ typecheck pass |\n| TC-14: CommandRunner.execute() | must | ✓ runner.test.ts pass |\n| TC-15: `grep \"stepCtx\\.repo\" src/` = 0 件 | must | ✓ 確認済み |\n| TC-16: `ManagedAgentRunner.this.repo` 維持 | must | ✓ 確認済み（GitHub API 用途で使用継続） |\n| TC-17: `state.repository` 維持 | must | ✓ preflight 変更なし |\n| TC-18: `OriginInfo` 型維持 | must | ✓ `src/git/remote.ts` 変更なし |\n| TC-19: typecheck pass | must | ✓ 1.8s pass |\n| TC-20: test pass | must | ✓ 162 files / 1924 tests pass |\n| TC-21: spec-review unit test pass | must | ✓ |\n| TC-22: spec-review-system プロンプトテスト pass | must | ✓ `repository:` 引数削除済み |\n| TC-23: pipeline-integration test pass | must | ✓ |\n| TC-24: step unit tests pass | must | ✓ |\n| TC-25: 他要素（Change folder 等）維持 | should | ✓ template 確認済み |\n| TC-26: ManagedRuntime constructor `repo` 維持 | should | ✓ |\n| TC-27: `deps.repo` grep = ManagedAgentRunnerDeps 系のみ | should | ✓ 1 件（L87 `this.repo = deps.repo`） |\n| TC-28: error-codes / cli-stdout-snapshot / test-case-gen-step | should | ✓ |\n| TC-29: step-execution-architecture spec.md 更新 | should | ✗ **未更新** |\n| TC-30: 不要 OriginInfo import 削除 | could | ✓ types.ts / strategy.ts / runner.ts 確認済み |\n\n---\n\n## Acceptance Criteria チェック\n\n- [x] `src/prompts/spec-review-system.ts` から `Repository: {{REPOSITORY}}` 行・replace 処理・`repository` 型 field が削除されている\n- [x] `src/core/step/spec-review.ts:117` の `repository:` 引数が削除されている\n- [x] `src/core/types.ts` の `StepContext` から `repo: OriginInfo` が削除されている\n- [x] 3 runner の `stepCtx` 組み立てから `repo:` 代入が削除されている\n- [x] `managed-agent` の `this.repo` field 整理完了（GitHub API 用途で維持。`stepCtx.repo` 代入のみ削除）\n- [x] `grep -rn \"stepCtx\\.repo\" src/` が 0 件\n- [x] `state.repository` / `OriginInfo` 型は維持されている\n- [x] `bun run typecheck && bun run test` が green（162 files / 1924 tests）\n- [ ] 該当 spec capability が存在する場合は MODIFIED で更新されている（**step-execution-architecture/spec.md が未更新**）\n\n---\n\n## Verdict\n\n- **verdict**: approved\n\n低優先度の spec ドキュメント欠落（TC-29）が 1 件あるが、全 must 受け入れ基準をクリアし機能・型・テストすべて問題ない。\n"
+        },
+        "startedAt": "2026-05-16T13:16:45.712Z",
+        "endedAt": "2026-05-16T13:19:22.061Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5023,
+            "outputTokens": 2431,
+            "cacheReadInputTokens": 20381,
+            "cacheCreationInputTokens": 62458
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 14,
+            "outputTokens": 7737,
+            "cacheReadInputTokens": 424758,
+            "cacheCreationInputTokens": 40355
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/codex-agent-runner-repo-ctx/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — codex-agent-runner-repo-ctx\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/268\n- **Number**: 268\n- **CreatedAt**: 2026-05-16T13:19:26.168Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-16T13:19:23.681Z",
+        "endedAt": "2026-05-16T13:19:26.168Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/268",
+    "number": 268,
+    "createdAt": "2026-05-16T13:19:26.168Z"
+  }
+}

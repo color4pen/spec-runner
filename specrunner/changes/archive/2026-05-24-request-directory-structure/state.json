@@ -1,0 +1,830 @@
+{
+  "version": 1,
+  "jobId": "7883510d-2fd3-4a01-af67-5658a70c726e",
+  "createdAt": "2026-05-24T05:13:48.739Z",
+  "updatedAt": "2026-05-24T05:49:51.955Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/request-directory-structure.md",
+    "title": "request をフラットファイルからディレクトリ構造に変更",
+    "type": "spec-change",
+    "slug": "request-directory-structure"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 70066,
+  "branch": "change/request-directory-structure-7883510d",
+  "history": [
+    {
+      "ts": "2026-05-24T05:13:48.739Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-24T05:13:50.519Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-24T05:17:49.008Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-24T05:17:49.010Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-24T05:17:49.011Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-24T05:17:49.015Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-24T05:17:49.024Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → delta-spec-fixer"
+    },
+    {
+      "ts": "2026-05-24T05:17:49.026Z",
+      "step": "delta-spec-fixer-started",
+      "status": "started",
+      "message": "Starting delta-spec-fixer step"
+    },
+    {
+      "ts": "2026-05-24T05:18:39.338Z",
+      "step": "delta-spec-fixer-verdict",
+      "status": "ok",
+      "message": "delta-spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T05:18:39.341Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-fixer → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-24T05:18:39.341Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-24T05:18:39.345Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-24T05:18:39.346Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → delta-spec-fixer"
+    },
+    {
+      "ts": "2026-05-24T05:18:39.348Z",
+      "step": "delta-spec-fixer-started",
+      "status": "started",
+      "message": "Starting delta-spec-fixer step"
+    },
+    {
+      "ts": "2026-05-24T05:19:19.244Z",
+      "step": "delta-spec-fixer-verdict",
+      "status": "ok",
+      "message": "delta-spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T05:19:19.247Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-fixer → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-24T05:19:19.248Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-24T05:19:19.251Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T05:19:19.253Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-24T05:19:19.253Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-24T05:19:19.254Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-24T05:22:59.391Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-24T05:22:59.394Z",
+      "step": "spec-review",
+      "status": "warning",
+      "message": "spec-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-24T05:22:59.394Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → spec-fixer"
+    },
+    {
+      "ts": "2026-05-24T05:22:59.395Z",
+      "step": "spec-fixer-started",
+      "status": "started",
+      "message": "Starting spec-fixer step"
+    },
+    {
+      "ts": "2026-05-24T05:23:48.718Z",
+      "step": "spec-fixer-verdict",
+      "status": "ok",
+      "message": "spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T05:23:48.721Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → delta-spec-validation (iter 1)"
+    },
+    {
+      "ts": "2026-05-24T05:23:48.722Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-24T05:23:48.726Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T05:23:48.728Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-24T05:23:48.728Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-24T05:23:48.730Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-24T05:26:35.953Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T05:26:35.957Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T05:26:35.957Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-24T05:26:35.960Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-24T05:28:11.763Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-24T05:28:11.767Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 2)"
+    },
+    {
+      "ts": "2026-05-24T05:28:11.768Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-24T05:33:10.990Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-24T05:33:10.994Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-24T05:33:10.995Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-24T05:33:10.996Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-24T05:33:24.195Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-24T05:33:24.198Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-24T05:33:24.198Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-24T05:33:24.199Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-24T05:33:24.202Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-24T05:35:34.431Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-24T05:35:34.434Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-24T05:35:34.434Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-24T05:35:34.436Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-24T05:36:49.691Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T05:36:49.695Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-24T05:36:49.696Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-24T05:36:49.697Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-24T05:39:04.263Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T05:39:04.267Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T05:39:04.267Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → adr-gen"
+    },
+    {
+      "ts": "2026-05-24T05:39:04.268Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-24T05:41:34.162Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-24T05:41:34.166Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-24T05:41:34.167Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-24T05:41:36.025Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-24T05:41:36.031Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-24T05:49:51.955Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "f16b3d79-8166-4ee5-bf09-43c0a03fa099",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T05:13:50.527Z",
+        "endedAt": "2026-05-24T05:17:46.890Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5728,
+            "outputTokens": 7115,
+            "cacheReadInputTokens": 498681,
+            "cacheCreationInputTokens": 67458
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 18,
+            "outputTokens": 7884,
+            "cacheReadInputTokens": 575536,
+            "cacheCreationInputTokens": 45410
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/request-directory-structure/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: needs-fix\n\n## Violations\n\n| Path | Reason | Suggested Fix |\n|------|--------|---------------|\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-directory-structure-7883510d/specrunner/changes/request-directory-structure/specs/` | `no-specs-for-required-type` | Request type 'spec-change' requires a delta spec. Add a file under ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-directory-structure-7883510d/specrunner/changes/request-directory-structure/specs/<capability-name>/spec.md |\n\n## How to Fix\n\n- Move all delta spec files to `specs/<capability-name>/spec.md` (canonical path)\n- Ensure each spec.md has a `## Requirements` section (and optionally `## Removed` / `## Renamed`)\n- Ensure the `## Requirements` section contains at least one `### Requirement:` block\n"
+        },
+        "startedAt": "2026-05-24T05:17:49.012Z",
+        "endedAt": "2026-05-24T05:17:49.013Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/request-directory-structure/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: needs-fix\n\n## Violations\n\n| Path | Reason | Suggested Fix |\n|------|--------|---------------|\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-directory-structure-7883510d/specrunner/changes/request-directory-structure/specs/request-store/spec.md` | `missing-scenario` | Add at least one #### Scenario: block describing observable behavior |\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-directory-structure-7883510d/specrunner/changes/request-directory-structure/specs/request-store/spec.md` | `missing-scenario` | Add at least one #### Scenario: block describing observable behavior |\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-directory-structure-7883510d/specrunner/changes/request-directory-structure/specs/request-store/spec.md` | `missing-scenario` | Add at least one #### Scenario: block describing observable behavior |\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-directory-structure-7883510d/specrunner/changes/request-directory-structure/specs/request-store/spec.md` | `missing-scenario` | Add at least one #### Scenario: block describing observable behavior |\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-directory-structure-7883510d/specrunner/changes/request-directory-structure/specs/request-store/spec.md` | `missing-scenario` | Add at least one #### Scenario: block describing observable behavior |\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-directory-structure-7883510d/specrunner/changes/request-directory-structure/specs/request-store/spec.md` | `missing-scenario` | Add at least one #### Scenario: block describing observable behavior |\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-directory-structure-7883510d/specrunner/changes/request-directory-structure/specs/request-store/spec.md` | `missing-normative-keyword` | Add SHALL or MUST in Requirement body to express normative intent |\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-directory-structure-7883510d/specrunner/changes/request-directory-structure/specs/request-store/spec.md` | `missing-normative-keyword` | Add SHALL or MUST in Requirement body to express normative intent |\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-directory-structure-7883510d/specrunner/changes/request-directory-structure/specs/request-store/spec.md` | `missing-normative-keyword` | Add SHALL or MUST in Requirement body to express normative intent |\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-directory-structure-7883510d/specrunner/changes/request-directory-structure/specs/request-store/spec.md` | `missing-normative-keyword` | Add SHALL or MUST in Requirement body to express normative intent |\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-directory-structure-7883510d/specrunner/changes/request-directory-structure/specs/request-store/spec.md` | `missing-normative-keyword` | Add SHALL or MUST in Requirement body to express normative intent |\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-directory-structure-7883510d/specrunner/changes/request-directory-structure/specs/request-store/spec.md` | `missing-normative-keyword` | Add SHALL or MUST in Requirement body to express normative intent |\n\n## How to Fix\n\n- Move all delta spec files to `specs/<capability-name>/spec.md` (canonical path)\n- Ensure each spec.md has a `## Requirements` section (and optionally `## Removed` / `## Renamed`)\n- Ensure the `## Requirements` section contains at least one `### Requirement:` block\n"
+        },
+        "startedAt": "2026-05-24T05:18:39.342Z",
+        "endedAt": "2026-05-24T05:18:39.345Z"
+      },
+      {
+        "attempt": 3,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/request-directory-structure/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-24T05:19:19.249Z",
+        "endedAt": "2026-05-24T05:19:19.251Z"
+      },
+      {
+        "attempt": 4,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/request-directory-structure/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-24T05:23:48.723Z",
+        "endedAt": "2026-05-24T05:23:48.726Z"
+      }
+    ],
+    "delta-spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "a454790e-0198-418a-bd9b-68d3154ef1f0",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T05:17:49.037Z",
+        "endedAt": "2026-05-24T05:18:37.574Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 760,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 9,
+            "outputTokens": 1912,
+            "cacheReadInputTokens": 129392,
+            "cacheCreationInputTokens": 13836
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "a454790e-0198-418a-bd9b-68d3154ef1f0",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T05:18:39.358Z",
+        "endedAt": "2026-05-24T05:19:16.874Z",
+        "modelUsage": {
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 1381,
+            "cacheReadInputTokens": 75542,
+            "cacheCreationInputTokens": 3042
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "5ff006ec-684c-4f3e-871e-85d8bb7365a4",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/request-directory-structure/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result — request-directory-structure\n\n- **verdict**: needs-fix\n- **iteration**: 001\n- **reviewed**: request.md, design.md, tasks.md, specs/request-store/spec.md\n\n---\n\n## Summary\n\n設計方針・要件・受け入れ基準はすべて整合しており、実装タスクの粒度も適切。ただし tasks.md の `fs` import 命名に矛盾があり、そのまま実装するとコンパイルエラーになる。\n\n---\n\n## Findings\n\n### F-001 [Medium / needs-fix] tasks.md — `list()` 内の `fs.readdir` と `fs.existsSync` の import 命名が矛盾\n\n**場所**: tasks.md — Task 2-2 (`resolveWithFallback`) と Task 2-3 (`list()`)\n\nTask 2-2 の注記:\n> 注意: `fs` は `node:fs` (sync) を新たに import する必要がある。既存は `node:fs/promises` のみ。\n\nこの注記は `fs = node:fs` (sync) / `fsAsync = node:fs/promises` (async) という命名規約を意図している（`manager.ts` と同じ慣習）。\n\nしかし Task 2-3 の `list()` コードスニペットには:\n```typescript\nentries = await fs.readdir(draftsDir, { withFileTypes: true });\n```\nが含まれており、`fs` を async (`node:fs/promises`) として使っている。`fs = node:fs` (sync) なら `fs.readdir` は callback-based であり `await` できず、TypeScript も型エラーになる。\n\n同スニペット内で `await fsAsync.access(...)` も使われているため、意図は `fsAsync = node:fs/promises` のはず。\n\n**修正**: tasks.md の `list()` スニペット中の `await fs.readdir(...)` を `await fsAsync.readdir(...)` に変更する。\n\n---\n\n### F-002 [Minor] tasks.md — `draftPathLegacy()` が dead export になる\n\n**場所**: tasks.md — Task 1-2 / paths.ts\n\n`draftPathLegacy(slug)` を `paths.ts` に追加するが、`store.ts` の `resolveWithFallback()` は legacy パスを `path.join(cwd, DRAFTS_SUBDIR, slug + \".md\")` で直接組み立てており、`draftPathLegacy()` を呼ばない。エクスポートされるが呼ばれない dead code になる。\n\nlegacy パスの組み立てロジックが `paths.ts` と `store.ts` の 2 箇所に分散する。\n\n**修正案（任意）**: `resolveWithFallback()` 内で `draftPathLegacy()` を使うか、`draftPathLegacy()` のエクスポートを削除して `store.ts` のロジックに一本化する。どちらでもよいが、揃っていることが望ましい。\n\n---\n\n## Coverage Check\n\n| 要件 | spec | design | tasks | 判定 |\n|------|------|--------|-------|------|\n| new → ディレクトリ作成 | ✅ | D1, D7 | T1, T2-5 | OK |\n| ls → ディレクトリ列挙 + フォールバック | ✅ | D3 | T2-3, T7-1 | OK |\n| validate / review → フォールバック | ✅ | D2, D5 | T4, T6 | OK |\n| run → CANONICAL_PATTERN 更新 | ✅ | D6 | T3 | OK |\n| generate → 自動対応 (store.write 経由) | ✅ | D8 | (implicit) | OK |\n| 後方互換 (flat file fallback) | ✅ | D2 | T2-2 | OK |\n| changes/ 構造不変 | ✅ | (scope-out) | (scope-out) | OK |\n\n---\n\n## Security Assessment\n\n変更対象は全てローカル FS 操作（readdir / mkdir / writeFile / existsSync）のみ。\n\n- **パストラバーサル**: `SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,63}$/` による入力検証は変更なし。slug から派生する全 FS パスは安全。\n- **新規攻撃面**: なし。ネットワーク・認証・外部 API への変更なし。\n- **OWASP Top 10 該当**: なし。\n\n---\n\n## Required Fix Before Implement\n\nF-001 のみ必須。F-002 は任意対応。\n\n**F-001 修正箇所**: tasks.md — Task 2-3 の `list()` スニペット:\n```typescript\n// 変更前\nentries = await fs.readdir(draftsDir, { withFileTypes: true });\n\n// 変更後\nentries = await fsAsync.readdir(draftsDir, { withFileTypes: true });\n```\n\nまた同 Task の先頭コメントまたは Task 2-2 の注記に、import 命名規約を明示することを推奨:\n```typescript\nimport * as fs from \"node:fs\";           // sync (existsSync 用)\nimport * as fsAsync from \"node:fs/promises\"; // async ops 用 (既存 import をリネーム)\n```\n"
+        },
+        "startedAt": "2026-05-24T05:19:19.266Z",
+        "endedAt": "2026-05-24T05:22:57.144Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3491,
+            "outputTokens": 13,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 15,
+            "outputTokens": 11715,
+            "cacheReadInputTokens": 441294,
+            "cacheCreationInputTokens": 47364
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "00a1c55c-5cec-4e8d-9ee9-3ef6d55ec356",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/request-directory-structure/spec-review-result-002.md",
+          "error": null,
+          "fileContent": "# Spec Review Result — request-directory-structure\n\n- **verdict**: approved\n- **iteration**: 002\n- **reviewed**: request.md, design.md, tasks.md, specs/request-store/spec.md\n\n---\n\n## Summary\n\n前回 (iteration 001) の唯一の blocking 指摘 F-001 が修正されている。tasks.md Task 2-3 の `list()` 内が `await fsAsync.readdir(...)` に変わっており、import 命名と一致している。残存する F-002 (optional) は tasks.md から `draftPathLegacy()` のタスクを削除することで正しく対応されている。1 件の minor 指摘を残すが実装ブロックにはならない。\n\n---\n\n## Findings\n\n### F-003 [Minor] design.md に `draftPathLegacy()` の \"新規追加\" 記述が残存している\n\n**場所**: design.md — D1: パス解決の変更点 / paths.ts\n\n```\n新規追加:\n- `draftPathLegacy(slug)` → `specrunner/drafts/<slug>.md` (後方互換フォールバック用)\n```\n\ntasks.md Task 1 には `1-1` (`draftPath()` 更新) のみが定義されており、`draftPathLegacy()` を追加するタスクは意図的に削除されている (iteration 001 F-002 の解消)。\n\nしかし design.md の記述が削除されていないため、implementer が design.md とtasks.md の両方を読んだ際に「tasks.md で Task 1-2 が抜けている」と誤認し、dead export を追加するリスクがある。\n\n**修正案 (任意)**: design.md の \"新規追加\" 欄を削除するか、「tasks.md で採用せず。legacy path は store.ts 内で直接組み立てる」と注記する。実装時に tasks.md を優先すれば問題は生じないため、ブロッカーではない。\n\n---\n\n## F-001 の修正確認\n\ntasks.md Task 2-3 `list()` スニペット:\n```typescript\nentries = await fsAsync.readdir(draftsDir, { withFileTypes: true });\n```\n`fsAsync` (= `node:fs/promises`) を正しく使用している。✅\n\n---\n\n## Coverage Check\n\n| 要件 | spec | design | tasks | 判定 |\n|------|------|--------|-------|------|\n| new → ディレクトリ作成 | ✅ | D1, D7 | T1, T2-5 | OK |\n| ls → ディレクトリ列挙 + flat フォールバック | ✅ | D3 | T2-3, T7-1 | OK |\n| validate / review → フォールバック付き読み込み | ✅ | D2, D5 | T4, T6 | OK |\n| run → CANONICAL_PATTERN 更新 + legacy フォールバック | ✅ | D6 | T3 | OK |\n| generate → store.write 経由で自動対応 | ✅ | D8 | (implicit) | OK |\n| 後方互換 (flat file fallback) | ✅ | D2 | T2-2 | OK |\n| changes/ 構造不変 | ✅ | scope-out | scope-out | OK |\n\n---\n\n## Security Assessment\n\n変更対象は全てローカル FS 操作 (readdir / mkdir / writeFile / existsSync) のみ。\n\n- **パストラバーサル**: `SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,63}$/` による入力検証は変更なし。slug から派生する全 FS パスは安全。\n- **新規攻撃面**: なし。ネットワーク・認証・外部 API への変更なし。\n- **OWASP Top 10 該当**: なし。\n\n---\n\n## 実装注意事項 (informational)\n\n- `store.ts` に `resolveWithFallback()` を追加する際、`node:fs` (sync) を新たに import する必要がある。既存 import `fs` は `node:fs/promises` のため、`fs` / `fsAsync` の命名規約 (`manager.ts` と同様) を適用すること。\n- `draftPathLegacy()` は **paths.ts に追加しない** (tasks.md に含まれていない、dead export 回避のため)。legacy パスは `resolveWithFallback()` 内で直接組み立てる。\n"
+        },
+        "startedAt": "2026-05-24T05:23:48.744Z",
+        "endedAt": "2026-05-24T05:26:33.811Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3491,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 12,
+            "outputTokens": 8653,
+            "cacheReadInputTokens": 302587,
+            "cacheCreationInputTokens": 38897
+          }
+        }
+      }
+    ],
+    "spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "744a35bd-8c03-48d7-b787-0a180b30bed3",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T05:22:59.407Z",
+        "endedAt": "2026-05-24T05:23:46.607Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 676,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 8,
+            "outputTokens": 2340,
+            "cacheReadInputTokens": 115610,
+            "cacheCreationInputTokens": 13876
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "6c91192b-8708-44ca-9755-f4d38a8ccf28",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T05:26:35.971Z",
+        "endedAt": "2026-05-24T05:28:09.867Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2227,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 6956,
+            "cacheReadInputTokens": 54892,
+            "cacheCreationInputTokens": 22166
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "68185f52-8a6d-4ebb-b231-0da6525fafa9",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T05:28:11.782Z",
+        "endedAt": "2026-05-24T05:33:08.363Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3584,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 35,
+            "outputTokens": 18031,
+            "cacheReadInputTokens": 1711390,
+            "cacheCreationInputTokens": 56360
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/request-directory-structure/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — request-directory-structure — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.1s | 0 |\n| 2 | typecheck | passed | 2.1s | 0 |\n| 3 | test | passed | 7.1s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n| 6 | test-coverage | passed | 0.0s | 0 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-directory-structure-7883510d\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t143d\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n\n Test Files  245 passed (245)\n      Tests  2761 passed (2761)\n   Start at  14:33:14\n   Duration  6.93s (transform 4.22s, setup 0ms, import 8.80s, tests 12.91s, environment 22ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-w0T1g7/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-qHiwaB/specrunner/credentials.json has loose permissions (recommend 0600).\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-directory-structure-7883510d/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n\n## Phase: test-coverage\n\n```\ntest-coverage: 0/0 must TCs covered (no must TCs defined)\n```\n"
+        },
+        "startedAt": "2026-05-24T05:33:10.996Z",
+        "endedAt": "2026-05-24T05:33:24.194Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "aa33196b-4fa4-4e18-bfe9-194925dc083d",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/request-directory-structure/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Review Feedback — request-directory-structure — iter 1\n\n## Summary\n\n実装は全体的に正しく、verification (typecheck + test) も green。\nただし `paths.ts` に `draftPathLegacy()` が実装されておらず、TC-PATHS-003 (must) が未充足。\n\n- **verdict**: needs-fix\n\n---\n\n## Findings\n\n### F-001: `draftPathLegacy()` が paths.ts に存在しない [severity: major]\n\n**場所**: `src/util/paths.ts`\n\n**問題**:\ndesign.md D1 と tasks.md task#1-1 で `draftPathLegacy(slug)` の追加が明示されているが、実装されていない。\n\n```\n// 期待: paths.ts に存在するはず\nexport function draftPathLegacy(slug: string): string {\n  return `${DRAFTS_DIR}/${slug}.md`;\n}\n```\n\ntest-cases.md の TC-PATHS-003 (priority: must) が未充足。\n\nなお、後方互換の実動作は `store.ts` の `resolveWithFallback()` が直接 `slug + \".md\"` を組んでいるため機能している。問題は公開 API として `draftPathLegacy()` が欠けていること。\n\n**修正**: `src/util/paths.ts` に以下を追加する。\n\n```typescript\n/**\n * Returns the relative path to a draft request file in legacy flat-file format.\n * Example: draftPathLegacy(\"my-change\") → \"specrunner/drafts/my-change.md\"\n */\nexport function draftPathLegacy(slug: string): string {\n  return `${DRAFTS_DIR}/${slug}.md`;\n}\n```\n\n---\n\n### F-002: TC-PATHS-001 / TC-PATHS-003 の直接テストが不在 [severity: minor]\n\n**場所**: `tests/unit/` 配下\n\n**問題**:\n`draftPath()` (TC-PATHS-001 must) と `draftPathLegacy()` (TC-PATHS-003 must) に対する直接ユニットテストが存在しない。`draftPath()` は `request-new.test.ts` で間接的に検証されているが、`paths.ts` 単体のテストファイルがない。\n\nF-001 の修正時に合わせてテストを追加することが望ましい。\n\n---\n\n### F-003: TC-ST-LIST-004 の明示的テストが不在 [severity: minor]\n\n**場所**: `tests/unit/core/request/store.test.ts`\n\n**問題**:\nTC-ST-LIST-004 (must) — 同名のディレクトリ (`both/request.md`) とフラットファイル (`both.md`) が共存するとき、`list()` の結果に `\"both\"` が 1 度だけ現れることを確認するテストが存在しない。\n\n実装ロジック（Set による重複排除）は正しい。明示的テストの追加が必要。\n\n---\n\n## Confirmed OK\n\n| 項目 | 確認結果 |\n|------|----------|\n| `resolve()` が新形式パスを返す (TC-ST-RESOLVE-001) | ✅ |\n| `resolveWithFallback()` 3ケース (TC-ST-FBK-001~004) | ✅ テストあり・実装正しい |\n| `list()` ディレクトリ + フラットファイル混在 (TC-ST-LIST-001~003, 005, 006) | ✅ |\n| `write()` がディレクトリを自動作成 (TC-ST-WRITE-001) | ✅ |\n| `checkSlugCollision()` ディレクトリ・フラット両対応 (TC-ST-COL-001~002) | ✅ |\n| `CANONICAL_PATTERN` 新形式・旧形式フォールバック (TC-PIPELINE-001~004) | ✅ |\n| `command-registry.ts` が `resolveWithFallback` に切り替え済み | ✅ |\n| `run.ts` が `resolveWithFallback` に切り替え済み | ✅ |\n| `manager.ts` が `resolveWithFallback` に切り替え済み | ✅ |\n| `request-new.test.ts` がディレクトリ構造を検証 (TC-NEW-001) | ✅ |\n| typecheck + test green (TC-BUILD-001, TC-BUILD-002) | ✅ verification passed |\n| changes/ 構造は変更なし (TC-NOCHANGE-001) | ✅ スコープ外確認済み |\n\n---\n\n## 修正箇所まとめ\n\n1. `src/util/paths.ts`: `draftPathLegacy()` を追加（F-001）\n2. `tests/unit/` に TC-PATHS-001, TC-PATHS-003 の直接テストを追加（F-002）\n3. `tests/unit/core/request/store.test.ts` に TC-ST-LIST-004 のテストを追加（F-003）\n"
+        },
+        "startedAt": "2026-05-24T05:33:24.218Z",
+        "endedAt": "2026-05-24T05:35:32.049Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3627,
+            "outputTokens": 13,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 13,
+            "outputTokens": 5392,
+            "cacheReadInputTokens": 382606,
+            "cacheCreationInputTokens": 50586
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "c1309c19-590a-4716-8216-e49be931c846",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/request-directory-structure/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Review Feedback — request-directory-structure — iter 2\n\n## Summary\n\niter 1 の 3 件の指摘（F-001〜F-003）がすべて修正されている。typecheck + test green（2761 tests pass）。\n\n- **verdict**: approved\n\n---\n\n## iter 1 指摘の解消確認\n\n| 指摘 | 内容 | 解消状況 |\n|------|------|----------|\n| F-001 (major) | `draftPathLegacy()` が paths.ts に存在しない | ✅ `src/util/paths.ts` に実装済み |\n| F-002 (minor) | TC-PATHS-001 / TC-PATHS-003 の直接テストが不在 | ✅ `tests/unit/util/paths.test.ts` が追加済み |\n| F-003 (minor) | TC-ST-LIST-004 の明示的テストが不在 | ✅ `store.test.ts` に deduplication テスト追加済み |\n\n---\n\n## 追加確認 (must TCs 網羅)\n\n| TC | 内容 | 状況 |\n|----|------|------|\n| TC-PATHS-001 | `draftPath()` が新形式パス | ✅ paths.test.ts |\n| TC-PATHS-003 | `draftPathLegacy()` が旧形式パス | ✅ paths.test.ts |\n| TC-ST-RESOLVE-001 | `resolve()` が新形式パスを返す | ✅ store.test.ts |\n| TC-ST-FBK-001〜004 | `resolveWithFallback()` 全4ケース | ✅ store.test.ts |\n| TC-ST-LIST-001〜004 | `list()` ディレクトリ/フラット/混在/重複排除 | ✅ store.test.ts |\n| TC-ST-READ-001〜002 | `read()` 新形式・旧形式 | ✅ store.test.ts |\n| TC-ST-WRITE-001 | `write()` がディレクトリを自動作成 | ✅ store.test.ts |\n| TC-ST-COL-001〜003 | `checkSlugCollision()` ディレクトリ・フラット両対応 | ✅ store.test.ts |\n| TC-PIPELINE-001〜004 | CANONICAL_PATTERN 新形式・旧形式フォールバック | ✅ pipeline-run-canonical.test.ts |\n| TC-BUILD-001〜002 | typecheck + test green | ✅ verification-result.md |\n\n---\n\n## 情報レベルの観察（ブロック対象外）\n\n### N-001: `job-start-file-path.test.ts` に stale な mock が残存\n\n**場所**: `tests/unit/cli/job-start-file-path.test.ts`\n\n`run.ts` は `resolveWithFallback` を import しているが、このテストのモックは旧来の `resolve` をモックしている:\n\n```typescript\nvi.mock(\"../../../src/core/request/store.js\", () => ({\n  resolve: vi.fn().mockReturnValue(\"/nonexistent/path\"),\n}));\n```\n\nテストは「既存ファイルパスが指定された場合」のみをカバーしているため slug lookup 分岐を通らず、stale なモックが影響しないまま通過している。動作上の問題はないが、後で slug lookup のテストを追加する際に混乱の原因になりうる。\n\n---\n\n## Confirmed OK\n\n| 項目 | 確認結果 |\n|------|----------|\n| `command-registry.ts` が `resolveWithFallback as storeResolve` に切り替え済み | ✅ |\n| `run.ts` が `resolveWithFallback as storeResolve` に切り替え済み | ✅ |\n| `manager.ts` が `store.resolveWithFallback()` に切り替え済み | ✅ |\n| `pipeline-run.ts` に CANONICAL_PATTERN + CANONICAL_PATTERN_LEGACY の両パターン | ✅ |\n| `changes/` 構造は変更なし (TC-NOCHANGE-001) | ✅ スコープ外確認済み |\n| 2761 tests pass | ✅ |\n"
+        },
+        "startedAt": "2026-05-24T05:36:49.711Z",
+        "endedAt": "2026-05-24T05:39:02.256Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3627,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 17,
+            "outputTokens": 7041,
+            "cacheReadInputTokens": 582091,
+            "cacheCreationInputTokens": 45092
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "2b14ca5a-4650-4ab5-8e5e-5e754680db52",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T05:35:34.451Z",
+        "endedAt": "2026-05-24T05:36:45.972Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2213,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 4852,
+            "outputTokens": 3241,
+            "cacheReadInputTokens": 314686,
+            "cacheCreationInputTokens": 21364
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "c36aba1c-8cb7-4e09-bee2-44cf6d094917",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T05:39:04.282Z",
+        "endedAt": "2026-05-24T05:41:31.480Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2335,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 3641,
+            "outputTokens": 6281,
+            "cacheReadInputTokens": 261753,
+            "cacheCreationInputTokens": 35496
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/request-directory-structure/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — request-directory-structure\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/382\n- **Number**: 382\n- **CreatedAt**: 2026-05-24T05:41:36.023Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-24T05:41:34.168Z",
+        "endedAt": "2026-05-24T05:41:36.024Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/382",
+    "number": 382,
+    "createdAt": "2026-05-24T05:41:36.023Z"
+  }
+}

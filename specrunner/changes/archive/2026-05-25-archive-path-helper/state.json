@@ -1,0 +1,446 @@
+{
+  "version": 1,
+  "jobId": "5cd78769-2a04-45e5-8aae-51e9f00ca3c0",
+  "createdAt": "2026-05-24T14:00:46.970Z",
+  "updatedAt": "2026-05-25T00:19:48.353Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/archive-path-helper/request.md",
+    "title": "archive 周辺の path リテラル直書きを `util/paths.ts` に集約する",
+    "type": "bug-fix",
+    "slug": "archive-path-helper"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 95958,
+  "branch": "fix/archive-path-helper-5cd78769",
+  "history": [
+    {
+      "ts": "2026-05-24T14:00:46.970Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-24T14:00:48.389Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-24T14:02:09.228Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-24T14:02:09.230Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-24T14:02:09.232Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-24T14:02:09.237Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:02:09.239Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-24T14:02:09.239Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-24T14:02:09.239Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-24T14:03:41.509Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:03:41.513Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:03:41.513Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-24T14:03:41.515Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-24T14:04:44.831Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-24T14:04:44.834Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-24T14:04:44.835Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-24T14:06:25.965Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-24T14:06:25.967Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-24T14:06:25.967Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-24T14:06:25.968Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-24T14:06:37.751Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-24T14:06:37.753Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-24T14:06:37.753Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-24T14:06:37.754Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-24T14:06:37.755Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-24T14:08:29.495Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:08:29.497Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:08:29.497Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → adr-gen"
+    },
+    {
+      "ts": "2026-05-24T14:08:29.498Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-24T14:08:34.464Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-24T14:08:34.465Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-24T14:08:34.466Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-24T14:08:36.017Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-24T14:08:36.021Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-25T00:19:48.353Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "470eafdb-03a0-4f9a-9277-0ffb3a3398d9",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T14:00:48.396Z",
+        "endedAt": "2026-05-24T14:02:07.509Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5553,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 12,
+            "outputTokens": 3249,
+            "cacheReadInputTokens": 225108,
+            "cacheCreationInputTokens": 39133
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/archive-path-helper/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-24T14:02:09.232Z",
+        "endedAt": "2026-05-24T14:02:09.237Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "3bc312a8-1948-4ac9-9b2f-c1a54407a0a7",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/archive-path-helper/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: archive-path-helper\n\n- **verdict**: approved\n\n## 検証サマリー\n\n純粋な refactor であり、スコープ・設計・タスク定義のいずれも整合している。\n\n## 確認事項\n\n### 対象リテラル 4 箇所の実在確認\n\n| ファイル | 行 | 内容 | 確認 |\n|---|---|---|---|\n| `src/context/request-patterns.ts:31` | 31 | `path.join(cwd, \"specrunner\", \"changes\", \"archive\")` | ✓ |\n| `src/core/doctor/checks/repo/workflow-structure.ts:25` | 25 | `path.join(ctx.cwd, \"specrunner\", \"changes\")` | ✓ |\n| `src/core/request/store.ts:10` | 10 | `const ARCHIVE_SUBDIR = path.join(\"specrunner\", \"changes\", \"archive\")` | ✓ |\n| `src/core/finish/archive-change-folder.ts:48` | 48 | `` `${changesDirRel()}/archive/${dateStr}-${slug}` `` | ✓ |\n\n### 設計整合性\n\n- `archivedChangesDirRel()` / `archivedChangeFolderPath(datedSlug)` の命名は既存の `changesDirRel()` / `changeFolderPath(slug)` とペアをなす ✓\n- 両関数とも `CHANGES_DIR` 定数のみを参照し、他の `src/` モジュールを import しない（TC-034 遵守） ✓\n- `archive-change-folder.ts` の `changesDirRel` import は、置換後も lines 63–70 の `git add` 呼び出しで引き続き使用されるため削除不要。tasks.md の diff も `changesDirRel` を残しており正しい ✓\n\n### 注意点（問題なし）\n\n- `store.ts` の `ARCHIVE_SUBDIR` は現在 `path.join(...)` (OS セパレータ) で生成されているが、置換後は template literal（`/` 固定）になる。Bun は POSIX 環境のみサポートするため実質的な差異なし ✓\n\n### セキュリティ\n\n- 新規のユーザー入力受付・認証フロー・外部呼び出しなし\n- パス値はコンパイル時定数。OWASP Top 10 該当なし ✓\n\n### 受け入れ基準の網羅性\n\n- helper export の要件 → tasks.md Task 1 で対応 ✓\n- 4 箇所置換の要件 → tasks.md Tasks 2-1〜2-4 で対応 ✓\n- unit test 追加の要件 → tasks.md Task 3 で対応 ✓\n- typecheck & test green の要件 → tasks.md Task 4 で対応 ✓\n"
+        },
+        "startedAt": "2026-05-24T14:02:09.248Z",
+        "endedAt": "2026-05-24T14:03:39.964Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3391,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 9,
+            "outputTokens": 4476,
+            "cacheReadInputTokens": 159816,
+            "cacheCreationInputTokens": 21484
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "9bd69510-33a1-46a7-9389-b24fcf22507f",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T14:03:41.530Z",
+        "endedAt": "2026-05-24T14:04:43.180Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2106,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 3922,
+            "cacheReadInputTokens": 50253,
+            "cacheCreationInputTokens": 14657
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "f658ef8b-4f67-461e-8e84-cb99df4b590b",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T14:04:44.847Z",
+        "endedAt": "2026-05-24T14:06:24.189Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3485,
+            "outputTokens": 20,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 23,
+            "outputTokens": 4827,
+            "cacheReadInputTokens": 605366,
+            "cacheCreationInputTokens": 24261
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/archive-path-helper/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — archive-path-helper — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.2s | 0 |\n| 2 | typecheck | passed | 2.2s | 0 |\n| 3 | test | passed | 6.8s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n| 6 | test-coverage | passed | 0.0s | 0 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/archive-path-helper-5cd78769\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t143d\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n\n Test Files  248 passed (248)\n      Tests  2789 passed (2789)\n   Start at  23:06:29\n   Duration  6.56s (transform 3.87s, setup 0ms, import 8.25s, tests 11.87s, environment 15ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-NhBDv0/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-87A2EL/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/archive-path-helper-5cd78769/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n\n## Phase: test-coverage\n\n```\ntest-coverage: 15/15 must TCs covered\n```\n"
+        },
+        "startedAt": "2026-05-24T14:06:25.968Z",
+        "endedAt": "2026-05-24T14:06:37.750Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "91d839dd-9d01-4d83-a747-3075dba7c37b",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/archive-path-helper/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Review Feedback 001\n\n- **change**: archive-path-helper\n- **iteration**: 1\n- **verdict**: approved\n\n## Summary\n\nAll 4 literal replacements are correctly done via the new helpers, both functions are exported from `util/paths.ts`, and typecheck + tests are green. One minor observation: `workflow-structure.ts` still contains a `path.join(ctx.cwd, \"specrunner\", \"drafts\")` literal for the drafts dir check, but this is explicitly out of scope per request.md.\n\n## Findings\n\n### [NIT] Test describe labels omit TC numbers\n\n**File**: `tests/unit/util/paths.test.ts:34-46`\n**Issue**: The two new `describe` blocks (`\"archivedChangesDirRel()\"`, `\"archivedChangeFolderPath()\"`) do not carry TC-001/TC-002 prefixes, unlike existing tests (`\"TC-PATHS-001: draftPath()\"` etc.). Inconsistent labeling makes test-coverage scanning slightly harder.\n**Suggestion**: Prefix the describe labels with `TC-001:` and `TC-002:` to match the project convention.\n\n### [NIT] TC-003 and TC-004 from test-cases.md have no corresponding test\n\n**File**: `tests/unit/util/paths.test.ts`\n**Issue**: TC-003 (prefix consistency check: `archivedChangeFolderPath` starts with `archivedChangesDirRel()`) and TC-004 (multi-hyphen slug) are listed as `must` / `should` in test-cases.md but are not present as separate test cases. TC-003 is implicitly covered by the single-value assertion, and TC-004 is a pure extension of TC-002, so this is low risk. Verification coverage report shows 15/15, suggesting the verifier counted them as covered.\n**Suggestion**: No action required; existing tests are functionally sufficient.\n\n## Acceptance Criteria Check\n\n| Criterion | Status |\n|-----------|--------|\n| `archivedChangeFolderPath(datedSlug)` exported from `util/paths.ts` | ✅ |\n| `archivedChangesDirRel()` exported from `util/paths.ts` | ✅ |\n| `src/context/request-patterns.ts` literal replaced with `archivedChangesDirRel()` | ✅ |\n| `src/core/doctor/checks/repo/workflow-structure.ts` literal replaced with `changesDirRel()` | ✅ |\n| `src/core/request/store.ts` `ARCHIVE_SUBDIR` replaced with `archivedChangesDirRel()` | ✅ |\n| `src/core/finish/archive-change-folder.ts` inline build replaced with `archivedChangeFolderPath()` | ✅ |\n| `bun run typecheck` green | ✅ |\n| `bun run test` green | ✅ |\n| Existing archive behavior unchanged (finish rename, doctor check, store lookup) | ✅ |\n| New helper unit tests added | ✅ |\n\n## Test Coverage\n\nTC-001 and TC-002 (must) are directly covered by the two new `describe` blocks in `tests/unit/util/paths.test.ts`. TC-003 (must — prefix consistency) is implicitly satisfied by TC-002's exact string assertion. TC-004 (should — multi-hyphen slug) is not an explicit separate test but is functionally subsumed by TC-002 since the implementation is a simple string interpolation with no slug parsing. TC-005 through TC-016 (static/regression checks) are confirmed by code inspection and the green typecheck/test run. The verification result reports 15/15 must TCs covered.\n"
+        },
+        "startedAt": "2026-05-24T14:06:37.767Z",
+        "endedAt": "2026-05-24T14:08:27.987Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3531,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 17,
+            "outputTokens": 4708,
+            "cacheReadInputTokens": 318321,
+            "cacheCreationInputTokens": 52403
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "edb5829e-75ba-4b69-bc24-a39723e7d596",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T14:08:29.506Z",
+        "endedAt": "2026-05-24T14:08:34.415Z",
+        "modelUsage": {
+          "claude-sonnet-4-6": {
+            "inputTokens": 3,
+            "outputTokens": 73,
+            "cacheReadInputTokens": 10651,
+            "cacheCreationInputTokens": 5616
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/archive-path-helper/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — archive-path-helper\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/388\n- **Number**: 388\n- **CreatedAt**: 2026-05-24T14:08:36.014Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-24T14:08:34.466Z",
+        "endedAt": "2026-05-24T14:08:36.015Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/388",
+    "number": 388,
+    "createdAt": "2026-05-24T14:08:36.014Z"
+  }
+}

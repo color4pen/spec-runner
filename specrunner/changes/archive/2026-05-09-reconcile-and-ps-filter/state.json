@@ -1,0 +1,374 @@
+{
+  "version": 1,
+  "jobId": "644a1a71-3f86-4493-a6e5-06b3be09ddaf",
+  "createdAt": "2026-05-09T13:32:22.982Z",
+  "updatedAt": "2026-05-09T14:00:03.307Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/reconcile-and-ps-filter/request.md",
+    "title": "reconciliation モジュール新設と ps フィルタ追加",
+    "type": "new-feature",
+    "slug": "reconcile-and-ps-filter"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 85152,
+  "branch": "feat/reconcile-and-ps-filter-644a1a71",
+  "history": [
+    {
+      "ts": "2026-05-09T13:32:22.982Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-09T13:32:24.104Z",
+      "step": "propose-started",
+      "status": "started",
+      "message": "Starting propose step"
+    },
+    {
+      "ts": "2026-05-09T13:36:45.027Z",
+      "step": "propose-verdict",
+      "status": "ok",
+      "message": "propose verdict: success"
+    },
+    {
+      "ts": "2026-05-09T13:36:45.028Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "propose → spec-review"
+    },
+    {
+      "ts": "2026-05-09T13:36:45.029Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T13:36:45.029Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-09T13:41:20.090Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T13:41:20.092Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T13:41:20.092Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-09T13:41:20.093Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-09T13:43:03.124Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-09T13:43:03.126Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-09T13:43:03.127Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-09T13:48:39.578Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-09T13:48:39.581Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-09T13:48:39.582Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T13:48:39.582Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-09T13:48:50.237Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-09T13:48:50.239Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-09T13:48:50.239Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-09T13:48:50.240Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T13:48:50.241Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-09T13:52:25.128Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T13:52:25.129Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T13:52:25.129Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-09T13:52:25.130Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-09T13:52:27.813Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-09T13:52:27.816Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-09T14:00:03.307Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "propose": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T13:32:24.104Z",
+        "endedAt": "2026-05-09T13:32:24.104Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2346,
+            "outputTokens": 5990,
+            "cacheReadInputTokens": 659163,
+            "cacheCreationInputTokens": 52180
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 17,
+            "outputTokens": 8301,
+            "cacheReadInputTokens": 603461,
+            "cacheCreationInputTokens": 39211
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "openspec/changes/reconcile-and-ps-filter/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result — reconcile-and-ps-filter\n\n- **iteration**: 1\n- **verdict**: approved\n- **reviewer**: spec-reviewer\n- **date**: 2026-05-09\n\n## Summary\n\n仕様は request の全要件を網羅し、既存コードベースの型・関数・モジュール構造と整合している。CRITICAL/HIGH の指摘なし。4 件の LOW 所見あり、いずれも実装を阻害しない。\n\n## Completeness\n\n| Requirement | Covered by | Status |\n|---|---|---|\n| Req 1: `src/state/reconcile.ts` 新設 | Phase 1 (tasks 1.1-1.4) | OK |\n| Req 2: `reconcileStaleRunning` | Task 1.2-1.3 | OK |\n| Req 3: `reconcilePrState` | Task 1.4 | OK |\n| Req 4: `--all` flag | 既存。proposal Impact で確認済み | OK |\n| Req 5: `--status <status>` flag | Phase 2 (tasks 2.1-2.3) | OK |\n| Req 6: PR merged hint 表示 | Phase 3 (tasks 3.1-3.4) | OK |\n| AC: `gh` CLI 非存在でエラーにならない | Task 3.1 catch clause | OK |\n| AC: typecheck + test green | Phase 5 (tasks 5.1-5.2) | OK |\n\n## Consistency\n\n- `TransitionResult`, `TransitionContext`, `JobState`, `JobStatus`, `PullRequestInfo`, `RepositoryInfo` — 全型が `schema.ts` / `lifecycle.ts` と一致\n- `transitionJob` 呼び出しの引数形式 `(state, targetStatus, { trigger, reason })` が `lifecycle.ts` の signature と一致\n- `FlagDef` の `values` プロパティが `flag-parser.ts` に存在し、enum 制約が機能する\n- `listJobStates`, `ACTIVE_STATUSES`, `getJobSlug` の import パスが正しい\n- 既存 `runPs` のフィルタ優先順序 (active → all → default) に `status` を最優先で挿入する設計が明確\n\n## Feasibility\n\n- 全タスクが既存の infrastructure（`transitionJob`, `FlagDef.values`, `Bun.spawn`）で実装可能\n- `state → core` 依存回避のため `isStaleRunning` を inline する判断（D2 Update）は妥当\n- テスト計画が関数の入出力境界を十分にカバーしている\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | LOW | consistency | design.md:24 | D1 で「純粋関数、I/O なし」と記述するが、`isProcessAlive` は `process.kill(pid, 0)` システムコールを実行する。意図（filesystem 書き込みなし）は正しいが「純粋関数」は不正確 | 「副作用のない関数（state 書き込みなし）」等に表現を修正する。実装に影響なし |\n| 2 | LOW | consistency | tasks.md:33 | `reconcile.ts` の stale threshold は 15 分（`safety.ts` 準拠）だが、既存 `ps.ts:33` の visual stale marker は 1 時間。目的が異なるため divergence は妥当だが、実装者が混乱する可能性がある | tasks.md Phase 1 に「注: ps.ts の STALE_THRESHOLD_MS (1h) とは異なる。reconcile は state 遷移判定用で safety.ts と同一閾値を使う」と注記を追加する |\n| 3 | LOW | maintainability | tasks.md:173 | STATUS 列の padEnd を 12→40 に拡張すると、全行の幅が約 160 文字になり標準ターミナル (120 列) を超える | 実装時に実際の表示を確認し、padEnd(30) 程度への調整や hint の短縮 (`(merged)` 等) を検討する |\n| 4 | LOW | performance | tasks.md:120-133 | `checkPrMerged` に subprocess timeout がない。`gh` がハングすると `ps` が無期限にブロックする。awaiting-merge が 0-2 個のため実リスクは極めて低い | `setTimeout` または `AbortSignal.timeout(5000)` の付与を検討する |\n\n## Scores\n\n| Category | Score |\n|---|---|\n| completeness | 9 |\n| consistency | 8 |\n| feasibility | 9 |\n\n## Verdict Rationale\n\nCRITICAL: 0, HIGH: 0。全要件が tasks.md のタスクにトレーサブル。既存コードベースとの型・API 整合性が確認済み。LOW 4 件は実装時に対応可能な範囲であり、仕様承認を阻害しない。\n"
+        },
+        "startedAt": "2026-05-09T13:36:45.029Z",
+        "endedAt": "2026-05-09T13:36:45.029Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1778,
+            "outputTokens": 4590,
+            "cacheReadInputTokens": 309573,
+            "cacheCreationInputTokens": 31060
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 15,
+            "outputTokens": 8038,
+            "cacheReadInputTokens": 444877,
+            "cacheCreationInputTokens": 31347
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T13:41:20.094Z",
+        "endedAt": "2026-05-09T13:41:20.094Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1749,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 7,
+            "outputTokens": 6279,
+            "cacheReadInputTokens": 123943,
+            "cacheCreationInputTokens": 22218
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T13:43:03.128Z",
+        "endedAt": "2026-05-09T13:43:03.128Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1787,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 37,
+            "outputTokens": 20124,
+            "cacheReadInputTokens": 1862636,
+            "cacheCreationInputTokens": 86580
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "openspec/changes/reconcile-and-ps-filter/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — reconcile-and-ps-filter — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 3.7s | 0 |\n| 2 | typecheck | passed | 1.6s | 0 |\n| 3 | test | passed | 3.8s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/reconcile-and-ps-filter-644a1a71\n\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t128d\n\n Test Files  141 passed (141)\n      Tests  1533 passed (1533)\n   Start at  22:48:45\n   Duration  3.54s (transform 2.46s, setup 0ms, import 4.62s, tests 5.60s, environment 9ms)\n\n\n$ vitest run\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/reconcile-and-ps-filter-644a1a71/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-09T13:48:39.583Z",
+        "endedAt": "2026-05-09T13:48:39.583Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "openspec/changes/reconcile-and-ps-filter/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review: reconcile-and-ps-filter (Iteration 1)\n\n## Summary\n\nreconcile.ts は純粋関数として正しく設計・実装されており、ps.ts への --status フィルタと PR hint 表示も仕様通り。モジュール境界違反なし、型安全、テストスイート全 green。checkPrMerged の must テストケースが未実装。\n\n## Scores\n\n| Category | Score | Weight | Weighted |\n|----------|-------|--------|----------|\n| correctness | 9 | 0.30 | 2.70 |\n| security | 8 | 0.25 | 2.00 |\n| architecture | 9 | 0.15 | 1.35 |\n| performance | 9 | 0.10 | 0.90 |\n| maintainability | 8 | 0.10 | 0.80 |\n| testing | 6 | 0.10 | 0.60 |\n| **Total** | | | **8.35** |\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | testing | tests/unit/cli/ps-pr-hint.test.ts | test-cases.md の must シナリオ TC-26, TC-27, TC-28 が未実装。`checkPrMerged` に対する直接テスト（pullRequest なし→null、gh 不在→null、MERGED→true）がない | `spawnCommand` を vi.mock してテストケース 3 件追加。TC-26: pullRequest なしの job を渡して null 検証。TC-27: spawnCommand が throw → null。TC-28: spawnCommand が `{ exitCode: 0, stdout: \"MERGED\" }` → true |\n| 2 | LOW | maintainability | src/state/reconcile.ts:20, src/cli/ps.ts:34 | `STALE_THRESHOLD_MS` が 2 ファイルに異なる値で定義（reconcile: 15min, ps: 1h）。名前が同一で用途が異なるため混乱の元 | ps.ts 側を `PS_STALE_HINT_THRESHOLD_MS` 等に rename して意図を明示する（ps.ts の 1h は pre-existing なので本 PR のスコープ外でも可） |\n\n## Scenario Coverage\n\n### must シナリオ (27 件)\n\n| Status | Count | Details |\n|--------|-------|---------|\n| Implemented | 24 | TC-01〜05, 07〜11, 14〜20, 23〜25, 33, 34, 36 |\n| Missing | 3 | TC-26, TC-27, TC-28 (checkPrMerged 系) |\n\nCoverage: 24/27 = **89%**\n\n**TC-32** (ps は state 変更しない) は構造的保証（runPs に writeJobState 呼び出しなし）で充足。\n\n### should シナリオ (10 件)\n\n| Status | Count |\n|--------|-------|\n| Implemented | 4 | TC-06, 21, 37 + TC-35 (import 検査は目視確認) |\n| Not implemented | 6 | TC-12, 13, 22, 29, 30, 31 |\n\n## Verification\n\n- `bun run typecheck`: **PASS** (TC-33)\n- `bun run test`: **PASS** — 141 files, 1533 tests (TC-34)\n- Module boundary (TC-35): `reconcile.ts` の import は `./lifecycle.js` と `./schema.js` のみ。`src/core/` への依存なし\n\n## Iteration Comparison\n\nN/A (初回イテレーション)\n\n- **verdict**: approved\n"
+        },
+        "startedAt": "2026-05-09T13:48:50.241Z",
+        "endedAt": "2026-05-09T13:48:50.241Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1841,
+            "outputTokens": 1610,
+            "cacheReadInputTokens": 20990,
+            "cacheCreationInputTokens": 33745
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 178,
+            "outputTokens": 7709,
+            "cacheReadInputTokens": 514544,
+            "cacheCreationInputTokens": 50233
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "openspec/changes/reconcile-and-ps-filter/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — reconcile-and-ps-filter\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/187\n- **Number**: 187\n- **CreatedAt**: 2026-05-09T13:52:27.812Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-09T13:52:25.130Z",
+        "endedAt": "2026-05-09T13:52:25.130Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/187",
+    "number": 187,
+    "createdAt": "2026-05-09T13:52:27.812Z"
+  }
+}

@@ -1,0 +1,458 @@
+{
+  "version": 1,
+  "jobId": "f3e203d2-8edb-44b1-8223-e82a031d4569",
+  "createdAt": "2026-05-22T16:24:06.853Z",
+  "updatedAt": "2026-05-22T23:38:06.304Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/foreground-progress-display.md",
+    "title": "実行中のフォアグラウンド進捗表示を改善する（step+elapsed の常時表示 + 時間throttle heartbeat）",
+    "type": "new-feature",
+    "slug": "foreground-progress-display"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 90549,
+  "branch": "feat/foreground-progress-display-f3e203d2",
+  "history": [
+    {
+      "ts": "2026-05-22T16:24:06.853Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-22T16:24:08.048Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-22T16:31:57.927Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-22T16:31:57.930Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-22T16:31:57.931Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-22T16:31:57.937Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T16:31:57.938Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-22T16:31:57.938Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-22T16:31:57.939Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-22T16:34:19.635Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T16:34:19.639Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T16:34:19.639Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-22T16:34:19.640Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-22T16:36:31.069Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-22T16:36:31.072Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-22T16:36:31.073Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-22T16:46:43.647Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-22T16:46:43.651Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-22T16:46:43.652Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-22T16:46:43.652Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-22T16:46:55.226Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-22T16:46:55.229Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-22T16:46:55.229Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-22T16:46:55.229Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-22T16:46:55.230Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-22T16:50:39.684Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T16:50:39.688Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T16:50:39.688Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → adr-gen"
+    },
+    {
+      "ts": "2026-05-22T16:50:39.689Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-22T16:53:31.983Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-22T16:53:31.987Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-22T16:53:31.989Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-22T16:53:33.678Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-22T16:53:33.682Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-22T23:38:06.304Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "8be44680-c8ef-48af-bdfd-64269e8639d0",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-22T16:24:08.055Z",
+        "endedAt": "2026-05-22T16:31:56.214Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 7054,
+            "outputTokens": 6998,
+            "cacheReadInputTokens": 293028,
+            "cacheCreationInputTokens": 86949
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 29,
+            "outputTokens": 16086,
+            "cacheReadInputTokens": 1343556,
+            "cacheCreationInputTokens": 65511
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/foreground-progress-display/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-22T16:31:57.931Z",
+        "endedAt": "2026-05-22T16:31:57.937Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "8dc4e6e8-7798-469d-83e0-0db8d4079265",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/foreground-progress-display/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: foreground-progress-display\n\n- **verdict**: approved\n- **reviewer**: spec-reviewer\n- **date**: 2026-05-23\n\n---\n\n## 総評\n\nrequest → design → tasks → delta spec の一貫性が高く、受け入れ基準がすべてタスクにトレースできる。アーキテクチャ上の主要リスク（timer leak）は設計・タスク・テストシナリオの三層で対策されており、実装可能な仕様として承認する。\n\n---\n\n## 検証サマリー\n\n### 網羅性チェック\n\n| 受け入れ基準 | 対応タスク | delta spec シナリオ |\n|---|---|---|\n| step+elapsed が定期出力される（floor） | Task 5.5–5.7 | message-streaming: Floor scenario |\n| TTY/非TTY 分岐 | Task 5.7 | message-streaming: TTY-Aware 3シナリオ |\n| DomainEvent に step:progress 追加 | Task 1 | message-streaming: DomainEvent scenario |\n| throttle/render が ProgressDisplay 集約 | Task 5, D2 | agent-runner-port: adapter no throttle |\n| timer が pipeline:complete/fail で停止 | Task 5.9 | message-streaming: safety net 2シナリオ |\n| heartbeat interval が config/env で可変 | Task 4, 6 | message-streaming: Config 6シナリオ |\n| 共通ヘルパーで main/follow-up を統一 | Task 3.1–3.3 | agent-runner-port: Common helper scenario |\n| pipeline/agent 挙動不変 | Task 7 (regression test) | — |\n| typecheck & test green | Task 8 | — |\n\n### delta spec 形式チェック\n\n- `message-streaming/spec.md`: 全 Requirement に `SHALL` あり、全シナリオに Given/When/Then あり ✓\n- `agent-runner-port/spec.md`: 全 Requirement に `SHALL` あり、全シナリオに Given/When/Then あり ✓\n- `delta-spec-validation-result.md`: approved ✓\n\n### セキュリティレビュー\n\n- 新規 API / 認証経路なし\n- `SPECRUNNER_HEARTBEAT_INTERVAL` env var は `parseInt` でパース済み（injection リスクなし）\n- `target` フィールド（ファイルパス等）は stdout のみへの出力で永続化・送信なし\n- OWASP Top 10 該当なし\n\n---\n\n## 実装時の注意点（blocking ではない）\n\n### 1. `clearTimerFn` と options の不整合（Task 5.2 vs 5.1）\n\ntasks 5.2 の内部状態に `clearTimerFn: typeof clearInterval` が列挙されているが、tasks 5.1 の `ProgressDisplayOptions` に対応する injection point がない。実装時に以下いずれかで解決すること:\n\n- `options` に `clearTimerFn?: typeof clearInterval` を追加（推奨、`timerFn` と対称）\n- または production では `clearInterval` を直接参照し、vitest の `vi.useFakeTimers()` でグローバル置換に頼る\n\n### 2. `elapsedSeconds` の `nowFn` 未適用\n\ntasks 5.5 で `this.nowFn()` を `stepStartTimes.set` に使っているが、既存の `elapsedSeconds` メソッドは `Date.now()` 直参照のまま（progress.ts:69）。テストで injected time を使うなら `elapsedSeconds` も `this.nowFn()` に変える必要がある。明示的に変更するか、既存のままテストで `Date.now` をモックするか実装者が選択すること。\n\n### 3. `isTTY` の注入なし\n\n`isTTY` は constructor で `process.stdout.isTTY` からキャプチャされるが、options に injection がないためテストでは `process.stdout.isTTY` をモックする必要がある。テスト 7.2 の TTY/非TTY シナリオは vitest の `Object.defineProperty` 等でカバー可能。実装上の問題はなし。\n\n### 4. `emitToolProgress` 内の `as any` キャスト（Task 3.1）\n\n```ts\nconst cb = (msg as any).event.content_block;\n```\n\n`isToolUse` で narrowing した後でもアクセスに `as any` が必要な場合、型定義の narrowed type に `content_block` を含めることで回避できる。`isToolUse` の返却型（tasks 2）に `content_block.name` が含まれているため、guard 通過後は `as any` 不要になるはず。実装時に確認すること。\n\n---\n\n## 決定事項の確認\n\n- `step:progress` を DomainEvent union に正規追加 → executor.ts:152 の `as never` は `step:progress` に対して不要になる（他 non-standard event の `as never` は残存、許容）\n- managed runtime は floor のみ（tool enrichment なし）— scope 外として明記済み、適切\n- heartbeat timer は cli（ProgressDisplay）に置く — core に置かない、design D1 原則に合致\n- CLI flag は今回追加しない（env で十分）— 設計判断として明記済み、適切\n"
+        },
+        "startedAt": "2026-05-22T16:31:57.947Z",
+        "endedAt": "2026-05-22T16:34:18.013Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4858,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 12,
+            "outputTokens": 6845,
+            "cacheReadInputTokens": 336261,
+            "cacheCreationInputTokens": 46684
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "a680ce0e-6642-4652-b2f8-e781ac804a81",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-22T16:34:19.650Z",
+        "endedAt": "2026-05-22T16:36:29.425Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3600,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 8582,
+            "cacheReadInputTokens": 60913,
+            "cacheCreationInputTokens": 28189
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "1fc6134a-64e7-475f-a08e-9a02171c391c",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-22T16:36:31.082Z",
+        "endedAt": "2026-05-22T16:46:41.912Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4957,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 81,
+            "outputTokens": 39290,
+            "cacheReadInputTokens": 6713360,
+            "cacheCreationInputTokens": 110254
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/foreground-progress-display/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — foreground-progress-display — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.2s | 0 |\n| 2 | typecheck | passed | 2.1s | 0 |\n| 3 | test | passed | 6.6s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n| 6 | test-coverage | passed | 0.0s | 0 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/foreground-progress-display-f3e203d2\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t141d\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n\n Test Files  242 passed (242)\n      Tests  2687 passed (2687)\n   Start at  01:46:47\n   Duration  6.44s (transform 3.95s, setup 0ms, import 8.22s, tests 11.25s, environment 15ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-rrMKBx/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-ERLaMq/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/foreground-progress-display-f3e203d2/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n\n## Phase: test-coverage\n\n```\ntest-coverage: 46/46 must TCs covered\n```\n"
+        },
+        "startedAt": "2026-05-22T16:46:43.653Z",
+        "endedAt": "2026-05-22T16:46:55.225Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "4343dbf9-dd0b-4e24-b51d-120282c3c051",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/foreground-progress-display/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — foreground-progress-display — iter 1\n\n- **verdict**: approved\n- **reviewer**: code-reviewer\n- **date**: 2026-05-23\n\n---\n\n## 総評\n\n差分実装は design.md / tasks.md / delta spec / test-cases.md と一貫しており、最重要リスクとされた timer leak は startHeartbeat 冒頭 stopHeartbeat + step:complete/step:error + pipeline:complete/pipeline:fail + dispose() の 4 経路で確実に塞がれている。`bun run typecheck && bun run test` は 2687/2687 green、test-coverage は 46/46 must TC をカバー済み。型安全性・async 正当性・security に critical/major 問題なし。実装可能な範囲で十分に高品質。\n\n下記の minor / info は blocking ではない（将来 cleanup の候補）。\n\n---\n\n## 検証スコープ\n\n- 実装ファイル\n  - `src/cli/progress.ts` — heartbeat timer / render 分岐 / dispose\n  - `src/adapter/claude-code/agent-runner.ts` — emitToolProgress + extractTarget + 2 stream loop wire\n  - `src/adapter/claude-code/message-types.ts` — isToolUse type guard\n  - `src/config/schema.ts` — ProgressConfig + validateConfig\n  - `src/core/event/types.ts` — DomainEvent / EventPayloadMap への step:progress 追加\n  - `src/cli/run.ts` / `src/cli/resume.ts` — resolveHeartbeatInterval + wireProgressDisplay + dispose\n- テスト\n  - `tests/unit/cli/progress.test.ts` — TC-HB-1〜10 + TC-6.1\n  - `tests/unit/adapter/claude-code/agent-runner.test.ts` — TC-EMIT-001/002/003\n  - `tests/unit/adapter/claude-code/message-types.test.ts` — TC-MT-005 (isToolUse)\n  - `tests/unit/config/runtime-config.test.ts` — TC-PROG-001〜007\n\n---\n\n## must scenario 網羅性 (test-cases.md)\n\n| ID | 内容 | 対応テスト | 状態 |\n|---|---|---|---|\n| TC-001 | step:progress が DomainEvent union に含まれる | `src/core/event/types.ts:14` | OK (型レベル) |\n| TC-002 | EventPayloadMap.step:progress payload 型 | `src/core/event/types.ts:28` | OK |\n| TC-004 | 既存 as never (commit:push) への影響なし | typecheck green | OK |\n| TC-010〜012 | isToolUse 判別 | `message-types.test.ts:170-254` | OK |\n| TC-020 | main loop で step:progress emit | TC-EMIT-001 | OK |\n| TC-021 | follow-up loop で step:progress emit | TC-EMIT-003 | OK |\n| TC-022 | tool_use なしで emit しない | TC-EMIT-002 | OK |\n| TC-026 | managed runtime は step:progress を emit しない | `src/adapter/managed-agent/` 内 grep で確認 | OK (構造的) |\n| TC-030〜034 | config validation | TC-PROG-001〜005 | OK |\n| TC-036 | progress 未定義で valid | TC-PROG-007 | OK |\n| TC-040 | step:start で timer 開始 | TC-HB-1 | OK |\n| TC-041 | tick で elapsed 出力 | TC-HB-1 (heartbeat tick outputs elapsed line) | OK |\n| TC-042〜045 | step:complete/error/pipeline:complete/fail で停止 | TC-HB-3/9/4 | OK |\n| TC-046 | dispose() で停止 | TC-HB-5 | OK |\n| TC-047 | heartbeatIntervalSec=0 で timer 起動なし | TC-HB-6 | OK |\n| TC-048 | 連続 step で leak しない | TC-HB-10 | OK |\n| TC-050〜053 | progressCount / lastTool / リセット | TC-HB-2 | OK |\n| TC-060 | TTY 非verbose で \\r 上書き | TC-HB-7 | OK |\n| TC-062 | 非TTY で \\n append | TC-HB-8 | OK |\n| TC-063 | verbose で \\n append | TC-HB-8 second case | OK |\n| TC-080/081 | timer leak 防止 | TC-HB-3/4/9/10 | OK |\n| TC-091/092 | typecheck / test green | verification-result.md | OK |\n\nmust TC: 46/46 covered (verification-result.md と一致)。\n\n---\n\n## Findings\n\n### F-01 [minor] resolveHeartbeatInterval が run.ts と resume.ts で重複実装されている\n\n**場所**: `src/cli/run.ts:21-37`、`src/cli/resume.ts:14-27`\n\n両ファイルにほぼ同一の 16 行関数がコピペされている。プロセス全体で 1 度しか呼ばれない util だが、env / config / TTY default の precedence ロジックは「振る舞いの単一真実」であるべき。片方を変更したらもう片方を変え忘れる drift リスクが高い。\n\n`src/cli/progress-config.ts` 等に切り出し、両方が import する形にすると、TC-070〜076 で要求されている precedence 動作の単体テストも 1 箇所に書ける（現状この関数自体の単体テストは 0 件）。\n\n**推奨**: blocking ではない。次の change で抽出 + テスト追加。\n\n### F-02 [minor] `as any` 相当キャストが残存している\n\n**場所**: `src/adapter/claude-code/agent-runner.ts:82`\n\n```ts\nconst cb = (msg as { type: string; event: { content_block: { name: string; input?: Record<string, unknown> } } }).event.content_block;\n```\n\n`isToolUse(msg)` で type narrowing 済みのため、本来この個別キャストは不要。`isToolUse` の guard 戻り型に `content_block.name: string` / `content_block.input?: Record<string, unknown>` がすでに含まれているので、`if (!isToolUse(msg)) return;` を抜けたあとは `msg.event.content_block.name` 等を素直にアクセスできるはず（spec-review-result-001 #4 で既に指摘されていた）。\n\nランタイム挙動は同じだが「narrow が効いている保証」が型システムから外れるため、SDK 形状の drift を検出できなくなる。\n\n**推奨**: 次の cleanup pass で。\n\n### F-03 [info] dispose の冪等性は OK だが、二重 dispose 経路に注意\n\n`onPipelineComplete` / `onPipelineFail` ですでに stopHeartbeat 済み + finally で `progress.dispose()` を呼ぶため、pipeline 正常終了パスでは stopHeartbeat が 2 度呼ばれる。`heartbeatTimer === null` ガードで安全なので動作問題なし、test TC-HB-5 second case で idempotent も確認済み。\n\nただし composition point (`run.ts:93` / `resume.ts:69`) の finally で `progress.dispose()` を直接呼ぶ設計は、将来 EventBus 不通や handler 例外が発生したときの safety net として正しい。コメントで「safety net」と明記しておくと意図が伝わる。\n\n**推奨**: 修正不要、コメント追加だけ検討。\n\n### F-04 [info] resolveHeartbeatInterval の precedence test が欠落\n\n`tests/unit/cli/progress.test.ts` には config/env/default precedence の test (TC-070〜076 相当) が存在しない。`resolveHeartbeatInterval` が module-local function で export されていないため、外部テストが書けない構造。\n\n現状 `wireProgressDisplay` 経由で `heartbeatIntervalSec` を直接渡しているので機能テストはカバーされている (TC-HB-1/6) が、precedence ロジックそのものの regression は捕まらない。F-01 と合わせて util 抽出すれば test しやすい。\n\n**推奨**: F-01 のリファクタとセットで対応。\n\n### F-05 [info] `lastTool` の文字列結合が target 長制限なし\n\n`onStepProgress` で `${tool} ${target}` を構築するが、`extractTarget` の Bash 分岐では 40 文字 + \"…\" に省略済み (`agent-runner.ts:54`)。Edit/Write の `file_path` は省略していないため、絶対パスが長いと heartbeat 出力が端末幅を超え、TTY mode で `padEnd(columns)` が無効になる可能性がある（`padEnd` は短い場合のみ伸ばすため）。\n\n実害は表示崩れ程度で機能には影響なし。\n\n**推奨**: 現状で OK。将来 file_path も切り詰めるなら adapter 側 extractTarget に集約する。\n\n---\n\n## Confidence\n\n- F-01〜F-05 はすべて confidence 90%+ で観測した事実ベース。\n- critical/major 該当なし。\n- 既存テスト 2687 件が green、新規追加分は明示的に該当 must TC をカバー。\n"
+        },
+        "startedAt": "2026-05-22T16:46:55.242Z",
+        "endedAt": "2026-05-22T16:50:37.962Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4999,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 1504,
+            "cacheReadInputTokens": 53564,
+            "cacheCreationInputTokens": 14614
+          },
+          "claude-opus-4-7[1m]": {
+            "inputTokens": 31,
+            "outputTokens": 9241,
+            "cacheReadInputTokens": 2231794,
+            "cacheCreationInputTokens": 142099
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "141920d7-bb87-4fc8-b869-2c87b145e9f3",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-22T16:50:39.698Z",
+        "endedAt": "2026-05-22T16:53:30.250Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3708,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 13,
+            "outputTokens": 8232,
+            "cacheReadInputTokens": 287693,
+            "cacheCreationInputTokens": 38559
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/foreground-progress-display/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — foreground-progress-display\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/375\n- **Number**: 375\n- **CreatedAt**: 2026-05-22T16:53:33.676Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-22T16:53:31.989Z",
+        "endedAt": "2026-05-22T16:53:33.677Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/375",
+    "number": 375,
+    "createdAt": "2026-05-22T16:53:33.676Z"
+  }
+}

@@ -1,0 +1,374 @@
+{
+  "version": 1,
+  "jobId": "41347b6a-351d-4454-889c-1a6661f47f7a",
+  "createdAt": "2026-05-16T07:31:07.955Z",
+  "updatedAt": "2026-05-16T08:07:24.569Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/pr248-followup-cleanup/request.md",
+    "title": "PR #248 followup の dead code 削除と test 品質改善",
+    "type": "bug-fix",
+    "slug": "pr248-followup-cleanup"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 79673,
+  "branch": "fix/pr248-followup-cleanup-41347b6a",
+  "history": [
+    {
+      "ts": "2026-05-16T07:31:07.955Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-16T07:31:09.635Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-16T07:32:53.476Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-16T07:32:53.480Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → spec-review"
+    },
+    {
+      "ts": "2026-05-16T07:32:53.481Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T07:32:53.482Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-16T07:35:14.649Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T07:35:14.652Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T07:35:14.652Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-16T07:35:14.654Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-16T07:36:25.947Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-16T07:36:25.950Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-16T07:36:25.952Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-16T07:39:57.897Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-16T07:39:57.901Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-16T07:39:57.902Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T07:39:57.903Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-16T07:40:08.325Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-16T07:40:08.328Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-16T07:40:08.329Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-16T07:40:08.329Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T07:40:08.330Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-16T07:41:35.503Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T07:41:35.505Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T07:41:35.505Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-16T07:41:35.506Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-16T07:41:37.891Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-16T07:41:37.893Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-16T08:07:24.568Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "c7873b7d-31a4-463c-a9b1-3654d230a5cc",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T07:31:09.635Z",
+        "endedAt": "2026-05-16T07:32:51.905Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4891,
+            "outputTokens": 20,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 14,
+            "outputTokens": 5287,
+            "cacheReadInputTokens": 425329,
+            "cacheCreationInputTokens": 44834
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "bc5c4b94-4c67-4a5e-864b-99e603a67e8b",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/pr248-followup-cleanup/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: pr248-followup-cleanup\n\n- **reviewer**: spec-reviewer\n- **date**: 2026-05-16\n- **verdict**: approved\n\n## Summary\n\nrequest.md / design.md / tasks.md の 3 ファイルを対象ソースコードと突合検証した。行番号・シンボル名・caller 有無・現行テストの記述すべて正確。scope は PR #248 の後始末に限定されており、機能変更なし。\n\n## Verification\n\n| 項目 | 結果 |\n|------|------|\n| `src/core/gh/pr.ts` の importer が 0 | `grep` で src/ 内に import 0 hit を確認 |\n| `factory.ts:34` の `githubToken: string = \"\"` | 存在確認。production caller 2 箇所 (`cli/run.ts:50`, `cli/bootstrap.ts:40`) は explicit に渡している |\n| `managed.ts:34` の `private readonly githubToken: string = \"\"` | 存在確認。唯一の caller は `factory.ts:44` で explicit に渡している |\n| TC-041 description が outdated | `checkConfigComplete` は `return null` のみ。現 description の \"only checks github.accessToken\" は誤り |\n| TC-CRED-004 に mode assert なし | テストは `loadCredentials` の内容のみ検証、file permission の assert がない |\n| `loadCredentials` catch コメント | \"treat as empty\" — `resolveGitHubToken` の fallback 意図が不明 |\n\n## Findings\n\n### [NIT] Task 3.2: managed.test.ts の 5th 引数 `undefined` が未記載\n\n`tasks.md` Task 3.2 は「第 6 引数に `\"\"` を追加する」とだけ書いているが、5 call sites はいずれも 4 引数しか渡していない。6th に `\"\"` を渡すには 5th の `spawnFn` に `undefined` を明示する必要がある。Task 2.2 ではこの点を「第 5 引数 `undefined` も必要」と正しく記載しているが、3.2 では省略されている。\n\n**影響**: TypeScript compiler が即座にエラーを出すため implementer は自力で修正可能。blocking ではない。\n\n## Security\n\n- `githubToken` default `\"\"` の除去は compile-time safety の向上（empty token での silent fail 防止）\n- TC-CRED-004 の `0o600` mode assert 追加は credential file permission 検証の強化\n- 認証・入力検証・OWASP 観点の新規リスクなし\n"
+        },
+        "startedAt": "2026-05-16T07:32:53.483Z",
+        "endedAt": "2026-05-16T07:35:13.187Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3002,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 10,
+            "outputTokens": 5799,
+            "cacheReadInputTokens": 252097,
+            "cacheCreationInputTokens": 35071
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "3d608991-84f7-4c80-b2fb-a65e213b17c1",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T07:35:14.654Z",
+        "endedAt": "2026-05-16T07:36:24.452Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1743,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 3870,
+            "cacheReadInputTokens": 52726,
+            "cacheCreationInputTokens": 15921
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "ff66f240-64f1-4710-9bf7-98ec92d5686d",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T07:36:25.953Z",
+        "endedAt": "2026-05-16T07:39:56.350Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3101,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 28,
+            "outputTokens": 11604,
+            "cacheReadInputTokens": 927066,
+            "cacheCreationInputTokens": 34645
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/pr248-followup-cleanup/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — pr248-followup-cleanup — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.2s | 0 |\n| 2 | typecheck | passed | 1.8s | 0 |\n| 3 | test | passed | 4.8s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/pr248-followup-cleanup-41347b6a\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t135d\n\n Test Files  161 passed (161)\n      Tests  1901 passed (1901)\n   Start at  16:40:02\n   Duration  4.60s (transform 2.97s, setup 0ms, import 5.94s, tests 8.73s, environment 10ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-pH1kQ3/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-mmPO1a/specrunner/credentials.json has loose permissions (recommend 0600).\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/pr248-followup-cleanup-41347b6a/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-16T07:39:57.903Z",
+        "endedAt": "2026-05-16T07:40:08.324Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "f76bf902-2c95-44a9-a0e9-50040188f539",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/pr248-followup-cleanup/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review: pr248-followup-cleanup — iter 1\n\n## Summary\n\n機能変更なし、dead code 削除と test/コメント品質改善のみ。すべての受け入れ基準を満たしており、build / typecheck / test 全 green。\n\n---\n\n## Findings\n\n### NIT-001: TC-041 インラインコメントが describe text と不一致\n\n**File**: `tests/unit/config/runtime-config.test.ts:341`  \n**Severity**: NIT\n\ndescribe テキスト（line 344）は正しく更新されているが、その直上のインラインコメント（line 341）が `// TC-041: --runtime local accepts missing apiKey` のまま旧記述になっている。describe text との乖離が小さい混乱を残す。\n\n```\n// TC-041: --runtime local accepts missing apiKey   ← 旧記述のまま\ndescribe(\"TC-041: checkConfigComplete always returns null ...\", () => {   // ← 更新済み\n```\n\n**Impact**: ゼロ（ランタイム影響なし）。\n\n---\n\n## Acceptance Criteria チェック\n\n| 基準 | 結果 |\n|------|------|\n| `grep -r \"runGhPrCreate\" src/ tests/` 0 hit | ✅ 確認済み |\n| `GhPrCreateInput` / `GhPrCreateResult` 0 hit | ✅ 確認済み |\n| `createRuntime` / `ManagedRuntime` の signature に `= \"\"` なし | ✅ `githubToken: string` のみ |\n| production caller (run.ts:50, bootstrap.ts:40) が明示的に渡している | ✅ 確認済み |\n| TC-041 description が新挙動を語っている | ✅ |\n| TC-CRED-004 が `expect(stat.mode & 0o777).toBe(0o600)` を assert | ✅ `saveCredentials` 直後、`loadCredentials` 前 |\n| `loadCredentials` catch コメントが `resolveGitHubToken` 経路を説明 | ✅ |\n| build / typecheck / test green | ✅ 161 files / 1901 tests |\n\n---\n\n## Verdict\n\n- **verdict**: approved\n"
+        },
+        "startedAt": "2026-05-16T07:40:08.331Z",
+        "endedAt": "2026-05-16T07:41:33.703Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3147,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 11,
+            "outputTokens": 4546,
+            "cacheReadInputTokens": 245061,
+            "cacheCreationInputTokens": 27352
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/pr248-followup-cleanup/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — pr248-followup-cleanup\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/259\n- **Number**: 259\n- **CreatedAt**: 2026-05-16T07:41:37.889Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-16T07:41:35.507Z",
+        "endedAt": "2026-05-16T07:41:37.890Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/259",
+    "number": 259,
+    "createdAt": "2026-05-16T07:41:37.889Z"
+  }
+}

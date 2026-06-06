@@ -1,0 +1,367 @@
+{
+  "version": 1,
+  "jobId": "1f524ceb-9c04-40ff-8a91-121af9c27faa",
+  "createdAt": "2026-05-09T12:52:59.818Z",
+  "updatedAt": "2026-05-09T13:21:20.049Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/finish-phase4-reorder/request.md",
+    "title": "finish Phase 4 の markJobArchived を Phase 3 直後に移動する",
+    "type": "bug-fix",
+    "slug": "finish-phase4-reorder"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "branch": "fix/finish-phase4-reorder-1f524ceb",
+  "history": [
+    {
+      "ts": "2026-05-09T12:52:59.818Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-09T12:53:00.961Z",
+      "step": "propose-started",
+      "status": "started",
+      "message": "Starting propose step"
+    },
+    {
+      "ts": "2026-05-09T12:58:59.959Z",
+      "step": "propose-verdict",
+      "status": "ok",
+      "message": "propose verdict: success"
+    },
+    {
+      "ts": "2026-05-09T12:58:59.961Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "propose → spec-review"
+    },
+    {
+      "ts": "2026-05-09T12:58:59.962Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T12:58:59.962Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-09T13:03:20.219Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T13:03:20.221Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T13:03:20.221Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-09T13:03:20.222Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-09T13:04:37.002Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-09T13:04:37.004Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-09T13:04:37.006Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-09T13:12:26.813Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-09T13:12:26.815Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-09T13:12:26.815Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T13:12:26.816Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-09T13:12:36.249Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-09T13:12:36.252Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-09T13:12:36.252Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-09T13:12:36.252Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T13:12:36.253Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-09T13:16:27.337Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T13:16:27.340Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T13:16:27.340Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-09T13:16:27.341Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-09T13:16:30.036Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-09T13:21:20.049Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "Job archived via specrunner finish."
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "propose": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T12:53:00.961Z",
+        "endedAt": "2026-05-09T12:53:00.961Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2266,
+            "outputTokens": 5747,
+            "cacheReadInputTokens": 722280,
+            "cacheCreationInputTokens": 59377
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 21,
+            "outputTokens": 12077,
+            "cacheReadInputTokens": 970775,
+            "cacheCreationInputTokens": 56690
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "openspec/changes/finish-phase4-reorder/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: finish-phase4-reorder\n\n- **iteration**: 1\n- **verdict**: approved\n- **date**: 2026-05-09\n- **type**: bug-fix\n\n## Summary\n\n仕様は request.md の 5 要件を網羅しており、proposal → design → tasks → delta spec の一貫性が高い。canTransition / transitionJob の既存 API 参照も正確。delta spec が既存 spec の 2 シナリオを更新していない点を MEDIUM で指摘するが、承認阻止には至らない。\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | consistency | specs/cli-finish-command/delta.md | 既存 spec の「feature PR が既に MERGED（resume）」シナリオが「Phase 4 のみ実行（markJobArchived + main pull --ff-only）」と記述されている。delta で Phase 4 の定義が cleanup only に変更されたが、このシナリオの THEN 句が未更新のまま残り、適用後に矛盾する | delta に resume シナリオの更新を追加: THEN を「markJobArchived 実行後、Phase 4 (cleanup) を実行」に書き換える |\n| 2 | MEDIUM | consistency | specs/cli-finish-command/delta.md | 同様に「archive folder 不在で commit skip」シナリオの THEN 句「Phase 4 で markJobArchived のみ実行」も旧 Phase 4 定義を参照している | delta に当該シナリオの THEN 句更新を追加: 「markJobArchived 実行後、Phase 4 (cleanup) を実行」 |\n| 3 | LOW | completeness | specs/cli-finish-command/delta.md | STATUS_HINTS に `success` ステータスの hint がない。fallback の汎用メッセージで動作するが、他ステータスと比べ情報量が落ちる | `success: \"Job completed but PR not yet created. Run 'specrunner finish' after PR creation.\"` 等を追加する |\n\n## Checklist\n\n| Axis | Result |\n|------|--------|\n| request.md 要件の網羅 | 5/5 全要件が proposal → design → tasks → delta に反映 |\n| proposal ↔ design 整合 | OK — markJobArchived 移動、Phase 4 best-effort 化、canTransition 導入が一致 |\n| design ↔ tasks 整合 | OK — T1-T6 が D1-D4 を順に実装。依存グラフも明示 |\n| tasks ↔ delta spec 整合 | OK — delta の requirement/scenario 変更が tasks の実装内容と対応 |\n| delta ↔ 既存 spec 整合 | MEDIUM — 2 シナリオの THEN 句が旧 Phase 4 定義のまま（Finding #1, #2） |\n| テスト計画 | OK — TC-124 順序逆転、TC-FIN-P4-FAIL-001/002 追加、TC-126 影響なし確認 |\n| セキュリティ | N/A — state 管理の順序変更のみ。認証・入力検証・外部入力の変更なし |\n| 実現可能性 | OK — canTransition, transitionJob は lifecycle.ts に実在。行番号も一致 |\n| スコープ外の明示 | OK — pipeline.ts / resume stale detection / 永続化一元化を明示的に除外 |\n"
+        },
+        "startedAt": "2026-05-09T12:58:59.962Z",
+        "endedAt": "2026-05-09T12:58:59.962Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1708,
+            "outputTokens": 4787,
+            "cacheReadInputTokens": 537655,
+            "cacheCreationInputTokens": 38926
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 15,
+            "outputTokens": 7394,
+            "cacheReadInputTokens": 385120,
+            "cacheCreationInputTokens": 36148
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T13:03:20.222Z",
+        "endedAt": "2026-05-09T13:03:20.222Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1660,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 7,
+            "outputTokens": 4476,
+            "cacheReadInputTokens": 124122,
+            "cacheCreationInputTokens": 21717
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T13:04:37.006Z",
+        "endedAt": "2026-05-09T13:04:37.006Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1699,
+            "outputTokens": 22,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 27,
+            "outputTokens": 21452,
+            "cacheReadInputTokens": 1482619,
+            "cacheCreationInputTokens": 65480
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "openspec/changes/finish-phase4-reorder/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — finish-phase4-reorder — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.8s | 0 |\n| 2 | typecheck | passed | 1.6s | 0 |\n| 3 | test | passed | 4.4s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/finish-phase4-reorder-1f524ceb\n\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\n\n Test Files  138 passed (138)\n      Tests  1472 passed (1472)\n   Start at  22:12:31\n   Duration  3.36s (transform 2.33s, setup 0ms, import 4.41s, tests 5.17s, environment 8ms)\n\n\n$ vitest run\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/finish-phase4-reorder-1f524ceb/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-09T13:12:26.816Z",
+        "endedAt": "2026-05-09T13:12:26.816Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "openspec/changes/finish-phase4-reorder/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review — finish-phase4-reorder — Iteration 1\n\n## Meta\n\n- **reviewer**: code-reviewer\n- **iteration**: 1\n- **date**: 2026-05-09\n- **verdict**: approved\n\n## Summary\n\n実装は設計に忠実で、5 つの受け入れ基準すべてを満たしている。`markJobArchived` が Phase 3 直後に移動されたことで、Phase 4 cleanup 失敗時の state 不整合問題（#178）が解消される。`canTransition` / `transitionJob` への移行も正確。typecheck + 全 1472 テスト green。\n\n## Scores\n\n| Category | Score | Weight | Weighted |\n|----------|-------|--------|----------|\n| correctness | 8 | 0.30 | 2.40 |\n| security | N/A | — | — |\n| architecture | 8 | 0.15 | 1.20 |\n| performance | 8 | 0.10 | 0.80 |\n| maintainability | 8 | 0.10 | 0.80 |\n| testing | 7 | 0.10 | 0.70 |\n| **Total** | | | **7.9** |\n\nsecurity は本変更で対象外のため除外。残カテゴリの weight を正規化: correctness 0.40, architecture 0.20, performance 0.13, maintainability 0.13, testing 0.13 → Total = 3.20 + 1.60 + 1.04 + 1.04 + 0.91 = **7.8**\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | testing | tests/finish-orchestrator.test.ts | TC-FIN-REORDER-004（git checkout 失敗 → archived, exit 0）が must シナリオだがテスト未実装。アーキテクチャ上は保証されるが、best-effort 化のリグレッションガードがない | spawn mock で `git checkout` を exitCode 1 にし、exit 0 + status=archived を検証するテストを追加 |\n| 2 | MEDIUM | testing | tests/finish-orchestrator.test.ts | TC-FIN-REORDER-005（updateJobState worktreePath:null 失敗 → archived, exit 0）が must シナリオだがテスト未実装。try-catch 保護の検証がコードレビューのみ | updateJobState を spy し throw させ、exit 0 + status=archived + stderr warning を検証するテストを追加 |\n| 3 | LOW | maintainability | src/core/finish/orchestrator.ts:147 | `runPhase4Finalize` が常に `{ ok: true }` を返すため、`if (!p4.ok)` チェック（L147）が到達不能コード。型安全なので害はないが意図が不明瞭になる | 将来の cleanup で削除を検討。現時点では情報提供のみ |\n| 4 | LOW | maintainability | src/core/finish/orchestrator.ts:249 | 関数名が `runPhase4Finalize` のまま。設計 D2 で `runPhase4Cleanup` への rename が言及されている（optional） | 次のリファクタで rename 検討。現時点では情報提供のみ |\n\n## Acceptance Criteria Verification\n\n| # | Criterion | Status |\n|---|-----------|--------|\n| 1 | markJobArchived が Phase 3 直後に実行される | ✅ L136-138（通常パス）, L141-142（prAlreadyMerged パス） |\n| 2 | Phase 4 の cleanup 失敗が state 更新を阻害しない | ✅ markJobArchived が Phase 4 より前に呼ばれる。TC-FIN-P4-FAIL-001 で検証済み |\n| 3 | assertJobFinishable が canTransition ベースに置換されている | ✅ job-state-update.ts L27 |\n| 4 | Phase 4 の updateJobState(worktreePath: null) が try-catch で保護されている | ✅ orchestrator.ts L271-274 |\n| 5 | TC-126 (archived → no-op) が引き続き通る | ✅ テスト green |\n| 6 | bun run typecheck && bun run test が green | ✅ 138 files, 1472 tests passed |\n\n## Scenario Coverage (test-cases.md)\n\n| ID | Priority | Covered | Test |\n|----|----------|---------|------|\n| TC-FIN-REORDER-001 | must | ✅ | TC-124 |\n| TC-FIN-REORDER-002 | must | △ | TC-106（exit 0 のみ。ordering 未検証） |\n| TC-FIN-REORDER-003 | must | ✅ | TC-FIN-P4-FAIL-001 |\n| TC-FIN-REORDER-004 | must | ❌ | — |\n| TC-FIN-REORDER-005 | must | ❌ | — |\n| TC-FIN-REORDER-006 | must | ✅ | 既存 finish-job-state tests |\n| TC-FIN-REORDER-007 | must | ✅ | 既存 TC-031 |\n| TC-FIN-REORDER-008 | must | ✅ | 既存 finish-job-state tests |\n| TC-FIN-REORDER-009 | must | ✅ | コード検査（L271-274 try-catch 確認） |\n| TC-FIN-REORDER-010 | must | ✅ | TC-126 |\n| TC-FIN-REORDER-011 | should | △ | TC-029 は transitionJob 呼び出しを直接検証していない |\n| TC-FIN-REORDER-012 | should | △ | TC-126 経由で間接的にカバー |\n| TC-FIN-REORDER-013 | could | ❌ | — |\n\nMust: 8/10 covered, Should: 0/2 explicitly covered, Could: 0/1\n"
+        },
+        "startedAt": "2026-05-09T13:12:36.254Z",
+        "endedAt": "2026-05-09T13:12:36.254Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1759,
+            "outputTokens": 951,
+            "cacheReadInputTokens": 44491,
+            "cacheCreationInputTokens": 25118
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 109,
+            "outputTokens": 8936,
+            "cacheReadInputTokens": 644136,
+            "cacheCreationInputTokens": 58172
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "openspec/changes/finish-phase4-reorder/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — finish-phase4-reorder\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/183\n- **Number**: 183\n- **CreatedAt**: 2026-05-09T13:16:30.035Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-09T13:16:27.341Z",
+        "endedAt": "2026-05-09T13:16:27.341Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/183",
+    "number": 183,
+    "createdAt": "2026-05-09T13:16:30.035Z"
+  }
+}

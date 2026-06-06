@@ -1,0 +1,374 @@
+{
+  "version": 1,
+  "jobId": "9f44788f-d4de-43cc-99f0-db5f303f8715",
+  "createdAt": "2026-05-11T04:57:35.936Z",
+  "updatedAt": "2026-05-11T05:19:00.487Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/fix-ghost-job-status/request.md",
+    "title": "request.md バリデーションエラー時に job status を failed に更新する",
+    "type": "bug-fix",
+    "slug": "fix-ghost-job-status"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 95322,
+  "branch": "fix/fix-ghost-job-status-9f44788f",
+  "history": [
+    {
+      "ts": "2026-05-11T04:57:35.936Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-11T04:57:37.416Z",
+      "step": "propose-started",
+      "status": "started",
+      "message": "Starting propose step"
+    },
+    {
+      "ts": "2026-05-11T05:05:29.171Z",
+      "step": "propose-verdict",
+      "status": "ok",
+      "message": "propose verdict: success"
+    },
+    {
+      "ts": "2026-05-11T05:05:29.173Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "propose → spec-review"
+    },
+    {
+      "ts": "2026-05-11T05:05:29.173Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T05:05:29.174Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-11T05:08:44.568Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T05:08:44.570Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T05:08:44.570Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-11T05:08:44.571Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-11T05:09:55.623Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-11T05:09:55.625Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-11T05:09:55.627Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-11T05:14:05.561Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-11T05:14:05.563Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-11T05:14:05.563Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T05:14:05.564Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-11T05:14:14.798Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-11T05:14:14.800Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-11T05:14:14.800Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-11T05:14:14.801Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T05:14:14.801Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-11T05:16:43.780Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T05:16:43.783Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T05:16:43.783Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-11T05:16:43.784Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-11T05:16:46.507Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-11T05:16:46.512Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-11T05:19:00.487Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "propose": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T04:57:37.417Z",
+        "endedAt": "2026-05-11T04:57:37.417Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3257,
+            "outputTokens": 10457,
+            "cacheReadInputTokens": 1688269,
+            "cacheCreationInputTokens": 105755
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 17,
+            "outputTokens": 13430,
+            "cacheReadInputTokens": 681213,
+            "cacheCreationInputTokens": 68159
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/fix-ghost-job-status/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: fix-ghost-job-status\n\n- **iteration**: 1\n- **date**: 2026-05-11\n- **verdict**: approved\n\n## Summary\n\n設計は root cause を正確に特定し、既存の `JobStateStore.fail()` API を再利用する最小限の修正方針を採っている。変更対象ファイルは 1 本（+ テスト 1 本）、blast radius は小さい。\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | LOW | consistency | request.md:33 | AC の「base-branch 未指定」は preflight で弾かれるため ghost job を生まない。design.md が正しく指摘しているが、AC 側の例示が不正確 | request.md の AC1 を「setupWorkspace が失敗した場合に job status が failed になる」等の実際のトリガーに書き換えるか、design.md の Clarification をそのまま残して対応とする |\n\n## Completeness\n\n- 要件 1〜3 は design.md の Affected Error Paths テーブルと Tasks 1〜3 で網羅されている\n- AC 4 項目のうち 3 項目（ghost job 解消、正常 pipeline 無影響、typecheck/test pass）は Tasks 4〜5 で検証可能\n- AC 1 は上記 Finding #1 の通り例示が不正確だが、design.md の Clarification セクションで明示的に言及・解決済み\n\n## Consistency\n\n- `JobStateStore.fail()` は `executor.ts` / `pipeline.ts` で既に確立されたパターン。新規抽象なし\n- `\"running\" → \"failed\"` は `VALID_TRANSITIONS`（lifecycle.ts:37）で有効な遷移\n- `\"No Delta Spec Required\"` の判断は妥当 — 既存 spec の fail() セマンティクスと exit code 1 の仕様内\n\n## Feasibility\n\n- 変更は runner.ts の 2 箇所の catch ブロック + 1 箇所の defensive guard。既存コードの構造変更なし\n- テスト計画（TC-CR-009〜011）は setupWorkspace 失敗、pipeline throw、safety net 既発火の 3 パターンをカバー\n- Task 3 の defensive guard（disk state 読み直し）は belt-and-suspenders として妥当。`store.load()` 失敗は catch で握りつぶすため二次障害リスクなし\n\n## Security\n\n該当なし。状態ファイルの書き込み先は既存の XDG state directory で、新たな attack surface の追加なし。\n"
+        },
+        "startedAt": "2026-05-11T05:05:29.174Z",
+        "endedAt": "2026-05-11T05:05:29.174Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1192,
+            "outputTokens": 4086,
+            "cacheReadInputTokens": 316565,
+            "cacheCreationInputTokens": 26832
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 12,
+            "outputTokens": 4620,
+            "cacheReadInputTokens": 309603,
+            "cacheCreationInputTokens": 26149
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T05:08:44.572Z",
+        "endedAt": "2026-05-11T05:08:44.572Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1179,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 7,
+            "outputTokens": 4773,
+            "cacheReadInputTokens": 112721,
+            "cacheCreationInputTokens": 18068
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T05:09:55.627Z",
+        "endedAt": "2026-05-11T05:09:55.627Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1247,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 38,
+            "outputTokens": 14869,
+            "cacheReadInputTokens": 1578175,
+            "cacheCreationInputTokens": 46621
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/fix-ghost-job-status/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — fix-ghost-job-status — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.0s | 0 |\n| 2 | typecheck | passed | 1.6s | 0 |\n| 3 | test | passed | 4.1s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/fix-ghost-job-status-9f44788f\n\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t130d\n\n Test Files  143 passed (143)\n      Tests  1634 passed (1634)\n   Start at  14:14:09\n   Duration  3.87s (transform 2.88s, setup 0ms, import 5.23s, tests 6.77s, environment 8ms)\n\n\n$ vitest run\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/fix-ghost-job-status-9f44788f/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-11T05:14:05.564Z",
+        "endedAt": "2026-05-11T05:14:05.564Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/fix-ghost-job-status/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review — fix-ghost-job-status — Iteration 1\n\n## Summary\n\n実装は design.md に忠実で、3 つのエラーパス（setupWorkspace / buildDeps+registerCleanup / pipeline throw）すべてに `JobStateStore.fail()` ガードを追加。既存の `fail()` API を再利用しており新しい抽象は不要。pipeline catch の defensive guard（ディスク状態を読み取り `\"running\"` のときだけ遷移）は安全性が高い。主な課題はテストカバレッジ — test-cases.md の must シナリオのうち buildDeps / registerCleanup 失敗パスが未テスト。\n\n## Scores\n\n| Category | Score | Weight | Weighted |\n|----------|-------|--------|----------|\n| correctness | 8 | 0.30 | 2.40 |\n| security | 8 | 0.25 | 2.00 |\n| architecture | 8 | 0.15 | 1.20 |\n| performance | 9 | 0.10 | 0.90 |\n| maintainability | 8 | 0.10 | 0.80 |\n| testing | 5 | 0.10 | 0.50 |\n| **Total** | | | **7.80** |\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | testing | tests/unit/core/command/runner.test.ts | test-cases.md の must シナリオ TC-CR-010（buildDeps fail → INIT_FAILED）と TC-CR-010b（registerCleanup fail → INIT_FAILED）のテストが未実装。Task 2 の try-catch が直接テストされていない | `buildMockRuntime` に `buildDepsThrow` オプションを追加し、buildDeps throw 時に disk state が `failed` + `error.code === \"INIT_FAILED\"` になることを検証するテストを追加する。registerCleanup は同じ catch ブロックなので 1 テストで十分 |\n| 2 | MEDIUM | testing | tests/unit/core/command/runner.test.ts | テスト番号が test-cases.md と不一致。test file の TC-CR-010 は pipeline throw（test-cases.md では TC-CR-011）、test file の TC-CR-011 は safety net 保持（test-cases.md では TC-CR-012）。相互参照時に混乱する | test file 側の番号を test-cases.md に合わせてリナンバーする（TC-CR-010 → TC-CR-011、TC-CR-011 → TC-CR-012）。または test-cases.md 側を合わせる |\n| 3 | LOW | testing | tests/unit/core/command/runner.test.ts | test-cases.md の must シナリオ TC-CR-013（preflight fail → state 未作成）と TC-CR-014（request.md 不在 → state 未作成）が未テスト。ただし pre-existing behavior で今回変更されたコードではない | 次の変更で追加を検討。現時点では既存動作のリグレッション防止テストとして優先度は低い |\n| 4 | LOW | maintainability | src/core/command/runner.ts:154 | `diskState as JobState` キャスト — `store.load()` は `NormalizedJobState`（steps が non-optional）を返す。`fail()` は `JobState` を受ける。型的には安全だが暗黙的 | `fail()` の引数型を `NormalizedJobState` も受け付けるようにするか、明示的なコメントを追加する |\n\n## Verdict\n\n- **verdict**: approved\n- **Total Score**: 7.80 (threshold: 7.0)\n- **CRITICAL**: 0\n- **HIGH**: 0\n- **MEDIUM**: 2\n- **LOW**: 2\n\n実装品質は高く、correctness / architecture ともに良好。MEDIUM 指摘はテストカバレッジの改善提案であり、実装コード自体に問題はない。\n"
+        },
+        "startedAt": "2026-05-11T05:14:14.802Z",
+        "endedAt": "2026-05-11T05:14:14.802Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1292,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 14,
+            "outputTokens": 6517,
+            "cacheReadInputTokens": 487567,
+            "cacheCreationInputTokens": 39636
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/fix-ghost-job-status/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — fix-ghost-job-status\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/203\n- **Number**: 203\n- **CreatedAt**: 2026-05-11T05:16:46.506Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-11T05:16:43.785Z",
+        "endedAt": "2026-05-11T05:16:43.785Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/203",
+    "number": 203,
+    "createdAt": "2026-05-11T05:16:46.506Z"
+  }
+}

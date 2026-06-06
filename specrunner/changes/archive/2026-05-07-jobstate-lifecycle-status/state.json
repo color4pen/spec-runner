@@ -1,0 +1,320 @@
+{
+  "version": 1,
+  "jobId": "7165b5a5-e225-4283-92e5-fffe150d2ed5",
+  "createdAt": "2026-05-07T08:42:44.124Z",
+  "updatedAt": "2026-05-07T09:17:47.349Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/jobstate-lifecycle-status/request.md",
+    "title": "JobState lifecycle status の再設計 + awaiting-resume 追加",
+    "type": "spec-change",
+    "slug": "jobstate-lifecycle-status"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "branch": "feat/jobstate-lifecycle-status-7165b5a5",
+  "history": [
+    {
+      "ts": "2026-05-07T08:42:44.124Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-07T08:42:44.437Z",
+      "step": "propose-started",
+      "status": "started",
+      "message": "Starting propose step"
+    },
+    {
+      "ts": "2026-05-07T08:49:15.527Z",
+      "step": "propose-verdict",
+      "status": "ok",
+      "message": "propose verdict: success"
+    },
+    {
+      "ts": "2026-05-07T08:49:15.531Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "propose → spec-review"
+    },
+    {
+      "ts": "2026-05-07T08:49:15.531Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-07T08:49:15.532Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-07T08:53:34.979Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-07T08:53:34.981Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-07T08:53:34.981Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → implementer"
+    },
+    {
+      "ts": "2026-05-07T08:53:34.983Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-07T09:03:14.464Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-07T09:03:14.465Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → verification (iter 1)"
+    },
+    {
+      "ts": "2026-05-07T09:03:14.466Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-07T09:03:14.466Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-07T09:03:22.316Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-07T09:03:22.318Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-07T09:03:22.318Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-07T09:03:22.318Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-07T09:03:22.319Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-07T09:06:46.954Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-07T09:06:46.957Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-07T09:06:46.957Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-07T09:06:46.958Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-07T09:06:50.343Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-07T09:17:47.349Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "Job archived via specrunner finish."
+    }
+  ],
+  "error": null,
+  "steps": {
+    "propose": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-07T08:42:44.438Z",
+        "endedAt": "2026-05-07T08:42:44.438Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2081,
+            "outputTokens": 4841,
+            "cacheReadInputTokens": 815392,
+            "cacheCreationInputTokens": 58857
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 15,
+            "outputTokens": 16748,
+            "cacheReadInputTokens": 772898,
+            "cacheCreationInputTokens": 75595
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "openspec/changes/jobstate-lifecycle-status/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result — jobstate-lifecycle-status\n\n- **change**: jobstate-lifecycle-status\n- **type**: spec-change\n- **iteration**: 1\n- **verdict**: approved\n\n## Summary\n\n仕様は request.md の全 21 要件を網羅し、設計判断（D1–D8）の根拠が明確。delta spec のシナリオカバレッジが高く、既存 spec との参照関係も正確。tasks.md は Phase 順序が依存関係に沿っており、コードスニペット付きで implementer の迷いが少ない構成。\n\nCRITICAL/HIGH の findings なし。以下 MEDIUM 1 件、LOW 2 件を記録する。\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | completeness | tasks.md (Task 2.4) | `handlePostPipelineState` の先頭にある `SPEC_REVIEW_RESULT_NOT_FOUND` guard が `awaiting-resume` check より先に発火する。新設計では SPEC_REVIEW_RESULT_NOT_FOUND は non-fatal（awaiting-resume に遷移）だが、既存 guard が `onFailure()` を呼び error メッセージを表示して return 1 する。worktree は Task 3.2 で保護されるが、ユーザーに resume 可能である旨が表示されない | Task 2.4 で `awaiting-resume` status check を `SPEC_REVIEW_RESULT_NOT_FOUND` guard **より前**に配置する。または SPEC_REVIEW_RESULT_NOT_FOUND guard 内で `status === \"awaiting-resume\"` を分岐し resume メッセージを出す |\n| 2 | LOW | consistency | design.md (D8) / request.md (Req 9) | request.md Req 9 が `AGENT_STEP_FAILED` を fatal error の例示に含めるが、design.md D8 の `FATAL_ERROR_CODES` には含まれていない。design の「明示リストで意識的に判断」方針は妥当だが、request との乖離が未説明 | design.md D8 の Rationale に `AGENT_STEP_FAILED` を除外した理由を 1 文追記する（例: agent step failure は retry 可能なため non-fatal とする） |\n| 3 | LOW | maintainability | tasks.md (Task 2.4) | `(finalState as any).resumePoint` の any cast。Phase 1 (Task 1.3) で `JobState` に `resumePoint` を追加済みのため不要 | `finalState.resumePoint` に変更。Phase 1 完了後は型が通る |\n\n## Detailed Assessment\n\n### Completeness (request ↔ spec)\n\n全 21 要件が proposal.md / design.md / tasks.md / delta specs のいずれかでカバーされている。\n\n- Req 1–3 (JobStatus 拡張): delta spec `job-state-store.delta.md` MODIFIED Requirement\n- Req 4–6 (ResumePoint): delta spec `job-state-store.delta.md` NEW Requirement\n- Req 7–9 (Pipeline escalation): delta spec `step-execution-architecture.delta.md` MODIFIED Requirement + design D3/D4/D8\n- Req 10–12 (SIGINT): delta spec `step-execution-architecture.delta.md` NEW Requirement + design D5\n- Req 13–14 (ps): delta spec `job-state-store.delta.md` MODIFIED Requirement (stale + ACTIVE_STATUSES)\n- Req 15–16 (assertJobFinishable): tasks.md Task 4.3 exhaustive switch\n- Req 17 (validateJobState): delta spec `job-state-store.delta.md` NEW Requirement + tasks.md Task 1.4–1.5\n- Req 18–19 (backward compat): design D7 + delta spec stale scenario\n- Req 20–21 (delta spec 存在): 2 ファイル確認済み\n\n### Consistency (spec ↔ existing codebase)\n\n- 既存 `job-state-store/spec.md` の JobStatus は `\"running\" | \"success\" | \"failed\" | \"terminated\" | \"archived\"` だが、実コードは既に `success` → `awaiting-merge` に on-read remap 済み。delta spec は実コードに合わせた `awaiting-merge` を使用しており正しい。`success` → `awaiting-merge` のリネームは本 change の scope 外（既存 spec debt）\n- `SPEC_REVIEW_RETRIES_EXHAUSTED` scenario の既存 spec は `state.status は success` と記述するが、実コードは `failed`。delta spec が `awaiting-resume` に置き換えるのは既存 spec / code 両方からの deviation だが、design D4 の根拠が妥当\n- `StepName` 型は `src/state/schema.ts` L14 で定義済み。`ResumePoint.step: StepName` は型安全\n\n### Feasibility\n\n- Phase 1 (schema) → Phase 2 (pipeline) → Phase 3 (SIGINT) → Phase 4 (ps/finish) → Phase 5 (tests) の順序は依存グラフに沿っており実行可能\n- FATAL_ERROR_CODES の明示リスト方式は、新 error code 追加時に意識的な判断を強制する良い設計\n- SIGINT handler での best-effort persist は signal handler の制約下で妥当\n\n### Scenarios Coverage (delta specs)\n\n`job-state-store.delta.md`: 11 scenarios（status persistence 2、resumePoint 設定 4、legacy compat 2、validation 2、stale detection + active filter 3）\n`step-execution-architecture.delta.md`: 5 scenarios（escalation 3、SIGINT 2）\n\nカバレッジは十分。境界条件（fatal vs non-fatal、legacy state、concurrent signal）も含まれている。\n"
+        },
+        "startedAt": "2026-05-07T08:49:15.532Z",
+        "endedAt": "2026-05-07T08:49:15.532Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2074,
+            "outputTokens": 4435,
+            "cacheReadInputTokens": 45145,
+            "cacheCreationInputTokens": 54144
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 16,
+            "outputTokens": 10659,
+            "cacheReadInputTokens": 483362,
+            "cacheCreationInputTokens": 40970
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-07T08:53:34.983Z",
+        "endedAt": "2026-05-07T08:53:34.983Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2124,
+            "outputTokens": 5474,
+            "cacheReadInputTokens": 597899,
+            "cacheCreationInputTokens": 80350
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 66,
+            "outputTokens": 35762,
+            "cacheReadInputTokens": 3933836,
+            "cacheCreationInputTokens": 163484
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "openspec/changes/jobstate-lifecycle-status/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — jobstate-lifecycle-status — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.7s | 0 |\n| 2 | typecheck | passed | 1.5s | 0 |\n| 3 | test | passed | 3.0s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n\u001b[1m\u001b[30m\u001b[46m RUN \u001b[49m\u001b[39m\u001b[22m \u001b[36mv4.1.5 \u001b[39m\u001b[90m~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/jobstate-lifecycle-status-7165b5a5\u001b[39m\n\n \u001b[32m✓\u001b[39m tests/spec-review-step.test.ts \u001b[2m(\u001b[22m\u001b[2m8 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 165\u001b[2mms\u001b[22m\u001b[39m\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\n \u001b[32m✓\u001b[39m tests/init.test.ts \u001b[2m(\u001b[22m\u001b[2m10 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 219\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/config/runtime-config.test.ts \u001b[2m(\u001b[22m\u001b[2m21 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 183\u001b[2mms\u001b[22m\u001b[39m\n[iter 1/1] starting propose\n \u001b[32m✓\u001b[39m tests/cli.test.ts \u001b[2m(\u001b[22m\u001b[2m7 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 213\u001b[2mms\u001b[22m\u001b[39m\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\n \u001b[32m✓\u001b[39m tests/pipeline.test.ts \u001b[2m(\u001b[22m\u001b[2m8 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 271\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/doctor-cli.test.ts \u001b[2m(\u001b[22m\u001b[2m8 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 335\u001b[2mms\u001b[22m\u001b[39m\n     \u001b[33m\u001b[2m✓\u001b[22m\u001b[39m TC-062: writes USAGE to stderr and exits 2 when no command given \u001b[33m 307\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/finish-orchestrator.test.ts \u001b[2m(\u001b[22m\u001b[2m13 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 103\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/pipeline/pipeline.test.ts \u001b[2m(\u001b[22m\u001b[2m11 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 92\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/adapter/managed-agent/agent-runner.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 83\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/rm.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 105\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/step/review-exit-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m33 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 62\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/core/pipeline/pipeline.transitions.test.ts \u001b[2m(\u001b[22m\u001b[2m37 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 91\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/finish-ps-integration.test.ts \u001b[2m(\u001b[22m\u001b[2m13 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 55\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/finish-job-state.test.ts \u001b[2m(\u001b[22m\u001b[2m13 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 68\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/grep-no-bun-imports.test.ts \u001b[2m(\u001b[22m\u001b[2m3 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 87\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/step/executor.test.ts \u001b[2m(\u001b[22m\u001b[2m9 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 76\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/adapter/agent-runner-port.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 80\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts \u001b[2m(\u001b[22m\u001b[2m8 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 56\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/store/job-state-store.test.ts \u001b[2m(\u001b[22m\u001b[2m9 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 56\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/pipeline-integration.test.ts \u001b[2m(\u001b[22m\u001b[2m13 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[33m 823\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/error-codes.test.ts \u001b[2m(\u001b[22m\u001b[2m13 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 49\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/custom-tools.test.ts \u001b[2m(\u001b[22m\u001b[2m10 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 65\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/state-store.test.ts \u001b[2m(\u001b[22m\u001b[2m9 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 63\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/finish-adversarial.test.ts \u001b[2m(\u001b[22m\u001b[2m8 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 52\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/core/verification/runner.test.ts \u001b[2m(\u001b[22m\u001b[2m5 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 38\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/step/executor-helpers.test.ts \u001b[2m(\u001b[22m\u001b[2m8 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 34\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/step/pr-create.test.ts \u001b[2m(\u001b[22m\u001b[2m13 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 41\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/state/session-timeout-migration.test.ts \u001b[2m(\u001b[22m\u001b[2m8 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 34\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/remove-session-timeout.test.ts \u001b[2m(\u001b[22m\u001b[2m9 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 57\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/steps/spec-review.test.ts \u001b[2m(\u001b[22m\u001b[2m6 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 75\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/adapter/claude-code/agent-runner.test.ts \u001b[2m(\u001b[22m\u001b[2m24 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 41\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/step/step-interface.test.ts \u001b[2m(\u001b[22m\u001b[2m12 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 33\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/core/verification/propagate.test.ts \u001b[2m(\u001b[22m\u001b[2m6 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 26\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/finish-resolve-target.test.ts \u001b[2m(\u001b[22m\u001b[2m7 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 43\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/cli-stdout-snapshot.test.ts \u001b[2m(\u001b[22m\u001b[2m3 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 41\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/state/io.test.ts \u001b[2m(\u001b[22m\u001b[2m3 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 24\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/parser.test.ts \u001b[2m(\u001b[22m\u001b[2m16 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 14\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/core/pr-create/runner.test.ts \u001b[2m(\u001b[22m\u001b[2m7 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 14\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/config/migrate.test.ts \u001b[2m(\u001b[22m\u001b[2m13 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 5\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/worktree/manager.test.ts \u001b[2m(\u001b[22m\u001b[2m11 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 11\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/agent-definition.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 11\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/agent/registry.test.ts \u001b[2m(\u001b[22m\u001b[2m15 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 11\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/event/event-bus.test.ts \u001b[2m(\u001b[22m\u001b[2m8 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 7\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/agent/syncer-rollback.test.ts \u001b[2m(\u001b[22m\u001b[2m5 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 15\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/session-runner.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 6\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/cli-run-verdict.test.ts \u001b[2m(\u001b[22m\u001b[2m5 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 9\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/storage/jobs-writable.test.ts \u001b[2m(\u001b[22m\u001b[2m5 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/prompts/propose-system.test.ts \u001b[2m(\u001b[22m\u001b[2m18 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 7\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/adapter/github/get-raw-file.test.ts \u001b[2m(\u001b[22m\u001b[2m4 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 9\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/step/code-fixer.test.ts \u001b[2m(\u001b[22m\u001b[2m23 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 5\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/grep-no-step-name-hardcode.test.ts \u001b[2m(\u001b[22m\u001b[2m4 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 8\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/formatter.test.ts \u001b[2m(\u001b[22m\u001b[2m11 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 8\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/schema.test.ts \u001b[2m(\u001b[22m\u001b[2m13 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 9\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/logger/stdout-verbose.test.ts \u001b[2m(\u001b[22m\u001b[2m3 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/finish-archive-openspec.test.ts \u001b[2m(\u001b[22m\u001b[2m9 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 8\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/adapter/managed-agent/session-client.test.ts \u001b[2m(\u001b[22m\u001b[2m3 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 5\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/adapter/github/get-ref-sha.test.ts \u001b[2m(\u001b[22m\u001b[2m6 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 6\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/agent/syncer.test.ts \u001b[2m(\u001b[22m\u001b[2m7 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 6\u001b[2mms\u001b[22m\u001b[39m\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\n \u001b[32m✓\u001b[39m tests/unit/core/finish/preflight.test.ts \u001b[2m(\u001b[22m\u001b[2m10 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 12\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/step/implementer.test.ts \u001b[2m(\u001b[22m\u001b[2m10 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/core/pr-create/body-template.test.ts \u001b[2m(\u001b[22m\u001b[2m4 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/github-device.test.ts \u001b[2m(\u001b[22m\u001b[2m7 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 8\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/completion.test.ts \u001b[2m(\u001b[22m\u001b[2m7 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 7\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/auth/anthropic-key-valid.test.ts \u001b[2m(\u001b[22m\u001b[2m6 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 5\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/runner.test.ts \u001b[2m(\u001b[22m\u001b[2m4 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 8\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/config/github-token-present.test.ts \u001b[2m(\u001b[22m\u001b[2m3 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 2\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/parser/review-verdict.test.ts \u001b[2m(\u001b[22m\u001b[2m21 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/prompts/spec-fixer-system.test.ts \u001b[2m(\u001b[22m\u001b[2m5 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/step/requires-commit-flags.test.ts \u001b[2m(\u001b[22m\u001b[2m7 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/agents/definition-drift.test.ts \u001b[2m(\u001b[22m\u001b[2m3 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 9\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/step/code-review.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 5\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/cli/progress.test.ts \u001b[2m(\u001b[22m\u001b[2m7 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/agent/hash.test.ts \u001b[2m(\u001b[22m\u001b[2m9 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 7\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/state/job-slug.test.ts \u001b[2m(\u001b[22m\u001b[2m24 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 5\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/config/step-config.test.ts \u001b[2m(\u001b[22m\u001b[2m19 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 8\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/git-remote.test.ts \u001b[2m(\u001b[22m\u001b[2m8 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 10\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/step/agent-definition.test.ts \u001b[2m(\u001b[22m\u001b[2m22 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 5\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/agents/environment-registered.test.ts \u001b[2m(\u001b[22m\u001b[2m3 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 6\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/step/build-fixer.test.ts \u001b[2m(\u001b[22m\u001b[2m14 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/core/pipeline/run.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 3\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/config/schema.test.ts \u001b[2m(\u001b[22m\u001b[2m7 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 3\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/state/helpers.test.ts \u001b[2m(\u001b[22m\u001b[2m8 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/runtime/openspec.test.ts \u001b[2m(\u001b[22m\u001b[2m3 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 6\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/finish-move-requests-dir.test.ts \u001b[2m(\u001b[22m\u001b[2m4 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 5\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/register-branch-schema.test.ts \u001b[2m(\u001b[22m\u001b[2m15 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/prompts/implementer-system.test.ts \u001b[2m(\u001b[22m\u001b[2m9 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 5\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/config/anthropic-key-present.test.ts \u001b[2m(\u001b[22m\u001b[2m3 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 2\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/auth/github-token-valid.test.ts \u001b[2m(\u001b[22m\u001b[2m6 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 3\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/repo/workflow-structure.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/config/file-exists.test.ts \u001b[2m(\u001b[22m\u001b[2m5 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/spec-review-verdict.test.ts \u001b[2m(\u001b[22m\u001b[2m11 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 3\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/step/step-model-maxturn-config.test.ts \u001b[2m(\u001b[22m\u001b[2m16 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 7\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/adapter/github/verify-path.test.ts \u001b[2m(\u001b[22m\u001b[2m4 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/cli/run-worktree-signal.test.ts \u001b[2m(\u001b[22m\u001b[2m3 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 3\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/repo/github-origin.test.ts \u001b[2m(\u001b[22m\u001b[2m4 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/storage/old-state-files.test.ts \u001b[2m(\u001b[22m\u001b[2m3 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 5\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/all-checks.test.ts \u001b[2m(\u001b[22m\u001b[2m3 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/config/getAgentId.test.ts \u001b[2m(\u001b[22m\u001b[2m6 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 6\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/repo/openspec-project-md.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 6\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/runtime/node.test.ts \u001b[2m(\u001b[22m\u001b[2m4 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/step/verification.test.ts \u001b[2m(\u001b[22m\u001b[2m7 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 3\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/runtime/bun.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 6\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/runtime/git.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 5\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/repo/git-repository.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 3\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/env/github-client-id.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 2\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/unit/core/step/types.test.ts \u001b[2m(\u001b[22m\u001b[2m5 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 2\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/core/doctor/checks/agents/agents-registered.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 2\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m✓\u001b[39m tests/finish-escalation.test.ts \u001b[2m(\u001b[22m\u001b[2m2 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 2\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m108 passed\u001b[39m\u001b[22m\u001b[90m (108)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m963 passed\u001b[39m\u001b[22m\u001b[90m (963)\u001b[39m\n\u001b[2m   Start at \u001b[22m 18:03:17\n\u001b[2m   Duration \u001b[22m 2.76s\u001b[2m (transform 2.03s, setup 0ms, import 3.34s, tests 4.36s, environment 7ms)\u001b[22m\n\n\n$ vitest run\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/jobstate-lifecycle-status-7165b5a5/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-07T09:03:14.467Z",
+        "endedAt": "2026-05-07T09:03:14.467Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "openspec/changes/jobstate-lifecycle-status/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review — jobstate-lifecycle-status — Iteration 1\n\n## Summary\n\nJobStatus lifecycle の再設計。`awaiting-resume` / `canceled` の追加、ResumePoint schema、Pipeline の escalation/exhaustion 遷移変更、SIGINT handler の worktree 保持、ps / assertJobFinishable / validateJobState の対応。設計に忠実な実装。型安全性の活用（exhaustive switch）が良い。テスト 963 件全 green、typecheck clean。\n\n## Scores\n\n| Category | Score | Weight | Weighted |\n|----------|-------|--------|----------|\n| correctness | 8 | 0.30 | 2.40 |\n| security | 8 | 0.25 | 2.00 |\n| architecture | 8 | 0.15 | 1.20 |\n| performance | 9 | 0.10 | 0.90 |\n| maintainability | 8 | 0.10 | 0.80 |\n| testing | 7 | 0.10 | 0.70 |\n| **Total** | | | **8.00** |\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | maintainability | src/cli/ps.ts:66 | TTY STATUS 列の `padEnd(12)` に対し `\"running (stale?)\"` は 17 文字、`\"awaiting-resume\"` は 15 文字で溢れる。列がズレる（`\"awaiting-merge\"` 14 文字も既存で溢れていた）。 | `padEnd(12)` → `padEnd(18)` に変更。header の `\"STATUS\".padEnd(12)` も同様に合わせる。 |\n| 2 | MEDIUM | correctness | src/state/schema.ts:322-325 | `resumePoint` validation が `typeof === \"object\"` の浅いチェックのみ。`resumePoint: {}` や `{ step: 123 }` が通過し、runtime で `resumePoint.step` アクセス時に予期しない値になる。 | `step` (string), `reason` (string), `iterationsExhausted` (number) の型チェックを追加する。 |\n| 3 | LOW | consistency | src/core/pipeline/pipeline.ts:13-18 | `FATAL_ERROR_CODES` に `AGENT_STEP_FAILED` が含まれない。design.md D3 では例示されているが D8 の定義リストには含まれていない。意図的な除外であれば D3 の文言を修正すべき。 | design.md D3 から `AGENT_STEP_FAILED` の言及を削除するか、コメントで「D8 が definitive list」と明記する。 |\n| 4 | LOW | testing | tests/ | SIGINT handler による `awaiting-resume` 遷移 + worktree 保持のシナリオは unit test なし。signal handler のテストは困難だが、`signalCleanup` を分離して `updateJobState` 呼び出しだけ検証可能。 | `signalCleanup` の状態遷移ロジックを抽出した関数に分離し、unit test を追加する（signal 送信自体はテスト不要）。 |\n\n## Verdict\n\n- **verdict**: approved\n\n## Rationale\n\nCRITICAL: 0, HIGH: 0。Total 8.00 ≥ 7.0 threshold。\n\nMEDIUM 2 件はいずれも機能破壊ではない：\n- #1 は表示上の列ズレ（pre-existing: `awaiting-merge` も同様に溢れていた）\n- #2 は defensive validation の深さ。現状の producer は正しい shape を書くため、実害は legacy/手動編集時のみ\n\n両方とも次の改善サイクルで対応可能。\n"
+        },
+        "startedAt": "2026-05-07T09:03:22.320Z",
+        "endedAt": "2026-05-07T09:03:22.320Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2133,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 21,
+            "outputTokens": 8127,
+            "cacheReadInputTokens": 1080366,
+            "cacheCreationInputTokens": 66638
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "openspec/changes/jobstate-lifecycle-status/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — jobstate-lifecycle-status\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/107\n- **Number**: 107\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-07T09:06:46.959Z",
+        "endedAt": "2026-05-07T09:06:46.959Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/107",
+    "number": 107,
+    "createdAt": "2026-05-07T09:06:50.342Z"
+  }
+}

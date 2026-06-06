@@ -1,0 +1,780 @@
+{
+  "version": 1,
+  "jobId": "19697d75-3ca2-4844-beae-76653969d6c6",
+  "createdAt": "2026-05-25T10:26:11.491Z",
+  "updatedAt": "2026-05-25T12:11:19.872Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/delta-validation-post-code-review/request.md",
+    "title": "baseline 編集違反を pipeline 内で構造的に検出・自動修正する (= delta-spec-validation を code-review 後にも再実行 + 違反検出 rule 追加)",
+    "type": "spec-change",
+    "slug": "delta-validation-post-code-review"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 46319,
+  "branch": "change/delta-validation-post-code-review-19697d75",
+  "history": [
+    {
+      "ts": "2026-05-25T10:26:11.491Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-25T10:26:13.199Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-25T10:36:48.004Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-25T10:36:48.006Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-25T10:36:48.009Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-25T10:36:48.016Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-25T10:36:48.018Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-25T10:36:48.018Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-25T10:36:48.018Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-25T10:39:54.032Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-25T10:39:54.035Z",
+      "step": "spec-review",
+      "status": "warning",
+      "message": "spec-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-25T10:39:54.035Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → spec-fixer"
+    },
+    {
+      "ts": "2026-05-25T10:39:54.036Z",
+      "step": "spec-fixer-started",
+      "status": "started",
+      "message": "Starting spec-fixer step"
+    },
+    {
+      "ts": "2026-05-25T10:40:35.180Z",
+      "step": "spec-fixer-verdict",
+      "status": "ok",
+      "message": "spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-25T10:40:35.184Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → delta-spec-validation (iter 1)"
+    },
+    {
+      "ts": "2026-05-25T10:40:35.186Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-25T10:40:35.195Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-25T10:40:35.197Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-25T10:40:35.198Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-25T10:40:35.198Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-25T10:44:30.915Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-25T10:44:30.918Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-25T10:44:30.918Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-25T10:44:30.920Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-25T10:45:59.272Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-25T10:45:59.276Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 2)"
+    },
+    {
+      "ts": "2026-05-25T10:45:59.277Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-25T11:04:17.501Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-25T11:04:17.505Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-25T11:04:17.505Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-25T11:04:17.506Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-25T11:04:32.000Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-25T11:04:32.003Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-25T11:04:32.003Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-25T11:04:32.004Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-25T11:04:32.005Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-25T11:09:47.749Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-25T11:09:47.752Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-25T11:09:47.752Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-25T11:09:47.754Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-25T11:13:57.325Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-25T11:13:57.326Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-25T11:13:57.327Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-25T11:13:57.327Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-25T11:19:23.038Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-25T11:19:23.041Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 2 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-25T11:19:23.041Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-25T11:19:23.042Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-25T11:20:32.603Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-25T11:20:32.606Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-25T11:20:32.607Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 3 started"
+    },
+    {
+      "ts": "2026-05-25T11:20:32.608Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-25T11:23:41.150Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-25T11:23:41.153Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 3 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-25T11:23:41.153Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → adr-gen"
+    },
+    {
+      "ts": "2026-05-25T11:23:41.154Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-25T11:26:34.894Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-25T11:26:34.897Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-25T11:26:34.898Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-25T11:26:36.685Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-25T11:26:36.690Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-25T12:11:19.872Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "3ef9320d-bffc-4e4f-9b59-76fadf0e4304",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-25T10:26:13.208Z",
+        "endedAt": "2026-05-25T10:36:46.244Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 7955,
+            "outputTokens": 19830,
+            "cacheReadInputTokens": 2240089,
+            "cacheCreationInputTokens": 174363
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 25,
+            "outputTokens": 30041,
+            "cacheReadInputTokens": 1418159,
+            "cacheCreationInputTokens": 101452
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/delta-validation-post-code-review/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-25T10:36:48.009Z",
+        "endedAt": "2026-05-25T10:36:48.016Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/delta-validation-post-code-review/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-25T10:40:35.187Z",
+        "endedAt": "2026-05-25T10:40:35.194Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "425993c1-e5b4-4e55-ad7f-86b685ee7857",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/delta-validation-post-code-review/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result\n\n- **verdict**: needs-fix\n- **reviewer**: spec-review agent\n- **date**: 2026-05-25\n\n---\n\n## Summary\n\nrequest / design / tasks の整合性は概ね良好。delta spec の format も通っている。ただし `specs/delta-spec-rule/spec.md` に **baseline と矛盾する Requirement が生じる構造的な問題** が 1 件あり、修正が必要。\n\n---\n\n## Findings\n\n### [BLOCKER] createDeltaSpecRegistry() 要件ヘッダーの不一致によるベースライン矛盾\n\n**場所**: `specrunner/changes/delta-validation-post-code-review/specs/delta-spec-rule/spec.md`\n\n**問題**:\n\ndelta spec に追加された要件ヘッダー:\n```\n### Requirement: createDeltaSpecRegistry() SHALL register 10 rules\n```\n\nベースライン `specrunner/specs/delta-spec-rule/spec.md` の既存ヘッダー:\n```\n### Requirement: createDeltaSpecRegistry() の戻り型を DeltaSpecRuleRegistry<DeltaSpecRuleName> に変更\n```\n\nヘッダーが異なるため、delta が `ADDED` として扱われる。`finish` 時に spec-merge を実行すると、ベースラインに両要件が共存する状態になる:\n\n- `createDeltaSpecRegistry() の戻り型を DeltaSpecRuleRegistry<DeltaSpecRuleName> に変更` → 登録 rule 数は **9**\n- `createDeltaSpecRegistry() SHALL register 10 rules` → 登録 rule 数は **10**\n\n2 要件が矛盾した状態でベースラインに残る。これは spec integrity violation。\n\n**修正方法 (いずれか)**:\n\n**A案 (推奨)**: delta spec 内のヘッダーをベースラインと完全一致させて MODIFIED 扱いにする\n```markdown\n### Requirement: createDeltaSpecRegistry() の戻り型を DeltaSpecRuleRegistry<DeltaSpecRuleName> に変更\n\n`src/core/spec/rules/index.ts` の `createDeltaSpecRegistry()` SHALL `DeltaSpecRuleRegistry<DeltaSpecRuleName>` を返し、10 rule を登録する:\n\n`noLegacyFlatFile`, `noLegacyFlatDir`, `canonicalSpecStructure`, `removedSectionFormat`, `renamedSectionFormat`, `requirementHeaderRequired`, `scenarioRequiredPerRequirement`, `normativeKeywordRequired`, `baselineHeaderMatch`, `noAuthoritySpecDirectEdit`\n\n`no-specs-for-required-type` は D9 設計で early-return 用途のため registry には登録しない。\n\n#### Scenario: registry contains 10 rules\n...\n```\n\n**B案**: `## Renamed` セクションで旧ヘッダーを新ヘッダーに改名し、本文を更新\n```markdown\n## Renamed\n- \"createDeltaSpecRegistry() の戻り型を DeltaSpecRuleRegistry<DeltaSpecRuleName> に変更\" → \"createDeltaSpecRegistry() SHALL register 10 rules\"\n```\n\n---\n\n## Non-blocking Observations\n\n以下は今回の verdict には影響しないが、実装時に注意を要する点として記録する。\n\n### [NOTE] D4 shared loop budget の記述が微妙\n\n`design.md` D4 の「budget は通算 — 1 回目 phase で iteration を消費しても 2 回目で fixer loop は継続可能」は、1 回目 phase で delta-spec-fixer が `maxIterations` 回使い切った場合、2 回目 phase では fixer loop が即 escalate する事実と矛盾する。記述が楽観的すぎる。ただし、design 後の delta-spec-fixer が maxIterations に達するケースは稀であり、実害は限定的と判断する。tasks.md や spec には影響なし。\n\n### [NOTE] delta-spec-fixer prompt 要件の capability 配置\n\n`specs/delta-spec-rule/spec.md` に `delta-spec-fixer prompt SHALL include baseline rollback instruction` を置いている。delta-spec-fixer は別 capability に相当するが、同一 fix loop の一部として `delta-spec-rule` 配下にまとめる判断は理解できる。ただし将来の可読性のために、別 capability (`delta-spec-fixer`) への分離も検討の余地がある。今回はスコープ内と扱う。\n\n### [NOTE] git diff の baseBranch 引数\n\nTask 7 で `git diff <baseBranch>..HEAD --name-only` を spawn 経由で実行する。`SpawnFn` が Bun.spawn の引数配列渡しであれば shell injection は発生しない。実装時は `[\"diff\", `${baseBranch}..HEAD`, \"--name-only\"]` のように配列要素として渡すこと（template string を shell 文字列として渡さないこと）を確認すること。\n\n---\n\n## Checklist\n\n| 項目 | 結果 |\n|------|------|\n| request と design の整合性 | ✅ 一致 |\n| design と tasks の整合性 | ✅ 一致 |\n| delta spec format (canonical-spec-structure) | ✅ pass |\n| delta spec header が baseline と一致するか（MODIFIED 判定） | ❌ `createDeltaSpecRegistry()` 要件ヘッダー不一致 |\n| 受け入れ基準の網羅性 | ✅ tasks でカバー |\n| セキュリティ (入力バリデーション、injection) | ✅ 低リスク（SpawnFn 経由の引数渡し前提） |\n| スコープ外の記述混入 | ✅ なし |\n"
+        },
+        "startedAt": "2026-05-25T10:36:48.029Z",
+        "endedAt": "2026-05-25T10:39:52.376Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5457,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 11,
+            "outputTokens": 10449,
+            "cacheReadInputTokens": 328115,
+            "cacheCreationInputTokens": 57211
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "3b8f7ab8-c122-4718-96f0-c7577c8dcde0",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/delta-validation-post-code-review/spec-review-result-002.md",
+          "error": null,
+          "fileContent": "# Spec Review Result\n\n- **verdict**: approved\n- **reviewer**: spec-review agent\n- **date**: 2026-05-25\n\n---\n\n## Summary\n\nspec-review-001 の BLOCKER（`createDeltaSpecRegistry()` 要件ヘッダー不一致）は解消済み。delta spec の全要件ヘッダーが baseline と整合しており、request / design / tasks との一貫性も確認できた。以下に主要な検証結果を記録する。\n\n---\n\n## BLOCKER 解消確認\n\n### [RESOLVED] createDeltaSpecRegistry() 要件ヘッダー\n\n`specs/delta-spec-rule/spec.md` の当該要件ヘッダーが baseline と一致していることを確認:\n\n- **delta spec ヘッダー**: `### Requirement: createDeltaSpecRegistry() の戻り型を DeltaSpecRuleRegistry<DeltaSpecRuleName> に変更`\n- **baseline ヘッダー**: `### Requirement: createDeltaSpecRegistry() の戻り型を DeltaSpecRuleRegistry<DeltaSpecRuleName> に変更`\n\n完全一致 → MODIFIED 判定 ✅。`finish` 時に旧 Requirement（rule 数 9）が新内容（rule 数 10）に置換される。矛盾は生じない。\n\n---\n\n## 主要検証結果\n\n### request / design / tasks / delta spec の整合性\n\n| 検証項目 | 結果 |\n|----------|------|\n| `no-authority-spec-direct-edit` rule 追加（要件 1） | design D1 + Task 5・6・13 でカバー ✅ |\n| `changedFiles` injection（要件 1） | design D1（option b 採用）+ Task 3・4・7 で実装手順明確 ✅ |\n| `DeltaSpecViolationReason` 拡張（要件 1） | Task 2 ✅ |\n| pipeline context-aware transition（要件 2） | design D2（`when` predicate）+ D3（STANDARD_TRANSITIONS）+ Task 8・9 ✅ |\n| `delta-spec-fixer` prompt 拡張（要件 3） | design D6 + Task 10 ✅ |\n| `commit-push.ts` halt → warning（要件 4） | design D5 + Task 11・15 ✅ |\n| `rules.ts` / `specs` 整理（要件 5） | Task 12、delta spec 2 ファイル ✅ |\n\n### delta spec format\n\n- `delta-spec-validation-result.md` は `approved` ✅\n- 全 `### Requirement:` ヘッダーに `#### Scenario:` が存在 ✅\n- 全 Requirement 本文に `SHALL` または `MUST` が存在 ✅\n- `## Requirements` セクション構造正常 ✅\n\n### baseline ヘッダー照合\n\n| delta spec | Requirement ヘッダー | 判定 |\n|------------|---------------------|------|\n| `specs/delta-spec-rule/spec.md` | `DeltaSpecRuleName union type` | MODIFIED（baseline に存在 ✅）|\n| `specs/delta-spec-rule/spec.md` | `createDeltaSpecRegistry() の戻り型を...` | MODIFIED（baseline に存在 ✅）|\n| `specs/delta-spec-rule/spec.md` | `DeltaSpecViolationReason union SHALL include...` | ADDED（新規 ✅）|\n| `specs/delta-spec-rule/spec.md` | `DeltaSpecRuleInput SHALL provide optional changedFiles` | ADDED（新規 ✅）|\n| `specs/delta-spec-rule/spec.md` | `no-authority-spec-direct-edit rule SHALL detect...` | ADDED（新規 ✅）|\n| `specs/delta-spec-rule/spec.md` | `delta-spec-fixer prompt SHALL include...` | ADDED（新規 ✅）|\n| `specs/delta-spec-rule/spec.md` | `commit-push SHALL warn instead of halt...` | ADDED（新規 ✅）|\n| `specs/pipeline-orchestrator/spec.md` | `Pipeline is Driven by a Declarative Transition Table` | MODIFIED（baseline に存在 ✅）|\n\n### transition table 正確性\n\npipeline-orchestrator delta spec の full table を baseline（`types.ts` の STANDARD_TRANSITIONS 実装）と照合:\n\n- `code-review --approved→ delta-spec-validation` (新): 設計と一致 ✅\n- `delta-spec-validation --approved→ adr-gen` (when: code-review 実行済み): 設計と一致 ✅\n- `delta-spec-validation --approved→ spec-review` (fallback): 既存維持 ✅\n- `delta-spec-fixer --approved→ delta-spec-validation`: 2 回目 phase でも機能 ✅\n- その他 28 行: regression なし ✅\n\npredicate `(state) => (state.steps?.[\"code-review\"]?.length ?? 0) > 0` と `Array.find()` first-match による順序制御は設計上正しい。\n\n### セキュリティ\n\n- `git diff <baseBranch>..HEAD --name-only` の `baseBranch` injection: `SpawnFn` が配列引数渡し（`Bun.spawn` ベース）であれば shell injection は発生しない。Task 7 の実装時に template string ではなく配列要素として渡すことを確認すること（前回レビューの NOTE を引き継ぐ）\n- `stderrWrite` でユーザー制御パス文字列を出力するが、内部ログに留まり外部露出なし\n- auth / HTTP endpoint 変更なし — 総合リスク: 低\n\n---\n\n## Non-blocking Observations\n\n### [NOTE] D4 shared loop budget の記述\n\ndesign.md D4 の「budget は通算 — 1 回目 phase で iteration を消費しても 2 回目で fixer loop は継続可能」という説明は、1 回目で `maxIterations` を消費しきった場合に 2 回目で即 escalate になる事実と整合しない。spec 記述には影響しないが、実装者・運用者への誤解を生む可能性がある。spec の Scenario には反映されていないため今回は non-blocking とする。\n\n### [NOTE] 2 回目 phase の loop exhaustion Scenario が未記載\n\npipeline-orchestrator delta spec に「2 回目 delta-spec-validation が maxIterations を超えた場合 → escalate」の Scenario がない。既存 `DELTA_SPEC_VALIDATION_RETRIES_EXHAUSTED` がそのまま適用されるため動作上の問題はなく、non-blocking。\n\n### [NOTE] delta-spec-fixer prompt 要件の capability 配置\n\n`specs/delta-spec-rule/spec.md` に `delta-spec-fixer prompt` 要件を置いている点は前回レビューと同様の観察。同一 fix loop の一部として集約する判断は理解できる。non-blocking。\n\n---\n\n## Checklist\n\n| 項目 | 結果 |\n|------|------|\n| request と design の整合性 | ✅ 一致 |\n| design と tasks の整合性 | ✅ 一致 |\n| delta spec format（canonical-spec-structure） | ✅ pass（validation-result approved）|\n| delta spec ヘッダーが baseline と一致するか | ✅ 全 MODIFIED 項目で一致 |\n| 受け入れ基準の網羅性 | ✅ tasks でカバー |\n| セキュリティ（入力バリデーション、injection） | ✅ 低リスク（SpawnFn 配列渡し前提） |\n| スコープ外記述の混入 | ✅ なし |\n| spec-review-001 BLOCKER の解消確認 | ✅ 解消済み |\n"
+        },
+        "startedAt": "2026-05-25T10:40:35.211Z",
+        "endedAt": "2026-05-25T10:44:29.223Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5457,
+            "outputTokens": 20,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 13,
+            "outputTokens": 10039,
+            "cacheReadInputTokens": 394365,
+            "cacheCreationInputTokens": 53953
+          }
+        }
+      }
+    ],
+    "spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "3b97dc92-f62c-4bf8-9a7f-da3e11f77e71",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-25T10:39:54.049Z",
+        "endedAt": "2026-05-25T10:40:33.618Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 705,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 7,
+            "outputTokens": 1597,
+            "cacheReadInputTokens": 92613,
+            "cacheCreationInputTokens": 16475
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "8a1a0053-221e-47d4-a600-86238b973d8d",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-25T10:44:30.932Z",
+        "endedAt": "2026-05-25T10:45:57.646Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4234,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 5620,
+            "cacheReadInputTokens": 60394,
+            "cacheCreationInputTokens": 24232
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "8c07b141-d7c9-4429-a559-adf1870bd20e",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-25T10:45:59.293Z",
+        "endedAt": "2026-05-25T11:04:15.700Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5568,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 1446,
+            "outputTokens": 64390,
+            "cacheReadInputTokens": 9907192,
+            "cacheCreationInputTokens": 168928
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/delta-validation-post-code-review/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — delta-validation-post-code-review — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.3s | 0 |\n| 2 | typecheck | passed | 2.6s | 0 |\n| 3 | test | passed | 9.0s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n| 6 | test-coverage | passed | 0.0s | 0 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/delta-validation-post-code-review-19697d75\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t144d\n\n Test Files  252 passed (252)\n      Tests  2815 passed (2815)\n   Start at  20:04:21\n   Duration  8.72s (transform 5.10s, setup 0ms, import 11.21s, tests 16.14s, environment 19ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-nFlRt1/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-aL8QJK/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/delta-validation-post-code-review-19697d75/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n\n## Phase: test-coverage\n\n```\ntest-coverage: 0/0 must TCs covered (no must TCs defined)\n```\n"
+        },
+        "startedAt": "2026-05-25T11:04:17.507Z",
+        "endedAt": "2026-05-25T11:04:31.998Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "39db9548-13a1-4712-82ad-d0f94b98be48",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/delta-validation-post-code-review/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — delta-validation-post-code-review — iter 1\n\n- **verdict**: needs-fix\n- **reviewer**: code-review agent\n- **date**: 2026-05-25\n\n---\n\n## Summary\n\n実装ロジック・設計判断は正しい。型安全性・テスト通過・transition 順序・warning 化 2 経路すべて意図通りに実装されている。ただし test-cases.md で **must** 指定された TC が複数未実装のため、主要メカニズムの自動検証が欠けている。\n\n---\n\n## Findings\n\n| # | Severity | Category | File | Description |\n|---|----------|----------|------|-------------|\n| F-01 | HIGH | test-coverage | `tests/unit/core/spec/rules/no-authority-spec-direct-edit.test.ts` | TC-RULE-08 (must): `createDeltaSpecRegistry()` に `\"no-authority-spec-direct-edit\"` が登録されているかを確認するテストが存在しない。rule の単体テスト (TC-1〜6) は通っているが、registry 統合点が無検証。 |\n| F-02 | HIGH | test-coverage | (新規ファイル必要) | TC-INJ-01 (must): `DeltaSpecValidationStep.run()` が `git diff <baseBranch>..HEAD --name-only` を spawn し、結果を `changedFiles` として `validateDeltaSpecPaths()` に渡すことを検証するテストがない。changedFiles injection が pipeline で機能しているかどうかが未検証。 |\n| F-03 | HIGH | test-coverage | (新規ファイル必要) | TC-INJ-02 (must): `git diff` が失敗した場合に `changedFiles = undefined` で degradation し、pipeline がエラーにならないことを検証するテストがない。 |\n| F-04 | HIGH | test-coverage | `tests/unit/step/executor.commit.test.ts` | TC-CP-01 (must): staged files に `specrunner/specs/foo/spec.md` を含めたときに `\"Warning: authority spec edit detected in staged files\"` が stderr に出力されるテストがない。TC-CAP-NEW-001〜008 は authority spec path を git diff の stdout に含めておらず、warning 分岐は一度も通らない。 |\n| F-05 | HIGH | test-coverage | `tests/unit/step/executor.commit.test.ts` | TC-CP-04 (must): HEAD diff 経路で agent self-commit に `specrunner/specs/foo/spec.md` が含まれるとき `\"Warning: authority spec edit detected in agent commits\"` が stderr に出力されるテストがない。TC-CAP-NEW-007 は \"Detected agent-authored commit\" メッセージしか検証しておらず、authority spec warning 分岐は未通過。 |\n| F-06 | LOW | prompt-quality | `src/core/step/delta-spec-fixer.ts` | `buildDeltaSpecFixerInitialMessage` にて、指示 6「ファイルを worktree に書き出したら end_turn してください」が指示 7「authority-spec-direct-edit の rollback」の前に現れる。agent が 6 を「即 end_turn」と解釈すると指示 7 を読まずに終了するリスクがある。end_turn 指示を最後に移動することを推奨。 |\n| F-07 | LOW | maintainability | `tests/unit/pipeline/transition-when.test.ts` | TC-WHEN-02: `expect(STANDARD_TRANSITIONS.length).toBe(31)` は行数ハードコードのアサーション。transition 追加・削除のたびに壊れる。このアサーションは削除、または特定 transition の存在確認に置換することを推奨。 |\n\n---\n\n## Detail\n\n### F-01: TC-RULE-08 — registry 登録の未検証\n\n`src/core/spec/rules/index.ts` の `createDeltaSpecRegistry()` に `noAuthoritySpecDirectEdit` が登録されているのはコード上確認できる。しかし `tests/unit/core/spec/rules/*.test.ts` に registry 登録を確認するテストが存在しない。同等のパターンとして、他の rule では `integration.test.ts` が registry オブジェクトに対する確認を行っているが、新 rule はここにも含まれていない。\n\n**修正**: `no-authority-spec-direct-edit.test.ts` または `integration.test.ts` に以下を追加する。\n\n```typescript\nimport { createDeltaSpecRegistry } from \"../../../../../src/core/spec/rules/index.js\";\n\nit(\"createDeltaSpecRegistry includes no-authority-spec-direct-edit\", () => {\n  const registry = createDeltaSpecRegistry();\n  const names = registry.rules.map(r => r.name);\n  expect(names).toContain(\"no-authority-spec-direct-edit\");\n});\n```\n\n### F-02, F-03: TC-INJ-01, TC-INJ-02 — changedFiles injection 未検証\n\n`DeltaSpecValidationStep.run()` が `deps.spawn` を使って `git diff main..HEAD --name-only` を実行し、その結果を `validateDeltaSpecPaths()` に渡す部分は実装されている。しかしこの injection path を検証するテストが存在しない。\n\nrule 単体テスト (F-01 経由で機能する) とは別に、ステップが spawn を正しい引数で呼び出し、stdout を changedFiles として注入することを確認する必要がある。`validateDeltaSpecPaths` を vi.mock して呼び出し引数を検証するか、実際の fs mock を使った CliStep テストで確認する。\n\n### F-04, F-05: TC-CP-01, TC-CP-04 — warning 出力の未検証\n\n`commit-push.ts` の 2 つの throw 経路を warning ログに変更することが本 request の主要変更の一つ。しかし executor.commit.test.ts の TC-CAP-NEW-* は git diff の stdout に `specrunner/specs/` パスを含めておらず、`findAuthoritySpecViolations()` が violation を返す分岐は一度も通らない。\n\n**修正**: 既存テストの `baseResponses` に以下を追加するか、専用テストを追加する。\n\n```typescript\n// TC-CP-01 のイメージ\n\"diff --cached --name-only\": {\n  exitCode: 0,\n  stdout: \"specrunner/specs/foo/spec.md\\nsrc/core/bar.ts\\n\",\n},\n// 期待: stderr に \"Warning: authority spec edit detected in staged files\" が含まれる\n```\n\n```typescript\n// TC-CP-04 のイメージ  \n\"diff --name-only\": {\n  exitCode: 0,\n  stdout: \"specrunner/specs/foo/spec.md\\n\",\n},\n// 期待: stderr に \"Warning: authority spec edit detected in agent commits\" が含まれる\n```\n\n### F-06: delta-spec-fixer prompt 指示順序\n\n```\n6. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。\n7. If violations include `authority-spec-direct-edit`:\n   a. Revert the authority spec edit: ...\n   b. Write the intended changes to the delta path: ...\n```\n\n指示 6 の「end_turn してください」は作業完了後の動作であることは文脈から読み取れるが、numbered list の構造上、agent が 6 を実行完了条件と解釈して 7 を見落とすリスクがある。指示 7 を 6 の前に移動することで意図が明確になる。\n\n### F-07: 行数ハードコードアサーション\n\n`expect(STANDARD_TRANSITIONS.length).toBe(31)` — transition テーブルは今後も変更されうる。このアサーションは追加変更のたびに手動更新が必要になり、保守コストが高い。削除か、「少なくとも N 件以上」に変更することを推奨。\n\n---\n\n## Positive Observations\n\n- `Transition.when` predicate の設計が clean。pipeline.ts の変更が 1 行追加に収まっており、既存 transition への影響がない。\n- conditional transition を fallback 行の前に配置することで `Array.find` の first-match 特性を正しく利用している。\n- `changedFiles` が undefined の場合に rule を skip する graceful degradation が実装されている。\n- `findAuthoritySpecViolations()` を削除せずに保持する判断は正しい（health check への有用性）。\n- TC-1〜TC-6 (rule unit test)、TC-1〜TC-5 (transition context-aware test) は内容が充実している。\n- typecheck + 2815 tests all green。\n\n---\n\n## How to Fix (優先順)\n\n1. `tests/unit/step/executor.commit.test.ts` に TC-CP-01 / TC-CP-04 相当のテストを追加（authority spec path を diff stdout に含め、stderr warning を検証）\n2. TC-INJ-01 / TC-INJ-02: `DeltaSpecValidationStep` の spawn 呼び出しと changedFiles 注入を検証するテストを追加\n3. TC-RULE-08: `createDeltaSpecRegistry()` の登録確認テストを追加\n4. F-06: `buildDeltaSpecFixerInitialMessage` で指示 6 (end_turn) を指示リストの末尾に移動\n5. F-07 (optional): `TC-WHEN-02` の行数アサーション削除\n"
+        },
+        "startedAt": "2026-05-25T11:04:32.019Z",
+        "endedAt": "2026-05-25T11:09:45.910Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5614,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 1538,
+            "outputTokens": 15734,
+            "cacheReadInputTokens": 1749446,
+            "cacheCreationInputTokens": 90567
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "f2d8a7f5-4222-4b80-8df4-2690dfbd3dc7",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/delta-validation-post-code-review/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — delta-validation-post-code-review — iter 2\n\n- **verdict**: needs-fix\n- **reviewer**: code-review agent\n- **date**: 2026-05-25\n\n---\n\n## Summary\n\nイテレーション 1 の HIGH 5 件 (F-01〜F-05) はすべて修正済み。実装ロジック・型安全性・transition 設計は正しい。  \nただし **TC-PROMPT-01 / TC-PROMPT-02 / TC-INT-03 (いずれも must-priority)** が未カバーのまま残っており、 `delta-spec-fixer` prompt に追加した authority-spec-direct-edit 対処指示が自動検証されていない。\n\n---\n\n## Findings\n\n| # | Severity | Status | Category | File | Description |\n|---|----------|--------|----------|------|-------------|\n| N-01 | HIGH | NEW | test-coverage | `tests/unit/step/delta-spec-fixer.test.ts` | TC-PROMPT-01 / TC-PROMPT-02 / TC-INT-03 (must): `buildDeltaSpecFixerInitialMessage()` と `buildDeltaSpecFixerContinuationMessage()` に追加した authority-spec-direct-edit 対処指示（`git checkout <baseBranch> -- <violated-path>` / delta path への書き直し）を検証するテストが存在しない。Task 10 の主要デリバラブルである prompt 拡張が自動検証されていない。 |\n| F-06 | LOW | OPEN | prompt-quality | `src/core/step/delta-spec-fixer.ts` | `buildDeltaSpecFixerInitialMessage` 内の指示順: item 6「end_turn してください」が item 7「authority-spec-direct-edit の rollback」より前に現れる。agent が item 6 を作業完了シグナルと解釈して item 7 を読み飛ばすリスクがある。end_turn 指示を末尾に移動することを推奨。 |\n| F-07 | LOW | OPEN | maintainability | `tests/unit/pipeline/transition-when.test.ts` | `expect(STANDARD_TRANSITIONS.length).toBe(31)` がハードコードのまま。transition 追加・削除のたびに壊れる脆弱なアサーション。削除か `toBeGreaterThanOrEqual(31)` への変更を推奨。 |\n\n---\n\n## Detail\n\n### N-01: TC-PROMPT-01 / TC-PROMPT-02 / TC-INT-03 — prompt 拡張が未検証\n\n`src/core/step/delta-spec-fixer.ts` の Task 10 変更点:\n\n```typescript\n// buildDeltaSpecFixerInitialMessage — item 7 として追加\n7. If violations include `authority-spec-direct-edit`:\n   a. Revert the authority spec edit: `git checkout ${baseBranch} -- <violated-path>`\n   b. Write the intended changes to the delta path: `specrunner/changes/${slug}/specs/<capability>/spec.md`\n```\n\n```typescript\n// buildDeltaSpecFixerContinuationMessage — 末尾に追加\nviolations に `authority-spec-direct-edit` が含まれる場合:\na. authority spec の編集を revert: `git checkout ${baseBranch} -- <violated-path>`\nb. 意図した変更を delta path に書き直す: `specrunner/changes/${slug}/specs/<capability>/spec.md`\n```\n\n既存の `tests/unit/step/delta-spec-fixer.test.ts` は branch / slug / validation result path / user-request タグ / completionVerdict などを検証しているが、**authority-spec-direct-edit 対処指示の有無** を検証するテストが 1 件もない。  \n\n`baseBranch` が prompt に正しく展開されることも未検証（`branch` (= state.branch) の存在テストはあるが `baseBranch` (= deps.request.baseBranch) のテストはない）。\n\n**修正**: `tests/unit/step/delta-spec-fixer.test.ts` に以下を追加する。\n\n```typescript\n// TC-PROMPT-01: initial message — authority-spec-direct-edit 対処指示\ndescribe(\"TC-PROMPT-01: initial message contains authority-spec-direct-edit instructions\", () => {\n  it(\"contains git checkout with baseBranch for authority spec revert\", () => {\n    const state = makeMinimalState({ branch: \"feat/my-change\" });\n    const deps = makeMinimalDeps(\"my-change\"); // baseBranch: \"main\"\n    const message = DeltaSpecFixerStep.buildMessage(state, deps);\n    expect(message).toContain(\"authority-spec-direct-edit\");\n    expect(message).toContain(\"git checkout main\");\n  });\n\n  it(\"contains delta path reference for rewrite destination\", () => {\n    const state = makeMinimalState();\n    const deps = makeMinimalDeps(\"my-change\");\n    const message = DeltaSpecFixerStep.buildMessage(state, deps);\n    expect(message).toContain(\"specrunner/changes/my-change/specs/\");\n  });\n});\n\n// TC-PROMPT-02: continuation message — authority-spec-direct-edit 対処指示\ndescribe(\"TC-PROMPT-02: continuation message contains authority-spec-direct-edit instructions\", () => {\n  it(\"continuation message contains authority spec revert instruction\", () => {\n    const state = makeStateWithPreviousDeltaSpecFixerRun(\"sess-001\");\n    const deps = makeMinimalDeps(\"my-change\"); // baseBranch: \"main\"\n    const message = DeltaSpecFixerStep.buildMessage(state, deps);\n    expect(message).toContain(\"authority-spec-direct-edit\");\n    expect(message).toContain(\"git checkout main\");\n  });\n\n  it(\"continuation message contains delta path reference\", () => {\n    const state = makeStateWithPreviousDeltaSpecFixerRun(\"sess-001\");\n    const deps = makeMinimalDeps(\"my-change\");\n    const message = DeltaSpecFixerStep.buildMessage(state, deps);\n    expect(message).toContain(\"specrunner/changes/my-change/specs/\");\n  });\n});\n```\n\n---\n\n## Fixed from iter 1\n\n| # | Status | Description |\n|---|--------|-------------|\n| F-01 | ✅ FIXED | TC-RULE-08: `createDeltaSpecRegistry()` に `no-authority-spec-direct-edit` が登録されていることを `registry.validate()` 経由で確認するテストを追加 |\n| F-02 | ✅ FIXED | TC-INJ-01: `DeltaSpecValidationStep.run()` が spawn stdout を `changedFiles` として `validateDeltaSpecPaths()` に注入することを `vi.mock` + call args 検証で確認 |\n| F-03 | ✅ FIXED | TC-INJ-02: git diff 失敗（非ゼロ exit code / spawn throw）時に `changedFiles = undefined` で graceful degradation し、pipeline がエラーにならないことを 2 ケースで確認 |\n| F-04 | ✅ FIXED | TC-CP-01 / TC-CP-02 / TC-CP-03 (TC-AUTH-01〜03): staged files に authority spec が含まれるとき warning が stderr に出力され commit が続行することを確認 |\n| F-05 | ✅ FIXED | TC-CP-04 / TC-CP-05 / TC-CP-06 (TC-AUTH-04〜06): agent self-commit の HEAD diff に authority spec が含まれるとき warning が stderr に出力され push が続行することを確認 |\n\n---\n\n## Positive Observations (iter 2)\n\n- TC-INJ-01 / TC-INJ-02 は `vi.mock` + call args 検証で changedFiles injection を正確に確認している。\n- TC-AUTH-01〜06 は `resolveGitResponse` helper を使って staged / HEAD-diff の両経路を明確に分離しており、テスト意図が読みやすい。\n- TC-RULE-08 が `registry.validate()` 経由で動作検証になっているのは `rules` フィールドが private な registry 設計と整合しており適切。\n- `baseBranch` の `buildMessage` への統合 (`deps.request.baseBranch` から取得) は Task 10 通り実装されており、continuation / initial 両 path で参照されている。\n\n---\n\n## How to Fix\n\n1. `tests/unit/step/delta-spec-fixer.test.ts` に TC-PROMPT-01 / TC-PROMPT-02 相当のテストを追加（authority-spec-direct-edit 指示と baseBranch / delta path の存在を initial + continuation 両 message で確認）\n2. F-06 (optional): `buildDeltaSpecFixerInitialMessage` で end_turn 指示を item リストの末尾に移動\n3. F-07 (optional): `TC-WHEN-02` の `toBe(31)` アサーションを削除または `toBeGreaterThanOrEqual` に変更\n"
+        },
+        "startedAt": "2026-05-25T11:13:57.337Z",
+        "endedAt": "2026-05-25T11:19:21.362Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5614,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 18,
+            "outputTokens": 18602,
+            "cacheReadInputTokens": 1043657,
+            "cacheCreationInputTokens": 92504
+          }
+        }
+      },
+      {
+        "attempt": 3,
+        "sessionId": "3e39e270-fe90-4b14-929c-c04f711e3143",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/delta-validation-post-code-review/review-feedback-003.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — delta-validation-post-code-review — iter 3\n\n- **verdict**: approved\n- **reviewer**: code-review agent\n- **date**: 2026-05-25\n\n---\n\n## Summary\n\nイテレーション 2 の HIGH 1 件 (N-01: TC-PROMPT-01 / TC-PROMPT-02 / TC-INT-03) が修正済み。\n全 HIGH severity 指摘 (F-01〜F-05, N-01 の計 6 件) がすべてクローズされた。\nLOW severity 2 件 (F-06, F-07) は carry-over だが、いずれも「optional」として前イテレーションでも明示されており、must-priority TC カバレッジは完全。承認可能と判断する。\n\n---\n\n## Findings\n\n| # | Severity | Status | Category | File | Description |\n|---|----------|--------|----------|------|-------------|\n| F-06 | LOW | CARRY-OVER | prompt-quality | `src/core/step/delta-spec-fixer.ts` | `buildDeltaSpecFixerInitialMessage` 内の item 6「end_turn してください」が item 7「authority-spec-direct-edit の rollback」より前に位置する。agent が 6 を作業完了シグナルと解釈して 7 を読み飛ばすリスクがある。iter 1 / iter 2 から引き続き OPEN。 |\n| F-07 | LOW | CARRY-OVER | maintainability | `tests/unit/pipeline/transition-when.test.ts` | `expect(STANDARD_TRANSITIONS.length).toBe(31)` がハードコードのまま。transition 追加・削除のたびに壊れる脆弱なアサーション。iter 1 / iter 2 から引き続き OPEN。 |\n\n---\n\n## Fixed from iter 2\n\n| # | Status | Description |\n|---|--------|-------------|\n| N-01 | ✅ FIXED | TC-PROMPT-01 / TC-PROMPT-02 / TC-INT-03: `tests/unit/step/delta-spec-fixer.test.ts` に authority-spec-direct-edit 対処指示の検証テストを追加。initial / continuation 両メッセージで `\"authority-spec-direct-edit\"`、`\"git checkout main\"`、`\"specrunner/changes/my-change/specs/\"` の存在を確認。`baseBranch` (= `deps.request.baseBranch`) の展開も検証済み。 |\n\n---\n\n## Test Coverage — must-priority TC 充足確認\n\n| Category | TCs (must) | Status |\n|----------|-----------|--------|\n| TC-RULE-01〜05, TC-RULE-08, TC-RULE-09 | 7件 | ✅ all covered |\n| TC-INJ-01, TC-INJ-02 | 2件 | ✅ all covered |\n| TC-TRANS-01〜05 | 5件 | ✅ all covered |\n| TC-CP-01〜06 | 6件 | ✅ all covered |\n| TC-INT-01〜05 | 5件 | ✅ all covered |\n| TC-PROMPT-01, TC-PROMPT-02 | 2件 | ✅ all covered (added in iter 3) |\n\n---\n\n## Positive Observations\n\n- TC-PROMPT-01 / TC-PROMPT-02 は initial / continuation の両経路をカバーしており、`baseBranch` 展開 (`git checkout main`) と `slug` 展開 (`specrunner/changes/my-change/specs/`) を独立して検証している。テスト粒度が適切。\n- `DeltaSpecViolationReason` union への `\"authority-spec-direct-edit\"` 追加、`Transition.when` predicate の導入、`commit-push.ts` の warning 化、`DeltaSpecValidationStep` の changedFiles injection — いずれも設計 D1〜D5 通りに実装されており、型安全性・後方互換性ともに問題なし。\n- verification-result.md が typecheck + 2815 tests all green を記録しており、基盤の整合性は保たれている。\n"
+        },
+        "startedAt": "2026-05-25T11:20:32.619Z",
+        "endedAt": "2026-05-25T11:23:39.483Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5614,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 19,
+            "outputTokens": 7498,
+            "cacheReadInputTokens": 964221,
+            "cacheCreationInputTokens": 83360
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "a6a8c02b-3250-43b2-99f8-31df6b63861a",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-25T11:09:47.767Z",
+        "endedAt": "2026-05-25T11:13:55.513Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4212,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 22,
+            "outputTokens": 14190,
+            "cacheReadInputTokens": 969172,
+            "cacheCreationInputTokens": 55537
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "a6a8c02b-3250-43b2-99f8-31df6b63861a",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-25T11:19:23.053Z",
+        "endedAt": "2026-05-25T11:20:30.937Z",
+        "modelUsage": {
+          "claude-sonnet-4-6": {
+            "inputTokens": 8,
+            "outputTokens": 3549,
+            "cacheReadInputTokens": 433087,
+            "cacheCreationInputTokens": 12369
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "4a1b890c-f615-4dd2-921d-5cd561bc48aa",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-25T11:23:41.166Z",
+        "endedAt": "2026-05-25T11:26:33.286Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4342,
+            "outputTokens": 20,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 1440,
+            "outputTokens": 8113,
+            "cacheReadInputTokens": 392656,
+            "cacheCreationInputTokens": 46544
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/delta-validation-post-code-review/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — delta-validation-post-code-review\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/396\n- **Number**: 396\n- **CreatedAt**: 2026-05-25T11:26:36.683Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-25T11:26:34.899Z",
+        "endedAt": "2026-05-25T11:26:36.684Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/396",
+    "number": 396,
+    "createdAt": "2026-05-25T11:26:36.683Z"
+  }
+}

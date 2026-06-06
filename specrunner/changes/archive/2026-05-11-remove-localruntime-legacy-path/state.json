@@ -1,0 +1,476 @@
+{
+  "version": 1,
+  "jobId": "5997d1e2-d75e-495c-834d-55068c9ea7eb",
+  "createdAt": "2026-05-11T06:02:15.878Z",
+  "updatedAt": "2026-05-11T06:32:43.311Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/remove-localruntime-legacy-path/request.md",
+    "title": "LocalRuntime の positional legacy コンストラクタを削除する",
+    "type": "refactoring",
+    "slug": "remove-localruntime-legacy-path"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 29546,
+  "branch": "refactor/remove-localruntime-legacy-path-5997d1e2",
+  "history": [
+    {
+      "ts": "2026-05-11T06:02:15.878Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-11T06:02:17.067Z",
+      "step": "propose-started",
+      "status": "started",
+      "message": "Starting propose step"
+    },
+    {
+      "ts": "2026-05-11T06:04:44.283Z",
+      "step": "propose-verdict",
+      "status": "ok",
+      "message": "propose verdict: success"
+    },
+    {
+      "ts": "2026-05-11T06:04:44.285Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "propose → spec-review"
+    },
+    {
+      "ts": "2026-05-11T06:04:44.286Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T06:04:44.287Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-11T06:06:12.459Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-11T06:06:12.461Z",
+      "step": "spec-review",
+      "status": "warning",
+      "message": "spec-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-11T06:06:12.461Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → spec-fixer"
+    },
+    {
+      "ts": "2026-05-11T06:06:12.462Z",
+      "step": "spec-fixer-started",
+      "status": "started",
+      "message": "Starting spec-fixer step"
+    },
+    {
+      "ts": "2026-05-11T06:07:15.452Z",
+      "step": "spec-fixer-verdict",
+      "status": "ok",
+      "message": "spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T06:07:15.453Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → spec-review (iter 2)"
+    },
+    {
+      "ts": "2026-05-11T06:07:15.454Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-11T06:07:15.455Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-11T06:09:19.153Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T06:09:19.156Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T06:09:19.156Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-11T06:09:19.157Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-11T06:10:39.109Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-11T06:10:39.112Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 2)"
+    },
+    {
+      "ts": "2026-05-11T06:10:39.113Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-11T06:13:48.924Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-11T06:13:48.925Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-11T06:13:48.926Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T06:13:48.926Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-11T06:13:58.368Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-11T06:13:58.371Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-11T06:13:58.371Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-11T06:13:58.372Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T06:13:58.373Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-11T06:17:38.764Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T06:17:38.766Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T06:17:38.766Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-11T06:17:38.768Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-11T06:17:41.658Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-11T06:17:41.663Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-11T06:32:43.311Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "propose": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T06:02:17.068Z",
+        "endedAt": "2026-05-11T06:02:17.068Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5074,
+            "outputTokens": 5748,
+            "cacheReadInputTokens": 545598,
+            "cacheCreationInputTokens": 39713
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 393,
+            "outputTokens": 3910,
+            "cacheReadInputTokens": 233157,
+            "cacheCreationInputTokens": 22377
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/remove-localruntime-legacy-path/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: remove-localruntime-legacy-path\n\n- **iteration**: 1\n- **verdict**: needs-fix\n- **date**: 2026-05-11\n- **reviewer**: spec-reviewer\n\n## Summary\n\nrequest.md と design.md は明確で整合的。ただし tasks.md が positional 呼び出し 1 箇所（line 481）と比較テストの削除を漏らしている。typecheck が安全網として機能するが、タスク分解の網羅性に欠陥がある。\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | HIGH | completeness | tasks.md (Task 1) | positional 呼び出しが 19 箇所あるのに 18 箇所と記載。line 481 `const positional = new LocalRuntime(tempDir, githubClient, manager1, spawnFn1)` が Task 1 の行リストから漏れている | Task 1 の 4-arg パターンに line 481 を追加し、箇所数を 19（4-arg: 11, 3-arg: 8）に修正する |\n| 2 | HIGH | correctness | tasks.md (Task 1) | line 474-487 の比較テスト「named options and positional constructor produce equivalent runtimes」は positional パス削除後に存在意義がない。単純な named options 変換ではなく、テストケース自体の削除が必要 | Task 1 に「TC-LR-011 の比較テスト（lines 474-487）を削除する」サブタスクを追加する |\n| 3 | MEDIUM | consistency | design.md | 「positional 呼び出しが 18 箇所残存」は実際には 19 箇所 | 18 → 19 に修正する |\n\n## Review Scope\n\n| Category | Scope | Result |\n|----------|-------|--------|\n| architecture | verify | PASS — 変更は constructor signature のみ。Ports & Adapters パターンへの影響なし |\n| correctness | verify | FAIL — Finding #2: 比較テストの扱いが未定義 |\n| completeness | task decomposition only | FAIL — Finding #1: 呼び出し箇所の列挙漏れ |\n| consistency | reduced | Finding #3: 箇所数の不一致（軽微） |\n| feasibility | skip | — |\n| security | skip | — |\n"
+        },
+        "startedAt": "2026-05-11T06:04:44.287Z",
+        "endedAt": "2026-05-11T06:04:44.287Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2627,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 163,
+            "outputTokens": 4015,
+            "cacheReadInputTokens": 255362,
+            "cacheCreationInputTokens": 22092
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/remove-localruntime-legacy-path/spec-review-result-002.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: remove-localruntime-legacy-path\n\n- **iteration**: 2\n- **verdict**: approved\n- **date**: 2026-05-11\n- **reviewer**: spec-reviewer\n\n## Summary\n\nIteration 1 の HIGH findings 3 件は全て修正済み。tasks.md の行リスト・箇所数・比較テスト削除が正しく反映されている。design.md の箇所数も 19 に修正済み。残存は line 481 の重複参照（MEDIUM）のみで、承認阻止条件に該当しない。\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | correctness | tasks.md (Task 1) | line 481 が 4-arg パターン（11 箇所）と比較テスト削除（lines 474-487）の両方に含まれている。実装者が変換と削除を二重に試みる可能性がある。4-arg の実数は 10（481 を除外） | 4-arg パターンから 481 を除外し「10 箇所」に修正するか、注記で比較テスト削除に包含される旨を明記する |\n\n## Iteration Comparison\n\n### Improvements\n- Finding #1 (iter1): line 481 が Task 1 の 4-arg リストに追加済み（ただし重複参照の問題は残存）\n- Finding #2 (iter1): 比較テスト削除サブタスクが Task 1 に追加済み\n- Finding #3 (iter1): design.md の箇所数が 19 に修正済み\n\n### Regressions\nなし\n\n### Unchanged Issues\nなし（iter1 の HIGH findings は全て解消。新規 MEDIUM が 1 件）\n\n### Convergence Trend\n`improving` — HIGH 3 件 → 0 件。残存は MEDIUM 1 件のみ\n\n## Review Scope\n\n| Category | Scope | Result |\n|----------|-------|--------|\n| architecture | verify | PASS — constructor signature のみの変更。Ports & Adapters パターンへの影響なし。factory.ts は変更対象外で正しい |\n| correctness | verify | PASS — target state の constructor 実装が正しい。デフォルト値の fallback チェーンが維持されている。Finding #1 は MEDIUM（typecheck + 完了条件が安全網） |\n| completeness | task decomposition only | PASS — 全 19 箇所の positional 呼び出しがカバーされている（変換 18 + 削除 1） |\n| consistency | reduced (skip cross-ref) | PASS — request.md / design.md / tasks.md 間の数値・行番号が整合 |\n| feasibility | skip | — |\n| security | skip | — |\n"
+        },
+        "startedAt": "2026-05-11T06:07:15.456Z",
+        "endedAt": "2026-05-11T06:07:15.456Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2627,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 150,
+            "outputTokens": 6094,
+            "cacheReadInputTokens": 273449,
+            "cacheCreationInputTokens": 25702
+          }
+        }
+      }
+    ],
+    "spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T06:06:12.463Z",
+        "endedAt": "2026-05-11T06:06:12.463Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 756,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 13,
+            "outputTokens": 2974,
+            "cacheReadInputTokens": 261212,
+            "cacheCreationInputTokens": 17133
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T06:09:19.158Z",
+        "endedAt": "2026-05-11T06:09:19.158Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1269,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 7,
+            "outputTokens": 4402,
+            "cacheReadInputTokens": 112215,
+            "cacheCreationInputTokens": 17809
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T06:10:39.114Z",
+        "endedAt": "2026-05-11T06:10:39.114Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2623,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 46,
+            "outputTokens": 12102,
+            "cacheReadInputTokens": 1557962,
+            "cacheCreationInputTokens": 58208
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/remove-localruntime-legacy-path/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — remove-localruntime-legacy-path — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.0s | 0 |\n| 2 | typecheck | passed | 1.7s | 0 |\n| 3 | test | passed | 4.1s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/remove-localruntime-legacy-path-5997d1e2\n\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t130d\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n\n Test Files  143 passed (143)\n      Tests  1651 passed (1651)\n   Start at  15:13:52\n   Duration  3.83s (transform 2.86s, setup 0ms, import 5.44s, tests 6.62s, environment 8ms)\n\n\n$ vitest run\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/remove-localruntime-legacy-path-5997d1e2/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-11T06:13:48.927Z",
+        "endedAt": "2026-05-11T06:13:48.927Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/remove-localruntime-legacy-path/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review: remove-localruntime-legacy-path\n\n- **iteration**: 1\n- **date**: 2026-05-11\n- **verdict**: approved\n\n---\n\n## Summary\n\nリファクタリングの目的を完全に達成している。コンストラクタシグネチャが `opts: LocalRuntimeOptions` の単一引数に統一され、`string | LocalRuntimeOptions` union 型と `githubClient!` non-null assertion が除去された。テスト全 19 箇所が named options 形式に変換済みで、比較テスト (`it(\"named options and positional constructor produce equivalent runtimes\")`) も適切に削除されている。verification は typecheck + 1651 tests 全 pass を確認済み。\n\n---\n\n## Scores\n\n| Category | Score | Notes |\n|----------|-------|-------|\n| correctness | 9 | 振る舞い変更なし。コンストラクタ本体のロジックは同一のまま union 分岐のみ除去 |\n| security | 8 | セキュリティ関連変更なし。non-null assertion 除去は安全性向上 |\n| architecture | 9 | 不要な overload 相当の union を除去し、シグネチャが単純化された |\n| performance | 8 | 変更なし |\n| maintainability | 9 | `cwdOrOpts` という紛らわしい命名が `opts` に置き換わり可読性向上 |\n| testing | 8 | must シナリオはすべて通過。TC-08/TC-09/TC-10 の private フィールド直接検証は間接的カバレッジで代替 |\n\n**Total**: 9×0.30 + 8×0.25 + 9×0.15 + 8×0.10 + 9×0.10 + 8×0.10 = **8.70**\n\n---\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | LOW | testing | specrunner/changes/remove-localruntime-legacy-path/test-cases.md | TC-08/TC-09/TC-10 が「インスタンスの cwd/githubClient/manager プロパティを参照する」と記述しているが、これらは `private readonly` フィールドのため直接 assert 不可能。実際のテストでは TC-LR-001 (setupWorkspace が fetch に `this.cwd` を使用) や TC-LR-007 (`deps.githubClient === githubClient`) で間接的にカバーされており、振る舞いの正しさは担保されている | test-cases.md の THEN 節を「`workspace.cwd` が期待値と一致する」等、observable な検証に書き直す（任意。振る舞いは正確に検証済みのため次回以降で対応可） |\n\n---\n\n## Scenario Coverage (must シナリオ)\n\n| TC | Priority | Status | 根拠 |\n|----|----------|--------|------|\n| TC-01 コンストラクタシグネチャ | must | ✅ PASS | `constructor(opts: LocalRuntimeOptions)` — `cwdOrOpts` / union / optional args なし |\n| TC-02 legacy 分岐削除 | must | ✅ PASS | `typeof cwdOrOpts === \"string\"` 分岐・コメントとも不在 |\n| TC-03 non-null assertion 除去 | must | ✅ PASS | `this.githubClient = opts.githubClient` の直接代入 |\n| TC-04 4-arg positional 変換 | must | ✅ PASS | 全箇所 `{ cwd: tempDir, githubClient, manager, spawnFn }` 形式 |\n| TC-05 3-arg positional 変換 | must | ✅ PASS | 全箇所 `{ cwd: tempDir, githubClient, manager }` 形式 |\n| TC-06 positional パターン残存なし | must | ✅ PASS | `new LocalRuntime(tempDir,` のパターン 0 件 |\n| TC-07 比較テスト削除 | must | ✅ PASS | \"named options and positional constructor produce equivalent runtimes\" 不在 |\n| TC-08 cwd 代入 | must | ✅ PASS (間接) | TC-LR-001/008 で setupWorkspace 内の git fetch が `this.cwd` を使用 |\n| TC-09 githubClient 代入 | must | ✅ PASS (間接) | TC-LR-007: `deps.githubClient === githubClient` |\n| TC-10 manager デフォルト値 | must | ✅ PASS (間接) | TC-LR-012: manager 省略で runtime が正常動作 |\n| TC-13 typecheck pass | must | ✅ PASS | verification-result: exit 0 |\n| TC-14 test suite pass | must | ✅ PASS | 1651 tests all pass |\n"
+        },
+        "startedAt": "2026-05-11T06:13:58.374Z",
+        "endedAt": "2026-05-11T06:13:58.374Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2668,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 15,
+            "outputTokens": 11066,
+            "cacheReadInputTokens": 307286,
+            "cacheCreationInputTokens": 81686
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/remove-localruntime-legacy-path/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — remove-localruntime-legacy-path\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/206\n- **Number**: 206\n- **CreatedAt**: 2026-05-11T06:17:41.656Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-11T06:17:38.769Z",
+        "endedAt": "2026-05-11T06:17:38.769Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/206",
+    "number": 206,
+    "createdAt": "2026-05-11T06:17:41.656Z"
+  }
+}

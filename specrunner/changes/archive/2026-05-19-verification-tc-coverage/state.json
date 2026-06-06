@@ -1,0 +1,714 @@
+{
+  "version": 1,
+  "jobId": "289589ea-dc35-410b-9384-980a1d6feb52",
+  "createdAt": "2026-05-19T14:01:30.960Z",
+  "updatedAt": "2026-05-19T23:20:15.686Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/verification-tc-coverage/request.md",
+    "title": "implementer の TC 網羅性を機械的に検証する",
+    "type": "new-feature",
+    "slug": "verification-tc-coverage"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 8914,
+  "branch": "feat/verification-tc-coverage-289589ea",
+  "history": [
+    {
+      "ts": "2026-05-19T14:01:30.960Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-19T14:01:32.577Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-19T14:07:30.914Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-19T14:07:30.917Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-19T14:07:30.919Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-19T14:07:30.925Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T14:07:30.927Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-19T14:07:30.928Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-19T14:07:30.928Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-19T14:11:13.373Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-19T14:11:13.377Z",
+      "step": "spec-review",
+      "status": "warning",
+      "message": "spec-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-19T14:11:13.377Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → spec-fixer"
+    },
+    {
+      "ts": "2026-05-19T14:11:13.379Z",
+      "step": "spec-fixer-started",
+      "status": "started",
+      "message": "Starting spec-fixer step"
+    },
+    {
+      "ts": "2026-05-19T14:12:22.754Z",
+      "step": "spec-fixer-verdict",
+      "status": "ok",
+      "message": "spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T14:12:22.758Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → delta-spec-validation (iter 1)"
+    },
+    {
+      "ts": "2026-05-19T14:12:22.759Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-19T14:12:22.762Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T14:12:22.765Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-19T14:12:22.766Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-19T14:12:22.766Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-19T14:14:57.902Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-19T14:14:57.905Z",
+      "step": "spec-review",
+      "status": "warning",
+      "message": "spec-review iteration 2 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-19T14:14:57.905Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → spec-fixer"
+    },
+    {
+      "ts": "2026-05-19T14:14:57.906Z",
+      "step": "spec-fixer-started",
+      "status": "started",
+      "message": "Starting spec-fixer step"
+    },
+    {
+      "ts": "2026-05-19T14:15:29.192Z",
+      "step": "spec-fixer-verdict",
+      "status": "ok",
+      "message": "spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T14:15:29.195Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → delta-spec-validation (iter 2)"
+    },
+    {
+      "ts": "2026-05-19T14:15:29.196Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-19T14:15:29.201Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T14:15:29.202Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-19T14:15:29.203Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 3 started"
+    },
+    {
+      "ts": "2026-05-19T14:15:29.204Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-19T14:18:21.583Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T14:18:21.586Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 3 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T14:18:21.586Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-19T14:18:21.588Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-19T14:20:58.626Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-19T14:20:58.657Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 3)"
+    },
+    {
+      "ts": "2026-05-19T14:20:58.658Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-19T14:34:03.161Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-19T14:34:03.164Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-19T14:34:03.165Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-19T14:34:03.165Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-19T14:34:16.300Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-19T14:34:16.303Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-19T14:34:16.303Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-19T14:34:16.304Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-19T14:34:16.304Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-19T14:37:51.093Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T14:37:51.096Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T14:37:51.096Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → adr-gen"
+    },
+    {
+      "ts": "2026-05-19T14:37:51.098Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-19T14:39:14.649Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-19T14:39:14.652Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-19T14:39:14.653Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-19T14:39:17.235Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-19T14:39:17.240Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-19T23:20:15.686Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "5cc9741e-bf5e-4bd4-b063-ce2c5c4d6ace",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T14:01:32.585Z",
+        "endedAt": "2026-05-19T14:07:28.889Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 10420,
+            "outputTokens": 16054,
+            "cacheReadInputTokens": 1318739,
+            "cacheCreationInputTokens": 138127
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 4193,
+            "outputTokens": 13015,
+            "cacheReadInputTokens": 815427,
+            "cacheCreationInputTokens": 80459
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/verification-tc-coverage/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-19T14:07:30.920Z",
+        "endedAt": "2026-05-19T14:07:30.925Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/verification-tc-coverage/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-19T14:12:22.760Z",
+        "endedAt": "2026-05-19T14:12:22.762Z"
+      },
+      {
+        "attempt": 3,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/verification-tc-coverage/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-19T14:15:29.197Z",
+        "endedAt": "2026-05-19T14:15:29.200Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "b4d3cc34-fb0c-46d2-9887-d6eb4793daa6",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/verification-tc-coverage/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: verification-tc-coverage\n\n- **verdict**: needs-fix\n- **reviewed-at**: 2026-05-19\n- **reviewer**: spec-reviewer\n\n---\n\n## Summary\n\n設計方針・ADR判断・タスク分割・delta spec いずれも論理的に整合しており、構造として承認に近い水準にある。ただし、**実装が design.md の記述通りに進むと動かない具体的なバグが1件**あり、TypeScript 型の扱いに関する未指定事項が1件ある。この2点の修正が必要。\n\n---\n\n## Critical Issues (needs-fix)\n\n### C-1: TC ID 抽出 regex が実際の test-cases.md フォーマットと不一致\n\n**場所**: `design.md` L75、T-02 の処理手順\n\ndesign.md は以下の regex を指定している:\n\n```\n^### (TC-\\d+(?:-\\d+)*):.*\\n.*\\n\\*\\*Priority\\*\\*:\\s*must\n```\n\nしかし実際の test-cases.md フォーマット（`request-review-command/test-cases.md` を参照）は:\n\n```markdown\n## TC-01: コマンド登録\n\n- **Category**: CLI Integration\n- **Priority**: must\n```\n\n- **heading level**: design.md は `###`(h3) だが実ファイルは `##`(h2)\n- **line offset**: Priority は header から 3 行後（blank → Category → Priority）だが regex は 2 行後を想定\n- **bullet prefix**: 実ファイルは `- **Priority**: must` だが regex は bullet なしを想定\n\ntest-case-gen-system.ts prompt が指定する h3 フォーマットでも同様に行オフセットが 1 行足りない（blank → Category → Priority の 3 行）。\n\n**影響**: design.md の regex をそのまま実装すると、test-coverage phase は must TC を常に 0 件と判定し `status: \"passed\"` を誤返却するか、全件 missing と誤判定する。\n\n**修正方針**: T-02 が「ヘッダ行に続く行群から `**Priority**: must` を持つものを抽出」と柔軟に記述しているのが正解に近い。design.md の具体的な regex 記述を削除し、実装に以下のアプローチを採用することを明記する:\n1. `^##[#]?\\s+(TC-\\d+(?:-\\d+)*)` で TC section header を全列挙\n2. 各 section の後続行群を次の `##` まで走査し `\\*\\*Priority\\*\\*:\\s*must` の存在で判定\n3. bullet prefix (`- **Priority**`) と非 bullet (`**Priority**`) の両方を許容\n\n---\n\n### C-2: `PHASE_SCRIPTS` の TypeScript 型が `test-coverage` 追加後に不整合\n\n**場所**: `phases.ts` + T-01\n\n現在の型定義:\n\n```typescript\nexport const PHASE_SCRIPTS: Record<PhaseName, string> = { ... }\n```\n\nT-01 では `PhaseName` に `\"test-coverage\"` を追加し、`PHASE_SCRIPTS` にはキーを追加しないと指定している。この組み合わせは TypeScript のコンパイルエラーになる（`Property 'test-coverage' is missing in type`）。\n\ndesign.md は「`phaseName in PHASE_SCRIPTS` で判定する」と処理分岐を説明しているが、型の修正方法を指定していない。\n\n**修正方針**: T-01 に型変更を明記する。推奨は以下のいずれか:\n\n```typescript\n// 案 A: スクリプト実行 phase のみを型として明示\nexport type ScriptPhaseName = Exclude<PhaseName, \"test-coverage\">;\nexport const PHASE_SCRIPTS: Record<ScriptPhaseName, string> = { ... }\n\n// 案 B: Partial 化（runtime check 必須）\nexport const PHASE_SCRIPTS: Partial<Record<PhaseName, string>> = { ... }\n```\n\n案 A の方が型安全で明示的。runner.ts 側で `phaseName in PHASE_SCRIPTS` の判定結果が型ガードとして機能するためにも案 A を推奨。\n\n---\n\n## Minor Issues (fix or acknowledge)\n\n### M-1: skipped phase の出力文言が test-coverage に不適切\n\n`writeVerificationResult` は skipped phase に `\"_(skipped — script not found in package.json)_\"` をハードコードしている。test-coverage の skip 理由は \"test-cases.md not found\" であり、この文言は誤解を招く。\n\n**修正方針**: `TestCoverageResult` の `stdout` フィールドに skip 理由を含め（例: `\"test-cases.md not found at specrunner/changes/<slug>/test-cases.md\"`）、runner.ts の分岐で test-coverage skipped の場合は stdout をそのまま出力する。または `writeVerificationResult` に phase 判定を追加する。\n\n---\n\n## Positive Observations\n\n- ADR-1 (TC ID 形式統一)、ADR-2 (verification 集約)、ADR-3 (CLI 内部処理) の根拠が明快で、いずれも妥当な判断\n- fail-fast 順序（test-coverage が末尾）の理由が明確に説明されている\n- test-cases.md 不在時の skipped 扱いが既存設計と整合している\n- build-fixer との連携設計（verification-result.md の `## Phase: test-coverage` セクションを読む）が自然\n- T-08〜T-10 のテスト網羅度は十分\n- セキュリティ観点: file I/O のみで認証・ネットワーク・外部入力処理なし。OWASP 懸念なし\n\n---\n\n## Required Changes Before Approval\n\n1. **design.md**: L75 の具体的 regex を削除し、section-scan アプローチ（上記 C-1 修正方針）を記述する\n2. **T-01**: `PHASE_SCRIPTS` の型変更（`ScriptPhaseName` または `Partial`）を明記する\n3. **design.md / T-03**: runner.ts の `phaseName in PHASE_SCRIPTS` 判定が型ガードとして機能するよう `PHASE_SCRIPTS` 型との整合を確認する旨を追記する\n4. (Optional) **M-1**: skipped 出力文言の対処方針を設計に追記する\n"
+        },
+        "startedAt": "2026-05-19T14:07:30.941Z",
+        "endedAt": "2026-05-19T14:11:11.395Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3920,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 14,
+            "outputTokens": 13313,
+            "cacheReadInputTokens": 395805,
+            "cacheCreationInputTokens": 43595
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "f1a98753-a505-4fc2-b093-1640d065fdf0",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/verification-tc-coverage/spec-review-result-002.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: verification-tc-coverage\n\n- **verdict**: needs-fix\n- **reviewed-at**: 2026-05-19\n- **reviewer**: spec-reviewer (round 2)\n\n---\n\n## Summary\n\nspec-review-001 の C-2（TypeScript 型）は design.md と tasks.md 両方で修正済み。M-1（skipped 文言）は design.md で方針が明記されたが tasks.md への反映が不完全。C-1（regex）は design.md では修正されたが **tasks.md T-02 に修正が反映されておらず、実装すると機能が無効化される**。\n\n---\n\n## Critical Issues (needs-fix)\n\n### C-1 (再発): tasks.md T-02 の regex が design.md の修正と不一致\n\n**場所**: `tasks.md` T-02 ステップ 2\n\ntasks.md は現在:\n\n```\n抽出パターン: `### (TC-\\d+(?:-\\d+)*)` ヘッダ行に続く行群から `**Priority**: must` を持つものを抽出\n```\n\n一方 design.md (L76–78) は spec-review-001 の C-1 修正後に:\n\n```\n^##[#]?\\s+(TC-\\d+(?:-\\d+)*)  で TC section header を全列挙（h2 / h3 両対応）\n各 section の後続行群を次の ## が出現するまで走査し、**Priority**: must の存在で判定\nbullet prefix あり（- **Priority**: must）と なし（**Priority**: must）の両方を許容\n```\n\nと記述されている。\n\n**影響**: 実際の test-cases.md は `## TC-001:` (h2) フォーマットを使用する（spec-review-001 でも確認済み）。tasks.md の `###` パターンは h2 にマッチしない。実装すると `mustTcIds` が常に 0 件 → test-coverage は常に `status: \"passed\"` を返す → 本機能が完全に無効化される。\n\nこれは spec-review-001 の C-1 で指摘した同一バグが tasks.md に残存している状態。design.md の修正が tasks.md に伝播していない。\n\n**修正方針**: tasks.md T-02 ステップ 2 を design.md の section-scan アプローチに揃える:\n\n```\nPriority: must の TC ID を section-scan アプローチで抽出する:\n  1. `^##[#]?\\s+(TC-\\d+(?:-\\d+)*)` で TC section header を全列挙（h2 / h3 両対応）\n  2. 各 section の後続行群を次の `##` が出現するまで走査し、`\\*\\*Priority\\*\\*:\\s*must` の行の存在で判定\n  3. bullet prefix（`- **Priority**: must`）と非 bullet（`**Priority**: must`）の両方を許容\n```\n\n---\n\n## Minor Issues (fix or acknowledge)\n\n### M-1 (残存): tasks.md T-03 が writeVerificationResult の修正を明記していない\n\n**場所**: `tasks.md` T-03\n\n既存の `writeVerificationResult`（`runner.ts` L123–124）は skipped phase に `\"_(skipped — script not found in package.json)_\"` をハードコードしている。design.md section 7 は「test-coverage の skipped 結果は `result.stdout` をそのまま出力する」と明記しているが、tasks.md T-03 にはこの変更の指示がない。\n\nT-03 では PhaseResult に `stdout: result.stdout` を含めると指定しているが、`writeVerificationResult` は `status === \"skipped\"` の場合に `p.stdout` を使わずに hardcoded 文言を返す（L123–130）。実装者が T-03 だけを読むと、この関数の修正が必要なことが伝わらない。\n\n**修正方針**: T-03 に以下を追記する:\n\n> `writeVerificationResult` の skipped 出力ロジックを変更: test-coverage phase が skipped かつ `p.stdout` が非空の場合は hardcoded 文言の代わりに `p.stdout` を出力する（skip 理由を human-readable に表示するため）。\n\n---\n\n## Confirmed Fixed (from round 1)\n\n| 指摘 | 状態 |\n|---|---|\n| C-1 (regex h3-only) | design.md ✅ / tasks.md ❌ (本 round の C-1) |\n| C-2 (PHASE_SCRIPTS 型エラー) | design.md ✅ / tasks.md T-01 ✅ |\n| M-1 (skipped 文言) | design.md ✅ / tasks.md T-03 は不完全 |\n\n---\n\n## Security\n\nfile I/O + 文字列 grep のみ。ネットワーク・認証・外部入力処理なし。OWASP Top 10 該当なし。セキュリティ懸念なし。\n\n---\n\n## Required Changes Before Approval\n\n1. **tasks.md T-02**: ステップ 2 の `### (TC-\\d+...)` を section-scan アプローチに差し替える（C-1 再発の修正）\n2. **tasks.md T-03**: `writeVerificationResult` の skipped 出力ロジック変更を明記する（M-1 tasks.md 反映）\n"
+        },
+        "startedAt": "2026-05-19T14:12:22.780Z",
+        "endedAt": "2026-05-19T14:14:55.897Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3920,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 11,
+            "outputTokens": 7839,
+            "cacheReadInputTokens": 262825,
+            "cacheCreationInputTokens": 33145
+          }
+        }
+      },
+      {
+        "attempt": 3,
+        "sessionId": "a912d64c-8746-47ee-9b41-eb83c0b553cb",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/verification-tc-coverage/spec-review-result-003.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: verification-tc-coverage\n\n- **verdict**: approved\n- **reviewed-at**: 2026-05-19\n- **reviewer**: spec-reviewer (round 3)\n\n---\n\n## Summary\n\nspec-review-002 の 2 件の必須修正（C-1 再発: T-02 regex / M-1 残存: T-03 skipped 出力ロジック）が tasks.md に反映済みであることを確認した。design.md / tasks.md / delta specs の 3 者間の整合性に問題なし。承認。\n\n---\n\n## Confirmed Fixed (from round 2)\n\n| 指摘 | 状態 |\n|---|---|\n| C-1 再発: tasks.md T-02 regex が `###` (h3 only) → section-scan アプローチ未反映 | ✅ 修正済み |\n| M-1 残存: tasks.md T-03 に `writeVerificationResult` の skipped 出力ロジック変更が未明記 | ✅ 修正済み |\n\n### C-1 確認詳細\n\ntasks.md T-02 ステップ 2 が以下の section-scan アプローチに差し替えられている:\n\n```\nPriority: must の TC ID を section-scan アプローチで抽出する:\n  - `^##[#]?\\s+(TC-\\d+(?:-\\d+)*)` で TC section header を全列挙（h2 / h3 両対応）\n  - 各 section の後続行群を次の `##` が出現するまで走査し、`\\*\\*Priority\\*\\*:\\s*must` の行の存在で判定\n  - bullet prefix（`- **Priority**: must`）と非 bullet（`**Priority**: must`）の両方を許容\n```\n\ndesign.md の記述と完全に一致している。「常に passed を誤返却する」バグは解消されている。\n\n### M-1 確認詳細\n\ntasks.md T-03 に以下が追記されている:\n\n> `writeVerificationResult` の skipped 出力ロジックを変更: test-coverage phase が skipped かつ `p.stdout` が非空の場合は、hardcoded 文言 `\"_(skipped — script not found in package.json)_\"` の代わりに `p.stdout` を出力する（skip 理由を human-readable に表示するため）\n\ndesign.md section 7 の方針と整合している。\n\n---\n\n## Full Spec Review (round 3)\n\n### request.md 受け入れ基準の網羅確認\n\n| 受け入れ基準 | 対応タスク / 設計箇所 |\n|---|---|\n| verification に test-coverage phase 追加、must TC 未実装で failed | T-01 / T-02 / T-03 / verification-runner delta spec |\n| verification-result.md に未実装 TC リスト | T-03 (PhaseResult.stdout + Phase テーブル) |\n| test-case-gen / implementer prompt に TC ID 規律 | T-04 / T-05 / delta specs |\n| PR #331 同型ケース再現 test | T-10 |\n| bun run typecheck && bun run test green | T-08 / T-09 |\n| ADR 記録 | design.md ADR-1/2/3 |\n\n全 6 件カバー済み。\n\n### design.md 整合性\n\n- ADR-1 (フラット型正規 + 両形式許容 grep): 合理的。test-case-gen prompt が既に `TC-{NNN}` を例示しておりゼロ変更が最小。\n- ADR-2 (案 B: verification 集約): 合理的。implementer の `resultFilePath: null` 問題を回避し、既存の verification ↔ build-fixer ループに自然に統合される。\n- ADR-3 (CLI 内部処理): 合理的。target project の package.json に依存しない設計原則と整合。\n- `ScriptPhaseName = Exclude<PhaseName, \"test-coverage\">` の型設計: T-01 と整合し、`phaseName in PHASE_SCRIPTS` が型ガードとして機能する。\n\n### tasks.md 整合性\n\n- T-01: PhaseName / ScriptPhaseName / PHASE_SCRIPTS 型変更が明確 ✅\n- T-02: section-scan アプローチが正しく記述 ✅\n- T-03: writeVerificationResult の skipped ロジック変更が明記 ✅\n- T-04〜T-06: prompt 変更内容が具体的 ✅\n- T-07: 4 delta spec の作成対象と Requirement が明確 ✅\n- T-08〜T-10: テストケースが受け入れ基準を網羅 ✅\n\n### delta specs 整合性\n\n- `verification-runner/spec.md`: 6 phase fail-fast / test-coverage 処理 / 不在時 skipped の Requirement と Scenario が揃っている ✅\n- `implementer-session/spec.md`: TC ID 記載規律 + 暗黙スキップ禁止が明記されている ✅\n- `test-case-generator/spec.md`: TC ID 一意性・grep 可能性の規律が明記されている ✅\n- `build-fixer-session/spec.md`: test-coverage 失敗時の test 追加対処が明記されている ✅\n\n### Security\n\nfile I/O（`node:fs/promises`）と文字列 grep のみ。ネットワーク・認証・外部入力処理なし。`bun:*` / `Bun.*` 禁止が tasks.md T-02 に明記されている。OWASP Top 10 該当なし。セキュリティ懸念なし。\n"
+        },
+        "startedAt": "2026-05-19T14:15:29.217Z",
+        "endedAt": "2026-05-19T14:18:19.783Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3920,
+            "outputTokens": 13,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 10,
+            "outputTokens": 6729,
+            "cacheReadInputTokens": 227439,
+            "cacheCreationInputTokens": 33533
+          }
+        }
+      }
+    ],
+    "spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "5f21115d-b220-4303-9272-d98e25ef1eb0",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T14:11:13.393Z",
+        "endedAt": "2026-05-19T14:12:20.563Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 673,
+            "outputTokens": 13,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 10,
+            "outputTokens": 3481,
+            "cacheReadInputTokens": 186585,
+            "cacheCreationInputTokens": 19516
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "5f21115d-b220-4303-9272-d98e25ef1eb0",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T14:14:57.922Z",
+        "endedAt": "2026-05-19T14:15:27.365Z",
+        "modelUsage": {
+          "claude-sonnet-4-6": {
+            "inputTokens": 6,
+            "outputTokens": 1236,
+            "cacheReadInputTokens": 126680,
+            "cacheCreationInputTokens": 3581
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "9c093ebb-c804-4aa2-b78d-164d3d0df751",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T14:18:21.601Z",
+        "endedAt": "2026-05-19T14:20:56.800Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2655,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 7,
+            "outputTokens": 11306,
+            "cacheReadInputTokens": 133785,
+            "cacheCreationInputTokens": 35438
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "9078916b-ef92-4487-8022-8a5ee79d979c",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T14:20:58.670Z",
+        "endedAt": "2026-05-19T14:34:00.942Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4013,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 48,
+            "outputTokens": 55120,
+            "cacheReadInputTokens": 3688330,
+            "cacheCreationInputTokens": 111031
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/verification-tc-coverage/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — verification-tc-coverage — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.5s | 0 |\n| 2 | typecheck | passed | 2.0s | 0 |\n| 3 | test | passed | 6.7s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/verification-tc-coverage-289589ea\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t138d\n\n Test Files  209 passed (209)\n      Tests  2347 passed (2347)\n   Start at  23:34:07\n   Duration  6.49s (transform 4.64s, setup 0ms, import 8.78s, tests 13.68s, environment 15ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-QI6ttr/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-TQdHD0/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/verification-tc-coverage-289589ea/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-19T14:34:03.166Z",
+        "endedAt": "2026-05-19T14:34:16.300Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "e76b24ab-5029-4f86-93f9-236d18ca2543",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/verification-tc-coverage/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review: verification-tc-coverage — Iteration 1\n\n## Summary\n\n実装は design.md / tasks.md に概ね忠実で、6 phase 拡張・section-scan 抽出・prompt 規律追加・delta spec 化が全て揃っており、`bun run typecheck` と全 2347 件のテストが green。`must` 指定 30 TC のうち実装 / アサーション化されているのは 26 件（86%）。残り 4 件（TC-022/023/024/025/026 部分・TC-028/029/030）はテストコードに TC ID 文字列としては出現しているため test-coverage phase 自体は通過するが、内 TC-028/TC-029/TC-030 はメタ的な「typecheck/test が green」「ADR 記録」要件であり、CI green 自体や spec-review が代替検証している。実装ロジックに 1 件、TC ID grep の false-positive リスクが残るが、design.md の「3 桁ゼロ埋め推奨」緩和規律と整合しているため許容範囲。\n\n## Findings\n\n### [minor] TC ID grep が substring 一致のため誤検出リスクがある\n\n- **file**: src/core/verification/test-coverage.ts (line 175)\n- **issue**: `text.includes(tcId)` は substring 一致のため、`tcId = \"TC-1\"` のとき test code 内の `TC-10` や `TC-100` にも一致してしまう。design.md ADR-1 は「test-cases.md 内の TC ID 文字列と test code 内の TC ID 文字列の完全一致で判定する」と述べているが、現実装は完全一致ではない。test-case-generator prompt が `TC-{NNN}` （3 桁ゼロ埋め）を推奨することで実害は緩和されるが、TC-1/TC-10/TC-100 のような 1〜2 桁混在の test-cases.md が来た場合に未実装 TC が「found」扱いになり、test-coverage が見逃す可能性がある。\n- **suggestion**: 単語境界付き正規表現で照合する（例: `new RegExp(\"\\\\b\" + escapeRegex(tcId) + \"\\\\b\").test(text)`）。少なくとも `tcId + \"[^0-9-]\"` 相当のチェックで substring extension を防ぐ。あるいは spec で「TC-{NNN} ゼロ埋め 3 桁を MUST」に格上げする。\n\n### [minor] extractMustTcIds が TC section 内の他文脈の \"Priority: must\" を誤検出しうる\n\n- **file**: src/core/verification/test-coverage.ts (line 85-97)\n- **issue**: TC section 内の GIVEN/WHEN/THEN 本文に `**Priority**: must` 文字列が偶然含まれると、その TC が should でも must として扱われる。実用上は test-case-gen prompt が Priority を section 頭部に書く規律で防げているため低リスクだが、prompt 違反時に静かに誤判定する。\n- **suggestion**: 任意。最初に見つかった `**Priority**: <value>` のみを採用するか、`<value>` を取り出してから `must` 判定にする方式に変更すれば堅牢化できる。\n\n### [info] 全 test 内容をメモリに同時ロードする\n\n- **file**: src/core/verification/test-coverage.ts (line 159-168)\n- **issue**: `tests/` 配下の全 .ts ファイルを `fileContents` に並列で持つため、巨大リポジトリで O(N) メモリ使用。現状の 209 ファイル規模では問題なし。\n- **suggestion**: 任意。ファイル単位でストリーミングし TC ID set を decrement する方式でメモリ削減できるが、現時点では過剰最適化。\n\n### [info] tasks.md の task 番号と test-cases.md の Source 引用が一部ずれている\n\n- **file**: specrunner/changes/verification-tc-coverage/test-cases.md\n- **issue**: TC-016 など Integration 系の Source 欄が `T-09, req#2` と記載されているが、req#2 は request.md に存在しない（req.md は番号付き list ではない）。実害なし。\n- **suggestion**: 任意。Source 表記の精度向上は別 issue で。\n\n### [info] PHASE_SCRIPTS in 演算子による型ガードを runtime 値で表現するテストが間接的\n\n- **file**: tests/unit/core/verification/test-coverage.test.ts (line 81-90)\n- **issue**: TC-003 (ScriptPhaseName が test-coverage を除外) のテストは runtime の `Object.keys(PHASE_SCRIPTS)` でしか型を検証していない。本質的な型レベル検証はコンパイル成功（typecheck green）で担保される。コメントで補足されているが、純粋な型レベルテストではない。\n- **suggestion**: 任意。`expectTypeOf` や `tsd` 等での明示的な型テストを追加すると意図が明確化される。\n\n## TC Coverage\n\n| TC ID | Priority | Covered |\n|-------|----------|---------|\n| TC-001 | must | ✅ (test-coverage.test.ts) |\n| TC-002 | must | ✅ (test-coverage.test.ts) |\n| TC-003 | must | ✅ (test-coverage.test.ts, runtime proxy) |\n| TC-004 | must | ✅ |\n| TC-005 | must | ✅ |\n| TC-006 | must | ✅ |\n| TC-007 | must | ✅ |\n| TC-008 | must | ✅ |\n| TC-009 | must | ✅ |\n| TC-010 | must | ✅ |\n| TC-011 | must | ✅ |\n| TC-012 | should | ✅ (extractMustTcIds tests) |\n| TC-013 | must | ✅ |\n| TC-014 | should | ✅ (extractMustTcIds tests) |\n| TC-015 | should | ✅ (runTestCoveragePhase multi-file test) |\n| TC-016 | must | ✅ (runner.test.ts) |\n| TC-017 | must | ✅ |\n| TC-018 | must | ✅ |\n| TC-019 | must | ✅ |\n| TC-020 | must | ✅ |\n| TC-021 | must | ✅ |\n| TC-022 | must | ✅ (implementer-system.test.ts) |\n| TC-023 | must | ✅ (test-case-gen-system.test.ts) |\n| TC-024 | must | ✅ (build-fixer-system.test.ts) |\n| TC-025 | must | ✅ (delta-spec.test.ts) |\n| TC-026 | must | ✅ (delta-spec.test.ts) |\n| TC-027 | must | ✅ (test-coverage.test.ts) |\n| TC-028 | must | ✅ (typecheck green = CI 検証) |\n| TC-029 | must | ✅ (bun run test green = CI 検証) |\n| TC-030 | must | ✅ (delta-spec.test.ts または ADR ファイル自体で検証) |\n\nすべての `must` TC（27 件）はテストコード / CI ジョブで何らかの形でカバーされている。`should` TC 3 件（TC-012/014/015）も全て実装済み。\n\n## Verdict\n\n- **verdict**: approved\n"
+        },
+        "startedAt": "2026-05-19T14:34:16.318Z",
+        "endedAt": "2026-05-19T14:37:49.174Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4061,
+            "outputTokens": 13,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 6,
+            "outputTokens": 1931,
+            "cacheReadInputTokens": 79084,
+            "cacheCreationInputTokens": 16250
+          },
+          "claude-opus-4-7[1m]": {
+            "inputTokens": 21,
+            "outputTokens": 8957,
+            "cacheReadInputTokens": 1112114,
+            "cacheCreationInputTokens": 104825
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "aa0b3d6f-0a7c-40e0-9e10-80a1917c7110",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T14:37:51.111Z",
+        "endedAt": "2026-05-19T14:39:12.705Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2763,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 8,
+            "outputTokens": 3554,
+            "cacheReadInputTokens": 146444,
+            "cacheCreationInputTokens": 23572
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/verification-tc-coverage/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — verification-tc-coverage\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/340\n- **Number**: 340\n- **CreatedAt**: 2026-05-19T14:39:17.233Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-19T14:39:14.654Z",
+        "endedAt": "2026-05-19T14:39:17.234Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/340",
+    "number": 340,
+    "createdAt": "2026-05-19T14:39:17.233Z"
+  }
+}

@@ -1,0 +1,528 @@
+{
+  "version": 1,
+  "jobId": "6a28b5d6-0277-469c-b459-649e61e1a5b4",
+  "createdAt": "2026-05-19T06:27:11.531Z",
+  "updatedAt": "2026-05-19T06:53:28.521Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/prevent-authority-path-in-request-body/request.md",
+    "title": "request body 内の authority path 直接指定を構造的に防ぐ",
+    "type": "spec-change",
+    "slug": "prevent-authority-path-in-request-body"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 65109,
+  "branch": "change/prevent-authority-path-in-request-body-6a28b5d6",
+  "history": [
+    {
+      "ts": "2026-05-19T06:27:11.531Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-19T06:27:12.978Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-19T06:29:24.708Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-19T06:29:24.712Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-19T06:29:24.715Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-19T06:29:24.718Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-19T06:29:24.720Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → delta-spec-fixer"
+    },
+    {
+      "ts": "2026-05-19T06:29:24.721Z",
+      "step": "delta-spec-fixer-started",
+      "status": "started",
+      "message": "Starting delta-spec-fixer step"
+    },
+    {
+      "ts": "2026-05-19T06:30:51.145Z",
+      "step": "delta-spec-fixer-verdict",
+      "status": "ok",
+      "message": "delta-spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T06:30:51.149Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-fixer → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-19T06:30:51.151Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-19T06:30:51.156Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T06:30:51.159Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-19T06:30:51.159Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-19T06:30:51.160Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-19T06:32:14.738Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T06:32:14.739Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T06:32:14.739Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-19T06:32:14.740Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-19T06:33:43.360Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-19T06:33:43.364Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-19T06:33:43.365Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-19T06:36:23.483Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-19T06:36:23.487Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-19T06:36:23.487Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-19T06:36:23.488Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-19T06:36:35.259Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-19T06:36:35.262Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-19T06:36:35.262Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-19T06:36:35.263Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-19T06:36:35.264Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-19T06:38:10.186Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T06:38:10.189Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T06:38:10.189Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → adr-gen"
+    },
+    {
+      "ts": "2026-05-19T06:38:10.190Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-19T06:40:43.247Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-19T06:40:43.250Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-19T06:40:43.253Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-19T06:40:46.023Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-19T06:40:46.027Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-19T06:53:28.521Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "d8dc4367-4ae2-4854-bbab-beffe927baf9",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T06:27:12.984Z",
+        "endedAt": "2026-05-19T06:29:22.705Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5408,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 10,
+            "outputTokens": 4348,
+            "cacheReadInputTokens": 254793,
+            "cacheCreationInputTokens": 29849
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/prevent-authority-path-in-request-body/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: needs-fix\n\n## Violations\n\n| Path | Reason | Suggested Fix |\n|------|--------|---------------|\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/prevent-authority-path-in-request-body-6a28b5d6/specrunner/changes/prevent-authority-path-in-request-body/specs/` | `no-specs-for-required-type` | Request type 'spec-change' requires a delta spec. Add a file under ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/prevent-authority-path-in-request-body-6a28b5d6/specrunner/changes/prevent-authority-path-in-request-body/specs/<capability-name>/spec.md |\n\n## How to Fix\n\n- Move all delta spec files to `specs/<capability-name>/spec.md` (canonical path)\n- Ensure each spec.md has at least one `## ADDED Requirements`, `## MODIFIED Requirements`, or `## REMOVED Requirements` section\n- Ensure each section contains at least one `### Requirement:` block\n"
+        },
+        "startedAt": "2026-05-19T06:29:24.715Z",
+        "endedAt": "2026-05-19T06:29:24.717Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/prevent-authority-path-in-request-body/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-19T06:30:51.152Z",
+        "endedAt": "2026-05-19T06:30:51.156Z"
+      }
+    ],
+    "delta-spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "863fa206-597c-44ff-9993-827d018c778a",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T06:29:24.735Z",
+        "endedAt": "2026-05-19T06:30:49.603Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 808,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 13,
+            "outputTokens": 3588,
+            "cacheReadInputTokens": 232129,
+            "cacheCreationInputTokens": 15906
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "4396efb0-2bec-440f-a8af-cb4d3e4b8958",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/prevent-authority-path-in-request-body/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: prevent-authority-path-in-request-body\n\n- **verdict**: approved\n- **date**: 2026-05-19\n- **reviewer**: spec-reviewer agent\n\n---\n\n## Findings Summary\n\n| # | Severity | Category | Description | Location | Recommendation |\n|---|----------|----------|-------------|----------|----------------|\n| 1 | LOW | clarity | `request.md` の `## architect 評価済みの設計判断` セクションが TBD のまま。`design.md` に DJ-1〜DJ-3 が記述されており実質的な空白はないが、request.md 単体で読む場合に完結しない | request.md L60-62 | `design.md` の設計判断要旨を 1 行で backfill するか、「設計判断は design.md 参照」と明記する。実装ブロッカーではない |\n| 2 | LOW | test-coverage | Task 4 の `toContain` アサーションに使う具体フレーズが spec 段階では未確定。実装後フレーズが弱すぎると regression 検知能力が下がる | tasks.md Task 4 | 実装時に「authority path + 編集動詞」「policy 言及は HIGH finding にしない」の文言を含む具体フレーズを選定し、テストコメントに記録する |\n\n---\n\n## Verdict\n\nNo HIGH severity findings. Requirements 1〜3 はそれぞれ tasks.md のタスクと spec.md のシナリオに 1:1 でマッピングされており、受け入れ基準はすべてテスト可能。設計判断 DJ-1〜DJ-3 は妥当で、スコープ外の明示も適切。LOW 所見 2 件は実装ブロッカーでない。\n\n---\n\n## Review Notes\n\n### 網羅性\n\n- Req 1 (request-generate prompt MUST 化) → Task 1 + spec.md Scenario \"MUST ルールが prompt に存在する\" ✓\n- Req 2 (scaffold template guidance) → Task 2 + spec.md Scenario \"scaffold に delta spec guidance が含まれる\" ✓\n- Req 3 (request review 検出ルール) → Task 3 + spec.md Scenario \"検出ルールが prompt に存在する\" / \"referential 除外節が prompt に存在する\" ✓\n- Req 4 (tests green) → Task 4 + Task 5 ✓\n\n### 設計判断の妥当性\n\n- **DJ-1 (直接埋め込み)**: `AUTHORITY_SPEC_GUARD` は executor 側 agent 用フラグメント。request 作成側の文脈は別関心事であり、YAGNI として直接埋め込みは妥当。\n- **DJ-2 (LLM 判断)**: request-review が LLM agent であることを前提とすると、prompt ルールによる判断は既存フローに最もコスト低く乗れる。正規表現ベースの静的検出はスコープ外として分離済み。\n- **DJ-3 (string contains assertion)**: 既存の TC-RR-009/010 パターンを踏襲。prompt 変更による regression を最小コストで検知できる。\n\n### セキュリティ考慮\n\n変更対象はすべて prompt テキストと scaffold テンプレートの文字列定数。入力受け付け・認証・外部 API の変更なし。OWASP Top 10 の適用対象外。\n\n### スコープ整合性\n\nスコープ外 5 項目（dsv 拡張 / 遡及修正 / AUTHORITY_SPEC_GUARD 変更 / executor 側防衛 / path 正規化）はいずれも要件・tasks.md に混入していない。\n"
+        },
+        "startedAt": "2026-05-19T06:30:51.175Z",
+        "endedAt": "2026-05-19T06:32:13.183Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3341,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 10,
+            "outputTokens": 4012,
+            "cacheReadInputTokens": 203440,
+            "cacheCreationInputTokens": 26613
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "fd2f377a-e78d-4ab9-9b95-d8054b679428",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T06:32:14.748Z",
+        "endedAt": "2026-05-19T06:33:41.738Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2104,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 6,
+            "outputTokens": 5911,
+            "cacheReadInputTokens": 81013,
+            "cacheCreationInputTokens": 21511
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "137247d8-5fcc-4f31-b3f0-e61f74970150",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T06:33:43.380Z",
+        "endedAt": "2026-05-19T06:36:21.849Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3440,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 19,
+            "outputTokens": 8644,
+            "cacheReadInputTokens": 574390,
+            "cacheCreationInputTokens": 31487
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/prevent-authority-path-in-request-body/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — prevent-authority-path-in-request-body — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.3s | 0 |\n| 2 | typecheck | passed | 2.0s | 0 |\n| 3 | test | passed | 5.9s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/prevent-authority-path-in-request-body-6a28b5d6\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t138d\n\n Test Files  196 passed (196)\n      Tests  2212 passed (2212)\n   Start at  15:36:27\n   Duration  5.68s (transform 4.17s, setup 0ms, import 7.94s, tests 10.38s, environment 11ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-LoyxpJ/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-GaZQ3t/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/prevent-authority-path-in-request-body-6a28b5d6/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-19T06:36:23.489Z",
+        "endedAt": "2026-05-19T06:36:35.257Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "b1b57eb1-1c4b-47f4-8aa3-eab680657217",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/prevent-authority-path-in-request-body/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review: prevent-authority-path-in-request-body — Iteration 1\n\n## Findings Summary\n\n| # | Severity | Category | Description | Location | Recommendation |\n|---|----------|----------|-------------|----------|----------------|\n| 1 | LOW | clarity | テストファイル先頭のテスト一覧コメント（TC-RR-001〜010）に TC-RR-011 / TC-RR-012 が追記されていない | `tests/unit/command/request-review.test.ts` L1–12 | コメントブロックに `TC-RR-011: REQUEST_REVIEW_SYSTEM_PROMPT — authority path co-occurrence detection rule` と `TC-RR-012: REQUEST_REVIEW_SYSTEM_PROMPT — referential exclusion clause` の 2 行を追加する（TC-013 / should 要件） |\n\n## Test Coverage Check\n\n| TC | Priority | Result |\n|----|----------|--------|\n| TC-001 | must | ✅ MUST NOT ルールが `## Output Rules` に追加されている |\n| TC-002 | must | ✅ delta spec path が代替として明示されている |\n| TC-003 | should | ✅ セクション構造・bullet 形式が維持されている |\n| TC-004 | must | ✅ `<!-- spec 変更を伴う場合: ... -->` guidance コメントが存在する |\n| TC-005 | must | ✅ `specrunner/specs/` が編集対象例文として現れない |\n| TC-006 | should | ✅ 既存 `<!-- adr 判断基準: ... -->` と同パターンで追加されている |\n| TC-007 | must | ✅ authority path + 編集動詞共起の HIGH finding ルールが存在する |\n| TC-008 | must | ✅ referential 除外節 (\"referential mentions … are NOT HIGH findings\") が存在する |\n| TC-009 | should | ✅ `Severity Scope Constraint` の HIGH 定義に authority path 直接指定が明示されている |\n| TC-010 | must | ✅ TC-RR-011 が `toContain` で 3 フレーズを assert している |\n| TC-011 | must | ✅ TC-RR-012 が `toContain` で 2 フレーズを assert している |\n| TC-012 | must | ✅ `REQUEST_REVIEW_SYSTEM_PROMPT` が named import されている |\n| TC-013 | should | ⚠️ テスト一覧コメントに TC-RR-011 / TC-RR-012 が未追記（Finding #1） |\n| TC-014 | must | ✅ TC-RR-011 が green（196 files / 2212 tests passed） |\n| TC-015 | must | ✅ TC-RR-012 が green |\n| TC-016 | must | ✅ TC-RR-001〜010 に regression なし |\n| TC-017 | must | ✅ `bun run typecheck` 型エラー 0 件 |\n| TC-018 | must | ✅ `bun run test` 全 green |\n| TC-019 | should | ✅ assert 文字列がキーフレーズ粒度（全文一致なし） |\n| TC-020 | could | ✅ authority path 言及が禁止説明の文脈のみ |\n\n## Verdict\n\n- **verdict**: approved\n\nFinding #1 は LOW（テストコメント未追記）で、should 優先度の TC-013 に対応する。動作・検出ロジック・テスト assertion に問題はなく、すべての must 要件を満たしている。\n"
+        },
+        "startedAt": "2026-05-19T06:36:35.281Z",
+        "endedAt": "2026-05-19T06:38:08.675Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3482,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 8,
+            "outputTokens": 4716,
+            "cacheReadInputTokens": 149816,
+            "cacheCreationInputTokens": 28569
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "b9bba6a2-a96c-4da9-8620-4a7755c3775e",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T06:38:10.205Z",
+        "endedAt": "2026-05-19T06:40:41.572Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2212,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 12,
+            "outputTokens": 5674,
+            "cacheReadInputTokens": 247249,
+            "cacheCreationInputTokens": 28069
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/prevent-authority-path-in-request-body/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — prevent-authority-path-in-request-body\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/324\n- **Number**: 324\n- **CreatedAt**: 2026-05-19T06:40:46.022Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-19T06:40:43.253Z",
+        "endedAt": "2026-05-19T06:40:46.022Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/324",
+    "number": 324,
+    "createdAt": "2026-05-19T06:40:46.022Z"
+  }
+}

@@ -1,0 +1,584 @@
+{
+  "version": 1,
+  "jobId": "e2f84bcc-214d-42e8-b65a-a2e54c099495",
+  "createdAt": "2026-05-26T14:52:06.335Z",
+  "updatedAt": "2026-05-26T15:29:29.704Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/resume-prompt-injection.md",
+    "title": "specrunner job resume に追加 prompt 注入オプションを追加する",
+    "type": "new-feature",
+    "slug": "resume-prompt-injection"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 63734,
+  "branch": "feat/resume-prompt-injection-e2f84bcc",
+  "history": [
+    {
+      "ts": "2026-05-26T14:52:06.335Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-26T14:52:07.888Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-26T14:57:09.466Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-26T14:57:09.468Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-26T14:57:09.470Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-26T14:57:09.490Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-26T14:57:09.491Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-26T14:57:09.491Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-26T14:57:09.492Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-26T14:59:59.249Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-26T14:59:59.253Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-26T14:59:59.253Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-26T14:59:59.257Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-26T15:01:29.724Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-26T15:01:29.727Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-26T15:01:29.729Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-26T15:16:25.346Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-26T15:16:25.349Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-26T15:16:25.349Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-26T15:16:25.350Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-26T15:16:39.807Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-26T15:16:39.809Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-26T15:16:39.809Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-26T15:16:39.810Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-26T15:16:39.811Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-26T15:20:11.106Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-26T15:20:11.108Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-26T15:20:11.108Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-26T15:20:11.109Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-26T15:22:40.194Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-26T15:22:40.196Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-26T15:22:40.197Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-26T15:22:40.198Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-26T15:26:22.010Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-26T15:26:22.012Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-26T15:26:22.012Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-26T15:26:22.014Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-26T15:26:22.035Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-26T15:26:22.036Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → adr-gen"
+    },
+    {
+      "ts": "2026-05-26T15:26:22.037Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-26T15:26:36.777Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-26T15:26:36.779Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-26T15:26:36.779Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-26T15:26:39.290Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-26T15:26:39.295Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-26T15:29:29.704Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "9e6561ad-340f-4251-8752-48dfb431ff08",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-26T14:52:07.895Z",
+        "endedAt": "2026-05-26T14:57:07.339Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6494,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 41,
+            "outputTokens": 11952,
+            "cacheReadInputTokens": 2339140,
+            "cacheCreationInputTokens": 84179
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/resume-prompt-injection/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-26T14:57:09.470Z",
+        "endedAt": "2026-05-26T14:57:09.490Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/resume-prompt-injection/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-26T15:26:22.014Z",
+        "endedAt": "2026-05-26T15:26:22.035Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "37bbba2f-48da-4be2-afa0-42d703919f99",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/resume-prompt-injection/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: resume-prompt-injection\n\n- **verdict**: approved\n- **reviewer**: spec-review agent\n- **date**: 2026-05-26\n\n## Summary\n\n設計・タスク・delta spec はいずれも整合しており、既存コードベースのパターンと一致している。\n後方互換性・one-shot 消費メカニズム・データフローの分離はいずれも適切。\nセキュリティ観点でも CLI ローカルツールとして妥当な設計。\n\n承認するが、以下の 2 件を実装時の注意事項として記録する。\n\n---\n\n## Findings\n\n### F-001: T-06 が managed adapter の二経路を明示していない（Low）\n\n**場所**: `tasks.md` T-06 / `src/adapter/managed-agent/agent-runner.ts`\n\n`ManagedAgentRunner` はメッセージ構築経路が 2 つある:\n\n| 経路 | メソッド | メッセージ構築 |\n|------|----------|--------------|\n| design-style (SSE) | `streamWithPollingFallback` | `effectiveRequestContent`（`requestContent + projectContext`）を `sessionClient.streamEvents()` に渡す |\n| polling-style | `preparePollingMessage` | `step.buildMessage()` → `initialMessage` を構築 |\n\nT-06 は「メッセージ構築位置を確認し、`<resume-context>` セクションを同様に挿入する」とあるが、どちらの経路にも追加すべきかが明示されていない。\n\n`design` ステップ（SSE 経路）で halt → resume するケースは稀だが仕様上ゼロではない。実装者が polling-style のみ更新して design-style を見落とす可能性がある。\n\n**判断**: 設計の D2 フォーマット仕様は両経路に適用可能であり、実装者への確認依頼（「位置を確認し」）で代替可能。ブロッカーではないが実装レビュー時に両経路を確認すること。\n\n---\n\n### F-002: `--prompt-file` にファイルサイズ上限が未定義（Informational）\n\n**場所**: `design.md` D1 / `tasks.md` T-09\n\n`--prompt-file` は `fs.readFileSync(path, \"utf-8\")` でファイル全体を読み込む。サイズ制限が定義されていないため、巨大ファイルをそのままエージェントのプロンプトに注入できる。\n\nローカル CLI ツールでありユーザー自身がファイルを指定するため、脅威モデル上は問題なし。注意事項として記録するのみ。\n\n---\n\n## Security Assessment\n\n| 観点 | 評価 |\n|------|------|\n| Prompt injection | ユーザー自身が `--prompt` 値を指定するローカル CLI。攻撃者とオペレーターが同一主体のため受容可能 |\n| XML tag boundary | `<resume-context>` タグで注入テキストの境界を明示。エージェントが境界を認識できる |\n| Path traversal (`--prompt-file`) | `path.resolve(process.cwd(), promptFile)` は絶対パスも受け付けるが、ローカル CLI では標準的な挙動 |\n| Persistence | 注入テキストは state に保存されない。one-shot 消費で後続ステップには伝播しない |\n| Backward compat | 全フィールドが optional。未指定時は既存動作と完全同一 |\n\n---\n\n## Design Correctness\n\n- **データフロー**: CLI flag → `ResumeOptions.prompt` → `PrepareResult.resumePrompt` → `PipelineDeps.resumePrompt` → `AgentRunContext.resumePrompt` → adapter prompt の流れは一貫している\n- **One-shot 消費**: `deps.resumePrompt = undefined` を `runAgentStep()` 内で実行する設計は正しい。CLI ステップ（verification 等）が先行する場合も `runCliStep` は `resumePrompt` を消費しないため、次の agent ステップが確実に最初の消費者になる\n- **排他チェック**: `process.exit(2)` で終了する handler 層での排他チェックは既存パターンと一致\n- **型安全性**: 全フィールドが optional であり、`PipelineRunCommand` が `resumePrompt` を設定しない設計は後方互換\n- **delta spec**: `specrunner/changes/resume-prompt-injection/specs/cli-resume-command/spec.md` の 4 要件はいずれも request.md の受け入れ基準に対応し、シナリオ形式・MUST キーワードも規律に適合\n"
+        },
+        "startedAt": "2026-05-26T14:57:09.500Z",
+        "endedAt": "2026-05-26T14:59:56.475Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4019,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 16,
+            "outputTokens": 8292,
+            "cacheReadInputTokens": 492742,
+            "cacheCreationInputTokens": 79108
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "b4068621-688c-4692-a3b2-8b4162c759a4",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-26T14:59:59.271Z",
+        "endedAt": "2026-05-26T15:01:27.918Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1384,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 6631,
+            "cacheReadInputTokens": 41575,
+            "cacheCreationInputTokens": 18503
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "c4ee5733-b8d2-4609-a81e-29c123d00ae3",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-26T15:01:29.739Z",
+        "endedAt": "2026-05-26T15:16:23.444Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4116,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 61,
+            "outputTokens": 53439,
+            "cacheReadInputTokens": 6437008,
+            "cacheCreationInputTokens": 155940
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/resume-prompt-injection/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — resume-prompt-injection — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.3s | 0 |\n| 2 | typecheck | passed | 2.3s | 0 |\n| 3 | test | passed | 7.4s | 0 |\n| 4 | lint | passed | 1.8s | 0 |\n| 5 | security | skipped | — | — |\n| 6 | test-coverage | passed | 0.0s | 0 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/resume-prompt-injection-e2f84bcc\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...\nGitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Required status check \"ci/build\" is expected, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t145d\n\n Test Files  269 passed (269)\n      Tests  3012 passed (3012)\n   Start at  00:16:29\n   Duration  7.17s (transform 4.01s, setup 0ms, import 8.82s, tests 13.62s, environment 15ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-EFttmj/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-dCtceN/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/resume-prompt-injection-e2f84bcc/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.\n\n```\n\n## Phase: lint\n\n```\n$ eslint ./src --max-warnings 0\n\n```\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n\n## Phase: test-coverage\n\n```\ntest-coverage: 15/15 must TCs covered\n```\n"
+        },
+        "startedAt": "2026-05-26T15:16:25.350Z",
+        "endedAt": "2026-05-26T15:16:39.806Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "809d16f6-2da9-4b4d-ae07-17909ae9177f",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/resume-prompt-injection/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback: resume-prompt-injection\n**Iteration**: 1  \n**Reviewer**: code-review agent  \n**Date**: 2026-05-27\n\n---\n\n## Summary\n\n実装・型チェック・テストはすべて green。受け入れ基準 5 項目は実装上すべて満たされている。データフロー（CLI flag → ResumeOptions → PrepareResult → PipelineDeps → StepExecutor → AgentRunContext → adapter）は設計通り正確に実装されており、one-shot 消費メカニズムも正しい。\n\nただし、test-cases.md で **must** 指定された 4 シナリオがテスト未カバーであるため `needs-fix`。\n\n---\n\n## Findings\n\n| # | severity | location | description |\n|---|----------|----------|-------------|\n| F-01 | minor | `tests/unit/cli/specrunner-resume-dispatch.test.ts` | **TC-02 未カバー（must）**: `--prompt-file` でファイル内容が `runResume` に渡されることのテストがない。TC-DISPATCH-009 は `--prompt` のみカバー。`fs.readFileSync` 呼び出しパスが無検証のまま |\n| F-02 | minor | `tests/unit/cli/specrunner-resume-dispatch.test.ts` | **TC-05 未カバー（must）**: `--prompt-file` に存在しないパスを指定したとき stderr に `\"Error: Cannot read prompt file …\"` が出力されて exit code 1 になることのテストがない |\n| F-03 | minor | `tests/` | **TC-15 / TC-16 未カバー（must）**: `ManagedAgentRunner` の `resumePrompt` 注入テストがない。SSE パス（`streamWithPollingFallback` — `effectiveRequestContentWithResume`）と polling パス（`preparePollingMessage` — `initialMessage`）の両方がテスト未カバー |\n| F-04 | cosmetic | `test-cases.md` vs `src/cli/command-registry.ts:406` | TC-03 のスペックは stderr 出力を `\"Error: --prompt and --prompt-file are mutually exclusive.\"` と定義しているが、実装は `FlagParseError` throw → specrunner.ts で `e.message` のみ書き出すため `\"Error: \"` プレフィックスなし。動作は正しく TC-DISPATCH-010 のテストも実装に合わせて書かれているが、spec との文言不一致がある |\n\n---\n\n## Positive Notes\n\n- **実装品質が高い**: 設計書（design.md）の Component Structure, Data Flow, D1〜D4 すべてが忠実に実装されている。\n- **後方互換**: `resumePrompt` は全箇所で optional。既存 `PipelineRunCommand` や run コマンドへの影響がゼロ。\n- **one-shot 消費が正確**: executor.ts の `ctx` 構築直後に `deps.resumePrompt = undefined` を設定、CLI ステップは消費しない設計を正確に実装。\n- **両 adapter 対応**: ClaudeCodeRunner（`fullPrompt` 構築）と ManagedAgentRunner（SSE / polling 双方の `initialMessage` 構築）で `<resume-context>` セクションが正しく挿入されている。\n- **テスト設計が丁寧**: TC-EXEC-003 の 2 回目呼び出しで `undefined` を確認するテスト、TC-10c の順序確認テストなど、critical path は細かくカバーされている。\n\n---\n\n## Fix Guide\n\n### F-01: TC-02 — `--prompt-file` ファイル読み込みテストを追加\n\n`tests/unit/cli/specrunner-resume-dispatch.test.ts` に以下を追加する。\n一時ファイルに内容を書き出して `--prompt-file` で指定し、`runResume` に `prompt: \"file content\"` が渡されることを確認する。\n\n```typescript\ndescribe(\"TC-DISPATCH-011: --prompt-file reads file content and passes to runResume\", () => {\n  it(\"passes file content as prompt\", async () => {\n    const { runResume } = await import(\"../../../src/cli/resume.js\");\n    const tmpFile = path.join(os.tmpdir(), `tc-dispatch-011-${Date.now()}.md`);\n    await fs.writeFile(tmpFile, \"fix content\");\n    try {\n      await runMain([\"job\", \"resume\", \"my-slug\", `--prompt-file=${tmpFile}`]);\n      expect(runResume).toHaveBeenCalledWith(\n        \"my-slug\",\n        expect.objectContaining({ prompt: \"fix content\" }),\n      );\n    } finally {\n      await fs.rm(tmpFile, { force: true });\n    }\n  });\n});\n```\n\n### F-02: TC-05 — 存在しないファイルパスで exit 1 テストを追加\n\n```typescript\ndescribe(\"TC-DISPATCH-012: --prompt-file with nonexistent path → exit 1\", () => {\n  it(\"exits with code 1 and writes error to stderr\", async () => {\n    const error = await runMain([\n      \"job\", \"resume\", \"my-slug\",\n      \"--prompt-file=./nonexistent-file-99999.md\",\n    ]);\n    expect(error).toBe(\"process.exit(1)\");\n    expect(stderrSpy).toHaveBeenCalledWith(\n      expect.stringContaining(\"Cannot read prompt file\"),\n    );\n  });\n});\n```\n\n### F-03: TC-15 / TC-16 — ManagedAgentRunner resumePrompt テストを追加\n\n既存の `tests/unit/adapter/managed-agent/` 配下のファイル（または新規）に追加する。\npolling パスの `preparePollingMessage()` を呼ぶルートで `initialMessage` に `<resume-context>` が含まれることと、`resumePrompt` なしでは含まれないことを確認する。\nSSE パスは `streamWithPollingFallback` の引数 `requestContent` を検証するか、`sessionClient.streamEvents` のモックで `requestContent` をキャプチャして確認する。\n\n### F-04: cosmetic — 対応は任意\n\ntest-cases.md の TC-03 の `THEN` 記述を実際の出力（`\"Error: \"` プレフィックスなし）に合わせて更新するか、実装側で `process.stderr.write(\"Error: \" + message)` に合わせるかを選択する。どちらでもよい。\n\n---\n\n## Verdict\n\n- **verdict**: needs-fix\n\n**理由**: F-01〜F-03 はいずれも test-cases.md で **must** 指定されたシナリオが未テスト。実装コードは正しいが、テストカバレッジのギャップが明確なため修正が必要。F-04 は cosmetic のみで fix 判定の要因ではない。\n"
+        },
+        "startedAt": "2026-05-26T15:16:39.824Z",
+        "endedAt": "2026-05-26T15:20:09.245Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4418,
+            "outputTokens": 13,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 23,
+            "outputTokens": 9580,
+            "cacheReadInputTokens": 1220683,
+            "cacheCreationInputTokens": 83109
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "132bdb62-7f58-4aab-8c40-b9d470c971bd",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/resume-prompt-injection/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback: resume-prompt-injection\n**Iteration**: 2  \n**Reviewer**: code-review agent  \n**Date**: 2026-05-27\n\n---\n\n## Summary\n\niteration 1 で指摘した F-01〜F-03（must カバレッジ不足）がすべて修正された。実装品質・型安全性・後方互換は引き続き問題なし。`bun run typecheck && bun run test` は 269 files / 3018 tests all green。\n\n---\n\n## Iteration 1 Findings の対応状況\n\n| # | severity | 指摘内容 | 対応 |\n|---|----------|----------|------|\n| F-01 | minor | TC-02 未カバー（`--prompt-file` ファイル読み込みパス） | TC-DISPATCH-011 を追加 ✓ |\n| F-02 | minor | TC-05 未カバー（存在しないファイルパス → exit 1） | TC-DISPATCH-012 を追加 ✓ |\n| F-03 | minor | TC-15/TC-16 未カバー（ManagedAgentRunner resumePrompt 注入） | polling / SSE 双方のテストを追加 ✓ |\n| F-04 | cosmetic | test-cases.md TC-03 の stderr 文言と実装の不一致 | 対応なし（cosmetic のため許容） |\n\n---\n\n## Findings（iteration 2）\n\n新規 findings なし。\n\n---\n\n## Positive Notes\n\n- **F-01 修正（TC-DISPATCH-011）**: 一時ファイルを実際に書き出して `--prompt-file=<path>` で渡し、`runResume` に `prompt: \"fix content\"` が届くことを確認。正しいテスト設計。\n- **F-02 修正（TC-DISPATCH-012）**: 存在しないパスを `--prompt-file` に渡したとき、`exit(1)` かつ stderr に `\"Cannot read prompt file\"` が含まれることを確認。exit code まで検証している点が丁寧。\n- **F-03 修正（TC-15/TC-16）**: polling パス（`sendUserMessage` の引数を検証）と SSE パス（`streamEvents` の `requestContent` を検証）の両方でカバー。absent 時にタグが含まれないことも対称的にテスト済み。\n- **全体的な設計**: データフロー全層（CLI → ResumeOptions → PrepareResult → PipelineDeps → executor → AgentRunContext → adapter）が設計通りに実装され、one-shot 消費も正確。\n\n---\n\n## Verdict\n\n- **verdict**: approved\n"
+        },
+        "startedAt": "2026-05-26T15:22:40.209Z",
+        "endedAt": "2026-05-26T15:26:20.284Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4418,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 23,
+            "outputTokens": 10294,
+            "cacheReadInputTokens": 1291577,
+            "cacheCreationInputTokens": 82203
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "d14cc612-d51a-491a-8ca1-4b3c3990348c",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-26T15:20:11.121Z",
+        "endedAt": "2026-05-26T15:22:38.443Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1370,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 15,
+            "outputTokens": 8731,
+            "cacheReadInputTokens": 508317,
+            "cacheCreationInputTokens": 52104
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "8442f6e9-b500-4f29-8ce4-69adfbdb1a0a",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-26T15:26:22.044Z",
+        "endedAt": "2026-05-26T15:26:36.723Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 559,
+            "outputTokens": 12,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 3,
+            "outputTokens": 70,
+            "cacheReadInputTokens": 7567,
+            "cacheCreationInputTokens": 5803
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/resume-prompt-injection/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — resume-prompt-injection\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/417\n- **Number**: 417\n- **CreatedAt**: 2026-05-26T15:26:39.288Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-26T15:26:36.780Z",
+        "endedAt": "2026-05-26T15:26:39.289Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/417",
+    "number": 417,
+    "createdAt": "2026-05-26T15:26:39.288Z"
+  }
+}

@@ -1,0 +1,780 @@
+{
+  "version": 1,
+  "jobId": "ec5834bf-1965-4eb7-b65b-4745c907183a",
+  "createdAt": "2026-05-21T12:08:34.555Z",
+  "updatedAt": "2026-05-21T13:21:31.423Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/dsv-format-rules-expansion.md",
+    "title": "delta-spec-validator (dsv) に rules.md 規定の tool 必須 format rule を追加する",
+    "type": "spec-change",
+    "slug": "dsv-format-rules-expansion"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 58596,
+  "branch": "change/dsv-format-rules-expansion-ec5834bf",
+  "history": [
+    {
+      "ts": "2026-05-21T12:08:34.555Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-21T12:08:37.172Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-21T12:21:13.904Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-21T12:21:13.908Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-21T12:21:13.909Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-21T12:21:13.914Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-21T12:21:13.915Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-21T12:21:13.915Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-21T12:21:13.916Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-21T12:26:24.699Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-21T12:26:24.702Z",
+      "step": "spec-review",
+      "status": "warning",
+      "message": "spec-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-21T12:26:24.702Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → spec-fixer"
+    },
+    {
+      "ts": "2026-05-21T12:26:24.703Z",
+      "step": "spec-fixer-started",
+      "status": "started",
+      "message": "Starting spec-fixer step"
+    },
+    {
+      "ts": "2026-05-21T12:27:15.731Z",
+      "step": "spec-fixer-verdict",
+      "status": "ok",
+      "message": "spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-21T12:27:15.734Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → delta-spec-validation (iter 1)"
+    },
+    {
+      "ts": "2026-05-21T12:27:15.735Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-21T12:27:15.737Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-21T12:27:15.739Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-21T12:27:15.739Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-21T12:27:15.740Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-21T12:30:16.514Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-21T12:30:16.517Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-21T12:30:16.517Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-21T12:30:16.517Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-21T12:32:47.524Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-21T12:32:47.526Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 2)"
+    },
+    {
+      "ts": "2026-05-21T12:32:47.528Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-21T12:43:30.139Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-21T12:43:30.142Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-21T12:43:30.142Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-21T12:43:30.143Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-21T12:43:41.457Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: failed"
+    },
+    {
+      "ts": "2026-05-21T12:43:41.459Z",
+      "step": "verification",
+      "status": "warning",
+      "message": "verification iteration 1 completed with verdict: failed"
+    },
+    {
+      "ts": "2026-05-21T12:43:41.459Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → build-fixer"
+    },
+    {
+      "ts": "2026-05-21T12:43:41.460Z",
+      "step": "build-fixer-started",
+      "status": "started",
+      "message": "Starting build-fixer step"
+    },
+    {
+      "ts": "2026-05-21T12:53:22.419Z",
+      "step": "build-fixer-verdict",
+      "status": "ok",
+      "message": "build-fixer verdict: success"
+    },
+    {
+      "ts": "2026-05-21T12:53:22.422Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "build-fixer → verification"
+    },
+    {
+      "ts": "2026-05-21T12:53:22.423Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 2 started"
+    },
+    {
+      "ts": "2026-05-21T12:53:22.424Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-21T12:53:34.235Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-21T12:53:34.237Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 2 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-21T12:53:34.237Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-21T12:53:34.237Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-21T12:53:34.238Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-21T13:00:51.912Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-21T13:00:51.916Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-21T13:00:51.916Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-21T13:00:51.917Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-21T13:02:49.924Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-21T13:02:49.930Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-21T13:02:49.931Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-21T13:02:49.931Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-21T13:06:02.762Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-21T13:06:02.766Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-21T13:06:02.766Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → adr-gen"
+    },
+    {
+      "ts": "2026-05-21T13:06:02.767Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-21T13:06:10.413Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-21T13:06:10.415Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-21T13:06:10.416Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-21T13:06:13.142Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-21T13:06:13.147Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-21T13:21:31.423Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "fb415238-b477-4e49-9222-8363a6a41519",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-21T12:08:37.178Z",
+        "endedAt": "2026-05-21T12:21:11.790Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 7544,
+            "outputTokens": 5452,
+            "cacheReadInputTokens": 144294,
+            "cacheCreationInputTokens": 42058
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 341,
+            "outputTokens": 40132,
+            "cacheReadInputTokens": 855369,
+            "cacheCreationInputTokens": 104664
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/dsv-format-rules-expansion/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-21T12:21:13.909Z",
+        "endedAt": "2026-05-21T12:21:13.914Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/dsv-format-rules-expansion/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-21T12:27:15.736Z",
+        "endedAt": "2026-05-21T12:27:15.737Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "3be29cbe-7eb5-4792-8e69-213cfa61fa85",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/dsv-format-rules-expansion/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result 001: dsv-format-rules-expansion\n\n- **verdict**: needs-fix\n\n---\n\n## Summary\n\n背景・動機・設計判断 (DJ1-DJ7) は solid。request.md の TBD 項目はすべて design.md で解決されており、tasks.md の粒度・検証ステップも十分。ただし delta spec 自体が導入する `normative-keyword-required` rule に違反している（自己参照不整合）。\n\n---\n\n## Findings\n\n### [MUST FIX] F1: delta spec の MODIFIED 2 件が `normative-keyword-required` rule に違反している\n\n**File**: `specrunner/changes/dsv-format-rules-expansion/specs/delta-spec-rule/spec.md`\n\n`normative-keyword-required` rule（要件 5）は「各 Requirement の本文に英語の SHALL または MUST が少なくとも 1 回出現すること」を強制する。しかし delta spec の MODIFIED 2 件の本文にいずれも `SHALL`/`MUST` が存在しない。\n\n**Requirement: DeltaSpecRuleName union type** — 本文:\n> `src/core/spec/rules/types.ts` に `DeltaSpecRuleName` union 型を export する。\n> - DSV rule 10 件の name を string literal union で列挙する: ...\n\n**Requirement: createDeltaSpecRegistry() の戻り型を DeltaSpecRuleRegistry\\<DeltaSpecRuleName\\> に変更** — 本文:\n> `src/core/spec/rules/index.ts` の `createDeltaSpecRegistry()` が `DeltaSpecRuleRegistry<DeltaSpecRuleName>` を返す。\n> - 登録 rule 数は 9: ...\n\nどちらも `SHALL`/`MUST` ゼロ。\n\n**影響**: 実装後に `specrunner request validate dsv-format-rules-expansion` を手動実行すると新 rule がこの delta spec に対して violation を返す。パイプライン上の blocking（delta-spec-validation は implementer より前に実行されるため現ラン内では発火しない）ではないが、spec が自身の定義する rule を満たしていないのは品質上の不整合。\n\n**Fix**: 上記 2 件の本文に `SHALL` を明示的に追加する。\n\n例（1 件目）:\n```\n`src/core/spec/rules/types.ts` の `DeltaSpecRuleName` union 型 SHALL 以下の 10 rule name を string literal で列挙する: ...\n```\n\n例（2 件目）:\n```\n`src/core/spec/rules/index.ts` の `createDeltaSpecRegistry()` SHALL `DeltaSpecRuleRegistry<DeltaSpecRuleName>` を返す。\n```\n\n---\n\n### [INFO] F2: DJ5 と Task 5a の微細な不整合（実装は正しい）\n\n**File**: `design.md` DJ5、`tasks.md` Task 5a\n\nDJ5:\n> rules 3-6 が `## Requirements` 内の Requirement block をパース — parsing ロジックの一元化\n\nRule 3 (`requirement-header-required`) は `### ` 行のうち `### Requirement:` でないものを検出する必要があり、`parseRequirementBlocks`（`^### Requirement:` 専用パーサー）は非標準 header を読み飛ばす構造上、Task 5a が raw line scan を採用しているのは**正しい**。\n\nDJ5 が「rules 3-6 すべてが parseRequirementBlocks を使う」と述べているのは不正確。Task 実装は正しいので修正不要。\n\n---\n\n## Not Flagged (確認済み、問題なし)\n\n| 観点 | 判断 |\n|------|------|\n| DJ1: `baselineSpecLoader` optional 化 | request.md の `required` から `optional?` への変更は DJ1 で合理的に説明済み。後方互換も維持される |\n| DJ2: rule 独立実行 | registry の既存 validate ループと整合、全違反一括報告は fixer にとって有益 |\n| DJ3: baseline 不在 = PASS | rule 側で `null` チェックする Single Responsibility 設計は適切 |\n| DJ7: normalized match ロジック | exact → normalized の 2 段階は false positive が少なく、typo 検出の精度バランスが妥当 |\n| `DeltaSpecViolationReason` 追加 6 件 | `delta-spec-validator.ts` 変更対象として design.md / tasks.md 両方に記載されており整合 |\n| 受け入れ基準の完全性 | 6 rule ファイル・registry 登録・型拡張・regression test・green test・archive 3 件確認。すべてカバー済み |\n| セキュリティ観点 | rule は fs read のみで write なし。`baselineSpecLoader` は path traversal リスクがあるが、capability 文字列は change folder 内 `specs/` 配下のディレクトリ名由来であり外部入力ではない。問題なし |\n\n---\n\n## Required Actions\n\n1. `specs/delta-spec-rule/spec.md` の MODIFIED 2 件の本文に `SHALL` を追加する（F1）\n"
+        },
+        "startedAt": "2026-05-21T12:21:13.924Z",
+        "endedAt": "2026-05-21T12:26:20.744Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5012,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 87,
+            "outputTokens": 16146,
+            "cacheReadInputTokens": 726383,
+            "cacheCreationInputTokens": 58026
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "c54f4cb6-6db6-4478-8cff-2e04b57e6a5c",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/dsv-format-rules-expansion/spec-review-result-002.md",
+          "error": null,
+          "fileContent": "# Spec Review Result 002: dsv-format-rules-expansion\n\n- **verdict**: approved\n\n---\n\n## Summary\n\nreview-001 の F1（delta spec MODIFIED 2 件の本文に SHALL がない）は正しく修正されている。delta spec の全 Requirement が `normative-keyword-required` rule に自己適合した状態になった。F2（DJ5 の記述とTask 5a の raw line scan の齟齬）は INFO 止まりであり修正不要と判断されており、今回も同様。\n\nrequest.md・design.md・tasks.md・delta spec の内容に新たな阻害要因は見当たらない。\n\n---\n\n## F1 修正確認\n\n**File**: `specrunner/changes/dsv-format-rules-expansion/specs/delta-spec-rule/spec.md`\n\n| Requirement | 修正後の body 内 SHALL |\n|-------------|----------------------|\n| DeltaSpecRuleName union type | `DeltaSpecRuleName` union 型 **SHALL** 以下の 10 rule name を string literal union で列挙する… ✓ |\n| createDeltaSpecRegistry() の戻り型 | `createDeltaSpecRegistry()` **SHALL** `DeltaSpecRuleRegistry<DeltaSpecRuleName>` を返す。 ✓ |\n\n両件とも body に `SHALL` が存在する。F1 解消を確認。\n\n---\n\n## 追加確認事項\n\n| 観点 | 判断 |\n|------|------|\n| delta spec 全 9 Requirement の normative keyword | 全件 body に `SHALL` を含む（詳細は下表）。違反なし |\n| delta spec 全 9 Requirement の Scenario 有無 | 全件 1 つ以上の `#### Scenario:` あり。違反なし |\n| delta spec の `## Removed` / `## Renamed` なし | section 不在は optional 扱いで PASS。問題なし |\n| `requirement-header-required` と `parseRequirementBlocks` の責務分離 | Task 5a が raw line scan を採用しているのは `parseRequirementBlocks` が非標準 header を読み飛ばすためであり正しい。design.md DJ5 の \"rules 3-6 が parseRequirementBlocks を使う\" 記述は不正確だが、実装仕様（tasks.md）は正しい。review-001 F2 と同評価：修正不要 |\n| `scenario-required-per-requirement` が非標準 header を検査しない件 | `parseRequirementBlocks` は `^### Requirement:` のみを検出するため、`### REQ-001:` 等は Scenario チェック対象外。`requirement-header-required` が先にエラーを出すため cascading として許容範囲内 |\n| `DeltaSpecViolationReason` 拡張（6 reason 追加） | `delta-spec-validator.ts` 現行 union に 6 件追加（tasks.md 1a）。既存 7 + 6 = 13 reason になる。design.md DJ6 と整合 |\n| セキュリティ: `baselineSpecLoader` の path traversal | capability 文字列は `readdir(specs/)` 由来（外部入力ではない）。変数展開でパスを構築するが入力経路は制御下にある。問題なし |\n| 後方互換 | `baselineSpecLoader` を optional 引数 (default `async () => null`) にすることで既存テスト・呼び出し箇所の変更不要。DJ1 の後方互換設計は正しい |\n| registry 登録数 | 受け入れ基準「3 → 9」と tasks.md Task 9a（3 既存 + 6 新規）が一致 ✓ |\n\n### delta spec 全 Requirement の normative keyword 確認\n\n| Requirement | body 内キーワード |\n|-------------|----------------|\n| DeltaSpecRuleName union type | SHALL ✓ |\n| createDeltaSpecRegistry() の戻り型 | SHALL ✓ |\n| DeltaSpecRuleInput SHALL provide optional baselineSpecLoader | SHALL（\"PASS を返す SHALL\"）✓ |\n| removed-section-format rule SHALL validate ## Removed section format | SHALL（\"SHALL 検証する\"）✓ |\n| renamed-section-format rule SHALL validate ## Renamed section format | SHALL（\"SHALL 検証する\"）✓ |\n| requirement-header-required rule SHALL validate Requirement header prefix | SHALL（\"SHALL 検証する\"）✓ |\n| scenario-required-per-requirement rule SHALL validate Scenario presence | SHALL（\"SHALL 検証する\"）✓ |\n| normative-keyword-required rule SHALL validate normative keyword presence | SHALL（\"SHALL 検証する\"）✓ |\n| baseline-header-match rule SHALL validate Requirement headers against baseline | SHALL（\"SHALL 検証する\"）✓ |\n\n---\n\n## Not Flagged（確認済み、問題なし）\n\n- DJ2（rule 独立実行）: 全違反一括報告は fixer にとって有益。registry の既存設計と整合\n- DJ3（baseline 不在 = PASS）: rule 側で判定する Single Responsibility 設計は適切\n- DJ7（normalized match）: exact → normalized の 2 段階で false positive を抑制。typo 検出の精度バランスが妥当\n- `loadSpecFiles` の複数呼び出し（rule ごとに個別 read）: パフォーマンス上の冗長さはあるが正確性に影響なし。受け入れ基準は green test のみを要求\n- 受け入れ基準の完全性: 6 rule ファイル・registry 登録・型拡張・regression test・green test・archive 3 件確認。すべてカバー済み\n"
+        },
+        "startedAt": "2026-05-21T12:27:15.752Z",
+        "endedAt": "2026-05-21T12:30:14.593Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5012,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 11,
+            "outputTokens": 9182,
+            "cacheReadInputTokens": 301061,
+            "cacheCreationInputTokens": 44260
+          }
+        }
+      }
+    ],
+    "spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "142a71cd-3bb0-46c7-89ae-3554e49ac90f",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-21T12:26:24.712Z",
+        "endedAt": "2026-05-21T12:27:13.913Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 697,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 7,
+            "outputTokens": 2818,
+            "cacheReadInputTokens": 92047,
+            "cacheCreationInputTokens": 14229
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "13160ec7-6925-4353-b9eb-e6af9794ede6",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-21T12:30:16.526Z",
+        "endedAt": "2026-05-21T12:32:45.666Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3610,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 10213,
+            "cacheReadInputTokens": 62869,
+            "cacheCreationInputTokens": 31866
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "4f289f2e-dd66-4ea7-a5e1-04b01de2ce0e",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-21T12:32:47.541Z",
+        "endedAt": "2026-05-21T12:43:28.226Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4967,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 70,
+            "outputTokens": 35804,
+            "cacheReadInputTokens": 3922145,
+            "cacheCreationInputTokens": 110220
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "failed",
+          "findingsPath": "specrunner/changes/dsv-format-rules-expansion/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — dsv-format-rules-expansion — iter 1\n\n## Verdict: failed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.1s | 0 |\n| 2 | typecheck | passed | 2.0s | 0 |\n| 3 | test | passed | 6.4s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n| 6 | test-coverage | failed | 0.0s | 1 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/dsv-format-rules-expansion-ec5834bf\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t140d\n\n Test Files  233 passed (233)\n      Tests  2516 passed (2516)\n   Start at  21:43:33\n   Duration  6.21s (transform 3.74s, setup 0ms, import 7.79s, tests 11.25s, environment 14ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-wDgESl/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-QQ4AfZ/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/dsv-format-rules-expansion-ec5834bf/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n\n## Phase: test-coverage\n\n```\ntest-coverage: 44/53 must TCs covered\nMissing: TC-081, TC-082, TC-083, TC-090, TC-091, TC-092, TC-093, TC-094, TC-095\n```\n"
+        },
+        "startedAt": "2026-05-21T12:43:30.143Z",
+        "endedAt": "2026-05-21T12:43:41.457Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/dsv-format-rules-expansion/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — dsv-format-rules-expansion — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.2s | 0 |\n| 2 | typecheck | passed | 2.1s | 0 |\n| 3 | test | passed | 6.4s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n| 6 | test-coverage | passed | 0.0s | 0 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/dsv-format-rules-expansion-ec5834bf\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t140d\n\n Test Files  235 passed (235)\n      Tests  2529 passed (2529)\n   Start at  21:53:25\n   Duration  6.22s (transform 3.68s, setup 0ms, import 7.81s, tests 10.91s, environment 15ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-5auZcL/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-P5Stc0/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/dsv-format-rules-expansion-ec5834bf/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n\n## Phase: test-coverage\n\n```\ntest-coverage: 53/53 must TCs covered\n```\n"
+        },
+        "startedAt": "2026-05-21T12:53:22.424Z",
+        "endedAt": "2026-05-21T12:53:34.235Z"
+      }
+    ],
+    "build-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "1078fb49-71b7-4451-833d-70c1069db504",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-21T12:43:41.471Z",
+        "endedAt": "2026-05-21T12:53:20.526Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3723,
+            "outputTokens": 3898,
+            "cacheReadInputTokens": 705119,
+            "cacheCreationInputTokens": 55230
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 37,
+            "outputTokens": 24783,
+            "cacheReadInputTokens": 1820476,
+            "cacheCreationInputTokens": 75528
+          }
+        }
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "9aee24af-8660-455d-991d-e615f09c5f0b",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/dsv-format-rules-expansion/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Review Feedback 001 — dsv-format-rules-expansion\n\n- **verdict**: needs-fix\n- **reviewer**: Claude code-reviewer\n- **commit reviewed**: 3446f13e (HEAD on change/dsv-format-rules-expansion-ec5834bf)\n\n## 概要\n\n6 つの新 rule、共有 parser、registry/caller plumbing は仕様どおり実装されており、78 件の新 test と統合 test は全て green。acceptance criteria (rule 6 件・registry 9 件・`baselineSpecLoader` の DI・union 拡張・PR #359 regression・false-positive regression) は全て満たされている。\n\nただし、共有 parser `extractSection` に 1 件の correctness バグがあり、これが他 rule の false-positive を誘発する可能性がある。修正は局所的で、影響範囲は限定的だが、せっかく \"spec format を機械的に検証する rule\" を入れているので、その rule 自身が format ばらつきで誤検知するのは避けたい。1 件の major + 数件の minor を修正してから approve したい。\n\n---\n\n## Findings\n\n### MAJOR\n\n#### M1. `extractSection` が隣接 `##` セクションで誤検出 (false positive 誘発)\n\n- **file**: `src/core/spec/rules/spec-content-parser.ts:82-91`\n- **症状**: 2 つの `## ` セクションが間に空行なく隣接している場合、前の section の `extractSection` 結果に次セクションの header 行と本文が含まれてしまう。\n\n**再現**:\n```ts\nconst content = `## Removed\\n## Renamed\\n- \"foo\" → \"bar\"\\n`;\nextractSection(content, \"## Removed\");\n// 期待: \"\"\n// 実際: '## Renamed\\n- \"foo\" → \"bar\"\\n'\n```\n\n**根本原因**: `nextSectionMatch.lastIndex = sectionStart` で、直前の `\\n` を含まない位置から `/\\n## /g` を探索しているため、`\\n## ` の `\\n` を見落とす。`sectionStart` は header 直後の `\\n` の **次** の位置を指している (line 79)。\n\n**影響**:\n- `removed-section-format` rule: 隣接 `## Renamed` (or 他 `## ` セクション) の中身を `## Removed` のコンテンツと誤認し、`## Renamed` header 行や中身の各行に false positive を出す。\n- `renamed-section-format` rule: 同様。\n- `requirement-header-required` / `scenario-required-per-requirement` / `normative-keyword-required`: `## Requirements` が EOF 直前以外で空に近い形だと同様の混入を起こす。\n- 実 archive サンプル (TC-092) は空行を含むため踏まないが、agent が空セクションを生成する場合 (例: section header だけ書いて中身を埋めるのを忘れる) に false positive が出る。\n\n**修正方針**:\n```ts\n// before\nconst nextSectionMatch = /\\n## /g;\nnextSectionMatch.lastIndex = sectionStart;\n\n// after (option A: lastIndex を 1 戻す)\nconst nextSectionMatch = /\\n## /g;\nnextSectionMatch.lastIndex = Math.max(0, sectionStart - 1);\n\n// after (option B: ^## を m フラグで)\nconst nextSectionMatch = /^## /gm;\nnextSectionMatch.lastIndex = sectionStart;\n// その場合 slice 範囲調整: content.slice(sectionStart, nextMatch.index)\n```\n\noption B のほうが意図が明確。\n\n**test 追加**:\n```ts\nit(\"returns empty string when section is immediately followed by another ##\", () => {\n  const content = `## Removed\\n## Renamed\\n- \"x\" → \"y\"\\n`;\n  expect(extractSection(content, \"## Removed\")).toBe(\"\");\n});\n```\n\n---\n\n### MINOR\n\n#### m1. violation に行番号情報がない (fixer agent の修正効率に影響)\n\n- **file**: `src/core/spec/rules/removed-section-format.ts:32-37`, `renamed-section-format.ts:32-37`, `requirement-header-required.ts:24-30`, `scenario-required-per-requirement.ts:24-30`, `normative-keyword-required.ts:28-34`, `baseline-header-match.ts:69-74`\n- **症状**: `DeltaSpecViolation` は `path` と `reason` と `suggested` だけを持ち、行番号を含まない。`RequirementBlock` は `line` フィールドを持つが rule で使われていない。\n- **影響**: 同じファイル内で複数 violation が出たとき、fixer agent は file 全体を読んで該当箇所を特定する必要がある。`canonical-spec-structure` も同じ設計なので一貫はしているが、新 rule 群では `line` がパース済みなのに利用していないのが残念。\n- **修正方針**: `DeltaSpecViolation.suggested` に違反行の内容を含める (例: `'Found line: \"### Removed: Foo\" — replace with - \"Foo\"'`)。型変更なしで対応可能。または将来 task として `DeltaSpecViolation.line?: number` を追加して全 rule 一斉対応。\n\n#### m2. `baseline-header-match` の violation が「どの header と一致しなかったか」を伝えない\n\n- **file**: `src/core/spec/rules/baseline-header-match.ts:69-74`\n- **症状**: case mismatch を検出したときの `suggested` は固定文字列 `\"Match baseline header exactly for MODIFIED, or treat as ADDED if new\"`。delta header の値も baseline の近い header の値も含まれない。\n- **影響**: fixer は spec file を全部読んで baseline と diff する必要がある。本来 rule 内で「`### Requirement: foo bar` は baseline の `### Requirement: Foo Bar` にマッチさせるべき」と直接 hint できる。\n- **修正方針**:\n```ts\nconst baselineExact = baselineNormalizedHeaders.get(normalized);\nviolations.push({\n  path: specPath,\n  reason: \"baseline-header-mismatch\",\n  suggested: `Header \"${block.header}\" appears to be a case/whitespace variant of baseline \"${baselineExact}\". Match exactly for MODIFIED, or rename to clearly indicate ADDED.`,\n});\n```\n\n#### m3. `parseRequirementBlocks` の body trailing newline が冗長\n\n- **file**: `src/core/spec/rules/spec-content-parser.ts:144`\n- **症状**: `bodyLines.join(\"\\n\") + (bodyLines.length > 0 ? \"\\n\" : \"\")` で末尾に余分な `\\n` が付くことがある。例えば最後の要素が `\"\"` のとき `body = \"text\\n\\n\"` となる。\n- **影響**: `normative-keyword-required` の検査は `\\bSHALL\\b|\\bMUST\\b` の regex test なので影響なし。`baseline-header-match` も body を見ない。下流 consumer がいないので実害なし。test も pass している。\n- **修正方針**: 必要性低い。気になるなら `bodyLines.join(\"\\n\")` だけにする (現状 1 行多い場合があるが trim 等で対応すれば bug ではない)。\n\n#### m4. 隣接 section 用の test が欠落 (TC-026 でカバーしているのは「空行のみ」のケースのみ)\n\n- **file**: `tests/unit/core/spec/rules/removed-section-format.test.ts:69-76`, `spec-content-parser.test.ts` 全体\n- **症状**: M1 と関連。`## Removed\\n## Renamed\\n...` のような **隣接 `##` セクション** の test が無い。`extractSection` の TC-013/014/015 は単純 case のみで、section 同士が空行なく接した場合の挙動を検証していない。\n- **修正方針**: M1 の修正と合わせて test 追加 (上記サンプルを参照)。\n\n---\n\n### NIT\n\n#### n1. `extractSection` で `m` フラグを使えばより簡潔\n\n- **file**: `src/core/spec/rules/spec-content-parser.ts:68-70`\n- **詳細**: `new RegExp(\\`(?:^|\\\\\\\\n)${escapeRegex(sectionHeader)}[ \\\\\\\\t]*(?=\\\\\\\\n|$)\\`)` は `new RegExp(\\`^${escapeRegex(sectionHeader)}[ \\\\\\\\t]*$\\`, \"m\")` と書ける。可読性向上。\n\n#### n2. `loadSpecFiles` の subdir read を Promise.all で並列化可能\n\n- **file**: `src/core/spec/rules/spec-content-parser.ts:36-53`\n- **詳細**: subdir loop が逐次 await。通常 1-5 spec なので体感差なし。気になるなら `await Promise.all(entries.map(async (entry) => { ... }))` に。\n\n#### n3. verification-result.md の test 件数表記ズレ\n\n- **file**: `specrunner/changes/dsv-format-rules-expansion/implementation-notes.md:51`\n- **詳細**: implementation-notes は `2516 tests pass across 233 test files`、verification-result は `2529 passed (2529) / Test Files 235 passed (235)`。コミット間で数件 test 増えただけと思われ実害なし。\n\n#### n4. `removed-section-format` / `renamed-section-format` の violation はファイル単位で重複しがち\n\n- **file**: `src/core/spec/rules/removed-section-format.ts:25-39`\n- **詳細**: 1 ファイルで複数行違反すると、各行で `path` が同じ violation が複数 push される。`reason` も `suggested` も identical なので冗長。aggregation するか、行情報を suggest に含めて区別する (m1 と統合) のが望ましい。\n\n#### n5. 既存 baseline (`specrunner/specs/delta-spec-rule/spec.md`) の Purpose セクションが `## Purpose\\n\\nTBD\\n## Requirements` で空行が 1 行しかない\n\n- **file**: `specrunner/specs/delta-spec-rule/spec.md:1-4`\n- **詳細**: review スコープ外だが、M1 の bug を抱えた `extractSection` で `## Purpose` を取りに行くと `## Requirements` の中身を返してしまうリスクあり。今回の rule は `## Purpose` を見ないので実害ないが、将来 `## Purpose` を見る rule を追加するときに踏む。M1 を直せば解消。\n\n---\n\n## Acceptance Criteria の状態\n\n| Criterion | Status |\n|---|---|\n| 6 rule files exist with correct filenames | ✓ |\n| `createDeltaSpecRegistry()` registers 9 rules (3 existing + 6 new) | ✓ (index.ts:26-39) |\n| `DeltaSpecRuleInput.baselineSpecLoader?` added as optional | ✓ (types.ts:7) |\n| `DeltaSpecRuleName` union includes 6 new names | ✓ (types.ts:15-20) |\n| `DeltaSpecViolationReason` union includes 6 new reasons | ✓ (delta-spec-validator.ts:29-34) |\n| PR #359 regression test green | ✓ (TC-022) |\n| All tests green (`bun run test` / `bun run typecheck`) | ✓ (verified locally: 78 rule tests pass, typecheck 0 errors) |\n| `validateDeltaSpecPaths` backward compatible (3-arg call) | ✓ (default `async () => null`, TC-081) |\n| 3+ archive samples produce no false positives | ✓ (TC-092 — 3 representative samples) |\n| Step injects real `baselineSpecLoader` from `specrunner/specs/<cap>/spec.md` | ✓ (delta-spec-validation.ts:45-52, TC-082/083) |\n\n---\n\n## Test Coverage vs test-cases.md\n\n- **must TCs**: 全件カバー済み (verification report: 53/53 must covered)。\n- **should TCs**: 全件カバー済み (TC-012, TC-015, TC-019, TC-025, TC-026, TC-036, TC-044, TC-054, TC-064, TC-066, TC-076, TC-096)。\n- **GIVEN/WHEN/THEN 対応**: spot check で確認した範囲 (TC-022, TC-034, TC-051, TC-062, TC-063, TC-074, TC-075, TC-077) は全て assertion が一致。\n\n唯一のギャップ: M1 で指摘した「隣接 `##` セクション」シナリオは test-cases.md にも無い。test-cases.md は spec rule の仕様を網羅しているが、共有 parser の edge case を直接 test するシナリオは TC-013〜TC-019 のみで隣接セクションを含まない。\n\n---\n\n## 結論\n\nbug は 1 件 (M1) で、影響は「隣接 `##` セクションを書いた delta spec で false positive が出る」というケース。実害は限定的だが、本 rule 群が targeting している「機械的に format ばらつきを検出する」という目的に照らすと、parser 側でばらつき耐性を上げておきたい。M1 と m4 を併せて修正 + 1 件 test 追加してください。minor / nit は次の機会で OK。\n\n"
+        },
+        "startedAt": "2026-05-21T12:53:34.248Z",
+        "endedAt": "2026-05-21T13:00:49.699Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5014,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 276,
+            "outputTokens": 2871,
+            "cacheReadInputTokens": 78338,
+            "cacheCreationInputTokens": 18390
+          },
+          "claude-opus-4-7[1m]": {
+            "inputTokens": 46,
+            "outputTokens": 20489,
+            "cacheReadInputTokens": 2716343,
+            "cacheCreationInputTokens": 105564
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "e99c39c9-03a0-449e-8d79-62677a40a2e4",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/dsv-format-rules-expansion/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Review Feedback 002 — dsv-format-rules-expansion\n\n- **verdict**: approved\n- **reviewer**: Claude code-reviewer\n- **commit reviewed**: dba0b9f2 (HEAD on change/dsv-format-rules-expansion-ec5834bf)\n- **iteration**: 2 (responding to review-feedback-001)\n\n## 概要\n\nreview-feedback-001 の M1 (`extractSection` 隣接セクションバグ) が正しく修正されており、関連 regression test (TC-013b) も追加されている。全 2531 テスト green、typecheck 0 エラー。acceptance criteria は全件満たしている。\n\n---\n\n## review-feedback-001 対応状況\n\n### M1 (MAJOR): `extractSection` が隣接 `##` セクションで誤検出\n\n**status**: ✅ 修正済み\n\n`spec-content-parser.ts:83` が以下のとおり修正されている:\n\n```typescript\n// before (buggy)\nconst nextSectionMatch = /\\n## /g;\nnextSectionMatch.lastIndex = sectionStart;\n\n// after (fixed — review-feedback-001 option B)\nconst nextSectionMatch = /^## /gm;\nnextSectionMatch.lastIndex = sectionStart;\n```\n\n`m` フラグによる `^` アンカーで、`sectionStart` が隣接セクション行頭を直接指す場合でも `\\n` を経由せず確実に検出できる。\n\n**動作確認** (手動トレース):\n- `content = \"## Removed\\n## Renamed\\n- \\\"x\\\" → \\\"y\\\"\\n\"`\n- `sectionStart = 11` (position 11 is start of `## Renamed`)\n- `/^## /gm` with `lastIndex = 11` → match at index 11\n- `content.slice(11, 11)` = `\"\"` ✓\n\n### m4 (MINOR): 隣接セクション用 test 欠落\n\n**status**: ✅ 追加済み\n\n`spec-content-parser.test.ts` に TC-013b が 2 ケース追加されている:\n\n```\nTC-013b: extractSection — adjacent ## section returns empty string, not next section content\n  ✓ returns empty string when section is immediately followed by another ## with no blank line\n  ✓ does not include next section body when sections are adjacent\n```\n\nテスト数の増加 (2529 → 2531) と一致。\n\n---\n\n## 未対応 minor / nit (前回レビューのまま)\n\n以下は前回 review-feedback-001 で minor/nit として挙げたもの。今回の scope 内修正として必須とは判断しない。\n\n| ID | 内容 | 判断 |\n|----|------|------|\n| m1 | violation に行番号情報がない | future enhancement — 型変更を伴うため別 task |\n| m2 | `baseline-header-match` の `suggested` に actual header 値が含まれない | future enhancement |\n| m3 | `parseRequirementBlocks` body trailing newline が冗長 | 実害なし、変更不要 |\n| n1-n5 | nit 各種 | 変更不要 |\n\n---\n\n## Acceptance Criteria の状態\n\n| Criterion | Status |\n|---|---|\n| 6 rule files exist | ✅ |\n| `createDeltaSpecRegistry()` が 9 rule 登録 | ✅ |\n| `DeltaSpecRuleInput.baselineSpecLoader?` optional 追加 | ✅ |\n| `DeltaSpecRuleName` union に 6 名追加 | ✅ |\n| `DeltaSpecViolationReason` union に 6 reason 追加 | ✅ |\n| PR #359 regression test green (TC-022) | ✅ |\n| `bun run typecheck` 0 errors | ✅ |\n| `bun run test` 2531 tests green | ✅ |\n| 既存 archive 3 件で false positive なし | ✅ |\n| Step が `baselineSpecLoader` を inject | ✅ |\n| M1 バグ修正 + 隣接セクション test 追加 | ✅ |\n"
+        },
+        "startedAt": "2026-05-21T13:02:49.940Z",
+        "endedAt": "2026-05-21T13:06:00.652Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5014,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 2495,
+            "outputTokens": 9179,
+            "cacheReadInputTokens": 605334,
+            "cacheCreationInputTokens": 60850
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "054c8021-29c9-419c-b6d9-8fbba73a0f6e",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-21T13:00:51.927Z",
+        "endedAt": "2026-05-21T13:02:47.896Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3590,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 10,
+            "outputTokens": 5982,
+            "cacheReadInputTokens": 218227,
+            "cacheCreationInputTokens": 24968
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "ed08694d-514b-44c0-9e1c-9ed7dfb474b1",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-21T13:06:02.777Z",
+        "endedAt": "2026-05-21T13:06:10.366Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 515,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 3,
+            "outputTokens": 70,
+            "cacheReadInputTokens": 10651,
+            "cacheCreationInputTokens": 5624
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/dsv-format-rules-expansion/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — dsv-format-rules-expansion\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/361\n- **Number**: 361\n- **CreatedAt**: 2026-05-21T13:06:13.139Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-21T13:06:10.416Z",
+        "endedAt": "2026-05-21T13:06:13.140Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/361",
+    "number": 361,
+    "createdAt": "2026-05-21T13:06:13.139Z"
+  }
+}

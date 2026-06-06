@@ -1,0 +1,528 @@
+{
+  "version": 1,
+  "jobId": "0bfe5784-1a1d-4f78-92f7-4a19e39293d4",
+  "createdAt": "2026-05-19T06:27:07.358Z",
+  "updatedAt": "2026-05-19T06:53:57.036Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/multi-layer-defense-integration-test/request.md",
+    "title": "多層防衛 (dsv + spec-review + design) 連携 integration test を追加する",
+    "type": "new-feature",
+    "slug": "multi-layer-defense-integration-test"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 65062,
+  "branch": "feat/multi-layer-defense-integration-test-0bfe5784",
+  "history": [
+    {
+      "ts": "2026-05-19T06:27:07.358Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-19T06:27:08.682Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-19T06:33:11.843Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-19T06:33:11.847Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-19T06:33:11.848Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-19T06:33:11.851Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-19T06:33:11.852Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → delta-spec-fixer"
+    },
+    {
+      "ts": "2026-05-19T06:33:11.853Z",
+      "step": "delta-spec-fixer-started",
+      "status": "started",
+      "message": "Starting delta-spec-fixer step"
+    },
+    {
+      "ts": "2026-05-19T06:33:44.973Z",
+      "step": "delta-spec-fixer-verdict",
+      "status": "ok",
+      "message": "delta-spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T06:33:44.977Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-fixer → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-19T06:33:44.980Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-19T06:33:44.985Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T06:33:44.987Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-19T06:33:44.988Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-19T06:33:44.989Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-19T06:35:33.508Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T06:35:33.515Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T06:35:33.515Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-19T06:35:33.517Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-19T06:36:56.557Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-19T06:36:56.558Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-19T06:36:56.559Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-19T06:42:13.295Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-19T06:42:13.298Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-19T06:42:13.299Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-19T06:42:13.299Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-19T06:42:25.278Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-19T06:42:25.281Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-19T06:42:25.281Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-19T06:42:25.281Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-19T06:42:25.282Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-19T06:44:33.565Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T06:44:33.568Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T06:44:33.568Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → adr-gen"
+    },
+    {
+      "ts": "2026-05-19T06:44:33.570Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-19T06:46:06.858Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-19T06:46:06.859Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-19T06:46:06.860Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-19T06:46:09.726Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-19T06:46:09.728Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-19T06:53:57.036Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "1696f951-7b71-4c70-96da-480d3740e252",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T06:27:08.688Z",
+        "endedAt": "2026-05-19T06:33:09.987Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6272,
+            "outputTokens": 16434,
+            "cacheReadInputTokens": 2451339,
+            "cacheCreationInputTokens": 137323
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 4308,
+            "outputTokens": 13770,
+            "cacheReadInputTokens": 572378,
+            "cacheCreationInputTokens": 59419
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/multi-layer-defense-integration-test/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: needs-fix\n\n## Violations\n\n| Path | Reason | Suggested Fix |\n|------|--------|---------------|\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/multi-layer-defense-integration-test-0bfe5784/specrunner/changes/multi-layer-defense-integration-test/specs/` | `no-specs-for-required-type` | Request type 'new-feature' requires a delta spec. Add a file under ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/multi-layer-defense-integration-test-0bfe5784/specrunner/changes/multi-layer-defense-integration-test/specs/<capability-name>/spec.md |\n\n## How to Fix\n\n- Move all delta spec files to `specs/<capability-name>/spec.md` (canonical path)\n- Ensure each spec.md has at least one `## ADDED Requirements`, `## MODIFIED Requirements`, or `## REMOVED Requirements` section\n- Ensure each section contains at least one `### Requirement:` block\n"
+        },
+        "startedAt": "2026-05-19T06:33:11.849Z",
+        "endedAt": "2026-05-19T06:33:11.850Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/multi-layer-defense-integration-test/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-19T06:33:44.980Z",
+        "endedAt": "2026-05-19T06:33:44.985Z"
+      }
+    ],
+    "delta-spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "b02cabce-15be-4f4d-85ef-fc9d382fac50",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T06:33:11.866Z",
+        "endedAt": "2026-05-19T06:33:43.406Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 788,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 7,
+            "outputTokens": 1463,
+            "cacheReadInputTokens": 89619,
+            "cacheCreationInputTokens": 11694
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "67af7fbc-ed68-4be9-a6cb-5edd68cc6c78",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/multi-layer-defense-integration-test/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result — multi-layer-defense-integration-test\n\n## Summary\n\n- **verdict**: approved\n- **date**: 2026-05-19\n- **reviewer**: spec-review agent\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|---|---|---|---|---|\n| 1 | LOW | documentation | design.md | D6 に「delta spec は作成しない」とあるが `specs/multi-layer-defense-integration-test/spec.md` が実際に存在しており記述と事実が乖離している。dsv は approved 済みで動作には影響しない | D6 の記述を「type=new-feature のため delta spec を作成した」に修正するか、当該設計決定を削除する |\n\n## Coverage Check\n\n### request.md 要件 vs spec.md\n\n| 要件 | spec.md カバー | 判定 |\n|---|---|---|\n| tests/multi-layer-defense.test.ts 新規作成 | ✓ (Requirement: multi-layer-defense integration test suite) | OK |\n| 正常系 state 遷移 assert | ✓ (Requirement: 正常系 state 遷移) | OK |\n| Sub-B catch シナリオ (spec-fixer 経由) | ✓ (Requirement: Sub-B catch) | OK |\n| Sub-A catch シナリオ (delta-spec-fixer 経由) | ✓ (Requirement: Sub-A catch) | OK |\n| 2 層同時 failure 5-a (dsv 残存) | ✓ (Requirement: 2 層同時 failure 5-a) | OK |\n| 2 層同時 failure 5-b (spec-review 残存) | ✓ (Requirement: 2 層同時 failure 5-b) | OK |\n| bun run typecheck && bun run test green | ✓ (Requirement: typecheck + test green) | OK |\n\n### State Transition 整合性\n\n| TC | 要求遷移 (request.md) | design.md 記述 | tasks.md mock 構成 | 判定 |\n|---|---|---|---|---|\n| TC-MLD-01 | happy path 完走 | `design → dsv → spec-review → ... → end` | specReviewVerdicts: [\"approved\"] | OK |\n| TC-MLD-02 | `dsv(ok) → spec-review(nf) → spec-fixer → dsv → spec-review(ok)` | ✓ D3/D4 表 | mockDeltaSpecValidator default ok + specReviewVerdicts: [\"needs-fix\",\"approved\"] | OK |\n| TC-MLD-03 | `dsv(nf) → delta-spec-fixer → dsv(ok) → spec-review(ok)` | ✓ D3/D4 表 | mockDeltaSpecValidator once(legacy-flat-file) then ok + specReviewVerdicts: [\"approved\"] | OK |\n| TC-MLD-04 | 5-a: dsv が PR #282 同型 violation で catch | ✓ D4 (no-specs-for-required-type) | mockDeltaSpecValidator once(no-specs-for-required-type) then ok | OK |\n| TC-MLD-05 | 5-b: spec-review が sole defense | ✓ D4 表 — TC-MLD-02 と同型 mock、コメントでセマンティクス記録 | specReviewVerdicts: [\"needs-fix\",\"approved\"] | OK |\n\n### 受け入れ基準チェック\n\n| 基準 | 判定 |\n|---|---|\n| tests/multi-layer-defense.test.ts に 3 層連携 test 追加 | tasks.md T-01 でカバー ✓ |\n| 正常系 + 4 シナリオが assert | TC-MLD-01〜05 (T-02〜T-06) でカバー ✓ |\n| Sub-B catch が spec-fixer 経由 | T-03 で spec-fixer length=1, delta-spec-fixer undefined を assert ✓ |\n| Sub-A catch が delta-spec-fixer 経由 | T-04 で delta-spec-fixer length=1 を assert ✓ |\n| 2 層同時 failure でも残る 1 層が catch し完走 | T-05/T-06 で完走 + state 遷移 assert ✓ |\n| mock agent + 実物 pipeline state machine | vi.mock 3 件 + createManagedAgentRunner 実物 ✓ |\n| typecheck + test green | T-07 で確認手順を明示 ✓ |\n\n## Security Assessment\n\nテストファイル 1 件の追加のみ。認証・入力処理・外部 API・DB クエリへの変更なし。OWASP 該当事項なし。\n"
+        },
+        "startedAt": "2026-05-19T06:33:45.003Z",
+        "endedAt": "2026-05-19T06:35:31.864Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4003,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 9,
+            "outputTokens": 5908,
+            "cacheReadInputTokens": 185806,
+            "cacheCreationInputTokens": 30870
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "56613dcf-638d-4b6e-9b60-27302754e3e7",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T06:35:33.538Z",
+        "endedAt": "2026-05-19T06:36:54.801Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2756,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 3563,
+            "cacheReadInputTokens": 59042,
+            "cacheCreationInputTokens": 20784
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "da8be647-7c53-43c4-98e8-fc66c58b97cb",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T06:36:56.567Z",
+        "endedAt": "2026-05-19T06:42:11.723Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4095,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 29,
+            "outputTokens": 14910,
+            "cacheReadInputTokens": 1405474,
+            "cacheCreationInputTokens": 61034
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/multi-layer-defense-integration-test/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — multi-layer-defense-integration-test — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.4s | 0 |\n| 2 | typecheck | passed | 2.1s | 0 |\n| 3 | test | passed | 6.1s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/multi-layer-defense-integration-test-0bfe5784\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t138d\n\n Test Files  197 passed (197)\n      Tests  2215 passed (2215)\n   Start at  15:42:17\n   Duration  5.84s (transform 4.19s, setup 0ms, import 8.30s, tests 11.20s, environment 12ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-pYWCBM/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-ZAAseX/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/multi-layer-defense-integration-test-0bfe5784/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-19T06:42:13.300Z",
+        "endedAt": "2026-05-19T06:42:25.278Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "4a286f8c-5b56-4fc4-ba03-2d44dfb59135",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/multi-layer-defense-integration-test/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review — multi-layer-defense-integration-test — iter 1\n\n## Summary\n\n- **verdict**: approved\n- **date**: 2026-05-19\n- **reviewer**: code-review agent\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|---|---|---|---|---|\n| 1 | LOW | dead-code | tests/multi-layer-defense.test.ts:141 | `designBranch` が `buildPipelineMockClient` の opts で destructure されているが、関数本体で一度も参照されていない。pipeline-integration.test.ts からのコピー時の残滓。 | `designBranch = \"feat/test-branch\",` の行と opts 型の `designBranch?` を削除する。または pipeline-integration.test.ts 側と同じ状態なら放置でも可（回帰なし）。 |\n| 2 | LOW | documentation | tests/multi-layer-defense.test.ts:135 | JSDoc コメント「sess2=spec-fixer-1, sess3=spec-review-1」の順序がパイプラインの実際の実行順（design → dsv → spec-review → spec-fixer）と逆になっており、sessionIds 配列の名称と合わせると誤解を招く。 | コメントを「sess2=spec-review-1, sess3=spec-fixer-1, sess4=spec-review-2, …」に修正する。テスト動作への影響はない（session ID はラベルのみ）。 |\n| 3 | LOW | documentation | specrunner/changes/multi-layer-defense-integration-test/design.md:55 | D6「delta spec は作成しない」と記述しているが `specrunner/specs/multi-layer-defense-integration-test/spec.md` が実際に存在する。spec-review-result-001.md finding #1 で既指摘。 | D6 の記述を実態（type=new-feature のため delta spec を作成した）に合わせて修正する。 |\n\n## Coverage Check\n\n### test-cases.md (must シナリオ) vs 実装\n\n| TC | Priority | 実装行 | verdict assert | fixer route assert | 判定 |\n|---|---|---|---|---|---|\n| TC-MLD-01 happy path | must | L259-303 | `awaiting-merge` + dsv×1 approved + spec-review×1 approved | delta-spec-fixer undefined + spec-fixer undefined | ✓ |\n| TC-MLD-02 Sub-B catch | must | L316-366 | dsv×2 approved + spec-review×2 [needs-fix→approved] | spec-fixer×1 defined, delta-spec-fixer undefined | ✓ |\n| TC-MLD-03 Sub-A catch | must | L379-437 | dsv×2 [needs-fix→approved] + spec-review×1 approved | delta-spec-fixer×1 defined, spec-fixer undefined | ✓ |\n| TC-MLD-04 5-a (dsv sole) | must | L452-513 | dsv×2 [needs-fix→approved] + `no-specs-for-required-type` repr | delta-spec-fixer×1, spec-fixer undefined | ✓ |\n| TC-MLD-05 5-b (spec-review sole) | must | L530-581 | dsv×2 approved (bugged) + spec-review×2 [needs-fix→approved] | spec-fixer×1, delta-spec-fixer undefined | ✓ |\n| TC-SCAFFOLD-01 typecheck | must | — | verification-result.md: typecheck passed | — | ✓ |\n| TC-GREEN-01 all tests green | must | — | verification-result.md: 2215 passed | — | ✓ |\n\n### 受け入れ基準チェック\n\n| 基準 | 判定 |\n|---|---|\n| `tests/multi-layer-defense.test.ts` 新規作成 | ✓ (581 lines) |\n| TC-MLD-01〜05 全 5 ケース実装 | ✓ |\n| Sub-B catch が spec-fixer 経由 (delta-spec-fixer ではない) | ✓ L355-361 |\n| Sub-A catch が delta-spec-fixer 経由 (spec-fixer ではない) | ✓ L420-432 |\n| 2 層同時 failure でも残る 1 層が catch し完走 | ✓ TC-MLD-04/05 |\n| mock agent + 実物 pipeline state machine | ✓ vi.mock×3 + createManagedAgentRunner 実物 |\n| `buildRequest()` type デフォルト `spec-change` (D5) | ✓ L123 |\n| PR #282 reproduction: `no-specs-for-required-type` | ✓ TC-MLD-04 L459-468 |\n| dsv bugged セマンティクスがコメント記録 (TC-MLD-05) | ✓ L519-525 |\n| `bun run typecheck && bun run test` green | ✓ verification-result.md 全 2215 passed |\n\n## 総評\n\nテストロジック・state transition アサーション・mock 構成はすべて設計通りに実装されており、要件の 5 シナリオ全てを網羅している。指摘はすべて LOW（dead code / comment / doc 不整合）でテスト動作への影響はない。\n"
+        },
+        "startedAt": "2026-05-19T06:42:25.295Z",
+        "endedAt": "2026-05-19T06:44:31.910Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4140,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 9,
+            "outputTokens": 7466,
+            "cacheReadInputTokens": 218057,
+            "cacheCreationInputTokens": 41840
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "05cac940-097b-41b2-b27b-3e2d97cd6ebb",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T06:44:33.584Z",
+        "endedAt": "2026-05-19T06:46:06.808Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2864,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 7,
+            "outputTokens": 4769,
+            "cacheReadInputTokens": 108014,
+            "cacheCreationInputTokens": 22955
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/multi-layer-defense-integration-test/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — multi-layer-defense-integration-test\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/325\n- **Number**: 325\n- **CreatedAt**: 2026-05-19T06:46:09.725Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-19T06:46:06.860Z",
+        "endedAt": "2026-05-19T06:46:09.725Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/325",
+    "number": 325,
+    "createdAt": "2026-05-19T06:46:09.725Z"
+  }
+}

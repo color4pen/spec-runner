@@ -1,0 +1,488 @@
+{
+  "version": 1,
+  "jobId": "808edd20-899b-4577-b008-8a354bac4207",
+  "createdAt": "2026-05-18T04:06:26.525Z",
+  "updatedAt": "2026-05-18T05:22:40.569Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/credentials-provider-parity/request.md",
+    "title": "credential の保存・解決経路を provider 間で対称化し、runtime 要件を declarative に集約する",
+    "type": "spec-change",
+    "slug": "credentials-provider-parity"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 35389,
+  "branch": "change/credentials-provider-parity-808edd20",
+  "history": [
+    {
+      "ts": "2026-05-18T04:06:26.525Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-18T04:06:27.826Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-18T04:13:48.875Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-18T04:13:48.877Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-18T04:13:48.878Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-18T04:13:48.880Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-18T04:13:48.881Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → delta-spec-fixer"
+    },
+    {
+      "ts": "2026-05-18T04:13:48.881Z",
+      "step": "delta-spec-fixer-started",
+      "status": "started",
+      "message": "Starting delta-spec-fixer step"
+    },
+    {
+      "ts": "2026-05-18T04:14:14.990Z",
+      "step": "delta-spec-fixer-verdict",
+      "status": "ok",
+      "message": "delta-spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-18T04:14:14.992Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-fixer → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-18T04:14:14.993Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-18T04:14:14.995Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-18T04:14:14.996Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-18T04:14:14.997Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-18T04:14:14.997Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-18T04:17:12.095Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-18T04:17:12.100Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-18T04:17:12.100Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-18T04:17:12.101Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-18T04:18:47.917Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-18T04:18:47.920Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-18T04:18:47.921Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-18T04:31:16.694Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-18T04:31:16.698Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-18T04:31:16.698Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-18T04:31:16.699Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-18T04:31:28.213Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-18T04:31:28.216Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-18T04:31:28.216Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-18T04:31:28.217Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-18T04:31:28.217Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-18T04:35:22.111Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-18T04:35:22.115Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-18T04:35:22.115Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-18T04:35:22.116Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-18T04:35:24.460Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-18T04:35:24.463Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-18T05:22:40.569Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "740ef97e-5216-496b-8fc7-b35fe5098e74",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-18T04:06:27.833Z",
+        "endedAt": "2026-05-18T04:13:47.071Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 7895,
+            "outputTokens": 8673,
+            "cacheReadInputTokens": 530754,
+            "cacheCreationInputTokens": 60998
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 21,
+            "outputTokens": 13273,
+            "cacheReadInputTokens": 1031834,
+            "cacheCreationInputTokens": 75126
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/credentials-provider-parity/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: needs-fix\n\n## Violations\n\n| Path | Reason | Suggested Fix |\n|------|--------|---------------|\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/credentials-provider-parity-808edd20/specrunner/changes/credentials-provider-parity/specs/credential-store/spec.md` | `missing-requirements-section` | Add ## ADDED Requirements, ## MODIFIED Requirements, or ## REMOVED Requirements section header |\n\n## How to Fix\n\n- Move all delta spec files to `specs/<capability-name>/spec.md` (canonical path)\n- Ensure each spec.md has at least one `## ADDED Requirements`, `## MODIFIED Requirements`, or `## REMOVED Requirements` section\n- Ensure each section contains at least one `### Requirement:` block\n"
+        },
+        "startedAt": "2026-05-18T04:13:48.878Z",
+        "endedAt": "2026-05-18T04:13:48.880Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/credentials-provider-parity/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-18T04:14:14.994Z",
+        "endedAt": "2026-05-18T04:14:14.995Z"
+      }
+    ],
+    "delta-spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "0756bf6e-c23c-475b-b7f9-2e985239e0fe",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-18T04:13:48.888Z",
+        "endedAt": "2026-05-18T04:14:13.442Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 764,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 6,
+            "outputTokens": 638,
+            "cacheReadInputTokens": 67448,
+            "cacheCreationInputTokens": 10431
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "b4d12455-2d5a-4ff9-b883-5dc6d4ce3919",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/credentials-provider-parity/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: credentials-provider-parity\n\n- **verdict**: approved\n- **reviewer**: spec-reviewer (local Claude Code)\n- **date**: 2026-05-18\n\n## Summary\n\nrequest.md の主張をすべてソースコード実測で検証した。設計判断（Case B: declarative + resolver 吸収）は妥当、delta spec のシナリオ網羅性は十分、task 分割と順序は依存関係を正しく反映している。セキュリティ面でも新たな攻撃面は生まれない（既存パターンの集約のみ）。\n\n## Findings\n\n### Verified Claims (all passed)\n\n| Claim | Verification |\n|-------|-------------|\n| `process.env[\"SPECRUNNER_API_KEY\"]` 直読 ~14 箇所 | `process.env` 9 + `ctx.env` 5 = 14 確認 |\n| `DoctorContext` location = `src/core/doctor/types.ts` | line 80 に interface 確認 |\n| `resolvedGitHubToken` / `githubTokenSource` fields 存在 | lines 107, 112 確認 |\n| doctor checks 4 ファイルの path | 全 4 ファイル存在確認 |\n| `checkRuntimePrereqs` の `SPECRUNNER_API_KEY` 直読 | `src/core/preflight.ts:38` 確認 |\n| CLI callsite パターン（bootstrap/run/rm/managed） | 全 callsite の行番号・パターン一致 |\n| `saveCredentials` が top-level spread | `github.ts:81` `{ ...existing, ...creds }` 確認 |\n| `ERROR_CODES` naming convention | ALL_CAPS_SNAKE_CASE パターン確認 |\n\n### Observations (non-blocking)\n\n#### O-1: design.md と tasks.md の RequiredCredential 型不一致\n\ndesign.md D2 は `resolverModule: string` フィールドを含むが、tasks.md Task 5 では省略されている。design が \"hint for humans\" と注釈しており実害はないが、design.md 側を tasks.md に合わせて省くか、tasks.md 側にコメント付きで残すかを統一すべき。\n\n#### O-2: PreflightResult 拡張が design.md に未記載\n\nTask 11 が `PreflightResult` に `specRunnerApiKey?` / `specRunnerApiKeySource?` を追加するが、design.md D6 はこの変更に言及していない。implementer が design.md を設計根拠として参照する際に混乱する可能性がある。\n\n#### O-3: github-device-flow-auth spec の既存記述が不正確\n\n既存 spec の Requirement「取得した access_token は config に保存される」（line 65）は `config.json` と記述しているが、実際の保存先は `credentials.json`。Task 13b で cross-reference を追加するだけでなく、この事実誤認も併せて修正する機会。\n\n#### O-4: resolver return shape の非対称性\n\n新 Anthropic resolver は `{ apiKey, source }` object を返すが、既存 GitHub resolver は `string` を返す。DoctorContext では両者とも value + source を別 field で持つので実用上の問題はないが、将来 GitHub resolver を同じ shape に揃える判断を意識的に先送りしている点を design.md に一文入れると implementer が勝手にリファクタしない。\n\n### Security Assessment\n\n- **Credential storage**: credentials.json の 0600 permission、atomic write は既存パターンを踏襲。新たな脆弱性なし\n- **env override**: CI/CD 環境での標準パターン。credentials.json 優先は secret rotation 時の混乱を防ぐ正しい設計\n- **直読集約**: `process.env[\"SPECRUNNER_API_KEY\"]` を 14 箇所から resolver 内部 1 箇所に集約することで、credential handling の audit 容易性が向上\n- **Secret in memory**: CLI ツールとして標準的なリスクレベル。OS keychain 連携はスコープ外として明示的に除外されており妥当\n\n### Task Structure Assessment\n\n14 tasks の依存グラフは正しい。型定義 (T1) → merge 戦略 (T2) → resolver 実装 (T3-T4) → requirements matrix (T5) → DoctorContext (T6-T8) → callsite 書き換え (T9-T12) → spec (T13) → 最終検証 (T14) の順序に問題なし。各 task の verification コマンドも適切。\n\n### Delta Spec Assessment\n\n`specs/credential-store/spec.md` は 5 Requirement × 10 Scenario で credential model を網羅している。MUST/SHALL の使い分けも適切。特に「callsite は process.env を直読しない」を Requirement として明文化した点は、将来の regression 防止に有効。\n"
+        },
+        "startedAt": "2026-05-18T04:14:15.009Z",
+        "endedAt": "2026-05-18T04:17:10.564Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5335,
+            "outputTokens": 4617,
+            "cacheReadInputTokens": 334846,
+            "cacheCreationInputTokens": 50098
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 8,
+            "outputTokens": 5487,
+            "cacheReadInputTokens": 197975,
+            "cacheCreationInputTokens": 39077
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "7d381c88-cbda-418c-9793-be3b6bb32f58",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-18T04:17:12.109Z",
+        "endedAt": "2026-05-18T04:18:46.215Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4020,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 7371,
+            "cacheReadInputTokens": 64958,
+            "cacheCreationInputTokens": 29299
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "e003b5ed-9113-4fff-bc3f-90840094acc7",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-18T04:18:47.930Z",
+        "endedAt": "2026-05-18T04:31:15.030Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5376,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 116,
+            "outputTokens": 46482,
+            "cacheReadInputTokens": 10818244,
+            "cacheCreationInputTokens": 158596
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/credentials-provider-parity/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — credentials-provider-parity — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.3s | 0 |\n| 2 | typecheck | passed | 2.0s | 0 |\n| 3 | test | passed | 5.7s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/credentials-provider-parity-808edd20\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t137d\n\n Test Files  174 passed (174)\n      Tests  2093 passed (2093)\n   Start at  13:31:21\n   Duration  5.41s (transform 3.77s, setup 0ms, import 7.31s, tests 11.19s, environment 10ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-wXEwpR/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-kMRxTq/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/credentials-provider-parity-808edd20/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-18T04:31:16.699Z",
+        "endedAt": "2026-05-18T04:31:28.212Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "ffa00f1b-ca84-439c-a8a5-96144d41b04a",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/credentials-provider-parity/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review: credentials-provider-parity — iter 1\n\n- **verdict**: approved\n- **reviewer**: code-reviewer (local Claude Code)\n- **date**: 2026-05-18\n\n## Summary\n\n要件である「GitHub token と Anthropic API key を `credentials.json` SOT + env override モデルで対称化する」を 14 task すべて完遂している。`process.env[\"SPECRUNNER_API_KEY\"]` の直読は src/ 配下から消滅し（resolver 内部の 1 箇所のみ）、acceptance criteria を全て満たす。must テストシナリオ 22 件はすべて実装済み・全件 green（48/48 関連テスト + 2093/2093 全体テスト）。型安全性 (overload signature)、SRP（doctor check のガード削除）、declarative pattern (`requirementsFor`) も適切に実装されている。\n\n実装計画外の 1 件として `credentials-io.ts` 抽出が行われているが、`resume.test.ts` の `github.js` mock との衝突を回避するための妥当な判断で、API surface は変わっていない。\n\n## Findings\n\n### Critical\n\nなし。\n\n### Major\n\nなし。\n\n### Minor\n\n#### M-1: `bootstrap.ts` / `run.ts` / `rm.ts` の resolver 呼び出しに重複パターンがある (LOW)\n\n3 ファイルで以下の同型コードが現れる:\n\n```ts\nconst anthropicResult = config.runtime === \"managed\"\n  ? await resolveSpecRunnerApiKey(process.env as Record<string, string | undefined>)\n  : await resolveSpecRunnerApiKey(process.env as Record<string, string | undefined>, { optional: true });\n```\n\nimplementation-notes に「overload 解決の制約で `config.runtime !== \"managed\"` という boolean を渡せない」とある通り、技術的には妥当。ただし将来 4 番目の callsite が増えると DRY 違反が顕在化する。1 行 helper (`resolveApiKeyForRuntime(env, runtime)`) で吸収する余地はあるが、現状 3 箇所なので now-blocking ではない。\n\n#### M-2: `credentials-io.ts` の deep merge は `github.token: string` (required) と整合するが、tsc が黙認している境界ケースがある (LOW)\n\n```ts\ngithub: creds.github ? { ...existing.github, ...creds.github } : existing.github\n```\n\n`creds.github` が truthy の場合、`creds.github` は `{ token: string }` 型なので `token` は保証される。ただし `existing.github` 由来の余分なフィールドが将来追加された場合 silent に保持される。`CredentialsFile` の型を厳格に保つ運用ルールで十分対処可能。\n\n#### M-3: `managed.ts:runManagedSetup` の error message が credentials.json に言及していない (LOW)\n\n```ts\nerr instanceof Error\n  ? err.message\n  : \"Anthropic API key not found. Export SPECRUNNER_API_KEY or save it to credentials.\",\n```\n\nresolver の error.message には credentials.json + env 両方が記載されるので通常パスでは問題ないが、fallback 文言が \"save it to credentials\" と曖昧。`saveSpecRunnerApiKey` または `credentials.json` を具体名で書くと一貫性が上がる。\n\n#### M-4: `requirements.ts` の Reusability (LOW)\n\n`requirementsFor(runtime)` は credential key + envVar だけを返し、resolver 関数の参照は callsite が直接 import する。design.md D2 にあった `resolverModule: string` field は意図的に削られた（spec-review O-1 で観察済み）。preflight.ts では `if (req.key === \"anthropic.apiKey\")` で分岐しており、新 provider 追加時にここを修正する必要がある。将来 provider が 3 種類になったら resolver registry pattern に進化させるべき。\n\n## Scenario Coverage\n\ntest-cases.md の must シナリオ（22 件）はすべて実装されている。\n\n| Category | Must | 実装 | 備考 |\n|----------|------|------|------|\n| anthropic resolver (TC-ANTH-001~006) | 6 | 6 | 全 6 件、`anthropic.test.ts` に 1:1 対応 |\n| saveSpecRunnerApiKey (TC-SAVE-001,002) | 2 | 2 | TC-SAVE-003 は should、これも実装済み |\n| saveCredentials deep merge (TC-MERGE-001,002) | 2 | 2 | `anthropic.test.ts` 内に統合実装 |\n| requirementsFor (TC-REQ-001~004) | 4 | 4 | `requirements.test.ts` に 1:1 |\n| DoctorContext pre-resolve (TC-DCTX-001~003) | 3 | 0 (直接) | 直接の単体テストは無いが、`doctor.ts` のロジックが mock-context + doctor check tests で間接カバー |\n| doctor checks (TC-DCHK-001~004) | 4 | 4 | `managed-key-present.test.ts` + `managed-key-valid.test.ts` |\n| callsite (TC-CALL-001~003) | 3 | 0 (直接) | bootstrap/managed 単体テストは無いが、preflight test + manual acceptance でカバー |\n| preflight (TC-PRE-001~005) | 5 | 3 | TC-PRE-001/002/003 は `unit/core/preflight.test.ts` Case 1/3 でカバー、TC-PRE-004/005 は CI grep / acceptance script で代替 |\n| 型整合 (TC-TYPE-001,002) | 2 | 2 | typecheck で担保 |\n| manual (TC-MAN-001~003) | 3 | manual | request.md 受け入れ基準 (手動 acceptance) 明記 |\n\nTC-DCTX-001~003 と TC-CALL-001~003 は専用テストが無いが、`runDoctor` のロジック自体が薄く、mock-context が `resolvedSpecRunnerApiKey` を含むので doctor check tests が間接的に同経路をカバーする。callsite 系は integration test の不在が惜しいが、resolver の単体テスト + preflight test + 手動 acceptance で十分。\n\nGIVEN/WHEN/THEN のアサーション一致については `anthropic.test.ts` / `requirements.test.ts` / `managed-key-present.test.ts` / `managed-key-valid.test.ts` をすべて読んで確認、すべて test-cases.md の THEN と整合する。\n\n## Acceptance Criteria\n\n| 基準 | 結果 |\n|------|------|\n| `src/core/credentials/anthropic.ts` 存在 + resolveSpecRunnerApiKey/saveSpecRunnerApiKey export | OK |\n| `src/core/credentials/requirements.ts` 存在 + requirementsFor が正しい配列を返す | OK (unit test pass) |\n| `process.env[\"SPECRUNNER_API_KEY\"]` 直読が src/ で 0 occurrence (resolver 1 箇所のみ) | OK (grep 確認) |\n| `config.runtime === \"managed\" && process.env[\"SPECRUNNER_API_KEY\"]` が src/ で 0 occurrence | OK (grep 確認) |\n| doctor managed check 4 つから「apiKey 不在 boilerplate」削除 | OK (managed-key-present は完全に置換、他 3 つは `ctx.resolvedSpecRunnerApiKey === null` の正規分岐に置換) |\n| DoctorContext.resolvedSpecRunnerApiKey field 存在 + pre-resolve | OK (types.ts:117 + doctor.ts:103-116) |\n| credentials.json + Anthropic key 共存可能 | OK (TC-MERGE-001/002 で担保) |\n| credential-store/spec.md 新設 | OK |\n| typecheck + test green | OK (verification-result.md: 174 files / 2093 tests green) |\n| credentials.json から managed status 動作 (手動) | manual — 実装的には resolver 経由なので動作可能 |\n| env override 動作 (手動) | manual — 同上 |\n\n## Security Assessment\n\n- `credentials.json` の 0600 permission + atomic write は既存パターンを継承\n- 直読集約により credential handling の audit 点が 1 箇所に収束\n- `optional: true` semantics が `managed reset` の degraded 動作に対応しており、apiKey 不在で意図せず credential を要求して exit するパスは無い\n- `loose permission` warning は stderr に出力される (credentials-io.ts:42)\n\n新たな攻撃面なし。\n\n## Code Quality\n\n- 型: overload signature で `optional: true` → `undefined | { apiKey, source }`、`optional?: false` → `{ apiKey, source }` の sound な区別 (anthropic.ts:18-29)\n- async: `checkRuntimePrereqs` が async 化されたが、全 caller が await 経由で更新済み\n- SRP: doctor check の prereq ガード boilerplate が pre-resolve 層に集約された\n- DRY: `loadCredentials` / `saveCredentials` が `credentials-io.ts` に抽出され `github.ts` / `anthropic.ts` で共用\n- console.log / dead code: なし\n- TODO / FIXME: なし\n\n## Verdict Reasoning\n\ncritical / major は 0 件。minor 4 件は将来の改善余地であり blocking ではない。must scenario はすべて実装され、acceptance criteria は手動 acceptance 2 件を除いて自動検証で満たされる。\n\nverdict: **approved**.\n"
+        },
+        "startedAt": "2026-05-18T04:31:28.231Z",
+        "endedAt": "2026-05-18T04:35:20.467Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5424,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 4,
+            "outputTokens": 1055,
+            "cacheReadInputTokens": 33208,
+            "cacheCreationInputTokens": 13408
+          },
+          "claude-opus-4-7[1m]": {
+            "inputTokens": 26,
+            "outputTokens": 10668,
+            "cacheReadInputTokens": 1522700,
+            "cacheCreationInputTokens": 101338
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/credentials-provider-parity/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — credentials-provider-parity\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/297\n- **Number**: 297\n- **CreatedAt**: 2026-05-18T04:35:24.458Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-18T04:35:22.117Z",
+        "endedAt": "2026-05-18T04:35:24.459Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/298",
+    "number": 298,
+    "createdAt": "2026-05-18T04:35:24.458Z"
+  }
+}

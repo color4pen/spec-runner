@@ -1,0 +1,367 @@
+{
+  "version": 1,
+  "jobId": "fdbf25c4-f42e-4e53-b7b2-8c9938fcdb9b",
+  "createdAt": "2026-05-09T05:46:01.190Z",
+  "updatedAt": "2026-05-09T06:10:47.278Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/worktree-guard/request.md",
+    "title": "worktree 内からの run/finish/resume 実行を検出して拒否する",
+    "type": "bug-fix",
+    "slug": "worktree-guard"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "branch": "fix/worktree-guard-fdbf25c4",
+  "history": [
+    {
+      "ts": "2026-05-09T05:46:01.190Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-09T05:46:03.814Z",
+      "step": "propose-started",
+      "status": "started",
+      "message": "Starting propose step"
+    },
+    {
+      "ts": "2026-05-09T05:51:08.616Z",
+      "step": "propose-verdict",
+      "status": "ok",
+      "message": "propose verdict: success"
+    },
+    {
+      "ts": "2026-05-09T05:51:08.618Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "propose → spec-review"
+    },
+    {
+      "ts": "2026-05-09T05:51:08.618Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T05:51:08.619Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-09T05:54:21.142Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T05:54:21.144Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T05:54:21.144Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-09T05:54:21.145Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-09T05:55:34.169Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-09T05:55:34.173Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-09T05:55:34.174Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-09T06:00:55.970Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-09T06:00:55.972Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-09T06:00:55.972Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T06:00:55.973Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-09T06:01:05.022Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-09T06:01:05.026Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-09T06:01:05.026Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-09T06:01:05.027Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T06:01:05.028Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-09T06:04:08.890Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T06:04:08.893Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T06:04:08.893Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-09T06:04:08.894Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-09T06:04:12.428Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-09T06:10:47.278Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "Job archived via specrunner finish."
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "propose": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T05:46:03.814Z",
+        "endedAt": "2026-05-09T05:46:03.814Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2075,
+            "outputTokens": 11069,
+            "cacheReadInputTokens": 1298832,
+            "cacheCreationInputTokens": 113851
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 2348,
+            "outputTokens": 7652,
+            "cacheReadInputTokens": 992160,
+            "cacheCreationInputTokens": 46603
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "openspec/changes/worktree-guard/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result — worktree-guard\n\n- **iteration**: 1\n- **verdict**: approved\n- **reviewed-files**: proposal.md, design.md, tasks.md\n\n## Summary\n\n仕様は request の全要件・受け入れ基準を網羅しており、設計判断 D1〜D4 は妥当。検出ロジックの配置（D1）、ガードの一元管理（D2）、`.git` file/directory 判定（D3）、エラー設計（D4）いずれも既存コードベースのパターンに合致。タスク分解は実装に必要十分。CRITICAL/HIGH の findings はなし。\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | correctness | tasks.md:Task 1.1 | `gitdir:` パスの例が `../../.git/specrunner-worktrees/foo-12345678` だが、git の仕様では worktree の `.git` ファイルは `.git/worktrees/<name>` を指す（`specrunner-worktrees` はチェックアウト配置先であり gitdir のターゲットではない）。実装者がこの例をそのままパースすると main worktree パスの導出が壊れる | 例を `../../.git/worktrees/foo-12345678` に修正するか、「git が生成する実際の gitdir 値に従う」と注記する。導出ロジックは gitdir パス内の `.git` セグメントを見つけてその親を返す方針で変わらない |\n| 2 | LOW | completeness | tasks.md:Task 3.2 | SpecRunnerError の catch 追加について「FlagParseError の catch の後に追加」と記述があるが、現在の `bin/specrunner.ts` は normal dispatch と subcommand dispatch の 2 箇所に catch がある。ガードは normal dispatch のみで十分だが、将来ガード対象にサブコマンドが追加された場合の拡張ポイントが未記載 | 現時点では normal dispatch のみで正しい。将来の拡張は発生時に対応すれば十分なので、実装上の問題にはならない |\n| 3 | LOW | consistency | design.md:D3 | `.git` ファイルのパース仕様について「`gitdir:` の行をパース」と記述。git の仕様上 `.git` ファイルは単一行 `gitdir: <path>` のみだが、改行コードの扱い（trim の必要性）やエンコーディングの想定が未記載 | 実装時に `content.trim().replace(/^gitdir:\\s*/, \"\")` 等で処理すれば問題ない。仕様レベルでの明記は不要 |\n\n## Architecture Assessment\n\n- **検出ロジックの配置 (D1)**: `src/core/worktree/detection.ts` は既存の `manager.ts` と同一ディレクトリ内で責務が分離されており適切。manager は worktree の CRUD、detection は実行環境の判定\n- **ガードの一元管理 (D2)**: `bin/specrunner.ts` での一元チェックは DRY で、新規ガード対象コマンド追加時も `Set` に追加するだけで済む。代替案（各コマンド冒頭でチェック）を検討・棄却した理由も明確\n- **エラー設計 (D4)**: 既存の `SpecRunnerError` + `ERROR_CODES` パターンに完全に準拠。ファクトリ関数のシグネチャ `worktreeGuardError(command, mainPath)` も既存ファクトリと一貫性がある\n- **ENOENT フォールバック**: `.git` が存在しない場合に `isWorktree: false` を返して後段の `NOT_GIT_REPO` チェックに委譲する設計は、責務の重複を避けて堅牢\n\n## Completeness Assessment (task decomposition)\n\nタスク 1〜5 は以下を網羅:\n- 検出ユーティリティ（Task 1）\n- エラーコード追加（Task 2）\n- エントリポイントへのガード挿入（Task 3）\n- ユニットテスト + 統合テスト（Task 4）\n- typecheck + test 検証（Task 5）\n\n受け入れ基準 6 項目すべてに対応するタスクが存在する。不足なし。\n"
+        },
+        "startedAt": "2026-05-09T05:51:08.619Z",
+        "endedAt": "2026-05-09T05:51:08.619Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1316,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 93,
+            "outputTokens": 6924,
+            "cacheReadInputTokens": 491208,
+            "cacheCreationInputTokens": 33796
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T05:54:21.146Z",
+        "endedAt": "2026-05-09T05:54:21.146Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1308,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 7,
+            "outputTokens": 3422,
+            "cacheReadInputTokens": 107579,
+            "cacheCreationInputTokens": 16026
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T05:55:34.175Z",
+        "endedAt": "2026-05-09T05:55:34.175Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1383,
+            "outputTokens": 20,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 39,
+            "outputTokens": 12760,
+            "cacheReadInputTokens": 1509535,
+            "cacheCreationInputTokens": 41695
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "openspec/changes/worktree-guard/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — worktree-guard — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.9s | 0 |\n| 2 | typecheck | passed | 1.6s | 0 |\n| 3 | test | passed | 3.5s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/worktree-guard-fdbf25c4\n\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n\n Test Files  136 passed (136)\n      Tests  1330 passed (1330)\n   Start at  15:00:59\n   Duration  3.27s (transform 2.34s, setup 0ms, import 3.97s, tests 5.25s, environment 9ms)\n\n\n$ vitest run\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/worktree-guard-fdbf25c4/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-09T06:00:55.973Z",
+        "endedAt": "2026-05-09T06:00:55.973Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "openspec/changes/worktree-guard/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review — worktree-guard — Iteration 1\n\n## Summary\n\n実装は仕様通り、クリーンで堅牢。検出ロジック（`.git` file vs directory）は git の仕様に準拠しており、エントリポイントでの一元ガードは DRY で拡張しやすい。エラーハンドリングは既存の `SpecRunnerError` パターンに正しく乗っている。テストは核心ロジックを十分にカバーしているが、test-cases.md の must シナリオに対して軽微なギャップがある。\n\n## Scores\n\n| Category | Score | Weight | Weighted |\n|----------|-------|--------|---------|\n| correctness | 9 | 0.30 | 2.70 |\n| security | 9 | 0.25 | 2.25 |\n| architecture | 9 | 0.15 | 1.35 |\n| performance | 9 | 0.10 | 0.90 |\n| maintainability | 9 | 0.10 | 0.90 |\n| testing | 7 | 0.10 | 0.70 |\n| **Total** | | | **8.80** |\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | LOW | testing | tests/unit/cli/specrunner-worktree-guard.test.ts | TC-12（doctor from worktree）が must だがテスト未実装。ps のみテスト済み。コードは正しい（doctor は WORKTREE_GUARDED_COMMANDS に含まれない）がテスト仕様との不一致 | TC-WG-004 と同様のテストを doctor 用に追加する |\n| 2 | LOW | testing | tests/unit/cli/specrunner-worktree-guard.test.ts | TC-13/TC-14（main worktree から run/finish）が must だが worktree-guard テストに明示テストなし。既存 dispatch テストで `detectWorktree` を `isWorktree: false` でモックしており暗黙的にはカバー | worktree-guard テストに main worktree シナリオ（`setWorktreeDetection(false)` → run が guard エラーなしで通過）を追加する |\n\n## Scenario Coverage (test-cases.md)\n\n| TC | Priority | Status | Notes |\n|----|----------|--------|-------|\n| TC-01 | must | ✅ | detection.test.ts |\n| TC-02 | must | ✅ | detection.test.ts |\n| TC-03 | must | ✅ | detection.test.ts（TC-02 と同一テストで検証） |\n| TC-04 | must | ✅ | detection.test.ts |\n| TC-05 | should | ✅ | detection.ts L49 で `.trim()` 実装済み。テストは暗黙的 |\n| TC-06 | must | ✅ | errors.ts に WORKTREE_GUARD 定義。統合テストで使用 |\n| TC-07 | must | ✅ | worktree-guard.test.ts TC-WG-005 で hint 検証 |\n| TC-08 | must | ✅ | worktree-guard.test.ts TC-WG-001 |\n| TC-09 | must | ✅ | worktree-guard.test.ts TC-WG-002 |\n| TC-10 | must | ✅ | worktree-guard.test.ts TC-WG-003 |\n| TC-11 | must | ✅ | worktree-guard.test.ts TC-WG-004 |\n| TC-12 | must | ⚠️ | doctor 用テスト未実装（Finding #1） |\n| TC-13 | must | ⚠️ | 暗黙カバーのみ（Finding #2） |\n| TC-14 | must | ⚠️ | 暗黙カバーのみ（Finding #2） |\n| TC-15 | must | ✅ | worktree-guard.test.ts TC-WG-005 |\n| TC-16 | should | ✅ | detection.ts ENOENT → isWorktree: false → guard スキップ |\n| TC-17 | must | ✅ | typecheck green 確認済み |\n| TC-18 | must | ✅ | 136 files, 1330 tests passed |\n\n## Verification\n\n- `bun run typecheck`: ✅ green\n- `bun run test`: ✅ 136 passed / 1330 tests\n\n- **verdict**: approved\n"
+        },
+        "startedAt": "2026-05-09T06:01:05.029Z",
+        "endedAt": "2026-05-09T06:01:05.029Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1426,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 14,
+            "outputTokens": 6637,
+            "cacheReadInputTokens": 474075,
+            "cacheCreationInputTokens": 37472
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "openspec/changes/worktree-guard/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — worktree-guard\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/173\n- **Number**: 173\n- **CreatedAt**: 2026-05-09T06:04:12.426Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-09T06:04:08.895Z",
+        "endedAt": "2026-05-09T06:04:08.895Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/173",
+    "number": 173,
+    "createdAt": "2026-05-09T06:04:12.426Z"
+  }
+}

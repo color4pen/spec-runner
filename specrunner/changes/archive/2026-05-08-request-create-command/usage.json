@@ -1,0 +1,84 @@
+{
+  "commandInvocations": [
+    {
+      "command": "job",
+      "timestamp": "2026-05-08T01:39:03.718Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 4170,
+          "outputTokens": 11461,
+          "cacheReadInputTokens": 1013096,
+          "cacheCreationInputTokens": 87858
+        },
+        "claude-opus-4-6[1m]": {
+          "inputTokens": 16,
+          "outputTokens": 8566,
+          "cacheReadInputTokens": 618098,
+          "cacheCreationInputTokens": 46764
+        }
+      },
+      "jobId": "ae120998-19a1-41a1-8b5e-7f1bc5311521",
+      "stepName": "propose"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-05-08T01:44:39.777Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 4119,
+          "outputTokens": 4776,
+          "cacheReadInputTokens": 523239,
+          "cacheCreationInputTokens": 32143
+        },
+        "claude-opus-4-6[1m]": {
+          "inputTokens": 14,
+          "outputTokens": 9981,
+          "cacheReadInputTokens": 486372,
+          "cacheCreationInputTokens": 43996
+        }
+      },
+      "jobId": "ae120998-19a1-41a1-8b5e-7f1bc5311521",
+      "stepName": "spec-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-05-08T01:49:17.117Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 4021,
+          "outputTokens": 16,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 61,
+          "outputTokens": 33259,
+          "cacheReadInputTokens": 3811861,
+          "cacheCreationInputTokens": 122313
+        }
+      },
+      "jobId": "ae120998-19a1-41a1-8b5e-7f1bc5311521",
+      "stepName": "implementer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-05-08T02:00:49.124Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 4112,
+          "outputTokens": 400,
+          "cacheReadInputTokens": 43939,
+          "cacheCreationInputTokens": 23714
+        },
+        "claude-opus-4-6[1m]": {
+          "inputTokens": 4286,
+          "outputTokens": 5806,
+          "cacheReadInputTokens": 1164895,
+          "cacheCreationInputTokens": 73011
+        }
+      },
+      "jobId": "ae120998-19a1-41a1-8b5e-7f1bc5311521",
+      "stepName": "code-review"
+    }
+  ]
+}

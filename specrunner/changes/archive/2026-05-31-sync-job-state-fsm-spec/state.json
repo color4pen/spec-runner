@@ -1,0 +1,521 @@
+{
+  "version": 1,
+  "jobId": "03e884b8-3c5b-43be-b121-6aca65a17f63",
+  "createdAt": "2026-05-31T14:08:02.100Z",
+  "updatedAt": "2026-05-31T14:41:15.934Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/sync-job-state-fsm-spec/request.md",
+    "title": "job-state-store spec の JobStatus 状態機械をコード／構造 authority に同期する",
+    "type": "spec-change",
+    "slug": "sync-job-state-fsm-spec"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 41688,
+  "branch": "change/sync-job-state-fsm-spec-03e884b8",
+  "history": [
+    {
+      "ts": "2026-05-31T14:08:02.100Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-31T14:08:03.657Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-31T14:11:12.019Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-31T14:11:12.023Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-31T14:11:12.025Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-31T14:11:12.048Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-31T14:11:12.049Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-31T14:11:12.050Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-31T14:11:12.050Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-31T14:14:00.192Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-31T14:14:00.195Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-31T14:14:00.195Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-31T14:14:00.197Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-31T14:17:30.508Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-31T14:17:30.513Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-31T14:17:30.515Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-31T14:19:45.020Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-31T14:19:45.024Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-31T14:19:45.025Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-31T14:19:45.026Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-31T14:20:01.564Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-31T14:20:01.568Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-31T14:20:01.568Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-31T14:20:01.569Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-31T14:20:01.570Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-31T14:23:02.709Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-31T14:23:02.712Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-31T14:23:02.713Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-31T14:23:02.715Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-31T14:23:02.737Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-31T14:23:02.738Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → adr-gen"
+    },
+    {
+      "ts": "2026-05-31T14:23:02.740Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-31T14:23:15.687Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-31T14:23:15.689Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-31T14:23:15.690Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-31T14:23:17.328Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-31T14:23:17.332Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-31T14:41:15.934Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "42086e84-48e8-4177-9a49-c5916957bea7",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-05-31T14:08:03.664Z",
+        "endedAt": "2026-05-31T14:11:10.140Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 8081,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 19,
+            "outputTokens": 7345,
+            "cacheReadInputTokens": 617794,
+            "cacheCreationInputTokens": 49065
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/sync-job-state-fsm-spec/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-05-31T14:11:12.025Z",
+        "endedAt": "2026-05-31T14:11:12.047Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/sync-job-state-fsm-spec/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-05-31T14:23:02.716Z",
+        "endedAt": "2026-05-31T14:23:02.737Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "9dd0be16-172f-408f-b410-979790b13256",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/sync-job-state-fsm-spec/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result\n\n<!-- FORMAT REQUIREMENTS (machine-parsed):\n- The verdict line MUST appear before the Findings table.\n- verdict line format (exact): `- **verdict**: <value>` at the start of a line\n- Valid verdict values: approved | needs-fix | escalation\n  - approved:    specification is complete, consistent, and ready for implementation\n  - needs-fix:   specification has issues that must be resolved before implementation\n  - escalation:  unresolvable conflicts, missing context, or requires human judgment\n- Findings table MUST have exactly 6 columns in this order:\n  # | Severity | Category | File | Description | How to Fix\n- Valid Severity values (uppercase): CRITICAL | HIGH | MEDIUM | LOW\n  - CRITICAL: production outage, data loss, security breach\n  - HIGH:     functional failure, clear bug, no workaround — blocks approval\n  - MEDIUM:   quality degradation, maintainability issue, future risk\n  - LOW:      informational, style, minor improvement\n- If no findings, write a table row with \"None\" or omit the table body.\n- Approval is blocked when CRITICAL ≥ 1 OR HIGH ≥ 1.\n-->\n\n- **verdict**: approved\n\n## Summary\n\ndelta spec はすべての受け入れ基準を満たす。コード（schema.ts / lifecycle.ts）・構造 authority（domain-model.md）・振る舞い spec（job-state-store）の 3 authority が 7 値 enum・VALID_TRANSITIONS・active/terminal 区分で完全に整合している。\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| — | — | — | — | None | — |\n\n## Verification Notes\n\n### Status enum（schema.ts L5 との照合）\n\n`schema.ts` L5: `\"running\" | \"awaiting-resume\" | \"awaiting-merge\" | \"failed\" | \"terminated\" | \"archived\" | \"canceled\"`\n\ndelta spec L5: `\"running\" | \"awaiting-resume\" | \"awaiting-merge\" | \"failed\" | \"terminated\" | \"archived\" | \"canceled\"` ✅\n\n### VALID_TRANSITIONS（lifecycle.ts L36–44 との照合）\n\n| from | lifecycle.ts allows | delta spec table |\n|---|---|---|\n| running | awaiting-resume, awaiting-merge, failed, terminated, canceled | ✅ |\n| awaiting-resume | running, canceled | ✅ |\n| awaiting-merge | archived, canceled | ✅ |\n| failed | running, canceled, awaiting-resume | ✅ |\n| terminated | running, canceled | ✅ |\n| archived | (empty) | ✅ |\n| canceled | (empty) | ✅ |\n\n### active / terminal 区分（lifecycle.ts L46–48 との照合）\n\n- `ACTIVE_STATUSES = {\"running\", \"awaiting-resume\"}` → delta spec active = {running, awaiting-resume} ✅\n- `TERMINAL_STATUSES = {\"archived\", \"canceled\"}` → delta spec terminal = {archived, canceled} ✅\n\n### Requirement header の baseline 完全一致\n\n- baseline L345 header ↔ delta spec header（JobStatus Requirement）: 完全一致 ✅ → MODIFIED 自動分類発動\n- baseline L70 header ↔ delta spec header（SPEC_REVIEW_RETRIES_EXHAUSTED Requirement）: 完全一致 ✅\n\n### legacy success Scenario の反転訂正\n\n- baseline: `state.status === \"success\"` (no automatic migration) ← コードと矛盾\n- delta spec: `state.status === \"awaiting-merge\"` (validateJobState が on-read remap) ← schema.ts L332–334 と一致 ✅\n\n### SPEC_REVIEW_RETRIES_EXHAUSTED Scenario の stale 参照訂正\n\n- baseline L77: `state.status は success` → delta spec L52: `state.status は awaiting-merge` ✅\n\n### 現行値としての `success` 残存なし\n\ndelta spec 内の `success` 参照はすべて「legacy remap の説明文脈」のみ。現行値としての `success` はゼロ ✅\n\n### セキュリティ\n\n本 change は spec/documentation のみの変更。コード変更・新規 API・認証経路の追加なし。OWASP Top 10 該当なし ✅\n",
+          "toolResult": {
+            "ok": true,
+            "approved": true
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-05-31T14:11:12.059Z",
+        "endedAt": "2026-05-31T14:13:58.664Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5090,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 17,
+            "outputTokens": 8679,
+            "cacheReadInputTokens": 471921,
+            "cacheCreationInputTokens": 39971
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "d8bde98e-4b5b-4a29-8038-128200b78002",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-05-31T14:14:00.212Z",
+        "endedAt": "2026-05-31T14:17:28.970Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2474,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 13,
+            "outputTokens": 11979,
+            "cacheReadInputTokens": 297586,
+            "cacheCreationInputTokens": 35036
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "98b4e7e4-fbc3-4ab2-8083-fc66735d5624",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-05-31T14:17:30.533Z",
+        "endedAt": "2026-05-31T14:19:43.448Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5237,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 16,
+            "outputTokens": 5322,
+            "cacheReadInputTokens": 472893,
+            "cacheCreationInputTokens": 37864
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/sync-job-state-fsm-spec/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — sync-job-state-fsm-spec — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 0.4s | 0 |\n| 2 | typecheck | passed | 2.8s | 0 |\n| 3 | test | passed | 10.3s | 0 |\n| 4 | lint | passed | 1.4s | 0 |\n\n## Phase: build\n\n```\nCLI Building entry: bin/specrunner.ts\nCLI Using tsconfig: tsconfig.json\nCLI tsup v8.5.1\nCLI Using tsup config: ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/sync-job-state-fsm-spec-03e884b8/tsup.config.ts\nCLI Target: node20\nCLI Cleaning output folder\nESM Build start\nESM dist/specrunner.js 612.24 KB\nESM ⚡️ Build success in 53ms\n\n$ tsup\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/sync-job-state-fsm-spec-03e884b8\n\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t150d\n\n Test Files  287 passed (287)\n      Tests  3274 passed (3274)\n   Start at  23:19:48\n   Duration  10.03s (transform 6.04s, setup 0ms, import 14.83s, tests 19.27s, environment 29ms)\n\n\n$ vitest run\nWarning: /tmp/claude-501/cred-test-2rHfM7/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /tmp/claude-501/cred-test-78DG0c/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\n[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...\nGitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Required status check \"ci/build\" is expected, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/sync-job-state-fsm-spec-03e884b8/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n```\n$ eslint ./src --max-warnings 0\n\n```\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-05-31T14:19:45.026Z",
+        "endedAt": "2026-05-31T14:20:01.563Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "05335077-4009-4a41-97e5-274a9a28e893",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/sync-job-state-fsm-spec/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — iteration 001\n\n<!-- FORMAT REQUIREMENTS (machine-parsed):\n- verdict line format (exact): `- **verdict**: <value>` at the start of a line\n- Valid verdict values: approved | needs-fix | escalation\n- iteration line format (exact): `- **iteration**: NNN` (3-digit zero-padded integer)\n- Findings table MUST have exactly 7 columns in this order:\n  # | Severity | Category | File | Description | How to Fix | Fix\n  - Fix column: yes = fixer should address this finding; no = skip (pre-existing / out-of-scope)\n- Scores table columns: Category | Score | Weight\n  - Valid Category values: correctness | security | architecture | performance | maintainability | testing\n  - Score: integer 1-10\n  - Weight: decimal as defined below\n- total line format (exact): `- **total**: <decimal>`\n- Default weights: correctness=0.30, security=0.25, architecture=0.15, performance=0.10, maintainability=0.10, testing=0.10\n- Scores table is optional but recommended. The verdict line is the authoritative decision.\n-->\n\n- **verdict**: approved\n- **iteration**: 001\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix | Fix |\n|---|----------|----------|------|-------------|------------|-----|\n| 1 | LOW | testing | `specrunner/changes/sync-job-state-fsm-spec/test-cases.md` | Summary のカウントが本文と不一致。Manual=6・Automated=9 と記載しているが、本文を数えると Manual=7（TC-001〜005・009・011）・Automated=8（TC-006〜008・010・012〜015）。合計 15 は正しい。 | Summary 行を `Manual: 7, Automated: 8` に修正する。 | no |\n\n## Scores\n\n| Category | Score | Weight |\n|----------|-------|--------|\n| correctness | 10 | 0.30 |\n| security | 10 | 0.25 |\n| architecture | 10 | 0.15 |\n| performance | 10 | 0.10 |\n| maintainability | 9 | 0.10 |\n| testing | 9 | 0.10 |\n\n- **total**: 9.90\n\n## Summary\n\nspec-only change（実装コードの変更なし）。delta spec が 2 つの Requirement を MODIFIED で置換している。\n\n**受け入れ基準の充足確認**:\n\n1. **7 値 enum の一致**: delta spec L5 の `JobStatus` 型宣言が `src/state/schema.ts` L5 と文字列完全一致。✅\n2. **canonical 遷移・legacy remap**: `awaiting-merge → archived` が canonical として記述されており、旧 `success → archived` の記述はない。legacy `success` Scenario が「load 時に `awaiting-merge` へ remap される」挙動を正しく記述（schema.ts L332–334 と一致）。✅\n3. **3 authority の整合**: VALID_TRANSITIONS 表が `lifecycle.ts` L36–44 と完全一致。active/terminal 区分が `lifecycle.ts` L46–48 と一致。`architecture/domain-model.md` の VALID_TRANSITIONS 表とも完全一致。✅\n4. **`success` 現行値の残存なし**: delta spec 内の `success` 参照はすべて legacy remap 説明文脈のみ。grep で確認済み（spec-review-result-001.md 記載）。✅\n5. **baseline Requirement の supersede**: baseline L345 の header `### Requirement: \\`JobStatus\\` includes \\`archived\\` as a terminal status` と delta spec header が完全一致 → MODIFIED 自動分類。baseline L345–365 の 5 値 enum・`success → archived` canonical・「legacy success loads without migration」Scenario はすべて置換される。✅\n6. **build green**: verification-result.md にて build/typecheck/test/lint の全 phase が passed（exit code 0）。✅\n\n**test-cases.md の must シナリオ網羅**: TC-001〜TC-008・TC-010〜TC-012・TC-015 の 11 must ケースをすべて手動確認済み。\n\n**唯一の指摘**（LOW、Fix=no）: test-cases.md Summary のカウント誤記（Manual 6→7、Automated 9→8）。spec の正しさや build に影響しないため、今回の fixer 対象から除外する。\n",
+          "toolResult": {
+            "ok": true,
+            "approved": true,
+            "fixableCount": 0
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-05-31T14:20:01.590Z",
+        "endedAt": "2026-05-31T14:23:01.109Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5901,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 17,
+            "outputTokens": 8493,
+            "cacheReadInputTokens": 467062,
+            "cacheCreationInputTokens": 46757
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "42552d7b-1d0a-42f0-b673-b46d57347d9c",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-05-31T14:23:02.749Z",
+        "endedAt": "2026-05-31T14:23:15.618Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 573,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 3,
+            "outputTokens": 49,
+            "cacheReadInputTokens": 7568,
+            "cacheCreationInputTokens": 5927
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/sync-job-state-fsm-spec/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — sync-job-state-fsm-spec\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/480\n- **Number**: 480\n- **CreatedAt**: 2026-05-31T14:23:17.326Z\n- **Action**: created\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-05-31T14:23:15.690Z",
+        "endedAt": "2026-05-31T14:23:17.327Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/480",
+    "number": 480,
+    "createdAt": "2026-05-31T14:23:17.326Z"
+  }
+}

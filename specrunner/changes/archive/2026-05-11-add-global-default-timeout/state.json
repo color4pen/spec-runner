@@ -1,0 +1,476 @@
+{
+  "version": 1,
+  "jobId": "7125672a-e3a6-4526-8926-533999b17915",
+  "createdAt": "2026-05-11T06:02:09.014Z",
+  "updatedAt": "2026-05-11T06:33:21.453Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/add-global-default-timeout/request.md",
+    "title": "step config の defaults.timeoutMs を解決チェーンに組み込む",
+    "type": "bug-fix",
+    "slug": "add-global-default-timeout"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 29446,
+  "branch": "fix/add-global-default-timeout-7125672a",
+  "history": [
+    {
+      "ts": "2026-05-11T06:02:09.014Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-11T06:02:10.761Z",
+      "step": "propose-started",
+      "status": "started",
+      "message": "Starting propose step"
+    },
+    {
+      "ts": "2026-05-11T06:09:55.454Z",
+      "step": "propose-verdict",
+      "status": "ok",
+      "message": "propose verdict: success"
+    },
+    {
+      "ts": "2026-05-11T06:09:55.457Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "propose → spec-review"
+    },
+    {
+      "ts": "2026-05-11T06:09:55.457Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T06:09:55.458Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-11T06:13:22.695Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T06:13:22.698Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T06:13:22.698Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-11T06:13:22.700Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-11T06:14:35.742Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-11T06:14:35.745Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-11T06:14:35.746Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-11T06:18:41.242Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-11T06:18:41.243Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-11T06:18:41.244Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T06:18:41.245Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-11T06:18:50.898Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-11T06:18:50.900Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-11T06:18:50.900Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-11T06:18:50.901Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T06:18:50.902Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-11T06:21:56.655Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-11T06:21:56.657Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-11T06:21:56.658Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-11T06:21:56.659Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-11T06:28:28.033Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T06:28:28.035Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-11T06:28:28.036Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-11T06:28:28.036Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-11T06:30:27.682Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T06:30:27.685Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T06:30:27.685Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-11T06:30:27.686Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-11T06:30:30.905Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-11T06:30:30.909Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-11T06:33:21.453Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "propose": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T06:02:10.761Z",
+        "endedAt": "2026-05-11T06:02:10.761Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4408,
+            "outputTokens": 4286,
+            "cacheReadInputTokens": 564402,
+            "cacheCreationInputTokens": 53901
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 32,
+            "outputTokens": 19888,
+            "cacheReadInputTokens": 1793083,
+            "cacheCreationInputTokens": 75150
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/add-global-default-timeout/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: add-global-default-timeout\n\n- **iteration**: 1\n- **date**: 2026-05-11\n- **verdict**: approved\n\n## Summary\n\n仕様は明確で、根本原因分析が正確。step-config.ts は既に timeoutMs を 4-level chain で解決しており、変更不要と正しく判定している。設計 D1-D4 は ManagedAgentRunner の resolveTimeoutMs 吸収と ClaudeCodeRunner の AbortController 導入を適切に分離。受け入れ基準 4 項目すべてがテストケースでカバーされている。CRITICAL/HIGH の指摘なし。\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | completeness | tasks.md:Task1-3 | `resolveTimeoutMs` を削除する際、`tests/unit/adapter/managed-agent/agent-runner.test.ts` の TC-026/027/028/029/032（resolveTimeoutMs の単体テスト群）の更新・削除が明記されていない。実装時にテスト失敗が起きる | Task 1 に「managed-agent テストから resolveTimeoutMs のインポートとテスト describe ブロック 3 件を削除する」サブステップを追加 |\n| 2 | MEDIUM | consistency | tasks.md:Task3 | TC-032 が managed-agent テストの既存 TC-032（resolveTimeoutMs null フォールバック）と番号重複。既存 TC-032 は Task 1 で削除されるため最終的には衝突しないが、git history で混乱を招く | TC-036〜TC-039 に採番し直す、または既存 TC-032 削除後に再利用する旨をタスクに明記 |\n| 3 | LOW | consistency | request.md:R1 | R1 は「step-config.ts の getStepExecutionConfig で defaults.timeoutMs を参照する」と記述するが、design.md は step-config.ts の変更不要と正しく判定。R1 の文面が変更箇所を誤示唆する | design.md が正しい。implementer は design.md/tasks.md に従えば問題ない |\n| 4 | LOW | feasibility | design.md:D2 | Claude Agent SDK の `query()` が `abortController` オプションを受け付ける前提だが、コード上 `QueryFn` は `Record<string, unknown>` にキャストされており SDK 仕様の裏付けが記載されていない | implementer が SDK ドキュメントまたは型定義で `abortController` サポートを確認してから実装する |\n\n## Verdict Rationale\n\n- CRITICAL: 0, HIGH: 0\n- MEDIUM 2 件はいずれも実装時に自然に解決可能（テスト失敗で気付く / 採番は機械的）\n- 設計の本質部分（解決チェーン統一、AbortController パターン、0-semantics 維持）は正確\n- 受け入れ基準と tasks.md の対応に漏れなし\n"
+        },
+        "startedAt": "2026-05-11T06:09:55.458Z",
+        "endedAt": "2026-05-11T06:09:55.458Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2488,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 14,
+            "outputTokens": 7309,
+            "cacheReadInputTokens": 464390,
+            "cacheCreationInputTokens": 39954
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T06:13:22.700Z",
+        "endedAt": "2026-05-11T06:13:22.700Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1228,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 10,
+            "outputTokens": 3835,
+            "cacheReadInputTokens": 203924,
+            "cacheCreationInputTokens": 20860
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T06:14:35.747Z",
+        "endedAt": "2026-05-11T06:14:35.747Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2586,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 32,
+            "outputTokens": 12749,
+            "cacheReadInputTokens": 1645124,
+            "cacheCreationInputTokens": 59523
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/add-global-default-timeout/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — add-global-default-timeout — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.3s | 0 |\n| 2 | typecheck | passed | 1.7s | 0 |\n| 3 | test | passed | 4.0s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/add-global-default-timeout-7125672a\n\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t130d\n\n Test Files  143 passed (143)\n      Tests  1652 passed (1652)\n   Start at  15:18:45\n   Duration  3.82s (transform 2.81s, setup 0ms, import 5.34s, tests 6.41s, environment 9ms)\n\n\n$ vitest run\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/add-global-default-timeout-7125672a/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-11T06:18:41.245Z",
+        "endedAt": "2026-05-11T06:18:41.245Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/add-global-default-timeout/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Review Feedback: add-global-default-timeout\n\n- **iteration**: 1\n- **date**: 2026-05-11\n- **verdict**: needs-fix\n\n## Summary\n\n実装ロジック（D1: stepDefaults 解決チェーン統一、D2/D4: AbortController wall-clock timeout）は設計通り正確に実装されている。`resolveTimeoutMs` 削除・`finally` によるタイマーリーク防止・0-semantics 維持も含め correctness に問題はない。\n\n問題は **テストカバレッジ**。`resolveTimeoutMs` の既存テスト 3 件（TC-026/027/028/029 相当）を削除した代わりに、ManagedAgentRunner の新しい stepDefaults 解決動作を検証するテストが一切追加されていない。must シナリオ 4 件（TC-036, TC-037, TC-038, TC-040）が未実装のまま。\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | HIGH | testing | tests/unit/adapter/managed-agent/agent-runner.test.ts | TC-036, TC-037, TC-038, TC-040 の must シナリオが未実装。`resolveTimeoutMs` の既存テスト 3 件を削除したが、新しい stepDefaults 解決チェーンを検証するテストが追加されていない。ManagedAgentRunner が `DEFAULT_POLL_TIMEOUT_MS` を stepDefaults として渡すことが実装コード上の唯一の担保となっており、動作保証がない | `runProposeStyle` / `runPollingStyle` それぞれで `getStepExecutionConfig` に `timeoutMs: DEFAULT_POLL_TIMEOUT_MS` が渡ることを確認するテストを追加（vi.spyOn か deps 注入で検証）。TC-036: defaults.timeoutMs が適用される、TC-037: step-level が defaults を上書き、TC-038: config なし → DEFAULT_POLL_TIMEOUT_MS、TC-040: no steps config → ManagedAgentRunner は DEFAULT_POLL_TIMEOUT_MS を維持 |\n| 2 | MEDIUM | testing | tests/unit/adapter/claude-code/agent-runner.test.ts | TC-041 (should) — タイムアウト前に非 abort エラーが発生した場合に completionReason が \"timeout\" に誤分類されないことのテストが未実装 | queryFn がタイムアウト前に即時エラーをスローするシナリオを追加し、`result.completionReason !== \"timeout\"` かつ `abortController.signal.aborted === false` を確認する |\n| 3 | LOW | maintainability | src/adapter/claude-code/agent-runner.ts:205 | timeout の catch ブロックで `clearTimeout(timeoutId)` を明示的に呼んだ後、`finally` でも `clearTimeout(timeoutId)` が呼ばれる。double-call だが harmless | catch 内の `clearTimeout(timeoutId)` を削除し、finally に一元化する |\n\n## Scores\n\n| Category | Score | Notes |\n|----------|-------|-------|\n| correctness | 8 | 実装ロジック正確。D1/D2/D4 の解決チェーン・AbortController・0-semantics すべて正しい |\n| security | 8 | セキュリティ上の懸念なし |\n| architecture | 8 | stepDefaults による解決チェーン統一は設計上クリーン。`resolveTimeoutMs` 削除も適切 |\n| performance | 8 | finally によるタイマーリーク防止が正しく実装されている |\n| maintainability | 7 | catch+finally の double clearTimeout が軽微な冗長性 |\n| testing | 3 | must 4 件未実装（TC-036/037/038/040）。ManagedAgentRunner 側の動作保証がゼロ |\n\n**Total**: 8×0.30 + 8×0.25 + 8×0.15 + 8×0.10 + 7×0.10 + 3×0.10 = **7.40**\n\npass threshold (7.0) は超えるが、HIGH finding (testing) により verdict = needs-fix。\n\n## Verdict Rationale\n\n- CRITICAL: 0\n- HIGH: 1（testing — must シナリオ TC-036/037/038/040 未実装）\n- 承認阻止条件: HIGH ≥ 1 → `needs-fix`\n"
+        },
+        "startedAt": "2026-05-11T06:18:50.904Z",
+        "endedAt": "2026-05-11T06:18:50.904Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2634,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 15,
+            "outputTokens": 10039,
+            "cacheReadInputTokens": 455023,
+            "cacheCreationInputTokens": 37260
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/add-global-default-timeout/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Review Feedback: add-global-default-timeout\n\n- **iteration**: 2\n- **date**: 2026-05-11\n- **verdict**: approved\n\n## Summary\n\nIteration 1 の HIGH finding（TC-036/037/038/040 未実装）と MEDIUM finding（TC-041 未実装）がいずれも解消された。ManagedAgentRunner の stepDefaults 解決動作を `pollUntilComplete` の呼び出し引数で検証するアプローチは妥当で、`resolveTimeoutMs` 削除の確認（ソース文字列検査）も含めて網羅性が高い。実装コード自体は iter 1 から変更なく正確。残存は LOW 1 件のみ。\n\n## Iteration Comparison\n\n- **Improvements**:\n  - Finding #1 (HIGH, testing): TC-036/037/038/040 の must シナリオをすべて実装 → 解消\n  - Finding #2 (MEDIUM, testing): TC-041 (非 abort エラーの誤分類防止) を実装 → 解消\n- **Regressions**: なし\n- **Unchanged Issues**: Finding #3 (LOW, maintainability) — catch 内の `clearTimeout` と `finally` の double-call が残存\n- **Convergence Trend**: improving（Total 7.40 → 7.90、差分 > 0.3）\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | LOW | maintainability | src/adapter/claude-code/agent-runner.ts:201 | timeout catch ブロック内で `clearTimeout(timeoutId)` を明示的に呼び出した後、`finally` でも `clearTimeout(timeoutId)` が呼ばれる（double-call）。harmless だが冗長 | catch 内の `clearTimeout(timeoutId)` を削除し、finally に一元化する |\n| 2 | LOW | testing | tests/unit/adapter/managed-agent/agent-runner.test.ts | TC-039 (should): ManagedAgentRunner で `timeoutMs: 0` が polling timeout を無効化することのテストが未実装 | `steps: { defaults: { timeoutMs: 0 } }` で `pollUntilComplete` の呼び出し引数が `{ timeoutMs: undefined }` または timeoutMs なしになることを確認するテストを追加 |\n\n## Scores\n\n| Category | Score | Notes |\n|----------|-------|-------|\n| correctness | 8 | D1/D2/D4 の実装ロジック正確。変更なし |\n| security | 8 | セキュリティ上の懸念なし |\n| architecture | 8 | stepDefaults 解決チェーン統一・`resolveTimeoutMs` 削除ともに設計通り |\n| performance | 8 | finally によるタイマーリーク防止が正しく実装されている |\n| maintainability | 7 | double clearTimeout が軽微な冗長性として残存 |\n| testing | 8 | must シナリオ全件実装（TC-032〜038, TC-040, TC-041）。TC-039/042 は should/could で未実装だが許容範囲 |\n\n**Total**: 8×0.30 + 8×0.25 + 8×0.15 + 8×0.10 + 7×0.10 + 8×0.10 = **7.90**\n\npass threshold (7.0) 超過、CRITICAL: 0、HIGH: 0 → approved\n\n## Verdict Rationale\n\n- CRITICAL: 0\n- HIGH: 0\n- MEDIUM: 0\n- LOW: 2（maintainability 冗長 double-call、testing TC-039 should 未実装）\n- 承認阻止条件に非該当 → `approved`\n"
+        },
+        "startedAt": "2026-05-11T06:28:28.037Z",
+        "endedAt": "2026-05-11T06:28:28.037Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2634,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 11,
+            "outputTokens": 5758,
+            "cacheReadInputTokens": 401000,
+            "cacheCreationInputTokens": 62166
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T06:21:56.659Z",
+        "endedAt": "2026-05-11T06:21:56.659Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1210,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 36,
+            "outputTokens": 24601,
+            "cacheReadInputTokens": 2449851,
+            "cacheCreationInputTokens": 81077
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/add-global-default-timeout/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — add-global-default-timeout\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/207\n- **Number**: 207\n- **CreatedAt**: 2026-05-11T06:30:30.902Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-11T06:30:27.687Z",
+        "endedAt": "2026-05-11T06:30:27.687Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/207",
+    "number": 207,
+    "createdAt": "2026-05-11T06:30:30.902Z"
+  }
+}

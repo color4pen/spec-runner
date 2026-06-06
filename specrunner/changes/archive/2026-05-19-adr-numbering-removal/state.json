@@ -1,0 +1,458 @@
+{
+  "version": 1,
+  "jobId": "4e7c7349-3501-45c2-856b-251adf571dbc",
+  "createdAt": "2026-05-19T03:22:05.485Z",
+  "updatedAt": "2026-05-19T05:15:30.237Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/adr-numbering-removal/request.md",
+    "title": "ADR ファイル命名から連番を廃止し `YYYY-MM-DD-slug.md` 形式に変更する",
+    "type": "spec-change",
+    "slug": "adr-numbering-removal"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 45447,
+  "branch": "change/adr-numbering-removal-4e7c7349",
+  "history": [
+    {
+      "ts": "2026-05-19T03:22:05.485Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-19T03:22:06.827Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-19T03:23:52.022Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-19T03:23:52.026Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-19T03:23:52.027Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-19T03:23:52.032Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T03:23:52.033Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-19T03:23:52.034Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-19T03:23:52.034Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-19T03:25:45.605Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T03:25:45.608Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T03:25:45.609Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-19T03:25:45.610Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-19T03:27:21.932Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-19T03:27:21.934Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-19T03:27:21.934Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-19T03:29:13.994Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-19T03:29:13.996Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-19T03:29:13.997Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-19T03:29:13.998Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-19T03:29:25.826Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-19T03:29:25.829Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-19T03:29:25.829Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-19T03:29:25.830Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-19T03:29:25.831Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-19T03:32:02.561Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T03:32:02.564Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T03:32:02.564Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → adr-gen"
+    },
+    {
+      "ts": "2026-05-19T03:32:02.566Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-19T03:33:01.180Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-19T03:33:01.182Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-19T03:33:01.183Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-19T03:33:03.919Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-19T03:33:03.923Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-19T05:15:30.237Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "8dc55f58-f1d2-4188-a6fa-58277761ff8b",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T03:22:06.833Z",
+        "endedAt": "2026-05-19T03:23:50.007Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6612,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 44,
+            "outputTokens": 5403,
+            "cacheReadInputTokens": 266912,
+            "cacheCreationInputTokens": 23526
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/adr-numbering-removal/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-19T03:23:52.027Z",
+        "endedAt": "2026-05-19T03:23:52.032Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "557b991f-0bb1-4706-8a75-aedf15cd9cba",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/adr-numbering-removal/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result\n\n- **change**: adr-numbering-removal\n- **date**: 2026-05-19\n- **reviewer**: spec-reviewer\n- **verdict**: approved\n\n## Summary\n\n問題・設計・タスク・delta spec の全アーティファクトが整合している。実装上のリスクは低い。\n\n## Findings\n\n### ✅ 問題の実証\n\n`specrunner/adr/` に `ADR-0004-2026-05-19-*.md` が 2 件並存していることを実ファイルで確認。request.md の観測が事実に基づいている。\n\n### ✅ 採番ロジックの所在\n\n`src/prompts/adr-gen-system.ts` L46–48 に旧命名規則と採番手順が存在することを確認。tasks.md が指定する変更箇所が正確。\n\n### ✅ ADR 内部参照の把握\n\ngrep 結果:\n- `ADR-0003-*.md` L1: `# ADR-0001:` （ファイル番号と見出し番号が不一致）\n- `ADR-0004-*baseline-header*.md` L1: `# ADR-0004:`\n\ndesign.md・tasks.md の記述と一致。クリーンアップ対象が正しく特定されている。\n\n### ✅ delta spec ヘッダー一致\n\nbaseline `specrunner/specs/adr-generation/spec.md` の Requirement ヘッダー:\n\n```\n### Requirement: judge=yes produces an ADR file\n```\n\ndelta spec の MODIFIED ヘッダーと完全一致。`Numbering` サブ行が delta spec から消えることで削除が明示される。\n\n### ✅ スコープ境界\n\n- `specrunner/changes/archive/` / `specrunner/requests/merged/` の旧参照は touch しない方針が明記されており適切。\n- `src/core/step/code-review.ts:83` の `ADR-20260430-review-exit-contract` は openspec-workflow 側の参照であり、本 request の命名変更とは無関係。除外判断が正確。\n\n### ✅ セキュリティ\n\n変更はプロンプト文字列の書き換えとファイルリネームのみ。認証・入力バリデーション・OWASP 対象箇所への影響なし。既存の prompt injection 防御（`<user-request>` タグ境界）は変更されない。\n\n### ✅ テスト影響\n\nADR 命名固有の unit test が存在しないことを tasks.md が述べており、`src/prompts/adr-gen-system.ts` はプロンプトテキストのみのため型チェックが通れば十分。`bun run typecheck && bun run test` の受け入れ基準は適切。\n\n## Observations（非ブロッキング）\n\n1. `ADR-0003` の見出しが `# ADR-0001:` になっている（既存ファイルのミス）。tasks.md Task 3 で正しく検出・修正対象に含まれている。\n\n2. delta spec は `## MODIFIED Requirements` のみで `## DELETED` セクションを持たない。`Numbering` 行の削除は MODIFIED 配下に含まれない形で消えるが、tasks.md L11–12 で明示されているため実装者が見落とすリスクは低い。\n\n## Verdict\n\n- **verdict**: approved\n"
+        },
+        "startedAt": "2026-05-19T03:23:52.044Z",
+        "endedAt": "2026-05-19T03:25:44.057Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4563,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 12,
+            "outputTokens": 4067,
+            "cacheReadInputTokens": 265867,
+            "cacheCreationInputTokens": 24300
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "57d08a3e-7e85-4aab-bde9-5ab3da5ff3d8",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T03:25:45.623Z",
+        "endedAt": "2026-05-19T03:27:20.464Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3309,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 8,
+            "outputTokens": 6960,
+            "cacheReadInputTokens": 145818,
+            "cacheCreationInputTokens": 24789
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "937fdf87-375e-436d-ab18-0d0f349444ed",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T03:27:21.942Z",
+        "endedAt": "2026-05-19T03:29:12.045Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4669,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 19,
+            "outputTokens": 3611,
+            "cacheReadInputTokens": 445825,
+            "cacheCreationInputTokens": 19858
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/adr-numbering-removal/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — adr-numbering-removal — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.4s | 0 |\n| 2 | typecheck | passed | 1.9s | 0 |\n| 3 | test | passed | 5.9s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/adr-numbering-removal-4e7c7349\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t138d\n\n Test Files  195 passed (195)\n      Tests  2206 passed (2206)\n   Start at  12:29:18\n   Duration  5.67s (transform 4.01s, setup 0ms, import 8.01s, tests 10.70s, environment 11ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-SdLZ2W/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-BIzk4T/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/adr-numbering-removal-4e7c7349/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-19T03:29:13.999Z",
+        "endedAt": "2026-05-19T03:29:25.825Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "1d6079b8-c8be-4c77-8efc-1c5d3ad0ceb9",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/adr-numbering-removal/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — adr-numbering-removal — iter 1\n\n- **change**: adr-numbering-removal\n- **date**: 2026-05-19\n- **reviewer**: code-reviewer\n- **verdict**: approved\n\n## Summary\n\nrequest.md の 6 要件と受け入れ基準すべてが満たされている。実装範囲は prompt テキスト 2 行の変更 + 5 ファイル rename + 2 ファイルの H1 修正 + delta spec 1 件で、いずれも意図通り実施済み。\n\n検証ポイント:\n\n- `src/prompts/adr-gen-system.ts` の命名規則を新形式に置換し採番手順を削除（diff = `-2 lines / +1 line`）\n- ADR 5 件を `git mv` で rename。git の rename 検出が 97%–100% の similarity で動作している（履歴保持 OK）\n- `grep -rE 'ADR-[0-9]{4}' specrunner/adr/` = 0 件（受け入れ基準 4 達成）\n- delta spec の MODIFIED Requirement header `judge=yes produces an ADR file` が baseline と完全一致\n- スコープ外（archive / merged / `src/core/step/code-review.ts:83` の `ADR-20260430-...`）は touch されていない\n- verification-result.md iter 1 で typecheck/test green（2206 / 2206 passed）\n- adr-gen.test.ts L70 の `expect(msg).not.toContain(\"specrunner/adr/\")` は adr=false 分岐のアサーションで命名形式の影響を受けない\n\n## Findings\n\n### F-01 — info: 本 request 自身の ADR 生成は finish 時の adr-gen step で初実証される\n\n- **severity**: info\n- **location**: 受け入れ基準 L128 `2026-05-19-adr-numbering-removal.md`\n- **description**: 受け入れ基準「本 request 自身の ADR が新形式で生成される」は finish pipeline の adr-gen step 実行時に初検証される。本 review 時点ではまだ生成されていない（worktree 内に該当 ADR ファイルなし）。これは想定通りで実装エラーではない。\n- **suggestion**: 修正不要。finish 後に `specrunner/adr/2026-05-19-adr-numbering-removal.md` が生成されることを finish 完了時に確認すれば足りる。\n\n### F-02 — info: delta spec で baseline の `Numbering` サブ行が暗黙削除される構造\n\n- **severity**: info\n- **location**: `specrunner/changes/adr-numbering-removal/specs/adr-generation/spec.md`\n- **description**: baseline には `- **Numbering**: NNNN is the next sequential number ...` 行が含まれるが、delta では MODIFIED Requirement 配下にこの行が出現しないため「定義から落ちる」形で削除される。spec-merge 時に MODIFIED が requirement を全置換するため挙動として正しいが、レビュワーがパッと差分を見たとき「削除されたフィールド」が一覧化されない。\n- **suggestion**: 修正不要。spec-review-result-001.md でも同旨の observation が記録されている。実装者・運用ともに把握済みで、リスクは顕在化しない。\n\n### F-03 — info: 既存 ADR `2026-05-18-one-shot-query-wrapper.md` の H1 番号ズレを修正\n\n- **severity**: info\n- **location**: `specrunner/adr/2026-05-18-one-shot-query-wrapper.md` L1\n- **description**: 旧 `ADR-0003-...` ファイルの H1 が誤って `# ADR-0001: ...` だった既存バグを本変更が `# queryOneShot を ...` に修正している。本 request のスコープ「内部参照クリーンアップ」に含まれる正当な修正で、副作用として既存バグが解消されている。\n- **suggestion**: 修正不要。望ましい副作用。\n\n## Verdict\n\n- **verdict**: approved\n"
+        },
+        "startedAt": "2026-05-19T03:29:25.844Z",
+        "endedAt": "2026-05-19T03:32:00.977Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4712,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 4,
+            "outputTokens": 1100,
+            "cacheReadInputTokens": 32700,
+            "cacheCreationInputTokens": 12744
+          },
+          "claude-opus-4-7[1m]": {
+            "inputTokens": 17,
+            "outputTokens": 6383,
+            "cacheReadInputTokens": 339897,
+            "cacheCreationInputTokens": 42742
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "d66ed4d4-18ea-47ef-9d58-e43369d03e44",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T03:32:02.581Z",
+        "endedAt": "2026-05-19T03:32:59.607Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3417,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 7,
+            "outputTokens": 2311,
+            "cacheReadInputTokens": 106639,
+            "cacheCreationInputTokens": 17112
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/adr-numbering-removal/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — adr-numbering-removal\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/320\n- **Number**: 320\n- **CreatedAt**: 2026-05-19T03:33:03.916Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-19T03:33:01.183Z",
+        "endedAt": "2026-05-19T03:33:03.917Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/320",
+    "number": 320,
+    "createdAt": "2026-05-19T03:33:03.916Z"
+  }
+}

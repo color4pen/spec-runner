@@ -1,0 +1,728 @@
+{
+  "version": 1,
+  "jobId": "35822876-86e0-463e-90ec-c51f56ee74bd",
+  "createdAt": "2026-05-24T14:00:47.918Z",
+  "updatedAt": "2026-05-25T00:21:06.895Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/remove-xdg-mode/request.md",
+    "title": "`config.jobs.location` の `\"xdg\"` opt-out を廃止し、jobs/logs を常に project 内に置く",
+    "type": "spec-change",
+    "slug": "remove-xdg-mode"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 95983,
+  "branch": "change/remove-xdg-mode-35822876",
+  "history": [
+    {
+      "ts": "2026-05-24T14:00:47.918Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-24T14:00:49.539Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-24T14:08:55.061Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-24T14:08:55.063Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-24T14:08:55.065Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-24T14:08:55.073Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-24T14:08:55.074Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → delta-spec-fixer"
+    },
+    {
+      "ts": "2026-05-24T14:08:55.075Z",
+      "step": "delta-spec-fixer-started",
+      "status": "started",
+      "message": "Starting delta-spec-fixer step"
+    },
+    {
+      "ts": "2026-05-24T14:09:16.779Z",
+      "step": "delta-spec-fixer-verdict",
+      "status": "ok",
+      "message": "delta-spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:09:16.781Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-fixer → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-24T14:09:16.783Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-24T14:09:16.787Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:09:16.790Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-24T14:09:16.790Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-24T14:09:16.791Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-24T14:11:44.543Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-24T14:11:44.546Z",
+      "step": "spec-review",
+      "status": "warning",
+      "message": "spec-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-24T14:11:44.546Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → spec-fixer"
+    },
+    {
+      "ts": "2026-05-24T14:11:44.548Z",
+      "step": "spec-fixer-started",
+      "status": "started",
+      "message": "Starting spec-fixer step"
+    },
+    {
+      "ts": "2026-05-24T14:13:43.227Z",
+      "step": "spec-fixer-verdict",
+      "status": "ok",
+      "message": "spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:13:43.230Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → delta-spec-validation (iter 1)"
+    },
+    {
+      "ts": "2026-05-24T14:13:43.231Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-24T14:13:43.236Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-24T14:13:43.237Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → delta-spec-fixer"
+    },
+    {
+      "ts": "2026-05-24T14:13:43.238Z",
+      "step": "delta-spec-fixer-started",
+      "status": "started",
+      "message": "Starting delta-spec-fixer step"
+    },
+    {
+      "ts": "2026-05-24T14:14:51.730Z",
+      "step": "delta-spec-fixer-verdict",
+      "status": "ok",
+      "message": "delta-spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:14:51.733Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-fixer → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-24T14:14:51.734Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-24T14:14:51.738Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:14:51.739Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-24T14:14:51.740Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-24T14:14:51.740Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-24T14:16:23.176Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:16:23.178Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:16:23.178Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-24T14:16:23.180Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-24T14:17:52.743Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-24T14:17:52.746Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 2)"
+    },
+    {
+      "ts": "2026-05-24T14:17:52.748Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-24T15:11:19.656Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-24T15:11:19.659Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-24T15:11:19.660Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-24T15:11:19.661Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-24T15:11:31.414Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-24T15:11:31.417Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-24T15:11:31.417Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-24T15:11:31.418Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-24T15:11:31.418Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-24T15:14:43.728Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T15:14:43.730Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T15:14:43.731Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → adr-gen"
+    },
+    {
+      "ts": "2026-05-24T15:14:43.732Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-24T15:17:39.347Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-24T15:17:39.349Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-24T15:17:39.351Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-24T15:17:40.773Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-24T15:17:40.779Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-25T00:21:06.895Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "0262bcc3-31f4-41b9-b874-ef0a724c8e3c",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T14:00:49.548Z",
+        "endedAt": "2026-05-24T14:08:53.423Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6115,
+            "outputTokens": 8265,
+            "cacheReadInputTokens": 401068,
+            "cacheCreationInputTokens": 109422
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 30,
+            "outputTokens": 19639,
+            "cacheReadInputTokens": 1775772,
+            "cacheCreationInputTokens": 100118
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/remove-xdg-mode/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: needs-fix\n\n## Violations\n\n| Path | Reason | Suggested Fix |\n|------|--------|---------------|\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/remove-xdg-mode-35822876/specrunner/changes/remove-xdg-mode/specs/verbose-execution-log/spec.md` | `missing-normative-keyword` | Add SHALL or MUST in Requirement body to express normative intent |\n\n## How to Fix\n\n- Move all delta spec files to `specs/<capability-name>/spec.md` (canonical path)\n- Ensure each spec.md has a `## Requirements` section (and optionally `## Removed` / `## Renamed`)\n- Ensure the `## Requirements` section contains at least one `### Requirement:` block\n"
+        },
+        "startedAt": "2026-05-24T14:08:55.065Z",
+        "endedAt": "2026-05-24T14:08:55.072Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/remove-xdg-mode/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-24T14:09:16.783Z",
+        "endedAt": "2026-05-24T14:09:16.787Z"
+      },
+      {
+        "attempt": 3,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/remove-xdg-mode/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: needs-fix\n\n## Violations\n\n| Path | Reason | Suggested Fix |\n|------|--------|---------------|\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/remove-xdg-mode-35822876/specrunner/changes/remove-xdg-mode/specs/verbose-execution-log/spec.md` | `missing-scenario` | Add at least one #### Scenario: block describing observable behavior |\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/remove-xdg-mode-35822876/specrunner/changes/remove-xdg-mode/specs/verbose-execution-log/spec.md` | `missing-normative-keyword` | Add SHALL or MUST in Requirement body to express normative intent |\n\n## How to Fix\n\n- Move all delta spec files to `specs/<capability-name>/spec.md` (canonical path)\n- Ensure each spec.md has a `## Requirements` section (and optionally `## Removed` / `## Renamed`)\n- Ensure the `## Requirements` section contains at least one `### Requirement:` block\n"
+        },
+        "startedAt": "2026-05-24T14:13:43.232Z",
+        "endedAt": "2026-05-24T14:13:43.236Z"
+      },
+      {
+        "attempt": 4,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/remove-xdg-mode/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-24T14:14:51.734Z",
+        "endedAt": "2026-05-24T14:14:51.737Z"
+      }
+    ],
+    "delta-spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "ed0f6fdf-e28c-4faa-9cd8-f5f07e64d28f",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T14:08:55.084Z",
+        "endedAt": "2026-05-24T14:09:15.297Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 772,
+            "outputTokens": 21,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 6,
+            "outputTokens": 1045,
+            "cacheReadInputTokens": 61521,
+            "cacheCreationInputTokens": 7598
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "ed0f6fdf-e28c-4faa-9cd8-f5f07e64d28f",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T14:13:43.250Z",
+        "endedAt": "2026-05-24T14:14:50.215Z",
+        "modelUsage": {
+          "claude-sonnet-4-6": {
+            "inputTokens": 9,
+            "outputTokens": 3451,
+            "cacheReadInputTokens": 143031,
+            "cacheCreationInputTokens": 8130
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "8966e149-a273-4e69-894b-b31524dfae3f",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/remove-xdg-mode/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: remove-xdg-mode\n\n- **verdict**: needs-fix\n- **reviewer**: spec-reviewer\n- **date**: 2026-05-24\n\n---\n\n## Summary\n\nrequest の意図・設計方針・delta spec の構造はいずれも明確で、実装可能な品質に近い。ただし **`verbose-execution-log` delta spec の未更新箇所**が spec と実装の乖離を生む可能性があるため、修正が必要。\n\n---\n\n## Findings\n\n### [MUST FIX] F1: `verbose-execution-log` delta spec — \"logger 層の抽象化\" Requirement が未更新\n\n**場所**: `specrunner/changes/remove-xdg-mode/specs/verbose-execution-log/spec.md`\n\n**問題**: delta spec は \"ログファイルの配置と形式\" Requirement のみを更新しているが、baseline の \"logger 層の抽象化\" Requirement には以下の記述が残る:\n\n```\n- `src/util/xdg.ts` に `resolveXdgStateDir()` ヘルパーを追加して `~/.local/state/specrunner/logs/` パス解決を集約する\n```\n\nこの Requirement が未 MODIFIED のまま残ると、本 change 適用後の authority spec に「`resolveXdgStateDir()` が verbose log パス解決に使われる」という虚偽の記述が残る。tasks.md Task 1 では `resolveXdgStateDir()` の扱いを \"test で使っているため export は残す（確認して不要なら削除）\" と曖昧にしているが、いずれにせよ verbose log のパス解決目的ではなくなるため、spec は更新が必要。\n\n**修正方針**: delta spec に `## Requirements` の `### Requirement: logger 層の抽象化` を追加し、`resolveXdgStateDir()` の verbose log 用途の記述を削除。また `initVerboseLog(repoRoot, jobId)` の signature 変更を本 Requirement に反映する。\n\n---\n\n### [SHOULD FIX] F2: tasks.md Task 7 — managed.ts 対応が TODO のまま\n\n**場所**: `specrunner/changes/remove-xdg-mode/tasks.md` Task 7\n\n**問題**: managed runtime の `storeFactory` 更新について「managed runtime は job state を書かないので影響なしか確認」と TODO が残っている。設計判断を implementer に委ねると、実装時に誤った対応をするリスクがある。\n\n**修正方針**: design.md で managed runtime が `cwd` を持つか / job state を書かないかを確認し、Task 7 の managed.ts チェックボックスを「影響なしのため変更不要」または「要変更」のどちらかに確定する。\n\n---\n\n### [SHOULD FIX] F3: tasks.md Task 8 — `src/state/store.ts` の扱いが不確定\n\n**場所**: `specrunner/changes/remove-xdg-mode/tasks.md` Task 8\n\n**問題**: \"deprecated wrappers に `repoRoot` parameter 追加（or 削除を検討、呼び出し元次第）\" という記述は implementer が追加で調査・判断する必要を生む。\n\n**修正方針**: 呼び出し元を確認済みであれば「削除する」または「引数追加する」のどちらかに確定して記述する。\n\n---\n\n## Approved Items\n\n- request の背景・廃止理由（構造的脆弱性 + 利用者希薄）は明確で、アーキテクチャ上妥当\n- design.md の D1（repoRoot parameter injection）は純粋関数化・テスト容易性・依存可視化の観点でいずれも適切\n- `cli-config-store` delta spec: \"設定ファイルは固定スキーマに従う\" Requirement の header が baseline と一致しており MODIFIED として正しく処理される。`jobs` 廃止後の無視挙動のシナリオも網羅されている\n- `job-state-store` delta spec: \"ジョブ状態ファイルは固定パスに保存される\" を repoRoot parameter 方式に正しく置換。XDG mode シナリオと setJobsLocation 前提シナリオが削除されている\n- `verbose-execution-log` delta spec の \"ログファイルの配置と形式\" Requirement は XDG 分岐の削除と `initVerboseLog(repoRoot, jobId)` への変更が正確に記述されている\n- 受け入れ基準はすべて検証可能な形式で記述されており、テスト対象が明確\n- スコープ外（旧 XDG state file の移行・config/credentials パス変更・worktree 書き込み戦略）の明示は明確で実装スコープの滲み出しリスクが低い\n- security: XDG silent fallback の削除は予測可能パスへの一本化であり、セキュリティ上のリグレッションなし。`git rev-parse` による repoRoot 取得は repo-bound tool として想定内\n\n---\n\n## Required Changes Before Approved\n\n1. `specs/verbose-execution-log/spec.md` に `### Requirement: logger 層の抽象化` の MODIFIED 版を追加（`resolveXdgStateDir()` verbose 用途の削除 + `initVerboseLog(repoRoot, jobId)` の signature 反映）\n2. `tasks.md` Task 7 の managed.ts TODO を確定した記述に更新\n3. `tasks.md` Task 8 の `state/store.ts` 対応を確定した記述に更新（\"or 削除を検討\" を解消）\n"
+        },
+        "startedAt": "2026-05-24T14:09:16.803Z",
+        "endedAt": "2026-05-24T14:11:42.920Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3871,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 11,
+            "outputTokens": 8061,
+            "cacheReadInputTokens": 249123,
+            "cacheCreationInputTokens": 49141
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "e18b2064-f5fe-4af2-95f8-dd8e48ed09fc",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/remove-xdg-mode/spec-review-result-002.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: remove-xdg-mode (Round 2)\n\n- **verdict**: approved\n- **reviewer**: spec-reviewer\n- **date**: 2026-05-24\n\n---\n\n## Summary\n\n前回レビュー (001) で指摘した 3 件（F1 MUST / F2・F3 SHOULD）がすべて解消された。delta spec・design.md・tasks.md の整合性は取れており、実装に進める品質に達している。\n\n---\n\n## Resolution Check (001 → 002)\n\n### F1 [MUST FIX] → ✅ 解消\n\n`specrunner/changes/remove-xdg-mode/specs/verbose-execution-log/spec.md` に `### Requirement: logger 層の抽象化` が追加された。\n\n- `initVerboseLog(repoRoot: string, jobId: string)` への signature 変更が明記された\n- `resolveXdgStateDir()` を verbose log パス解決に使用してはならない（MUST NOT）が明記された\n- baseline の虚偽記述リスクが除去された\n\n### F2 [SHOULD FIX] → ✅ 解消\n\n`tasks.md` Task 7 の managed.ts 対応が確定した。\n\n- \"managed runtime は `this.cwd` を持ち job state を書く（`updateJobState()` を lines 149/192 で呼び出す）\" と根拠付きで記述\n- `storeFactory` を `(id: string) => new JobStateStore(id, this.cwd)` に変更することが明確化された\n- implementer に調査・判断を委ねる TODO が消えた\n\n### F3 [SHOULD FIX] → ✅ 解消\n\n`tasks.md` Task 8 の `src/state/store.ts` 対応が確定した。\n\n- \"deprecated wrappers を削除する\" と明確化\n- \"呼び出し元は managed.ts のみ → managed.ts 側を直接 `JobStateStore` 使用に更新する\" という根拠と対応方針が記述された\n- \"or 削除を検討\" という曖昧表現が除去された\n\n---\n\n## Approved Items (継続)\n\n- request の廃止理由（構造的脆弱性・利用者希薄・コード単純化）は依然として明確で妥当\n- design.md D1（repoRoot parameter injection）は純粋関数化・依存可視化・テスト容易性の観点で適切\n- design.md D4（repo 外では jobs が存在しないのが正常）の fallback 戦略は合理的\n- `cli-config-store` delta spec: `jobs` 廃止後の passthrough 挙動が正確に記述されている\n- `job-state-store` delta spec: `repoRoot` parameter 方式への置換が一貫している\n- `verbose-execution-log` delta spec: 両 Requirement が整合しており、XDG 分岐の削除と新 signature が網羅されている\n- 受け入れ基準はすべて検証可能な形式\n- スコープ外（旧 XDG state file 移行・config/credentials パス・worktree 書き込み戦略）の明示が適切\n\n## Security\n\n- XDG silent fallback の削除は予測可能パスへの一本化であり、セキュリティ上のリグレッションなし\n- `git rev-parse --show-toplevel` による repoRoot 取得は repo-bound tool として想定内\n- 旧 config の `jobs` section passthrough: parse して型に落とさず無視するため injection ベクターなし\n- OWASP Top 10 観点での影響なし（認証・入力処理・API・DB クエリへの変更を含まない）\n"
+        },
+        "startedAt": "2026-05-24T14:14:51.751Z",
+        "endedAt": "2026-05-24T14:16:21.612Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3871,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 9,
+            "outputTokens": 4489,
+            "cacheReadInputTokens": 168554,
+            "cacheCreationInputTokens": 26985
+          }
+        }
+      }
+    ],
+    "spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "01040baa-6f7e-43a2-8763-ece76bdb35e1",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T14:11:44.560Z",
+        "endedAt": "2026-05-24T14:13:41.612Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 718,
+            "outputTokens": 2278,
+            "cacheReadInputTokens": 111856,
+            "cacheCreationInputTokens": 32893
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 10,
+            "outputTokens": 5316,
+            "cacheReadInputTokens": 169825,
+            "cacheCreationInputTokens": 17761
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "89326faf-ba91-4c11-9725-8f29629b11e1",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T14:16:23.193Z",
+        "endedAt": "2026-05-24T14:17:51.280Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2593,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 5988,
+            "cacheReadInputTokens": 54446,
+            "cacheCreationInputTokens": 20338
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "08b08636-671b-4ed2-8086-3c8f9c15b518",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T14:17:52.760Z",
+        "endedAt": "2026-05-24T15:11:17.650Z",
+        "modelUsage": {
+          "claude-sonnet-4-6": {
+            "inputTokens": 3943,
+            "outputTokens": 178474,
+            "cacheReadInputTokens": 42899580,
+            "cacheCreationInputTokens": 535182
+          },
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3974,
+            "outputTokens": 20,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/remove-xdg-mode/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — remove-xdg-mode — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.2s | 0 |\n| 2 | typecheck | passed | 2.2s | 0 |\n| 3 | test | passed | 6.8s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n| 6 | test-coverage | passed | 0.0s | 0 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/remove-xdg-mode-35822876\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t143d\n\n Test Files  248 passed (248)\n      Tests  2777 passed (2777)\n   Start at  00:11:23\n   Duration  6.55s (transform 3.95s, setup 0ms, import 8.17s, tests 11.59s, environment 17ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-m7Jfp5/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-9oKpRr/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/remove-xdg-mode-35822876/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n\n## Phase: test-coverage\n\n```\ntest-coverage: 0/0 must TCs covered (no must TCs defined)\n```\n"
+        },
+        "startedAt": "2026-05-24T15:11:19.661Z",
+        "endedAt": "2026-05-24T15:11:31.414Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "40f54153-1678-44fb-a209-42d3b64c3b53",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/remove-xdg-mode/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — remove-xdg-mode — iter 1\n\n- **verdict**: approved\n- **reviewer**: code-review (iter 1)\n\n---\n\n## Summary\n\n実装は設計通り。module-level state 完全除去 / 純粋関数化 / `repoRoot` 引数注入の 3 点が正確に達成されており、verification (typecheck + 2777 tests) も green。\n\n---\n\n## Must TC カバレッジ\n\n| TC | 確認方法 | 結果 |\n|----|---------|------|\n| TC-XDG-01 | `src/util/xdg.ts` export 確認 — `setJobsLocation` 等なし | ✅ |\n| TC-XDG-02 | `getJobsDir(\"/path\")` → `\"/path/.specrunner/jobs\"` | ✅ |\n| TC-XDG-03 | `getVerboseLogDir(\"/path\")` → `\"/path/.specrunner/logs\"` | ✅ |\n| TC-XDG-04/05 | `getJobStatePath` / `getVerboseLogPath` の引数 `repoRoot, jobId` 形式 | ✅ |\n| TC-CFG-03/04/05 | `SpecRunnerConfig.jobs` field なし、`validateConfig` に jobs block なし | ✅ |\n| TC-JSS-01〜05 | `JobStateStore` コンストラクタ / static メソッド全て `repoRoot` 引数 | ✅ |\n| TC-VL-01〜03 | `initVerboseLog(repoRoot, jobId)` signature、`PrepareResult.repoRoot` あり | ✅ |\n| TC-CLI-01 | 全 6 CLI entry に `setJobsLocation` import/call なし | ✅ |\n| TC-CLI-03 | `cancel.ts` / `ps.ts` が `git rev-parse` で `repoRoot` を解決 | ✅ |\n| TC-RT-01/02 | `local.ts` / `managed.ts` の `storeFactory: (id) => new JobStateStore(id, this.cwd)` | ✅ |\n| TC-RT-04 | `state/store.ts` が deprecated wrappers 完全削除（ファイルほぼ空） | ✅ |\n| TC-DOC-01 | `src/prompts/rules.ts` L80-81 から `\"xdg\"` 言及削除済み | ✅ |\n| TC-DOC-02 | `specrunner/project.md` L41 から XDG 括弧書き削除済み | ✅ |\n| TC-TC-01/02/04/05 | `xdg.test.ts` — `setJobsLocation` / `resetJobsLocation` / `afterEach` 呼び出しなし | ✅ |\n| TC-TC-03 | `schema.test.ts` — 旧 jobs validation テスト (TC-JOBS-03〜08) 削除済み | ✅ |\n| TC-E2E-04/05 | typecheck pass / 2777 tests pass | ✅ |\n\n---\n\n## Findings\n\n### F-01 — stale mock field in `tests/unit/cli/resume.test.ts` (advisory)\n\n```ts\n// tests/unit/cli/resume.test.ts:29\nvi.mock(\"../../../src/config/store.js\", () => ({\n  loadConfig: vi.fn().mockResolvedValue({\n    runtime: \"local\",\n    pipeline: { maxRetries: 2 },\n    agents: {},\n    jobs: { location: \"xdg\" },  // ← stale: SpecRunnerConfig.jobs は存在しない\n  }),\n}));\n```\n\n`SpecRunnerConfig` から `jobs` field が削除されたため、この mock fixture の `jobs` フィールドは型的に存在しない未知フィールドとして silently 無視される。`vi.fn().mockResolvedValue()` の戻り型は `any` なので TypeScript はエラーを出さない。\n\nTC-TC-06 (should: `grep -r \"jobs.location\"` のヒット数 0) に対応する唯一の残存箇所。\n\n**影響**: runtime に影響なし。テストは green のまま通過。  \n**推奨**: 次の機会に `jobs: { location: \"xdg\" }` 行を削除する（今回 block 不要）。\n\n---\n\n## Overall Assessment\n\n設計判断 (D1〜D5) が全て忠実に実装されている。特に:\n\n- `getJobsDir` / `getVerboseLogDir` が純粋関数になり、module-level state の silent fallback リスクが構造的に除去された\n- `storeFactory` closure capture パターンで `StoreFactory` 型シグネチャを変えずに `repoRoot` を注入 — 型互換を維持しつつ依存を可視化\n- `state/store.ts` deprecated wrappers を全削除しコードパスをシンプル化\n\nF-01 はコメント/fixture の整理であり、機能的影響なし。\n"
+        },
+        "startedAt": "2026-05-24T15:11:31.431Z",
+        "endedAt": "2026-05-24T15:14:42.134Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3981,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 303,
+            "outputTokens": 10780,
+            "cacheReadInputTokens": 490009,
+            "cacheCreationInputTokens": 76931
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "0b2f4333-19d1-42ed-a2e3-735ea5763a3e",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T15:14:43.745Z",
+        "endedAt": "2026-05-24T15:17:37.714Z",
+        "modelUsage": {
+          "claude-sonnet-4-6": {
+            "inputTokens": 14,
+            "outputTokens": 7486,
+            "cacheReadInputTokens": 272060,
+            "cacheCreationInputTokens": 30939
+          },
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2701,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/remove-xdg-mode/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — remove-xdg-mode\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/390\n- **Number**: 390\n- **CreatedAt**: 2026-05-24T15:17:40.770Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-24T15:17:39.352Z",
+        "endedAt": "2026-05-24T15:17:40.772Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/390",
+    "number": 390,
+    "createdAt": "2026-05-24T15:17:40.770Z"
+  }
+}

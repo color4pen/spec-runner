@@ -1,0 +1,521 @@
+{
+  "version": 1,
+  "jobId": "31030a73-3550-40f7-a4ef-bb871e260ddf",
+  "createdAt": "2026-06-01T07:29:01.931Z",
+  "updatedAt": "2026-06-01T11:12:06.133Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/b9-bypass-burndown/request.md",
+    "title": "B-9 の status 直書き 3 箇所を transitionJob 経由に解消する（B-9 burn-down）",
+    "type": "refactoring",
+    "slug": "b9-bypass-burndown"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 9886,
+  "branch": "refactor/b9-bypass-burndown-31030a73",
+  "history": [
+    {
+      "ts": "2026-06-01T07:29:01.931Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-06-01T07:29:03.900Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-06-01T07:34:53.164Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-06-01T07:34:53.166Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-06-01T07:34:53.167Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-06-01T07:34:53.184Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-06-01T07:34:53.185Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-06-01T07:34:53.186Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-06-01T07:34:53.186Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-06-01T07:37:17.530Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-06-01T07:37:17.534Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-06-01T07:37:17.534Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-06-01T07:37:17.535Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-06-01T07:40:04.238Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-06-01T07:40:04.241Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-06-01T07:40:04.242Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-06-01T07:44:25.449Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-06-01T07:44:25.451Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-06-01T07:44:25.452Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-06-01T07:44:25.453Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-06-01T07:44:39.288Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-06-01T07:44:39.291Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-06-01T07:44:39.291Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-06-01T07:44:39.291Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-06-01T07:44:39.292Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-06-01T07:48:20.784Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-06-01T07:48:20.787Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-06-01T07:48:20.787Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → delta-spec-validation"
+    },
+    {
+      "ts": "2026-06-01T07:48:20.788Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-06-01T07:48:20.806Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-06-01T07:48:20.808Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → adr-gen"
+    },
+    {
+      "ts": "2026-06-01T07:48:20.809Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-06-01T07:48:37.775Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-06-01T07:48:37.777Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-06-01T07:48:37.777Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-06-01T07:48:39.654Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-06-01T07:48:39.659Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-06-01T11:12:06.133Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "63fc2117-f8a6-4a89-b2f6-9936a83dbdc8",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-01T07:29:03.907Z",
+        "endedAt": "2026-06-01T07:34:51.302Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 8240,
+            "outputTokens": 22,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 25,
+            "outputTokens": 13515,
+            "cacheReadInputTokens": 1053246,
+            "cacheCreationInputTokens": 71730
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/b9-bypass-burndown/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-06-01T07:34:53.168Z",
+        "endedAt": "2026-06-01T07:34:53.184Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/b9-bypass-burndown/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-06-01T07:48:20.789Z",
+        "endedAt": "2026-06-01T07:48:20.806Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "81c14da4-059e-40df-9813-73aacbd59c75",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/b9-bypass-burndown/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result\n\n<!-- FORMAT REQUIREMENTS (machine-parsed):\n- The verdict line MUST appear before the Findings table.\n- verdict line format (exact): `- **verdict**: <value>` at the start of a line\n- Valid verdict values: approved | needs-fix | escalation\n  - approved:    specification is complete, consistent, and ready for implementation\n  - needs-fix:   specification has issues that must be resolved before implementation\n  - escalation:  unresolvable conflicts, missing context, or requires human judgment\n- Findings table MUST have exactly 6 columns in this order:\n  # | Severity | Category | File | Description | How to Fix\n- Valid Severity values (uppercase): CRITICAL | HIGH | MEDIUM | LOW\n  - CRITICAL: production outage, data loss, security breach\n  - HIGH:     functional failure, clear bug, no workaround — blocks approval\n  - MEDIUM:   quality degradation, maintainability issue, future risk\n  - LOW:      informational, style, minor improvement\n- If no findings, write a table row with \"None\" or omit the table body.\n- Approval is blocked when CRITICAL ≥ 1 OR HIGH ≥ 1.\n-->\n\n- **verdict**: approved\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | LOW | correctness | `src/core/step/executor.ts` | `executor.ts:218-219` では `store.fail()` が `transitionJob` 経由になった後、同じ catch ブロック内で `store.appendHistory()` を呼ぶため、history に遷移 entry が 2 件追加される（transitionJob 由来 + appendHistory 由来）。design の Risk 欄で「forensic ログの重複は情報増加として許容」と明示されており blocking ではない。ただし将来的に history を解析するコードが重複を前提としない場合に混乱の余地がある。 | 本 change では対応不要。将来 `fail()` 呼び出し元の `appendHistory` と `transitionJob` 付与 entry の統合が必要であれば別 request で対処する。 |\n\n## Summary\n\n### Architecture\n- **依存方向**: `store/ → state/lifecycle.ts` の import 追加は persistence → shared-kernel の下方向であり、既存の `schema.ts` import と同層。B-3 違反なし。\n- **責務分離**: status mutation を `transitionJob` に集約するのは B-9 invariant の趣旨に合致。純粋関数への委譲であり副作用の所在が明確。\n\n### Correctness\n\n**D1 (`fail()`)**: 10 call-site 全てを検証した。`runner.ts:191` は `diskState.status === \"running\"` ガード付き、`executor.ts` / `executor-helpers.ts` は step 実行中エラーハンドラ（prior state は `running`）、`runner.ts:118,169` は job create 直後（`create()` が `running` で初期化）。`running → failed` は `VALID_TRANSITIONS` で合法。`failed → failed` の noop 保護も `transitionJob` が担う。\n\n**D2 (`exit-guard.ts`)**: `if (state.status !== \"running\") continue;` が先行ガードとして機能。`running → awaiting-resume` は合法。\n\n**D3 (`local.ts` signal-handler)**: race condition（`awaiting-merge` 時の SIGINT）で `transitionJob` が throw しても既存の `catch {}` が swallow し `process.exit(130)` へ進む。state は変更されず正しい挙動。`managed.ts` との一貫性も担保。\n\n**D4 (suppression test 削除)**: B-9 regression guard（空 allowlist で synthetic violation を検出）と live B-9 scan test（bypass 解消後は violation ゼロ）はいずれも B-9 エントリ空でも機能する。suppression test は空 allowlist で fail するため削除は必然。`filterViolations` の suppression 動作は B-1 エントリ（3 件残存）でカバー継続。\n\n### Completeness\nT-01〜T-07 が全受け入れ基準をカバー。T-01 の grep scan による全件確定、T-02〜T-04 の各 bypass 修正、T-05 の allowlist 全削除、T-06 の suppression test 削除、T-07 の verification green 確認まで抜け漏れなし。\n",
+          "toolResult": {
+            "ok": true,
+            "approved": true
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-01T07:34:53.193Z",
+        "endedAt": "2026-06-01T07:37:15.995Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5239,
+            "outputTokens": 22,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 14,
+            "outputTokens": 6405,
+            "cacheReadInputTokens": 387342,
+            "cacheCreationInputTokens": 40989
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "525a71f5-e76e-4e65-a0cf-2ce4a987af34",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-01T07:37:17.548Z",
+        "endedAt": "2026-06-01T07:40:02.601Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2502,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 8,
+            "outputTokens": 8939,
+            "cacheReadInputTokens": 104617,
+            "cacheCreationInputTokens": 24206
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "7aa201fe-095d-4f76-92da-42cbb8f4ef81",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-01T07:40:04.255Z",
+        "endedAt": "2026-06-01T07:44:23.881Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5264,
+            "outputTokens": 22,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 30,
+            "outputTokens": 11940,
+            "cacheReadInputTokens": 1443921,
+            "cacheCreationInputTokens": 61777
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/b9-bypass-burndown/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — b9-bypass-burndown — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 0.3s | 0 |\n| 2 | typecheck | passed | 2.5s | 0 |\n| 3 | test | passed | 8.2s | 0 |\n| 4 | lint | passed | 1.3s | 0 |\n\n## Phase: build\n\n```\nCLI Building entry: bin/specrunner.ts\nCLI Using tsconfig: tsconfig.json\nCLI tsup v8.5.1\nCLI Using tsup config: ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/b9-bypass-burndown-31030a73/tsup.config.ts\nCLI Target: node20\nCLI Cleaning output folder\nESM Build start\nESM dist/specrunner.js 613.90 KB\nESM ⚡️ Build success in 37ms\n\n$ tsup\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/b9-bypass-burndown-31030a73\n\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t151d\n\n Test Files  287 passed (287)\n      Tests  3284 passed (3284)\n   Start at  16:44:28\n   Duration  7.94s (transform 4.39s, setup 0ms, import 11.10s, tests 14.49s, environment 19ms)\n\n\n$ vitest run\nWarning: /tmp/claude-501/cred-test-IDLbvc/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /tmp/claude-501/cred-test-T1ofXb/specrunner/credentials.json has loose permissions (recommend 0600).\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...\nGitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Required status check \"ci/build\" is expected, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/b9-bypass-burndown-31030a73/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.\n\n```\n\n## Phase: lint\n\n```\n$ eslint ./src --max-warnings 0\n\n```\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-06-01T07:44:25.454Z",
+        "endedAt": "2026-06-01T07:44:39.288Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "62caee19-d67d-4548-b121-7776b49a9544",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/b9-bypass-burndown/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — iteration 001\n\n<!-- FORMAT REQUIREMENTS (machine-parsed):\n- verdict line format (exact): `- **verdict**: <value>` at the start of a line\n- Valid verdict values: approved | needs-fix | escalation\n- iteration line format (exact): `- **iteration**: NNN` (3-digit zero-padded integer)\n- Findings table MUST have exactly 7 columns in this order:\n  # | Severity | Category | File | Description | How to Fix | Fix\n  - Fix column: yes = fixer should address this finding; no = skip (pre-existing / out-of-scope)\n- Scores table columns: Category | Score | Weight\n  - Valid Category values: correctness | security | architecture | performance | maintainability | testing\n  - Score: integer 1-10\n  - Weight: decimal as defined below\n- total line format (exact): `- **total**: <decimal>`\n- Default weights: correctness=0.30, security=0.25, architecture=0.15, performance=0.10, maintainability=0.10, testing=0.10\n- Scores table is optional but recommended. The verdict line is the authoritative decision.\n-->\n\n- **verdict**: approved\n- **iteration**: 001\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix | Fix |\n|---|----------|----------|------|-------------|------------|-----|\n| 1 | LOW | maintainability | `src/store/job-state-store.ts` | `fail()` 経由で `transitionJob` が history entry を自動付与するため、呼び出し元が別途 `appendHistory` を呼ぶと二重記録になる。設計 D1 が「forensic ログとして情報増加は許容」と明示しているので blocker ではない。 | 不要。設計済みの trade-off。 | no |\n\n## Scores\n\n| Category | Score | Weight |\n|----------|-------|--------|\n| correctness | 9 | 0.30 |\n| security | 9 | 0.25 |\n| architecture | 10 | 0.15 |\n| performance | 10 | 0.10 |\n| maintainability | 9 | 0.10 |\n| testing | 9 | 0.10 |\n\n- **total**: 9.25\n\n## Summary\n\n### 受け入れ基準チェック\n\n- [x] **status 直書き 3 箇所が `transitionJob` 経由に変換済み**\n  - `fail()` (`job-state-store.ts`): `transitionJob(state, \"failed\", { trigger: \"store-fail\", ... })` ✓\n  - exit-guard (`exit-guard.ts`): `transitionJob(state, \"awaiting-resume\", { trigger: \"exit-guard\", ... })` ✓\n  - signal-handler (`local.ts`): `transitionJob(current, \"awaiting-resume\", { trigger: \"signal-handler\", ... })` ✓\n- [x] **`arch-allowlist.ts` の B-9 エントリ 0 件**: ARCH_ALLOWLIST に `invariant: \"B-9\"` エントリなし ✓\n- [x] **B-9 arch test green**: 実違反ゼロ（live scan passes）、regression guard は空 allowlist でも synthetic violation を検出 ✓\n- [x] **各遷移が VALID_TRANSITIONS で合法**: `running → failed` ✓、`running → awaiting-resume` ✓。race condition（`awaiting-merge → awaiting-resume`）は throw→catch→swallow で state 不変（D3 明記済）✓\n- [x] **bypass 対象が grep authoritative に 3 件確定**: T-01 scan で B9-store-fail / B9-exit-guard / B9-signal-handler の 3 件確定。残存マッチはすべてテスト除外対象（create() init / コメント行 / core/verification/）✓\n- [x] **verification 4 コマンド green**: build ✓ / typecheck ✓ / lint ✓ / test (287 files, 3284 tests) ✓\n\n### 遷移合法性の独立検証\n\n`VALID_TRANSITIONS` を直接参照して確認:\n\n| 遷移 | 合法か | 備考 |\n|------|--------|------|\n| `running → failed` (`fail()`) | ✓ | `running` → `{awaiting-resume, awaiting-merge, failed, ...}` |\n| `running → awaiting-resume` (exit-guard) | ✓ | guard `status !== \"running\" → continue` で保証 |\n| `running → awaiting-resume` (signal-handler) | ✓ | 通常ケース |\n| `awaiting-merge → awaiting-resume` (signal race) | ✗ (throw) | catch → swallow → `process.exit(130)` → state 不変。`managed.ts` と同パターン ✓ |\n| `failed → failed` (二重呼び出し) | noop | same-status 判定で state 変更なし ✓ |\n\n### テスト構成の確認\n\n- **suppression test 削除**: `\"does not flag status writes that are correctly allowlisted (B-9 allowlist suppression)\"` がファイルに存在しないことを確認 ✓\n- **regression guard 存在**: `\"detects new direct status write not in allowlist (B-9 regression guard)\"` (line 666) が残存 ✓\n- **live scan 存在**: `\"grep finds no direct JobState.status writes ...\"` (line 428) が残存 ✓\n- B-1 entries（3 件）が allowlist に維持されていることを確認 ✓\n\n### local.ts vs managed.ts パターン一致 (TC-017)\n\n両ファイルとも `canTransition` guard なしで `transitionJob` を直呼び。例外は既存 `catch` で swallow。完全一致 ✓\n",
+          "toolResult": {
+            "ok": true,
+            "approved": true,
+            "fixableCount": 0
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-01T07:44:39.305Z",
+        "endedAt": "2026-06-01T07:48:19.164Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6060,
+            "outputTokens": 20,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 249,
+            "outputTokens": 10777,
+            "cacheReadInputTokens": 662647,
+            "cacheCreationInputTokens": 53613
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "9a01cddd-55b3-471f-8221-f3addebf79c6",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-01T07:48:20.817Z",
+        "endedAt": "2026-06-01T07:48:37.712Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 563,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 3,
+            "outputTokens": 67,
+            "cacheReadInputTokens": 7568,
+            "cacheCreationInputTokens": 5917
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/b9-bypass-burndown/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — b9-bypass-burndown\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/494\n- **Number**: 494\n- **CreatedAt**: 2026-06-01T07:48:39.651Z\n- **Action**: created\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-06-01T07:48:37.778Z",
+        "endedAt": "2026-06-01T07:48:39.652Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/494",
+    "number": 494,
+    "createdAt": "2026-06-01T07:48:39.651Z"
+  }
+}

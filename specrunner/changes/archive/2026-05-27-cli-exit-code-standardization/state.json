@@ -1,0 +1,792 @@
+{
+  "version": 1,
+  "jobId": "1d9f1d0c-63c9-438e-813d-d770800fb739",
+  "createdAt": "2026-05-27T02:56:05.881Z",
+  "updatedAt": "2026-05-27T03:53:26.620Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/cli-exit-code-standardization.md",
+    "title": "CLI exit code の全コマンド統一",
+    "type": "spec-change",
+    "slug": "cli-exit-code-standardization"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 28609,
+  "branch": "change/cli-exit-code-standardization-1d9f1d0c",
+  "history": [
+    {
+      "ts": "2026-05-27T02:56:05.881Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-27T02:56:07.186Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-27T03:00:22.969Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-27T03:00:22.972Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-27T03:00:22.973Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-27T03:00:22.995Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-27T03:00:22.996Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → delta-spec-fixer"
+    },
+    {
+      "ts": "2026-05-27T03:00:22.997Z",
+      "step": "delta-spec-fixer-started",
+      "status": "started",
+      "message": "Starting delta-spec-fixer step"
+    },
+    {
+      "ts": "2026-05-27T03:00:44.821Z",
+      "step": "delta-spec-fixer-verdict",
+      "status": "ok",
+      "message": "delta-spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T03:00:44.823Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-fixer → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-27T03:00:44.824Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-27T03:00:44.843Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T03:00:44.845Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-27T03:00:44.845Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-27T03:00:44.846Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-27T03:04:29.209Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-27T03:04:29.211Z",
+      "step": "spec-review",
+      "status": "warning",
+      "message": "spec-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-27T03:04:29.211Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → spec-fixer"
+    },
+    {
+      "ts": "2026-05-27T03:04:29.212Z",
+      "step": "spec-fixer-started",
+      "status": "started",
+      "message": "Starting spec-fixer step"
+    },
+    {
+      "ts": "2026-05-27T03:07:30.127Z",
+      "step": "spec-fixer-verdict",
+      "status": "ok",
+      "message": "spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T03:07:30.129Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → delta-spec-validation (iter 1)"
+    },
+    {
+      "ts": "2026-05-27T03:07:30.131Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-27T03:07:30.150Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T03:07:30.152Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-27T03:07:30.152Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-27T03:07:30.152Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-27T03:10:24.529Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T03:10:24.531Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T03:10:24.531Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-27T03:10:24.533Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-27T03:12:10.452Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-27T03:12:10.455Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 2)"
+    },
+    {
+      "ts": "2026-05-27T03:12:10.456Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-27T03:32:12.748Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-27T03:32:12.751Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-27T03:32:12.752Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-27T03:32:12.752Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-27T03:32:27.121Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-27T03:32:27.124Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-27T03:32:27.124Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-27T03:32:27.125Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-27T03:32:27.125Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-27T03:37:26.781Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-27T03:37:26.784Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-27T03:37:26.784Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-27T03:37:26.785Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-27T03:37:46.953Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T03:37:46.956Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-27T03:37:46.957Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-27T03:37:46.957Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-27T03:43:40.392Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T03:43:40.396Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T03:43:40.396Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-27T03:43:40.398Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-27T03:43:40.420Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T03:43:40.423Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → adr-gen"
+    },
+    {
+      "ts": "2026-05-27T03:43:40.424Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-27T03:43:50.362Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-27T03:43:50.364Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-27T03:43:50.365Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-27T03:43:51.907Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-27T03:43:51.912Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-27T03:53:26.620Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "5277f443-9555-4efa-b1fd-e83313bf62bf",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T02:56:07.193Z",
+        "endedAt": "2026-05-27T03:00:21.270Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 7092,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 28,
+            "outputTokens": 10642,
+            "cacheReadInputTokens": 1498475,
+            "cacheCreationInputTokens": 87934
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/cli-exit-code-standardization/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: needs-fix\n\n## Violations\n\n| Path | Reason | Suggested Fix |\n|------|--------|---------------|\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/cli-exit-code-standardization-1d9f1d0c/specrunner/changes/cli-exit-code-standardization/specs/cli-commands/spec.md` | `missing-scenario` | Add at least one #### Scenario: block describing observable behavior |\n\n## How to Fix\n\n- Move all delta spec files to `specs/<capability-name>/spec.md` (canonical path)\n- Ensure each spec.md has a `## Requirements` section (and optionally `## Removed` / `## Renamed`)\n- Ensure the `## Requirements` section contains at least one `### Requirement:` block\n"
+        },
+        "startedAt": "2026-05-27T03:00:22.974Z",
+        "endedAt": "2026-05-27T03:00:22.995Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/cli-exit-code-standardization/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-27T03:00:44.825Z",
+        "endedAt": "2026-05-27T03:00:44.843Z"
+      },
+      {
+        "attempt": 3,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/cli-exit-code-standardization/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-27T03:07:30.131Z",
+        "endedAt": "2026-05-27T03:07:30.150Z"
+      },
+      {
+        "attempt": 4,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/cli-exit-code-standardization/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-27T03:43:40.398Z",
+        "endedAt": "2026-05-27T03:43:40.420Z"
+      }
+    ],
+    "delta-spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "56a0ca33-e723-44dd-b9b7-fe00bf940bec",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T03:00:23.004Z",
+        "endedAt": "2026-05-27T03:00:43.302Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 921,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 6,
+            "outputTokens": 950,
+            "cacheReadInputTokens": 43310,
+            "cacheCreationInputTokens": 16213
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "a081614b-b44f-4e67-b611-b4cd9c0e6843",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/cli-exit-code-standardization/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result\n\n- **verdict**: needs-fix\n- **reviewer**: spec-review agent\n- **date**: 2026-05-27\n\n---\n\n## 総評\n\n設計の方向性（0/1/2 統一、宣言的マッピング、handler の `process.exit` 排除）は正しく、実装コストも適切に絞られている。ただし、delta spec が baseline spec との整合を担保できていない箇所が 1 件あり、これがあると authority spec merge 後に spec 内部矛盾が生じる。加えて、tasks.md 内の矛盾が 1 件。いずれも実装前に修正が必要。\n\n---\n\n## Findings\n\n### [HIGH] Delta spec が baseline の preflight 要件を MODIFIED していない\n\n**場所**: `specs/cli-commands/spec.md`\n\n**問題**:\nbaseline の `specrunner/specs/cli-commands/spec.md` には次の要件が存在する:\n\n> Requirement: `specrunner job start` は起動前に fail-fast バリデーションを固定順序で実行する\n> 1. `~/.config/specrunner/config.json` が存在すること（なければ … + **exit 1**）\n> 3. cwd が git リポジトリであること（… + **exit 1**）\n> 4. `git remote get-url origin` が `github.com` を指すこと（… + **exit 1**）\n\nD3 / EXIT_CODE_MAP では `CONFIG_MISSING` / `NOT_GIT_REPO` / `REMOTE_NOT_GITHUB` を exit 2 に再分類する。これにより上記 baseline シナリオの期待値が変わるが、delta spec にそれらエラーコードが対応するシナリオの **MODIFIED** バージョンが存在しない。\n\ndelta spec の仕組みでは、header が完全一致しない Requirement は baseline にそのまま残る。merge 後の authority spec は「preflight で CONFIG_MISSING → exit 1（baseline）」と「CONFIG_MISSING → exit 2（delta）」が共存し、内部矛盾になる。\n\n**修正**: delta spec の `## Requirements` に以下を追加する。\n\n```markdown\n### Requirement: `specrunner job start` は起動前に fail-fast バリデーションを固定順序で実行する\n\n（本文は baseline と同様。シナリオのみ exit code を 1 → 2 に更新）\n\n#### Scenario: config が存在しない（ステップ 1 で失敗）\n\n- **WHEN** `~/.config/specrunner/config.json` が存在しない状態で `specrunner run req.md` を実行する\n- **THEN** ステップ 1 で即時 exit 2 し、git repo チェック等は実行しない\n\n#### Scenario: github token が欠けている（ステップ 2 で失敗）\n\n- **WHEN** config は存在するが `github.accessToken` が未設定\n- **THEN** ステップ 2 で `Run 'specrunner login' first.` を stderr に出し exit 2（前提条件不足）。cwd チェック等は実行しない\n\n#### Scenario: origin が GitHub 以外（ステップ 4 で失敗）\n\n- **WHEN** config と token は揃い cwd は git repo だが origin が gitlab.com を指す\n- **THEN** ステップ 4 で `'origin' must point to github.com.` を stderr に出し exit 2（前提条件不足）\n```\n\nheader を baseline と完全一致させることで tool が MODIFIED に自動分類し、authority spec が正しく更新される。\n\n---\n\n### [MEDIUM] Task 8 と Task 9 が `run.ts` slug-not-found の exit code で矛盾している\n\n**場所**: `tasks.md` Task 8 / Task 9\n\n**問題**:\n- Task 8 (D5 準拠): 「`runRunCore()` でファイルが見つからない場合（slug としても解決できない場合）を exit 2 に変更」\n- Task 9: 「slug 解決失敗（ファイルも slug も存在しない）→ exit 1（現状維持、存在しないリソースは「一般エラー」に分類。引数フォーマット自体は正しいため）」\n\n両タスクが同じパスについて exit 2 と exit 1 を指示しており、実装者が判断できない状態。\n\n`request validate` の同一パス（slug-not-found）は現在 exit 1 で `request review` も同様（command-registry.ts 264, 289 行目）。`run` だけ挙動を変えるかどうかは設計上の判断であり、一方を削除してから実装に進む必要がある。\n\n**修正**: design.md または tasks.md で意図を明示する。推奨は Task 9 の方針（slug-not-found = exit 1）— 引数の形式は valid だが存在しないリソースを指しているだけなので runtime error 扱いが自然、かつ `request validate` / `request review` との一貫性がある。Task 8 の当該箇所を削除し、design D5 を更新する。\n\n---\n\n### [LOW] `job finish --job <uuid>` の不正 UUID チェックが exit 1 のまま（設計・タスクに記載なし）\n\n**場所**: `src/cli/command-registry.ts` 449–451 行目\n\n```typescript\nif (jobFlagValue !== undefined && !UUID_REGEX.test(jobFlagValue)) {\n  logError(\"invalid jobId format\");\n  process.exit(1);  // フォーマット不正 → exit 2 であるべき\n}\n```\n\n`job cancel` の同様チェック（Task 9 で exit 2 に変更）と整合性が取れない。設計・タスクに記載がないため実装時に見落とされるリスクがある。tasks.md Task 9 にこのケースを追記することを推奨する。\n\n---\n\n### [LOW] subcommand worktree guard の `process.exit(1)` が設計でカバーされていない\n\n**場所**: `bin/specrunner.ts` 62 行目\n\n```typescript\nprocess.exit(1);  // WORKTREE_GUARD → EXIT_CODE_MAP では exit 2\n```\n\n`run` コマンドのワークツリーガードは `worktreeGuardError` を throw → catch → `e.exitCode` (D6) で exit 2 になる経路。しかし `job start` / `resume` / `finish` の subcommand ガードは throw せず `process.exit(1)` を直接呼ぶため、D6 の恩恵を受けない。EXIT_CODE_MAP で WORKTREE_GUARD → exit 2 なのに、このパスは exit 1 のままになる。\n\ntasks.md にこのケースの修正を追記することを推奨する（throw に変更して catch 経路に乗せるか、`EXIT_CODE.ARG_ERROR` を直接使う）。\n\n---\n\n## セキュリティ評価\n\n- **パストラバーサル対策**: `VALID_JOB_ID_CHARS` ガード（cancel コマンド）、`SLUG_REGEX` ガード（request 系コマンド）はそのまま維持されており、exit code 変更によって検証ロジック自体は変わらない。問題なし。\n- **エラー情報の漏洩**: `SpecRunnerError.hint` は stderr に出力されるが、変更前後で内容は変わらない。問題なし。\n- **`github-device.ts` の `process.exit` → throw への変更**: エラーを caller に伝播させる変更であり、ハンドラが適切に catch する限り安全。むしろテスタビリティが向上する。問題なし。\n- OWASP Top 10 観点での新規リスクなし。\n\n---\n\n## 承認条件\n\n以下の修正を delta spec と tasks.md に反映した後、再レビューなしで実装に進むことができる:\n\n1. `specs/cli-commands/spec.md` に「Requirement: `specrunner job start` は起動前に fail-fast バリデーションを固定順序で実行する」の MODIFIED バージョンを追加し、exit 1 → exit 2 のシナリオを記載する\n2. Task 8 / Task 9 の slug-not-found exit code 矛盾を解消し、どちらか一方に統一する\n3. [任意] Task 9 に `job finish --job` UUID チェック (exit 1 → exit 2) を追記する\n4. [任意] Task 9 または Task 3 に subcommand worktree guard の `process.exit(1)` 修正を追記する\n"
+        },
+        "startedAt": "2026-05-27T03:00:44.854Z",
+        "endedAt": "2026-05-27T03:04:27.507Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4344,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 22,
+            "outputTokens": 11091,
+            "cacheReadInputTokens": 716441,
+            "cacheCreationInputTokens": 61521
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "8e782689-84ed-42e9-86cd-037c0f11ca02",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/cli-exit-code-standardization/spec-review-result-002.md",
+          "error": null,
+          "fileContent": "# Spec Review Result\n\n- **verdict**: approved\n- **reviewer**: spec-review agent\n- **date**: 2026-05-27\n\n---\n\n## 総評\n\nspec-review-001 で指摘した HIGH / MEDIUM / LOW の全 4 件が解消されている。設計・タスク・delta spec の整合性が取れており、実装に進める状態。\n\n---\n\n## spec-review-001 指摘の解消確認\n\n### [HIGH] ✅ Delta spec が baseline の preflight 要件を MODIFIED していない → 解消\n\n`specs/cli-commands/spec.md` に `### Requirement: \\`specrunner job start\\` は起動前に fail-fast バリデーションを固定順序で実行する` が追加され、header が baseline と完全一致している。ステップ 1–4 は exit 1 → exit 2 に更新済み。ステップ 5（request.md not found）は exit 1 維持。シナリオも exit 2 に更新済み。\n\n### [MEDIUM] ✅ Task 8 / Task 9 の slug-not-found exit code 矛盾 → 解消\n\nTask 8 に「`runRunCore()` でファイルが見つからない場合は exit 1 のまま維持する（D5 参照）」という注記が追加され、Task 9 の「slug 解決失敗 → exit 1（現状維持）」と整合している。\n\n### [LOW] ✅ `job finish --job <uuid>` UUID チェック → 解消\n\nTask 9 に「`job finish --job <uuid>` の不正 UUID チェック → exit 2 に変更」が追記された。`job cancel` との整合が取れている。\n\n### [LOW] ✅ subcommand worktree guard の `process.exit(1)` → 解消\n\nTask 9 に「`bin/specrunner.ts` 62 行目の subcommand worktree guard `process.exit(1)` → `process.exit(EXIT_CODE.ARG_ERROR)` に変更」が追記された。WORKTREE_GUARD → exit 2 の EXIT_CODE_MAP と整合する。\n\n---\n\n## 新規 Findings\n\n### [LOW] exit code 表の \"存在しないファイル\" 例示が request.md not found（exit 1）と表面的に矛盾する\n\n**場所**: `specs/cli-commands/spec.md` Requirements 表\n\n```\n| 2 | 引数エラー | 不正な slug、存在しないファイル、フラグの矛盾、前提条件不足 |\n```\n\n「存在しないファイル → exit 2」と読めるが、同じ spec の preflight requirement ステップ 5 は「request.md not found → exit 1」を明示している。design D5 の根拠（引数フォーマットは正しく、存在しないリソースへの参照は runtime error）は一貫しており、「例」列のラベルも exhaustive ではなく例示であるため **実装上のブロッカーではない**。ただし「存在しない設定ファイル」など対象を絞った表現に将来的に改めると誤読を防げる。\n\n---\n\n## セキュリティ評価\n\n- **入力バリデーション**: `VALID_JOB_ID_CHARS`（cancel）/ `SLUG_REGEX`（request 系）のバリデーションロジック自体は変更なし。exit code が変わるだけで検証強度に影響なし。\n- **エラー情報の漏洩**: `SpecRunnerError.hint` の出力内容は変更なし。\n- **`github-device.ts` の throw リファクタリング**: process.exit → throw への変更はテスタビリティ向上であり、caller の catch が適切に設計されている（Task 4）。情報漏洩リスクなし。\n- **OWASP Top 10**: 新規リスクなし。\n\n---\n\n## 承認条件\n\n修正不要。実装に進んでよい。\n"
+        },
+        "startedAt": "2026-05-27T03:07:30.161Z",
+        "endedAt": "2026-05-27T03:10:22.576Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4344,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 17,
+            "outputTokens": 8760,
+            "cacheReadInputTokens": 404865,
+            "cacheCreationInputTokens": 34643
+          }
+        }
+      }
+    ],
+    "spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "cc440ee3-9a25-470d-a386-b5cb3e5d3d66",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T03:04:29.224Z",
+        "endedAt": "2026-05-27T03:07:28.429Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 758,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 10,
+            "outputTokens": 10506,
+            "cacheReadInputTokens": 253541,
+            "cacheCreationInputTokens": 44893
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "7df56b20-314e-4633-aee3-160e63a33f75",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T03:10:24.543Z",
+        "endedAt": "2026-05-27T03:12:08.741Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1723,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 7832,
+            "cacheReadInputTokens": 42840,
+            "cacheCreationInputTokens": 20432
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "47b02e42-87ff-4d42-8890-dc35b17fcc6f",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T03:12:10.469Z",
+        "endedAt": "2026-05-27T03:32:11.150Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4455,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 1449,
+            "outputTokens": 76031,
+            "cacheReadInputTokens": 9755048,
+            "cacheCreationInputTokens": 195260
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/cli-exit-code-standardization/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — cli-exit-code-standardization — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.4s | 0 |\n| 2 | typecheck | passed | 2.3s | 0 |\n| 3 | test | passed | 7.5s | 0 |\n| 4 | lint | passed | 1.7s | 0 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/cli-exit-code-standardization-1d9f1d0c\n\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t146d\n\n Test Files  270 passed (270)\n      Tests  3037 passed (3037)\n   Start at  12:32:16\n   Duration  7.26s (transform 3.95s, setup 0ms, import 8.97s, tests 12.84s, environment 18ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-rFhREy/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-N7oOpc/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\n[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...\nGitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Required status check \"ci/build\" is expected, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/cli-exit-code-standardization-1d9f1d0c/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n```\n$ eslint ./src --max-warnings 0\n\n```\n"
+        },
+        "startedAt": "2026-05-27T03:32:12.753Z",
+        "endedAt": "2026-05-27T03:32:27.121Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "113e6687-44fa-4c9f-b632-a7752255c7f9",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/cli-exit-code-standardization/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — cli-exit-code-standardization — iter 1\n\n## Summary\n\n- **verdict**: needs-fix\n- **blocker count**: 1 (minor / single-line fix)\n\n全体的な実装品質は高い。`EXIT_CODE` 定数・`EXIT_CODE_MAP`・`SpecRunnerError.exitCode` の三層構造が設計通りに実装され、対象7コマンド（init / login / job-show / job-ls / managed ×3）の `process.exit()` 排除も完了している。typecheck + test も全 green。\n\nただし doctor ハンドラの catch ブロックで非引数エラーが exit 2 を返す点が、本 PR が定義した exit code セマンティクスに反するため、修正が必要。\n\n---\n\n## Findings\n\n### F-01 — [minor / blocker] doctor catch ブロックが非引数エラーでも exit 2 を返す\n\n**場所**: `src/cli/command-registry.ts` line 545\n\n```typescript\ndoctor: {\n  handler: async (parsed) => {\n    try {\n      process.exit(await runDoctor({ json: !!parsed.flags[\"json\"] }));\n    } catch (err: unknown) {\n      stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);\n      process.exit(2);  // ← 問題箇所\n    }\n  },\n},\n```\n\n`runDoctor` が予期しない例外（ネットワークエラー・I/O 障害等）を throw した場合、catch ブロックが `process.exit(2)` を呼ぶ。しかし本 PR が確立した定義では exit 2 は **引数エラー**（不正な slug、フラグの矛盾、前提条件不足）であり、runtime crash は exit 1（一般エラー）でなければならない。\n\n`doctor` は `--json` 以外に引数を持たないため、catch で捕捉される例外が「引数エラー」である可能性はほぼゼロ。これは pre-existing behavior の保持だが、本 PR の目的（セマンティクスの統一）に直接反する。\n\n**修正**:\n\n```typescript\n} catch (err: unknown) {\n  stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);\n  process.exit(err instanceof SpecRunnerError ? err.exitCode : EXIT_CODE.GENERAL_ERROR);\n}\n```\n\nあるいは最小修正として:\n\n```diff\n- process.exit(2);\n+ process.exit(EXIT_CODE.GENERAL_ERROR);\n```\n\n---\n\n### F-02 — [informational] TC-31/32/33（run preflight → exit 2）が自動テスト未カバー\n\n**場所**: `tests/exit-code-standardization.test.ts`（TC-01〜TC-11 のみ収録）\n\n受け入れ基準の key シナリオ:\n- TC-31: `CONFIG_MISSING` → exit 2\n- TC-32: `NOT_GIT_REPO` → exit 2\n- TC-33: `REMOTE_NOT_GITHUB` → exit 2\n\n`run.ts` の `runRunCore` における `err.exitCode` 使用は正しく実装されているが、これらのシナリオに対応する自動テストが存在しない。コードロジックは正しいため blocking ではないが、フォローアップで追加を検討。\n\n---\n\n### F-03 — [informational] validate / review handler の inline process.exit() は仕様範囲内\n\n`command-registry.ts` の `validate` / `review` ハンドラ（line 258, 264, 284, 290）は inline で `process.exit(2)` / `process.exit(1)` を呼び続けている。\n\nTC-46 の記述（\"handler 内の process.exit() はなく\"）と一見矛盾するが、`spec.md` の Requirement セクションでは `process.exit()` 排除の対象を明示的に **init / login / job-show / job-ls / managed setup / managed status / managed reset** に限定している。validate / review は対象外であり、現状は spec-compliant。\n\n---\n\n## Acceptance Criteria Checklist\n\n| 基準 | 状態 |\n|---|---|\n| 全コマンドで exit code が 0/1/2 のいずれか | ✅（doctor crash → 2 はセマンティクス違反、要修正）|\n| 引数エラーで exit 2 | ✅ |\n| 一般エラーで exit 1 | ⚠️ doctor catch が exit 2（F-01） |\n| `SpecRunnerError` 宣言的マッピング | ✅ |\n| `bun run typecheck && bun run test` が green | ✅（verification-result.md 確認済み）|\n\n---\n\n## Required Changes\n\n1. **F-01 を修正すること**: `command-registry.ts` doctor handler catch ブロックの `process.exit(2)` を `process.exit(EXIT_CODE.GENERAL_ERROR)` に変更する。\n"
+        },
+        "startedAt": "2026-05-27T03:32:27.137Z",
+        "endedAt": "2026-05-27T03:37:25.161Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5009,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 17,
+            "outputTokens": 15954,
+            "cacheReadInputTokens": 778115,
+            "cacheCreationInputTokens": 93852
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "196032d6-646e-4843-99e9-7240c7738064",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/cli-exit-code-standardization/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — cli-exit-code-standardization — iter 2\n\n## Summary\n\n- **verdict**: approved\n- **blocker count**: 0\n\niter 1 の唯一のブロッカー（F-01: doctor catch ブロックが非引数エラーで exit 2）が正しく修正された。`process.exit(EXIT_CODE.GENERAL_ERROR)` への 1 行変更のみで意図通り。typecheck + test は 270 files / 3037 tests で全 green。\n\n---\n\n## iter 1 Blocker の修正確認\n\n### F-01 — [resolved] doctor catch ブロック修正\n\n```diff\n- process.exit(2);\n+ process.exit(EXIT_CODE.GENERAL_ERROR);\n```\n\n`src/cli/command-registry.ts` line 545。設計が要求するセマンティクス（catch → 一般エラー = exit 1）に準拠。✅\n\n---\n\n## Findings\n\n### F-01 — [informational] delta spec シナリオと実装の微小な不一致\n\n**場所**: `specrunner/changes/cli-exit-code-standardization/specs/cli-commands/spec.md`\n\ndelta spec に以下のシナリオが記述されている:\n\n```\n#### Scenario: github token が欠けている（ステップ 2 で失敗）\n- **THEN** ステップ 2 で `Run 'specrunner login' first.` を stderr に出し exit 2（前提条件不足）\n```\n\nしかし実装では、GitHub token 欠落時は `RUNTIME_PREREQ_MISSING` エラーが throw される。このコードは `EXIT_CODE_MAP` に未登録であり、`err.exitCode` は fallback の exit 1 になる。`tests/cli.test.ts` TC-064 も exit 1 を期待しており、実装と一致している。\n\n**評価**: design.md D3 が `EXIT_CODE_MAP` に `RUNTIME_PREREQ_MISSING` を意図的に含めなかった結果であり、実装とテストは整合している。delta spec のシナリオが設計を誤って反映した spec ドキュメントの問題。blocking ではない。\n\n解消するには `EXIT_CODE_MAP: { RUNTIME_PREREQ_MISSING: EXIT_CODE.ARG_ERROR }` を追加して TC-064 を exit 2 に更新するか、spec シナリオを exit 1 に修正するかのいずれか。\n\n---\n\n### F-02 — [informational] TC-32/33（NOT_GIT_REPO / REMOTE_NOT_GITHUB → exit 2）の自動テスト未カバー（iter 1 引き継ぎ）\n\n`tests/cli.test.ts` TC-063 は `CONFIG_MISSING → exit 2` をカバーしているが、対応する NOT_GIT_REPO / REMOTE_NOT_GITHUB のシナリオ（TC-32/TC-33）に対する exit code の直接テストがない。コードロジック（`err.exitCode` を使用した `runRunCore` の preflight catch）は正しく実装されている。\n\n---\n\n### F-03 — [informational] TC-36/TC-37（cancel/finish の不正フォーマット → exit 2）の自動テスト未カバー\n\n`command-registry.ts` の `job cancel` と `job finish --job` 双方でフォーマットバリデーション `→ EXIT_CODE.ARG_ERROR` が正しく実装されているが、これを直接検証するテストがない。specrunner-worktree-guard.test.ts は TC-38（worktree guard → exit 2）をカバーしているが cancel/finish の UUID バリデーションは対象外。\n\n---\n\n## Acceptance Criteria Checklist\n\n| 基準 | 状態 |\n|---|---|\n| 全コマンドで exit code が 0/1/2 のいずれか | ✅ |\n| 引数エラーで exit 2 | ✅（slug regex 不正・worktree guard・deprecated flags 等） |\n| 一般エラーで exit 1 | ✅（doctor catch 修正済み） |\n| `SpecRunnerError` 宣言的マッピング | ✅ |\n| `bun run typecheck && bun run test` が green | ✅（270 files / 3037 tests passed） |\n"
+        },
+        "startedAt": "2026-05-27T03:37:46.969Z",
+        "endedAt": "2026-05-27T03:43:38.654Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5009,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 28,
+            "outputTokens": 18826,
+            "cacheReadInputTokens": 1818424,
+            "cacheCreationInputTokens": 104471
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "324ebb20-3066-4b3f-abcf-d743369b07d5",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T03:37:26.796Z",
+        "endedAt": "2026-05-27T03:37:45.318Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1703,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 6,
+            "outputTokens": 656,
+            "cacheReadInputTokens": 54973,
+            "cacheCreationInputTokens": 9409
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "f647559e-97a4-4492-bc7f-5aa3c897cdae",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T03:43:40.432Z",
+        "endedAt": "2026-05-27T03:43:50.308Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 572,
+            "outputTokens": 13,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 3,
+            "outputTokens": 55,
+            "cacheReadInputTokens": 7567,
+            "cacheCreationInputTokens": 5785
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/cli-exit-code-standardization/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — cli-exit-code-standardization\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/435\n- **Number**: 435\n- **CreatedAt**: 2026-05-27T03:43:51.904Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-27T03:43:50.365Z",
+        "endedAt": "2026-05-27T03:43:51.906Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/435",
+    "number": 435,
+    "createdAt": "2026-05-27T03:43:51.904Z"
+  }
+}

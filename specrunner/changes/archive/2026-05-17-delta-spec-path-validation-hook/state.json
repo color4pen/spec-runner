@@ -1,0 +1,482 @@
+{
+  "version": 1,
+  "jobId": "64db94da-64ef-4d23-88f2-006c185226c3",
+  "createdAt": "2026-05-16T14:53:17.377Z",
+  "updatedAt": "2026-05-17T08:53:19.513Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/delta-spec-path-validation-hook/request.md",
+    "title": "delta spec の正規 path / format を pipeline 内 deterministic step で検証する",
+    "type": "spec-change",
+    "slug": "delta-spec-path-validation-hook"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 80800,
+  "branch": "change/delta-spec-path-validation-hook-64db94da",
+  "history": [
+    {
+      "ts": "2026-05-16T14:53:17.377Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-16T14:53:18.660Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-16T14:59:00.602Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-16T14:59:00.606Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → spec-review"
+    },
+    {
+      "ts": "2026-05-16T14:59:00.606Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T14:59:00.607Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-16T15:02:49.663Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T15:02:49.665Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T15:02:49.665Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-16T15:02:49.667Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-16T15:04:51.372Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-16T15:04:51.374Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-16T15:04:51.374Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-16T15:36:29.249Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-16T15:36:29.253Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-16T15:36:29.254Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T15:36:29.255Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-16T15:36:39.379Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-16T15:36:39.382Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-16T15:36:39.382Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-16T15:36:39.383Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T15:36:39.384Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-16T15:41:46.590Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-16T15:41:46.593Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-16T15:41:46.593Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-16T15:41:46.595Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-16T15:57:28.491Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T15:57:28.496Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-16T15:57:28.497Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-16T15:57:28.497Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-16T16:00:32.100Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T16:00:32.104Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T16:00:32.104Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-16T16:00:32.105Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-16T16:00:34.942Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-16T16:00:34.949Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-17T08:53:19.513Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "ea5d0f4c-b78c-46c9-87d7-e7e633baf292",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T14:53:18.661Z",
+        "endedAt": "2026-05-16T14:58:58.844Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 9771,
+            "outputTokens": 8253,
+            "cacheReadInputTokens": 521496,
+            "cacheCreationInputTokens": 101624
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 19,
+            "outputTokens": 12951,
+            "cacheReadInputTokens": 855853,
+            "cacheCreationInputTokens": 83819
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "2b3831ae-083a-4273-8345-b48d26da1d2c",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/delta-spec-path-validation-hook/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: delta-spec-path-validation-hook\n\n- **verdict**: approved\n- **reviewer**: spec-reviewer\n- **date**: 2026-05-17\n\n## Summary\n\n設計は既存パターン (VerificationStep + BuildFixerStep pair) と完全に同型で、pipeline state machine への拡張として自然。delta spec / design / tasks の三位一体は整合しており、実装可能な仕様になっている。\n\n## Findings\n\n### Positive\n\n1. **Pattern consistency**: CliStep (deterministic check) + AgentStep (fixer) の pair 追加は verification/build-fixer と同型。pipeline の設計哲学に合致。\n2. **Counter independence**: loopNames 追加 + LOOP_ERROR_CODES 追加で既存 loop と独立。spec-review counter を消費しない設計が明確。\n3. **DI for testability**: validator の `{ readdir, readFile }` 注入は FinishFs pattern と整合し、unit test で fs mock 可能。\n4. **Double defense**: validation step + spec-merge:474 fail-fast の二重防衛。validation で 99% 捕捉、残り edge case は finish で防ぐ。\n5. **Transition table completeness**: delta spec の full table が test-case-gen 含む現行コードベースの状態を正確に反映。\n\n### Notes (non-blocking)\n\n| # | Category | Detail |\n|---|----------|--------|\n| 1 | request/spec 微差 | request.md §5 は `DELTA_SPEC_FIXER, on: \"escalation\"` だが、delta spec と tasks は `on: \"error\"` を使用。delta spec 側が既存 fixer pattern (spec-fixer/build-fixer/code-fixer 全て `--error→ escalate`) と整合しており正しい。request.md の typo 扱い。 |\n| 2 | agent.tools 未記載 | step-execution-architecture delta spec の DeltaSpecFixerStep に `agent.tools` の明示がない。「spec-fixer を流用」から推論可能だが、他 step spec (CodeFixerStep 等) では `agent.tools: \"agent_toolset_20260401\"` を明記している。実装時に揃えれば OK。 |\n| 3 | validator module の spec 化 | `validateDeltaSpecPaths` の型/振る舞いは request.md + tasks.md で定義されているが、delta spec には間接参照のみ。内部 utility のため spec-level 定義は不要と判断。将来 reuse が広がるなら capability 化を検討。 |\n| 4 | baseline spec の propose/design 差異 | baseline spec が \"propose\" を使う箇所を delta spec は \"design\" に統一している。現行コードベースの実態反映であり correct。 |\n\n### Security\n\n- 認証 / 外部入力処理の変更なし\n- validator は filesystem read-only (path pattern match + content regex)\n- agent (delta-spec-fixer) は既存 spec-fixer と同一権限モデル\n- 新規攻撃面なし\n\n### Coverage\n\n- request.md 12 要件 → 全て delta spec / tasks でカバー確認済み\n- 受け入れ基準 14 項目 → tasks T-01〜T-15 で対応\n- pipeline integration test で counter 独立性・exhaust escalation を検証\n\n## Conclusion\n\n仕様は完全で一貫している。実装に曖昧性はなく、既存パターンとの整合も取れている。approved。\n"
+        },
+        "startedAt": "2026-05-16T14:59:00.608Z",
+        "endedAt": "2026-05-16T15:02:48.009Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 23304,
+            "outputTokens": 4338,
+            "cacheReadInputTokens": 579551,
+            "cacheCreationInputTokens": 68673
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 9,
+            "outputTokens": 7896,
+            "cacheReadInputTokens": 210500,
+            "cacheCreationInputTokens": 51385
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "f9d8d8e4-e477-4093-891d-afa98be613c1",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T15:02:49.668Z",
+        "endedAt": "2026-05-16T15:04:49.737Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6524,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 7196,
+            "cacheReadInputTokens": 70547,
+            "cacheCreationInputTokens": 32163
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "8818c572-6a98-473d-b18f-1c8cc1803bfd",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T15:04:51.375Z",
+        "endedAt": "2026-05-16T15:36:27.468Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 7889,
+            "outputTokens": 2261,
+            "cacheReadInputTokens": 21358,
+            "cacheCreationInputTokens": 45554
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 1891,
+            "outputTokens": 128355,
+            "cacheReadInputTokens": 11320983,
+            "cacheCreationInputTokens": 319698
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/delta-spec-path-validation-hook/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — delta-spec-path-validation-hook — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.1s | 0 |\n| 2 | typecheck | passed | 1.8s | 0 |\n| 3 | test | passed | 4.7s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/delta-spec-path-validation-hook-64db94da\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t135d\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n\n Test Files  165 passed (165)\n      Tests  1977 passed (1977)\n   Start at  00:36:33\n   Duration  4.51s (transform 2.91s, setup 0ms, import 5.75s, tests 8.38s, environment 16ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-cx6IZZ/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-Kq31Dx/specrunner/credentials.json has loose permissions (recommend 0600).\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/delta-spec-path-validation-hook-64db94da/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-16T15:36:29.256Z",
+        "endedAt": "2026-05-16T15:36:39.378Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "aa63cd44-7e06-431a-a239-3cabc8e20535",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/delta-spec-path-validation-hook/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — delta-spec-path-validation-hook (iter 1)\n\n- **verdict**: needs-fix\n- **reviewer**: code-reviewer\n- **date**: 2026-05-17\n\n## Summary\n\n実装は設計に高い忠実度で従っており、validator / CliStep / AgentStep / 共通定数 / 遷移表更新 / counter 独立化 / unit + integration tests が一通り揃っている。`bun run test` は 1977 件 PASS、`bun run typecheck` も通っており regression は確認されない。\n\nただし step-execution-architecture spec の ADDED Requirement「DeltaSpecValidationStep and DeltaSpecFixerStep are excluded from AgentStepName」が未充足のため needs-fix とする。`src/state/schema.ts:22` の `AgentStepName` Exclude 句に `STEP_NAMES.DELTA_SPEC_VALIDATION` を追加すれば解消できる軽微な漏れだが、型レベルで `config.agents` 誤登録を防ぐ「派生 Exclude 句更新」の規律 (review-lessons でも繰り返し指摘されている既知パターン) に該当するため major 扱い。\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | major | spec-conformance | src/state/schema.ts:22 | step-execution-architecture spec の ADDED Requirement「`AgentStepName` SHALL exclude `\"delta-spec-validation\"`」が未実装。現状 `AgentStepName = Exclude<StepName, VERIFICATION \\| PR_CREATE>` のみで、`\"delta-spec-validation\"` (CliStep) が `AgentStepName` に含まれてしまう。同じ Requirement の Scenario「`\"delta-spec-validation\"` is NOT assignable to `AgentStepName`」も担保されていない。 | `AgentStepName` の Exclude 句に `\\| typeof STEP_NAMES.DELTA_SPEC_VALIDATION` を追加。コメントも `(verification, pr-create, delta-spec-validation)` に更新。型レベル assertion テスト (例: `const _check: AgentStepName extends \"delta-spec-validation\" ? never : true = true` 相当) を追加すると Scenario が完全に検証される。 |\n| 2 | minor | code-quality | src/core/pipeline/types.ts:48 | `LOOP_ERROR_CODES[DELTA_SPEC_VALIDATION].hint` が `(_nnn) => ...` と引数を握り潰している。他 entry (`SPEC_REVIEW` / `VERIFICATION` / `CODE_REVIEW`) は iteration suffix を文字列に埋め込んでいるが、delta-spec-validation の result file は `delta-spec-validation-result.md` (iter 番号なし) のため意図的。コメントで「result file does not include iteration suffix because it is overwritten each iteration」と明示しておくと、後の reviewer が `_nnn` を typo と疑わない。 | hint 行の手前にコメントを 1 行追加するだけで十分。 |\n| 3 | minor | test-coverage | tests/unit/core/spec/delta-spec-validator.test.ts | test-cases.md TC-V-10 (`delta-spec.md` + `delta-spec/cap.md` の 2 件同時違反) が独立 describe として存在しない (TC-V-08 の 2 件目で legacy-flat-file は確認するが、複数 reason の同時報告は明示テストなし)。validator の挙動上は確実に動くが、must 指定の TC が抜けている。 | 既存 TC-V-07 を拡張するか、新たに「multiple violations are reported in a single result」TC を追加。実装変更は不要なので 1 テスト追加で対応可。 |\n| 4 | minor | test-coverage | tests/pipeline-integration.test.ts | test-cases.md TC-P-06「観測例 (`managed-reset-status-stale-guard` 相当) — `## ADDED` (suffix 無し) + `delta-spec/<cap>.md` の双方の違反を 1 cycle で修正して spec-review まで完走する E2E」が独立 TC として実装されていない。TC-DSV-INT-02 が legacy-flat-file 1 件のシナリオは網羅しているが、observed regression の reproduction としては不十分。 | TC-DSV-INT-02 と同形だが mock の violations に `legacy-flat-dir` と `missing-requirements-section` の 2 件を含める TC を追加。 |\n| 5 | nit | consistency | src/core/step/delta-spec-fixer.ts:64-79 | 継続 prompt が delta-spec-fixer 独自関数 `buildDeltaSpecFixerContinuationMessage` を持つ。spec-fixer / build-fixer / code-fixer は `fixer-helpers.ts` の `buildContinuationMessage` を共有しているが、delta-spec-fixer は source 種別を「verification / reviewer」二択にできない（実体は delta-spec-validation 結果）ため独立化は妥当な判断。ただしコメントで「共有 helper を使えない理由 = validation source は reviewer でも verification でもない」と書いておくと future reviewer が DRY violation と誤解しない。 | `buildDeltaSpecFixerContinuationMessage` の JSDoc に shared helper を使わない理由を 1 行追加するだけ。 |\n| 6 | nit | doc-drift | src/core/step/delta-spec-fixer.ts:88 | コメント `Design D4: completionVerdict=\"approved\" → DeltaSpecFixerStep → DeltaSpecValidationStep (loop). counter is independent from spec-review loop (see loopFixerPairs in run.ts).` の `loopFixerPairs` 参照は実態と乖離している。実際 counter 独立化を担保しているのは `Pipeline.loopNames` の expansion であり、`loopFixerPairs` は #269 のための placeholder (eslint-disable された未使用 field)。実装 D3 と一致するコメントに修正したほうが正確。 | `(see loopNames in run.ts)` または `(via per-loop counter in Pipeline.loopIters)` に変更。 |\n\n## Positive\n\n- **Design fidelity**: D1-D9 が実装に 1:1 で写像されている。VerificationStep + BuildFixerStep pair と同型の構造で、Step as data / Executor as behavior の原則 (project.md) に整合。\n- **Validator の DI**: `DeltaSpecValidatorFs = { readdir, readFile }` が FinishFs と subset 整合し、unit test で純粋な mock が成立 (実 fs アクセスなし)。\n- **共通定数 (DELTA_SPEC_FORMAT_RULES)**: design-system / spec-fixer-system 双方で template literal 補間しており、prompt 文言の単一 source 化に成功。スナップショット比較テスト (TC-PR-04) 相当が verification phase test pass で間接的に担保されている。\n- **遷移表完全性**: STANDARD_TRANSITIONS が 28 行に拡張され、design → DSV / spec-fixer → DSV / DSV ↔ delta-spec-fixer の全 5 行が追加されている。`tests/unit/core/pipeline/pipeline.transitions.test.ts` の TC-030 で行数 assertion を追加しており、追加忘れを catch する regression guard が機能している。\n- **Counter 独立性検証**: TC-DSV-INT-04 が delta-spec-validation 3 回 + spec-review 2 回を maxRetries:4 で並走させ、独立 counter であることを定量的に検証している。\n- **二重防衛維持**: `src/core/finish/spec-merge.ts:474` の semantic empty delta check が削除されていない (TC-R-01 相当)。\n- **fixer-helpers の拡張**: `FIXER_STEP_NAMES` に `DELTA_SPEC_FIXER` が追加されており、将来 fixer 共通処理が増えたとき自動的に対象になる。\n- **prompt injection 防御**: delta-spec-fixer の initial / continuation message が `<user-request>` タグで包まれており、SPEC_FIXER_SYSTEM_PROMPT のセキュリティ規約と整合。\n\n## Security\n\n- validator は filesystem read-only (path pattern + content regex のみ)。書き込みは result file のみで、path は cwd + slug derived のため directory traversal risk なし。\n- delta-spec-fixer の agent は spec-fixer と同一 toolset (`AGENT_TOOLSET_TYPE`) / 同一 system prompt のため、新規攻撃面なし。\n- 新規ハードコード secret / 認証バイパス / プロトタイプ汚染なし。\n\n## Scenario Coverage (test-cases.md vs実装)\n\n| Category | Must TC | 実装 | 備考 |\n|----------|---------|------|------|\n| validator | TC-V-01〜TC-V-10 (10) | 8 件直接 + 2 件 (additional describe) | TC-V-10 (複数 reason 同時) が独立 describe としては未実装 (finding #3) |\n| validator (should) | TC-V-11〜TC-V-13 (3) | TC-V-11/V-12 該当する describe あり、TC-V-13 は makeFsMock 経由で全 TC が DI を行使 | 実質充足 |\n| step-validation | TC-S1-01〜TC-S1-04 (4 must) | TC-DSV-01〜TC-DSV-03 で 4 件カバー | 充足 |\n| step-fixer | TC-S2-01〜TC-S2-03 (3 must) | TC-DSF-01〜TC-DSF-03 で 4+ 件カバー | 充足。TC-S2-04/05 (should) も「`maxTurns`/`requiresCommit`」「継続 prompt 短縮」テストで対応 |\n| pipeline | TC-P-01〜TC-P-06 (6 must) | TC-DSV-INT-01〜TC-DSV-INT-04 (4 件) | TC-P-03 (spec-fixer → DSV 経路) と TC-P-06 (managed-reset 観測例) が独立 TC 未実装 (finding #4) |\n| prompt | TC-PR-01〜TC-PR-03 (3 must) | import 由来でコンパイル時に担保 | 実装側で literal 重複なし確認済み |\n| constants | TC-C-01, TC-C-02 (2 must) | STEP_NAMES 参照と LOOP_ERROR_CODES エントリで充足 | |\n| regression | TC-R-01〜TC-R-03 (3 must) | spec-merge:474 保持、bun run test pass、typecheck pass | 充足 |\n| paths-helper | TC-H-01 (1 must) | paths.ts:106 で定義、複数テストで使用 | 充足 |\n\nmust TC 27 件中 25 件が直接 or 間接的に充足。残る 2 件 (TC-V-10 / TC-P-06) は finding #3 / #4 で指摘。\n\n## Conclusion\n\n実装は設計通り高品質で、新パターン (CliStep + AgentStep pair の独立 loop) が既存基盤に違和感なく統合されている。typecheck / test / build いずれも PASS で regression なし。\n\nただし、step-execution-architecture spec で ADDED された「AgentStepName excludes delta-spec-validation」Requirement が schema.ts に未反映のため、spec authority と実装の整合が崩れている。これは review-lessons でも繰り返し指摘されている「type union 拡張時の派生 Exclude 句更新」パターンの再発事例。Exclude 句に 1 リテラル追加するだけの最小修正で needs-fix を解消できる。\n\nfinding #2-#6 はいずれも optional だが、特に finding #3 / #4 は test-cases.md の must TC を直接欠いているため可能なら同 PR で対応すると completeness が高い。\n"
+        },
+        "startedAt": "2026-05-16T15:36:39.385Z",
+        "endedAt": "2026-05-16T15:41:45.013Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 7925,
+            "outputTokens": 20,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 4,
+            "outputTokens": 1286,
+            "cacheReadInputTokens": 35709,
+            "cacheCreationInputTokens": 16072
+          },
+          "claude-opus-4-7[1m]": {
+            "inputTokens": 36,
+            "outputTokens": 14330,
+            "cacheReadInputTokens": 3486017,
+            "cacheCreationInputTokens": 164398
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "f9b5b2b2-9c60-4685-864b-20bd06bfa7c0",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/delta-spec-path-validation-hook/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — delta-spec-path-validation-hook (iter 2)\n\n- **verdict**: approved\n- **reviewer**: code-reviewer\n- **date**: 2026-05-17\n\n## Summary\n\niteration 1 の唯一の needs-fix 根拠だった `AgentStepName` Exclude 句未追加 (finding #1 major) が `src/state/schema.ts:22` に正しく反映されている。minor 指摘 (#2 LOOP_ERROR_CODES hint コメント / #3 TC-V-10 独立 describe / #4 TC-P-06 regression scenario) もすべて対応済み。nit レベルの #5 / #6 は残存しているが承認をブロックしない。typecheck / test (165 files / 1977 tests) は引き続き全 PASS。\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | nit | doc-accuracy | src/core/step/delta-spec-fixer.ts:88 | コメント `(see loopFixerPairs in run.ts)` が counter 独立化の実装と乖離 (実体は `Pipeline.loopNames` / `loopIters`。`loopFixerPairs` は #269 用 placeholder で現時点では eslint-disable 済み未使用 field)。前回 finding #6 から持ち越し。 | `(see loopNames in run.ts)` または `(via per-loop counter in Pipeline.loopIters)` に変更。1 行のみ。 |\n| 2 | nit | doc-completeness | src/core/step/delta-spec-fixer.ts:64 | `buildDeltaSpecFixerContinuationMessage` の JSDoc に、`fixer-helpers.ts` の共有 `buildContinuationMessage` を使わない理由が書かれていない。将来の reviewer が DRY 違反と誤解するリスク。前回 finding #5 から持ち越し。 | JSDoc に「`buildContinuationMessage` は source を `verification` / `reviewer` の 2 択に固定しているため、`delta-spec-validation` 由来の feedback には適合しない」旨を 1 行追加。 |\n| 3 | nit | test-coverage | tests/pipeline-integration.test.ts | TC-P-03「spec-fixer 経由でも delta-spec-validation を通る」が独立 TC として存在しない (TC-DSV-INT-04 が counter 独立性のサブパスとして通過するが、主 assertion が counter であり spec-fixer → dsv path が主題ではない)。must 指定の TC だが機能的には TC-DSV-INT-04 で検証済み。 | 厳密には独立 describe を追加すると test-cases.md との 1:1 対応が完成するが、現カバレッジで実質担保されているため今 PR では optional。 |\n\n## Resolved from Iteration 1\n\n| Finding | 内容 | 解決確認 |\n|---------|------|---------|\n| #1 (major) | `AgentStepName` Exclude 句に `delta-spec-validation` が未追加 | ✅ `schema.ts:22`: `Exclude<StepName, … \\| typeof STEP_NAMES.DELTA_SPEC_VALIDATION>` 追加、コメントも `(verification, pr-create, delta-spec-validation)` に更新 |\n| #2 (minor) | `LOOP_ERROR_CODES[DELTA_SPEC_VALIDATION].hint` が `_nnn` を使わず意図不明確 | ✅ hint 前行に `// _nnn is intentionally unused: the result file is delta-spec-validation-result.md (no iteration suffix) because it is overwritten each iteration with the latest violations.` が追加されている |\n| #3 (minor) | TC-V-10 (複数 reason 同時) が独立 describe として未実装 | ✅ `delta-spec-validator.test.ts` 末尾に `describe(\"TC-V-10: multiple violations are reported in a single result\", ...)` が追加されている |\n| #4 (minor) | TC-P-06 managed-reset-status-stale-guard 観測例が独立 TC として未実装 | ✅ `pipeline-integration.test.ts:1259` に `TC-P-06 / TC-DSV-INT-05: managed-reset-status-stale-guard scenario — legacy-flat-dir + missing-requirements-section resolved in one cycle` が追加されており、2 違反 (violations array 2 件) のシナリオが完走することを検証 |\n\n## Positive\n\n- `AgentStepName` 修正後も `config.agents` スキーマ・型チェックが通っており、既存登録エントリに regression なし。\n- TC-DSV-INT-04 が delta-spec-validation 3 回 / spec-review 2 回を maxRetries:4 で並走させ counter 独立性を定量検証。spec-fixer → delta-spec-validation 経路が実地に通過していることを results length から間接的に確認できる。\n- TC-P-06 の managed-reset 再現テストで、`legacy-flat-dir` + `missing-requirements-section` の 2 違反が 1 cycle で修正されて spec-review まで完走することを end-to-end で確認。\n- `bun run typecheck` / `bun run test` (165 files / 1977 tests) PASS。regression なし。\n\n## Conclusion\n\niteration 1 の needs-fix 根拠は完全に解消された。残存する 3 件はすべて nit レベルであり、動作・型安全性・テストカバレッジのいずれも阻害しない。承認。\n"
+        },
+        "startedAt": "2026-05-16T15:57:28.498Z",
+        "endedAt": "2026-05-16T16:00:30.526Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 7925,
+            "outputTokens": 21,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 260,
+            "outputTokens": 10490,
+            "cacheReadInputTokens": 1414934,
+            "cacheCreationInputTokens": 105282
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "8797ddca-8f4a-4281-812c-43fb84e15e8d",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T15:41:46.596Z",
+        "endedAt": "2026-05-16T15:57:26.897Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6502,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 30,
+            "outputTokens": 8947,
+            "cacheReadInputTokens": 1233773,
+            "cacheCreationInputTokens": 43573
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/delta-spec-path-validation-hook/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — delta-spec-path-validation-hook\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/274\n- **Number**: 274\n- **CreatedAt**: 2026-05-16T16:00:34.940Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-16T16:00:32.106Z",
+        "endedAt": "2026-05-16T16:00:34.940Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/274",
+    "number": 274,
+    "createdAt": "2026-05-16T16:00:34.940Z"
+  }
+}

@@ -1,0 +1,367 @@
+{
+  "version": 1,
+  "jobId": "70c49735-2e7a-4adf-8539-6a990cf41f95",
+  "createdAt": "2026-05-08T14:18:18.898Z",
+  "updatedAt": "2026-05-08T14:47:57.288Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/refactor-executor-finalize-step/request.md",
+    "title": "StepExecutor の成功パスを finalizeStep に統合する",
+    "type": "refactoring",
+    "slug": "refactor-executor-finalize-step"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "branch": "refactor/refactor-executor-finalize-step-70c49735",
+  "history": [
+    {
+      "ts": "2026-05-08T14:18:18.898Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-08T14:18:20.015Z",
+      "step": "propose-started",
+      "status": "started",
+      "message": "Starting propose step"
+    },
+    {
+      "ts": "2026-05-08T14:20:58.122Z",
+      "step": "propose-verdict",
+      "status": "ok",
+      "message": "propose verdict: success"
+    },
+    {
+      "ts": "2026-05-08T14:20:58.124Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "propose → spec-review"
+    },
+    {
+      "ts": "2026-05-08T14:20:58.125Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-08T14:20:58.125Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-08T14:23:27.791Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-08T14:23:27.793Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-08T14:23:27.793Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-08T14:23:27.794Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-08T14:25:12.834Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-08T14:25:12.836Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-08T14:25:12.837Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-08T14:34:26.154Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-08T14:34:26.155Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-08T14:34:26.156Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-08T14:34:26.156Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-08T14:34:34.486Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-08T14:34:34.489Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-08T14:34:34.489Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-08T14:34:34.489Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-08T14:34:34.490Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-08T14:37:26.514Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-08T14:37:26.516Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-08T14:37:26.516Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-08T14:37:26.518Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-08T14:37:29.760Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-08T14:47:57.287Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "Job archived via specrunner finish."
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "propose": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-08T14:18:20.016Z",
+        "endedAt": "2026-05-08T14:18:20.016Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2035,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 18,
+            "outputTokens": 7370,
+            "cacheReadInputTokens": 776913,
+            "cacheCreationInputTokens": 64767
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "openspec/changes/refactor-executor-finalize-step/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result — refactor-executor-finalize-step\n\n- **iteration**: 1\n- **verdict**: approved\n- **reviewed-artifacts**: proposal.md, design.md, tasks.md\n- **review-scope**: Lightweight (behavior-preserving refactoring)\n\n## Summary\n\n仕様は明確で、実装対象コード（executor.ts L165-226, L282-330）との対応が正確。`finalizeStep` の設計判断（D1-D4）はすべて型安全性と拡張性の観点から妥当。タスク分解は漏れなく、検証基準も具体的。\n\n## Architecture\n\n`agentResult` をオプショナルオブジェクトにまとめる D1 の判断が適切。フラット引数案より将来の agent 固有フィールド追加に強い。`completionVerdict` / `setsBranch` の `in` ガードによる型判別（D2, D3）は `CliStep` にこれらのフィールドが存在しないことを types.ts で確認済み — 正確に機能する。公開 API 不変、依存方向の変更なし。\n\n## Correctness\n\n- `pushStepResult` の `modelUsage` 処理: CLI パスで `agentResult?.modelUsage` → `undefined` を渡す。`helpers.ts:94` の `partial.modelUsage !== undefined ? { modelUsage } : {}` により、既存の CLI パス（`modelUsage` フィールド省略）と同一の挙動。問題なし\n- `completionVerdict` フォールバック: `AgentStep` のみに存在（types.ts:89）。`\"completionVerdict\" in step` ガードは CLI step で false → 既存挙動を正確に保持\n- `setsBranch` / `agentBranch` 優先順: タスク 1.2 の step 8→9 の順序が現行コード L210-222 と一致。`agentBranch` が先に評価され、`setsBranch` は `!state.branch` ガードにより重複設定なし\n- warning メッセージ変更（D4）: CLI step の stderr 出力が `${findingsPath}` から `${step.kind} step '${step.name}'` に変わる。振る舞い上は微小な差分で、テストへの影響なし\n\n## Completeness (task decomposition)\n\nタスク 1-5 が request の全要件をカバー。検証タスク 5.1-5.6 は `grep -c` による集約確認まで含み、実装後の機械的検証が可能。\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | LOW | completeness | tasks.md:24 | タスク 1.2 step 6 で `pushStepResult` に渡すフィールドのうち `verdict`, `findingsPath`, `fileContent`, `completedAt`, `error: null` が明記されていない。`session` と `modelUsage` のみ記載 | 既存コードから自明であり implementer が誤る可能性は低い。修正不要 |\n"
+        },
+        "startedAt": "2026-05-08T14:20:58.126Z",
+        "endedAt": "2026-05-08T14:20:58.126Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1604,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 12,
+            "outputTokens": 6934,
+            "cacheReadInputTokens": 364697,
+            "cacheCreationInputTokens": 34093
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-08T14:23:27.795Z",
+        "endedAt": "2026-05-08T14:23:27.795Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1498,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 8,
+            "outputTokens": 5062,
+            "cacheReadInputTokens": 141304,
+            "cacheCreationInputTokens": 33569
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-08T14:25:12.838Z",
+        "endedAt": "2026-05-08T14:25:12.838Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1569,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 45,
+            "outputTokens": 30196,
+            "cacheReadInputTokens": 2165303,
+            "cacheCreationInputTokens": 59615
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "openspec/changes/refactor-executor-finalize-step/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — refactor-executor-finalize-step — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.8s | 0 |\n| 2 | typecheck | passed | 1.6s | 0 |\n| 3 | test | passed | 3.5s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/refactor-executor-finalize-step-70c49735\n\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n\n Test Files  131 passed (131)\n      Tests  1283 passed (1283)\n   Start at  23:34:29\n   Duration  3.31s (transform 2.56s, setup 0ms, import 4.35s, tests 5.46s, environment 7ms)\n\n\n$ vitest run\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/refactor-executor-finalize-step-70c49735/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-08T14:34:26.157Z",
+        "endedAt": "2026-05-08T14:34:26.157Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "openspec/changes/refactor-executor-finalize-step/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review — refactor-executor-finalize-step — Iteration 1\n\n## Summary\n\n振る舞い不変リファクタリングとして高品質。成功パスの 7 ステップシーケンスが `finalizeStep` に正しく集約されており、executor.ts は 270 行に縮小。全 1283 テスト pass、typecheck green。設計判断（D1〜D4）が忠実に実装されている。\n\n- **verdict**: approved\n\n## Scores\n\n| Category | Score | Weight | Weighted |\n|----------|-------|--------|----------|\n| correctness | 9 | 0.30 | 2.70 |\n| security | 8 | 0.25 | 2.00 |\n| architecture | 9 | 0.15 | 1.35 |\n| performance | 8 | 0.10 | 0.80 |\n| maintainability | 7 | 0.10 | 0.70 |\n| testing | 8 | 0.10 | 0.80 |\n| **Total** | | | **8.35** |\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | maintainability | src/core/step/executor.ts:216-269 | `finalizeStep` メソッド本体に空行が一切なく、7 つの論理ブロック（parse → fallback → emit → pushResult → history → branch → persist）が密結合に見える。リファクタリング前の各パスには空行で区切りがあった | verdict パース、event emit、pushStepResult、branch 設定、persist の間に空行を挿入して論理ブロックを視覚的に分離する |\n| 2 | LOW | performance | src/core/step/executor.ts:200,230 | CLI step で `step.resultFilePath(state, deps)` が `runCliStep` L200 と `finalizeStep` L230 で 2 回呼ばれる。元コードでは 1 回。純粋関数なので正確性に問題はないが冗長 | `finalizeStep` に `findingsPath` を引数で渡すか、現状維持（影響は微小） |\n| 3 | LOW | maintainability | src/core/step/executor.ts:234-235 | `\"completionVerdict\" in step` 後の `(step as { completionVerdict?: Verdict \\| null })` 型アサーション。設計 D2 の意図は理解できるが、`in` ガード後に `as` が必要な点はやや fragile | `Step` 型に optional な `completionVerdict` フィールドを追加するか、`step.kind === \"agent\"` で discriminated union narrowing を使う。ただし D2 で代替案を検討済みのため現状維持も可 |\n| 4 | LOW | testing | openspec/changes/refactor-executor-finalize-step/test-cases.md:113 | TC-13 は `store.persist` 数を「3 以下」と定義しているが実際は 4（finalizeStep 1 + runAgentStep エラーパス 2 + runCliStep エラーパス 1）。tasks.md の 5.5 で既に認識されている | test-cases.md の TC-13 期待値を `4` に修正する |\n\n## Scenario Coverage (test-cases.md)\n\n| TC | Level | Status | Notes |\n|----|-------|--------|-------|\n| TC-01 | must | pass | `pushStepResult` 呼び出し 1 箇所（import 除く） |\n| TC-02 | must | pass | `verdict:parsed` emit 1 箇所 |\n| TC-03 | must | pass | 270 行 ≤ 280 |\n| TC-04 | must | pass | 1283 tests passed |\n| TC-05 | must | pass | typecheck green |\n| TC-06 | must | pass | `resultContent !== null` → `parseResult` 呼び出し（L232-233） |\n| TC-07 | must | pass | `\"completionVerdict\" in step` フォールバック（L234-235） |\n| TC-08 | must | pass | fileContent null → escalation（L237-240） |\n| TC-09 | must | pass | warning に `step.kind` と `step.name` 含む（L238） |\n| TC-10 | should | pass | D4 形式の統一メッセージ |\n| TC-11 | must | pass | `events.emit(\"verdict:parsed\", ...)` L241 |\n| TC-12 | must | pass | `appendHistory` L254-258 |\n| TC-13 | must | **注意** | persist は 4 箇所（3 以下でない）。ただしコードは正しい — TC 期待値が不正確 |\n| TC-14 | must | pass | sessionId → session entry（L242-244） |\n| TC-15 | should | pass | sessionId undefined → null（L243 条件分岐） |\n| TC-16 | should | pass | modelUsage 透過（L253） |\n| TC-17 | should | pass | agentResult undefined → modelUsage undefined |\n| TC-18 | must | pass | agentBranch → state.branch（L260-261） |\n| TC-19 | should | pass | `!state.branch` ガード（L260） |\n| TC-20 | must | pass | setsBranch → getBranchPrefix（L263-265） |\n| TC-21 | should | pass | `!state.branch` ガード（L263） |\n| TC-22 | should | pass | CliStep に setsBranch なし → 分岐不発火 |\n| TC-23 | must | pass | 呼び出し 1 箇所（import 含め 2、TC 意図は call site = 1） |\n| TC-24 | must | pass | エラーパスは catch 内で attachStateAndRethrow、finalizeStep 未到達 |\n| TC-25 | must | pass | 同上（CLI エラーパス） |\n| TC-26 | must | pass | `return this.finalizeStep(...)` で直接 return |\n| TC-27 | could | pass | resultContent 非 null → parseResult 優先（L232 が先に評価） |\n\n## Verdict Justification\n\n- CRITICAL: 0, HIGH: 0\n- Total score: 8.35 ≥ 7.0 threshold\n- 全 must シナリオ pass（TC-13 は期待値の記述ミスであり、コード自体は正しい）\n- 振る舞い不変が typecheck + 1283 テストで確認済み\n"
+        },
+        "startedAt": "2026-05-08T14:34:34.490Z",
+        "endedAt": "2026-05-08T14:34:34.490Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1613,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 14,
+            "outputTokens": 6649,
+            "cacheReadInputTokens": 446546,
+            "cacheCreationInputTokens": 34961
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "openspec/changes/refactor-executor-finalize-step/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — refactor-executor-finalize-step\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/151\n- **Number**: 151\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-08T14:37:26.518Z",
+        "endedAt": "2026-05-08T14:37:26.518Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/151",
+    "number": 151,
+    "createdAt": "2026-05-08T14:37:29.758Z"
+  }
+}

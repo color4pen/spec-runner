@@ -1,0 +1,884 @@
+{
+  "version": 1,
+  "jobId": "7e30a287-2943-4f16-8a23-54bc2eb20fa9",
+  "createdAt": "2026-05-27T09:16:52.777Z",
+  "updatedAt": "2026-05-27T09:57:34.925Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/verification-package-json-integrity/request.md",
+    "title": "verification 前に package.json の改変を検出して escalation する",
+    "type": "spec-change",
+    "slug": "verification-package-json-integrity"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 8743,
+  "branch": "change/verification-package-json-integrity-7e30a287",
+  "history": [
+    {
+      "ts": "2026-05-27T09:16:52.777Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-27T09:16:54.471Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-27T09:21:05.865Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-27T09:21:05.866Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-27T09:21:05.867Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-27T09:21:05.878Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T09:21:05.879Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-27T09:21:05.879Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-27T09:21:05.879Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-27T09:23:59.765Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-27T09:23:59.768Z",
+      "step": "spec-review",
+      "status": "warning",
+      "message": "spec-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-27T09:23:59.769Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → spec-fixer"
+    },
+    {
+      "ts": "2026-05-27T09:23:59.770Z",
+      "step": "spec-fixer-started",
+      "status": "started",
+      "message": "Starting spec-fixer step"
+    },
+    {
+      "ts": "2026-05-27T09:24:45.357Z",
+      "step": "spec-fixer-verdict",
+      "status": "ok",
+      "message": "spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T09:24:45.361Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → delta-spec-validation (iter 1)"
+    },
+    {
+      "ts": "2026-05-27T09:24:45.362Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-27T09:24:45.385Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T09:24:45.387Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-27T09:24:45.388Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-27T09:24:45.388Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-27T09:27:31.084Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T09:27:31.088Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T09:27:31.088Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-27T09:27:31.089Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-27T09:28:45.014Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-27T09:28:45.018Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 2)"
+    },
+    {
+      "ts": "2026-05-27T09:28:45.019Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-27T09:33:59.127Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-27T09:33:59.129Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-27T09:33:59.130Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-27T09:33:59.130Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-27T09:34:04.464Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: failed"
+    },
+    {
+      "ts": "2026-05-27T09:34:04.467Z",
+      "step": "verification",
+      "status": "warning",
+      "message": "verification iteration 1 completed with verdict: failed"
+    },
+    {
+      "ts": "2026-05-27T09:34:04.467Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → build-fixer"
+    },
+    {
+      "ts": "2026-05-27T09:34:04.468Z",
+      "step": "build-fixer-started",
+      "status": "started",
+      "message": "Starting build-fixer step"
+    },
+    {
+      "ts": "2026-05-27T09:34:29.720Z",
+      "step": "build-fixer-verdict",
+      "status": "ok",
+      "message": "build-fixer verdict: success"
+    },
+    {
+      "ts": "2026-05-27T09:34:29.722Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "build-fixer → verification"
+    },
+    {
+      "ts": "2026-05-27T09:34:29.723Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 2 started"
+    },
+    {
+      "ts": "2026-05-27T09:34:29.723Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-27T09:34:42.355Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: failed"
+    },
+    {
+      "ts": "2026-05-27T09:34:42.357Z",
+      "step": "verification",
+      "status": "warning",
+      "message": "verification iteration 2 completed with verdict: failed"
+    },
+    {
+      "ts": "2026-05-27T09:34:42.357Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → build-fixer"
+    },
+    {
+      "ts": "2026-05-27T09:34:42.359Z",
+      "step": "build-fixer-started",
+      "status": "started",
+      "message": "Starting build-fixer step"
+    },
+    {
+      "ts": "2026-05-27T09:36:38.921Z",
+      "step": "build-fixer-verdict",
+      "status": "ok",
+      "message": "build-fixer verdict: success"
+    },
+    {
+      "ts": "2026-05-27T09:36:38.923Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "build-fixer → verification"
+    },
+    {
+      "ts": "2026-05-27T09:36:38.923Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 3 started"
+    },
+    {
+      "ts": "2026-05-27T09:36:38.924Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-27T09:36:53.068Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-27T09:36:53.070Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 3 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-27T09:36:53.070Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-27T09:36:53.071Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-27T09:36:53.071Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-27T09:40:17.347Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-27T09:40:17.349Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-27T09:40:17.349Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-27T09:40:17.350Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-27T09:45:55.226Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T09:45:55.229Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-27T09:45:55.230Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-27T09:45:55.230Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-27T09:50:14.482Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T09:50:14.485Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T09:50:14.486Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-27T09:50:14.487Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-27T09:50:14.512Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-27T09:50:14.514Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → adr-gen"
+    },
+    {
+      "ts": "2026-05-27T09:50:14.515Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-27T09:50:20.167Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-27T09:50:20.168Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-27T09:50:20.169Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-27T09:50:22.286Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-27T09:50:22.293Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-27T09:57:34.925Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "31f70193-236e-455a-8fe5-666980ed1a66",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T09:16:54.477Z",
+        "endedAt": "2026-05-27T09:21:04.061Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6791,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 31,
+            "outputTokens": 9953,
+            "cacheReadInputTokens": 1077018,
+            "cacheCreationInputTokens": 54375
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/verification-package-json-integrity/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-27T09:21:05.867Z",
+        "endedAt": "2026-05-27T09:21:05.878Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/verification-package-json-integrity/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-27T09:24:45.363Z",
+        "endedAt": "2026-05-27T09:24:45.385Z"
+      },
+      {
+        "attempt": 3,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/verification-package-json-integrity/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-27T09:50:14.488Z",
+        "endedAt": "2026-05-27T09:50:14.512Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "c4e07f71-81ca-4372-a001-5c2ce8dc6649",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/verification-package-json-integrity/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: verification-package-json-integrity\n\n- **verdict**: needs-fix\n\n## Summary\n\nセキュリティ目的は正当。脅威モデル・設計判断・スコープ境界はいずれも妥当。ただし tasks.md に **事実誤認** が 1 件あり、実装時に false positive を生む設計バグを招く可能性があるため修正が必要。\n\n---\n\n## Finding 1 — tasks.md の JSON 正規化に関する事実誤認 (needs-fix)\n\n**場所**: `tasks.md` T2.1 Notes for Implementer\n\n> `JSON.stringify` での比較はキーの順序に依存する。ベースラインとワークツリーで JSON.parse → JSON.stringify すれば正規化される\n\nこの記述は **誤り**。`JSON.parse` はテキスト中のキー出現順を保持するため、`JSON.parse → JSON.stringify` だけでは正規化は行われない。\n\n```\n// 実証: 同じ内容でキー順が異なる 2 つの JSON\nJSON.parse('{\"test\":\"vitest\",\"build\":\"tsc\"}') → JSON.stringify → '{\"test\":\"vitest\",\"build\":\"tsc\"}'\nJSON.parse('{\"build\":\"tsc\",\"test\":\"vitest\"}') → JSON.stringify → '{\"build\":\"tsc\",\"test\":\"vitest\"}'\n// → 比較結果は false（false positive）\n```\n\npackage.json の scripts キー順が baseline とワークツリーで異なる場合（例: `prettier --write` による自動整形、別の npm クライアントによる書き換え等）、scripts が改変されていないにもかかわらず `tampered: true` を返す。\n\n**修正方法**: T2.1 の比較ロジックをキーソートによる正規化に変更する。\n\n```typescript\n// 変更前\nJSON.stringify(baselineScripts) !== JSON.stringify(currentScripts)\n\n// 変更後\nconst normalize = (s: Record<string, string>) =>\n  JSON.stringify(Object.fromEntries(Object.entries(s).sort()));\nnormalize(baselineScripts) !== normalize(currentScripts)\n```\n\ntasks.md の Notes for Implementer のコメントも訂正すること（「JSON.parse → JSON.stringify すれば正規化される」→「Object.entries().sort() でキーを昇順ソートして正規化する」）。\n\n---\n\n## Finding 2 — spec.md にキー順序の edge case シナリオが欠落 (minor, needs-fix に含める)\n\n**場所**: `specs/verification-package-json-integrity/spec.md`\n\nFinding 1 の修正に合わせ、spec.md に以下のシナリオを追加すること。\n\n```\n#### Scenario: scripts キー順が異なるだけで内容が同一の場合\n\n- Given: baseline の `scripts` と worktree の `scripts` はキーと値が同一だがキーの出現順が異なる\n- When: `runVerificationPhases(slug, cwd, baseBranch)` を呼ぶ\n- Then: integrity check は tampered を検出せず、従来通り phase が実行される\n```\n\n---\n\n## Finding 3 — Unit test タスクが未定義 (advisory)\n\n**場所**: `tasks.md` Phase 4\n\nT4.1–T4.3 は typecheck/lint/test の通過確認のみ。セキュリティ目的の関数 `checkPackageJsonScriptsIntegrity` に対する unit test タスクが明示されていない。\n\nspec.md の各 Scenario（scripts 改変検出、未改変通過、dependencies 変更許容、baseBranch undefined スキップ、git show 失敗スキップ）は全て直接テスト可能である。追加を推奨するが、今回の needs-fix 判定の主因は Finding 1 であるため、本 Finding は advisory とする。\n\n---\n\n## セキュリティ評価\n\n**Command injection リスク（問題なし）**: `git show` の呼び出しは `spawn(\"git\", [\"show\", \\`origin/${baseBranch}:package.json\\`], { cwd })` の配列形式。`baseBranch` はシェル経由でなく git の単一引数として渡されるため、シェルメタ文字によるインジェクションは発生しない。\n\n**False negative リスク（設計上許容済み）**: `origin/<baseBranch>` が fetch されていない場合はチェックがスキップされる。design.md の Trade-offs に明記されており、pipeline の前提条件として妥当。\n\n**主目的達成**: implementer agent による `bun run <script>` を通じた任意コマンド実行を防ぐという目的は、設計通りに達成される。\n\n---\n\n## 修正対象ファイル\n\n1. `tasks.md` — T2.1 の比較ロジック記述とキー正規化の説明文を修正\n2. `specs/verification-package-json-integrity/spec.md` — キー順序 edge case シナリオを追加\n"
+        },
+        "startedAt": "2026-05-27T09:21:05.885Z",
+        "endedAt": "2026-05-27T09:23:58.042Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4261,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 16,
+            "outputTokens": 8194,
+            "cacheReadInputTokens": 390108,
+            "cacheCreationInputTokens": 39150
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "c2f646f9-9dfb-4cc7-b0d8-d19c6f223001",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/verification-package-json-integrity/spec-review-result-002.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: verification-package-json-integrity\n\n- **verdict**: approved\n\n## Summary\n\nspec-review-001 が指摘した 2 件の required fix が両方正しく適用されている。設計・仕様・セキュリティ観点ともに問題なし。実装に進んでよい。\n\n---\n\n## spec-review-001 fixes 確認\n\n### Fix 1 — JSON 正規化（tasks.md T2.1）✅\n\n`Object.entries(s).sort()` によるキーソート正規化が正しく記述されている。\n旧来の「JSON.parse → JSON.stringify で正規化される」という誤記は削除済み。\n比較ロジック:\n```typescript\nconst normalize = (s: Record<string, string>) =>\n  JSON.stringify(Object.fromEntries(Object.entries(s).sort()));\nnormalize(baselineScripts) !== normalize(currentScripts)\n```\nが tasks.md T2.1 に明示されており、Notes for Implementer の説明文も整合している。\n\n### Fix 2 — spec.md キー順序 edge case シナリオ ✅\n\n以下のシナリオが spec.md に追加されている。\n\n```\n#### Scenario: scripts キー順が異なるだけで内容が同一の場合\n- Given: baseline の `scripts` と worktree の `scripts` はキーと値が同一だがキーの出現順が異なる\n- When: `runVerificationPhases(slug, cwd, baseBranch)` を呼ぶ\n- Then: integrity check は tampered を検出せず、従来通り phase が実行される\n```\n\n---\n\n## セキュリティ評価\n\n**Command injection（問題なし）**: `spawn(\"git\", [\"show\", \\`origin/${baseBranch}:package.json\\`], { cwd })` は配列形式。`baseBranch` はシェルを経由せず git の単一引数として渡されるため、シェルメタ文字によるインジェクションは発生しない。\n\n**JSON.parse（問題なし）**: git object database からの出力を JSON.parse するのみ。コード実行リスクなし。\n\n**Path traversal（問題なし）**: `path.join(cwd, \"package.json\")` は固定ファイル名。\n\n**False negative（設計上許容済み）**: `origin/<baseBranch>` が fetch されていない場合はチェックをスキップ。design.md D3 Trade-offs に明記されており、pipeline 前提として妥当。\n\n---\n\n## Advisory（ブロックなし）\n\n**`outputPath` 変数スコープ（実装メモ）**: 現在の `runVerificationPhases` では `outputPath` が関数末尾（line 377）で定義されている。T3.1 の早期 return で `writeVerificationResult(result, outputPath)` を呼ぶには、`outputPath` の定義を関数冒頭（integrity check の前）に移動する必要がある。tasks.md に明記されていないが、実装上自明な対応であり spec 修正は不要。\n\n**Unit test タスク（spec-review-001 Advisory 継続）**: `checkPackageJsonScriptsIntegrity` の unit test が tasks.md に定義されていない点は引き続き advisory。integration test（bun test 通過）で受け入れ基準を充足するため、ブロックしない。\n\n---\n\n## 結論\n\nrequest.md / design.md / tasks.md / spec.md 間の整合性を確認済み。受け入れ基準は spec.md の全 Scenario に対応しており完全。実装フェーズに進んでよい。\n"
+        },
+        "startedAt": "2026-05-27T09:24:45.397Z",
+        "endedAt": "2026-05-27T09:27:29.339Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4261,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 15,
+            "outputTokens": 6572,
+            "cacheReadInputTokens": 322659,
+            "cacheCreationInputTokens": 32918
+          }
+        }
+      }
+    ],
+    "spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "e1955736-bc8e-475b-a736-592fbdb7b9c3",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T09:23:59.784Z",
+        "endedAt": "2026-05-27T09:24:43.597Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 743,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 9,
+            "outputTokens": 1988,
+            "cacheReadInputTokens": 110353,
+            "cacheCreationInputTokens": 12897
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "1ffef761-d29a-41e2-8fe0-867b186548ec",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T09:27:31.104Z",
+        "endedAt": "2026-05-27T09:28:43.343Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1633,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 4428,
+            "cacheReadInputTokens": 41946,
+            "cacheCreationInputTokens": 16466
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "5f51ad79-9bc5-4c2b-a770-f5f43b4c9307",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T09:28:45.035Z",
+        "endedAt": "2026-05-27T09:33:57.442Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4383,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 50,
+            "outputTokens": 14645,
+            "cacheReadInputTokens": 2153570,
+            "cacheCreationInputTokens": 61697
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "failed",
+          "findingsPath": "specrunner/changes/verification-package-json-integrity/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — verification-package-json-integrity — iter 1\n\n## Verdict: failed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.4s | 0 |\n| 2 | typecheck | failed | 2.3s | 2 |\n| 3 | test | skipped | — | — |\n| 4 | lint | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\nStep 'typecheck' failed\n\n```\ntests/unit/core/verification/runner-integrity.test.ts(105,34): error TS2345: Argument of type '(cmd: string, args: string[]) => childProcess.ChildProcess' is not assignable to parameter of type '(command: string, args: readonly string[], options: SpawnOptions) => ChildProcess'.\n  Types of parameters 'args' and 'args' are incompatible.\n    The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.\ntests/unit/core/verification/runner-integrity.test.ts(131,34): error TS2345: Argument of type '(cmd: string, args: string[]) => childProcess.ChildProcess' is not assignable to parameter of type '(command: string, args: readonly string[], options: SpawnOptions) => ChildProcess'.\n  Types of parameters 'args' and 'args' are incompatible.\n    The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.\ntests/unit/core/verification/runner-integrity.test.ts(157,34): error TS2345: Argument of type '(cmd: string, args: string[]) => childProcess.ChildProcess' is not assignable to parameter of type '(command: string, args: readonly string[], options: SpawnOptions) => ChildProcess'.\n  Types of parameters 'args' and 'args' are incompatible.\n    The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.\ntests/unit/core/verification/runner-integrity.test.ts(185,34): error TS2345: Argument of type '(cmd: string, args: string[]) => childProcess.ChildProcess' is not assignable to parameter of type '(command: string, args: readonly string[], options: SpawnOptions) => ChildProcess'.\n  Types of parameters 'args' and 'args' are incompatible.\n    The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.\ntests/unit/core/verification/runner-integrity.test.ts(208,34): error TS2345: Argument of type '(cmd: string, args: string[]) => childProcess.ChildProcess' is not assignable to parameter of type '(command: string, args: readonly string[], options: SpawnOptions) => ChildProcess'.\n  Types of parameters 'args' and 'args' are incompatible.\n    The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.\ntests/unit/core/verification/runner-integrity.test.ts(230,34): error TS2345: Argument of type '(cmd: string, args: string[]) => ReturnType<typeof childProcess.spawn>' is not assignable to parameter of type '(command: string, args: readonly string[], options: SpawnOptions) => ChildProcess'.\n  Types of parameters 'args' and 'args' are incompatible.\n    The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.\ntests/unit/core/verification/runner-integrity.test.ts(253,34): error TS2345: Argument of type '(cmd: string, args: string[]) => ReturnType<typeof childProcess.spawn>' is not assignable to parameter of type '(command: string, args: readonly string[], options: SpawnOptions) => ChildProcess'.\n  Types of parameters 'args' and 'args' are incompatible.\n    The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.\ntests/unit/core/verification/runner-integrity.test.ts(278,34): error TS2345: Argument of type '(cmd: string, args: string[]) => childProcess.ChildProcess' is not assignable to parameter of type '(command: string, args: readonly string[], options: SpawnOptions) => ChildProcess'.\n  Types of parameters 'args' and 'args' are incompatible.\n    The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.\ntests/unit/core/verification/runner-integrity.test.ts(306,34): error TS2345: Argument of type '(cmd: string, args: string[]) => childProcess.ChildProcess' is not assignable to parameter of type '(command: string, args: readonly string[], options: SpawnOptions) => ChildProcess'.\n  Types of parameters 'args' and 'args' are incompatible.\n    The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.\n\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n_(skipped — previous command failed)_\n\n## Phase: lint\n\n_(skipped — previous command failed)_\n"
+        },
+        "startedAt": "2026-05-27T09:33:59.131Z",
+        "endedAt": "2026-05-27T09:34:04.463Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "failed",
+          "findingsPath": "specrunner/changes/verification-package-json-integrity/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — verification-package-json-integrity — iter 1\n\n## Verdict: failed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.3s | 0 |\n| 2 | typecheck | passed | 2.3s | 0 |\n| 3 | test | failed | 7.5s | 1 |\n| 4 | lint | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\nStep 'test' failed\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/verification-package-json-integrity-7e30a287\n\n ❯ tests/unit/step/requires-commit-flags.test.ts (7 tests | 1 failed) 5ms\n     × CodeFixerStep.requiresCommit is falsy (may be invoked with no staged changes) 3ms\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t146d\n\n Test Files  1 failed | 280 passed (281)\n      Tests  1 failed | 3185 passed (3186)\n   Start at  18:34:33\n   Duration  7.25s (transform 3.86s, setup 0ms, import 9.07s, tests 12.95s, environment 16ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-EvwT0Y/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-saDJ18/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...\nGitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Required status check \"ci/build\" is expected, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/verification-package-json-integrity-7e30a287/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  tests/unit/step/requires-commit-flags.test.ts > requiresCommit flag — review and design steps stay opt-out > CodeFixerStep.requiresCommit is falsy (may be invoked with no staged changes)\nAssertionError: expected true to be falsy\n\n- Expected\n+ Received\n\n- false\n+ true\n\n ❯ tests/unit/step/requires-commit-flags.test.ts:56:42\n     54|\n     55|   it(\"CodeFixerStep.requiresCommit is falsy (may be invoked with no st…\n     56|     expect(CodeFixerStep.requiresCommit).toBeFalsy();\n       |                                          ^\n     57|   });\n     58| });\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\nerror: script \"test\" exited with code 1\n\n```\n\n## Phase: lint\n\n_(skipped — previous command failed)_\n"
+        },
+        "startedAt": "2026-05-27T09:34:29.724Z",
+        "endedAt": "2026-05-27T09:34:42.354Z"
+      },
+      {
+        "attempt": 3,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/verification-package-json-integrity/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — verification-package-json-integrity — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.3s | 0 |\n| 2 | typecheck | passed | 2.3s | 0 |\n| 3 | test | passed | 7.6s | 0 |\n| 4 | lint | passed | 1.3s | 0 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/verification-package-json-integrity-7e30a287\n\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t146d\n\n Test Files  281 passed (281)\n      Tests  3186 passed (3186)\n   Start at  18:36:42\n   Duration  7.37s (transform 4.12s, setup 0ms, import 9.04s, tests 13.35s, environment 16ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-vWuV3k/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-82ta9o/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/verification-package-json-integrity-7e30a287/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...\nGitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Required status check \"ci/build\" is expected, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\n\n```\n\n## Phase: lint\n\n```\n$ eslint ./src --max-warnings 0\n\n```\n"
+        },
+        "startedAt": "2026-05-27T09:36:38.924Z",
+        "endedAt": "2026-05-27T09:36:53.067Z"
+      }
+    ],
+    "build-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "741d7ee9-ddee-4eef-a7d8-20d3ffa8fab1",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T09:34:04.481Z",
+        "endedAt": "2026-05-27T09:34:28.047Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1624,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 6,
+            "outputTokens": 760,
+            "cacheReadInputTokens": 59305,
+            "cacheCreationInputTokens": 14210
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "741d7ee9-ddee-4eef-a7d8-20d3ffa8fab1",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T09:34:42.371Z",
+        "endedAt": "2026-05-27T09:36:37.316Z",
+        "modelUsage": {
+          "claude-sonnet-4-6": {
+            "inputTokens": 329,
+            "outputTokens": 6035,
+            "cacheReadInputTokens": 472565,
+            "cacheCreationInputTokens": 14357
+          }
+        }
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "0ca819fa-760e-40eb-9473-4f644f3db62c",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/verification-package-json-integrity/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — verification-package-json-integrity — iter 1\n\n- **verdict**: needs-fix\n- **reviewer**: code-review agent\n- **date**: 2026-05-27\n\n---\n\n## Summary\n\n実装の核心ロジック（`checkPackageJsonScriptsIntegrity`、`runVerificationPhases` への挿入、`runVerification` シグネチャ変更）は仕様通りで正しく動作している。verification は build/typecheck/test/lint 全通過。ただし以下 4 点を要修正・要確認とする。\n\n---\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix | Fix |\n|---|----------|----------|------|-------------|------------|-----|\n| 1 | HIGH | Scope Creep | `src/core/step/code-fixer.ts` | `requiresCommit: true → false` がスコープ外で変更されている。tasks.md が「本タスクと無関係」と明記していた既存失敗を暗黙に解消しており、意図不明の振る舞い変更が混入している | `code-fixer.ts` の変更を revert する。必要なら別 request に切り出す | yes |\n| 2 | MEDIUM | Test Coverage | `tests/unit/core/verification/runner-integrity.test.ts` | TC-10（must）— dependencies 変更・scripts 未改変のシナリオがテストされていない。実装は正しいが `must` シナリオが機械的に検証されていない | TC-INT-10 として `dependencies` 追加・`scripts` 不変のケースを追加する | yes |\n| 3 | MEDIUM | Test Coverage | `src/core/step/verification.ts` | TC-11（must）— `VerificationStep.run` が `deps.request.baseBranch` を `runVerification` に渡すことを検証するテストがない。配線が壊れても現テストスイートで検出不可 | `runVerification` を spy して第4引数に `baseBranch` が正しく渡されることを検証するテストを追加する | yes |\n| 4 | LOW | Documentation | `src/core/verification/runner.ts` L37 | `VerificationResult.errorCode` の JSDoc が「phases were skipped 時のみ」と旧記述のままで、`PACKAGE_JSON_SCRIPTS_TAMPERED` のケースが未反映 | JSDoc を「`VERIFICATION_NO_RUNNABLE_PHASES` または `PACKAGE_JSON_SCRIPTS_TAMPERED` 時に設定」と更新する | no |\n\n---\n\n## Positive Notes\n\n- `checkPackageJsonScriptsIntegrity` の実装は設計通り: git show 失敗・ファイル不在・JSON 不正・baseBranch undefined の全エラーパスで `{ tampered: false }` を返す。\n- キーソートによる正規化（`Object.entries(s).sort()`）が正しく実装されている（TC-INT-05 通過）。\n- custom commands path への非混入（TC-INT-07 通過）。\n- 9 つのユニットテスト（TC-INT-01〜09）はいずれも must/edge case を適切にカバーしている。\n- verification 全通過: build / typecheck / test（3186件）/ lint。\n"
+        },
+        "startedAt": "2026-05-27T09:36:53.081Z",
+        "endedAt": "2026-05-27T09:40:15.675Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4682,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 18,
+            "outputTokens": 10909,
+            "cacheReadInputTokens": 486717,
+            "cacheCreationInputTokens": 47951
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "51a26550-7630-42ed-8142-c8ef28b59002",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/verification-package-json-integrity/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — verification-package-json-integrity — iter 2\n\n- **verdict**: approved\n- **reviewer**: code-review agent\n- **date**: 2026-05-27\n\n---\n\n## Summary\n\niter 1 の required fixes（HIGH×1、MEDIUM×2）がすべて解消されている。実装・テスト・型チェック・lint すべて通過。`must` 優先度テストケース（TC-01〜TC-11）が完全にカバーされている。\n\n---\n\n## iter 1 fixes 確認\n\n| # | iter 1 Severity | Description | Status |\n|---|-----------------|-------------|--------|\n| 1 | HIGH | `code-fixer.ts` scope creep（requiresCommit 変更）revert | ✓ 解消。diff に `code-fixer.ts` なし、pre-existing 失敗テストが1件のみ残留（本タスクと無関係） |\n| 2 | MEDIUM | TC-10（dependencies 変更・scripts 不変）テスト追加 | ✓ TC-INT-10 が `runner-integrity.test.ts` に追加済み |\n| 3 | MEDIUM | TC-11（VerificationStep.run の baseBranch 配線）テスト追加 | ✓ `verification-step.test.ts` 新規追加、2ケース通過 |\n| 4 | LOW | errorCode JSDoc 更新（iter 1 で Fix: no） | 未更新（許容範囲）。下記 Findings #1 参照 |\n\n---\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix | Fix |\n|---|----------|----------|------|-------------|------------|-----|\n| 1 | LOW | Documentation | `runner.ts` L36 | `VerificationResult.errorCode` の JSDoc が旧記述（\"all phases were skipped\" のみ）のまま。`PACKAGE_JSON_SCRIPTS_TAMPERED` のケースが未反映。iter 1 から持ち越し、Fix: no とされていたため approve の障害にはならない | JSDoc を「`VERIFICATION_NO_RUNNABLE_PHASES` または `PACKAGE_JSON_SCRIPTS_TAMPERED` 時に設定」と更新する | no |\n| 2 | LOW | Style | `runner.ts` `checkPackageJsonScriptsIntegrity` | `git show` の spawn で `stderr` を消費していない。既存の `spawnScript` パターン（stderr を Buffer で収集）と非対称。`git show` の stderr は短いので実用上問題ないが、パターン統一の観点で次 request 以降に検討余地あり | `spawnScript` と同様に `stderr` を Buffer で収集する listener を追加する | no |\n\n---\n\n## Test Coverage\n\n| TC | Priority | Covered by |\n|----|----------|-----------|\n| TC-01 scripts unchanged | must | TC-INT-02 ✓ |\n| TC-02 scripts tampered → failed | must | TC-INT-01 ✓ |\n| TC-03 verification-result.md に diff 記録 | must | TC-INT-08 ✓ |\n| TC-04 custom commands path → no check | must | TC-INT-07 ✓ |\n| TC-05 baseBranch undefined → skip | must | TC-INT-06 ✓ |\n| TC-06 git show 失敗 → skip | must | TC-INT-03 ✓ |\n| TC-07 worktree package.json 不在 → skip | must | TC-INT-09 ✓ |\n| TC-08 両方 scripts undefined → 差分なし | must | TC-INT-04 ✓ |\n| TC-09 キー順序違い → 正規化 → 差分なし | must | TC-INT-05 ✓ |\n| TC-10 dependencies 変更・scripts 不変 | must | TC-INT-10 ✓ |\n| TC-11 baseBranch 配線 | must | verification-step.test.ts ✓ |\n| TC-12 JSON.parse 失敗 → skip | should | 未テスト（should のため許容） |\n\n---\n\n## Positive Notes\n\n- セキュリティ核心ロジック（phase fallback path のみ integrity check、custom commands path は対象外）が仕様通りに実装されている。\n- `normalize = (s) => JSON.stringify(Object.fromEntries(Object.entries(s).sort()))` によるキー順序正規化が正確。\n- baseBranch が falsy の場合に git show を呼ばない guard (`if (baseBranch)`) が正しく機能。\n- `must` 優先度テスト 11 件すべて通過。全体テスト 3188 件通過（既存 1 件失敗は本タスクと無関係）。\n- 型チェック・lint エラーなし。\n"
+        },
+        "startedAt": "2026-05-27T09:45:55.241Z",
+        "endedAt": "2026-05-27T09:50:12.723Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4682,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 28,
+            "outputTokens": 10816,
+            "cacheReadInputTokens": 996673,
+            "cacheCreationInputTokens": 52242
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "d4bdebf0-e565-4b02-b6cd-21fd02bab8df",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T09:40:17.358Z",
+        "endedAt": "2026-05-27T09:45:53.583Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1615,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5110,
+            "outputTokens": 15127,
+            "cacheReadInputTokens": 1943171,
+            "cacheCreationInputTokens": 49277
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "dc5b7224-cdf8-4f06-a983-4d68f2160be5",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-27T09:50:14.522Z",
+        "endedAt": "2026-05-27T09:50:20.109Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 564,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 3,
+            "outputTokens": 73,
+            "cacheReadInputTokens": 7568,
+            "cacheCreationInputTokens": 5777
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/verification-package-json-integrity/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — verification-package-json-integrity\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/448\n- **Number**: 448\n- **CreatedAt**: 2026-05-27T09:50:22.283Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-27T09:50:20.169Z",
+        "endedAt": "2026-05-27T09:50:22.284Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/448",
+    "number": 448,
+    "createdAt": "2026-05-27T09:50:22.283Z"
+  }
+}

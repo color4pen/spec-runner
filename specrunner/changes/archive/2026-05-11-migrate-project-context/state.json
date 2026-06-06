@@ -1,0 +1,476 @@
+{
+  "version": 1,
+  "jobId": "f1f45420-4778-4ada-ae1b-5d40e8df9fce",
+  "createdAt": "2026-05-11T05:21:30.042Z",
+  "updatedAt": "2026-05-11T05:54:34.539Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/migrate-project-context/request.md",
+    "title": "project.md を specrunner/ に移行し pipeline に注入する",
+    "type": "spec-change",
+    "slug": "migrate-project-context"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 12803,
+  "branch": "change/migrate-project-context-f1f45420",
+  "history": [
+    {
+      "ts": "2026-05-11T05:21:30.042Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-11T05:21:31.272Z",
+      "step": "propose-started",
+      "status": "started",
+      "message": "Starting propose step"
+    },
+    {
+      "ts": "2026-05-11T05:25:32.831Z",
+      "step": "propose-verdict",
+      "status": "ok",
+      "message": "propose verdict: success"
+    },
+    {
+      "ts": "2026-05-11T05:25:32.834Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "propose → spec-review"
+    },
+    {
+      "ts": "2026-05-11T05:25:32.834Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T05:25:32.835Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-11T05:29:34.988Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T05:29:34.991Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T05:29:34.991Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-11T05:29:34.992Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-11T05:31:30.482Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-11T05:31:30.485Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-11T05:31:30.486Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-11T05:36:56.995Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-11T05:36:56.996Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-11T05:36:56.997Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T05:36:56.997Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-11T05:37:06.327Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-11T05:37:06.329Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-11T05:37:06.329Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-11T05:37:06.330Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T05:37:06.331Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-11T05:40:42.806Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-11T05:40:42.809Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-11T05:40:42.809Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-11T05:40:42.810Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-11T05:49:41.802Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T05:49:41.805Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-11T05:49:41.806Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-11T05:49:41.806Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-11T05:52:37.116Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T05:52:37.119Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T05:52:37.119Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-11T05:52:37.121Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-11T05:52:39.694Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-11T05:52:39.698Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-11T05:54:34.539Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "propose": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T05:21:31.272Z",
+        "endedAt": "2026-05-11T05:21:31.272Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3902,
+            "outputTokens": 7008,
+            "cacheReadInputTokens": 733099,
+            "cacheCreationInputTokens": 62409
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 14,
+            "outputTokens": 7108,
+            "cacheReadInputTokens": 554494,
+            "cacheCreationInputTokens": 47747
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/migrate-project-context/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: migrate-project-context — Iteration 1\n\n## Verdict\n\n- **verdict**: approved\n- **iteration**: 1\n- **trend**: — (initial)\n- **agents**: spec-reviewer (manual), security-reviewer (manual)\n- **blocking_findings**: CRITICAL: 0, HIGH: 0\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | consistency | request.md 要件6 vs design.md D3 | request.md は `buildAdditionalInstructions() を async 化し` と記述するが、design.md D3 は `関数は同期のまま（projectContext は既に読み込み済み文字列）` と明記。design の判断は正しい（executor が事前読み込みするため adapter 側に I/O は不要）が、request-design 間の矛盾が残る | request.md 要件6 から「async 化し」を削除し「ctx.projectContext が存在する場合のみ `<project-context>` タグで追加する」に修正する。または design.md の判断を正とし implementer は design に従う旨を補足する |\n| 2 | MEDIUM | completeness | tasks.md | 新規注入ロジック（executor の allowlist 判定・adapter の `<project-context>` タグ付加）に対するテストタスクが欠如。Task 8 は doctor check テストのリネームのみ。executor が allowlist 内ステップに projectContext を設定し、allowlist 外では undefined であることの検証がない | Task 8 の後に「Task 8.5: executor + adapter の projectContext 注入テスト」を追加。少なくとも (a) allowlist 内ステップで ctx.projectContext が設定される (b) allowlist 外で undefined (c) ファイル不在時に undefined の 3 ケースを検証する |\n| 3 | MEDIUM | consistency | specrunner/specs/cli-commands/spec.md:166 | baseline spec が `openspec/project.md が存在すること` と記述。本変更で doctor check は `specrunner/project.md` を参照するようになるが、delta spec が提供されていない。Affected Files にも含まれていない | `specs/cli-commands/` の delta spec を追加し、doctor repo チェックの記述を `specrunner/project.md` に更新する。または tasks.md に baseline spec 更新タスクを追加する |\n| 4 | LOW | consistency | specrunner/specs/repository-registration/spec.md:33-50 | bootstrap status detection が `openspec/project.md` を参照。プロジェクト規約が `specrunner/project.md` に移行した場合、bootstrap 検出ロジックも更新が必要になる可能性がある | 本変更のスコープ外（bootstrap 検出は任意リポジトリの構造検査であり、本プロジェクト固有の pipeline 注入とは別関心事）。将来的に別 request で対応 |\n| 5 | LOW | correctness | tasks.md Task 4.4 | catch 句が全エラーを黙殺する。ENOENT 以外のエラー（EACCES, encoding error 等）も undefined として扱われ、デバッグ困難になる可能性がある | `catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e; }` として ENOENT 以外は再 throw する。または最低限 stderr に warning を出力する |\n\n## Security Assessment\n\n- 全操作はローカルファイルシステム内で完結。project.md の読み込みは `path.join(cwd, \"specrunner/project.md\")` 固定パスで path traversal リスクなし\n- project.md の内容は additionalInstructions（system prompt）に挿入される。ユーザーが管理するファイルであり、信頼境界内\n- `<project-context>` XML タグで境界を明示しており、prompt injection リスクは通常の system prompt 注入と同等（既存の additionalInstructions パターンと同一リスクレベル）\n- 認証・認可・入力検証（OWASP Top 10）に該当する攻撃面なし\n\n## Review Detail\n\n### Completeness (request.md ↔ design.md ↔ tasks.md)\n\n- request.md の 7 要件が design.md の D1-D6 に網羅的に対応。D1(読み込み責務) → 要件4、D2(allowlist) → 要件5、D3(adapter注入) → 要件6,7、D4(ファイル不在) → 要件6の一部、D5(doctor) → 要件2、D6(openspec/削除) → 要件1\n- tasks.md の 9 タスクが全要件をカバー。タスク間の依存グラフ: T1(移動) → T2(paths.ts) → T3(AgentRunContext) → T4(executor) → T5(claude-code) / T6(managed-agent) → T7(doctor) → T8(テスト) → T9(検証)\n- **問題点**: テストタスクが doctor check リネームのみで、core injection ロジックのテストが未定義（Finding #2）\n- **問題点**: baseline spec `cli-commands/spec.md` の delta spec が欠如（Finding #3）\n\n### Consistency (内部整合性 + 既存 spec との整合)\n\n- design.md D3 と request.md 要件6 に async/sync の矛盾あり（Finding #1）。design の判断が正しく、実装上の影響は軽微\n- design.md D2 の allowlist `[\"propose\", \"spec-review\", \"implementer\", \"code-review\"]` は実在するステップ名と一致（`src/core/step/` 配下で確認済み）\n- enrichContext パターンとの分離が明確。enrichContext は step 固有の動的データ、projectContext は全対象 step 共通の固定データ。`AgentRunContext` に `dynamicContext` と同じ optional パターンで追加\n- TC-002 の更新が tasks.md T3.3 で明記されている\n- TC-034（paths.ts は他 src/ を import しない）の堅持が tasks.md T2.2 で明記されている\n- project.md 内の Directory Structure セクション更新（`openspec/` → `specrunner/`）が tasks.md T1.3 でカバーされている\n\n### Feasibility\n\n- 全変更が既存パターンの拡張。新規アーキテクチャ導入なし\n- StepExecutor への I/O 追加は `readFile` 1 回。パフォーマンス影響なし\n- adapter 側の変更は文字列連結のみ。既存の additionalInstructions / initialMessage / requestContent 構築パターンの延長\n- doctor check リネームは git mv + テキスト置換。リスク低\n"
+        },
+        "startedAt": "2026-05-11T05:25:32.835Z",
+        "endedAt": "2026-05-11T05:25:32.835Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1968,
+            "outputTokens": 13,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 17,
+            "outputTokens": 8444,
+            "cacheReadInputTokens": 758584,
+            "cacheCreationInputTokens": 58023
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T05:29:34.993Z",
+        "endedAt": "2026-05-11T05:29:34.993Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1994,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 7,
+            "outputTokens": 7557,
+            "cacheReadInputTokens": 130045,
+            "cacheCreationInputTokens": 24516
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T05:31:30.486Z",
+        "endedAt": "2026-05-11T05:31:30.486Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2060,
+            "outputTokens": 21,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 90,
+            "outputTokens": 17074,
+            "cacheReadInputTokens": 2845182,
+            "cacheCreationInputTokens": 61591
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/migrate-project-context/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — migrate-project-context — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.0s | 0 |\n| 2 | typecheck | passed | 1.7s | 0 |\n| 3 | test | passed | 4.1s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/migrate-project-context-f1f45420\n\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nNo jobs found.\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t130d\n\n Test Files  143 passed (143)\n      Tests  1637 passed (1637)\n   Start at  14:37:00\n   Duration  3.93s (transform 2.95s, setup 0ms, import 5.37s, tests 6.74s, environment 9ms)\n\n\n$ vitest run\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/migrate-project-context-f1f45420/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-11T05:36:56.998Z",
+        "endedAt": "2026-05-11T05:36:56.998Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/migrate-project-context/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review: migrate-project-context (Iteration 1)\n\n## Metadata\n\n- **request**: migrate-project-context\n- **iteration**: 1\n- **reviewer**: code-reviewer\n- **date**: 2026-05-11\n\n---\n\n## Scores\n\n| Category | Score | Weight | Weighted |\n|----------|-------|--------|----------|\n| correctness | 8 | 0.30 | 2.40 |\n| security | 9 | 0.25 | 2.25 |\n| architecture | 9 | 0.15 | 1.35 |\n| performance | 9 | 0.10 | 0.90 |\n| maintainability | 8 | 0.10 | 0.80 |\n| testing | 3 | 0.10 | 0.30 |\n| **Total** | | | **8.00** |\n\n---\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | HIGH | testing | tests/ | test-cases.md の must シナリオ TC-007〜TC-021（StepExecutor allowlist 判定、adapter 注入）に対応するユニットテストが一切実装されていない。core の新機能（projectContext 注入）がテストカバレッジゼロ | `tests/unit/step/executor.test.ts` に allowlist 内ステップでの projectContext 設定・allowlist 外での undefined を検証するテストを追加。`tests/unit/adapter/claude-code/agent-runner.test.ts` と `tests/unit/adapter/managed-agent/agent-runner.test.ts` に projectContext 有無での注入挙動テストを追加 |\n| 2 | MEDIUM | testing | tests/pipeline.test.ts:285 | TC-038 のアサーションが `toBe` から `toContain` に弱化された。`specrunner/project.md` が cwd に存在するか否かでテスト結果が変わる環境依存テストになっている | テスト内で `deps.cwd` を `specrunner/project.md` が存在しない一時ディレクトリに設定し、`toBe` アサーションを維持する。または projectContext 有無の両ケースを明示的にテストする |\n| 3 | LOW | correctness | src/core/step/executor.ts:105 | catch ブロックが ENOENT 以外の全エラー（権限エラー等）も黙殺する。TC-037 は could 優先度だが、本番での I/O 障害を隠蔽するリスクがある | 現時点では許容（design D4 準拠）。将来的に `if (err.code !== 'ENOENT') logger.warn(...)` で非 ENOENT エラーをログ出力することを推奨 |\n\n---\n\n## Summary\n\n実装は design.md に忠実で、StepExecutor → AgentRunContext → adapter の注入経路が正しく構築されている。allowlist パターン、adapter ごとの注入方式、ファイル不在時のフォールバックすべて仕様通り。\n\nしかし、**テストカバレッジが致命的に不足**している。test-cases.md が must と宣言する 15 シナリオ（TC-007〜TC-021: StepExecutor の allowlist 判定、claude-code/managed-agent adapter の projectContext 注入挙動）に対応するユニットテストが 1 件も実装されていない。既存テスト（`executor.test.ts`, `agent-runner.test.ts`）は存在するが `projectContext` への言及がゼロ。加えて既存の pipeline.test.ts のアサーションが弱化されており、回帰検出力が低下している。\n\n---\n\n- **verdict**: needs-fix\n"
+        },
+        "startedAt": "2026-05-11T05:37:06.331Z",
+        "endedAt": "2026-05-11T05:37:06.331Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2106,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 151,
+            "outputTokens": 7567,
+            "cacheReadInputTokens": 681207,
+            "cacheCreationInputTokens": 56162
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/migrate-project-context/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Code Review: migrate-project-context (Iteration 2)\n\n## Metadata\n\n- **request**: migrate-project-context\n- **iteration**: 2\n- **reviewer**: code-reviewer\n- **date**: 2026-05-11\n\n---\n\n## Scores\n\n| Category | Score | Weight | Weighted |\n|----------|-------|--------|----------|\n| correctness | 9 | 0.30 | 2.70 |\n| security | 9 | 0.25 | 2.25 |\n| architecture | 9 | 0.15 | 1.35 |\n| performance | 9 | 0.10 | 0.90 |\n| maintainability | 8 | 0.10 | 0.80 |\n| testing | 8 | 0.10 | 0.80 |\n| **Total** | | | **8.80** |\n\n---\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | LOW | correctness | src/core/step/executor.ts:105 | catch ブロックが ENOENT 以外の全エラー（権限エラー等）も黙殺する。design D4 準拠だが、本番での I/O 障害を隠蔽するリスクがある | 将来的に `if (err.code !== 'ENOENT') logger.warn(...)` で非 ENOENT エラーをログ出力することを推奨。現時点では許容 |\n| 2 | LOW | maintainability | tests/unit/step/executor.test.ts | `makeCapturingRunner()`, `makeStepNamed()`, `makeDepsWithCwd()` が TC-007~TC-010 と TC-011~TC-014 の describe ブロックで重複定義されている | describe ブロックの外に共通ヘルパーとして抽出する。機能的には問題なし |\n\n---\n\n## Iteration Comparison\n\n### Improvements (vs Iteration 1)\n\n- **Finding #1 (HIGH, testing)**: TC-007~TC-021 のユニットテストが全て実装された。`executor.test.ts` に allowlist/非 allowlist のパラメタライズドテスト、`claude-code/agent-runner.test.ts` に TC-016/TC-017、`managed-agent/agent-runner.test.ts` に TC-018~TC-021 が追加。testing スコア 3→8\n- **Finding #2 (MEDIUM, testing)**: `pipeline.test.ts:288` のアサーションが `toBe` に戻され、`cwd: tempDir`（specrunner/project.md なし）で環境非依存化された\n\n### Regressions\n\nなし\n\n### Unchanged Issues\n\n- **Finding #3 (LOW, correctness)**: catch ブロックの全エラー黙殺。design D4 準拠のため維持\n\n### Convergence Trend\n\n`improving` — Total スコア 8.00 → 8.80（+0.80）\n\n---\n\n## Scenario Coverage (test-cases.md)\n\n| TC | Priority | Status | Test File |\n|----|----------|--------|-----------|\n| TC-001 | must | covered | git 操作結果（specrunner/project.md 存在確認済み） |\n| TC-002 | must | covered | git 操作結果（openspec/ は空ディレクトリのみ、git 追跡外） |\n| TC-003 | must | covered | specrunner/project.md 内容確認済み |\n| TC-004 | must | covered | paths.ts の `projectMdPath()` 実装確認 |\n| TC-005 | must | covered | paths.ts に src/ import なし |\n| TC-006 | must | covered | agent-runner.ts の型定義確認 |\n| TC-007 | must | covered | executor.test.ts — propose |\n| TC-008 | must | covered | executor.test.ts — spec-review |\n| TC-009 | must | covered | executor.test.ts — implementer |\n| TC-010 | must | covered | executor.test.ts — code-review |\n| TC-011 | must | covered | executor.test.ts — spec-fixer |\n| TC-012 | must | covered | executor.test.ts — build-fixer |\n| TC-013 | must | covered | executor.test.ts — code-fixer |\n| TC-014 | must | covered | executor.test.ts — test-case-gen |\n| TC-015 | must | covered | executor.test.ts — missing file |\n| TC-016 | must | covered | claude-code/agent-runner.test.ts — TC-016 |\n| TC-017 | must | covered | claude-code/agent-runner.test.ts — TC-017 |\n| TC-018 | must | covered | managed-agent/agent-runner.test.ts — TC-018 |\n| TC-019 | must | covered | managed-agent/agent-runner.test.ts — TC-019 |\n| TC-020 | must | covered | managed-agent/agent-runner.test.ts — TC-020 |\n| TC-021 | must | covered | managed-agent/agent-runner.test.ts — TC-021 |\n| TC-023 | must | covered | specrunner-project-md.test.ts |\n| TC-024 | must | covered | specrunner-project-md.test.ts |\n| TC-025 | must | covered | specrunner-project-md.test.ts |\n| TC-026 | must | covered | checks/index.ts 確認 |\n| TC-029 | must | covered | specrunner-project-md.test.ts |\n| TC-030 | must | covered | specrunner-project-md.test.ts |\n| TC-031 | must | covered | typecheck pass 確認 |\n| TC-032 | must | covered | test pass 確認（143 files, 1652 tests） |\n\n**must シナリオ: 23/23 covered**\n\n---\n\n## Summary\n\nIteration 1 の HIGH（テストカバレッジ不足）と MEDIUM（pipeline.test.ts のアサーション弱化）が両方とも解消された。実装は design.md に忠実で、StepExecutor → AgentRunContext → adapter の注入経路が正しく構築されている。allowlist パターン、両 adapter の注入方式、ファイル不在時のフォールバック、doctor check のリネーム、すべて仕様通り。テストカバレッジも must シナリオ全 23 件をカバー。`bun run typecheck` / `bun run test` 全 pass（143 files, 1652 tests）。\n\n---\n\n- **verdict**: approved\n"
+        },
+        "startedAt": "2026-05-11T05:49:41.806Z",
+        "endedAt": "2026-05-11T05:49:41.806Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2106,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 15,
+            "outputTokens": 6548,
+            "cacheReadInputTokens": 978291,
+            "cacheCreationInputTokens": 87278
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T05:40:42.811Z",
+        "endedAt": "2026-05-11T05:40:42.811Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1980,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 51,
+            "outputTokens": 31226,
+            "cacheReadInputTokens": 4180247,
+            "cacheCreationInputTokens": 102977
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/migrate-project-context/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — migrate-project-context\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/204\n- **Number**: 204\n- **CreatedAt**: 2026-05-11T05:52:39.691Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-11T05:52:37.121Z",
+        "endedAt": "2026-05-11T05:52:37.121Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/204",
+    "number": 204,
+    "createdAt": "2026-05-11T05:52:39.691Z"
+  }
+}

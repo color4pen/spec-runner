@@ -1,0 +1,452 @@
+{
+  "version": 1,
+  "jobId": "dfe9aa48-5b13-44ac-86c6-b5fb80c98978",
+  "createdAt": "2026-05-25T01:14:04.199Z",
+  "updatedAt": "2026-05-25T02:21:20.897Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/cleanup-runtime-cli/request.md",
+    "title": "runtime / CLI 周辺の cleanup: drafts 空 dir 残置 + repo root 解決の整理 (#391 Finding 2,3)",
+    "type": "bug-fix",
+    "slug": "cleanup-runtime-cli"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 27843,
+  "branch": "fix/cleanup-runtime-cli-dfe9aa48",
+  "history": [
+    {
+      "ts": "2026-05-25T01:14:04.199Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-25T01:14:05.842Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-25T01:16:39.884Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-25T01:16:39.886Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-25T01:16:39.888Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-25T01:16:39.891Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-25T01:16:39.892Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-25T01:16:39.893Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-25T01:16:39.893Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-25T01:18:06.514Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-25T01:18:06.517Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-25T01:18:06.517Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-25T01:18:06.518Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-25T01:19:48.098Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-25T01:19:48.100Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-25T01:19:48.101Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-25T01:25:58.946Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-25T01:25:58.949Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-25T01:25:58.949Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-25T01:25:58.950Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-25T01:26:10.515Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-25T01:26:10.518Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-25T01:26:10.518Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-25T01:26:10.519Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-25T01:26:10.519Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-25T01:28:30.658Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-25T01:28:30.661Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-25T01:28:30.661Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → adr-gen"
+    },
+    {
+      "ts": "2026-05-25T01:28:30.663Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-25T01:28:40.396Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-25T01:28:40.397Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-25T01:28:40.398Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-25T01:28:41.914Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-25T01:28:41.918Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-25T02:21:20.897Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "3fc343b3-04bc-412b-a1c8-05aeb839bbd7",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-25T01:14:05.851Z",
+        "endedAt": "2026-05-25T01:16:38.176Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6287,
+            "outputTokens": 2886,
+            "cacheReadInputTokens": 103159,
+            "cacheCreationInputTokens": 45823
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 15,
+            "outputTokens": 5172,
+            "cacheReadInputTokens": 331515,
+            "cacheCreationInputTokens": 42476
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/cleanup-runtime-cli/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-25T01:16:39.888Z",
+        "endedAt": "2026-05-25T01:16:39.891Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "f5eb9015-df5c-4143-aa95-3f77af99e232",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/cleanup-runtime-cli/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: cleanup-runtime-cli\n\n- **verdict**: approved\n\n## Summary\n\n3 件の cleanup (課題 A: drafts 空 dir 残置、課題 B: repo root 解決のコメント欠如、課題 C: resolveRepoRoot 重複) について、request → design → tasks の整合性・網羅性・セキュリティを確認した。\n\n## 確認済み項目\n\n### 整合性\n\n- **request ↔ design**: D1/D2/D3 が要件 1/2/3 に 1:1 で対応。スコープ外の境界も設計に反映されている。\n- **design ↔ tasks**: ファイル変更表と Task 番号が一致。コードスニペット付きで実装者の迷いがない。\n- **ps.ts call site**: Task 2c が「呼び出し箇所はそのまま」と述べる根拠を確認 — `ps.ts:141` がすでに `opts.repoRoot ?? await resolveRepoRoot() ?? process.cwd()` パターンであり、private `resolveRepoRoot(): Promise<string | null>` の戻り型が新 util と一致している。問題なし。\n- **job-show.ts 型差分**: private 版は `Promise<string>` (fallback 込み) → 新 util は `Promise<string | null>`。Task 2b が `?? process.cwd()` の追加を明示しており正しい。\n\n### 網羅性\n\n- 受け入れ基準 7 項目すべてに対応する Task が存在する。\n- テスト: canonical / legacy 両形式の削除挙動と `resolveRepoRoot` の silent/fail-fast 両モードが Task 4 に含まれる。\n\n### セキュリティ\n\n- `fs.rm(path.dirname(opts.requestFilePath), { recursive: true, force: true })`: `requestFilePath` は `job start` 実行時に draft から読み込んだパスであり、実行時の直接ユーザー入力ではない。内部 CLI ツールのスコープでは許容可能なリスク。\n- `resolveRepoRoot` は `spawnCommand` 経由の read-only git 呼び出しのみ。状態変更なし。\n\n## 軽微な所見 (ブロックなし)\n\n1. **`endsWith(\"/request.md\")` ガードの境界**: slug が `request` という名前になると `specrunner/drafts/request/request.md` となり問題ないが、slug にパス区切り文字が含まれた場合 (= `request new` が防ぐべき) は意図しない親 dir を指す可能性がある。現行の slug バリデーションで kebab-case しか許可されていれば実害なし。実装時に slug バリデーションの存在を確認すること (blocking ではない)。\n\n2. **Task 3 コード例の `path` import**: コメントで「既に存在する可能性あり、要確認」と正しく注記されている。`local.ts` の既存 import を実装者が確認すれば十分。\n"
+        },
+        "startedAt": "2026-05-25T01:16:39.903Z",
+        "endedAt": "2026-05-25T01:18:04.971Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4099,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 11,
+            "outputTokens": 4270,
+            "cacheReadInputTokens": 220655,
+            "cacheCreationInputTokens": 23491
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "db621ccf-415c-4e69-becf-8c7fd1e13a53",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-25T01:18:06.529Z",
+        "endedAt": "2026-05-25T01:19:46.418Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2855,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 7069,
+            "cacheReadInputTokens": 53675,
+            "cacheCreationInputTokens": 20213
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "c79c6629-4f96-49a6-b859-09eef91b79ae",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-25T01:19:48.113Z",
+        "endedAt": "2026-05-25T01:25:57.303Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4197,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 56,
+            "outputTokens": 19896,
+            "cacheReadInputTokens": 2737969,
+            "cacheCreationInputTokens": 64910
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/cleanup-runtime-cli/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — cleanup-runtime-cli — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.3s | 0 |\n| 2 | typecheck | passed | 2.2s | 0 |\n| 3 | test | passed | 6.7s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n| 6 | test-coverage | passed | 0.0s | 0 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/cleanup-runtime-cli-dfe9aa48\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t144d\n\n Test Files  250 passed (250)\n      Tests  2797 passed (2797)\n   Start at  10:26:02\n   Duration  6.49s (transform 3.73s, setup 0ms, import 7.90s, tests 11.50s, environment 16ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-rtl0mr/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-csPjsF/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/cleanup-runtime-cli-dfe9aa48/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n\n## Phase: test-coverage\n\n```\ntest-coverage: 20/20 must TCs covered\n```\n"
+        },
+        "startedAt": "2026-05-25T01:25:58.951Z",
+        "endedAt": "2026-05-25T01:26:10.515Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "d6fc2c2b-4923-4f9f-b6c5-58a66f58f918",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/cleanup-runtime-cli/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Review Feedback: cleanup-runtime-cli\n\n## Summary\n\n3 件の cleanup (drafts 空 dir 残置 / resolveRepoRoot 共通 util / CLI 挙動意図コメント) を 1 PR にまとめた実装。全体的に設計通りに実装されており、build/typecheck/test すべて green。\n\n---\n\n## Findings\n\n### F-01\n- **severity**: minor\n- **location**: `tests/unit/core/runtime/draft-move.test.ts`\n- **description**: テスト名が `TC-DRAFT-001` 〜 `TC-DRAFT-004` に揃えられているが、`test-cases.md` の TC ID は `TC-05` / `TC-06` / `TC-07` / `TC-08` / `TC-09` / `TC-21`。verification-result.md の test-coverage check が「20/20 must TCs covered」と通っているのは、`test-coverage.ts` が `TC-DRAFT-NNN` 形式を別 namespace として認識しているか、もしくは TC-05〜TC-09 を「covered」と判定する別ロジックがあるため。draft-move.test.ts が `TC-05` 等のラベルを一切含まないため、test-cases.md との追跡可能性 (traceability) が断絶している。\n- **suggestion**: `describe` 行に `// Covers TC-05, TC-06` 等のコメントを追加するか、TC-DRAFT-NNN を test-cases.md に追記してマッピングを明示する。どちらでもよいが、現状は coverage check が pass しているため機能上の問題はない。\n\n### F-02\n- **severity**: minor\n- **location**: `tests/unit/core/runtime/managed.test.ts`\n- **description**: TC-08 / TC-09 (managed.ts の directory-format draft 削除 / legacy flat-file 親 dir 保護) に相当するテストが `managed.test.ts` に存在しない。`draft-move.test.ts` の `simulateSetupWorkspaceDraftMove` スタブは local.ts / managed.ts 共通のロジックを模倣しているが、managed runtime を直接 instantiate して setupWorkspace を呼ぶテストはない。`TC-MR-005` は `flat-file` パスのみ使用しており、directory-format (`/request.md` suffix) のケースを managed.ts で直接検証していない。\n- **suggestion**: `TC-MR-005` に directory-format draft path (ending with `/request.md`) を使ったケースを追加し、slug dir が削除されることを確認する。`draft-move.test.ts` のスタブが共通ロジックを代替しているという判断なら、コメントで明示する。\n\n### F-03\n- **severity**: nit\n- **location**: `tests/unit/core/runtime/draft-move.test.ts`, L30-60\n- **description**: `simulateSetupWorkspaceDraftMove` はスタブ実装であり、`local.ts` / `managed.ts` の実際のコードとは別に保守が必要。実装が変わった際にスタブが追従しない可能性がある。\n- **suggestion**: スタブである旨と「local.ts L243-254 / managed.ts L133-144 と同期すること」のコメントを追加する。\n\n### F-04\n- **severity**: nit\n- **location**: `src/cli/cancel.ts`, L52\n- **description**: エラーメッセージが `Error: Failed to resolve git repo root. Ensure you are inside a git repository.` と出力されるが、元の実装は `Error: failed to resolve git repo root: <detail>` という形式で詳細情報を含んでいた。新実装では `resolveRepoRootOrFail` が throw する固定メッセージのみになり、git コマンドの stderr (例: `fatal: not a git repository`) が消える。\n- **suggestion**: 現行の挙動で機能的に十分 (エラー原因は明示的) なため変更必須ではないが、デバッグ時の情報量が減ることを認識しておく。\n\n---\n\n## TC Coverage Matrix\n\n| TC ID | Priority | Covered | Location |\n|-------|----------|---------|----------|\n| TC-01 | must | yes | `repo-root.test.ts` TC-RR-001 |\n| TC-02 | must | yes | `repo-root.test.ts` TC-RR-002 |\n| TC-03 | must | yes | `repo-root.test.ts` TC-RR-004 |\n| TC-04 | must | yes | `repo-root.test.ts` TC-RR-005 |\n| TC-05 | must | partial | `draft-move.test.ts` TC-DRAFT-003 (スタブ経由) |\n| TC-06 | must | partial | `draft-move.test.ts` TC-DRAFT-004 (スタブ経由) |\n| TC-07 | must | no | 複数 slug が共存する状態で一方だけ削除されるテストなし |\n| TC-08 | must | no | managed.ts での directory-format 直接テストなし |\n| TC-09 | must | partial | `managed.test.ts` TC-MR-005 は flat-file のみ |\n| TC-10 | must | static check のみ | cancel.ts が resolveRepoRootOrFail 使用を確認可能 |\n| TC-12 | must | yes (static) | import 文の確認で充足 |\n| TC-14 | must | yes (static) | import 文の確認で充足 |\n| TC-16 | must | yes (static) | import 文の確認で充足 |\n| TC-17 | must | yes (static) | cancel.ts L47 コメント確認 |\n| TC-18a | must | yes (static) | job-show.ts L24 コメント確認 |\n| TC-18b | must | yes (static) | ps.ts L125 コメント確認 |\n| TC-19 | must | yes | verification-result.md typecheck passed |\n| TC-20 | must | yes | verification-result.md test passed |\n| TC-22 | should | yes | `repo-root.test.ts` TC-RR-002 (exitCode:128) |\n| TC-21 | should | partial | スタブ内で catch → stderr.write はあるが fs.rm mock による直接テストなし |\n\n---\n\n## Correctness Checks\n\n- **drafts dir 削除ロジック**: `opts.requestFilePath.endsWith(\"/request.md\")` で directory-format を判定し `fs.rm(path.dirname(...), { recursive: true, force: true })` を呼ぶ。local.ts / managed.ts 両方に同一ロジック適用済み。設計 D1 通り。\n- **resolveRepoRoot util**: `spawnCommand` を使い、exitCode === 0 のみ成功、例外・非 0 は null 返却。`resolveRepoRootOrFail` は null 時に throw。設計 D2 通り。\n- **cancel.ts**: `resolveRepoRootOrFail` import、コメント `// State-modifying command — require valid git repo (fail-fast)` あり。\n- **job-show.ts**: private `resolveRepoRoot` 削除、共通 util import、`?? process.cwd()` fallback 維持、コメント `// Read-only command — fallback to cwd if git unavailable` あり。\n- **ps.ts**: 同上パターン。`opts.repoRoot ??` の優先も維持。\n- **型安全性**: `any` キャストなし。`err as Error` / `err as NodeJS.ErrnoException` はパターンとして適切。\n- **エラー伝播**: draft 削除失敗は警告のみで job を継続。repo root 失敗は cancel で exit 1、read-only CLI は cwd fallback。要件通り。\n\n---\n\n- **verdict**: approved\n"
+        },
+        "startedAt": "2026-05-25T01:26:10.532Z",
+        "endedAt": "2026-05-25T01:28:29.122Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4240,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 22,
+            "outputTokens": 7179,
+            "cacheReadInputTokens": 861980,
+            "cacheCreationInputTokens": 96174
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "62b71e45-be19-4edb-82ea-658bf57352c4",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-25T01:28:30.674Z",
+        "endedAt": "2026-05-25T01:28:40.345Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 509,
+            "outputTokens": 13,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 3,
+            "outputTokens": 70,
+            "cacheReadInputTokens": 10651,
+            "cacheCreationInputTokens": 5618
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/cleanup-runtime-cli/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — cleanup-runtime-cli\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/393\n- **Number**: 393\n- **CreatedAt**: 2026-05-25T01:28:41.911Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-25T01:28:40.398Z",
+        "endedAt": "2026-05-25T01:28:41.913Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/393",
+    "number": 393,
+    "createdAt": "2026-05-25T01:28:41.911Z"
+  }
+}

@@ -1,0 +1,583 @@
+{
+  "version": 1,
+  "jobId": "73e6ba3a-aebc-42e2-87e2-e331e88bbd82",
+  "createdAt": "2026-05-16T12:51:47.149Z",
+  "updatedAt": "2026-05-16T14:04:03.279Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/managed-reset-status-stale-guard/request.md",
+    "title": "managed reset / status を runtime != managed の状態に対して defensive 化する",
+    "type": "spec-change",
+    "slug": "managed-reset-status-stale-guard"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 76343,
+  "branch": "change/managed-reset-status-stale-guard-73e6ba3a",
+  "history": [
+    {
+      "ts": "2026-05-16T12:51:47.149Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-16T12:51:48.209Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-16T12:55:33.747Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-16T12:55:33.749Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → spec-review"
+    },
+    {
+      "ts": "2026-05-16T12:55:33.750Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T12:55:33.750Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-16T12:57:20.126Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T12:57:20.128Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T12:57:20.128Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-16T12:57:20.129Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-16T12:58:39.619Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-16T12:58:39.622Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-16T12:58:39.623Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-16T13:03:49.802Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-16T13:03:49.804Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-16T13:03:49.804Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T13:03:49.805Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-16T13:04:03.133Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-16T13:04:03.135Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-16T13:04:03.135Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-16T13:04:03.136Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T13:04:03.137Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-16T13:06:28.547Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-16T13:06:28.550Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-16T13:06:28.550Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-16T13:06:28.552Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-16T13:07:52.605Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T13:07:52.608Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-16T13:07:52.609Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-16T13:07:52.609Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-16T13:10:38.931Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-16T13:10:38.935Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 2 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-16T13:10:38.935Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-16T13:10:38.936Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-16T13:11:18.450Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T13:11:18.456Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-resume: code-review did not approve after 2 iterations"
+    },
+    {
+      "ts": "2026-05-16T13:54:34.179Z",
+      "step": "resume",
+      "status": "ok",
+      "message": "awaiting-resume → running: Resuming from step 'code-review'"
+    },
+    {
+      "ts": "2026-05-16T13:54:34.231Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T13:54:34.232Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-16T13:57:04.556Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T13:57:04.559Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T13:57:04.559Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-16T13:57:04.561Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-16T13:57:09.165Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-16T13:57:09.171Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-16T14:04:03.279Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "bb20274c-8361-450f-809d-ca85e43821a8",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T12:51:48.210Z",
+        "endedAt": "2026-05-16T12:55:32.169Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6427,
+            "outputTokens": 3103,
+            "cacheReadInputTokens": 388282,
+            "cacheCreationInputTokens": 55131
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 15,
+            "outputTokens": 9645,
+            "cacheReadInputTokens": 656338,
+            "cacheCreationInputTokens": 73001
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "717f1fea-7ee8-4a6f-9d8b-935298c289f7",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/managed-reset-status-stale-guard/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: managed-reset-status-stale-guard\n\n- **reviewer**: spec-reviewer (Claude)\n- **date**: 2026-05-16\n- **verdict**: approved\n\n## Summary\n\nrequest.md → design.md → tasks.md → delta-spec の一貫性は高く、受け入れ基準を全てカバーしている。セキュリティ面も問題なし。1 件の minor finding あり（非 blocking）。\n\n## Findings\n\n### F-01: stale path で `runtime` フィールドを削除している (minor)\n\n- **場所**: tasks.md T-03 擬似コード L140\n- **内容**: `delete (newConfig as unknown as Record<string, unknown>)[\"runtime\"]` が stale path にも含まれている。request.md 要件 3 は「agents / environment.id を clear する」、design.md Data Flow は「config 更新: agents={}, environment 削除」と記述しており、`runtime` の削除は stated scope に含まれない。`runtime` が `\"local\"` や `undefined` のときに削除しても機能的には無害（local がデフォルト）だが、「stale managed fields only をリセットする」という意図と齟齬がある。\n- **推奨**: stale path では `runtime` を温存する（既存の managed path のコードからの copy-paste と思われる）。implementer が判断してよい。\n\n## Checklist\n\n| 観点 | 結果 | 備考 |\n|------|------|------|\n| request ↔ design 整合 | ✓ | D1-D4 が request の設計判断 1-4 に 1:1 対応 |\n| request ↔ tasks 整合 | ✓ | 全要件が T-01〜T-07 でカバー |\n| request ↔ delta-spec 整合 | ✓ | ADDED の Requirement / Scenario が request の spec authority セクションと一致 |\n| design ↔ tasks 整合 | ✓ | 擬似コードが design Data Flow と一致（F-01 の minor 差異を除く） |\n| 既存 spec への影響 | ✓ | `managed-agent-runtime/spec.md` と `cli-commands/spec.md` は変更対象外。実際に両 spec を確認し、managed CLI コマンドの記述がないことを検証済み |\n| テストカバレッジ | ✓ | 要件 5 の 7 パターン全てが T-05 で定義。既存 regression は TC-MR-001/002/003 + TC-MST-001 で担保 |\n| 二重確認防止 | ✓ | design D2 の分岐構造が明確。runtime !== managed → 新 prompt 1 本、managed → 既存 prompt 1 本 |\n| non-TTY 安全策 | ✓ | `rm/runner.ts` の既存パターンに準拠。CI で --force なしは即中断 |\n| セキュリティ | ✓ | API key 不在時の graceful degradation（warning + SDK delete skip）は既存パターン踏襲。新たな入力経路なし、OWASP 該当なし |\n| スコープ逸脱 | ✓ | request のスコープ外 3 項目に触れていない |\n"
+        },
+        "startedAt": "2026-05-16T12:55:33.751Z",
+        "endedAt": "2026-05-16T12:57:18.657Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4448,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 10,
+            "outputTokens": 4399,
+            "cacheReadInputTokens": 308658,
+            "cacheCreationInputTokens": 50879
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "bc75ad34-43d9-4cf0-88af-438539186e9c",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T12:57:20.130Z",
+        "endedAt": "2026-05-16T12:58:38.088Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3202,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 5962,
+            "cacheReadInputTokens": 61242,
+            "cacheCreationInputTokens": 25091
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "ab89cac1-302e-4f92-aef3-5db0e1178926",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T12:58:39.624Z",
+        "endedAt": "2026-05-16T13:03:48.241Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4557,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 28,
+            "outputTokens": 22569,
+            "cacheReadInputTokens": 1417915,
+            "cacheCreationInputTokens": 60065
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/managed-reset-status-stale-guard/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — managed-reset-status-stale-guard — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.5s | 0 |\n| 2 | typecheck | passed | 1.7s | 0 |\n| 3 | test | passed | 7.6s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/managed-reset-status-stale-guard-73e6ba3a\n\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t135d\n\n Test Files  162 passed (162)\n      Tests  1930 passed (1930)\n   Start at  22:03:55\n   Duration  6.59s (transform 2.81s, setup 0ms, import 6.18s, tests 10.56s, environment 10ms)\n\n\n$ vitest run\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-0932G7/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-CBuedy/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/managed-reset-status-stale-guard-73e6ba3a/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-16T13:03:49.805Z",
+        "endedAt": "2026-05-16T13:04:03.132Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "6123c218-c06d-4269-94cc-107bd0d8973f",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/managed-reset-status-stale-guard/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review: managed-reset-status-stale-guard — iter 1\n\n- **verdict**: needs-fix\n- **reviewer**: code-reviewer\n- **date**: 2026-05-16\n\n---\n\n## Summary\n\n実装は仕様通りに正しく動作している。`hasStaleManagedConfig` ヘルパー、`managed status` の stale 列挙、`managed reset` の runtime 不一致 guard、TTY 判定、`--force` bypass、二重確認防止、完了メッセージの出し分け、`spec.md` 新設、spec authority 分離——すべて設計通り。typecheck / test も全 green。\n\nただし test-cases.md の **must 優先度テストケース 4 件が未カバー**。\n\n---\n\n## Findings\n\n### F-01: TC-MST-NEW-002 未カバー (severity: medium)\n\n**priority: must** のテストケースが実装されていない。\n\n> TC-MST-NEW-002 — runtime: local + agents のみ stale → agents のみ列挙され `environment.id` は出力されない\n\n`managed status` の stale 列挙は `environment.id` と `agents` を別々の if/for で出力する。`5-a` は両方が存在するケースのみカバーしており、「agents のみ」のケースで environment.id が誤出力されるリグレッションを検出できない。\n\n**修正**: 以下を `runManagedStatus` の describe に追加する。\n\n```typescript\nit(\"lists only agents when only agents are stale (TC-MST-NEW-002)\", async () => {\n  await writeConfig({\n    version: 1,\n    agents: { design: { agentId: \"agent_001\", definitionHash: \"hash\", lastSyncedAt: \"2026-01-01T00:00:00Z\" } },\n    // no environment field\n  });\n\n  const stdoutSpy = vi.spyOn(process.stdout, \"write\").mockImplementation(() => true);\n  const { runManagedStatus } = await import(\"../../../src/cli/managed.js\");\n  await runManagedStatus();\n\n  const output = stdoutSpy.mock.calls.map((c) => c[0]).join(\"\");\n  expect(output).toContain(\"Stale managed config detected:\");\n  expect(output).toContain(\"agents.design: agent_001\");\n  expect(output).not.toContain(\"environment.id\");\n});\n```\n\n---\n\n### F-02: TC-MST-NEW-003 未カバー (severity: medium)\n\n**priority: must** のテストケースが実装されていない。\n\n> TC-MST-NEW-003 — runtime: local + environment.id のみ stale → environment.id のみ列挙され `agents` は出力されない\n\n`5-a` は両方存在するケースのみ。「environment.id のみ」のケースで agents 行が誤出力されるリグレッションを検出できない。\n\n**修正**:\n\n```typescript\nit(\"lists only environment.id when only environment is stale (TC-MST-NEW-003)\", async () => {\n  await writeConfig({\n    version: 1,\n    agents: {},\n    environment: { id: \"env_001\", lastSyncedAt: \"2026-01-01T00:00:00Z\" },\n  });\n\n  const stdoutSpy = vi.spyOn(process.stdout, \"write\").mockImplementation(() => true);\n  const { runManagedStatus } = await import(\"../../../src/cli/managed.js\");\n  await runManagedStatus();\n\n  const output = stdoutSpy.mock.calls.map((c) => c[0]).join(\"\");\n  expect(output).toContain(\"Stale managed config detected:\");\n  expect(output).toContain(\"environment.id: env_001\");\n  expect(output).not.toContain(\"agents.\");\n});\n```\n\n---\n\n### F-03: TC-MR-NEW-004 未カバー (severity: medium)\n\n**priority: must** のテストケースが実装されていない。\n\n> TC-MR-NEW-004 — runtime: local + TTY + stdin `y` → reset が進行\n\n`5-f` は TTY + `n` → abort のみカバー。TTY + `y` → reset 進行のハッピーパスが未テスト。`promptConfirm` の `y` 分岐（`managed` でない stale path）はこのテストなしに正しさが担保されない。\n\n**修正**:\n\n```typescript\nit(\"resets stale config when TTY user answers 'y' (TC-MR-NEW-004)\", async () => {\n  await writeConfig({\n    version: 1,\n    agents: { design: { agentId: \"agent_001\", definitionHash: \"hash\", lastSyncedAt: \"2026-01-01T00:00:00Z\" } },\n  });\n\n  const originalIsTTY = (process.stdin as { isTTY?: boolean }).isTTY;\n  Object.defineProperty(process.stdin, \"isTTY\", { value: true, configurable: true });\n\n  const readline = await import(\"node:readline\");\n  vi.mocked(readline.createInterface).mockReturnValue({\n    question: vi.fn().mockImplementation((_msg: string, cb: (ans: string) => void) => cb(\"y\")),\n    close: vi.fn(),\n  } as unknown as import(\"node:readline\").Interface);\n\n  const { runManagedReset } = await import(\"../../../src/cli/managed.js\");\n  await runManagedReset({ force: false });\n\n  Object.defineProperty(process.stdin, \"isTTY\", { value: originalIsTTY, configurable: true });\n\n  const saved = await readConfig();\n  expect(saved[\"agents\"]).toEqual({});\n  expect(saved[\"environment\"]).toBeUndefined();\n});\n```\n\n---\n\n### F-04: TC-MR-NEW-012 未カバー (severity: low)\n\n**priority: must** のテストケースが assertion として実装されていない。\n\n> TC-MR-NEW-012 — runtime: local + stale + `--force` で既存の destructive prompt `\"This will delete the Anthropic Environment\"` が出ない\n\nコードの if/else 分岐構造上、二重確認は起きないことが保証されているが、test-cases.md で must として定義された要件を assertion で明示していない。`5-d` に `not.toContain` を追加することで閉じられる。\n\n**修正**: test `5-d` の末尾に追加:\n\n```typescript\n// no existing destructive prompt should appear\nconst stdoutOutput = stdoutSpy.mock.calls.map((c) => c[0]).join(\"\");\nexpect(stdoutOutput).not.toContain(\"This will delete the Anthropic Environment\");\n```\n\nまた `stdoutSpy` が `5-d` では宣言されていないため追加が必要。\n\n---\n\n## Positive Observations\n\n- `hasStaleManagedConfig` のヘルパー分離が明瞭。`environment?.id` の truthy チェックと `agents ?? {}` の length チェックが設計通り。\n- non-TTY 判定を `promptConfirm` 呼び出し前に行う設計（D1）が `rm/runner.ts` パターンに準拠しており一貫性がある。\n- 二重確認防止の分岐構造（D2）が if/else で明確に分離されており、構造的に correctness が保証されている。\n- `runtime !== \"managed\"` path の完了メッセージを `\"Reset stale managed fields.\"` に分ける D3 の判断が適切。\n- `managed-agent-runtime/spec.md` / `cli-commands/spec.md` が変更されていないことを確認した（TC-SPEC-002/003 ✅）。\n- `specrunner/specs/managed-cli-commands/spec.md` が正しく新設され、4 つの Requirement と Scenario が網羅されている（TC-SPEC-001 ✅）。\n- `MANAGED_RESET_USAGE` の `--force` help text に `(including when runtime is not managed)` が追加されている（TC-HELP-001 ✅）。\n- verification-result.md で typecheck / test / build がすべて green（TC-TYPE-001/002 ✅）。\n\n---\n\n## Fix Scope\n\nF-01〜F-03 は `tests/unit/cli/managed.test.ts` へのテスト追加のみ。F-04 は既存テストへの assertion 追加のみ。実装コード変更は不要。\n"
+        },
+        "startedAt": "2026-05-16T13:04:03.137Z",
+        "endedAt": "2026-05-16T13:06:26.995Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4601,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 12,
+            "outputTokens": 8736,
+            "cacheReadInputTokens": 386332,
+            "cacheCreationInputTokens": 48182
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "2dd8bdcc-f242-49e6-bcb4-9a42fabf9e1b",
+        "outcome": {
+          "verdict": "escalation",
+          "findingsPath": "specrunner/changes/managed-reset-status-stale-guard/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Code Review: managed-reset-status-stale-guard — iter 2\n\n- **verdict**: needs-fix\n- **reviewer**: code-reviewer\n- **date**: 2026-05-16\n\n---\n\n## Summary\n\niter 1 の F-01（TC-MST-NEW-002）、F-02（TC-MST-NEW-003）、F-03（TC-MR-NEW-004）はすべて正しく修正されている。実装コードに変更はなく、変更はテスト追加のみ。\n\n残る未解決は F-04（TC-MR-NEW-012）のみ。test-cases.md で **must** と定義されているアサーションが iter 2 でも未追加。\n\n---\n\n## Findings\n\n### F-01: TC-MR-NEW-012 アサーション未追加（severity: low）\n\niter 1 F-04 が未修正のまま。\n\n> TC-MR-NEW-012 — `runtime: local` + stale + `--force` で既存の destructive prompt `\"This will delete the Anthropic Environment\"` が出力されない（二重確認防止）\n\ntest-cases.md の priority は **must**。`5-d` に `stdoutSpy` のキャプチャと `not.toContain` アサーションが追加されていない。\n\nコードの if/else 分岐構造上、runtime 不一致パスで既存 destructive prompt が出力されないことは静的に保証されているが、テストケース仕様として明示的に義務付けられている。\n\n**修正**: テスト `5-d`（`\"resets stale config with --force when runtime is not managed\"`）の末尾に以下を追加する。\n\n```typescript\n// TC-MR-NEW-012: existing destructive prompt must NOT appear on stale path\nconst stdoutSpy2 = vi.spyOn(process.stdout, \"write\").mockImplementation(() => true);\nconst stdoutOutput = stdoutSpy2.mock.calls.map((c) => c[0]).join(\"\");\n```\n\nただし `beforeEach` で既に `process.stdout.write` を spy しているため、テスト内で再度 `vi.spyOn` すると二重になる。より単純な修正として、`5-d` に local `stdoutSpy` を宣言してから assertion を追加する:\n\n```typescript\nit(\"resets stale config with --force when runtime is not managed (5-d)\", async () => {\n  await writeConfig({\n    version: 1,\n    agents: { design: { agentId: \"agent_001\", definitionHash: \"hash\", lastSyncedAt: \"2026-01-01T00:00:00Z\" } },\n    environment: { id: \"env_001\", lastSyncedAt: \"2026-01-01T00:00:00Z\" },\n  });\n\n  delete process.env[\"SPECRUNNER_API_KEY\"];\n\n  const stderrSpy = vi.spyOn(process.stderr, \"write\").mockImplementation(() => true);\n  const stdoutSpy = vi.spyOn(process.stdout, \"write\").mockImplementation(() => true);\n  const { runManagedReset } = await import(\"../../../src/cli/managed.js\");\n  await runManagedReset({ force: true });\n\n  const stderrOutput = stderrSpy.mock.calls.map((c) => c[0]).join(\"\");\n  expect(stderrOutput).toContain(\"runtime is\");\n  expect(stderrOutput).toContain('not \"managed\"');\n\n  // TC-MR-NEW-012: existing destructive prompt must NOT appear (no double confirmation)\n  const stdoutOutput = stdoutSpy.mock.calls.map((c) => c[0]).join(\"\");\n  expect(stdoutOutput).not.toContain(\"This will delete the Anthropic Environment\");\n\n  const saved = await readConfig();\n  expect(saved[\"agents\"]).toEqual({});\n  expect(saved[\"environment\"]).toBeUndefined();\n});\n```\n\n---\n\n## iter 1 Findings 解決状況\n\n| Finding | 内容 | 解決状況 |\n|---------|------|----------|\n| F-01 | TC-MST-NEW-002 テスト未追加 | ✅ 解決（lines 250–265） |\n| F-02 | TC-MST-NEW-003 テスト未追加 | ✅ 解決（lines 267–282） |\n| F-03 | TC-MR-NEW-004 テスト未追加 | ✅ 解決（lines 485–508） |\n| F-04 | TC-MR-NEW-012 アサーション未追加 | ❌ 未解決（本 F-01） |\n\n---\n\n## Positive Observations\n\n- TC-MST-NEW-002: agents のみ stale のケースで `not.toContain(\"environment.id\")` が正しく assertions されている。\n- TC-MST-NEW-003: environment.id のみ stale のケースで `not.toContain(\"agents.\")` が正しく assertions されている。\n- TC-MR-NEW-004: TTY + stdin `y` での reset 進行ケースが追加され、stale path の `promptConfirm` 正常系が網羅された。\n- `isTTY` の mock/restore パターン（`Object.defineProperty` + configurable restore）が TC-MR-NEW-004 でも正しく実装されている。\n\n---\n\n## Fix Scope\n\n`tests/unit/cli/managed.test.ts` の既存テスト `5-d` への `stdoutSpy` 宣言と `not.toContain` アサーション追加のみ。実装コード変更は不要。\n"
+        },
+        "startedAt": "2026-05-16T13:07:52.610Z",
+        "endedAt": "2026-05-16T13:10:37.342Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4601,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 2415,
+            "outputTokens": 7520,
+            "cacheReadInputTokens": 235774,
+            "cacheCreationInputTokens": 50986
+          }
+        }
+      },
+      {
+        "attempt": 3,
+        "sessionId": "4ea0b135-975b-4fe7-abe4-0b395e717b6e",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/managed-reset-status-stale-guard/review-feedback-003.md",
+          "error": null,
+          "fileContent": "# Code Review - managed-reset-status-stale-guard (Iteration 3)\n\n- **verdict**: approved\n- **reviewer**: code-reviewer\n- **date**: 2026-05-16\n\n---\n\n## Summary\n\niter 2 で唯一未解決だった F-04（TC-MR-NEW-012 のアサーション未追加）が iter 3 で解消された。`tests/unit/cli/managed.test.ts:415` で local な `stdoutSpy` を宣言し、`tests/unit/cli/managed.test.ts:425` で `not.toContain(\"This will delete the Anthropic Environment\")` を assert することで「runtime 不一致 + `--force` 時に既存 destructive prompt が出力されない（二重確認防止）」を test レベルで明示。\n\n実装コード（`src/cli/managed.ts`、`src/cli/command-registry.ts`、`specrunner/specs/managed-cli-commands/spec.md`）には変更なし。typecheck / test ともに green（162 files, 1933 tests passed）。\n\niter 1 で挙げた F-01〜F-04 はすべて解決済み。test-cases.md の **must** 優先度テストケースは全てカバーされている。\n\n---\n\n## Findings\n\n### Resolved iter 2 findings\n\n| iter 2 finding | 対応 | 状況 |\n|---|---|---|\n| F-01 (TC-MR-NEW-012 アサーション未追加) | `tests/unit/cli/managed.test.ts:415,425` で `stdoutSpy` 追加と `not.toContain` 追加 | 解決 |\n\niter 3 で新規に検出された問題はなし。\n\n---\n\n## Verification Results\n\n### Correctness（spec 要件との一致）\n\n- **req-1 (managed status 拡張)**: `src/cli/managed.ts:147-159` で `Runtime: local` 出力後に `hasStaleManagedConfig(config)` で stale を判定し、`environment.id` / `agents.<role>` を個別に列挙。design.md と一致。\n- **req-2 (managed reset runtime 不一致 guard)**: `src/cli/managed.ts:189-237` で `runtime !== \"managed\"` 分岐を独立配置。stale なし → early return（L190-193）、stderr 警告（L195-197）、non-TTY 中断（L200-204）、`promptConfirm` 確認（L205-209）、SDK delete（L213-228）、`agents={}` + `environment` 削除 + `runtime` 削除（L231-234）、`logSuccess(\"Reset stale managed fields.\")`（L235）。設計通り。\n- **req-3 (data flow)**: stale false → \"Nothing to reset\" early return / stale true → 警告 → confirm → reset の流れが design.md L83-99 と完全一致。\n- **req-4 (--force 拡張)**: `MANAGED_RESET_USAGE`（`src/cli/command-registry.ts:102`）に `(including when runtime is not managed)` 文言が追加されている。\n- **req-5 (regression)**: `config.runtime === \"managed\"` path（`src/cli/managed.ts:239-282`）は構造的にそのまま維持され、既存 destructive prompt（L241-243）→ SDK delete → `logSuccess(\"Config reset.\")` → orphan warning が変更なし。テスト TC-MR-001/002/003/004/007 が green を確認。\n- **req-6 (spec authority)**: `specrunner/specs/managed-cli-commands/spec.md` が新規作成され、Requirement 4 件（status 拡張 / reset guard / `--force` bypass / non-TTY 中断）と Scenario 5 件をすべて含む。既存 spec（`managed-agent-runtime/spec.md`、`cli-commands/spec.md`）は変更されていないことを `git diff main` で確認済み。\n\n### Type Safety\n\n- `hasStaleManagedConfig` シグネチャは `SpecRunnerConfig` 引数 → `boolean` 戻り値で明示。`any` なし。\n- `process.stdin.isTTY` の参照は `(process.stdin as NodeJS.ReadStream).isTTY ?? false`（`src/cli/managed.ts:200`）で `unknown` ではない型に narrow。Node の標準型と整合。\n- `runtime` フィールド削除に使用された `delete (newConfig as unknown as Record<string, unknown>)[\"runtime\"]`（L233 / L275）は既存 managed path と同じパターン。`runtime?: ...` が optional のため `delete` は legal。`as unknown as` 二段 cast は `any` 回避のための定石。問題なし。\n- SDK error の `status` 取り出し `(err as { status?: number }).status` も既存パターン踏襲。\n- typecheck（`tsc --noEmit`）は no error。\n\n### Edge Cases\n\n- **非-TTY**: `(process.stdin as NodeJS.ReadStream).isTTY ?? false` で falsy 化、`!isTTY` → \"Non-interactive mode requires --force to reset stale config.\" + return。`rm/runner.ts` パターン準拠（design.md D1）。\n- **`--force` bypass**: `if (!opts.force)` ブロック全体（TTY 判定と prompt）を skip → SDK delete → reset へ直接進む。design.md D4 通り。\n- **stale detection**: `environment?.id` truthy または `Object.keys(config.agents ?? {}).length > 0` のいずれか。両方 falsy → \"Nothing to reset\"。空 object `environment: {}` は id 未設定なので false 判定（TC-STL-004 通り）。\n- **二重確認防止**: `runtime !== \"managed\"` path 内で `return`（L236）するため `runtime === \"managed\"` path には絶対落ちない。テスト 5-d で `not.toContain(\"This will delete the Anthropic Environment\")` を assert。\n- **完了メッセージ切り分け**: stale path → `\"Reset stale managed fields.\"`（L235）、managed path → `\"Config reset.\"`（L278）+ orphan warning（L279-281）。design.md D3 通り。\n\n### Regression\n\n- managed path のロジック（`src/cli/managed.ts:239-282`）は完全に元の挙動を保持。既存テスト TC-MR-001 (`--force`)、TC-MR-002 (TTY `y`)、TC-MR-003 (TTY `n`)、TC-MR-004 (orphan warning)、TC-MR-007 (env.id 未設定) はすべて green。\n- `runManagedStatus` も `runtime === \"managed\"` 分岐（L161-174）は無変更。TC-MST-001 が green。\n\n### Spec.md completeness\n\n`specrunner/specs/managed-cli-commands/spec.md` の内容を verify:\n\n| 要件 | Spec での記載 |\n|---|---|\n| status 拡張（stale 列挙） | L6-20 Requirement + 2 Scenarios |\n| reset runtime 不一致 guard（4-step 手順） | L22-39 Requirement + 1 Scenario |\n| `--force` bypass | L41-45 Scenario + L53-55 Requirement |\n| non-TTY 中断 | L47-51 Scenario + L57-59 Requirement |\n| 二重確認防止（SHALL NOT） | L33 |\n| 完了メッセージ「Reset stale managed fields.」 | L31, L45 |\n\nreq-6 で要求された Requirement / Scenario はすべて記述されている。\n\n---\n\n## Test Coverage\n\n### must 優先度テストケース カバレッジ\n\n| TC | カバー先 | 状況 |\n|---|---|---|\n| TC-MST-NEW-001 (stale 両方) | test 5-a (L198-213) | OK |\n| TC-MST-NEW-002 (agents のみ) | L250-265 | OK |\n| TC-MST-NEW-003 (env.id のみ) | L267-282 | OK |\n| TC-MST-NEW-004 (stale なし) | test 5-b (L215-225) | OK |\n| TC-MST-NEW-005 (managed regression) | TC-MST-001 (L227-248) | OK |\n| TC-MR-NEW-001 (Nothing to reset) | 5-h (L478-487) | OK |\n| TC-MR-NEW-002 (`--force` で reset) | 5-d (L405-430) | OK |\n| TC-MR-NEW-003 (non-TTY 中断) | 5-e (L432-450) | OK |\n| TC-MR-NEW-004 (TTY `y` で reset) | L489-512 | OK |\n| TC-MR-NEW-005 (TTY `n` 中断) | 5-f (L452-476) | OK |\n| TC-MR-NEW-010 (managed regression) | TC-MR-001 (L286-305) | OK |\n| TC-MR-NEW-011 (managed `n` で abort) | TC-MR-003 (L334-361) | OK |\n| TC-MR-NEW-012 (二重確認防止) | 5-d L425 `not.toContain` | OK |\n| TC-STL-001/002/003 (hasStaleManagedConfig) | 5-a / 5-b / 5-h 経由で間接的に検証 | OK |\n| TC-SPEC-001 (新規 spec 存在) | `specrunner/specs/managed-cli-commands/spec.md` 存在 | OK |\n| TC-SPEC-002/003 (既存 spec 不変) | `git diff main` で確認 | OK |\n| TC-TYPE-001 (typecheck) | `bun run typecheck` no error | OK |\n| TC-TYPE-002 (test) | 1933 tests passed | OK |\n\nmust 全件カバー済み。\n\n### should 優先度\n\n- TC-MST-NEW-006（複数 agents 列挙）: 未テストだが、`for (const [role, record] of Object.entries(...))` のループは複数 agent をそのまま列挙する単純な構造で、TC-MST-NEW-001（design 1 件）で同じ code path が検証されている。should なので blocking しない。\n- TC-MR-NEW-007/008/009（SDK delete 系）: 未テストだが、stale path の SDK delete は managed path の TC-MR-001/004/007 と同一ロジック（コピー）であり code-level で挙動が保証されている。should なので blocking しない。\n- TC-MR-NEW-006（空 Enter で中断）: 未テストだが、`promptConfirm` の `answer.trim().toLowerCase() === \"y\" || === \"yes\"` 判定は空文字列で false を返すため挙動は確実。should なので blocking しない。\n- TC-STL-004（environment id なしで false）: 直接テストはないが、TC-MR-NEW-001（stale なしで early return）が `agents: {}` のみで pass しており同等の検証になる。should なので blocking しない。\n\n### Help text\n\n- TC-HELP-001（`--force` 説明）: `command-registry.ts:102` で `Skip confirmation prompt (including when runtime is not managed)` を確認。should だが満たされている。\n\n---\n\n## Verdict\n\n- **verdict**: approved\n\niter 2 で残っていた F-04 が解決され、test-cases.md の must 優先度はすべてカバーされた。実装は spec / design / tasks すべてに整合し、typecheck / test も green。regression リスクなし。マージ可。\n"
+        },
+        "startedAt": "2026-05-16T13:54:34.233Z",
+        "endedAt": "2026-05-16T13:57:02.987Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4895,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 4,
+            "outputTokens": 1040,
+            "cacheReadInputTokens": 32679,
+            "cacheCreationInputTokens": 12593
+          },
+          "claude-opus-4-7[1m]": {
+            "inputTokens": 16,
+            "outputTokens": 6827,
+            "cacheReadInputTokens": 526948,
+            "cacheCreationInputTokens": 70122
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "3c54f1fb-5246-4343-9a4b-79c3afcae0e1",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T13:06:28.552Z",
+        "endedAt": "2026-05-16T13:07:51.104Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3178,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 8,
+            "outputTokens": 4456,
+            "cacheReadInputTokens": 141006,
+            "cacheCreationInputTokens": 23667
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "3c54f1fb-5246-4343-9a4b-79c3afcae0e1",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T13:10:38.936Z",
+        "endedAt": "2026-05-16T13:11:16.799Z",
+        "modelUsage": {
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 2224,
+            "cacheReadInputTokens": 105965,
+            "cacheCreationInputTokens": 4654
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/managed-reset-status-stale-guard/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — managed-reset-status-stale-guard\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/271\n- **Number**: 271\n- **CreatedAt**: 2026-05-16T13:57:09.163Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-16T13:57:04.562Z",
+        "endedAt": "2026-05-16T13:57:09.164Z"
+      }
+    ]
+  },
+  "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/271",
+    "number": 271,
+    "createdAt": "2026-05-16T13:57:09.163Z"
+  }
+}

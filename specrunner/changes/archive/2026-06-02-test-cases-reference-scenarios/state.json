@@ -1,0 +1,698 @@
+{
+  "version": 1,
+  "jobId": "75fd9c68-ddd8-4d36-8e1e-759953bce2ed",
+  "createdAt": "2026-06-02T06:56:08.699Z",
+  "updatedAt": "2026-06-02T09:51:08.743Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/test-cases-reference-scenarios/request.md",
+    "title": "test-cases.md を「scenario の写し」から「scenario 参照 + テスト戦略」へ（GWT 二重持ち解消）",
+    "type": "spec-change",
+    "slug": "test-cases-reference-scenarios"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 67242,
+  "branch": "change/test-cases-reference-scenarios-75fd9c68",
+  "history": [
+    {
+      "ts": "2026-06-02T06:56:08.699Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-06-02T06:56:11.144Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-06-02T06:59:52.421Z",
+      "step": "store-fail",
+      "status": "ok",
+      "message": "running → failed: Claude Code SDK query failed: Claude Code returned an error result: API Error: 529 Overloaded. This is a server-side issue, usually temporary — try again in a moment. If it persists, check status.claude.com."
+    },
+    {
+      "ts": "2026-06-02T06:59:52.428Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "failed → awaiting-resume: Claude Code SDK query failed: Claude Code returned an error result: API Error: 529 Overloaded. This is a server-side issue, usually temporary — try again in a moment. If it persists, check status.claude.com."
+    },
+    {
+      "ts": "2026-06-02T07:00:44.256Z",
+      "step": "resume",
+      "status": "ok",
+      "message": "awaiting-resume → running: Resuming from step 'design'"
+    },
+    {
+      "ts": "2026-06-02T07:00:44.316Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-06-02T07:04:17.023Z",
+      "step": "store-fail",
+      "status": "ok",
+      "message": "running → failed: Claude Code SDK query failed: Claude Code returned an error result: API Error: 529 Overloaded. This is a server-side issue, usually temporary — try again in a moment. If it persists, check status.claude.com."
+    },
+    {
+      "ts": "2026-06-02T07:04:17.028Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "failed → awaiting-resume: Claude Code SDK query failed: Claude Code returned an error result: API Error: 529 Overloaded. This is a server-side issue, usually temporary — try again in a moment. If it persists, check status.claude.com."
+    },
+    {
+      "ts": "2026-06-02T08:26:56.232Z",
+      "step": "resume",
+      "status": "ok",
+      "message": "awaiting-resume → running: Resuming from step 'design'"
+    },
+    {
+      "ts": "2026-06-02T08:26:56.292Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-06-02T08:29:56.390Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-06-02T08:29:56.392Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-06-02T08:29:56.393Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-06-02T08:29:56.417Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-06-02T08:29:56.418Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-06-02T08:29:56.418Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-06-02T08:29:56.418Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-06-02T08:32:52.548Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-06-02T08:32:52.551Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-06-02T08:32:52.551Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-06-02T08:32:52.552Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-06-02T08:34:28.010Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-06-02T08:34:28.013Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-06-02T08:34:28.014Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-06-02T08:39:09.608Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-06-02T08:39:09.610Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-06-02T08:39:09.610Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-06-02T08:39:09.612Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-06-02T08:39:25.128Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-06-02T08:39:25.131Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-06-02T08:39:25.131Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-06-02T08:39:25.132Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-06-02T08:39:25.132Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-06-02T08:42:52.383Z",
+      "step": "store-fail",
+      "status": "ok",
+      "message": "running → failed: Claude Code SDK query failed: Claude Code returned an error result: API Error: 529 Overloaded. This is a server-side issue, usually temporary — try again in a moment. If it persists, check status.claude.com."
+    },
+    {
+      "ts": "2026-06-02T08:42:52.431Z",
+      "step": "code-review",
+      "status": "error",
+      "message": "code-review iteration 1 completed with verdict: error"
+    },
+    {
+      "ts": "2026-06-02T08:42:52.431Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "failed → awaiting-resume: Claude Code SDK query failed: Claude Code returned an error result: API Error: 529 Overloaded. This is a server-side issue, usually temporary — try again in a moment. If it persists, check status.claude.com."
+    },
+    {
+      "ts": "2026-06-02T09:37:29.102Z",
+      "step": "resume",
+      "status": "ok",
+      "message": "awaiting-resume → running: Resuming from step 'code-fixer'"
+    },
+    {
+      "ts": "2026-06-02T09:37:29.172Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-06-02T09:37:29.187Z",
+      "step": "store-fail",
+      "status": "ok",
+      "message": "running → failed: code-fixer requires code-review result but none found"
+    },
+    {
+      "ts": "2026-06-02T09:37:29.187Z",
+      "step": "code-fixer-failed",
+      "status": "error",
+      "message": "code-fixer failed: CODE_FIXER_NO_REVIEW_RESULT — code-fixer requires code-review result but none found"
+    },
+    {
+      "ts": "2026-06-02T09:37:29.189Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "failed → awaiting-resume: code-fixer requires code-review result but none found"
+    },
+    {
+      "ts": "2026-06-02T09:39:58.203Z",
+      "step": "resume",
+      "status": "ok",
+      "message": "awaiting-resume → running: Resuming from step 'code-review'"
+    },
+    {
+      "ts": "2026-06-02T09:39:58.237Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-06-02T09:39:58.239Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-06-02T09:43:59.214Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-06-02T09:43:59.217Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-06-02T09:43:59.217Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → delta-spec-validation"
+    },
+    {
+      "ts": "2026-06-02T09:43:59.218Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-06-02T09:43:59.250Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-06-02T09:43:59.251Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → adr-gen"
+    },
+    {
+      "ts": "2026-06-02T09:43:59.252Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-06-02T09:46:32.615Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-06-02T09:46:32.617Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-06-02T09:46:32.618Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-06-02T09:46:34.761Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-06-02T09:46:34.766Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-06-02T09:51:08.743Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": null,
+          "findingsPath": null,
+          "error": {
+            "code": "CLAUDE_CODE_QUERY_FAILED",
+            "message": "Claude Code SDK query failed: Claude Code returned an error result: API Error: 529 Overloaded. This is a server-side issue, usually temporary — try again in a moment. If it persists, check status.claude.com.",
+            "hint": ""
+          }
+        },
+        "startedAt": "2026-06-02T06:56:11.157Z",
+        "endedAt": "2026-06-02T06:59:52.421Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": null,
+          "findingsPath": null,
+          "error": {
+            "code": "CLAUDE_CODE_QUERY_FAILED",
+            "message": "Claude Code SDK query failed: Claude Code returned an error result: API Error: 529 Overloaded. This is a server-side issue, usually temporary — try again in a moment. If it persists, check status.claude.com.",
+            "hint": ""
+          }
+        },
+        "startedAt": "2026-06-02T07:00:44.331Z",
+        "endedAt": "2026-06-02T07:04:17.022Z"
+      },
+      {
+        "attempt": 3,
+        "sessionId": "38a553cb-a499-4e5d-9b20-5fde55455079",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-02T08:26:56.305Z",
+        "endedAt": "2026-06-02T08:29:54.675Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 7514,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 19,
+            "outputTokens": 6867,
+            "cacheReadInputTokens": 548603,
+            "cacheCreationInputTokens": 51707
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/test-cases-reference-scenarios/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-06-02T08:29:56.393Z",
+        "endedAt": "2026-06-02T08:29:56.417Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/test-cases-reference-scenarios/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-06-02T09:43:59.219Z",
+        "endedAt": "2026-06-02T09:43:59.250Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "283727b2-1ae0-4bea-8605-85ebfe0aa58f",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/test-cases-reference-scenarios/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result\n\n<!-- FORMAT REQUIREMENTS (machine-parsed):\n- The verdict line MUST appear before the Findings table.\n- verdict line format (exact): `- **verdict**: <value>` at the start of a line\n- Valid verdict values: approved | needs-fix | escalation\n  - approved:    specification is complete, consistent, and ready for implementation\n  - needs-fix:   specification has issues that must be resolved before implementation\n  - escalation:  unresolvable conflicts, missing context, or requires human judgment\n- Findings table MUST have exactly 6 columns in this order:\n  # | Severity | Category | File | Description | How to Fix\n- Valid Severity values (uppercase): CRITICAL | HIGH | MEDIUM | LOW\n  - CRITICAL: production outage, data loss, security breach\n  - HIGH:     functional failure, clear bug, no workaround — blocks approval\n  - MEDIUM:   quality degradation, maintainability issue, future risk\n  - LOW:      informational, style, minor improvement\n- If no findings, write a table row with \"None\" or omit the table body.\n- Approval is blocked when CRITICAL ≥ 1 OR HIGH ≥ 1.\n-->\n\n- **verdict**: approved\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | Spec-Capability-Boundary | specs/test-case-generator/spec.md | 「implementer は delta spec の Scenario から GWT を読んでテストを実装しなければならない」は implementer の振る舞い要件であり、`test-case-generator` capability の delta spec ではなく `implementer-session` capability の delta spec に置くべき。finish 時の spec-merge でこの要件が `specrunner/specs/test-case-generator/spec.md` に取り込まれ、implementer-session の authority spec との乖離が生まれる。 | `specrunner/changes/test-cases-reference-scenarios/specs/implementer-session/spec.md` を追加し、当該 Requirement（+ Scenario）をそちらへ移動する。既存の `test-case-generator` capability delta spec からは削除する。 |\n",
+          "toolResult": {
+            "ok": true,
+            "approved": true
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-02T08:29:56.434Z",
+        "endedAt": "2026-06-02T08:32:50.851Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4690,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 17,
+            "outputTokens": 6454,
+            "cacheReadInputTokens": 371885,
+            "cacheCreationInputTokens": 40257
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "03324f8f-c13d-4524-844c-760b1da72cfc",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-02T08:32:52.575Z",
+        "endedAt": "2026-06-02T08:34:26.366Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2098,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 12,
+            "outputTokens": 4416,
+            "cacheReadInputTokens": 188759,
+            "cacheCreationInputTokens": 18603
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "858d1b58-4ca5-4f4e-b083-0ff88d756d39",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-02T08:34:28.034Z",
+        "endedAt": "2026-06-02T08:39:07.944Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4814,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 31,
+            "outputTokens": 15598,
+            "cacheReadInputTokens": 1377525,
+            "cacheCreationInputTokens": 56467
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/test-cases-reference-scenarios/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — test-cases-reference-scenarios — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.2s | 0 |\n| 2 | typecheck | passed | 2.6s | 0 |\n| 3 | test | passed | 8.4s | 0 |\n| 4 | lint | passed | 1.8s | 0 |\n\n## Phase: build\n\n```\nCLI Building entry: bin/specrunner.ts\nCLI Using tsconfig: tsconfig.json\nCLI tsup v8.5.1\nCLI Using tsup config: ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/test-cases-reference-scenarios-75fd9c68/tsup.config.ts\nCLI Target: node20\nCLI Cleaning output folder\nESM Build start\nESM dist/specrunner.js 621.74 KB\nESM ⚡️ Build success in 52ms\n\n$ tsup\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/test-cases-reference-scenarios-75fd9c68\n\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t152d\n\n Test Files  289 passed (289)\n      Tests  3339 passed (3339)\n   Start at  17:39:13\n   Duration  8.10s (transform 4.41s, setup 0ms, import 11.14s, tests 15.83s, environment 18ms)\n\n\n$ vitest run\nWarning: /tmp/claude-501/cred-test-JUu5Bh/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /tmp/claude-501/cred-test-ydA7Yp/specrunner/credentials.json has loose permissions (recommend 0600).\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...\nGitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Required status check \"ci/build\" is expected, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\n[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/test-cases-reference-scenarios-75fd9c68/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n```\n$ eslint ./src --max-warnings 0\n\n```\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-06-02T08:39:09.612Z",
+        "endedAt": "2026-06-02T08:39:25.127Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": null,
+          "findingsPath": null,
+          "error": {
+            "code": "CLAUDE_CODE_QUERY_FAILED",
+            "message": "Claude Code SDK query failed: Claude Code returned an error result: API Error: 529 Overloaded. This is a server-side issue, usually temporary — try again in a moment. If it persists, check status.claude.com.",
+            "hint": ""
+          }
+        },
+        "startedAt": "2026-06-02T08:39:25.156Z",
+        "endedAt": "2026-06-02T08:42:52.383Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": "92d7f803-53f9-4bbd-b6ec-8e59586eed46",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/test-cases-reference-scenarios/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — iteration 002\n\n<!-- FORMAT REQUIREMENTS (machine-parsed):\n- verdict line format (exact): `- **verdict**: <value>` at the start of a line\n- Valid verdict values: approved | needs-fix | escalation\n- iteration line format (exact): `- **iteration**: NNN` (3-digit zero-padded integer)\n- Findings table MUST have exactly 7 columns in this order:\n  # | Severity | Category | File | Description | How to Fix | Fix\n  - Fix column: yes = fixer should address this finding; no = skip (pre-existing / out-of-scope)\n- Scores table columns: Category | Score | Weight\n  - Valid Category values: correctness | security | architecture | performance | maintainability | testing\n  - Score: integer 1-10\n  - Weight: decimal as defined below\n- total line format (exact): `- **total**: <decimal>`\n- Default weights: correctness=0.30, security=0.25, architecture=0.15, performance=0.10, maintainability=0.10, testing=0.10\n- Scores table is optional but recommended. The verdict line is the authoritative decision.\n-->\n\n- **verdict**: approved\n- **iteration**: 002\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix | Fix |\n|---|----------|----------|------|-------------|------------|-----|\n| 1 | LOW | documentation | specrunner/changes/test-cases-reference-scenarios/test-cases.md | HTML comment ヘッダが旧フォーマット（\"required for each test case\"）のまま。実装完了前に test-case-gen が実行されたため更新後テンプレートが反映されていない。動作への影響なし（TEST_CASES_TEMPLATE 本体は正しく更新済み）。 | 次サイクルから test-case-gen は更新済みテンプレートを受け取るため自動解消。対応不要。 | no |\n\n## Scores\n\n| Category | Score | Weight |\n|----------|-------|--------|\n| correctness | 9 | 0.30 |\n| security | 8 | 0.25 |\n| architecture | 9 | 0.15 |\n| performance | 8 | 0.10 |\n| maintainability | 9 | 0.10 |\n| testing | 8 | 0.10 |\n\n- **total**: 8.70\n\n## Summary\n\n3 ファイルの変更（`step-output-templates.ts`、`test-case-gen-system.ts`、`implementer-system.ts`）すべてが受け入れ基準を満たしている。\n\n**受け入れ基準チェック**\n\n- ✅ `test-cases.md` の Scenario 由来 TC（TC-001〜TC-005）が GWT を持たず Source 参照のみで記述されている\n- ✅ 非 Scenario 由来 TC（TC-006〜TC-008）が従来通り GWT を保持している\n- ✅ `TEST_CASES_TEMPLATE` の HTML comment に `mixed format — depends on TC type` で混在形式が明記されており、Scenario 由来=GWT 省略・非 Scenario 由来=GWT 必須の両ルールが記載されている\n- ✅ `implementer-system.ts` の手順 3 に Scenario 由来 TC → Source パスを Read tool で開き delta spec の GWT を読む手順が明記されており、test-cases.md に GWT が無くても動作する\n- ✅ must TC-ID（TC-004、TC-006）が vitest test の describe/it に記載されており verification の grep チェックが機能する。TC-001〜003・TC-005 は LLM agent 出力のテストであり vitest 化不可（\"MUST NOT be expressed as vitest test cases\" 制約に合致）\n- ✅ `bun run typecheck && bun run test` が 289 test files / 3339 tests green\n\n**設計確認**\n\n`TEST_CASE_GEN_BASE` の `Test Case Format` セクションと `buildTestCaseGenInitialMessage` 手順 5 が一貫して混在形式を指示している。`implementer-system.ts` では Source フィールドのパターン（`specs/<capability>/spec.md > ...`）で Scenario 由来 TC を判別するフローが明確で、非 Scenario TC は従来フローを維持する。single-source-of-truth 設計として整合している。\n",
+          "toolResult": {
+            "ok": true,
+            "approved": true,
+            "fixableCount": 0
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-02T09:39:58.253Z",
+        "endedAt": "2026-06-02T09:43:55.618Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5622,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 18,
+            "outputTokens": 11808,
+            "cacheReadInputTokens": 543710,
+            "cacheCreationInputTokens": 59924
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": null,
+          "findingsPath": null,
+          "error": {
+            "code": "CODE_FIXER_NO_REVIEW_RESULT",
+            "message": "code-fixer requires code-review result but none found",
+            "hint": "Ensure code-review step produced specrunner/changes/test-cases-reference-scenarios/review-feedback-NNN.md before invoking code-fixer."
+          }
+        },
+        "startedAt": "2026-06-02T09:37:29.185Z",
+        "endedAt": "2026-06-02T09:37:29.187Z"
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "383f8db0-00ec-4276-90bd-a2e312f75bb1",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-02T09:43:59.266Z",
+        "endedAt": "2026-06-02T09:46:30.893Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2170,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 14,
+            "outputTokens": 6802,
+            "cacheReadInputTokens": 227166,
+            "cacheCreationInputTokens": 27682
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/test-cases-reference-scenarios/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — test-cases-reference-scenarios\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/505\n- **Number**: 505\n- **CreatedAt**: 2026-06-02T09:46:34.758Z\n- **Action**: created\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-06-02T09:46:32.619Z",
+        "endedAt": "2026-06-02T09:46:34.759Z"
+      }
+    ]
+  },
+  "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/505",
+    "number": 505,
+    "createdAt": "2026-06-02T09:46:34.758Z"
+  }
+}

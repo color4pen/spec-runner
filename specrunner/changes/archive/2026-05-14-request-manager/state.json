@@ -1,0 +1,635 @@
+{
+  "version": 1,
+  "jobId": "8d7e0c4d-dfb1-46bd-a89b-c51ea55f0141",
+  "createdAt": "2026-05-14T05:17:30.661Z",
+  "updatedAt": "2026-05-14T08:52:03.760Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/request-manager/request.md",
+    "title": "request 管理機構の新設",
+    "type": "new-feature",
+    "slug": "request-manager"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 99895,
+  "branch": "feat/request-manager-8d7e0c4d",
+  "history": [
+    {
+      "ts": "2026-05-14T05:17:30.661Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-14T05:17:32.321Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-14T05:29:10.544Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-14T05:29:10.546Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → spec-review"
+    },
+    {
+      "ts": "2026-05-14T05:29:10.547Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-14T05:29:10.547Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-14T05:33:53.454Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-14T08:12:37.860Z",
+      "step": "stale-detection",
+      "status": "ok",
+      "message": "running → awaiting-resume: Process not running"
+    },
+    {
+      "ts": "2026-05-14T08:12:59.801Z",
+      "step": "resume",
+      "status": "ok",
+      "message": "awaiting-resume → running: Resuming from step 'spec-review'"
+    },
+    {
+      "ts": "2026-05-14T08:12:59.849Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-14T08:12:59.849Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-14T08:16:45.689Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-14T08:16:45.691Z",
+      "step": "spec-review",
+      "status": "warning",
+      "message": "spec-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-14T08:16:45.691Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → spec-fixer"
+    },
+    {
+      "ts": "2026-05-14T08:16:45.693Z",
+      "step": "spec-fixer-started",
+      "status": "started",
+      "message": "Starting spec-fixer step"
+    },
+    {
+      "ts": "2026-05-14T08:18:25.981Z",
+      "step": "spec-fixer-verdict",
+      "status": "ok",
+      "message": "spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-14T08:18:25.983Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → spec-review (iter 2)"
+    },
+    {
+      "ts": "2026-05-14T08:18:25.984Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-14T08:18:25.984Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-14T08:24:14.501Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-14T08:24:14.505Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-14T08:24:14.505Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-14T08:24:14.506Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-14T08:27:00.329Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-14T08:27:00.332Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 2)"
+    },
+    {
+      "ts": "2026-05-14T08:27:00.333Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-14T08:38:12.616Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-14T08:38:12.619Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-14T08:38:12.620Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-14T08:38:12.621Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-14T08:38:22.137Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-14T08:38:22.141Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-14T08:38:22.141Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-14T08:38:22.142Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-14T08:38:22.142Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-14T08:42:36.359Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-14T08:42:36.362Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-14T08:42:36.363Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-14T08:42:36.364Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-14T08:43:39.196Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-14T08:43:39.199Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-14T08:43:39.199Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-14T08:43:39.200Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-14T08:46:04.877Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-14T08:46:04.881Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-14T08:46:04.881Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-14T08:46:04.884Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-14T08:46:08.157Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-14T08:46:08.161Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-14T08:52:03.760Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "8dc21961-c8ac-41c7-a79c-4a17c132f0de",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-14T05:17:32.322Z",
+        "endedAt": "2026-05-14T05:17:32.322Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6267,
+            "outputTokens": 6128,
+            "cacheReadInputTokens": 335057,
+            "cacheCreationInputTokens": 52475
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 21,
+            "outputTokens": 38601,
+            "cacheReadInputTokens": 1123909,
+            "cacheCreationInputTokens": 82509
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "7ef50799-9fe1-4298-b07c-b3d552500bf8",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/request-manager/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: request-manager\n\n- **reviewer**: spec-reviewer\n- **date**: 2026-05-14\n- **iteration**: 1\n- **verdict**: needs-fix\n\n## Summary\n\nrequest.md の要件に対してdesign.md / tasks.md / delta specs は概ね網羅的だが、設計とスペックの間に 3 件の不整合、delta spec に 1 件のカバレッジ漏れ、API 設計に 1 件の一貫性問題がある。セキュリティ上の重大リスクは確認されなかった。\n\n## Findings\n\n### F-01: design.md の `executeCreate` フローが REQ-CLI-RC-02 の優先順位規定と矛盾 [HIGH]\n\n**場所**: design.md `src/core/command/request-create.ts` セクション / delta spec REQ-CLI-RC-02\n\nREQ-CLI-RC-02 は「If both `--stdin` and a positional `<text>` are provided, the positional argument takes precedence」と規定している。\n\nしかし design.md の `executeCreate` 実装フローは:\n1. `opts.stdin` が true なら stdin を全読みして text とする\n2. `text === null` かつ `!opts.stdin` なら error\n\nこの順序だと、positional が提供されていても `--stdin` が true なら stdin の内容で上書きされる。正しいフローは:\n1. `text !== null`（positional 提供済み）ならそのまま使う\n2. `text === null` かつ `opts.stdin` なら stdin を読む\n3. `text === null` かつ `!opts.stdin` なら error\n\n**修正対象**: design.md の executeCreate フロー記述 + tasks.md 9.1\n\n### F-02: `store.read()` が delta spec に不在 [MEDIUM]\n\n**場所**: specs/request-management/spec.md\n\ndesign.md は `store.read(cwd, slug): Promise<ParsedRequest>` を定義し、`manager.list()` の実装で使用している。しかし delta spec の REQ-RM-STORE-* には `read()` に対応する Requirement がない。\n\n`resolve` / `list` / `write` / `checkSlugCollision` は全て明示的な Requirement を持つが、`read` だけが抜けている。\n\n**修正対象**: specs/request-management/spec.md に REQ-RM-STORE-06 として `store.read()` の Requirement を追加\n\n### F-03: `buildScaffoldTemplate()` の移動が design / tasks から脱落 [MEDIUM]\n\n**場所**: request.md 要件 1 vs design.md / tasks.md\n\nrequest.md の要件 1（モジュール構成）に「`buildScaffoldTemplate()` を `src/core/command/request.ts` から移動」と明記されている。しかし design.md の generator.ts セクションには `generate()` と `buildGeneratePrompt()` のみが記載され、`buildScaffoldTemplate()` の移動には言及がない。tasks.md にも該当タスクがない。\n\n要件 8 で「generator はそれを拡張し」とあり、LLM ベースの生成で機能的に上位互換を提供する設計意図は理解できるが、要件 1 の「移動」指示と design が乖離している。\n\n**選択肢**:\n- (a) `buildScaffoldTemplate()` を generator.ts に移動し、`request.ts` から re-export（要件通り）\n- (b) request.md を更新して移動対象から外す（設計判断として `request template` コマンドと generator を分離する意図を明示）\n\n**修正対象**: design.md + tasks.md、または request.md の要件 1 を修正\n\n### F-04: `manager.resolve()` と `store.resolve()` のパラメータ順序が逆 [LOW]\n\n**場所**: design.md\n\n- `store.resolve(cwd: string, slug: string): string` — cwd が先\n- `manager.resolve(slug: string, cwd: string): string` — slug が先\n\n同一概念の関数でパラメータ順序が逆転しており、実装時・利用時の混乱リスクがある。慣例としてプロジェクト内で `cwd` を第一引数にする関数（`store.list(cwd)`, `store.write(cwd, slug, ...)`, `store.checkSlugCollision(cwd, slug)`）が多いため、`manager.resolve` も `(cwd, slug)` に統一するのが自然。\n\n**修正対象**: design.md の manager.resolve シグネチャ + tasks.md 8.5\n\n### F-05: 事実誤差（import 元ファイル数） [INFO]\n\n**場所**: request.md 補足\n\nrequest.md は「`parseRequestMd()` / `parseRequestMdContent()` は 13 ファイルから import されている」と記載しているが、実際のコードベースでは 12 ファイルから import されている。design.md も「13 ファイルの既存 import は変更不要」と転記している。機能上の影響はないが、正確性のため修正が望ましい。\n\n## Security Review\n\n### SEC-01: slugify() によるパス安全性 [PASS]\n\n`slugify()` は非 ASCII を除去し、`[^a-z0-9]+` をハイフンに置換するため、`../` や null byte などのパストラバーサル文字列は生成されない。`store.resolve()` が `path.join(cwd, ACTIVE_SUBDIR, slug, \"request.md\")` を構築する際も、slugify 済みの slug のみが使われるため安全。\n\n### SEC-02: LLM 出力のファイルシステム書き込み [PASS]\n\n`generator.generate()` は LLM 出力を `parseRequestMdContent()` でバリデーション後に `store.write()` する。書き込み先は固定パス（`specrunner/requests/active/<slug>/request.md`）のみで、LLM が書き込み先を制御する余地はない。\n\n### SEC-03: stdin 読み込みのサイズ制限 [INFO]\n\nstdin 読み込みにサイズ上限の規定がない。CLI ツールとしては標準的だが、極端に大きな入力（> 数 MB）で OOM の可能性がある。現時点では非ブロッキング。必要に応じて将来 `--max-input-size` 等で制限可能。\n\n### SEC-04: query() の permissionMode [PASS]\n\ngenerator は `allowedTools: []` で LLM のツールアクセスを完全に遮断しており、ファイルシステムへの副作用はない。reviewer は既存の `executeReview()` と同じ `allowedTools` / `permissionMode` を使用しており、新たなリスクは導入されない。\n\n## Baseline Spec Compatibility\n\ndelta spec `request-management` は baseline の web ベース要件（Server Action, DB schema, workspace-client.tsx）とは異なるレイヤー（CLI + FS ベース）の要件を追加する。これは CLI-first への転換（project status memory 参照）と整合しており、baseline 要件との機能的矛盾はない。\n\n## Checklist\n\n| request.md 要件 | design.md | tasks.md | delta spec | 状態 |\n|---|---|---|---|---|\n| 1. モジュール構成 | ✓ (buildScaffoldTemplate 移動を除く) | ✓ | ✓ | F-03 |\n| 2. request store パス | ✓ | ✓ | ✓ | OK |\n| 3. 状態遷移 active→merged | ✓ | — | ✓ | OK |\n| 4. slug → パス解決 | ✓ | ✓ | ✓ | OK |\n| 5. list() | ✓ | ✓ | ✓ | OK |\n| 6. 既存コード切り替えスコープ外 | ✓ | — | ✓ | OK |\n| 7-12. generator | ✓ | ✓ | ✓ | OK |\n| 13-15. reviewer | ✓ | ✓ | ✓ | OK |\n| 16. request create | ✓ | ✓ | ✓ | F-01 |\n| 17. request create --stdin | ✓ | ✓ | ✓ | F-01 |\n| 18. request review slug 対応 | ✓ | ✓ | ✓ | OK |\n| 19. request list | ✓ | ✓ | ✓ | OK |\n| 20-23. run slug 対応 | ✓ | ✓ | ✓ | OK |\n"
+        },
+        "startedAt": "2026-05-14T05:29:10.548Z",
+        "endedAt": "2026-05-14T05:29:10.548Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 11154,
+            "outputTokens": 7141,
+            "cacheReadInputTokens": 623191,
+            "cacheCreationInputTokens": 56949
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 8,
+            "outputTokens": 7970,
+            "cacheReadInputTokens": 215873,
+            "cacheCreationInputTokens": 60874
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "c7a8889e-7877-432e-a1d1-fde665fe1c16",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/request-manager/spec-review-result-002.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: request-manager\n\n- **reviewer**: spec-reviewer (iteration 2)\n- **date**: 2026-05-14\n- **iteration**: 2\n- **verdict**: needs-fix\n\n## Summary\n\niteration 1 (spec-review-result-001.md) で指摘された F-01〜F-04 のうち、いずれも現在の spec ファイル群に修正が反映されていない。加えて、コードベース検証で import 数の事実誤差が spec・前回レビューの両方より大きいことを確認した。HIGH 1 件 + MEDIUM 2 件が未解決のため verdict は needs-fix を維持する。\n\n## Open Findings from Iteration 1 (still unfixed)\n\n### F-01: executeCreate の stdin/positional 優先順位が REQ-CLI-RC-02 と矛盾 [HIGH] — UNFIXED\n\n**場所**: design.md `executeCreate` フロー (L240-241) / tasks.md 9.1(a)(b) / delta spec REQ-CLI-RC-02\n\nREQ-CLI-RC-02 は「positional argument takes precedence」と規定しているが、design.md のフローは:\n1. `opts.stdin` が true → stdin 全読み\n2. `text === null` かつ `!opts.stdin` → error\n\npositional `text` が渡されていても `--stdin` が true なら stdin で上書きされる。正しいフロー:\n1. `text !== null` → positional をそのまま使う\n2. `text === null` かつ `opts.stdin` → stdin を読む\n3. `text === null` かつ `!opts.stdin` → error\n\n**修正対象**: design.md executeCreate フロー + tasks.md 9.1\n\n### F-02: `store.read()` の delta spec Requirement が不在 [MEDIUM] — UNFIXED\n\n**場所**: specs/request-management/spec.md\n\ndesign.md は `store.read(cwd, slug): Promise<ParsedRequest>` を定義し、tasks.md 2.4 にタスクがあり、`manager.list()` の実装でも使用される。しかし delta spec の REQ-RM-STORE-01〜05 に `read()` の Requirement がない。\n\n**修正対象**: specs/request-management/spec.md に REQ-RM-STORE-06 を追加\n\n### F-03: `buildScaffoldTemplate()` の移動が design/tasks から脱落 [MEDIUM] — UNFIXED\n\n**場所**: request.md 要件 1 vs design.md / tasks.md\n\nrequest.md 要件 1:「`buildScaffoldTemplate()` を `src/core/command/request.ts` から移動」と明記されている。design.md の generator.ts セクションには `generate()` と `buildGeneratePrompt()` のみ。tasks.md にも対応タスクなし。\n\nrequest.md の要件 1 を修正して移動対象から外す（generator は LLM ベースの別機能であり、template scaffold とは分離する意図を明示する）か、design.md + tasks.md に移動タスクを追加する必要がある。\n\n**修正対象**: request.md 要件 1 を明確化、または design.md + tasks.md に反映\n\n### F-04: `manager.resolve()` と `store.resolve()` のパラメータ順序が逆 [LOW] — UNFIXED\n\n**場所**: design.md\n\n- `store.resolve(cwd, slug)` — cwd が先\n- `manager.resolve(slug, cwd)` — slug が先\n\nプロジェクト全体で `(cwd, ...)` を第一引数にするパターンが多い（`store.list(cwd)`, `store.write(cwd, slug, ...)`, `store.checkSlugCollision(cwd, slug)`, `manager.create(text, cwd, ...)`）。`manager.resolve` も `(cwd, slug)` に統一すべき。\n\n**修正対象**: design.md manager.resolve シグネチャ + tasks.md 8.5\n\n## New Findings (Iteration 2)\n\n### F-06: import ファイル数の事実誤差が spec・前回レビュー双方で不正確 [INFO]\n\n**場所**: request.md 補足 / design.md types.ts セクション\n\nrequest.md は「13 ファイルから import」、前回レビュー F-05 は「実際は 12 ファイル」と指摘。\n\nコードベース検証の結果:\n- `src/` 内で `request-md.ts` から import するファイル: 13 ファイル（`request-md.ts` 自身を除く）\n- `tests/` 内: 4 ファイル\n- 合計: 17 ファイル\n\n機能上の影響はない（re-export 戦略は import 数に依存しない）。正確性のため修正が望ましいが、ブロッカーではない。\n\n### F-07: ハードコードパス箇所数の事実誤差 [INFO]\n\n**場所**: request.md\n\nrequest.md は「6 箇所にハードコード」と記載。コードベース検証の結果、source ファイルは 5 つ（slugify.ts, pipeline-run.ts, request-patterns.ts, move-requests-dir.ts, resolve-target.ts）。コメント行を含めれば 12 箇所、実コードのみで 9 箇所。「6 箇所」はどの数え方とも一致しない。\n\n機能・設計上の影響なし。store.ts 集約の妥当性は変わらない。\n\n## Security Review\n\n### SEC-01: slugify() によるパス安全性 [PASS]\n\n`slugify()` は `[^a-z0-9]+` をハイフンに置換し、先頭末尾のハイフンを除去する。`../`, null byte, スペース等のパストラバーサル文字列は生成されない。`store.resolve()` が固定パスパターンを構築するため、slug 経由でのディレクトリ脱出は不可能。\n\n### SEC-02: LLM 出力のファイルシステム書き込み [PASS]\n\n`generator.generate()` は LLM 出力を `parseRequestMdContent()` で構造検証後に `store.write()` で固定パスに書き込む。LLM が書き込み先を制御する余地なし。`allowedTools: []` により LLM のファイルシステムアクセスも完全遮断。\n\n### SEC-03: stdin サイズ制限なし [INFO]\n\nstdin 読み込みにサイズ上限の規定がない。CLI ツールとしては標準的な挙動。極端な入力での OOM リスクは理論上あるが、ユーザー自身が入力を制御する CLI 環境では non-blocking。\n\n### SEC-04: `permissionMode: \"bypassPermissions\"` [PASS]\n\ngenerator は `allowedTools: []` でツールアクセスを完全遮断しており実質的な副作用なし。reviewer は既存 `executeReview()` と同じ `allowedTools` / `permissionMode` を継承しており新たなリスクは導入されない。\n\n## Baseline Spec Compatibility\n\ndelta spec `cli-commands` は既存 baseline の `specrunner run` ステップ 5（ファイル存在チェック）を拡張する。slug 解決は「ファイルが存在しない場合のフォールバック」として追加されるため、ファイルパスが存在する場合の既存動作は一切変わらない。baseline の fail-fast 順序（ステップ 1〜4）も影響を受けない。\n\ndelta spec `request-management` は baseline の web ベース要件（Server Action, DB schema）とは異なるレイヤー（CLI + FS ベース）であり、機能的矛盾なし。\n\n## Required Actions for Approval\n\n| ID | Severity | Action |\n|----|----------|--------|\n| F-01 | HIGH | design.md + tasks.md 9.1: executeCreate の stdin/positional 優先順位を REQ-CLI-RC-02 と整合させる |\n| F-02 | MEDIUM | specs/request-management/spec.md: `store.read()` の Requirement (REQ-RM-STORE-06) を追加 |\n| F-03 | MEDIUM | request.md 要件 1 を修正して buildScaffoldTemplate 移動を除外する旨を明示するか、design.md + tasks.md に移動タスクを追加 |\n| F-04 | LOW | design.md + tasks.md 8.5: `manager.resolve(slug, cwd)` → `manager.resolve(cwd, slug)` に統一 |\n\n## Checklist\n\n| request.md 要件 | design.md | tasks.md | delta spec | 状態 |\n|---|---|---|---|---|\n| 1. モジュール構成 | ✓ (buildScaffoldTemplate を除く) | ✓ | ✓ | F-03 |\n| 2. request store パス | ✓ | ✓ | ✓ | OK |\n| 3. 状態遷移 active→merged | ✓ | — | ✓ | OK |\n| 4. slug → パス解決 | ✓ | ✓ | ✓ | OK |\n| 5. list() | ✓ | ✓ | ✓ | OK |\n| 6. 既存コード切り替えスコープ外 | ✓ | — | ✓ | OK |\n| 7-12. generator | ✓ | ✓ | ✓ | OK |\n| 13-15. reviewer | ✓ | ✓ | ✓ | OK |\n| 16. request create | ✓ | ✓ | ✓ | F-01 |\n| 17. request create --stdin | ✓ | ✓ | ✓ | F-01 |\n| 18. request review slug 対応 | ✓ | ✓ | ✓ | OK |\n| 19. request list | ✓ | ✓ | ✓ | OK |\n| 20-23. run slug 対応 | ✓ | ✓ | ✓ | OK |\n| store.read() | ✓ | ✓ | — | F-02 |\n"
+        },
+        "startedAt": "2026-05-14T08:12:59.850Z",
+        "endedAt": "2026-05-14T08:12:59.850Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 11301,
+            "outputTokens": 6783,
+            "cacheReadInputTokens": 655077,
+            "cacheCreationInputTokens": 62605
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 8,
+            "outputTokens": 7416,
+            "cacheReadInputTokens": 221438,
+            "cacheCreationInputTokens": 60531
+          }
+        }
+      },
+      {
+        "attempt": 3,
+        "sessionId": "7c8f5503-82d9-459e-aa99-95085c91a327",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/request-manager/spec-review-result-003.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: request-manager\n\n- **reviewer**: spec-reviewer (iteration 3)\n- **date**: 2026-05-14\n- **iteration**: 3\n- **verdict**: approved\n\n## Summary\n\nIteration 1-2 の全指摘（F-01 HIGH, F-02 MEDIUM, F-03 MEDIUM, F-04 LOW）が修正済みであることを確認した。request.md・design.md・tasks.md・delta specs の間に未解決の不整合はない。セキュリティ上の重大リスクも確認されなかった。1 件の LOW 観察事項を記録するが、ブロッカーではない。\n\n## Resolution of Previous Findings\n\n### F-01: executeCreate の stdin/positional 優先順位 [HIGH] — RESOLVED\n\ndesign.md L241 が正しい順序に修正済み:\n1. `text !== null` → positional をそのまま使う\n2. `text === null` かつ `opts.stdin` → stdin を読む\n3. `text === null` かつ `!opts.stdin` → error\n\ntasks.md 9.1(a) も同様に修正。REQ-CLI-RC-02 の規定と整合する。\n\n### F-02: `store.read()` の delta spec Requirement 不在 [MEDIUM] — RESOLVED\n\nspecs/request-management/spec.md に REQ-RM-STORE-06 が追加済み。`read()` の動作（パース失敗時の throw、原因の非隠蔽）が明確に規定されている。\n\n### F-03: `buildScaffoldTemplate()` の移動が design から脱落 [MEDIUM] — RESOLVED\n\nrequest.md 要件 1 が修正済み: 「`buildScaffoldTemplate()` は移動しない（generator は LLM ベースの生成機能であり、テンプレートベースの scaffold とは別機能のため分離する）」と明示。design.md・tasks.md に反映不要な設計判断として整合する。\n\n### F-04: `manager.resolve()` パラメータ順序 [LOW] — RESOLVED\n\ndesign.md L221: `resolve(cwd: string, slug: string): string` — `(cwd, slug)` に統一済み。tasks.md 8.5 も同様。プロジェクト全体の慣例と整合する。\n\n## New Findings (Iteration 3)\n\n### F-08: run.ts slug 解決の fail-fast 順序への影響 [LOW]\n\n**場所**: design.md L280-307 / delta spec REQ-CLI-RUN-02\n\ndesign.md の `runRunCore()` は slug 解決（`fs.existsSync` + `storeResolve`）を `runPreflight()` の前に配置する。slug 解決が失敗した場合（ファイルでも active slug でもない）、`return 1` で preflight steps 1-4 の実行前に早期終了する。\n\nbaseline spec は `specrunner run` の fail-fast 順序を step 1（config 存在）→ ... → step 5（ファイル存在）と MUST で規定しており、slug 解決の早期 return は理論上この順序に影響する。\n\n**実影響**: ファイルでも slug でもない無効な引数 AND 環境設定不備の両方が同時に発生する場合のみ、エラーメッセージの表示順が変わる。有効な入力に対する動作は一切影響なし。\n\n**推奨**: delta spec REQ-CLI-RUN-02 の「preflight, pipeline, and all downstream behavior are unchanged」に注記を追加し、引数解決が preflight 前の pre-step であることを明示する。または design.md で早期 return を削除し、slug 解決パスを `absolutePath` に設定して preflight step 5 に存在確認を委ねる。\n\nblocking ではない理由: 新しいエラーメッセージ（`'...' is neither a file path nor an active request slug.`）は、baseline の step 5 エラー（`ENOENT: no such file or directory`）よりユーザーにとって有用。UX は改善方向。\n\n### F-09: ハードコードパス箇所数の事実誤差 [INFO]\n\n**場所**: request.md module-architect 分析セクション\n\nrequest.md は「6 箇所にハードコード」と記載。コードベース検証では 5 ソースファイル（slugify.ts, pipeline-run.ts, resolve-target.ts, move-requests-dir.ts, workflow-structure.ts）に分散。機能・設計上の影響なし。store.ts 集約の妥当性は変わらない。\n\n## Security Review\n\n### SEC-01: slugify() によるパス安全性 [PASS]\n\n`slugify()` は `[^a-z0-9]+` をハイフンに置換し、先頭末尾のハイフンを除去する。`../`, null byte (`\\x00` は `[^a-z0-9]+` にマッチしてハイフン化), スペース等のパストラバーサル文字列は生成されない。`store.resolve()` が固定パスパターン（`specrunner/requests/active/<slug>/request.md`）を構築するため、slug 経由でのディレクトリ脱出は不可能。\n\n### SEC-02: LLM 出力のファイルシステム書き込み [PASS]\n\n`generator.generate()` は LLM 出力を `parseRequestMdContent()` で構造検証後に `store.write()` で固定パスに書き込む。LLM が書き込み先を制御する余地なし。`allowedTools: []` により LLM のファイルシステムアクセスも完全遮断。\n\n### SEC-03: stdin サイズ制限なし [INFO]\n\nstdin 読み込みにサイズ上限の規定がない。CLI ツールとしては標準的な挙動。極端な入力（> 数 MB）での OOM リスクは理論上あるが、ユーザー自身が入力を制御する CLI 環境では non-blocking。\n\n### SEC-04: `permissionMode: \"bypassPermissions\"` [PASS]\n\ngenerator は `allowedTools: []` でツールアクセスを完全遮断しており実質的な副作用なし。reviewer は既存 `executeReview()` と同じ `allowedTools` / `permissionMode` を継承しており新たなリスクは導入されない。\n\n### SEC-05: OWASP Top 10 該当項目 [PASS]\n\nCLI ツールのため大半は N/A。該当するもの:\n- A03 Injection: slugify() によるサニタイズで対処済み。shell exec にユーザー入力を渡す箇所なし\n- A04 Insecure Design: store が固定パスパターンを強制。LLM の出力が書き込み先を制御する経路なし\n- A01 Broken Access Control: ローカル CLI のため N/A（OS レベルのファイル権限に委ねる）\n\n## Baseline Spec Compatibility\n\n**cli-commands baseline**: delta spec REQ-CLI-RUN-02 は既存の `specrunner run` step 5 を slug フォールバックで拡張する。ファイルパスが存在する場合の既存動作は一切変わらない（後方互換）。step 1-4 の fail-fast 順序は F-08 記載の注記を除き影響なし。\n\n**request-management baseline**: baseline は web ベース要件（Server Action, DB schema, workspace-client.tsx）、delta は CLI + FS ベース要件。異なるレイヤーであり機能的矛盾なし。CLI-first 転換の方針と整合。\n\n## Completeness Checklist\n\n| request.md 要件 | design.md | tasks.md | delta spec | 状態 |\n|---|---|---|---|---|\n| 1. モジュール構成（buildScaffoldTemplate 除外明示） | ✓ | ✓ | ✓ | OK |\n| 2. request store パス | ✓ | ✓ | ✓ | OK |\n| 3. 状態遷移 active→merged | ✓ | — | ✓ | OK |\n| 4. slug → パス解決 | ✓ | ✓ | ✓ | OK |\n| 5. list() | ✓ | ✓ | ✓ | OK |\n| 6. 既存コード切り替えスコープ外 | ✓ | — | ✓ | OK |\n| 7-12. generator | ✓ | ✓ | ✓ | OK |\n| 13-15. reviewer | ✓ | ✓ | ✓ | OK |\n| 16. request create | ✓ | ✓ | ✓ | OK |\n| 17. request create --stdin | ✓ | ✓ | ✓ | OK |\n| 18. request review slug 対応 | ✓ | ✓ | ✓ | OK |\n| 19. request list | ✓ | ✓ | ✓ | OK |\n| 20-23. run slug 対応 | ✓ | ✓ | ✓ | OK |\n| store.read() | ✓ | ✓ | ✓ | OK |\n"
+        },
+        "startedAt": "2026-05-14T08:18:25.985Z",
+        "endedAt": "2026-05-14T08:18:25.985Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 11073,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 11,
+            "outputTokens": 17050,
+            "cacheReadInputTokens": 509835,
+            "cacheCreationInputTokens": 71297
+          }
+        }
+      }
+    ],
+    "spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "bfe16302-73f6-47df-9f13-f9958b14329f",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-14T08:16:45.693Z",
+        "endedAt": "2026-05-14T08:16:45.693Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 674,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 12,
+            "outputTokens": 6365,
+            "cacheReadInputTokens": 330979,
+            "cacheCreationInputTokens": 44412
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "be313000-8f15-4c11-961a-33f14603c8b5",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-14T08:24:14.507Z",
+        "endedAt": "2026-05-14T08:24:14.507Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3057,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 13778,
+            "cacheReadInputTokens": 66272,
+            "cacheCreationInputTokens": 38324
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "c94079a9-7621-4927-9695-d607640f64be",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-14T08:27:00.333Z",
+        "endedAt": "2026-05-14T08:27:00.333Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4553,
+            "outputTokens": 13,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 99,
+            "outputTokens": 43641,
+            "cacheReadInputTokens": 6184515,
+            "cacheCreationInputTokens": 154193
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/request-manager/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — request-manager — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.0s | 0 |\n| 2 | typecheck | passed | 1.7s | 0 |\n| 3 | test | passed | 4.3s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-manager-8d7e0c4d\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t133d\n\n Test Files  149 passed (149)\n      Tests  1760 passed (1760)\n   Start at  17:38:16\n   Duration  4.07s (transform 2.88s, setup 0ms, import 5.47s, tests 7.78s, environment 10ms)\n\n\n$ vitest run\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-manager-8d7e0c4d/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-14T08:38:12.622Z",
+        "endedAt": "2026-05-14T08:38:12.622Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "8d760af4-9afc-4bd0-b607-4fe9d34e3d55",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/request-manager/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — request-manager — iter 1\n\n- **date**: 2026-05-14\n- **reviewer**: code-reviewer\n- **verdict**: needs-fix\n\n---\n\n## Summary\n\n実装は設計仕様に忠実で、アーキテクチャは clean。typecheck と全 1760 テストが green。\nただし **generator.ts の timeoutMs 未適用**（設計との乖離、機能的バグ）と **TC-GEN-003 must テスト欠落**が修正必須。\n\n---\n\n## Findings\n\n### F-01 [MEDIUM] `generator.ts` — `timeoutMs` 解決済みだが AbortController 未設定\n\n**ファイル**: `src/core/request/generator.ts` 行 37–65\n\n`getStepExecutionConfig` で `resolvedConfig.timeoutMs` を解決しているが、AbortController が一切作成されず `queryFn` 呼び出しに渡されていない。\n\n```typescript\n// (c) Resolve execution config\nconst resolvedConfig = getStepExecutionConfig(config, \"request-generate\", {\n  model: \"claude-opus-4-5\",\n  maxTurns: 1,\n  timeoutMs: 120_000,\n});\n// ← ここで timeoutMs が解決されているが以降一切使われない\n\nconst messages = queryFn({\n  prompt: buildGeneratePrompt(text),\n  options: {\n    cwd,\n    allowedTools: [],\n    permissionMode: \"bypassPermissions\",\n    ...maxTurnsOption,\n    model: resolvedConfig.model,\n    systemPrompt: REQUEST_GENERATE_SYSTEM_PROMPT,\n    // abortController が渡されていない\n  },\n});\n```\n\n`reviewer.ts` では同パターンで正しく実装されている（行 161–165）:\n\n```typescript\nconst abortController = new AbortController();\nlet timeoutId: ReturnType<typeof setTimeout> | undefined;\nif (resolvedConfig.timeoutMs !== null && resolvedConfig.timeoutMs > 0) {\n  timeoutId = setTimeout(() => abortController.abort(), resolvedConfig.timeoutMs);\n}\n// ... finally { if (timeoutId !== undefined) clearTimeout(timeoutId); }\n```\n\n`maxTurns: 1` で実質 1 turn 制限はあるが、SDK の turn 完了まで任意に時間がかかりうる。設定値が無視される点は設計との乖離。\n\n**Fix**: `reviewer.ts` と同パターンで AbortController + setTimeout を追加し、`finally` でクリアする。\n\n---\n\n### F-02 [MEDIUM] TC-GEN-003 (must) テスト欠落\n\n**ファイル**: `tests/unit/core/request/generator.test.ts`\n\n`test-cases.md` の TC-GEN-003 は **must** 指定:\n\n```\nGIVEN active/my-feature/request.md が存在する\nWHEN  generate(\"my feature\", cwd, config) を呼ぶ\nTHEN  SLUG_COLLISION エラーを throw する\nAND   queryFn は呼ばれない\n```\n\n実装は正しく `checkSlugCollision` が `queryFn` より先に呼ばれている（generator.ts 行 34）。しかし、この振る舞いを保証するテストがない。「queryFn が呼ばれないこと」の検証は将来のリグレッション防止に重要。\n\n**Fix**: TC-GEN-003 テストを `generator.test.ts` に追加する。`vi.fn()` で mock queryFn を用意し、`checkSlugCollision` が throw した際に mock が 0 回呼ばれたことを確認する。\n\n---\n\n### F-03 [LOW] `request-review.ts` — `verdictToExitCode` に dynamic import を使用\n\n**ファイル**: `src/core/command/request-review.ts` 行 90\n\n```typescript\n// Step 12: Return exit code based on verdict\nconst { verdictToExitCode } = await import(\"../request/reviewer.js\");\nreturn verdictToExitCode(result.verdict);\n```\n\nファイル上部で `verdictToExitCode` を静的に re-export しているにもかかわらず、内部使用には dynamic import を使っている。一貫性がなく、不要な非同期呼び出し。\n\n```typescript\n// 既存の re-export（上部）\nexport {\n  parseReviewOutput,\n  verdictToExitCode,\n  buildInitialMessage,\n} from \"../request/reviewer.js\";\n```\n\n**Fix**: `runReview` と共に `verdictToExitCode` を static import し、`await import(...)` を削除する。\n\n```typescript\nimport { runReview, verdictToExitCode } from \"../request/reviewer.js\";\n```\n\n---\n\n### F-04 [LOW] TC-ST-010 (store.read() must) テスト欠落\n\n**ファイル**: `tests/unit/core/request/store.test.ts`\n\n`test-cases.md` の TC-ST-010 は **must** 指定（Task-2.4 対応）:\n\n```\nGIVEN active/my-feature/request.md に valid な request.md が存在する\nWHEN  store.read(cwd, \"my-feature\") を呼ぶ\nTHEN  ParsedRequest オブジェクトを返す\n```\n\n`read()` 自体は単純だが、`manager.list()` の内部で使われており、パース失敗スキップロジックとセットで重要。\n\n**Fix**: TC-ST-010 を `store.test.ts` に追加する（write + read のラウンドトリップ確認）。\n\n---\n\n## Positive Notes\n\n- **型安全性**: `SpecRunnerError(code, hint, message)` の引数順を全箇所で正しく踏襲している（errors.ts の factory パターンと一致）\n- **DI パターン**: `reviewer.ts` と `generator.ts` で `queryFn` を注入可能にし、testability を確保\n- **後方互換**: `src/parser/request-md.ts` と `src/util/slugify.ts` の re-export が既存 13 ファイルを無変更のまま通している\n- **パス知識の集約**: `ACTIVE_SUBDIR` / `MERGED_SUBDIR` 定数が store.ts に集約され、設計意図を達成\n- **manager.ts の薄さ**: thin coordinator として独自ロジックを持たず、設計方針を遵守\n- **エラーメッセージの品質**: slug collision 等の stderr 出力に Hint が付いており UX 良好\n- `ERROR_CODES` 定数に `SLUG_COLLISION` / `GENERATE_SESSION_FAILED` / `REVIEW_SESSION_FAILED` が未追加だが機能的影響なし（LOW informational）\n\n---\n\n## Fix Checklist\n\n- [ ] F-01: `generator.ts` に AbortController + setTimeout を追加（reviewer.ts パターンに合わせる）\n- [ ] F-02: `generator.test.ts` に TC-GEN-003 を追加（slug collision → queryFn 未呼び出し確認）\n- [ ] F-03: `request-review.ts` の dynamic import を static import に変更\n- [ ] F-04: `store.test.ts` に TC-ST-010 (read()) を追加\n"
+        },
+        "startedAt": "2026-05-14T08:38:22.143Z",
+        "endedAt": "2026-05-14T08:38:22.143Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4568,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 216,
+            "outputTokens": 16066,
+            "cacheReadInputTokens": 575258,
+            "cacheCreationInputTokens": 76976
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "0fd36236-dc9d-4140-8c18-ada6930bcebb",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/request-manager/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Review Feedback 002\n\n- **reviewer**: code-reviewer\n- **iteration**: 2\n- **date**: 2026-05-14\n- **verdict**: approved\n\n## Summary\n\nIteration 1 の 4 件の指摘のうち、critical な 2 件（F-01: generator.ts AbortController 未設定、F-02: TC-GEN-003 テスト欠落）が修正済みであることを確認した。残る 2 件（F-03: dynamic import、F-04: TC-ST-010 欠落）は LOW のまま未修正だが、どちらも機能的バグではなくコード品質・テスト網羅の問題であり、次 PR 対応でブロッカーにならない。typecheck・全テスト green を確認済み（verification-result.md: 1760 passed）。\n\n## Findings\n\n### [info] F-01 (from iter 1) — RESOLVED: generator.ts AbortController 追加確認\n\n`src/core/request/generator.ts` L47-77 に AbortController + setTimeout が正しく実装された。`reviewer.ts` と同パターンで `finally` ブロックでの `clearTimeout` も含む。設計との乖離が解消された。\n\n**File**: `src/core/request/generator.ts`\n**Suggestion**: N/A (resolved)\n\n---\n\n### [info] F-02 (from iter 1) — RESOLVED: TC-GEN-003 テスト追加確認\n\n`tests/unit/core/request/generator.test.ts` L153-181 に TC-GEN-003 が追加され、slug 衝突時に queryFn が呼ばれないことを `vi.fn()` で検証している。must テストとしての要件を満たす。\n\n**File**: `tests/unit/core/request/generator.test.ts`\n**Suggestion**: N/A (resolved)\n\n---\n\n### [minor] F-03 (from iter 1) — STILL OPEN: `request-review.ts` の dynamic import 残存\n\n`src/core/command/request-review.ts` L90 で `verdictToExitCode` に dynamic import を使用している。\n\n```typescript\nconst { verdictToExitCode } = await import(\"../request/reviewer.js\");\nreturn verdictToExitCode(result.verdict);\n```\n\nファイル上部で `runReview` を静的 import しており、同ファイルから `verdictToExitCode` も静的に re-export 済み。不要な非同期処理で一貫性を欠く。機能上の問題はない。\n\n**File**: `src/core/command/request-review.ts`\n**Suggestion**: `import { runReview, verdictToExitCode } from \"../request/reviewer.js\"` に変更し、L90 の dynamic import を削除する。次 PR または別 fixup で対応可。\n\n---\n\n### [minor] F-04 (from iter 1) — STILL OPEN: TC-ST-010 (`store.read()`) テスト欠落\n\n`tests/unit/core/request/store.test.ts` は TC-ST-001〜TC-ST-007 を網羅しているが、`test-cases.md` の TC-ST-010（must: `read()` が ParsedRequest を返す）が未追加。`store.read()` は `manager.list()` の内部で使われており、write + read のラウンドトリップ保証がテストされていない。機能的バグではなく、リグレッション防止の観点での欠落。\n\n**File**: `tests/unit/core/request/store.test.ts`\n**Suggestion**: `read()` のテストを追加する（`write()` で書き込んだ後に `read()` でパース結果を検証するラウンドトリップテスト）。次 PR または別 fixup で対応可。\n\n---\n\n### [info] New: manager.review() で解決 slug が存在しない場合の無言 throw\n\n`src/core/request/manager.ts` L30-33:\n\n```typescript\n} else {\n  filePath = store.resolve(cwd, slugOrPath);\n}\nconst content = await fsAsync.readFile(filePath, \"utf-8\");\n```\n\nslug 解決後に `existsSync` の検証をせず直接 `readFile` している。ファイルが存在しない場合は Node の ENOENT エラーがそのまま上位に伝播する。\n\nCLI エントリポイント（`command-registry.ts` review handler）が `existsSync` で先行チェックしてユーザー向けエラーを出力するため、実際の CLI 利用では問題が表面化しない。ただし `manager.review()` を直接呼ぶ場合（テスト・プログラム的利用）は ENOENT が素通りする。設計上 manager は thin coordinator であり、存在確認をどこで行うかの責務が CLI ハンドラに依存している点はトレードオフとして許容範囲。\n\n**File**: `src/core/request/manager.ts`\n**Suggestion**: 設計の Non-Goal（store は存在確認なし）と整合しているため対応不要。ただし将来 manager.review() をライブラリ的に使う際は注意。\n\n## Test Coverage\n\n`test-cases.md` は 724 行、store / reviewer / generator / manager / cli-create の全カテゴリを網羅している。must 指定のシナリオはほぼ全て実装済み。\n\n未実装の must テスト:\n- **TC-ST-010** (`store.read()`): store.test.ts に未追加（上記 F-04）\n\nその他の must テストはすべて対応する実装ファイルに存在し、verification-result.md で 1760 passed を確認。`test-cases.md` のシナリオと受け入れ基準（request.md 記載）の対応は十分。\n\n## Verdict Rationale\n\niter 1 で指摘した MEDIUM 2 件（AbortController 未設定、TC-GEN-003 欠落）がいずれも修正済みで、設計意図を正しく実装している。残る F-03・F-04 は LOW で機能的バグではなく、いずれも独立した small fixup として次の PR または同 PR 内で対処できる。設計仕様との一致、型安全性、後方互換性、テストの緑、いずれも問題なし。approved とする。\n"
+        },
+        "startedAt": "2026-05-14T08:43:39.201Z",
+        "endedAt": "2026-05-14T08:43:39.201Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4568,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 23,
+            "outputTokens": 7467,
+            "cacheReadInputTokens": 794921,
+            "cacheCreationInputTokens": 88652
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "b5c89c27-6ac9-4eae-8f58-18cb76017c7a",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-14T08:42:36.364Z",
+        "endedAt": "2026-05-14T08:42:36.364Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3047,
+            "outputTokens": 13,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 10,
+            "outputTokens": 3569,
+            "cacheReadInputTokens": 193378,
+            "cacheCreationInputTokens": 20567
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/request-manager/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — request-manager\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/226\n- **Number**: 226\n- **CreatedAt**: 2026-05-14T08:46:08.155Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-14T08:46:04.885Z",
+        "endedAt": "2026-05-14T08:46:04.885Z"
+      }
+    ]
+  },
+  "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/226",
+    "number": 226,
+    "createdAt": "2026-05-14T08:46:08.155Z"
+  }
+}

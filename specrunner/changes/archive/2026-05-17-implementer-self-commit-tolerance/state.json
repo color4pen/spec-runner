@@ -1,0 +1,406 @@
+{
+  "version": 1,
+  "jobId": "101ada87-c7c9-4d81-a303-f4c230cc8fec",
+  "createdAt": "2026-05-17T10:02:27.816Z",
+  "updatedAt": "2026-05-17T12:44:55.655Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/implementer-self-commit-tolerance/request.md",
+    "title": "agent の自主 commit を許容し prompt 規律と executor 寛容化の両建てで halt を防ぐ",
+    "type": "spec-change",
+    "slug": "implementer-self-commit-tolerance"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 39268,
+  "branch": "change/implementer-self-commit-tolerance-101ada87",
+  "history": [
+    {
+      "ts": "2026-05-17T10:02:27.816Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-17T10:02:29.370Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-17T10:05:16.211Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-17T10:05:16.214Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-17T10:05:16.215Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-17T10:05:16.218Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-17T10:05:16.219Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-17T10:05:16.219Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-17T10:05:16.220Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-17T10:07:11.299Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-17T10:07:11.302Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-17T10:07:11.302Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-17T10:07:11.305Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-17T10:08:59.808Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-17T10:08:59.811Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-17T10:08:59.812Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-17T10:24:20.398Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-17T10:24:20.402Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-17T10:24:20.402Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-17T10:24:20.403Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-17T10:24:32.022Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-17T10:24:32.025Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-17T10:24:32.025Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-17T10:24:32.026Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-17T10:24:32.027Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-17T10:26:56.643Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-17T10:26:56.646Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-17T10:26:56.646Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-17T10:26:56.647Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-17T10:26:59.052Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-17T10:26:59.057Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-17T12:44:55.655Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "12b95cac-7f32-406d-b368-0082d9fa6dcb",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-17T10:02:29.371Z",
+        "endedAt": "2026-05-17T10:05:14.676Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 8332,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 13,
+            "outputTokens": 7454,
+            "cacheReadInputTokens": 506753,
+            "cacheCreationInputTokens": 63946
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/implementer-self-commit-tolerance/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-17T10:05:16.216Z",
+        "endedAt": "2026-05-17T10:05:16.218Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "b3891b56-6382-4ba1-a2db-ae98a734f336",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/implementer-self-commit-tolerance/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: implementer-self-commit-tolerance\n\n- **verdict**: approved\n- **reviewer**: spec-review (manual)\n- **date**: 2026-05-17\n\n## Summary\n\nrequest.md → design.md → tasks.md → delta spec の一貫性は高く、実装可能な状態。構造補強を主対策とし prompt 規律を副対策とする両建て設計は、観測実例に裏付けられた妥当な判断。\n\n## Findings\n\n### Coverage (request → delta spec)\n\n| 要件 | delta spec | 判定 |\n|------|-----------|------|\n| 1. executor HEAD 比較判定 | commitAndPush sequence step 4a-4c に明記 | ✓ |\n| 1-b. managed adapter スコープ外 | delta spec 変更なし (正しい) | ✓ |\n| 2. push-only 経路 | \"execute push only\" + retry reuse を明記 | ✓ |\n| 3. 検知ログ | \"log the detection to stderr\" + scenario で検証 | ✓ |\n| 4. prompt fragment | spec authority 対象外 (request.md で明記済み) | ✓ |\n| 5. test | spec 側は scenario で表現、test ファイルは tasks.md 管轄 | ✓ |\n| 6. spec authority 反映 | MODIFIED requirement として正しく差分定義 | ✓ |\n\n### Consistency (delta spec ↔ baseline spec)\n\n全 7 既存 scenario が保持されている。既存 scenario 2 (\"No staged changes with requiresCommit true raises error\") は HEAD unchanged 条件を追加して明確化されており、意味的に等価かつ厳密化。新規 2 scenario が追加。矛盾なし。\n\n### Noted observations (non-blocking)\n\n1. **request.md 設計判断6**: `requiresCommit: true` の step 列挙に `design` が含まれるが、`design.ts` には `requiresCommit` 未設定 (= false)。ただし要件 4-2 と受け入れ基準は正しく 5 step (implementer / spec-fixer / code-fixer / build-fixer / delta-spec-fixer) を列挙しているため、実装に影響なし。\n\n2. **request.md 要件5 TC7**: \"stdout ログ出力\" と記載があるが、design.md / tasks.md は `stderrWrite` (stderr) で一致。要件3 は \"pipeline ログに\" と曖昧。design.md / tasks.md の stderr が正。実装者は design.md / tasks.md に従えばよい。\n\n3. **tasks.md Task 1-4 の `pushOnly` signature**: `private async pushOnly(branch: string, cwd: string, stepName: string)` だが、Task 1-3 では `await this.pushOnly(branch)` と呼んでいる (引数不一致)。implementer は実装時に整合させる必要あり。些末。\n\n### Security\n\n本変更に認証・入力検証・外部 API・DB クエリの変更はない。`git rev-parse HEAD` の出力は trusted local git state であり injection リスクなし。OWASP Top 10 該当なし。\n"
+        },
+        "startedAt": "2026-05-17T10:05:16.220Z",
+        "endedAt": "2026-05-17T10:07:09.655Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 17453,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 13,
+            "outputTokens": 4653,
+            "cacheReadInputTokens": 504389,
+            "cacheCreationInputTokens": 44512
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "f0b8cc1b-0055-4281-8964-12a8f47b3a70",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-17T10:07:11.306Z",
+        "endedAt": "2026-05-17T10:08:58.295Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5163,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 6406,
+            "cacheReadInputTokens": 64115,
+            "cacheCreationInputTokens": 26448
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "90851adc-faf8-4b61-bfac-75078b6008d7",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-17T10:08:59.813Z",
+        "endedAt": "2026-05-17T10:24:18.839Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6519,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 58,
+            "outputTokens": 51174,
+            "cacheReadInputTokens": 6491630,
+            "cacheCreationInputTokens": 142743
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/implementer-self-commit-tolerance/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — implementer-self-commit-tolerance — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.5s | 0 |\n| 2 | typecheck | passed | 2.0s | 0 |\n| 3 | test | passed | 5.7s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/implementer-self-commit-tolerance-101ada87\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t136d\n\n Test Files  167 passed (167)\n      Tests  2010 passed (2010)\n   Start at  19:24:25\n   Duration  5.45s (transform 3.96s, setup 0ms, import 7.26s, tests 11.27s, environment 10ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-U1EGpu/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-Ask5S3/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/implementer-self-commit-tolerance-101ada87/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-17T10:24:20.403Z",
+        "endedAt": "2026-05-17T10:24:32.021Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "6180cac8-082b-4756-b612-4ee9801b32d8",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/implementer-self-commit-tolerance/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review: implementer-self-commit-tolerance — Iteration 1\n\n- **verdict**: approved\n- **reviewer**: code-review agent\n- **date**: 2026-05-17\n\n## Summary\n\n実装は要件をすべて満たしている。executor HEAD 比較判定・push-only 経路・prompt fragment の 3 つの主要変更が設計通りに実装されており、verification は 167 ファイル / 2010 テスト全 pass。\n\n---\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|---|---|---|---|---|\n| 1 | LOW | style | `src/core/step/executor.ts` L141–145 | `headBeforeStep` を `requiresCommit` 有無に関わらず全 local runtime step で取得しているが、実際に使用するのは `requiresCommit: true` の branch のみ。spec は capture タイミングを `requiresCommit: true` に限定していないため bug ではないが、`requiresCommit: false` の step に対して余分な `git rev-parse HEAD` が 1 回発生する | 任意: `if (step.requiresCommit && deps.config.runtime === \"local\")` で条件付け可能。パフォーマンス影響は極小のためスキップ可 |\n| 2 | LOW | safety | `src/core/step/executor.ts` L270 | `headBeforeStep && headAfterStep && ...` — git が step 開始前に失敗して `headBeforeStep === null` のとき、agent が自主 commit していても保守的に halt する。設計上は「git が使えない環境では halt」が正しい挙動だが、コメントで意図を明示すると読みやすい | 任意: 条件の直前に `// If headBeforeStep is null (git unavailable before step), conservatively halt` を追加 |\n\n---\n\n## Test Coverage Check (against test-cases.md must scenarios)\n\n| TC | Priority | Coverage | Notes |\n|----|----------|----------|-------|\n| TC-A01 staged あり + HEAD 進みなし → commit + push | must | ✅ TC-CAP-NEW-001 | rev-parse が 1 回のみ呼ばれることも検証 |\n| TC-A02 staged 0 + HEAD 進みなし + requiresCommit:true → halt | must | ✅ TC-CAP-NEW-002 | `NO_COMMIT_DETECTED` throw を確認 |\n| TC-A03 staged 0 + HEAD 進みあり + requiresCommit:true → push only | must | ✅ TC-CAP-NEW-003 | push 呼び出し・commit 非呼び出し・rev-parse 2 回を検証 |\n| TC-A04 staged あり + HEAD 進みあり → staged commit + push | must | ✅ TC-CAP-NEW-004 | 部分 commit 混在シナリオ |\n| TC-A05 staged 0 + HEAD 進みなし + requiresCommit:false → silent skip | must | ✅ TC-CAP-NEW-005 | |\n| TC-A06 staged 0 + HEAD 進みあり + requiresCommit:false → silent skip | must | ✅ TC-CAP-NEW-006 | HEAD 進みを無視することを検証 |\n| TC-B01 agent 自主 commit 検出時に規定ログ出力 | must | ✅ TC-CAP-NEW-007 | stderr に \"Detected agent-authored commit(s)...\" を確認 |\n| TC-C01 commit:push event emit (push-only 経路) | must | ✅ TC-CAP-NEW-008 (bonus) | step + branch フィールドを検証 |\n| TC-D01 commit-discipline.ts が COMMIT_DISCIPLINE_RULE export | must | ✅ ファイル確認済み | 文言 3 禁止 + pipeline executor 文言を含む |\n| TC-D02 implementer-system.ts に embed | must | ✅ L10 `${COMMIT_DISCIPLINE_RULE}` 確認 | |\n| TC-D03 spec-fixer-system.ts に embed (delta-spec-fixer も自動カバー) | must | ✅ L11 確認 | delta-spec-fixer は spec-fixer-system.ts import を維持 |\n| TC-D04 code-fixer-system.ts に embed | must | ✅ L10 確認 | |\n| TC-D05 build-fixer-system.ts に embed | must | ✅ L10 確認 | |\n| TC-D06 delta-spec-fixer-system.ts は新規作成しない | must | ✅ ファイルなし | Glob で不存在確認 |\n| TC-E01 implementer 自主 commit → pipeline halt せず verification へ | must | ✅ TC-AGENT-COMMIT-INT-001 | Pipeline mini-run で implementer→verification の完走・commit 非呼び出し・push 呼び出しを検証 |\n| TC-F01 managed adapter 変更なし | must | ✅ git diff で変更 0 確認 | |\n| TC-G01 spec.md に HEAD 進み判定が明文化 | must | ✅ step-execution-architecture/spec.md L463–579 | 3 シナリオ追加確認 |\n| TC-H01 bun run typecheck pass | must | ✅ verification-result.md | |\n| TC-H02 bun run test pass | must | ✅ 2010 tests all pass | |\n\n---\n\n## Acceptance Criteria Check\n\n| Criteria | Status |\n|---|---|\n| `commitAndPush` が staged 0 でも HEAD 進みを check する | ✅ |\n| managed adapter は対象外（変更なし） | ✅ |\n| HEAD 進みあり → push のみ実行、halt しない | ✅ |\n| staged あり → 従来通り commit + push | ✅ |\n| 両方とも変化なし + requiresCommit:true → halt | ✅ |\n| agent 自主 commit 検出時に pipeline ログ出力 | ✅ |\n| `src/prompts/commit-discipline.ts` に `COMMIT_DISCIPLINE_RULE` 新規追加 | ✅ |\n| requiresCommit:true の 5 step に embed（prompt ファイル 4 件） | ✅ |\n| `delta-spec-fixer-system.ts` は新規作成しない | ✅ |\n| inject パターンが PIPELINE_RULES と同じ template literal embed | ✅ |\n| 新規 unit test (executor.commit.test.ts) pass | ✅ |\n| integration test pass | ✅ |\n| 既存 commit/push 関連 test regression なし | ✅ |\n| `bun run typecheck && bun run test` green | ✅ |\n| `step-execution-architecture/spec.md` が MODIFIED で更新 | ✅ |\n"
+        },
+        "startedAt": "2026-05-17T10:24:32.028Z",
+        "endedAt": "2026-05-17T10:26:55.227Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6565,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 14,
+            "outputTokens": 8453,
+            "cacheReadInputTokens": 578870,
+            "cacheCreationInputTokens": 69745
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/implementer-self-commit-tolerance/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — implementer-self-commit-tolerance\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/281\n- **Number**: 281\n- **CreatedAt**: 2026-05-17T10:26:59.050Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-17T10:26:56.648Z",
+        "endedAt": "2026-05-17T10:26:59.051Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/281",
+    "number": 281,
+    "createdAt": "2026-05-17T10:26:59.050Z"
+  }
+}

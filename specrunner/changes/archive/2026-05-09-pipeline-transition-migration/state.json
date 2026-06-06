@@ -1,0 +1,469 @@
+{
+  "version": 1,
+  "jobId": "b70128f4-ff79-49af-a560-d063829880b3",
+  "createdAt": "2026-05-09T12:52:56.799Z",
+  "updatedAt": "2026-05-09T13:19:25.532Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/pipeline-transition-migration/request.md",
+    "title": "pipeline.ts の状態遷移を transitionJob 経由に移行する",
+    "type": "refactoring",
+    "slug": "pipeline-transition-migration"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "branch": "refactor/pipeline-transition-migration-b70128f4",
+  "history": [
+    {
+      "ts": "2026-05-09T12:52:56.799Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-09T12:52:58.130Z",
+      "step": "propose-started",
+      "status": "started",
+      "message": "Starting propose step"
+    },
+    {
+      "ts": "2026-05-09T12:56:40.035Z",
+      "step": "propose-verdict",
+      "status": "ok",
+      "message": "propose verdict: success"
+    },
+    {
+      "ts": "2026-05-09T12:56:40.037Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "propose → spec-review"
+    },
+    {
+      "ts": "2026-05-09T12:56:40.038Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T12:56:40.038Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-09T12:59:18.139Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T12:59:18.141Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T12:59:18.141Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-09T12:59:18.141Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-09T13:01:50.959Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-09T13:01:50.961Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-09T13:01:50.962Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-09T13:07:49.172Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-09T13:07:49.173Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-09T13:07:49.173Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T13:07:49.174Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-09T13:07:58.232Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-09T13:07:58.240Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-09T13:07:58.240Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-09T13:07:58.241Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T13:07:58.242Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-09T13:11:49.283Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-09T13:11:49.285Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-09T13:11:49.285Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-09T13:11:49.286Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-09T13:13:33.531Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T13:13:33.532Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-09T13:13:33.533Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-09T13:13:33.533Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-09T13:16:23.811Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T13:16:23.813Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T13:16:23.813Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-09T13:16:23.815Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-09T13:16:26.453Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-09T13:19:25.532Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "Job archived via specrunner finish."
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "propose": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T12:52:58.130Z",
+        "endedAt": "2026-05-09T12:52:58.130Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2298,
+            "outputTokens": 8415,
+            "cacheReadInputTokens": 621075,
+            "cacheCreationInputTokens": 80831
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 1328,
+            "outputTokens": 7920,
+            "cacheReadInputTokens": 500025,
+            "cacheCreationInputTokens": 40745
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "openspec/changes/pipeline-transition-migration/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result — pipeline-transition-migration\n\n- **reviewer**: spec-reviewer\n- **iteration**: 1\n- **verdict**: approved\n- **date**: 2026-05-09\n\n## Summary\n\n仕様は正確で、実コードベースの全遷移箇所を網羅している。行番号・変数名・条件分岐の記述はソースと一致。`transitionJob` の pure function 設計と caller-owned persistence の責務分離は明確。Phase 分割（2a/2b/2c/3）のスコープ境界も適切。1 件の LOW finding あり。\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | LOW | correctness | tasks.md:33,60 | Task 2.1/2.2 の After コード例で `appendHistoryEntry` の後に `state = { ...state, updatedAt: new Date().toISOString() };` を追加しているが、`appendHistoryEntry` は戻り値に `updatedAt` を含む（schema.ts:175）ため冗長。説明文「含まれるため別途セットする」も矛盾している | After コード例から `state = { ...state, updatedAt: ... }` 行を削除し、説明文を「`appendHistoryEntry` が `updatedAt` を更新するため追加のセットは不要」に修正する。実装時に無視しても実害なし |\n\n## Review Axes\n\n### Architecture (verify)\n\n- `transitionJob` を純粋関数として維持し、永続化を呼び出し元に残す設計（D2）は正しい\n- `handleExhausted` で steps 更新を transitionJob の前に行い、patch で状態遷移とは分離する設計（D5）は責務が明確\n- `store.fail()` を Phase 3 まで残す判断（D6）はスコープの最小化に適切\n\n### Correctness (verify)\n\n- pipeline.ts の全 status 直接代入（L89, L254, L263, L396）と executor.ts の L140 がタスクで網羅されている\n- `VALID_TRANSITIONS` マップ上 `running → awaiting-resume`, `running → awaiting-merge` は有効な遷移で、transitionJob は例外を投げない\n- escalation の `state.status !== \"failed\"` ガード条件がタスク 3.3 のコード例でも保持されている\n- `transitionJob` が内部で `appendHistoryEntry` を呼ぶ件（D7）と、ステップ bookkeeping の history が別エントリである件は正しく区別されている\n\n### Completeness (task decomposition only)\n\n- design.md Scope の 7 箇所が tasks.md の 7 タスク（1.1-1.3, 2.1-2.2, 3.1-3.3, 4.1, 5.1）に 1:1 対応\n- 検証タスク（6.1-6.4）で typecheck, test, grep による残存確認をカバー\n\n### Consistency (skip)\n\nSkipped per review scope — no spec changes expected for behavior-preserving refactoring.\n"
+        },
+        "startedAt": "2026-05-09T12:56:40.038Z",
+        "endedAt": "2026-05-09T12:56:40.038Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1745,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 11,
+            "outputTokens": 6274,
+            "cacheReadInputTokens": 316335,
+            "cacheCreationInputTokens": 35371
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T12:59:18.142Z",
+        "endedAt": "2026-05-09T12:59:18.142Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1660,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 11,
+            "outputTokens": 9598,
+            "cacheReadInputTokens": 286593,
+            "cacheCreationInputTokens": 34038
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T13:01:50.962Z",
+        "endedAt": "2026-05-09T13:01:50.962Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1698,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 49,
+            "outputTokens": 18929,
+            "cacheReadInputTokens": 2725534,
+            "cacheCreationInputTokens": 98178
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "openspec/changes/pipeline-transition-migration/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — pipeline-transition-migration — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.9s | 0 |\n| 2 | typecheck | passed | 1.9s | 0 |\n| 3 | test | passed | 3.8s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/pipeline-transition-migration-b70128f4\n\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n\n Test Files  138 passed (138)\n      Tests  1471 passed (1471)\n   Start at  22:07:53\n   Duration  3.47s (transform 2.32s, setup 0ms, import 4.30s, tests 5.34s, environment 7ms)\n\n\n$ vitest run\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/pipeline-transition-migration-b70128f4/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-09T13:07:49.174Z",
+        "endedAt": "2026-05-09T13:07:49.174Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "openspec/changes/pipeline-transition-migration/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review — pipeline-transition-migration — Iteration 1\n\n- **reviewer**: code-reviewer\n- **date**: 2026-05-09\n- **verdict**: needs-fix\n\n## Summary\n\n`transitionJob` / `appendHistoryEntry` への移行は大部分で正しく実行されている。全 1471 テスト PASS、型チェック green。ただし pipeline.ts L280-289 に `status: \"awaiting-resume\"` の直接代入が 1 箇所残っており、受け入れ基準「pipeline.ts に `state.status = \"...\"` の直接代入が存在しない」に違反している。\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | HIGH | correctness | src/core/pipeline/pipeline.ts:282 | `failed → awaiting-resume` の escalation fallback パスで `status: \"awaiting-resume\"` を直接代入している。受け入れ基準「pipeline.ts に `state.status = \"...\"` の直接代入が存在しない」に違反。`VALID_TRANSITIONS` が `failed → awaiting-resume` を許可しないため `transitionJob` を使えないという制約が根本原因 | `src/state/lifecycle.ts` の `VALID_TRANSITIONS` で `failed` の遷移先に `\"awaiting-resume\"` を追加し、L269-289 の分岐を `transitionJob` 一本に統一する。lifecycle.test.ts にも `failed → awaiting-resume` の valid transition テストを追加する |\n| 2 | MEDIUM | architecture | src/core/pipeline/pipeline.ts:269-289 | escalation ブロックが `state.status === \"running\"` と `else`（実質 `failed`）で分岐し、running は `transitionJob`、failed は直接代入と 2 つの遷移パスが混在している。移行の目的（遷移バリデーション一元化）が部分的に達成されていない | Finding #1 の修正で解消される。`VALID_TRANSITIONS` 拡張後は `transitionJob` 一本で済むため、if/else 分岐自体が不要になる |\n| 3 | LOW | maintainability | src/core/pipeline/pipeline.ts:270-273 | `failed → awaiting-resume is not in VALID_TRANSITIONS` のコメントが 4 行あり、実装の制約を丁寧に説明しているが、Finding #1 の修正後は不要になる | `VALID_TRANSITIONS` 拡張後にコメントを削除する |\n\n## Scores\n\n| Category | Score | Rationale |\n|----------|-------|-----------|\n| correctness | 6 | 動作は正しい（全テスト PASS）が、受け入れ基準の明示的な条件を 1 箇所違反 |\n| security | 8 | セキュリティ関連の変更なし |\n| architecture | 7 | `transitionJob` 一元化の設計方針は適切。failed fallback の分岐が唯一の例外 |\n| performance | 8 | パフォーマンスへの影響なし |\n| maintainability | 7 | コードは明確で意図が読める。コメントで制約を説明している |\n| testing | 7 | 既存 1471 テスト全 PASS。must TC の大部分は既存テストでカバー |\n\n**Total**: 6×0.30 + 8×0.25 + 7×0.15 + 8×0.10 + 7×0.10 + 7×0.10 = 1.80 + 2.00 + 1.05 + 0.80 + 0.70 + 0.70 = **7.05**\n\n**Verdict: needs-fix** (HIGH finding #1: 受け入れ基準違反)\n\n## Scenario Coverage (test-cases.md)\n\n| TC | Priority | Status | Notes |\n|----|----------|--------|-------|\n| TC-01 | must | covered | appendHistoryEntry の MAX_HISTORY_SIZE は schema.ts の既存テストでカバー |\n| TC-02 | must | covered | pipeline.test.ts の loop bookkeeping テストで検証 |\n| TC-03 | must | covered | 同上 |\n| TC-06 | must | covered | pipeline.test.ts の end 条件テスト |\n| TC-07 | must | covered | transitionJob が自動追記（lifecycle.test.ts） |\n| TC-09 | must | covered | pipeline.test.ts の catch block テスト |\n| TC-10 | must | covered | 同上 |\n| TC-11 | must | covered | 同上 |\n| TC-13 | must | covered | pipeline.test.ts の escalation テスト |\n| TC-14 | must | covered | 同上 |\n| TC-15 | must | covered | FATAL_ERROR_CODES テスト |\n| TC-17 | must | covered | handleExhausted テスト |\n| TC-18 | must | covered | 同上 |\n| TC-19 | must | covered | 同上 |\n| TC-20 | must | covered | 同上 |\n| TC-23 | must | covered | executor timeout テスト |\n| TC-24 | must | covered | 同上 |\n| TC-25 | must | covered | 同上 |\n| TC-27 | must | **FAIL** | L282 に `status: \"awaiting-resume\"` 直接代入が残存 |\n| TC-28 | must | covered | `history: [...state.history` のスプレッドは 0 箇所 |\n| TC-29 | must | covered | 1471 テスト全 PASS |\n| TC-30 | must | covered | typecheck green |\n| TC-31 | must | covered | lifecycle.test.ts で検証 |\n| TC-33 | must | covered | lifecycle.test.ts で検証 |\n\n## Recommended Fix\n\n```typescript\n// src/state/lifecycle.ts — VALID_TRANSITIONS の failed 行を修正\n[\"failed\", new Set([\"running\", \"canceled\", \"awaiting-resume\"])],\n```\n\nこれにより pipeline.ts L254-292 の escalation ブロックを以下に簡素化できる:\n\n```typescript\nif (nextStep === \"escalate\" && (state.status !== \"failed\" || !FATAL_ERROR_CODES.has(state.error?.code ?? \"\"))) {\n  const { state: escalateState } = transitionJob(state, \"awaiting-resume\", {\n    trigger: \"pipeline\",\n    reason: state.error?.message ?? `${currentStep} escalated`,\n    patch: {\n      resumePoint: {\n        step: currentStep as StepName,\n        reason: state.error?.message ?? `${currentStep} escalated`,\n        iterationsExhausted: loopIters.get(currentStep) ?? 0,\n      },\n    },\n  });\n  state = escalateState;\n  const escalateStore = new JobStateStore(state.jobId);\n  await escalateStore.persist(state);\n}\n```\n"
+        },
+        "startedAt": "2026-05-09T13:07:58.246Z",
+        "endedAt": "2026-05-09T13:07:58.246Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1742,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 16,
+            "outputTokens": 8124,
+            "cacheReadInputTokens": 624461,
+            "cacheCreationInputTokens": 48233
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "openspec/changes/pipeline-transition-migration/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Code Review — pipeline-transition-migration — Iteration 2\n\n- **reviewer**: code-reviewer\n- **date**: 2026-05-09\n- **verdict**: approved\n\n## Summary\n\nIter 1 の全 3 findings が正しく修正されている。`VALID_TRANSITIONS` に `failed → awaiting-resume` を追加し、escalation ブロックの if/else 分岐を `transitionJob` 一本に統一。テストも `failed → awaiting-resume` の valid transition を追加済み。全 1472 テスト PASS（+1）、typecheck green。受け入れ基準 5 項目すべて充足。\n\n## Iteration Comparison\n\n### Improvements\n\n| Iter 1 # | Severity | Description | Resolution |\n|-----------|----------|-------------|------------|\n| 1 | HIGH | `failed → awaiting-resume` の直接代入が受け入れ基準違反 | `VALID_TRANSITIONS` に `failed → awaiting-resume` を追加し、escalation ブロックを `transitionJob` 一本に統一 |\n| 2 | MEDIUM | escalation ブロックの running/failed 分岐混在 | 分岐自体が不要になり、単一の `transitionJob` 呼び出しに簡素化 |\n| 3 | LOW | 不要になるコメント | コメントごと削除済み |\n\n### Regressions\n\nなし\n\n### Unchanged Issues\n\nなし\n\n### Convergence Trend: `improving`\n\nTotal スコア: 7.05 → 8.00（+0.95）\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n\n（指摘なし）\n\n## Acceptance Criteria Verification\n\n| # | Criteria | Status |\n|---|---------|--------|\n| 1 | `pipeline.ts` に `state.status = \"...\"` の直接代入が存在しない | ✅ grep 0 件 |\n| 2 | `pipeline.ts` の history 操作が全て `appendHistoryEntry` 経由 | ✅ `history: [...state.history` が 0 件 |\n| 3 | `executor.ts` の timeout 遷移が `transitionJob` 経由 | ✅ L139 で `transitionJob` 使用 |\n| 4 | 既存テストが全て通る | ✅ 1472 tests passed |\n| 5 | `bun run typecheck && bun run test` が green | ✅ |\n\n## Scores\n\n| Category | Score | Rationale |\n|----------|-------|-----------|\n| correctness | 8 | 全遷移が `transitionJob` 経由。受け入れ基準完全充足 |\n| security | 8 | セキュリティ関連の変更なし |\n| architecture | 8 | `transitionJob` 一元化の設計方針が一貫して適用。escalation パスも統一 |\n| performance | 8 | パフォーマンスへの影響なし |\n| maintainability | 8 | 分岐が減り、遷移パスが明確。コメントのノイズも除去 |\n| testing | 8 | 1472 テスト全 PASS。`failed → awaiting-resume` の遷移テスト追加済み |\n\n**Total**: 8×0.30 + 8×0.25 + 8×0.15 + 8×0.10 + 8×0.10 + 8×0.10 = **8.00**\n\n## Scenario Coverage (test-cases.md)\n\n| TC | Priority | Status | Notes |\n|----|----------|--------|-------|\n| TC-01 | must | covered | appendHistoryEntry の MAX_HISTORY_SIZE は schema.ts の既存テストでカバー |\n| TC-02 | must | covered | pipeline.test.ts の loop bookkeeping テストで検証 |\n| TC-03 | must | covered | 同上 |\n| TC-06 | must | covered | pipeline.test.ts の end 条件テスト |\n| TC-07 | must | covered | transitionJob が自動追記（lifecycle.test.ts） |\n| TC-09 | must | covered | pipeline.test.ts の catch block テスト |\n| TC-10 | must | covered | 同上 |\n| TC-11 | must | covered | 同上 |\n| TC-13 | must | covered | pipeline.test.ts の escalation テスト |\n| TC-14 | must | covered | 同上 |\n| TC-15 | must | covered | FATAL_ERROR_CODES テスト |\n| TC-17 | must | covered | handleExhausted テスト |\n| TC-18 | must | covered | 同上 |\n| TC-19 | must | covered | 同上 |\n| TC-20 | must | covered | 同上 |\n| TC-23 | must | covered | executor timeout テスト |\n| TC-24 | must | covered | 同上 |\n| TC-25 | must | covered | 同上 |\n| TC-27 | must | covered | `status: \"awaiting-` 直接代入 0 件。iter 1 の FAIL が解消 |\n| TC-28 | must | covered | `history: [...state.history` のスプレッド 0 件 |\n| TC-29 | must | covered | 1472 テスト全 PASS |\n| TC-30 | must | covered | typecheck green |\n| TC-31 | must | covered | lifecycle.test.ts で検証 |\n| TC-33 | must | covered | lifecycle.test.ts で検証 |\n"
+        },
+        "startedAt": "2026-05-09T13:13:33.533Z",
+        "endedAt": "2026-05-09T13:13:33.533Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1742,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 16,
+            "outputTokens": 5999,
+            "cacheReadInputTokens": 632919,
+            "cacheCreationInputTokens": 48517
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T13:11:49.286Z",
+        "endedAt": "2026-05-09T13:11:49.286Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1648,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 17,
+            "outputTokens": 4991,
+            "cacheReadInputTokens": 470845,
+            "cacheCreationInputTokens": 27761
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "openspec/changes/pipeline-transition-migration/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — pipeline-transition-migration\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/182\n- **Number**: 182\n- **CreatedAt**: 2026-05-09T13:16:26.451Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-09T13:16:23.815Z",
+        "endedAt": "2026-05-09T13:16:23.815Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/182",
+    "number": 182,
+    "createdAt": "2026-05-09T13:16:26.451Z"
+  }
+}

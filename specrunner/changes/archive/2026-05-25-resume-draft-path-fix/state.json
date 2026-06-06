@@ -1,0 +1,560 @@
+{
+  "version": 1,
+  "jobId": "3826eb3b-0cf7-4af7-bd56-1ae4f4d5493b",
+  "createdAt": "2026-05-24T14:00:46.139Z",
+  "updatedAt": "2026-05-25T00:20:34.203Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/resume-draft-path-fix/request.md",
+    "title": "`state.request.path` が指す draft の削除で resume が ENOENT 失敗する bug を修正する",
+    "type": "bug-fix",
+    "slug": "resume-draft-path-fix"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 95945,
+  "branch": "fix/resume-draft-path-fix-3826eb3b",
+  "history": [
+    {
+      "ts": "2026-05-24T14:00:46.139Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-24T14:00:48.032Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-24T14:05:34.064Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-24T14:05:34.068Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-24T14:05:34.070Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-24T14:05:34.079Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:05:34.080Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-24T14:05:34.081Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-24T14:05:34.081Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-24T14:07:25.468Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:07:25.470Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:07:25.470Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-24T14:07:25.471Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-24T14:08:26.187Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-24T14:08:26.189Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-24T14:08:26.191Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-24T14:12:00.163Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-24T14:12:00.166Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-24T14:12:00.167Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-24T14:12:00.167Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-24T14:12:11.805Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-24T14:12:11.808Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-24T14:12:11.808Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-24T14:12:11.808Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-24T14:12:11.809Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-24T14:18:21.450Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-24T14:18:21.452Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-24T14:18:21.452Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-24T14:18:21.453Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-24T14:19:47.158Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:19:47.161Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-24T14:19:47.162Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-24T14:19:47.162Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-24T14:22:02.947Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:22:02.950Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-24T14:22:02.950Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → adr-gen"
+    },
+    {
+      "ts": "2026-05-24T14:22:02.952Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-24T14:22:10.606Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-24T14:22:10.607Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-24T14:22:10.608Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-24T14:22:14.067Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-24T14:22:14.073Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-25T00:20:34.203Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "eb5e059e-90c0-417d-9c93-d8a0c51ef976",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T14:00:48.042Z",
+        "endedAt": "2026-05-24T14:05:32.440Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5557,
+            "outputTokens": 4876,
+            "cacheReadInputTokens": 554013,
+            "cacheCreationInputTokens": 36551
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 20,
+            "outputTokens": 9777,
+            "cacheReadInputTokens": 768952,
+            "cacheCreationInputTokens": 69162
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/resume-draft-path-fix/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-24T14:05:34.072Z",
+        "endedAt": "2026-05-24T14:05:34.079Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "3860767e-1a03-4bd5-9c24-0cb74f39bea0",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/resume-draft-path-fix/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: resume-draft-path-fix\n\n- **verdict**: approved\n- **reviewer**: spec-reviewer\n- **date**: 2026-05-24\n\n## Summary\n\n仕様は一貫しており、実装可能。根本原因分析・設計判断・タスク分解・delta spec の四層が整合している。\n\n## Findings\n\n### ✅ 根本原因の特定が正確\n\n`pipeline-run.ts:66` → draft path 記録、`local.ts:228` / `managed.ts:118` → draft 削除、`resume.ts:171` → 削除済み path 参照の因果チェーンが明確に示されており、設計の前提として信頼できる。\n\n### ✅ D1 (setupWorkspace 内での state 更新) の配置\n\n`fs.cp` 成功直後・`fs.rm` 前に `updateJobState` を挿入する手順は適切。git add 失敗時は worktree cleanup が走るので state 整合性は保たれる。`changeFolderRequestPath` 変数と `updateJobState` の両方が既に存在することをコード上で確認済み (local.ts L201, L206)。\n\n### ✅ D3 (resolveRequestPath の純粋関数分離) の設計\n\n関数シグネチャ `resolveRequestPath(statePath, slug, worktreePath, cwd): string` は副作用が `fs.existsSync` のみで、テスタビリティが高い。戻り値が「解決済みパス or 元パス（ENOENT 委譲）」という設計はシンプルで正しい。\n\n### ✅ getJobSlug の利用\n\nTask 4 が `getJobSlug(state)` を使うよう指示している。legacy state で `state.request.slug` が null かつ `state.branch` も空の場合、fallback 3 が `path.basename(\"...drafts/my-slug/request.md\", \".md\")` → `\"request\"` を返す可能性があるが、実際の job state では `state.request.slug` または `state.branch` は必ず存在するため実害はない。\n\n### ✅ delta spec 形式\n\n`specs/cli-resume-command/spec.md` は `## Requirements` / `### Requirement:` / `#### Scenario:` 構造を正しく使用。MUST keyword を含み、3 つのシナリオ（local runtime / managed runtime / 完全 ENOENT）が Given/When/Then 形式で記述されている。rules.md 記法要件をすべて満たしている。\n\n### ✅ セキュリティ\n\n- パス組み立ては `path.join(worktreePath, requestMdPath(slug))` 形式で slug を relative segment に限定。slug はユーザー自身が作成した job state から由来するローカル CLI であり、path traversal リスクは許容範囲。\n- ファイル I/O は `fs.existsSync` (read-only) のみ。書き込みなし。\n- OWASP 該当事項なし（ネットワーク・認証・DB 操作なし）。\n\n### ✅ 後方互換\n\nlegacy fallback のフォールバックチェーン（worktreePath → cwd → ENOENT 委譲）は request の要件 3 を満たしており、既存の archived job state を破壊しない。\n\n### ✅ テストカバレッジ\n\nTask 5 が要求する 4 ケース（新規 state / legacy+worktreePathあり / legacy+worktreePathなし / 完全 ENOENT）は受け入れ基準の「local runtime / managed runtime 両 case」を包含している。\n\n## Minor Notes（修正不要）\n\n- `requestMdPath(slug)` が返す relative path を base と join する実装詳細は task に明示されていないが、`path.join(base, requestMdPath(slug))` が自然な実装であり問題ない。\n- Task 2/3 の行番号は現行コードと照合済みで正確。\n"
+        },
+        "startedAt": "2026-05-24T14:05:34.094Z",
+        "endedAt": "2026-05-24T14:07:23.924Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3321,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 12,
+            "outputTokens": 5355,
+            "cacheReadInputTokens": 253715,
+            "cacheCreationInputTokens": 26782
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "82a68ac3-36c7-4ae4-8822-0773cd737fcb",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T14:07:25.484Z",
+        "endedAt": "2026-05-24T14:08:24.502Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2045,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 3630,
+            "cacheReadInputTokens": 51149,
+            "cacheCreationInputTokens": 15174
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "0a87430f-197b-4033-b21e-b0aecf402502",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T14:08:26.202Z",
+        "endedAt": "2026-05-24T14:11:58.622Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3423,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 33,
+            "outputTokens": 11040,
+            "cacheReadInputTokens": 1407170,
+            "cacheCreationInputTokens": 48167
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/resume-draft-path-fix/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — resume-draft-path-fix — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.2s | 0 |\n| 2 | typecheck | passed | 2.2s | 0 |\n| 3 | test | passed | 6.8s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n| 6 | test-coverage | passed | 0.0s | 0 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/resume-draft-path-fix-3826eb3b\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t143d\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n\n Test Files  249 passed (249)\n      Tests  2795 passed (2795)\n   Start at  23:12:03\n   Duration  6.52s (transform 3.79s, setup 0ms, import 8.10s, tests 11.73s, environment 15ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-iWUsGC/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-yZypMh/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/resume-draft-path-fix-3826eb3b/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n\n## Phase: test-coverage\n\n```\ntest-coverage: 12/12 must TCs covered\n```\n"
+        },
+        "startedAt": "2026-05-24T14:12:00.168Z",
+        "endedAt": "2026-05-24T14:12:11.805Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "656dafd0-0840-4d59-b144-fe9d4ce4ae62",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/resume-draft-path-fix/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review — resume-draft-path-fix — iter 1\n\n## Summary\n\n実装は正しい。バグの根本原因（`state.request.path` が draft 削除後も古いパスを指す）への対処として `local.ts`/`managed.ts` の `updateJobState` 追加と `resolveRequestPath` の設計・実装は適切。TypeScript/test も green。\n\n1 件の `high` 欠陥あり。TC-06/TC-07（`setupWorkspace` 後に `state.request.path` が永続パスを指すことの検証）が実テストで未カバー。\n\n---\n\n## Findings\n\n### [high] TC-06/TC-07: `setupWorkspace` の `state.request.path` 更新がテストで検証されていない\n\n- **file**: `tests/unit/core/runtime/local.test.ts`, `tests/unit/core/runtime/managed.test.ts`\n- **description**:\n  `local.ts:227-230` と `managed.ts:116-120` に追加された `updateJobState` 呼び出し（`state.request.path` を `changeFolderRequestPath` に更新する）を実際に検証するテストがない。\n\n  - `TC-LR-010`（local.test.ts）は `git add` / `git commit` の呼び出しを検証するが、state の `request.path` フィールドを読み戻すアサーションがない。\n  - `draft-move.test.ts` は `LocalRuntime.setupWorkspace` を呼ばないスタブ実装であり、実コードの `updateJobState` は一切実行されない。\n\n  受け入れ基準の「関連 unit test を追加（**新規 path 記録** / legacy fallback / 完全 ENOENT の 3 ケース）」のうち「新規 path 記録」が未達成。test-cases.md の `TC-06`/`TC-07` は Priority: must。\n\n- **fix**:\n  `local.test.ts` の TC-LR-010 相当のテスト（`requestFilePath` を渡す run パス）に、`setupWorkspace` 完了後に job state を読み戻して `state.request.path` が `<worktreePath>/specrunner/changes/<slug>/request.md` を指していることをアサートするテストを追加する。\n  `managed.test.ts` でも同様に、`<cwd>/specrunner/changes/<slug>/request.md` を指していることをアサートする。\n\n  例（local.test.ts）:\n  ```ts\n  const { loadJobState } = await import(\"../../../../src/state/store.js\");\n  const finalState = await loadJobState(jobState.jobId);\n  const expectedPath = path.join(createdPaths[0], \"specrunner\", \"changes\", \"test-slug\", \"request.md\");\n  expect(finalState?.request.path).toBe(expectedPath);\n  ```\n\n---\n\n### [low] test-coverage \"12/12\" は substring マッチによる false positive\n\n- **file**: `specrunner/changes/resume-draft-path-fix/verification-result.md`\n- **description**:\n  `runTestCoveragePhase` は `text.includes(tcId)` でサブストリング検索するため、`TC-01` は他テストファイルの `TC-010`/`TC-011` などにも一致する。test-cases.md の `TC-01`〜`TC-14` が実際には `resolve-request-path.test.ts` の `TC-RRP-001`〜`TC-RRP-004` 等と対応しているが、ツールは別 TC の一部として一致している。\n\n  実装のバグではないが、coverage カウントが実態を過大に評価している。test-coverage フェーズの精度問題として別途 issue 化を推奨。\n\n---\n\n## Test Coverage vs test-cases.md (must)\n\n| TC | 説明 | カバー状況 |\n|----|------|-----------|\n| TC-01 | non-draft パスはそのまま返る | ✓ resolve-request-path.test.ts (TC-RRP-001) |\n| TC-02 | legacy + worktreePath あり → worktreePath 配下 | ✓ TC-RRP-002 |\n| TC-03 | legacy + worktreePath のファイル不在 → cwd フォールバック | ✓ TC-RRP-002 second case |\n| TC-04 | legacy + worktreePath null → cwd 配下 | ✓ TC-RRP-003 |\n| TC-05 | legacy + 両候補不在 → statePath そのまま | ✓ TC-RRP-004 |\n| TC-06 | job start 後 state.request.path が永続パス（local） | ✗ **未カバー** |\n| TC-07 | job start 後 state.request.path が永続パス（managed） | ✗ **未カバー** |\n| TC-08 | 新規 job resume → ENOENT なし | △ resume.test.ts で parseRequestMd がモックされ fallback 未検証 |\n| TC-09 | legacy + local resume → fallback 動作 | △ 同上 |\n| TC-10 | legacy + managed resume → cwd fallback | △ 同上 |\n| TC-11 | legacy + 両候補不在 → ENOENT | △ 同上 |\n| TC-14 | typecheck + test green | ✓ verification-result.md |\n\nTC-08〜TC-11 は `parseRequestMd` がモックされているため fallback ロジックの実質的な動作検証ではないが、`resolveRequestPath` 自体は TC-RRP-002/TC-RRP-003 で十分にテストされており、`resume.ts` へのワイヤリングはコンパイル + 静的解析で確認可能。実態としての regression リスクは TC-06/TC-07 の欠如が主要。\n\n---\n\n## Implementation Notes\n\n- `resolve-request-path.ts`: 純粋関数として分離済み、`fs.existsSync` の使い方も正しい\n- `local.ts:227-230`: `fs.cp` 直後・`fs.rm` 前の正しい位置に `updateJobState` 追加済み\n- `managed.ts:116-120`: 同上\n- `resume.ts:172-173`: `resolveRequestPath` のワイヤリングも正しく、エラーメッセージの `resolvedPath` 参照も修正済み\n\n---\n\n- **verdict**: needs-fix\n"
+        },
+        "startedAt": "2026-05-24T14:12:11.822Z",
+        "endedAt": "2026-05-24T14:18:19.793Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3468,
+            "outputTokens": 13,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 26,
+            "outputTokens": 19084,
+            "cacheReadInputTokens": 1111382,
+            "cacheCreationInputTokens": 65546
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "6aafafe8-e93b-481a-a3f9-846005de0c62",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/resume-draft-path-fix/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Review Feedback 002\n\n## Summary\n\niter 1 で指摘した high finding（TC-06/TC-07 の `state.request.path` 永続化を検証するテスト不在）は、`local.test.ts:589-609` と `managed.test.ts:207-226` で `loadJobState` による事後検証として正しく追加された。`bun run typecheck` clean、40/40 test green。実装と design.md / tasks.md / test-cases.md の整合は問題なし。\n\n## Findings\n\n### [info] iter 1 の high finding が解消されている\n\n- **file**: `tests/unit/core/runtime/local.test.ts:589-609`, `tests/unit/core/runtime/managed.test.ts:207-226`\n- **description**:\n  iter 1 で未カバーだった TC-06 / TC-07 が両ファイルに追加され、`setupWorkspace` 後に `loadJobState(jobState.jobId)` で `state.request.path` を読み戻し、それぞれ `<worktreePath>/specrunner/changes/test-slug/request.md`（local） / `<cwd>/specrunner/changes/test-slug/request.md`（managed）を指していることをアサートしている。受け入れ基準「新規 path 記録」の検証要件を満たしている。\n\n### [info] resolveRequestPath の実装と test-cases.md の整合は完全\n\n- **file**: `src/core/resume/resolve-request-path.ts`, `tests/unit/core/resume/resolve-request-path.test.ts`\n- **description**:\n  TC-01 〜 TC-05 のすべてが TC-RRP-001 〜 TC-RRP-004 でカバーされている。`undefined` worktreePath ケース（TC-RRP-003 の 2 ケース目）まで明示的にテストされている点も堅実。`fs.existsSync` の使用は同期 I/O だが path 解決という用途では妥当。\n\n### [info] resume.ts のワイヤリング\n\n- **file**: `src/core/command/resume.ts:171-179`\n- **description**:\n  `resolveRequestPath(state.request.path, getJobSlug(state), state.worktreePath, cwd)` 呼び出しと、`parseRequestMd` への引き渡し、エラーメッセージの `resolvedPath` 参照は design.md D2 / Task 4 の指示通り。`getJobSlug` が `state.request.slug` を最優先するため、`request.slug` が null だった legacy state でも branch / path basename フォールバックで slug を取得できる。\n\n### [minor] TC-08〜TC-11（integration: resume command）は test-cases.md に must で挙げられているが直接の integration test はない\n\n- **file**: `specrunner/changes/resume-draft-path-fix/test-cases.md:95-143`\n- **description**:\n  TC-08〜TC-11 は `specrunner job resume <slug>` を end-to-end で実行して ENOENT が出ない／出ることを検証する integration test を想定しているが、対応するテストファイルは追加されていない。iter 1 feedback でも「`parseRequestMd` がモック前提のため fallback ロジックの実質的な動作検証ではない」と認識されており、`resolveRequestPath` 自体が TC-RRP-002/003 で十分テストされているため、regression リスクは低く実害は限定的。test-cases.md の priority 表記と実装範囲のズレとして記録。\n- **fix**:\n  追加対応は不要。test-cases.md の TC-08〜TC-11 を「resolveRequestPath unit test でカバー済み」として既存の integration coverage に委ねるか、別 request で end-to-end 検証を追加するかは判断対象（本 review では blocker としない）。\n\n### [info] test-coverage の \"12/12\" は substring マッチによる過大評価（iter 1 と同様）\n\n- **file**: `specrunner/changes/resume-draft-path-fix/verification-result.md`\n- **description**:\n  iter 1 と verification-result.md は同一（iter 2 では再実行されていない）。`runTestCoveragePhase` の substring マッチで `TC-01` が `TC-010` 等にも一致するため 12/12 と報告されているが、実際の must coverage は前項のとおり TC-06/TC-07 が追加された結果として向上している。本 request のスコープ外。\n\n## Verdict\n\n- **verdict**: approved\n"
+        },
+        "startedAt": "2026-05-24T14:19:47.176Z",
+        "endedAt": "2026-05-24T14:22:01.232Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3468,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 4,
+            "outputTokens": 1196,
+            "cacheReadInputTokens": 29879,
+            "cacheCreationInputTokens": 10041
+          },
+          "claude-opus-4-7[1m]": {
+            "inputTokens": 17,
+            "outputTokens": 6289,
+            "cacheReadInputTokens": 556810,
+            "cacheCreationInputTokens": 73235
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "22d56980-1d53-43a2-882d-f01ca67bf8c7",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T14:18:21.466Z",
+        "endedAt": "2026-05-24T14:19:45.605Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2027,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 3083,
+            "outputTokens": 4966,
+            "cacheReadInputTokens": 250758,
+            "cacheCreationInputTokens": 30081
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "abebb30f-f3e6-4215-b1b1-e1e1c3a99a65",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-24T14:22:02.967Z",
+        "endedAt": "2026-05-24T14:22:10.552Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 514,
+            "outputTokens": 13,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 3,
+            "outputTokens": 73,
+            "cacheReadInputTokens": 10651,
+            "cacheCreationInputTokens": 5623
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/resume-draft-path-fix/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — resume-draft-path-fix\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/389\n- **Number**: 389\n- **CreatedAt**: 2026-05-24T14:22:14.064Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-24T14:22:10.608Z",
+        "endedAt": "2026-05-24T14:22:14.065Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/389",
+    "number": 389,
+    "createdAt": "2026-05-24T14:22:14.064Z"
+  }
+}

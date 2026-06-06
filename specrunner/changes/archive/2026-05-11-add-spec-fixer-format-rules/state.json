@@ -1,0 +1,374 @@
+{
+  "version": 1,
+  "jobId": "9f13f534-96d5-4aa1-b590-d88a2f2a124a",
+  "createdAt": "2026-05-11T03:04:14.594Z",
+  "updatedAt": "2026-05-11T03:28:22.926Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/add-spec-fixer-format-rules/request.md",
+    "title": "spec-fixer に delta spec format rules を追加する",
+    "type": "spec-change",
+    "slug": "add-spec-fixer-format-rules"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 69227,
+  "branch": "change/add-spec-fixer-format-rules-9f13f534",
+  "history": [
+    {
+      "ts": "2026-05-11T03:04:14.594Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-11T03:04:16.110Z",
+      "step": "propose-started",
+      "status": "started",
+      "message": "Starting propose step"
+    },
+    {
+      "ts": "2026-05-11T03:06:09.848Z",
+      "step": "propose-verdict",
+      "status": "ok",
+      "message": "propose verdict: success"
+    },
+    {
+      "ts": "2026-05-11T03:06:09.851Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "propose → spec-review"
+    },
+    {
+      "ts": "2026-05-11T03:06:09.851Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T03:06:09.852Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-11T03:08:59.046Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T03:08:59.048Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T03:08:59.048Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-11T03:08:59.049Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-11T03:10:20.500Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-11T03:10:20.503Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-11T03:10:20.504Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-11T03:11:57.713Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-11T03:11:57.714Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-11T03:11:57.715Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T03:11:57.716Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-11T03:12:06.830Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-11T03:12:06.832Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-11T03:12:06.832Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-11T03:12:06.833Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T03:12:06.834Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-11T03:14:48.188Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T03:14:48.191Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T03:14:48.191Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-11T03:14:48.192Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-11T03:14:50.679Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-11T03:14:50.680Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-11T03:28:22.926Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "propose": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T03:04:16.110Z",
+        "endedAt": "2026-05-11T03:04:16.110Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1282,
+            "outputTokens": 1445,
+            "cacheReadInputTokens": 45261,
+            "cacheCreationInputTokens": 30074
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 10,
+            "outputTokens": 3834,
+            "cacheReadInputTokens": 208049,
+            "cacheCreationInputTokens": 18888
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/add-spec-fixer-format-rules/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: add-spec-fixer-format-rules — Iteration 1\n\n## Verdict\n\n- **verdict**: approved\n- **iteration**: 1\n- **blocking_findings**: CRITICAL: 0, HIGH: 0\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | consistency | design.md, tasks.md | design.md は「propose-system.ts のルールテキストをそのまま複製する」と明記するが、tasks.md の挿入内容は (a) RENAMED セクションのコードブロック例（propose-system.ts L102-118 相当）と (b) rule 2 の LLM 警告文「LLM は MODIFIED を「差分の説明」と解釈してシナリオを省略しやすいが、これは validation error になるため必ず含めること」を省略している。design の「そのまま複製」と tasks の実際の挿入テキストが不整合。 | 2 択: (A) design.md の「そのまま複製する」を「Self-review checklist と RENAMED 例示を除き複製する」に修正し省略を意図的と明記する、または (B) tasks.md の挿入内容に RENAMED コードブロック例と LLM 警告文を追加して propose-system.ts と一致させる。spec-fixer も LLM であり同じ省略傾向を持つため (B) を推奨。 |\n| 2 | MEDIUM | completeness | change folder (specs/ 不在) | request type が `spec-change` だが delta spec が不在。既存 `specrunner/specs/spec-fixer-session/spec.md` は system prompt の内容を Requirement で定義している（「buildSpecFixerSystemPrompt は MUST 以下のキーワードを含む」）。format rules 追加はプロンプト内容の実質的変更であり、spec 上で追跡可能にすべき。ただし既存 Requirement はキーワード列挙であり format rules 追加で violation は発生しないため、spec 更新は推奨であって阻止要因ではない。 | `specs/spec-fixer-session/spec.md` に MODIFIED Requirement として「spec-fixer の system prompt は delta spec format rules を含む MUST」旨を追加するか、または design.md に「既存 spec の Requirement はキーワード列挙のみであり format rules の有無を spec 化するほどではないため delta spec は不要」と判断根拠を明記する。 |\n| 3 | LOW | consistency | tasks.md | tasks.md 挿入内容の「ファイル配置」セクションで `specs/<capability-name>/spec.md` を使用するが、propose-system.ts では `${_changesDir}/<slug>/specs/<capability-name>/spec.md` とフルパスで記載。spec-fixer は既存ファイルの修正文脈で動作するため相対パスで十分という設計判断は妥当だが、design.md にその判断根拠の記載がない。 | design.md「移植しないもの」セクションに「ファイル配置のパスプレフィックスは spec-fixer が既存ファイルの修正文脈で動作するため `specs/**/*.md` の相対記述に置き換える」を追記。 |\n\n## Summary\n\n小規模かつ明確なスコープの変更。propose-system.ts から spec-fixer-system.ts への format rules 移植という方針は正しく、配置位置（修正手順と修正不能 findings の間）も適切。MEDIUM 2 件は (1) design↔tasks 間の「そのまま複製」宣言と実際の省略の不整合、(2) spec-change type での delta spec 不在だが、いずれも実装を阻害するレベルではない。CRITICAL/HIGH なし、実装上の曖昧性も低いため approved。\n"
+        },
+        "startedAt": "2026-05-11T03:06:09.852Z",
+        "endedAt": "2026-05-11T03:06:09.852Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1186,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 14,
+            "outputTokens": 7336,
+            "cacheReadInputTokens": 419913,
+            "cacheCreationInputTokens": 36991
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T03:08:59.050Z",
+        "endedAt": "2026-05-11T03:08:59.050Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1232,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 8,
+            "outputTokens": 4788,
+            "cacheReadInputTokens": 143562,
+            "cacheCreationInputTokens": 20408
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T03:10:20.505Z",
+        "endedAt": "2026-05-11T03:10:20.505Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1296,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 15,
+            "outputTokens": 3635,
+            "cacheReadInputTokens": 329800,
+            "cacheCreationInputTokens": 19136
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/add-spec-fixer-format-rules/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — add-spec-fixer-format-rules — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.0s | 0 |\n| 2 | typecheck | passed | 1.6s | 0 |\n| 3 | test | passed | 4.0s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/add-spec-fixer-format-rules-9f13f534\n\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t130d\n\n Test Files  142 passed (142)\n      Tests  1589 passed (1589)\n   Start at  12:12:01\n   Duration  3.73s (transform 2.63s, setup 0ms, import 5.09s, tests 6.12s, environment 9ms)\n\n\n$ vitest run\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/add-spec-fixer-format-rules-9f13f534/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-11T03:11:57.716Z",
+        "endedAt": "2026-05-11T03:11:57.716Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/add-spec-fixer-format-rules/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback: add-spec-fixer-format-rules — Iteration 1\n\n## Verdict\n\n- **verdict**: approved\n- **iteration**: 1\n- **blocking_findings**: CRITICAL: 0, HIGH: 0\n\n## Scores\n\n| Category | Score | Weight | Weighted |\n|----------|-------|--------|----------|\n| correctness | 8 | 0.30 | 2.40 |\n| security | 9 | 0.25 | 2.25 |\n| architecture | 8 | 0.15 | 1.20 |\n| performance | 9 | 0.10 | 0.90 |\n| maintainability | 7 | 0.10 | 0.70 |\n| testing | 7 | 0.10 | 0.70 |\n| **Total** | | | **8.15** |\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | consistency | src/prompts/spec-fixer-system.ts:41 | propose-system.ts のルール 2 にある LLM 警告文「LLM は MODIFIED を『差分の説明』と解釈してシナリオを省略しやすいが、これは validation error になるため必ず含めること」が省略されている。spec-fixer 自身も LLM であり、同じ省略傾向を持つため、このルールを修正する際にまさに警告対象の失敗パターンを再現するリスクがある。 | ルール 2 の sub-bullet の末尾に propose-system.ts L100 の警告文を追加する。 |\n| 2 | LOW | completeness | src/prompts/spec-fixer-system.ts:42 | RENAMED の FROM/TO 構造例（propose-system.ts L102-118 のコードブロック）が省略されている。spec-fixer が RENAMED 関連の finding を修正する際、具体例がないと正しい FROM/TO 構造を生成できない可能性がある。 | ルール 3 の後に propose-system.ts L102-118 相当の markdown コードブロック例を追加する。 |\n| 3 | LOW | completeness | src/prompts/spec-fixer-system.ts:34 | request.md の要件「REMOVED セクションではヘッダのみ（本文不要）」が明示されていない。`## REMOVED Requirements — 既存 Requirement を削除する場合` の記述から推測可能だが、他のルール（Scenario 必須、normative keywords 必須）が REMOVED にも適用されるか曖昧になる。 | REMOVED の説明に「header のみ記載し、本文・Scenario は不要」を追記する。 |\n\n## Scenario Coverage (test-cases.md)\n\n| TC | Priority | Covered | Notes |\n|----|----------|---------|-------|\n| TC-01 | must | yes | `## Delta Spec Format Rules` セクション存在 |\n| TC-02 | must | yes | 修正手順の後、修正不能 findings の前に配置 |\n| TC-03 | must | yes | ADDED/MODIFIED/REMOVED/RENAMED 全記載 |\n| TC-04 | must | yes | `### Requirement:` ヘッダ書式 |\n| TC-05 | must | yes | `#### Scenario:` 必須（MODIFIED 含む） |\n| TC-06 | must | yes | SHALL/MUST normative keywords |\n| TC-07 | must | partial | REMOVED の「ヘッダのみ」は推測可能だが明示なし（Finding #3） |\n| TC-08 | must | yes | 独自フォーマット禁止 |\n| TC-09 | must | yes | コードブロック禁止 |\n| TC-10 | should | yes | ファイル配置ルール |\n| TC-11 | must | yes | `${_changesDir}` 不使用 |\n| TC-12 | must | yes | Self-review checklist 不含 |\n| TC-13 | must | partial | 概ね整合。LLM 警告文と RENAMED 例の省略あり（Finding #1, #2） |\n| TC-14 | must | yes | シグネチャ変更なし |\n| TC-15 | must | yes | typecheck pass 確認済み |\n| TC-16 | must | yes | 1589 tests pass 確認済み |\n| TC-17 | should | yes | MODIFIED の Scenario 必須が強調されている |\n| TC-18 | must | yes | MODIFIED header 一致ルール記載 |\n\n## Summary\n\nスコープが明確で、実装はクリーン。propose-system.ts の Delta Spec Format Rules を spec-fixer-system.ts に正しく移植し、配置位置も設計通り（修正手順 → Format Rules → 修正不能 findings）。typecheck・全 1589 テスト pass。MEDIUM 1 件（LLM 警告文の省略）は改善推奨だが承認阻止要因ではない。\n"
+        },
+        "startedAt": "2026-05-11T03:12:06.834Z",
+        "endedAt": "2026-05-11T03:12:06.834Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1343,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 10,
+            "outputTokens": 5456,
+            "cacheReadInputTokens": 297723,
+            "cacheCreationInputTokens": 35007
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/add-spec-fixer-format-rules/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — add-spec-fixer-format-rules\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/198\n- **Number**: 198\n- **CreatedAt**: 2026-05-11T03:14:50.679Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-11T03:14:48.192Z",
+        "endedAt": "2026-05-11T03:14:48.192Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/198",
+    "number": 198,
+    "createdAt": "2026-05-11T03:14:50.679Z"
+  }
+}

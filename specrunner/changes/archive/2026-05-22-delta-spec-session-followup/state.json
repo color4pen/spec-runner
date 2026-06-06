@@ -1,0 +1,816 @@
+{
+  "version": 1,
+  "jobId": "aee194b4-e180-4ed8-9540-07e5366f98bc",
+  "createdAt": "2026-05-22T06:27:47.157Z",
+  "updatedAt": "2026-05-22T08:02:17.266Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/delta-spec-session-followup.md",
+    "title": "step 内で作業後に follow プロンプトを 1 本投げて self-fix させる (= intra-step follow-up prompt)",
+    "type": "spec-change",
+    "slug": "delta-spec-session-followup"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 88338,
+  "branch": "change/delta-spec-session-followup-aee194b4",
+  "history": [
+    {
+      "ts": "2026-05-22T06:27:47.157Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-22T06:27:48.843Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-22T06:36:34.911Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-22T06:36:34.916Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-22T06:36:34.917Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-22T06:36:34.928Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T06:36:34.929Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-22T06:36:34.930Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-22T06:36:34.930Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-22T06:41:04.296Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T06:41:04.299Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T06:41:04.299Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-22T06:41:04.301Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-22T06:43:06.159Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-22T06:43:06.162Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-22T06:43:06.164Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-22T06:58:30.862Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-22T06:58:30.872Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-22T06:58:30.872Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-22T06:58:30.873Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-22T06:58:42.405Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: failed"
+    },
+    {
+      "ts": "2026-05-22T06:58:42.408Z",
+      "step": "verification",
+      "status": "warning",
+      "message": "verification iteration 1 completed with verdict: failed"
+    },
+    {
+      "ts": "2026-05-22T06:58:42.408Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → build-fixer"
+    },
+    {
+      "ts": "2026-05-22T06:58:42.409Z",
+      "step": "build-fixer-started",
+      "status": "started",
+      "message": "Starting build-fixer step"
+    },
+    {
+      "ts": "2026-05-22T06:59:41.938Z",
+      "step": "build-fixer-verdict",
+      "status": "ok",
+      "message": "build-fixer verdict: success"
+    },
+    {
+      "ts": "2026-05-22T06:59:41.940Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "build-fixer → verification"
+    },
+    {
+      "ts": "2026-05-22T06:59:41.941Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 2 started"
+    },
+    {
+      "ts": "2026-05-22T06:59:41.941Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-22T06:59:53.596Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: failed"
+    },
+    {
+      "ts": "2026-05-22T06:59:53.599Z",
+      "step": "verification",
+      "status": "warning",
+      "message": "verification iteration 2 completed with verdict: failed"
+    },
+    {
+      "ts": "2026-05-22T06:59:53.599Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → build-fixer"
+    },
+    {
+      "ts": "2026-05-22T06:59:53.600Z",
+      "step": "build-fixer-started",
+      "status": "started",
+      "message": "Starting build-fixer step"
+    },
+    {
+      "ts": "2026-05-22T07:04:32.739Z",
+      "step": "build-fixer-verdict",
+      "status": "ok",
+      "message": "build-fixer verdict: success"
+    },
+    {
+      "ts": "2026-05-22T07:04:32.742Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "build-fixer → verification"
+    },
+    {
+      "ts": "2026-05-22T07:04:32.743Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 3 started"
+    },
+    {
+      "ts": "2026-05-22T07:04:32.744Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-22T07:04:44.530Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-22T07:04:44.533Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 3 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-22T07:04:44.533Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-22T07:04:44.534Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-22T07:04:44.535Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-22T07:11:03.601Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-22T07:11:03.604Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-22T07:11:03.604Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-22T07:11:03.606Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-22T07:13:48.724Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T07:13:48.727Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-22T07:13:48.728Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-22T07:13:48.728Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-22T07:20:36.975Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-22T07:20:36.978Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 2 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-22T07:20:36.978Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-22T07:20:36.979Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-22T07:24:01.162Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T07:24:01.166Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-22T07:24:01.166Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 3 started"
+    },
+    {
+      "ts": "2026-05-22T07:24:01.167Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-22T07:29:29.460Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T07:29:29.463Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 3 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-22T07:29:29.463Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → adr-gen"
+    },
+    {
+      "ts": "2026-05-22T07:29:29.464Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-22T07:31:23.118Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-22T07:31:23.121Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-22T07:31:23.122Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-22T07:31:27.075Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-22T07:31:27.080Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-22T08:02:17.266Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "6225b266-8b0b-4186-984f-8fe575f17db6",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-22T06:27:48.854Z",
+        "endedAt": "2026-05-22T06:36:32.919Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 9607,
+            "outputTokens": 17935,
+            "cacheReadInputTokens": 1871293,
+            "cacheCreationInputTokens": 164405
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 2082,
+            "outputTokens": 22106,
+            "cacheReadInputTokens": 1787780,
+            "cacheCreationInputTokens": 122237
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/delta-spec-session-followup/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-22T06:36:34.918Z",
+        "endedAt": "2026-05-22T06:36:34.928Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "fd17c86d-99bc-40fd-971d-957faf14ff35",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/delta-spec-session-followup/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: delta-spec-session-followup\n\n- **verdict**: approved\n- **reviewer**: spec-reviewer\n- **date**: 2026-05-22\n\n---\n\n## Summary\n\nintra-step follow-up prompt primitive の追加仕様として網羅性・整合性・セキュリティ要件を確認した。delta spec の format 規律違反はなく、設計判断は一貫している。3 点の注意事項を記録するが、いずれも blocker ではない。\n\n---\n\n## Format Validation (rules.md 準拠)\n\n全 4 ファイルを確認。\n\n| ファイル | ## Requirements | ### Requirement: | #### Scenario: | SHALL/MUST | Removed/Renamed 形式 |\n|---|---|---|---|---|---|\n| agent-runner-port/spec.md | ✅ | ✅ | ✅ | ✅ | 不要 (追加のみ) |\n| step-execution-architecture/spec.md | ✅ | ✅ | ✅ | ✅ | 不要 (追加のみ) |\n| claude-code-runtime/spec.md | ✅ | ✅ | ✅ | ✅ | 不要 (追加のみ) |\n| managed-agent-runtime/spec.md | ✅ | ✅ | ✅ | ✅ | 不要 (追加のみ) |\n\n旧形式 (`## ADDED/MODIFIED Requirements`) は使用されていない。各 Requirement と最初の Scenario の間にコードブロックはない。\n\n---\n\n## Coverage Assessment\n\n### request.md → delta spec のトレーサビリティ\n\n| 要件 | delta spec |\n|---|---|\n| `AgentRunContext.followUpPrompt?: string` 追加 | agent-runner-port/spec.md ✅ |\n| `AgentStep.followUpPrompt?: string` 追加 | step-execution-architecture/spec.md ✅ |\n| executor の ctx への転記 | step-execution-architecture/spec.md ✅ |\n| ClaudeCode adapter 2 段実行 (resume 方式) | claude-code-runtime/spec.md ✅ |\n| Managed adapter SSE 経路 2 段実行 | managed-agent-runtime/spec.md ✅ |\n| Managed adapter polling 経路 2 段実行 | managed-agent-runtime/spec.md ✅ |\n| DesignStep への format self-fix followUpPrompt 設定 | step-execution-architecture/spec.md ✅ |\n| modelUsage adapter native (Codex 加算 / Claude cumulative) | design.md D6 + tasks.md T-06 (※後述) |\n| timeout 単一 AbortController | claude-code-runtime/spec.md ✅ / managed-agent-runtime/spec.md ✅ |\n| graceful degradation (managed sendUserMessage 失敗) | managed-agent-runtime/spec.md ✅ |\n| shared 純粋関数の境界 (adapter → shared 一方向) | tasks.md T-04 に定義 ✅ |\n\n受け入れ基準の全項目に対応する spec または design/tasks 記述が存在する。\n\n---\n\n## Design Consistency\n\n### D1 (intra-step 完結) の一貫性 ✅\n\nexecutor が `runner.run(ctx)` を 1 回 await し、内部 2 turn は adapter の実装詳細である点が step-execution-architecture/spec.md の Scenario (`executor と finalizeStep が無改修である`) で検証可能な形式になっている。pipeline state machine / FIXER_STEP_NAMES への無干渉も spec に明記されている。\n\n### D5 (shared/native 境界) の一貫性 ✅\n\nshared に置く関数 (`shouldRunFollowUp` / `mergeFollowUpResult`) は runtime 型 (AsyncGenerator / Turn / poll result) と usage 意味論を知らない純粋関数として定義されている。Codex の per-turn usage 加算は T-06 に adapter native として配置されており、shared への一律加算は存在しない。\n\n### D6 (各 adapter の follow 送信方式) の一貫性 ✅\n\n- **Claude**: `resume: sessionId` 方式。design.md が AsyncIterable 案と比較検討した上で fixer session 継続の実績を根拠に選択。spec の Scenario (`resume: \"sess-abc\"` が options に含まれる) として検証可能。\n- **Codex**: 同一 `CodexThread.run()` 2 回。spec なし (後述 F-01)。\n- **Managed SSE**: `sendUserMessage + pollUntilComplete`。spec の Scenario で検証可能。\n\n---\n\n## Findings\n\n### F-01: Codex adapter に delta spec がない (pre-existing gap、non-blocker)\n\nbaseline に `specrunner/specs/codex-runtime/spec.md` が存在しない。そのため Codex follow-up 実装 (T-06 / T-12) に対応する delta spec がない。これは本 request で生じた gap ではなく、Codex adapter が当初から spec 未カバーであることに起因する。request の acceptance criteria は unit test (T-12) でカバーされているため blocker ではない。\n\n### F-02: Managed API multi-turn の検証エビデンスが設計内に明示されていない (acceptable risk)\n\nrequest は「SSE `end_turn` 後の `sendUserMessage` 可否を design フェーズで実機または公式ドキュメントで検証する SHALL」と要求した。design.md D6 は「fixer session resume pattern と同じ前提」として `sendUserMessage + pollUntilComplete` を採用しているが、実機検証や公式ドキュメント引用のエビデンスは記録されていない。\n\nただし:\n- fixer session resume は現行コードで動作する実績パターン\n- managed-agent-runtime/spec.md に `sendUserMessage 失敗時 graceful degradation` が明示されている (非致命的フォールバック)\n\n仮定が外れた場合でも hard failure にならない設計であるため、許容できるリスクと判断する。\n\n### F-03: DesignStep followUpPrompt の rules.md path が slug 非依存表記 (minor)\n\ntasks.md T-09 のプロンプト文面は `specrunner/changes/ 配下の rules.md を Read tool で読んでください` と書かれており、slug を含まない。変更 folder が複数存在するケースで agent が誤った rules.md を読む可能性がある (実運用上は 1 worktree = 1 change だが、spec 上の不確定性)。\n\nstep-execution-architecture/spec.md の Requirement: DesignStep は「slug 埋め込みは adapter 側で行う、または slug 非依存な path 表記を使用する」と両案を認めており、tasks.md はどちらか一方を選んで実装することになる。実装者は slug を path に埋め込む方式 (`specrunner/changes/<slug>/rules.md`) を推奨する。\n\n---\n\n## Security Review\n\n本変更はユーザー入力をプロンプトへ流す経路を持たない。`followUpPrompt` は step 定義時に開発者がハードコードする static string であり、`DesignStep.followUpPrompt` は rules.md の参照と format 規律の列挙のみ含む。外部入力の injectionリスクは該当しない。\n\nmanaged adapter の `sendUserMessage` に渡す値は `ctx.followUpPrompt` (= step 定義の static string) のみであり、job state やユーザー request 内容は混入しない。\n\n---\n\n## Acceptance Criteria Check\n\n- [x] `AgentRunContext.followUpPrompt` + `AgentStep.followUpPrompt` が追加される — spec に定義あり\n- [x] `followUpPrompt` 未指定時は早期 return で作業 turn のみ — 全 adapter spec に Scenario あり\n- [x] 3 adapter とも 2 段実行が定義されている — Claude / Managed は delta spec、Codex は design + tasks (F-01)\n- [x] follow turn が同一 session 継続 — 各 spec の Scenario で検証条件を記述\n- [x] wall-clock timeout が作業 turn + follow turn 合算で 1 本 — claude-code-runtime / managed-agent-runtime spec に Scenario あり\n- [x] modelUsage が session 累積総量 (adapter native) — design D6 + tasks に定義\n- [x] shared が runtime 型・usage 意味論を知らない — T-04 の設計意図に明記\n- [x] result 集約 (sessionId 維持 / resultContent 採用) が shared — T-04 の `mergeFollowUpResult` に定義\n- [x] design step に format self-fix followUpPrompt が設定される — step-execution-architecture/spec.md ✅\n- [x] executor / finalizeStep が無改修 — step-execution-architecture/spec.md の Scenario で検証\n- [x] pipeline step 遷移・state machine が無変更 — step-execution-architecture/spec.md に明記\n- [x] dsv が従来通りゲートとして残る — scope 外定義で明示的に除外 ✅\n- [x] 3 adapter の unit test — T-11 / T-12 / T-13 に定義\n- [x] `bun run typecheck && bun run test` が green — T-14 に定義\n- [~] managed の follow turn が設計確定手段で実行できる — design.md が fixer precedent + graceful degradation で解決 (F-02)\n"
+        },
+        "startedAt": "2026-05-22T06:36:34.940Z",
+        "endedAt": "2026-05-22T06:41:02.639Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 7213,
+            "outputTokens": 22,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 14,
+            "outputTokens": 11381,
+            "cacheReadInputTokens": 462081,
+            "cacheCreationInputTokens": 54806
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "cb18463d-2fc9-410a-a051-56a2916f639d",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-22T06:41:04.310Z",
+        "endedAt": "2026-05-22T06:43:04.460Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5962,
+            "outputTokens": 21,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 8761,
+            "cacheReadInputTokens": 69834,
+            "cacheCreationInputTokens": 35103
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "b3e356ae-aea4-446f-ba1b-009bf81a36d1",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-22T06:43:06.177Z",
+        "endedAt": "2026-05-22T06:58:29.112Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 7317,
+            "outputTokens": 22,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 86,
+            "outputTokens": 58622,
+            "cacheReadInputTokens": 6638249,
+            "cacheCreationInputTokens": 238134
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "failed",
+          "findingsPath": "specrunner/changes/delta-spec-session-followup/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — delta-spec-session-followup — iter 1\n\n## Verdict: failed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.1s | 0 |\n| 2 | typecheck | passed | 2.1s | 0 |\n| 3 | test | failed | 6.7s | 1 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n| 6 | test-coverage | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/delta-spec-session-followup-aee194b4\n\n ❯ tests/unit/core/spec/rules/integration.test.ts (9 tests | 1 failed) 8ms\n     × specrunner/changes/dsv-format-rules-expansion validates without violations 3ms\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t141d\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n\n Test Files  1 failed | 235 passed (236)\n      Tests  1 failed | 2556 passed (2557)\n   Start at  15:58:34\n   Duration  6.45s (transform 4.10s, setup 0ms, import 8.11s, tests 11.63s, environment 15ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-TK8OLs/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-5AmlSw/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/delta-spec-session-followup-aee194b4/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  tests/unit/core/spec/rules/integration.test.ts > TC-093: self-consistency — dsv-format-rules-expansion delta spec passes validateDeltaSpecPaths > specrunner/changes/dsv-format-rules-expansion validates without violations\nError: Delta spec has violations:\n[no-specs-for-required-type] ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/delta-spec-session-followup-aee194b4/specrunner/changes/dsv-format-rules-expansion/specs/: Request type 'spec-change' requires a delta spec. Add a file under ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/delta-spec-session-followup-aee194b4/specrunner/changes/dsv-format-rules-expansion/specs/<capability-name>/spec.md\n ❯ tests/unit/core/spec/rules/integration.test.ts:241:13\n    239|       // Surface the violations to make failures debuggable\n    240|       const msgs = result.violations.map((v) => `[${v.reason}] ${v.pat…\n    241|       throw new Error(`Delta spec has violations:\\n${msgs.join(\"\\n\")}`…\n       |             ^\n    242|     }\n    243|     expect(result.ok).toBe(true);\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\nerror: script \"test\" exited with code 1\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n\n## Phase: test-coverage\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-22T06:58:30.873Z",
+        "endedAt": "2026-05-22T06:58:42.404Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "failed",
+          "findingsPath": "specrunner/changes/delta-spec-session-followup/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — delta-spec-session-followup — iter 1\n\n## Verdict: failed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.2s | 0 |\n| 2 | typecheck | passed | 2.2s | 0 |\n| 3 | test | passed | 6.7s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n| 6 | test-coverage | failed | 0.0s | 1 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/delta-spec-session-followup-aee194b4\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t141d\n\n Test Files  236 passed (236)\n      Tests  2557 passed (2557)\n   Start at  15:59:45\n   Duration  6.53s (transform 4.21s, setup 0ms, import 8.73s, tests 11.62s, environment 14ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-aBrDsi/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-NS0PoV/specrunner/credentials.json has loose permissions (recommend 0600).\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/delta-spec-session-followup-aee194b4/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n\n## Phase: test-coverage\n\n```\ntest-coverage: 48/57 must TCs covered\nMissing: TC-42, TC-46, TC-47, TC-48, TC-52, TC-54, TC-55, TC-58, TC-59\n```\n"
+        },
+        "startedAt": "2026-05-22T06:59:41.942Z",
+        "endedAt": "2026-05-22T06:59:53.596Z"
+      },
+      {
+        "attempt": 3,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/delta-spec-session-followup/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — delta-spec-session-followup — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.2s | 0 |\n| 2 | typecheck | passed | 2.1s | 0 |\n| 3 | test | passed | 6.6s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n| 6 | test-coverage | passed | 0.0s | 0 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/delta-spec-session-followup-aee194b4\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t141d\n\n Test Files  236 passed (236)\n      Tests  2566 passed (2566)\n   Start at  16:04:36\n   Duration  6.40s (transform 4.05s, setup 0ms, import 8.15s, tests 11.66s, environment 15ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-reeNXV/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-Z7B09h/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/delta-spec-session-followup-aee194b4/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n\n## Phase: test-coverage\n\n```\ntest-coverage: 57/57 must TCs covered\n```\n"
+        },
+        "startedAt": "2026-05-22T07:04:32.744Z",
+        "endedAt": "2026-05-22T07:04:44.529Z"
+      }
+    ],
+    "build-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "c4479609-04c7-4947-b1a6-93a32efe8304",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-22T06:58:42.421Z",
+        "endedAt": "2026-05-22T06:59:40.357Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 7417,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 12,
+            "outputTokens": 2613,
+            "cacheReadInputTokens": 278423,
+            "cacheCreationInputTokens": 27783
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "c4479609-04c7-4947-b1a6-93a32efe8304",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-22T06:59:53.613Z",
+        "endedAt": "2026-05-22T07:04:31.084Z",
+        "modelUsage": {
+          "claude-sonnet-4-6": {
+            "inputTokens": 30,
+            "outputTokens": 14689,
+            "cacheReadInputTokens": 2529765,
+            "cacheCreationInputTokens": 83185
+          }
+        }
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "a2560a37-6542-4e23-ab41-7b2bd9741b6e",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/delta-spec-session-followup/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback: delta-spec-session-followup\n\n- **verdict**: needs-fix\n- **reviewer**: code-reviewer\n- **iteration**: 1\n- **date**: 2026-05-22\n\n---\n\n## Summary\n\n実装全体として設計意図は正確に反映されており、typecheck・test は共に green (2566 passed)。\npipeline の step machinery 無改修、executor/finalizeStep 無改修、FIXER_STEP_NAMES 無改修も確認済み。\n3 adapter の 2 段実行ロジックと DesignStep の followUpPrompt 設定は spec 通り。\n\nただし 2 点の指摘がある。1 件は受け入れ基準に直接抵触するため needs-fix とする。\n\n---\n\n## Findings\n\n### F-01: `mergeFollowUpResult` が dead code — 受け入れ基準「result 集約が shared で」未充足\n\n- **severity**: medium\n- **file**: `src/adapter/shared/follow-up.ts`, 各 adapter\n\n**事実**:\n`mergeFollowUpResult` は `src/adapter/shared/follow-up.ts` でエクスポートされ、テストも通っているが、**3 adapter のいずれもこの関数を import・呼び出ししていない**。\n\n```\n$ grep -rn \"mergeFollowUpResult\" src/\nsrc/adapter/shared/follow-up.ts:24:export function mergeFollowUpResult(\n```\n\nproduction code からの参照はゼロ。adapters は result 集約を inline で行っている。\n\n**request.md の受け入れ基準**:\n> `result 集約のうち sessionId (turn 1 維持) / resultContent (follow turn 採用) が shared で、依存が adapter → shared 純粋関数の一方向である`\n\nこの基準は「shared 純粋関数が adapter から呼ばれる」ことを前提とする。現状、adapter は `shouldRunFollowUp` だけ shared から呼んでおり、`mergeFollowUpResult` は呼んでいない。\n\n**挙動への影響**: なし。各 adapter が inline で等価な処理をしており、動作は正しい。ただし設計意図 (adapter → shared 純粋関数の単方向依存) が実装レベルで未達成であり、将来の adapter 追加時に適用されない。\n\n**修正方針**:\n- ClaudeCodeRunner: follow turn 完了後に `mergeFollowUpResult(baseResultObj, followResultContent)` を呼んで最終結果を組み立てる\n- CodexAgentRunner: 同様に呼び出す\n- ManagedAgentRunner: design step は resultContent が常に null なので影響軽微だが、polling 経路では適用可能\n\nなお、ClaudeCodeRunner の `resultContent` はファイル読み出し後に確定するため、`mergeFollowUpResult` の呼び出しタイミングは「ファイル読み出し後・return 前」になる点に注意。\n\n---\n\n### F-02: TC-25 (must) のファンクショナルテストが欠落\n\n- **severity**: low\n- **file**: `tests/unit/adapter/claude-code/agent-runner.test.ts`\n\n**事実**:\n`test-cases.md` の TC-25 (priority: **must**):\n> GIVEN `ctx.followUpPrompt` が指定され、AbortController が abort される\n> WHEN abort が 1 回目の turn 実行中に発生する\n> THEN 2 回目の turn が開始されず、timeout による completion が返る\n\nこのシナリオに対応するファンクショナルテストが claude-code/agent-runner.test.ts に存在しない。\n`tests/unit/core/step/types.test.ts` の TC-48 は「ファイルに 'followUpPrompt' と 'AbortController' の文字列が含まれる」という構造的 assertion に留まり、「abort 後に follow turn が開始されない」という振る舞いを保証しない。\n\n**挙動への影響**: なし。実装コードを見ると、turn 1 が abort で throw → 外側 catch → `abortController.signal.aborted` が true → timeout 返却、という経路で follow turn は絶対に開始されない。コードは正しい。\n\n**修正方針**:\n`ClaudeCodeRunner follow-up 2-turn execution` describe ブロックに以下を追加:\n- queryFn が 1 回目の呼び出し中に abort されたとき、2 回目が呼ばれず completionReason === \"timeout\" を返すテストケース\n\n既存の TC-032 (timeoutMs) では `followUpPrompt` が未設定のため、follow turn の起動有無を検証できていない。\n\n---\n\n## Must Test Coverage (test-cases.md との照合)\n\n| TC | Priority | Status |\n|---|---|---|\n| TC-01〜TC-18 (Interface / shared) | must | ✅ |\n| TC-19〜TC-26 (ClaudeCode) | must/should | TC-25 のみ functional 未 |\n| TC-27〜TC-33 (Codex) | must | ✅ |\n| TC-34〜TC-42 (Managed) | must | ✅ |\n| TC-43〜TC-46 (DesignStep) | must | ✅ |\n| TC-47〜TC-48 (Timeout) | must | structural のみ (functional は TC-25 依存) |\n| TC-49〜TC-52 (Pipeline) | must | ✅ |\n| TC-54〜TC-55 (全体) | must | ✅ green |\n\n---\n\n## 非問題として記録\n\n- **managed SSE 経路の follow turn**: `sendUserMessage` + `pollUntilComplete` の実装は design D6 通り。graceful degradation (catch → stderrWrite) も確認済み\n- **Codex usage 加算**: `turn1Usage` を spread してから加算、turn 2 で上書きしない実装 (TC-31 相当) が正しく動作\n- **executor 転記**: `followUpPrompt: step.followUpPrompt` の 1 行追加のみ、他の executor ロジックは無改修\n- **shared が runtime 型を知らない**: `follow-up.ts` の import は `AgentRunContext` と `AgentRunResult` のみ (core/port — pure interface)\n- **`shouldRunFollowUp` の早期 return 役割**: falsy or non-success で false を返すシンプルな実装で leak なし\n\n---\n\n## 修正スコープ\n\nF-01 は受け入れ基準に抵触するため修正必須。F-02 は must テストケースの欠落であり追加が必要。\nいずれもスコープは局所的で、pipeline/executor の変更は不要。\n"
+        },
+        "startedAt": "2026-05-22T07:04:44.551Z",
+        "endedAt": "2026-05-22T07:11:01.899Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 7363,
+            "outputTokens": 20,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 25,
+            "outputTokens": 12939,
+            "cacheReadInputTokens": 1748668,
+            "cacheCreationInputTokens": 101041
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "a8a5b924-2268-44de-ba3f-c3c6be2c8f80",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/delta-spec-session-followup/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Review Feedback 002: delta-spec-session-followup\n\n- **iteration**: 2\n- **reviewer**: code-reviewer\n- **verdict**: needs-fix\n\n---\n\n## Summary\n\n実装・型チェック・テストはすべて green。core の 2 段実行ロジック・shared helper・3 adapter の follow-up 実装はいずれも正しい。ただし must-scenario の TC-25 が「functional test は claude-code/agent-runner.test.ts にある」とコメントに書かれているが実際には存在せず、TC-05/TC-06（executor 転記）の unit test も未実装。\n\n---\n\n## Findings\n\n### F-01: TC-25 functional test が存在しない（must-scenario 未カバー）\n\n- **severity**: high\n- **file**: `tests/unit/core/step/types.test.ts` L133 / `tests/unit/adapter/claude-code/agent-runner.test.ts`\n- **test-case**: TC-25 (must)\n\n`types.test.ts` TC-48 に「The functional aspect is tested by TC-25 in claude-code/agent-runner.test.ts」とコメントがあるが、`claude-code/agent-runner.test.ts` の follow-up describe ブロックに対応するテストが存在しない。\n\ntest-cases.md の TC-25 シナリオは:\n```\nGIVEN ctx.followUpPrompt が指定され、AbortController が abort される\nWHEN abort が 1 回目の turn 実行中に発生する\nTHEN 2 回目の turn が開始されず、timeout による completion が返る\n```\n\nTC-032 (timeout) のテストは `followUpPrompt` を設定せずに abort を検証しており、TC-25 の「followUpPrompt 指定 + work turn abort → follow turn 不起動」は直接カバーされていない。\n\n`types.test.ts` の TC-47/TC-48 は構造チェック（ファイル内容の文字列確認）であり、行動テストの代替にはならない。\n\n**fix**: `claude-code/agent-runner.test.ts` の follow-up describe 内に以下を追加する。\n\n```typescript\nit(\"work turn が abort されたとき follow turn が開始されず timeout が返る\", async () => {\n  let callCount = 0;\n  const queryFn: QueryFn = async function* (params) {\n    callCount++;\n    const abortCtrl = params.options?.[\"abortController\"] as AbortController | undefined;\n    await new Promise<void>((_, reject) => {\n      if (abortCtrl) {\n        abortCtrl.signal.addEventListener(\"abort\", () => {\n          reject(Object.assign(new Error(\"AbortError\"), { name: \"AbortError\" }));\n        }, { once: true });\n      }\n    });\n    yield {} as never; // never reached\n  } as QueryFn;\n\n  const config: SpecRunnerConfig = { ...makeConfig(), steps: { defaults: { timeoutMs: 50 } } };\n  const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });\n  const ctx: AgentRunContext = {\n    step: makeAgentStep({ followUpPrompt: \"fix format\" }),\n    followUpPrompt: \"fix format\",\n    state: makeJobState(),\n    branch: \"feat/test\",\n    slug: \"test-slug\",\n    cwd: tempDir,\n    requestContent: \"content\",\n    config,\n    emit: vi.fn(),\n  };\n\n  const result = await runner.run(ctx);\n  expect(result.completionReason).toBe(\"timeout\");\n  expect(callCount).toBe(1); // follow turn not started\n});\n```\n\n---\n\n### F-02: TC-05/TC-06 — executor.ts の `followUpPrompt` 転記に unit test なし（must-scenario 未カバー）\n\n- **severity**: medium\n- **file**: `tests/unit/step/executor.test.ts`\n- **test-case**: TC-05, TC-06 (must)\n\nexecutor.ts に `followUpPrompt: step.followUpPrompt` を追加したが、`executor.test.ts` に `followUpPrompt` に関する記述がない（grep で 0 件）。\n\nTC-05「executor が step.followUpPrompt を ctx.followUpPrompt に転記する」と TC-06「followUpPrompt 未設定の step では ctx.followUpPrompt が undefined」は must だが、直接検証するテストが存在しない。\n\nadapter unit tests は `ctx.followUpPrompt` を直接設定しているため転記ロジックは迂回されており、executor の転記責務は未検証のまま。\n\n**fix**: `executor.test.ts` のモック runner の ctx キャプチャ部分に以下を追加する。\n\n```typescript\nit(\"TC-05: step.followUpPrompt が ctx.followUpPrompt に転記される\", async () => {\n  let capturedCtx: AgentRunContext | undefined;\n  const mockRunner: AgentRunner = {\n    run: vi.fn().mockImplementation((ctx: AgentRunContext) => {\n      capturedCtx = ctx;\n      return Promise.resolve({ completionReason: \"success\", resultContent: null });\n    }),\n  };\n  const executor = new StepExecutor(makeEventBus(), mockRunner);\n  const step = makeAgentStep({ followUpPrompt: \"fix format violations\" });\n  await executor.execute(step, makeJobState(), makeDeps());\n  expect(capturedCtx?.followUpPrompt).toBe(\"fix format violations\");\n});\n\nit(\"TC-06: followUpPrompt 未設定の step では ctx.followUpPrompt が undefined\", async () => {\n  let capturedCtx: AgentRunContext | undefined;\n  const mockRunner: AgentRunner = {\n    run: vi.fn().mockImplementation((ctx: AgentRunContext) => {\n      capturedCtx = ctx;\n      return Promise.resolve({ completionReason: \"success\", resultContent: null });\n    }),\n  };\n  const executor = new StepExecutor(makeEventBus(), mockRunner);\n  const step = makeAgentStep(); // no followUpPrompt\n  await executor.execute(step, makeJobState(), makeDeps());\n  expect(capturedCtx?.followUpPrompt).toBeUndefined();\n});\n```\n\n---\n\n### F-03: SSE polling fallback + followUpPrompt のテストシナリオが test-cases.md に未定義（low）\n\n- **severity**: low\n- **file**: `specrunner/changes/delta-spec-session-followup/test-cases.md`\n- **test-case**: TC-36 周辺\n\n設計 (D6 / T-07) は「SSE が end_turn 以外 (terminated / polling fallback) で終了した場合は follow turn を実行しない」と明記しており、実装も `sseEndTurn = !needsPollingFallback` で正しく制御されている。\n\nしかし test-cases.md には「SSE terminated → follow turn 不実行」(TC-36) のみあり、「SSE polling fallback → follow turn 不実行」のシナリオが定義されていない。TC-36 のテストは `terminated = true` で throw するパスを検証しており、polling fallback パス（`terminated = false` かつ `end_turn` でない SSE disconnection）は検証されていない。\n\n動作は正しいが must シナリオの抜けとして記録する。fix は任意（should）。\n\n---\n\n### F-04: `shouldRunFollowUp` の `baseCompletionReason` 引数が全 adapter で `\"success\"` リテラル固定（note）\n\n- **severity**: low (style / future-proofing)\n- **file**: `src/adapter/claude-code/agent-runner.ts` L206, `src/adapter/codex/agent-runner.ts` L175, `src/adapter/managed-agent/agent-runner.ts` L230 / L497\n\n3 adapter すべてで `shouldRunFollowUp(ctx, \"success\")` と呼ばれており、`baseCompletionReason` パラメータが意味を持っていない（呼び出し前に既に成功を確認済みのため）。将来 `shouldRunFollowUp` を他の理由でも呼ぶ可能性があるなら有用だが、現状は `!!ctx.followUpPrompt` と同義。動作上の問題はない。\n\n---\n\n## Must-scenario Coverage Matrix\n\n| TC | Priority | Status |\n|---|---|---|\n| TC-01〜TC-04 (interface) | must | ✅ typecheck green |\n| TC-05 (executor 転記) | must | ❌ unit test なし (F-02) |\n| TC-06 (executor undefined) | must | ❌ unit test なし (F-02) |\n| TC-07 (executor 無改修) | must | ✅ verified by diff |\n| TC-08 (FIXER_STEP_NAMES 無改修) | must | ✅ TC-52 structural check |\n| TC-09〜TC-18 (shared helper) | must | ✅ follow-up.test.ts |\n| TC-19〜TC-22 (Claude 2-turn) | must | ✅ |\n| TC-23 (Claude modelUsage cumulative) | must | ✅ |\n| TC-24 (Claude follow error → error) | must | ✅ |\n| TC-25 (Claude abort propagation) | must | ❌ functional test なし (F-01) |\n| TC-27〜TC-33 (Codex) | must | ✅ |\n| TC-34〜TC-42 (Managed SSE / polling) | must | ✅ |\n| TC-43〜TC-46 (DesignStep wiring) | must | ✅ |\n| TC-47〜TC-48 (AbortController) | must | ⚠️ structural check のみ (F-01 と関連) |\n| TC-49〜TC-52 (pipeline integrity) | must | ✅ |\n| TC-54〜TC-55 (typecheck/test green) | must | ✅ green |\n\n---\n\n## Positive Observations\n\n- **shared/follow-up.ts** は runtime 型・usage 意味論を一切 import しない純粋関数として正確に実装されている。依存方向 (adapter → shared) も守られている。\n- **Codex の usage 加算** (`turn1Usage = { ...turn.usage }` でコピーしてから加算) は turn 1 上書き防止を正確に実装している。\n- **Managed graceful degradation** (`try/catch` で follow-up 失敗を非致命的に処理) は 2 adapter (SSE / polling) ともに正しく実装されている。\n- **executor 無改修原則** — `followUpPrompt: step.followUpPrompt` の 1 行追加のみ。finalizeStep・state machine・FIXER_STEP_NAMES は無改修。\n- **TypeCheck** と **2566 tests** がすべて green。\n"
+        },
+        "startedAt": "2026-05-22T07:13:48.739Z",
+        "endedAt": "2026-05-22T07:20:35.320Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 7363,
+            "outputTokens": 20,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 22,
+            "outputTokens": 17400,
+            "cacheReadInputTokens": 1473366,
+            "cacheCreationInputTokens": 111570
+          }
+        }
+      },
+      {
+        "attempt": 3,
+        "sessionId": "5b1ca920-5d74-4c5c-a1c6-626adc5b8060",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/delta-spec-session-followup/review-feedback-003.md",
+          "error": null,
+          "fileContent": "# Review Feedback 003: delta-spec-session-followup\n\n- **iteration**: 3\n- **reviewer**: code-reviewer\n- **verdict**: approved\n\n---\n\n## Summary\n\nreview-002 の F-01 (TC-25 abort functional test) と F-02 (TC-05/TC-06 executor 転記 unit test) が両方解消されており、すべての must-scenario が unit test でカバーされた。typecheck green、2569 tests passed。\n\n---\n\n## Findings\n\n### F-01: TC numbering collision in executor.test.ts (note)\n\n- **severity**: low (style / readability)\n- **file**: `tests/unit/step/executor.test.ts` L974–975 / L1109\n\n既存 executor.test.ts に「TC-05: runAgentStep — startedAt < endedAt」「TC-06: runCliStep — startedAt < endedAt」という describe ブロックが存在し、追加された「TC-05 / TC-06: followUpPrompt 転記」describe と番号が衝突している。\n\n機能的な問題はなく、テストはすべて pass している。将来レビューや CI 出力を読む際に混乱する可能性があるが、修正必須ではない。\n\n---\n\n## Must-scenario Coverage Matrix\n\n| TC | Priority | Status |\n|---|---|---|\n| TC-01〜TC-04 (interface) | must | ✅ typecheck green |\n| TC-05 (executor 転記) | must | ✅ executor.test.ts L1149 (F-02 resolved) |\n| TC-06 (executor undefined) | must | ✅ executor.test.ts L1172 (F-02 resolved) |\n| TC-07 (executor 無改修) | must | ✅ diff で確認 |\n| TC-08 (FIXER_STEP_NAMES 無改修) | must | ✅ |\n| TC-09〜TC-18 (shared helper) | must | ✅ follow-up.test.ts |\n| TC-19〜TC-22 (Claude 2-turn) | must | ✅ |\n| TC-23 (Claude modelUsage cumulative) | must | ✅ |\n| TC-24 (Claude follow error → error) | must | ✅ |\n| TC-25 (Claude abort propagation) | must | ✅ agent-runner.test.ts L945 (F-01 resolved) |\n| TC-27〜TC-33 (Codex) | must | ✅ |\n| TC-34〜TC-42 (Managed SSE / polling) | must | ✅ |\n| TC-43〜TC-46 (DesignStep wiring) | must | ✅ |\n| TC-47〜TC-48 (AbortController) | must | ✅ Claude/Codex でカバー |\n| TC-49〜TC-52 (pipeline integrity) | must | ✅ |\n| TC-54〜TC-55 (typecheck/test green) | must | ✅ 2569 passed |\n\n---\n\n## Positive Observations\n\n- TC-25 の functional test が review-002 の提示例とほぼ同一の構造で正確に実装されている。`callCount === 1` の assert が「follow turn 不起動」を直接証明している。\n- TC-05/TC-06 executor 転記テストは `makeCapturingFollowUpRunner()` で ctx を直接キャプチャする方式で正確。executor の転記責務が独立して検証されている。\n- review-002 F-03 (SSE polling fallback test, should) は未着手だが、実装は正しくテスト対象外パスを封じており、\"should\" スコープのまま据え置きは妥当。\n"
+        },
+        "startedAt": "2026-05-22T07:24:01.178Z",
+        "endedAt": "2026-05-22T07:29:27.682Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 7363,
+            "outputTokens": 20,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 14,
+            "outputTokens": 12950,
+            "cacheReadInputTokens": 744589,
+            "cacheCreationInputTokens": 88530
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "8907825c-a03f-406c-8c1a-26869f2e4cf7",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-22T07:11:03.619Z",
+        "endedAt": "2026-05-22T07:13:46.993Z",
+        "modelUsage": {
+          "claude-sonnet-4-6": {
+            "inputTokens": 19,
+            "outputTokens": 7605,
+            "cacheReadInputTokens": 670613,
+            "cacheCreationInputTokens": 39369
+          },
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5942,
+            "outputTokens": 22,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "8907825c-a03f-406c-8c1a-26869f2e4cf7",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-22T07:20:36.987Z",
+        "endedAt": "2026-05-22T07:23:59.539Z",
+        "modelUsage": {
+          "claude-sonnet-4-6": {
+            "inputTokens": 14,
+            "outputTokens": 10827,
+            "cacheReadInputTokens": 963119,
+            "cacheCreationInputTokens": 52668
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "85dcb925-ae74-4404-aa02-272f4f683600",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-22T07:29:29.474Z",
+        "endedAt": "2026-05-22T07:31:21.453Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6070,
+            "outputTokens": 21,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 9,
+            "outputTokens": 4354,
+            "cacheReadInputTokens": 206997,
+            "cacheCreationInputTokens": 31956
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/delta-spec-session-followup/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — delta-spec-session-followup\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/362\n- **Number**: 362\n- **CreatedAt**: 2026-05-22T07:31:27.072Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-22T07:31:23.122Z",
+        "endedAt": "2026-05-22T07:31:27.074Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/362",
+    "number": 362,
+    "createdAt": "2026-05-22T07:31:27.072Z"
+  }
+}

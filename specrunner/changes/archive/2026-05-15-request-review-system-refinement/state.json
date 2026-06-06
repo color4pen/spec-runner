@@ -1,0 +1,374 @@
+{
+  "version": 1,
+  "jobId": "a87040a1-f4aa-4bee-a73d-573d29428bc5",
+  "createdAt": "2026-05-15T14:34:31.634Z",
+  "updatedAt": "2026-05-15T15:02:44.314Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/request-review-system-refinement/request.md",
+    "title": "request review の責務分離と default 出力に findings を含める",
+    "type": "spec-change",
+    "slug": "request-review-system-refinement"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 14276,
+  "branch": "change/request-review-system-refinement-a87040a1",
+  "history": [
+    {
+      "ts": "2026-05-15T14:34:31.634Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-15T14:34:32.970Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-15T14:38:13.634Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-15T14:38:13.635Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → spec-review"
+    },
+    {
+      "ts": "2026-05-15T14:38:13.636Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-15T14:38:13.636Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-15T14:40:24.605Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-15T14:40:24.607Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-15T14:40:24.607Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-15T14:40:24.607Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-15T14:42:16.764Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-15T14:42:16.767Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-15T14:42:16.768Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-15T14:47:41.644Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-15T14:47:41.646Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-15T14:47:41.646Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-15T14:47:41.647Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-15T14:47:51.982Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-15T14:47:51.985Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-15T14:47:51.985Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-15T14:47:51.986Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-15T14:47:51.986Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-15T14:50:33.369Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-15T14:50:33.372Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-15T14:50:33.372Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-15T14:50:33.373Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-15T14:50:36.752Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-15T14:50:36.755Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-15T15:02:44.314Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "50f319a2-6739-4790-93a2-c28294e4132a",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-15T14:34:32.970Z",
+        "endedAt": "2026-05-15T14:38:11.646Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6177,
+            "outputTokens": 4531,
+            "cacheReadInputTokens": 435355,
+            "cacheCreationInputTokens": 34142
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 19,
+            "outputTokens": 8306,
+            "cacheReadInputTokens": 685089,
+            "cacheCreationInputTokens": 40694
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "e810d561-905f-4667-ae3a-eeb5007a5493",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/request-review-system-refinement/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: request-review-system-refinement\n\n- **verdict**: approved\n- **reviewer**: claude (spec-review)\n- **date**: 2026-05-15\n\n## Summary\n\nrequest.md / design.md / tasks.md の三点は整合しており、問題の根拠（4周・3周ループの実績データ）も明確。prompt 責務の縮小と output formatter 追加の設計は妥当で、既存コードベースとの整合性も確認済み。以下の MEDIUM/LOW findings は情報提供として記録する。\n\n## Findings\n\n#1 [MEDIUM] task-coverage — fallback path に number フィールド付与が欠落\n   Location: src/core/request/reviewer.ts L76-86, tasks.md Task 3\n   Task 3 は `parseReviewOutput()` の parsed findings に `number` fallback を追加するが、JSON parse 失敗時の fallback finding（L78-82: `{ severity: \"HIGH\", category: \"parse-error\", ... }`）には触れていない。Task 2 で `RequestReviewFinding.number` を required にすると、この fallback path が型エラーになる。implementer は typecheck で気付くが、Task 3 の記述に「fallback finding にも `number: 1` を付与する」を含めるのが正確。\n\n#2 [MEDIUM] task-coverage — TC-RVR-001 のテストフィクスチャ型不整合\n   Location: tests/unit/core/request/reviewer.test.ts L30-34, tasks.md Task 7\n   TC-RVR-001 は `RequestReviewResult` 型付きオブジェクト内に `number` なしの finding を直接構築している。Task 2 で `number` を required にした時点で型エラーになる。Task 7 は「assertion に追加」と書いているが、フィクスチャ自体の修正（`number: 1` 追加 or JSON 文字列経由に変更）が必要。同様に fallback テスト（TC-RVR-002, 003, 005）のフィクスチャ検証も必要。\n\n#3 [LOW] implementation-detail — Task 5 の dynamic import が既存パターンと不一致\n   Location: tasks.md Task 5\n   `request-review.ts` は既に L15 で `reviewer.ts` から static import している。Task 5 の `await import(\"../request/reviewer.js\")` は不要な dynamic import で、既存の static import パターンと不整合。re-export ブロック（L22-27）に `formatHumanReadable` を追加し static import で使う方が一貫性がある。\n\n#4 [LOW] wording — acceptance criteria の「--json 不変」の表現精度\n   Location: request.md 受け入れ基準 6 行目\n   `number` / `location` / `recommendation` フィールドが追加されるため出力は厳密には「不変」ではない。design.md D3 で「additive change なので後方互換」と正しく記述されているが、acceptance criteria 側も「既存フィールドの意味・構造は不変（additive のみ）」とすると正確。\n\n## Security Review\n\n- 変更対象は prompt テキストと output formatter のみ。認証・入力検証・外部 API 呼び出しの変更なし\n- `permissionMode: \"bypassPermissions\"` は既存コード（reviewer.ts L175）で、本 change では変更なし\n- OWASP Top 10 に該当する変更なし\n"
+        },
+        "startedAt": "2026-05-15T14:38:13.636Z",
+        "endedAt": "2026-05-15T14:40:22.970Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4227,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 8,
+            "outputTokens": 5408,
+            "cacheReadInputTokens": 166226,
+            "cacheCreationInputTokens": 31353
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "0b667233-3dd1-4580-a991-5ecb01bade1e",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-15T14:40:24.608Z",
+        "endedAt": "2026-05-15T14:42:15.129Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2972,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 6674,
+            "cacheReadInputTokens": 59215,
+            "cacheCreationInputTokens": 24183
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "afe26284-485c-4fcd-bf01-214fe1747901",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-15T14:42:16.769Z",
+        "endedAt": "2026-05-15T14:47:39.993Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4326,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 26,
+            "outputTokens": 22045,
+            "cacheReadInputTokens": 1127894,
+            "cacheCreationInputTokens": 94966
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/request-review-system-refinement/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — request-review-system-refinement — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.2s | 0 |\n| 2 | typecheck | passed | 1.8s | 0 |\n| 3 | test | passed | 4.8s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-review-system-refinement-a87040a1\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t134d\n\n Test Files  157 passed (157)\n      Tests  1885 passed (1885)\n   Start at  23:47:45\n   Duration  4.58s (transform 3.15s, setup 0ms, import 6.20s, tests 9.06s, environment 10ms)\n\n\n$ vitest run\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/request-review-system-refinement-a87040a1/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-15T14:47:41.648Z",
+        "endedAt": "2026-05-15T14:47:51.981Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "d78d69c7-894b-4774-9495-aeb4b3643b73",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/request-review-system-refinement/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Review Feedback — request-review-system-refinement — iteration 1\n\n- **verdict**: approved\n- **date**: 2026-05-15\n- **reviewer**: code-review agent\n\n---\n\n## Summary\n\n実装は仕様に忠実で、全タスクが完了している。prompt の責務縮小（design 領域除去 / Severity Scope Constraint 追加 / 4-Step 再構成）、型拡張（`number` / `location` / `recommendation`）、`formatHumanReadable` の実装と export、default 出力切り替え、テスト追加（TC-RVR-012〜018）、verification green — いずれも要件通り。2 件の LOW 所見を情報提供として記録するが、どちらも approve をブロックしない。\n\n---\n\n## Findings\n\n| # | Severity | Category | Description | Location | Recommendation |\n|---|----------|----------|-------------|----------|----------------|\n| 1 | LOW | clarity | TC-07 要件「MEDIUM のみの場合は approve（findings は情報提供として出力）であることが明示されている」に対し、prompt の Verdict Derivation Rules は \"No HIGH findings → approve\" と記述しており、MEDIUM-only ケースが approve になることは暗黙的にのみ導出可能 | `src/prompts/request-review-system.ts` L130–136 | Verdict Rules に「MEDIUM findings alone result in `approve`; they are informational only.」を 1 行追記すると TC-07 の明示要件と完全に合致する |\n| 2 | LOW | test-coverage | test-cases.md の TC-28「MEDIUM findings のみの場合 verdict が approved になる」は priority: must だが、対応するユニットテストが `reviewer.test.ts` に存在しない。verdict は LLM 出力を parse するだけで code 側に verdict 強制ロジックがないため、純粋なユニットテストは構造上困難。test-cases.md の must 分類がやや aspirational | `tests/unit/core/request/reviewer.test.ts` | 現行アーキテクチャでは「MEDIUM-only JSON を与えて parseReviewOutput が approve を返すことを確認する」integration-style テストで代替可能。追加するかは裁量 |\n\n---\n\n## Test Coverage\n\n### Must シナリオ検証\n\n| TC | Priority | Status | 備考 |\n|----|----------|--------|------|\n| TC-01 | must | ✅ PASS | prompt に Design Evaluation / Trade-off Analysis / Anti-Pattern Detection 等が存在しない |\n| TC-02 | must | ✅ PASS | 4-Step 構成（Codebase Context / Request Validation / External Dependency Check / Scope Sanity Check）を確認 |\n| TC-03 | must | ✅ PASS | Severity Scope Constraint セクション明示あり |\n| TC-04 | must | ✅ PASS | Exclusion Clause（日本語）明示あり |\n| TC-05 | must | ✅ PASS | カラム `# / Severity / Category / Description / Location / Recommendation`、カテゴリリスト 6 種のみ |\n| TC-06 | must | ✅ PASS | JSON schema に `number`（1-indexed）/ `location`（optional）/ `recommendation`（optional）/ `#N` 参照制約が含まれる |\n| TC-07 | must | ⚠️ PARTIAL | HIGH=0→approve / HIGH1+→needs-discussion / reject ルール明示あり。MEDIUM-only→approve は暗黙的導出のみ（Finding #1） |\n| TC-08 | must | ✅ PASS | `RequestReviewFinding` 型に 3 フィールド追加、既存フィールド維持 |\n| TC-09 | must | ✅ PASS | TC-RVR-012 実装・pass 確認 |\n| TC-10 | must | ✅ PASS | TC-RVR-013 実装・pass 確認 |\n| TC-11 | must | ✅ PASS | TC-RVR-014 実装・pass 確認 |\n| TC-12 | must | ✅ PASS | TC-RVR-015 実装・pass 確認 |\n| TC-13 | must | ✅ PASS | TC-RVR-016 実装・pass 確認 |\n| TC-14 | must | ✅ PASS | TC-RVR-017（location あり）実装・pass 確認 |\n| TC-15 | must | ✅ PASS | TC-RVR-017（location なし）実装・pass 確認 |\n| TC-16 | must | ✅ PASS | TC-RVR-017（recommendation あり）実装・pass 確認 |\n| TC-17 | must | ✅ PASS | TC-RVR-017（recommendation なし）実装・pass 確認 |\n| TC-18 | must | ✅ PASS | TC-RVR-018 実装・pass 確認 |\n| TC-19 | must | ✅ PASS | `export function formatHumanReadable` 確認 |\n| TC-20 | must | ✅ PASS | default パスで `formatHumanReadable(result)` 呼び出し、`result.summary` 直書き消滅 |\n| TC-21 | must | ✅ PASS | `--json` パスは `JSON.stringify(result, null, 2)` のみ、formatHumanReadable 呼ばれない |\n| TC-23 | must | ✅ PASS | TC-RVR-001 に `findings[0]?.number === 1` assertion 追加済み |\n| TC-25 | must | ✅ PASS | TC-RVR-012〜018 全件 pass（verification: 1885 tests passed） |\n| TC-26 | must | ✅ PASS | build / typecheck / test 全 phase green |\n| TC-28 | must | ⚠️ NO TEST | MEDIUM-only→approve のユニットテストが存在しない（Finding #2） |\n\n### Should シナリオ検証\n\n| TC | Priority | Status | 備考 |\n|----|----------|--------|------|\n| TC-22 | should | ✅ PASS | `buildInitialMessage` に新 4 Step 名を参照するテキスト（日本語）あり |\n| TC-24 | should | ✅ PASS | TC-RVR-009 が新ステップ名「コードベース文脈把握」「外部依存チェック」を assertion で確認 |\n| TC-27 | should | n/a | 定性的・観察的テスト。静的コードレビューでは検証不能 |\n\n---\n\n## 実装品質メモ\n\n- `parseReviewOutput` の fallback オブジェクト（parse-error finding）も `number: 1` フィールドを持っており、型整合が保たれている\n- `request-review.ts` は thin handler のままで、重い処理が `reviewer.ts` に集約されている（design D4 の設計意図を遵守）\n- `executeReview` 内で `verdictToExitCode` / `formatHumanReadable` を dynamic import しているが、同ファイルで既に `runReview` を static import していることから、`reviewer.ts` のモジュール読み込みは一度に済む。dynamic import を static に変えてもよいが、現状でも問題はない\n"
+        },
+        "startedAt": "2026-05-15T14:47:51.987Z",
+        "endedAt": "2026-05-15T14:50:31.557Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4372,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 11,
+            "outputTokens": 8206,
+            "cacheReadInputTokens": 338232,
+            "cacheCreationInputTokens": 47456
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/request-review-system-refinement/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — request-review-system-refinement\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/245\n- **Number**: 245\n- **CreatedAt**: 2026-05-15T14:50:36.750Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-15T14:50:33.373Z",
+        "endedAt": "2026-05-15T14:50:36.751Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/245",
+    "number": 245,
+    "createdAt": "2026-05-15T14:50:36.750Z"
+  }
+}

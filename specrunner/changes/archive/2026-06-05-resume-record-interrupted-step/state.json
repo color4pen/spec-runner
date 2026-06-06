@@ -1,0 +1,519 @@
+{
+  "version": 1,
+  "jobId": "4cf46622-c10f-4c63-8320-42d49ad20f25",
+  "createdAt": "2026-06-04T15:32:57.131Z",
+  "updatedAt": "2026-06-04T16:03:54.590Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/resume-record-interrupted-step/request.md",
+    "title": "signal 中断時の resumePoint に、起動 step でなく中断時の実行中 step を記録する",
+    "type": "bug-fix",
+    "slug": "resume-record-interrupted-step"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 7925,
+  "branch": "fix/resume-record-interrupted-step-4cf46622",
+  "history": [
+    {
+      "ts": "2026-06-04T15:32:57.131Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-06-04T15:33:00.344Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-06-04T15:39:30.270Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-06-04T15:39:30.272Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → spec-review"
+    },
+    {
+      "ts": "2026-06-04T15:39:30.273Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-06-04T15:39:30.274Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-06-04T15:41:30.728Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-06-04T15:41:30.730Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-06-04T15:41:30.730Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-06-04T15:41:30.732Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-06-04T15:43:09.519Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-06-04T15:43:09.522Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-06-04T15:43:09.523Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-06-04T15:46:14.787Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-06-04T15:46:14.790Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-06-04T15:46:14.790Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-06-04T15:46:14.791Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-06-04T15:46:29.810Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-06-04T15:46:29.812Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-06-04T15:46:29.813Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-06-04T15:46:29.813Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-06-04T15:46:29.814Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-06-04T15:49:33.210Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-06-04T15:49:33.213Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-06-04T15:49:33.213Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → conformance"
+    },
+    {
+      "ts": "2026-06-04T15:49:33.214Z",
+      "step": "conformance",
+      "status": "started",
+      "message": "conformance iteration 1 started"
+    },
+    {
+      "ts": "2026-06-04T15:49:33.215Z",
+      "step": "conformance-started",
+      "status": "started",
+      "message": "Starting conformance step"
+    },
+    {
+      "ts": "2026-06-04T15:51:24.114Z",
+      "step": "conformance-verdict",
+      "status": "ok",
+      "message": "conformance verdict: approved"
+    },
+    {
+      "ts": "2026-06-04T15:51:24.116Z",
+      "step": "conformance",
+      "status": "ok",
+      "message": "conformance iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-06-04T15:51:24.116Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "conformance → adr-gen"
+    },
+    {
+      "ts": "2026-06-04T15:51:24.117Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-06-04T15:51:44.646Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-06-04T15:51:44.647Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-06-04T15:51:44.648Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-06-04T15:51:47.494Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-06-04T15:51:47.499Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-archive: pipeline complete"
+    },
+    {
+      "ts": "2026-06-04T16:03:54.590Z",
+      "step": "archive",
+      "status": "ok",
+      "message": "awaiting-archive → archived: change archived"
+    }
+  ],
+  "error": null,
+  "pipelineId": "standard",
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "f4b98b4b-a56d-483b-b2b9-269a4a459480",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-04T15:33:00.352Z",
+        "endedAt": "2026-06-04T15:39:27.868Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5355,
+            "outputTokens": 12,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-8[1m]": {
+            "inputTokens": 1997,
+            "outputTokens": 25699,
+            "cacheReadInputTokens": 1699414,
+            "cacheCreationInputTokens": 106758
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "4d75871b-93d1-4745-8e13-14ab08bebf0a",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/resume-record-interrupted-step/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result\n\n<!-- FORMAT REQUIREMENTS (machine-parsed):\n- The verdict line MUST appear before the Findings table.\n- verdict line format (exact): `- **verdict**: <value>` at the start of a line\n- Valid verdict values: approved | needs-fix | escalation\n  - approved:    specification is complete, consistent, and ready for implementation\n  - needs-fix:   specification has issues that must be resolved before implementation\n  - escalation:  unresolvable conflicts, missing context, or requires human judgment\n- Findings table MUST have exactly 6 columns in this order:\n  # | Severity | Category | File | Description | How to Fix\n- Valid Severity values (uppercase): CRITICAL | HIGH | MEDIUM | LOW\n  - CRITICAL: production outage, data loss, security breach\n  - HIGH:     functional failure, clear bug, no workaround — blocks approval\n  - MEDIUM:   quality degradation, maintainability issue, future risk\n  - LOW:      informational, style, minor improvement\n- If no findings, write a table row with \"None\" or omit the table body.\n- Approval is blocked when CRITICAL ≥ 1 OR HIGH ≥ 1.\n-->\n\n- **verdict**: approved\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | LOW | Test coverage | tasks.md T-03 | T-03 instructs \"add a test if no existing case covers code-review with iterationsExhausted: 0\" — that case already exists at line 131-132 in `tests/unit/core/resume/resolve-step.test.ts`. No new test is needed; T-03 can rely on existing coverage as-is. | No action required; the condition in T-03 (\"if no existing case\") already resolves to \"rely on existing coverage\". |\n\n## Summary\n\nBug confirmed in `src/core/runtime/local.ts` line 433: `resumePoint.step` is written as `startStep` (launch step) despite `current.step` (the in-progress step) being available on the same line from the preceding `store.load()`. The fix `(current.step ?? startStep)` is the minimal, correct change.\n\nAll four spec documents (request.md, design.md, spec.md, tasks.md) are internally consistent. Design decisions D1 (`??` over `||`) and D2 (no type or resolver changes) are sound and well-reasoned. `resolveResumeStep` Tier 2c correctly returns `resumePoint.step` unchanged when `iterationsExhausted === 0` and the step is not a reviewer, so feeding it a correct origin value is sufficient to fix end-to-end resume behavior. No security implications.\n",
+          "toolResult": {
+            "ok": true,
+            "approved": true
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-04T15:39:30.283Z",
+        "endedAt": "2026-06-04T15:41:28.187Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4510,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 16,
+            "outputTokens": 3576,
+            "cacheReadInputTokens": 369808,
+            "cacheCreationInputTokens": 40803
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "26b4c907-b1a5-4460-9639-bbaab496570c",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-04T15:41:30.744Z",
+        "endedAt": "2026-06-04T15:43:07.640Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1949,
+            "outputTokens": 20,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 7,
+            "outputTokens": 3008,
+            "cacheReadInputTokens": 83907,
+            "cacheCreationInputTokens": 17141
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "5bdea18b-5922-419c-83cd-6d5b9cb63a83",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-04T15:43:09.535Z",
+        "endedAt": "2026-06-04T15:46:12.766Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4631,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 32,
+            "outputTokens": 6877,
+            "cacheReadInputTokens": 1361323,
+            "cacheCreationInputTokens": 47652
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/resume-record-interrupted-step/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — resume-record-interrupted-step — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.3s | 0 |\n| 2 | typecheck | passed | 2.3s | 0 |\n| 3 | test | passed | 7.6s | 0 |\n| 4 | lint | passed | 1.8s | 0 |\n\n## Phase: build\n\n```\nCLI Building entry: bin/specrunner.ts\nCLI Using tsconfig: tsconfig.json\nCLI tsup v8.5.1\nCLI Using tsup config: ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/resume-record-interrupted-step-4cf46622/tsup.config.ts\nCLI Target: node20\nCLI Cleaning output folder\nESM Build start\nESM dist/specrunner.js 577.73 KB\nESM ⚡️ Build success in 40ms\n\n$ tsup\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/resume-record-interrupted-step-4cf46622\n\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t154d\n\n Test Files  271 passed (271)\n      Tests  3193 passed (3193)\n   Start at  00:46:18\n   Duration  7.42s (transform 3.77s, setup 0ms, import 10.20s, tests 13.84s, environment 16ms)\n\n\n$ vitest run\nWarning: /tmp/claude-501/cred-test-GUB9Jo/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /tmp/claude-501/cred-test-sXBedd/specrunner/credentials.json has loose permissions (recommend 0600).\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...\nGitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Required status check \"ci/build\" is expected, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nGitHub PR merge retry: Required status check \"ci/build\" is expected, retrying (1/3)...\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/resume-record-interrupted-step-4cf46622/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.\n\n```\n\n## Phase: lint\n\n```\n$ eslint ./src --max-warnings 0\n\n```\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-06-04T15:46:14.792Z",
+        "endedAt": "2026-06-04T15:46:29.809Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "7ec0213e-7fb9-49e0-9b24-1bb26be953f2",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/resume-record-interrupted-step/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — iteration 001\n\n<!-- FORMAT REQUIREMENTS (machine-parsed):\n- verdict line format (exact): `- **verdict**: <value>` at the start of a line\n- Valid verdict values: approved | needs-fix | escalation\n- iteration line format (exact): `- **iteration**: NNN` (3-digit zero-padded integer)\n- Findings table MUST have exactly 7 columns in this order:\n  # | Severity | Category | File | Description | How to Fix | Fix\n  - Fix column: yes = fixer should address this finding; no = skip (pre-existing / out-of-scope)\n- Scores table columns: Category | Score | Weight\n  - Valid Category values: correctness | security | architecture | performance | maintainability | testing\n  - Score: integer 1-10\n  - Weight: decimal as defined below\n- total line format (exact): `- **total**: <decimal>`\n- Default weights: correctness=0.30, security=0.25, architecture=0.15, performance=0.10, maintainability=0.10, testing=0.10\n- Scores table is optional but recommended. The verdict line is the authoritative decision.\n-->\n\n- **verdict**: approved\n- **iteration**: 001\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix | Fix |\n|---|----------|----------|------|-------------|------------|-----|\n| 1 | LOW | testing | tests/unit/core/runtime/local.test.ts | TC-LR-015 is inserted between TC-LR-014 and TC-LR-013 (out of numeric order). No functional impact. | Reorder if desired; not required. | no |\n\n## Scores\n\n| Category | Score | Weight |\n|----------|-------|--------|\n| correctness | 10 | 0.30 |\n| security | 10 | 0.25 |\n| architecture | 10 | 0.15 |\n| performance | 10 | 0.10 |\n| maintainability | 9 | 0.10 |\n| testing | 9 | 0.10 |\n\n- **total**: 9.8\n\n## Summary\n\n1行修正（`startStep` → `current.step ?? startStep`）が正確に適用されており、スコープ外の変更は一切ない。`ResumePoint` 型・`resolveResumeStep` ロジックは手付かずで、設計判断通り。\n\nTC-LR-015 は実際の `LocalRuntime.registerCleanup()` を経由するため、記録バグを直接回帰させるテストとして機能している。TC-003（fallback）は test-cases.md が \"should\" 扱いで、design.md でも「typecheck + inspection で検証」と明示されているため未テストは許容範囲。既存テスト 271 ファイル / 3193 件すべて通過（verification-result.md 確認済み）。\n\n全受け入れ基準を満たしている。\n",
+          "toolResult": {
+            "ok": true,
+            "approved": true,
+            "fixableCount": 0
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-04T15:46:29.828Z",
+        "endedAt": "2026-06-04T15:49:31.122Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5419,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 19,
+            "outputTokens": 6615,
+            "cacheReadInputTokens": 429384,
+            "cacheCreationInputTokens": 32696
+          }
+        }
+      }
+    ],
+    "conformance": [
+      {
+        "attempt": 1,
+        "sessionId": "d00afb96-26b5-4d98-8d41-1a49595726fa",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/resume-record-interrupted-step/conformance-result-001.md",
+          "error": null,
+          "fileContent": "# Conformance Result\n\n<!-- FORMAT REQUIREMENTS (machine-parsed):\n- verdict line format (exact): `- **verdict**: <value>` at the start of a line\n- Valid verdict values: approved | needs-fix | escalation\n  - approved:   implementation conforms to tasks.md, design.md, spec.md, and request.md\n  - needs-fix:  one or more upstream artifacts are not satisfied by the implementation\n  - escalation: conformance cannot be determined (missing artifacts, unresolvable ambiguity)\n- The Findings table records the per-artifact judgment.\n-->\n\n- **verdict**: approved\n\n## Conformance Findings\n\n| Artifact | Conforms | Notes |\n|----------|----------|-------|\n| tasks.md | ✅ | All checkboxes marked [x]. T-01/T-02/T-03/T-04 fully implemented. |\n| design.md | ✅ | D1: `(current.step ?? startStep)` — exact match. D2: `schema.ts` and `resolve-step.ts` untouched. |\n| spec.md | ✅ | All 3 scenarios covered (see details below). |\n| request.md | ✅ | All 5 acceptance criteria satisfied. `bun run typecheck && bun run test` green; 3193 tests passed. |\n\n## Details\n\n### tasks.md\n\nAll 4 tasks complete:\n- **T-01**: `src/core/runtime/local.ts` line changed from `step: startStep as StepName` to `step: (current.step ?? startStep) as StepName`. No other change in the function.\n- **T-02**: TC-LR-015 added to `tests/unit/core/runtime/local.test.ts`. Exercises the real `registerCleanup`/`signalCleanup` path with `state.step = \"code-review\"` and `startStep = \"design\"`. Asserts `resumePoint.step === \"code-review\"` and `!== \"design\"`. `process.exit` stubbed and restored in `finally`.\n- **T-03**: Existing resolve-step suite already covers `code-review` + `iterationsExhausted: 0` → `code-review` (line 131–133 of resolve-step.test.ts). No modification to `resolveResumeStep` or `ResumePoint`.\n- **T-04**: verification-result.md shows build/typecheck/test/lint all exit 0.\n\n### spec.md scenarios\n\n| Scenario | Coverage |\n|----------|----------|\n| Interruption during a later step records that step | TC-LR-015: persists `step: \"code-review\"`, registers cleanup with `startStep = \"design\"`, asserts `resumePoint.step === \"code-review\"` |\n| Resume continues from the interrupted step | Existing resolve-step test: `resumePoint.step = \"code-review\"`, `iterationsExhausted: 0` → resolves to `\"code-review\"` |\n| Missing in-progress step falls back to launch step | `??` operator falls back on null/undefined only; design designates this a defensive guard verified by inspection + typecheck |\n\n### Scope\n\nDiff touches 2 files only: 1 line in `src/core/runtime/local.ts`, 44 lines of new test in `tests/unit/core/runtime/local.test.ts`. `schema.ts` and `resolve-step.ts` are untouched. Scope matches the request exactly.\n",
+          "toolResult": {
+            "ok": true,
+            "approved": true
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-04T15:49:33.228Z",
+        "endedAt": "2026-06-04T15:51:22.164Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4651,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 13,
+            "outputTokens": 4733,
+            "cacheReadInputTokens": 301401,
+            "cacheCreationInputTokens": 29477
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "58e4e068-fbd4-487f-8fa9-98cf5cb0dec9",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-06-04T15:51:24.130Z",
+        "endedAt": "2026-06-04T15:51:44.582Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 562,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 3,
+            "outputTokens": 73,
+            "cacheReadInputTokens": 7568,
+            "cacheCreationInputTokens": 6404
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/resume-record-interrupted-step/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — resume-record-interrupted-step\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/529\n- **Number**: 529\n- **CreatedAt**: 2026-06-04T15:51:47.492Z\n- **Action**: created\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-06-04T15:51:44.648Z",
+        "endedAt": "2026-06-04T15:51:47.493Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/529",
+    "number": 529,
+    "createdAt": "2026-06-04T15:51:47.492Z"
+  }
+}

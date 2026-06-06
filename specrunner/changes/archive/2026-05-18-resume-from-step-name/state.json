@@ -1,0 +1,556 @@
+{
+  "version": 1,
+  "jobId": "62abdaa3-2ec5-413c-ba08-0ad482c39596",
+  "createdAt": "2026-05-18T09:48:14.274Z",
+  "updatedAt": "2026-05-18T11:46:45.185Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/resume-from-step-name/request.md",
+    "title": "resume --from で step 名を直接受け付ける (= ResumeRole 型 signature 拡張)",
+    "type": "spec-change",
+    "slug": "resume-from-step-name"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 66108,
+  "branch": "change/resume-from-step-name-62abdaa3",
+  "history": [
+    {
+      "ts": "2026-05-18T09:48:14.274Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-18T09:48:15.985Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-18T09:50:19.556Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-18T09:50:19.559Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-18T09:50:19.561Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-18T09:50:19.564Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-18T09:50:19.566Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → delta-spec-fixer"
+    },
+    {
+      "ts": "2026-05-18T09:50:19.567Z",
+      "step": "delta-spec-fixer-started",
+      "status": "started",
+      "message": "Starting delta-spec-fixer step"
+    },
+    {
+      "ts": "2026-05-18T09:50:50.429Z",
+      "step": "delta-spec-fixer-verdict",
+      "status": "ok",
+      "message": "delta-spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-18T09:50:50.431Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-fixer → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-18T09:50:50.432Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-18T09:50:50.433Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-18T09:50:50.434Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → delta-spec-fixer"
+    },
+    {
+      "ts": "2026-05-18T09:50:50.435Z",
+      "step": "delta-spec-fixer-started",
+      "status": "started",
+      "message": "Starting delta-spec-fixer step"
+    },
+    {
+      "ts": "2026-05-18T09:51:09.613Z",
+      "step": "delta-spec-fixer-verdict",
+      "status": "ok",
+      "message": "delta-spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-18T09:51:09.616Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-fixer → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-18T09:51:09.617Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-18T09:51:09.619Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-18T09:51:09.621Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-18T09:51:09.621Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-18T09:51:09.622Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-18T09:53:45.163Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-18T09:53:45.167Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-18T09:53:45.167Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-18T09:53:45.168Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-18T09:55:10.182Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-18T09:55:10.185Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-18T09:55:10.186Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-18T09:57:49.476Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-18T09:57:49.479Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-18T09:57:49.480Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-18T09:57:49.480Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-18T09:58:02.372Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-18T09:58:02.374Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-18T09:58:02.375Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-18T09:58:02.375Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-18T09:58:02.376Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-18T10:02:02.005Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-18T10:02:02.008Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-18T10:02:02.008Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-18T10:02:02.010Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-18T10:02:04.800Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-18T10:02:04.803Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-18T11:46:45.185Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "61d61b8f-7f91-4eee-a0eb-1d85fcd81ca7",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-18T09:48:15.993Z",
+        "endedAt": "2026-05-18T09:50:17.564Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6511,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 12,
+            "outputTokens": 6148,
+            "cacheReadInputTokens": 366894,
+            "cacheCreationInputTokens": 37202
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/resume-from-step-name/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: needs-fix\n\n## Violations\n\n| Path | Reason | Suggested Fix |\n|------|--------|---------------|\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/resume-from-step-name-62abdaa3/specrunner/changes/resume-from-step-name/specs/` | `no-specs-for-required-type` | Request type 'spec-change' requires a delta spec. Add a file under ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/resume-from-step-name-62abdaa3/specrunner/changes/resume-from-step-name/specs/<capability-name>/spec.md |\n\n## How to Fix\n\n- Move all delta spec files to `specs/<capability-name>/spec.md` (canonical path)\n- Ensure each spec.md has at least one `## ADDED Requirements`, `## MODIFIED Requirements`, or `## REMOVED Requirements` section\n- Ensure each section contains at least one `### Requirement:` block\n"
+        },
+        "startedAt": "2026-05-18T09:50:19.561Z",
+        "endedAt": "2026-05-18T09:50:19.564Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/resume-from-step-name/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: needs-fix\n\n## Violations\n\n| Path | Reason | Suggested Fix |\n|------|--------|---------------|\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/resume-from-step-name-62abdaa3/specrunner/changes/resume-from-step-name/delta-spec/cli-resume-command.md` | `legacy-flat-dir` | Move to ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/resume-from-step-name-62abdaa3/specrunner/changes/resume-from-step-name/specs/cli-resume-command/spec.md |\n\n## How to Fix\n\n- Move all delta spec files to `specs/<capability-name>/spec.md` (canonical path)\n- Ensure each spec.md has at least one `## ADDED Requirements`, `## MODIFIED Requirements`, or `## REMOVED Requirements` section\n- Ensure each section contains at least one `### Requirement:` block\n"
+        },
+        "startedAt": "2026-05-18T09:50:50.432Z",
+        "endedAt": "2026-05-18T09:50:50.433Z"
+      },
+      {
+        "attempt": 3,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/resume-from-step-name/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-18T09:51:09.618Z",
+        "endedAt": "2026-05-18T09:51:09.619Z"
+      }
+    ],
+    "delta-spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "b4bc0077-181f-48b1-b3d6-96e0a73d7241",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-18T09:50:19.579Z",
+        "endedAt": "2026-05-18T09:50:48.795Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 771,
+            "outputTokens": 20,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 8,
+            "outputTokens": 1442,
+            "cacheReadInputTokens": 112873,
+            "cacheCreationInputTokens": 12916
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "b4bc0077-181f-48b1-b3d6-96e0a73d7241",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-18T09:50:50.445Z",
+        "endedAt": "2026-05-18T09:51:08.057Z",
+        "modelUsage": {
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 533,
+            "cacheReadInputTokens": 71829,
+            "cacheCreationInputTokens": 1242
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "3c7bb892-cf91-4ed2-86c6-cae0f670cbc0",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/resume-from-step-name/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: resume-from-step-name\n\n- **reviewer**: spec-reviewer\n- **date**: 2026-05-18\n- **verdict**: approved\n\n## Summary\n\nrequest.md → design.md → tasks.md → delta spec の一貫性・網羅性を検証した。変更対象 3 ファイル（resolve-step.ts, command-registry.ts, resolve-step.test.ts）と既存コードの整合も確認済み。重大な欠陥なし。\n\n## Findings\n\n### [INFO] F-01: 現行コードの silent fallback-to-critic が明示 error に変わる（意図的な breaking change）\n\n現行 `resolveResumeStep` L98-102 は `from` が `fixer`/`creator` 以外の任意文字列を `\"critic\"` にフォールバックする。本変更で不正値は Error throw に変わる。CLI の `flag-parser.ts` enum validation が先にガードするため実質的に到達しないが、`resolveResumeStep` を直接呼ぶ内部コードがある場合は影響する。request.md の設計判断 4 と tasks.md T-01c で明示されており、意図通り。\n\n### [INFO] F-02: delta spec が baseline の override 固有シナリオを汎化している\n\nbaseline の `--from` Requirement には「fixer-empty mismatch を上書き」「fixer crash を上書き」の具体シナリオがある。delta spec は「任意の resumePoint 状態」で汎化しており、意味的には上位互換だが具体的なエッジケースの文書性がやや低下する。テストケース TC-04〜06 で振る舞い regression は検証されるため実害なし。\n\n### [INFO] F-03: `--from <step-name>` は phase-agnostic（意図通り）\n\nstep 名直接指定時は resumePoint の phase に依存せずそのまま返す設計。code phase で `--from design` を指定すると spec phase の step から再開する。これは「ユーザーが明示した step を尊重する」設計意図と合致しており、request.md の要件 2 で明記されている。\n\n## Checklist\n\n| Item | Status |\n|------|--------|\n| request.md ↔ design.md 整合 | OK |\n| design.md ↔ tasks.md 整合 | OK |\n| tasks.md が受け入れ基準を網羅 | OK |\n| delta spec が baseline と矛盾しない | OK |\n| delta spec の MODIFIED format | OK（正しく MODIFIED Requirements セクション） |\n| 対象ファイルの行番号・型名が実コードと一致 | OK（resolve-step.ts L16, L91-106, L54; command-registry.ts L89, L335） |\n| テストケースが要件を網羅 | OK（TC-01〜07 で全シナリオカバー） |\n| スコープ外が明確 | OK |\n| セキュリティ考慮 | 問題なし（enum validation で入力制限、FS/Network アクセスなし） |\n| baseline spec 直接編集の禁止 | OK（delta spec 経由、AUTHORITY_SPEC_GUARD_RULE 準拠） |\n"
+        },
+        "startedAt": "2026-05-18T09:51:09.635Z",
+        "endedAt": "2026-05-18T09:53:43.509Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5592,
+            "outputTokens": 1322,
+            "cacheReadInputTokens": 64457,
+            "cacheCreationInputTokens": 10915
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 9,
+            "outputTokens": 5133,
+            "cacheReadInputTokens": 227766,
+            "cacheCreationInputTokens": 34671
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "0fc1c03c-8491-48a1-b67d-4e2d6dcc0dd8",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-18T09:53:45.181Z",
+        "endedAt": "2026-05-18T09:55:08.418Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3289,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 5090,
+            "cacheReadInputTokens": 58456,
+            "cacheCreationInputTokens": 21349
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "1cf02bb0-50ba-4c2d-93ea-79fc93bc39e4",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-18T09:55:10.202Z",
+        "endedAt": "2026-05-18T09:57:46.992Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5529,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 26,
+            "outputTokens": 8382,
+            "cacheReadInputTokens": 986400,
+            "cacheCreationInputTokens": 39914
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/resume-from-step-name/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — resume-from-step-name — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.8s | 0 |\n| 2 | typecheck | passed | 2.2s | 0 |\n| 3 | test | passed | 6.4s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/resume-from-step-name-62abdaa3\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t137d\n\n Test Files  174 passed (174)\n      Tests  2111 passed (2111)\n   Start at  18:57:54\n   Duration  6.10s (transform 4.88s, setup 0ms, import 8.37s, tests 13.04s, environment 13ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-5J9rCZ/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-GwBAdm/specrunner/credentials.json has loose permissions (recommend 0600).\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/resume-from-step-name-62abdaa3/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-18T09:57:49.481Z",
+        "endedAt": "2026-05-18T09:58:02.372Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "00e2fa6b-f807-4010-9dfe-b252d1d42b8a",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/resume-from-step-name/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review: resume-from-step-name (Iteration 1)\n\n## Summary\n\n`--from` flag が受け付ける値を全 step 名 + legacy alias に拡張する変更。実装は design.md / tasks.md の指示にほぼ忠実に従っており、型・解決ロジック・CLI enum・USAGE・テスト・delta spec の各成果物が一貫している。typecheck と全 174 ファイル / 2111 テストが green、新 describe ブロックの 13 テストもすべて pass している。後方互換は legacy alias 3 種について保持されている。CRITICAL / MAJOR は無し。MINOR / SUGGESTION のみ。\n\n## Findings\n\n### [MINOR] LegacyResumeRole の narrowing が冗長\n\n**file**: `src/core/resume/resolve-step.ts:118-122`\n**description**: `from === \"fixer\" || from === \"creator\" || from === \"critic\"` で literal を 3 回列挙している。直上で `LEGACY_RESUME_ROLES` 定数 (`as const` tuple) を定義しているため、`(LEGACY_RESUME_ROLES as readonly string[]).includes(from)` で揃えるか、`Set<string>` を別途持たせると DRY になる。step 名側は `ALL_STEP_NAMES_SET` で Set を使っているので非対称。\n**suggestion**: 同じパターンで Set 化するか、`LEGACY_RESUME_ROLES.includes(from as LegacyResumeRole)` を使い、narrowing は `from as LegacyResumeRole` で行う。挙動には影響しないので必須ではない。\n\n---\n\n### [MINOR] error message の step 名列挙が長い\n\n**file**: `src/core/resume/resolve-step.ts:125-131`\n**description**: `Available step names: design, spec-review, spec-fixer, delta-spec-fixer, test-case-gen, implementer, build-fixer, code-review, code-fixer, verification, pr-create, delta-spec-validation. Legacy aliases: critic, fixer, creator.` のように 1 行で 12 step 名 + 3 alias を出力する。CLI usability 観点で改行や bullet 表示の方が読みやすい。flag-parser 経由の場合は別の error が先に出るため stderr に到達するのは内部直接呼びだけだが、design.md 51-58 にあるサンプル形式に近い multi-line にすると一貫性が高い。\n**suggestion**: `\\n  - design\\n  - spec-review\\n  ...` のような bullet list、または step 名と alias を別行に分けるなど。必須ではない（test は正規表現マッチで pass する）。\n\n---\n\n### [SUGGESTION] `ResumeRole` の deprecated alias が未使用\n\n**file**: `src/core/resume/resolve-step.ts:18-19`\n**description**: `ResumeRole = LegacyResumeRole` を `@deprecated` 付きで残しているが、grep の結果、リポジトリ内で `ResumeRole` を import している箇所は無い。当該 PR 範囲では問題にならないが、公開 API として export している以上、外部利用がないなら削除しても良い。\n**suggestion**: 当面残すなら現状のままで OK。next minor release で削除候補に挙げる程度。\n\n---\n\n### [SUGGESTION] テスト命名スタイルの揺れ\n\n**file**: `tests/unit/core/resume/resolve-step.test.ts:260-309`\n**description**: 新規 describe ブロック `\"resolveResumeStep - --from with step name\"` 内のテスト名は `it(\"--from design → design\", ...)` 形式。一方既存テストは `it(\"spec phase + critic → spec-review\", ...)` 形式や `it(\"T4.4: ...\")` のように構造が違う。意図的に新規 TC を視認しやすくしている可能性もある。\n**suggestion**: 必須ではない。後方互換の test は既存テストにもあるため、TC-RESUME-FROM-04/05/06 の重複テストは将来的に統合余地がある。\n\n---\n\n## Acceptance Criteria Check\n\n| # | Criterion | Status |\n|---|-----------|--------|\n| 1 | `ResumeFrom = StepName \\| LegacyResumeRole` 型が `resolve-step.ts` で定義されている | ✅ (L27) |\n| 2 | `resolveResumeStep` が step 名を直接受け付け、mapping なしで返す | ✅ (L113-116, ALL_STEP_NAMES_SET で O(1) チェック後 `from as StepName` を return) |\n| 3 | legacy alias 3 種が既存 mapping 通りに動く（後方互換 regression なし） | ✅ (L118-123、STEP_MAPPING は値不変。既存 35+ tests も pass) |\n| 4 | 不正値の error message に利用可能 step 名 + legacy alias 一覧が含まれる | ✅ (L125-131) |\n| 5 | `command-registry.ts` の `--from` parsing が拡張された signature を受け付ける | ✅ (L336: `[...AGENT_STEP_NAMES, ...CLI_STEP_NAMES, \"critic\", \"fixer\", \"creator\"]`) |\n| 6 | USAGE 文字列が `--from=<step-or-alias>` 形式に更新されている | ✅ (L90: `--from=<step\\|alias>` — test-cases.md TC-21 で許容される代替表記) |\n| 7 | 既存 resume 関連 test が regression していない | ✅ (resolve-step.test.ts 51 件 + 全 2111 件 green) |\n| 8 | delta spec が `## MODIFIED Requirements` を持つ形で作成されている | ✅ (`specs/cli-resume-command/spec.md` L5、baseline 未変更を git diff で確認) |\n| 9 | `bun run typecheck && bun run test` が green | ✅ (verification-result.md / 本レビュー再実行で確認) |\n\n## Test Coverage\n\ntest-cases.md の must 18 件 / should 4 件 / could 1 件のうち、unit test として実装されるべき must は全て resolve-step.test.ts に存在する。CLI 経路 (TC-18/19/20/21) は flag-parser の既存 enum validation 経由で機能するため、unit 単位での追加 test は無いが、values 配列拡張により挙動は実質達成されている（手動検証 / 既存 flag-parser tests 経由）。\n\n| TC | Description | Status |\n|----|-------------|--------|\n| TC-RESUME-FROM-01 | `--from design` → `design` | ✅ (resolve-step.test.ts:262-264) |\n| TC-RESUME-FROM-02 | `--from code-review` → `code-review` | ✅ (267-269) |\n| TC-RESUME-FROM-03 | `--from delta-spec-validation` → `delta-spec-validation` | ✅ (272-274) |\n| TC-RESUME-FROM-04 | step 名 `spec-fixer` を直接指定 (should) | ⚠️ 専用テストは無いが、既存 fixer test と TC-01/02 で同等パスをカバー |\n| TC-RESUME-FROM-05 | step 名 `test-case-gen` を直接指定 (should) | ⚠️ 専用テスト無し（ALL_STEP_NAMES_SET 経路は TC-01/02/03 で実証済み） |\n| TC-RESUME-FROM-06 | step 名 `pr-create` を直接指定 (could) | ❌ 専用テスト無し（could なので必須ではない） |\n| TC-RESUME-FROM-07 | legacy alias `critic` — spec phase | ✅ (277-279) |\n| TC-RESUME-FROM-08 | legacy alias `critic` — code phase | ✅ (280-282) |\n| TC-RESUME-FROM-09 | legacy alias `fixer` — spec phase | ✅ (285-287) |\n| TC-RESUME-FROM-10 | legacy alias `fixer` — code phase | ✅ (288-290) |\n| TC-RESUME-FROM-11 | legacy alias `creator` — spec phase | ✅ (293-295) |\n| TC-RESUME-FROM-12 | legacy alias `creator` — code phase | ✅ (296-298) |\n| TC-RESUME-FROM-13 | invalid → throws with invalid value in message | ✅ (302-303) |\n| TC-RESUME-FROM-14 | invalid Error message に step 名一覧 | ✅ (304-305) |\n| TC-RESUME-FROM-15 | invalid Error message に alias 一覧 | ✅ (306-307) |\n| TC-RESUME-FROM-16 | step 名 / alias 識別順 (`design` は step 名経路) | ✅ (TC-01 で実証 — phase が code でも `design` を返す) |\n| TC-RESUME-FROM-17 | `from` undefined regression | ✅ (既存 describe `\"resolveResumeStep - default (from=undefined)\"`, T4.1〜T4.3, fixer-empty 群が網羅) |\n| TC-RESUME-FROM-18 | CLI flag が step 名を受け付ける | ✅ (command-registry.ts L336 + flag-parser enum) |\n| TC-RESUME-FROM-19 | CLI flag が legacy alias を受け付ける | ✅ (同上) |\n| TC-RESUME-FROM-20 | CLI flag が不正値を拒否 | ✅ (flag-parser:92-94 の既存ロジック) |\n| TC-RESUME-FROM-21 | USAGE 文字列更新 | ✅ (L90: `<step\\|alias>` 形式、e.g. に `code-review, implementer, critic`) |\n| TC-RESUME-FROM-22 | `ResumeFrom` export + 型エラーなし | ✅ (typecheck green) |\n| TC-RESUME-FROM-23 | `STEP_MAPPING` key 型が `LegacyResumeRole` | ✅ (L68) |\n| TC-RESUME-FROM-24 | delta spec の存在 + format | ✅ |\n| TC-RESUME-FROM-25 | typecheck && test green | ✅ |\n\nmust 18 件: すべて達成 (TC-04/05 は should なので除外)。should 4 件: TC-04/05/16/23 のうち TC-04/05 は専用テストなし（同等パスが他テストでカバー）、TC-16/23 達成。could 1 件: TC-06 未達 (必須でない)。\n\n## Verdict\n\n- **verdict**: approved\n"
+        },
+        "startedAt": "2026-05-18T09:58:02.388Z",
+        "endedAt": "2026-05-18T10:02:00.253Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5537,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 4,
+            "outputTokens": 2001,
+            "cacheReadInputTokens": 33402,
+            "cacheCreationInputTokens": 14292
+          },
+          "claude-opus-4-7[1m]": {
+            "inputTokens": 35,
+            "outputTokens": 9265,
+            "cacheReadInputTokens": 1424053,
+            "cacheCreationInputTokens": 66019
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/resume-from-step-name/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — resume-from-step-name\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/302\n- **Number**: 302\n- **CreatedAt**: 2026-05-18T10:02:04.799Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-18T10:02:02.010Z",
+        "endedAt": "2026-05-18T10:02:04.800Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/302",
+    "number": 302,
+    "createdAt": "2026-05-18T10:02:04.799Z"
+  }
+}

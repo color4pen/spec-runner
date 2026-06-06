@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "jobId": "2abcf24c-70ad-4577-b1d6-ed79fb486a46",
+  "createdAt": "2026-06-02T12:49:32.624Z",
+  "updatedAt": "2026-06-02T12:53:23.307Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/abolish-spec-merge/request.md",
+    "title": "spec-merge を廃止し finish の pipeline→specs 閉ループを断つ",
+    "type": "spec-change",
+    "slug": "abolish-spec-merge"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "design",
+  "status": "canceled",
+  "pid": 92828,
+  "branch": "change/abolish-spec-merge-2abcf24c",
+  "history": [
+    {
+      "ts": "2026-06-02T12:49:32.624Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-06-02T12:49:34.813Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-06-02T12:53:23.307Z",
+      "step": "cancel",
+      "status": "ok",
+      "message": "running → canceled: Canceled by user"
+    }
+  ],
+  "error": {
+    "code": "USER_CANCELED",
+    "message": "Canceled by user",
+    "hint": ""
+  },
+  "worktreePath": null,
+  "steps": {},
+  "canceledAt": "2026-06-02T12:53:23.306Z"
+}

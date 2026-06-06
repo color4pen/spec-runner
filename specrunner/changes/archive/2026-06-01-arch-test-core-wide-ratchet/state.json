@@ -1,0 +1,914 @@
+{
+  "version": 1,
+  "jobId": "7167e6c0-8619-494c-8267-40041d9e3bae",
+  "createdAt": "2026-05-31T15:35:43.271Z",
+  "updatedAt": "2026-06-01T00:29:44.277Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/arch-test-core-wide-ratchet/request.md",
+    "title": "アーキ構造不変条件（B-1〜B-8 + closure）を core 全体に ratchet 方式で歯付けする",
+    "type": "spec-change",
+    "slug": "arch-test-core-wide-ratchet"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 62227,
+  "branch": "change/arch-test-core-wide-ratchet-7167e6c0",
+  "history": [
+    {
+      "ts": "2026-05-31T15:35:43.271Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-31T15:35:46.556Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-31T15:40:21.653Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-31T15:40:21.656Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-31T15:40:21.658Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-31T15:40:21.680Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-31T15:40:21.681Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-31T15:40:21.681Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-31T15:40:21.682Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-31T15:46:15.129Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-31T15:46:15.132Z",
+      "step": "spec-review",
+      "status": "warning",
+      "message": "spec-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-31T15:46:15.132Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → spec-fixer"
+    },
+    {
+      "ts": "2026-05-31T15:46:15.133Z",
+      "step": "spec-fixer-started",
+      "status": "started",
+      "message": "Starting spec-fixer step"
+    },
+    {
+      "ts": "2026-05-31T15:47:57.848Z",
+      "step": "spec-fixer-verdict",
+      "status": "ok",
+      "message": "spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-31T15:47:57.850Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → delta-spec-validation (iter 1)"
+    },
+    {
+      "ts": "2026-05-31T15:47:57.852Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-31T15:47:57.872Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-31T15:47:57.875Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-31T15:47:57.876Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-31T15:47:57.876Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-31T15:54:24.691Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-31T15:54:24.693Z",
+      "step": "spec-review",
+      "status": "warning",
+      "message": "spec-review iteration 2 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-31T15:54:24.694Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → spec-fixer"
+    },
+    {
+      "ts": "2026-05-31T15:54:24.695Z",
+      "step": "spec-fixer-started",
+      "status": "started",
+      "message": "Starting spec-fixer step"
+    },
+    {
+      "ts": "2026-05-31T15:55:21.036Z",
+      "step": "spec-fixer-verdict",
+      "status": "ok",
+      "message": "spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-31T15:55:21.039Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → delta-spec-validation (iter 2)"
+    },
+    {
+      "ts": "2026-05-31T15:55:21.040Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-31T15:55:21.061Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-31T15:55:21.063Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-31T15:55:21.063Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 3 started"
+    },
+    {
+      "ts": "2026-05-31T15:55:21.064Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-31T15:58:46.493Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-31T15:58:46.496Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 3 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-31T15:58:46.496Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-31T15:58:46.497Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-31T16:01:57.712Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-31T16:01:57.716Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 3)"
+    },
+    {
+      "ts": "2026-05-31T16:01:57.717Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-31T16:18:54.932Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-31T16:18:54.937Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-31T16:18:54.937Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-31T16:18:54.938Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-31T16:19:08.973Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-31T16:19:08.976Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-31T16:19:08.976Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-31T16:19:08.977Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-31T16:19:08.978Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-31T16:25:15.215Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-31T16:25:15.218Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-31T16:25:15.218Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-31T16:25:15.219Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-31T16:26:08.651Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-31T16:26:08.654Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-31T16:26:08.654Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-31T16:26:08.655Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-31T16:31:23.985Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-31T16:31:23.988Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-31T16:31:23.988Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-31T16:31:23.990Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-31T16:31:24.012Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-31T16:31:24.014Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → adr-gen"
+    },
+    {
+      "ts": "2026-05-31T16:31:24.015Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-31T16:34:13.807Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-31T16:34:13.810Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-31T16:34:13.811Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-31T16:34:15.636Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-31T16:34:15.642Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-06-01T00:29:44.277Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "60d4b3fb-4e8b-4c41-b064-78455ca533bb",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-05-31T15:35:46.566Z",
+        "endedAt": "2026-05-31T15:40:19.870Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 9044,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 23,
+            "outputTokens": 10003,
+            "cacheReadInputTokens": 713502,
+            "cacheCreationInputTokens": 54168
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/arch-test-core-wide-ratchet/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-05-31T15:40:21.658Z",
+        "endedAt": "2026-05-31T15:40:21.679Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/arch-test-core-wide-ratchet/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-05-31T15:47:57.852Z",
+        "endedAt": "2026-05-31T15:47:57.872Z"
+      },
+      {
+        "attempt": 3,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/arch-test-core-wide-ratchet/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-05-31T15:55:21.041Z",
+        "endedAt": "2026-05-31T15:55:21.061Z"
+      },
+      {
+        "attempt": 4,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/arch-test-core-wide-ratchet/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-05-31T16:31:23.990Z",
+        "endedAt": "2026-05-31T16:31:24.012Z"
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "b3607acd-ff06-4aaf-9d49-7a279c36fc35",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/arch-test-core-wide-ratchet/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result\n\n<!-- FORMAT REQUIREMENTS (machine-parsed):\n- The verdict line MUST appear before the Findings table.\n- verdict line format (exact): `- **verdict**: <value>` at the start of a line\n- Valid verdict values: approved | needs-fix | escalation\n  - approved:    specification is complete, consistent, and ready for implementation\n  - needs-fix:   specification has issues that must be resolved before implementation\n  - escalation:  unresolvable conflicts, missing context, or requires human judgment\n- Findings table MUST have exactly 6 columns in this order:\n  # | Severity | Category | File | Description | How to Fix\n- Valid Severity values (uppercase): CRITICAL | HIGH | MEDIUM | LOW\n  - CRITICAL: production outage, data loss, security breach\n  - HIGH:     functional failure, clear bug, no workaround — blocks approval\n  - MEDIUM:   quality degradation, maintainability issue, future risk\n  - LOW:      informational, style, minor improvement\n- If no findings, write a table row with \"None\" or omit the table body.\n- Approval is blocked when CRITICAL ≥ 1 OR HIGH ≥ 1.\n-->\n\n- **verdict**: needs-fix\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | Consistency | tasks.md (T-02) | B-3/B-4 テストのスキャン範囲記述が自己矛盾している。B-3 は冒頭で「shared-kernel (`src/parser/`, `src/config/`, `src/state/`) が `src/core/` を import していないことを assert」と書きながら、直後の括弧書きで「本 change は core scope のため…shared-kernel 側の歯は src-wide 拡張で追加」と後退している。B-4 も「`src/util/` が他モジュールを import していないことを assert」と書いた直後に「core scope からの参照確認。util 側の歯は src-wide で追加」と矛盾する。実装者が「core/ ファイルのみスキャンすべきか、parser/config/state/util もスキャンすべきか」を判断できない。 | T-02 の B-3/B-4 記述を一本化する。「本 change では B-3/B-4 の違反は core/ 外のファイルに起点があるため、直接スキャンは src-wide 拡張に委ねる。本 change の B-3/B-4 coverage は closure model チェック（core が domain→adapters 逆方向を import しないこと）で代替する」と明確化するか、あるいは「parser/config/state/util を B-3/B-4 のためにスキャンする（必要な allowlist エントリも T-01 に追加）」と明確化する。 |\n| 2 | MEDIUM | Consistency | request.md (§2), tasks.md (T-01) | requirement §2 は「allowlist は R1=parser→core / R3=step-names back-edge / R4=util leaf 違反を網羅し」と明記しているが、T-01 の allowlist エントリには R1/R3/R4 が存在しない。これらの違反は非 core ファイル（`src/parser/`, `src/config/`, `src/state/`, `src/util/`）に起点があり、core-scoped テストからは検出されない。T-02 が上記ファイルをスキャンするなら対応 allowlist エントリが必要（未追加で test red）。スキャンしないなら requirement §2 の記述が誤り。どちらかに矛盾が生じる。 | 以下いずれかで解消する。(A) T-02 の B-3/B-4 で parser/config/state/util をスキャンする方針なら、T-01 に R1（`src/parser/request-md.ts` B-3 R1）・R3（`src/config/migrate.ts` B-3 R3、`src/state/schema.ts` B-3 R3）・R4（`src/util/slugify.ts` B-4 R4）の allowlist エントリを追加する。(B) core-only スキャン方針ならば request.md §2 の「allowlist は R1/R3/R4 を網羅し」を「本 change の allowlist は core-scoped 違反（R2/B-6/B-8）を対象とする。R1/R3/R4 の allowlist 化は src-wide 拡張 change で実施」に修正する。 |\n| 3 | LOW | Completeness | tasks.md (T-01, T-03) | request.md §2 は「allowlist は…単一mutator を網羅し」と記載しているが、T-01 に単一mutator（`store.fail()` / `exit-guard` の raw status 書き）の allowlist エントリが存在せず、T-03 にも対応テストがない。`model.md` §5 では「（lifecycle）」扱いで B-# 番号が振られていないため、grep アサーション化が難しい面がある。 | request.md §2 の「単一mutator」に言及している箇所を「単一mutator は lifecycle 不変条件であり B-# grep 対象外のため本 change の allowlist・テスト対象から除外する。後続 change で enforcement 設計を別途検討する」と明記し、受け入れ基準との整合を取る。 |\n| 4 | LOW | Accuracy | tasks.md (T-01) | T-01 の「B-8: `src/core/step/executor.ts` — `config.runtime` 分岐（3 箇所）」は実コードの grep 結果（L203/L208/L287/L295 の 4 件）と一致しない。file-level allowlist なら実害はないが、line-level フィルタを実装した場合に 4 件目が未 allowlist で test red になるリスクがある。 | コメントの「3 箇所」を「4 箇所」に修正するか、「allowlist はファイル単位で適用する（行単位ではない）」と設計ノートに明記して曖昧さを解消する。 |\n",
+          "toolResult": {
+            "ok": true,
+            "approved": false
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-05-31T15:40:21.691Z",
+        "endedAt": "2026-05-31T15:46:13.522Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5658,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 29,
+            "outputTokens": 17241,
+            "cacheReadInputTokens": 1016946,
+            "cacheCreationInputTokens": 57930
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "cc427857-ef68-44f8-9350-f1e2c0d057c1",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/arch-test-core-wide-ratchet/spec-review-result-002.md",
+          "error": null,
+          "fileContent": "# Spec Review Result\n\n<!-- FORMAT REQUIREMENTS (machine-parsed):\n- The verdict line MUST appear before the Findings table.\n- verdict line format (exact): `- **verdict**: <value>` at the start of a line\n- Valid verdict values: approved | needs-fix | escalation\n  - approved:    specification is complete, consistent, and ready for implementation\n  - needs-fix:   specification has issues that must be resolved before implementation\n  - escalation:  unresolvable conflicts, missing context, or requires human judgment\n- Findings table MUST have exactly 6 columns in this order:\n  # | Severity | Category | File | Description | How to Fix\n- Valid Severity values (uppercase): CRITICAL | HIGH | MEDIUM | LOW\n  - CRITICAL: production outage, data loss, security breach\n  - HIGH:     functional failure, clear bug, no workaround — blocks approval\n  - MEDIUM:   quality degradation, maintainability issue, future risk\n  - LOW:      informational, style, minor improvement\n- If no findings, write a table row with \"None\" or omit the table body.\n- Approval is blocked when CRITICAL ≥ 1 OR HIGH ≥ 1.\n-->\n\n- **verdict**: needs-fix\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | HIGH | Completeness | tasks.md (T-03) | T-03 のセクションタイトルは「B-5〜B-8 call-site 制約」と謳いながら、タスク箇条書きに B-5 の項目が存在しない（B-6/B-7/B-8 のみ）。request.md 受け入れ基準「B-1〜B-8 + closure を assert する」および spec.md Scenario「all B-invariants are asserted（B-5 judgment purity 含む）」が要求する B-5 アサーションが tasks.md 上で定義されていないため、実装者は B-5 テストを書く根拠と grep パターンを持てず受け入れ基準を満たせない。design.md D5 も B-5 を call-site grep 対象として列挙しているが grep パターンは記述されていない。model.md §5 によると B-5 の現在の違反形態は「spec/rules の load を seam 化」（fs.readFile 等を判定系から排除）。 | T-03 に B-5 タスク箇条書きを追加する。grep パターンの例: `src/core/` 内の verdict / transition / spec-rules 相当ファイル（例: `src/core/pipeline/transitions.ts`, `src/core/step/spec-rules/` 等）で `readFile\\|readFileSync\\|readdir\\|existsSync` 等の本物 I/O が直呼びされていないことを assert。もし現状の B-5 違反がゼロで green なら allowlist エントリ不要で pass する。B-5 を本 change スコープ外とする場合は request.md 受け入れ基準と spec.md Scenario の「B-5」への言及を削除し scope 外を明記する。 |\n| 2 | LOW | Accuracy | tasks.md (T-03) | T-03 の B-7 テスト説明「`process.stdout.write` / `process.stderr.write` 直呼び出しを検出」において、テキスト grep で `process.stderr.write` を検索すると `src/core/finish/branch-checkout.ts:80` および `src/core/finish/preflight.ts:50` の JSDoc コメント（`/** Warning output function (defaults to process.stderr.write). */`）がヒットし false positive になる。`__tests__/` 除外は記述されているがコメント行への対処は未定義。T-01 にこれらのエントリがないため allowlist フィルタでも救われず、day-1 で B-7 テストが red になるリスクがある。 | T-03 の B-7 パターンを「関数呼び出しサイトのみにマッチさせる（例: `process\\.stderr\\.write\\s*\\(`）」と明記するか、grep 後にコメント行（先頭が `*` または `//` の行）を除外するフィルタを実装することを記述する。代替として T-01 に `src/core/finish/branch-checkout.ts`・`src/core/finish/preflight.ts` の B-7 allowlist エントリを追加する（ただし実コード違反でないため allowlist 化は不適切であり、パターン精緻化の方が望ましい）。 |\n\n## Review Notes\n\n### spec-review-001 findings の解消確認\n\n- [x] Finding 1 (MEDIUM): T-02 B-3/B-4 スキャン範囲の自己矛盾 → 解消済み。tasks.md T-02 で「core 外ファイル起点のため src-wide 拡張 change に委ねる」と一本化された。\n- [x] Finding 2 (MEDIUM): R1/R3/R4 allowlist 不整合 → 解消済み。request.md §2 が「本 change の allowlist は core-scoped 違反（R2/B-6/B-8）対象。R1/R3/R4 は src-wide 拡張 change で実施」と明確化された。\n- [x] Finding 3 (LOW): 単一mutator の扱い未定義 → 解消済み。request.md §2 に「lifecycle 不変条件で B-# grep 対象外のため除外、後続 change で別途検討」と明記された。\n- [x] Finding 4 (LOW): executor.ts 箇所数誤記 → 解消済み。tasks.md T-01 が「4 箇所」に修正された。\n\n### セキュリティレビュー\n\n本 change は architecture enforcement test の追加であり、auth / user input / network access を持たない。OWASP Top 10 該当なし。B-6（stripSecrets 強制）・B-7（maskSensitive 強制）の enforcement 自体がセキュリティ seam を強化する設計であり方向性は適切。\n",
+          "toolResult": {
+            "ok": true,
+            "approved": false
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-05-31T15:47:57.887Z",
+        "endedAt": "2026-05-31T15:54:23.161Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5658,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 22,
+            "outputTokens": 19509,
+            "cacheReadInputTokens": 682685,
+            "cacheCreationInputTokens": 50382
+          }
+        }
+      },
+      {
+        "attempt": 3,
+        "sessionId": "a3b6b889-14ac-44ed-a408-2203897b02ea",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/arch-test-core-wide-ratchet/spec-review-result-003.md",
+          "error": null,
+          "fileContent": "# Spec Review Result\n\n<!-- FORMAT REQUIREMENTS (machine-parsed):\n- The verdict line MUST appear before the Findings table.\n- verdict line format (exact): `- **verdict**: <value>` at the start of a line\n- Valid verdict values: approved | needs-fix | escalation\n  - approved:    specification is complete, consistent, and ready for implementation\n  - needs-fix:   specification has issues that must be resolved before implementation\n  - escalation:  unresolvable conflicts, missing context, or requires human judgment\n- Findings table MUST have exactly 6 columns in this order:\n  # | Severity | Category | File | Description | How to Fix\n- Valid Severity values (uppercase): CRITICAL | HIGH | MEDIUM | LOW\n  - CRITICAL: production outage, data loss, security breach\n  - HIGH:     functional failure, clear bug, no workaround — blocks approval\n  - MEDIUM:   quality degradation, maintainability issue, future risk\n  - LOW:      informational, style, minor improvement\n- If no findings, write a table row with \"None\" or omit the table body.\n- Approval is blocked when CRITICAL ≥ 1 OR HIGH ≥ 1.\n-->\n\n- **verdict**: approved\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | Consistency | tasks.md (T-01, T-02) | T-01 は `src/core/runtime/local.ts` と `src/core/runtime/managed.ts` の adapter import を **B-1** 違反として allowlist に登録しているが、T-02 の layer-mapping は `src/core/runtime/` を **composition-root** に分類し B-1 スキャンから明示除外している（\"`src/core/`（runtime 除く）が `adapter/` を import していないことを assert\"）。composition-root → adapters は §3 closure model で ✓ の許容 edge であるため、これらは真の B-1 違反ではない。テストが runtime を B-1 スキャン対象外とする以上、allowlist の当該エントリは永久に exercised されず phantom エントリになる。ratchet の「allowlist は機械的に消費され縮んでいく」原則と矛盾する。 | 実装時に以下のいずれかで対処する。(A) T-01 の runtime B-1 エントリの invariant を `\"B-1\"` から `\"composition-root-design\"` または削除（allowed edge のため allowlist 不要）に変更し、B-2 エントリ（SDK 直 import）のみ残す。(B) `model.md` §3 上 composition-root → adapters が forbidden である（port 経由を強制する）ならば T-02 の B-1 スキャン対象に runtime を含め、allowlist エントリが実際に exercised されるようにする。どちらを選ぶかは実装者判断で可。|\n| 2 | LOW | Completeness | tasks.md (T-03) | B-5 テストの grep スコープが「verdict / transition / spec-rules 相当ファイルで」と記述されているが、実装者がこれらのファイルをプログラム的に特定する方法（glob パターン、明示的ファイルリスト、ディレクトリ prefix）が未定義。現状 B-5 違反がゼロなら全 `src/core/` をスキャンしても問題ないが、`src/core/` 内の他ファイル（finish/ や step/executor.ts 等）が fs API を正当な目的で使っている場合に false positive が出るリスクがある。 | 実装時に B-5 grep スコープを `src/core/pipeline/` と `src/core/step/spec-rules/` 相当のディレクトリに限定するか、全 `src/core/` をスキャンして false positive が出ないことを確認してからパターン確定する。違反ゼロなら影響なし。 |\n\n## Review Notes\n\n### spec-review-002 findings の解消確認\n\n- [x] Finding 1 (HIGH): T-03 に B-5 タスク箇条書きが追加された（`readFile\\b|readFileSync\\b|readdir\\b|existsSync\\b|statSync\\b`、`__tests__/` 除外、fs seam 経由許容）→ **解消済み**\n- [x] Finding 2 (LOW): T-03 B-7 パターンが `process\\.(stdout|stderr)\\.write\\s*\\(` の call-site 限定になり JSDoc false positive を回避 → **解消済み**\n\n### セキュリティレビュー\n\n本 change は enforcement test の追加のみ。auth / network access / user input を一切持たない。OWASP Top 10 該当なし。B-6（raw process.env 禁止）・B-7（raw stdout/stderr 禁止）の enforcement 自体がセキュリティ seam を強化する方向性であり適切。\n",
+          "toolResult": {
+            "ok": true,
+            "approved": true
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-05-31T15:55:21.072Z",
+        "endedAt": "2026-05-31T15:58:44.927Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5658,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 13,
+            "outputTokens": 9722,
+            "cacheReadInputTokens": 279488,
+            "cacheCreationInputTokens": 33723
+          }
+        }
+      }
+    ],
+    "spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "316f49c0-94f0-4f36-a72b-8b391b20b14b",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-05-31T15:46:15.144Z",
+        "endedAt": "2026-05-31T15:47:56.249Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 774,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 10,
+            "outputTokens": 5444,
+            "cacheReadInputTokens": 149591,
+            "cacheCreationInputTokens": 19097
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "316f49c0-94f0-4f36-a72b-8b391b20b14b",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-05-31T15:54:24.706Z",
+        "endedAt": "2026-05-31T15:55:19.548Z",
+        "modelUsage": {
+          "claude-sonnet-4-6": {
+            "inputTokens": 9,
+            "outputTokens": 3061,
+            "cacheReadInputTokens": 227042,
+            "cacheCreationInputTokens": 9389
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "a0b736fe-cca2-4863-82bb-09cc025986a2",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-05-31T15:58:46.535Z",
+        "endedAt": "2026-05-31T16:01:55.980Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3047,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 10,
+            "outputTokens": 10797,
+            "cacheReadInputTokens": 174006,
+            "cacheCreationInputTokens": 27090
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "c4990117-07a9-469e-88d2-6a2004685ded",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-05-31T16:01:57.730Z",
+        "endedAt": "2026-05-31T16:18:52.931Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5805,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 50,
+            "outputTokens": 57006,
+            "cacheReadInputTokens": 3351308,
+            "cacheCreationInputTokens": 104231
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/arch-test-core-wide-ratchet/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — arch-test-core-wide-ratchet — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 0.5s | 0 |\n| 2 | typecheck | passed | 2.5s | 0 |\n| 3 | test | passed | 8.2s | 0 |\n| 4 | lint | passed | 1.3s | 0 |\n\n## Phase: build\n\n```\nCLI Building entry: bin/specrunner.ts\nCLI Using tsconfig: tsconfig.json\nCLI tsup v8.5.1\nCLI Using tsup config: ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/arch-test-core-wide-ratchet-7167e6c0/tsup.config.ts\nCLI Target: node20\nCLI Cleaning output folder\nESM Build start\nESM dist/specrunner.js 612.24 KB\nESM ⚡️ Build success in 42ms\n\n$ tsup\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/arch-test-core-wide-ratchet-7167e6c0\n\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t150d\n\n Test Files  287 passed (287)\n      Tests  3278 passed (3278)\n   Start at  01:18:58\n   Duration  7.94s (transform 4.23s, setup 0ms, import 10.84s, tests 14.79s, environment 17ms)\n\n\n$ vitest run\nWarning: /tmp/claude-501/cred-test-In43Bx/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /tmp/claude-501/cred-test-PurH34/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...\nGitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Required status check \"ci/build\" is expected, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\n[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/arch-test-core-wide-ratchet-7167e6c0/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n\n```\n\n## Phase: lint\n\n```\n$ eslint ./src --max-warnings 0\n\n```\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-05-31T16:18:54.939Z",
+        "endedAt": "2026-05-31T16:19:08.972Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "b4c78897-e3b9-441e-a98a-8be519edd2e0",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/arch-test-core-wide-ratchet/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — iteration 001\n\n- **verdict**: needs-fix\n- **iteration**: 001\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix | Fix |\n|---|----------|----------|------|-------------|------------|-----|\n| 1 | high | architecture | `tests/unit/architecture/core-invariants.test.ts` + `arch-allowlist.ts` | B-8 grep pattern `config\\.runtime` misses `cfg.runtime` variants. `checkRuntimePrereqs` in `src/core/preflight.ts` uses parameter name `cfg: SpecRunnerConfig` and has `cfg.runtime ?? \"local\"` (L43) and `cfg.runtime === \"managed\"` (L59). Neither is caught by the enforcement test nor in the allowlist — the ratchet has a live hole for B-8. | (1) Widen the B-8 grep pattern to `(config\\|cfg)\\.runtime`. (2) Add two allowlist entries in `arch-allowlist.ts` for `src/core/preflight.ts` / pattern `cfg.runtime ?? \"local\"` / B-8 / `B8-preflight-checkRuntimePrereqs` and pattern `cfg.runtime === \"managed\"` / B-8 / `B8-preflight-checkRuntimePrereqs`. | yes |\n| 2 | low | testing | `tests/unit/architecture/core-invariants.test.ts` L224, L244 | B-3 and B-4 test bodies are `expect(true).toBe(true)` — no codebase scanning, zero enforcement. TC-009 and TC-010 are \"must\" priority in test-cases.md. The delta spec requirement scenario lists B-3 and B-4 assertions as required. Per design the violations originate outside `core/` so this is intentional deferral, but the current stub silently passes rather than documenting its deferred scope. | Convert the body to `it.skip(...)` or add an explicit `// deferred: src-wide change` comment and a `pending()` / `todo()` marker so the gap is machine-visible rather than a passing no-op. This is a non-blocking suggestion — the deferral rationale in the design is sound. | no |\n| 3 | info | testing | `tests/unit/architecture/core-invariants.test.ts` L265-274 | B-5 grep pattern `(readFile\\|readFileSync\\|readdir\\|existsSync\\|statSync)` has no word-boundary anchors and would match seam-based `deps.readFile(` calls. Scoped to `src/core/pipeline/` only (currently zero violations). If pipeline code adopts `deps.readFile`, the test will false-positive and block CI. | Acceptable given current zero-violation state; note the risk in a comment so the next author knows not to add `deps.readFile` calls to pipeline/ without updating the filter. | no |\n\n## Scores\n\n| Category | Score | Weight |\n|----------|-------|--------|\n| correctness | 8 | 0.30 |\n| security | 9 | 0.25 |\n| architecture | 7 | 0.15 |\n| performance | 9 | 0.10 |\n| maintainability | 7 | 0.10 |\n| testing | 7 | 0.10 |\n\n- **total**: 7.95\n\n## Summary\n\n全体的に設計は健全。vitest + grep + TypeScript allowlist の ratchet 実装は今後の burn-down change への足がかりとして十分機能する。regression guard テスト (T-04) は実証済みで、アーキテクチャ判断 (D1–D5) の根拠も ADR レベルで残っている。\n\nただし **Finding 1 は実際の穴**: B-8 enforcement の grep が `config.runtime` のみを対象としており、`checkRuntimePrereqs` で使われている `cfg.runtime` (preflight.ts L43・L59) を拾えない。この 2 行は allowlist にも入っていないため、ratchet の外側に既知 B-8 違反が漏れている。パターンを `(config|cfg)\\.runtime` に広げ、2 エントリを allowlist に追加すれば修正完了（小さな変更）。\n\nFinding 2 (B-3/B-4 no-op) は設計上の deliberate deferral であり block しない。\n",
+          "toolResult": {
+            "ok": true,
+            "approved": false,
+            "fixableCount": 1
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-05-31T16:19:08.991Z",
+        "endedAt": "2026-05-31T16:25:13.511Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6860,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 346,
+            "outputTokens": 18231,
+            "cacheReadInputTokens": 567212,
+            "cacheCreationInputTokens": 60336
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "e14a72ac-b3ca-447c-baf5-f7438fc7a19a",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/arch-test-core-wide-ratchet/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Code Review Feedback — iteration 002\n\n<!-- FORMAT REQUIREMENTS (machine-parsed):\n- verdict line format (exact): `- **verdict**: <value>` at the start of a line\n- Valid verdict values: approved | needs-fix | escalation\n- iteration line format (exact): `- **iteration**: NNN` (3-digit zero-padded integer)\n- Findings table MUST have exactly 7 columns in this order:\n  # | Severity | Category | File | Description | How to Fix | Fix\n  - Fix column: yes = fixer should address this finding; no = skip (pre-existing / out-of-scope)\n- Scores table columns: Category | Score | Weight\n  - Valid Category values: correctness | security | architecture | performance | maintainability | testing\n  - Score: integer 1-10\n  - Weight: decimal as defined below\n- total line format (exact): `- **total**: <decimal>`\n- Default weights: correctness=0.30, security=0.25, architecture=0.15, performance=0.10, maintainability=0.10, testing=0.10\n- Scores table is optional but recommended. The verdict line is the authoritative decision.\n-->\n\n- **verdict**: approved\n- **iteration**: 002\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix | Fix |\n|---|----------|----------|------|-------------|------------|-----|\n| 1 | low | maintainability | `tests/unit/architecture/arch-allowlist.ts` L145-151 | `preflight.ts` L136 のパターン `\"Record<string, string | undefined>,\"` はコードのフォーマットに依存したフラジルなパターン。末尾カンマが prettier によって整形されると null ポインタになりうる。現在は正しく L136 を L105/L121 と区別して機能しており実害はない。 | 将来 preflight.ts を修正する burn-down request (B6-preflight) の際に、より安定したパターン（例: `resolveSpecRunnerApiKey` の関数名）に差し替えること。本 change では対応不要。 | no |\n| 2 | low | testing | `tests/unit/architecture/core-invariants.test.ts` L224, L244 | iteration 001 から持ち越し: B-3/B-4 テストが `expect(true).toBe(true)` の no-op。設計 (D3/タスク) で src-wide change への意図的な deferral と明記されており、テスト count 上は pass するが実スキャンがゼロ。 | iteration 001 で `Fix: no` 確定済み。後続の src-wide enforcement change で対応される。 | no |\n\n## Scores\n\n| Category | Score | Weight |\n|----------|-------|--------|\n| correctness | 9 | 0.30 |\n| security | 9 | 0.25 |\n| architecture | 9 | 0.15 |\n| performance | 9 | 0.10 |\n| maintainability | 8 | 0.10 |\n| testing | 8 | 0.10 |\n\n- **total**: 8.80\n\n## Summary\n\niteration 001 の唯一のブロッカー（Finding 1 HIGH: B-8 grep が `cfg.runtime` を拾えない穴）が正しく修正されている:\n\n- `core-invariants.test.ts` L348 の B-8 パターンが `\"(config|cfg)\\\\.runtime\"` に拡張済み ✓\n- `arch-allowlist.ts` に `cfg.runtime ?? \"local\"` / `cfg.runtime === \"managed\"` の 2 エントリが追加済み ✓\n\n実ファイル検証で全 B-8 違反（preflight.ts 3 箇所 + executor.ts 4 箇所）が allowlist に網羅されていることを確認。B-6 違反（preflight.ts 3 行 + diagnostic.ts + commands.ts 2 行）も同様に全カバー済み。\n\n検証結果:\n- `bun run test` 287 files / 3278 tests all green ✓\n- `arch-allowlist.ts` 13 エントリ全て file/invariant/tracking を保持 ✓\n- regression guard テスト（T-04: 5 ケース）が detection mechanism を実証 ✓\n- delta spec の 4 要件（Core Layer Has No Direct SDK Dependencies / Architecture Enforcement Covers Entire Core / Ratchet Allowlist Documents Known Divergences / Closure Model Prevents Unknown Edges）全て存在 ✓\n\n残存する no-op（B-3/B-4）と B-5 false positive リスクは前回 `Fix: no` 確定であり、本 change の受け入れ基準を満たす範囲で問題なし。\n",
+          "toolResult": {
+            "ok": true,
+            "approved": true,
+            "fixableCount": 0
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-05-31T16:26:08.668Z",
+        "endedAt": "2026-05-31T16:31:22.497Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 6860,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 23,
+            "outputTokens": 14679,
+            "cacheReadInputTokens": 867563,
+            "cacheCreationInputTokens": 58239
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "f2c614fd-72bb-459f-a998-30d80d31425e",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-05-31T16:25:15.229Z",
+        "endedAt": "2026-05-31T16:26:07.094Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3021,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 9,
+            "outputTokens": 2362,
+            "cacheReadInputTokens": 154858,
+            "cacheCreationInputTokens": 23332
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "8b32727f-1028-4e5e-917d-4a59f0d5e361",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null,
+          "toolResult": {
+            "ok": true,
+            "status": "success"
+          },
+          "followUpAttempts": 1
+        },
+        "startedAt": "2026-05-31T16:31:24.023Z",
+        "endedAt": "2026-05-31T16:34:12.145Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3155,
+            "outputTokens": 22,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 15,
+            "outputTokens": 7463,
+            "cacheReadInputTokens": 284171,
+            "cacheCreationInputTokens": 33521
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/arch-test-core-wide-ratchet/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — arch-test-core-wide-ratchet\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/482\n- **Number**: 482\n- **CreatedAt**: 2026-05-31T16:34:15.633Z\n- **Action**: created\n",
+          "toolResult": null,
+          "followUpAttempts": 0
+        },
+        "startedAt": "2026-05-31T16:34:13.812Z",
+        "endedAt": "2026-05-31T16:34:15.635Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/482",
+    "number": 482,
+    "createdAt": "2026-05-31T16:34:15.633Z"
+  }
+}

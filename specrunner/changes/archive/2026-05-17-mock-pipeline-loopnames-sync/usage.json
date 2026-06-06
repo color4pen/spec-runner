@@ -1,0 +1,104 @@
+{
+  "commandInvocations": [
+    {
+      "command": "job",
+      "timestamp": "2026-05-17T10:05:23.817Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 9606,
+          "outputTokens": 10420,
+          "cacheReadInputTokens": 1122404,
+          "cacheCreationInputTokens": 105482
+        },
+        "claude-opus-4-6[1m]": {
+          "inputTokens": 699,
+          "outputTokens": 6092,
+          "cacheReadInputTokens": 327763,
+          "cacheCreationInputTokens": 42611
+        }
+      },
+      "jobId": "a62f810f-fabd-4d20-b911-1d2ad7b72b3f",
+      "stepName": "design"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-05-17T10:06:38.760Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 5316,
+          "outputTokens": 18,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-opus-4-6[1m]": {
+          "inputTokens": 8,
+          "outputTokens": 2640,
+          "cacheReadInputTokens": 211991,
+          "cacheCreationInputTokens": 34702
+        }
+      },
+      "jobId": "a62f810f-fabd-4d20-b911-1d2ad7b72b3f",
+      "stepName": "spec-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-05-17T10:07:46.252Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 4069,
+          "outputTokens": 18,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 6,
+          "outputTokens": 4527,
+          "cacheReadInputTokens": 87694,
+          "cacheCreationInputTokens": 22094
+        }
+      },
+      "jobId": "a62f810f-fabd-4d20-b911-1d2ad7b72b3f",
+      "stepName": "test-case-gen"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-05-17T10:10:09.124Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 5424,
+          "outputTokens": 23,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 24,
+          "outputTokens": 5945,
+          "cacheReadInputTokens": 884674,
+          "cacheCreationInputTokens": 37828
+        }
+      },
+      "jobId": "a62f810f-fabd-4d20-b911-1d2ad7b72b3f",
+      "stepName": "implementer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-05-17T10:11:24.813Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 5470,
+          "outputTokens": 19,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 8,
+          "outputTokens": 3676,
+          "cacheReadInputTokens": 148160,
+          "cacheCreationInputTokens": 26710
+        }
+      },
+      "jobId": "a62f810f-fabd-4d20-b911-1d2ad7b72b3f",
+      "stepName": "code-review"
+    }
+  ]
+}

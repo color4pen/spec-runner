@@ -1,0 +1,380 @@
+{
+  "version": 1,
+  "jobId": "403b532a-25aa-47c3-a321-a9661938046f",
+  "createdAt": "2026-05-16T12:51:48.705Z",
+  "updatedAt": "2026-05-16T13:42:51.607Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/managed-key-present-rename/request.md",
+    "title": "anthropic-key-present / anthropic-key-valid を managed-key-* に rename する",
+    "type": "refactoring",
+    "slug": "managed-key-present-rename"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 43670,
+  "branch": "refactor/managed-key-present-rename-403b532a",
+  "history": [
+    {
+      "ts": "2026-05-16T12:51:48.705Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-16T12:51:50.063Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-16T12:52:41.171Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-16T12:52:41.173Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → spec-review"
+    },
+    {
+      "ts": "2026-05-16T12:52:41.173Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T12:52:41.173Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-16T12:53:42.514Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T12:53:42.516Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T12:53:42.516Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-16T12:53:42.517Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-16T12:54:35.581Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-16T12:54:35.582Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-16T12:54:35.583Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-16T12:56:28.131Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-16T12:56:28.134Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-16T12:56:28.134Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T12:56:28.135Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-16T12:56:37.988Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-16T12:56:37.990Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-16T12:56:37.990Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-16T12:56:37.990Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T12:56:37.991Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-16T12:58:18.954Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T12:58:18.957Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T12:58:18.957Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-16T12:58:18.958Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-16T12:58:21.557Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-16T12:58:21.560Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-16T13:42:51.606Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "0ba2868c-0a34-4b05-b1eb-8d1c098a0d9f",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T12:51:50.064Z",
+        "endedAt": "2026-05-16T12:52:39.749Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5367,
+            "outputTokens": 23,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 7,
+            "outputTokens": 2380,
+            "cacheReadInputTokens": 108937,
+            "cacheCreationInputTokens": 31107
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "ad161ebd-f967-4870-b84b-97be3a59def4",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/managed-key-present-rename/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: managed-key-present-rename\n\n- **verdict**: approved\n- **reviewer**: spec-reviewer\n- **date**: 2026-05-16\n\n## Summary\n\n純粋な rename refactoring。影響範囲が完全に列挙されており、task 分解も正確。\n\n## Architecture\n\n- **pass**: 責務分離・依存方向に変更なし。命名が実装内容 (managed runtime env var check) と一致するようになり可読性が向上する。\n\n## Correctness\n\n- **pass**: `index.ts` の参照箇所 (L21, L28, L72-73, L99, L102) を実ファイルと照合し全て正確。`remove-session-timeout.test.ts` の L188, L191 も一致。`check.name` フィールドは触らない制約が明記されており spec contract 破壊リスクなし。\n\n## Completeness (task decomposition)\n\n- **pass**: source 2 files, test 2 files, index.ts, test reference 1 file の全変更箇所が tasks.md に網羅されている。Task 9 の grep 検証で漏れを検出する安全策も適切。\n\n## Observations\n\n- tasks.md の Task 8 で line number が hardcoded されているが、本 branch 時点で正確であることを確認済み。main 上で先に当該ファイルが変わった場合は rebase 時に自然に conflict するため問題なし。\n"
+        },
+        "startedAt": "2026-05-16T12:52:41.174Z",
+        "endedAt": "2026-05-16T12:53:40.948Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3573,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 8,
+            "outputTokens": 2363,
+            "cacheReadInputTokens": 147584,
+            "cacheCreationInputTokens": 18406
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "3a807d75-aca2-420f-a2d5-99f236b13474",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T12:53:42.518Z",
+        "endedAt": "2026-05-16T12:54:34.092Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2205,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 6,
+            "outputTokens": 3955,
+            "cacheReadInputTokens": 74510,
+            "cacheCreationInputTokens": 15848
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "ffd68368-ed1a-4b50-a21b-0d66b9686e05",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T12:54:35.583Z",
+        "endedAt": "2026-05-16T12:56:26.526Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3565,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 25,
+            "outputTokens": 7272,
+            "cacheReadInputTokens": 686834,
+            "cacheCreationInputTokens": 27991
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/managed-key-present-rename/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — managed-key-present-rename — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.1s | 0 |\n| 2 | typecheck | passed | 1.8s | 0 |\n| 3 | test | passed | 4.6s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/managed-key-present-rename-403b532a\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t135d\n\n Test Files  162 passed (162)\n      Tests  1924 passed (1924)\n   Start at  21:56:32\n   Duration  4.37s (transform 3.08s, setup 0ms, import 5.69s, tests 8.09s, environment 10ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-GQC6aX/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-1IWa6T/specrunner/credentials.json has loose permissions (recommend 0600).\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/managed-key-present-rename-403b532a/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-16T12:56:28.136Z",
+        "endedAt": "2026-05-16T12:56:37.987Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "ecf6f7e1-a7cb-4ca6-92ea-f7b90d009424",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/managed-key-present-rename/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Review Feedback — Iteration 1\n\n## Summary\n\n純粋な rename refactoring が design / tasks / test-cases に沿って完全に実行されている。受け入れ基準 8 項目すべて充足、grep 0 hits、index.ts の import / array / re-export いずれも一貫して新名に更新済み。\n\n## Findings\n\n| # | Severity | Location | Description |\n|---|----------|----------|-------------|\n| 1 | info | `src/core/doctor/checks/auth/managed-key-valid.ts:8` | `ANTHROPIC_API_TIMEOUT_MS` / `ANTHROPIC_MODELS_URL` という定数名は upstream provider に依存した名前。ただし `tests/unit/remove-session-timeout.test.ts:195` が `ANTHROPIC_API_TIMEOUT_MS` 文字列を直接 assertion しているため、本 request 単独で改名すると既存 test を破壊する。今回 scope 外として妥当。後続 request で扱うのが適切。 |\n| 2 | info | `src/core/doctor/checks/auth/managed-key-valid.ts:43,50` | result message 文字列に `\"Anthropic API key is valid\"` / `\"Anthropic API key is invalid\"` が残存。これは UI に出る文言で外部契約に近く、命名統一の対象外として今回触らないのは妥当。 |\n\n## Test Coverage\n\ntest-cases.md の must (15件) / should (6件) すべて検証済み。\n\n- TC-01〜04 (filesystem): 新 4 ファイル存在、旧 4 ファイル削除を `ls` で確認\n- TC-05〜06 (export symbol): `managedKeyPresentCheck` / `managedKeyValidCheck` 宣言確認\n- TC-07〜08 (check.name 保持): `\"managed/api-key-present\"` / `\"managed/api-key-valid\"` 維持を実ファイルで確認\n- TC-09〜10 (index.ts): import path・配列使用・re-export すべて新名に更新済み\n- TC-11〜14 (test files): import path・describe 文字列が新名に追従\n- TC-15〜16 (remove-session-timeout): L188 description / L191 path 文字列とも新名に更新\n- TC-17 (grep 0 hits): `src/` `tests/` 配下とも 0 件確認\n- TC-18〜19 (build/test): verification-result.md で typecheck pass、1924 tests passed\n- TC-20 (specs unchanged): `git diff main -- specrunner/specs/` 差分なし確認\n- TC-21 (他 request): `credentials-provider-parity` への変更なし確認\n\n## Verdict\n\n- **verdict**: approved\n"
+        },
+        "startedAt": "2026-05-16T12:56:37.992Z",
+        "endedAt": "2026-05-16T12:58:17.501Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3609,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 4,
+            "outputTokens": 1089,
+            "cacheReadInputTokens": 31393,
+            "cacheCreationInputTokens": 11433
+          },
+          "claude-opus-4-7[1m]": {
+            "inputTokens": 10,
+            "outputTokens": 4127,
+            "cacheReadInputTokens": 181660,
+            "cacheCreationInputTokens": 52308
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/managed-key-present-rename/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — managed-key-present-rename\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/267\n- **Number**: 267\n- **CreatedAt**: 2026-05-16T12:58:21.556Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-16T12:58:18.958Z",
+        "endedAt": "2026-05-16T12:58:21.556Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/267",
+    "number": 267,
+    "createdAt": "2026-05-16T12:58:21.556Z"
+  }
+}

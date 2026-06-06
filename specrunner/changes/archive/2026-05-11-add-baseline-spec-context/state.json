@@ -1,0 +1,476 @@
+{
+  "version": 1,
+  "jobId": "da4e1643-d34b-47c1-aabc-461661391ef3",
+  "createdAt": "2026-05-11T03:04:21.203Z",
+  "updatedAt": "2026-05-11T03:39:12.582Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/add-baseline-spec-context/request.md",
+    "title": "propose に baseline spec の参照コンテキストを追加する",
+    "type": "new-feature",
+    "slug": "add-baseline-spec-context"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 69337,
+  "branch": "feat/add-baseline-spec-context-da4e1643",
+  "history": [
+    {
+      "ts": "2026-05-11T03:04:21.203Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-11T03:04:22.316Z",
+      "step": "propose-started",
+      "status": "started",
+      "message": "Starting propose step"
+    },
+    {
+      "ts": "2026-05-11T03:10:36.957Z",
+      "step": "propose-verdict",
+      "status": "ok",
+      "message": "propose verdict: success"
+    },
+    {
+      "ts": "2026-05-11T03:10:36.959Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "propose → spec-review"
+    },
+    {
+      "ts": "2026-05-11T03:10:36.960Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T03:10:36.961Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-11T03:16:06.434Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-11T03:16:06.436Z",
+      "step": "spec-review",
+      "status": "warning",
+      "message": "spec-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-11T03:16:06.436Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → spec-fixer"
+    },
+    {
+      "ts": "2026-05-11T03:16:06.437Z",
+      "step": "spec-fixer-started",
+      "status": "started",
+      "message": "Starting spec-fixer step"
+    },
+    {
+      "ts": "2026-05-11T03:18:07.181Z",
+      "step": "spec-fixer-verdict",
+      "status": "ok",
+      "message": "spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T03:18:07.182Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → spec-review (iter 2)"
+    },
+    {
+      "ts": "2026-05-11T03:18:07.182Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-11T03:18:07.183Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-11T03:21:38.495Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T03:21:38.497Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T03:21:38.497Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-11T03:21:38.499Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-11T03:23:25.986Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-11T03:23:25.988Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 2)"
+    },
+    {
+      "ts": "2026-05-11T03:23:25.989Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-11T03:31:31.848Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-11T03:31:31.849Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-11T03:31:31.850Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T03:31:31.850Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-11T03:31:41.364Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-11T03:31:41.366Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-11T03:31:41.366Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-11T03:31:41.366Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-11T03:31:41.367Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-11T03:34:51.394Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T03:34:51.397Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-11T03:34:51.397Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-11T03:34:51.398Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-11T03:34:53.978Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-11T03:34:53.982Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-11T03:39:12.582Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "propose": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T03:04:22.316Z",
+        "endedAt": "2026-05-11T03:04:22.316Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1794,
+            "outputTokens": 11708,
+            "cacheReadInputTokens": 816743,
+            "cacheCreationInputTokens": 57189
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 14,
+            "outputTokens": 13219,
+            "cacheReadInputTokens": 571249,
+            "cacheCreationInputTokens": 53073
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/add-baseline-spec-context/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: add-baseline-spec-context — Iteration 1\n\n## Verdict\n\n- **verdict**: needs-fix\n- **iteration**: 1\n- **trend**: — (initial)\n- **agents**: spec-reviewer (manual), architect (manual), security-reviewer (manual)\n- **blocking_findings**: CRITICAL: 0, HIGH: 2\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | HIGH | completeness | specs/propose-session/spec.md (MODIFIED \"Propose Instruction Message Content (Updated)\") | MODIFIED delta は `applyMerge` で baseline の同名 Requirement を丸ごと置換する（`reqs[idx] = block`）。現在の delta は specIndex/DynamicContext 関連の 4 Scenario のみを記述しており、baseline の openspec CLI workflow 関連 4 Scenario（\"Propose instruction message content\"、\"openspec CLI workflow in system prompt\"、\"Delta spec generation is schema-driven\"、\"buildProposeMessage signature unchanged\"）が merge 後に消失する | 方法A: MODIFIED delta に既存 Scenario を全て含めた上で新 Scenario を追加する。方法B: 既存 Requirement は MODIFIED しない（追加分は新 Requirement として ADDED セクションに記述する。例: \"Requirement: Propose specIndex Injection\"） |\n| 2 | HIGH | completeness | specs/propose-session/spec.md (MODIFIED \"Propose Session Agent Configuration\") | 同上。baseline の 3 Scenario（\"Agent creation for propose session\"、\"Agent and environment selection\"、\"Custom Tool included in session creation\"）が merge 後に消失する。delta は baseline 参照指示の 2 Scenario のみ | 方法A: MODIFIED delta に既存の agent 設定 Scenario を含めた上で baseline 参照 Scenario を追加する。方法B: 既存 Requirement は MODIFIED せず、\"Requirement: Baseline Spec Reference in System Prompt\" を ADDED セクションに追加する |\n| 3 | LOW | consistency | tasks.md T-07 | TC-DC-005b〜005e を `tests/git/dynamic-context.test.ts` に追加するが、TC-DC-005 は `tests/prompts/dynamic-context-prompts.test.ts` に存在する。\"b\" suffix は sub-case 関係を暗示するが、実際には別ファイルの無関係なテスト（buildInitialMessage のテスト）。共有 namespace 内で混乱を招く | git テスト側の新 ID を TC-DC-015〜018 に変更する（TC-DC-011〜014 が prompt テストで使用されるため） |\n| 4 | LOW | consistency | tasks.md T-04 | 受け入れ基準に「既存テスト TC-DC-005/006 が pass」とあるが、これらは prompt テストで buildInitialMessage の backward compat を検証するもの。T-04 の型変更の互換性はむしろ T-07 で追加される TC-DC-013/014 で検証される | 受け入れ基準を「既存テスト TC-DC-005〜010 が全 pass（リグレッションなし）」に修正するか、T-07 のテスト ID と整合させる |\n\n## Security Assessment\n\n- 全操作はローカルファイルシステム内で完結。外部ネットワーク通信なし\n- `collectSpecIndex` は `fs.readdir` + `fs.readFile` で `specrunner/specs/` を走査。パス構築は `path.join(cwd, specsDirRel())` + readdir 結果で path traversal リスクなし\n- system prompt への追加は Read 許可のみ（Write/Edit 許可ではない）。path-fence と矛盾しない\n- 認証・認可・入力検証（OWASP Top 10）に該当する攻撃面なし\n\n## Review Detail\n\n### Completeness (request.md ↔ design.md ↔ tasks.md ↔ delta spec)\n\n- request.md の 6 要件が design.md の D1-D5 に対応。D1(軽量index) → 要件1,2、D2(フォールバック) → 要件1、D3(引数型) → 要件4、D4(baseline参照指示) → 要件5、D5(Purpose抽出) → 要件1\n- tasks.md の 8 タスクが全要件をカバー。T-01(型) → T-02(collectSpecIndex) → T-03(統合) → T-04(引数型) → T-05(注入) → T-06(system prompt) → T-07(テスト) → T-08(検証) の依存グラフが正しい\n- **問題点**: delta spec の MODIFIED セクションが baseline の既存内容を保持していない（Finding #1, #2）\n- ADDED Requirement \"DynamicContext は specIndex フィールドを含む\" は propose-session に配置。DynamicContext は cross-cutting だが、specIndex の消費者は propose のみ（Non-Goals で明記）のため許容\n\n### Consistency (内部整合性 + 既存 spec との整合)\n\n- design.md の D3「`DynamicContext` 自体が optional パラメータなので後方互換性に問題なし」→ `buildInitialMessage` の第4引数は `dynamicContext?:` で optional。`propose.ts` は `deps.dynamicContext`（`DynamicContext | undefined`）を渡す。整合\n- design.md D5 の Purpose 抽出ロジック（`## Purpose` の次の非空行）→ baseline spec のフォーマット `## Purpose\\n\\n<text>` と一致\n- tasks.md T-02 の `### Requirement:` カウント → baseline spec は `### Requirement:` ヘッダーを使用。一致\n- `specsDirRel()` / `baselineSpecPath()` は `src/util/paths.ts` に存在（PR #195）。一致\n- T-06 の配置位置「`## CRITICAL BOUNDARY (path-fence)` の直後、`## 禁止事項` の直前」→ 実際の propose-system.ts の構造（path-fence L145-162、禁止事項 L163-169）と整合\n\n### Feasibility\n\n- `collectSpecIndex` は既存の `collectChangesList` と同じパターン（readdir + フォールバック）。実装リスク低\n- ~1000 トークンの specIndex テーブル注入は context window に余裕あり（opus-4-6[1m]）\n- 全タスクが既存パターンの拡張であり、新規アーキテクチャ導入なし\n"
+        },
+        "startedAt": "2026-05-11T03:10:36.961Z",
+        "endedAt": "2026-05-11T03:10:36.961Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1701,
+            "outputTokens": 4940,
+            "cacheReadInputTokens": 575696,
+            "cacheCreationInputTokens": 34222
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 157,
+            "outputTokens": 10539,
+            "cacheReadInputTokens": 703769,
+            "cacheCreationInputTokens": 38599
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/add-baseline-spec-context/spec-review-result-002.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: add-baseline-spec-context — Iteration 2\n\n## Verdict\n\n- **verdict**: approved\n- **iteration**: 2\n- **trend**: improving (HIGH x2 resolved, LOW x2 resolved, no new findings)\n- **agents**: spec-reviewer, security-reviewer\n- **blocking_findings**: CRITICAL: 0, HIGH: 0\n\n## Iteration Comparison\n\n| # | Iteration 1 Finding | Status | Notes |\n|---|---------------------|--------|-------|\n| 1 | HIGH: MODIFIED delta \"Propose Instruction Message Content (Updated)\" が merge 時に baseline の既存 4 Scenario を消失させる | **Resolved** | delta spec を `## ADDED Requirements` のみの構造に再編。MODIFIED セクション削除。baseline Requirements は不変 |\n| 2 | HIGH: MODIFIED delta \"Propose Session Agent Configuration\" が merge 時に baseline の既存 3 Scenario を消失させる | **Resolved** | 同上。\"Baseline Spec Reference in System Prompt\" を独立した ADDED Requirement として記述 |\n| 3 | LOW: テスト ID が TC-DC-005b〜005e で既存 TC-DC-005 と混同リスク | **Resolved** | tasks.md T-07 で TC-DC-015〜018（git テスト）、TC-DC-011〜014（prompt テスト）に変更済み |\n| 4 | LOW: T-04 受け入れ基準の参照範囲が不正確 | **Resolved** | 「既存テスト TC-DC-005〜010 が全 pass（リグレッションなし）」に修正済み |\n\n**Improvements**: 4/4 findings resolved\n**Regressions**: none\n**Unchanged Issues**: none\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n\n(なし)\n\n## Requirements Traceability\n\n| # | request.md 要件 | delta spec 対応 | Status |\n|---|----------------|----------------|--------|\n| 1 | DynamicContext に specIndex フィールドを追加 | ADDED \"DynamicContext は specIndex フィールドを含む\" — Scenarios: 空ディレクトリ, 正常走査, 読み取り不可スキップ | covered |\n| 2 | DynamicContext 型の拡張 | 同上 Requirement 本文に型定義を明記 | covered |\n| 3 | propose の初期メッセージに specIndex を注入 | ADDED \"Propose specIndex Injection\" — Scenarios: テーブル有無, changesList のみ, 両方存在 | covered |\n| 4 | buildInitialMessage の引数型を DynamicContext に変更 | ADDED \"Propose specIndex Injection\" 本文 + Scenario \"buildInitialMessage の引数型が DynamicContext に統一される\" | covered |\n| 5 | propose のシステムプロンプトに baseline 参照指示を追加 | ADDED \"Baseline Spec Reference in System Prompt\" — Scenarios: 参照指示存在, path-fence 共存 | covered |\n| 6 | paths.ts の specsDirRel() を使用 | 実装詳細。tasks.md T-02 で明示。spec は振る舞いを記述するため省略は適切 | covered |\n\n## Security Assessment\n\n- 全操作はローカルファイルシステム内で完結。外部ネットワーク通信なし\n- `collectSpecIndex` は `fs.readdir` + `fs.readFile` で `specrunner/specs/` を走査。パス構築は `path.join(cwd, specsDirRel())` + readdir 結果で path traversal リスクなし\n- system prompt への追加は Read 許可のみ（Write/Edit 許可ではない）。path-fence と矛盾しない\n- 認証・認可・入力検証（OWASP Top 10）に該当する攻撃面なし\n\n## Summary\n\nIteration 1 の HIGH findings 2 件（MODIFIED delta による baseline Scenario 消失リスク）は、delta spec を ADDED Requirements のみの構造に再編することで解消。既存 baseline Requirements は一切変更されず、merge 時の Scenario 消失リスクはない。LOW findings 2 件も修正済み。request.md の 6 要件は全て delta spec + tasks.md にトレーサブルに反映されている。\n"
+        },
+        "startedAt": "2026-05-11T03:18:07.183Z",
+        "endedAt": "2026-05-11T03:18:07.183Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1631,
+            "outputTokens": 13,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 21,
+            "outputTokens": 8525,
+            "cacheReadInputTokens": 418267,
+            "cacheCreationInputTokens": 51563
+          }
+        }
+      }
+    ],
+    "spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T03:16:06.438Z",
+        "endedAt": "2026-05-11T03:16:06.438Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 729,
+            "outputTokens": 13,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 15,
+            "outputTokens": 6181,
+            "cacheReadInputTokens": 349290,
+            "cacheCreationInputTokens": 23517
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T03:21:38.499Z",
+        "endedAt": "2026-05-11T03:21:38.499Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1665,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 10,
+            "outputTokens": 5957,
+            "cacheReadInputTokens": 233705,
+            "cacheCreationInputTokens": 27873
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-11T03:23:25.990Z",
+        "endedAt": "2026-05-11T03:23:25.990Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1731,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 57,
+            "outputTokens": 25105,
+            "cacheReadInputTokens": 2488177,
+            "cacheCreationInputTokens": 75545
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/add-baseline-spec-context/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — add-baseline-spec-context — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.2s | 0 |\n| 2 | typecheck | passed | 1.7s | 0 |\n| 3 | test | passed | 4.2s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/add-baseline-spec-context-da4e1643\n\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t130d\n\n Test Files  142 passed (142)\n      Tests  1610 passed (1610)\n   Start at  12:31:36\n   Duration  3.87s (transform 2.83s, setup 0ms, import 5.19s, tests 6.75s, environment 9ms)\n\n\n$ vitest run\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/add-baseline-spec-context-da4e1643/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-11T03:31:31.851Z",
+        "endedAt": "2026-05-11T03:31:31.851Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/add-baseline-spec-context/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review — add-baseline-spec-context — Iteration 1\n\n## Summary\n\n実装は仕様に正確に沿っており、既存パターン（collectChangesList のフォールバック、DynamicContext の並列収集）と一貫性がある。エラーハンドリング、型安全性、テストカバレッジいずれも良好。CRITICAL/HIGH の findings なし。\n\n- **verdict**: approved\n\n## Scores\n\n| Category | Score | Weight | Weighted |\n|----------|-------|--------|----------|\n| correctness | 9 | 0.30 | 2.70 |\n| security | 9 | 0.25 | 2.25 |\n| architecture | 9 | 0.15 | 1.35 |\n| performance | 9 | 0.10 | 0.90 |\n| maintainability | 8 | 0.10 | 0.80 |\n| testing | 8 | 0.10 | 0.80 |\n| **Total** | | | **8.80** |\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | LOW | maintainability | src/git/dynamic-context.ts:151 | `extractPurpose` の `line.startsWith(\"## Purpose\")` は `## Purposeful` 等の仮想ヘッダーにもマッチしうる。spec フォーマットは統制されているため実害なし | 厳密にするなら `line === \"## Purpose\"` または `/^## Purpose\\s*$/.test(line)` に変更 |\n| 2 | LOW | testing | tests/ | TC-DC-021（must: DynamicContext 型に specIndex が存在）と TC-EDGE-003（must: dynamicContext undefined 後方互換）が独立テストブロックとして存在しないが、TC-DC-015/016 および TC-DC-006 で実質カバーされている | 明示的なテストブロックを追加するか、implementation-notes の coverage table に covered-by 注記を追加 |\n\n## Correctness (9/10)\n\n- `collectSpecIndex` は `specrunner/specs/` 未存在時に空配列フォールバック、個別 spec.md 読取失敗時にスキップ — 仕様通り\n- `extractPurpose` は `## Purpose` 直後の非空行を抽出、次の `##` ヘッダーでガード — D5 準拠\n- `countRequirements` の `/^### Requirement:/gm` は行頭マッチで正確\n- `buildInitialMessage` の changesList/specIndex 独立条件分岐、両方空時の Repository Context 省略 — 全ケース網羅\n- 呼び出し元 `propose.ts` は `deps.dynamicContext` をそのまま渡しており変更不要 — 後方互換維持\n\n## Security (9/10)\n\n- 新機能はファイルシステム読み取り（readdir + readFile）のみ。外部入力なし、ネットワーク通信なし\n- path traversal リスクなし: `specsDirRel()` は固定パス、サブディレクトリ名は `readdir` の `Dirent.name` から取得\n- system prompt の baseline 参照指示は Read 許可のみ（編集許可ではない）\n\n## Architecture (9/10)\n\n- `specsDirRel()` を `paths.ts` から import — 要件6 準拠、パスのハードコーディング回避\n- `collectSpecIndex` を `Promise.all` に追加して並列収集 — 既存の `collectDynamicContext` パターンに統合\n- `buildInitialMessage` の引数型を `DynamicContext` に統一 — `implementer.ts` と同じパターン\n- system prompt の baseline 参照セクションは path-fence 直後・禁止事項直前 — D4 準拠\n\n## Performance (9/10)\n\n- 全フィールドが `Promise.all` で並列収集される\n- 個別 spec.md の読み取りも `Promise.all` で並列化\n- 全文注入ではなく軽量 index (~1000 トークン) — D1 のトークン効率設計\n\n## Maintainability (8/10)\n\n- JSDoc コメントが各関数・インターフェースに付与されている\n- `extractPurpose` / `countRequirements` が独立ヘルパーとして分離 — テスタブル\n- Finding #1 の `startsWith` マッチの曖昧さが唯一の減点要因（実害はないが defensive coding として改善余地あり）\n\n## Testing (8/10)\n\n- must テストケース 15 件中 13 件が明示的に実装済み\n- TC-DC-021 は TC-DC-015/016 で構造的にカバー、TC-EDGE-003 は TC-DC-006 でカバー — 実質的には全 must カバー\n- TC-SP-001/002 で system prompt の内容と配置順序を検証 — 良好\n- TC-DC-019/020（should: Purpose なし / Requirement 0 件）も TC-DC-016 内の追加ケースとして実装済み\n- Finding #2 の明示的テストブロック欠落が減点要因（coverage tracking の正確性の観点）\n\n## Scenario Coverage (test-cases.md vs implementation)\n\n| TC | Priority | Implemented | Notes |\n|----|----------|-------------|-------|\n| TC-DC-015 | must | ✅ | dynamic-context.test.ts |\n| TC-DC-016 | must | ✅ | dynamic-context.test.ts |\n| TC-DC-017 | must | ✅ | dynamic-context.test.ts |\n| TC-DC-018 | must | ✅ | dynamic-context.test.ts |\n| TC-DC-019 | should | ✅ | TC-DC-016 内の追加ケース |\n| TC-DC-020 | should | ✅ | TC-DC-016 内の追加ケース |\n| TC-DC-021 | must | ⚠️ | TC-DC-015/016 で暗黙カバー |\n| TC-DC-011 | must | ✅ | dynamic-context-prompts.test.ts |\n| TC-DC-012 | must | ✅ | dynamic-context-prompts.test.ts |\n| TC-DC-013 | must | ✅ | dynamic-context-prompts.test.ts |\n| TC-DC-014 | must | ✅ | dynamic-context-prompts.test.ts |\n| TC-SP-001 | must | ✅ | propose-system.test.ts |\n| TC-SP-002 | should | ✅ | propose-system.test.ts |\n| TC-SP-003 | should | ⚠️ | TC-SP-001 内で部分カバー |\n| TC-TYPE-001 | must | ✅ | typecheck pass |\n| TC-TYPE-002 | must | ✅ | typecheck pass + propose.ts 未変更 |\n| TC-REG-001 | must | ✅ | 1610 tests pass |\n| TC-REG-002 | must | ✅ | typecheck exit 0 |\n| TC-REG-003 | must | ✅ | 1610 tests pass |\n| TC-INT-001 | should | ✅ | import 確認済み |\n| TC-INT-002 | could | ✅ | Promise.all 確認済み |\n| TC-EDGE-001 | should | ✅ | filter(e => e.isDirectory()) で実現 |\n| TC-EDGE-002 | should | ✅ | TC-DC-016 で単一 spec テスト済み |\n| TC-EDGE-003 | must | ⚠️ | TC-DC-006 で暗黙カバー |\n"
+        },
+        "startedAt": "2026-05-11T03:31:41.367Z",
+        "endedAt": "2026-05-11T03:31:41.367Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1777,
+            "outputTokens": 13,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 17,
+            "outputTokens": 6973,
+            "cacheReadInputTokens": 703575,
+            "cacheCreationInputTokens": 49943
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/add-baseline-spec-context/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — add-baseline-spec-context\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/200\n- **Number**: 200\n- **CreatedAt**: 2026-05-11T03:34:53.976Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-11T03:34:51.399Z",
+        "endedAt": "2026-05-11T03:34:51.399Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/200",
+    "number": 200,
+    "createdAt": "2026-05-11T03:34:53.976Z"
+  }
+}

@@ -1,0 +1,374 @@
+{
+  "version": 1,
+  "jobId": "05f89666-f8d8-4624-bb10-8166edda1c51",
+  "createdAt": "2026-05-16T07:31:10.521Z",
+  "updatedAt": "2026-05-16T08:08:49.658Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/require-spawn-injection/request.md",
+    "title": "propagateVerificationResult の spawn を必須引数化してテストの git 副作用を遮断する",
+    "type": "spec-change",
+    "slug": "require-spawn-injection"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 79882,
+  "branch": "change/require-spawn-injection-05f89666",
+  "history": [
+    {
+      "ts": "2026-05-16T07:31:10.521Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-16T07:31:11.740Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-16T07:34:30.204Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-16T07:34:30.208Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → spec-review"
+    },
+    {
+      "ts": "2026-05-16T07:34:30.209Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T07:34:30.210Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-16T07:37:10.562Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T07:37:10.566Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T07:37:10.566Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-16T07:37:10.567Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-16T07:38:29.737Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-16T07:38:29.740Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-16T07:38:29.742Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-16T07:54:30.727Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-16T07:54:30.731Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-16T07:54:30.732Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T07:54:30.733Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-16T07:54:41.622Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-16T07:54:41.625Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-16T07:54:41.625Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-16T07:54:41.627Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-16T07:54:41.628Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-16T07:59:05.596Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T07:59:05.600Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-16T07:59:05.600Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-16T07:59:05.601Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-16T07:59:08.102Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-16T07:59:08.107Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-16T08:08:49.658Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "bec13f2d-984a-42bd-b517-3660f3975528",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T07:31:11.741Z",
+        "endedAt": "2026-05-16T07:34:28.574Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5398,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 11,
+            "outputTokens": 10361,
+            "cacheReadInputTokens": 404960,
+            "cacheCreationInputTokens": 64770
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "d2f5aa11-503c-4ddb-b4ef-ecd4f0221461",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/require-spawn-injection/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result — require-spawn-injection\n\n- **reviewer**: spec-reviewer\n- **date**: 2026-05-16\n- **verdict**: approved\n\n## Summary\n\nrequest.md の問題定義・設計判断・タスク分解いずれも実コードベースと整合しており、compile-time safety を最小変更で達成する妥当なアプローチ。\n\n## Verified Against Codebase\n\n| Claim | File:Line | Actual | OK |\n|-------|-----------|--------|----|\n| `spawn?: SpawnFn` with `?? spawnCommand` fallback | `propagate.ts:35,37` | 一致 | Yes |\n| `VerificationStep.run` が spawn を渡していない | `verification.ts:44-49` | `propagateVerificationResult` 呼び出しに spawn field なし | Yes |\n| `StepDeps = StepContext` (alias) | `step/types.ts:19` | 一致 | Yes |\n| `PipelineDeps extends StepContext` | `types.ts:39` | 一致 | Yes |\n| `CliStep.run` がメソッド構文で宣言 | `step/types.ts:181` | `run(state: JobState, deps: StepDeps): Promise<void>;` — メソッド構文 | Yes |\n| `PrCreateStep` が `CliStep` を実装 | `pr-create.ts:23` | `const PrCreateStep: CliStep` | Yes |\n| `executor.ts` が `PipelineDeps` を `step.run()` に渡す | `executor.ts:305,319` | `deps: PipelineDeps` | Yes |\n| `buildDeps` が `PipelineDeps` を返す (local) | `local.ts:256-274` | 一致 | Yes |\n| `buildDeps` が `PipelineDeps` を返す (managed) | `managed.ts:159-177` | 一致 | Yes |\n| テストが `propagateVerificationResult` を mock していない | `pipeline-integration.test.ts` | `runVerification` と `runPrCreate` のみ mock | Yes |\n\n## Design Decisions\n\n### D1 (spawn required) — OK\n\nLeaky default の除去は正しい。`spawnCommand` import が dead code になるため Task 1 の削除指示も適切。\n\n### D2 (CliStepDeps) — OK\n\n`StepContext` を触らず `CliStepDeps extends StepDeps` で拡張する判断は request の制約に合致。\n\n### D3 (PipelineDeps に spawn 追加) — OK\n\n`PipelineDeps extends StepContext` + `spawn` → `CliStepDeps` (`StepContext` + `spawn`) を構造的に満たす。`executor.ts` 変更不要の根拠は正しい。Agent step が余分な `spawn` field を受け取るが、アクセスしないため harmless。\n\n### D4 (buildDeps injection) — OK\n\n`local.ts` と `managed.ts` の 2 箇所。省略すれば TypeScript が検出する — compile-time guarantee 達成。\n\n### D5 (PrCreateStep bivariance) — Acceptable with note\n\n`CliStep.run(deps: CliStepDeps)` に対して `PrCreateStep.run(deps: StepDeps)` はメソッド構文の bivariant checking で compile 通る。**現状正しいが、将来 interface をアロー構文に変えると壊れる**。issue #256 で `PrCreateStep` にも spawn injection が入れば解消されるため、今回は acceptable。\n\n## Tasks\n\nTask 1-6 の手順・ファイル参照・行番号は実コードと一致。Task 5 の行番号は approximate だが search pattern (`await runPipeline(jobState,`) が明示されており implementer は問題なく特定できる。\n\n## Security\n\n- spawn injection は副作用の抑制（git subprocess の遮断）であり、攻撃面の拡大なし\n- `noopSpawn` はテスト専用で production path に入らない\n- OWASP 観点で新たなリスクなし\n\n## Findings\n\nなし。\n"
+        },
+        "startedAt": "2026-05-16T07:34:30.211Z",
+        "endedAt": "2026-05-16T07:37:09.133Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3519,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 14,
+            "outputTokens": 6606,
+            "cacheReadInputTokens": 417112,
+            "cacheCreationInputTokens": 34738
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "84fd2707-c3c1-4821-ae1b-8eb08cd75a6f",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T07:37:10.568Z",
+        "endedAt": "2026-05-16T07:38:28.259Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2251,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 4678,
+            "cacheReadInputTokens": 54686,
+            "cacheCreationInputTokens": 18248
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "620d5121-5f8e-48d4-b27b-c3319b910599",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-16T07:38:29.743Z",
+        "endedAt": "2026-05-16T07:54:29.079Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3611,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 182,
+            "outputTokens": 53742,
+            "cacheReadInputTokens": 15041750,
+            "cacheCreationInputTokens": 198430
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/require-spawn-injection/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — require-spawn-injection — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.4s | 0 |\n| 2 | typecheck | passed | 1.8s | 0 |\n| 3 | test | passed | 5.1s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/require-spawn-injection-05f89666\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t135d\n\n Test Files  161 passed (161)\n      Tests  1901 passed (1901)\n   Start at  16:54:35\n   Duration  4.89s (transform 3.55s, setup 0ms, import 6.62s, tests 9.25s, environment 10ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-RF8hy2/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-JRYBTb/specrunner/credentials.json has loose permissions (recommend 0600).\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/require-spawn-injection-05f89666/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-16T07:54:30.733Z",
+        "endedAt": "2026-05-16T07:54:41.621Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "97bd1104-5d5f-46c0-9f1a-749d227ff2b1",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/require-spawn-injection/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review — require-spawn-injection\n\n- **reviewer**: code-reviewer\n- **date**: 2026-05-16\n- **iteration**: 1\n- **verdict**: approved\n\n## Summary\n\n全 must TC が実装で充足されている。`spawn` required 化・`CliStepDeps` 導入・`buildDeps` injection・テスト側 `noopSpawn` 注入のすべてが正しく実装されており、verification-result.md が 161 ファイル / 1901 テスト全 pass を記録している。\n\n---\n\n## Findings\n\n### [low] `noopSpawn` が 15+ のテストファイルに重複定義されている\n\n**場所**: `tests/pipeline-integration.test.ts`, `tests/pipeline.test.ts`, `tests/cli-stdout-snapshot.test.ts`, `tests/core/pipeline/pipeline.test.ts`, ... (計 ~15 ファイル)\n\n**内容**: 各ファイルで `const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: \"\", stderr: \"\" })` が独立して定義されている。ファイルによっては inline cast 形式 `(async () => ...) as SpawnFn` と named const 形式が混在している。\n\n**影響**: 将来 `SpawnFn` の戻り値型が変わった場合に修正箇所が散在する。機能的な誤りはなく今回のスコープ外。\n\n**推奨**: `tests/util/noop-spawn.ts` に集約する。issue #256 の test isolation 整備と合わせて対応するのが妥当。\n\n---\n\n### [low] `specrunner/changes/test-slug/pr-create-result.md` が検証実行中に書き換えられている\n\n**場所**: `specrunner/changes/test-slug/pr-create-result.md`\n\n**内容**: `diff --stat` に当該ファイルへの 2 行変更が含まれており、`CreatedAt` タイムスタンプが `2026-05-16T07:53:44.840Z` に更新されている。`runPrCreate` モックが `input.cwd ?? process.cwd()` で CWD に fallback しており、`process.cwd()` がワークツリー直下を指す場合に実 repoファイルへの書き込みが発生する。\n\n**影響**: git commit / push は発生しないため本 PR の受け入れ基準は充足。ただし `test-slug` フォルダへのファイル副作用が残存しており、これは `pr-create/runner.ts` の leaky default に起因する既存問題。\n\n**スコープ**: request.md 「スコープ外」で明示されている issue #256 に該当。本 PR での対応は不要。\n\n---\n\n## Test Coverage Against test-cases.md\n\n| TC | Priority | 結果 |\n|----|----------|------|\n| TC-001: `spawn` が optional でない | must | ✅ `propagate.ts:35` — `spawn: SpawnFn`（`?` なし） |\n| TC-002: `?? spawnCommand` fallback 削除 | must | ✅ `propagate.ts:37` — `const spawn = params.spawn;` |\n| TC-003: `spawnCommand` import 削除 | must | ✅ import に `SpawnFn` 型のみ残存 |\n| TC-004: `CliStepDeps` 定義 | must | ✅ `step/types.ts:30-32` |\n| TC-005: `CliStep.run` が `CliStepDeps` を受け取る | must | ✅ `step/types.ts:194` |\n| TC-006: `PipelineDeps` に `spawn: SpawnFn` | must | ✅ `core/types.ts:65` |\n| TC-007: `VerificationStep.run` が `CliStepDeps` | must | ✅ `verification.ts:35` |\n| TC-008: `propagate` に `spawn: deps.spawn` | must | ✅ `verification.ts:48` |\n| TC-009: `LocalRuntimeStrategy.buildDeps` が `spawn: spawnCommand` | must | ✅ `local.ts:273` |\n| TC-010: `ManagedRuntimeStrategy.buildDeps` が `spawn: spawnCommand` | must | ✅ `managed.ts:176` |\n| TC-011: `bun run typecheck` green | must | ✅ verification-result.md: build/typecheck フェーズ passed |\n| TC-012: `bun run test` green | must | ✅ verification-result.md: 1901 tests passed |\n| TC-013: テスト後に新規 git commit なし | must | ✅ verification-result.md で確認済み |\n| TC-014: テスト後に git push なし | must | ✅ `noopSpawn` により propagate 内の git push が遮断 |\n| TC-015: 全 `runPipeline` に `noopSpawn` | must | ✅ grep 結果: 22 箇所すべてに `spawn: noopSpawn` |\n| TC-017: `spawn` 省略でコンパイルエラー | must | ✅ required field により型システムが保証 |\n| TC-023: `local.ts` に `spawnCommand` import | must | ✅ `local.ts:21` |\n| TC-024: `managed.ts` に `spawnCommand` import | must | ✅ `managed.ts:21` |\n| TC-025: `buildDeps` が `PipelineDeps` を満たす (local) | must | ✅ typecheck green |\n| TC-026: `buildDeps` が `PipelineDeps` を満たす (managed) | must | ✅ typecheck green |\n\nshould TC (TC-016, TC-018, TC-019, TC-020, TC-021, TC-022, TC-027) も typecheck/test 通過から実質充足。\n\n---\n\n## 設計上の注記\n\n**`PrCreateStep` bivariance 依存**: `PrCreateStep.run(deps: StepDeps)` が `CliStep.run(deps: CliStepDeps)` を満たすのは TypeScript のメソッド bivariant checking による。spec-review-result-001.md でも \"Acceptable with note\" として記録済み。issue #256 で `PrCreateStep` にも spawn injection が入れば自然に解消される。現状では問題なし。\n"
+        },
+        "startedAt": "2026-05-16T07:54:41.629Z",
+        "endedAt": "2026-05-16T07:59:04.064Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3656,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 29,
+            "outputTokens": 12516,
+            "cacheReadInputTokens": 1211653,
+            "cacheCreationInputTokens": 51616
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/require-spawn-injection/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — require-spawn-injection\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/261\n- **Number**: 261\n- **CreatedAt**: 2026-05-16T07:59:08.099Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-16T07:59:05.602Z",
+        "endedAt": "2026-05-16T07:59:08.100Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/261",
+    "number": 261,
+    "createdAt": "2026-05-16T07:59:08.099Z"
+  }
+}

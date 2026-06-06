@@ -1,0 +1,367 @@
+{
+  "version": 1,
+  "jobId": "2f95f0ed-1dbc-4f77-96ba-1e069a4c6ee4",
+  "createdAt": "2026-05-09T04:56:53.132Z",
+  "updatedAt": "2026-05-09T06:08:39.761Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/implementer-test-cases-ref/request.md",
+    "title": "implementer prompt に test-cases.md の参照指示を追加する",
+    "type": "spec-change",
+    "slug": "implementer-test-cases-ref"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "branch": "change/implementer-test-cases-ref-2f95f0ed",
+  "history": [
+    {
+      "ts": "2026-05-09T04:56:53.132Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-09T04:56:54.986Z",
+      "step": "propose-started",
+      "status": "started",
+      "message": "Starting propose step"
+    },
+    {
+      "ts": "2026-05-09T04:59:29.146Z",
+      "step": "propose-verdict",
+      "status": "ok",
+      "message": "propose verdict: success"
+    },
+    {
+      "ts": "2026-05-09T04:59:29.147Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "propose → spec-review"
+    },
+    {
+      "ts": "2026-05-09T04:59:29.148Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T04:59:29.148Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-09T05:01:16.020Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T05:01:16.022Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T05:01:16.022Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-09T05:01:16.023Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-09T05:01:53.757Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-09T05:01:53.759Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-09T05:01:53.760Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-09T05:03:26.215Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-09T05:03:26.217Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-09T05:03:26.217Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T05:03:26.218Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-09T05:03:37.574Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-09T05:03:37.577Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-09T05:03:37.577Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-09T05:03:37.577Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-09T05:03:37.578Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-09T05:05:47.217Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T05:05:47.219Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-09T05:05:47.219Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-09T05:05:47.220Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-09T05:05:50.584Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-09T06:08:39.761Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "Job archived via specrunner finish."
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "propose": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T04:56:54.987Z",
+        "endedAt": "2026-05-09T04:56:54.987Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1806,
+            "outputTokens": 4582,
+            "cacheReadInputTokens": 194011,
+            "cacheCreationInputTokens": 16202
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 11,
+            "outputTokens": 3844,
+            "cacheReadInputTokens": 256534,
+            "cacheCreationInputTokens": 22185
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "openspec/changes/implementer-test-cases-ref/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result — implementer-test-cases-ref\n\n- **iteration**: 1\n- **verdict**: approved\n- **date**: 2026-05-09\n\n## Summary\n\nproposal / design / tasks の 3 ファイルが request.md の要件を網羅しており、既存 implementer prompt と openspec-workflow の参照元との差分も正確に把握されている。設計判断は妥当で、実装リスクは極めて低い（prompt テキスト追加のみ）。\n\n## Acceptance Criteria Mapping\n\n| # | Acceptance Criterion | Covered By | Status |\n|---|---------------------|------------|--------|\n| 1 | implementer の system prompt に test-cases.md 参照指示が含まれている | Task 1.1 | covered |\n| 2 | must シナリオの実装義務が明示されている | Task 1.2 | covered |\n| 3 | 未実装ケースの報告フォーマットが定義されている | Task 1.3, Design D3 | covered |\n| 4 | test-cases.md 非存在時のフォールバックが記載されている | Task 1.4, Design D2 | covered |\n| 5 | `bun run typecheck && bun run test` が green | Task 2.1, 2.2 | covered |\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | LOW | consistency | tasks.md:5 | Design D3 は `test_cases_skipped` の出力先を「commit message や session output」と記述するが、Task 1.3 は「commit message に含める」のみ。session output への言及が落ちている | Task 1.3 の記述を「commit message または session output に含める指示」に合わせるか、design 側を commit message のみに限定する |\n| 2 | LOW | consistency | design.md:39-43 | openspec-workflow の参照元では `test_cases_skipped` は構造化された戻り値（会話出力）に配置されるが、本 spec では commit message に配置。spec-runner の implementer に構造化戻り値がないため妥当な適応だが、将来 implementation-notes.md 導入時に再検討が必要 | 現時点では対応不要。design.md の Non-Goals に「implementation-notes.md の導入（別 change）」が明記済み |\n\n## Design Decisions Evaluation\n\n| Decision | Assessment |\n|----------|-----------|\n| D1: 既存セクション拡張 | 妥当。新セクション追加より認知負荷が低い |\n| D2: 条件分岐（存在する場合のみ） | 妥当。test-case-gen は optional ステップであり必須化できない |\n| D3: openspec-workflow 準拠フォーマット | 妥当。一貫性確保の観点で正しい選択 |\n\n## Security\n\nセキュリティ影響なし。変更は AI エージェントの system prompt テキスト追加のみで、認証・入力検証・API・DB 操作に関わらない。\n"
+        },
+        "startedAt": "2026-05-09T04:59:29.148Z",
+        "endedAt": "2026-05-09T04:59:29.148Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1214,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 11,
+            "outputTokens": 4266,
+            "cacheReadInputTokens": 242921,
+            "cacheCreationInputTokens": 20403
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T05:01:16.023Z",
+        "endedAt": "2026-05-09T05:01:16.023Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1215,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 7,
+            "outputTokens": 2327,
+            "cacheReadInputTokens": 90888,
+            "cacheCreationInputTokens": 24326
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-09T05:01:53.760Z",
+        "endedAt": "2026-05-09T05:01:53.760Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1287,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 14,
+            "outputTokens": 3244,
+            "cacheReadInputTokens": 286077,
+            "cacheCreationInputTokens": 18303
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "openspec/changes/implementer-test-cases-ref/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — implementer-test-cases-ref — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.8s | 0 |\n| 2 | typecheck | passed | 1.7s | 0 |\n| 3 | test | passed | 6.1s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/implementer-test-cases-ref-2f95f0ed\n\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\n[iter 1/1] starting propose\n[iter 1] propose verdict: escalation → halt\n[iter 1/1] starting propose\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n\n Test Files  134 passed (134)\n      Tests  1320 passed (1320)\n   Start at  14:03:29\n   Duration  5.84s (transform 4.01s, setup 0ms, import 8.76s, tests 9.67s, environment 8ms)\n\n\n$ vitest run\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/implementer-test-cases-ref-2f95f0ed/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-09T05:03:26.218Z",
+        "endedAt": "2026-05-09T05:03:26.218Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "openspec/changes/implementer-test-cases-ref/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Code Review — implementer-test-cases-ref — Iteration 1\n\n- **reviewer**: code-review (manual)\n- **iteration**: 1\n- **verdict**: approved\n- **total-score**: 8.7\n\n## Scores\n\n| Category | Weight | Score | Weighted |\n|----------|--------|-------|----------|\n| correctness | 0.30 | 9 | 2.70 |\n| security | 0.25 | 9 | 2.25 |\n| architecture | 0.15 | 9 | 1.35 |\n| performance | 0.10 | 10 | 1.00 |\n| maintainability | 0.10 | 8 | 0.80 |\n| testing | 0.10 | 6 | 0.60 |\n| **Total** | | | **8.70** |\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | testing | tests/prompts/implementer-system.test.ts | TC-001〜TC-006 の must シナリオに対応する自動テストが未追加。既存テストファイルが `expect().toContain()` で prompt 内容を検証するパターンを持っているため、同パターンで `test-cases.md`, `must`, `GIVEN/WHEN/THEN`, `test_cases_skipped` 等のキーワード存在を検証できる | 既存の `tests/prompts/implementer-system.test.ts` に TC-001〜TC-006 相当の `it()` ブロックを追加する |\n\n## Scenario Coverage (test-cases.md)\n\n| TC | Priority | Status | Notes |\n|----|----------|--------|-------|\n| TC-001 | must | covered | L28: `test-cases.md を読み込む` |\n| TC-002 | must | covered | L28: `存在する場合` |\n| TC-003 | must | covered | L31: `must のテストケースは全て実装する` |\n| TC-004 | must | covered | L32: `GIVEN/WHEN/THEN をテストコードに変換する` |\n| TC-005 | must | covered | L44: `test_cases_skipped: [TC-ID — 理由]` |\n| TC-006 | must | covered | L33: `test-cases.md が存在しない場合は従来通り tasks.md ベースで TDD` |\n| TC-007 | should | covered | L28: ステップ 1 のサブ項目として配置 |\n| TC-008 | must | covered | verification: typecheck passed |\n| TC-009 | must | covered | verification: 134 files / 1320 tests passed |\n| TC-010 | should | covered | L40: `commit message に以下のフォーマットで記録する` |\n\nMust 8/8 covered, Should 2/2 covered.\n\n## Summary\n\nprompt-only の変更で、design.md の D1〜D3 全てが忠実に実装されている。request.md の受け入れ基準 4 項目すべて充足。verification green。唯一の指摘は既存テストインフラを活用した自動テストの欠如だが、prompt 文字列の検証であり MEDIUM 留め。\n"
+        },
+        "startedAt": "2026-05-09T05:03:37.579Z",
+        "endedAt": "2026-05-09T05:03:37.579Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1331,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 12,
+            "outputTokens": 4587,
+            "cacheReadInputTokens": 296248,
+            "cacheCreationInputTokens": 24581
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "openspec/changes/implementer-test-cases-ref/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — implementer-test-cases-ref\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/167\n- **Number**: 167\n- **CreatedAt**: 2026-05-09T05:05:50.582Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-09T05:05:47.221Z",
+        "endedAt": "2026-05-09T05:05:47.221Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/167",
+    "number": 167,
+    "createdAt": "2026-05-09T05:05:50.582Z"
+  }
+}

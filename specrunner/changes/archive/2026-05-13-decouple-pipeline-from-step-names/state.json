@@ -1,0 +1,374 @@
+{
+  "version": 1,
+  "jobId": "a5ba8e15-a5c1-452a-ac86-d5f13f41783e",
+  "createdAt": "2026-05-13T14:18:52.432Z",
+  "updatedAt": "2026-05-13T15:46:53.609Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/decouple-pipeline-from-step-names/request.md",
+    "title": "pipeline フレームワークの step 名依存を解消する",
+    "type": "spec-change",
+    "slug": "decouple-pipeline-from-step-names"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 46405,
+  "branch": "change/decouple-pipeline-from-step-names-a5ba8e15",
+  "history": [
+    {
+      "ts": "2026-05-13T14:18:52.432Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-13T14:18:54.842Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-13T14:28:50.568Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-13T14:28:50.570Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → spec-review"
+    },
+    {
+      "ts": "2026-05-13T14:28:50.571Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-13T14:28:50.571Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-13T14:30:42.252Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-13T14:30:42.255Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-13T14:30:42.255Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-13T14:30:42.256Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-13T14:31:59.346Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-13T14:31:59.348Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-13T14:31:59.350Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-13T14:40:49.142Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-13T14:40:49.144Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-13T14:40:49.145Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-13T14:40:49.146Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-13T14:40:58.537Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-13T14:40:58.540Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 1 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-13T14:40:58.540Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-13T14:40:58.540Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-13T14:40:58.541Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-13T14:44:01.368Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-13T14:44:01.370Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-13T14:44:01.370Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → pr-create"
+    },
+    {
+      "ts": "2026-05-13T14:44:01.371Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-13T14:44:05.085Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-13T14:44:05.089Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-13T15:46:53.609Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "a5cea549-3bd6-401d-a05d-76134ad465e0",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-13T14:18:54.843Z",
+        "endedAt": "2026-05-13T14:18:54.843Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5490,
+            "outputTokens": 26108,
+            "cacheReadInputTokens": 778817,
+            "cacheCreationInputTokens": 101769
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 12,
+            "outputTokens": 24256,
+            "cacheReadInputTokens": 456298,
+            "cacheCreationInputTokens": 55886
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "c4426d07-b4de-42a8-bf67-d7a2c1b458ab",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/decouple-pipeline-from-step-names/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: decouple-pipeline-from-step-names\n\n- **reviewer**: spec-reviewer (Claude)\n- **date**: 2026-05-13\n- **verdict**: approved\n\n---\n\n## Summary\n\nrequest.md に記載された 5 箇所の step 名依存はすべてソースコードで確認でき、仕様の記述は正確。design.md の各 Change は影響範囲が限定的かつ具体的で、tasks.md は依存順に正しく並んでいる。delta-spec.md の要件は design と矛盾なし。\n\n---\n\n## Findings\n\n### F1 — Change 1: dead branch 除去 ✅\n\n`pipeline.ts:344-348` で `completionVerdict` を先にチェックしており、`DesignStep.completionVerdict` は `\"success\"` が宣言済み。line 351-354 の `if (stepName === STEP_NAMES.DESIGN)` は到達不能。除去は正しい。\n\nただし `pipeline.ts` は他にも `STEP_NAMES` を 8 箇所で参照（line 63, 96, 236-238, 286-288）。design.md/tasks.md ともに「他で使われていれば import を残す」と正しく注記。\n\n### F2 — Change 2: phase フラグ ✅\n\n`resolve-step.ts` の `SPEC_PHASE_STEPS` は `{DESIGN, SPEC_REVIEW, SPEC_FIXER}` を保持。設計は `phase: \"spec\"` を同じ 3 step に付与。一致。\n\n`CODE_PHASE_STEPS` は `isSpecPhase()` の逆で暗黙的に使われるのみ（明示的参照なし）。除去しても `STEP_PHASE_MAP.get(x) === \"spec\"` で同等の判定が成立。\n\ndesign.md の `STEP_PHASE_MAP` 構築で全 AgentStep singleton を import する方式は、circular dependency の心配なし（step → resume への逆参照は存在しない）。`VerificationStep` / `PrCreateStep`（CliStep）が map に含まれない点も、`isSpecPhase()` が false を返すので正しい。\n\n### F3 — Change 3: needsProjectContext フラグ ✅\n\n`executor.ts:23-25` の `PROJECT_CONTEXT_STEPS` は `{DESIGN, SPEC_REVIEW, IMPLEMENTER, CODE_REVIEW}`。設計で `needsProjectContext: true` を付与する 4 step と一致。\n\n`executor.ts` の `STEP_NAMES` import は `PROJECT_CONTEXT_STEPS` のみで使用（line 21, 24）。除去後は import も不要。tasks.md T5 で「他で使われていなければ import も除去」と正しく条件付き。\n\n### F4 — Change 4: useSseStrategy 抽出 ✅\n\n`agent-runner.ts:99` で `step.agent.role === STEP_NAMES.DESIGN` が top-level dispatch にある。private method への extract は純粋なリファクタリング。core 層に SSE フラグを追加しない判断は Ports & Adapters パターンに沿う。\n\n注意: `STEP_NAMES` import は `agent-runner.ts` に残る（`useSseStrategy` 内部 + error path）。design.md に明記済み。\n\n### F5 — Change 5: error factory 統合 ✅\n\n既存の `specReviewResultNotFoundError` は `specReviewResultPath(slug, iteration)` を内部で算出し、`codeReviewResultNotFoundError` は `reviewFeedbackPath(slug, iteration)` を使用。新 generic factory は呼び出し元で `resultFilePath`（`step.resultFilePath()` の戻り値）を直接渡す設計。\n\n`resultFilePath` は `agent-runner.ts:435` で `const resultFilePath = step.resultFilePath(state, stepCtx)` としてスコープ内に存在。設計の主張は正確。\n\nerror code の導出: `\"spec-review\".toUpperCase().replace(/-/g, \"_\")` → `\"SPEC_REVIEW\"` + `\"_RESULT_NOT_FOUND\"` → `\"SPEC_REVIEW_RESULT_NOT_FOUND\"`。既存の `ERROR_CODES.SPEC_REVIEW_RESULT_NOT_FOUND` と一致。`CODE_REVIEW` も同様。後方互換性あり。\n\n### F6 — delta-spec.md の妥当性 ✅\n\n5 要件（R-phase-flag, R-needsProjectContext-flag, R-no-step-names-in-pipeline-framework, R-no-step-names-in-adapter-dispatch, R-generic-result-not-found-error）+ 既存 R-completion-verdict の更新。すべて design.md の Change 1-5 と 1:1 対応。\n\n### F7 — Out of scope の判断 ✅\n\n`REVIEWER_STEPS`、`STEP_MAPPING`、`LOOP_ERROR_CODES` を scope 外とする判断は妥当。これらは step 名を「データとして保持」しており「制御フロー分岐に使用」していない。resume 機能の本質的要件。\n\n---\n\n## Observations (non-blocking)\n\n1. **Change 5 の signature 変更**: 既存 factory は `(slug, branch, iteration)` → 新 factory は `(stepName, resultPath, branch)`。呼び出し元の `iteration` 変数が不要になるが、同ブロック内で他に使われていないことを実装時に確認すること（tasks.md T8b に注記あり）。\n\n2. **Change 4 の `useSseStrategy` 命名**: 現時点で SSE strategy を使うのは design step のみ。将来 2 つ目の SSE step が追加された場合、この method が自然な拡張ポイントになる。良い設計。\n\n3. **`test-case-gen` の phase**: 未設定（= `\"impl\"` 扱い）。test-case-gen は spec phase と impl phase の境界にあるが、resume の phase 判定では code phase 側に倒すのが妥当（`resolve-step.ts` の既存 `CODE_PHASE_STEPS` に含まれている）。整合。\n"
+        },
+        "startedAt": "2026-05-13T14:28:50.572Z",
+        "endedAt": "2026-05-13T14:28:50.572Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3457,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 13,
+            "outputTokens": 4911,
+            "cacheReadInputTokens": 415716,
+            "cacheCreationInputTokens": 38384
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "e36302fc-ed3b-47e6-ac2b-8a99db80d569",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-13T14:30:42.256Z",
+        "endedAt": "2026-05-13T14:30:42.256Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2215,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 5639,
+            "cacheReadInputTokens": 57711,
+            "cacheCreationInputTokens": 22538
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "b9a01ff7-9c6a-4c96-a242-97a9f775979f",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-13T14:31:59.351Z",
+        "endedAt": "2026-05-13T14:31:59.351Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3569,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 62,
+            "outputTokens": 29872,
+            "cacheReadInputTokens": 4853103,
+            "cacheCreationInputTokens": 110912
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/decouple-pipeline-from-step-names/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — decouple-pipeline-from-step-names — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.0s | 0 |\n| 2 | typecheck | passed | 1.7s | 0 |\n| 3 | test | passed | 4.1s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/decouple-pipeline-from-step-names-a5ba8e15\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t132d\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n\n Test Files  145 passed (145)\n      Tests  1726 passed (1726)\n   Start at  23:40:52\n   Duration  3.86s (transform 2.68s, setup 0ms, import 5.15s, tests 7.08s, environment 8ms)\n\n\n$ vitest run\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/decouple-pipeline-from-step-names-a5ba8e15/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-13T14:40:49.147Z",
+        "endedAt": "2026-05-13T14:40:49.147Z"
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "bad5a633-7a7a-4246-b3d7-9b6e1f822ab0",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/decouple-pipeline-from-step-names/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Review Feedback: decouple-pipeline-from-step-names — Iteration 1\n\n- **date**: 2026-05-13\n- **reviewer**: code-reviewer\n- **verdict**: approved\n\n## Summary\n\nAll 5 step-name dependency sites have been correctly eliminated. The implementation is clean, type-safe, and all 1726 tests pass with zero typecheck errors. One stale JSDoc comment in `pipeline.ts` and a minor gap in explicit unit test coverage for TC-14/15/16 (isSpecPhase) and TC-18/19/20 (useSseStrategy) are the only notes — neither blocks merge.\n\n## Findings\n\n### [nit] Stale \"Special case: design\" comment in `getStepOutcome` JSDoc\n\n**File**: `src/core/pipeline/pipeline.ts:329`\n**Requirement**: T4 — Remove dead branch from `pipeline.ts:getStepOutcome()`\n**Problem**: The JSDoc comment on line 329 reads `\"Special case: 'design' uses the design SSE path and gets 'success' via completionVerdict\"`. After the dead-code removal, there is no longer a special case for design — the method simply reads `step.completionVerdict` uniformly for all steps. The comment now misrepresents the code.\n**Suggestion**: Replace with a neutral note, e.g. `- For steps with no verdict and completionVerdict set: returns completionVerdict (e.g. \"success\" for DesignStep).` Remove the \"Special case: design\" sentence entirely.\n\n---\n\n### [nit] TC-14/15/16 (isSpecPhase) and TC-18/19/20 (useSseStrategy) lack dedicated unit tests\n\n**File**: `tests/unit/core/resume/resolve-step.test.ts`, `tests/unit/adapter/managed-agent/agent-runner.test.ts`\n**Requirement**: TC-14 through TC-16 (isSpecPhase phase resolution), TC-18 through TC-20 (useSseStrategy private method existence)\n**Problem**: The `resolve-step.test.ts` file tests `resolveResumeStep()` end-to-end and implicitly exercises `isSpecPhase()`. There are no tests that directly assert `isSpecPhase(\"design\") === true` or `isSpecPhase(\"implementer\") === false` (TC-14/TC-15/TC-16), nor tests for unknown step names defaulting to `false` (TC-16). Similarly, no test verifies that the `run()` method body delegates to `useSseStrategy()` rather than comparing `step.agent.role` directly (TC-20 static analysis criterion). The existing tests pass, and behavioral coverage is complete, but the explicit assertions in test-cases.md for these cases are not implemented.\n**Suggestion**: Add a small describe block in `resolve-step.test.ts` for `isSpecPhase` (exported or tested indirectly via the STEP_PHASE_MAP) with assertions for each step name. Add a static-analysis style test in the agent-runner test file for `useSseStrategy` method existence and absence of direct `=== STEP_NAMES.DESIGN` in `run()`. This matches the level of rigor the test-cases.md author intended for must-priority cases.\n\n---\n\n## Acceptance Criteria Check\n\n| Criteria | Status |\n|----------|--------|\n| `pipeline.ts` に step 名の文字列比較が存在しない | ✅ |\n| `resolve-step.ts` に step 名のハードコード Set が存在しない | ✅ |\n| `executor.ts` に `PROJECT_CONTEXT_STEPS` が存在しない | ✅ |\n| managed adapter の SSE/polling 分岐がプライベートメソッドに集約されている | ✅ |\n| managed adapter に `step.name ===` のエラーメッセージ分岐が存在しない | ✅ |\n| 各 step 定義にフラグが宣言されている | ✅ |\n| 振る舞いが変わらない | ✅ |\n| `bun run typecheck` / `bun run test` が全 pass | ✅ |\n\n## Test Coverage\n\ntest-cases.md defines 32 test cases across 9 categories.\n\n**Must-priority cases — coverage status:**\n\n- TC-01 through TC-05 (step flags): covered implicitly by the executor's `needsProjectContext` injection tests in `executor.test.ts` (ALLOWLIST_STEPS and NON_ALLOWLIST_STEPS arrays), and indirectly by the `resolve-step.test.ts` phase assertions. However, no test directly reads `DesignStep.phase`, `SpecReviewStep.needsProjectContext`, etc. from the object literals. Coverage is behavioral rather than structural.\n- TC-07/TC-08 (getStepOutcome via completionVerdict): the pipeline.test.ts design step mock is declared with `completionVerdict: \"success\"` and the pipeline routes correctly; TC-060 implicitly covers TC-07.\n- TC-10 (no step-name comparison in pipeline.ts getStepOutcome): no static-analysis test checks this, but the dead code was verified removed by direct inspection.\n- TC-11/TC-12 (needsProjectContext injection): fully covered by `executor.test.ts` TC-007 to TC-015 blocks using the ALLOWLIST/NON_ALLOWLIST pattern with a capturing runner.\n- TC-13 (PROJECT_CONTEXT_STEPS absent): no explicit static-analysis test, but the symbol is absent from the file.\n- TC-14/TC-15/TC-16 (isSpecPhase): covered indirectly via `resolveResumeStep()` tests in `resolve-step.test.ts`. No direct `isSpecPhase` test.\n- TC-17 (SPEC_PHASE_STEPS absent): no explicit static-analysis test; verified by direct inspection.\n- TC-18/TC-19 (useSseStrategy dispatch): not directly tested; behavior is correct but no unit test isolates the method.\n- TC-20 (useSseStrategy private method exists, run() has no direct comparison): not tested statically.\n- TC-21 through TC-27 (errors.ts and agent-runner): fully covered by `review-exit-contract.test.ts`, which tests `resultFileNotFoundError` for both step names and arbitrary names, checks `ERROR_CODES` keys, and verifies the executor throws with the correct error code and hint.\n- TC-28/TC-29 (typecheck and test pass): verified — both pass with zero errors.\n- TC-30 (behavioral equivalence): implicitly covered by the full pipeline integration tests (pipeline.test.ts TC-060 through TC-068) which exercise the complete step sequence.\n- TC-31 (STEP_PHASE_MAP covers all AgentStep singletons): not tested; verified by inspection that all 8 singletons are imported.\n- TC-32 (STEP_NAMES import removed from executor.ts if unused): verified by inspection — STEP_NAMES is not imported in executor.ts in this branch.\n\nOverall, must-priority behavioral coverage is complete. The gap is in explicit unit assertions for TC-01 through TC-05 (step flag values), TC-14 through TC-16 (isSpecPhase directly), and TC-18 through TC-20 (useSseStrategy static analysis). These are nit-level for a refactoring PR where behavior is unchanged and verified end-to-end.\n"
+        },
+        "startedAt": "2026-05-13T14:40:58.542Z",
+        "endedAt": "2026-05-13T14:40:58.542Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3614,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 24,
+            "outputTokens": 8400,
+            "cacheReadInputTokens": 1455154,
+            "cacheCreationInputTokens": 128722
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/decouple-pipeline-from-step-names/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — decouple-pipeline-from-step-names\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/222\n- **Number**: 222\n- **CreatedAt**: 2026-05-13T14:44:05.083Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-13T14:44:01.372Z",
+        "endedAt": "2026-05-13T14:44:01.372Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/222",
+    "number": 222,
+    "createdAt": "2026-05-13T14:44:05.083Z"
+  }
+}

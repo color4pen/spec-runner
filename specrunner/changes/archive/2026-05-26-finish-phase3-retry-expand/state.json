@@ -1,0 +1,748 @@
+{
+  "version": 1,
+  "jobId": "06e19fa4-a65c-484d-82e0-b1ed0c3e5e8f",
+  "createdAt": "2026-05-26T13:23:42.974Z",
+  "updatedAt": "2026-05-26T13:53:25.219Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/drafts/finish-phase3-retry-expand/request.md",
+    "title": "finish Phase 3 の transient error retry 対象を拡充する",
+    "type": "bug-fix",
+    "slug": "finish-phase3-retry-expand"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 51890,
+  "branch": "fix/finish-phase3-retry-expand-06e19fa4",
+  "history": [
+    {
+      "ts": "2026-05-26T13:23:42.974Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-26T13:23:44.494Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-26T13:26:06.820Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-26T13:26:06.823Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-26T13:26:06.824Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-26T13:26:06.848Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-26T13:26:06.849Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → delta-spec-fixer"
+    },
+    {
+      "ts": "2026-05-26T13:26:06.850Z",
+      "step": "delta-spec-fixer-started",
+      "status": "started",
+      "message": "Starting delta-spec-fixer step"
+    },
+    {
+      "ts": "2026-05-26T13:31:29.894Z",
+      "step": "delta-spec-fixer-verdict",
+      "status": "ok",
+      "message": "delta-spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-26T13:31:29.895Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-fixer → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-26T13:31:29.896Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-26T13:31:29.920Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-26T13:31:29.921Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-26T13:31:29.921Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-26T13:31:29.921Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-26T13:33:26.572Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-26T13:33:26.574Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 1 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-26T13:33:26.574Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-26T13:33:26.575Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-26T13:34:50.061Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-26T13:34:50.063Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 1)"
+    },
+    {
+      "ts": "2026-05-26T13:34:50.064Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-26T13:36:36.745Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-26T13:36:36.746Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-26T13:36:36.747Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-26T13:36:36.747Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-26T13:36:53.419Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: failed"
+    },
+    {
+      "ts": "2026-05-26T13:36:53.422Z",
+      "step": "verification",
+      "status": "warning",
+      "message": "verification iteration 1 completed with verdict: failed"
+    },
+    {
+      "ts": "2026-05-26T13:36:53.422Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → build-fixer"
+    },
+    {
+      "ts": "2026-05-26T13:36:53.423Z",
+      "step": "build-fixer-started",
+      "status": "started",
+      "message": "Starting build-fixer step"
+    },
+    {
+      "ts": "2026-05-26T13:38:07.418Z",
+      "step": "build-fixer-verdict",
+      "status": "ok",
+      "message": "build-fixer verdict: success"
+    },
+    {
+      "ts": "2026-05-26T13:38:07.421Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "build-fixer → verification"
+    },
+    {
+      "ts": "2026-05-26T13:38:07.421Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 2 started"
+    },
+    {
+      "ts": "2026-05-26T13:38:07.422Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-26T13:38:21.534Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-26T13:38:21.537Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 2 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-26T13:38:21.537Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-26T13:38:21.537Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-26T13:38:21.538Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-26T13:42:03.922Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-26T13:42:03.925Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-26T13:42:03.925Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-26T13:42:03.926Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-26T13:42:33.087Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-26T13:42:33.089Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-26T13:42:33.090Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-26T13:42:33.090Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-26T13:44:28.114Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-26T13:44:28.116Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-26T13:44:28.116Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-26T13:44:28.118Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-26T13:44:28.144Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-26T13:44:28.145Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → adr-gen"
+    },
+    {
+      "ts": "2026-05-26T13:44:28.145Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-26T13:44:33.798Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-26T13:44:33.800Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-26T13:44:33.801Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-26T13:44:35.889Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-26T13:44:35.893Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-26T13:53:25.218Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "34588cd3-5dab-4c13-8331-4e4be15bd98c",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-26T13:23:44.501Z",
+        "endedAt": "2026-05-26T13:26:05.047Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 7127,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 20,
+            "outputTokens": 6362,
+            "cacheReadInputTokens": 819869,
+            "cacheCreationInputTokens": 62502
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/finish-phase3-retry-expand/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: needs-fix\n\n## Violations\n\n| Path | Reason | Suggested Fix |\n|------|--------|---------------|\n| `specrunner/specs/module-boundary/spec.md` | `authority-spec-direct-edit` | Revert with git checkout and move changes to specrunner/changes/<slug>/specs/<capability>/spec.md |\n| `specrunner/specs/step-execution-architecture/spec.md` | `authority-spec-direct-edit` | Revert with git checkout and move changes to specrunner/changes/<slug>/specs/<capability>/spec.md |\n\n## How to Fix\n\n- Move all delta spec files to `specs/<capability-name>/spec.md` (canonical path)\n- Ensure each spec.md has a `## Requirements` section (and optionally `## Removed` / `## Renamed`)\n- Ensure the `## Requirements` section contains at least one `### Requirement:` block\n"
+        },
+        "startedAt": "2026-05-26T13:26:06.825Z",
+        "endedAt": "2026-05-26T13:26:06.848Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/finish-phase3-retry-expand/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-26T13:31:29.897Z",
+        "endedAt": "2026-05-26T13:31:29.920Z"
+      },
+      {
+        "attempt": 3,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/finish-phase3-retry-expand/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-26T13:44:28.118Z",
+        "endedAt": "2026-05-26T13:44:28.143Z"
+      }
+    ],
+    "delta-spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "1c7c50bd-0980-4ab4-af0c-f12393ff371a",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-26T13:26:06.858Z",
+        "endedAt": "2026-05-26T13:31:28.217Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 913,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 36,
+            "outputTokens": 15946,
+            "cacheReadInputTokens": 1062943,
+            "cacheCreationInputTokens": 43831
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "7b87bb94-46cd-4563-869a-97c77fc4217c",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/finish-phase3-retry-expand/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result\n\n- **verdict**: approved\n\n## Summary\n\n変更スコープは `isMergeTransientFailure()` 1 関数への 3 パターン追加のみ。設計・タスク・delta spec いずれも整合しており、受け入れ基準を満たす実装が明確に定義されている。\n\n## Findings\n\n### [OK] 設計判断 (D1〜D6) は妥当\n\n- 既存 `retryWithBackoff` infrastructure を拡張するだけで新機構不要\n- `\"not mergeable\"` / `\"head branch was modified\"` の 2 パターンは transient として明らかに正当\n- 永続 error (403 / 409) は既存のまま retry しない — 正しい境界\n\n### [OK] delta spec と design/tasks の整合\n\n- `delta/github-api-lib/spec.md` の Requirement header `\"PR Merge via REST API\"` は baseline と完全一致 → MODIFIED として自動分類される\n- 3 シナリオ (not mergeable / head branch modified / required status check) が tasks.md の TC-PM-017〜019 と対応している\n\n### [OK] TC-PM-016 の期待値変更\n\n- 現テスト: `\"Pull Request is not mergeable\" → no retry → { merged: false }`\n- 変更後: `→ retry (transient) → 2nd attempt 200 → { merged: true }` — design 通り\n\n### [NOTE] `\"required status check\"` の retry 実効性\n\n`required status check` は CI 未完了が原因で、通常は数分単位かかる。`baseDelayMs: 1000` × maxAttempts: 4 の retry window (~7s) では解消しないケースが大半。しかし:\n\n- 最終的に retry exhausted → `{ merged: false }` → 既存の escalation path に落ちるため **動作は安全**\n- Phase 2 push 直後に check が一瞬 \"expected\" 状態になる race condition には効く可能性がある\n- request.md が明示的に追加対象として挙げており、architect 評価済み\n\nブロッカーではないが、将来的に「required status check は retry せず即 escalation」の方針に変更する余地は残る。\n\n### [OK] セキュリティ\n\n- 新規入力経路なし — GitHub API レスポンスの `message` フィールドを `.toLowerCase().includes()` で照合するだけ\n- retry 上限 (maxAttempts: 4) は不変 → API 呼び出し数の上限は変わらない\n- 認証・権限経路の変更なし\n\n### [OK] 既存テスト regression なし\n\n追加パターンは既存の `\"base branch was modified\"` / `\"unstable state\"` / `\"locked\"` と部分一致しない。T-04 (TC-PM-010〜015 の pass 確認) は implicit に保証される。\n"
+        },
+        "startedAt": "2026-05-26T13:31:29.929Z",
+        "endedAt": "2026-05-26T13:33:24.672Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4455,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 12,
+            "outputTokens": 5216,
+            "cacheReadInputTokens": 239691,
+            "cacheCreationInputTokens": 29669
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "dff469cf-0f70-49ed-a727-a7948e2c524f",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-26T13:33:26.586Z",
+        "endedAt": "2026-05-26T13:34:48.425Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1831,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 9,
+            "outputTokens": 5223,
+            "cacheReadInputTokens": 126733,
+            "cacheCreationInputTokens": 19628
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "4848c0a1-993f-4d27-a812-adf23a7ca2e3",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-26T13:34:50.073Z",
+        "endedAt": "2026-05-26T13:36:34.839Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4592,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 12,
+            "outputTokens": 5072,
+            "cacheReadInputTokens": 272926,
+            "cacheCreationInputTokens": 29611
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "failed",
+          "findingsPath": "specrunner/changes/finish-phase3-retry-expand/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — finish-phase3-retry-expand — iter 1\n\n## Verdict: failed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.8s | 0 |\n| 2 | typecheck | passed | 2.9s | 0 |\n| 3 | test | passed | 8.4s | 0 |\n| 4 | lint | passed | 1.9s | 0 |\n| 5 | security | skipped | — | — |\n| 6 | test-coverage | failed | 0.0s | 1 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/finish-phase3-retry-expand-06e19fa4\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...\nGitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Required status check \"ci/build\" is expected, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t145d\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\n\n Test Files  267 passed (267)\n      Tests  2995 passed (2995)\n   Start at  22:36:41\n   Duration  8.10s (transform 4.50s, setup 0ms, import 10.39s, tests 14.52s, environment 17ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-0ZS49q/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-lf7xj4/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/finish-phase3-retry-expand-06e19fa4/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.\n\n```\n\n## Phase: lint\n\n```\n$ eslint ./src --max-warnings 0\n\n```\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n\n## Phase: test-coverage\n\nStep 'test-coverage' failed\n\n```\ntest-coverage: 7/13 must TCs covered\nMissing: TC-201, TC-202, TC-203, TC-204, TC-401, TC-402\n```\n"
+        },
+        "startedAt": "2026-05-26T13:36:36.748Z",
+        "endedAt": "2026-05-26T13:36:53.418Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/finish-phase3-retry-expand/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — finish-phase3-retry-expand — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1.6s | 0 |\n| 2 | typecheck | passed | 2.3s | 0 |\n| 3 | test | passed | 7.3s | 0 |\n| 4 | lint | passed | 1.2s | 0 |\n| 5 | security | skipped | — | — |\n| 6 | test-coverage | passed | 0.0s | 0 |\n\n## Phase: build\n\n```\n$ tsc -p tsconfig.build.json\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/finish-phase3-retry-expand-06e19fa4\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...\nGitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...\nGitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...\nGitHub PR merge retry: Required status check \"ci/build\" is expected, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...\nGitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t145d\n\n Test Files  267 passed (267)\n      Tests  2995 passed (2995)\n   Start at  22:38:11\n   Duration  6.98s (transform 3.82s, setup 0ms, import 8.77s, tests 12.86s, environment 16ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-Opx8rP/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-vTL4gV/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/finish-phase3-retry-expand-06e19fa4/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.\n\n```\n\n## Phase: lint\n\n```\n$ eslint ./src --max-warnings 0\n\n```\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n\n## Phase: test-coverage\n\n```\ntest-coverage: 13/13 must TCs covered\n```\n"
+        },
+        "startedAt": "2026-05-26T13:38:07.423Z",
+        "endedAt": "2026-05-26T13:38:21.534Z"
+      }
+    ],
+    "build-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "b62fc056-43bf-4de9-a1f7-8284062e3fce",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-26T13:36:53.432Z",
+        "endedAt": "2026-05-26T13:38:05.538Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1821,
+            "outputTokens": 22,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 15,
+            "outputTokens": 3404,
+            "cacheReadInputTokens": 316578,
+            "cacheCreationInputTokens": 25941
+          }
+        }
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "b321c304-0062-4836-80ba-8aea833c26df",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/finish-phase3-retry-expand/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Review Feedback: finish-phase3-retry-expand (Iteration 1)\n\n- **reviewer**: code-review\n- **iteration**: 1\n- **date**: 2026-05-26\n- **verdict**: needs-fix\n\n## Summary\n\n実装は設計通り。`isMergeTransientFailure()` に 3 パターン追加、TC-PM-016 書き換え、TC-PM-017〜019 新規追加。typecheck / lint / 全 2995 テスト green。設計判断 (D1〜D6) はすべて実装に反映されている。\n\nただし test-cases.md の **must** シナリオ TC-002（小文字 'r' バリアント）が test file に存在しない。実装の `.toLowerCase()` が正しいため動作バグはないが、test-cases.md に対するカバレッジが 12/13 となる。\n\n## Scores\n\n| Category | Score | Weight | Weighted |\n|----------|-------|--------|----------|\n| correctness | 9 | 0.30 | 2.70 |\n| security | 9 | 0.25 | 2.25 |\n| architecture | 9 | 0.15 | 1.35 |\n| performance | 9 | 0.10 | 0.90 |\n| maintainability | 8 | 0.10 | 0.80 |\n| testing | 7 | 0.10 | 0.70 |\n| **Total** | | | **8.70** |\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | MEDIUM | testing | tests/unit/adapter/github/github-client-pr.test.ts | TC-002 (must): 405 `\"Pull request is not mergeable\"` (小文字 r) → retry → 成功 のテストが未実装。TC-PM-016 は大文字 R の `\"Pull Request is not mergeable\"` のみカバー。design.md D2 に「小文字 r の表記もあり得る」と明記されており、`.toLowerCase()` の動作確認が must に指定されている | TC-PM-016 の隣に `TC-PM-016b` を追加: `mockResolvedValueOnce(mergeResponse(405, { message: \"Pull request is not mergeable\" }))` → `mockResolvedValueOnce(200 merged)` → `merged: true`, `mockFetch` 2 回 |\n| 2 | LOW | documentation | src/adapter/github/github-client.ts | `mergePullRequest()` の JSDoc (L362–366) が古いまま: `\"Base branch was modified\" / \"unstable state\", 423 Locked` のみ列挙されており、今回追加した 3 パターンが記載されていない。`isMergeTransientFailure()` の JSDoc は正しく更新済み | `mergePullRequest` JSDoc の \"Transient failures\" 行を `isMergeTransientFailure` JSDoc と同期させる |\n| 3 | LOW | testing | tests/unit/adapter/github/github-client-pr.test.ts | TC-PM-002 は message に `\"Pull Request is not mergeable\"` を使いつつ `mockResolvedValue`（全試行共通）で call count を assert していない。変更後は 4 回呼ばれるが test がそれを検証していないため、挙動が変わっても黙過される。コメントにも `(merge not allowed / not mergeable)` と残っており misleading | TC-PM-002 の message を `\"Merge not allowed\"` に変更し永続エラーの no-retry を明示する（または call count を 4 に assert する） |\n\n## Scenario Coverage (test-cases.md)\n\n| ID | Priority | Status | Notes |\n|----|----------|--------|-------|\n| TC-001 | must | covered | TC-PM-016 (大文字 R) |\n| TC-002 | must | **missing** | Finding #1 |\n| TC-003 | must | covered | TC-PM-017 |\n| TC-004 | must | covered | TC-PM-018 |\n| TC-005 | must | covered | TC-PM-019 |\n| TC-101 | must | covered | TC-PM-014 |\n| TC-102 | must | covered | TC-PM-015 |\n| TC-201 | must | covered | TC-PM-010 |\n| TC-202 | must | covered | TC-PM-011 |\n| TC-203 | must | covered | TC-PM-012 |\n| TC-204 | must | covered | TC-PM-013 |\n| TC-401 | must | covered | typecheck pass |\n| TC-402 | must | covered | 2995 tests pass |\n| TC-006 | should | not tested | exhaustion シナリオ (Head branch × 4) |\n| TC-007 | should | not tested | exhaustion シナリオ (Required status check × 4) |\n| TC-103 | should | not tested | 405 \"Merge not allowed\" → no retry の明示テストなし（TC-PM-002 が実質カバーしなくなった） |\n| TC-301 | should | not tested | 大文字 \"NOT MERGEABLE\" → retry |\n| TC-302 | should | not tested | merged:true + \"not mergeable\" message → no retry |\n| TC-303 | should | not tested | パターン干渉なしの明示テスト |\n\n## Verification\n\n- `bun run typecheck`: pass\n- `bun run test`: 267 files, 2995 tests, all passed\n- `bun run lint`: pass\n"
+        },
+        "startedAt": "2026-05-26T13:38:21.550Z",
+        "endedAt": "2026-05-26T13:42:02.045Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5078,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 10,
+            "outputTokens": 10473,
+            "cacheReadInputTokens": 253038,
+            "cacheCreationInputTokens": 46840
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "32abf8b2-5f9c-4818-bd25-a6acf3a79a18",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/finish-phase3-retry-expand/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Review Feedback: finish-phase3-retry-expand (Iteration 2)\n\n- **reviewer**: code-review\n- **iteration**: 2\n- **date**: 2026-05-26\n- **verdict**: approved\n\n## Summary\n\nIteration 1 の MEDIUM finding（TC-002: 小文字 'r' バリアントのテスト未実装）が `TC-PM-016b` 追加で解消。must シナリオ 13/13 カバー達成。typecheck / lint / 2995 tests green を確認。\n\nIteration 1 の 2 件の LOW finding は未修正だが、いずれも correctness に影響なく merge を妨げない。\n\n## Scores\n\n| Category | Score | Weight | Weighted |\n|----------|-------|--------|----------|\n| correctness | 9 | 0.30 | 2.70 |\n| security | 9 | 0.25 | 2.25 |\n| architecture | 9 | 0.15 | 1.35 |\n| performance | 9 | 0.10 | 0.90 |\n| maintainability | 8 | 0.10 | 0.80 |\n| testing | 8 | 0.10 | 0.80 |\n| **Total** | | | **8.80** |\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|----------|----------|------|-------------|------------|\n| 1 | LOW | documentation | src/adapter/github/github-client.ts | `mergePullRequest()` の JSDoc (L363–365) が旧パターンのまま: `\"Base branch was modified\" / \"unstable state\", 423 Locked` のみ列挙。今回追加した 3 パターン (`\"not mergeable\"`, `\"head branch was modified\"`, `\"required status check\"`) が未記載。`isMergeTransientFailure()` の JSDoc は正しく更新済みのため二重管理状態 | `mergePullRequest` JSDoc の \"Transient failures\" 行を `isMergeTransientFailure` JSDoc のリストに合わせて更新 |\n| 2 | LOW | testing | tests/unit/adapter/github/github-client-pr.test.ts | TC-PM-002 (L212) が `message: \"Pull Request is not mergeable\"` を使用したまま。これは現在 transient 扱いで 4 回 retry されるが、test は call count を assert していないため no-retry 動作の検証になっていない。テスト名に `(merge not allowed / not mergeable)` と残っておりミスリーディング | message を `\"Merge not allowed\"` に変更して永続エラーの 1 回のみ呼び出しを明示。または `expect(mockFetch).toHaveBeenCalledTimes(4)` を追加 |\n\n## Iter 1 Findings 対応状況\n\n| # | Severity | 対応状況 |\n|---|----------|---------|\n| 1 (TC-002 must missing) | MEDIUM | ✅ 解消 — TC-PM-016b 追加 (L360–371) |\n| 2 (mergePullRequest JSDoc) | LOW | ❌ 未修正 → Finding #1 (本 iter) |\n| 3 (TC-PM-002 misleading) | LOW | ❌ 未修正 → Finding #2 (本 iter) |\n\n## Scenario Coverage (test-cases.md)\n\n| ID | Priority | Status | Notes |\n|----|----------|--------|-------|\n| TC-001 | must | covered | TC-PM-016 |\n| TC-002 | must | covered | TC-PM-016b (iter 2 追加) |\n| TC-003 | must | covered | TC-PM-017 |\n| TC-004 | must | covered | TC-PM-018 |\n| TC-005 | must | covered | TC-PM-019 |\n| TC-101 | must | covered | TC-PM-014 |\n| TC-102 | must | covered | TC-PM-015 |\n| TC-201 | must | covered | TC-PM-010 |\n| TC-202 | must | covered | TC-PM-011 |\n| TC-203 | must | covered | TC-PM-012 |\n| TC-204 | must | covered | TC-PM-013 |\n| TC-401 | must | covered | typecheck pass |\n| TC-402 | must | covered | 2995 tests pass |\n| TC-006 | should | not tested | Head branch × 4 exhaustion |\n| TC-007 | should | not tested | Required status check × 4 exhaustion |\n| TC-103 | should | not tested | 405 \"Merge not allowed\" → no retry の明示テストなし |\n| TC-301 | should | not tested | 大文字 \"NOT MERGEABLE\" → retry |\n| TC-302 | should | not tested | merged:true + \"not mergeable\" message → no retry |\n| TC-303 | should | not tested | パターン干渉なしの明示テスト |\n\n## Verification\n\n- `bun run typecheck`: pass\n- `bun run test`: 267 files, 2995 tests, all passed\n- `bun run lint`: pass\n- must TCs: 13/13 covered\n"
+        },
+        "startedAt": "2026-05-26T13:42:33.101Z",
+        "endedAt": "2026-05-26T13:44:26.561Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 5078,
+            "outputTokens": 19,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 11,
+            "outputTokens": 6030,
+            "cacheReadInputTokens": 272854,
+            "cacheCreationInputTokens": 40639
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "a44ee568-1911-4a46-a055-91c3cde8e389",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-26T13:42:03.937Z",
+        "endedAt": "2026-05-26T13:42:31.388Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 1811,
+            "outputTokens": 24,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 8,
+            "outputTokens": 1320,
+            "cacheReadInputTokens": 90720,
+            "cacheCreationInputTokens": 11124
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "1032cf84-08c8-4ef3-8c0a-0e556a858d18",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-26T13:44:28.152Z",
+        "endedAt": "2026-05-26T13:44:33.749Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 567,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 3,
+            "outputTokens": 75,
+            "cacheReadInputTokens": 7567,
+            "cacheCreationInputTokens": 5740
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/finish-phase3-retry-expand/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — finish-phase3-retry-expand\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/413\n- **Number**: 413\n- **CreatedAt**: 2026-05-26T13:44:35.888Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-26T13:44:33.801Z",
+        "endedAt": "2026-05-26T13:44:35.888Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/413",
+    "number": 413,
+    "createdAt": "2026-05-26T13:44:35.888Z"
+  }
+}

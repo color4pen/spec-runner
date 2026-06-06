@@ -1,0 +1,956 @@
+{
+  "version": 1,
+  "jobId": "43fdc201-4dca-4a31-b329-34a3d36777c2",
+  "createdAt": "2026-05-19T07:33:25.497Z",
+  "updatedAt": "2026-05-19T12:38:44.559Z",
+  "request": {
+    "path": "~/Documents/GitHub/spec-runner/specrunner/requests/active/gh-cli-to-rest-api/request.md",
+    "title": "gh CLI 依存を脱却し PR 操作を GitHub REST API 直叩きに置き換える",
+    "type": "spec-change",
+    "slug": "gh-cli-to-rest-api"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "session": null,
+  "step": "pr-create",
+  "status": "archived",
+  "pid": 85991,
+  "branch": "change/gh-cli-to-rest-api",
+  "history": [
+    {
+      "ts": "2026-05-19T07:33:25.497Z",
+      "step": "init",
+      "status": "started",
+      "message": "job created"
+    },
+    {
+      "ts": "2026-05-19T07:33:26.858Z",
+      "step": "design-started",
+      "status": "started",
+      "message": "Starting design step"
+    },
+    {
+      "ts": "2026-05-19T07:41:58.363Z",
+      "step": "design-verdict",
+      "status": "ok",
+      "message": "design verdict: success"
+    },
+    {
+      "ts": "2026-05-19T07:41:58.366Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "design → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-19T07:41:58.368Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-19T07:41:58.369Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-19T07:41:58.371Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → delta-spec-fixer"
+    },
+    {
+      "ts": "2026-05-19T07:41:58.371Z",
+      "step": "delta-spec-fixer-started",
+      "status": "started",
+      "message": "Starting delta-spec-fixer step"
+    },
+    {
+      "ts": "2026-05-19T07:43:26.297Z",
+      "step": "delta-spec-fixer-verdict",
+      "status": "ok",
+      "message": "delta-spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T07:43:26.299Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-fixer → delta-spec-validation"
+    },
+    {
+      "ts": "2026-05-19T07:43:26.300Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-19T07:43:26.303Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T07:43:26.304Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-19T07:43:26.305Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-19T07:43:26.305Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-19T07:46:37.847Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-19T07:46:37.849Z",
+      "step": "spec-review",
+      "status": "warning",
+      "message": "spec-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-19T07:46:37.849Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → spec-fixer"
+    },
+    {
+      "ts": "2026-05-19T07:46:37.850Z",
+      "step": "spec-fixer-started",
+      "status": "started",
+      "message": "Starting spec-fixer step"
+    },
+    {
+      "ts": "2026-05-19T07:48:18.353Z",
+      "step": "spec-fixer-verdict",
+      "status": "ok",
+      "message": "spec-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T07:48:18.356Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → delta-spec-validation (iter 1)"
+    },
+    {
+      "ts": "2026-05-19T07:48:18.357Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to delta-spec-validation step"
+    },
+    {
+      "ts": "2026-05-19T07:48:18.360Z",
+      "step": "delta-spec-validation-verdict",
+      "status": "ok",
+      "message": "delta-spec-validation verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T07:48:18.362Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "delta-spec-validation → spec-review"
+    },
+    {
+      "ts": "2026-05-19T07:48:18.362Z",
+      "step": "spec-review",
+      "status": "started",
+      "message": "spec-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-19T07:48:18.363Z",
+      "step": "spec-review-started",
+      "status": "started",
+      "message": "Starting spec-review step"
+    },
+    {
+      "ts": "2026-05-19T07:53:18.295Z",
+      "step": "spec-review-verdict",
+      "status": "ok",
+      "message": "spec-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T07:53:18.298Z",
+      "step": "spec-review",
+      "status": "ok",
+      "message": "spec-review iteration 2 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T07:53:18.298Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review → test-case-gen"
+    },
+    {
+      "ts": "2026-05-19T07:53:18.299Z",
+      "step": "test-case-gen-started",
+      "status": "started",
+      "message": "Starting test-case-gen step"
+    },
+    {
+      "ts": "2026-05-19T07:55:37.747Z",
+      "step": "test-case-gen-verdict",
+      "status": "ok",
+      "message": "test-case-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-19T07:55:37.750Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "spec-review complete → implementer (iter 2)"
+    },
+    {
+      "ts": "2026-05-19T07:55:37.751Z",
+      "step": "implementer-started",
+      "status": "started",
+      "message": "Starting implementer step"
+    },
+    {
+      "ts": "2026-05-19T09:00:15.532Z",
+      "step": "implementer-verdict",
+      "status": "ok",
+      "message": "implementer verdict: success"
+    },
+    {
+      "ts": "2026-05-19T09:00:15.535Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "implementer → verification"
+    },
+    {
+      "ts": "2026-05-19T09:00:15.536Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 1 started"
+    },
+    {
+      "ts": "2026-05-19T09:00:15.537Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-19T09:00:27.154Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: failed"
+    },
+    {
+      "ts": "2026-05-19T09:00:27.157Z",
+      "step": "verification",
+      "status": "warning",
+      "message": "verification iteration 1 completed with verdict: failed"
+    },
+    {
+      "ts": "2026-05-19T09:00:27.157Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → build-fixer"
+    },
+    {
+      "ts": "2026-05-19T09:00:27.159Z",
+      "step": "build-fixer-started",
+      "status": "started",
+      "message": "Starting build-fixer step"
+    },
+    {
+      "ts": "2026-05-19T09:49:21.806Z",
+      "step": "build-fixer-verdict",
+      "status": "ok",
+      "message": "build-fixer verdict: success"
+    },
+    {
+      "ts": "2026-05-19T09:49:21.809Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "build-fixer → verification"
+    },
+    {
+      "ts": "2026-05-19T09:49:21.810Z",
+      "step": "verification",
+      "status": "started",
+      "message": "verification iteration 2 started"
+    },
+    {
+      "ts": "2026-05-19T09:49:21.811Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to verification step"
+    },
+    {
+      "ts": "2026-05-19T09:49:33.222Z",
+      "step": "verification-verdict",
+      "status": "ok",
+      "message": "verification verdict: passed"
+    },
+    {
+      "ts": "2026-05-19T09:49:33.225Z",
+      "step": "verification",
+      "status": "ok",
+      "message": "verification iteration 2 completed with verdict: passed"
+    },
+    {
+      "ts": "2026-05-19T09:49:33.225Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "verification → code-review"
+    },
+    {
+      "ts": "2026-05-19T09:49:33.226Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 1 started"
+    },
+    {
+      "ts": "2026-05-19T09:49:33.227Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-19T09:56:03.734Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-19T09:56:03.737Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 1 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-19T09:56:03.737Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-19T09:56:03.739Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-19T10:14:59.524Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T10:14:59.527Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-19T10:14:59.528Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 2 started"
+    },
+    {
+      "ts": "2026-05-19T10:14:59.529Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-19T10:22:38.337Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-19T10:22:38.341Z",
+      "step": "code-review",
+      "status": "warning",
+      "message": "code-review iteration 2 completed with verdict: needs-fix"
+    },
+    {
+      "ts": "2026-05-19T10:22:38.341Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → code-fixer"
+    },
+    {
+      "ts": "2026-05-19T10:22:38.343Z",
+      "step": "code-fixer-started",
+      "status": "started",
+      "message": "Starting code-fixer step"
+    },
+    {
+      "ts": "2026-05-19T10:26:54.047Z",
+      "step": "code-fixer-verdict",
+      "status": "ok",
+      "message": "code-fixer verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T10:26:54.051Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-fixer → code-review"
+    },
+    {
+      "ts": "2026-05-19T10:26:54.052Z",
+      "step": "code-review",
+      "status": "started",
+      "message": "code-review iteration 3 started"
+    },
+    {
+      "ts": "2026-05-19T10:26:54.054Z",
+      "step": "code-review-started",
+      "status": "started",
+      "message": "Starting code-review step"
+    },
+    {
+      "ts": "2026-05-19T10:31:12.450Z",
+      "step": "code-review-verdict",
+      "status": "ok",
+      "message": "code-review verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T10:31:12.454Z",
+      "step": "code-review",
+      "status": "ok",
+      "message": "code-review iteration 3 completed with verdict: approved"
+    },
+    {
+      "ts": "2026-05-19T10:31:12.454Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "code-review → adr-gen"
+    },
+    {
+      "ts": "2026-05-19T10:31:12.456Z",
+      "step": "adr-gen-started",
+      "status": "started",
+      "message": "Starting adr-gen step"
+    },
+    {
+      "ts": "2026-05-19T10:31:46.074Z",
+      "step": "adr-gen-verdict",
+      "status": "ok",
+      "message": "adr-gen verdict: success"
+    },
+    {
+      "ts": "2026-05-19T10:31:46.076Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "adr-gen → pr-create"
+    },
+    {
+      "ts": "2026-05-19T10:31:46.077Z",
+      "step": "step-transition",
+      "status": "ok",
+      "message": "Transitioning to pr-create step"
+    },
+    {
+      "ts": "2026-05-19T10:31:49.687Z",
+      "step": "pr-create-verdict",
+      "status": "ok",
+      "message": "pr-create verdict: success"
+    },
+    {
+      "ts": "2026-05-19T10:31:49.692Z",
+      "step": "pipeline",
+      "status": "ok",
+      "message": "running → awaiting-merge: pipeline complete"
+    },
+    {
+      "ts": "2026-05-19T12:38:44.559Z",
+      "step": "finish",
+      "status": "ok",
+      "message": "awaiting-merge → archived: PR merged"
+    }
+  ],
+  "error": null,
+  "worktreePath": null,
+  "steps": {
+    "design": [
+      {
+        "attempt": 1,
+        "sessionId": "d35fc1e9-66e1-4226-a483-a805c980e1f4",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T07:33:26.864Z",
+        "endedAt": "2026-05-19T07:41:56.653Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 7092,
+            "outputTokens": 15664,
+            "cacheReadInputTokens": 1146496,
+            "cacheCreationInputTokens": 181765
+          },
+          "claude-opus-4-6[1m]": {
+            "inputTokens": 18,
+            "outputTokens": 18056,
+            "cacheReadInputTokens": 939511,
+            "cacheCreationInputTokens": 68767
+          }
+        }
+      }
+    ],
+    "delta-spec-validation": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/gh-cli-to-rest-api/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: needs-fix\n\n## Violations\n\n| Path | Reason | Suggested Fix |\n|------|--------|---------------|\n| `~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/gh-cli-to-rest-api-43fdc201/specrunner/changes/gh-cli-to-rest-api/specs/` | `no-specs-for-required-type` | Request type 'spec-change' requires a delta spec. Add a file under ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/gh-cli-to-rest-api-43fdc201/specrunner/changes/gh-cli-to-rest-api/specs/<capability-name>/spec.md |\n\n## How to Fix\n\n- Move all delta spec files to `specs/<capability-name>/spec.md` (canonical path)\n- Ensure each spec.md has at least one `## ADDED Requirements`, `## MODIFIED Requirements`, or `## REMOVED Requirements` section\n- Ensure each section contains at least one `### Requirement:` block\n"
+        },
+        "startedAt": "2026-05-19T07:41:58.368Z",
+        "endedAt": "2026-05-19T07:41:58.369Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/gh-cli-to-rest-api/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-19T07:43:26.301Z",
+        "endedAt": "2026-05-19T07:43:26.303Z"
+      },
+      {
+        "attempt": 3,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/gh-cli-to-rest-api/delta-spec-validation-result.md",
+          "error": null,
+          "fileContent": "# Delta Spec Validation Result\n\n## Verdict: approved\n\nAll delta spec files conform to the canonical path and format.\n"
+        },
+        "startedAt": "2026-05-19T07:48:18.358Z",
+        "endedAt": "2026-05-19T07:48:18.360Z"
+      }
+    ],
+    "delta-spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "0b1a3b1f-91f9-4ae9-a7f3-2360c6ed54ab",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T07:41:58.384Z",
+        "endedAt": "2026-05-19T07:43:24.688Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 785,
+            "outputTokens": 22,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 10,
+            "outputTokens": 3971,
+            "cacheReadInputTokens": 169156,
+            "cacheCreationInputTokens": 17140
+          }
+        }
+      }
+    ],
+    "spec-review": [
+      {
+        "attempt": 1,
+        "sessionId": "612f0b91-7620-4d06-a1b6-a2af38c83834",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/gh-cli-to-rest-api/spec-review-result-001.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: gh-cli-to-rest-api\n\n- **verdict**: needs-fix\n- **reviewer**: spec-reviewer\n- **date**: 2026-05-19\n\n---\n\n## Summary\n\n設計方針（D1-D8）は適切。Port/Adapter パターンの維持、field mapping を adapter 境界で吸収する戦略（D2）、retry/rate-limit middleware の集約（D3）はいずれも健全。  \nただし実装に先行して修正が必要な問題が 3 件、実装リスクを高める重要問題が 3 件ある。\n\n---\n\n## Critical（実装前に必ず修正）\n\n### C-1: `listPullRequests` の `state` パラメータが無意味になっている\n\n- **場所**: T-01（port interface）、T-02c（実装）、delta/github-api-lib/spec.md\n- **問題**: メソッドシグネチャに `state` パラメータがあるが、T-02c の実装仕様では常に `state=all` をクエリに付与すると記述されており、渡したパラメータは無視される。\n- **影響**: 呼び出し元が `state` を指定しても silently ignored。port interface と実装の contract 不一致。\n- **修正案**: 2 択\n  - A) `state` パラメータを port interface から削除し、実装は `state=all` 固定とする（現在の用途は「既存 PR の有無を全状態で確認する」だけなので十分）\n  - B) `state` パラメータを実際にクエリへ渡す実装に変える\n\n### C-2: `mergePullRequest` で 403 Forbidden が未ハンドル\n\n- **場所**: delta/github-api-lib/spec.md「PR Merge via REST API」、T-02c\n- **問題**: delta spec は 405（not mergeable）と 409（head branch modified）のみを `{ merged: false, message }` で返す仕様にしているが、GitHub REST は merge 権限不足・repository policy 違反に対して **403** を返す。403 はハンドルされていないため throw されて orchestrator に伝播し、不明瞭なエラーになる。\n- **影響**: protected branch + required reviewers 環境で 403 が発生したとき、`specrunner finish` が escalation ではなく uncaught error で終了するリスク。\n- **修正案**: 403 も `{ merged: false, message }` で返す（escalation message に「admin token もしくは repository 権限を確認してください」を含める）\n\n### C-3: T-13 の ADR パスが間違っている\n\n- **場所**: tasks.md T-13\n- **問題**: `openspec-workflow/adr/ADR-20260519-gh-cli-to-rest-api.md` を指定しているが、このリポジトリの近時 ADR は `specrunner/adr/YYYY-MM-DD-<slug>.md` 形式で格納されている（例: `specrunner/adr/2026-05-19-adr-numbering-removal.md`）。`openspec-workflow/adr/` は開発ワークフロースキル用の別系統。\n- **影響**: ADR が誰も参照しない場所に置かれ、受け入れ基準「ADR ファイルが存在する」が機能的に満たされない。\n- **修正案**: パスを `specrunner/adr/2026-05-19-gh-cli-to-rest-api.md` に変更する\n\n---\n\n## Important（修正を推奨、未修正は実装フェーズでリスク）\n\n### I-1: `Retry-After` / `X-RateLimit-Reset` の上限が未規定\n\n- **場所**: delta/github-api-lib/spec.md「Retry and Rate Limit Handling」、T-02a\n- **問題**: `Retry-After` header 値や `X-RateLimit-Reset` epoch までの待機時間に上限が設定されていない。GitHub API のバグや悪意ある応答で非現実的な値（例: 86400 秒）が返ると、クライアントが無限に近い時間ハングする。\n- **修正案**: spec に上限を明記する。例:\n  - `Retry-After` wait: `min(Retry-After, 60)` 秒\n  - `X-RateLimit-Reset` wait: `min(reset - now, 300)` 秒\n\n### I-2: T-02b で既存メソッドの挙動が暗黙的に変わる\n\n- **場所**: tasks.md T-02b\n- **問題**: 既存メソッドを `request()` 経由にリファクタリングすると 5xx retry が追加される。現在これらのメソッドは 5xx で即 throw するため、挙動変化をテストが検出できていない。特に以下が懸念:\n  - `verifyTokenScopes()` は AbortController で 5 秒 timeout を張っているが、`request()` に組み込む際の timeout 継続方針が未記述\n  - `getRawFile()` は 404 で独自 retry しており、`request()` の 5xx retry との組み合わせが複雑になる\n- **修正案**: T-02b に「既存メソッドの挙動変化の明示」と「`verifyTokenScopes` の timeout を `request()` に渡す方針」を追記する\n\n### I-3: `createPullRequest` の 422 Unprocessable Entity が未ハンドル\n\n- **場所**: delta/github-api-lib/spec.md「PR Creation via REST API」\n- **問題**: GitHub は PR body が無効・既存 PR の重複検出などで 422 を返す。spec では 422 の扱いが記述されていない（現実装では `listPullRequests` で事前チェックするが、race condition で重複 create が起きる可能性は残る）。\n- **修正案**: 422 は `SpecRunnerError(GITHUB_API_ERROR)` として throw するシナリオを spec に追記する\n\n---\n\n## Minor（実装者の判断に委ねる）\n\n### M-1: `listPullRequests` クエリの `owner:head` エンコーディング\n\n- `?head={owner}:{head}` の `owner` と `head` に `encodeURIComponent` が必要か不明。既存コードの `verifyBranch` では `encodeURIComponent(branch)` を使っており、同様に適用すべき。spec に明示しておくと実装ミスを防げる。\n\n### M-2: セキュリティ — token をエラーメッセージ・ログに含めない旨の明示\n\n- `request()` method が Authorization header を構築するため、エラーログがリクエスト詳細を出力すると token が漏れるリスクがある。spec か tasks に「error message / log に token 値を含めない」制約を 1 行追加することを推奨。\n\n---\n\n## 確認済み（問題なし）\n\n- D1（既存 `GitHubClient` port 拡張）: 正しい選択。DI graph の単純性が保たれる。\n- D2（field mapping を adapter 境界で吸収）: `mergeStateStatus` / `mergeable` / `headRefName` / `state` の mapping テーブルは正確。既存 core ロジックへの影響は最小。\n- D3（`sleepFn` injection）: テスタビリティのための正しい設計。\n- D4（`--admin` 相当の REST 等価）: 制約を正直に記述しており、escalation 設計も適切。\n- D5（`X-GitHub-Api-Version` header）: class 定数で管理するのは正しい。\n- D6（owner/repo の entry point 解決）: `getOriginInfo()` で解決して下流に注入するのは clean。\n- T-11d / T-11e（retry・field mapping のユニットテスト）: 適切な粒度でカバーされている。\n- delta spec 形式: 3 ファイルともフォーマット準拠、validation result は approved。\n\n---\n\n## 修正後の再レビュー不要\n\nC-1・C-2・C-3 を修正し I-1〜I-3 を対処または対処しない旨を明記すれば、再レビューなしで実装フェーズに進んでよい。\n"
+        },
+        "startedAt": "2026-05-19T07:43:26.318Z",
+        "endedAt": "2026-05-19T07:46:36.228Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4175,
+            "outputTokens": 15,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 1279,
+            "outputTokens": 10066,
+            "cacheReadInputTokens": 541137,
+            "cacheCreationInputTokens": 53641
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "0c9086a6-9cb9-42e7-a20c-50443d672f65",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/gh-cli-to-rest-api/spec-review-result-002.md",
+          "error": null,
+          "fileContent": "# Spec Review Result: gh-cli-to-rest-api (Round 2)\n\n- **verdict**: approved\n- **reviewer**: spec-reviewer\n- **date**: 2026-05-19\n- **based-on**: spec-review-result-001.md の指摘を受けた修正後の再レビュー\n\n---\n\n## Summary\n\nspec-review-001 で指摘した C-1・C-2・C-3（Critical 3 件）および I-1・I-2・I-3（Important 3 件）はすべて delta spec + tasks.md 上で解消されている。  \nただし **canonical spec (`specs/github-api-lib/spec.md`) が delta の修正に追随していない**という新たな Important 問題が 1 件ある。実装は delta + tasks.md を権威源として進められるため実装ブロックとはしないが、将来の spec-change の baseline として残るため実装中に修正すること。\n\n---\n\n## 前回指摘の解消確認\n\n### C-1: `listPullRequests` の `state` パラメータ問題 → 解消\n\n- T-01: signature から `state` を削除し `listPullRequests(owner, repo, head, base)` に変更\n- delta spec: `WHEN listPullRequests(owner, repo, head, base) is called` に修正済み\n- T-03: `state パラメータなし。全状態を取得して caller でフィルタ` と明示\n\n### C-2: `mergePullRequest` で 403 Forbidden が未ハンドル → 解消\n\n- T-02c: `403 → { merged: false, message: \"Merge failed: permission denied...\" }` を追加\n- delta spec: `Scenario: Merge permission denied` シナリオ追加済み\n\n### C-3: ADR パスの誤り → 解消\n\n- T-13: `specrunner/adr/2026-05-19-gh-cli-to-rest-api.md` に修正済み\n\n### I-1: `Retry-After` / `X-RateLimit-Reset` 上限未規定 → 解消\n\n- T-02a: `min(Retry-After, 60)` / `min(X-RateLimit-Reset - now, 300)` の上限を明記\n- delta spec: 両シナリオに上限値を反映済み\n\n### I-2: T-02b での既存メソッド挙動変化が暗黙的 → 解消\n\n- T-02b に「挙動変化の明示」ブロックを追加。5xx retry 追加の影響とテスト更新方針を記述\n- `verifyTokenScopes` の AbortController timeout は `signal` として `request()` に渡す方針を明記\n\n### I-3: `createPullRequest` の 422 が未ハンドル → 解消\n\n- delta spec に `Scenario: Create PR validation error` (422 → `SpecRunnerError(GITHUB_API_ERROR)`) を追加\n\n---\n\n## Important（実装中に修正すること）\n\n### I-NEW: `specs/github-api-lib/spec.md` が delta の修正に追随していない\n\n- **場所**: `specrunner/changes/gh-cli-to-rest-api/specs/github-api-lib/spec.md`\n- **問題**: canonical spec が spec-review-001 の修正前の内容のまま残っており、delta spec と 4 点で矛盾している:\n\n| 差異 | canonical spec (誤) | delta spec (正) |\n|---|---|---|\n| `listPullRequests` signature | `(owner, repo, head, base, state)` — state あり | `(owner, repo, head, base)` — state なし |\n| 429 rate limit wait | cap なし (`Retry-After` header の値そのまま) | `min(Retry-After, 60)` 秒 |\n| X-RateLimit-Remaining=0 wait | cap なし (`X-RateLimit-Reset` epoch まで) | `min(X-RateLimit-Reset - now, 300)` 秒 |\n| 403 Forbidden (merge) | シナリオなし | `{ merged: false, message }` を返す |\n| 422 Unprocessable (create) | シナリオなし | `SpecRunnerError(GITHUB_API_ERROR)` をthrow |\n\n- **影響**: この変更が merge された後、`specs/github-api-lib/spec.md` が次の spec-change の baseline として参照される。誤った内容が残ると C-1/C-2/I-1 の regression を再招来するリスクがある。\n- **修正**: 実装フェーズ中に canonical spec を delta spec の内容に合わせて更新すること (T-14 完了前に実施)\n\n---\n\n## Minor（実装者の判断に委ねる）\n\n### M-1: `html_url` → `url` の mapping が暗黙的\n\n- T-02c は `POST /repos/.../pulls` の response から `html_url` を取得するが、port interface の戻り値は `url` と記述している。adapter 内で `html_url → url` を mapping することを tasks/delta spec のいずれも明示していない。\n- 実装で自然に解決される範囲だが、delta spec の `createPullRequest` シナリオに `response.html_url を url として返す` の一文を加えると精度が上がる。\n\n### M-2: token をログ・エラーメッセージに含めない旨が未明示（前回から継続）\n\n- `request()` method が Authorization header を構築するため、エラーログが詳細なリクエスト情報を出力すると token が漏れる経路がある。\n- tasks か delta spec に「error message / log に token 値を含めない」制約を 1 行追加することを推奨。\n\n### M-3: `runner.ts` のフィルタロジックが未記述\n\n- T-03 は「全状態を取得して caller でフィルタ」と書くが、`runner.ts` が何の state でフィルタするか（= 既存 OPEN PR の確認）を tasks に明記していない。実装者が既存コードを読めば判断できるため blocking ではない。\n\n---\n\n## セキュリティレビュー\n\n### 確認済み（問題なし）\n\n- **A01 Broken Access Control**: 403 → `{ merged: false }` の escalation 設計は適切。admin bypass は token 権限で暗黙処理（D4）。\n- **A02 Cryptographic Failures**: HTTPS 強制は GitHub API の前提として成立。token は Authorization header 経由。\n- **A03 Injection**: `owner`/`repo` は `getOriginInfo()` (git remote 解析) 由来。`prNumber` は TypeScript number 型で URL 組み込み。コード制御範囲の入力で injection リスクは低い。\n- **A05 Security Misconfiguration**: `X-GitHub-Api-Version` の class 定数管理（D5）は適切。\n- **A06 Outdated Components**: `2022-11-28` は現行 stable version。\n\n### 懸念（前回 M-2 から継続）\n\n- token のログ漏洩リスクは M-2 として前回も指摘済み。spec 上の制約がないまま実装に入るリスクが残る。\n\n---\n\n## 確認済み（問題なし）\n\n- delta spec 3 ファイルのフォーマット準拠: validation result は approved\n- design.md D1〜D8 の設計判断: すべて適切（前回確認済み、変更なし）\n- tasks.md の実装タスク: T-01〜T-14 の内容は delta spec と整合している\n- T-01 port interface: `state` パラメータなし、4 メソッドの戻り値型は正確\n- T-02a の rate limit cap: `min()` 上限は I-1 の要件を満たす\n- T-11d / T-11e のテスト設計: retry・field mapping の網羅性は適切\n- ADR パス: `specrunner/adr/2026-05-19-gh-cli-to-rest-api.md` で正しい\n\n---\n\n## 実装フェーズへの申し送り\n\n1. **I-NEW を最初に解消**: `specs/github-api-lib/spec.md` を delta と同期してから T-01 実装に入ること\n2. **T-02b の挙動変化**: 既存テストの 5xx mock は retry exhausted まで 5xx を返し続けるよう更新が必要（T-11a〜T-11c 実施時に注意）\n3. **M-2 の token ログ**: `request()` 実装時に error catch 部分で token が出力されないことを明示的に確認すること\n"
+        },
+        "startedAt": "2026-05-19T07:48:18.376Z",
+        "endedAt": "2026-05-19T07:53:16.672Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4175,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 10,
+            "outputTokens": 12800,
+            "cacheReadInputTokens": 228927,
+            "cacheCreationInputTokens": 51181
+          }
+        }
+      }
+    ],
+    "spec-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "e6c1b962-72ee-43f7-a204-e710ec44d6a7",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T07:46:37.863Z",
+        "endedAt": "2026-05-19T07:48:16.840Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 705,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 16,
+            "outputTokens": 5609,
+            "cacheReadInputTokens": 376570,
+            "cacheCreationInputTokens": 30590
+          }
+        }
+      }
+    ],
+    "test-case-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "a50ee06f-c02a-4e98-bab2-8edfbd56e81d",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T07:53:18.309Z",
+        "endedAt": "2026-05-19T07:55:36.099Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2927,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 10234,
+            "cacheReadInputTokens": 62615,
+            "cacheCreationInputTokens": 30454
+          }
+        }
+      }
+    ],
+    "implementer": [
+      {
+        "attempt": 1,
+        "sessionId": "61bc5459-15d6-4ef9-8e3c-2337e87e07ae",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T07:55:37.762Z",
+        "endedAt": "2026-05-19T09:00:11.425Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4291,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 8444,
+            "outputTokens": 197292,
+            "cacheReadInputTokens": 41312111,
+            "cacheCreationInputTokens": 605061
+          }
+        }
+      }
+    ],
+    "verification": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "failed",
+          "findingsPath": "specrunner/changes/gh-cli-to-rest-api/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — gh-cli-to-rest-api — iter 1\n\n## Verdict: failed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.3s | 0 |\n| 2 | typecheck | passed | 1.9s | 0 |\n| 3 | test | failed | 5.6s | 1 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/gh-cli-to-rest-api-43fdc201\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n ❯ tests/pipeline-integration.test.ts (37 tests | 1 failed) 2335ms\n     × returns status='awaiting-merge', steps['spec-review'] has 1 element with verdict=approved, no spec-fixer steps 190ms\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t138d\n\n Test Files  1 failed | 195 passed (196)\n      Tests  1 failed | 2214 passed (2215)\n   Start at  18:00:19\n   Duration  5.43s (transform 3.64s, setup 0ms, import 7.21s, tests 10.55s, environment 12ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-XM168A/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-qbjPuL/specrunner/credentials.json has loose permissions (recommend 0600).\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/gh-cli-to-rest-api-43fdc201/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  tests/pipeline-integration.test.ts > TC-010: runPipeline — iter=1 approved: spec-fixer not invoked > returns status='awaiting-merge', steps['spec-review'] has 1 element with verdict=approved, no spec-fixer steps\nAssertionError: expected 'awaiting-resume' to be 'awaiting-merge' // Object.is equality\n\nExpected: \"awaiting-merge\"\nReceived: \"awaiting-resume\"\n\n ❯ tests/pipeline-integration.test.ts:286:27\n    284|     });\n    285|\n    286|     expect(result.status).toBe(\"awaiting-merge\");\n       |                           ^\n    287|\n    288|     // spec-review: length 1, verdict=approved\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\nerror: script \"test\" exited with code 1\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-19T09:00:15.537Z",
+        "endedAt": "2026-05-19T09:00:27.154Z"
+      },
+      {
+        "attempt": 2,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "passed",
+          "findingsPath": "specrunner/changes/gh-cli-to-rest-api/verification-result.md",
+          "error": null,
+          "fileContent": "# Verification Result — gh-cli-to-rest-api — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 2.3s | 0 |\n| 2 | typecheck | passed | 1.9s | 0 |\n| 3 | test | passed | 5.6s | 0 |\n| 4 | lint | skipped | — | — |\n| 5 | security | skipped | — | — |\n\n## Phase: build\n\n```\n$ tsc --noEmit false --outDir dist\n\n```\n\n## Phase: typecheck\n\n```\n$ tsc --noEmit\n\n```\n\n## Phase: test\n\n```\n\n RUN  v4.1.5 ~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/gh-cli-to-rest-api-43fdc201\n\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\n[iter 1/1] starting design\n[iter 1] design verdict: escalation → halt\n[iter 1/1] starting design\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 1/3)...\nRetrying check 4: mergeStateStatus was UNKNOWN (attempt 2/3)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (1/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (2/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (3/5)...\nPost-push polling: mergeStateStatus=UNKNOWN, retrying (4/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (1/5)...\nPost-push polling: mergeStateStatus=BEHIND, retrying (2/5)...\nNo jobs found.\nJOB_ID\tSLUG\tSTEP\tSTATUS\tBRANCH\tAGE\njob-run-\tslug-job-run-1\tinit\trunning (stale?)\tfeat/test\t138d\n\n Test Files  196 passed (196)\n      Tests  2215 passed (2215)\n   Start at  18:49:26\n   Duration  5.36s (transform 3.42s, setup 0ms, import 7.07s, tests 10.28s, environment 12ms)\n\n\n$ vitest run\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-MgPxm7/specrunner/credentials.json has loose permissions (recommend 0600).\nWarning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-494ueU/specrunner/credentials.json has loose permissions (recommend 0600).\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 1/3)\nRetrying worktree add: lock contention (attempt 2/3)\nWarning: unknown request type 'unknown-type'.\nWarning: unknown request type 'spec_change'.\nWarning: unknown request type 'Spec-Change'.\nWarning: A vi.mock(\"node:child_process\") call in \"~/Documents/GitHub/spec-runner/.git/specrunner-worktrees/gh-cli-to-rest-api-43fdc201/tests/git-remote.test.ts\" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.\nSee: https://vitest.dev/guide/mocking/modules#how-it-works\n\n```\n\n## Phase: lint\n\n_(skipped — script not found in package.json)_\n\n## Phase: security\n\n_(skipped — script not found in package.json)_\n"
+        },
+        "startedAt": "2026-05-19T09:49:21.811Z",
+        "endedAt": "2026-05-19T09:49:33.221Z"
+      }
+    ],
+    "build-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "6b6489fe-b470-4dda-8b56-08d106bee430",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T09:00:27.172Z",
+        "endedAt": "2026-05-19T09:49:20.073Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4233,
+            "outputTokens": 14,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 165540,
+            "outputTokens": 161561,
+            "cacheReadInputTokens": 15654427,
+            "cacheCreationInputTokens": 360826
+          }
+        }
+      }
+    ],
+    "code-review": [
+      {
+        "attempt": 1,
+        "sessionId": "1835c8f8-bae8-41f3-8ca1-a354becd74e7",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/gh-cli-to-rest-api/review-feedback-001.md",
+          "error": null,
+          "fileContent": "# Review Feedback — gh-cli-to-rest-api (iteration 1)\n\n## Summary\n\n実装は全体として丁寧で、design.md の D1-D8 を概ね忠実に実装している。型シグネチャ、field mapping、retry middleware の構造は正しく、orchestrator/preflight/pr-status は REST 化されており、テスト 2215 件が green。一方で **T-11d (retry/rate-limit の unit test 新設) が事実上未実施で、429 / Retry-After / X-RateLimit-Reset / X-GitHub-Api-Version / 5xx exponential backoff の挙動はテストで検証されていない**。さらに `verifyBranch` が 5xx exhaustion 時に silently `true` を返す behavioral regression、`src/core/gh/error.ts` の dead helper 残存、`src/cli/ps.ts` の `gh pr view` subprocess 残存など、scope の取りこぼしが複数ある。\n\n## Findings\n\n### [critical] T-11d / TC-RC-001..008 retry/rate-limit middleware に対する unit test が存在しない\n- **file**: `tests/unit/adapter/github/` (期待: `github-client.test.ts` または同等ファイルが新設されるはずだった)\n- **issue**: tasks.md T-11d は `[x]` でチェック済みだが、実際には `Retry-After`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, `X-GitHub-Api-Version`, `API_VERSION = \"2022-11-28\"`, 429, exponential backoff のいずれにもアサーションするテストファイルが存在しない (`grep` で 0 件)。`tests/unit/adapter/github/` には `get-raw-file.test.ts` / `get-ref-sha.test.ts` / `verify-path.test.ts` の 3 ファイルのみで、これらは `mockHeaders.get` を一律 `null` にしており、新しい retry/rate-limit ロジックの分岐を踏まない。\n- **影響範囲**: test-cases.md の TC-RC-001 (X-GitHub-Api-Version header), TC-RC-002 (Authorization header), TC-RC-003 (401 no retry), TC-RC-004 (429 Retry-After), TC-RC-005 (Retry-After 60s cap), TC-RC-006 (X-RateLimit-Reset wait), TC-RC-007 (5xx exponential backoff success), TC-RC-008 (retry exhausted) のすべての must が unverified。TC-RC-002 の `Authorization: token ${token}` フォーマットも、コード上は `Authorization: token ghp_...` でハードコードされており fetch mock の引数アサーションが無い。\n- **suggestion**: `tests/unit/adapter/github/github-client-request.test.ts` を新規作成し、最低限 TC-RC-001..008 を fetch mock + sleepFn 注入で検証する。`mockFetch.mock.calls[i][1].headers` を直接覗いて X-GitHub-Api-Version / Authorization を確認すること。\n\n### [critical] `verifyBranch` が 5xx retry exhaustion で `true` を返す regression\n- **file**: `src/adapter/github/github-client.ts` (line 120-125)\n- **issue**: `request()` が 5xx retry を 3 回使い切ると **最後の 5xx response を return する** (line 102-104: `return response`)。`verifyBranch` はそれを `resp.status !== 404` で評価するため、503 が返ってきた場合に `true` を返す。これは「branch exists」と誤判定する severe な silent regression。tasks.md T-02b でも「既存メソッドは現在 5xx で即 throw する」と挙動変化を明示しており、本来 throw すべき。\n- **suggestion**: `verifyBranch` を以下に変更する:\n  ```ts\n  if (resp.status === 200) return true;\n  if (resp.status === 404) return false;\n  throw githubApiError(resp.status, `verifyBranch(${owner}/${repo}@${branch})`);\n  ```\n  あるいは `request()` が 5xx exhausted 時に response を返すのではなく throw に変える設計に統一する (こちらが望ましい — `getRawFile` を除く全 caller が 5xx を error として扱っているため)。\n\n### [major] `request()` の 5xx exhaustion 後の振る舞いが caller ごとに不揃い\n- **file**: `src/adapter/github/github-client.ts` (line 100-110)\n- **issue**: 5xx を 3 回 retry した後 `return response` するが、callers の取り扱いがバラバラ:\n  - `verifyBranch`: 503 → `true` (バグ、上記 critical 参照)\n  - `getRefSha`: 503 → `throw githubApiError` (正)\n  - `verifyPath`: 503 → `throw` (正)\n  - `getRawFile`: 503 → `return null` (silently swallow — 既存挙動と整合だが妥当性は微妙)\n  - `listPullRequests` / `getPullRequest`: 503 → `throw` (正)\n  - `createPullRequest`: 503 → `throw` (正)\n  - `mergePullRequest`: 503 → `{ merged: false, message }` を返す (escalation 経由でユーザに伝わるので妥当)\n- **suggestion**: `request()` 内で 5xx exhausted 時に `githubApiError` を throw する仕様に統一すれば、全 caller の `if (resp.status !== 200) throw ...` ガードがそのまま機能して挙動が揃う。caller 側で 5xx を吸収したいケースは `getRawFile` の 404 retry のようにメソッド固有 logic で wrap すればよい。\n\n### [major] retry exhausted 時に response.body を消費する前に再 read を試みる箇所がない (副次的だが)\n- **file**: `src/adapter/github/github-client.ts` (line 102-104)\n- **issue**: 5xx で `return response` した response は body が未消費なので caller が `.json()` / `.text()` を呼べる、これは OK。だが retry 直前に `Retry-After` ヘッダー以外の body を一切読まずに捨てている。例えば `X-Ratelimit-Used` の secondary rate limit (`Retry-After` なしで `documentation_url` を本文に含むケース) を判別できない。\n- **suggestion**: P2。現状の挙動でも GitHub の standard rate limit には対応できるので blocker ではない。issue としてメモするに留める。\n\n### [major] TC-RC-007 が要求する「2 回目 retry の sleep が 1 回目の 2 倍程度」を満たしていない可能性\n- **file**: `src/adapter/github/github-client.ts` (line 417-420)\n- **issue**: `jitterDelay(attempt)` は `1000 * 2^attempt + random*500` で、`attempt=0 → ~1000-1500ms`, `attempt=1 → ~2000-2500ms`, `attempt=2 → ~4000-4500ms`。これは仕様通り。ただし initial attempt が `attempt5xx=0` で sleep されるのは「1 回目失敗後 → attempt5xx=0 sleep → 2 回目試行」になる。tasks.md と test-cases.md の想定 (\"base=1s, factor=2\") とは整合している。ただし `attempt5xx++` の位置が sleep 後なので、5xx で 4 回試行する (initial + 3 retry) ことになる。TC-RC-008 が「合計 4 回」を期待しており、コードは正しい。**finding 自体は false positive、確認のみ**。\n\n### [major] `src/core/gh/error.ts` (dead helper) と `gh auth login` 言及が残存している\n- **file**: `src/core/gh/error.ts` (line 1-16)\n- **issue**: `buildGhFailureMessage` は本リクエストの T-03 で auth hint を `specrunner login` のみに簡素化すべき関数だが、ファイル本体には依然 `Run 'specrunner login' or 'gh auth login' to re-authenticate.` という文字列が残っている。さらに `src/core/pr-create/runner.ts` は `core/gh/error.ts` を import せず独自の `buildFailureMessage()` を local 定義しているため、`buildGhFailureMessage` は **完全に dead code**。grep で他の caller も見当たらない。\n- **suggestion**: (1) `src/core/gh/error.ts` ファイルごと削除、もしくは (2) 残すなら `gh auth login` 言及を消して `pr-create/runner.ts` から本 helper を再利用するよう統一する。dead code として残るのは過去にも指摘されている (`openspec-workflow/learned-patterns.md` line 1014)。\n\n### [major] `src/cli/ps.ts` に `gh pr view` subprocess 呼び出しが残存\n- **file**: `src/cli/ps.ts` (line 96-114)\n- **issue**: `checkPrMerged()` 関数が `spawnCommand(\"gh\", [\"pr\", \"view\", ...])` を呼び出している。Design.md の Goal「`gh` バイナリの install 前提を完全に除去する」と矛盾する。tasks.md T-14 の「`gh` の文字列が src/ 配下のプロダクションコードに残っていないことを grep で確認」も passing として扱われているが、実際には `src/cli/ps.ts:104` で残っている。`checkPrMerged` は `runPs()` から呼ばれるユーザ向けコマンドで、production code path。\n- **suggestion**: `runPs` が `GitHubClient` を受け取れるよう signature を変更し、`checkPrMerged(job, githubClient)` を `githubClient.getPullRequest(owner, repo, prNumber)` 呼び出しに置換する。あるいは scope outside と判断するなら、tasks.md T-14 の AC を未達として記録し follow-up を切る。\n\n### [major] `src/cli/command-registry.ts` の help 文字列に `gh pr view` 言及\n- **file**: `src/cli/command-registry.ts` (line 78, 116)\n- **issue**: `--pr=<num>        Reverse-lookup slug via gh pr view <num>` と書かれている。実装は REST API に置き換わったため description が嘘になっている。ユーザが見る help message なので user-facing inconsistency。\n- **suggestion**: `Reverse-lookup slug via GitHub REST API (PR <num>)` 等に書き換える。\n\n### [minor] `src/core/preflight.ts:97` のコメントが古い\n- **file**: `src/core/preflight.ts` (line 97)\n- **issue**: `// Step 2.5: GitHub token (both runtimes require it for PR creation / gh CLI)` というコメント。gh CLI 言及は無効。\n- **suggestion**: `// Step 2.5: GitHub token (required for PR operations via REST API)` に書き換える。\n\n### [minor] preflight.ts の冒頭 comment ブロックで `gh pr view` `gh / git binaries` `gh binary missing` の説明が古いまま\n- **file**: `src/core/finish/preflight.ts` (line 1-23)\n- **issue**: ファイル冒頭の責務コメント:\n  - L10: `3. gh pr view success + state           → pr-status.ts` (→ `3. getPullRequest success + state`)\n  - L14: `6. gh / git binaries available` (→ `6. git binary available`)\n  - L17: `TC-105: gh pr view auth failure → escalation` (→ TC-105 の本質はそのまま、表現を `getPullRequest auth failure` に更新)\n  - L21: `TC-121: gh binary missing → escalation` (TC-121 は test 側で git missing に書き換わっている)\n- **suggestion**: REST API ベースの記述に書き換える。読者の認知負荷を下げる cleanup。\n\n### [minor] `orchestrator.ts` の冒頭 comment にも古い記述\n- **file**: `src/core/finish/orchestrator.ts` (line 1-18)\n- **issue**: 「Phase 3: REST API squash merge」は正しいが、`spawnOrEscalate({ cmd: \"gh\", ... })` 言及が design.md / tasks.md には残らないものの header コメントには明示されていない。`finish/types.ts:7` の `Data returned from gh pr view for the feature PR.` も古い言及。\n- **suggestion**: header comment と types.ts の docstring を REST API 表現に統一。\n\n### [minor] dry-run plan の `admin-flag` 表示が誤解を招く\n- **file**: `src/core/finish/orchestrator.ts` (line 549, 559)\n- **issue**: `BLOCKED` のとき `admin-flag: yes (via admin token)` と表示するが、D4 で REST API には `--admin` 等価が無く「admin token を持っていれば暗黙的に bypass」という挙動。`yes` という表示は実際の dry-run plan を見たユーザに「`--admin` 相当の操作が走る」誤解を与える。\n- **suggestion**: `admin-flag: implicit (REST merge uses token's admin privileges if available)` 等の説明的表現に変える。あるいは TC-PM-007 の「`merge-strategy: \"REST API squash merge\"`」だけで十分なら admin-flag 行を削除する。\n\n### [minor] FINISH_USAGE の `--force` description も古い\n- **file**: `src/cli/command-registry.ts` (line 81, 119)\n- **issue**: `--force           Force merge even with failing checks (uses --admin)` と書かれている。`--admin` flag は REST API では存在しないので description が嘘。\n- **suggestion**: `--force           Force merge even with failing checks (relies on admin token)` 等に書き換える。\n\n### [minor] `force` flag が orchestrator.ts でほぼ未使用\n- **file**: `src/core/finish/orchestrator.ts` (line 202, MergePhase3Params.force)\n- **issue**: `mergeFeaturePrPhase3()` は `force` を引数で受け取るが、destructuring から `force` を抜いており実際に使われない (line 489)。`flags.force` を CLI 側で受けて UI に出すだけのフィールドになっている。\n- **suggestion**: `--force` の意味づけが REST API では実質失われるなら orchestrator/preflight から該当 field を消すか、`force=true` のときの分岐 (例えば BLOCKED でも merge を試行する) を明示する。\n\n### [minor] `request()` の `headers` 型キャストが緩い\n- **file**: `src/adapter/github/github-client.ts` (line 55)\n- **issue**: `const callerHeaders = (init.headers ?? {}) as Record<string, string>;` で `init.headers` を強制キャストしている。`RequestInit.headers` は `HeadersInit (= Headers | Record<string, string> | [string, string][])` なので、`Headers` インスタンスや配列形式で渡されると spread が壊れる。実用上は内部 caller しか居ないため問題化していないが、型安全性を損ねる。\n- **suggestion**: header merge を `new Headers()` ベースに統一する、もしくは callers が必ず plain object を渡す制約を comment で明示する。\n\n### [minor] `getRawFile` の retry が `request()` の 5xx retry と二重になっている\n- **file**: `src/adapter/github/github-client.ts` (line 141-167)\n- **issue**: tasks.md T-02b の注記通り意図的だが、5xx エラー時に `request()` 内部で 3 回 retry した後、さらに getRawFile が 404 として `maxRetries` (default 3) 回 retry する設計。実装は意図通りだが、5xx の場合に最大 3+1=4 回の API call が `maxRetries` 回繰り返され、worst case で 12-16 回程度になる可能性がある。\n- **suggestion**: 5xx の case は `return null` で fast-fail するよう explicit 分岐を追加すれば、無駄な retry を避けられる。現状でも壊れてはいないので follow-up 扱いで OK。\n\n### [minor] `mergePullRequest` の 200 path で `resp.json()` が常に成功する前提\n- **file**: `src/adapter/github/github-client.ts` (line 366-368)\n- **issue**: 200 時に `resp.json()` を呼ぶが、空 body / malformed JSON 時の error handling が無い。GitHub の merge endpoint は 200 で `{ sha, merged, message }` を返すのが仕様なので実用上は問題ないが、defensive coding として `.catch(() => ({}))` があったほうがよい。\n- **suggestion**: `const data = (await resp.json().catch(() => ({}))) as { message?: string };` に変える。critical ではない。\n\n### [nit] tasks.md の `[x]` 表示が実装と乖離\n- **file**: `specrunner/changes/gh-cli-to-rest-api/tasks.md` (T-11d, T-14)\n- **issue**: T-11d / T-14 が `[x]` でチェックされているが、上記 critical のとおり実装/テストが不足している。verification result も「passed」だが test 2215 件は既存テストが通っているだけで新規 TC-RC-001..008 を verify していない。\n- **suggestion**: implementer が完了報告する前に test-cases.md の must を 1 件 1 件 grep でチェックするべき。今後のプロセス改善メモ。\n\n## Test Coverage\n\n### MUST scenarios (test-cases.md)\n\n#### REST_CLIENT\n- [ ] TC-RC-001: 全リクエストに `X-GitHub-Api-Version` ヘッダー (未実装)\n- [ ] TC-RC-002: `Authorization: token` ヘッダー (未実装)\n- [ ] TC-RC-003: 401 → 即 throw、retry なし (未実装)\n- [ ] TC-RC-004: 429 → Retry-After 秒 wait (未実装)\n- [ ] TC-RC-005: Retry-After 60 秒 cap (未実装)\n- [ ] TC-RC-006: X-RateLimit-Remaining 0 → reset wait (未実装)\n- [ ] TC-RC-007: 5xx exponential backoff 3 retry (未実装)\n- [ ] TC-RC-008: 3 retry exhausted → throw (未実装)\n\n#### FIELD_MAPPING\n- [ ] TC-FM-001: mergeable_state: \"clean\" → \"CLEAN\" (直接テストなし、TC-PS 系で間接的に通過)\n- [ ] TC-FM-002: mergeable_state: \"blocked\" → \"BLOCKED\" (直接テストなし)\n- [ ] TC-FM-003: merged:true → \"MERGED\" (直接テストなし)\n- [ ] TC-FM-004: state:\"open\" → \"OPEN\" (直接テストなし)\n- [ ] TC-FM-005: mergeable:null → \"UNKNOWN\" (直接テストなし)\n\n#### PR_CREATE\n- [x] TC-PC-001: REST 経由で PR 作成 (TC-002 in pr-create/runner.test.ts)\n- [x] TC-PC-002: 既存 OPEN PR → existing URL (TC-001 in pr-create/runner.test.ts)\n- [x] TC-PC-003: PrCreateInput に githubToken なし (typecheck で担保)\n\n#### PR_STATUS\n- [x] TC-PS-001: fetchPrViewWithRetry が getPullRequest 使用 (preflight.test.ts)\n- [x] TC-PS-002: mergeable UNKNOWN 時 retry (TC-CONFLICT-003 in finish-orchestrator.test.ts)\n- [x] TC-PS-003: pollMergeStateAfterPush BLOCKED 検出 (TC-DIRTY-001 で DIRTY 経由検証、BLOCKED は要追加)\n\n#### PR_MERGE\n- [x] TC-PM-001: squash merge が REST 経由 (TC-FIN-BD-001 in finish-orchestrator.test.ts)\n- [ ] TC-PM-002: 405 → { merged: false } (直接テストなし)\n- [ ] TC-PM-003: 403 → permission denied message (直接テストなし)\n- [ ] TC-PM-004: 保護されていないブランチで merge 成功 (整合的に動作、明示テストなし)\n\n#### RESOLVE_TARGET\n- [x] TC-RT-001: PR 番号 → head branch 解決 (TC-109 in finish-resolve-target.test.ts)\n- [x] TC-RT-002: error message に gh 言及なし (resolve-target.ts line 121 で \"specrunner login\" 言及済、テストでは明示検証なし)\n\n#### PREFLIGHT\n- [x] TC-PF-001: checkBinaries が [\"git\"] のみ (TC-121 で git missing が verify される)\n- [x] TC-PF-002: PreflightInput に githubClient/owner/repo (typecheck で担保)\n\n#### DOCTOR\n- [x] TC-DC-001: gh-cli.ts ファイル削除 (ファイルシステム確認済)\n\n#### REGRESSION\n- [x] TC-RG-001: finish-orchestrator.test.ts green\n- [x] TC-RG-002: pr-create/runner.test.ts green\n- [x] TC-RG-003: adversarial/resolve-target green\n- [ ] TC-RG-005: production code に gh 文字列残存なし — `src/cli/ps.ts:104` に残存 (上記 finding 参照)\n\n#### INTEGRATION\n- [ ] TC-IT-001: gh なしで finish 完走 (専用テストなし、orchestrator テストで間接担保)\n- [ ] TC-IT-002: CLI entry point で owner/repo 解決 (finish.ts のロジック自体に対する unit test なし)\n\n## Verdict\n\n- **verdict**: needs-fix\n\n理由:\n1. **CRITICAL**: TC-RC-001..008 (8 件の must テスト) が未実装で、retry/rate-limit/version header の振る舞いがテストでまったく担保されていない。tasks.md T-11d が `[x]` になっているのは虚偽。\n2. **CRITICAL**: `verifyBranch` が 5xx exhaustion で `true` を返す silent regression。`verifyBranch` は spec-review pipeline の前提となる branch existence check で利用されており、503 を「存在する」と誤判定すると downstream の挙動が壊れる。\n3. **MAJOR**: `src/cli/ps.ts:104` で `gh pr view` subprocess が残存。tasks.md T-14 AC「`gh` 文字列が production code に残らない」が未達。\n4. **MAJOR**: `src/core/gh/error.ts` の `gh auth login` 言及と dead helper、`command-registry.ts` の help message、複数の comment が REST 化と乖離している。\n\n優先度高い fix としては (1) → (2) → (3) → (4) の順。(1)(2) は behavior に直結するため次 iteration で必ず修正。(3)(4) は dead code/comment cleanup で並行作業可能。\n"
+        },
+        "startedAt": "2026-05-19T09:49:33.241Z",
+        "endedAt": "2026-05-19T09:56:01.871Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4336,
+            "outputTokens": 17,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 385,
+            "outputTokens": 2107,
+            "cacheReadInputTokens": 82502,
+            "cacheCreationInputTokens": 22840
+          },
+          "claude-opus-4-7[1m]": {
+            "inputTokens": 35,
+            "outputTokens": 19845,
+            "cacheReadInputTokens": 3632373,
+            "cacheCreationInputTokens": 171864
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "2a8fb64b-1f8f-4911-b69a-825d7bde2b56",
+        "outcome": {
+          "verdict": "needs-fix",
+          "findingsPath": "specrunner/changes/gh-cli-to-rest-api/review-feedback-002.md",
+          "error": null,
+          "fileContent": "# Code Review Findings — gh-cli-to-rest-api (iteration 2)\n\n## Summary\n\niter 1 で指摘した critical 2 件 (retry/rate-limit middleware の unit test 不在、`verifyBranch` の 5xx silent regression) と major 3 件 (`src/cli/ps.ts` の `gh pr view` 残存、`src/core/gh/error.ts` の dead helper、`command-registry.ts` の help 文字列) はすべて修正済。`github-client-request.test.ts` (301 行) が新設され TC-RC-001..008 を網羅、`request()` は 5xx 枯渇時に `githubApiError` を throw する仕様に変更され caller 全体で挙動が揃った。\n\n残課題は次の通り:\n\n1. **must テスト 5 件 (TC-FM-001..005) の直接検証が依然不在** — 既存テストは `getPullRequest` の戻り値を mock し直接 internal 形式を返しているため、`mergeable_state` / `merged_at` / `head.ref` といった REST API field から internal 形式への mapping が GitHubApiClient 境界では 1 度も実測されていない。`mapPrState` / `mapMergeable` も unit test の網にかかっていない。\n2. **must テスト 3 件 (TC-PM-002 / TC-PM-003 / could TC-PM-006) も同様** — `mergePullRequest` の 403 / 405 / 409 → `{ merged: false }` 分岐に対する直接 unit test が存在しない (全 mock が `merged: true` のみ)。\n3. **iter 1 で minor 指摘された stale comment / dead config がそのまま** — `preflight.ts` 冒頭ブロック、`orchestrator.ts:549` の `admin-flag: yes (via admin token)` 表記、`force` flag の MergePhase3Params 上での未使用、`src/core/preflight.ts:97` の \"gh CLI\" 言及、`pr-create.ts:5` の \"spawn gh CLI\" 言及、`resolve-target.ts:7` の \"gh pr view\" 言及。\n4. **pr-create step が `owner: \"\"` / `repo: \"\"` を fallback として渡せる** — `StepDeps` で optional のため、CI route で実行時 silent failure (URL は `/repos//.../pulls`) になりうる。production code path では cli/run.ts 経由で必ず set されるが、guard が無いので future regression の窓口になる。\n\n主要な production 挙動は正しく動作しており typecheck/test も green。critical 級の問題は残っていないが、test-cases.md must スコープの数件が依然 unverified である点と、iter 1 minor の cleanup が放置されている点を需要に応じて記録する。\n\n## Findings\n\n### F-001: TC-FM-001..005 (must) の field mapping unit test が直接実施されていない\n- **severity**: major\n- **file**: `tests/unit/adapter/github/` (期待: `github-client-pr.test.ts` または同等で `getPullRequest` の REST→internal mapping を実測する unit test)\n- **description**: test-cases.md の TC-FM-001 (`mergeable_state: \"clean\"` → `mergeStateStatus: \"CLEAN\"`), TC-FM-002 (`blocked` → `BLOCKED`), TC-FM-003 (`merged: true` → `state: \"MERGED\"`), TC-FM-004 (`state: \"open\"` → `state: \"OPEN\"`), TC-FM-005 (`mergeable: null` → `mergeable: \"UNKNOWN\"`) はすべて must 優先度だが、GitHubApiClient の `getPullRequest()` に raw REST レスポンス (`mergeable_state` / `merged_at` / `head.ref` / `mergeable: boolean | null` 形) を流し込んで実際の mapping を verify する unit test が存在しない。既存の `tests/unit/core/finish/preflight.test.ts` 等は `getPullRequest` を mock 化し、すでに internal 形式 (`mergeStateStatus: \"CLEAN\"`) を返す形にしているため、`mapPrState` / `mapMergeable` 関数および `data.mergeable_state.toUpperCase()` の分岐は一度も走らない。grep で `mergeable_state` / `merged_at` の文字列はテストコードに 0 件。`bun run test` は green になるが iter 1 で `Risk 1` として記録された \"`null` を `\"UNKNOWN\"` に mapping する\" の整合性が壊れても検知できない。\n- **suggestion**: `tests/unit/adapter/github/github-client-pr.test.ts` を新設し、fetch mock が raw REST response を返した場合に GitHubApiClient.getPullRequest() の戻り値が internal 形式に変換されることを 5 ケース最低限 verify する。`getPullRequest(\"o\",\"r\",1)` を 1 回呼んで、response body に `{state:\"closed\", merged:true, merged_at:\"2024-...\", mergeable_state:\"clean\", mergeable:null, head:{ref:\"feat/x\"}}` を渡し、戻り値が `{state:\"MERGED\", mergeStateStatus:\"CLEAN\", headRefName:\"feat/x\", mergeable:\"UNKNOWN\"}` であることを 1 ケースで網羅できる。\n\n### F-002: TC-PM-002 / TC-PM-003 (must) と TC-PM-006 (should) の merge 失敗分岐に unit test がない\n- **severity**: major\n- **file**: `tests/unit/adapter/github/` (期待: `github-client-pr.test.ts` で `mergePullRequest` の 403 / 405 / 409 ハンドリングを verify)\n- **description**: test-cases.md の TC-PM-002 (`405 → { merged: false }`), TC-PM-003 (`403 → permission denied メッセージ`), TC-PM-006 (`409 → { merged: false }`) を直接 verify するテストが存在しない。`mergePullRequest` 呼び出しを mock しているテスト全 31 箇所はすべて `{ merged: true }` のみで、`{ merged: false }` を返すケースは 0。`src/adapter/github/github-client.ts:382-395` の 403 / 405 / 409 分岐は production 上では reachable だが unit test での coverage がない。\n- **suggestion**: F-001 と同じファイルで `mergePullRequest` に対し fetch mock が 200 / 403 / 405 / 409 / 500 を返すケースを並べ、戻り値が `{ merged, message }` 形で期待通りであることを verify する (4-5 ケース)。最低限 must の 405 / 403 は必須。\n\n### F-003: `outputDryRunPlan` の `admin-flag: yes (via admin token)` 表記が misleading のまま\n- **severity**: minor\n- **file**: `src/core/finish/orchestrator.ts:549`\n- **description**: iter 1 で指摘した「REST API には `--admin` 等価 flag がなく admin token の暗黙 bypass で動く (D4)」という事実に対し、dry-run plan 出力は依然 `admin-flag: yes (via admin token)` と表示する。`yes` は `--admin` flag が立った旧 gh CLI 時代の文言を引きずっており、REST API では存在しない概念。ユーザに「`--admin` 相当の操作が走る」と誤解させる。\n- **suggestion**: `admin-flag: implicit (REST merge uses token's admin privileges if available)` 等の説明的表現に変える、または admin-flag 行を削除して `merge-strategy: \"REST API squash merge\"` の 1 行で済ませる。\n\n### F-004: `force` flag が `mergeFeaturePrPhase3` で未使用のまま\n- **severity**: minor\n- **file**: `src/core/finish/orchestrator.ts:202`, `:475`, `:488`\n- **description**: `MergePhase3Params.force: boolean` を引数として受け取るが destructuring (line 489: `const { prNumber, githubClient, owner, repo, slug, baseBranch, sleepFn } = params;`) で `force` を抜いており実際に使われない。iter 1 で同件を指摘。REST API merge では `--admin` flag が消えたため `--force` の意味づけが実質失われており、CLI flag だけが残って behavior に影響しないゴーストになっている。\n- **suggestion**: (a) `mergeFeaturePrPhase3` から `force` field を削除、CLI 側の `--force` flag は次回 release で deprecate アナウンスし削除、または (b) `force=true` の場合に `BLOCKED` でも merge を試行する分岐を明示的に書き加えて意味を回復する。今 release では (a) が無難。\n\n### F-005: pr-create step が `owner: \"\"` / `repo: \"\"` を fallback として渡す\n- **severity**: minor\n- **file**: `src/core/step/pr-create.ts:45-46`\n- **description**: `StepDeps` は `owner?: string` / `repo?: string` (optional) なので、step が `runPrCreate` を呼ぶ際 `deps.owner ?? \"\"` / `deps.repo ?? \"\"` でフォールバックしている。production の `cli/run.ts` → `LocalRuntime.buildDeps` 経路では常に非空文字列が入るので現状壊れていないが、empty string が渡ると GitHub API URL が `https://api.github.com/repos//.../pulls` となり 404 (`Not Found`) で silent failure し、`buildFailureMessage` の hint に流れる。`if (!deps.githubClient) throw` の隣に `if (!deps.owner || !deps.repo) throw` を足せば、future regression の早期検知になる。\n- **suggestion**: `pr-create.ts:35` の `githubClient` ガードに合わせて `owner` / `repo` の必須チェックを足す。あるいは `StepDeps` の `owner` / `repo` を必須に変える (pr-create を呼ぶ context は常に PR step なので妥当)。\n\n### F-006: 各 module 冒頭の責務 docstring が REST 化前のまま (iter 1 minor の積み残し)\n- **severity**: minor\n- **file**: 複数\n  - `src/core/finish/preflight.ts:10`: `3. gh pr view success + state` → `getPullRequest success + state`\n  - `src/core/finish/preflight.ts:13`: `6. gh / git binaries available` → `6. git binary available`\n  - `src/core/finish/preflight.ts:17`: `TC-105: gh pr view auth failure → escalation` → `getPullRequest auth failure`\n  - `src/core/finish/preflight.ts:21`: `TC-121: gh binary missing → escalation` (TC-121 は test 側で git missing にリライト済)\n  - `src/core/finish/preflight.ts:78` (comment): `(git only — gh CLI is no longer required)` は OK だが、ファイル冒頭ブロックの説明と整合させる\n  - `src/core/finish/orchestrator.ts:5`: `Destructive ops: git commit / git push / gh pr merge` — `gh pr merge` を `REST API merge` に\n  - `src/core/finish/types.ts:7`: `Data returned from gh pr view for the feature PR.` → `Data returned from getPullRequest for the feature PR.`\n  - `src/core/preflight.ts:97`: `// Step 2.5: GitHub token (both runtimes require it for PR creation / gh CLI)` → `// Step 2.5: GitHub token (required for PR operations via REST API)`\n  - `src/core/finish/resolve-target.ts:7`: `TC-109: --pr <num> → gh pr view → headRefName → ...` → `getPullRequest → headRefName`\n  - `src/core/step/pr-create.ts:5`: `Calls runPrCreate() to spawn gh CLI` → `Calls runPrCreate() to call GitHub REST API`\n- **description**: REST API 化が完了しているがコード comment が gh CLI 時代のまま。読者が file を初めて読んだ際に「gh CLI を呼んでいる」と誤解する。\n- **suggestion**: 各 file の冒頭 docstring と inline comment を REST API ベースの表現に書き換える。動作には影響しないため低優先度。\n\n### F-007: `mergePullRequest` の 200 path で `resp.json()` が空 body 時に throw する可能性 (iter 1 minor の再掲)\n- **severity**: minor\n- **file**: `src/adapter/github/github-client.ts:378`\n- **description**: 200 時に `const data = (await resp.json()) as { message?: string };` を呼ぶ。GitHub の merge endpoint は規約上 `{ sha, merged, message }` を返すので実用上は壊れないが、test mock や proxy 経由で空 body / malformed JSON を受けると unhandled exception になり caller の `try { mergeResult = await ... } catch (err) { ... }` に飛んでしまう (= 「merge は成功したのに escalation が出る」見かけ上の regression)。\n- **suggestion**: 一行で defensive にする: `const data = (await resp.json().catch(() => ({}))) as { message?: string };` (line 390 と同パターン)。\n\n### F-008: `request()` の header 型キャストが緩い (iter 1 minor の再掲)\n- **severity**: minor\n- **file**: `src/adapter/github/github-client.ts:55`\n- **description**: `const callerHeaders = (init.headers ?? {}) as Record<string, string>;` で `init.headers` を強制キャストしている。`RequestInit.headers` の正規型は `HeadersInit (= Headers | Record<string, string> | [string, string][])`。callers が plain object 以外を渡すと spread が想定通り動かない。現在 caller は内部のみで plain object が確実だが、`@anthropic-ai/claude-agent-sdk` 越しに渡る将来の経路 (もしくは middleware 拡張) で破壊される可能性。\n- **suggestion**: `new Headers()` ベースに統一する、もしくは `request()` の `init.headers` 引数の型を `Record<string, string>` に絞ったローカル `init` 型に変える。\n\n## Test Coverage\n\n### MUST scenarios (test-cases.md)\n\n#### REST_CLIENT (8/8 covered by new file `github-client-request.test.ts`)\n- [x] TC-RC-001: X-GitHub-Api-Version header\n- [x] TC-RC-002: Authorization: token header\n- [x] TC-RC-003: 401 → throw, no retry\n- [x] TC-RC-004: 429 → Retry-After wait + retry\n- [x] TC-RC-005: Retry-After 60s cap\n- [x] TC-RC-006: X-RateLimit-Remaining=0 → reset wait\n- [x] TC-RC-007: 5xx exponential backoff 3 retry\n- [x] TC-RC-008: 5xx exhausted → throw\n\n#### FIELD_MAPPING (0/5 must directly verified; F-001)\n- [ ] TC-FM-001: mergeable_state: \"clean\" → \"CLEAN\"\n- [ ] TC-FM-002: mergeable_state: \"blocked\" → \"BLOCKED\"\n- [ ] TC-FM-003: merged: true → \"MERGED\"\n- [ ] TC-FM-004: state: \"open\" → \"OPEN\"\n- [ ] TC-FM-005: mergeable: null → \"UNKNOWN\"\n\n#### PR_CREATE (3/3 must covered)\n- [x] TC-PC-001: REST 経由で PR 作成 (TC-002)\n- [x] TC-PC-002: 既存 OPEN PR → existing URL (TC-001)\n- [x] TC-PC-003: PrCreateInput に githubToken なし (typecheck)\n\n#### PR_STATUS (3/3 must covered)\n- [x] TC-PS-001: fetchPrViewWithRetry が getPullRequest 使用 (preflight.test.ts)\n- [x] TC-PS-002: mergeable UNKNOWN retry (finish-orchestrator.test.ts)\n- [x] TC-PS-003: BLOCKED 検出 (DIRTY 経由)\n\n#### PR_MERGE (1/4 must directly verified; F-002)\n- [x] TC-PM-001: squash merge 成功 (TC-FIN-BD-001)\n- [ ] TC-PM-002: 405 → { merged: false } (直接テストなし)\n- [ ] TC-PM-003: 403 → permission denied メッセージ (直接テストなし)\n- [x] TC-PM-004: 保護されていないブランチで merge 成功 (TC-PM-001 で間接的に担保)\n\n#### RESOLVE_TARGET (2/2 must covered)\n- [x] TC-RT-001: PR 番号 → head branch 解決 (TC-109)\n- [x] TC-RT-002: error message に gh 言及なし (resolve-target.ts:121)\n\n#### PREFLIGHT (2/2 must covered)\n- [x] TC-PF-001: checkBinaries が [\"git\"] のみ (TC-121)\n- [x] TC-PF-002: PreflightInput に githubClient/owner/repo (typecheck)\n\n#### DOCTOR (1/1 must covered)\n- [x] TC-DC-001: gh-cli.ts ファイル削除 (filesystem 確認済)\n\n#### REGRESSION (3/3 must covered)\n- [x] TC-RG-001: finish-orchestrator.test.ts green\n- [x] TC-RG-002: pr-create/runner.test.ts green\n- [x] TC-RG-003: adversarial/resolve-target green\n- [x] TC-RG-005: production code に gh 残存なし (`src/cli/ps.ts` の `gh pr view` も REST 化済を確認)\n\n#### INTEGRATION (1/2 must covered)\n- [x] TC-IT-001: gh なしで finish 完走 (orchestrator テストで間接担保)\n- [x] TC-IT-002: CLI entry point で owner/repo 解決 (finish.ts:97-105 + integration test)\n\n### Must coverage summary\n- Total must: 33\n- Direct coverage: 25\n- Missing direct verification: 8 (TC-FM-001..005 + TC-PM-002 + TC-PM-003 + INTEGRATION の 1 件は間接担保のみ)\n\n## Verdict\n\n- **verdict**: needs-fix\n\n理由:\n- iter 1 で指摘した critical 2 件 + major 3 件は完全に解消されており、production 挙動の血流は正しい。\n- 残課題は (1) must テスト 7 件の直接 verification 不足 (F-001 + F-002) と (2) iter 1 minor の cleanup 積み残し (F-003〜F-008) の 2 ジャンル。critical/重大な behavior bug は無い。\n- 一見 `approved` でも構わないが、test-cases.md の must スコープを「直接 verify されていない」状態で merge すると、将来 `mapPrState` / `mapMergeable` / `mergePullRequest` の 403/405 分岐に regression が入った時に検知できない。test-cases.md は仕様の一部であり must は契約と同義なので、`needs-fix` (F-001 + F-002 だけでも対応) を推奨する。\n- F-003 ～ F-008 は minor で blocking ではない。F-001 + F-002 を片付けるタイミングでまとめて cleanup できれば望ましいが必須ではない。\n\n優先度: **F-001 → F-002** (must coverage) を最優先で対応。F-003 ～ F-008 は同 PR で序でに直すか別 issue 切り出しでも可。\n"
+        },
+        "startedAt": "2026-05-19T10:14:59.543Z",
+        "endedAt": "2026-05-19T10:22:36.613Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4336,
+            "outputTokens": 21,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 5,
+            "outputTokens": 1648,
+            "cacheReadInputTokens": 56274,
+            "cacheCreationInputTokens": 19118
+          },
+          "claude-opus-4-7[1m]": {
+            "inputTokens": 62,
+            "outputTokens": 20959,
+            "cacheReadInputTokens": 5930584,
+            "cacheCreationInputTokens": 175665
+          }
+        }
+      },
+      {
+        "attempt": 3,
+        "sessionId": "5997cb23-b50e-45b7-adf8-2379644763f6",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": "specrunner/changes/gh-cli-to-rest-api/review-feedback-003.md",
+          "error": null,
+          "fileContent": "# Code Review Findings — gh-cli-to-rest-api (iteration 3)\n\n## Summary\n\nIteration 3 addressed both major findings from iter-2: `github-client-pr.test.ts` was added with direct unit tests for TC-FM-001..005 and TC-PM-002/003/006. All iter-2 stale-comment minor findings (F-006) were also resolved — `preflight.ts`, `orchestrator.ts`, `types.ts`, `pr-create.ts`, `resolve-target.ts`, and `src/core/preflight.ts` are now updated to REST API wording. The `force` field was removed from `MergePhase3Params`, resolving F-004. The `owner`/`repo` empty-string fallback in `pr-create.ts` was replaced with an explicit `throw`, resolving F-005.\n\nProduction behavior is correct: `gh` CLI dependency is fully eliminated from all production paths, retry/rate-limit middleware is correct, field mapping is verified by direct unit tests, and all tests pass (verification-result.md: green).\n\n---\n\n## Findings\n\n### F-001: `finish-adversarial.test.ts` file-header comment still references \"gh binary missing\"\n\n- **severity**: minor\n- **file**: `tests/finish-adversarial.test.ts` (file-level doc comment)\n- **description**: The file-level doc comment references `TC-121: gh binary missing → escalation`. The actual `describe` block correctly says `TC-121: git binary missing → escalation`. The stale \"gh binary\" in the header is a copy-paste carry-over from before the REST migration. It does not affect behavior or test logic but is misleading for readers skimming the file header.\n- **recommendation**: Update the file-header comment to `TC-121: git binary missing → escalation` to match the describe block.\n\n### F-002 (note): `outputDryRunPlan` no longer emits `admin-flag` line — iter-2 F-003 resolved\n\n- **severity**: note\n- **file**: `src/core/finish/orchestrator.ts`\n- **description**: Iter-2 finding F-003 flagged the misleading `admin-flag: yes (via admin token)` output. The current implementation does not emit an `admin-flag` line at all. TC-PM-007 (`merge-strategy: \"REST API squash merge\"` appears in dry-run plan) is satisfied. The resolution is correct; recording as a note for completeness.\n\n---\n\n## Test Coverage (MUST scenarios from test-cases.md)\n\n### REST_CLIENT (8/8)\n- [x] TC-RC-001: `X-GitHub-Api-Version` header — `github-client-request.test.ts`\n- [x] TC-RC-002: `Authorization: token` header — `github-client-request.test.ts`\n- [x] TC-RC-003: 401 → throw immediately, no retry — `github-client-request.test.ts`\n- [x] TC-RC-004: 429 → Retry-After wait + retry — `github-client-request.test.ts`\n- [x] TC-RC-005: Retry-After 60s cap — `github-client-request.test.ts`\n- [x] TC-RC-006: `X-RateLimit-Remaining=0` → reset wait — `github-client-request.test.ts`\n- [x] TC-RC-007: 5xx exponential backoff 3 retry — `github-client-request.test.ts`\n- [x] TC-RC-008: 5xx exhausted → throw — `github-client-request.test.ts`\n\n### FIELD_MAPPING (5/5)\n- [x] TC-FM-001: `mergeable_state: \"clean\"` → `mergeStateStatus: \"CLEAN\"` — `github-client-pr.test.ts`\n- [x] TC-FM-002: `mergeable_state: \"blocked\"` → `mergeStateStatus: \"BLOCKED\"` — `github-client-pr.test.ts`\n- [x] TC-FM-003: `merged: true` → `state: \"MERGED\"` — `github-client-pr.test.ts`\n- [x] TC-FM-004: `state: \"open\"` → `state: \"OPEN\"` — `github-client-pr.test.ts`\n- [x] TC-FM-005: `mergeable: null` → `mergeable: \"UNKNOWN\"` — `github-client-pr.test.ts`\n\n### PR_CREATE (3/3)\n- [x] TC-PC-001: REST 経由で PR 作成成功 — `runner.test.ts`\n- [x] TC-PC-002: 既存 OPEN PR → existing URL 返却 — `runner.test.ts`\n- [x] TC-PC-003: `githubToken` なしの型エラー — typecheck\n\n### PR_STATUS (3/3)\n- [x] TC-PS-001: `fetchPrViewWithRetry` が `getPullRequest` 使用 — `preflight.test.ts`\n- [x] TC-PS-002: `mergeable: \"UNKNOWN\"` 時 retry — `finish-orchestrator.test.ts`\n- [x] TC-PS-003: `pollMergeStateAfterPush` BLOCKED 検出 — `finish-orchestrator.test.ts`\n\n### PR_MERGE (4/4)\n- [x] TC-PM-001: squash merge が REST 経由で成功 — `github-client-pr.test.ts` + `finish-orchestrator.test.ts`\n- [x] TC-PM-002: 405 → `{ merged: false }` — `github-client-pr.test.ts`\n- [x] TC-PM-003: 403 → permission denied メッセージ — `github-client-pr.test.ts`\n- [x] TC-PM-004: 保護されていないブランチで merge 成功 — TC-PM-001 で間接担保\n\n### RESOLVE_TARGET (2/2)\n- [x] TC-RT-001: PR 番号 → head branch 解決 — `finish-resolve-target.test.ts`\n- [x] TC-RT-002: error message に `gh` 言及なし — `resolve-target.ts` で `Run 'specrunner login'`\n\n### PREFLIGHT (2/2)\n- [x] TC-PF-001: `checkBinaries` が `[\"git\"]` のみ — `finish-adversarial.test.ts`\n- [x] TC-PF-002: `PreflightInput` に `githubClient/owner/repo` — typecheck\n\n### DOCTOR (1/1)\n- [x] TC-DC-001: `gh-cli.ts` ファイル削除確認済み\n\n### REGRESSION (3/3)\n- [x] TC-RG-001: `finish-orchestrator.test.ts` green\n- [x] TC-RG-002: `pr-create/runner.test.ts` green\n- [x] TC-RG-003: adversarial / resolve-target green\n- [x] TC-RG-005: production code に `gh` 文字列残存なし\n\n### INTEGRATION (2/2)\n- [x] TC-IT-001: `gh` なしで finish 完走 — orchestrator テストで間接担保\n- [x] TC-IT-002: CLI entry point で `owner/repo` 解決 — `finish.ts`\n\n**Must coverage**: 33 / 33\n\n---\n\n## Verdict\n\n- **verdict**: approved\n\niter-2 で要求された major 2 件（TC-FM-001..005 フィールドマッピング直接 unit test、TC-PM-002/003 merge 失敗分岐 unit test）がいずれも `github-client-pr.test.ts`（新設、263 行）で完全にカバーされた。iter-2 minor F-003〜F-006 もすべて対処済み。test-cases.md の must 33 件が直接または構造的に検証されており、typecheck + test green を確認。残る F-001 は 1 行コメント修正で merge を blocking しない minor。\n"
+        },
+        "startedAt": "2026-05-19T10:26:54.069Z",
+        "endedAt": "2026-05-19T10:31:10.652Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 4336,
+            "outputTokens": 23,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 43,
+            "outputTokens": 12901,
+            "cacheReadInputTokens": 3311619,
+            "cacheCreationInputTokens": 140985
+          }
+        }
+      }
+    ],
+    "code-fixer": [
+      {
+        "attempt": 1,
+        "sessionId": "a2355e97-7d03-4dc3-a8ef-6ae58ef767f1",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T09:56:03.751Z",
+        "endedAt": "2026-05-19T10:14:57.660Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 2905,
+            "outputTokens": 16,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 49,
+            "outputTokens": 22992,
+            "cacheReadInputTokens": 2670738,
+            "cacheCreationInputTokens": 67656
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "sessionId": "a2355e97-7d03-4dc3-a8ef-6ae58ef767f1",
+        "outcome": {
+          "verdict": "approved",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T10:22:38.356Z",
+        "endedAt": "2026-05-19T10:26:52.262Z",
+        "modelUsage": {
+          "claude-sonnet-4-6": {
+            "inputTokens": 35,
+            "outputTokens": 13269,
+            "cacheReadInputTokens": 3067329,
+            "cacheCreationInputTokens": 29220
+          }
+        }
+      }
+    ],
+    "adr-gen": [
+      {
+        "attempt": 1,
+        "sessionId": "0428abf6-1fed-4318-bf27-14e2490e1d43",
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": null,
+          "error": null,
+          "fileContent": null
+        },
+        "startedAt": "2026-05-19T10:31:12.470Z",
+        "endedAt": "2026-05-19T10:31:46.022Z",
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 3035,
+            "outputTokens": 18,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "claude-sonnet-4-6": {
+            "inputTokens": 6,
+            "outputTokens": 1508,
+            "cacheReadInputTokens": 85624,
+            "cacheCreationInputTokens": 19872
+          }
+        }
+      }
+    ],
+    "pr-create": [
+      {
+        "attempt": 1,
+        "sessionId": null,
+        "outcome": {
+          "verdict": "success",
+          "findingsPath": "specrunner/changes/gh-cli-to-rest-api/pr-create-result.md",
+          "error": null,
+          "fileContent": "# pr-create Result — gh-cli-to-rest-api\n\n## Status: success\n\n## PR\n\n- **URL**: https://github.com/color4pen/spec-runner/pull/330\n- **Number**: 330\n- **CreatedAt**: 2026-05-19T10:31:49.685Z\n- **Action**: created\n"
+        },
+        "startedAt": "2026-05-19T10:31:46.077Z",
+        "endedAt": "2026-05-19T10:31:49.686Z"
+      }
+    ]
+  },
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/337",
+    "number": 337,
+    "createdAt": "2026-05-19T10:31:49.685Z"
+  }
+}
