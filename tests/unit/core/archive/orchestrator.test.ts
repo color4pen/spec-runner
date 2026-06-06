@@ -6,6 +6,8 @@
  * TC-006: awaiting-archive → archived 遷移
  * TC-013: terminal status の job は archive で no-op exit 0
  * TC-AO-NOTFOUND: slug に対応する job が存在しない場合は exit 2
+ * TC-AO-ORDER: Phase 1 順序 (mv → markJobArchived → git add → commit → push)
+ * TC-AO-IDEMPOTENT: folder 移動済み・awaiting-archive の冪等再実行
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
@@ -213,7 +215,8 @@ describe("TC-003: change folder が存在する場合のアーカイブ（正常
     );
     expect(pushCall).toBeDefined();
 
-    expect(markJobArchived).toHaveBeenCalledWith("test-job-id", CWD);
+    // markJobArchived called with (slug, cwd) — D1/D2/D3
+    expect(markJobArchived).toHaveBeenCalledWith(SLUG, CWD);
   });
 });
 
@@ -260,7 +263,7 @@ describe("TC-005: worktree が存在する job を archive する", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-006: awaiting-archive の job を archive する", () => {
-  it("markJobArchived が job id と cwd で呼ばれる", async () => {
+  it("markJobArchived が (slug, cwd) で呼ばれる（D1/D2/D3）", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     const jobId = "job-awaiting-archive-001";
     (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
@@ -282,6 +285,106 @@ describe("TC-006: awaiting-archive の job を archive する", () => {
     const result = await runArchiveOrchestrator({ slug: SLUG, cwd: CWD, spawn: makeSpawn(0), fs: makeFs() });
 
     expect(result).toEqual({ exitCode: 0 });
-    expect(markJobArchived).toHaveBeenCalledWith(jobId, CWD);
+    // D1/D2/D3: called with (slug, cwd) not (jobId, cwd)
+    expect(markJobArchived).toHaveBeenCalledWith(SLUG, CWD);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-AO-ORDER: Phase 1 順序 — mv → markJobArchived → git add → commit → push
+// ---------------------------------------------------------------------------
+
+describe("TC-AO-ORDER: Phase 1 実行順序の検証", () => {
+  it("archiveChangeFolder → markJobArchived → git add specrunner/changes/ → commitArchive → push", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeJobState({ status: "awaiting-archive" }),
+    ]);
+
+    const { assertJobFinishable, markJobArchived } = await import("../../../../src/core/finish/job-state-update.js");
+    (assertJobFinishable as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
+
+    const { archiveChangeFolder } = await import("../../../../src/core/finish/archive-change-folder.js");
+    const { commitArchive } = await import("../../../../src/core/finish/commit-archive.js");
+
+    const callOrder: string[] = [];
+
+    (archiveChangeFolder as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+      callOrder.push("archiveChangeFolder");
+      return { ok: true, skipped: false, message: "archived" };
+    });
+    (markJobArchived as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+      callOrder.push("markJobArchived");
+    });
+    (commitArchive as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+      callOrder.push("commitArchive");
+      return { ok: true, skipped: false, message: "committed" };
+    });
+
+    const spawn = vi.fn().mockImplementation(async (_cmd: string, args: string[]) => {
+      if (args[0] === "add") callOrder.push("git-add");
+      else if (args[0] === "push" && args[2] !== "--delete") callOrder.push("git-push");
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }) as unknown as SpawnFn;
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    const result = await runArchiveOrchestrator({ slug: SLUG, cwd: CWD, spawn, fs: makeFs() });
+
+    expect(result).toEqual({ exitCode: 0 });
+
+    // Verify ordering: archiveChangeFolder → markJobArchived → git-add → commitArchive → git-push
+    const archiveIdx = callOrder.indexOf("archiveChangeFolder");
+    const markIdx = callOrder.indexOf("markJobArchived");
+    const addIdx = callOrder.indexOf("git-add");
+    const commitIdx = callOrder.indexOf("commitArchive");
+    const pushIdx = callOrder.lastIndexOf("git-push");
+
+    expect(archiveIdx).toBeGreaterThanOrEqual(0);
+    expect(markIdx).toBeGreaterThan(archiveIdx);
+    expect(addIdx).toBeGreaterThan(markIdx);
+    expect(commitIdx).toBeGreaterThan(addIdx);
+    expect(pushIdx).toBeGreaterThan(commitIdx);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-AO-IDEMPOTENT: folder 移動済み・awaiting-archive の冪等再実行
+// ---------------------------------------------------------------------------
+
+describe("TC-AO-IDEMPOTENT: folder 移動済みで awaiting-archive の冪等再実行", () => {
+  it("archiveChangeFolder skip → markJobArchived → stage → commit → push", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeJobState({ status: "awaiting-archive" }),
+    ]);
+
+    const { assertJobFinishable, markJobArchived } = await import("../../../../src/core/finish/job-state-update.js");
+    (assertJobFinishable as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
+    (markJobArchived as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    const { archiveChangeFolder } = await import("../../../../src/core/finish/archive-change-folder.js");
+    // Simulate already-moved: skipped
+    (archiveChangeFolder as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      skipped: true,
+      message: "skipping — folder already moved",
+    });
+
+    const { commitArchive } = await import("../../../../src/core/finish/commit-archive.js");
+    (commitArchive as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, skipped: false, message: "committed" });
+
+    const spawn = makeSpawn(0);
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    const result = await runArchiveOrchestrator({ slug: SLUG, cwd: CWD, spawn, fs: makeFs() });
+
+    expect(result).toEqual({ exitCode: 0 });
+    // markJobArchived still called to transition status in archive location
+    expect(markJobArchived).toHaveBeenCalledWith(SLUG, CWD);
+    // git add called to stage state.json changes
+    const spawnMock = spawn as ReturnType<typeof vi.fn>;
+    const addCall = spawnMock.mock.calls.find(
+      (c: unknown[]) => c[0] === "git" && Array.isArray(c[1]) && (c[1] as string[])[0] === "add",
+    );
+    expect(addCall).toBeDefined();
   });
 });

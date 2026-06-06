@@ -285,6 +285,13 @@ export class ManagedRuntime implements RuntimeStrategy {
     // no-op: managed runtime does not commit/push from the CLI
   }
 
+  /**
+   * D5: no-op for managed runtime — cloud agent manages branch state independently.
+   */
+  async commitFinalState(_deps: unknown, _state: unknown): Promise<void> {
+    // no-op
+  }
+
   async validateStepInputs(inputs: RequiredInput[], cwd: string, branch: string | null): Promise<void> {
     if (inputs.length === 0) return;
 

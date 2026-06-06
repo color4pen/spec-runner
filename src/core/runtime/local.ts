@@ -27,7 +27,7 @@ import {
   writeOutputTemplates,
   cleanupOutputTemplates,
 } from "../artifact/copy-artifacts.js";
-import { commitAndPush } from "../step/commit-push.js";
+import { commitAndPush, commitFinalState } from "../step/commit-push.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput } from "../port/runtime-strategy.js";
@@ -418,6 +418,18 @@ export class LocalRuntime implements RuntimeStrategy {
     logPipelineDiag("executor:commit:pre", `step=${step.name}`);
     await commitAndPush(step, state, deps, headBeforeStep, commitPushInfra);
     logPipelineDiag("executor:commit:post", `step=${step.name}`);
+  }
+
+  /**
+   * D5: commit and push slug canonical state after pipeline running → awaiting-archive transition.
+   * - git add -A → commit "finalize: <slug>" → push origin <branch> (1 retry)
+   * - Push failures warn on stderr but do not throw.
+   */
+  async commitFinalState(deps: PipelineDeps, state: JobState): Promise<void> {
+    const cwd = deps.cwd ?? process.cwd();
+    const branch = state.branch ?? "";
+    const slug = deps.slug;
+    await commitFinalState({ cwd, branch, slug, spawnFn: this.spawnFn });
   }
 
   async validateStepInputs(inputs: RequiredInput[], cwd: string, branch: string | null): Promise<void> {

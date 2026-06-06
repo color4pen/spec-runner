@@ -115,6 +115,7 @@ function buildMockRuntime(opts: {
     prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
     finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
     validateStepInputs: vi.fn().mockResolvedValue(undefined),
+    commitFinalState: vi.fn().mockResolvedValue(undefined),
   };
 }
 

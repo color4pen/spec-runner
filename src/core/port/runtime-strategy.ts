@@ -218,4 +218,24 @@ export interface RuntimeStrategy {
    * D3 (step-io-contracts): pre-execution validation seam in RuntimeStrategy.
    */
   validateStepInputs(inputs: RequiredInput[], cwd: string, branch: string | null): Promise<void>;
+
+  // ---------------------------------------------------------------------------
+  // Pipeline terminal phase (D5 seam)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Commit and push the final pipeline state (running → awaiting-archive) to the feature branch.
+   *
+   * Called by pipeline.ts immediately after the running → awaiting-archive transition is persisted.
+   *
+   * - local:   git add -A → commit "finalize: <slug>" → push origin <branch> (1 retry, best-effort)
+   * - managed: no-op (cloud agent manages branch state independently)
+   *
+   * Parameters are typed as `unknown` at the port level to keep this file free of
+   * ports→domain imports. LocalRuntime declares concrete types (PipelineDeps, JobState).
+   * TypeScript bivariant method checking allows this.
+   *
+   * Must NOT throw — push failures are warned on stderr and the run continues.
+   */
+  commitFinalState(deps: unknown, state: unknown): Promise<void>;
 }

@@ -112,6 +112,7 @@ function makeTestRuntimeStrategy(spawnFn: SpawnFn): RuntimeStrategy {
       await commitAndPush(step, state, deps, headBeforeStep, infra);
     },
     async validateStepInputs(): Promise<void> {},
+    async commitFinalState(): Promise<void> { /* no-op in tests */ },
   };
 }
 

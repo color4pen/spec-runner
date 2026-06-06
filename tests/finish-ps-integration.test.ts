@@ -288,3 +288,53 @@ describe("TC-143: non-TTY TAB-separated output — SLUG is second column", () =>
     expect(headerFields[1]).toBe("SLUG");
   });
 });
+
+// TC-D6-DEDUP: dedup で archive-location の archived が legacy jobId ストアの running に勝つ
+describe("TC-D6-DEDUP: dedup regression — archived (newest updatedAt) wins over running (older)", () => {
+  it("archived job from archive-location wins dedup over legacy running state with same jobId", async () => {
+    const jobId = "dedup-job-0000-0000-0000-000000000001";
+    const slug = "dedup-test-slug";
+
+    // Legacy jobId store: running (older updatedAt)
+    const olderUpdatedAt = new Date(Date.now() - 60000).toISOString();
+    const legacyState = makeBaseState({
+      jobId,
+      status: "running",
+      updatedAt: olderUpdatedAt,
+      request: { path: "/test/request.md", title: "Test", type: "new-feature", slug },
+    });
+    await writeStateFile(legacyState);
+
+    // Archive location: archived (newer updatedAt)
+    const newerUpdatedAt = new Date().toISOString();
+    const archiveDir = path.join(tempDir, "specrunner", "changes", "archive", `2026-01-15-${slug}`);
+    await fs.mkdir(archiveDir, { recursive: true });
+    const archivedStateForFile = {
+      ...makeBaseState({
+        jobId,
+        status: "archived",
+        updatedAt: newerUpdatedAt,
+        request: { path: "/test/request.md", title: "Test", type: "new-feature", slug },
+      }),
+      _journal: { historyCount: 0, stepCounts: {} },
+    };
+    await fs.writeFile(path.join(archiveDir, "state.json"), JSON.stringify(archivedStateForFile), "utf-8");
+    await fs.writeFile(path.join(archiveDir, "events.jsonl"), "", "utf-8");
+
+    // default ps should NOT show the job (archived wins dedup, and archived is filtered out)
+    await runPs({ repoRoot: tempDir });
+    const defaultOutput = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+      .map((c: unknown[]) => String(c[0]))
+      .join("");
+    expect(defaultOutput).not.toContain("dedup-job");
+
+    // --all should show job as archived (not running)
+    (process.stdout.write as ReturnType<typeof vi.fn>).mockClear();
+    await runPs({ all: true, repoRoot: tempDir });
+    const allOutput = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
+      .map((c: unknown[]) => String(c[0]))
+      .join("");
+    expect(allOutput).toContain("archived");
+    expect(allOutput).not.toContain("running");
+  });
+});

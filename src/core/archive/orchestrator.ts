@@ -4,9 +4,9 @@
  * Design invariant: does NOT import GitHubClient — no GitHub API calls.
  *
  * Phase 0: pre-flight (job state load + finishable gate + terminal status check)
- * Phase 1: git checkout main → derive usage → archive change folder → commit → git push origin main
+ * Phase 1: git checkout main → derive usage → archiveChangeFolder (mv/skip) →
+ *          markJobArchived (slug, cwd) → git add specrunner/changes/ → commitArchive → git push origin main
  * Phase 2: worktree remove + feature branch delete (best-effort)
- * Phase 3: status → archived
  */
 import * as fs from "node:fs/promises";
 import * as nodePath from "node:path";
@@ -184,12 +184,35 @@ export async function runArchiveOrchestrator(
       stderrWrite(`Warning: failed to derive usage for ${slug}. Continuing archive.`);
     }
 
-    // Archive change folder (git mv)
+    // Archive change folder (git mv; skips if already moved)
     const archiveResult = await archiveChangeFolder({ slug, cwd, spawn, fs });
     if (!archiveResult.ok) {
       return { exitCode: 1, escalation: archiveResult.escalation };
     }
     if (!archiveResult.skipped) stdoutWrite(archiveResult.message);
+
+    // Mark job archived (D1/D2/D3): resolve slug canonical state dir and transition to archived
+    try {
+      await markJobArchived(slug, cwd);
+      stdoutWrite(`Job ${slug} marked as archived.`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return {
+        exitCode: 1,
+        escalation: formatEscalation({
+          failedStep: "Phase 1 (markJobArchived)",
+          detectedState: message,
+          recommendedAction: `Re-run: specrunner job archive ${slug}`,
+          resumeCommand: `specrunner job archive ${slug}`,
+        }),
+      };
+    }
+
+    // Stage mv + archived status change together so they land in one commit
+    const addResult = await spawn("git", ["add", "specrunner/changes/"], { cwd });
+    if (addResult.exitCode !== 0) {
+      stderrWrite(`Warning: git add specrunner/changes/ failed: ${addResult.stderr.trim()}. Continuing.`);
+    }
 
     // Commit staged changes
     const commitResult = await commitArchive({ slug, cwd, spawn });
@@ -247,13 +270,6 @@ export async function runArchiveOrchestrator(
         stderrWrite(`Warning: failed to delete remote branch ${branch}.`);
       }
     }
-
-    // -------------------------------------------------------------------------
-    // Phase 3: mark archived
-    // -------------------------------------------------------------------------
-    stdoutWrite("Phase 3: updating job status...");
-    await markJobArchived(jobId, cwd);
-    stdoutWrite(`Job ${jobId} marked as archived.`);
 
     return { exitCode: 0 };
   } finally {

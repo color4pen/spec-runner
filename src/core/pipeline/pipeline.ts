@@ -280,6 +280,8 @@ export class Pipeline {
           state = mergeState;
           const endStore = deps.storeFactory(state.jobId);
           await endStore.persist(state);
+          // D5: commit slug canonical state (state.json / events.jsonl) to feature branch
+          await deps.runtimeStrategy?.commitFinalState(deps, state);
         }
 
         // Escalation → awaiting-resume (unless fatal error)

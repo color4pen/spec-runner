@@ -3,6 +3,7 @@ import type { JobState } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import { gitExec, gitExecExitCode, type SpawnFn } from "../../util/git-exec.js";
+import type { SpawnFn as PipelineSpawnFn } from "../../util/spawn.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { pushFailedError } from "../../errors.js";
 
@@ -72,6 +73,61 @@ export async function commitAndPush(
 
   // Push with one retry
   await pushOnly(branch, cwd, step.name, infra);
+}
+
+/**
+ * Commit final pipeline state (awaiting-archive) to the feature branch.
+ *
+ * D5: called after the running → awaiting-archive transition in pipeline.ts.
+ * Stages all changes (git add -A), commits if there are staged changes
+ * (message: "finalize: <slug>"), and pushes with one retry.
+ *
+ * Idempotent: if no staged changes, returns immediately (no-op).
+ * Push failures: warns on stderr but does NOT throw — run is already complete.
+ *
+ * Uses `spawn.ts` SpawnFn (same as LocalRuntime.spawnFn) so the same injection
+ * point works without any adapter.
+ */
+export async function commitFinalState(params: {
+  cwd: string;
+  branch: string;
+  slug: string;
+  spawnFn: PipelineSpawnFn;
+}): Promise<void> {
+  const { cwd, branch, slug, spawnFn } = params;
+
+  // Stage all changes
+  const addResult = await spawnFn("git", ["add", "-A"], { cwd });
+  if ((addResult.exitCode ?? 1) !== 0) {
+    // Not a git repo or git is non-functional — skip silently
+    return;
+  }
+
+  // Check for staged changes (exit 1 = changes present, exit 0 = clean)
+  const diffResult = await spawnFn("git", ["diff", "--cached", "--quiet"], { cwd });
+  if ((diffResult.exitCode ?? 0) !== 1) {
+    // No staged changes — nothing to commit
+    return;
+  }
+
+  // Commit
+  const commitResult = await spawnFn("git", ["commit", "-m", `finalize: ${slug}`], { cwd });
+  if ((commitResult.exitCode ?? 1) !== 0) {
+    stderrWrite(`Warning: finalize commit failed for ${slug}. Push manually to ensure state is on the branch.`);
+    return;
+  }
+
+  // Push with one retry (best-effort — don't throw on failure)
+  const push1 = await spawnFn("git", ["push", "origin", branch], { cwd });
+  if ((push1.exitCode ?? 1) === 0) return;
+
+  const push2 = await spawnFn("git", ["push", "origin", branch], { cwd });
+  if ((push2.exitCode ?? 1) === 0) return;
+
+  stderrWrite(
+    `Warning: failed to push finalize commit for ${slug} to origin/${branch}. ` +
+      `Push manually to ensure state is on the branch.`,
+  );
 }
 
 /**

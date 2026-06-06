@@ -74,6 +74,9 @@ interface SlugInjectOptions {
  *   Slug-based (Stage 2):
  *                {stateRoot}/specrunner/changes/{slug}/events.jsonl
  *                {stateRoot}/specrunner/changes/{slug}/state.json
+ *   Slug-based with explicit changeDir (D3):
+ *                {changeDir}/events.jsonl
+ *                {changeDir}/state.json
  *   Split layout (Stage 1):
  *                .specrunner/jobs/<jobId>/events.jsonl
  *                .specrunner/jobs/<jobId>/state.json
@@ -100,12 +103,20 @@ export class JobStateStore {
   private readonly repoRoot: string;
   private readonly slug?: string;
   private readonly stateRoot?: string;
+  /**
+   * D3 (changeDir seam): when set, overrides slug-convention path resolution.
+   * getStateJsonPath() → changeDir/state.json
+   * getEventsPath()    → changeDir/events.jsonl
+   * slug + stateRoot must still be provided for slugInject (request.slug / request.path injection).
+   */
+  private readonly changeDir?: string;
 
-  constructor(jobId: string, repoRoot: string, opts?: { slug?: string; stateRoot?: string }) {
+  constructor(jobId: string, repoRoot: string, opts?: { slug?: string; stateRoot?: string; changeDir?: string }) {
     this.jobId = jobId;
     this.repoRoot = repoRoot;
     this.slug = opts?.slug;
     this.stateRoot = opts?.stateRoot;
+    this.changeDir = opts?.changeDir;
   }
 
   private isSlugMode(): boolean {
@@ -113,6 +124,9 @@ export class JobStateStore {
   }
 
   private getEventsPath(): string {
+    if (this.changeDir) {
+      return path.join(this.changeDir, "events.jsonl");
+    }
     if (this.isSlugMode()) {
       return path.join(this.stateRoot!, slugEventsPath(this.slug!));
     }
@@ -120,6 +134,9 @@ export class JobStateStore {
   }
 
   private getStateJsonPath(): string {
+    if (this.changeDir) {
+      return path.join(this.changeDir, "state.json");
+    }
     if (this.isSlugMode()) {
       return path.join(this.stateRoot!, slugStateJsonPath(this.slug!));
     }

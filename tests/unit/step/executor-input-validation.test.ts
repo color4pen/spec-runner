@@ -104,6 +104,7 @@ function makeFailingValidationStrategy(errorToThrow: Error): RuntimeStrategy {
     async validateStepInputs(): Promise<void> {
       throw errorToThrow;
     },
+    async commitFinalState(): Promise<void> {},
   };
 }
 

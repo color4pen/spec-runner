@@ -1,7 +1,7 @@
 /**
  * Tests for finish command: job state updates.
  *
- * TC-029: awaiting-merge → status: "archived" + history entry
+ * TC-029: awaiting-archive → status: "archived" + history entry (slug canonical state)
  * TC-030: escalation → state unchanged
  * TC-031: status=running → reject
  * TC-039: loadJobState ENOENT → JOB_NOT_FOUND
@@ -29,20 +29,42 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-async function makeJob(status: JobState["status"] = "awaiting-archive") {
-  const job = await JobStateStore.create(tempDir, {
-    request: { path: "/test/request.md", title: "Test", type: "new-feature" },
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a slug-based state at tempDir/specrunner/changes/<slug>/.
+ * Returns the jobId used for the state.
+ */
+async function makeSlugJob(slug: string, status: JobState["status"] = "awaiting-archive"): Promise<string> {
+  const jobId = "00000000-0000-0000-0000-" + slug.replace(/[^a-z0-9]/g, "").slice(0, 12).padEnd(12, "0");
+  const slugDir = path.join(tempDir, "specrunner", "changes", slug);
+  await fs.mkdir(slugDir, { recursive: true });
+
+  const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir });
+
+  // Build an initial state that passes validation
+  const now = new Date().toISOString();
+  const initialState: JobState = {
+    version: 1,
+    jobId,
+    createdAt: now,
+    updatedAt: now,
+    request: { path: path.join(slugDir, "request.md"), title: "Test", type: "spec-change" },
     repository: { owner: "user", name: "repo" },
-  });
+    session: null,
+    step: "pr-create",
+    status,
+    pid: null,
+    branch: `change/${slug}-abc12345`,
+    history: [],
+    error: null,
+    pipelineId: "standard",
+  };
 
-  // Patch status via the store (split layout)
-  if (status !== "running") {
-    const store = new JobStateStore(job.jobId, tempDir);
-    const current = await store.load();
-    await store.update(current, { status });
-  }
-
-  return job;
+  await store.persist(initialState);
+  return jobId;
 }
 
 /** Helper replacing the removed loadJobState(id) from state/store.ts */
@@ -62,26 +84,129 @@ async function loadJobState(jobId: string): Promise<JobState> {
 }
 
 // TC-029
-describe("TC-029: awaiting-merge → status: archived + history entry", () => {
-  it("marks job as archived and appends finish history entry", async () => {
-    const job = await makeJob("awaiting-archive");
+describe("TC-029: awaiting-archive → status: archived + history entry (slug canonical state)", () => {
+  it("marks job as archived via slug canonical state and appends finish history entry", async () => {
+    const slug = "test-slug-029";
+    await makeSlugJob(slug, "awaiting-archive");
 
-    const updated = await markJobArchived(job.jobId, tempDir);
+    const updated = await markJobArchived(slug, tempDir);
 
     expect(updated.status).toBe("archived");
     const finishEntry = updated.history.find((h) => h.step === "archive");
     expect(finishEntry).toBeDefined();
     expect(finishEntry?.status).toBe("ok");
   });
+
+  it("persists archived status to slug canonical dir (state.json)", async () => {
+    const slug = "test-slug-029b";
+    await makeSlugJob(slug, "awaiting-archive");
+
+    await markJobArchived(slug, tempDir);
+
+    // Verify state.json in slug dir was updated
+    const stateJsonPath = path.join(tempDir, "specrunner", "changes", slug, "state.json");
+    const raw = JSON.parse(await fs.readFile(stateJsonPath, "utf-8")) as Record<string, unknown>;
+    expect(raw["status"]).toBe("archived");
+  });
+
+  it("appends awaiting-archive → archived transition record to events.jsonl", async () => {
+    const slug = "test-slug-029c";
+    await makeSlugJob(slug, "awaiting-archive");
+
+    await markJobArchived(slug, tempDir);
+
+    // Verify events.jsonl has a transition record
+    const eventsPath = path.join(tempDir, "specrunner", "changes", slug, "events.jsonl");
+    const content = await fs.readFile(eventsPath, "utf-8");
+    expect(content).toContain("archived");
+  });
+});
+
+// TC-029-IDEMPOTENT: already archived → no-op
+describe("TC-029-IDEMPOTENT: already archived → no-op", () => {
+  it("returns current state without additional transition when already archived", async () => {
+    const slug = "test-slug-idempotent";
+    await makeSlugJob(slug, "archived");
+
+    // Call once → no-op since already archived
+    const result = await markJobArchived(slug, tempDir);
+    expect(result.status).toBe("archived");
+
+    // Call a second time to confirm idempotency
+    const result2 = await markJobArchived(slug, tempDir);
+    expect(result2.status).toBe("archived");
+  });
+
+  it("does not append extra events on re-archive when already archived", async () => {
+    const slug = "test-slug-idempotent-events";
+    // Start with awaiting-archive, archive it, then try to archive again
+    await makeSlugJob(slug, "awaiting-archive");
+
+    // First archive: creates transition record
+    await markJobArchived(slug, tempDir);
+
+    // Read events count after first archive
+    const eventsPath = path.join(tempDir, "specrunner", "changes", slug, "events.jsonl");
+    const afterFirst = await fs.readFile(eventsPath, "utf-8");
+    const countAfterFirst = afterFirst.trim().split("\n").filter(Boolean).length;
+
+    // Second archive: should be no-op, no new events
+    await markJobArchived(slug, tempDir);
+    const afterSecond = await fs.readFile(eventsPath, "utf-8");
+    const countAfterSecond = afterSecond.trim().split("\n").filter(Boolean).length;
+
+    expect(countAfterSecond).toBe(countAfterFirst);
+  });
+});
+
+// TC-029-ARCHIVE-DIR: slug in archive location
+describe("TC-029-ARCHIVE-DIR: slug in archive location → resolved correctly", () => {
+  it("resolves canonical state from archive dir and archives successfully", async () => {
+    const slug = "test-slug-archive-dir";
+    const datedSlug = "2026-01-15-" + slug;
+    const archiveDir = path.join(tempDir, "specrunner", "changes", "archive", datedSlug);
+    await fs.mkdir(archiveDir, { recursive: true });
+
+    // Write state directly to archive dir using changeDir seam
+    const jobId = "00000000-0000-0000-0000-000000000099";
+    const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir, changeDir: archiveDir });
+    const now = new Date().toISOString();
+    const state: JobState = {
+      version: 1,
+      jobId,
+      createdAt: now,
+      updatedAt: now,
+      request: { path: path.join(archiveDir, "request.md"), title: "Test", type: "spec-change" },
+      repository: { owner: "user", name: "repo" },
+      session: null,
+      step: "pr-create",
+      status: "awaiting-archive",
+      pid: null,
+      branch: "change/test-slug-archive-dir-abc",
+      history: [],
+      error: null,
+      pipelineId: "standard",
+    };
+    await store.persist(state);
+
+    const result = await markJobArchived(slug, tempDir);
+    expect(result.status).toBe("archived");
+
+    // Verify written to archive dir
+    const raw = JSON.parse(await fs.readFile(path.join(archiveDir, "state.json"), "utf-8")) as Record<string, unknown>;
+    expect(raw["status"]).toBe("archived");
+  });
 });
 
 // TC-030
 describe("TC-030: escalation → state unchanged", () => {
   it("state status remains unchanged when escalation occurs (no markJobArchived called)", async () => {
-    const job = await makeJob("awaiting-archive");
+    const slug = "test-slug-030";
+    const jobId = await makeSlugJob(slug, "awaiting-archive");
 
     // Simulate escalation by NOT calling markJobArchived
-    const stateAfter = await loadJobState(job.jobId);
+    // Load from slug store (makeSlugJob writes to slug dir)
+    const stateAfter = await new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir }).load();
     expect(stateAfter.status).toBe("awaiting-archive"); // unchanged
   });
 });
@@ -89,22 +214,33 @@ describe("TC-030: escalation → state unchanged", () => {
 // TC-031
 describe("TC-031: status=running → reject (JOB_NOT_FINISHABLE)", () => {
   it("throws JOB_NOT_FINISHABLE when job status is running", async () => {
-    const job = await makeJob("running");
+    const job = await JobStateStore.create(tempDir, {
+      request: { path: "/test/request.md", title: "Test", type: "new-feature" },
+      repository: { owner: "user", name: "repo" },
+    });
     const state = await loadJobState(job.jobId);
 
     expect(() => assertJobFinishable(state)).toThrow(SpecRunnerError);
     expect(() => assertJobFinishable(state)).toThrow(/running/);
   });
 
-  it("does not throw for awaiting-merge status", async () => {
-    const job = await makeJob("awaiting-archive");
-    const state = await loadJobState(job.jobId);
+  it("does not throw for awaiting-archive status", async () => {
+    const slug = "test-slug-031b";
+    const jobId = await makeSlugJob(slug, "awaiting-archive");
+    // Load from slug store (not jobId store) since makeSlugJob writes to slug dir
+    const state = await new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir }).load();
 
     expect(() => assertJobFinishable(state)).not.toThrow();
   });
 
   it("throws JOB_NOT_FINISHABLE for failed status", async () => {
-    const job = await makeJob("failed");
+    const job = await JobStateStore.create(tempDir, {
+      request: { path: "/test/request.md", title: "Test", type: "new-feature" },
+      repository: { owner: "user", name: "repo" },
+    });
+    const store = new JobStateStore(job.jobId, tempDir);
+    const current = await store.load();
+    await store.update(current, { status: "failed" });
     const state = await loadJobState(job.jobId);
 
     expect(() => assertJobFinishable(state)).toThrow(SpecRunnerError);
@@ -112,7 +248,13 @@ describe("TC-031: status=running → reject (JOB_NOT_FINISHABLE)", () => {
   });
 
   it("throws JOB_NOT_FINISHABLE for terminated status", async () => {
-    const job = await makeJob("terminated");
+    const job = await JobStateStore.create(tempDir, {
+      request: { path: "/test/request.md", title: "Test", type: "new-feature" },
+      repository: { owner: "user", name: "repo" },
+    });
+    const store = new JobStateStore(job.jobId, tempDir);
+    const current = await store.load();
+    await store.update(current, { status: "terminated" });
     const state = await loadJobState(job.jobId);
 
     expect(() => assertJobFinishable(state)).toThrow(SpecRunnerError);
@@ -120,8 +262,9 @@ describe("TC-031: status=running → reject (JOB_NOT_FINISHABLE)", () => {
   });
 
   it("does not throw for archived status (idempotent)", async () => {
-    const job = await makeJob("archived");
-    const state = await loadJobState(job.jobId);
+    const slug = "test-slug-031e";
+    const jobId = await makeSlugJob(slug, "archived");
+    const state = await new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir }).load();
 
     expect(() => assertJobFinishable(state)).not.toThrow();
   });
@@ -130,15 +273,18 @@ describe("TC-031: status=running → reject (JOB_NOT_FINISHABLE)", () => {
 // Backward compatibility: legacy status=success
 describe("Backward compatibility: legacy status=success", () => {
   it("loads legacy success state as awaiting-merge", async () => {
-    const job = await makeJob("awaiting-archive");
+    const job = await JobStateStore.create(tempDir, {
+      request: { path: "/test/request.md", title: "Test", type: "new-feature" },
+      repository: { owner: "user", name: "repo" },
+    });
     const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     const statePath = path.join(jobsDir, job.jobId, "state.json");
-    
+
     // Write legacy state with status="success"
     const raw = JSON.parse(await fs.readFile(statePath, "utf-8"));
     raw.status = "success";
     await fs.writeFile(statePath, JSON.stringify(raw, null, 2));
-    
+
     // Load and verify migration
     const loaded = await loadJobState(job.jobId);
     expect(loaded.status).toBe("awaiting-archive");
@@ -180,8 +326,9 @@ describe("TC-040: loadJobState parse failure → STATE_FILE_INVALID", () => {
 // TC-NEW-03: assertJobFinishable — awaiting-resume → resume 案内エラー
 describe("TC-NEW-03: assertJobFinishable — awaiting-resume → resume hint", () => {
   it("throws JOB_NOT_FINISHABLE with resume hint for awaiting-resume status", async () => {
-    const job = await makeJob("awaiting-resume" as JobState["status"]);
-    const state = await loadJobState(job.jobId);
+    const slug = "test-slug-newtest-03";
+    const jobId = await makeSlugJob(slug, "awaiting-resume" as JobState["status"]);
+    const state = await new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir }).load();
 
     expect(() => assertJobFinishable(state)).toThrow(SpecRunnerError);
     expect(() => assertJobFinishable(state)).toThrow(/awaiting-resume/);
@@ -191,8 +338,9 @@ describe("TC-NEW-03: assertJobFinishable — awaiting-resume → resume hint", (
 // TC-NEW-04: assertJobFinishable — canceled → 操作不要エラー
 describe("TC-NEW-04: assertJobFinishable — canceled → no action needed", () => {
   it("throws JOB_NOT_FINISHABLE with no-action hint for canceled status", async () => {
-    const job = await makeJob("canceled" as JobState["status"]);
-    const state = await loadJobState(job.jobId);
+    const slug = "test-slug-newtest-04";
+    const jobId = await makeSlugJob(slug, "canceled" as JobState["status"]);
+    const state = await new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir }).load();
 
     expect(() => assertJobFinishable(state)).toThrow(SpecRunnerError);
     expect(() => assertJobFinishable(state)).toThrow(/canceled/);
@@ -202,7 +350,10 @@ describe("TC-NEW-04: assertJobFinishable — canceled → no action needed", () 
 // TC-041
 describe("TC-041: updateJobState atomic write protocol", () => {
   it("writes via atomic tmp+rename (no .tmp files remain)", async () => {
-    const job = await makeJob("awaiting-archive");
+    const job = await JobStateStore.create(tempDir, {
+      request: { path: "/test/request.md", title: "Test", type: "new-feature" },
+      repository: { owner: "user", name: "repo" },
+    });
 
     const store = new JobStateStore(job.jobId, tempDir);
     const current = await store.load();
