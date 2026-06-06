@@ -25,7 +25,7 @@ import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import { formatEscalation } from "../finish/escalation.js";
 import { logResult, stderrWrite } from "../../logger/stdout.js";
 import { KeepAlive } from "../lifecycle/keepalive.js";
-import { livenessJsonPath } from "../../util/paths.js";
+import { livenessJsonPath, managedMarkerPath } from "../../util/paths.js";
 
 export interface ArchiveInput {
   /** Slug of the job to archive. */
@@ -249,16 +249,23 @@ export async function runArchiveOrchestrator(
       } catch {
         stderrWrite(`Warning: failed to remove worktree at ${worktreePath}. Run 'git worktree prune' manually.`);
       }
-      // Clear worktreePath in sidecar liveness.json (best-effort, T-06 D5)
-      // jobId ストアへの read/write は Phase 2 で行わない。
-      const sidecarAbsPath = nodePath.join(cwd, livenessJsonPath(slug));
-      try {
-        const raw = await fs.readFile(sidecarAbsPath);
-        const data = JSON.parse(raw) as Record<string, unknown>;
-        data["worktreePath"] = null;
-        await fs.writeFile(sidecarAbsPath, JSON.stringify(data, null, 2));
-      } catch {
-        // Best-effort: ENOENT or parse failure → no-op
+    }
+
+    // Delete liveness.json sidecar (best-effort)
+    try {
+      await fs.unlink(nodePath.join(cwd, livenessJsonPath(slug)));
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+        stderrWrite(`Warning: failed to delete liveness sidecar for ${slug}.`);
+      }
+    }
+
+    // Delete managed marker (best-effort)
+    try {
+      await fs.unlink(nodePath.join(cwd, managedMarkerPath(slug)));
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+        stderrWrite(`Warning: failed to delete managed marker for ${slug}.`);
       }
     }
 

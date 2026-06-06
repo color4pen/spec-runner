@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "jobId": "5bc778f8-2793-4da5-bf02-af41b7df99ac",
+  "createdAt": "2026-06-06T13:51:57.081Z",
+  "updatedAt": "2026-06-06T14:31:37.612Z",
+  "request": {
+    "title": "archive 後に managed marker が残り幽霊 job が表示される",
+    "type": "bug-fix"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "fix/archive-clear-managed-marker-5bc778f8",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/540",
+    "number": 540,
+    "createdAt": "2026-06-06T14:31:37.602Z"
+  },
+  "_journal": {
+    "historyCount": 60,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 2,
+      "spec-fixer": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 3,
+      "code-fixer": 2,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

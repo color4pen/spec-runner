@@ -259,11 +259,11 @@ describe("TC-005: worktree が存在する job を archive する", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-032: Phase 2 writes worktreePath: null to sidecar liveness.json (D5)
+// TC-032: Phase 2 deletes liveness.json sidecar (best-effort unlink)
 // ---------------------------------------------------------------------------
 
-describe("TC-032: archive Phase 2 clears worktreePath in sidecar liveness.json (D5)", () => {
-  it("fs.writeFile called with sidecar path containing worktreePath:null after worktree removal", async () => {
+describe("TC-032: archive Phase 2 deletes liveness.json sidecar via unlink", () => {
+  it("fs.unlink called with liveness.json path after worktree removal", async () => {
     const jobId = "test-job-id-032";
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
@@ -280,10 +280,7 @@ describe("TC-032: archive Phase 2 clears worktreePath in sidecar liveness.json (
     const { commitArchive } = await import("../../../../src/core/finish/commit-archive.js");
     (commitArchive as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, skipped: false, message: "committed" });
 
-    const sidecarContent = JSON.stringify({ jobId, worktreePath: "/tmp/worktrees/my-slug", pid: 1 });
     const mockFs = makeFs();
-    (mockFs.readFile as ReturnType<typeof vi.fn>).mockResolvedValue(sidecarContent);
-
     const manager = makeWorktreeManager();
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
 
@@ -297,20 +294,13 @@ describe("TC-032: archive Phase 2 clears worktreePath in sidecar liveness.json (
 
     expect(result).toEqual({ exitCode: 0 });
 
-    // Phase 2 must write worktreePath: null to sidecar liveness.json
-    const writeFileMock = mockFs.writeFile as ReturnType<typeof vi.fn>;
-    const expectedSidecarPath = `${CWD}/.specrunner/local/${SLUG}/liveness.json`;
-    const sidecarWriteCall = writeFileMock.mock.calls.find(
-      (c: unknown[]) => c[0] === expectedSidecarPath,
+    // Phase 2 must unlink liveness.json sidecar
+    const unlinkMock = mockFs.unlink as ReturnType<typeof vi.fn>;
+    const expectedLivenessPath = `${CWD}/.specrunner/local/${SLUG}/liveness.json`;
+    const livenessUnlinkCall = unlinkMock.mock.calls.find(
+      (c: unknown[]) => c[0] === expectedLivenessPath,
     );
-    expect(sidecarWriteCall).toBeDefined();
-    if (sidecarWriteCall) {
-      const written = JSON.parse(sidecarWriteCall[1] as string) as Record<string, unknown>;
-      expect(written["worktreePath"]).toBeNull();
-      // Other sidecar fields must be preserved
-      expect(written["jobId"]).toBe(jobId);
-      expect(written["pid"]).toBe(1);
-    }
+    expect(livenessUnlinkCall).toBeDefined();
   });
 });
 
