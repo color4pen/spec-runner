@@ -57,14 +57,39 @@ async function makeJob(
     repository: { owner: "user", name: "repo" },
   });
 
-  // Patch via the store (split layout)
+  // Patch via the store (split layout — writes to jobs-dir for stateFileExists checks)
   const store = new JobStateStore(state.jobId, tempDir);
   const loaded = await store.load();
   const patch: Record<string, unknown> = { status };
   if ("pid" in extras) patch["pid"] = extras.pid ?? null;
   if (extras.branch !== undefined) patch["branch"] = extras.branch;
   if (extras.worktreePath !== undefined) patch["worktreePath"] = extras.worktreePath;
-  await store.update(loaded, patch as Parameters<typeof store.update>[1]);
+  const updated = await store.update(loaded, patch as Parameters<typeof store.update>[1]);
+
+  // Also write to slug dir so list() can find it (section 3/jobs-dir scan removed).
+  // Use jobId prefix as unique slug to avoid cross-test collisions.
+  const slug = `cancel-${state.jobId.slice(0, 8)}`;
+  const slugDir = path.join(tempDir, "specrunner", "changes", slug);
+  await nodefs.mkdir(slugDir, { recursive: true });
+  await nodefs.writeFile(
+    path.join(slugDir, "state.json"),
+    JSON.stringify({
+      version: 1,
+      jobId: state.jobId,
+      createdAt: state.createdAt,
+      updatedAt: updated.updatedAt,
+      request: { path: "/test/request.md", title: "Test", type: "new-feature", slug },
+      repository: state.repository,
+      session: null,
+      step: updated.step,
+      status: updated.status,
+      branch: updated.branch ?? null,
+      error: updated.error ?? null,
+      _journal: { historyCount: 0, stepCounts: {} },
+    }),
+  );
+  await nodefs.writeFile(path.join(slugDir, "events.jsonl"), "");
+
   return { jobId: state.jobId };
 }
 

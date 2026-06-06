@@ -43,6 +43,8 @@ function makeLegacyStateRaw(overrides: Record<string, unknown> = {}): Record<str
 }
 
 async function writeStateFile(jobId: string, content: unknown): Promise<string> {
+  // Write as legacy flat file to jobs-dir.
+  // JobStateStore.load() (fallback path) reads this and normalizes in-memory.
   const jobsDir = path.join(tempDir, ".specrunner", "jobs");
   await fs.mkdir(jobsDir, { recursive: true });
   const filePath = path.join(jobsDir, `${jobId}.json`);
@@ -97,7 +99,7 @@ describe("TC-048: validateJobState — fills missing steps field with empty obje
   });
 });
 
-// TC-049: specrunner ps — reads legacy format in-memory, warns on stderr, file not rewritten (should)
+// TC-049: legacy flat-file load — normalizes legacy step format in-memory without rewriting file
 describe("TC-049: listJobStates — normalizes legacy format in-memory without rewriting file", () => {
   it("returns normalized state (array format) and does not modify the file", async () => {
     const jobId = "legacy-job-id-for-ps";
@@ -117,13 +119,12 @@ describe("TC-049: listJobStates — normalizes legacy format in-memory without r
     const filePath = await writeStateFile(jobId, legacyState);
     const originalContent = await fs.readFile(filePath, "utf-8");
 
-    // Import JobStateStore (the ps command read path)
+    // Use JobStateStore.load() fallback path (reads legacy flat file + normalizes in-memory)
     const { JobStateStore } = await import("../../src/store/job-state-store.js");
-    const states = await JobStateStore.list(tempDir);
-
-    // The state should be returned with normalized array format
-    const found = states.find((s) => s.jobId === jobId);
+    const store = new JobStateStore(jobId, tempDir);
+    const found = await store.load();
     expect(found).toBeDefined();
+    expect(found.jobId).toBe(jobId);
 
     const specReviewArr = found?.steps?.["spec-review"];
     expect(Array.isArray(specReviewArr)).toBe(true);

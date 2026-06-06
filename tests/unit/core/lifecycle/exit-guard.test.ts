@@ -31,15 +31,15 @@ afterEach(async () => {
 // ---------------------------------------------------------------------------
 
 /**
- * Write a legacy flat-file job state (running by default) to .specrunner/jobs/<jobId>.json.
+ * Write a job state:
+ * - Legacy flat file to jobs-dir (for JobStateStore.load() fallback in per-job guard tests)
+ * - Slug dir to main-checkout changes (for list() in global-scan fallback tests)
  */
 async function writeLegacyState(
   repoRoot: string,
   jobId: string,
   status = "running",
 ): Promise<void> {
-  const jobsDir = path.join(repoRoot, ".specrunner", "jobs");
-  await fs.mkdir(jobsDir, { recursive: true });
   const state = {
     version: 1,
     jobId,
@@ -54,11 +54,26 @@ async function writeLegacyState(
     history: [],
     error: null,
   };
+
+  // Write legacy flat file (for JobStateStore.load() fallback path in tests)
+  const jobsDir = path.join(repoRoot, ".specrunner", "jobs");
+  await fs.mkdir(jobsDir, { recursive: true });
   await fs.writeFile(
     path.join(jobsDir, `${jobId}.json`),
     JSON.stringify(state, null, 2),
     "utf-8",
   );
+
+  // Also write to slug dir so list() can find it for global-scan fallback tests
+  const slug = `legacy-${jobId.slice(0, 8)}`;
+  const slugDir = path.join(repoRoot, "specrunner", "changes", slug);
+  await fs.mkdir(slugDir, { recursive: true });
+  await fs.writeFile(
+    path.join(slugDir, "state.json"),
+    JSON.stringify({ ...state, request: { ...state.request, slug }, _journal: { historyCount: 0, stepCounts: {} } }, null, 2),
+    "utf-8",
+  );
+  await fs.writeFile(path.join(slugDir, "events.jsonl"), "", "utf-8");
 }
 
 /**

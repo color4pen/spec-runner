@@ -36,15 +36,50 @@ async function makeJob(slug: string, updatedAt?: string) {
     repository: { owner: "user", name: "repo" },
   });
 
+  let finalState = state;
   if (updatedAt) {
     const store = new JobStateStore(state.jobId, tempDir);
     const current = await store.load();
     const updated = { ...current, updatedAt };
     await store.persist(updated);
-    return updated;
+    finalState = updated;
   }
 
-  return state;
+  // Write to slug dir so resolveJobStateBySlug (which calls list()) can find it.
+  // Multiple jobs with same slug go to unique dated archive dirs if slug dir already exists.
+  const slugDir = path.join(tempDir, "specrunner", "changes", slug);
+  const slugDirExists = await fs.access(slugDir).then(() => true).catch(() => false);
+
+  let targetDir: string;
+  if (slugDirExists) {
+    // Second job with same slug → write to archive with dated prefix
+    const datePrefix = updatedAt ? updatedAt.slice(0, 10) : new Date().toISOString().slice(0, 10);
+    targetDir = path.join(tempDir, "specrunner", "changes", "archive", `${datePrefix}-${slug}`);
+  } else {
+    targetDir = slugDir;
+  }
+
+  await fs.mkdir(targetDir, { recursive: true });
+  await fs.writeFile(
+    path.join(targetDir, "state.json"),
+    JSON.stringify({
+      version: 1,
+      jobId: state.jobId,
+      createdAt: state.createdAt,
+      updatedAt: finalState.updatedAt,
+      request: { path: `/specrunner/drafts/${slug}.md`, title: "Test", type: "new-feature", slug },
+      repository: state.repository,
+      session: null,
+      step: finalState.step,
+      status: finalState.status,
+      branch: finalState.branch ?? null,
+      error: null,
+      _journal: { historyCount: 0, stepCounts: {} },
+    }, null, 2),
+  );
+  await fs.writeFile(path.join(targetDir, "events.jsonl"), "");
+
+  return finalState;
 }
 
 describe("TC-RJ-001: single match → returns that job", () => {

@@ -131,45 +131,45 @@ describe("TC-065: specrunner run — REMOTE_NOT_GITHUB error message", () => {
 
 // TC-066: specrunner ps — 破損ファイルをスキップして他のジョブを表示
 describe("TC-066: specrunner ps — skips corrupted state file", () => {
-  it("shows other jobs and logs skip message when one file is malformed", async () => {
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    await fs.mkdir(jobsDir, { recursive: true });
-
+  it("shows other jobs and silently skips malformed slug state.json", async () => {
     const now = new Date().toISOString();
-    const validJob = {
-      version: 1,
-      jobId: "11111111-0000-4000-a000-000000000001",
-      createdAt: now,
-      updatedAt: now,
-      request: { path: "/req.md", title: "Valid Job", type: "new-feature" },
-      repository: { owner: "o", name: "r" },
-      session: null,
-      step: "success",
-      status: "success",
-      branch: "feat/test",
-      history: [],
-      error: null,
-    };
 
+    // Write valid job to slug dir (section 1)
+    const validSlugDir = path.join(tempDir, "specrunner", "changes", "valid-job");
+    await fs.mkdir(validSlugDir, { recursive: true });
     await fs.writeFile(
-      path.join(jobsDir, "11111111-0000-4000-a000-000000000001.json"),
-      JSON.stringify(validJob),
+      path.join(validSlugDir, "state.json"),
+      JSON.stringify({
+        version: 1,
+        jobId: "11111111-0000-4000-a000-000000000001",
+        createdAt: now,
+        updatedAt: now,
+        request: { path: "/req.md", title: "Valid Job", type: "new-feature" },
+        repository: { owner: "o", name: "r" },
+        session: null,
+        step: "success",
+        status: "awaiting-archive",
+        branch: "feat/valid-job",
+        error: null,
+        _journal: { historyCount: 0, stepCounts: {} },
+      }),
     );
+    await fs.writeFile(path.join(validSlugDir, "events.jsonl"), "");
+
+    // Write corrupt slug state.json (section 1 silently skips this)
+    const corruptSlugDir = path.join(tempDir, "specrunner", "changes", "corrupt-job");
+    await fs.mkdir(corruptSlugDir, { recursive: true });
     await fs.writeFile(
-      path.join(jobsDir, "corrupted.json"),
+      path.join(corruptSlugDir, "state.json"),
       "{ not valid json at all !!!",
     );
 
     const { runPs } = await import("../src/cli/ps.js");
     await runPs({ repoRoot: tempDir });
 
-    const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
-    const combined = stderrCalls.map((c: unknown[]) => String(c[0])).join("\n");
-    expect(combined).toContain("Skipping malformed file:");
-
+    // Valid job should appear in output; corrupt job is silently skipped
     const stdoutCalls = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls;
     const stdoutCombined = stdoutCalls.map((c: unknown[]) => String(c[0])).join("\n");
-    // ps output shows jobId (first 8 chars), step, status, branch — not title
     expect(stdoutCombined).toContain("11111111");
   });
 });
@@ -190,38 +190,34 @@ describe("TC-067: specrunner ps — no jobs found", () => {
 // TC-068: specrunner ps — 非 TTY 出力（TAB 区切り）
 describe("TC-068: specrunner ps — TAB-separated output in non-TTY mode", () => {
   it("outputs TAB-separated rows when stdout is not a TTY", async () => {
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    await fs.mkdir(jobsDir, { recursive: true });
-
     const now = new Date().toISOString();
-    const job1 = {
-      version: 1,
-      jobId: "22222222-0000-4000-a000-000000000001",
-      createdAt: now,
-      updatedAt: now,
-      request: { path: "/req.md", title: "Job One", type: "new-feature" },
-      repository: { owner: "o", name: "r" },
-      session: null,
-      step: "success",
-      status: "success",
-      branch: "feat/job-one",
-      history: [],
-      error: null,
-    };
-    const job2 = {
-      ...job1,
-      jobId: "33333333-0000-4000-a000-000000000002",
-      branch: "feat/job-two",
-    };
 
-    await fs.writeFile(
-      path.join(jobsDir, `${job1.jobId}.json`),
-      JSON.stringify(job1),
-    );
-    await fs.writeFile(
-      path.join(jobsDir, `${job2.jobId}.json`),
-      JSON.stringify(job2),
-    );
+    // Write both jobs to slug dirs (section 1)
+    for (const [jobId, slug] of [
+      ["22222222-0000-4000-a000-000000000001", "job-one"],
+      ["33333333-0000-4000-a000-000000000002", "job-two"],
+    ] as [string, string][]) {
+      const slugDir = path.join(tempDir, "specrunner", "changes", slug);
+      await fs.mkdir(slugDir, { recursive: true });
+      await fs.writeFile(
+        path.join(slugDir, "state.json"),
+        JSON.stringify({
+          version: 1,
+          jobId,
+          createdAt: now,
+          updatedAt: now,
+          request: { path: `/req.md`, title: `Job ${slug}`, type: "new-feature", slug },
+          repository: { owner: "o", name: "r" },
+          session: null,
+          step: "success",
+          status: "awaiting-archive",
+          branch: `feat/${slug}`,
+          error: null,
+          _journal: { historyCount: 0, stepCounts: {} },
+        }),
+      );
+      await fs.writeFile(path.join(slugDir, "events.jsonl"), "");
+    }
 
     // Non-TTY mode is default in tests (process.stdout.isTTY is undefined/false)
     const { runPs } = await import("../src/cli/ps.js");

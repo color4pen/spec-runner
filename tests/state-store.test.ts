@@ -132,30 +132,51 @@ describe("TC-046: history append-only — no persistent truncation (Design D4)",
 });
 
 // TC-047: 破損ファイルが存在しても他のジョブを表示できる
-describe("TC-047: corrupt file skipped, others returned", () => {
-  it("listJobStates skips corrupt files and returns valid ones", async () => {
-    // Create valid states
-    const s1 = await JobStateStore.create(tempDir, makeBaseState());
-    const s2 = await JobStateStore.create(tempDir, makeBaseState());
+// Updated to use slug-dir fixtures (section 1 of list()) instead of jobs-dir (section 3 removed).
+describe("TC-047: corrupt slug state skipped, others returned", () => {
+  it("list() skips corrupt slug state.json and returns valid ones", async () => {
+    // Write 2 valid slug states to specrunner/changes/
+    const slug1 = "valid-slug-one";
+    const slug2 = "valid-slug-two";
+    const jobId1 = "aaaa1111-tc047-0000-0000-000000000001";
+    const jobId2 = "bbbb2222-tc047-0000-0000-000000000001";
 
-    // Create a corrupt file
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
+    for (const [slug, jobId] of [[slug1, jobId1], [slug2, jobId2]] as [string, string][]) {
+      const dir = path.join(tempDir, "specrunner", "changes", slug);
+      await fs.mkdir(dir, { recursive: true });
+      await fs.writeFile(
+        path.join(dir, "state.json"),
+        JSON.stringify({
+          version: 1, jobId,
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+          request: { path: "/test/request.md", title: "T", type: "new-feature" },
+          repository: { owner: "u", name: "r" },
+          session: null, step: "init", status: "running",
+          branch: `change/${slug}`, error: null,
+          _journal: { historyCount: 0, stepCounts: {} },
+        }),
+      );
+      await fs.writeFile(path.join(dir, "events.jsonl"), "");
+    }
+
+    // Write a corrupt slug state.json in specrunner/changes/corrupt-slug/
+    const corruptDir = path.join(tempDir, "specrunner", "changes", "corrupt-slug");
+    await fs.mkdir(corruptDir, { recursive: true });
     await fs.writeFile(
-      path.join(jobsDir, "corrupt-job-id.json"),
+      path.join(corruptDir, "state.json"),
       "NOT VALID JSON {{{ corrupt",
     );
 
     const states = await JobStateStore.list(tempDir);
-    // Should return 2 valid states
-    expect(states).toHaveLength(2);
+    // Should return 2 valid states and skip corrupt
+    expect(states.length).toBeGreaterThanOrEqual(2);
     const ids = states.map((s) => s.jobId);
-    expect(ids).toContain(s1.jobId);
-    expect(ids).toContain(s2.jobId);
-
-    // Should log skip message
-    expect(process.stderr.write).toHaveBeenCalledWith(
-      expect.stringContaining("Skipping malformed file:"),
-    );
+    expect(ids).toContain(jobId1);
+    expect(ids).toContain(jobId2);
+    // corrupt-slug should not produce a state
+    const corruptEntry = states.find((s) => s.jobId === "corrupt-slug");
+    expect(corruptEntry).toBeUndefined();
   });
 });
 

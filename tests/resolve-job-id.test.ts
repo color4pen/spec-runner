@@ -19,11 +19,24 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-function makeBaseParams() {
+function makeBaseParams(slug = "test-slug") {
   return {
-    request: { path: "/test/request.md", title: "Test", type: "new-feature" as const },
+    request: { path: "/test/request.md", title: "Test", type: "new-feature" as const, slug },
     repository: { owner: "user", name: "repo" },
   };
+}
+
+/**
+ * Create a liveness.json sidecar so resolveId can find the job via sidecar index.
+ * TC-02/04/05: jobs-dir-only setup → new index model (sidecar).
+ */
+async function createLiveness(slug: string, jobId: string): Promise<void> {
+  const dir = path.join(tempDir, ".specrunner", "local", slug);
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(
+    path.join(dir, "liveness.json"),
+    JSON.stringify({ jobId, worktreePath: null, pid: 1234 }),
+  );
 }
 
 // TC-06: AMBIGUOUS_JOB_ID エラーコードの存在確認
@@ -63,10 +76,14 @@ describe("TC-01: resolveJobId — full UUID pass-through", () => {
 
 // TC-02: resolveJobId — 短縮 ID で 1 件 match
 describe("TC-02: resolveJobId — short ID with 1 match", () => {
-  it("returns the full UUID when prefix matches exactly one job", async () => {
-    const state = await JobStateStore.create(tempDir, makeBaseParams());
-    const prefix = state.jobId.slice(0, 8);
+  it("returns the full UUID when prefix matches exactly one job (via sidecar)", async () => {
+    // New index model: create() writes to jobs-dir; also create liveness.json
+    // so that resolveId finds the job via sidecar index (T-03).
+    const slug = "tc02-slug";
+    const state = await JobStateStore.create(tempDir, makeBaseParams(slug));
+    await createLiveness(slug, state.jobId);
 
+    const prefix = state.jobId.slice(0, 8);
     const result = await JobStateStore.resolveId(tempDir, prefix);
 
     expect(result).toBe(state.jobId);
@@ -89,11 +106,13 @@ describe("TC-03: resolveJobId — short ID with 0 matches", () => {
 
 // TC-04: resolveJobId — 短縮 ID で 2 件以上 match
 describe("TC-04: resolveJobId — short ID with 2+ matches", () => {
-  it("throws AMBIGUOUS_JOB_ID with hint containing candidate UUIDs", async () => {
-    // Create two jobs and give them a shared prefix by manipulating the store directly.
-    // Since we can't control generated UUIDs, we create 2 jobs and use the first common prefix.
-    const s1 = await JobStateStore.create(tempDir, makeBaseParams());
-    const s2 = await JobStateStore.create(tempDir, makeBaseParams());
+  it("throws AMBIGUOUS_JOB_ID with hint containing candidate UUIDs (via sidecar)", async () => {
+    // New index model: create() writes to jobs-dir; also create liveness.json
+    // for each job so resolveId finds them via sidecar index (T-03).
+    const s1 = await JobStateStore.create(tempDir, makeBaseParams("slug-tc04-a"));
+    const s2 = await JobStateStore.create(tempDir, makeBaseParams("slug-tc04-b"));
+    await createLiveness("slug-tc04-a", s1.jobId);
+    await createLiveness("slug-tc04-b", s2.jobId);
 
     // Find the longest common prefix of the two UUIDs
     let commonPrefix = "";
@@ -123,12 +142,14 @@ describe("TC-04: resolveJobId — short ID with 2+ matches", () => {
 
 // TC-05: resolveJobId — 1 文字 prefix で一意に特定
 describe("TC-05: resolveJobId — single character prefix uniquely resolves", () => {
-  it("resolves correctly when only one job starts with the given single character", async () => {
-    // Create a job and find a prefix character that uniquely identifies it
-    const state = await JobStateStore.create(tempDir, makeBaseParams());
+  it("resolves correctly when only one job starts with the given single character (via sidecar)", async () => {
+    // New index model: create() + liveness.json for sidecar-based resolveId.
+    const slug = "tc05-slug";
+    const state = await JobStateStore.create(tempDir, makeBaseParams(slug));
+    await createLiveness(slug, state.jobId);
     const firstChar = state.jobId[0]!;
 
-    // The store has only one job, so any prefix should uniquely resolve
+    // The sidecar has only one job, so any prefix should uniquely resolve
     const result = await JobStateStore.resolveId(tempDir, firstChar);
     expect(result).toBe(state.jobId);
   });

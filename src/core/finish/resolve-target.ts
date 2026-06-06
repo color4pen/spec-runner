@@ -10,6 +10,7 @@
  * TC-134: multiple states for same slug → latest updatedAt chosen
  */
 import { JobStateStore } from "../../store/job-state-store.js";
+import { loadStateByJobId } from "../job-access/load-by-job-id.js";
 import { getJobSlug, stripBranchPrefix, stripJobIdSuffix } from "../../state/job-slug.js";
 import type { JobState } from "../../state/schema.js";
 import type { ResolvedTarget } from "./types.js";
@@ -139,7 +140,7 @@ async function resolveByPrNumber(
 }
 
 /**
- * Resolve by --job <jobId>: direct load.
+ * Resolve by --job <jobId>: load via sidecar → slug dir (T-05 D4).
  */
 async function resolveByJobId(
   jobId: string,
@@ -147,7 +148,7 @@ async function resolveByJobId(
   _stdoutWrite: (msg: string) => void,
 ): Promise<ResolveTargetResult> {
   try {
-    const state = (await new JobStateStore(jobId, repoRoot).load()) as JobState;
+    const state = (await loadStateByJobId(repoRoot, jobId)) as JobState;
     const slug = getJobSlug(state);
     return buildResolvedTarget(state, slug);
   } catch (err: unknown) {

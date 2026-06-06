@@ -1,10 +1,8 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import type { Dirent } from "node:fs";
 import { randomUUID } from "node:crypto";
 import {
   getJobStatePath,
-  getJobsDir,
   getJobDir,
   getJobStateJsonPath,
   getJobEventsPath,
@@ -16,12 +14,12 @@ import {
   parseArchiveDirName,
   managedMarkerPath,
 } from "../util/paths.js";
+import { listLocalSidecars } from "./local-job-index.js";
 import { atomicWriteJson } from "../util/atomic-write.js";
 import { appendHistoryEntry, validateJobState } from "../state/schema.js";
 import type { JobState, StepRun, ErrorInfo, HistoryEntry, RequestInfo, RepositoryInfo } from "../state/schema.js";
 import { STANDARD_PIPELINE_ID } from "../kernel/pipeline-ids.js";
 import { transitionJob } from "../state/lifecycle.js";
-import { stderrWrite } from "../logger/stdout.js";
 import { SpecRunnerError, ERROR_CODES, ambiguousJobIdError } from "../errors.js";
 import {
   fold,
@@ -327,45 +325,25 @@ export class JobStateStore {
       if (code !== "ENOENT") throw err;
     }
 
-    // 3. Legacy: .specrunner/jobs/<jobId>/ split-layout and flat files
-    const jobsDir = getJobsDir(repoRoot);
-    let entries: Dirent[];
-    try {
-      entries = await fs.readdir(jobsDir, { withFileTypes: true });
-    } catch (err: unknown) {
-      const code = (err as NodeJS.ErrnoException).code;
-      if (code === "ENOENT") {
-        entries = [];
-      } else {
-        throw err;
-      }
-    }
+    // 3. Sidecar supplement (D2): for local entries not yet in stateMap, try worktreePath slug dir.
+    // Sections 1/1b/2 cover main-checkout active, archived, and standard worktrees.
+    // This supplement adds coverage for non-standard worktree paths and future edge cases.
+    const localSidecars = await listLocalSidecars(repoRoot);
+    for (const sidecarEntry of localSidecars) {
+      if (sidecarEntry.kind !== "local") continue; // managed handled by section 4
+      if (stateMap.has(sidecarEntry.jobId)) continue; // already found
+      if (!sidecarEntry.worktreePath) continue; // no worktree to try
 
-    // Split-layout subdirectories
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
-      const jobId = entry.name;
-      const stateJsonPath = getJobStateJsonPath(repoRoot, jobId);
-      const eventsPath = getJobEventsPath(repoRoot, jobId);
+      const sidecarStateJsonPath = path.join(sidecarEntry.worktreePath, slugStateJsonPath(sidecarEntry.slug));
+      const sidecarEventsPath = path.join(sidecarEntry.worktreePath, slugEventsPath(sidecarEntry.slug));
       try {
-        const state = await loadSplitLayout(stateJsonPath, eventsPath);
+        const state = await loadSplitLayout(sidecarStateJsonPath, sidecarEventsPath, {
+          slug: sidecarEntry.slug,
+          stateRoot: sidecarEntry.worktreePath,
+        });
         tryMerge(state);
       } catch {
-        stderrWrite(`Skipping malformed split-layout dir: ${jobsDir}/${jobId}`);
-      }
-    }
-
-    // Legacy flat files
-    for (const entry of entries) {
-      if (!entry.isFile() || !entry.name.endsWith(".json") || entry.name.includes(".tmp.")) continue;
-      const filePath = `${jobsDir}/${entry.name}`;
-      try {
-        const raw = await fs.readFile(filePath, "utf-8");
-        const parsed = JSON.parse(raw);
-        const state = validateJobState(parsed);
-        tryMerge(state);
-      } catch {
-        stderrWrite(`Skipping malformed file: ${filePath}`);
+        // Worktree slug dir not accessible — state not available, skip (jobId preserved in resolveId)
       }
     }
 
@@ -412,11 +390,14 @@ export class JobStateStore {
   /**
    * Resolve a full job UUID from a prefix (short ID) or full UUID.
    *
-   * - Full UUID (36 chars): returned as-is without calling list().
-   * - Short prefix: calls list() and filters by startsWith(prefix).
+   * - Full UUID (36 chars): returned as-is without calling list() or sidecar index.
+   * - Short prefix: candidate set = list() jobIds ∪ sidecar index jobIds (dedup).
    *   - 0 matches: throws JOB_NOT_FOUND
    *   - 1 match: returns the full UUID
    *   - 2+ matches: throws AMBIGUOUS_JOB_ID with candidate list in hint
+   *
+   * The sidecar union ensures degraded local jobs (worktree deleted, not yet archived)
+   * whose jobId is only in liveness.json are still prefix-resolvable (requirement 5).
    */
   static async resolveId(repoRoot: string, prefix: string): Promise<string> {
     // Full UUID v4 is exactly 36 characters (8-4-4-4-12 + 4 hyphens)
@@ -424,8 +405,18 @@ export class JobStateStore {
       return prefix;
     }
 
-    const states = await JobStateStore.list(repoRoot);
-    const matches = states.filter((s) => s.jobId.startsWith(prefix));
+    // Candidate set: list() jobIds ∪ sidecar index jobIds (D3)
+    const [states, sidecarEntries] = await Promise.all([
+      JobStateStore.list(repoRoot),
+      listLocalSidecars(repoRoot),
+    ]);
+
+    const candidateIds = new Set<string>(states.map((s) => s.jobId));
+    for (const entry of sidecarEntries) {
+      candidateIds.add(entry.jobId);
+    }
+
+    const matches = Array.from(candidateIds).filter((id) => id.startsWith(prefix));
 
     if (matches.length === 0) {
       throw new SpecRunnerError(
@@ -436,10 +427,10 @@ export class JobStateStore {
     }
 
     if (matches.length === 1) {
-      return matches[0]!.jobId;
+      return matches[0]!;
     }
 
-    throw ambiguousJobIdError(prefix, matches.map((s) => s.jobId));
+    throw ambiguousJobIdError(prefix, matches);
   }
 
   // -------------------------------------------------------------------------

@@ -19,17 +19,16 @@ afterEach(async () => {
 });
 
 /**
- * Helper to create a job state file directly for testing.
+ * Helper to create a job state in slug dir (for list()) and legacy flat file (for load()).
  */
 async function createJobState(repoRoot: string, jobId: string, status: string): Promise<void> {
-  const jobsDir = path.join(repoRoot, ".specrunner", "jobs");
-  await fs.mkdir(jobsDir, { recursive: true });
+  const slug = `guard-${jobId.slice(0, 8)}`;
   const state = {
     version: 1,
     jobId,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    request: { type: "bug-fix", title: "test", slug: "test", baseBranch: "main", content: "", adr: false },
+    request: { path: "/req.md", type: "new-feature", title: "test", slug },
     repository: { owner: "test", name: "test" },
     session: null,
     step: "init",
@@ -39,8 +38,21 @@ async function createJobState(repoRoot: string, jobId: string, status: string): 
     history: [],
     error: null,
   };
-  const filePath = path.join(jobsDir, `${jobId}.json`);
-  await fs.writeFile(filePath, JSON.stringify(state), "utf-8");
+
+  // Write legacy flat file (for JobStateStore.load() fallback after persist)
+  const jobsDir = path.join(repoRoot, ".specrunner", "jobs");
+  await fs.mkdir(jobsDir, { recursive: true });
+  await fs.writeFile(path.join(jobsDir, `${jobId}.json`), JSON.stringify(state), "utf-8");
+
+  // Write to slug dir (for list() to find it)
+  const slugDir = path.join(repoRoot, "specrunner", "changes", slug);
+  await fs.mkdir(slugDir, { recursive: true });
+  await fs.writeFile(
+    path.join(slugDir, "state.json"),
+    JSON.stringify({ ...state, _journal: { historyCount: 0, stepCounts: {} } }),
+    "utf-8",
+  );
+  await fs.writeFile(path.join(slugDir, "events.jsonl"), "", "utf-8");
 }
 
 describe("createExitGuardHandler", () => {

@@ -11,7 +11,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { JobStateStore } from "../src/store/job-state-store.js";
 import { runPs, formatJobRow } from "../src/cli/ps.js";
 import type { JobState } from "../src/state/schema.js";
 
@@ -28,19 +27,59 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-async function writeStateFile(state: JobState) {
-  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-  await fs.mkdir(jobsDir, { recursive: true });
-  await fs.writeFile(
-    path.join(jobsDir, `${state.jobId}.json`),
-    JSON.stringify(state, null, 2),
-  );
+/**
+ * Write state to the canonical slug dir so list() can find it (new index model).
+ *
+ * For archived status: writes to specrunner/changes/archive/2026-01-01-<slug>/
+ * For other statuses:  writes to specrunner/changes/<slug>/
+ *
+ * Slug is derived from request.slug → branch (strip "feat/") → jobId prefix.
+ */
+async function writeStateFile(state: JobState): Promise<void> {
+  // Derive slug: prefer explicit request.slug, then branch, then jobId prefix
+  const slug = state.request.slug
+    ?? (state.branch ? state.branch.replace(/^feat\//, "") : state.jobId.slice(0, 8));
+
+  const stateForFile = {
+    version: state.version,
+    jobId: state.jobId,
+    createdAt: state.createdAt,
+    updatedAt: state.updatedAt,
+    request: {
+      path: state.request.path,
+      title: state.request.title,
+      type: state.request.type,
+      ...(state.request.slug ? { slug: state.request.slug } : {}),
+    },
+    repository: state.repository,
+    session: state.session,
+    step: state.step,
+    status: state.status,
+    branch: state.branch,
+    error: state.error,
+    _journal: { historyCount: 0, stepCounts: {} },
+  };
+
+  let dir: string;
+  if (state.status === "archived") {
+    dir = path.join(tempDir, "specrunner", "changes", "archive", `2026-01-01-${slug}`);
+  } else {
+    dir = path.join(tempDir, "specrunner", "changes", slug);
+  }
+
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, "state.json"), JSON.stringify(stateForFile, null, 2));
+  await fs.writeFile(path.join(dir, "events.jsonl"), "");
 }
 
 function makeBaseState(overrides: Partial<JobState> = {}): JobState {
+  const jobId = overrides.jobId ?? "test-job-00000000";
+  // Use jobId-derived branch by default to ensure unique slug per state.
+  // Explicit `branch` override takes priority.
+  const defaultBranch = `feat/job-${jobId.slice(0, 8)}`;
   return {
     version: 1,
-    jobId: "test-job-00000000",
+    jobId,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     request: { path: "/test/request.md", title: "Test", type: "new-feature" },
@@ -48,7 +87,7 @@ function makeBaseState(overrides: Partial<JobState> = {}): JobState {
     session: null,
     step: "pr-create",
     status: "awaiting-archive",
-    branch: "feat/test",
+    branch: defaultBranch,
     history: [],
     error: null,
     ...overrides,
@@ -87,17 +126,15 @@ describe("TC-032: archived state file → ps reads without crash", () => {
 // TC-033
 describe("TC-033: legacy state file with status=success → ps reads correctly", () => {
   it("reads success state files without crash", async () => {
-    const job = await JobStateStore.create(tempDir, {
-      request: { path: "/req.md", title: "T", type: "new-feature" },
-      repository: { owner: "u", name: "r" },
-    });
+    const state = makeBaseState({ jobId: "tc033-job-00000001", status: "awaiting-archive" });
+    await writeStateFile(state);
 
     await expect(runPs({ repoRoot: tempDir })).resolves.toBe(0);
 
     const output = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls
       .map((c: unknown[]) => String(c[0]))
       .join("");
-    expect(output).toContain(job.jobId.slice(0, 8));
+    expect(output).toContain(state.jobId.slice(0, 8));
   });
 });
 

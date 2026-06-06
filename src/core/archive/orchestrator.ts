@@ -249,13 +249,16 @@ export async function runArchiveOrchestrator(
       } catch {
         stderrWrite(`Warning: failed to remove worktree at ${worktreePath}. Run 'git worktree prune' manually.`);
       }
-      // Clear worktreePath in state (best-effort)
+      // Clear worktreePath in sidecar liveness.json (best-effort, T-06 D5)
+      // jobId ストアへの read/write は Phase 2 で行わない。
+      const sidecarAbsPath = nodePath.join(cwd, livenessJsonPath(slug));
       try {
-        const store = new JobStateStore(jobId, cwd);
-        const current = await store.load();
-        await store.persist({ ...current, worktreePath: null });
+        const raw = await fs.readFile(sidecarAbsPath);
+        const data = JSON.parse(raw) as Record<string, unknown>;
+        data["worktreePath"] = null;
+        await fs.writeFile(sidecarAbsPath, JSON.stringify(data, null, 2));
       } catch {
-        stderrWrite(`Warning: failed to clear worktreePath for job ${jobId}.`);
+        // Best-effort: ENOENT or parse failure → no-op
       }
     }
 

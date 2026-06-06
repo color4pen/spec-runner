@@ -11,6 +11,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { JobStateStore } from "../store/job-state-store.js";
+import { loadStateByJobId } from "../core/job-access/load-by-job-id.js";
 import { getJobSlug } from "../state/job-slug.js";
 import type { JobState } from "../state/schema.js";
 import { resolveRepoRoot } from "../util/repo-root.js";
@@ -30,10 +31,9 @@ export async function runJobShow(input: string): Promise<number> {
   let state: JobState;
 
   if (UUID_REGEX.test(input)) {
-    // Load directly by jobId
+    // Load via sidecar → slug dir, falling back to jobs-dir (T-05 D4)
     try {
-      const store = new JobStateStore(input, repoRoot);
-      const loaded = await store.load();
+      const loaded = await loadStateByJobId(repoRoot, input);
       state = loaded as JobState;
     } catch (err: unknown) {
       const code = (err as NodeJS.ErrnoException).code;

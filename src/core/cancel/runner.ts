@@ -14,6 +14,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { JobStateStore } from "../../store/job-state-store.js";
+import { loadStateByJobId } from "../job-access/load-by-job-id.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { stdoutWrite } from "../../logger/stdout.js";
 import { ERROR_CODES, SpecRunnerError } from "../../errors.js";
@@ -165,10 +166,10 @@ export async function cancelSingleJob(opts: {
   const { jobId, force, purge, deps } = opts;
   const warnings: string[] = [];
 
-  // Load state
+  // Load state via sidecar → slug dir (T-05 D4)
   let state: JobState;
   try {
-    state = (await new JobStateStore(jobId, deps.repoRoot).load()) as JobState;
+    state = (await loadStateByJobId(deps.repoRoot, jobId)) as JobState;
   } catch (err: unknown) {
     const code = (err as NodeJS.ErrnoException & { code?: string }).code;
     if (

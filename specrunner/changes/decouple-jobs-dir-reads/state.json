@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "jobId": "8cf27e1c-e0fc-43ce-b7de-8a3ac8b13a8e",
+  "createdAt": "2026-06-06T08:09:45.351Z",
+  "updatedAt": "2026-06-06T09:37:11.772Z",
+  "request": {
+    "title": "`.specrunner/jobs/` への読み取り依存を slug/sidecar 起点に移行する",
+    "type": "spec-change"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/decouple-jobs-dir-reads-8cf27e1c",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/536",
+    "number": 536,
+    "createdAt": "2026-06-06T09:37:11.763Z"
+  },
+  "_journal": {
+    "historyCount": 52,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 2,
+      "build-fixer": 1,
+      "code-review": 2,
+      "code-fixer": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

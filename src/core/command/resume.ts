@@ -9,6 +9,7 @@ import * as nodeFs from "node:fs/promises";
 import { loadConfig } from "../../config/store.js";
 import { resolveRepoRoot } from "../../util/repo-root.js";
 import { JobStateStore } from "../../store/job-state-store.js";
+import { loadStateByJobId } from "../job-access/load-by-job-id.js";
 import { logInfo, setLogLevel, logError, stderrWrite, type LogLevel } from "../../logger/stdout.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
@@ -95,7 +96,7 @@ export class ResumeCommand extends CommandRunner {
           }
           throw new PrepareError(1, "Job not found");
         }
-        state = (await new JobStateStore(fullId, cwd).load()) as JobState;
+        state = (await loadStateByJobId(cwd, fullId)) as JobState;
       } else {
         state = resolved;
       }

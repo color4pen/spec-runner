@@ -129,6 +129,38 @@ async function makeAwaitingResumeJob(slug: string, overrides: Partial<JobState> 
     ...overrides,
   } as JobState;
   await store.persist(updated);
+
+  // Also write to slug dir so resolveJobStateBySlug (which calls list()) can find it.
+  // Copy state.json + events.jsonl from jobs-dir to slug dir so steps/resumePoint are preserved.
+  const jobsDir = path.join(tempDir, ".specrunner", "jobs", state.jobId);
+  const slugDir = path.join(tempDir, "specrunner", "changes", slug);
+  await fs.mkdir(slugDir, { recursive: true });
+
+  // Copy state.json, injecting request.slug so getJobSlug() returns the correct slug
+  try {
+    const raw = JSON.parse(await fs.readFile(path.join(jobsDir, "state.json"), "utf-8")) as Record<string, unknown>;
+    if (raw["request"] && typeof raw["request"] === "object") {
+      (raw["request"] as Record<string, unknown>)["slug"] = slug;
+    }
+    await fs.writeFile(path.join(slugDir, "state.json"), JSON.stringify(raw, null, 2));
+  } catch {
+    await fs.writeFile(path.join(slugDir, "state.json"), JSON.stringify({
+      version: 1, jobId: state.jobId, createdAt: state.createdAt, updatedAt: updated.updatedAt,
+      request: { path: `/specrunner/drafts/${slug}.md`, title: "Test", type: "new-feature", slug },
+      repository: state.repository, session: null, step: updated.step, status: updated.status,
+      resumePoint: updated.resumePoint ?? null, branch: updated.branch ?? null, error: updated.error ?? null,
+      _journal: { historyCount: 0, stepCounts: {} },
+    }, null, 2));
+  }
+
+  // Copy events.jsonl to preserve steps data in slug dir
+  try {
+    const events = await fs.readFile(path.join(jobsDir, "events.jsonl"), "utf-8");
+    await fs.writeFile(path.join(slugDir, "events.jsonl"), events);
+  } catch {
+    await fs.writeFile(path.join(slugDir, "events.jsonl"), "");
+  }
+
   return updated;
 }
 

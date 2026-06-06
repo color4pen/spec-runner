@@ -259,6 +259,117 @@ describe("TC-005: worktree が存在する job を archive する", () => {
 });
 
 // ---------------------------------------------------------------------------
+// TC-032: Phase 2 writes worktreePath: null to sidecar liveness.json (D5)
+// ---------------------------------------------------------------------------
+
+describe("TC-032: archive Phase 2 clears worktreePath in sidecar liveness.json (D5)", () => {
+  it("fs.writeFile called with sidecar path containing worktreePath:null after worktree removal", async () => {
+    const jobId = "test-job-id-032";
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeJobState({ jobId, status: "awaiting-archive", worktreePath: "/tmp/worktrees/my-slug" }),
+    ]);
+
+    const { assertJobFinishable, markJobArchived } = await import("../../../../src/core/finish/job-state-update.js");
+    (assertJobFinishable as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
+    (markJobArchived as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    const { archiveChangeFolder } = await import("../../../../src/core/finish/archive-change-folder.js");
+    (archiveChangeFolder as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, skipped: false, message: "archived" });
+
+    const { commitArchive } = await import("../../../../src/core/finish/commit-archive.js");
+    (commitArchive as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, skipped: false, message: "committed" });
+
+    const sidecarContent = JSON.stringify({ jobId, worktreePath: "/tmp/worktrees/my-slug", pid: 1 });
+    const mockFs = makeFs();
+    (mockFs.readFile as ReturnType<typeof vi.fn>).mockResolvedValue(sidecarContent);
+
+    const manager = makeWorktreeManager();
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+
+    const result = await runArchiveOrchestrator({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: makeSpawn(0),
+      fs: mockFs,
+      worktreeManagerFn: () => manager,
+    });
+
+    expect(result).toEqual({ exitCode: 0 });
+
+    // Phase 2 must write worktreePath: null to sidecar liveness.json
+    const writeFileMock = mockFs.writeFile as ReturnType<typeof vi.fn>;
+    const expectedSidecarPath = `${CWD}/.specrunner/local/${SLUG}/liveness.json`;
+    const sidecarWriteCall = writeFileMock.mock.calls.find(
+      (c: unknown[]) => c[0] === expectedSidecarPath,
+    );
+    expect(sidecarWriteCall).toBeDefined();
+    if (sidecarWriteCall) {
+      const written = JSON.parse(sidecarWriteCall[1] as string) as Record<string, unknown>;
+      expect(written["worktreePath"]).toBeNull();
+      // Other sidecar fields must be preserved
+      expect(written["jobId"]).toBe(jobId);
+      expect(written["pid"]).toBe(1);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-034: Phase 2 does not access .specrunner/jobs/ — D5 invariant
+// ---------------------------------------------------------------------------
+
+describe("TC-034: Phase 2 does not access .specrunner/jobs/ paths (D5 invariant)", () => {
+  it("no fs.readFile or fs.writeFile calls on .specrunner/jobs/ and JobStateStore.list invoked once", async () => {
+    const jobId = "test-job-id-034";
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeJobState({ jobId, status: "awaiting-archive", worktreePath: "/tmp/worktrees/my-slug" }),
+    ]);
+
+    const { assertJobFinishable, markJobArchived } = await import("../../../../src/core/finish/job-state-update.js");
+    (assertJobFinishable as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
+    (markJobArchived as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    const { archiveChangeFolder } = await import("../../../../src/core/finish/archive-change-folder.js");
+    (archiveChangeFolder as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, skipped: false, message: "archived" });
+
+    const { commitArchive } = await import("../../../../src/core/finish/commit-archive.js");
+    (commitArchive as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, skipped: false, message: "committed" });
+
+    const sidecarContent = JSON.stringify({ jobId, worktreePath: "/tmp/worktrees/my-slug", pid: 1 });
+    const mockFs = makeFs();
+    (mockFs.readFile as ReturnType<typeof vi.fn>).mockResolvedValue(sidecarContent);
+
+    const manager = makeWorktreeManager();
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+
+    const result = await runArchiveOrchestrator({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: makeSpawn(0),
+      fs: mockFs,
+      worktreeManagerFn: () => manager,
+    });
+
+    expect(result).toEqual({ exitCode: 0 });
+
+    // D5: injected fs must never target .specrunner/jobs/
+    const writeFileMock = mockFs.writeFile as ReturnType<typeof vi.fn>;
+    const readFileMock = mockFs.readFile as ReturnType<typeof vi.fn>;
+
+    for (const call of writeFileMock.mock.calls) {
+      expect((call[0] as string).includes(".specrunner/jobs/")).toBe(false);
+    }
+    for (const call of readFileMock.mock.calls) {
+      expect((call[0] as string).includes(".specrunner/jobs/")).toBe(false);
+    }
+
+    // JobStateStore.list invoked exactly once (Phase 0 only; Phase 2 must not re-invoke it)
+    expect(JobStateStore.list).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-006: awaiting-archive → archived 遷移
 // ---------------------------------------------------------------------------
 

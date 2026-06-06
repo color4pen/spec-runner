@@ -234,3 +234,11 @@ export function livenessJsonPath(slug: string): string {
 export function managedMarkerPath(slug: string): string {
   return `${LOCAL_SIDECAR_BASE}/${slug}/marker.json`;
 }
+
+/**
+ * Returns the relative path to the base directory for all machine-local sidecar files.
+ * Example: localSidecarBaseDirRel() → ".specrunner/local"
+ */
+export function localSidecarBaseDirRel(): string {
+  return LOCAL_SIDECAR_BASE;
+}

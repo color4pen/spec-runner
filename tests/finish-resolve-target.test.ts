@@ -12,7 +12,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { JobStateStore } from "../src/store/job-state-store.js";
+import { randomUUID } from "node:crypto";
 import { resolveTarget } from "../src/core/finish/resolve-target.js";
 
 let tempDir: string;
@@ -27,22 +27,45 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
+/**
+ * Write a job state to the slug dir (section 1) so list() can find it,
+ * and write a liveness.json sidecar so loadStateByJobId can resolve via sidecar.
+ */
 async function makeJobWithPr(slug: string, updatedAt?: string) {
-  const state = await JobStateStore.create(tempDir, {
+  const jobId = randomUUID();
+  const now = updatedAt ?? new Date().toISOString();
+
+  const stateJson = {
+    version: 1,
+    jobId,
+    createdAt: now,
+    updatedAt: now,
     request: { path: `/specrunner/drafts/${slug}.md`, title: "Test", type: "new-feature", slug },
     repository: { owner: "user", name: "repo" },
-  });
-
-  // Patch via the store (split layout)
-  const store = new JobStateStore(state.jobId, tempDir);
-  const current = await store.load();
-  const patch: Parameters<typeof store.update>[1] = {
-    pullRequest: { url: `https://github.com/user/repo/pull/42`, number: 42, createdAt: "2026-01-01" },
+    session: null,
+    step: "pr-create",
+    status: "awaiting-archive",
     branch: `feat/${slug}`,
-    ...(updatedAt ? { updatedAt } : {}),
+    pullRequest: { url: `https://github.com/user/repo/pull/42`, number: 42, createdAt: "2026-01-01" },
+    error: null,
+    _journal: { historyCount: 0, stepCounts: {} },
   };
-  const updated = await store.update(current, patch);
-  return { ...updated, jobId: state.jobId };
+
+  // Write to slug dir (section 1 — list() scans this)
+  const slugDir = path.join(tempDir, "specrunner", "changes", slug);
+  await fs.mkdir(slugDir, { recursive: true });
+  await fs.writeFile(path.join(slugDir, "state.json"), JSON.stringify(stateJson, null, 2));
+  await fs.writeFile(path.join(slugDir, "events.jsonl"), "");
+
+  // Write liveness.json sidecar (loadStateByJobId resolves via sidecar → slug dir)
+  const sidecarDir = path.join(tempDir, ".specrunner", "local", slug);
+  await fs.mkdir(sidecarDir, { recursive: true });
+  await fs.writeFile(
+    path.join(sidecarDir, "liveness.json"),
+    JSON.stringify({ jobId, worktreePath: null, pid: 1234 }),
+  );
+
+  return { ...stateJson, jobId };
 }
 
 describe("TC-001: --job resolves state file", () => {
@@ -75,7 +98,22 @@ describe("TC-002: <slug> positional resolves single match", () => {
 
 describe("TC-003 / TC-134: <slug> multiple matches → latest updatedAt, stdout warning", () => {
   it("picks most recently updated state and emits stdout warning", async () => {
-    await makeJobWithPr("multi-slug", "2026-01-01T00:00:00.000Z");
+    // Older job in archive (section 1b)
+    const olderJobId = randomUUID();
+    const archiveDir = path.join(tempDir, "specrunner", "changes", "archive", "2026-01-01-multi-slug");
+    await fs.mkdir(archiveDir, { recursive: true });
+    await fs.writeFile(path.join(archiveDir, "state.json"), JSON.stringify({
+      version: 1, jobId: olderJobId,
+      createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z",
+      request: { path: "/specrunner/drafts/multi-slug.md", title: "Test", type: "new-feature", slug: "multi-slug" },
+      repository: { owner: "user", name: "repo" }, session: null,
+      step: "pr-create", status: "archived", branch: "feat/multi-slug",
+      pullRequest: { url: "https://github.com/user/repo/pull/42", number: 42, createdAt: "2026-01-01" },
+      error: null, _journal: { historyCount: 0, stepCounts: {} },
+    }, null, 2));
+    await fs.writeFile(path.join(archiveDir, "events.jsonl"), "");
+
+    // Newer job in active dir (section 1)
     const newer = await makeJobWithPr("multi-slug", "2026-06-01T00:00:00.000Z");
 
     const messages: string[] = [];
