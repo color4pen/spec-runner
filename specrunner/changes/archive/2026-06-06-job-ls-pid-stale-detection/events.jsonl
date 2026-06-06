@@ -53,3 +53,4 @@
 {"type":"transition","ts":"2026-06-06T13:16:44.239Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/job-ls-pid-stale-detection/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-06T13:16:42.816Z","endedAt":"2026-06-06T13:16:44.237Z"}
 {"type":"transition","ts":"2026-06-06T13:16:44.248Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-06T13:31:46.220Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
