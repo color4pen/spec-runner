@@ -32,6 +32,7 @@ export interface ResumeOptions {
   logLevel?: LogLevel;
   cwd?: string;
   prompt?: string;
+  json?: boolean;
 }
 
 /**
@@ -244,6 +245,7 @@ export class ResumeCommand extends CommandRunner {
         baseBranch: request.baseBranch,
       },
       resumePrompt: this.options.prompt,
+      json: this.options.json ?? false,
     };
   }
 }

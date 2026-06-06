@@ -1,0 +1,45 @@
+{"type":"transition","ts":"2026-06-06T03:35:13.142Z","step":"init","status":"started","message":"job created"}
+{"type":"transition","ts":"2026-06-06T03:35:15.077Z","step":"design-started","status":"started","message":"Starting design step"}
+{"type":"transition","ts":"2026-06-06T03:45:13.147Z","step":"design-verdict","status":"ok","message":"design verdict: success"}
+{"type":"step-attempt","step":"design","sessionId":"9f90972c-8fe9-4947-a703-761b6b08eb2a","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"reason":"design.md / spec.md / tasks.md を specrunner/changes/run-result-contract-json/ に作成。run/job start/resume への --json 終端契約（stdout JSON）を、status→種別 写像を純粋関数 buildRunResult に集約する方針で計画。","status":"success"},"followUpAttempts":1},"startedAt":"2026-06-06T03:35:15.085Z","endedAt":"2026-06-06T03:45:11.621Z"}
+{"type":"transition","ts":"2026-06-06T03:45:13.154Z","step":"step-transition","status":"ok","message":"design → spec-review"}
+{"type":"transition","ts":"2026-06-06T03:45:13.155Z","step":"spec-review","status":"started","message":"spec-review iteration 1 started"}
+{"type":"transition","ts":"2026-06-06T03:45:13.156Z","step":"spec-review-started","status":"started","message":"Starting spec-review step"}
+{"type":"transition","ts":"2026-06-06T03:48:30.715Z","step":"spec-review-verdict","status":"ok","message":"spec-review verdict: approved"}
+{"type":"step-attempt","step":"spec-review","sessionId":"d73db9d7-42ea-4c79-9382-e319e38e1e5b","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/run-result-contract-json/spec-review-result-001.md","error":null,"toolResult":{"ok":true,"approved":true},"followUpAttempts":1},"startedAt":"2026-06-06T03:45:13.173Z","endedAt":"2026-06-06T03:48:29.076Z"}
+{"type":"transition","ts":"2026-06-06T03:48:30.721Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-06-06T03:48:30.721Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
+{"type":"transition","ts":"2026-06-06T03:48:30.723Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-06-06T03:51:15.856Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"e8f7ca0c-2ecc-46c2-9628-d1e7a4986d7a","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1},"startedAt":"2026-06-06T03:48:30.739Z","endedAt":"2026-06-06T03:51:14.261Z"}
+{"type":"transition","ts":"2026-06-06T03:51:15.861Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-06-06T03:51:15.863Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
+{"type":"transition","ts":"2026-06-06T04:10:57.038Z","step":"implementer-verdict","status":"ok","message":"implementer verdict: success"}
+{"type":"step-attempt","step":"implementer","sessionId":"693f4a64-a9c9-4ef8-8721-2d62b9a2bedb","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1},"startedAt":"2026-06-06T03:51:15.881Z","endedAt":"2026-06-06T04:10:55.245Z"}
+{"type":"transition","ts":"2026-06-06T04:10:57.043Z","step":"step-transition","status":"ok","message":"implementer → verification"}
+{"type":"transition","ts":"2026-06-06T04:10:57.044Z","step":"verification","status":"started","message":"verification iteration 1 started"}
+{"type":"transition","ts":"2026-06-06T04:10:57.046Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-06-06T04:11:14.158Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/run-result-contract-json/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-06T04:10:57.047Z","endedAt":"2026-06-06T04:11:14.156Z"}
+{"type":"transition","ts":"2026-06-06T04:11:14.163Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
+{"type":"transition","ts":"2026-06-06T04:11:14.163Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-06-06T04:11:14.165Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-06-06T04:11:14.166Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
+{"type":"transition","ts":"2026-06-06T04:13:34.442Z","step":"code-review-verdict","status":"ok","message":"code-review verdict: approved"}
+{"type":"step-attempt","step":"code-review","sessionId":"b68ea25d-1f83-4025-a9f3-ce2c256df44d","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/run-result-contract-json/review-feedback-001.md","error":null,"toolResult":{"ok":true,"approved":true,"fixableCount":0},"followUpAttempts":1},"startedAt":"2026-06-06T04:11:14.183Z","endedAt":"2026-06-06T04:13:32.860Z"}
+{"type":"transition","ts":"2026-06-06T04:13:34.449Z","step":"code-review","status":"ok","message":"code-review iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-06-06T04:13:34.449Z","step":"step-transition","status":"ok","message":"code-review → conformance"}
+{"type":"transition","ts":"2026-06-06T04:13:34.452Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-06-06T04:13:34.453Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
+{"type":"transition","ts":"2026-06-06T04:16:27.369Z","step":"conformance-verdict","status":"ok","message":"conformance verdict: approved"}
+{"type":"step-attempt","step":"conformance","sessionId":"b3656803-2c16-448e-b9c3-758affdfbd4f","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/run-result-contract-json/conformance-result-001.md","error":null,"toolResult":{"ok":true,"approved":true},"followUpAttempts":1},"startedAt":"2026-06-06T04:13:34.470Z","endedAt":"2026-06-06T04:16:25.791Z"}
+{"type":"transition","ts":"2026-06-06T04:16:27.375Z","step":"conformance","status":"ok","message":"conformance iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-06-06T04:16:27.375Z","step":"step-transition","status":"ok","message":"conformance → adr-gen"}
+{"type":"transition","ts":"2026-06-06T04:16:27.378Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-06-06T04:19:01.127Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"edaed44d-584a-428f-b0ec-974c63cdef85","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1},"startedAt":"2026-06-06T04:16:27.394Z","endedAt":"2026-06-06T04:18:59.564Z"}
+{"type":"transition","ts":"2026-06-06T04:19:01.133Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-06-06T04:19:01.135Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-06-06T04:19:02.976Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/run-result-contract-json/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-06T04:19:01.136Z","endedAt":"2026-06-06T04:19:02.974Z"}
+{"type":"transition","ts":"2026-06-06T04:19:02.984Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}

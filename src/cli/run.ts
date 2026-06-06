@@ -41,7 +41,7 @@ function resolveHeartbeatInterval(config: SpecRunnerConfig): number {
 
 export async function runRunCore(
   requestMdPath: string,
-  options: { cwd?: string; logLevel?: LogLevel },
+  options: { cwd?: string; logLevel?: LogLevel; json?: boolean },
 ): Promise<number> {
   setLogLevel(options.logLevel ?? "default");
   const cwd = options.cwd ?? process.cwd();
@@ -107,7 +107,7 @@ export async function runRunCore(
 
 export async function runRun(
   requestMdPath: string,
-  options: { cwd?: string; logLevel?: LogLevel },
+  options: { cwd?: string; logLevel?: LogLevel; json?: boolean },
 ): Promise<void> {
   process.exit(await runRunCore(requestMdPath, options));
 }

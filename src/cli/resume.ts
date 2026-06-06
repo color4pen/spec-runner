@@ -32,6 +32,7 @@ export interface ResumeOptions {
   logLevel?: LogLevel;
   cwd?: string;
   prompt?: string;
+  json?: boolean;
 }
 
 export async function runResumeCore(slug: string, options: ResumeOptions): Promise<number> {

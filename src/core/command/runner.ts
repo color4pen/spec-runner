@@ -20,7 +20,7 @@
  *   - soft errors (awaiting-resume, failed) → teardown("error-status") + return 1
  *   - success (awaiting-merge) → teardown("awaiting-merge") + return 0
  */
-import { logInfo, logError, stderrWrite, logWarn, initVerboseLog, closeVerboseLog, getVerboseLogFilePath, isLevelEnabled } from "../../logger/stdout.js";
+import { logInfo, logError, stderrWrite, stdoutWrite, logWarn, initVerboseLog, closeVerboseLog, getVerboseLogFilePath, isLevelEnabled } from "../../logger/stdout.js";
 import type { LogLevel } from "../../logger/stdout.js";
 import { initPipelineLog, closePipelineLog } from "../../logger/pipeline-logger.js";
 import { pruneOldLogs } from "../../logger/log-retention.js";
@@ -40,6 +40,8 @@ import type { PipelineDeps } from "../types.js";
 import { collectDynamicContext } from "../../git/dynamic-context.js";
 import { specReviewResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "../step/step-names.js";
+import { buildRunResult, formatRunResultJson } from "./run-result.js";
+import { transitionJob } from "../../state/lifecycle.js";
 
 // ---------------------------------------------------------------------------
 // PrepareResult
@@ -61,6 +63,8 @@ export interface PrepareResult {
   repoRoot: string;
   /** resume 時に注入する追加プロンプト。ResumeCommand のみが設定する。 */
   resumePrompt?: string;
+  /** --json flag: when true, emit terminal contract JSON to stdout. */
+  json?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -87,6 +91,7 @@ export abstract class CommandRunner {
     const prepared = await this.prepare();
 
     const { jobState, startStep, request, config, slug, workspaceOpts, repoRoot } = prepared;
+    const json = prepared.json ?? false;
 
     // Register per-job exit guard so that beforeExit writes awaiting-resume to slug-based state.
     process.on("beforeExit", createExitGuardHandler(repoRoot, jobState.jobId));
@@ -119,12 +124,12 @@ export abstract class CommandRunner {
         workspace = await this.runtime.setupWorkspace(slug, jobState.jobId, workspaceOpts);
       } catch (err) {
         const store = new JobStateStore(jobState.jobId, repoRoot);
-        await store.fail(jobState, {
-          code: "WORKSPACE_SETUP_FAILED",
-          message: (err as Error).message,
-          hint: "",
-        }, "init");
+        const wsError = { code: "WORKSPACE_SETUP_FAILED", message: (err as Error).message, hint: "" };
+        const wsFailedState = await store.fail(jobState, wsError, "init");
         logError(`Failed to set up workspace: ${(err as Error).message}`);
+        if (json) {
+          stdoutWrite(formatRunResultJson(buildRunResult(wsFailedState, slug)));
+        }
         closeVerboseLog();
         closePipelineLog();
         return 1;
@@ -170,12 +175,12 @@ export abstract class CommandRunner {
         handle = this.runtime.registerCleanup(jobState.jobId, startStep);
       } catch (err) {
         const store = new JobStateStore(jobState.jobId, repoRoot);
-        await store.fail(jobState, {
-          code: "INIT_FAILED",
-          message: (err as Error).message,
-          hint: "",
-        }, "init");
+        const initError = { code: "INIT_FAILED", message: (err as Error).message, hint: "" };
+        const initFailedState = await store.fail(jobState, initError, "init");
         logError((err as Error).message);
+        if (json) {
+          stdoutWrite(formatRunResultJson(buildRunResult(initFailedState, slug)));
+        }
         closeVerboseLog();
         closePipelineLog();
         return 1;
@@ -188,18 +193,31 @@ export abstract class CommandRunner {
         finalState = await pipeline.run(startStep, jobState, deps);
       } catch (err) {
         // Defensive: if pipeline safety net did not transition state, mark as failed
+        const crashCode = err instanceof SpecRunnerError ? err.code : "PIPELINE_UNHANDLED_ERROR";
+        const crashMessage = (err as Error).message;
+        const crashErrorInfo = { code: crashCode, message: crashMessage, hint: "" };
+        let crashState: JobState | null = null;
         try {
           const store = new JobStateStore(jobState.jobId, repoRoot);
           const diskState = await store.load();
           if (diskState.status === "running") {
-            await store.fail(diskState as JobState, {
-              code: "PIPELINE_UNHANDLED_ERROR",
-              message: (err as Error).message,
-              hint: "",
-            }, jobState.step);
+            crashState = await store.fail(diskState as JobState, crashErrorInfo, jobState.step);
+          } else {
+            crashState = diskState as JobState;
           }
-        } catch { /* best-effort — don't mask original error */ }
+        } catch {
+          // Disk state unavailable: derive failed state via lifecycle transition (no direct assignment)
+          const { state: inMemFailed } = transitionJob(jobState, "failed", {
+            trigger: "runner",
+            reason: crashMessage,
+            patch: { error: crashErrorInfo },
+          });
+          crashState = inMemFailed;
+        }
         outputPipelineThrowError(err, jobState.branch);
+        if (json && crashState !== null) {
+          stdoutWrite(formatRunResultJson(buildRunResult(crashState, slug)));
+        }
         await this.runtime.teardown(handle, "error");
         closeVerboseLog();
         closePipelineLog();
@@ -207,7 +225,7 @@ export abstract class CommandRunner {
       }
 
       // Step 6: handleResult (computes exit code)
-      const exitCode = await handleResult(finalState, slug);
+      const exitCode = await handleResult(finalState, slug, json);
 
       // Display verbose log path if active
       const logPath = getVerboseLogFilePath();
@@ -240,8 +258,16 @@ export abstract class CommandRunner {
 /**
  * Handle post-pipeline state: check soft-errors, output verdict, compute exit code.
  * Does NOT call teardown — that is always done by execute() after this returns.
+ *
+ * When json=true, emits a RunResultContract JSON to stdout before human-readable output.
+ * SPEC_REVIEW_RESULT_NOT_FOUND is treated as a hard failure for JSON output even though
+ * the pipeline may have set state.status to "awaiting-resume".
  */
-async function handleResult(finalState: JobState, slug: string): Promise<number> {
+async function handleResult(finalState: JobState, slug: string, json: boolean): Promise<number> {
+  if (json) {
+    stdoutWrite(formatRunResultJson(buildRunResult(finalState, slug)));
+  }
+
   if (finalState.error?.code === "SPEC_REVIEW_RESULT_NOT_FOUND") {
     const branch = finalState.branch ?? "unknown";
     logError(`Spec-review result file not found on branch '${branch}'.`);

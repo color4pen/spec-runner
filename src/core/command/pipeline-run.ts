@@ -18,6 +18,7 @@ import { STANDARD_PIPELINE_ID } from "../../kernel/pipeline-ids.js";
 export interface PipelineRunOptions {
   cwd?: string;
   logLevel?: LogLevel;
+  json?: boolean;
 }
 
 // Canonical path pattern: specrunner/drafts/<slug>/request.md
@@ -92,6 +93,7 @@ export class PipelineRunCommand extends CommandRunner {
         requestType: request.type,
         baseBranch: request.baseBranch,
       },
+      json: this.options.json ?? false,
     };
   }
 }

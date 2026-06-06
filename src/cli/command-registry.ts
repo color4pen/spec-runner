@@ -184,6 +184,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
     flags: {
       verbose: { type: "boolean" },
       quiet: { type: "boolean" },
+      json: { type: "boolean" },
     },
     positional: { name: "request.md|slug", required: true },
     handler: async (parsed) => {
@@ -193,7 +194,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
         verbose: !!parsed.flags["verbose"],
         debug: !!parsed.flags["debug"],
       });
-      await runRun(requestMdPath, { logLevel });
+      await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"] });
     },
   },
 
@@ -322,6 +323,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
         flags: {
           verbose: { type: "boolean" },
           quiet: { type: "boolean" },
+          json: { type: "boolean" },
         },
         positional: { name: "slug|file", required: true },
         handler: async (parsed) => {
@@ -331,7 +333,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
             verbose: !!parsed.flags["verbose"],
             debug: !!parsed.flags["debug"],
           });
-          await runRun(requestMdPath, { logLevel });
+          await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"] });
         },
       },
       ls: {
@@ -418,6 +420,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
           quiet: { type: "boolean" },
           prompt: { type: "string" },
           "prompt-file": { type: "string" },
+          json: { type: "boolean" },
         },
         positional: { name: "slug", required: true },
         handler: async (parsed) => {
@@ -457,6 +460,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
               logLevel,
               cwd: process.cwd(),
               prompt: resolvedPrompt,
+              json: !!parsed.flags["json"],
             });
           } catch (err: unknown) {
             if (err instanceof SpecRunnerError) {

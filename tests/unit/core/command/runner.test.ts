@@ -448,6 +448,197 @@ describe("TC-06-03: verbose log closed on pipeline error", () => {
   });
 });
 
+// TC-JSON-RUN-001: json=true + awaiting-archive → stdout has JSON with result: "pr-created", exit 0
+describe("TC-JSON-RUN-001: json=true + awaiting-archive → stdout JSON result pr-created, exit 0", () => {
+  it("emits JSON with result pr-created to stdout and returns exit 0", async () => {
+    const runtime = buildMockRuntime();
+    const command = new TestCommand(runtime, buildPrepareResult({ json: true }));
+
+    const { buildPipelineForJob } = await import("../../../../src/core/pipeline/index.js");
+    (buildPipelineForJob as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+      run: vi.fn().mockResolvedValue({
+        version: 1, jobId: "test-job-id", createdAt: "", updatedAt: "",
+        request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
+        repository: { owner: "testowner", name: "testrepo" },
+        session: null, step: "pr-create", status: "awaiting-archive",
+        branch: "feat/test", history: [], error: null, steps: {},
+        pullRequest: { url: "https://github.com/owner/repo/pull/7", number: 7, createdAt: "" },
+      }),
+    });
+
+    const exitCode = await command.execute();
+
+    expect(exitCode).toBe(0);
+    const stdoutCalls = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allStdout = stdoutCalls.map((c) => String(c[0])).join("");
+    const parsed = JSON.parse(allStdout);
+    expect(parsed.result).toBe("pr-created");
+    expect(parsed.prUrl).toBe("https://github.com/owner/repo/pull/7");
+    expect(parsed.reason).toBeNull();
+    expect(parsed.schemaVersion).toBe(1);
+  });
+});
+
+// TC-JSON-RUN-002: json=true + awaiting-resume → stdout has JSON with result: "awaiting-human", exit 1
+describe("TC-JSON-RUN-002: json=true + awaiting-resume → stdout JSON result awaiting-human, exit 1", () => {
+  it("emits JSON with result awaiting-human to stdout and returns exit 1", async () => {
+    const runtime = buildMockRuntime();
+    const command = new TestCommand(runtime, buildPrepareResult({ json: true }));
+
+    const { buildPipelineForJob } = await import("../../../../src/core/pipeline/index.js");
+    (buildPipelineForJob as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+      run: vi.fn().mockResolvedValue({
+        version: 1, jobId: "test-job-id", createdAt: "", updatedAt: "",
+        request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
+        repository: { owner: "testowner", name: "testrepo" },
+        session: null, step: "spec-review", status: "awaiting-resume",
+        branch: "feat/test", history: [], error: null, steps: {},
+        resumePoint: { step: "spec-review", reason: "escalation: needs human review", iterationsExhausted: 3 },
+      }),
+    });
+
+    const exitCode = await command.execute();
+
+    expect(exitCode).toBe(1);
+    const stdoutCalls = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allStdout = stdoutCalls.map((c) => String(c[0])).join("");
+    const parsed = JSON.parse(allStdout);
+    expect(parsed.result).toBe("awaiting-human");
+    expect(parsed.schemaVersion).toBe(1);
+  });
+});
+
+// TC-JSON-RUN-003: json=true + pipeline throw (crash) → stdout has JSON with result: "failed", exit 1
+describe("TC-JSON-RUN-003: json=true + pipeline crash → stdout JSON result failed, exit 1", () => {
+  it("emits JSON with result failed to stdout on pipeline throw and returns exit 1", async () => {
+    const realJobState = await JobStateStore.create(tempDir, {
+      request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
+      repository: { owner: "testowner", name: "testrepo" },
+    });
+
+    const runtime = buildMockRuntime();
+    const command = new TestCommand(runtime, buildPrepareResult({
+      jobState: realJobState,
+      repoRoot: tempDir,
+      json: true,
+    }));
+
+    const { buildPipelineForJob } = await import("../../../../src/core/pipeline/index.js");
+    (buildPipelineForJob as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+      run: vi.fn().mockRejectedValue(new Error("Pipeline crashed")),
+    });
+
+    const exitCode = await command.execute();
+
+    expect(exitCode).toBe(1);
+    const stdoutCalls = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allStdout = stdoutCalls.map((c) => String(c[0])).join("");
+    const parsed = JSON.parse(allStdout);
+    expect(parsed.result).toBe("failed");
+    expect(parsed.reason.message).toBe("Pipeline crashed");
+    expect(parsed.schemaVersion).toBe(1);
+  });
+});
+
+// TC-JSON-RUN-004: json=false → stdout has no terminal JSON
+describe("TC-JSON-RUN-004: json=false → stdout has no terminal JSON", () => {
+  it("does not emit JSON to stdout when json option is false", async () => {
+    const runtime = buildMockRuntime();
+    const command = new TestCommand(runtime, buildPrepareResult({ json: false }));
+
+    const exitCode = await command.execute();
+
+    expect(exitCode).toBe(0);
+    const stdoutCalls = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allStdout = stdoutCalls.map((c) => String(c[0])).join("");
+    // stdout should be empty (no JSON contract output)
+    expect(allStdout).toBe("");
+  });
+});
+
+// TC-026: SPEC_REVIEW_RESULT_NOT_FOUND early return → stdout JSON result failed
+describe("TC-026: SPEC_REVIEW_RESULT_NOT_FOUND early return with json=true emits failed JSON", () => {
+  it("emits JSON with result failed for SPEC_REVIEW_RESULT_NOT_FOUND terminal", async () => {
+    const runtime = buildMockRuntime();
+    const command = new TestCommand(runtime, buildPrepareResult({ json: true }));
+
+    const { buildPipelineForJob } = await import("../../../../src/core/pipeline/index.js");
+    (buildPipelineForJob as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+      run: vi.fn().mockResolvedValue({
+        version: 1, jobId: "test-job-id", createdAt: "", updatedAt: "",
+        request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
+        repository: { owner: "testowner", name: "testrepo" },
+        session: null, step: "spec-review", status: "failed",
+        branch: "feat/test", history: [], steps: {},
+        error: { code: "SPEC_REVIEW_RESULT_NOT_FOUND", message: "Result file not found", hint: "Check branch" },
+      }),
+    });
+
+    const exitCode = await command.execute();
+
+    expect(exitCode).toBe(1);
+    const stdoutCalls = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allStdout = stdoutCalls.map((c) => String(c[0])).join("");
+    const parsed = JSON.parse(allStdout);
+    expect(parsed.result).toBe("failed");
+    expect(parsed.reason.code).toBe("SPEC_REVIEW_RESULT_NOT_FOUND");
+    expect(parsed.schemaVersion).toBe(1);
+  });
+});
+
+// TC-JSON-SETUP-001: json=true + setupWorkspace failure → stdout JSON result failed
+describe("TC-JSON-SETUP-001: json=true + setupWorkspace failure → stdout JSON result failed", () => {
+  it("emits JSON with result failed when setupWorkspace throws", async () => {
+    const realJobState = await JobStateStore.create(tempDir, {
+      request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
+      repository: { owner: "testowner", name: "testrepo" },
+    });
+
+    const runtime = buildMockRuntime({ setupThrow: new Error("worktree creation failed") });
+    const command = new TestCommand(runtime, buildPrepareResult({
+      jobState: realJobState,
+      repoRoot: tempDir,
+      json: true,
+    }));
+
+    const exitCode = await command.execute();
+
+    expect(exitCode).toBe(1);
+    const stdoutCalls = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allStdout = stdoutCalls.map((c) => String(c[0])).join("");
+    const parsed = JSON.parse(allStdout);
+    expect(parsed.result).toBe("failed");
+    expect(parsed.reason.code).toBe("WORKSPACE_SETUP_FAILED");
+    expect(parsed.reason.message).toBe("worktree creation failed");
+    expect(parsed.schemaVersion).toBe(1);
+    expect(typeof parsed.slug).toBe("string");
+    expect(typeof parsed.jobId).toBe("string");
+  });
+});
+
+// TC-JSON-SETUP-002: json=false + setupWorkspace failure → no stdout JSON
+describe("TC-JSON-SETUP-002: json=false + setupWorkspace failure → no stdout JSON", () => {
+  it("does not emit JSON to stdout on setupWorkspace failure when json=false", async () => {
+    const realJobState = await JobStateStore.create(tempDir, {
+      request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
+      repository: { owner: "testowner", name: "testrepo" },
+    });
+
+    const runtime = buildMockRuntime({ setupThrow: new Error("worktree failed") });
+    const command = new TestCommand(runtime, buildPrepareResult({
+      jobState: realJobState,
+      repoRoot: tempDir,
+      json: false,
+    }));
+
+    await command.execute();
+
+    const stdoutCalls = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allStdout = stdoutCalls.map((c) => String(c[0])).join("");
+    expect(allStdout).toBe("");
+  });
+});
+
 // T-033: pruneOldLogs exception does not abort pipeline
 describe("T-033: pruneOldLogs exception does not abort pipeline", () => {
   it("logs warning and continues pipeline when pruneOldLogs throws", async () => {
