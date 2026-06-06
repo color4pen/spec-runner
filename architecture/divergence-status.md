@@ -9,12 +9,6 @@
 - **B-1〜B-10 ＋ §3 DSM closure に対する実 divergence = ゼロ。**
 - `arch-allowlist.ts` の残エントリは `B-1` の `R2-*-adapter` 3件のみ。これは composition-root（`core/runtime/`）が adapter を import する §3 許可 edge の記録であり、**違反ではない**。
 
-## doc ↔ code 断面（transient・in-loop change が解消）
-
-- `domain-model.md` §Aggregate / `components.md` §JobStateStore / `dynamic-model.md` は **event-sourced target** を記述（`JobState` を event journal / projection に分解、liveness は static state 外＝動的構造、`StepOutcome.fileContent` 除去・`modelUsage` を Aggregate 外へ、branch-borne slug 配置）。**コード（`src/state/schema.ts`・`src/store/job-state-store.ts`）はまだ旧 monolithic**（`fileContent`/`modelUsage` 現存、`.specrunner/jobs/<jobId>.json` 配置）。
-- realize は in-loop change `minimal-state-slug-dir`。land で解消。
-- 新不変条件の歯は **ratify 待ち**（構造 ADR `2026-06-05-event-sourced-branch-tracked-state.md` の B-11 候補 ＝ journal append / projection overwrite は `JobStateStore` 経由のみ）。
-
 ## burn-down 履歴（どの change が何を解消したか）
 
 正典は git 履歴 ＋ `specrunner/changes/archive/`。主なもの:
