@@ -112,36 +112,35 @@ describe("TC-002: validateJobState — SESSION_TIMEOUT 以外の error code は�
 
 // TC-003 (should): persist() 後の on-disk JSON に SESSION_TIMEOUT が含まれない
 describe("TC-003 (should): lazy migration 後の persist で on-disk JSON に SESSION_TIMEOUT が残らない", () => {
-  it("SESSION_TIMEOUT fixture を validateJobState 後に atomicWriteJson すると on-disk JSON に SESSION_TIMEOUT が含まれない", async () => {
+  it("SESSION_TIMEOUT fixture を validateJobState 後に persist すると on-disk JSON に SESSION_TIMEOUT が含まれない", async () => {
     const { JobStateStore } = await import("../../src/store/job-state-store.js");
-    const { atomicWriteJson } = await import("../../src/util/atomic-write.js");
-    const { getJobStatePath } = await import("../../src/util/xdg.js");
 
     // Write a fixture with SESSION_TIMEOUT directly to disk (bypass validateJobState)
+    // Use changeDir layout (no slug required)
     const jobId = "tc003-migration-job";
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    await fs.mkdir(jobsDir, { recursive: true });
+    const changeDir = path.join(tempDir, ".specrunner", "local", "tc003-slug");
+    await fs.mkdir(changeDir, { recursive: true });
 
     const fixtureWithTimeout = makeFixtureWithError("SESSION_TIMEOUT");
     (fixtureWithTimeout as Record<string, unknown>)["jobId"] = jobId;
     await fs.writeFile(
-      path.join(jobsDir, `${jobId}.json`),
+      path.join(changeDir, "state.json"),
       JSON.stringify(fixtureWithTimeout, null, 2),
     );
+    await fs.writeFile(path.join(changeDir, "events.jsonl"), "");
 
     // Load via JobStateStore.load() (which calls validateJobState → lazy migration)
-    const store = new JobStateStore(jobId, tempDir);
+    const store = new JobStateStore(jobId, tempDir, { changeDir });
     const state = await store.load();
 
     // state.error.code should be SESSION_TERMINATED after migration
     expect(state.error?.code).toBe("SESSION_TERMINATED");
 
-    // Persist to disk via atomicWriteJson (simulates JobStateStore.persist / store.update)
-    const filePath = getJobStatePath(tempDir, jobId);
-    await atomicWriteJson(filePath, state);
+    // Persist to disk via store.persist() (simulates the normal update flow)
+    await store.persist(state);
 
     // Read the on-disk JSON and verify error.code is SESSION_TERMINATED (not SESSION_TIMEOUT)
-    const onDisk = await fs.readFile(path.join(jobsDir, `${jobId}.json`), "utf-8");
+    const onDisk = await fs.readFile(path.join(changeDir, "state.json"), "utf-8");
     const parsed = JSON.parse(onDisk) as { error?: { code?: string } };
     expect(parsed.error?.code).toBe("SESSION_TERMINATED");
     expect(parsed.error?.code).not.toBe("SESSION_TIMEOUT");

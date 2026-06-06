@@ -6,7 +6,7 @@ import type { SessionClient } from "../src/core/port/session-client.js";
 import type { GitHubClient } from "../src/core/port/github-client.js";
 import { createManagedAgentRunner } from "../src/adapter/managed-agent/agent-runner.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
-import { JobStateStore } from "../src/store/job-state-store.js";
+import { buildInitialJobState } from "../src/store/job-state-store.js";
 import type { SpawnFn } from "../src/util/spawn.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
@@ -26,10 +26,12 @@ afterEach(async () => {
 
 // Helper to create a base job state
 async function makeJobState() {
-  return JobStateStore.create(tempDir, {
+  const state = buildInitialJobState({
     request: { path: "/test/request.md", title: "Test Request", type: "new-feature" },
     repository: { owner: "testowner", name: "testrepo" },
   });
+  await makeStoreFactory(tempDir)(state.jobId).persist(state);
+  return state;
 }
 
 /**

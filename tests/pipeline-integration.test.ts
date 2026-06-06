@@ -21,7 +21,7 @@ import type { AgentRunner } from "../src/core/port/agent-runner.js";
 import { commitAndPush } from "../src/core/step/commit-push.js";
 import type { CommitPushInfra } from "../src/core/step/commit-push.js";
 import { cleanupOutputTemplates } from "../src/core/artifact/copy-artifacts.js";
-import { JobStateStore } from "../src/store/job-state-store.js";
+import { buildInitialJobState } from "../src/store/job-state-store.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
 import { EventBus } from "../src/core/event/event-bus.js";
 
@@ -149,10 +149,12 @@ function makeTestRuntimeStrategy(spawnFn: GitSpawnFn): RuntimeStrategy {
 }
 
 async function makeJobState() {
-  return JobStateStore.create(tempDir, {
+  const state = buildInitialJobState({
     request: { path: "/test/request.md", title: "Test", type: "feature" },
     repository: { owner: "testowner", name: "testrepo" },
   });
+  await makeStoreFactory(tempDir)(state.jobId).persist(state);
+  return state;
 }
 
 function buildConfig(overrides: Record<string, unknown> = {}) {
@@ -1162,8 +1164,7 @@ describe("TC-030: runPipeline — persistence: both propose and spec-review step
     });
 
     // Verify the final persisted state has both steps recorded — reload via store
-    const { JobStateStore } = await import("../src/store/job-state-store.js");
-    const finalState = await new JobStateStore(jobState.jobId, tempDir).load();
+    const finalState = await makeStoreFactory(tempDir)(jobState.jobId).load();
     expect(finalState.steps?.["design"]).toBeDefined();
     expect(finalState.steps?.["spec-review"]).toBeDefined();
   });
@@ -1570,8 +1571,7 @@ describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not
     const jobState = await makeJobState();
     const stateWithBranch = { ...jobState, branch: "feat/test-self-commit" };
     // Persist so store.update can find and update it
-    const { JobStateStore } = await import("../src/store/job-state-store.js");
-    const store = new JobStateStore(stateWithBranch.jobId, tempDir);
+    const store = makeStoreFactory(tempDir)(stateWithBranch.jobId);
     await store.persist(stateWithBranch);
 
     const localConfig = {

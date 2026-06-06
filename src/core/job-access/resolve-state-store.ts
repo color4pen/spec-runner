@@ -7,9 +7,9 @@
  *                                  resolveCanonicalStateDir (archive / main-checkout)
  *                                  → null (no accessible store found)
  *   2. sidecar entry kind="managed": .specrunner/local/<slug>/ (changeDir seam)
- *   3. No sidecar entry: jobId-based store (legacy safety net)
+ *   No sidecar entry: returns null (degraded skip — caller should skip persist).
  *
- * Returns null when no writable slug store is accessible (local, degraded).
+ * Returns null when no writable slug store is accessible.
  */
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
@@ -71,6 +71,6 @@ export async function resolveStateStoreByJobId(
     }
   }
 
-  // Step 3: no sidecar entry — fallback to jobId-based store (legacy safety net)
-  return new JobStateStore(jobId, repoRoot);
+  // No sidecar entry — unresolvable (degraded skip)
+  return null;
 }

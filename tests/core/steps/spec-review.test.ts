@@ -18,7 +18,7 @@ import { EventBus } from "../../../src/core/event/event-bus.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import { createManagedAgentRunner } from "../../../src/adapter/managed-agent/agent-runner.js";
 import { SpecReviewStep } from "../../../src/core/step/spec-review.js";
-import { JobStateStore } from "../../../src/store/job-state-store.js";
+import { buildInitialJobState } from "../../../src/store/job-state-store.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 
 let tempDir: string;
@@ -35,11 +35,12 @@ afterEach(async () => {
 });
 
 async function makePersistedJobState(steps: JobState["steps"] = {}): Promise<JobState> {
-  const state = await JobStateStore.create(tempDir, {
+  const state = buildInitialJobState({
     request: { path: "/req.md", title: "Test", type: "feature" },
     repository: { owner: "testowner", name: "testrepo" },
   });
-  const store = new JobStateStore(state.jobId, tempDir);
+  const store = makeStoreFactory(tempDir)(state.jobId);
+  await store.persist(state);
   return store.update({
     ...state,
     step: "spec-review",

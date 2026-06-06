@@ -18,7 +18,7 @@ import type { RuntimeStrategy, WorkspaceContext, CleanupHandle } from "../../../
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
-import { JobStateStore } from "../../../../src/store/job-state-store.js";
+import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import { closeVerboseLog, setLogLevel } from "../../../../src/logger/stdout.js";
 
 let tempDir: string;
@@ -94,7 +94,7 @@ function buildMockRuntime(): RuntimeStrategy {
     owner: "owner",
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
-    storeFactory: (id: string) => new JobStateStore(id, tempDir),
+    storeFactory: makeStoreFactory(tempDir),
     cwd: "/worktree",
   } as unknown as PipelineDeps;
 

@@ -12,7 +12,6 @@ import * as os from "node:os";
 import { LocalRuntime } from "../src/core/runtime/local.js";
 import { cancelSingleJob } from "../src/core/cancel/runner.js";
 import { createExitGuardHandler } from "../src/core/lifecycle/exit-guard.js";
-import { getJobsDir } from "../src/util/xdg.js";
 import { changeFolderPath } from "../src/util/paths.js";
 
 let tempDir: string;
@@ -99,7 +98,7 @@ async function writeLiveness(slug: string, jobId: string, worktreePath: string |
  * Return true when the jobs dir for a given jobId does NOT exist.
  */
 async function jobsDirAbsent(jobId: string): Promise<boolean> {
-  const jobDir = path.join(getJobsDir(tempDir), jobId);
+  const jobDir = path.join(tempDir, ".specrunner", "jobs", jobId);
   try {
     await fs.access(jobDir);
     return false; // exists
@@ -125,7 +124,7 @@ describe("TC-NJW-001: LocalRuntime.bootstrapJob() does not write to .specrunner/
     expect(state.status).toBe("running");
 
     // jobs dir must not have been created at all
-    await expect(fs.access(getJobsDir(tempDir))).rejects.toThrow();
+    await expect(fs.access(path.join(tempDir, ".specrunner", "jobs"))).rejects.toThrow();
     // the per-job dir must not exist
     expect(await jobsDirAbsent(state.jobId)).toBe(true);
   });
@@ -164,7 +163,7 @@ describe("TC-NJW-002: LocalRuntime.setupWorkspace() writes slug store, not .spec
     // jobs-dir entry must NOT exist
     expect(await jobsDirAbsent(jobState.jobId)).toBe(true);
     // The jobs-dir root itself should not be created by LocalRuntime
-    await expect(fs.access(getJobsDir(tempDir))).rejects.toThrow();
+    await expect(fs.access(path.join(tempDir, ".specrunner", "jobs"))).rejects.toThrow();
   });
 });
 
@@ -241,7 +240,7 @@ describe("TC-NJW-004: LocalRuntime.setupWorkspace() resume path does not write t
 
     // jobs-dir must NOT have been created
     expect(await jobsDirAbsent(jobId)).toBe(true);
-    await expect(fs.access(getJobsDir(tempDir))).rejects.toThrow();
+    await expect(fs.access(path.join(tempDir, ".specrunner", "jobs"))).rejects.toThrow();
   });
 });
 
@@ -266,7 +265,7 @@ describe("TC-NJW-005: exit-guard global scan does not write to .specrunner/jobs/
 
     // jobs-dir must NOT have been created
     expect(await jobsDirAbsent(jobId)).toBe(true);
-    await expect(fs.access(getJobsDir(tempDir))).rejects.toThrow();
+    await expect(fs.access(path.join(tempDir, ".specrunner", "jobs"))).rejects.toThrow();
 
     // The slug canonical state should be updated to "awaiting-resume"
     const stateRaw = await fs.readFile(path.join(canonDir, "state.json"), "utf-8");

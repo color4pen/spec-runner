@@ -22,7 +22,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { StepExecutor } from "../../../../src/core/step/executor.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
-import { JobStateStore } from "../../../../src/store/job-state-store.js";
+import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import type { AgentRunner } from "../../../../src/core/port/agent-runner.js";
 import type { AgentStep } from "../../../../src/core/step/types.js";
 import type { AgentStepName } from "../../../../src/state/schema.js";
@@ -83,7 +83,7 @@ function makeDeps(): PipelineDeps {
 }
 
 async function createRunningJobState(): Promise<JobState> {
-  const created = await JobStateStore.create(tempDir, {
+  const created = buildInitialJobState({
     request: {
       path: path.join(tempDir, "request.md"),
       title: "Test",
@@ -92,7 +92,7 @@ async function createRunningJobState(): Promise<JobState> {
     },
     repository: { owner: "owner", name: "repo" },
   });
-  const store = new JobStateStore(created.jobId, tempDir);
+  const store = makeStoreFactory(tempDir)(created.jobId);
   const running: JobState = {
     ...created,
     status: "running",

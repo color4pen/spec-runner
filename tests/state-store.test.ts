@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { JobStateStore } from "../src/store/job-state-store.js";
+import { JobStateStore, buildInitialJobState } from "../src/store/job-state-store.js";
 import { appendHistoryEntry, MAX_HISTORY_SIZE, validateJobState } from "../src/state/schema.js";
 import type { JobState } from "../src/state/schema.js";
 
@@ -26,23 +26,34 @@ function makeBaseState() {
   };
 }
 
+/**
+ * Create a test job using buildInitialJobState + changeDir store.
+ * Returns the initial JobState and a store for it.
+ */
+async function createTestJob(
+  params: Parameters<typeof buildInitialJobState>[0] = makeBaseState(),
+): Promise<{ state: JobState; store: JobStateStore; changeDir: string }> {
+  const state = buildInitialJobState(params);
+  const changeDir = path.join(tempDir, ".specrunner", "test-jobs", state.jobId);
+  const store = new JobStateStore(state.jobId, tempDir, { changeDir });
+  await store.persist(state);
+  return { state, store, changeDir };
+}
+
 // TC-043: atomic write（temp+rename）
 describe("TC-043: atomic write — temp+rename", () => {
-  it("writes job state atomically and final file is valid JSON (split layout)", async () => {
-    const state = await JobStateStore.create(tempDir, makeBaseState());
-    const jobDir = path.join(tempDir, ".specrunner", "jobs", state.jobId);
+  it("writes job state atomically and final file is valid JSON (changeDir layout)", async () => {
+    const { state, changeDir } = await createTestJob();
 
-    // Split layout: subdirectory with state.json + events.jsonl
-    const stateJsonPath = path.join(jobDir, "state.json");
+    const stateJsonPath = path.join(changeDir, "state.json");
     const content = await fs.readFile(stateJsonPath, "utf-8");
     const parsed = JSON.parse(content);
     expect(parsed.jobId).toBe(state.jobId);
   });
 
   it("no .tmp files remain after successful write", async () => {
-    const state = await JobStateStore.create(tempDir, makeBaseState());
-    const jobDir = path.join(tempDir, ".specrunner", "jobs", state.jobId);
-    const files = await fs.readdir(jobDir);
+    const { changeDir } = await createTestJob();
+    const files = await fs.readdir(changeDir);
     const tmpFiles = files.filter((f) => f.includes(".tmp."));
     expect(tmpFiles).toHaveLength(0);
   });
@@ -51,15 +62,14 @@ describe("TC-043: atomic write — temp+rename", () => {
 // TC-044: SIGINT 中断耐性
 describe("TC-044: SIGINT resilience", () => {
   it("original state.json remains intact when temp file exists but rename hasn't happened", async () => {
-    const state = await JobStateStore.create(tempDir, makeBaseState());
-    const jobDir = path.join(tempDir, ".specrunner", "jobs", state.jobId);
+    const { state, changeDir } = await createTestJob();
 
     // Simulate having a temp file alongside the real state.json (crash scenario)
-    const tmpFile = path.join(jobDir, "state.json.tmp.abcdef");
+    const tmpFile = path.join(changeDir, "state.json.tmp.abcdef");
     await fs.writeFile(tmpFile, "INCOMPLETE DATA");
 
     // Reading the job state should still work (state.json is intact)
-    const content = await fs.readFile(path.join(jobDir, "state.json"), "utf-8");
+    const content = await fs.readFile(path.join(changeDir, "state.json"), "utf-8");
     const parsed = JSON.parse(content);
     expect(parsed.jobId).toBe(state.jobId);
   });
@@ -68,20 +78,37 @@ describe("TC-044: SIGINT resilience", () => {
 // TC-045: 並行 ps と書き込みの整合性
 describe("TC-045: concurrent ps and write", () => {
   it("listJobStates returns valid states even during concurrent writes", async () => {
-    // Create multiple job states
-    const s1 = await JobStateStore.create(tempDir, makeBaseState());
-    const s2 = await JobStateStore.create(tempDir, makeBaseState());
+    // Create multiple job states in slug layout so list() can find them
+    const slug1 = "tc045-slug-one";
+    const slug2 = "tc045-slug-two";
+    const j1 = buildInitialJobState(makeBaseState());
+    const j2 = buildInitialJobState(makeBaseState());
 
-    // Run concurrent reads and writes
+    for (const [slug, state] of [[slug1, j1], [slug2, j2]] as [string, JobState][]) {
+      const dir = path.join(tempDir, "specrunner", "changes", slug);
+      await fs.mkdir(dir, { recursive: true });
+      await fs.writeFile(
+        path.join(dir, "state.json"),
+        JSON.stringify({
+          version: 1,
+          jobId: state.jobId,
+          createdAt: state.createdAt,
+          updatedAt: state.updatedAt,
+          request: state.request,
+          repository: state.repository,
+          session: null,
+          step: "init",
+          status: "running",
+          branch: null,
+          error: null,
+          _journal: { historyCount: 0, stepCounts: {} },
+        }),
+      );
+      await fs.writeFile(path.join(dir, "events.jsonl"), "");
+    }
+
+    // Run concurrent reads
     const reads = [JobStateStore.list(tempDir), JobStateStore.list(tempDir)];
-    const store1 = new JobStateStore(s1.jobId, tempDir);
-    const store2 = new JobStateStore(s2.jobId, tempDir);
-    const writes = [
-      store1.update(s1, { status: "awaiting-archive" }),
-      store2.update(s2, { branch: "feat/test" }),
-    ];
-
-    void writes;
     // All reads should succeed (no partial JSON errors)
     for (const result of await Promise.all(reads)) {
       expect(Array.isArray(result)).toBe(true);
@@ -89,7 +116,6 @@ describe("TC-045: concurrent ps and write", () => {
   });
 });
 
-// TC-046: history append-only と最大 100 entry truncate
 // TC-046: history append-only (Design D4: no persistent truncation)
 describe("TC-046: history append-only — no persistent truncation (Design D4)", () => {
   it("does NOT truncate history — all entries preserved in journal (D4)", () => {
@@ -132,7 +158,6 @@ describe("TC-046: history append-only — no persistent truncation (Design D4)",
 });
 
 // TC-047: 破損ファイルが存在しても他のジョブを表示できる
-// Updated to use slug-dir fixtures (section 1 of list()) instead of jobs-dir (section 3 removed).
 describe("TC-047: corrupt slug state skipped, others returned", () => {
   it("list() skips corrupt slug state.json and returns valid ones", async () => {
     // Write 2 valid slug states to specrunner/changes/
@@ -182,12 +207,9 @@ describe("TC-047: corrupt slug state skipped, others returned", () => {
 
 // TC-048: repoRoot-based path resolution
 describe("TC-048: repoRoot-based path resolution", () => {
-  it("jobs directory is <repoRoot>/.specrunner/jobs", () => {
-    // New design: jobs go to <repoRoot>/.specrunner/jobs (not XDG-based)
-    const expectedJobsDir = path.join(tempDir, ".specrunner", "jobs");
-    // Create a job and verify files appear in the expected location
-    // (verified implicitly by other tests in this suite)
-    expect(expectedJobsDir).toContain(".specrunner/jobs");
+  it("local sidecar dir is <repoRoot>/.specrunner/local/", () => {
+    const expectedLocalDir = path.join(tempDir, ".specrunner", "local");
+    expect(expectedLocalDir).toContain(".specrunner/local");
   });
 });
 
@@ -227,10 +249,9 @@ describe("TC-051: config atomic write and 0600 permission", () => {
 // TC-PIPID-010: pipelineId round-trip — persist → load で値が保たれる
 describe("TC-PIPID-010: pipelineId round-trip — persist then load preserves value", () => {
   it("pipelineId is preserved after create and load", async () => {
-    const state = await JobStateStore.create(tempDir, makeBaseState());
+    const { state, store } = await createTestJob();
     expect(state.pipelineId).toBe("standard");
 
-    const store = new JobStateStore(state.jobId, tempDir);
     const loaded = await store.load();
     expect(loaded.pipelineId).toBe("standard");
   });
@@ -260,12 +281,12 @@ describe("TC-PIPID-011: backward compat — pipelineId absent in legacy state do
     expect(state.step).toBe("implementer");
   });
 
-  it("JobStateStore.load succeeds for state file without pipelineId", async () => {
+  it("JobStateStore.load succeeds for state file without pipelineId (changeDir layout)", async () => {
     const jobId = "legacy-no-pipeline-id";
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    await fs.mkdir(jobsDir, { recursive: true });
+    const changeDir = path.join(tempDir, ".specrunner", "local", jobId);
+    await fs.mkdir(changeDir, { recursive: true });
     await fs.writeFile(
-      path.join(jobsDir, `${jobId}.json`),
+      path.join(changeDir, "state.json"),
       JSON.stringify({
         version: 1,
         jobId,
@@ -279,28 +300,27 @@ describe("TC-PIPID-011: backward compat — pipelineId absent in legacy state do
         branch: "feat/legacy",
         history: [],
         error: null,
+        _journal: { historyCount: 0, stepCounts: {} },
       }),
     );
+    await fs.writeFile(path.join(changeDir, "events.jsonl"), "");
 
-    const store = new JobStateStore(jobId, tempDir);
+    const store = new JobStateStore(jobId, tempDir, { changeDir });
     const loaded = await store.load();
     expect(loaded.jobId).toBe(jobId);
     expect(loaded.pipelineId).toBeUndefined();
   });
 });
 
-// TC-PIPID-012: JobStateStore.create のデフォルト pipelineId は "standard"
-describe("TC-PIPID-012: JobStateStore.create default pipelineId is standard", () => {
+// TC-PIPID-012: buildInitialJobState のデフォルト pipelineId は "standard"
+describe("TC-PIPID-012: buildInitialJobState default pipelineId is standard", () => {
   it("creates state with pipelineId 'standard' when not specified", async () => {
-    const state = await JobStateStore.create(tempDir, makeBaseState());
+    const { state } = await createTestJob();
     expect(state.pipelineId).toBe("standard");
   });
 
   it("creates state with explicit pipelineId when provided", async () => {
-    const state = await JobStateStore.create(tempDir, {
-      ...makeBaseState(),
-      pipelineId: "standard",
-    });
+    const { state } = await createTestJob({ ...makeBaseState(), pipelineId: "standard" });
     expect(state.pipelineId).toBe("standard");
   });
 });

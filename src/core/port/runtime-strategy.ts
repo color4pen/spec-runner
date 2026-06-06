@@ -140,9 +140,7 @@ export interface RuntimeStrategy {
    *
    * - local:   resolves the slug store (workspace.worktreePath → sidecar → canonicalStateDir).
    *            Persists portable state to slug store. Skips (best-effort) if no store found.
-   *            Does NOT write to .specrunner/jobs/<jobId>/.
    * - managed: persists full state to .specrunner/local/<slug>/ (machine-local, changeDir seam).
-   *            Does NOT write to .specrunner/jobs/<jobId>/.
    *
    * workspace may be null when the worktree was never established (WORKSPACE_SETUP_FAILED).
    */

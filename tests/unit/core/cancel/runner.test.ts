@@ -7,7 +7,7 @@
  * - awaiting-merge + --force あり → 成功
  * - archived → reject
  * - canceled → idempotent (state 未変更)
- * - --purge で state file 物理削除
+ * - --purge で sidecar 物理削除
  * - running + pid kill 成功 / 失敗
  * - running + state.pid が null → warning + 続行
  * - worktree cleanup の best-effort (失敗時 warning)
@@ -27,7 +27,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { cancelSingleJob, cancelAllTerminated } from "../../../../src/core/cancel/runner.js";
 import type { CancelDeps } from "../../../../src/core/cancel/runner.js";
-import { JobStateStore } from "../../../../src/store/job-state-store.js";
+import { JobStateStore, buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import type { JobState, JobStatus } from "../../../../src/state/schema.js";
 import type { WorktreeManager } from "../../../../src/core/worktree/manager.js";
 import type { SpawnResult } from "../../../../src/util/spawn.js";
@@ -47,50 +47,64 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-/** Create a job state with a specific status patched via the store. */
+/**
+ * Create a job state with a specific status and write it to:
+ *  1. Slug canonical dir at specrunner/changes/<slug>/ (for cancelSingleJob load/persist)
+ *  2. Liveness sidecar at .specrunner/local/<slug>/liveness.json (for loadStateByJobId)
+ *
+ * cancelSingleJob loads via loadStateByJobId → liveness sidecar → slug canonical dir.
+ * cancelSingleJob persists via resolveStateStoreByJobId → liveness sidecar → slug canonical dir.
+ */
 async function makeJob(
   status: JobStatus = "failed",
   extras: Partial<{ pid: number | null | undefined; branch: string; worktreePath: string }> = {},
-) {
-  const state = await JobStateStore.create(tempDir, {
+): Promise<{ jobId: string; slug: string }> {
+  const state = buildInitialJobState({
     request: { path: "/test/request.md", title: "Test", type: "new-feature" },
     repository: { owner: "user", name: "repo" },
   });
+  const jobId = state.jobId;
+  const slug = `cancel-${jobId.slice(0, 8)}`;
 
-  // Patch via the store (split layout — writes to jobs-dir for stateFileExists checks)
-  const store = new JobStateStore(state.jobId, tempDir);
-  const loaded = await store.load();
-  const patch: Record<string, unknown> = { status };
-  if ("pid" in extras) patch["pid"] = extras.pid ?? null;
-  if (extras.branch !== undefined) patch["branch"] = extras.branch;
-  if (extras.worktreePath !== undefined) patch["worktreePath"] = extras.worktreePath;
-  const updated = await store.update(loaded, patch as Parameters<typeof store.update>[1]);
+  const pid = "pid" in extras ? (extras.pid ?? null) : null;
 
-  // Also write to slug dir so list() can find it (section 3/jobs-dir scan removed).
-  // Use jobId prefix as unique slug to avoid cross-test collisions.
-  const slug = `cancel-${state.jobId.slice(0, 8)}`;
+  // Write slug canonical state (what cancelSingleJob reads/writes)
   const slugDir = path.join(tempDir, "specrunner", "changes", slug);
   await nodefs.mkdir(slugDir, { recursive: true });
   await nodefs.writeFile(
     path.join(slugDir, "state.json"),
     JSON.stringify({
       version: 1,
-      jobId: state.jobId,
+      jobId,
       createdAt: state.createdAt,
-      updatedAt: updated.updatedAt,
+      updatedAt: state.updatedAt,
       request: { path: "/test/request.md", title: "Test", type: "new-feature", slug },
       repository: state.repository,
       session: null,
-      step: updated.step,
-      status: updated.status,
-      branch: updated.branch ?? null,
-      error: updated.error ?? null,
+      step: "init",
+      status,
+      pid: pid ?? null,
+      branch: extras.branch ?? null,
+      error: null,
+      history: [],
       _journal: { historyCount: 0, stepCounts: {} },
     }),
   );
   await nodefs.writeFile(path.join(slugDir, "events.jsonl"), "");
 
-  return { jobId: state.jobId };
+  // Write liveness sidecar so loadStateByJobId can find the job
+  const livenessDir = path.join(tempDir, ".specrunner", "local", slug);
+  await nodefs.mkdir(livenessDir, { recursive: true });
+  await nodefs.writeFile(
+    path.join(livenessDir, "liveness.json"),
+    JSON.stringify({
+      jobId,
+      worktreePath: extras.worktreePath ?? null,
+      pid,
+    }),
+  );
+
+  return { jobId, slug };
 }
 
 /** Build a minimal CancelDeps mock. */
@@ -113,18 +127,23 @@ function makeDeps(overrides: Partial<CancelDeps> = {}): CancelDeps {
   };
 }
 
-async function loadState(jobId: string): Promise<JobState> {
-  return (await new JobStateStore(jobId, tempDir).load()) as JobState;
+/** Load the latest state for a job via its slug canonical store. */
+async function loadState(jobId: string, slug: string): Promise<JobState> {
+  const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir });
+  return (await store.load()) as JobState;
 }
 
-async function stateFileExists(jobId: string): Promise<boolean> {
-  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
+/**
+ * Return true when the sidecar directory for a job is absent.
+ * cancelSingleJob --purge deletes .specrunner/local/<slug>/.
+ */
+async function sidecarAbsent(slug: string): Promise<boolean> {
+  const sidecarDir = path.join(tempDir, ".specrunner", "local", slug);
   try {
-    // Check split-layout subdirectory (new format)
-    await nodefs.access(path.join(jobsDir, jobId, "state.json"));
-    return true;
+    await nodefs.access(sidecarDir);
+    return false; // exists
   } catch {
-    return false;
+    return true; // ENOENT
   }
 }
 
@@ -141,10 +160,10 @@ describe("cancelSingleJob — archived status", () => {
     expect(result.message).toMatch(/archived/i);
   });
 
-  it("does NOT delete state file", async () => {
-    const { jobId } = await makeJob("archived");
+  it("does NOT delete sidecar", async () => {
+    const { jobId, slug } = await makeJob("archived");
     await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
-    expect(await stateFileExists(jobId)).toBe(true);
+    expect(await sidecarAbsent(slug)).toBe(false);
   });
 });
 
@@ -158,19 +177,19 @@ describe("cancelSingleJob — awaiting-merge status", () => {
   });
 
   it("succeeds with --force", async () => {
-    const { jobId } = await makeJob("awaiting-archive");
+    const { jobId, slug } = await makeJob("awaiting-archive");
     const result = await cancelSingleJob({ jobId, force: true, purge: false, deps: makeDeps() });
 
     expect(result.exitCode).toBe(0);
 
-    const state = await loadState(jobId);
+    const state = await loadState(jobId, slug);
     expect(state.status).toBe("canceled");
   });
 });
 
 describe("cancelSingleJob — running status", () => {
   it("kills pid and transitions to canceled", async () => {
-    const { jobId } = await makeJob("running", { pid: 1234 });
+    const { jobId, slug } = await makeJob("running", { pid: 1234 });
     const kill = vi.fn();
     const isAlive = vi.fn().mockReturnValue(false);
     const deps = makeDeps({ kill, isAlive });
@@ -180,12 +199,11 @@ describe("cancelSingleJob — running status", () => {
     expect(result.exitCode).toBe(0);
     expect(kill).toHaveBeenCalledWith(1234, "SIGTERM");
 
-    const state = await loadState(jobId);
+    const state = await loadState(jobId, slug);
     expect(state.status).toBe("canceled");
   });
 
   it("continues with warning when pid is null", async () => {
-    // Explicitly set pid: null to trigger "no PID recorded" branch
     const { jobId } = await makeJob("running", { pid: null });
     const deps = makeDeps();
 
@@ -215,66 +233,63 @@ describe("cancelSingleJob — running status", () => {
 
 describe("cancelSingleJob — awaiting-resume status", () => {
   it("transitions to canceled", async () => {
-    const { jobId } = await makeJob("awaiting-resume");
+    const { jobId, slug } = await makeJob("awaiting-resume");
     const result = await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
 
     expect(result.exitCode).toBe(0);
 
-    const state = await loadState(jobId);
+    const state = await loadState(jobId, slug);
     expect(state.status).toBe("canceled");
   });
 });
 
 describe("cancelSingleJob — failed status", () => {
   it("transitions to canceled", async () => {
-    const { jobId } = await makeJob("failed");
+    const { jobId, slug } = await makeJob("failed");
     const result = await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
 
     expect(result.exitCode).toBe(0);
 
-    const state = await loadState(jobId);
+    const state = await loadState(jobId, slug);
     expect(state.status).toBe("canceled");
   });
 });
 
 describe("cancelSingleJob — terminated status", () => {
   it("transitions to canceled", async () => {
-    const { jobId } = await makeJob("terminated");
+    const { jobId, slug } = await makeJob("terminated");
     const result = await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
 
     expect(result.exitCode).toBe(0);
 
-    const state = await loadState(jobId);
+    const state = await loadState(jobId, slug);
     expect(state.status).toBe("canceled");
   });
 });
 
 describe("cancelSingleJob — canceled status (idempotent)", () => {
   it("succeeds without changing state", async () => {
-    const { jobId } = await makeJob("canceled");
+    const { jobId, slug } = await makeJob("canceled");
 
     // Record the state before
-    const stateBefore = await loadState(jobId);
+    const stateBefore = await loadState(jobId, slug);
 
     const result = await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
 
     expect(result.exitCode).toBe(0);
 
-    // State file should still exist
-    expect(await stateFileExists(jobId)).toBe(true);
-
     // Status should still be canceled (not modified)
-    const stateAfter = await loadState(jobId);
+    const stateAfter = await loadState(jobId, slug);
     expect(stateAfter.status).toBe("canceled");
     // updatedAt should NOT change (no write happened)
     expect(stateAfter.updatedAt).toBe(stateBefore.updatedAt);
   });
 
-  it("deletes state file with --purge even for idempotent case", async () => {
-    const { jobId } = await makeJob("canceled");
+  it("deletes sidecar with --purge even for idempotent case", async () => {
+    const { jobId, slug } = await makeJob("canceled");
     await cancelSingleJob({ jobId, force: false, purge: true, deps: makeDeps() });
 
-    expect(await stateFileExists(jobId)).toBe(false);
+    expect(await sidecarAbsent(slug)).toBe(true);
   });
 });
 
@@ -284,12 +299,12 @@ describe("cancelSingleJob — canceled status (idempotent)", () => {
 
 describe("cancelSingleJob — state file content", () => {
   it("records status=canceled, error.code=USER_CANCELED, canceledAt on cancel", async () => {
-    const { jobId } = await makeJob("failed");
+    const { jobId, slug } = await makeJob("failed");
     const before = new Date();
 
     await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
 
-    const state = await loadState(jobId);
+    const state = await loadState(jobId, slug);
     expect(state.status).toBe("canceled");
     expect(state.error?.code).toBe("USER_CANCELED");
     expect(state.canceledAt).toBeDefined();
@@ -304,11 +319,11 @@ describe("cancelSingleJob — state file content", () => {
 // ---------------------------------------------------------------------------
 
 describe("cancelSingleJob — --purge flag", () => {
-  it("deletes state file after cancel", async () => {
-    const { jobId } = await makeJob("failed");
+  it("deletes sidecar after cancel", async () => {
+    const { jobId, slug } = await makeJob("failed");
     await cancelSingleJob({ jobId, force: false, purge: true, deps: makeDeps() });
 
-    expect(await stateFileExists(jobId)).toBe(false);
+    expect(await sidecarAbsent(slug)).toBe(true);
   });
 
   it("still performs cleanup before deletion", async () => {
@@ -417,9 +432,9 @@ describe("cancelAllTerminated", () => {
   });
 
   it("removes failed / terminated / canceled jobs with --yes", async () => {
-    const { jobId: j1 } = await makeJob("failed");
-    const { jobId: j2 } = await makeJob("terminated");
-    const { jobId: j3 } = await makeJob("canceled");
+    const { slug: s1 } = await makeJob("failed");
+    const { slug: s2 } = await makeJob("terminated");
+    const { slug: s3 } = await makeJob("canceled");
     await makeJob("running");        // should NOT be removed
     await makeJob("awaiting-archive"); // should NOT be removed
 
@@ -427,22 +442,22 @@ describe("cancelAllTerminated", () => {
 
     expect(result.exitCode).toBe(0);
 
-    // State files for targeted jobs should be gone
-    expect(await stateFileExists(j1)).toBe(false);
-    expect(await stateFileExists(j2)).toBe(false);
-    expect(await stateFileExists(j3)).toBe(false);
+    // Sidecars for targeted jobs should be gone
+    expect(await sidecarAbsent(s1)).toBe(true);
+    expect(await sidecarAbsent(s2)).toBe(true);
+    expect(await sidecarAbsent(s3)).toBe(true);
   });
 
   it("does NOT target archived jobs", async () => {
-    const { jobId: archivedId } = await makeJob("archived");
+    const { slug: archivedSlug } = await makeJob("archived");
     await makeJob("failed");
 
     const result = await cancelAllTerminated({ yes: true, repoRoot: tempDir });
 
     expect(result.exitCode).toBe(0);
 
-    // archived job state file must remain
-    expect(await stateFileExists(archivedId)).toBe(true);
+    // archived job sidecar must remain
+    expect(await sidecarAbsent(archivedSlug)).toBe(false);
   });
 
   it("rejects non-TTY without --yes", async () => {
@@ -458,7 +473,7 @@ describe("cancelAllTerminated", () => {
   });
 
   it("TTY + y 入力で削除される (TC-27)", async () => {
-    const { jobId } = await makeJob("failed");
+    const { slug } = await makeJob("failed");
     const { Readable } = await import("node:stream");
     const ttyStdin = new Readable({ read() {} }) as NodeJS.ReadStream;
     (ttyStdin as unknown as { isTTY: boolean }).isTTY = true;
@@ -469,7 +484,7 @@ describe("cancelAllTerminated", () => {
     const result = await resultPromise;
 
     expect(result.exitCode).toBe(0);
-    expect(await stateFileExists(jobId)).toBe(false);
+    expect(await sidecarAbsent(slug)).toBe(true);
   });
 
   it("shows count of targets before deletion", async () => {

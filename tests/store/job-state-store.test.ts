@@ -30,15 +30,19 @@ afterEach(async () => {
 });
 
 /**
- * Write raw JSON directly to the jobs dir for a given jobId.
+ * Write raw JSON directly to a changeDir for a given jobId.
+ * Returns the changeDir path and a store for it.
  */
-async function writeRawState(jobId: string, raw: unknown): Promise<void> {
-  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-  await fs.mkdir(jobsDir, { recursive: true });
+async function writeRawState(jobId: string, raw: unknown): Promise<{ changeDir: string; store: JobStateStore }> {
+  const changeDir = path.join(tempDir, ".specrunner", "test-jobs", jobId);
+  await fs.mkdir(changeDir, { recursive: true });
   await fs.writeFile(
-    path.join(jobsDir, `${jobId}.json`),
+    path.join(changeDir, "state.json"),
     JSON.stringify(raw, null, 2),
   );
+  await fs.writeFile(path.join(changeDir, "events.jsonl"), "");
+  const store = new JobStateStore(jobId, tempDir, { changeDir });
+  return { changeDir, store };
 }
 
 /**
@@ -91,9 +95,7 @@ describe("TC-001: pre-PR24 single object → StepRun[] normalization", () => {
         },
       },
     };
-    await writeRawState(jobId, raw);
-
-    const store = new JobStateStore(jobId, tempDir);
+    const { store } = await writeRawState(jobId, raw);
     const state = await store.load();
 
     const designRuns = state.steps["design"];
@@ -151,9 +153,7 @@ describe("TC-002: post-PR24 StepResult[] → StepRun[] normalization", () => {
         ],
       },
     };
-    await writeRawState(jobId, raw);
-
-    const store = new JobStateStore(jobId, tempDir);
+    const { store } = await writeRawState(jobId, raw);
     const state = await store.load();
 
     const runs = state.steps["spec-review"];
@@ -202,9 +202,7 @@ describe("TC-002: post-PR24 StepResult[] → StepRun[] normalization", () => {
         ],
       },
     };
-    await writeRawState(jobId, raw);
-
-    const store = new JobStateStore(jobId, tempDir);
+    const { store } = await writeRawState(jobId, raw);
     const state = await store.load();
 
     const runs = state.steps["spec-review"];
@@ -219,7 +217,7 @@ describe("TC-002: post-PR24 StepResult[] → StepRun[] normalization", () => {
 // ---------------------------------------------------------------------------
 describe("TC-003: pre-PR24 fixture round-trip — load → normalize → save", () => {
   it("loads pre-pr24 fixture, normalizes, and saved JSON uses StepRun[] shape without legacy fields", async () => {
-    // Read fixture and write to temp store dir
+    // Read fixture and write to temp changeDir
     const fixturePath = path.resolve(
       __dirname,
       "../fixtures/legacy-job-state-pre-pr24.json",
@@ -228,11 +226,7 @@ describe("TC-003: pre-PR24 fixture round-trip — load → normalize → save", 
     const fixture = JSON.parse(fixtureRaw) as { jobId: string };
     const jobId = fixture.jobId;
 
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    await fs.mkdir(jobsDir, { recursive: true });
-    await fs.writeFile(path.join(jobsDir, `${jobId}.json`), fixtureRaw);
-
-    const store = new JobStateStore(jobId, tempDir);
+    const { store } = await writeRawState(jobId, fixture);
     const state = await store.load();
 
     // Save to a temp path to inspect output
@@ -268,15 +262,11 @@ describe("TC-004: post-PR24 fixture round-trip — load → normalize → save",
     const fixture = JSON.parse(fixtureRaw) as { jobId: string };
     const jobId = fixture.jobId;
 
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    await fs.mkdir(jobsDir, { recursive: true });
-    await fs.writeFile(path.join(jobsDir, `${jobId}.json`), fixtureRaw);
-
-    const store = new JobStateStore(jobId, tempDir);
+    const { store } = await writeRawState(jobId, fixture);
     const state = await store.load();
     await store.persist(state);
 
-    // After persist, reload via store (now uses split layout)
+    // After persist, reload via store to verify
     const reloaded = await store.load();
     const specReviewRuns = reloaded.steps["spec-review"];
 
@@ -316,15 +306,7 @@ describe("TC-005: appendStepRun — appends and auto-increments attempt", () => 
       steps: { "spec-review": [existingRun] },
     };
 
-    // Write the seeded state to disk first
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    await fs.mkdir(jobsDir, { recursive: true });
-    await fs.writeFile(
-      path.join(jobsDir, `${jobId}.json`),
-      JSON.stringify(seeded, null, 2),
-    );
-
-    const store = new JobStateStore(jobId, tempDir);
+    const { store } = await writeRawState(jobId, seeded);
     const newRun: Omit<StepRun, "attempt"> = {
       sessionId: "sess_002",
       outcome: { verdict: "approved", findingsPath: null, error: null },
@@ -345,18 +327,11 @@ describe("TC-005: appendStepRun — appends and auto-increments attempt", () => 
 // TC-006: appendStepRun persists atomically
 // ---------------------------------------------------------------------------
 describe("TC-006: appendStepRun — persists atomically (write-and-rename)", () => {
-  it("state is fully updated after appendStepRun — no partial write (split layout)", async () => {
+  it("state is fully updated after appendStepRun — no partial write (changeDir layout)", async () => {
     const jobId = "tc006-job";
     const state = makeMinimalNormalizedState(jobId);
 
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    await fs.mkdir(jobsDir, { recursive: true });
-    await fs.writeFile(
-      path.join(jobsDir, `${jobId}.json`),
-      JSON.stringify(state, null, 2),
-    );
-
-    const store = new JobStateStore(jobId, tempDir);
+    const { store, changeDir } = await writeRawState(jobId, state);
     const run: Omit<StepRun, "attempt"> = {
       sessionId: "sess_001",
       outcome: { verdict: "approved", findingsPath: null, error: null },
@@ -371,9 +346,8 @@ describe("TC-006: appendStepRun — persists atomically (write-and-rename)", () 
     expect(Array.isArray(designRuns)).toBe(true);
     expect(designRuns!.length).toBe(1);
 
-    // No tmp files left in the split-layout directory
-    const jobDir = path.join(jobsDir, jobId);
-    const files = await fs.readdir(jobDir);
+    // No tmp files left in the changeDir
+    const files = await fs.readdir(changeDir);
     const tmpFiles = files.filter((f) => f.includes(".tmp."));
     expect(tmpFiles).toHaveLength(0);
   });
@@ -387,17 +361,11 @@ describe("TC-007: StepRun captures startedAt and endedAt timestamps", () => {
     const jobId = "tc007-job";
     const state = makeMinimalNormalizedState(jobId);
 
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    await fs.mkdir(jobsDir, { recursive: true });
-    await fs.writeFile(
-      path.join(jobsDir, `${jobId}.json`),
-      JSON.stringify(state, null, 2),
-    );
+    const { store } = await writeRawState(jobId, state);
 
     const startedAt = "2026-01-01T00:00:00.000Z";
     const endedAt = "2026-01-01T00:05:00.000Z";
 
-    const store = new JobStateStore(jobId, tempDir);
     const run: Omit<StepRun, "attempt"> = {
       sessionId: null,
       outcome: { verdict: "approved", findingsPath: null, error: null },
@@ -445,13 +413,11 @@ describe("TC-008: persist after legacy load writes new format only", () => {
         ],
       },
     };
-    await writeRawState(jobId, raw);
-
-    const store = new JobStateStore(jobId, tempDir);
+    const { store } = await writeRawState(jobId, raw);
     const normalized = await store.load();
     await store.persist(normalized);
 
-    // After persist, reload via store (now uses split layout)
+    // After persist, reload via store to verify
     const reloaded = await store.load();
     const runs = reloaded.steps["spec-review"];
     const first = runs![0]!;

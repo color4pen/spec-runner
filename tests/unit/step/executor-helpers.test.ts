@@ -21,8 +21,9 @@ import {
   failStepWithError,
 } from "../../../src/core/step/executor-helpers.js";
 import type { SessionClient } from "../../../src/core/port/session-client.js";
-import { JobStateStore } from "../../../src/store/job-state-store.js";
+import { buildInitialJobState } from "../../../src/store/job-state-store.js";
 import type { JobState, ErrorInfo } from "../../../src/state/schema.js";
+import { makeStoreFactory } from "../../helpers/store-factory.js";
 
 let tempDir: string;
 
@@ -123,11 +124,12 @@ describe("TC-NEW-helpers-003: throwWrappedError", () => {
 // TC-NEW-helpers-004: failStepWithError
 describe("TC-NEW-helpers-004: failStepWithError", () => {
   it("records step result, marks state failed, persists, and throws", async () => {
-    const state = await JobStateStore.create(tempDir, {
+    const state = buildInitialJobState({
       request: { path: "/req.md", title: "Test", type: "feature" },
       repository: { owner: "o", name: "r" },
     });
-    const store = new JobStateStore(state.jobId, tempDir);
+    const store = makeStoreFactory(tempDir)(state.jobId);
+    await store.persist(state);
     const errorInfo: ErrorInfo = { code: "GENERIC_ERROR_CODE_FOR_TEST", message: "timeout", hint: "retry" };
     const completedAt = new Date().toISOString();
 
@@ -150,11 +152,12 @@ describe("TC-NEW-helpers-004: failStepWithError", () => {
 // TC-NEW-helpers-005: createSessionWithHistory — success path
 describe("TC-NEW-helpers-005: createSessionWithHistory success path", () => {
   it("records started/ok history, updates state with sessionId, and returns sessionId", async () => {
-    const state = await JobStateStore.create(tempDir, {
+    const state = buildInitialJobState({
       request: { path: "/req.md", title: "Test", type: "feature" },
       repository: { owner: "o", name: "r" },
     });
-    const store = new JobStateStore(state.jobId, tempDir);
+    const store = makeStoreFactory(tempDir)(state.jobId);
+    await store.persist(state);
 
     const mockClient: SessionClient = {
       createSession: vi.fn().mockResolvedValue({ sessionId: "sess-abc-123" }),
@@ -203,11 +206,12 @@ describe("TC-NEW-helpers-005: createSessionWithHistory success path", () => {
 // TC-NEW-helpers-006: createSessionWithHistory — failure path
 describe("TC-NEW-helpers-006: createSessionWithHistory failure path", () => {
   it("fails state, appends error history, attaches state to error, and rethrows", async () => {
-    const state = await JobStateStore.create(tempDir, {
+    const state = buildInitialJobState({
       request: { path: "/req.md", title: "Test", type: "feature" },
       repository: { owner: "o", name: "r" },
     });
-    const store = new JobStateStore(state.jobId, tempDir);
+    const store = makeStoreFactory(tempDir)(state.jobId);
+    await store.persist(state);
 
     const sessionError = new Error("network failure");
     const mockClient: SessionClient = {

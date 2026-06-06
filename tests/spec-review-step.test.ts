@@ -9,7 +9,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { specReviewResultPath } from "../src/util/paths.js";
-import { JobStateStore } from "../src/store/job-state-store.js";
+import { buildInitialJobState } from "../src/store/job-state-store.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
 
 let tempDir: string;
@@ -25,12 +25,13 @@ afterEach(async () => {
 });
 
 async function makeJobState() {
-  const state = await JobStateStore.create(tempDir, {
+  const state = buildInitialJobState({
     request: { path: "/test/request.md", title: "Test", type: "feature" },
     repository: { owner: "testowner", name: "testrepo" },
   });
   // Simulate propose step completed with a branch
-  const store = new JobStateStore(state.jobId, tempDir);
+  const store = makeStoreFactory(tempDir)(state.jobId);
+  await store.persist(state);
   return store.update(state, {
     branch: "feat/test-branch",
     status: "running",

@@ -20,7 +20,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { fold, appendEventRecord } from "../../src/store/event-journal.js";
 import type { StepAttemptRecord, TransitionRecord } from "../../src/store/event-journal.js";
-import { JobStateStore } from "../../src/store/job-state-store.js";
+import { makeStoreFactory } from "../helpers/store-factory.js";
 import { resolveResumeStep } from "../../src/core/resume/resolve-step.js";
 import { STANDARD_DESCRIPTOR } from "../../src/core/pipeline/registry.js";
 import type { BaseReportResult } from "../../src/kernel/report-result.js";
@@ -78,7 +78,7 @@ async function writeStateJson(
   historyCount: number,
   stepCounts: Record<string, number> = {},
 ): Promise<void> {
-  const jobDir = path.join(tempDir, ".specrunner", "jobs", jobId);
+  const jobDir = path.join(tempDir, ".specrunner", "test-jobs", jobId);
   await fs.mkdir(jobDir, { recursive: true });
   const stateJson = {
     version: 1,
@@ -105,7 +105,7 @@ async function writeStateJson(
  * Return events.jsonl path for a jobId in tempDir.
  */
 function eventsPath(jobId: string): string {
-  return path.join(tempDir, ".specrunner", "jobs", jobId, "events.jsonl");
+  return path.join(tempDir, ".specrunner", "test-jobs", jobId, "events.jsonl");
 }
 
 /**
@@ -317,7 +317,7 @@ describe("TC-003: crash safety — events.jsonl complete, state.json has stale c
     // Write state.json with stale historyCount: 0 (simulates crash after append, before cursor update)
     await writeStateJson(jobId, 0);
 
-    const store = new JobStateStore(jobId, tempDir);
+    const store = makeStoreFactory(tempDir)(jobId);
     const state = await store.load();
 
     // load() must fold-recover both records despite stale counter
@@ -337,7 +337,7 @@ describe("TC-003: crash safety — events.jsonl complete, state.json has stale c
     // state.json says 0 steps (stale — crash before cursor update)
     await writeStateJson(jobId, 1, {});
 
-    const store = new JobStateStore(jobId, tempDir);
+    const store = makeStoreFactory(tempDir)(jobId);
     const state = await store.load();
 
     const specReviewRuns = state.steps["spec-review"];
@@ -364,7 +364,7 @@ describe("TC-030: delta-append crash recovery — no double-append after persist
     // state.json with stale historyCount: 0 (crash before cursor update)
     await writeStateJson(jobId, 0);
 
-    const store = new JobStateStore(jobId, tempDir);
+    const store = makeStoreFactory(tempDir)(jobId);
     const state = await store.load();
 
     // load() returns 2 history entries
@@ -390,7 +390,7 @@ describe("TC-030: delta-append crash recovery — no double-append after persist
     // state.json with stale historyCount: 0
     await writeStateJson(jobId, 0);
 
-    const store = new JobStateStore(jobId, tempDir);
+    const store = makeStoreFactory(tempDir)(jobId);
     const loaded = await store.load();
 
     // Add 1 genuinely new history entry to in-memory state
@@ -434,7 +434,7 @@ describe("TC-040: load() materializes resumePoint from last interruption record"
     await appendEventRecord(ep, interruptionRecord);
 
     // load() must materialize resumePoint from the interruption record
-    const store = new JobStateStore(jobId, tempDir);
+    const store = makeStoreFactory(tempDir)(jobId);
     const state = await store.load();
 
     expect(state.resumePoint).toBeDefined();
@@ -461,7 +461,7 @@ describe("TC-040: load() materializes resumePoint from last interruption record"
       ts: "2026-01-01T00:10:00.000Z",
     });
 
-    const store = new JobStateStore(jobId, tempDir);
+    const store = makeStoreFactory(tempDir)(jobId);
     const state = await store.load();
 
     expect(state.resumePoint).toBeDefined();

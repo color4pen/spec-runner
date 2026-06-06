@@ -12,10 +12,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { JobStateStore } from "../src/store/job-state-store.js";
+import { JobStateStore, buildInitialJobState } from "../src/store/job-state-store.js";
 import { assertJobFinishable, markJobArchived } from "../src/core/finish/job-state-update.js";
 import { SpecRunnerError, ERROR_CODES } from "../src/errors.js";
 import type { JobState } from "../src/state/schema.js";
+import { makeStoreFactory } from "./helpers/store-factory.js";
 
 let tempDir: string;
 
@@ -70,7 +71,7 @@ async function makeSlugJob(slug: string, status: JobState["status"] = "awaiting-
 /** Helper replacing the removed loadJobState(id) from state/store.ts */
 async function loadJobState(jobId: string): Promise<JobState> {
   try {
-    return (await new JobStateStore(jobId, tempDir).load()) as JobState;
+    return (await makeStoreFactory(tempDir)(jobId).load()) as JobState;
   } catch (err: unknown) {
     const code = (err as NodeJS.ErrnoException).code;
     if (code === "ENOENT") {
@@ -214,12 +215,11 @@ describe("TC-030: escalation → state unchanged", () => {
 // TC-031
 describe("TC-031: status=running → reject (JOB_NOT_FINISHABLE)", () => {
   it("throws JOB_NOT_FINISHABLE when job status is running", async () => {
-    const job = await JobStateStore.create(tempDir, {
+    const state = buildInitialJobState({
       request: { path: "/test/request.md", title: "Test", type: "new-feature" },
       repository: { owner: "user", name: "repo" },
     });
-    const state = await loadJobState(job.jobId);
-
+    // buildInitialJobState returns status: "running"
     expect(() => assertJobFinishable(state)).toThrow(SpecRunnerError);
     expect(() => assertJobFinishable(state)).toThrow(/running/);
   });
@@ -234,29 +234,25 @@ describe("TC-031: status=running → reject (JOB_NOT_FINISHABLE)", () => {
   });
 
   it("throws JOB_NOT_FINISHABLE for failed status", async () => {
-    const job = await JobStateStore.create(tempDir, {
-      request: { path: "/test/request.md", title: "Test", type: "new-feature" },
-      repository: { owner: "user", name: "repo" },
-    });
-    const store = new JobStateStore(job.jobId, tempDir);
-    const current = await store.load();
-    await store.update(current, { status: "failed" });
-    const state = await loadJobState(job.jobId);
-
+    const state: JobState = {
+      ...buildInitialJobState({
+        request: { path: "/test/request.md", title: "Test", type: "new-feature" },
+        repository: { owner: "user", name: "repo" },
+      }),
+      status: "failed",
+    };
     expect(() => assertJobFinishable(state)).toThrow(SpecRunnerError);
     expect(() => assertJobFinishable(state)).toThrow(/failed/);
   });
 
   it("throws JOB_NOT_FINISHABLE for terminated status", async () => {
-    const job = await JobStateStore.create(tempDir, {
-      request: { path: "/test/request.md", title: "Test", type: "new-feature" },
-      repository: { owner: "user", name: "repo" },
-    });
-    const store = new JobStateStore(job.jobId, tempDir);
-    const current = await store.load();
-    await store.update(current, { status: "terminated" });
-    const state = await loadJobState(job.jobId);
-
+    const state: JobState = {
+      ...buildInitialJobState({
+        request: { path: "/test/request.md", title: "Test", type: "new-feature" },
+        repository: { owner: "user", name: "repo" },
+      }),
+      status: "terminated",
+    };
     expect(() => assertJobFinishable(state)).toThrow(SpecRunnerError);
     expect(() => assertJobFinishable(state)).toThrow(/terminated/);
   });
@@ -272,21 +268,24 @@ describe("TC-031: status=running → reject (JOB_NOT_FINISHABLE)", () => {
 
 // Backward compatibility: legacy status=success
 describe("Backward compatibility: legacy status=success", () => {
-  it("loads legacy success state as awaiting-merge", async () => {
-    const job = await JobStateStore.create(tempDir, {
+  it("loads legacy success state as awaiting-archive", async () => {
+    const jobId = "backward-compat-legacy-success";
+    const changeDir = path.join(tempDir, ".specrunner", "test-jobs", jobId);
+    await fs.mkdir(changeDir, { recursive: true });
+    await fs.writeFile(path.join(changeDir, "state.json"), JSON.stringify({
+      version: 1, jobId,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
       request: { path: "/test/request.md", title: "Test", type: "new-feature" },
       repository: { owner: "user", name: "repo" },
-    });
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    const statePath = path.join(jobsDir, job.jobId, "state.json");
-
-    // Write legacy state with status="success"
-    const raw = JSON.parse(await fs.readFile(statePath, "utf-8"));
-    raw.status = "success";
-    await fs.writeFile(statePath, JSON.stringify(raw, null, 2));
+      session: null, step: "pr-create", status: "success",
+      branch: null, history: [], error: null,
+      _journal: { historyCount: 0, stepCounts: {} },
+    }, null, 2));
+    await fs.writeFile(path.join(changeDir, "events.jsonl"), "");
 
     // Load and verify migration
-    const loaded = await loadJobState(job.jobId);
+    const loaded = await loadJobState(jobId);
     expect(loaded.status).toBe("awaiting-archive");
   });
 });
@@ -308,10 +307,11 @@ describe("TC-039: loadJobState ENOENT → JOB_NOT_FOUND", () => {
 // TC-040
 describe("TC-040: loadJobState parse failure → STATE_FILE_INVALID", () => {
   it("throws SpecRunnerError with STATE_FILE_INVALID for corrupt JSON", async () => {
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    await fs.mkdir(jobsDir, { recursive: true });
     const badJobId = "corrupt-job-00000000-0000-0000-0000-000000000000";
-    await fs.writeFile(path.join(jobsDir, `${badJobId}.json`), "NOT VALID JSON {{{");
+    const changeDir = path.join(tempDir, ".specrunner", "test-jobs", badJobId);
+    await fs.mkdir(changeDir, { recursive: true });
+    await fs.writeFile(path.join(changeDir, "state.json"), "NOT VALID JSON {{{");
+    await fs.writeFile(path.join(changeDir, "events.jsonl"), "");
 
     try {
       await loadJobState(badJobId);
@@ -350,22 +350,21 @@ describe("TC-NEW-04: assertJobFinishable — canceled → no action needed", () 
 // TC-041
 describe("TC-041: updateJobState atomic write protocol", () => {
   it("writes via atomic tmp+rename (no .tmp files remain)", async () => {
-    const job = await JobStateStore.create(tempDir, {
+    const state = buildInitialJobState({
       request: { path: "/test/request.md", title: "Test", type: "new-feature" },
       repository: { owner: "user", name: "repo" },
     });
+    const store = makeStoreFactory(tempDir)(state.jobId);
+    await store.persist(state);
+    await store.persist({ ...state, step: "implementer" });
 
-    const store = new JobStateStore(job.jobId, tempDir);
-    const current = await store.load();
-    await store.persist({ ...current, step: "updated-step" });
-
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    const files = await fs.readdir(jobsDir);
+    const changeDir = path.join(tempDir, ".specrunner", "test-jobs", state.jobId);
+    const files = await fs.readdir(changeDir);
     const tmpFiles = files.filter((f) => f.includes(".tmp."));
     expect(tmpFiles).toHaveLength(0);
 
     // Verify the actual file was updated
-    const updated = await loadJobState(job.jobId);
-    expect(updated.step).toBe("updated-step");
+    const updated = await loadJobState(state.jobId);
+    expect(updated.step).toBe("implementer");
   });
 });

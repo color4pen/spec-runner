@@ -2,14 +2,14 @@
  * Unit tests for resolveStateStoreByJobId.
  *
  * TC-021: sidecar kind=local + worktree state.json present → worktree slug store returned
- * TC-024: sidecar kind=managed → jobId-based store returned
+ * TC-024: sidecar kind=managed → .specrunner/local/<slug>/ store returned
+ * TC-025: no sidecar → returns null
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { resolveStateStoreByJobId } from "../../../../src/core/job-access/resolve-state-store.js";
-import { getJobStateJsonPath } from "../../../../src/util/xdg.js";
 import { livenessJsonPath, managedMarkerPath, slugStateJsonPath } from "../../../../src/util/paths.js";
 
 let tempDir: string;
@@ -101,13 +101,9 @@ describe("TC-021: resolveStateStoreByJobId — kind=local + worktree present →
     // The store must read the slug-state from the worktree (load should succeed and return correct jobId)
     const state = await store!.load();
     expect(state.jobId).toBe(jobId);
-
-    // No jobs-dir entry should have been created
-    const jobsDirEntry = getJobStateJsonPath(tempDir, jobId);
-    await expect(fs.access(jobsDirEntry)).rejects.toThrow();
   });
 
-  it("returns a store that persists to the worktree slug path (not jobs-dir)", async () => {
+  it("returns a store that persists to the worktree slug path", async () => {
     const slug = "persist-check";
     const jobId = "aaaa0002-0000-0000-0000-000000000002";
 
@@ -127,9 +123,6 @@ describe("TC-021: resolveStateStoreByJobId — kind=local + worktree present →
     const raw = await fs.readFile(slugStatePath, "utf-8");
     const written = JSON.parse(raw) as { status: string };
     expect(written.status).toBe("awaiting-resume");
-
-    // Verify no jobs-dir entry was created
-    await expect(fs.access(getJobStateJsonPath(tempDir, jobId))).rejects.toThrow();
   });
 });
 
@@ -168,15 +161,27 @@ describe("TC-024: resolveStateStoreByJobId — kind=managed → local/slug store
     };
     await store!.persist(minimalState);
 
-    // Verify the write landed in .specrunner/local/<slug>/ (not jobs-dir)
+    // Verify the write landed in .specrunner/local/<slug>/
     const localSlugDir = path.join(tempDir, ".specrunner", "local", slug);
     const jobStateFile = path.join(localSlugDir, "state.json");
     const raw = await fs.readFile(jobStateFile, "utf-8");
     const written = JSON.parse(raw) as { jobId: string; status: string };
     expect(written.jobId).toBe(jobId);
     expect(written.status).toBe("awaiting-resume");
+  });
+});
 
-    // Verify no jobs-dir entry was created
-    await expect(fs.access(getJobStateJsonPath(tempDir, jobId))).rejects.toThrow();
+// ---------------------------------------------------------------------------
+// TC-025: no sidecar → returns null
+// ---------------------------------------------------------------------------
+
+describe("TC-025: resolveStateStoreByJobId — no sidecar → returns null", () => {
+  it("returns null when no sidecar exists for the jobId", async () => {
+    const jobId = "cccc0001-0000-0000-0000-000000000001";
+
+    // No sidecar at all
+    const store = await resolveStateStoreByJobId(tempDir, jobId);
+
+    expect(store).toBeNull();
   });
 });

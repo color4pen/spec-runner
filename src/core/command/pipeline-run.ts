@@ -59,7 +59,7 @@ export class PipelineRunCommand extends CommandRunner {
       CANONICAL_PATTERN_LEGACY.exec(this.absolutePath);
     const requestSlug: string | null = canonicalMatch ? (canonicalMatch[1] ?? null) : null;
 
-    // Bootstrap job state (local: no I/O; managed: persists to jobs-dir)
+    // Bootstrap job state (no I/O; persistence is deferred to setupWorkspace)
     const cwd = this.options.cwd ?? process.cwd();
     const jobState = await this.runtime.bootstrapJob(cwd, {
       request: {

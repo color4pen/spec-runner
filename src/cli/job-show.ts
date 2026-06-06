@@ -17,6 +17,7 @@ import type { JobState } from "../state/schema.js";
 import { resolveRepoRoot } from "../util/repo-root.js";
 import { logResult, stderrWrite } from "../logger/stdout.js";
 import { getVerboseLogPath } from "../util/xdg.js";
+import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 
 const UUID_REGEX = /^[a-f0-9-]{36}$/;
 
@@ -31,11 +32,15 @@ export async function runJobShow(input: string): Promise<number> {
   let state: JobState;
 
   if (UUID_REGEX.test(input)) {
-    // Load via sidecar → slug dir, falling back to jobs-dir (T-05 D4)
+    // Load via sidecar → slug dir
     try {
       const loaded = await loadStateByJobId(repoRoot, input);
       state = loaded as JobState;
     } catch (err: unknown) {
+      if (err instanceof SpecRunnerError && err.code === ERROR_CODES.JOB_NOT_FOUND) {
+        stderrWrite(`Error: Job not found: ${input}`);
+        return 1;
+      }
       const code = (err as NodeJS.ErrnoException).code;
       if (code === "ENOENT") {
         stderrWrite(`Error: Job not found: ${input}`);

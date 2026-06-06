@@ -16,7 +16,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { JobStateStore } from "../../../src/store/job-state-store.js";
+import { buildInitialJobState } from "../../../src/store/job-state-store.js";
 import type { JobState, StepRun } from "../../../src/state/schema.js";
 
 // Top-level vi.mock() — hoisted before all imports by Vitest.
@@ -105,7 +105,7 @@ afterEach(async () => {
 });
 
 async function makeAwaitingResumeJob(slug: string, overrides: Partial<JobState> = {}): Promise<JobState> {
-  const state = await JobStateStore.create(tempDir, {
+  const state = buildInitialJobState({
     request: {
       path: `/specrunner/drafts/${slug}.md`,
       title: "Test",
@@ -115,10 +115,8 @@ async function makeAwaitingResumeJob(slug: string, overrides: Partial<JobState> 
     repository: { owner: "user", name: "repo" },
   });
 
-  const store = new JobStateStore(state.jobId, tempDir);
-  const current = await store.load();
   const updated: JobState = {
-    ...current,
+    ...state,
     status: "awaiting-resume",
     step: "code-review",
     resumePoint: {
@@ -128,48 +126,31 @@ async function makeAwaitingResumeJob(slug: string, overrides: Partial<JobState> 
     },
     ...overrides,
   } as JobState;
-  await store.persist(updated);
 
-  // Also write to slug dir so resolveJobStateBySlug (which calls list()) can find it.
-  // Copy state.json + events.jsonl from jobs-dir to slug dir so steps/resumePoint are preserved.
-  const jobsDir = path.join(tempDir, ".specrunner", "jobs", state.jobId);
+  // Write directly to slug dir so resolveJobStateBySlug (which calls list()) can find it.
+  // Do NOT include _journal so the legacy migration in loadSplitLayout normalizes steps.
   const slugDir = path.join(tempDir, "specrunner", "changes", slug);
   await fs.mkdir(slugDir, { recursive: true });
-
-  // Copy state.json, injecting request.slug so getJobSlug() returns the correct slug
-  try {
-    const raw = JSON.parse(await fs.readFile(path.join(jobsDir, "state.json"), "utf-8")) as Record<string, unknown>;
-    if (raw["request"] && typeof raw["request"] === "object") {
-      (raw["request"] as Record<string, unknown>)["slug"] = slug;
-    }
-    await fs.writeFile(path.join(slugDir, "state.json"), JSON.stringify(raw, null, 2));
-  } catch {
-    await fs.writeFile(path.join(slugDir, "state.json"), JSON.stringify({
-      version: 1, jobId: state.jobId, createdAt: state.createdAt, updatedAt: updated.updatedAt,
-      request: { path: `/specrunner/drafts/${slug}.md`, title: "Test", type: "new-feature", slug },
-      repository: state.repository, session: null, step: updated.step, status: updated.status,
-      resumePoint: updated.resumePoint ?? null, branch: updated.branch ?? null, error: updated.error ?? null,
-      _journal: { historyCount: 0, stepCounts: {} },
-    }, null, 2));
-  }
-
-  // Copy events.jsonl to preserve steps data in slug dir
-  try {
-    const events = await fs.readFile(path.join(jobsDir, "events.jsonl"), "utf-8");
-    await fs.writeFile(path.join(slugDir, "events.jsonl"), events);
-  } catch {
-    await fs.writeFile(path.join(slugDir, "events.jsonl"), "");
-  }
+  await fs.writeFile(path.join(slugDir, "state.json"), JSON.stringify({
+    version: 1, jobId: state.jobId, createdAt: state.createdAt, updatedAt: updated.updatedAt,
+    request: { path: `/specrunner/drafts/${slug}.md`, title: "Test", type: "new-feature", slug },
+    repository: state.repository, session: null, step: updated.step, status: updated.status,
+    resumePoint: updated.resumePoint ?? null, branch: updated.branch ?? null, error: updated.error ?? null,
+    steps: updated.steps ?? {},
+  }, null, 2));
+  await fs.writeFile(path.join(slugDir, "events.jsonl"), "");
 
   // Write liveness sidecar pointing to slugDir as worktreePath.
   // This lets ResumeCommand.prepare() resolve a non-null existingWorktreePath,
   // so setupWorkspace() enters the reuse path (slugDir exists) instead of trying
   // to create a worktree at the mock path "/fake/worktree".
+  // Use process.pid when status is "running" so isStaleRunning returns false (actively running).
+  const sidecarPid = updated.status === "running" ? process.pid : 99999;
   const livenessDir = path.join(tempDir, ".specrunner", "local", slug);
   await fs.mkdir(livenessDir, { recursive: true });
   await fs.writeFile(
     path.join(livenessDir, "liveness.json"),
-    JSON.stringify({ jobId: state.jobId, worktreePath: slugDir, pid: 99999 }),
+    JSON.stringify({ jobId: state.jobId, worktreePath: slugDir, pid: sidecarPid }),
   );
 
   return updated;

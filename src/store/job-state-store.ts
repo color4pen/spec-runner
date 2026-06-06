@@ -2,12 +2,6 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { randomUUID } from "node:crypto";
 import {
-  getJobStatePath,
-  getJobDir,
-  getJobStateJsonPath,
-  getJobEventsPath,
-} from "../util/xdg.js";
-import {
   slugStateJsonPath,
   slugEventsPath,
   changeFolderPath,
@@ -70,8 +64,8 @@ interface SlugInjectOptions {
 /**
  * Build an initial JobState object without performing any I/O.
  * Pure function: generates a new jobId and constructs the in-memory state.
- * Callers (LocalRuntime.bootstrapJob) use this to defer persistence to after
- * worktree establishment. JobStateStore.create() also uses this internally.
+ * Callers (LocalRuntime.bootstrapJob, ManagedRuntime.bootstrapJob) use this to
+ * defer persistence to after workspace establishment.
  */
 export function buildInitialJobState(params: {
   request: RequestInfo;
@@ -117,25 +111,19 @@ export function buildInitialJobState(params: {
  * JobStateStore wraps the job state with typed read/write operations.
  *
  * Storage layouts:
- *   Slug-based (Stage 2):
+ *   Slug-based current/archive:
  *                {stateRoot}/specrunner/changes/{slug}/events.jsonl
  *                {stateRoot}/specrunner/changes/{slug}/state.json
- *   Slug-based with explicit changeDir (D3):
+ *   Slug-based with explicit changeDir (managed sidecar / D3):
  *                {changeDir}/events.jsonl
  *                {changeDir}/state.json
- *   Split layout (Stage 1):
- *                .specrunner/jobs/<jobId>/events.jsonl
- *                .specrunner/jobs/<jobId>/state.json
- *   Legacy:      .specrunner/jobs/<jobId>.json (read-only)
  *
  * Static methods (class-level operations):
- * - create(): create a new job state in the split layout
- * - delete(): delete a job state (ENOENT idempotent)
- * - list(): list all valid job states (slug-based, split-layout dirs, legacy .json files)
+ * - list(): list all valid job states (slug-based current, archive, worktrees, managed markers)
  * - resolveId(): resolve a short prefix to a full jobId
  *
  * Instance methods (per-job operations):
- * - load(): read from disk (slug-based, split or legacy), validate and normalize
+ * - load(): read from slug/changeDir, validate and normalize (throws if neither is set)
  * - persist(): delta-append to journal + atomically overwrite state.json
  * - appendHistory(): append a history entry to journal and return updated state
  * - appendInterruption(): append an interruption record to the journal
@@ -176,7 +164,11 @@ export class JobStateStore {
     if (this.isSlugMode()) {
       return path.join(this.stateRoot!, slugEventsPath(this.slug!));
     }
-    return getJobEventsPath(this.repoRoot, this.jobId);
+    throw new SpecRunnerError(
+      ERROR_CODES.STATE_FILE_INVALID,
+      "Internal invariant violation: JobStateStore requires slug+stateRoot or changeDir.",
+      `getEventsPath: no slug or changeDir for jobId ${this.jobId}`,
+    );
   }
 
   private getStateJsonPath(): string {
@@ -186,7 +178,11 @@ export class JobStateStore {
     if (this.isSlugMode()) {
       return path.join(this.stateRoot!, slugStateJsonPath(this.slug!));
     }
-    return getJobStateJsonPath(this.repoRoot, this.jobId);
+    throw new SpecRunnerError(
+      ERROR_CODES.STATE_FILE_INVALID,
+      "Internal invariant violation: JobStateStore requires slug+stateRoot or changeDir.",
+      `getStateJsonPath: no slug or changeDir for jobId ${this.jobId}`,
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -194,71 +190,9 @@ export class JobStateStore {
   // -------------------------------------------------------------------------
 
   /**
-   * Create a new job state in the split layout.
-   * Creates:
-   *   .specrunner/jobs/<jobId>/state.json    (descriptor + cursor + counters)
-   *   .specrunner/jobs/<jobId>/events.jsonl  (initial transition record)
-   *
-   * Returns the initial JobState (with history/steps populated from the journal).
-   */
-  static async create(repoRoot: string, params: {
-    request: RequestInfo;
-    repository: RepositoryInfo;
-    pipelineId?: string;
-  }): Promise<JobState> {
-    const state = buildInitialJobState(params);
-    const { jobId } = state;
-    const initialHistoryEntry = state.history[0]!;
-
-    const eventsPath = getJobEventsPath(repoRoot, jobId);
-    const stateJsonPath = getJobStateJsonPath(repoRoot, jobId);
-
-    // Write initial transition record to events.jsonl
-    await appendEventRecord(eventsPath, historyEntryToRecord(initialHistoryEntry));
-
-    // Write state.json (without history/steps — those live in events.jsonl)
-    const initialCounters: JournalCounters = {
-      historyCount: 1,
-      stepCounts: {},
-    };
-    await atomicWriteJson(stateJsonPath, { ...stateToStateJson(state), _journal: initialCounters });
-
-    return state;
-  }
-
-  /**
-   * Delete a job state (split layout directory or legacy .json file).
-   * Idempotent: ENOENT is silently ignored. Other errors propagate.
-   */
-  static async delete(repoRoot: string, jobId: string): Promise<void> {
-    // Try split layout directory first
-    const jobDir = getJobDir(repoRoot, jobId);
-    try {
-      await fs.rm(jobDir, { recursive: true });
-      return;
-    } catch (err: unknown) {
-      const code = (err as NodeJS.ErrnoException).code;
-      if (code !== "ENOENT") throw err;
-    }
-
-    // Try legacy flat file
-    const filePath = getJobStatePath(repoRoot, jobId);
-    try {
-      await fs.unlink(filePath);
-    } catch (err: unknown) {
-      const code = (err as NodeJS.ErrnoException).code;
-      if (code === "ENOENT") {
-        return; // already deleted — idempotent
-      }
-      throw err;
-    }
-  }
-
-  /**
-   * List all valid job states from all known layouts.
+   * List all valid job states from slug-based stores.
    * Scans (1) slug-based states in current checkout and local worktrees,
-   * (2) split-layout subdirectories (.specrunner/jobs/<jobId>/),
-   * (3) legacy flat files (.specrunner/jobs/<jobId>.json).
+   * (2) archived states, (3) machine-local sidecar supplement, (4) managed markers.
    * Deduplicates by jobId: newest updatedAt wins.
    */
   static async list(repoRoot: string): Promise<JobState[]> {
@@ -462,44 +396,19 @@ export class JobStateStore {
   /**
    * Load and validate a job state from disk.
    *
-   * In slug mode: reads from {stateRoot}/specrunner/changes/{slug}/.
-   * Falls back to split layout (.specrunner/jobs/<jobId>/) then legacy flat file.
+   * Requires either slug+stateRoot or changeDir to be set; throws an internal
+   * invariant error otherwise. ENOENT from the underlying file read propagates
+   * to the caller.
    *
    * Crash recovery (D3): if fold row count > stored counter, resets counter to
    * fold count before computing any delta.
    */
   async load(): Promise<NormalizedJobState> {
-    if (this.changeDir || this.isSlugMode()) {
-      try {
-        return await loadSplitLayout(
-          this.getStateJsonPath(),
-          this.getEventsPath(),
-          this.isSlugMode() ? { slug: this.slug!, stateRoot: this.stateRoot! } : undefined,
-        );
-      } catch (err: unknown) {
-        const code = (err as NodeJS.ErrnoException).code;
-        if (code !== "ENOENT") throw err;
-        // Fall through to jobId-based paths
-      }
-    }
-
-    const stateJsonPath = getJobStateJsonPath(this.repoRoot, this.jobId);
-    const eventsPath = getJobEventsPath(this.repoRoot, this.jobId);
-
-    // Try split layout first
-    try {
-      return await loadSplitLayout(stateJsonPath, eventsPath) as NormalizedJobState;
-    } catch (err: unknown) {
-      const code = (err as NodeJS.ErrnoException).code;
-      if (code !== "ENOENT") throw err;
-    }
-
-    // Fallback to legacy flat file
-    const legacyPath = getJobStatePath(this.repoRoot, this.jobId);
-    const raw = await fs.readFile(legacyPath, "utf-8");
-    const parsed = JSON.parse(raw) as unknown;
-    const state = validateJobState(parsed);
-    return state as NormalizedJobState;
+    return await loadSplitLayout(
+      this.getStateJsonPath(),
+      this.getEventsPath(),
+      this.isSlugMode() ? { slug: this.slug!, stateRoot: this.stateRoot! } : undefined,
+    );
   }
 
   /**
@@ -769,11 +678,27 @@ async function loadSplitLayout(
     };
   }
 
+  // Legacy migration: if events.jsonl has no steps and state.json has no _journal
+  // (pre-split-layout format), normalize legacy steps from state.json.
+  let composedSteps = foldResult.steps;
+  if (foldResult.stepsTotal === 0 && !parsedState["_journal"]) {
+    const legacyStepsRaw = stateWithoutJournal["steps"];
+    if (
+      legacyStepsRaw &&
+      typeof legacyStepsRaw === "object" &&
+      !Array.isArray(legacyStepsRaw) &&
+      Object.keys(legacyStepsRaw as object).length > 0
+    ) {
+      const legacyValidated = validateJobState({ ...stateWithoutJournal, history: [] });
+      composedSteps = legacyValidated.steps ?? {};
+    }
+  }
+
   // Compose NormalizedJobState with journal-derived data
   const composed: NormalizedJobState = {
     ...validated,
     history: foldResult.history,
-    steps: foldResult.steps,
+    steps: composedSteps,
   };
 
   return composed;

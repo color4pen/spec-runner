@@ -19,7 +19,7 @@ afterEach(async () => {
 });
 
 /**
- * Helper to create a job state in slug dir (for list()) and legacy flat file (for load()).
+ * Helper to create a job state in slug dir (for list()) and liveness sidecar (for resolveStateStoreByJobId).
  */
 async function createJobState(repoRoot: string, jobId: string, status: string): Promise<void> {
   const slug = `guard-${jobId.slice(0, 8)}`;
@@ -39,11 +39,6 @@ async function createJobState(repoRoot: string, jobId: string, status: string): 
     error: null,
   };
 
-  // Write legacy flat file (for JobStateStore.load() fallback after persist)
-  const jobsDir = path.join(repoRoot, ".specrunner", "jobs");
-  await fs.mkdir(jobsDir, { recursive: true });
-  await fs.writeFile(path.join(jobsDir, `${jobId}.json`), JSON.stringify(state), "utf-8");
-
   // Write to slug dir (for list() to find it)
   const slugDir = path.join(repoRoot, "specrunner", "changes", slug);
   await fs.mkdir(slugDir, { recursive: true });
@@ -53,6 +48,15 @@ async function createJobState(repoRoot: string, jobId: string, status: string): 
     "utf-8",
   );
   await fs.writeFile(path.join(slugDir, "events.jsonl"), "", "utf-8");
+
+  // Write liveness sidecar (for resolveStateStoreByJobId to find slug → store)
+  const sidecarDir = path.join(repoRoot, ".specrunner", "local", slug);
+  await fs.mkdir(sidecarDir, { recursive: true });
+  await fs.writeFile(
+    path.join(sidecarDir, "liveness.json"),
+    JSON.stringify({ jobId, worktreePath: null }),
+    "utf-8",
+  );
 }
 
 describe("createExitGuardHandler", () => {
@@ -66,7 +70,8 @@ describe("createExitGuardHandler", () => {
     // Wait for async work in void IIFE
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    const store = new JobStateStore(jobId, tempDir);
+    const slug = `guard-${jobId.slice(0, 8)}`;
+    const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir });
     const state = await store.load();
     expect(state.status).toBe("awaiting-resume");
   });
@@ -80,7 +85,8 @@ describe("createExitGuardHandler", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    const store = new JobStateStore(jobId, tempDir);
+    const slug = `guard-${jobId.slice(0, 8)}`;
+    const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir });
     const state = await store.load();
     expect(state.status).toBe("awaiting-archive");
   });

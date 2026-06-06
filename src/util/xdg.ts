@@ -27,47 +27,6 @@ export function getCredentialsPath(): string {
 }
 
 /**
- * Get the path to the specrunner jobs directory.
- * Always returns <repoRoot>/.specrunner/jobs/
- */
-export function getJobsDir(repoRoot: string): string {
-  return path.join(repoRoot, ".specrunner", "jobs");
-}
-
-/**
- * Get the path to a specific job state file (legacy flat format).
- * Returns <repoRoot>/.specrunner/jobs/<jobId>.json
- * @deprecated Use getJobDir / getJobStateJsonPath / getJobEventsPath for new split format.
- */
-export function getJobStatePath(repoRoot: string, jobId: string): string {
-  return path.join(getJobsDir(repoRoot), `${jobId}.json`);
-}
-
-/**
- * Get the path to the subdirectory for a job (split layout).
- * Returns <repoRoot>/.specrunner/jobs/<jobId>/
- */
-export function getJobDir(repoRoot: string, jobId: string): string {
-  return path.join(getJobsDir(repoRoot), jobId);
-}
-
-/**
- * Get the path to the state.json file for a job (split layout cursor/descriptor).
- * Returns <repoRoot>/.specrunner/jobs/<jobId>/state.json
- */
-export function getJobStateJsonPath(repoRoot: string, jobId: string): string {
-  return path.join(getJobDir(repoRoot, jobId), "state.json");
-}
-
-/**
- * Get the path to the events.jsonl file for a job (split layout journal).
- * Returns <repoRoot>/.specrunner/jobs/<jobId>/events.jsonl
- */
-export function getJobEventsPath(repoRoot: string, jobId: string): string {
-  return path.join(getJobDir(repoRoot, jobId), "events.jsonl");
-}
-
-/**
  * Resolve XDG_STATE_HOME or fallback to ~/.local/state
  */
 export function resolveXdgStateDir(): string {

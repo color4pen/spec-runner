@@ -5,8 +5,6 @@
  * TC-XDG-02: resolveXdgStateDir returns ~/.local/state when XDG_STATE_HOME not set
  * TC-XDG-03: getVerboseLogDir(repoRoot) returns <repoRoot>/.specrunner/logs
  * TC-XDG-04: getVerboseLogPath(repoRoot, jobId) returns <repoRoot>/.specrunner/logs/<jobId>.log
- * TC-XDG-10: getJobsDir(repoRoot) returns <repoRoot>/.specrunner/jobs
- * TC-XDG-11: getJobStatePath(repoRoot, jobId) returns <repoRoot>/.specrunner/jobs/<jobId>.json
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as os from "node:os";
@@ -15,8 +13,6 @@ import {
   resolveXdgStateDir,
   getVerboseLogDir,
   getVerboseLogPath,
-  getJobsDir,
-  getJobStatePath,
 } from "../../../src/util/xdg.js";
 
 let originalXdgStateHome: string | undefined;
@@ -47,20 +43,6 @@ describe("resolveXdgStateDir", () => {
   it("returns ~/.local/state when XDG_STATE_HOME is empty string", () => {
     process.env["XDG_STATE_HOME"] = "";
     expect(resolveXdgStateDir()).toBe(path.join(os.homedir(), ".local", "state"));
-  });
-});
-
-describe("getJobsDir", () => {
-  it("TC-XDG-10: returns <repoRoot>/.specrunner/jobs", () => {
-    expect(getJobsDir("~/myrepo")).toBe("~/myrepo/.specrunner/jobs");
-  });
-});
-
-describe("getJobStatePath", () => {
-  it("TC-XDG-11: returns <repoRoot>/.specrunner/jobs/<jobId>.json", () => {
-    expect(getJobStatePath("~/myrepo", "abc")).toBe(
-      "~/myrepo/.specrunner/jobs/abc.json",
-    );
   });
 });
 

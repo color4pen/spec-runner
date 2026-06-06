@@ -6,7 +6,7 @@
  *   2a. kind="local", worktreePath set: try {worktreePath}/specrunner/changes/{slug}/state.json
  *   2b. kind="local", worktree not found: resolveCanonicalStateDir(slug, repoRoot) → archive / main-checkout
  *   3.  kind="managed": load from .specrunner/local/<slug>/ (changeDir seam)
- *   4.  No sidecar entry: fallback to jobs-dir + legacy readFile (safety net, not a readdir scan)
+ *   No sidecar entry or unresolvable local entry: throws JOB_NOT_FOUND.
  *
  * Read-only: never calls persist().
  */
@@ -17,6 +17,7 @@ import { JobStateStore } from "../../store/job-state-store.js";
 import type { NormalizedJobState } from "../../store/job-state-store.js";
 import { resolveCanonicalStateDir } from "../finish/resolve-canonical-state-dir.js";
 import { slugStateJsonPath, localSidecarDir } from "../../util/paths.js";
+import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 
 /**
  * Load job state by jobId, routing through the sidecar index to the canonical slug dir.
@@ -24,7 +25,7 @@ import { slugStateJsonPath, localSidecarDir } from "../../util/paths.js";
  * @param repoRoot - Absolute path to the repo root.
  * @param jobId    - Full UUID of the job.
  * @returns NormalizedJobState from the most authoritative source.
- * @throws  ENOENT (or SpecRunnerError) when state cannot be found anywhere.
+ * @throws  SpecRunnerError(JOB_NOT_FOUND) when state cannot be resolved.
  */
 export async function loadStateByJobId(
   repoRoot: string,
@@ -61,7 +62,7 @@ export async function loadStateByJobId(
         }).load();
       }
 
-      // No slug state found — fall through to jobs-dir fallback
+      // No accessible slug state for this local job
     } else if (sidecarEntry.kind === "managed") {
       // Step 3: managed jobs use .specrunner/local/<slug>/ (D4)
       return new JobStateStore(jobId, repoRoot, {
@@ -70,7 +71,10 @@ export async function loadStateByJobId(
     }
   }
 
-  // Step 4: no sidecar entry, or local entry with no accessible slug state.
-  // Fall back to jobs-dir split layout + legacy readFile (safety net — not a readdir scan).
-  return new JobStateStore(jobId, repoRoot).load();
+  // No sidecar entry, or local entry with no accessible slug state: unresolvable.
+  throw new SpecRunnerError(
+    ERROR_CODES.JOB_NOT_FOUND,
+    "Run 'specrunner ps' to list available job IDs.",
+    `Job not found: ${jobId}`,
+  );
 }

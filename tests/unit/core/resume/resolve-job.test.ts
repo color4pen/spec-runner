@@ -10,7 +10,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { vi } from "vitest";
-import { JobStateStore } from "../../../../src/store/job-state-store.js";
+import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import { resolveJobStateBySlug } from "../../../../src/core/resume/resolve-job.js";
 
 let tempDir: string;
@@ -26,7 +26,7 @@ afterEach(async () => {
 });
 
 async function makeJob(slug: string, updatedAt?: string) {
-  const state = await JobStateStore.create(tempDir, {
+  const state = buildInitialJobState({
     request: {
       path: `/specrunner/drafts/${slug}.md`,
       title: "Test",
@@ -36,14 +36,7 @@ async function makeJob(slug: string, updatedAt?: string) {
     repository: { owner: "user", name: "repo" },
   });
 
-  let finalState = state;
-  if (updatedAt) {
-    const store = new JobStateStore(state.jobId, tempDir);
-    const current = await store.load();
-    const updated = { ...current, updatedAt };
-    await store.persist(updated);
-    finalState = updated;
-  }
+  const finalState = updatedAt ? { ...state, updatedAt } : state;
 
   // Write to slug dir so resolveJobStateBySlug (which calls list()) can find it.
   // Multiple jobs with same slug go to unique dated archive dirs if slug dir already exists.

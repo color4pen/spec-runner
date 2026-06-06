@@ -133,7 +133,7 @@ export class LocalRuntime implements RuntimeStrategy {
   }
 
   /**
-   * Persist a job state to the slug store (portable) without touching .specrunner/jobs/.
+   * Persist a job state to the slug store (portable).
    *
    * Resolution order for slug store:
    *   1. workspace.worktreePath (active worktree)
@@ -437,7 +437,11 @@ export class LocalRuntime implements RuntimeStrategy {
         if (wtp) {
           return new JobStateStore(id, this.cwd, { slug, stateRoot: wtp });
         }
-        return new JobStateStore(id, this.cwd);
+        throw new SpecRunnerError(
+          ERROR_CODES.STEP_INPUT_MISSING,
+          "Internal invariant violation: buildDeps() called without worktreePath. setupWorkspace() must complete first.",
+          "storeFactory: workspace.worktreePath is not set",
+        );
       },
       repoRoot: this.cwd,
       runtimeStrategy: this,
@@ -550,9 +554,16 @@ export class LocalRuntime implements RuntimeStrategy {
     const manager = this.manager;
     const slugOpts = this.slugStoreOpts();
 
-    const makeStore = () => slugOpts
-      ? new JobStateStore(jobId, cwd, slugOpts)
-      : new JobStateStore(jobId, cwd);
+    const makeStore = () => {
+      if (slugOpts) {
+        return new JobStateStore(jobId, cwd, slugOpts);
+      }
+      throw new SpecRunnerError(
+        ERROR_CODES.STEP_INPUT_MISSING,
+        "Internal invariant violation: registerCleanup() called without slug/worktree context.",
+        "makeStore: slugOpts is not set",
+      );
+    };
 
     // Best-effort cleanup for all failure paths.
     // On success the worktree is left for finish — finish cleans it up.

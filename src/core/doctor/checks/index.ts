@@ -41,8 +41,8 @@ import { agentProviderAliveCheck } from "./agents/agent-provider-alive.js";
 import { environmentProviderAliveCheck } from "./agents/environment-provider-alive.js";
 
 // Storage
-import { jobsWritableCheck } from "./storage/jobs-writable.js";
-import { oldStateFilesCheck } from "./storage/old-state-files.js";
+import { localStateWritableCheck } from "./storage/local-state-writable.js";
+import { legacyJobsDirCheck } from "./storage/legacy-jobs-dir.js";
 
 export const commonChecks: DoctorCheck[] = [
   // Runtime (3 — gh CLI check removed: no longer required)
@@ -62,8 +62,8 @@ export const commonChecks: DoctorCheck[] = [
   specrunnerProjectMdCheck,
   workflowStructureCheck,
   // Storage
-  jobsWritableCheck,
-  oldStateFilesCheck,
+  localStateWritableCheck,
+  legacyJobsDirCheck,
 ];
 
 export const managedChecks: DoctorCheck[] = [
@@ -107,6 +107,6 @@ export {
   definitionDriftCheck,
   agentProviderAliveCheck,
   environmentProviderAliveCheck,
-  jobsWritableCheck,
-  oldStateFilesCheck,
+  localStateWritableCheck,
+  legacyJobsDirCheck,
 };

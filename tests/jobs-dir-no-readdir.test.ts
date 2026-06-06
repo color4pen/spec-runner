@@ -11,7 +11,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as path from "node:path";
 import * as os from "node:os";
 import { JobStateStore } from "../src/store/job-state-store.js";
-import { getJobsDir } from "../src/util/xdg.js";
 
 // Wrap fs.readdir and fs.writeFile in vi.fn() so we can spy on them in ESM.
 vi.mock("node:fs/promises", async (importOriginal) => {
@@ -95,7 +94,7 @@ describe("TC-001: list() does not readdir .specrunner/jobs/", () => {
     await writeSlugState(stateDir, jobId, "running", slug);
 
     // Also create jobs-dir (to ensure it exists, but list() should not readdir it)
-    const jobsDir = getJobsDir(tempDir);
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     await fs.mkdir(jobsDir, { recursive: true });
 
     // Clear call tracking after setup
@@ -103,7 +102,7 @@ describe("TC-001: list() does not readdir .specrunner/jobs/", () => {
 
     await JobStateStore.list(tempDir);
 
-    // Verify readdir was NOT called on getJobsDir root
+    // Verify readdir was NOT called on jobs-dir root
     const jobsDirCalls = vi.mocked(fs.readdir).mock.calls.filter(
       ([arg]) => String(arg) === jobsDir,
     );
@@ -125,7 +124,7 @@ describe("TC-007: resolveId() does not readdir .specrunner/jobs/", () => {
     await writeLiveness(slug, jobId, null);
 
     // Also create jobs-dir (should NOT be readdir'd)
-    const jobsDir = getJobsDir(tempDir);
+    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
     await fs.mkdir(jobsDir, { recursive: true });
 
     // Clear call tracking after setup
@@ -191,7 +190,7 @@ describe("TC-039: managed section 4 preserved — no jobs-dir readdir", () => {
     const localSlugDir = path.join(tempDir, ".specrunner", "local", slug);
     await writeSlugState(localSlugDir, jobId, "running", slug);
 
-    const jobsDirRoot = getJobsDir(tempDir);
+    const jobsDirRoot = path.join(tempDir, ".specrunner", "jobs");
     await fs.mkdir(jobsDirRoot, { recursive: true });
 
     // Clear call tracking after setup

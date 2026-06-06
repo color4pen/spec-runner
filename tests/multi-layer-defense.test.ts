@@ -8,7 +8,7 @@ import { createManagedAgentRunner } from "../src/adapter/managed-agent/agent-run
 import { verificationResultPath, prCreateResultPath } from "../src/util/paths.js";
 import type { SpawnFn } from "../src/util/spawn.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
-import { JobStateStore } from "../src/store/job-state-store.js";
+import { buildInitialJobState } from "../src/store/job-state-store.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -67,10 +67,12 @@ afterEach(async () => {
 });
 
 async function makeJobState() {
-  return JobStateStore.create(tempDir, {
+  const state = buildInitialJobState({
     request: { path: "/test/request.md", title: "Test", type: "spec-change" },
     repository: { owner: "testowner", name: "testrepo" },
   });
+  await makeStoreFactory(tempDir)(state.jobId).persist(state);
+  return state;
 }
 
 function buildConfig(overrides: Record<string, unknown> = {}) {

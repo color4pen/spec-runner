@@ -31,21 +31,21 @@ afterEach(async () => {
 // ---------------------------------------------------------------------------
 
 /**
- * Write a job state:
- * - Legacy flat file to jobs-dir (for JobStateStore.load() fallback in per-job guard tests)
- * - Slug dir to main-checkout changes (for list() in global-scan fallback tests)
+ * Write a job state to slug dir so list() can find it for global-scan fallback tests.
+ * Returns the slug used (for loading state in assertions).
  */
 async function writeLegacyState(
   repoRoot: string,
   jobId: string,
   status = "running",
-): Promise<void> {
+): Promise<string> {
+  const slug = `legacy-${jobId.slice(0, 8)}`;
   const state = {
     version: 1,
     jobId,
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
-    request: { path: "/req.md", title: "Test", type: "feature", slug: null },
+    request: { path: "/req.md", title: "Test", type: "feature", slug },
     repository: { owner: "testowner", name: "testrepo" },
     session: null,
     step: "design",
@@ -53,27 +53,23 @@ async function writeLegacyState(
     branch: null,
     history: [],
     error: null,
+    _journal: { historyCount: 0, stepCounts: {} },
   };
 
-  // Write legacy flat file (for JobStateStore.load() fallback path in tests)
-  const jobsDir = path.join(repoRoot, ".specrunner", "jobs");
-  await fs.mkdir(jobsDir, { recursive: true });
-  await fs.writeFile(
-    path.join(jobsDir, `${jobId}.json`),
-    JSON.stringify(state, null, 2),
-    "utf-8",
-  );
-
-  // Also write to slug dir so list() can find it for global-scan fallback tests
-  const slug = `legacy-${jobId.slice(0, 8)}`;
   const slugDir = path.join(repoRoot, "specrunner", "changes", slug);
   await fs.mkdir(slugDir, { recursive: true });
+  await fs.writeFile(path.join(slugDir, "state.json"), JSON.stringify(state, null, 2), "utf-8");
+  await fs.writeFile(path.join(slugDir, "events.jsonl"), "", "utf-8");
+
+  // Write liveness sidecar so resolveStateStoreByJobId can find the store
+  const sidecarDir = path.join(repoRoot, ".specrunner", "local", slug);
+  await fs.mkdir(sidecarDir, { recursive: true });
   await fs.writeFile(
-    path.join(slugDir, "state.json"),
-    JSON.stringify({ ...state, request: { ...state.request, slug }, _journal: { historyCount: 0, stepCounts: {} } }, null, 2),
+    path.join(sidecarDir, "liveness.json"),
+    JSON.stringify({ jobId, worktreePath: null }),
     "utf-8",
   );
-  await fs.writeFile(path.join(slugDir, "events.jsonl"), "", "utf-8");
+  return slug;
 }
 
 /**
@@ -134,7 +130,7 @@ describe("TC-037-1: per-job exit guard — only target job transitions to awaiti
     await writeSlugState(worktreeDir, slug, targetJobId, "running");
 
     // Set up a legacy running job (other job — should NOT be affected)
-    await writeLegacyState(tempDir, otherJobId, "running");
+    const otherSlug = await writeLegacyState(tempDir, otherJobId, "running");
 
     // Fire the per-job handler
     const handler = createExitGuardHandler(tempDir, targetJobId);
@@ -147,7 +143,7 @@ describe("TC-037-1: per-job exit guard — only target job transitions to awaiti
     expect(targetState.status).toBe("awaiting-resume");
 
     // Other job must be unchanged (still running)
-    const otherStore = new JobStateStore(otherJobId, tempDir);
+    const otherStore = new JobStateStore(otherJobId, tempDir, { slug: otherSlug, stateRoot: tempDir });
     const otherState = await otherStore.load();
     expect(otherState.status).toBe("running");
   });
@@ -180,8 +176,8 @@ describe("TC-037-2: per-job exit guard — global scan fallback when worktree no
     const jobId2 = "eeffeeff-0000-0000-0000-000000000002";
 
     // Both jobs in legacy format (running)
-    await writeLegacyState(tempDir, jobId1, "running");
-    await writeLegacyState(tempDir, jobId2, "running");
+    const slug1 = await writeLegacyState(tempDir, jobId1, "running");
+    const slug2 = await writeLegacyState(tempDir, jobId2, "running");
 
     // No .git/specrunner-worktrees/ directory exists
     // Fire with a jobId that matches no worktree → global scan
@@ -191,8 +187,8 @@ describe("TC-037-2: per-job exit guard — global scan fallback when worktree no
     await waitForHandler();
 
     // Global scan: both running jobs → awaiting-resume
-    const store1 = new JobStateStore(jobId1, tempDir);
-    const store2 = new JobStateStore(jobId2, tempDir);
+    const store1 = new JobStateStore(jobId1, tempDir, { slug: slug1, stateRoot: tempDir });
+    const store2 = new JobStateStore(jobId2, tempDir, { slug: slug2, stateRoot: tempDir });
     const state1 = await store1.load();
     const state2 = await store2.load();
     expect(state1.status).toBe("awaiting-resume");
@@ -209,7 +205,7 @@ describe("TC-037-2: per-job exit guard — global scan fallback when worktree no
     await fs.mkdir(path.join(wrongWorktreeDir, "specrunner", "changes", "other-slug"), { recursive: true });
 
     // Legacy running job
-    await writeLegacyState(tempDir, otherLegacyJobId, "running");
+    const otherSlug = await writeLegacyState(tempDir, otherLegacyJobId, "running");
 
     // Fire with targetJobId (no matching worktree)
     const handler = createExitGuardHandler(tempDir, targetJobId);
@@ -217,7 +213,7 @@ describe("TC-037-2: per-job exit guard — global scan fallback when worktree no
     await waitForHandler();
 
     // Global scan: legacy running job → awaiting-resume
-    const otherStore = new JobStateStore(otherLegacyJobId, tempDir);
+    const otherStore = new JobStateStore(otherLegacyJobId, tempDir, { slug: otherSlug, stateRoot: tempDir });
     const otherState = await otherStore.load();
     expect(otherState.status).toBe("awaiting-resume");
   });

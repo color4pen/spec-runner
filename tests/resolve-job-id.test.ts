@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { JobStateStore } from "../src/store/job-state-store.js";
+import { JobStateStore, buildInitialJobState } from "../src/store/job-state-store.js";
 import { ERROR_CODES, ambiguousJobIdError } from "../src/errors.js";
 import { SpecRunnerError } from "../src/errors.js";
 
@@ -77,10 +77,9 @@ describe("TC-01: resolveJobId — full UUID pass-through", () => {
 // TC-02: resolveJobId — 短縮 ID で 1 件 match
 describe("TC-02: resolveJobId — short ID with 1 match", () => {
   it("returns the full UUID when prefix matches exactly one job (via sidecar)", async () => {
-    // New index model: create() writes to jobs-dir; also create liveness.json
-    // so that resolveId finds the job via sidecar index (T-03).
+    // resolveId uses sidecar index (liveness.json) only — no disk persist needed.
     const slug = "tc02-slug";
-    const state = await JobStateStore.create(tempDir, makeBaseParams(slug));
+    const state = buildInitialJobState(makeBaseParams(slug));
     await createLiveness(slug, state.jobId);
 
     const prefix = state.jobId.slice(0, 8);
@@ -107,10 +106,9 @@ describe("TC-03: resolveJobId — short ID with 0 matches", () => {
 // TC-04: resolveJobId — 短縮 ID で 2 件以上 match
 describe("TC-04: resolveJobId — short ID with 2+ matches", () => {
   it("throws AMBIGUOUS_JOB_ID with hint containing candidate UUIDs (via sidecar)", async () => {
-    // New index model: create() writes to jobs-dir; also create liveness.json
-    // for each job so resolveId finds them via sidecar index (T-03).
-    const s1 = await JobStateStore.create(tempDir, makeBaseParams("slug-tc04-a"));
-    const s2 = await JobStateStore.create(tempDir, makeBaseParams("slug-tc04-b"));
+    // resolveId uses sidecar index only — no disk persist needed.
+    const s1 = buildInitialJobState(makeBaseParams("slug-tc04-a"));
+    const s2 = buildInitialJobState(makeBaseParams("slug-tc04-b"));
     await createLiveness("slug-tc04-a", s1.jobId);
     await createLiveness("slug-tc04-b", s2.jobId);
 
@@ -143,9 +141,9 @@ describe("TC-04: resolveJobId — short ID with 2+ matches", () => {
 // TC-05: resolveJobId — 1 文字 prefix で一意に特定
 describe("TC-05: resolveJobId — single character prefix uniquely resolves", () => {
   it("resolves correctly when only one job starts with the given single character (via sidecar)", async () => {
-    // New index model: create() + liveness.json for sidecar-based resolveId.
+    // resolveId uses sidecar index only — no disk persist needed.
     const slug = "tc05-slug";
-    const state = await JobStateStore.create(tempDir, makeBaseParams(slug));
+    const state = buildInitialJobState(makeBaseParams(slug));
     await createLiveness(slug, state.jobId);
     const firstChar = state.jobId[0]!;
 

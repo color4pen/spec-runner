@@ -43,12 +43,12 @@ function makeLegacyStateRaw(overrides: Record<string, unknown> = {}): Record<str
 }
 
 async function writeStateFile(jobId: string, content: unknown): Promise<string> {
-  // Write as legacy flat file to jobs-dir.
-  // JobStateStore.load() (fallback path) reads this and normalizes in-memory.
-  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-  await fs.mkdir(jobsDir, { recursive: true });
-  const filePath = path.join(jobsDir, `${jobId}.json`);
+  // Write state.json to changeDir (test-jobs layout).
+  const changeDir = path.join(tempDir, ".specrunner", "test-jobs", jobId);
+  await fs.mkdir(changeDir, { recursive: true });
+  const filePath = path.join(changeDir, "state.json");
   await fs.writeFile(filePath, JSON.stringify(content, null, 2));
+  await fs.writeFile(path.join(changeDir, "events.jsonl"), "");
   return filePath;
 }
 
@@ -119,9 +119,9 @@ describe("TC-049: listJobStates — normalizes legacy format in-memory without r
     const filePath = await writeStateFile(jobId, legacyState);
     const originalContent = await fs.readFile(filePath, "utf-8");
 
-    // Use JobStateStore.load() fallback path (reads legacy flat file + normalizes in-memory)
-    const { JobStateStore } = await import("../../src/store/job-state-store.js");
-    const store = new JobStateStore(jobId, tempDir);
+    // Use JobStateStore.load() via changeDir layout — normalizes in-memory without rewriting
+    const { makeStoreFactory: mkFactory } = await import("../helpers/store-factory.js");
+    const store = mkFactory(tempDir)(jobId);
     const found = await store.load();
     expect(found).toBeDefined();
     expect(found.jobId).toBe(jobId);

@@ -11,7 +11,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as path from "node:path";
 import * as os from "node:os";
 import { loadStateByJobId } from "../src/core/job-access/load-by-job-id.js";
-import { JobStateStore } from "../src/store/job-state-store.js";
+import { SpecRunnerError, ERROR_CODES } from "../src/errors.js";
 
 // Wrap fs.writeFile in vi.fn() so we can verify it is not called during read-only operations.
 vi.mock("node:fs/promises", async (importOriginal) => {
@@ -146,48 +146,20 @@ describe("TC-023: managed job loads from .specrunner/local/<slug>/", () => {
   });
 });
 
-// TC-024: sidecar absent → fallback jobs-dir readFile
-describe("TC-024: sidecar absent → fallback jobs-dir readFile", () => {
-  it("loads from jobs-dir split layout when no sidecar exists", async () => {
+// TC-024: sidecar absent → throws JOB_NOT_FOUND
+describe("TC-024: sidecar absent → throws JOB_NOT_FOUND", () => {
+  it("throws SpecRunnerError(JOB_NOT_FOUND) when no sidecar exists", async () => {
     const jobId = "dddd1111-0000-0000-0000-000000000001";
 
-    // Write state to jobs-dir only (no sidecar)
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs", jobId);
-    await writeSlugState(jobsDir, jobId, "awaiting-archive", "legacy-slug");
+    // No sidecar — loadStateByJobId must throw JOB_NOT_FOUND
+    await expect(loadStateByJobId(tempDir, jobId)).rejects.toThrow(SpecRunnerError);
 
-    const loaded = await loadStateByJobId(tempDir, jobId);
-
-    expect(loaded.jobId).toBe(jobId);
-    expect(loaded.status).toBe("awaiting-archive");
-  });
-
-  it("loads from legacy flat file when no sidecar exists", async () => {
-    const jobId = "eeee1111-0000-0000-0000-000000000001";
-
-    // Write legacy flat file
-    const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-    await fs.mkdir(jobsDir, { recursive: true });
-    await fs.writeFile(
-      path.join(jobsDir, `${jobId}.json`),
-      JSON.stringify({
-        version: 1,
-        jobId,
-        createdAt: "2026-01-01T00:00:00.000Z",
-        updatedAt: "2026-01-01T00:00:00.000Z",
-        request: { path: "/test/request.md", title: "Test", type: "new-feature" },
-        repository: { owner: "user", name: "repo" },
-        session: null,
-        step: "init",
-        status: "failed",
-        branch: null,
-        history: [],
-        error: null,
-      }),
-    );
-
-    const loaded = await loadStateByJobId(tempDir, jobId);
-    expect(loaded.jobId).toBe(jobId);
-    expect(loaded.status).toBe("failed");
+    try {
+      await loadStateByJobId(tempDir, jobId);
+    } catch (err: unknown) {
+      expect(err instanceof SpecRunnerError).toBe(true);
+      expect((err as SpecRunnerError).code).toBe(ERROR_CODES.JOB_NOT_FOUND);
+    }
   });
 });
 

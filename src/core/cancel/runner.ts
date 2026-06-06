@@ -254,12 +254,11 @@ export async function cancelSingleJob(opts: {
   }
 
   // ---------------------------------------------------------------------------
-  // Purge (state file physical deletion)
+  // Purge (machine-local sidecar deletion)
   // ---------------------------------------------------------------------------
 
   if (purge) {
-    await JobStateStore.delete(deps.repoRoot, jobId);
-    // Also purge .specrunner/local/<slug>/ for managed jobs (D6)
+    // Purge .specrunner/local/<slug>/ (machine-local sidecar — liveness / marker / managed state)
     if (slugForMarker) {
       try {
         await fs.rm(path.join(deps.repoRoot, localSidecarDir(slugForMarker)), {
@@ -325,13 +324,18 @@ export async function cancelAllTerminated(opts: {
   const warnings: string[] = [];
 
   for (const state of targets) {
+    const slug = getJobSlug(state);
+    if (!slug) {
+      warnings.push(`Skipped ${state.jobId}: no slug to resolve sidecar path`);
+      continue;
+    }
     try {
-      await JobStateStore.delete(repoRoot, state.jobId);
+      await fs.rm(path.join(repoRoot, localSidecarDir(slug)), { recursive: true, force: true });
       removed++;
     } catch (err: unknown) {
       hasErrors = true;
       const msg = err instanceof Error ? err.message : String(err);
-      warnings.push(`Failed to remove ${state.jobId}: ${msg}`);
+      warnings.push(`Failed to remove sidecar for ${state.jobId}: ${msg}`);
     }
   }
 

@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "jobId": "64fc9fd0-beef-4b82-9d99-df5de5665712",
+  "createdAt": "2026-06-06T15:51:27.600Z",
+  "updatedAt": "2026-06-06T17:33:54.496Z",
+  "request": {
+    "title": "`.specrunner/jobs/` を完全撤去する",
+    "type": "spec-change"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/retire-jobs-dir-64fc9fd0",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/543",
+    "number": 543,
+    "createdAt": "2026-06-06T17:33:54.486Z"
+  },
+  "_journal": {
+    "historyCount": 36,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

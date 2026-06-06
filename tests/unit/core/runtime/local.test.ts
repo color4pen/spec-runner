@@ -15,6 +15,8 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { LocalRuntime } from "../../../../src/core/runtime/local.js";
 import type { QueryFn } from "../../../../src/adapter/claude-code/agent-runner.js";
+import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
+import { makeStoreFactory } from "../../../helpers/store-factory.js";
 
 let tempDir: string;
 
@@ -137,8 +139,7 @@ function buildMockManager(opts: {
 
 // Helper: create a minimal job state
 async function makeJobState(slug = "test-slug") {
-  const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-  return JobStateStore.create(tempDir, {
+  const state = buildInitialJobState({
     request: {
       path: path.join(tempDir, "request.md"),
       title: "Test",
@@ -147,6 +148,8 @@ async function makeJobState(slug = "test-slug") {
     },
     repository: { owner: "testowner", name: "testrepo" },
   });
+  await makeStoreFactory(tempDir)(state.jobId).persist(state);
+  return state;
 }
 
 // TC-LR-001: setupWorkspace(run) — new worktree creation (no requestFilePath)
@@ -161,7 +164,7 @@ describe("TC-LR-001: setupWorkspace creates worktree for run command", () => {
 
     // Call setupWorkspace without requestFilePath (no git add needed)
     // The git add behavior is tested in run-worktree-git-staging.test.ts
-    const workspace = await runtime.setupWorkspace("test-slug", jobState.jobId, {});
+    const workspace = await runtime.setupWorkspace("test-slug", jobState.jobId, { bootstrapState: jobState });
 
     expect(createdPaths.length).toBe(1);
     expect(workspace.cwd).toBe(createdPaths[0]);
@@ -202,7 +205,7 @@ describe("TC-LR-008: setupWorkspace run path calls git fetch origin and uses ori
     const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
     const jobState = await makeJobState();
-    await runtime.setupWorkspace("test-slug", jobState.jobId, {});
+    await runtime.setupWorkspace("test-slug", jobState.jobId, { bootstrapState: jobState });
 
     // git fetch origin was called
     const fetchCall = calls.find((c) => c.cmd === "git" && c.args[0] === "fetch");
@@ -224,7 +227,7 @@ describe("TC-LR-008: setupWorkspace run path calls git fetch origin and uses ori
 
     const jobState = await makeJobState();
     await expect(
-      runtime.setupWorkspace("test-slug", jobState.jobId, {}),
+      runtime.setupWorkspace("test-slug", jobState.jobId, { bootstrapState: jobState }),
     ).rejects.toThrow("git fetch origin failed");
   });
 
@@ -235,7 +238,7 @@ describe("TC-LR-008: setupWorkspace run path calls git fetch origin and uses ori
     const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
     const jobState = await makeJobState();
-    await runtime.setupWorkspace("test-slug", jobState.jobId, {});
+    await runtime.setupWorkspace("test-slug", jobState.jobId, { bootstrapState: jobState });
 
     // stderr.write was spied in beforeEach; check it was called with behind warning
     const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
@@ -253,7 +256,7 @@ describe("TC-LR-008: setupWorkspace run path calls git fetch origin and uses ori
     const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
     const jobState = await makeJobState();
-    await runtime.setupWorkspace("test-slug", jobState.jobId, {});
+    await runtime.setupWorkspace("test-slug", jobState.jobId, { bootstrapState: jobState });
 
     const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
     const warningCalls = stderrMock.mock.calls as [string][];
@@ -270,7 +273,7 @@ describe("TC-LR-008: setupWorkspace run path calls git fetch origin and uses ori
     const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
     const jobState = await makeJobState();
-    await runtime.setupWorkspace("test-slug", jobState.jobId, { existingWorktreePath: null });
+    await runtime.setupWorkspace("test-slug", jobState.jobId, { existingWorktreePath: null, bootstrapState: jobState });
 
     const fetchCalls = calls.filter((c) => c.cmd === "git" && c.args[0] === "fetch");
     expect(fetchCalls).toHaveLength(0);
@@ -344,6 +347,7 @@ describe("TC-LR-003: setupWorkspace recreates worktree when existing is missing"
 
     const workspace = await runtime.setupWorkspace("test-slug", jobState.jobId, {
       existingWorktreePath: "/nonexistent/path",
+      bootstrapState: jobState,
     });
 
     // Should create new worktree
@@ -363,6 +367,7 @@ describe("TC-LR-004: setupWorkspace creates new worktree when existingWorktreePa
 
     const workspace = await runtime.setupWorkspace("test-slug", jobState.jobId, {
       existingWorktreePath: null,
+      bootstrapState: jobState,
     });
 
     expect(createdPaths.length).toBe(1);
@@ -470,6 +475,7 @@ describe("TC-LR-009: setupWorkspace run path passes branchName to manager.create
     const jobState = await makeJobState();
     await runtime.setupWorkspace("test-slug", jobState.jobId, {
       branchName: "feat/test-slug-abcd1234",
+      bootstrapState: jobState,
     });
 
     const createMock = manager.create as ReturnType<typeof vi.fn>;
@@ -506,6 +512,7 @@ describe("TC-LR-009: setupWorkspace run path passes branchName to manager.create
     const jobState = await makeJobState();
     const workspace = await runtime.setupWorkspace("test-slug", jobState.jobId, {
       branchName: "feat/test-slug-abcd1234",
+      bootstrapState: jobState,
     });
 
     expect(workspace.branch).toBe("feat/test-slug-abcd1234");
@@ -604,6 +611,7 @@ describe("TC-LR-010: setupWorkspace run path commits request.md", () => {
     await runtime.setupWorkspace("test-slug", jobState.jobId, {
       requestFilePath: requestFile,
       branchName: "feat/test-slug-abcd1234",
+      bootstrapState: jobState,
     });
 
     // git add should be called
@@ -632,6 +640,7 @@ describe("TC-LR-010: setupWorkspace run path commits request.md", () => {
       runtime.setupWorkspace("test-slug", jobState.jobId, {
         requestFilePath: requestFile,
         branchName: "feat/test-slug-abcd1234",
+        bootstrapState: jobState,
       }),
     ).rejects.toThrow("Failed to commit request file");
   });
@@ -651,6 +660,7 @@ describe("TC-LR-010: setupWorkspace run path commits request.md", () => {
     await runtime.setupWorkspace("test-slug", jobState.jobId, {
       requestFilePath: requestFile,
       branchName: "feat/test-slug-abcd1234",
+      bootstrapState: jobState,
     });
 
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
@@ -691,6 +701,7 @@ describe("TC-LR-014: setupWorkspace writes rules.md to change folder via string 
     await runtime.setupWorkspace("test-slug", jobState.jobId, {
       requestFilePath: requestFile,
       branchName: "feat/test-slug-abcd1234",
+      bootstrapState: jobState,
     });
 
     // Verify rules.md was written to the change folder
@@ -709,18 +720,21 @@ describe("TC-LR-014: setupWorkspace writes rules.md to change folder via string 
 // TC-LR-015: signal handler records the in-progress step (not the launch step)
 describe("TC-LR-015: signalCleanup records in-progress step in resumePoint", () => {
   it("persists resumePoint.step = current.step (code-review), not startStep (design)", async () => {
-    const { manager } = buildMockManager();
+    const { manager, createdPaths } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn();
     const githubClient = buildMockGitHubClient();
-    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager });
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
-    // Create a job state
-    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    // Create a job state and bootstrap it into the worktree slug store via setupWorkspace
     const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, { bootstrapState: jobState });
+    const worktreePath = createdPaths[0]!;
 
-    // Persist an update so the in-progress step is "code-review" (running)
-    const store = new JobStateStore(jobState.jobId, tempDir);
-    const current = await store.load();
-    await store.persist({ ...current, step: "code-review", status: "running" } as import("../../../../src/state/schema.js").JobState);
+    // Update slug store to reflect in-progress step "code-review"
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    const slugStore = new JobStateStore(jobState.jobId, tempDir, { slug: "test-slug", stateRoot: worktreePath });
+    const current = await slugStore.load();
+    await slugStore.persist({ ...current, step: "code-review", status: "running" } as import("../../../../src/state/schema.js").JobState);
 
     // Stub process.exit so it doesn't actually exit
     const originalExit = process.exit;
@@ -737,8 +751,8 @@ describe("TC-LR-015: signalCleanup records in-progress step in resumePoint", () 
       // Invoke the signal handler and wait for it to complete
       await listener();
 
-      // Load state from disk and assert
-      const finalState = await new JobStateStore(jobState.jobId, tempDir).load();
+      // Load from slug store and assert
+      const finalState = await slugStore.load();
       expect(finalState?.status).toBe("awaiting-resume");
       expect(finalState?.resumePoint?.step).toBe("code-review");
       expect(finalState?.resumePoint?.step).not.toBe("design");

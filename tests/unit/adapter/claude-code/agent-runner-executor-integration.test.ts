@@ -124,9 +124,7 @@ function makeLocalQueryFn(opts: {
 }
 
 async function seedJobState(jobId: string, state: JobState): Promise<void> {
-  const jobsDir = path.join(tempDir, ".specrunner", "jobs");
-  await fs.mkdir(jobsDir, { recursive: true });
-  await fs.writeFile(path.join(jobsDir, `${jobId}.json`), JSON.stringify(state, null, 2));
+  await makeStoreFactory(tempDir)(jobId).persist(state);
 }
 
 // ---------------------------------------------------------------------------
@@ -222,8 +220,7 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
 
     expect(verdictEvents).toContain("spec-review:approved");
 
-    const { JobStateStore: JSS } = await import("../../../../src/store/job-state-store.js");
-    const persisted = await new JSS(jobId, tempDir).load();
+    const persisted = await makeStoreFactory(tempDir)(jobId).load();
     expect(persisted.steps?.["spec-review"]).toBeDefined();
   });
 
@@ -289,8 +286,7 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
       code: "CLAUDE_CODE_QUERY_FAILED",
     });
 
-    const { JobStateStore: JSS2 } = await import("../../../../src/store/job-state-store.js");
-    const persisted2 = await new JSS2(jobId, tempDir).load();
+    const persisted2 = await makeStoreFactory(tempDir)(jobId).load();
     const stepResults = persisted2.steps?.["spec-review"];
     expect(stepResults).toBeDefined();
     expect(Array.isArray(stepResults)).toBe(true);

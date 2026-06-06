@@ -30,6 +30,10 @@ vi.mock("../../../src/store/job-state-store.js", () => {
   return { JobStateStore: MockJobStateStore };
 });
 
+vi.mock("../../../src/core/job-access/load-by-job-id.js", () => ({
+  loadStateByJobId: vi.fn().mockImplementation(() => mockLoad()),
+}));
+
 const VALID_UUID = "abcd1234-ef56-7890-abcd-ef1234567890";
 
 function makeJob(overrides: Partial<JobState> = {}): JobState {

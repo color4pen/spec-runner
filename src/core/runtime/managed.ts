@@ -106,7 +106,6 @@ export class ManagedRuntime implements RuntimeStrategy {
 
   /**
    * Persist job state to the machine-local slug store (.specrunner/local/<slug>/).
-   * Does NOT write to .specrunner/jobs/<jobId>/.
    */
   async persistJobState(
     jobId: string,
