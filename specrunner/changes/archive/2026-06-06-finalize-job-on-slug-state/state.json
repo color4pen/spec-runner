@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "7b2fd652-e4c4-45db-964d-50aff89917a7",
   "createdAt": "2026-06-06T06:27:32.813Z",
-  "updatedAt": "2026-06-06T07:19:27.969Z",
+  "updatedAt": "2026-06-06T07:39:03.308Z",
   "request": {
     "title": "job 終端処理を slug 正本に一本化する",
     "type": "spec-change"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/finalize-job-on-slug-state-7b2fd652",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-06T07:19:27.960Z"
   },
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 37,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
