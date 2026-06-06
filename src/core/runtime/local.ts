@@ -214,6 +214,7 @@ export class LocalRuntime implements RuntimeStrategy {
           worktreePath: existingWorktreePath,
         };
         this.workspace = workspace;
+        await this.writeLivenessSidecar(slug, jobId, existingWorktreePath);
         return workspace;
       } else {
         // Worktree was deleted — create a new one (resume path: fetch already ran during original run)

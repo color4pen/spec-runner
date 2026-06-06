@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "jobId": "4bb0534d-1cea-49dd-824c-0423382e78fa",
+  "createdAt": "2026-06-06T13:43:15.275Z",
+  "updatedAt": "2026-06-06T13:56:19.593Z",
+  "request": {
+    "title": "resume 時に liveness sidecar の pid が更新されない",
+    "type": "bug-fix"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "fix/resume-liveness-pid-update-4bb0534d",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/538",
+    "number": 538,
+    "createdAt": "2026-06-06T13:56:19.585Z"
+  },
+  "_journal": {
+    "historyCount": 36,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

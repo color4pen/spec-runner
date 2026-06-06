@@ -690,6 +690,89 @@ describe("TC-LR-015: signalCleanup records in-progress step in resumePoint", () 
   });
 });
 
+// TC-LR-016: setupWorkspace(resume/reuse) updates liveness sidecar pid
+describe("TC-LR-016: setupWorkspace reuse path updates liveness sidecar pid", () => {
+  it("overwrites stale pid in liveness.json with process.pid", async () => {
+    const { manager } = buildMockManager();
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager });
+
+    const jobState = await makeJobState("test-slug");
+
+    const existingPath = path.join(tempDir, "existing-worktree");
+    await fs.mkdir(existingPath, { recursive: true });
+
+    // Write a stale liveness.json with an old pid
+    const sidecarDir = path.join(tempDir, ".specrunner", "local", "test-slug");
+    await fs.mkdir(sidecarDir, { recursive: true });
+    const sidecarPath = path.join(sidecarDir, "liveness.json");
+    await fs.writeFile(
+      sidecarPath,
+      JSON.stringify({ pid: 999999, session: null, worktreePath: existingPath, jobId: jobState.jobId }, null, 2),
+      "utf-8",
+    );
+
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {
+      existingWorktreePath: existingPath,
+    });
+
+    const sidecar = JSON.parse(await fs.readFile(sidecarPath, "utf-8"));
+    expect(sidecar.pid).toBe(process.pid);
+  });
+
+  it("preserves worktreePath and jobId in liveness.json after reuse", async () => {
+    const { manager } = buildMockManager();
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager });
+
+    const jobState = await makeJobState("test-slug");
+
+    const existingPath = path.join(tempDir, "existing-worktree");
+    await fs.mkdir(existingPath, { recursive: true });
+
+    // Write a stale liveness.json
+    const sidecarDir = path.join(tempDir, ".specrunner", "local", "test-slug");
+    await fs.mkdir(sidecarDir, { recursive: true });
+    const sidecarPath = path.join(sidecarDir, "liveness.json");
+    await fs.writeFile(
+      sidecarPath,
+      JSON.stringify({ pid: 999999, session: null, worktreePath: existingPath, jobId: jobState.jobId }, null, 2),
+      "utf-8",
+    );
+
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {
+      existingWorktreePath: existingPath,
+    });
+
+    const sidecar = JSON.parse(await fs.readFile(sidecarPath, "utf-8"));
+    expect(sidecar.worktreePath).toBe(existingPath);
+    expect(sidecar.jobId).toBe(jobState.jobId);
+  });
+
+  it("creates liveness.json with process.pid when no prior sidecar exists", async () => {
+    const { manager } = buildMockManager();
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager });
+
+    const jobState = await makeJobState("test-slug");
+
+    const existingPath = path.join(tempDir, "existing-worktree");
+    await fs.mkdir(existingPath, { recursive: true });
+
+    // No prior sidecar — directory does not exist
+    const workspace = await runtime.setupWorkspace("test-slug", jobState.jobId, {
+      existingWorktreePath: existingPath,
+    });
+
+    // workspace returned without throwing
+    expect(workspace.worktreePath).toBe(existingPath);
+
+    const sidecarPath = path.join(tempDir, ".specrunner", "local", "test-slug", "liveness.json");
+    const sidecar = JSON.parse(await fs.readFile(sidecarPath, "utf-8"));
+    expect(sidecar.pid).toBe(process.pid);
+  });
+});
+
 // TC-LR-013: query() passthrough of session fields
 describe("TC-LR-013: query() passthroughs sessionId/continue/resume/includePartialMessages to SDK", () => {
   it("passes sessionId, continue, resume, includePartialMessages to queryFn options", async () => {
