@@ -28,6 +28,7 @@ import { checkMergeableForMerge } from "../finish/pr-status.js";
 import { formatEscalation } from "../finish/escalation.js";
 import { logResult } from "../../logger/stdout.js";
 import { DEFAULT_MERGE_WAIT_TIMEOUT_MS, DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS } from "../../config/schema.js";
+import { evaluateProtectedPaths } from "./protected-paths.js";
 
 /**
  * Grace period (ms) to wait for the first check run to appear after a push.
@@ -63,6 +64,12 @@ export interface MergeThenArchiveInput {
   pollIntervalMs?: number;
   /** Injectable clock for testing. Default: Date.now. */
   nowFn?: () => number;
+  /**
+   * Glob patterns for files that block auto-merge (from archive.protectedPaths config).
+   * When non-empty, the PR's changed files are fetched and evaluated before merging.
+   * Empty or absent → guard skipped entirely (no listPullRequestFiles call).
+   */
+  protectedPaths?: string[];
 }
 
 export type MergeThenArchiveResult = ArchiveResult;
@@ -89,6 +96,7 @@ export async function runMergeThenArchive(
     waitTimeoutMs,
     pollIntervalMs = DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS,
     nowFn = Date.now,
+    protectedPaths,
   } = input;
 
   // Resolve effective timeout: undefined → default, null → unlimited, number → as-is
@@ -148,6 +156,70 @@ export async function runMergeThenArchive(
   if (prData.state === "MERGED") {
     stdoutWrite(`PR #${prNumber} already merged. Running archive directly.`);
     return runArchiveOrchestrator({ slug, cwd, spawn, fs, baseBranch, worktreeManagerFn }, stdoutWrite);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Step 3.5: Protected-path merge guard
+  // ---------------------------------------------------------------------------
+  if (protectedPaths && protectedPaths.length > 0) {
+    let filesResult: { files: string[]; truncated: boolean };
+    try {
+      filesResult = await githubClient.listPullRequestFiles(owner, repo, prNumber);
+    } catch (err: unknown) {
+      const detail = err instanceof Error ? err.message : String(err);
+      return {
+        exitCode: 1,
+        escalation: formatEscalation({
+          failedStep: "merge gate (protected paths — file list fetch)",
+          detectedState: `listPullRequestFiles #${prNumber} failed: ${detail}`,
+          recommendedAction: `Check GitHub token: specrunner login. Then re-run: specrunner job archive --with-merge ${slug}`,
+          resumeCommand: `specrunner job archive --with-merge ${slug}`,
+        }),
+      };
+    }
+
+    const decision = evaluateProtectedPaths({
+      changedFiles: filesResult.files,
+      truncated: filesResult.truncated,
+      patterns: protectedPaths,
+    });
+
+    if (decision.blocked) {
+      if (decision.reason === "truncated") {
+        return {
+          exitCode: 1,
+          escalation: formatEscalation({
+            failedStep: "merge gate (protected paths — file list truncated)",
+            detectedState:
+              `The PR's changed file list exceeded the GitHub API cap (3000 files) and was truncated. ` +
+              `Protected-path matching cannot be performed reliably on an incomplete list.`,
+            recommendedAction:
+              `Review the PR manually to ensure no protected paths are modified, then merge by hand:\n` +
+              `  1. Open the PR on GitHub and review all changed files.\n` +
+              `  2. If the changes are safe, squash-merge the PR on GitHub.\n` +
+              `  3. Run: specrunner job archive --with-merge ${slug}`,
+            resumeCommand: `specrunner job archive --with-merge ${slug}`,
+          }),
+        };
+      }
+
+      // reason === "match"
+      const matchedList = decision.matched.map((f) => `  - ${f}`).join("\n");
+      return {
+        exitCode: 1,
+        escalation: formatEscalation({
+          failedStep: "merge gate (protected paths)",
+          detectedState:
+            `The following changed files match a protected path and require human review before merging:\n${matchedList}`,
+          recommendedAction:
+            `Review the PR manually and merge by hand:\n` +
+            `  1. Open the PR on GitHub and review the flagged files.\n` +
+            `  2. If the changes are safe, squash-merge the PR on GitHub.\n` +
+            `  3. Run: specrunner job archive --with-merge ${slug}`,
+          resumeCommand: `specrunner job archive --with-merge ${slug}`,
+        }),
+      };
+    }
   }
 
   // ---------------------------------------------------------------------------

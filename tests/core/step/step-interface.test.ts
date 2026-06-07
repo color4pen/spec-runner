@@ -118,6 +118,7 @@ function makeMinimalDeps(clientOpts?: Parameters<typeof makeMockSessionClient>[0
       getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
       mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
       getCheckStatus: vi.fn().mockResolvedValue({ state: "success", total: 0, failing: [], pending: [] }),
+      listPullRequestFiles: vi.fn().mockResolvedValue({ files: [], truncated: false }),
     },
     owner: "user",
     repo: "repo",

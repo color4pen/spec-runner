@@ -39,6 +39,7 @@ function buildMockGitHubClient() {
     getPullRequest: vi.fn(),
     mergePullRequest: vi.fn(),
     getCheckStatus: vi.fn(),
+    listPullRequestFiles: vi.fn().mockResolvedValue({ files: [], truncated: false }),
   };
 }
 

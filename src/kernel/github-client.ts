@@ -154,4 +154,24 @@ export interface GitHubClient {
     prNumber: number,
     opts: { mergeMethod: "squash" },
   ): Promise<{ merged: boolean; message: string }>;
+
+  /**
+   * List the files changed by a pull request.
+   * Calls GET /repos/{owner}/{repo}/pulls/{pull_number}/files with per_page=100,
+   * following Link: rel="next" for pagination.
+   *
+   * The GitHub API caps results at 3000 files. When the cap is reached,
+   * `truncated` is set to `true` so callers can fail-closed rather than
+   * silently miss protected-path matches.
+   *
+   * - Returns `{ files, truncated: false }` when all changed files fit under the cap.
+   * - Returns `{ files, truncated: true }` when the 3000-file cap is reached.
+   * - Throws SpecRunnerError(GITHUB_API_ERROR) on non-200 responses.
+   * - Throws SpecRunnerError(GITHUB_TOKEN_EXPIRED) on 401 (via shared request() layer).
+   */
+  listPullRequestFiles(
+    owner: string,
+    repo: string,
+    prNumber: number,
+  ): Promise<{ files: string[]; truncated: boolean }>;
 }

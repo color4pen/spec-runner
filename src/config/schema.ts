@@ -143,7 +143,7 @@ export const DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS = 15_000;
 
 /**
  * Archive-specific configuration.
- * Controls --with-merge wait behaviour.
+ * Controls --with-merge wait behaviour and merge guard.
  */
 export interface ArchiveConfig {
   /**
@@ -158,6 +158,18 @@ export interface ArchiveConfig {
    * undefined / absent = use DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS (15_000 ms = 15 seconds).
    */
   mergeWaitPollIntervalMs?: number;
+  /**
+   * Glob patterns for files that must not be auto-merged.
+   * When a PR changes any file matching one of these patterns, `job archive --with-merge`
+   * stops with an escalation instead of merging automatically.
+   *
+   * Absent or empty array = no guard (backward compatible).
+   * Each element must be a non-empty string glob pattern.
+   *
+   * Examples:
+   *   [".github/workflows/**", "release-please-config.json"]
+   */
+  protectedPaths?: string[];
 }
 
 /** GitHub host and API base URL configuration. */
@@ -690,6 +702,25 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
           new Error("CONFIG_INVALID: archive.mergeWaitPollIntervalMs must be a positive integer."),
           { code: "CONFIG_INVALID" },
         );
+      }
+    }
+
+    if (archiveObj["protectedPaths"] !== undefined) {
+      const v = archiveObj["protectedPaths"];
+      if (!Array.isArray(v)) {
+        throw Object.assign(
+          new Error("CONFIG_INVALID: archive.protectedPaths must be an array."),
+          { code: "CONFIG_INVALID" },
+        );
+      }
+      for (let i = 0; i < v.length; i++) {
+        const elem = v[i];
+        if (typeof elem !== "string" || elem.length === 0) {
+          throw Object.assign(
+            new Error(`CONFIG_INVALID: archive.protectedPaths[${i}] must be a non-empty string.`),
+            { code: "CONFIG_INVALID" },
+          );
+        }
       }
     }
   }

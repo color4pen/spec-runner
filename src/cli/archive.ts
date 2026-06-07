@@ -139,6 +139,7 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
       let githubApiBaseUrl = "https://api.github.com";
       let waitTimeoutMs: number | null | undefined = undefined;
       let pollIntervalMs: number | undefined = undefined;
+      let protectedPaths: string[] | undefined = undefined;
       try {
         const config = await loadConfig();
         githubHost = resolveGitHubHost(config.github);
@@ -152,8 +153,9 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
           waitTimeoutMs = DEFAULT_MERGE_WAIT_TIMEOUT_MS;
         }
         pollIntervalMs = config.archive?.mergeWaitPollIntervalMs ?? DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS;
+        protectedPaths = config.archive?.protectedPaths;
       } catch {
-        // Config not available — use defaults
+        // Config not available — use defaults (no guard applied)
         if (opts.mergeWaitMs !== undefined) {
           waitTimeoutMs = opts.mergeWaitMs;
         } else {
@@ -207,6 +209,7 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
           baseBranch,
           waitTimeoutMs,
           pollIntervalMs,
+          protectedPaths,
         },
         logResult,
       );

@@ -208,6 +208,7 @@ function makeMockGithubClient() {
     getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN" }),
     mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "merged" }),
     getCheckStatus: vi.fn().mockResolvedValue({ state: "success", total: 0, failing: [], pending: [] }),
+    listPullRequestFiles: vi.fn().mockResolvedValue({ files: [], truncated: false }),
   } satisfies GitHubClient;
 }
 

@@ -60,6 +60,7 @@ function makeGitHubClient(overrides: Partial<GitHubClient> = {}): GitHubClient {
     }),
     mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "merged" }),
     getCheckStatus: vi.fn().mockResolvedValue(SUCCESS_ROLLUP),
+    listPullRequestFiles: vi.fn().mockResolvedValue({ files: [], truncated: false }),
     ...overrides,
   };
 }
@@ -797,5 +798,275 @@ describe("TC-MTA-013: waitTimeoutMs null + 常に none → grace 後に merge（
     expect(runArchiveOrchestrator).toHaveBeenCalled();
     // 少なくとも 1 回 sleep していること（初回 none で即 merge していない）
     expect(sleepFn).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-PPG-001: Protected-path match → escalation (no merge, no archive)
+// ---------------------------------------------------------------------------
+
+describe("TC-PPG-001: protected-path match → escalation, merge/archive not called", () => {
+  it("blocks merge when a changed file matches a protected path", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0 });
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        headRefName: "change/my-slug",
+        mergeable: "MERGEABLE",
+        headSha: "abc123",
+      }),
+      listPullRequestFiles: vi.fn().mockResolvedValue({
+        files: [".github/workflows/ci.yml", "src/foo.ts"],
+        truncated: false,
+      }),
+    });
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      waitTimeoutMs: 60_000,
+      protectedPaths: [".github/workflows/**"],
+    });
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode === 1) {
+      expect(result.escalation).toContain(".github/workflows/ci.yml");
+      // manual merge steps should be present
+      expect(result.escalation).toMatch(/merge.*by hand|manually merge|squash-merge/i);
+    }
+    expect(client.mergePullRequest).not.toHaveBeenCalled();
+    expect(runArchiveOrchestrator).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-PPG-002: Truncated file list with non-empty patterns → escalation
+// ---------------------------------------------------------------------------
+
+describe("TC-PPG-002: truncated file list + non-empty patterns → escalation", () => {
+  it("blocks merge when file list is truncated and patterns are configured", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0 });
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        headRefName: "change/my-slug",
+        mergeable: "MERGEABLE",
+        headSha: "abc123",
+      }),
+      listPullRequestFiles: vi.fn().mockResolvedValue({
+        files: Array.from({ length: 3000 }, (_, i) => `src/file-${i}.ts`),
+        truncated: true,
+      }),
+    });
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      waitTimeoutMs: 60_000,
+      protectedPaths: [".github/workflows/**"],
+    });
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode === 1) {
+      expect(result.escalation).toMatch(/truncated|3000/i);
+    }
+    expect(client.mergePullRequest).not.toHaveBeenCalled();
+    expect(runArchiveOrchestrator).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-PPG-003: No match → existing flow runs unchanged
+// ---------------------------------------------------------------------------
+
+describe("TC-PPG-003: no protected-path match → merge proceeds normally", () => {
+  it("merges normally when changed files do not match any protected pattern", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0 });
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        headRefName: "change/my-slug",
+        mergeable: "MERGEABLE",
+        headSha: "abc123",
+      }),
+      getCheckStatus: vi.fn().mockResolvedValue(SUCCESS_ROLLUP),
+      listPullRequestFiles: vi.fn().mockResolvedValue({
+        files: ["src/foo.ts", "README.md"],
+        truncated: false,
+      }),
+      mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "merged" }),
+    });
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      waitTimeoutMs: 60_000,
+      protectedPaths: [".github/workflows/**"],
+    });
+
+    expect(result).toEqual({ exitCode: 0 });
+    expect(client.mergePullRequest).toHaveBeenCalled();
+    expect(runArchiveOrchestrator).toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-PPG-004: Empty/undefined protectedPaths → guard skipped entirely
+// ---------------------------------------------------------------------------
+
+describe("TC-PPG-004: empty/undefined protectedPaths → listPullRequestFiles not called", () => {
+  it("skips guard when protectedPaths is undefined", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0 });
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        headRefName: "change/my-slug",
+        mergeable: "MERGEABLE",
+        headSha: "abc123",
+      }),
+      getCheckStatus: vi.fn().mockResolvedValue(SUCCESS_ROLLUP),
+      mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "merged" }),
+    });
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      waitTimeoutMs: 60_000,
+      // protectedPaths: undefined (absent)
+    });
+
+    expect(client.listPullRequestFiles).not.toHaveBeenCalled();
+    expect(client.mergePullRequest).toHaveBeenCalled();
+  });
+
+  it("skips guard when protectedPaths is an empty array", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0 });
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        headRefName: "change/my-slug",
+        mergeable: "MERGEABLE",
+        headSha: "abc123",
+      }),
+      getCheckStatus: vi.fn().mockResolvedValue(SUCCESS_ROLLUP),
+      mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "merged" }),
+    });
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      waitTimeoutMs: 60_000,
+      protectedPaths: [],
+    });
+
+    expect(client.listPullRequestFiles).not.toHaveBeenCalled();
+    expect(client.mergePullRequest).toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-PPG-005: Already-MERGED PR → guard skipped
+// ---------------------------------------------------------------------------
+
+describe("TC-PPG-005: already-MERGED PR → protected-path guard skipped", () => {
+  it("skips guard and runs archive directly when PR is already MERGED", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0 });
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "MERGED",
+        mergeStateStatus: "UNKNOWN",
+        headRefName: "change/my-slug",
+        mergeable: "MERGEABLE",
+        headSha: "abc123",
+      }),
+    });
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      waitTimeoutMs: 60_000,
+      protectedPaths: [".github/workflows/**"],
+    });
+
+    expect(result).toEqual({ exitCode: 0 });
+    expect(client.listPullRequestFiles).not.toHaveBeenCalled();
+    expect(runArchiveOrchestrator).toHaveBeenCalled();
   });
 });

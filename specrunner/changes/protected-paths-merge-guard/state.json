@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "jobId": "4fbc6fa1-65c4-49a0-acc7-8a305db574dd",
+  "createdAt": "2026-06-07T14:01:30.786Z",
+  "updatedAt": "2026-06-07T14:36:42.548Z",
+  "request": {
+    "title": "保護パスを変更する PR を無人マージ対象外にする",
+    "type": "spec-change"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/protected-paths-merge-guard-4fbc6fa1",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/553",
+    "number": 553,
+    "createdAt": "2026-06-07T14:36:42.537Z"
+  },
+  "_journal": {
+    "historyCount": 36,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

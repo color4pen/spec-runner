@@ -448,6 +448,45 @@ export class GitHubApiClient implements GitHubClient {
   }
 
   /**
+   * List the files changed by a pull request, following Link: rel="next" pagination.
+   *
+   * GitHub caps this endpoint at 3000 files. When the cap is reached,
+   * returns `truncated: true` so callers can fail-closed.
+   */
+  async listPullRequestFiles(
+    owner: string,
+    repo: string,
+    prNumber: number,
+  ): Promise<{ files: string[]; truncated: boolean }> {
+    const MAX_FILES = 3000;
+    const files: string[] = [];
+    let nextUrl: string | null =
+      `${this.baseUrl}/repos/${owner}/${repo}/pulls/${prNumber}/files?per_page=100`;
+
+    while (nextUrl !== null) {
+      const resp = await this.request(nextUrl);
+      if (resp.status !== 200) {
+        throw githubApiError(resp.status, `listPullRequestFiles(${owner}/${repo}#${prNumber})`);
+      }
+
+      const data = (await resp.json()) as Array<{ filename: string }>;
+      for (const entry of data) {
+        files.push(entry.filename);
+      }
+
+      // Check for truncation: if we've reached the cap, fail-closed
+      if (files.length >= MAX_FILES) {
+        return { files, truncated: true };
+      }
+
+      const linkHeader = resp.headers.get("Link");
+      nextUrl = parseNextLink(linkHeader);
+    }
+
+    return { files, truncated: false };
+  }
+
+  /**
    * Merge a pull request (squash).
    * Merge depends on branch protection being satisfied — no admin bypass is performed.
    *
