@@ -93,7 +93,10 @@ export abstract class CommandRunner {
     const json = prepared.json ?? false;
 
     // Register per-job exit guard so that beforeExit writes awaiting-resume to slug-based state.
-    process.on("beforeExit", createExitGuardHandler(repoRoot, jobState.jobId));
+    process.on("beforeExit", createExitGuardHandler(repoRoot, jobState.jobId, {
+      noWorktree: workspaceOpts.noWorktree,
+      slug,
+    }));
 
     // Prune old logs before initializing pipeline log (run 開始時 retention チェック)
     try {

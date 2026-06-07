@@ -91,6 +91,7 @@ export const ERROR_CODES = {
   SYMLINK_REJECTED: "SYMLINK_REJECTED",
   STEP_HALTED_NO_TOOL_CALL: "STEP_HALTED_NO_TOOL_CALL",
   STEP_INPUT_MISSING: "STEP_INPUT_MISSING",
+  WORKTREE_DIRTY: "WORKTREE_DIRTY",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -294,6 +295,14 @@ export function stepHaltedNoToolCallError(stepName: string): SpecRunnerError {
     ERROR_CODES.STEP_HALTED_NO_TOOL_CALL,
     "The agent did not call report_result after the maximum number of retries. Resume the job to retry, or check the agent session log for why the agent failed to call the tool.",
     `Step '${stepName}' halted: agent did not call report_result tool after maximum retry attempts.`,
+  );
+}
+
+export function worktreeDirtyError(detail: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.WORKTREE_DIRTY,
+    "--no-worktree requires a clean working tree. Commit or stash your changes, then retry.",
+    `Working tree is dirty: ${detail}`,
   );
 }
 

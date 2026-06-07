@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "jobId": "bec325b2-207f-407d-97c8-796d2508129d",
+  "createdAt": "2026-06-07T06:27:58.263Z",
+  "updatedAt": "2026-06-07T07:32:23.471Z",
+  "request": {
+    "title": "`--no-worktree` モードで worktree を作らずに run / resume を実行する",
+    "type": "spec-change"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/no-worktree-mode-bec325b2",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/547",
+    "number": 547,
+    "createdAt": "2026-06-07T07:32:23.462Z"
+  },
+  "_journal": {
+    "historyCount": 52,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 3,
+      "code-fixer": 2,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

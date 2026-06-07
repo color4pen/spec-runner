@@ -185,6 +185,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
       verbose: { type: "boolean" },
       quiet: { type: "boolean" },
       json: { type: "boolean" },
+      "no-worktree": { type: "boolean" },
     },
     positional: { name: "request.md|slug", required: true },
     handler: async (parsed) => {
@@ -194,7 +195,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
         verbose: !!parsed.flags["verbose"],
         debug: !!parsed.flags["debug"],
       });
-      await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"] });
+      await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] });
     },
   },
 
@@ -327,6 +328,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
           verbose: { type: "boolean" },
           quiet: { type: "boolean" },
           json: { type: "boolean" },
+          "no-worktree": { type: "boolean" },
         },
         positional: { name: "slug|file", required: true },
         handler: async (parsed) => {
@@ -336,7 +338,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
             verbose: !!parsed.flags["verbose"],
             debug: !!parsed.flags["debug"],
           });
-          await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"] });
+          await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] });
         },
       },
       ls: {
@@ -424,6 +426,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
           prompt: { type: "string" },
           "prompt-file": { type: "string" },
           json: { type: "boolean" },
+          "no-worktree": { type: "boolean" },
         },
         positional: { name: "slug", required: true },
         handler: async (parsed) => {
@@ -464,6 +467,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
               cwd: process.cwd(),
               prompt: resolvedPrompt,
               json: !!parsed.flags["json"],
+              noWorktree: !!parsed.flags["no-worktree"],
             });
           } catch (err: unknown) {
             if (err instanceof SpecRunnerError) {

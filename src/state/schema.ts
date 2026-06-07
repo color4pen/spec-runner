@@ -176,6 +176,13 @@ export interface JobState {
   pid?: number | null;
   /** ISO 8601 timestamp when the job was canceled. Set by `job cancel`. Optional. */
   canceledAt?: string;
+  /**
+   * Indicates this job was executed in no-worktree mode (--no-worktree flag).
+   * Portable: written to state.json and readable by the archive command in a
+   * separate process to skip worktree remove/prune.
+   * Absent (undefined) means the job ran in normal worktree mode.
+   */
+  noWorktree?: boolean;
 }
 
 /**

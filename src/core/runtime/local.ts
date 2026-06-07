@@ -33,7 +33,7 @@ import { commitAndPush, commitFinalState } from "../step/commit-push.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput } from "../port/runtime-strategy.js";
-import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
+import { SpecRunnerError, ERROR_CODES, worktreeDirtyError } from "../../errors.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import { stripSecrets } from "../../util/env-filter.js";
@@ -115,8 +115,9 @@ export class LocalRuntime implements RuntimeStrategy {
 
   /** Build slug-based store opts if workspace and slug are available. */
   private slugStoreOpts(): { slug: string; stateRoot: string } | undefined {
-    if (this.currentSlug && this.workspace?.worktreePath) {
-      return { slug: this.currentSlug, stateRoot: this.workspace.worktreePath };
+    const stateRoot = this.workspace?.worktreePath ?? this.workspace?.cwd;
+    if (this.currentSlug && stateRoot) {
+      return { slug: this.currentSlug, stateRoot };
     }
     return undefined;
   }
@@ -233,12 +234,129 @@ export class LocalRuntime implements RuntimeStrategy {
     return new DispatchingAgentRunner(claudeRunner);
   }
 
+  /**
+   * No-worktree setup: use cwd as-is, optionally create feature branch.
+   * - Requires clean working tree (git status --porcelain empty).
+   * - run path (existingWorktreePath === undefined): git checkout -b <branchName>
+   * - resume path (existingWorktreePath set): assume branch already checked out.
+   */
+  private async setupWorkspaceNoWorktree(
+    slug: string,
+    jobId: string,
+    opts?: WorkspaceOptions,
+  ): Promise<WorkspaceContext> {
+    // Clean working tree check
+    const statusResult = await this.spawnFn("git", ["status", "--porcelain"], { cwd: this.cwd });
+    if (statusResult.exitCode !== 0) {
+      throw new Error(`git status failed (exit ${statusResult.exitCode}): ${statusResult.stderr.trim()}`);
+    }
+    const dirtyOutput = statusResult.stdout.trim();
+    if (dirtyOutput.length > 0) {
+      throw worktreeDirtyError(dirtyOutput);
+    }
+
+    const isRunPath = opts?.existingWorktreePath === undefined;
+    const branchName = opts?.branchName;
+
+    if (isRunPath && branchName) {
+      // Create and switch to the feature branch
+      const checkoutResult = await this.spawnFn("git", ["checkout", "-b", branchName], { cwd: this.cwd });
+      if (checkoutResult.exitCode !== 0) {
+        throw new Error(`git checkout -b ${branchName} failed (exit ${checkoutResult.exitCode}): ${checkoutResult.stderr.trim()}`);
+      }
+    }
+    // Resume path: branch already checked out — no branch operation needed.
+
+    const workspace: WorkspaceContext = {
+      cwd: this.cwd,
+      worktreePath: undefined,
+      branch: branchName,
+      noWorktree: true,
+    };
+    this.workspace = workspace;
+
+    // Seed slug store
+    const slugOpts = { slug, stateRoot: this.cwd };
+    if (opts?.bootstrapState) {
+      await new JobStateStore(jobId, this.cwd, slugOpts).persist(opts.bootstrapState);
+    }
+
+    // Write liveness sidecar with worktreePath: null
+    await this.writeLivenessSidecar(slug, jobId, null);
+
+    // Run path: copy request.md, rules, etc. into cwd (same as worktree path but targeting cwd)
+    if (isRunPath && opts?.requestFilePath) {
+      const changeFolderRequestPath = path.join(this.cwd, changeFolderPath(slug), "request.md");
+      await fs.mkdir(path.dirname(changeFolderRequestPath), { recursive: true });
+      await rejectSymlink(opts.requestFilePath);
+      await fs.cp(opts.requestFilePath, changeFolderRequestPath);
+
+      // Stage the change folder request.md
+      const gitAddChangeFolderResult = await this.spawnFn(
+        "git",
+        ["add", path.join(changeFolderPath(slug), "request.md")],
+        { cwd: this.cwd },
+      );
+      if (gitAddChangeFolderResult.exitCode !== 0) {
+        throw new Error(`Failed to stage change folder request.md: ${gitAddChangeFolderResult.stderr.trim()}`);
+      }
+
+      // Copy draft's usage.json (silent no-op if absent)
+      await copyDraftUsageToChangeFolder(opts.requestFilePath, this.cwd, slug, this.spawnFn);
+
+      // Copy rules.md into change folder
+      await copyRulesToChangeFolder(this.cwd, slug, this.spawnFn);
+
+      // Update state.request.path
+      await this.updateJobState(jobId, (s) => ({
+        ...s,
+        request: { ...s.request, path: changeFolderRequestPath },
+      }), slugOpts);
+
+      // Delete main worktree draft file (move semantics)
+      try {
+        if (opts.requestFilePath.endsWith("/request.md")) {
+          await fs.rm(path.dirname(opts.requestFilePath), { recursive: true, force: true });
+        } else {
+          await fs.rm(opts.requestFilePath);
+        }
+      } catch {
+        stderrWrite(
+          `Warning: failed to delete draft file ${opts.requestFilePath} from main worktree. Remove it manually.`,
+        );
+      }
+
+      // Commit change folder files as the first commit on the feature branch
+      const gitCommitResult = await this.spawnFn(
+        "git",
+        ["commit", "-m", `add request.md for ${slug}`],
+        { cwd: this.cwd },
+      );
+      if (gitCommitResult.exitCode !== 0) {
+        throw new Error(`Failed to commit request file: ${gitCommitResult.stderr.trim()}`);
+      }
+    }
+
+    // Record branchName in state
+    if (branchName) {
+      await this.updateJobState(jobId, (s) => ({ ...s, branch: branchName }), slugOpts);
+    }
+
+    return workspace;
+  }
+
   async setupWorkspace(
     slug: string,
     jobId: string,
     opts?: WorkspaceOptions,
   ): Promise<WorkspaceContext> {
     this.currentSlug = slug;
+
+    // No-worktree mode: bypass worktree creation and use cwd directly
+    if (opts?.noWorktree) {
+      return this.setupWorkspaceNoWorktree(slug, jobId, opts);
+    }
+
     const baseBranch = opts?.baseBranch ?? "main";
     const remoteBaseRef = `origin/${baseBranch}`;
     const existingWorktreePath = opts?.existingWorktreePath;
@@ -433,15 +551,8 @@ export class LocalRuntime implements RuntimeStrategy {
       runner: this.createAgentRunner(),
       spawn: spawnCommand,
       storeFactory: (id: string) => {
-        const wtp = workspace.worktreePath;
-        if (wtp) {
-          return new JobStateStore(id, this.cwd, { slug, stateRoot: wtp });
-        }
-        throw new SpecRunnerError(
-          ERROR_CODES.STEP_INPUT_MISSING,
-          "Internal invariant violation: buildDeps() called without worktreePath. setupWorkspace() must complete first.",
-          "storeFactory: workspace.worktreePath is not set",
-        );
+        const stateRoot = workspace.worktreePath ?? workspace.cwd;
+        return new JobStateStore(id, this.cwd, { slug, stateRoot });
       },
       repoRoot: this.cwd,
       runtimeStrategy: this,
@@ -532,9 +643,10 @@ export class LocalRuntime implements RuntimeStrategy {
   /**
    * Write the machine-local liveness sidecar to .specrunner/local/<slug>/liveness.json.
    * Contains: { pid, session: null, worktreePath, jobId }
+   * worktreePath may be null for no-worktree mode.
    * Best-effort: silently swallows errors to avoid blocking workspace setup.
    */
-  private async writeLivenessSidecar(slug: string, jobId: string, worktreePath: string): Promise<void> {
+  private async writeLivenessSidecar(slug: string, jobId: string, worktreePath: string | null): Promise<void> {
     try {
       const sidecarAbsPath = path.join(this.cwd, livenessJsonPath(slug));
       await fs.mkdir(path.dirname(sidecarAbsPath), { recursive: true });

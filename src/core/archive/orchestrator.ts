@@ -93,6 +93,7 @@ export async function runArchiveOrchestrator(
   let jobId: string;
   let worktreePath: string | null;
   let branch: string | null;
+  let noWorktree = false;
 
   try {
     const allStates = await JobStateStore.list(cwd);
@@ -109,6 +110,7 @@ export async function runArchiveOrchestrator(
     jobId = state.jobId;
     worktreePath = await resolveWorktreePathForArchive(state, cwd);
     branch = state.branch;
+    noWorktree = state.noWorktree === true;
 
     // Terminal status → no-op
     if (TERMINAL_STATUSES.has(state.status)) {
@@ -239,9 +241,9 @@ export async function runArchiveOrchestrator(
     // -------------------------------------------------------------------------
     // Phase 2: worktree teardown + feature branch delete (best-effort)
     // -------------------------------------------------------------------------
-    stdoutWrite("Phase 2: cleaning up worktree...");
+    stdoutWrite(noWorktree ? "Phase 2: cleaning up branches..." : "Phase 2: cleaning up worktree...");
 
-    if (worktreePath) {
+    if (worktreePath && !noWorktree) {
       const manager = worktreeManagerFn ? worktreeManagerFn() : createWorktreeManager();
       try {
         await manager.remove(worktreePath, cwd);

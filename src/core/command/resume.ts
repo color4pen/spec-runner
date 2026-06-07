@@ -33,6 +33,7 @@ export interface ResumeOptions {
   cwd?: string;
   prompt?: string;
   json?: boolean;
+  noWorktree?: boolean;
 }
 
 /**
@@ -119,8 +120,14 @@ export class ResumeCommand extends CommandRunner {
           reason: "Process not running",
           patch: { pid: null },
         });
-        const staleStore = await resolveStateStoreByJobId(cwd, state.jobId);
-        if (staleStore) await staleStore.persist(recovered);
+        if (this.options.noWorktree) {
+          const slug = getJobSlug(recovered) ?? this.slug;
+          const staleStore = new JobStateStore(recovered.jobId, cwd, { slug, stateRoot: cwd });
+          await staleStore.persist(recovered);
+        } else {
+          const staleStore = await resolveStateStoreByJobId(cwd, state.jobId);
+          if (staleStore) await staleStore.persist(recovered);
+        }
         state = recovered;
         stderrWrite(`Warning: Job '${this.slug}' was running but the process is no longer alive. Recovering.`);
       } else {
@@ -187,8 +194,15 @@ export class ResumeCommand extends CommandRunner {
         reason: `Resuming from step '${startStep}'`,
         patch: { error: null, resumePoint: null, pid: process.pid },
       });
-      const runStore = await resolveStateStoreByJobId(cwd, state.jobId);
-      if (runStore) await runStore.persist(transitioned);
+      if (this.options.noWorktree) {
+        // no-worktree mode: state.json lives in cwd (no worktree path to find)
+        const slug = getJobSlug(transitioned) ?? this.slug;
+        const runStore = new JobStateStore(transitioned.jobId, cwd, { slug, stateRoot: cwd });
+        await runStore.persist(transitioned);
+      } else {
+        const runStore = await resolveStateStoreByJobId(cwd, state.jobId);
+        if (runStore) await runStore.persist(transitioned);
+      }
       updatedState = transitioned;
     } catch (err) {
       logError(`Failed to update job state: ${(err as Error).message}`);
@@ -242,6 +256,7 @@ export class ResumeCommand extends CommandRunner {
         existingWorktreePath: resolvedWorktreePath,
         baseBranch: request.baseBranch,
         bootstrapState: updatedState,
+        noWorktree: this.options.noWorktree,
       },
       resumePrompt: this.options.prompt,
       json: this.options.json ?? false,

@@ -8,16 +8,21 @@ import { resolveStateStoreByJobId } from "../job-access/resolve-state-store.js";
  * Returns a handler that can be called multiple times but only executes once (fired guard).
  *
  * When jobId is provided (per-job mode, T-13):
- *   Scans .git/specrunner-worktrees/ for a dir ending with `-<jobId.slice(0,8)>`,
- *   derives the slug from that dir's changes/ subdirectory, and updates only that
- *   job's branch state (slug-based store).
+ *   - If opts.noWorktree && opts.slug: uses cwd-based state directly (no worktree scan).
+ *   - Otherwise: scans .git/specrunner-worktrees/ for a dir ending with `-<jobId.slice(0,8)>`,
+ *     derives the slug from that dir's changes/ subdirectory, and updates only that
+ *     job's branch state (slug-based store).
  *
  * When jobId is not provided (global scan mode):
  *   Scans all running jobs via JobStateStore.list() and transitions them.
  *
  * All I/O is best-effort — errors are swallowed to avoid masking original exit cause.
  */
-export function createExitGuardHandler(repoRoot: string, jobId?: string): () => void {
+export function createExitGuardHandler(
+  repoRoot: string,
+  jobId?: string,
+  opts?: { noWorktree?: boolean; slug?: string },
+): () => void {
   let fired = false;
   return () => {
     if (fired) return;
@@ -25,8 +30,13 @@ export function createExitGuardHandler(repoRoot: string, jobId?: string): () => 
     void (async () => {
       try {
         if (jobId) {
-          // Per-job mode: find slug-based store for this specific job
-          await handlePerJobExit(repoRoot, jobId);
+          if (opts?.noWorktree && opts.slug) {
+            // No-worktree mode: cwd is the repo root, state lives in specrunner/changes/<slug>/
+            await handleNoWorktreeExit(repoRoot, jobId, opts.slug);
+          } else {
+            // Per-job worktree mode: find slug-based store for this specific job
+            await handlePerJobExit(repoRoot, jobId);
+          }
         } else {
           // Global scan mode: transition all running jobs
           await handleGlobalExit(repoRoot);
@@ -36,6 +46,30 @@ export function createExitGuardHandler(repoRoot: string, jobId?: string): () => 
       }
     })();
   };
+}
+
+/**
+ * No-worktree exit guard: load state from cwd-based store and transition to awaiting-resume.
+ */
+async function handleNoWorktreeExit(repoRoot: string, jobId: string, slug: string): Promise<void> {
+  try {
+    stderrWrite(`[specrunner] warn: process exiting with running job ${jobId}, transitioning to awaiting-resume`);
+    const store = new JobStateStore(jobId, repoRoot, { slug, stateRoot: repoRoot });
+    const state = await store.load();
+    if (state.status !== "running") return;
+    await store.appendInterruption({
+      type: "interruption",
+      reason: "signal",
+      ts: new Date().toISOString(),
+    });
+    const { state: updated } = transitionJob(state, "awaiting-resume", {
+      trigger: "exit-guard",
+      reason: `process exiting with running job ${jobId}`,
+    });
+    await store.persist(updated);
+  } catch {
+    // best-effort — ignore errors
+  }
 }
 
 /**

@@ -77,6 +77,11 @@ export interface WorkspaceOptions {
    * If absent, seeding is skipped (managed runtime ignores this field).
    */
   bootstrapState?: JobState;
+  /**
+   * When true, skip worktree creation and use cwd as the workspace directory.
+   * Intended for CI environments where a feature branch is already checked out.
+   */
+  noWorktree?: boolean;
 }
 
 /**
@@ -91,6 +96,11 @@ export interface WorkspaceContext {
   worktreePath?: string;
   /** Branch name created during setupWorkspace (set when branchName was provided) */
   branch?: string;
+  /**
+   * When true, this workspace was resolved in no-worktree mode.
+   * The cwd is the repository root itself (no isolated worktree).
+   */
+  noWorktree?: boolean;
 }
 
 /**

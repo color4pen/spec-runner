@@ -33,6 +33,7 @@ export interface ResumeOptions {
   cwd?: string;
   prompt?: string;
   json?: boolean;
+  noWorktree?: boolean;
 }
 
 export async function runResumeCore(slug: string, options: ResumeOptions): Promise<number> {
@@ -63,7 +64,7 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
     heartbeatIntervalSec: resolveHeartbeatInterval(config),
   });
   try {
-    return await new ResumeCommand(runtime, events, slug, options).execute();
+    return await new ResumeCommand(runtime, events, slug, { ...options, noWorktree: options.noWorktree }).execute();
   } catch (err) {
     logError((err as Error).message);
     return 1;

@@ -18,6 +18,7 @@ export interface PipelineRunOptions {
   cwd?: string;
   logLevel?: LogLevel;
   json?: boolean;
+  noWorktree?: boolean;
 }
 
 // Canonical path pattern: specrunner/drafts/<slug>/request.md
@@ -74,6 +75,11 @@ export class PipelineRunCommand extends CommandRunner {
 
     logInfo(`Job ID: ${jobState.jobId}`);
 
+    // Set noWorktree flag on initial state (portable — written to state.json for archive to read)
+    if (this.options.noWorktree === true) {
+      jobState.noWorktree = true;
+    }
+
     // Compute branchName: CLI creates the branch before the agent runs
     const branchPrefix = getBranchPrefix(request.type);
     const branchName = `${branchPrefix}${slug}-${jobState.jobId.slice(0, 8)}`;
@@ -92,6 +98,7 @@ export class PipelineRunCommand extends CommandRunner {
         requestType: request.type,
         baseBranch: request.baseBranch,
         bootstrapState: jobState,
+        noWorktree: this.options.noWorktree,
       },
       json: this.options.json ?? false,
     };
