@@ -74,6 +74,15 @@ interface AgentDefinition { readonly name: string; readonly role: AgentStepName;
 - **協調**: LocalRuntime（comp-root）/ finish / cancel が注入で受ける（**port ではない domain seam**）。
 - → `src/core/worktree/manager.ts`（`WorktreeManager` / `createWorktreeManager` / `buildWorktreePath`）
 
+### JobAccess — jobId → slug → state の解決レイヤ
+- **責務**: sidecar index を経由し、jobId から slug を引き、適切な JobStateStore を構築して state を読み込む / 書き込み先を解決する。
+- **公開インターフェース**:
+  - `loadStateByJobId(repoRoot, jobId): NormalizedJobState` — read-only。sidecar → worktree slug dir → canonical → throw の順。
+  - `resolveStateStoreByJobId(repoRoot, jobId): JobStateStore | null` — writable store 解決。null は degraded skip。
+- **不変条件**: read-only（resolve 時に persist しない）。jobId が解決できなければ `JOB_NOT_FOUND` throw。
+- **協調**: JobStateStore / resolveCanonicalStateDir / local-job-index（`store/local-job-index.ts`、sidecar 走査）。
+- → `src/core/job-access/`
+
 ---
 
 ## ports（core/port — domain が要求する seam の interface）
@@ -115,9 +124,9 @@ interface FollowUpPolicy { maxAttempts; buildPrompt(input): string }  // DEFAULT
 > domain（filter）を組み上げ・runtime を選び・依存を注入する層。**adapters を new してよい唯一の層**（B-1）。生 SDK 型は持たない（B-2）。
 
 ### RuntimeStrategy — runtime 中立の実行基盤 seam
-- **責務**: agent 実行基盤を runtime 非依存に抽象。`query` / `createAgentRunner` / `setupWorkspace` / `buildDeps` / `registerCleanup` / `teardown` の6面を露出。
-- **実装**: `LocalRuntime`（worktree + ClaudeCodeRunner + signal cleanup）/ `ManagedRuntime`（SessionClient + ManagedAgentRunner + no-op workspace）。
-- → `src/core/runtime/strategy.ts`（`local.ts` / `managed.ts` が implements）
+- **責務**: agent 実行基盤を runtime 非依存に抽象。workspace 管理・agent 実行・state 永続・cleanup の面を露出。
+- **実装**: `LocalRuntime`（worktree or no-worktree + ClaudeCodeRunner + signal cleanup）/ `ManagedRuntime`（SessionClient + ManagedAgentRunner + no-op workspace）。
+- → `src/core/port/runtime-strategy.ts`（`local.ts` / `managed.ts` が implements）
 
 ### createRuntime — runtime factory（分岐集約点）
 - **責務**: `config.runtime`（local / managed）の分岐を**ここ1箇所に閉じて** RuntimeStrategy を組む（B-8）。

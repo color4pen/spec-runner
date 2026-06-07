@@ -17,8 +17,8 @@ CLI-first の dual runtime アーキテクチャ。
 
 - **Local runtime**: Claude Agent SDK 経由でローカルに agent セッションを実行
 - **Managed runtime**: Anthropic Managed Agents API 経由でクラウド上の agent を実行
-- **Pipeline**: 10 ステップの state-machine で request.md → PR を自動生成
-  1. propose — ブランチ作成・仕様生成
+- **Pipeline**: 12 ステップの state-machine で request.md → PR を自動生成
+  1. design — ブランチ作成・仕様生成
   2. spec-review — 仕様レビュー
   3. spec-fixer — 仕様修正（spec-review が needs-fix の場合）
   4. test-case-gen — テストケース生成
@@ -27,7 +27,9 @@ CLI-first の dual runtime アーキテクチャ。
   7. build-fixer — ビルド修正（verification 失敗時）
   8. code-review — コードレビュー
   9. code-fixer — コード修正（code-review が needs-fix の場合）
-  10. pr-create — GitHub PR 作成
+  10. conformance — アーキテクチャ適合性検証
+  11. adr-gen — ADR 生成（request.adr === true の場合）
+  12. pr-create — GitHub PR 作成
 
 ### 設計パターン
 
@@ -38,8 +40,9 @@ CLI-first の dual runtime アーキテクチャ。
 
 ### 状態管理
 
-- ジョブ状態: `.specrunner/jobs/` に JSON で永続化
-- ジョブ隔離: git worktree でジョブごとに独立した作業ディレクトリを確保
+- ジョブ状態: `specrunner/changes/<slug>/`（branch-borne、event journal + projection）に永続化
+- 機械ローカルメタデータ: `.specrunner/local/<slug>/`（liveness / managed marker）に sidecar で記録
+- ジョブ隔離: git worktree でジョブごとに独立した作業ディレクトリを確保（`--no-worktree` で worktree なし実行も可）
 
 ### Lifecycle binding
 
@@ -62,7 +65,7 @@ exit 時 invariant として `process.on('beforeExit')` が running 状態の jo
 
 #### Project local config の team 共有設計
 
-`.specrunner/config.json` のみ git commit して team で共有できる設計になっている。`.gitignore` は `specrunner init` が自動的に `.specrunner/*`（全要素 ignore）+ `!.specrunner/config.json`（例外）の 2 行構成で設定する。これにより `jobs/`・`logs/` 等の machine-generated state は ignore を維持しながら、verify pipeline や step model の設定だけを commit できる。旧形式（`.specrunner/` 単体）が存在する `.gitignore` も次回 `specrunner init` 実行時に自動 migrate される。
+`.specrunner/config.json` のみ git commit して team で共有できる設計になっている。`.gitignore` は `specrunner init` が自動的に `.specrunner/*`（全要素 ignore）+ `!.specrunner/config.json`（例外）の 2 行構成で設定する。これにより `local/`・`logs/` 等の machine-generated state は ignore を維持しながら、verify pipeline や step model の設定だけを commit できる。旧形式（`.specrunner/` 単体）が存在する `.gitignore` も次回 `specrunner init` 実行時に自動 migrate される。
 
 #### Step-config resolution chain（6 レベル）
 
@@ -169,6 +172,7 @@ src/
 │   ├── verification/   # ビルド検証
 │   ├── finish/         # PR ファイナライズ
 │   ├── pr-create/      # PR テンプレート
+│   ├── job-access/      # jobId → slug → state 解決
 │   ├── resume/         # 中断再開
 │   ├── tools/          # カスタムツール定義
 │   ├── doctor/         # 環境診断
@@ -182,8 +186,10 @@ src/
 ├── prompts/          # ステップ別システムプロンプト
 └── util/             # Atomic write, XDG パス
 specrunner/
-├── changes/          # Change proposals
-└── specs/            # Specifications
-docs/
-└── adr/              # Architecture Decision Records
+├── changes/          # Active change folders（slug 単位、branch-borne state 含む）
+│   └── archive/      # Archived change folders
+├── drafts/           # Request drafts
+├── adr/              # Pipeline behavior ADRs（in-loop）
+└── project.md        # プロジェクト概要
+architecture/         # 構造定義（out-of-loop、CODEOWNERS）
 ```
