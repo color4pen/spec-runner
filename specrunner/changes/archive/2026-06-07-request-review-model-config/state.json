@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "b3d127f7-cf61-4532-b1fb-e795e7c81dce",
   "createdAt": "2026-06-07T05:16:55.697Z",
-  "updatedAt": "2026-06-07T06:32:13.354Z",
+  "updatedAt": "2026-06-07T06:50:11.612Z",
   "request": {
     "title": "`specrunner request review` に `--model` フラグを追加する",
     "type": "new-feature"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "feat/request-review-model-config-b3d127f7",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-07T06:32:13.343Z"
   },
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 37,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
