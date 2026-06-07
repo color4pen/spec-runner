@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "50659b7b-2a1a-4325-bf3b-59a0e9d63466",
   "createdAt": "2026-06-07T04:37:33.802Z",
-  "updatedAt": "2026-06-07T05:25:50.687Z",
+  "updatedAt": "2026-06-07T05:53:29.545Z",
   "request": {
     "title": "resume の再開位置解決を resumePoint の記録から素直に決定する",
     "type": "spec-change"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/resume-simplify-50659b7b",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-07T05:25:50.669Z"
   },
   "_journal": {
-    "historyCount": 44,
+    "historyCount": 45,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
