@@ -329,57 +329,34 @@ export class Pipeline {
       if (isAnyLoopStep && nextStep !== "end" && nextStep !== "escalate" && outcome !== "approved" && outcome !== "passed") {
         const pairedFixer = this.loopFixerPairs[currentStep];
         if (pairedFixer === undefined) {
-          const currentLoopIter = loopIters.get(currentStep) ?? 0;
-          if (currentLoopIter >= this.maxIterations) {
-            logPipelineDiag("pipeline:loop:exhausted", `step=${currentStep}, iter=${currentLoopIter}, max=${this.maxIterations}`);
-            this.events.emit("pipeline:iteration:exhausted", { step: currentStep, iteration: currentLoopIter, maxIterations: this.maxIterations });
-            state = await this.handleExhausted(state, deps, currentStep, "review-exhausted");
-            this.printPipelineFinished(state);
-            break;
-          }
+          const r = await this.tryExhaust(state, deps, { iteration: loopIters.get(currentStep) ?? 0, stepName: currentStep, phase: "review-exhausted" });
+          if (r.exhausted) { state = r.state; break; }
         }
       }
 
       // --- Check loop exhaustion before entering next loop iteration ---
+      // Check bypass: fixer has reached its max iterations → allow one more review.
+      // Condition is based on fixer iteration count, not the immediately preceding step,
+      // so the bypass survives intermediate deterministic steps that the transition table
+      // inserts between the fixer and the review (e.g. spec-fixer → spec-review).
+      // Per loop, the review is only re-entered through its paired fixer,
+      // so this counter-based check is correct for any path that reaches the review.
       if (this.loopNames.includes(nextStep as string)) {
-        const nextLoopIter = loopIters.get(nextStep as string) ?? 0;
-        if (nextLoopIter >= this.maxIterations) {
-          // Check bypass: fixer has reached its max iterations → allow one more review.
-          // Condition is based on fixer iteration count, not the immediately preceding step,
-          // so the bypass survives intermediate deterministic steps that the transition table
-          // inserts between the fixer and the review (e.g. spec-fixer → spec-review).
-          // Per loop, the review is only re-entered through its paired fixer,
-          // so this counter-based check is correct for any path that reaches the review.
-          const pairedFixer = this.loopFixerPairs[nextStep as string];
-          const fixerAtMax = pairedFixer !== undefined && (fixerIters.get(pairedFixer) ?? 0) >= this.maxIterations;
-
-          if (!fixerAtMax) {
-            // Conventional exhaustion (no fixer bypass)
-            logPipelineDiag("pipeline:loop:exhausted", `step=${nextStep}, iter=${nextLoopIter}, max=${this.maxIterations}`);
-            this.events.emit("pipeline:iteration:exhausted", { step: nextStep as string, iteration: nextLoopIter, maxIterations: this.maxIterations });
-            state = await this.handleExhausted(state, deps, nextStep as string, "review-exhausted");
-            this.printPipelineFinished(state);
-            break;
-          }
-          // else: bypass — allow the +1 review iteration (fixer final iter review)
-        }
+        const pairedFixer = this.loopFixerPairs[nextStep as string];
+        const r = await this.tryExhaust(state, deps, { iteration: loopIters.get(nextStep as string) ?? 0, stepName: nextStep as string, phase: "review-exhausted", bypassIteration: pairedFixer !== undefined ? (fixerIters.get(pairedFixer) ?? 0) : undefined });
+        if (r.exhausted) { state = r.state; break; }
       }
 
       // --- Check fixer exhaustion before entering fixer step ---
+      // Fixer exhausted: the review that triggered this needs-fix has already used the bypass.
+      // Find the paired review for this fixer to escalate properly.
       const fixerNames = new Set(Object.values(this.loopFixerPairs));
       if (fixerNames.has(nextStep as string)) {
-        const nextFixerIter = fixerIters.get(nextStep as string) ?? 0;
-        if (nextFixerIter >= this.maxIterations) {
-          // Fixer exhausted: the review that triggered this needs-fix has already used the bypass
-          // Find the paired review for this fixer to escalate properly
-          const pairedReview = Object.entries(this.loopFixerPairs)
-            .find(([_, fixer]) => fixer === nextStep)?.[0];
-          const exhaustedLoopName = pairedReview ?? (nextStep as string);
-          this.events.emit("pipeline:iteration:exhausted", { step: exhaustedLoopName, iteration: this.maxIterations, maxIterations: this.maxIterations });
-          state = await this.handleExhausted(state, deps, exhaustedLoopName, "review-after-final-fix");
-          this.printPipelineFinished(state);
-          break;
-        }
+        const pairedReview = Object.entries(this.loopFixerPairs)
+          .find(([_, fixer]) => fixer === nextStep)?.[0];
+        const exhaustedLoopName = pairedReview ?? (nextStep as string);
+        const r = await this.tryExhaust(state, deps, { iteration: fixerIters.get(nextStep as string) ?? 0, stepName: exhaustedLoopName, phase: "review-after-final-fix", reportIteration: this.maxIterations });
+        if (r.exhausted) { state = r.state; break; }
       }
 
       // Print needs-fix transition message for loop steps
@@ -404,6 +381,44 @@ export class Pipeline {
     }
 
     return state;
+  }
+
+  /**
+   * Check iteration counter against maxIterations and handle exhaustion if reached.
+   *
+   * Returns `{ exhausted: false, state }` in two cases:
+   *   (a) iteration has not yet reached maxIterations
+   *   (b) bypassIteration is provided and has reached maxIterations (fixer-final-review bypass)
+   *
+   * Returns `{ exhausted: true, state }` (with the post-handleExhausted state) when the
+   * loop has genuinely exhausted its budget.
+   */
+  private async tryExhaust(
+    state: JobState,
+    deps: PipelineDeps,
+    opts: {
+      iteration: number;
+      stepName: string;
+      phase: "review-exhausted" | "review-after-final-fix";
+      reportIteration?: number;
+      bypassIteration?: number;
+    },
+  ): Promise<{ exhausted: boolean; state: JobState }> {
+    // Not yet exhausted
+    if (opts.iteration < this.maxIterations) {
+      return { exhausted: false, state };
+    }
+    // Bypass: paired fixer has also reached max → allow one extra review
+    if (opts.bypassIteration !== undefined && opts.bypassIteration >= this.maxIterations) {
+      return { exhausted: false, state };
+    }
+    // Exhausted
+    const reportedIteration = opts.reportIteration ?? opts.iteration;
+    logPipelineDiag("pipeline:loop:exhausted", `step=${opts.stepName}, iter=${reportedIteration}, max=${this.maxIterations}`);
+    this.events.emit("pipeline:iteration:exhausted", { step: opts.stepName, iteration: reportedIteration, maxIterations: this.maxIterations });
+    const next = await this.handleExhausted(state, deps, opts.stepName, opts.phase);
+    this.printPipelineFinished(next);
+    return { exhausted: true, state: next };
   }
 
   /** Emit the "pipeline:summary" event if summaryStep is configured and present in the pipeline. */
