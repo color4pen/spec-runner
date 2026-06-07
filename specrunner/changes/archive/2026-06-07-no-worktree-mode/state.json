@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "bec325b2-207f-407d-97c8-796d2508129d",
   "createdAt": "2026-06-07T06:27:58.263Z",
-  "updatedAt": "2026-06-07T07:32:23.471Z",
+  "updatedAt": "2026-06-07T07:46:34.570Z",
   "request": {
     "title": "`--no-worktree` モードで worktree を作らずに run / resume を実行する",
     "type": "spec-change"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/no-worktree-mode-bec325b2",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-07T07:32:23.462Z"
   },
   "_journal": {
-    "historyCount": 52,
+    "historyCount": 53,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
