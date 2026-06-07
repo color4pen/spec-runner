@@ -256,16 +256,16 @@ describe("TC-RESUME-005: no resumePoint and no --from", () => {
   });
 });
 
-// TC-RESUME-006: no resumePoint + --from → uses fallback step for phase
-describe("TC-RESUME-006: fallback step via --from", () => {
-  it("resolves step using state.step as phase fallback when resumePoint is null and --from is provided", async () => {
+// TC-RESUME-006: no resumePoint + --from <step-name> → uses specified step directly
+describe("TC-RESUME-006: --from step-name when resumePoint is null", () => {
+  it("resolves to given step name when resumePoint is null and --from is a valid step", async () => {
     await makeAwaitingResumeJob("fallback-slug", {
       step: "spec-review",
       resumePoint: null,
     });
 
     const { runResumeCore } = await import("../../../src/cli/resume.js");
-    const exitCode = await runResumeCore("fallback-slug", { from: "fixer", cwd: tempDir });
+    const exitCode = await runResumeCore("fallback-slug", { from: "spec-fixer", cwd: tempDir });
     expect(exitCode).toBe(0);
   });
 });
@@ -340,15 +340,12 @@ describe("TC-RESUME-010: slug not found", () => {
   });
 });
 
-// TC-RESUME-013: exact #236 reproduction — fixer-empty mismatch through ResumeCommand.prepare()
-// Verifies that the fixer-empty detection in resolveResumeStep works end-to-end at the command layer
-// where state.steps is sourced from the loaded job state.
-describe("TC-RESUME-013: exact #236 — fixer-empty mismatch detected at command layer", () => {
-  it("resumePoint=code-fixer + steps[code-fixer] absent + steps[code-review] needs-fix → pipeline starts at code-review", async () => {
-    // Construct the exact #236 job state:
-    //   - resumePoint.step = "code-fixer" (pipeline.ts:100 recorded the transition)
-    //   - state.steps["code-fixer"] is absent (fixer never executed — kill happened after transition)
-    //   - state.steps["code-review"][-1].outcome.verdict = "needs-fix"
+// TC-RESUME-013: resumePoint.step = "code-fixer" → pipeline starts at code-fixer
+// The old fixer-empty detection redirected to code-review. Now resumePoint.step is returned verbatim.
+// handleExhausted now records the fixer step directly, so the scenario where kill happened after
+// transition to fixer resumes from code-fixer (the recorded step), not code-review.
+describe("TC-RESUME-013: resumePoint.step verbatim — fixer-empty no longer redirects", () => {
+  it("resumePoint=code-fixer + steps[code-fixer] absent → pipeline starts at code-fixer (verbatim)", async () => {
     await makeAwaitingResumeJob("bug-236-slug", {
       step: "code-fixer",
       resumePoint: {
@@ -366,7 +363,7 @@ describe("TC-RESUME-013: exact #236 — fixer-empty mismatch detected at command
             endedAt: "2026-01-01T00:00:00.000Z",
           } satisfies StepRun,
         ],
-        // "code-fixer" intentionally absent — fixer never ran (the #236 scenario)
+        // "code-fixer" intentionally absent — fixer never ran
       },
     });
 
@@ -374,11 +371,10 @@ describe("TC-RESUME-013: exact #236 — fixer-empty mismatch detected at command
     const exitCode = await runResumeCore("bug-236-slug", { cwd: tempDir });
     expect(exitCode).toBe(0);
 
-    // Verify the pipeline was invoked with startStep = "code-review", not "code-fixer"
+    // Verify the pipeline was invoked with startStep = "code-fixer" (verbatim from resumePoint.step)
     const { buildPipelineForJob } = await import("../../../src/core/pipeline/index.js");
     const pipelineMock = vi.mocked(buildPipelineForJob);
-    // pipeline.run(startStep, jobState, deps) — first arg is startStep
     const runFn = pipelineMock.mock.results[0]?.value.run as ReturnType<typeof vi.fn>;
-    expect(runFn.mock.calls[0]?.[0]).toBe("code-review");
+    expect(runFn.mock.calls[0]?.[0]).toBe("code-fixer");
   });
 });

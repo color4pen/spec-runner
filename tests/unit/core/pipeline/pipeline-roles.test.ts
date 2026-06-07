@@ -223,50 +223,48 @@ describe("TC-007: resolve-step source contains no standard-specific imports or l
 });
 
 // ---------------------------------------------------------------------------
-// TC-008: impl-phase fixer resolves to code-fixer (not build-fixer)
+// TC-008: --from code-fixer returns code-fixer (step-name direct, not alias)
 // ---------------------------------------------------------------------------
 
-describe("TC-008: impl phase fixer resolves to code-fixer (via loopFixerPairs[reviewer])", () => {
-  it("--from fixer with impl-phase step resolves to code-fixer, not build-fixer", () => {
-    // build-fixer also has role=fixer/impl — but the correct impl fixer is code-fixer
-    // because it is the fixer paired with the impl reviewer (code-review)
-    const result = resolveResumeStep(STANDARD_DESCRIPTOR, "fixer", { step: "code-review", reason: "test", iterationsExhausted: 0 });
+describe("TC-008: --from code-fixer returns code-fixer (step-name direct)", () => {
+  it("--from code-fixer resolves to code-fixer, not build-fixer", () => {
+    const result = resolveResumeStep("code-fixer", { step: "code-review", reason: "test", iterationsExhausted: 0 });
     expect(result).toBe("code-fixer");
     expect(result).not.toBe("build-fixer");
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-009: design-only crash resume → design
+// TC-009: crash resume → resumePoint.step verbatim (design)
 // ---------------------------------------------------------------------------
 
-describe("TC-009: design-only crash resume resolves to design", () => {
+describe("TC-009: crash resume returns resumePoint.step verbatim", () => {
   it("crash with resumePoint=design → design", () => {
-    const result = resolveResumeStep(DESIGN_ONLY_DESCRIPTOR, undefined, { step: "design", reason: "crash", iterationsExhausted: 0 });
+    const result = resolveResumeStep(undefined, { step: "design", reason: "crash", iterationsExhausted: 0 });
     expect(result).toBe("design");
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-010: design-only --from creator → design
+// TC-010: --from design → design (step-name direct)
 // ---------------------------------------------------------------------------
 
-describe("TC-010: design-only --from creator resolves to design", () => {
-  it("--from creator with spec-phase resumePoint → design", () => {
-    const result = resolveResumeStep(DESIGN_ONLY_DESCRIPTOR, "creator", { step: "design", reason: "test", iterationsExhausted: 0 });
+describe("TC-010: --from design resolves to design", () => {
+  it("--from design with resumePoint → design", () => {
+    const result = resolveResumeStep("design", { step: "design", reason: "test", iterationsExhausted: 0 });
     expect(result).toBe("design");
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-011: design-only --from critic → error (no reviewer in design-only)
+// TC-011: --from critic (legacy alias) → throws with invalid value error
 // ---------------------------------------------------------------------------
 
-describe("TC-011: design-only --from critic throws because no reviewer exists", () => {
-  it("throws an error mentioning reviewer is absent", () => {
+describe("TC-011: --from critic (legacy alias) throws invalid value error", () => {
+  it("throws an error mentioning invalid value", () => {
     expect(() =>
-      resolveResumeStep(DESIGN_ONLY_DESCRIPTOR, "critic", { step: "design", reason: "test", iterationsExhausted: 0 })
-    ).toThrow(/reviewer/i);
+      resolveResumeStep("critic", { step: "design", reason: "test", iterationsExhausted: 0 })
+    ).toThrow(/Invalid --from value/i);
   });
 });
 
@@ -495,29 +493,35 @@ describe("TC-022: pipelineId-absent state resolves as STANDARD_DESCRIPTOR", () =
     const descriptor = getPipelineDescriptor(pipelineId);
     expect(descriptor.id).toBe("standard");
 
-    // Resume routing should resolve correctly (same as before the change)
-    const result = resolveResumeStep(descriptor, undefined, { step: "spec-review", reason: "exhausted", iterationsExhausted: 3 });
-    expect(result).toBe("spec-fixer");
+    // New behavior: resumePoint.step is returned verbatim.
+    // handleExhausted now records fixer step; legacy states recording reviewer resume from reviewer.
+    const result = resolveResumeStep(undefined, { step: "spec-review", reason: "exhausted", iterationsExhausted: 3 });
+    expect(result).toBe("spec-review");
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-023: in-flight state with no pipelineId resumes to same step as before
+// TC-023: in-flight state resumes from recorded resumePoint.step verbatim
 // ---------------------------------------------------------------------------
 
-describe("TC-023: in-flight awaiting-resume state resumes correctly without pipelineId", () => {
-  it("code-review exhaustion state resolves to code-fixer (same as pre-change)", () => {
-    // Simulate legacy awaiting-resume state: no pipelineId, resumePoint present
-    const descriptor = getPipelineDescriptor(getPipelineId({ pipelineId: undefined }));
+describe("TC-023: in-flight awaiting-resume state resumes from resumePoint.step verbatim", () => {
+  it("code-review in resumePoint → returns code-review (verbatim; legacy state)", () => {
+    // Legacy state with resumePoint.step = reviewer; new system returns verbatim
     const resumePoint = { step: "code-review" as const, reason: "exhausted", iterationsExhausted: 3 };
-    const result = resolveResumeStep(descriptor, undefined, resumePoint, undefined, {});
+    const result = resolveResumeStep(undefined, resumePoint);
+    expect(result).toBe("code-review");
+  });
+
+  it("code-fixer in resumePoint (new exhaustion recording) → returns code-fixer", () => {
+    // New state: handleExhausted records fixer step; resolveResumeStep returns verbatim
+    const resumePoint = { step: "code-fixer" as const, reason: "exhausted", iterationsExhausted: 3 };
+    const result = resolveResumeStep(undefined, resumePoint);
     expect(result).toBe("code-fixer");
   });
 
-  it("design crash state resolves to design (same as pre-change)", () => {
-    const descriptor = getPipelineDescriptor(getPipelineId({ pipelineId: undefined }));
+  it("design crash state resolves to design", () => {
     const resumePoint = { step: "design" as const, reason: "crash", iterationsExhausted: 0 };
-    const result = resolveResumeStep(descriptor, undefined, resumePoint, undefined, {});
+    const result = resolveResumeStep(undefined, resumePoint);
     expect(result).toBe("design");
   });
 });

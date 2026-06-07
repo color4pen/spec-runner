@@ -3,9 +3,9 @@
  *
  * TC-DISPATCH-001: job resume with valid slug → calls runResume with slug
  * TC-DISPATCH-002: job resume without slug → exit 2
- * TC-DISPATCH-003: job resume with --from=critic → passes from: "critic"
- * TC-DISPATCH-004: job resume with --from=fixer → passes from: "fixer"
- * TC-DISPATCH-005: job resume with --from=creator → passes from: "creator"
+ * TC-DISPATCH-003: job resume with --from=critic (legacy alias) → exit 2 (invalid value)
+ * TC-DISPATCH-004: job resume with --from=fixer (legacy alias) → exit 2 (invalid value)
+ * TC-DISPATCH-005: job resume with --from=creator (legacy alias) → exit 2 (invalid value)
  * TC-DISPATCH-006: job resume with invalid --from value → exit 2
  * TC-DISPATCH-007: job resume with --force → passes force: true
  * TC-DISPATCH-008: job resume with unknown flag → exit 2
@@ -90,44 +90,43 @@ describe("TC-DISPATCH-002: job resume without slug", () => {
   });
 });
 
-// TC-DISPATCH-003: job resume with --from=critic
-describe("TC-DISPATCH-003: --from=critic", () => {
-  it("passes from: 'critic' to runResume", async () => {
-    const { runResume } = await import("../../../src/cli/resume.js");
-
-    await runMain(["job", "resume", "my-slug", "--from=critic"]);
-
-    expect(runResume).toHaveBeenCalledWith(
-      "my-slug",
-      expect.objectContaining({ from: "critic" }),
-    );
+// TC-DISPATCH-003: job resume with --from=critic (legacy alias, now invalid)
+describe("TC-DISPATCH-003: --from=critic (legacy alias rejected)", () => {
+  it("exits with code 2 for legacy alias 'critic'", async () => {
+    const error = await runMain(["job", "resume", "my-slug", "--from=critic"]);
+    expect(error).toBe("process.exit(2)");
+    expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid --from value"));
   });
 });
 
-// TC-DISPATCH-004: job resume with --from=fixer
-describe("TC-DISPATCH-004: --from=fixer", () => {
-  it("passes from: 'fixer' to runResume", async () => {
-    const { runResume } = await import("../../../src/cli/resume.js");
-
-    await runMain(["job", "resume", "my-slug", "--from=fixer"]);
-
-    expect(runResume).toHaveBeenCalledWith(
-      "my-slug",
-      expect.objectContaining({ from: "fixer" }),
-    );
+// TC-DISPATCH-004: job resume with --from=fixer (legacy alias, now invalid)
+describe("TC-DISPATCH-004: --from=fixer (legacy alias rejected)", () => {
+  it("exits with code 2 for legacy alias 'fixer'", async () => {
+    const error = await runMain(["job", "resume", "my-slug", "--from=fixer"]);
+    expect(error).toBe("process.exit(2)");
+    expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid --from value"));
   });
 });
 
-// TC-DISPATCH-005: job resume with --from=creator
-describe("TC-DISPATCH-005: --from=creator", () => {
-  it("passes from: 'creator' to runResume", async () => {
+// TC-DISPATCH-005: job resume with --from=creator (legacy alias, now invalid)
+describe("TC-DISPATCH-005: --from=creator (legacy alias rejected)", () => {
+  it("exits with code 2 for legacy alias 'creator'", async () => {
+    const error = await runMain(["job", "resume", "my-slug", "--from=creator"]);
+    expect(error).toBe("process.exit(2)");
+    expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid --from value"));
+  });
+});
+
+// TC-DISPATCH-005b: job resume with --from=code-fixer (valid step name)
+describe("TC-DISPATCH-005b: --from=code-fixer (valid step name accepted)", () => {
+  it("passes from: 'code-fixer' to runResume", async () => {
     const { runResume } = await import("../../../src/cli/resume.js");
 
-    await runMain(["job", "resume", "my-slug", "--from=creator"]);
+    await runMain(["job", "resume", "my-slug", "--from=code-fixer"]);
 
     expect(runResume).toHaveBeenCalledWith(
       "my-slug",
-      expect.objectContaining({ from: "creator" }),
+      expect.objectContaining({ from: "code-fixer" }),
     );
   });
 });

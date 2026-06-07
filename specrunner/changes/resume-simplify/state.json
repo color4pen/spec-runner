@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "jobId": "50659b7b-2a1a-4325-bf3b-59a0e9d63466",
+  "createdAt": "2026-06-07T04:37:33.802Z",
+  "updatedAt": "2026-06-07T05:25:50.687Z",
+  "request": {
+    "title": "resume の再開位置解決を resumePoint の記録から素直に決定する",
+    "type": "spec-change"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/resume-simplify-50659b7b",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/545",
+    "number": 545,
+    "createdAt": "2026-06-07T05:25:50.669Z"
+  },
+  "_journal": {
+    "historyCount": 44,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 2,
+      "code-fixer": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

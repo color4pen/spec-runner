@@ -1,298 +1,137 @@
 /**
  * Tests for resolveResumeStep()
  *
- * Design D2 mapping table (standard descriptor):
- * | role    | spec phase       | impl phase   |
- * |---------|------------------|--------------|
- * | critic  | spec-review      | code-review  |
- * | fixer   | spec-fixer       | code-fixer   |
- * | creator | design           | implementer  |
- *
- * Spec phase steps: design, spec-review, spec-fixer
- * Impl phase steps: test-case-gen, implementer, verification, build-fixer, code-review, code-fixer, conformance, adr-gen, pr-create
+ * New behavior:
+ * 1. `--from <step-name>` (registered step) → returns the step name directly.
+ * 2. `--from <unknown>` → throws with available step names (no aliases listed).
+ * 3. `--from` undefined + resumePoint present → returns `resumePoint.step` verbatim.
+ * 4. `--from` undefined + resumePoint null → throws (defensive invariant).
  */
 import { describe, it, expect } from "vitest";
 import { resolveResumeStep } from "../../../../src/core/resume/resolve-step.js";
-import { STANDARD_DESCRIPTOR } from "../../../../src/core/pipeline/registry.js";
-import type { ResumePoint, StepRun, Verdict } from "../../../../src/state/schema.js";
+import type { ResumePoint } from "../../../../src/state/schema.js";
 
-/**
- * Create a minimal StepRun for use in fixer-empty detection tests.
- * Only `outcome.verdict` is exercised by the logic under test.
- */
-function makeVerdictRun(verdict: Verdict | null): StepRun {
-  return {
-    attempt: 1,
-    sessionId: null,
-    outcome: { verdict, findingsPath: null, error: null },
-    startedAt: "2026-01-01T00:00:00.000Z",
-    endedAt: "2026-01-01T00:00:00.000Z",
-  };
+function makeResumePoint(step: ResumePoint["step"], iterationsExhausted = 0): ResumePoint {
+  return { step, reason: "test", iterationsExhausted };
 }
 
-function makeResumePoint(step: ResumePoint["step"]): ResumePoint {
-  return { step, reason: "test", iterationsExhausted: 0 };
-}
+// ============================================================
+// resumePoint present → verbatim return
+// ============================================================
 
-describe("resolveResumeStep - spec phase", () => {
-  it("spec phase + critic → spec-review", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "critic", makeResumePoint("spec-review"))).toBe("spec-review");
+describe("resolveResumeStep - resumePoint.step returned verbatim", () => {
+  it("crash at implementer → implementer", () => {
+    expect(resolveResumeStep(undefined, makeResumePoint("implementer"))).toBe("implementer");
   });
 
-  it("spec phase + fixer → spec-fixer", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "fixer", makeResumePoint("spec-review"))).toBe("spec-fixer");
+  it("crash at design → design", () => {
+    expect(resolveResumeStep(undefined, makeResumePoint("design"))).toBe("design");
   });
 
-  it("spec phase + creator → design", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "creator", makeResumePoint("spec-review"))).toBe("design");
+  it("crash at verification → verification", () => {
+    expect(resolveResumeStep(undefined, makeResumePoint("verification"))).toBe("verification");
   });
 
-  it("spec phase (design step) + critic → spec-review", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "critic", makeResumePoint("design"))).toBe("spec-review");
+  it("crash at spec-review → spec-review (no re-inference)", () => {
+    expect(resolveResumeStep(undefined, makeResumePoint("spec-review"))).toBe("spec-review");
   });
 
-  it("spec phase (spec-fixer step) + fixer → spec-fixer", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "fixer", makeResumePoint("spec-fixer"))).toBe("spec-fixer");
-  });
-});
-
-describe("resolveResumeStep - code phase", () => {
-  it("code phase + critic → code-review", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "critic", makeResumePoint("code-review"))).toBe("code-review");
+  it("crash at code-review → code-review (no re-inference)", () => {
+    expect(resolveResumeStep(undefined, makeResumePoint("code-review"))).toBe("code-review");
   });
 
-  it("code phase + fixer → code-fixer", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "fixer", makeResumePoint("implementer"))).toBe("code-fixer");
+  it("exhausted spec-fixer recorded → spec-fixer", () => {
+    // handleExhausted now records fixer; resolveResumeStep returns it verbatim
+    expect(resolveResumeStep(undefined, makeResumePoint("spec-fixer", 3))).toBe("spec-fixer");
   });
 
-  it("code phase + creator → implementer", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "creator", makeResumePoint("implementer"))).toBe("implementer");
+  it("exhausted code-fixer recorded → code-fixer", () => {
+    expect(resolveResumeStep(undefined, makeResumePoint("code-fixer", 3))).toBe("code-fixer");
   });
 
-  it("code phase (verification step) + critic → code-review", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "critic", makeResumePoint("verification"))).toBe("code-review");
-  });
-
-  it("code phase (build-fixer step) + fixer → code-fixer", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "fixer", makeResumePoint("build-fixer"))).toBe("code-fixer");
-  });
-
-  it("code phase (pr-create step) + creator → implementer", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "creator", makeResumePoint("pr-create"))).toBe("implementer");
-  });
-});
-
-describe("resolveResumeStep - default (from=undefined)", () => {
-  it("from undefined defaults to critic → spec phase → spec-review", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, makeResumePoint("spec-review"))).toBe("spec-review");
-  });
-
-  it("from undefined defaults to critic → code phase → code-review", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, makeResumePoint("code-review"))).toBe("code-review");
-  });
-});
-
-describe("resolveResumeStep - null resumePoint with fallbackStep", () => {
-  it("resumePoint null + fallbackStep spec-review + critic → spec-review", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "critic", null, "spec-review")).toBe("spec-review");
-  });
-
-  it("resumePoint null + fallbackStep implementer + critic → code-review", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "critic", null, "implementer")).toBe("code-review");
-  });
-
-  it("resumePoint null + fallbackStep undefined → code phase default + critic → code-review", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "critic", null, undefined)).toBe("code-review");
-  });
-
-  it("resumePoint null + unknown fallbackStep → code phase default + critic → code-review", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "critic", null, "unknown-step")).toBe("code-review");
-  });
-});
-
-// T4.1: crash (iterationsExhausted=0) → resumePoint.step から再開 (要件 9)
-describe("T4.1: resolveResumeStep - crash (iterationsExhausted=0) → restart from resumePoint.step", () => {
-  it("implementer crash (iterationsExhausted=0) → implementer", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, { step: "implementer", reason: "crash", iterationsExhausted: 0 })).toBe("implementer");
-  });
-
-  it("design crash (iterationsExhausted=0) → design", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, { step: "design", reason: "crash", iterationsExhausted: 0 })).toBe("design");
-  });
-
-  it("verification crash (iterationsExhausted=0) → verification", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, { step: "verification", reason: "crash", iterationsExhausted: 0 })).toBe("verification");
-  });
-
-  it("spec-review crash (iterationsExhausted=0) → spec-review (crash, not exhaustion)", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, { step: "spec-review", reason: "crash", iterationsExhausted: 0 })).toBe("spec-review");
-  });
-
-  it("code-review crash (iterationsExhausted=0) → code-review (crash, not exhaustion)", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, { step: "code-review", reason: "crash", iterationsExhausted: 0 })).toBe("code-review");
-  });
-});
-
-// T4.2: review exhaustion (iterationsExhausted>0, reviewer step) → fixer (要件 10)
-describe("T4.2: resolveResumeStep - review exhaustion (iterationsExhausted>0, reviewer) → fixer", () => {
-  it("spec-review exhausted (iterationsExhausted=3) → spec-fixer", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, { step: "spec-review", reason: "exhausted", iterationsExhausted: 3 })).toBe("spec-fixer");
-  });
-
-  it("code-review exhausted (iterationsExhausted=3) → code-fixer", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, { step: "code-review", reason: "exhausted", iterationsExhausted: 3 })).toBe("code-fixer");
-  });
-
-  it("spec-review exhausted (iterationsExhausted=1) → spec-fixer", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, { step: "spec-review", reason: "exhausted", iterationsExhausted: 1 })).toBe("spec-fixer");
-  });
-});
-
-// T4.3: non-reviewer step + iterationsExhausted>0 → resumePoint.step (crash 扱い)
-describe("T4.3: resolveResumeStep - non-reviewer + iterationsExhausted>0 → resumePoint.step", () => {
-  it("verification exhausted (iterationsExhausted=3) → verification (not a reviewer)", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, { step: "verification", reason: "exhausted", iterationsExhausted: 3 })).toBe("verification");
-  });
-
-  it("implementer exhausted (iterationsExhausted=2) → implementer (not a reviewer)", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, { step: "implementer", reason: "exhausted", iterationsExhausted: 2 })).toBe("implementer");
-  });
-
-  it("build-fixer exhausted (iterationsExhausted=1) → build-fixer (not a reviewer)", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, { step: "build-fixer", reason: "exhausted", iterationsExhausted: 1 })).toBe("build-fixer");
-  });
-});
-
-// T4.4: --from 指定時は --from が最優先 (要件 11)
-describe("T4.4: resolveResumeStep - --from specified → role-based mapping takes priority", () => {
-  it("--from creator + code-review exhausted → implementer (creator role wins)", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "creator", { step: "code-review", reason: "exhausted", iterationsExhausted: 3 })).toBe("implementer");
-  });
-
-  it("--from fixer + implementer crash → code-fixer (fixer role wins)", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "fixer", { step: "implementer", reason: "crash", iterationsExhausted: 0 })).toBe("code-fixer");
-  });
-
-  it("--from critic + implementer crash → code-review (critic role wins)", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "critic", { step: "implementer", reason: "crash", iterationsExhausted: 0 })).toBe("code-review");
-  });
-
-  it("--from creator + spec-review exhausted → design (creator role, spec phase)", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "creator", { step: "spec-review", reason: "exhausted", iterationsExhausted: 3 })).toBe("design");
-  });
-
-  it("--from fixer + spec-review crash (iterationsExhausted=0) → spec-fixer (fixer role wins)", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "fixer", { step: "spec-review", reason: "crash", iterationsExhausted: 0 })).toBe("spec-fixer");
+  it("resumePoint at pr-create → pr-create", () => {
+    expect(resolveResumeStep(undefined, makeResumePoint("pr-create"))).toBe("pr-create");
   });
 });
 
 // ============================================================
-// Fixer-empty detection (issue #236)
+// --from <step-name> → direct return
 // ============================================================
 
-describe("resolveResumeStep - fixer-empty detection (issue #236)", () => {
-  it("resumePoint=code-fixer + steps[code-fixer] empty + steps[code-review] needs-fix → code-review", () => {
-    const steps: Record<string, StepRun[]> = {
-      "code-review": [makeVerdictRun("needs-fix")],
-    };
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, { step: "code-fixer", reason: "kill", iterationsExhausted: 0 }, undefined, steps))
-      .toBe("code-review");
-  });
-
-  it("resumePoint=spec-fixer + steps[spec-fixer] empty + steps[spec-review] needs-fix → spec-review", () => {
-    const steps: Record<string, StepRun[]> = {
-      "spec-review": [makeVerdictRun("needs-fix")],
-    };
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, { step: "spec-fixer", reason: "kill", iterationsExhausted: 0 }, undefined, steps))
-      .toBe("spec-review");
-  });
-
-  it("resumePoint=build-fixer + steps[build-fixer] empty + steps[verification] failed → verification", () => {
-    const steps: Record<string, StepRun[]> = {
-      "verification": [makeVerdictRun("failed")],
-    };
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, { step: "build-fixer", reason: "kill", iterationsExhausted: 0 }, undefined, steps))
-      .toBe("verification");
-  });
-
-  it("resumePoint=code-fixer + steps[code-fixer] non-empty → code-fixer (fixer ran, crash restart)", () => {
-    const steps: Record<string, StepRun[]> = {
-      "code-review": [makeVerdictRun("needs-fix")],
-      "code-fixer": [makeVerdictRun("success")],
-    };
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, { step: "code-fixer", reason: "crash", iterationsExhausted: 0 }, undefined, steps))
-      .toBe("code-fixer");
-  });
-
-  it("--from fixer + fixer-empty scenario → code-fixer (--from wins)", () => {
-    const steps: Record<string, StepRun[]> = {
-      "code-review": [makeVerdictRun("needs-fix")],
-    };
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "fixer", { step: "code-fixer", reason: "kill", iterationsExhausted: 0 }, undefined, steps))
-      .toBe("code-fixer");
-  });
-
-  it("resumePoint=code-fixer + steps=undefined → code-fixer (legacy path, no steps inspection)", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, { step: "code-fixer", reason: "kill", iterationsExhausted: 0 }, undefined, undefined))
-      .toBe("code-fixer");
-  });
-
-  it("resumePoint=code-fixer + steps[code-fixer] empty + steps[code-review] approved → code-fixer (no mismatch)", () => {
-    const steps: Record<string, StepRun[]> = {
-      "code-review": [makeVerdictRun("approved")],
-    };
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, undefined, { step: "code-fixer", reason: "kill", iterationsExhausted: 0 }, undefined, steps))
-      .toBe("code-fixer");
-  });
-
-});
-
-// ============================================================
-// resolveResumeStep - --from with step name (TC-RESUME-FROM-*)
-// ============================================================
-
-describe("resolveResumeStep - --from with step name", () => {
-  // TC-RESUME-FROM-01: step name direct — phase of resumePoint is irrelevant
+describe("resolveResumeStep - --from with registered step name", () => {
   it("--from design → design", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "design", makeResumePoint("code-review"))).toBe("design");
+    expect(resolveResumeStep("design", makeResumePoint("code-review"))).toBe("design");
   });
 
-  // TC-RESUME-FROM-02: step name direct
   it("--from code-review → code-review", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "code-review", makeResumePoint("implementer"))).toBe("code-review");
+    expect(resolveResumeStep("code-review", makeResumePoint("implementer"))).toBe("code-review");
   });
 
-  // TC-RESUME-FROM-04: legacy alias critic is still phase-aware
-  it("--from critic + spec phase → spec-review", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "critic", makeResumePoint("spec-review"))).toBe("spec-review");
-  });
-  it("--from critic + code phase → code-review", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "critic", makeResumePoint("implementer"))).toBe("code-review");
+  it("--from spec-fixer → spec-fixer", () => {
+    expect(resolveResumeStep("spec-fixer", makeResumePoint("spec-review"))).toBe("spec-fixer");
   });
 
-  // TC-RESUME-FROM-05: legacy alias fixer is still phase-aware
-  it("--from fixer + spec phase → spec-fixer", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "fixer", makeResumePoint("spec-review"))).toBe("spec-fixer");
-  });
-  it("--from fixer + code phase → code-fixer", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "fixer", makeResumePoint("implementer"))).toBe("code-fixer");
+  it("--from code-fixer → code-fixer", () => {
+    expect(resolveResumeStep("code-fixer", makeResumePoint("implementer"))).toBe("code-fixer");
   });
 
-  // TC-RESUME-FROM-06: legacy alias creator is still phase-aware
-  it("--from creator + spec phase → design", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "creator", makeResumePoint("spec-review"))).toBe("design");
-  });
-  it("--from creator + code phase → implementer", () => {
-    expect(resolveResumeStep(STANDARD_DESCRIPTOR, "creator", makeResumePoint("implementer"))).toBe("implementer");
+  it("--from build-fixer → build-fixer", () => {
+    expect(resolveResumeStep("build-fixer", makeResumePoint("verification"))).toBe("build-fixer");
   });
 
-  // TC-RESUME-FROM-07: invalid value → throws with available step names and aliases listed
-  it("--from invalid-name → throws with available values", () => {
-    expect(() => resolveResumeStep(STANDARD_DESCRIPTOR, "invalid-name", makeResumePoint("code-review")))
+  it("--from implementer → implementer (resumePoint irrelevant)", () => {
+    expect(resolveResumeStep("implementer", makeResumePoint("spec-review"))).toBe("implementer");
+  });
+
+  it("--from step-name works even when resumePoint is null", () => {
+    expect(resolveResumeStep("code-review", null)).toBe("code-review");
+  });
+});
+
+// ============================================================
+// --from <unknown> → throws with step names listed (no aliases)
+// ============================================================
+
+describe("resolveResumeStep - --from invalid value throws", () => {
+  it("throws on unknown value", () => {
+    expect(() => resolveResumeStep("invalid-name", makeResumePoint("code-review")))
       .toThrow(/invalid-name/);
-    expect(() => resolveResumeStep(STANDARD_DESCRIPTOR, "invalid-name", makeResumePoint("code-review")))
-      .toThrow(/design/); // step name is listed
-    expect(() => resolveResumeStep(STANDARD_DESCRIPTOR, "invalid-name", makeResumePoint("code-review")))
-      .toThrow(/critic/); // legacy alias is listed
+  });
+
+  it("error message lists registered step names", () => {
+    expect(() => resolveResumeStep("invalid-name", makeResumePoint("code-review")))
+      .toThrow(/design/);
+  });
+
+  it("error message does NOT list legacy aliases (critic/fixer/creator)", () => {
+    try {
+      resolveResumeStep("invalid-name", makeResumePoint("code-review"));
+    } catch (err) {
+      const msg = (err as Error).message;
+      expect(msg).not.toContain("critic");
+      expect(msg).not.toContain("Legacy aliases");
+    }
+  });
+
+  it("legacy alias 'critic' is rejected as invalid", () => {
+    expect(() => resolveResumeStep("critic", makeResumePoint("code-review"))).toThrow();
+  });
+
+  it("legacy alias 'fixer' is rejected as invalid", () => {
+    expect(() => resolveResumeStep("fixer", makeResumePoint("code-review"))).toThrow();
+  });
+
+  it("legacy alias 'creator' is rejected as invalid", () => {
+    expect(() => resolveResumeStep("creator", makeResumePoint("code-review"))).toThrow();
+  });
+});
+
+// ============================================================
+// null resumePoint + no --from → throws (defensive invariant)
+// ============================================================
+
+describe("resolveResumeStep - null resumePoint + no from → throws", () => {
+  it("throws when resumePoint is null and from is undefined", () => {
+    expect(() => resolveResumeStep(undefined, null)).toThrow();
   });
 });

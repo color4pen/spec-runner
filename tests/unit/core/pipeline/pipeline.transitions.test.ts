@@ -564,6 +564,7 @@ describe("TC-017: code-review ↔ code-fixer loop guard → CODE_REVIEW_RETRIES_
       events,
       loopName: "code-review",
       loopNames: ["code-review"],
+      loopFixerPairs: { "code-review": "code-fixer" },
     });
 
     const result = await pipeline.run("code-review", jobState, makeMinimalDeps());
@@ -574,6 +575,8 @@ describe("TC-017: code-review ↔ code-fixer loop guard → CODE_REVIEW_RETRIES_
     const codeReviewSteps = result.steps?.["code-review"] ?? [];
     const lastStep = codeReviewSteps[codeReviewSteps.length - 1];
     expect(lastStep?.outcome?.verdict).toBe("escalation");
+    // TC-009: code-review 枯渇後の resumePoint は code-fixer を指す（reviewer 再実行を避ける）
+    expect(result.resumePoint?.step).toBe("code-fixer");
   });
 });
 
@@ -785,13 +788,15 @@ describe("TC-NEW-05: handleExhausted → status: awaiting-resume + resumePoint",
       events,
       loopName: "spec-review",
       loopNames: ["spec-review"],
+      loopFixerPairs: { "spec-review": "spec-fixer" },
     });
 
     const result = await pipeline.run("spec-review", jobState, makeMinimalDeps());
 
     expect(result.status).toBe("awaiting-resume");
     expect(result.resumePoint).toBeDefined();
-    expect(result.resumePoint?.step).toBe("spec-review");
+    // handleExhausted now records the fixer step (spec-fixer) for spec-review exhaustion
+    expect(result.resumePoint?.step).toBe("spec-fixer");
     expect(result.resumePoint?.iterationsExhausted).toBe(maxIterations);
   });
 });

@@ -485,13 +485,17 @@ export class Pipeline {
       hint: (_nnn: string) => `Review the ${exhaustedLoopName} results and fix manually.`,
     };
 
+    // Record the fixer step (not the exhausted reviewer) so resume starts at the productive
+    // entry point. For loop steps without a paired fixer (e.g. conformance), fall back to self.
+    const resumeStep = (this.loopFixerPairs[exhaustedLoopName] ?? exhaustedLoopName) as StepName;
+
     const stateWithSteps = { ...state, steps: updatedSteps };
     const { state: exhaustedState } = transitionJob(stateWithSteps, "awaiting-resume", {
       trigger: "pipeline",
       reason: errorShape.message(this.maxIterations),
       patch: {
         resumePoint: {
-          step: exhaustedLoopName as StepName,
+          step: resumeStep,
           reason: errorShape.message(this.maxIterations),
           iterationsExhausted: this.maxIterations,
           ...(exhaustionPhase && { exhaustionPhase }),

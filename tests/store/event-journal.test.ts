@@ -22,7 +22,6 @@ import { fold, appendEventRecord } from "../../src/store/event-journal.js";
 import type { StepAttemptRecord, TransitionRecord } from "../../src/store/event-journal.js";
 import { makeStoreFactory } from "../helpers/store-factory.js";
 import { resolveResumeStep } from "../../src/core/resume/resolve-step.js";
-import { STANDARD_DESCRIPTOR } from "../../src/core/pipeline/registry.js";
 import type { BaseReportResult } from "../../src/kernel/report-result.js";
 
 let tempDir: string;
@@ -239,10 +238,10 @@ describe("TC-005: fold round-trip — toolResult.fixableCount preserved", () => 
 });
 
 // ---------------------------------------------------------------------------
-// TC-006: fixer-empty 検出 — fold result feeds resolveResumeStep correctly
+// TC-006: fold round-trip — fold step counts are correct; resolveResumeStep returns verbatim
 // ---------------------------------------------------------------------------
-describe("TC-006: fold round-trip — fixer-empty detection via resolveResumeStep", () => {
-  it("0 code-fixer attempts in journal → fixer-empty → resolveResumeStep returns code-review", async () => {
+describe("TC-006: fold round-trip — step counts correct; resolveResumeStep verbatim", () => {
+  it("0 code-fixer attempts in journal → code-fixer absent → resolveResumeStep returns code-fixer (verbatim)", async () => {
     const filePath = path.join(tempDir, "events.jsonl");
 
     // code-review ran and ended with needs-fix; code-fixer never ran
@@ -255,23 +254,17 @@ describe("TC-006: fold round-trip — fixer-empty detection via resolveResumeSte
     const fixerRuns = result.steps["code-fixer"] ?? [];
     expect(fixerRuns).toHaveLength(0);
 
-    // resolveResumeStep Tier 2a: fixer-empty detection
+    // resolveResumeStep: returns resumePoint.step verbatim (no fixer-empty detection)
     const resumePoint = {
       step: "code-fixer" as const,
       reason: "killed before fixer ran",
       iterationsExhausted: 0,
     };
-    const resolved = resolveResumeStep(
-      STANDARD_DESCRIPTOR,
-      undefined,
-      resumePoint,
-      "code-fixer",
-      result.steps,
-    );
-    expect(resolved).toBe("code-review");
+    const resolved = resolveResumeStep(undefined, resumePoint);
+    expect(resolved).toBe("code-fixer");
   });
 
-  it("N code-fixer attempts in journal → count correct → no fixer-empty redirect", async () => {
+  it("N code-fixer attempts in journal → count correct → resolveResumeStep returns code-fixer", async () => {
     const filePath = path.join(tempDir, "events.jsonl");
 
     await appendEventRecord(filePath, makeStepAttemptRecord("code-review", "needs-fix"));
@@ -284,20 +277,13 @@ describe("TC-006: fold round-trip — fixer-empty detection via resolveResumeSte
     expect(fixerRuns).toHaveLength(1);
     expect(fixerRuns[0]!.attempt).toBe(1);
 
-    // resolveResumeStep: fixer ran → no fixer-empty redirect; crash → same step
+    // resolveResumeStep: returns resumePoint.step verbatim
     const resumePoint = {
       step: "code-fixer" as const,
       reason: "crash after fixer ran",
       iterationsExhausted: 0,
     };
-    const resolved = resolveResumeStep(
-      STANDARD_DESCRIPTOR,
-      undefined,
-      resumePoint,
-      "code-fixer",
-      result.steps,
-    );
-    // fixer ran (non-empty), so fixer-empty branch does NOT trigger → resume from code-fixer
+    const resolved = resolveResumeStep(undefined, resumePoint);
     expect(resolved).toBe("code-fixer");
   });
 });

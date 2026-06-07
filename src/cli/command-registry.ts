@@ -414,7 +414,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
       },
       resume: {
         flags: {
-          from: { type: "string", values: [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES, "critic", "fixer", "creator"] as const },
+          from: { type: "string", values: [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES] as const },
           force: { type: "boolean" },
           verbose: { type: "boolean" },
           quiet: { type: "boolean" },
