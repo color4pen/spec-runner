@@ -64,7 +64,7 @@ Request commands:
   request ls                      active 配下の request 一覧
   request validate <file|slug>    構文 / 規律 check
   request template                雛形 markdown を stdout
-  request review <slug|file>      architect agent によるレビュー
+  request review <slug|file>      architect agent によるレビュー（--model でモデル上書き可）
 
 Job commands:
   job start <request-slug|file>   pipeline 開始、jobId 発行
@@ -276,6 +276,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
       review: {
         flags: {
           json: { type: "boolean" },
+          model: { type: "string" },
         },
         positional: { name: "file-or-slug", required: true },
         handler: async (parsed) => {
@@ -310,7 +311,9 @@ export const COMMANDS: Record<string, CommandEntry> = {
             config = {} as SpecRunnerConfig;
           }
           const client = new ClaudeCodeOneShotQueryClient(config);
-          process.exit(await executeReview(filePath, { json: !!parsed.flags["json"] }, client, resolvedSlug));
+          const modelFlag = parsed.flags["model"];
+          const model = typeof modelFlag === "string" && modelFlag.trim() !== "" ? modelFlag : undefined;
+          process.exit(await executeReview(filePath, { json: !!parsed.flags["json"], model }, client, resolvedSlug));
         },
       },
     },

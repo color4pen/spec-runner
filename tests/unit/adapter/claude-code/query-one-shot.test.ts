@@ -288,6 +288,85 @@ describe("TC-OSQ-06: modelUsage is extracted from SDK result", () => {
 });
 
 // ---------------------------------------------------------------------------
+// TC-OSQ-07: modelOverride takes priority over config resolution chain
+// ---------------------------------------------------------------------------
+describe("TC-OSQ-07: modelOverride overrides config resolution chain model", () => {
+  it("uses modelOverride value when config has a step-level model", async () => {
+    let capturedOptions: Record<string, unknown> | undefined;
+
+    const mockQueryFn: QueryFn = vi.fn().mockImplementation(
+      ({ options }: { prompt: string; options?: Record<string, unknown> }) => {
+        capturedOptions = options;
+        return (async function* () {
+          yield { type: "result", subtype: "success", result: "done", session_id: undefined };
+        })();
+      },
+    ) as unknown as QueryFn;
+
+    const config = makeConfig({
+      steps: { "request-review": { model: "claude-sonnet-4-6" } },
+    });
+
+    await queryOneShot(
+      { systemPrompt: "sys", prompt: "user", stepName: "request-review", modelOverride: "claude-opus-4-8[1m]" },
+      config,
+      mockQueryFn,
+    );
+
+    // modelOverride must win over config's "claude-sonnet-4-6"
+    expect(capturedOptions?.["model"]).toBe("claude-opus-4-8[1m]");
+  });
+
+  it("uses resolvedConfig.model when modelOverride is not specified (config present)", async () => {
+    let capturedOptions: Record<string, unknown> | undefined;
+
+    const mockQueryFn: QueryFn = vi.fn().mockImplementation(
+      ({ options }: { prompt: string; options?: Record<string, unknown> }) => {
+        capturedOptions = options;
+        return (async function* () {
+          yield { type: "result", subtype: "success", result: "done", session_id: undefined };
+        })();
+      },
+    ) as unknown as QueryFn;
+
+    const config = makeConfig({
+      steps: { "request-review": { model: "claude-sonnet-4-6" } },
+    });
+
+    await queryOneShot(
+      { systemPrompt: "sys", prompt: "user", stepName: "request-review" },
+      config,
+      mockQueryFn,
+    );
+
+    // No modelOverride → resolvedConfig.model from step config
+    expect(capturedOptions?.["model"]).toBe("claude-sonnet-4-6");
+  });
+
+  it("falls back to stepDefaults model when neither config nor modelOverride are set", async () => {
+    let capturedOptions: Record<string, unknown> | undefined;
+
+    const mockQueryFn: QueryFn = vi.fn().mockImplementation(
+      ({ options }: { prompt: string; options?: Record<string, unknown> }) => {
+        capturedOptions = options;
+        return (async function* () {
+          yield { type: "result", subtype: "success", result: "done", session_id: undefined };
+        })();
+      },
+    ) as unknown as QueryFn;
+
+    // No config, no modelOverride → stepDefaults model from opts.model
+    await queryOneShot(
+      { systemPrompt: "sys", prompt: "user", stepName: "request-review", model: "claude-opus-4-5" },
+      makeConfig(),
+      mockQueryFn,
+    );
+
+    expect(capturedOptions?.["model"]).toBe("claude-opus-4-5");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-OSQ-05: non-success result → SpecRunnerError("QUERY_ONE_SHOT_FAILED")
 // ---------------------------------------------------------------------------
 describe("TC-OSQ-05: non-success result throws QUERY_ONE_SHOT_FAILED", () => {

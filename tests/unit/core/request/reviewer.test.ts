@@ -263,6 +263,53 @@ describe("TC-RVR-011: runReview() with mock OneShotQueryClient returns RequestRe
 });
 
 // ---------------------------------------------------------------------------
+// TC-RVR-011b: runReview() — modelOverride transparency
+// ---------------------------------------------------------------------------
+describe("TC-RVR-011b: runReview() passes modelOverride to client.run", () => {
+  async function makeTmpDir() {
+    const { mkdtemp } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const { tmpdir } = await import("node:os");
+    return mkdtemp(join(tmpdir(), "reviewer-model-test-"));
+  }
+
+  const approveJson = JSON.stringify({ verdict: "approve", findings: [], summary: "ok" });
+  const approveText = `\`\`\`json\n${approveJson}\n\`\`\``;
+
+  it("passes modelOverride to client.run when specified", async () => {
+    const mockClient = {
+      run: vi.fn().mockResolvedValue({ text: approveText, stopReason: "success" }),
+    };
+    const tmpDir = await makeTmpDir();
+    const { rm } = await import("node:fs/promises");
+    try {
+      await runReview("# Content", tmpDir, mockClient, "claude-opus-4-8[1m]");
+      expect(mockClient.run).toHaveBeenCalledWith(
+        expect.objectContaining({ modelOverride: "claude-opus-4-8[1m]" }),
+      );
+    } finally {
+      await rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("passes modelOverride as undefined when not specified", async () => {
+    const mockClient = {
+      run: vi.fn().mockResolvedValue({ text: approveText, stopReason: "success" }),
+    };
+    const tmpDir = await makeTmpDir();
+    const { rm } = await import("node:fs/promises");
+    try {
+      await runReview("# Content", tmpDir, mockClient);
+      expect(mockClient.run).toHaveBeenCalledWith(
+        expect.objectContaining({ modelOverride: undefined }),
+      );
+    } finally {
+      await rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-RVR-012: parseReviewOutput — number field present is preserved
 // ---------------------------------------------------------------------------
 describe("TC-RVR-012: parseReviewOutput — number field present is preserved", () => {

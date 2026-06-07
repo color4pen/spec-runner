@@ -53,6 +53,11 @@ export interface QueryOneShotOptions {
   stepName?: string;
   /** Model identifier. Default: "claude-sonnet-4-5". Feeds into config chain stepDefaults. */
   model?: string;
+  /**
+   * 指定時、config 解決チェーンの結果より優先して使うモデル。
+   * 未指定時は解決チェーンの結果を使う。
+   */
+  modelOverride?: string;
 }
 
 export interface QueryOneShotResult {
@@ -99,6 +104,9 @@ export async function queryOneShot(
     timeoutMs: opts.timeoutMs,
   });
 
+  // Step 1b: Apply modelOverride (takes priority over config resolution chain)
+  const effectiveModel = opts.modelOverride ?? resolvedConfig.model;
+
   // Step 2: maxTurns option — omit when null (unlimited)
   const maxTurnsOption: Record<string, unknown> =
     resolvedConfig.maxTurns !== null ? { maxTurns: resolvedConfig.maxTurns } : {};
@@ -120,7 +128,7 @@ export async function queryOneShot(
         allowedTools: opts.allowedTools ?? ["Read", "Bash", "Grep", "Glob"],
         permissionMode: "bypassPermissions",
         ...maxTurnsOption,
-        model: resolvedConfig.model,
+        model: effectiveModel,
         systemPrompt: opts.systemPrompt,
         abortController,
       },

@@ -41,7 +41,7 @@ export {
  */
 export async function executeReview(
   filePath: string,
-  opts: { json: boolean },
+  opts: { json: boolean; model?: string },
   client: OneShotQueryClient,
   slug?: string,
 ): Promise<number> {
@@ -72,7 +72,7 @@ export async function executeReview(
   let result: import("../request/reviewer.js").RequestReviewResult;
   stderrWrite("Reviewing request.md...");
   try {
-    result = await runReview(content, process.cwd(), client);
+    result = await runReview(content, process.cwd(), client, opts.model);
 
     // Append usage to drafts/<slug>/usage.json (silent on error)
     if (slug) {

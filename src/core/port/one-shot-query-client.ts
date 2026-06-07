@@ -31,6 +31,11 @@ export interface OneShotQueryOptions {
   stepName?: string;
   /** Model identifier. Default: "claude-sonnet-4-5". Feeds into config chain stepDefaults. */
   model?: string;
+  /**
+   * 指定時、config 解決チェーンの結果より優先して使うモデル。
+   * 未指定時は解決チェーンの結果を使う。
+   */
+  modelOverride?: string;
 }
 
 // ---------------------------------------------------------------------------

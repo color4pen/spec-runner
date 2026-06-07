@@ -192,6 +192,7 @@ export async function runReview(
   content: string,
   cwd: string,
   client: OneShotQueryClient,
+  modelOverride?: string,
 ): Promise<RequestReviewResult> {
   // Read project context
   let projectContext = "";
@@ -211,6 +212,7 @@ export async function runReview(
     cwd,
     stepName: "request-review",
     model: "claude-opus-4-5",
+    modelOverride,
   });
   const parsed = parseReviewOutput(result.text);
   return { ...parsed, modelUsage: result.modelUsage };
