@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "54c65870-5c36-4280-8a49-96b45feeea76",
   "createdAt": "2026-06-07T08:10:15.550Z",
-  "updatedAt": "2026-06-07T08:31:38.966Z",
+  "updatedAt": "2026-06-07T08:46:00.198Z",
   "request": {
     "title": "ループ枯渇判定を1箇所に集約する",
     "type": "refactoring"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "refactor/exhaustion-consolidation-54c65870",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-07T08:31:38.957Z"
   },
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 37,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
