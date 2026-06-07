@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "4fbc6fa1-65c4-49a0-acc7-8a305db574dd",
   "createdAt": "2026-06-07T14:01:30.786Z",
-  "updatedAt": "2026-06-07T14:36:42.548Z",
+  "updatedAt": "2026-06-07T15:31:36.979Z",
   "request": {
     "title": "保護パスを変更する PR を無人マージ対象外にする",
     "type": "spec-change"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/protected-paths-merge-guard-4fbc6fa1",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-07T14:36:42.537Z"
   },
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 37,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
