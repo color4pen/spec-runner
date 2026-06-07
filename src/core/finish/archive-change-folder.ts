@@ -12,7 +12,7 @@ import * as path from "node:path";
 import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs } from "./types.js";
 import { formatEscalation } from "./escalation.js";
-import { changeFolderPath, changesDirRel, archivedChangeFolderPath } from "../../util/paths.js";
+import { changeFolderPath, changesDirRel, archivedChangeFolderPath, archivedChangesDirRel } from "../../util/paths.js";
 
 export type ArchiveChangeFolderResult =
   | { ok: true; skipped: boolean; message: string }
@@ -46,6 +46,8 @@ export async function archiveChangeFolder(params: {
   const d = (params.now ?? (() => new Date()))();
   const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const archivePath = archivedChangeFolderPath(`${dateStr}-${slug}`);
+
+  await fs.mkdir(path.join(cwd, archivedChangesDirRel()), { recursive: true });
 
   const mvResult = await spawn("git", ["mv", sourcePath, archivePath], { cwd });
 

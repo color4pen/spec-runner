@@ -6,9 +6,12 @@
  * TC-CF-003: git mv fails → escalation
  * TC-CF-004: archive path has YYYY-MM-DD-<slug> format (now injectable)
  * TC-CF-005: now omitted → default Date used (no error)
+ * TC-CF-006: archive parent dir absent → mkdir(recursive) runs before git mv
  */
+import * as path from "node:path";
 import { describe, it, expect, vi } from "vitest";
 import { archiveChangeFolder } from "../../../../src/core/finish/archive-change-folder.js";
+import { archivedChangesDirRel } from "../../../../src/util/paths.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
 import type { FinishFs } from "../../../../src/core/finish/types.js";
 
@@ -77,16 +80,19 @@ describe("TC-CF-001: change folder exists → git mv succeeds", () => {
 });
 
 describe("TC-CF-002: change folder absent → skip", () => {
-  it("returns ok: true, skipped: true when change dir does not exist", async () => {
+  it("returns ok: true, skipped: true and does not create the archive dir", async () => {
+    const fs = makeFs({ exists: vi.fn().mockResolvedValue(false) });
     const result = await archiveChangeFolder({
       slug: SLUG,
       cwd: CWD,
       spawn: makeSpawn(0),
-      fs: makeFs({ exists: vi.fn().mockResolvedValue(false) }),
+      fs,
       now: FIXED_NOW,
     });
 
     expect(result).toMatchObject({ ok: true, skipped: true });
+    // skip path must not create the archive parent dir
+    expect(fs.mkdir).not.toHaveBeenCalled();
   });
 });
 
@@ -128,5 +134,32 @@ describe("TC-CF-005: now omitted → default Date used, no error", () => {
       // Archive path should start with a YYYY-MM-DD prefix
       expect(result.message).toMatch(/specrunner\/changes\/archive\/\d{4}-\d{2}-\d{2}-my-slug/);
     }
+  });
+});
+
+describe("TC-CF-006: archive 親ディレクトリの実行時保証 — mkdir(recursive) が git mv より前に呼ばれる", () => {
+  it("creates the archive parent dir before git mv; result ok: true, skipped: false", async () => {
+    const fs = makeFs();
+    const spawn = makeSpawn(0);
+
+    const result = await archiveChangeFolder({ slug: SLUG, cwd: CWD, spawn, fs, now: FIXED_NOW });
+
+    // mkdir was called with the archive parent dir and recursive: true
+    const mkdirMock = fs.mkdir as ReturnType<typeof vi.fn>;
+    expect(mkdirMock).toHaveBeenCalledWith(path.join(CWD, archivedChangesDirRel()), { recursive: true });
+
+    // git mv spawn was called
+    const spawnMock = spawn as ReturnType<typeof vi.fn>;
+    const gitMvCallIndex = spawnMock.mock.calls.findIndex(
+      (call: unknown[]) => call[0] === "git" && Array.isArray(call[1]) && (call[1] as string[])[0] === "mv",
+    );
+    expect(gitMvCallIndex).toBeGreaterThanOrEqual(0);
+
+    // mkdir invocationCallOrder < git mv invocationCallOrder
+    const mkdirOrder = mkdirMock.mock.invocationCallOrder[0]!;
+    const gitMvOrder = spawnMock.mock.invocationCallOrder[gitMvCallIndex]!;
+    expect(mkdirOrder).toBeLessThan(gitMvOrder);
+
+    expect(result).toMatchObject({ ok: true, skipped: false });
   });
 });
