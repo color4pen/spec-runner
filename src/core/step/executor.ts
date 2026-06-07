@@ -13,6 +13,7 @@ import { stderrWrite, logVerbose, isLevelEnabled } from "../../logger/stdout.js"
 import { getAgentLogDir } from "../../util/xdg.js";
 import * as nodePath from "node:path";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
+import { toStepName } from "./step-names.js";
 import { appendInvocation } from "../usage/store.js";
 import { usageJsonPath } from "../../util/paths.js";
 import {
@@ -294,7 +295,7 @@ export class StepExecutor {
         trigger: "executor",
         reason: "timeout",
         patch: {
-          resumePoint: { step: step.name as import("../../state/schema.js").StepName, reason: "timeout", iterationsExhausted: 0 },
+          resumePoint: { step: toStepName(step.name), reason: "timeout", iterationsExhausted: 0 },
           error: errorInfo,
         },
       });

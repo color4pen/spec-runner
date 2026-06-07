@@ -11,7 +11,8 @@ import type { AgentRunner } from "../port/agent-runner.js";
 import type { PipelineDeps } from "../types.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
-import type { JobState, StepName } from "../../state/schema.js";
+import type { JobState } from "../../state/schema.js";
+import { toStepName } from "../step/step-names.js";
 import { createClaudeCodeRunner, defaultQueryFn, type QueryFn } from "../../adapter/claude-code/agent-runner.js";
 import { DispatchingAgentRunner } from "../../adapter/dispatching/agent-runner.js";
 import { createWorktreeManager } from "../worktree/manager.js";
@@ -715,7 +716,7 @@ export class LocalRuntime implements RuntimeStrategy {
           patch: {
             pid: null,
             resumePoint: {
-              step: (current.step ?? startStep) as StepName,
+              step: toStepName(current.step ?? startStep),
               reason: "Interrupted by signal",
               iterationsExhausted: 0,
             },

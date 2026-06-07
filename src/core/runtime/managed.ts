@@ -14,7 +14,8 @@ import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { OriginInfo } from "../../git/remote.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import { createManagedAgentRunner } from "../../adapter/managed-agent/agent-runner.js";
-import type { JobState, StepName, RequestInfo, RepositoryInfo } from "../../state/schema.js";
+import type { JobState, RequestInfo, RepositoryInfo } from "../../state/schema.js";
+import { toStepName } from "../step/step-names.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { spawnCommand } from "../../util/spawn.js";
@@ -395,7 +396,7 @@ export class ManagedRuntime implements RuntimeStrategy {
           patch: {
             pid: null,
             resumePoint: {
-              step: startStep as StepName,
+              step: toStepName(startStep),
               reason: "Interrupted by signal",
               iterationsExhausted: 0,
             },

@@ -8,7 +8,7 @@
  * TC-5: Type-level assertions
  */
 import { describe, it, expect } from "vitest";
-import { AGENT_STEP_NAMES, CLI_STEP_NAMES, STEP_NAMES } from "../../../../src/core/step/step-names.js";
+import { AGENT_STEP_NAMES, CLI_STEP_NAMES, STEP_NAMES, toStepName } from "../../../../src/core/step/step-names.js";
 import type { AgentStepName, CliStepName } from "../../../../src/state/schema.js";
 import type { SpecRunnerConfig, AgentRecord } from "../../../../src/config/schema.js";
 import { DesignStep } from "../../../../src/core/step/design.js";
@@ -97,5 +97,31 @@ describe("step name arrays", () => {
     // Suppress unused variable warnings
     void _cfgBad;
     expect(true).toBe(true);
+  });
+});
+
+describe("toStepName", () => {
+  it("returns the same value for all registered agent step names", () => {
+    for (const name of AGENT_STEP_NAMES) {
+      expect(toStepName(name)).toBe(name);
+    }
+  });
+
+  it("returns the same value for all registered CLI step names", () => {
+    for (const name of CLI_STEP_NAMES) {
+      expect(toStepName(name)).toBe(name);
+    }
+  });
+
+  it("throws for an unregistered step name", () => {
+    expect(() => toStepName("not-a-step")).toThrow(/Unknown step name/);
+  });
+
+  it("throws for an empty string", () => {
+    expect(() => toStepName("")).toThrow(/Unknown step name/);
+  });
+
+  it("throws for a legacy alias 'critic'", () => {
+    expect(() => toStepName("critic")).toThrow(/Unknown step name/);
   });
 });

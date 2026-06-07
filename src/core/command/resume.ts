@@ -14,6 +14,7 @@ import { resolveStateStoreByJobId } from "../job-access/resolve-state-store.js";
 import { logInfo, setLogLevel, logError, stderrWrite, type LogLevel } from "../../logger/stdout.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
+import { toStepName } from "../step/step-names.js";
 import { parseRequestMd } from "../../parser/request-md.js";
 import { resolveJobStateBySlug } from "../resume/resolve-job.js";
 import { resolveRequestPath } from "../resume/resolve-request-path.js";
@@ -144,7 +145,7 @@ export class ResumeCommand extends CommandRunner {
 
     // Safety checks
     const resumePoint = state.resumePoint ?? null;
-    const startStepForCheck = resumePoint?.step ?? (state.step as StepName | undefined);
+    const startStepForCheck = resumePoint?.step ?? (state.step ? toStepName(state.step) : undefined);
 
     if (startStepForCheck) {
       const hasConsecutiveEscalations = checkConsecutiveEscalations(state, startStepForCheck);

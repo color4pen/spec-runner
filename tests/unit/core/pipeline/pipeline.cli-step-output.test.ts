@@ -313,26 +313,26 @@ describe("TC-S04: pr-create success emits [step] pr-create: success", () => {
   });
 });
 
-// TC-B03: dsv needs-fix completion emits [step] delta-spec-validation: needs-fix
-describe("TC-B03: dsv needs-fix completion emits [step] delta-spec-validation: needs-fix", () => {
-  it("outputs [step] delta-spec-validation: needs-fix after step completes with needs-fix verdict", async () => {
+// TC-B03: conformance needs-fix completion emits [step] conformance: needs-fix
+describe("TC-B03: conformance needs-fix completion emits [step] conformance: needs-fix", () => {
+  it("outputs [step] conformance: needs-fix after step completes with needs-fix verdict", async () => {
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
-    const dsvResult = stateWithVerdict(state, "delta-spec-validation", "needs-fix");
+    const stepResult = stateWithVerdict(state, "conformance", "needs-fix");
 
     const executeSpy = vi.fn().mockImplementation(async (step: Step) => {
-      if (step.name === "delta-spec-validation") return dsvResult;
+      if (step.name === "conformance") return stepResult;
       throw new Error(`Unexpected step: ${step.name}`);
     });
     const events = makeEventsWithProgress();
     const pipeline = new Pipeline({
       steps: new Map([
-        ["delta-spec-validation", makeCliStepWithVerdict("delta-spec-validation", "needs-fix")],
+        ["conformance", makeCliStepWithVerdict("conformance", "needs-fix")],
       ]),
       transitions: [
-        { step: "delta-spec-validation", on: "approved",   to: "end" },
-        { step: "delta-spec-validation", on: "needs-fix",  to: "escalate" },
-        { step: "delta-spec-validation", on: "escalation", to: "escalate" },
+        { step: "conformance", on: "approved",   to: "end" },
+        { step: "conformance", on: "needs-fix",  to: "escalate" },
+        { step: "conformance", on: "escalation", to: "escalate" },
       ],
       maxIterations: 3,
       executor: { execute: executeSpy } as unknown as StepExecutor,
@@ -341,10 +341,10 @@ describe("TC-B03: dsv needs-fix completion emits [step] delta-spec-validation: n
       loopNames: LOOP_NAMES,
     });
 
-    await pipeline.run("delta-spec-validation", state, deps);
+    await pipeline.run("conformance", state, deps);
 
     const stdout = getCapturedStderr();
-    expect(stdout).toContain("[step] delta-spec-validation: needs-fix");
+    expect(stdout).toContain("[step] conformance: needs-fix");
   });
 });
 

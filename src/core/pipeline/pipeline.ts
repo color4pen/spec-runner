@@ -1,8 +1,9 @@
 import type { Step } from "../step/types.js";
 import type { Transition } from "./types.js";
 import { LOOP_ERROR_CODES } from "./types.js";
-import type { JobState, Verdict, StepRun, StepName } from "../../state/schema.js";
+import type { JobState, Verdict, StepRun } from "../../state/schema.js";
 import { appendHistoryEntry } from "../../state/schema.js";
+import { toStepName } from "../step/step-names.js";
 import type { PipelineDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import { StepExecutor } from "../step/executor.js";
@@ -99,7 +100,7 @@ export class Pipeline {
           patch: {
             pid: null,
             resumePoint: {
-              step: (finalState.step ?? startStep) as StepName,
+              step: toStepName(finalState.step ?? startStep),
               reason: (err as Error).message ?? String(err),
               iterationsExhausted: 0,
             },
@@ -291,7 +292,7 @@ export class Pipeline {
             reason: state.error?.message ?? `${currentStep} escalated`,
             patch: {
               resumePoint: {
-                step: currentStep as StepName,
+                step: toStepName(currentStep),
                 reason: state.error?.message ?? `${currentStep} escalated`,
                 iterationsExhausted: loopIters.get(currentStep) ?? 0,
               },
@@ -502,7 +503,7 @@ export class Pipeline {
 
     // Record the fixer step (not the exhausted reviewer) so resume starts at the productive
     // entry point. For loop steps without a paired fixer (e.g. conformance), fall back to self.
-    const resumeStep = (this.loopFixerPairs[exhaustedLoopName] ?? exhaustedLoopName) as StepName;
+    const resumeStep = toStepName(this.loopFixerPairs[exhaustedLoopName] ?? exhaustedLoopName);
 
     const stateWithSteps = { ...state, steps: updatedSteps };
     const { state: exhaustedState } = transitionJob(stateWithSteps, "awaiting-resume", {

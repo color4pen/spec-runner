@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "jobId": "8183269f-b077-4402-9f7e-1c40a7eec501",
+  "createdAt": "2026-06-07T08:55:23.523Z",
+  "updatedAt": "2026-06-07T09:20:43.125Z",
+  "request": {
+    "title": "`as StepName` の force cast を validated cast に置き換える",
+    "type": "refactoring"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "refactor/stepname-open-8183269f",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/549",
+    "number": 549,
+    "createdAt": "2026-06-07T09:20:43.115Z"
+  },
+  "_journal": {
+    "historyCount": 36,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

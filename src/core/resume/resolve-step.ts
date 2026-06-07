@@ -1,5 +1,5 @@
 import type { StepName, ResumePoint } from "../../state/schema.js";
-import { AGENT_STEP_NAMES, CLI_STEP_NAMES } from "../step/step-names.js";
+import { AGENT_STEP_NAMES, CLI_STEP_NAMES, toStepName } from "../step/step-names.js";
 
 /** Set of all valid step names for O(1) membership check. */
 const ALL_STEP_NAMES_SET = new Set<string>([...AGENT_STEP_NAMES, ...CLI_STEP_NAMES]);
@@ -19,7 +19,7 @@ export function resolveResumeStep(
 ): StepName {
   if (from !== undefined) {
     if (ALL_STEP_NAMES_SET.has(from)) {
-      return from as StepName;
+      return toStepName(from);
     }
     const availableSteps = [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES].join(", ");
     throw new Error(
