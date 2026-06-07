@@ -52,10 +52,6 @@ function buildConfig(overrides?: { specReview?: { pollIntervalMs?: number } }) {
   };
 }
 
-function buildRepo() {
-  return { owner: "testowner", name: "testrepo" };
-}
-
 function buildRequest() {
   return { type: "feature", title: "Test", slug: "test", baseBranch: "main", content: "Do something", adr: false };
 }

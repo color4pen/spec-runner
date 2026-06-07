@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { runChecks } from "../../../src/core/doctor/runner.js";
-import type { DoctorCheck, DoctorContext } from "../../../src/core/doctor/types.js";
+import type { DoctorCheck } from "../../../src/core/doctor/types.js";
 import { buildMockContext } from "./mock-context.js";
 
 function makePassCheck(name: string): DoctorCheck {

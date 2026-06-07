@@ -7,7 +7,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { AgentSyncer } from "../../../src/core/agent/syncer.js";
 import { AgentRegistry } from "../../../src/core/agent/registry.js";
-import type { AnthropicClient, AgentData } from "../../../src/core/port/anthropic-client.js";
+import type { AnthropicClient } from "../../../src/core/port/anthropic-client.js";
 import type { AgentDefinition } from "../../../src/core/agent/definition.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { AgentStepName } from "../../../src/state/schema.js";

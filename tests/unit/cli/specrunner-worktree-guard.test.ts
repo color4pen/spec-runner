@@ -163,7 +163,7 @@ describe("TC-WG-007: job cancel from inside a worktree", () => {
     await setWorktreeDetection(true, "/home/user/my-project");
 
     // job cancel with --all-terminated so no UUID required
-    const result = await runMain(["job", "cancel", "--all-terminated", "--yes"]);
+    const _result = await runMain(["job", "cancel", "--all-terminated", "--yes"]);
 
     // Should not exit(1) due to worktree guard
     const stderrOutput = (stderrSpy.mock.calls as unknown[][])
@@ -178,7 +178,7 @@ describe("TC-WG-008: job show from inside a worktree", () => {
   it("does NOT reject job show — proceeds normally", async () => {
     await setWorktreeDetection(true, "/home/user/my-project");
 
-    const result = await runMain(["job", "show", "my-slug"]);
+    const _result = await runMain(["job", "show", "my-slug"]);
 
     // Should not exit(1) due to worktree guard
     const stderrOutput = (stderrSpy.mock.calls as unknown[][])

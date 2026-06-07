@@ -113,7 +113,7 @@ function makeMinimalDeps(storeFactory: StoreFactory): PipelineDeps {
   };
 }
 
-function makeStep(name: string, verdict: string | null = null, status: "running" | "failed" = "running"): Step {
+function makeStep(name: string, verdict: string | null = null, _status: "running" | "failed" = "running"): Step {
   return {
     kind: "agent",
     name,

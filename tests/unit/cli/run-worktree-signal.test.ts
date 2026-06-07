@@ -8,7 +8,7 @@
  * with correct arguments. Testing actual process.kill(SIGINT) in unit tests is
  * fragile — instead we capture the registered handler and invoke it directly.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { createWorktreeManager } from "../../../src/core/worktree/manager.js";
 
 /**

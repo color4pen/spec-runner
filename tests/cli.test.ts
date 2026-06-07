@@ -14,7 +14,7 @@ vi.mock("../src/sdk/client.js", () => ({
   createAnthropicClient: () => currentMockSdk,
 }));
 
-let currentMockSdk: unknown = null;
+const currentMockSdk: unknown = null;
 
 let tempDir: string;
 let originalXdgConfigHome: string | undefined;

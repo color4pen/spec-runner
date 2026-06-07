@@ -142,7 +142,7 @@ function makeQueryFn(opts: {
  * Create a spawn function that simulates git behavior for requiresCommit tests.
  */
 function makeGitSimulatingSpawnFn(gitResponses: Record<string, { stdout: string; exitCode: number }>): SpawnFn {
-  return (_bin: string, args: string[], spawnOpts: SpawnOptions): ChildProcess => {
+  return (_bin: string, args: string[], _spawnOpts: SpawnOptions): ChildProcess => {
     const gitCmd = args[0] ?? "unknown";
     const response = gitResponses[gitCmd] ?? { stdout: "", exitCode: 0 };
 
@@ -828,11 +828,11 @@ describe("ClaudeCodeRunner follow-up 2-turn execution", () => {
   });
 
   it("2 回目の queryFn options に resume: sessionId が含まれる", async () => {
-    let callCount = 0;
+    let _callCount = 0;
     const callParams: Array<{ prompt: string; options?: Record<string, unknown> }> = [];
 
     const queryFn: QueryFn = async function* (params) {
-      callCount++;
+      _callCount++;
       callParams.push({ prompt: params.prompt as string, options: params.options });
       yield {
         type: "result" as const,
@@ -1843,7 +1843,7 @@ describe("TC-EMIT: ClaudeCodeRunner emits step:progress on tool_use messages", (
     const sessionId = "follow-session-id";
     let callCount = 0;
 
-    const queryFn: QueryFn = async function* (params: { prompt: string; options?: Record<string, unknown> }) {
+    const queryFn: QueryFn = async function* (_params: { prompt: string; options?: Record<string, unknown> }) {
       callCount++;
       if (callCount === 1) {
         // Main turn: yields result with session_id

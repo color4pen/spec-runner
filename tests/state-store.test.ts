@@ -120,7 +120,7 @@ describe("TC-045: concurrent ps and write", () => {
 describe("TC-046: history append-only — no persistent truncation (Design D4)", () => {
   it("does NOT truncate history — all entries preserved in journal (D4)", () => {
     // Create a state with MAX_HISTORY_SIZE history entries
-    let state: JobState = {
+    const state: JobState = {
       version: 1,
       jobId: "test-id",
       createdAt: new Date().toISOString(),
@@ -216,7 +216,7 @@ describe("TC-048: repoRoot-based path resolution", () => {
 // TC-051: config atomic write and permission 0600
 describe("TC-051: config atomic write and 0600 permission", () => {
   it("saveConfig creates file with 0600 permissions", async () => {
-    let originalXdgConfigHome = process.env["XDG_CONFIG_HOME"];
+    const originalXdgConfigHome = process.env["XDG_CONFIG_HOME"];
     process.env["XDG_CONFIG_HOME"] = tempDir;
 
     try {

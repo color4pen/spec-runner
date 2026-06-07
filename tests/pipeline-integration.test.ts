@@ -221,7 +221,7 @@ function buildPipelineMockClient(opts: {
   sessionIds?: string[];
 }) {
   const {
-    designBranch = "feat/test-branch",
+    designBranch: _designBranch = "feat/test-branch",
     designFailure = false,
     specReviewVerdicts = ["approved"],
     codeReviewVerdicts = ["approved"],
@@ -614,7 +614,7 @@ describe("TC-015: runPipeline — fresh session IDs per iteration", () => {
     const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
-    const { client, sessionIds } = buildPipelineMockClient({
+    const { client, sessionIds: _sessionIds } = buildPipelineMockClient({
       specReviewVerdicts: ["needs-fix", "approved"],
     });
     const githubClient = buildMockGithubClient({ specReviewVerdicts: ["needs-fix", "approved"] });
@@ -1366,11 +1366,11 @@ describe("TC-DC-106: enrichContext returns unmodified dynamicContext when no spe
     const jobState = await makeJobState();
 
     // No spec context — enrichContext should return dynamicContext unchanged
-    let capturedEnrichResult: DynamicContext | undefined;
+    let _capturedEnrichResult: DynamicContext | undefined;
     const enrichSpy = vi.spyOn(SpecReviewStep, "enrichContext").mockImplementation(
       async (dynamicContext: DynamicContext, _cwd: string, _slug: string) => {
         // Simulate: no spec context → return as-is
-        capturedEnrichResult = dynamicContext;
+        _capturedEnrichResult = dynamicContext;
         return dynamicContext;
       },
     );

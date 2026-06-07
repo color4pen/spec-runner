@@ -4,7 +4,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { githubTokenPresentCheck } from "../../../../../src/core/doctor/checks/config/github-token-present.js";
-import { buildMockContext, buildMockConfig } from "../../mock-context.js";
+import { buildMockContext } from "../../mock-context.js";
 
 describe("githubTokenPresentCheck", () => {
   // TC-014

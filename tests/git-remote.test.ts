@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { parseRemoteUrl } from "../src/git/remote.js";
 
 // TC-008: HTTPS URL から owner/name 解決
@@ -54,7 +54,7 @@ describe("TC-012: non-GitHub remote", () => {
 // TC-013: git 未初期化 — handled via getOriginInfo (mock execFile)
 describe("TC-013: getOriginInfo with no git repo", () => {
   it("throws NOT_GIT_REPO when git exits with error", async () => {
-    const { getOriginInfo } = await import("../src/git/remote.js");
+    const { getOriginInfo: _getOriginInfo } = await import("../src/git/remote.js");
 
     // Mock child_process.execFile
     vi.mock("node:child_process", () => ({

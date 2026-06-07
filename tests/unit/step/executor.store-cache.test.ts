@@ -11,7 +11,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
 import type { JobState } from "../../../src/state/schema.js";
-import type { PipelineDeps, StoreFactory } from "../../../src/core/types.js";
+import type { PipelineDeps } from "../../../src/core/types.js";
 import type { JobStateStore } from "../../../src/store/job-state-store.js";
 import type { AgentRunner } from "../../../src/core/port/agent-runner.js";
 import type { CliStep } from "../../../src/core/step/types.js";

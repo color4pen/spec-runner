@@ -38,7 +38,7 @@ const PARAMS = { cwd: "/repo", branch: "change/my-slug-abc", slug: "my-slug" };
 describe("TC-CFS-001: staged changes → commit + push", () => {
   it("calls git add -A, git commit with finalize message, and git push", async () => {
     // add: exit 0, diff: exit 1 (staged), commit: exit 0, push: exit 0
-    const spawn = makeSpawnSequence([
+    const _spawn = makeSpawnSequence([
       { exitCode: 0 }, // git add -A
       { exitCode: 1 }, // git diff --cached --quiet (staged changes present)
       { exitCode: 0 }, // git commit -m "finalize: my-slug" — stdout needed for gitExec

@@ -139,7 +139,7 @@ describe("TC-024: BuildFixerStep.resultFilePath と parseResult", () => {
   });
 
   it("parseResult は NULL_PARSE_RESULT と deep-equal な値を返す", () => {
-    const state = makeStateWithVerificationResult("my-change");
+    const _state = makeStateWithVerificationResult("my-change");
     const deps = makeMinimalDeps();
     const result = BuildFixerStep.parseResult("any content", deps);
     expect(result).toEqual(NULL_PARSE_RESULT);

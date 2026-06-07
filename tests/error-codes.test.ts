@@ -114,7 +114,7 @@ describe("TC-025 (error-codes): CONFIG_INCOMPLETE code is preserved", () => {
       agents: {},
       // No agents.propose — should throw CONFIG_INCOMPLETE
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
-    } as any;
+    } as unknown as import("../src/config/schema.js").SpecRunnerConfig;
     expect(() => getAgentId(configWithoutAgents, "design")).toThrow(
       expect.objectContaining({ code: "CONFIG_INCOMPLETE" }),
     );
@@ -133,11 +133,10 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
     const { Pipeline } = await import("../src/core/pipeline/pipeline.js");
     const { STANDARD_TRANSITIONS } = await import("../src/core/pipeline/types.js");
     const { EventBus } = await import("../src/core/event/event-bus.js");
-    const { StepExecutor } = await import("../src/core/step/executor.js");
     type PipelineDeps = import("../src/core/types.js").PipelineDeps;
     type Step = import("../src/core/step/types.js").Step;
     type JobState = import("../src/state/schema.js").JobState;
-    type StepExecutorType = InstanceType<typeof StepExecutor>;
+    type StepExecutorType = import("../src/core/step/executor.js").StepExecutor;
 
     const state = {
       version: 1 as const,
@@ -188,7 +187,7 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
     const mockStep = (name: string, extras?: Partial<import("../src/core/step/types.js").AgentStep>): Step => ({
       kind: "agent",
       name,
-      agent: { name: "test", role: name as any, model: "claude-sonnet-4-5", system: "", tools: [] },
+      agent: { name: "test", role: name as unknown as import("../src/core/step/types.js").AgentDefinition["role"], model: "claude-sonnet-4-5", system: "", tools: [] },
       buildMessage: () => "",
       resultFilePath: () => null,
       parseResult: () => ({ verdict: null, findingsPath: null }),

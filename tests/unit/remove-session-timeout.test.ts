@@ -48,7 +48,6 @@ describe("TC-007: StepExecutor.getTimeoutMs は存在しない", () => {
     const { StepExecutor } = await import("../../src/core/step/executor.js");
     const { EventBus } = await import("../../src/core/event/event-bus.js");
     // Minimal mock AgentRunner for constructor — just tests method absence
-    const { JobStateStore } = await import("../../src/store/job-state-store.js");
     const mockRunner = { run: async () => ({ completionReason: "success" as const, resultContent: null, toolResult: null, followUpAttempts: 0 }) };
     const executor = new StepExecutor(new EventBus(), mockRunner, makeStoreFactory(tempDir));
     // getTimeoutMs は private だったが削除済み — prototype にも存在しない

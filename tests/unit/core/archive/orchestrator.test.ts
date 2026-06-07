@@ -106,10 +106,10 @@ function makeJobState(overrides: Partial<{
 const CWD = "/tmp/repo";
 const SLUG = "my-slug";
 
-let stderrSpy: ReturnType<typeof vi.spyOn>;
+let _stderrSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
-  stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+  _stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
 

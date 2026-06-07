@@ -49,16 +49,6 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-async function writeConfig(cfg: Record<string, unknown>): Promise<void> {
-  const configDir = path.join(tempDir, "specrunner");
-  await fs.mkdir(configDir, { recursive: true });
-  await fs.writeFile(
-    path.join(configDir, "config.json"),
-    JSON.stringify(cfg),
-    { mode: 0o600 },
-  );
-}
-
 // ---------------------------------------------------------------------------
 // TC-032: runtime field absent → migrated to "local"
 // ---------------------------------------------------------------------------

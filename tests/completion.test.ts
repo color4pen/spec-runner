@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   isSessionIdle,
-  isSessionTerminated,
-  calculateBackoff,
   pollUntilComplete,
   assertBreakAfterCompletion,
   DEFAULT_POLL_TIMEOUT_MS,
@@ -11,7 +9,6 @@ import type { BetaManagedAgentsSession } from "@anthropic-ai/sdk/resources/beta/
 import {
   isStatusIdleEvent,
   isEndTurnIdle,
-  isStatusTerminatedEvent,
   isStatusRescheduledEvent,
   isSessionErrorEvent,
   isSessionDeletedEvent,
@@ -107,7 +104,7 @@ describe("TC-027: requires_action does not trigger end", () => {
 describe("TC-028: polling triggers AbortController abort", () => {
   it("AbortController.abort() is called when polling completes", async () => {
     const abortController = new AbortController();
-    const mockAbort = vi.spyOn(abortController, "abort");
+    const _mockAbort = vi.spyOn(abortController, "abort");
 
     // Create a mock client that returns idle on first call
     const mockClient = {

@@ -147,7 +147,7 @@ describe("TC-003: TestCaseGenStep.resultFilePath と parseResult", () => {
   });
 
   it("parseResult は NULL_PARSE_RESULT と deep-equal な値を返す", () => {
-    const state = makeMinimalState();
+    const _state = makeMinimalState();
     const deps = makeMinimalDeps();
     const result = TestCaseGenStep.parseResult("any content", deps);
     expect(result).toEqual(NULL_PARSE_RESULT);

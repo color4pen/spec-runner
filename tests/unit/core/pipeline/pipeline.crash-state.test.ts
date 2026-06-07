@@ -155,7 +155,7 @@ describe("T3.1: executor throws without .state → state becomes awaiting-resume
 
     // Throw a non-Error object (string)
     const executeSpy = vi.fn().mockImplementation(async () => {
-      throw "string-thrown-error"; // eslint-disable-line no-throw-literal
+      throw "string-thrown-error";
     });
     const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
 

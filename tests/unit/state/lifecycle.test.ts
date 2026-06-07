@@ -34,7 +34,6 @@ import {
   isTerminal,
   transitionJob,
   type TransitionContext,
-  type TransitionResult,
 } from "../../../src/state/lifecycle.js";
 import { MAX_HISTORY_SIZE } from "../../../src/state/schema.js";
 import type { JobState, JobStatus } from "../../../src/state/schema.js";

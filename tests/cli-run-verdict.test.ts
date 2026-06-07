@@ -117,8 +117,8 @@ function simulateRunOutput(
   const stderrLines: string[] = [];
 
   // Capture writes
-  const origStdout = process.stdout.write.bind(process.stdout);
-  const origStderr = process.stderr.write.bind(process.stderr);
+  const _origStdout = process.stdout.write.bind(process.stdout);
+  const _origStderr = process.stderr.write.bind(process.stderr);
 
   vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
     stdoutLines.push(String(chunk));

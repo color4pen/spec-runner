@@ -157,7 +157,7 @@ describe("TC-AR-02: Agent tool redirect limit exceeded", () => {
     // Emit 4 Agent tool calls (exceeds limit of 3)
     const agentToolNames = ["Agent", "Agent", "Agent", "Agent"];
 
-    const queryFn: QueryFn = async function* (params) {
+    const queryFn: QueryFn = async function* (_params) {
       yield* toolUseStream(agentToolNames) as AsyncGenerator<unknown>;
     };
 
@@ -174,7 +174,7 @@ describe("TC-AR-02: Agent tool redirect limit exceeded", () => {
     // 3 Agent calls should NOT exceed the limit (limit is > 3)
     const agentToolNames = ["Agent", "Agent", "Agent"];
 
-    const queryFn: QueryFn = async function* (params) {
+    const queryFn: QueryFn = async function* (_params) {
       yield* toolUseStream(agentToolNames) as AsyncGenerator<unknown>;
     };
 
@@ -192,7 +192,7 @@ describe("TC-AR-03: Normal tools don't trigger redirect counter", () => {
   it("Read, Bash, Grep tool_use events → no redirect limit triggered", async () => {
     const normalTools = ["Read", "Bash", "Grep", "Edit", "Write", "Glob"];
 
-    const queryFn: QueryFn = async function* (params) {
+    const queryFn: QueryFn = async function* (_params) {
       yield* toolUseStream(normalTools) as AsyncGenerator<unknown>;
     };
 

@@ -57,10 +57,6 @@ function buildConfig() {
   };
 }
 
-function buildRepo() {
-  return { owner: "testowner", name: "testrepo" };
-}
-
 function buildRequest() {
   return { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false };
 }
@@ -110,7 +106,7 @@ function buildMockSpawnFn(opts: {
 }
 
 // Helper: create a mock WorktreeManager
-function buildMockManager(opts: {
+function buildMockManager(_opts: {
   worktreeExistsOnCreate?: boolean;
 } = {}) {
   const createdPaths: string[] = [];

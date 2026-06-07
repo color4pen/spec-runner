@@ -16,7 +16,7 @@
  * TC-RC-010: X-RateLimit-Remaining=0 retry exhausted (6 total attempts) → throws GITHUB_API_ERROR
  * TC-RC-011: 429 and rate-limit mixed, total 6 attempts → throws GITHUB_API_ERROR
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { GitHubApiClient } from "../../../../src/adapter/github/github-client.js";
 import { ERROR_CODES } from "../../../../src/errors.js";
 

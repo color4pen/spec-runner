@@ -20,7 +20,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import type { JobState } from "../../../src/state/schema.js";
-import type { StepDeps, CliStepDeps } from "../../../src/core/step/types.js";
+import type { CliStepDeps } from "../../../src/core/step/types.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { changeFolderPath, prCreateResultPath } from "../../../src/util/paths.js";
 

@@ -43,11 +43,11 @@ const mockClient: OneShotQueryClient = {
 // ---------------------------------------------------------------------------
 describe("TC-PROG-03: executeReview outputs Reviewing message to stderr", () => {
   let stderrSpy: ReturnType<typeof vi.spyOn>;
-  let stdoutSpy: ReturnType<typeof vi.spyOn>;
+  let _stdoutSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
-    stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    _stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   });
 
   afterEach(() => {
@@ -67,11 +67,11 @@ describe("TC-PROG-03: executeReview outputs Reviewing message to stderr", () => 
 // ---------------------------------------------------------------------------
 describe("TC-PROG-05: executeReview outputs failure message to stderr", () => {
   let stderrSpy: ReturnType<typeof vi.spyOn>;
-  let stdoutSpy: ReturnType<typeof vi.spyOn>;
+  let _stdoutSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
-    stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    _stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   });
 
   afterEach(() => {

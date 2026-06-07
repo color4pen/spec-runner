@@ -490,7 +490,7 @@ describe("TC-CAP-006: commit message format", () => {
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const step = makeAgentStep({ name: "build-fixer" });
-    const deps = makeLocalDeps({ slug: "my-test-slug" }, spawnFn);
+    const _deps = makeLocalDeps({ slug: "my-test-slug" }, spawnFn);
     state.steps = {};
 
     await executor.execute(step, state, makeLocalDeps({ slug: "my-test-slug" }, spawnFn));

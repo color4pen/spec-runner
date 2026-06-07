@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { githubTokenValidCheck } from "../../../../../src/core/doctor/checks/auth/github-token-valid.js";
-import { buildMockContext, buildMockConfig, buildMockGitHubClient } from "../../mock-context.js";
+import { buildMockContext, buildMockGitHubClient } from "../../mock-context.js";
 
 describe("githubTokenValidCheck", () => {
   // TC-022

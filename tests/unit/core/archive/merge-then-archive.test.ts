@@ -274,7 +274,7 @@ describe("TC-MTA-003: check pending → success → merge → archive", () => {
     });
 
     const sleepFn = vi.fn().mockResolvedValue(undefined);
-    let time = 0;
+    const time = 0;
     const nowFn = () => time;
 
     const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
@@ -661,7 +661,7 @@ describe("TC-MTA-011: none → pending → success (grace 内に check 出現)",
     });
 
     // Time stays at 0: grace never exceeds (elapsed always 0)
-    let time = 0;
+    const time = 0;
     const nowFn = () => time;
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 
@@ -716,7 +716,7 @@ describe("TC-MTA-012: none → failure (grace 内に check 出現 → failure es
     });
 
     // Time stays at 0: grace never exceeds
-    let time = 0;
+    const time = 0;
     const nowFn = () => time;
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 

@@ -56,7 +56,7 @@ function makeJob(overrides: Partial<JobState> = {}): JobState {
 }
 
 let stdoutSpy: ReturnType<typeof vi.spyOn>;
-let exitSpy: ReturnType<typeof vi.spyOn>;
+let _exitSpy: ReturnType<typeof vi.spyOn>;
 let stderrSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
@@ -64,7 +64,7 @@ beforeEach(() => {
   mockList.mockReset();
   stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
-  exitSpy = vi.spyOn(process, "exit").mockImplementation((code?: string | number | null) => {
+  _exitSpy = vi.spyOn(process, "exit").mockImplementation((code?: string | number | null) => {
     throw new Error(`process.exit(${code})`);
   });
 });

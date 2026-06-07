@@ -83,7 +83,7 @@ describe("TC-022: ImplementerStep.resultFilePath と parseResult", () => {
   });
 
   it("parseResult は NULL_PARSE_RESULT と deep-equal な値を返す", () => {
-    const state = makeMinimalState();
+    const _state = makeMinimalState();
     const deps = makeMinimalDeps();
     const result = ImplementerStep.parseResult("any content", deps);
     expect(result).toEqual(NULL_PARSE_RESULT);

@@ -62,7 +62,7 @@ describe("TC-001: VerificationStep kind discriminator and agent 不在", () => {
 // TC-018: VerificationStep.parseResult — passed 抽出
 describe("TC-018: VerificationStep.parseResult — passed 抽出", () => {
   it("content に '## Verdict: passed' が含まれる場合 verdict='passed' を返す", () => {
-    const state = makeMinimalState();
+    const _state = makeMinimalState();
     const deps = makeMinimalDeps("my-change");
     const content = "# Verification Result\n\n## Verdict: passed\n\n## Phase Results\n";
     const result = VerificationStep.parseResult(content, deps);
@@ -76,7 +76,7 @@ describe("TC-018: VerificationStep.parseResult — passed 抽出", () => {
 // TC-019: VerificationStep.parseResult — failed 抽出
 describe("TC-019: VerificationStep.parseResult — failed 抽出", () => {
   it("content に '## Verdict: failed' が含まれる場合 verdict='failed' を返す", () => {
-    const state = makeMinimalState();
+    const _state = makeMinimalState();
     const deps = makeMinimalDeps("my-change");
     const content = "# Verification Result\n\n## Verdict: failed\n\n## Phase Results\n";
     const result = VerificationStep.parseResult(content, deps);
@@ -89,7 +89,7 @@ describe("TC-019: VerificationStep.parseResult — failed 抽出", () => {
 // TC-020: VerificationStep.parseResult — verdict 行不在 → null
 describe("TC-020: VerificationStep.parseResult — verdict 行不在 → null", () => {
   it("content に '## Verdict:' が存在しない場合 verdict=null を返す", () => {
-    const state = makeMinimalState();
+    const _state = makeMinimalState();
     const deps = makeMinimalDeps("my-change");
     const content = "# Broken verification result\n\nNo verdict here.\n";
     const result = VerificationStep.parseResult(content, deps);

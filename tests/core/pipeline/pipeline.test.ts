@@ -17,13 +17,13 @@ import { EventBus } from "../../../src/core/event/event-bus.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import { toLegacyStepResult } from "../../../src/state/helpers.js";
 import type { Step } from "../../../src/core/step/types.js";
-import type { JobState, StepRun } from "../../../src/state/schema.js";
+import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { changeFolderPath, reviewFeedbackPath, verificationResultPath, prCreateResultPath } from "../../../src/util/paths.js";
+import { reviewFeedbackPath, verificationResultPath, prCreateResultPath } from "../../../src/util/paths.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
@@ -414,7 +414,7 @@ describe("TC-063: Pipeline — loop exhaustion: SPEC_REVIEW_RETRIES_EXHAUSTED", 
     ];
     const specFixerResult: JobState = { ...designResult };
 
-    const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
+    const executeSpy = vi.fn().mockImplementation(async (step: Step, _currentState: JobState) => {
       if (step.name === "design") return designResult;
       if (step.name === "spec-review") {
         return specReviewResults[callCount++] ?? specReviewResults[specReviewResults.length - 1];

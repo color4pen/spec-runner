@@ -58,7 +58,7 @@ describe("TC-49: jobId validation — UUID 形式でない jobId の拒否（job
 describe("TC-50: jobId validation — UUID 形式でない jobId の拒否（job show）", () => {
   it("'invalid-not-uuid' does not match UUID_REGEX", () => {
     const UUID_REGEX = /^[a-f0-9-]{36}$/;
-    const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,63}$/;
+    const _SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,63}$/;
     const input = "invalid-not-uuid";
     // Neither UUID nor valid slug (slug only applies to non-UUID inputs in job show)
     expect(UUID_REGEX.test(input)).toBe(false);

@@ -16,7 +16,7 @@ import { STANDARD_TRANSITIONS } from "../src/core/pipeline/types.js";
 import { EventBus } from "../src/core/event/event-bus.js";
 import { StepExecutor } from "../src/core/step/executor.js";
 import type { Step } from "../src/core/step/types.js";
-import type { JobState, StepRun } from "../src/state/schema.js";
+import type { JobState } from "../src/state/schema.js";
 import type { PipelineDeps } from "../src/core/types.js";
 import type { SpawnFn } from "../src/util/spawn.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";

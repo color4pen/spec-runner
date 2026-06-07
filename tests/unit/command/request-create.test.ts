@@ -19,11 +19,11 @@ const mockClient: OneShotQueryClient = {
 };
 
 let stderrSpy: ReturnType<typeof vi.spyOn>;
-let stdoutSpy: ReturnType<typeof vi.spyOn>;
+let _stdoutSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
   stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
-  stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+  _stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
 
 afterEach(() => {

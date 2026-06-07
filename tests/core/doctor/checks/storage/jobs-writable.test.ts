@@ -22,7 +22,7 @@ describe("localStateWritableCheck", () => {
   // TC-040
   it("returns warn when local state dir absent but parent is writable", async () => {
     let callCount = 0;
-    const access = vi.fn().mockImplementation(async (p: string) => {
+    const access = vi.fn().mockImplementation(async (_p: string) => {
       callCount++;
       if (callCount === 1) {
         // First call: local state dir — ENOENT

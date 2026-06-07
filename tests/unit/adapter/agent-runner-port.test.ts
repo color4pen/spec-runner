@@ -28,7 +28,7 @@ import type {
 import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
-import type { Step, AgentStep, CliStep } from "../../../src/core/step/types.js";
+import type { AgentStep, CliStep } from "../../../src/core/step/types.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 
 // ---------------------------------------------------------------------------

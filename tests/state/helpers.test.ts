@@ -240,8 +240,9 @@ describe("TC-startedAt-02: pushStepResult — startedAt falls back to now when n
 
     const run = updated.steps?.["implementer"]?.[0];
     expect(run?.startedAt).toBeDefined();
-    expect(run?.startedAt! >= before).toBe(true);
-    expect(run?.startedAt! <= after).toBe(true);
+    const startedAt = run?.startedAt;
+    expect(startedAt! >= before).toBe(true);
+    expect(startedAt! <= after).toBe(true);
   });
 });
 

@@ -19,7 +19,7 @@ import type { RuntimeStrategy, WorkspaceContext, CleanupHandle } from "../../../
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
-import { JobStateStore, buildInitialJobState } from "../../../../src/store/job-state-store.js";
+import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import {
   setLogLevel,
@@ -91,7 +91,7 @@ function buildMockRuntime(opts: {
   /** When set, the mock buildDeps will include a real storeFactory pointing to this dir. */
   storeRootDir?: string;
 } = {}): RuntimeStrategy {
-  const finalJobState = buildJobState(opts.finalState ?? { status: "awaiting-archive", branch: "feat/test" });
+  const _finalJobState = buildJobState(opts.finalState ?? { status: "awaiting-archive", branch: "feat/test" });
 
   return {
     query: vi.fn(),
@@ -261,7 +261,7 @@ describe("TC-CR-005: awaiting-resume path returns 1", () => {
     expect(exitCode).toBe(1);
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
     // Should have written the "resume" hint
-    const combined = stderrCalls.map((c) => String(c[0])).join("");
+    const _combined = stderrCalls.map((c) => String(c[0])).join("");
     // logError uses stderr indirectly through stdout.write — check stdout too
     const stdoutCalls = (process.stdout.write as ReturnType<typeof vi.fn>).mock.calls;
     const allOutput = [...stderrCalls, ...stdoutCalls].map((c) => String(c[0])).join("");

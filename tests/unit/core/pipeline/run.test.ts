@@ -4,7 +4,7 @@
  * TC-025: Pipeline steps Map — pr-create が登録されている
  * TC-026: AgentRegistry — pr-create が登録されない
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 
 // TC-025: Pipeline steps Map — pr-create が登録されている
 describe("TC-025: Pipeline steps Map — pr-create が登録されている", () => {

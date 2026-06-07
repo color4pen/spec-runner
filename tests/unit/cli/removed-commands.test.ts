@@ -41,13 +41,13 @@ vi.mock("../../../src/core/command/request-list.js", () => ({ executeList: vi.fn
 
 let originalArgv: string[];
 let stderrSpy: ReturnType<typeof vi.spyOn>;
-let exitSpy: ReturnType<typeof vi.spyOn>;
+let _exitSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
   originalArgv = process.argv;
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
-  exitSpy = vi.spyOn(process, "exit").mockImplementation((code?: string | number | null) => {
+  _exitSpy = vi.spyOn(process, "exit").mockImplementation((code?: string | number | null) => {
     throw new Error(`process.exit(${code})`);
   });
 });
