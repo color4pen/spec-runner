@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.1.8](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.7...specrunner-v0.1.8) (2026-06-07)
+
+
+### Features
+
+* `--no-worktree` モードで worktree を作らずに run / resume を実行する ([#547](https://github.com/color4pen/spec-runner/issues/547)) ([bf13ad6](https://github.com/color4pen/spec-runner/commit/bf13ad65efa32b8e4081e587e3cd0d664d6955b2))
+* `.specrunner/jobs/` への読み取り依存を slug/sidecar 起点に移行する ([#536](https://github.com/color4pen/spec-runner/issues/536)) ([c0eebc1](https://github.com/color4pen/spec-runner/commit/c0eebc1658dc203efccf8e31c8181ed6ba24e5e6))
+* `.specrunner/jobs/` を完全撤去する ([#543](https://github.com/color4pen/spec-runner/issues/543)) ([8827b4e](https://github.com/color4pen/spec-runner/commit/8827b4ec629ad4dec1f668a9694b7466785604de))
+* `specrunner request review` に `--model` フラグを追加する ([#546](https://github.com/color4pen/spec-runner/issues/546)) ([7d83730](https://github.com/color4pen/spec-runner/commit/7d8373009d6502d68d252eb2070a5c8eb69d4dd6))
+* `specrunner usage` に step × model の内訳を表示する ([#542](https://github.com/color4pen/spec-runner/issues/542)) ([e0ee4e3](https://github.com/color4pen/spec-runner/commit/e0ee4e33ccab60dd2c710c5898ca85fb7f11c7af))
+* job state を event journal / projection / liveness に分離し、slug ディレクトリで branch 同伴管理する ([#532](https://github.com/color4pen/spec-runner/issues/532)) ([1d5ab2b](https://github.com/color4pen/spec-runner/commit/1d5ab2b4ae7efb14662a65afa111738b16036847))
+* job 終端処理を slug 正本に一本化する ([#535](https://github.com/color4pen/spec-runner/issues/535)) ([2dab4f7](https://github.com/color4pen/spec-runner/commit/2dab4f7985a607efe17d636c8f1860e9a0dd7180))
+* JobState に pipeline 同一性（pipelineId）を記録する ([#524](https://github.com/color4pen/spec-runner/issues/524)) ([79ab04a](https://github.com/color4pen/spec-runner/commit/79ab04a70cf51384f217e285cf06b8b269325a52))
+* local runtime の state 書き込みを slug/sidecar に一本化する ([#539](https://github.com/color4pen/spec-runner/issues/539)) ([3c376ee](https://github.com/color4pen/spec-runner/commit/3c376ee02a6491376cde523fbb4d8441cc0fc0fe))
+* managed runtime の machine-local state を slug キーに移す ([#541](https://github.com/color4pen/spec-runner/issues/541)) ([c4145a7](https://github.com/color4pen/spec-runner/commit/c4145a74188bf479b33472efb4355047c528e708))
+* pipeline 構成を PipelineDescriptor + registry に集約し、pipelineId で選択する ([#526](https://github.com/color4pen/spec-runner/issues/526)) ([a0c3d10](https://github.com/color4pen/spec-runner/commit/a0c3d10f5534e10da9b0b2b8fbd71397325d34cb))
+* resume の再開位置解決を resumePoint の記録から素直に決定する ([#545](https://github.com/color4pen/spec-runner/issues/545)) ([a251097](https://github.com/color4pen/spec-runner/commit/a2510973adb4b2a2407ab3a0921ab27fedd3d4de))
+* run / resume の終端結果を機械可読な --json 契約で出す ([#534](https://github.com/color4pen/spec-runner/issues/534)) ([3f6554a](https://github.com/color4pen/spec-runner/commit/3f6554a2302a15329c25d03859eb622515652356))
+* 各 step が入出力を宣言し、実行前に入力の存在を検証する ([#528](https://github.com/color4pen/spec-runner/issues/528)) ([f34ce87](https://github.com/color4pen/spec-runner/commit/f34ce87ae878552ef8967cb067df5c262bee3570))
+* 工程の役割と phase を記述子に一級化し、resume とエンジンの収束意味論をそこから導出する ([#527](https://github.com/color4pen/spec-runner/issues/527)) ([f98dbb1](https://github.com/color4pen/spec-runner/commit/f98dbb1979515a7a120c2685a0db6bdc6d438bbe))
+
+
+### Bug Fixes
+
+* `job ls` がプロセス死亡済みの job を `running` と表示する ([#537](https://github.com/color4pen/spec-runner/issues/537)) ([3da9d5a](https://github.com/color4pen/spec-runner/commit/3da9d5af1eea8b43f2b4271d293781a828d70047))
+* archive 後に managed marker が残り幽霊 job が表示される ([#540](https://github.com/color4pen/spec-runner/issues/540)) ([94f525f](https://github.com/color4pen/spec-runner/commit/94f525f897154d94ba977dbc29a222c949b00824))
+* request review が構造化 JSON の truncation で parse 失敗し、偽の needs-discussion を返す ([#530](https://github.com/color4pen/spec-runner/issues/530)) ([549dcab](https://github.com/color4pen/spec-runner/commit/549dcabf01052dcdd96c1b4431d2e674dca4f333))
+* resume 時に liveness sidecar の pid が更新されない ([#538](https://github.com/color4pen/spec-runner/issues/538)) ([1e8bcd8](https://github.com/color4pen/spec-runner/commit/1e8bcd8c755bcca7fd754e74d99edd38054c1db1))
+* signal 中断時の resumePoint に、起動 step でなく中断時の実行中 step を記録する ([#529](https://github.com/color4pen/spec-runner/issues/529)) ([a7f68da](https://github.com/color4pen/spec-runner/commit/a7f68dac87d752b79b3026146423a995404ae51a))
+* ループの fixer retry budget が step 生涯で累積し、loop 外からの再入で fresh budget を持てず即 escalate する ([#531](https://github.com/color4pen/spec-runner/issues/531)) ([97488d4](https://github.com/color4pen/spec-runner/commit/97488d4d48b3c4c2ece775dbaef788852f6036aa))
+
 ## [0.1.7](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.6...specrunner-v0.1.7) (2026-06-03)
 
 
