@@ -43,3 +43,4 @@
 {"type":"transition","ts":"2026-06-07T16:20:18.210Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/lint-cover-tests/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-07T16:20:16.491Z","endedAt":"2026-06-07T16:20:18.208Z"}
 {"type":"transition","ts":"2026-06-07T16:20:18.221Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-07T17:17:41.077Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

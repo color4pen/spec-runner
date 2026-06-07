@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "7a85b0fc-d0c4-4292-903c-a2c575316e81",
   "createdAt": "2026-06-07T15:47:02.707Z",
-  "updatedAt": "2026-06-07T16:20:18.221Z",
+  "updatedAt": "2026-06-07T17:17:41.077Z",
   "request": {
     "title": "eslint の対象に tests/ を加える",
     "type": "chore"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "chore/lint-cover-tests-7a85b0fc",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-07T16:20:18.207Z"
   },
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 37,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
