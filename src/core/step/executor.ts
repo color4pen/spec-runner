@@ -218,6 +218,7 @@ export class StepExecutor {
       input: {
         requestContent: deps.request.content,
         requestAdr: deps.request.adr,
+        requestBaseBranch: deps.request.baseBranch,
         dynamicContext: deps.dynamicContext,
         projectContext,
       },

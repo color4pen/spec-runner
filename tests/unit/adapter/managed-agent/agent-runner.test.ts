@@ -1862,3 +1862,65 @@ describe("ManagedAgentRunner usage tracking — SSE (design) 経路", () => {
     expect(result.modelUsage).toBeUndefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-baseBranch: requestBaseBranch propagation to StepContext
+// ---------------------------------------------------------------------------
+
+describe("ManagedAgentRunner requestBaseBranch propagation", () => {
+  it("propagates requestBaseBranch to StepContext.request.baseBranch when supplied", async () => {
+    const jobId = "tc-bb-ma-01";
+    const state = makeJobState(jobId, "feat/test");
+    await persistState(state);
+
+    const runner = new ManagedAgentRunner({
+      sessionClient: makeMockSessionClient(),
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const buildMessage = vi.fn().mockReturnValue("build message result");
+    // Use a non-design role so the runner takes the polling path (which calls buildMessage)
+    const step = makePollingStyleStep("spec-review", "spec-review");
+    const stepWithBuildMessage = { ...step, buildMessage };
+
+    const ctx = makeCtx(
+      { step: stepWithBuildMessage, state, branch: "feat/test", input: { requestContent: "content", requestBaseBranch: "develop" } },
+      jobId,
+    );
+
+    await runner.run(ctx);
+
+    const stepCtxArg = buildMessage.mock.calls[0]?.[1] as { request?: { baseBranch?: string } };
+    expect(stepCtxArg?.request?.baseBranch).toBe("develop");
+  });
+
+  it("falls back to baseBranch \"main\" when requestBaseBranch is absent", async () => {
+    const jobId = "tc-bb-ma-02";
+    const state = makeJobState(jobId, "feat/test");
+    await persistState(state);
+
+    const runner = new ManagedAgentRunner({
+      sessionClient: makeMockSessionClient(),
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const buildMessage = vi.fn().mockReturnValue("build message result");
+    // Use a non-design role so the runner takes the polling path (which calls buildMessage)
+    const step = makePollingStyleStep("spec-review", "spec-review");
+    const stepWithBuildMessage = { ...step, buildMessage };
+
+    const ctx = makeCtx(
+      { step: stepWithBuildMessage, state, branch: "feat/test", input: { requestContent: "content" } },
+      jobId,
+    );
+
+    await runner.run(ctx);
+
+    const stepCtxArg = buildMessage.mock.calls[0]?.[1] as { request?: { baseBranch?: string } };
+    expect(stepCtxArg?.request?.baseBranch).toBe("main");
+  });
+});

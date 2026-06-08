@@ -198,6 +198,58 @@ describe("TC-022: ClaudeCodeRunner implements AgentRunner interface", () => {
 });
 
 // ---------------------------------------------------------------------------
+// TC-baseBranch: requestBaseBranch propagation to StepContext
+// ---------------------------------------------------------------------------
+
+describe("ClaudeCodeRunner requestBaseBranch propagation", () => {
+  it("propagates requestBaseBranch to StepContext.request.baseBranch when supplied", async () => {
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: makeQueryFn() });
+    const buildMessage = vi.fn().mockReturnValue("build message result");
+    const step = makeAgentStep({ buildMessage });
+    const ctx: AgentRunContext = {
+      step,
+      state: makeJobState("tc-bb-01"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content", requestBaseBranch: "develop" },
+      session: {},
+      policy: {},
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    const stepCtxArg = buildMessage.mock.calls[0]?.[1] as { request?: { baseBranch?: string } };
+    expect(stepCtxArg?.request?.baseBranch).toBe("develop");
+  });
+
+  it("falls back to baseBranch \"main\" when requestBaseBranch is absent", async () => {
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: makeQueryFn() });
+    const buildMessage = vi.fn().mockReturnValue("build message result");
+    const step = makeAgentStep({ buildMessage });
+    const ctx: AgentRunContext = {
+      step,
+      state: makeJobState("tc-bb-02"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    const stepCtxArg = buildMessage.mock.calls[0]?.[1] as { request?: { baseBranch?: string } };
+    expect(stepCtxArg?.request?.baseBranch).toBe("main");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-023: query() receives ctx.cwd
 // ---------------------------------------------------------------------------
 

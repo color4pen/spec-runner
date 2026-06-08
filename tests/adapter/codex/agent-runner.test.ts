@@ -268,6 +268,38 @@ describe("CodexAgentRunner", () => {
     }
   });
 
+  // TC-baseBranch-01: requestBaseBranch supplied → StepContext.request.baseBranch propagated
+  it("propagates requestBaseBranch to StepContext.request.baseBranch when supplied", async () => {
+    const thread = makeThread({ finalResponse: "" });
+    const factory = makeCodexFactory(thread);
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const buildMessage = vi.fn().mockReturnValue("build message result");
+    const step = makeAgentStep({ buildMessage });
+    const ctx = makeCtx({ step, input: { requestContent: "# Request\nDo something", requestBaseBranch: "develop" } });
+
+    await runner.run(ctx);
+
+    const stepCtxArg = buildMessage.mock.calls[0]?.[1] as { request?: { baseBranch?: string } };
+    expect(stepCtxArg?.request?.baseBranch).toBe("develop");
+  });
+
+  // TC-baseBranch-02: requestBaseBranch absent → StepContext.request.baseBranch falls back to "main"
+  it("falls back to baseBranch \"main\" when requestBaseBranch is absent", async () => {
+    const thread = makeThread({ finalResponse: "" });
+    const factory = makeCodexFactory(thread);
+    const runner = new CodexAgentRunner({ _codexFactory: factory });
+
+    const buildMessage = vi.fn().mockReturnValue("build message result");
+    const step = makeAgentStep({ buildMessage });
+    const ctx = makeCtx({ step, input: { requestContent: "# Request\nDo something" } });
+
+    await runner.run(ctx);
+
+    const stepCtxArg = buildMessage.mock.calls[0]?.[1] as { request?: { baseBranch?: string } };
+    expect(stepCtxArg?.request?.baseBranch).toBe("main");
+  });
+
   // TC-08: enrichContext called before buildMessage, enriched context passed through
   it("calls enrichContext before buildMessage and passes enriched dynamicContext", async () => {
     const thread = makeThread({ finalResponse: "" });

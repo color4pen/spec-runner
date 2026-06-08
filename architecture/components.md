@@ -100,7 +100,7 @@ interface AgentDefinition { readonly name: string; readonly role: AgentStepName;
 主要 DTO（port 契約に属する型）:
 ```ts
 interface AgentRunContext { step; state; branch; slug; cwd; config; requestType?;
-  input: { requestContent; requestAdr?; dynamicContext?; projectContext? };
+  input: { requestContent; requestAdr?; requestBaseBranch?; dynamicContext?; projectContext? };
   session: { resumeSessionId?; resumePrompt?; logPath? };
   policy: { postWorkPrompts?; reportTool?; toolReportRetry? };
   emit(event, payload) }

@@ -31,6 +31,13 @@ export interface AgentRunInput {
    * Defaults to false when not provided (backward compat).
    */
   requestAdr?: boolean;
+  /**
+   * Base branch declared in the request's Meta section (e.g. "main", "develop").
+   * Propagated from ParsedRequest.baseBranch so adapters can construct a valid StepContext.
+   * Adapters use `requestBaseBranch ?? "main"` — falls back to "main" when absent (backward compat
+   * with old state that did not carry this field).
+   */
+  requestBaseBranch?: string;
   /** Dynamic repository context collected at pipeline start. Optional for backward compat. */
   dynamicContext?: DynamicContext;
   /** Project-level context from specrunner/project.md. undefined when file does not exist. */
