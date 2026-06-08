@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "51ededc6-8474-4b03-9f0e-9f1bfe660f4b",
   "createdAt": "2026-06-08T16:24:39.309Z",
-  "updatedAt": "2026-06-08T16:38:28.562Z",
+  "updatedAt": "2026-06-08T16:51:54.921Z",
   "request": {
     "title": "request template と prompt から bun / tests/ のハードコードを除去する",
     "type": "bug-fix"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/request-template-pm-neutral-51ededc6",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-08T16:38:28.554Z"
   },
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 37,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
