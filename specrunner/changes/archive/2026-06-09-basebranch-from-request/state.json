@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "05473548-1b61-4413-8c77-829097daeb74",
   "createdAt": "2026-06-08T16:24:44.676Z",
-  "updatedAt": "2026-06-08T16:46:09.661Z",
+  "updatedAt": "2026-06-08T16:54:27.614Z",
   "request": {
     "title": "adapter の baseBranch fallback を request.md から読む形に修正する",
     "type": "bug-fix"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/basebranch-from-request-05473548",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-08T16:46:09.649Z"
   },
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 37,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
