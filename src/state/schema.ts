@@ -6,6 +6,7 @@ export type JobStatus = "running" | "awaiting-resume" | "awaiting-archive" | "fa
 
 import type { ModelUsage } from "../kernel/model-usage.js";
 import type { BaseReportResult } from "../kernel/report-result.js";
+import type { AgentStepName as AgentStepNameUnion } from "../kernel/agent-definition.js";
 /**
  * Re-export from canonical location in the kernel layer.
  * Both the port layer and state layer reference this single definition.
@@ -21,6 +22,23 @@ export type StepName = typeof STEP_NAMES[keyof typeof STEP_NAMES];
  * Derived from AGENT_STEP_NAMES whitelist — new steps must be added to the appropriate array.
  */
 export type AgentStepName = typeof AGENT_STEP_NAMES[number];
+
+// ---------------------------------------------------------------------------
+// Compile-time sync guard: AGENT_STEP_NAMES (kernel/step-names.ts) ↔ AgentStepName (kernel/agent-definition.ts)
+//
+// Enforces bidirectional consistency between the runtime array and the literal
+// union.  If either side is updated without updating the other, `tsc` fails here.
+// To fix: update AGENT_STEP_NAMES in kernel/step-names.ts AND AgentStepName in
+// kernel/agent-definition.ts so both sides contain exactly the same step names.
+//
+// Technique: Exclude<A, B> extends never — non-distributive check that catches
+// values present in A but absent in B (and vice versa for the reverse direction).
+// ---------------------------------------------------------------------------
+type _AssertNever<T extends never> = T;
+// Direction 1: array → union (catches values in AGENT_STEP_NAMES not in AgentStepName)
+type _AgentStepExtraInArray = _AssertNever<Exclude<typeof AGENT_STEP_NAMES[number], AgentStepNameUnion>>;
+// Direction 2: union → array (catches values in AgentStepName not in AGENT_STEP_NAMES)
+type _AgentStepExtraInUnion = _AssertNever<Exclude<AgentStepNameUnion, typeof AGENT_STEP_NAMES[number]>>;
 
 /**
  * CliStepName: names of steps that run as deterministic CLI processes.

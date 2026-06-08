@@ -100,6 +100,55 @@ describe("step name arrays", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// TC-SYNC-*: Guard mechanism regression tests (T-04)
+//
+// These tests verify that the bidirectional compile-time guard technique used in
+// state/schema.ts correctly catches drift between AGENT_STEP_NAMES and
+// AgentStepName.  Mirror copies with intentional drift are used so the actual
+// definitions are never modified.
+// ---------------------------------------------------------------------------
+
+// Shared helper — mirrors the guard in state/schema.ts
+type _AssertNeverMirror<T extends never> = T;
+
+// Mirror copies in sync (positive case — must compile without errors)
+const _MIRROR_SYNCED = ["a", "b", "c"] as const;
+type _MirrorUnionSynced = "a" | "b" | "c";
+// Both directions: no extra values in either side — resolves to never, constraint satisfied
+type _MirrorSync1 = _AssertNeverMirror<Exclude<typeof _MIRROR_SYNCED[number], _MirrorUnionSynced>>;
+type _MirrorSync2 = _AssertNeverMirror<Exclude<_MirrorUnionSynced, typeof _MIRROR_SYNCED[number]>>;
+
+// Drift case 1: array has a value not in the union — guard catches it (array → union direction)
+const _MIRROR_EXTRA_IN_ARRAY = ["a", "b", "c", "__drift__"] as const;
+// @ts-expect-error — "__drift__" is in the array but not in _MirrorUnionSynced; guard must fail
+type _DriftArrayToUnion = _AssertNeverMirror<Exclude<typeof _MIRROR_EXTRA_IN_ARRAY[number], _MirrorUnionSynced>>;
+
+// Drift case 2: union has a value not in the array — guard catches it (union → array direction)
+type _MirrorUnionExtraVal = "a" | "b" | "c" | "__drift__";
+// @ts-expect-error — "__drift__" is in the union but not in _MIRROR_SYNCED; guard must fail
+type _DriftUnionToArray = _AssertNeverMirror<Exclude<_MirrorUnionExtraVal, typeof _MIRROR_SYNCED[number]>>;
+
+describe("TC-SYNC: compile-time guard regression — mirror copy assertions", () => {
+  it("TC-SYNC-1: positive case: synced mirror compiles without type errors", () => {
+    // The mirror copies above (_MIRROR_SYNCED / _MirrorUnionSynced) compile cleanly.
+    // This it() block is a runtime anchor; the actual enforcement is compile-time above.
+    expect(true).toBe(true);
+  });
+
+  it("TC-SYNC-2: drift case: array→union drift is caught by @ts-expect-error (compile-time)", () => {
+    // _MIRROR_EXTRA_IN_ARRAY has "__drift__" which is absent in _MirrorUnionSynced.
+    // The @ts-expect-error directive above confirms the guard produces a type error.
+    expect(true).toBe(true);
+  });
+
+  it("TC-SYNC-3: drift case: union→array drift is caught by @ts-expect-error (compile-time)", () => {
+    // _MirrorUnionExtraVal has "__drift__" which is absent in _MIRROR_SYNCED.
+    // The @ts-expect-error directive above confirms the guard produces a type error.
+    expect(true).toBe(true);
+  });
+});
+
 describe("toStepName", () => {
   it("returns the same value for all registered agent step names", () => {
     for (const name of AGENT_STEP_NAMES) {

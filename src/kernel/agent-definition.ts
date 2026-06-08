@@ -2,15 +2,17 @@
  * Core agent definition types.
  * These types do NOT import from @anthropic-ai/sdk — adapter layer handles SDK mapping.
  *
- * Kernel principle: zero imports. AgentStepName is inlined as a literal union
- * (mirrors AGENT_STEP_NAMES in kernel/step-names.ts and AgentStepName in state/schema.ts).
+ * Kernel principle: zero imports. AgentStepName is inlined as a literal union.
+ * Compile-time sync with AGENT_STEP_NAMES (kernel/step-names.ts) is enforced
+ * via bidirectional guard in state/schema.ts.
  */
 
 /**
  * Names of pipeline steps that run as agent sessions.
- * Kept in sync with AGENT_STEP_NAMES in kernel/step-names.ts.
+ * Compile-time sync with AGENT_STEP_NAMES (kernel/step-names.ts) is enforced
+ * via bidirectional guard in state/schema.ts — update both when adding steps.
  */
-type AgentStepName =
+export type AgentStepName =
   | "design"
   | "spec-review"
   | "spec-fixer"

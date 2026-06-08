@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "jobId": "b427c084-a1a5-4a9b-922e-178aa83ea437",
+  "createdAt": "2026-06-08T09:11:20.851Z",
+  "updatedAt": "2026-06-08T09:40:57.662Z",
+  "request": {
+    "title": "AgentStepName と AGENT_STEP_NAMES の手動同期を compile-time enforcement に置き換える",
+    "type": "refactoring"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "refactor/step-name-compile-guard-b427c084",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/559",
+    "number": 559,
+    "createdAt": "2026-06-08T09:40:57.657Z"
+  },
+  "_journal": {
+    "historyCount": 36,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

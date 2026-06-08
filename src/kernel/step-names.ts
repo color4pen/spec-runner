@@ -6,7 +6,9 @@
 
 /**
  * Whitelist of step names that run as AI agent sessions.
- * AgentStepName is derived from this array — add new agent steps here.
+ * AgentStepName (kernel/agent-definition.ts) and this array are kept in sync
+ * via bidirectional compile-time guard in state/schema.ts — update both when
+ * adding or removing agent steps.
  */
 export const AGENT_STEP_NAMES = [
   "design",
