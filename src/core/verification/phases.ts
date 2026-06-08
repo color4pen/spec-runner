@@ -1,7 +1,7 @@
 /**
  * Verification phase configuration.
  * Maps phase names to package.json script names.
- * All phases run as `bun run <script>` via the runner.
+ * All phases run via the package manager run command detected at runtime.
  *
  * Using script names (not runner commands) allows the target project's
  * package.json to specify the actual test runner (e.g. vitest, jest, bun test).

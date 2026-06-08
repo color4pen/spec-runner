@@ -118,7 +118,7 @@ describe("TC-REQ-001: buildScaffoldTemplate() embeds type, title, slug", () => {
     expect(content).toContain("## 要件");
     expect(content).toContain("## スコープ外");
     expect(content).toContain("## 受け入れ基準");
-    expect(content).toContain("bun run typecheck && bun run test");
+    expect(content).toContain("`typecheck && test` が green");
   });
 });
 

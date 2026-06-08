@@ -40,7 +40,7 @@ export interface VerificationResult {
 
 /**
  * Type guard: returns true if phaseName is a script-based phase
- * (i.e. it has an entry in PHASE_SCRIPTS and runs via `bun run <script>`).
+ * (i.e. it has an entry in PHASE_SCRIPTS and runs via the detected package manager run command).
  */
 function isScriptPhase(name: PhaseName): name is ScriptPhaseName {
   return name in PHASE_SCRIPTS;
@@ -245,7 +245,7 @@ async function checkPackageJsonScriptsIntegrity(
  * 1. **commands path**: when verificationConfig.commands is defined, executes each command via
  *    `sh -c <command>` in order (fail-fast). Language-agnostic.
  * 2. **phase fallback path**: when commands is undefined, detects and runs package.json scripts
- *    (build → typecheck → test → lint → security → test-coverage) via `bun run <script>`.
+ *    (build → typecheck → test → lint → security → test-coverage) via the detected package manager run command.
  *
  * Writes verification-result.md to the change folder.
  *

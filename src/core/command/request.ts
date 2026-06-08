@@ -45,7 +45,7 @@ export function buildScaffoldTemplate(params: {
 ## 受け入れ基準
 
 - [ ] <基準 1>
-- [ ] \`bun run typecheck && bun run test\` が green
+- [ ] \`typecheck && test\` が green
 
 ## architect 評価済みの設計判断
 

@@ -30,7 +30,7 @@ verification-result.md に記録された build/test/lint/typecheck エラーを
 4. **Phase: test-coverage が failed の場合**:
    - verification-result.md の \`## Phase: test-coverage\` セクションに記載された missing TC ID を確認する
    - change folder の \`test-cases.md\` から該当 TC の GIVEN/WHEN/THEN を読み取る
-   - 対応する test を \`tests/\` 配下に追加する
+   - 対応する test を追加する（配置先はプロジェクトの既存テストの配置パターンに従う。特定ディレクトリを指定しない）
    - test 関数名または直前のコメントに TC ID を必ず記載する（例: \`it("TC-003: ...", ...)\`）
 5. 修正が完了したら end_turn する
 
