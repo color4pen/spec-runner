@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "3eb024e1-d2de-422b-a386-597492626fd0",
   "createdAt": "2026-06-08T08:40:18.143Z",
-  "updatedAt": "2026-06-08T08:55:47.038Z",
+  "updatedAt": "2026-06-08T09:03:08.168Z",
   "request": {
     "title": "pr-status.ts のユニットテストを追加する",
     "type": "chore"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "chore/pr-status-tests-3eb024e1",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-08T08:55:47.033Z"
   },
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 37,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
