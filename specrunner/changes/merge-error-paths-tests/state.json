@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "jobId": "4d92c9d1-27a9-4d0f-95e0-5d15e060c8c5",
+  "createdAt": "2026-06-08T08:40:24.008Z",
+  "updatedAt": "2026-06-08T08:54:02.159Z",
+  "request": {
+    "title": "merge-then-archive の未テスト error path を追加する",
+    "type": "chore"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "chore/merge-error-paths-tests-4d92c9d1",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/555",
+    "number": 555,
+    "createdAt": "2026-06-08T08:54:02.151Z"
+  },
+  "_journal": {
+    "historyCount": 36,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

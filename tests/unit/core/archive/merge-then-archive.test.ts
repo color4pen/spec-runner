@@ -1030,6 +1030,163 @@ describe("TC-PPG-004: empty/undefined protectedPaths → listPullRequestFiles no
 });
 
 // ---------------------------------------------------------------------------
+// TC-MTA-E01: Step 1 — JobStateStore.list throws → exitCode 2
+// ---------------------------------------------------------------------------
+
+describe("TC-MTA-E01: JobStateStore.list throws → exitCode 2", () => {
+  it("list() throws → exitCode 2 with error message", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("disk read error"));
+
+    const client = makeGitHubClient();
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      waitTimeoutMs: 60_000,
+    });
+
+    expect(result.exitCode).toBe(2);
+    if (result.exitCode === 2) {
+      expect(result.message).toContain("disk read error");
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MTA-E02: Step 2 — initial getPullRequest throws → exitCode 1 (escalation)
+// ---------------------------------------------------------------------------
+
+describe("TC-MTA-E02: initial getPullRequest throws → exitCode 1 escalation", () => {
+  it("getPullRequest throws before check loop → exitCode 1, failedStep contains 'PR status check'", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockRejectedValue(new Error("network error")),
+    });
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      waitTimeoutMs: 60_000,
+    });
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode === 1) {
+      expect(result.escalation).toContain("PR status check (getPullRequest)");
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MTA-E03: Step 5 — mergePullRequest throws → exitCode 1 (escalation)
+// ---------------------------------------------------------------------------
+
+describe("TC-MTA-E03: mergePullRequest throws → exitCode 1 escalation", () => {
+  it("mergePullRequest throws → exitCode 1, failedStep contains 'squash merge (REST API)'", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0 });
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        headRefName: "change/my-slug",
+        mergeable: "MERGEABLE",
+        headSha: "abc123",
+      }),
+      getCheckStatus: vi.fn().mockResolvedValue(SUCCESS_ROLLUP),
+      mergePullRequest: vi.fn().mockRejectedValue(new Error("API error 503")),
+    });
+
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      sleepFn,
+      waitTimeoutMs: 60_000,
+    });
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode === 1) {
+      expect(result.escalation).toContain("squash merge (REST API)");
+    }
+    expect(runArchiveOrchestrator).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MTA-E04: Step 5 — mergePullRequest returns {merged: false} → exitCode 1 (escalation)
+// ---------------------------------------------------------------------------
+
+describe("TC-MTA-E04: mergePullRequest returns merged: false → exitCode 1 escalation", () => {
+  it("mergePullRequest returns {merged: false} → exitCode 1, failedStep contains 'squash merge (REST API)'", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0 });
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        headRefName: "change/my-slug",
+        mergeable: "MERGEABLE",
+        headSha: "abc123",
+      }),
+      getCheckStatus: vi.fn().mockResolvedValue(SUCCESS_ROLLUP),
+      mergePullRequest: vi.fn().mockResolvedValue({ merged: false, message: "Method not allowed" }),
+    });
+
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      sleepFn,
+      waitTimeoutMs: 60_000,
+    });
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode === 1) {
+      expect(result.escalation).toContain("squash merge (REST API)");
+    }
+    expect(runArchiveOrchestrator).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-PPG-005: Already-MERGED PR → guard skipped
 // ---------------------------------------------------------------------------
 
