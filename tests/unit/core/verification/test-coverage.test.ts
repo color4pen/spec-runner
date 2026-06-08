@@ -20,7 +20,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { PHASE_NAMES, PHASE_SCRIPTS } from "../../../../src/core/verification/phases.js";
-import { runTestCoveragePhase, extractMustTcIds } from "../../../../src/core/verification/test-coverage.js";
+import { runTestCoveragePhase, extractMustTcIds, getTestFiles } from "../../../../src/core/verification/test-coverage.js";
 
 let tempDir: string;
 
@@ -642,5 +642,196 @@ it("TC-001: assert.strictEqual", () => { assert.strictEqual(1, 1); });`,
     const result = await runTestCoveragePhase(slug, tempDir);
     expect(result.status).toBe("passed");
     expect(result.assertionlessTcIds).toEqual([]);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Project-wide scanning — テストはプロジェクトの慣習に従って任意の場所に書かれる
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe("project-wide scanning: monorepo workspace 配下のテストも検出される", () => {
+  it("apps/<app>/src/foo.test.ts に TC ID があれば found（gamesmith 形式）", async () => {
+    const slug = "novel-prototype";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-100: workspace co-located test
+**Priority**: must
+`,
+    );
+    await writeTestFile(
+      "apps/novel-prototype/src/hooks/useTypewriter.test.ts",
+      `it("TC-100: typewriter", () => { expect(true).toBe(true); });`,
+    );
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("passed");
+    expect(result.foundTcIds).toContain("TC-100");
+    expect(result.missingTcIds).toEqual([]);
+  });
+
+  it("packages/<pkg>/src/foo.test.ts に TC ID があれば found", async () => {
+    const slug = "extract-pkg";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-101: package co-located test
+**Priority**: must
+`,
+    );
+    await writeTestFile(
+      "packages/dialogue/src/DialogueEngine.test.ts",
+      `it("TC-101: dialogue", () => { expect(true).toBe(true); });`,
+    );
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("passed");
+    expect(result.foundTcIds).toContain("TC-101");
+  });
+
+  it("apps と packages と tests/ が混在しても全て拾われる", async () => {
+    const slug = "mixed";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-200: in tests/
+**Priority**: must
+
+## TC-201: in apps/
+**Priority**: must
+
+## TC-202: in packages/
+**Priority**: must
+`,
+    );
+    await writeTestFile("tests/unit/legacy.test.ts", `it("TC-200", () => { expect(true).toBe(true); });`);
+    await writeTestFile("apps/my-app/src/a.test.ts", `it("TC-201", () => { expect(true).toBe(true); });`);
+    await writeTestFile("packages/my-pkg/src/b.test.ts", `it("TC-202", () => { expect(true).toBe(true); });`);
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("passed");
+    expect(result.foundTcIds).toEqual(
+      expect.arrayContaining(["TC-200", "TC-201", "TC-202"]),
+    );
+  });
+});
+
+describe("project-wide scanning: 除外ディレクトリは scan されない", () => {
+  it("node_modules 配下の TC ID は検出されない", async () => {
+    const slug = "exclude-nm";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-300: should NOT be found in node_modules
+**Priority**: must
+`,
+    );
+    // node_modules 内に偽の test (TC-300 を含む) を置く
+    await writeTestFile(
+      "node_modules/fake-pkg/dist/index.test.ts",
+      `it("TC-300: fake", () => { expect(true).toBe(true); });`,
+    );
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("failed");
+    expect(result.missingTcIds).toContain("TC-300");
+  });
+
+  it("dist / build / .git / coverage / .turbo / .cache / .specrunner も除外", async () => {
+    const slug = "exclude-many";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-301: excluded
+**Priority**: must
+`,
+    );
+    for (const dir of ["dist", "build", "out", ".git", "coverage", ".turbo", ".cache", ".specrunner", ".next"]) {
+      await writeTestFile(
+        `${dir}/leak.test.ts`,
+        `it("TC-301: ${dir}", () => { expect(true).toBe(true); });`,
+      );
+    }
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("failed");
+    expect(result.missingTcIds).toContain("TC-301");
+  });
+
+  it("specrunner/changes/archive 配下の TC ID は検出されない（過去 PR の汚染を防ぐ）", async () => {
+    const slug = "current-change";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-400: must not be matched by archive
+**Priority**: must
+`,
+    );
+    // 過去の archived change folder の中に TC-400 が偶然存在する状況を再現
+    await writeTestFile(
+      "specrunner/changes/archive/2026-05-01-old-change/tests/leftover.test.ts",
+      `it("TC-400: stale", () => { expect(true).toBe(true); });`,
+    );
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("failed");
+    expect(result.missingTcIds).toContain("TC-400");
+  });
+
+  it("specrunner/changes/<active-slug>/ 配下は scan される（archive のみ除外）", async () => {
+    const slug = "active-change";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-401: active change folder content is allowed
+**Priority**: must
+`,
+    );
+    // active な change folder 配下の test は拾われるべき
+    await writeTestFile(
+      "specrunner/changes/active-change/tests/scenario.test.ts",
+      `it("TC-401: active", () => { expect(true).toBe(true); });`,
+    );
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.foundTcIds).toContain("TC-401");
+  });
+});
+
+describe("getTestFiles: 単体動作", () => {
+  it("rootDir が存在しない場合は空配列を返す", async () => {
+    const files = await getTestFiles(path.join(tempDir, "no-such-dir"));
+    expect(files).toEqual([]);
+  });
+
+  it(".ts / .tsx ファイルのみ収集する", async () => {
+    await writeTestFile("src/a.ts", "export const a = 1;");
+    await writeTestFile("src/b.tsx", "export const b = 1;");
+    await writeTestFile("src/c.js", "exports.c = 1;");
+    await writeTestFile("src/d.md", "doc");
+
+    const files = await getTestFiles(tempDir);
+    const basenames = files.map((f) => path.basename(f)).sort();
+    expect(basenames).toEqual(["a.ts", "b.tsx"]);
+  });
+
+  it("node_modules 配下と archive 配下は無視される", async () => {
+    await writeTestFile("src/keep.ts", "export {};");
+    await writeTestFile("node_modules/skip.ts", "export {};");
+    await writeTestFile(
+      "specrunner/changes/archive/2026-01-01-old/skip.ts",
+      "export {};",
+    );
+
+    const files = await getTestFiles(tempDir);
+    const rels = files.map((f) => path.relative(tempDir, f)).sort();
+    expect(rels).toEqual([path.join("src", "keep.ts")]);
   });
 });

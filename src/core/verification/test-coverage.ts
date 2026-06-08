@@ -2,12 +2,31 @@
  * test-coverage phase — CLI internal processing.
  *
  * Reads test-cases.md, extracts Priority: must TC IDs via section-scan,
- * then checks if each TC ID appears in at least one tests/*.ts file.
+ * then checks if each TC ID appears in at least one test file anywhere
+ * in the project (respecting the project's own test-placement convention).
  *
  * Uses node:fs/promises and node:path only (bun:* / Bun.* are prohibited).
  */
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+
+// Directory names that should never be scanned for project tests.
+const ALWAYS_EXCLUDED_DIRS = new Set<string>([
+  "node_modules",
+  "dist",
+  "build",
+  "out",
+  "coverage",
+  ".git",
+  ".next",
+  ".turbo",
+  ".cache",
+  ".specrunner",
+]);
+
+// Path (relative to rootDir) where archived change folders live; their test
+// references must not contaminate the active coverage check.
+const ARCHIVE_REL_PATH = path.join("specrunner", "changes", "archive");
 
 /** TC-002: Result of the test-coverage phase. */
 export interface TestCoverageResult {
@@ -21,11 +40,17 @@ export interface TestCoverageResult {
 }
 
 /**
- * Recursively collect all .ts files under a directory.
+ * Recursively collect all `.ts` / `.tsx` files under `rootDir`, skipping
+ * common build / dependency / cache directories and the spec-runner change
+ * archive.
+ *
  * Returns an empty array if the directory does not exist or is unreadable.
+ *
+ * Exported for unit testing.
  */
-async function getTestFiles(dir: string): Promise<string[]> {
+export async function getTestFiles(rootDir: string): Promise<string[]> {
   const result: string[] = [];
+  const absArchive = path.join(rootDir, ARCHIVE_REL_PATH);
 
   async function scan(current: string): Promise<void> {
     let entries;
@@ -37,14 +62,19 @@ async function getTestFiles(dir: string): Promise<string[]> {
     for (const entry of entries) {
       const full = path.join(current, entry.name);
       if (entry.isDirectory()) {
+        if (ALWAYS_EXCLUDED_DIRS.has(entry.name)) continue;
+        if (full === absArchive) continue;
         await scan(full);
-      } else if (entry.isFile() && entry.name.endsWith(".ts")) {
+      } else if (
+        entry.isFile() &&
+        (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx"))
+      ) {
         result.push(full);
       }
     }
   }
 
-  await scan(dir);
+  await scan(rootDir);
   return result;
 }
 
@@ -112,7 +142,8 @@ export function extractMustTcIds(content: string): string[] {
  *    → if absent, return status: "skipped" with skip reason in stdout
  * 2. Extract Priority: must TC IDs
  *    → if 0 must TCs, return status: "passed"
- * 3. Collect all .ts files under tests/
+ * 3. Collect all .ts / .tsx files across the project (excluding build /
+ *    dependency / cache directories and the change archive)
  * 4. Check each must TC ID appears in at least one file
  * 5. Return status: "passed" or "failed" with coverage summary
  *
@@ -155,9 +186,11 @@ export async function runTestCoveragePhase(
     };
   }
 
-  // Step 3: Collect test files from tests/
-  const testsDir = path.join(cwd, "tests");
-  const testFiles = await getTestFiles(testsDir);
+  // Step 3: Collect test files from the entire project. We follow the
+  // project's own test-placement convention rather than a hard-coded `tests/`
+  // directory, so e.g. monorepo workspace tests (apps/*/src/**/*.test.ts) and
+  // co-located unit tests are all picked up.
+  const testFiles = await getTestFiles(cwd);
 
   // Step 4: Read all test files into memory
   const fileContents: string[] = [];
