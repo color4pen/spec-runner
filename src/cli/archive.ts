@@ -15,7 +15,7 @@ import { runArchiveOrchestrator } from "../core/archive/orchestrator.js";
 import { runMergeThenArchive } from "../core/archive/merge-then-archive.js";
 import type { FinishFs } from "../core/finish/types.js";
 import { parseRequestMd } from "../parser/request-md.js";
-import { requestMdPath } from "../util/paths.js";
+import { requestMdPath, archivedChangesDirRel, archivedChangeFolderPath } from "../util/paths.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { getOriginInfo } from "../git/remote.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
@@ -116,12 +116,12 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
     // Try archived change folder (may already be archived)
     try {
       const archivedPaths = await nodeFsPromises.readdir(
-        path.join(opts.cwd, "specrunner", "changes", "archive"),
+        path.join(opts.cwd, archivedChangesDirRel()),
       );
       const archiveEntry = archivedPaths.find((p) => p.endsWith(`-${opts.slug}`));
       if (archiveEntry) {
         const archivedReqPath = path.join(
-          opts.cwd, "specrunner", "changes", "archive", archiveEntry, "request.md",
+          opts.cwd, archivedChangeFolderPath(archiveEntry), "request.md",
         );
         const parsed = await parseRequestMd(archivedReqPath);
         baseBranch = parsed.baseBranch;

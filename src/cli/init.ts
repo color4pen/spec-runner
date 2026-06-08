@@ -4,6 +4,7 @@ import { loadConfig, saveConfig } from "../config/store.js";
 import { logInfo, logSuccess, logError } from "../logger/stdout.js";
 import { spawnCommand } from "../util/spawn.js";
 import { ensureDotSpecrunnerGitignore } from "../util/gitignore.js";
+import { changesDirRel, draftsDir } from "../util/paths.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 
 /**
@@ -68,8 +69,8 @@ export async function runInit(options: {
       const repoRoot = result.stdout.trim();
       await ensureDotSpecrunnerGitignore(repoRoot);
       // Create project scaffold directories (idempotent — recursive:true is no-op if exists)
-      await fs.mkdir(path.join(repoRoot, "specrunner", "drafts"), { recursive: true });
-      await fs.mkdir(path.join(repoRoot, "specrunner", "changes"), { recursive: true });
+      await fs.mkdir(path.join(repoRoot, draftsDir()), { recursive: true });
+      await fs.mkdir(path.join(repoRoot, changesDirRel()), { recursive: true });
     }
     // Non-zero exit = not a git repo; skip silently
   } catch {

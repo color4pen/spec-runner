@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "jobId": "32fbcde2-55ce-4466-a48e-b437ef7f7e03",
+  "createdAt": "2026-06-08T09:11:15.204Z",
+  "updatedAt": "2026-06-08T09:24:42.634Z",
+  "request": {
+    "title": "CLI のパス直書きを util/paths.ts に統一する",
+    "type": "refactoring"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "refactor/paths-util-consolidation-32fbcde2",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/557",
+    "number": 557,
+    "createdAt": "2026-06-08T09:24:42.619Z"
+  },
+  "_journal": {
+    "historyCount": 36,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}
