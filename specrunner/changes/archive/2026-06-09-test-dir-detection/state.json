@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "a76a554b-b114-4e5b-a318-16e9f1a6e971",
   "createdAt": "2026-06-08T15:09:59.089Z",
-  "updatedAt": "2026-06-08T15:42:43.347Z",
+  "updatedAt": "2026-06-08T15:47:22.037Z",
   "request": {
     "title": "テスト配置先の tests/ ハードコードを解消し implementer に配置を委ねる",
     "type": "spec-change"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/test-dir-detection-a76a554b",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-08T15:42:43.341Z"
   },
   "_journal": {
-    "historyCount": 44,
+    "historyCount": 45,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
