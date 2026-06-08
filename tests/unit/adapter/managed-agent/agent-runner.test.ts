@@ -18,6 +18,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { ManagedAgentRunner } from "../../../../src/adapter/managed-agent/agent-runner.js";
+import { environmentNotSetError } from "../../../../src/errors.js";
 import { DEFAULT_POLL_TIMEOUT_MS } from "../../../../src/adapter/managed-agent/completion.js";
 import type { AgentRunContext } from "../../../../src/core/port/agent-runner.js";
 import type { SessionClient } from "../../../../src/core/port/session-client.js";
@@ -1640,6 +1641,150 @@ describe("ManagedAgentRunner usage tracking — polling 経路", () => {
 
     expect(result.completionReason).toBe("success");
     expect(result.modelUsage).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-005: environmentNotSetError factory — code / message / hint の直接検証
+// ---------------------------------------------------------------------------
+
+describe("TC-005: environmentNotSetError factory", () => {
+  it("returns SpecRunnerError with code ENVIRONMENT_NOT_SET", () => {
+    const error = environmentNotSetError("design");
+    expect(error.code).toBe("ENVIRONMENT_NOT_SET");
+  });
+
+  it("message contains stepName", () => {
+    const error = environmentNotSetError("design");
+    expect(error.message).toContain("design");
+  });
+
+  it("hint contains 'specrunner managed setup'", () => {
+    const error = environmentNotSetError("design");
+    expect(error.hint).toContain("specrunner managed setup");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-02: config.environment 未設定 → ENVIRONMENT_NOT_SET エラー
+// ---------------------------------------------------------------------------
+
+describe("T-02: config.environment 未設定 → ENVIRONMENT_NOT_SET エラー", () => {
+  it("polling-style step + config.environment undefined → run() rejects with ENVIRONMENT_NOT_SET", async () => {
+    const runner = new ManagedAgentRunner({
+      sessionClient: makeMockSessionClient(),
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const state = makeJobState("tc-env-polling-job");
+    const ctx = makeCtx(
+      {
+        step: makePollingStyleStep("spec-review", "spec-review"),
+        state,
+        config: makeConfig({ environment: undefined }),
+      },
+      "tc-env-polling-job",
+    );
+
+    await expect(runner.run(ctx)).rejects.toMatchObject({ code: "ENVIRONMENT_NOT_SET" });
+  });
+
+  it("design-style step + config.environment undefined → run() rejects with ENVIRONMENT_NOT_SET", async () => {
+    const designStep: AgentStep = {
+      kind: "agent",
+      name: "design",
+      agent: {
+        name: "specrunner-design",
+        role: "design",
+        model: "claude-sonnet-4-5",
+        system: "design system",
+        tools: [],
+      },
+      toolHandlers: undefined,
+      buildMessage: () => "design message",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: null, findingsPath: null }),
+    };
+
+    const runner = new ManagedAgentRunner({
+      sessionClient: makeMockSessionClient(),
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const state = makeJobState("tc-env-design-job");
+    const ctx = makeCtx(
+      {
+        step: designStep,
+        state,
+        branch: "feat/test",
+        config: makeConfig({ environment: undefined }),
+      },
+      "tc-env-design-job",
+    );
+
+    await expect(runner.run(ctx)).rejects.toMatchObject({ code: "ENVIRONMENT_NOT_SET" });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-03: sessionId undefined → SESSION_CREATE_FAILED エラー
+// ---------------------------------------------------------------------------
+
+describe("T-03: createSession が sessionId: undefined を返す → SESSION_CREATE_FAILED エラー", () => {
+  it("createSession returns sessionId: undefined → run() rejects with SESSION_CREATE_FAILED", async () => {
+    const sessionClient: SessionClient = {
+      ...makeMockSessionClient(),
+      createSession: vi.fn().mockResolvedValue({ sessionId: undefined }),
+    };
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const state = makeJobState("tc-sess-undef-job");
+    const ctx = makeCtx(
+      {
+        step: makePollingStyleStep("spec-review", "spec-review"),
+        state,
+        session: {},
+      },
+      "tc-sess-undef-job",
+    );
+
+    await expect(runner.run(ctx)).rejects.toMatchObject({ code: "SESSION_CREATE_FAILED" });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-04: state.branch = null → BRANCH_NOT_SET エラー
+// ---------------------------------------------------------------------------
+
+describe("T-04: state.branch = null → BRANCH_NOT_SET エラー", () => {
+  it("polling-style step + state.branch = null → run() rejects with BRANCH_NOT_SET", async () => {
+    const runner = new ManagedAgentRunner({
+      sessionClient: makeMockSessionClient(),
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const state: JobState = { ...makeJobState("tc-branch-null-job"), branch: null };
+    const ctx = makeCtx(
+      {
+        step: makePollingStyleStep("spec-review", "spec-review"),
+        state,
+      },
+      "tc-branch-null-job",
+    );
+
+    await expect(runner.run(ctx)).rejects.toMatchObject({ code: "BRANCH_NOT_SET" });
   });
 });
 

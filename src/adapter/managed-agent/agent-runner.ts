@@ -54,6 +54,7 @@ import {
 } from "./error-helpers.js";
 import {
   branchNotSetError,
+  environmentNotSetError,
   sessionTerminatedError,
   changeFolderNotFoundError,
   sessionRequiresActionError,
@@ -150,6 +151,18 @@ export class ManagedAgentRunner implements AgentRunner {
   private async readSessionUsage(sessionId: string, model: string): Promise<Record<string, ModelUsage> | undefined> {
     const sessionUsage = await this.sessionClient.getSessionUsage(sessionId);
     return sessionUsage ? { [model]: sessionUsage } : undefined;
+  }
+
+  /**
+   * Resolve managed environment ID from config, or throw ENVIRONMENT_NOT_SET if not configured.
+   * Mirrors the branchNotSetError wrapping pattern (L564-566).
+   */
+  private resolveEnvironmentId(config: SpecRunnerConfig, step: AgentStep, state: JobState): string {
+    if (config.environment === undefined) {
+      const envErr = environmentNotSetError(step.name);
+      throwWrappedError({ code: envErr.code, message: envErr.message, hint: envErr.hint }, state);
+    }
+    return config.environment.id;
   }
 
   /**
@@ -279,10 +292,11 @@ export class ManagedAgentRunner implements AgentRunner {
     const agentId = getAgentId(config, step.agent.role);
     const repoUrl = `https://github.com/${this.repo.owner}/${this.repo.name}`;
 
+    const environmentId = this.resolveEnvironmentId(config, step, state);
     try {
       const sessionResult = await this.sessionClient.createSession({
         agentId,
-        environmentId: config.environment!.id,
+        environmentId,
         repoUrl,
         githubToken: this.githubToken,
         branch: ctx.branch || undefined,
@@ -587,8 +601,9 @@ export class ManagedAgentRunner implements AgentRunner {
     const { config, state } = ctx;
     const step = ctx.step;
     const repoUrl = `https://github.com/${this.repo.owner}/${this.repo.name}`;
+    const environmentId = this.resolveEnvironmentId(config, step, state);
 
-    let sessionId: string;
+    let sessionId: string | undefined;
 
     if (ctx.session.resumeSessionId) {
       // Session continuity: reuse existing session, fall back to new session on failure.
@@ -603,7 +618,7 @@ export class ManagedAgentRunner implements AgentRunner {
         try {
           const sessionResult = await this.sessionClient.createSession({
             agentId,
-            environmentId: config.environment!.id,
+            environmentId,
             repoUrl,
             githubToken: this.githubToken,
             branch: state.branch ?? undefined,
@@ -615,7 +630,7 @@ export class ManagedAgentRunner implements AgentRunner {
           throwSessionCreateError(errMsg, step.name, state, "fallback after resume failure");
         }
         try {
-          await this.sessionClient.sendUserMessage(sessionId!, initialMessage);
+          await this.sessionClient.sendUserMessage(sessionId, initialMessage);
         } catch (err) {
           const errMsg = (err as Error).message;
           throwSendMessageError(errMsg, step.name, state, "fallback");
@@ -625,7 +640,7 @@ export class ManagedAgentRunner implements AgentRunner {
       try {
         const sessionResult = await this.sessionClient.createSession({
           agentId,
-          environmentId: config.environment!.id,
+          environmentId,
           repoUrl,
           githubToken: this.githubToken,
           branch: state.branch ?? undefined,
@@ -638,14 +653,22 @@ export class ManagedAgentRunner implements AgentRunner {
       }
 
       try {
-        await this.sessionClient.sendUserMessage(sessionId!, initialMessage);
+        await this.sessionClient.sendUserMessage(sessionId, initialMessage);
       } catch (err) {
         const errMsg = (err as Error).message;
         throwSendMessageError(errMsg, step.name, state);
       }
     }
 
-    return sessionId!;
+    if (sessionId === undefined) {
+      throwWrappedError({
+        code: "SESSION_CREATE_FAILED",
+        message: `Failed to establish a session for '${step.name}': no session ID was returned.`,
+        hint: "Check your API key and try again.",
+      }, state);
+    }
+
+    return sessionId;
   }
 
   /**
@@ -660,7 +683,11 @@ export class ManagedAgentRunner implements AgentRunner {
     const resultFilePath = step.resultFilePath(state, stepCtx);
     if (resultFilePath === null) return null;
 
-    const effectiveBranch = state.branch!;
+    if (state.branch === null) {
+      const branchErr = branchNotSetError(step.name);
+      throwWrappedError({ code: branchErr.code, message: branchErr.message, hint: branchErr.hint }, state);
+    }
+    const effectiveBranch = state.branch;
 
     const fileContent = await this.githubClient.getRawFile(
       this.repo.owner,

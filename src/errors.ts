@@ -92,6 +92,7 @@ export const ERROR_CODES = {
   STEP_HALTED_NO_TOOL_CALL: "STEP_HALTED_NO_TOOL_CALL",
   STEP_INPUT_MISSING: "STEP_INPUT_MISSING",
   WORKTREE_DIRTY: "WORKTREE_DIRTY",
+  ENVIRONMENT_NOT_SET: "ENVIRONMENT_NOT_SET",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -198,6 +199,14 @@ export function branchNotSetError(stepName: string): SpecRunnerError {
     ERROR_CODES.BRANCH_NOT_SET,
     "Verify that design ran successfully and called register_branch before this step.",
     `state.branch is not set when entering '${stepName}'.`,
+  );
+}
+
+export function environmentNotSetError(stepName: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.ENVIRONMENT_NOT_SET,
+    "Run 'specrunner managed setup'.",
+    `Managed environment is not configured when entering '${stepName}'.`,
   );
 }
 

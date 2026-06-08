@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "jobId": "7beb998b-b185-4a91-afa5-0dd57966b201",
+  "createdAt": "2026-06-08T09:11:26.927Z",
+  "updatedAt": "2026-06-08T10:09:02.970Z",
+  "request": {
+    "title": "managed-agent adapter の非 null アサーションを safe access に置き換える",
+    "type": "bug-fix"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "fix/nonnull-assertion-cleanup-7beb998b",
+  "error": null,
+  "pipelineId": "standard",
+  "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/560",
+    "number": 560,
+    "createdAt": "2026-06-08T10:09:02.959Z"
+  },
+  "_journal": {
+    "historyCount": 68,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 2,
+      "verification": 2,
+      "code-review": 3,
+      "code-fixer": 1,
+      "conformance": 3,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}
