@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "a09eb901-1951-456e-9041-9837befc52a3",
   "createdAt": "2026-06-08T17:02:03.818Z",
-  "updatedAt": "2026-06-08T17:18:27.111Z",
+  "updatedAt": "2026-06-08T17:50:51.483Z",
   "request": {
     "title": "test-coverage のファイル拡張子フィルタを拡張する",
     "type": "spec-change"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/test-coverage-extensions-a09eb901",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-08T17:18:27.101Z"
   },
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 37,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
