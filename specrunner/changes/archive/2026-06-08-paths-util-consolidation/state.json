@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "32fbcde2-55ce-4466-a48e-b437ef7f7e03",
   "createdAt": "2026-06-08T09:11:15.204Z",
-  "updatedAt": "2026-06-08T09:24:42.634Z",
+  "updatedAt": "2026-06-08T10:43:35.746Z",
   "request": {
     "title": "CLI のパス直書きを util/paths.ts に統一する",
     "type": "refactoring"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "refactor/paths-util-consolidation-32fbcde2",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-08T09:24:42.619Z"
   },
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 37,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
