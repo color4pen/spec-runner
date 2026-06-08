@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "db5bf019-adb4-4e4e-b4fc-ec436e27722a",
   "createdAt": "2026-06-08T09:11:32.371Z",
-  "updatedAt": "2026-06-08T09:37:34.445Z",
+  "updatedAt": "2026-06-08T10:45:49.041Z",
   "request": {
     "title": "validateConfig で未検証のフィールドを検証する",
     "type": "bug-fix"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/config-validation-gaps-db5bf019",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-08T09:37:34.432Z"
   },
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 37,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
