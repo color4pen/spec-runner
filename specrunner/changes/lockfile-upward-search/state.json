@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "jobId": "a01f26fb-cb28-46ea-9c77-9ebe0ca5ebda",
+  "createdAt": "2026-06-08T17:01:58.551Z",
+  "updatedAt": "2026-06-08T17:33:31.288Z",
+  "request": {
+    "title": "detectPackageManager の lockfile 探索を上位ディレクトリに拡張する",
+    "type": "spec-change"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/lockfile-upward-search-a01f26fb",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/573",
+    "number": 573,
+    "createdAt": "2026-06-08T17:33:31.278Z"
+  },
+  "_journal": {
+    "historyCount": 36,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

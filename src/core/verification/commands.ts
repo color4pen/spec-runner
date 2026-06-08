@@ -41,19 +41,28 @@ export function normalizeCommands(raw: VerificationCommand[]): NormalizedCommand
  * environment variable expansion, and command chaining (`&&`, `||`, `;`).
  * Windows is not supported (POSIX shell assumed).
  *
- * Prepends `<cwd>/node_modules/.bin` to PATH so that locally-installed binaries
- * (tsc, eslint, vitest, etc.) are found even when sh does not inherit them from
- * the parent process environment.
+ * PATH construction (in order):
+ *   1. `<cwd>/node_modules/.bin` — locally-installed binaries always first.
+ *   2. `<root>/node_modules/.bin` — lockfile root binaries (hoisted in monorepo), only when root !== cwd.
+ *   3. Original `env.PATH` (if set).
+ *
+ * @param command - Shell command to execute via `sh -c`.
+ * @param cwd - Working directory for the child process.
+ * @param env - Environment variables (secrets are stripped before passing to child).
+ * @param root - Lockfile root directory. When provided and different from `cwd`,
+ *   its `node_modules/.bin` is appended to PATH after `cwd/node_modules/.bin`.
+ *   Defaults to `cwd` (no additional bin path).
  */
 export function spawnCommand(
   command: string,
   cwd: string,
   env: Record<string, string | undefined>,
+  root?: string,
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
-  const localBin = `${cwd}/node_modules/.bin`;
-  const pathWithLocalBin = env.PATH
-    ? `${localBin}:${env.PATH}`
-    : localBin;
+  const cwdBin = `${cwd}/node_modules/.bin`;
+  const rootBin = root !== undefined && root !== cwd ? `${root}/node_modules/.bin` : undefined;
+  const pathParts = [cwdBin, ...(rootBin ? [rootBin] : []), ...(env.PATH ? [env.PATH] : [])];
+  const pathWithLocalBin = pathParts.join(":");
   return new Promise((resolve) => {
     const child = spawn("sh", ["-c", command], {
       cwd,

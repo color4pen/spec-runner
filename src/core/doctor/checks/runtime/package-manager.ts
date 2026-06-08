@@ -18,7 +18,7 @@ export const packageManagerCheck: DoctorCheck = {
   required: true,
 
   async check(ctx: DoctorContext) {
-    const pm = await detectPackageManager(ctx.cwd, ctx.fs);
+    const { pm } = await detectPackageManager(ctx.cwd, ctx.fs);
     try {
       const result = await ctx.execFile(pm, ["--version"], { signal: AbortSignal.timeout(5000) });
       const version = result.stdout.trim();

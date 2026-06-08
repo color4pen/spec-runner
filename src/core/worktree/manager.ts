@@ -74,7 +74,7 @@ export function createWorktreeManager(
   const rm = rmFn ?? ((p: string, opts?: { recursive?: boolean; force?: boolean }) =>
     fs.rm(p, opts));
   const sleep = sleepFn ?? defaultSleep;
-  const detectPm = detectPmFn ?? detectPackageManager;
+  const detectPm = detectPmFn ?? (async (c: string): Promise<PackageManager> => (await detectPackageManager(c)).pm);
 
   return {
     async create(repoRoot: string, slug: string, jobId: string, baseRef?: string, branchName?: string): Promise<string> {

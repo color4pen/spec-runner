@@ -279,6 +279,7 @@ async function runVerificationCommands(
   rawCommands: import("../../config/schema.js").VerificationCommand[],
 ): Promise<VerificationResult> {
   const normalized = normalizeCommands(rawCommands);
+  const { root } = await detectPackageManager(cwd);
   const phases: PhaseResult[] = [];
   let failed = false;
 
@@ -298,7 +299,7 @@ async function runVerificationCommands(
     }
 
     const startMs = Date.now();
-    const { exitCode, stdout, stderr } = await spawnCommand(cmd.run, cwd, stripSecrets(process.env as Record<string, string | undefined>));
+    const { exitCode, stdout, stderr } = await spawnCommand(cmd.run, cwd, stripSecrets(process.env as Record<string, string | undefined>), root);
     const durationMs = Date.now() - startMs;
 
     const status = exitCode === 0 ? "passed" : "failed";
@@ -375,7 +376,8 @@ async function runVerificationPhases(
   }
 
   // Detect package manager from cwd to determine the run command for script phases
-  const toRunCmd = runCommand(await detectPackageManager(cwd));
+  const { pm: detectedPm } = await detectPackageManager(cwd);
+  const toRunCmd = runCommand(detectedPm);
 
   const phases: PhaseResult[] = [];
   let failed = false;
