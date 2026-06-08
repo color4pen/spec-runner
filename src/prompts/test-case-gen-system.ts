@@ -129,10 +129,10 @@ Result determination:
   expressed as vitest test cases. These scenarios are verified through dogfood runs
   (actual \`specrunner run\` executions).
 - **TC ID downstream reference**: TC IDs are referenced by the implementer (who writes the TC ID
-  in test function names / comments) and by the verification step (which greps \`tests/\` for each
-  must TC ID). TC IDs MUST be unique within test-cases.md and stable enough to grep reliably
-  (i.e. must not accidentally match unrelated strings). Use the \`TC-{NNN}\` flat format with
-  zero-padded 3-digit numbers as the canonical form.
+  in test function names / comments) and by the verification step (which greps the project's test
+  files (\`*.test.ts\` / \`*.spec.ts\`) for each must TC ID). TC IDs MUST be unique within
+  test-cases.md and stable enough to grep reliably (i.e. must not accidentally match unrelated
+  strings). Use the \`TC-{NNN}\` flat format with zero-padded 3-digit numbers as the canonical form.
 
 ## Delivery
 

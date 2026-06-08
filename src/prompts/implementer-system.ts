@@ -46,10 +46,11 @@ change folder の tasks.md に記載されたタスクを実装します。
      - **非 Scenario 由来 TC**（Source フィールドが design.md / tasks.md セクション参照）:
        従来通り test-cases.md に記載された GIVEN/WHEN/THEN をテストコードに変換する。
    - テストフレームワークやモック方法はプロジェクトの既存テストに合わせる
+   - **テストの配置先はプロジェクトの既存テストの配置パターンに従う**（特定ディレクトリを指定しない。既存テストの import パス・ディレクトリ構造を見て判断する）
    - test-cases.md が存在しない場合は従来通り tasks.md ベースで TDD を行う
    - **test 関数名または直前のコメントに TC ID を必ず記載する**
      - 例: \`it("TC-070: Agent 定義ハッシュ — 同一定義は同一ハッシュ", ...)\`
-     - 後続の verification step が \`tests/\` 配下に対する grep で TC ID の存在を機械的に検証する
+     - 後続の verification step がプロジェクト内の \`*.test.ts\` / \`*.spec.ts\` に対する grep で TC ID の存在を機械的に検証する
      - TC ID を記載せず暗黙的にスキップすることは禁止。must TC を実装しない場合は \`test_cases_skipped\` フォーマットで明示的に報告すること
 4. タスク完了時に tasks.md の未完了チェックボックス [ ] を完了 [x] に更新する
 5. 実装が完了したら end_turn する

@@ -20,7 +20,11 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { PHASE_NAMES, PHASE_SCRIPTS } from "../../../../src/core/verification/phases.js";
-import { runTestCoveragePhase, extractMustTcIds } from "../../../../src/core/verification/test-coverage.js";
+import {
+  runTestCoveragePhase,
+  extractMustTcIds,
+  collectProjectTestFiles,
+} from "../../../../src/core/verification/test-coverage.js";
 
 let tempDir: string;
 
@@ -642,5 +646,227 @@ it("TC-001: assert.strictEqual", () => { assert.strictEqual(1, 1); });`,
     const result = await runTestCoveragePhase(slug, tempDir);
     expect(result.status).toBe("passed");
     expect(result.assertionlessTcIds).toEqual([]);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// TC-028: collocated test (src/...feature.test.ts, no tests/ dir) が found になる
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe("TC-028: collocated test (src/ 配下 .test.ts, tests/ なし) の TC ID が found になる", () => {
+  it("src/feature.test.ts に TC ID を配置し tests/ ディレクトリ無し → status: passed", async () => {
+    const slug = "my-change";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-028: Collocated feature test
+**Priority**: must
+`,
+    );
+    // Place test under src/ (collocated), no tests/ directory
+    await writeTestFile(
+      "src/feature/feature.test.ts",
+      `it("TC-028: collocated", () => { expect(true).toBe(true); });`,
+    );
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("passed");
+    expect(result.foundTcIds).toContain("TC-028");
+    expect(result.missingTcIds).not.toContain("TC-028");
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// TC-029: .spec.ts 拡張子の test ファイルの TC ID が found になる
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe("TC-029: .spec.ts 拡張子の test ファイルの TC ID が found になる", () => {
+  it("feature.spec.ts に TC ID → status: passed", async () => {
+    const slug = "my-change";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-029: Spec extension test
+**Priority**: must
+`,
+    );
+    await writeTestFile(
+      "tests/unit/feature.spec.ts",
+      `it("TC-029: spec extension", () => { expect(true).toBe(true); });`,
+    );
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("passed");
+    expect(result.foundTcIds).toContain("TC-029");
+    expect(result.missingTcIds).not.toContain("TC-029");
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// TC-030: tests/ 配下配置の TC ID が引き続き found になる（後方互換）
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe("TC-030: tests/ 配下配置の TC ID が引き続き found になる（後方互換）", () => {
+  it("tests/unit/a.test.ts に TC ID → status: passed（既存配置との後方互換）", async () => {
+    const slug = "my-change";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-030: Backward compat tests/ placement
+**Priority**: must
+`,
+    );
+    await writeTestFile(
+      "tests/unit/a.test.ts",
+      `it("TC-030: backward compat", () => { expect(true).toBe(true); });`,
+    );
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("passed");
+    expect(result.foundTcIds).toContain("TC-030");
+    expect(result.missingTcIds).not.toContain("TC-030");
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// TC-031: node_modules / dist / .git 配下にのみ TC ID があれば missing になる（除外確認）
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe("TC-031: node_modules / dist / .git 配下は除外される", () => {
+  it("node_modules/ 配下にのみ TC ID → status: failed (missing)", async () => {
+    const slug = "my-change";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-031: Excluded dir test
+**Priority**: must
+`,
+    );
+    // Place TC ID only inside node_modules — must be excluded
+    await writeTestFile(
+      "node_modules/some-pkg/some.test.ts",
+      `it("TC-031: node_modules", () => { expect(true).toBe(true); });`,
+    );
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("failed");
+    expect(result.missingTcIds).toContain("TC-031");
+  });
+
+  it("dist/ 配下にのみ TC ID → status: failed (missing)", async () => {
+    const slug = "my-change2";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-031: Excluded dist test
+**Priority**: must
+`,
+    );
+    await writeTestFile(
+      "dist/some.test.ts",
+      `it("TC-031: dist", () => { expect(true).toBe(true); });`,
+    );
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("failed");
+    expect(result.missingTcIds).toContain("TC-031");
+  });
+
+  it(".git/ 配下にのみ TC ID → status: failed (missing)", async () => {
+    const slug = "my-change3";
+    await writeTestCasesMd(
+      slug,
+      `# Test Cases
+
+## TC-031: Excluded git test
+**Priority**: must
+`,
+    );
+    await writeTestFile(
+      ".git/hooks/some.test.ts",
+      `it("TC-031: git", () => { expect(true).toBe(true); });`,
+    );
+
+    const result = await runTestCoveragePhase(slug, tempDir);
+    expect(result.status).toBe("failed");
+    expect(result.missingTcIds).toContain("TC-031");
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// collectProjectTestFiles unit tests
+// ──────────────────────────────────────────────────────────────────────────────
+
+// ──────────────────────────────────────────────────────────────────────────────
+// TC-012 (test-dir-detection): test-coverage.ts に path.join(cwd, "tests") 固定参照が残っていない
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe("TC-012: test-coverage.ts — path.join(cwd, 'tests') 固定参照が除去されている", () => {
+  it("src/core/verification/test-coverage.ts に path.join(cwd, 'tests') が含まれない", async () => {
+    const srcPath = path.resolve("src/core/verification/test-coverage.ts");
+    const source = await fs.readFile(srcPath, "utf-8");
+    expect(source).not.toContain('path.join(cwd, "tests")');
+    expect(source).not.toContain("path.join(cwd, 'tests')");
+  });
+
+  it("src/core/verification/test-coverage.ts に path.join(rootDir, 'tests') が含まれない", async () => {
+    const srcPath = path.resolve("src/core/verification/test-coverage.ts");
+    const source = await fs.readFile(srcPath, "utf-8");
+    expect(source).not.toContain('path.join(rootDir, "tests")');
+    expect(source).not.toContain("path.join(rootDir, 'tests')");
+  });
+});
+
+describe("collectProjectTestFiles — .test.ts / .spec.ts のみ収集する", () => {
+  it("*.test.ts ファイルを収集する", async () => {
+    await writeTestFile("src/foo.test.ts", "");
+    const files = await collectProjectTestFiles(tempDir);
+    expect(files.some((f) => f.endsWith("foo.test.ts"))).toBe(true);
+  });
+
+  it("*.spec.ts ファイルを収集する", async () => {
+    await writeTestFile("src/bar.spec.ts", "");
+    const files = await collectProjectTestFiles(tempDir);
+    expect(files.some((f) => f.endsWith("bar.spec.ts"))).toBe(true);
+  });
+
+  it("*.ts（非 test/spec）ファイルは収集しない", async () => {
+    await writeTestFile("src/index.ts", "");
+    const files = await collectProjectTestFiles(tempDir);
+    expect(files.some((f) => f.endsWith("index.ts") && !f.endsWith(".test.ts") && !f.endsWith(".spec.ts"))).toBe(false);
+  });
+
+  it("node_modules 配下のファイルは除外する", async () => {
+    await writeTestFile("node_modules/pkg/foo.test.ts", "");
+    const files = await collectProjectTestFiles(tempDir);
+    expect(files.some((f) => f.includes("node_modules"))).toBe(false);
+  });
+
+  it("dist 配下のファイルは除外する", async () => {
+    await writeTestFile("dist/foo.test.ts", "");
+    const files = await collectProjectTestFiles(tempDir);
+    expect(files.some((f) => f.includes(`${path.sep}dist${path.sep}`) || f.endsWith(`${path.sep}dist`))).toBe(false);
+  });
+
+  it(".git 配下のファイルは除外する", async () => {
+    await writeTestFile(".git/foo.test.ts", "");
+    const files = await collectProjectTestFiles(tempDir);
+    expect(files.some((f) => f.includes(path.sep + ".git" + path.sep))).toBe(false);
+  });
+
+  it("存在しないディレクトリを渡すと空配列を返す", async () => {
+    const files = await collectProjectTestFiles(path.join(tempDir, "nonexistent"));
+    expect(files).toEqual([]);
+  });
+
+  it("dist-tests のような部分一致ディレクトリは除外しない", async () => {
+    await writeTestFile("dist-tests/foo.test.ts", "");
+    const files = await collectProjectTestFiles(tempDir);
+    expect(files.some((f) => f.includes("dist-tests"))).toBe(true);
   });
 });

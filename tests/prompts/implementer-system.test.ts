@@ -94,6 +94,37 @@ describe("IMPLEMENTER_SYSTEM_PROMPT — basic requirements", () => {
 });
 
 // ---------------------------------------------------------------------------
+// TC-005 (test-dir-detection): IMPLEMENTER_SYSTEM_PROMPT に tests/ 固定 grep 表現がない
+// Source: test-cases.md TC-005 — implementer プロンプトに tests/ 固定 grep の記述がない
+// ---------------------------------------------------------------------------
+describe("TC-005: IMPLEMENTER_SYSTEM_PROMPT — tests/ 固定 grep 表現が含まれない", () => {
+  it("verification step の説明に tests/ 配下固定のディレクトリパスが含まれない", () => {
+    // Old text: "verification step が `tests/` 配下に対する grep で TC ID の存在を機械的に検証する"
+    expect(IMPLEMENTER_SYSTEM_PROMPT).not.toContain("tests/ 配下に対する grep");
+    expect(IMPLEMENTER_SYSTEM_PROMPT).not.toContain("tests/ 配下への grep");
+  });
+
+  it("verification step の説明がプロジェクト内の *.test.ts / *.spec.ts を参照している", () => {
+    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("*.test.ts");
+    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("*.spec.ts");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-011 (test-dir-detection): IMPLEMENTER_SYSTEM_PROMPT に既存テスト配置パターンに従う旨のガイダンスが含まれる
+// Source: test-cases.md TC-011 — IMPLEMENTER_SYSTEM_PROMPT に既存 test 配置パターンに従う旨のガイダンスが含まれる
+// ---------------------------------------------------------------------------
+describe("TC-011: IMPLEMENTER_SYSTEM_PROMPT — 既存テスト配置パターンに従うガイダンスが含まれる", () => {
+  it("テストの配置先はプロジェクトの既存テスト配置パターンに従う旨が含まれる", () => {
+    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("既存テストの配置パターンに従う");
+  });
+
+  it("特定ディレクトリを指定しない旨の説明が含まれる", () => {
+    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("特定ディレクトリを指定しない");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-007: implementer system prompt に delta spec Scenario 参照フローが記載されている
 // Source: tasks.md > T-03: implementer system prompt を delta spec Scenario 参照フローに更新
 // ---------------------------------------------------------------------------

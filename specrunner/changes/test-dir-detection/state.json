@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "jobId": "a76a554b-b114-4e5b-a318-16e9f1a6e971",
+  "createdAt": "2026-06-08T15:09:59.089Z",
+  "updatedAt": "2026-06-08T15:42:43.347Z",
+  "request": {
+    "title": "テスト配置先の tests/ ハードコードを解消し implementer に配置を委ねる",
+    "type": "spec-change"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/test-dir-detection-a76a554b",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/569",
+    "number": 569,
+    "createdAt": "2026-06-08T15:42:43.341Z"
+  },
+  "_journal": {
+    "historyCount": 44,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 2,
+      "code-fixer": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

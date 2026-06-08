@@ -2,7 +2,8 @@
  * test-coverage phase — CLI internal processing.
  *
  * Reads test-cases.md, extracts Priority: must TC IDs via section-scan,
- * then checks if each TC ID appears in at least one tests/*.ts file.
+ * then checks if each TC ID appears in at least one *.test.ts / *.spec.ts
+ * file found anywhere in the project (excluding node_modules / dist / .git).
  *
  * Uses node:fs/promises and node:path only (bun:* / Bun.* are prohibited).
  */
@@ -20,11 +21,15 @@ export interface TestCoverageResult {
   stdout: string;
 }
 
+/** Directory names to skip entirely during project-wide scan. */
+const SKIP_DIRS = new Set(["node_modules", "dist", ".git"]);
+
 /**
- * Recursively collect all .ts files under a directory.
+ * Recursively collect all *.test.ts / *.spec.ts files under a project root.
+ * Skips node_modules, dist, and .git directories (exact name match only).
  * Returns an empty array if the directory does not exist or is unreadable.
  */
-async function getTestFiles(dir: string): Promise<string[]> {
+export async function collectProjectTestFiles(rootDir: string): Promise<string[]> {
   const result: string[] = [];
 
   async function scan(current: string): Promise<void> {
@@ -37,14 +42,19 @@ async function getTestFiles(dir: string): Promise<string[]> {
     for (const entry of entries) {
       const full = path.join(current, entry.name);
       if (entry.isDirectory()) {
-        await scan(full);
-      } else if (entry.isFile() && entry.name.endsWith(".ts")) {
+        if (!SKIP_DIRS.has(entry.name)) {
+          await scan(full);
+        }
+      } else if (
+        entry.isFile() &&
+        (entry.name.endsWith(".test.ts") || entry.name.endsWith(".spec.ts"))
+      ) {
         result.push(full);
       }
     }
   }
 
-  await scan(dir);
+  await scan(rootDir);
   return result;
 }
 
@@ -112,7 +122,7 @@ export function extractMustTcIds(content: string): string[] {
  *    → if absent, return status: "skipped" with skip reason in stdout
  * 2. Extract Priority: must TC IDs
  *    → if 0 must TCs, return status: "passed"
- * 3. Collect all .ts files under tests/
+ * 3. Collect all *.test.ts / *.spec.ts files from the project root
  * 4. Check each must TC ID appears in at least one file
  * 5. Return status: "passed" or "failed" with coverage summary
  *
@@ -155,9 +165,8 @@ export async function runTestCoveragePhase(
     };
   }
 
-  // Step 3: Collect test files from tests/
-  const testsDir = path.join(cwd, "tests");
-  const testFiles = await getTestFiles(testsDir);
+  // Step 3: Collect *.test.ts / *.spec.ts files from the project root
+  const testFiles = await collectProjectTestFiles(cwd);
 
   // Step 4: Read all test files into memory
   const fileContents: string[] = [];

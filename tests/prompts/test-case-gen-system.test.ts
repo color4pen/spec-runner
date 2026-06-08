@@ -108,6 +108,23 @@ describe("buildTestCaseGenInitialMessage — spec reading step", () => {
 });
 
 // ---------------------------------------------------------------------------
+// TC-006 (test-dir-detection): TEST_CASE_GEN_SYSTEM_PROMPT に tests/ 固定 grep 表現がない
+// Source: test-cases.md TC-006 — test-case-gen プロンプトに tests/ 固定 grep の記述がない
+// ---------------------------------------------------------------------------
+describe("TC-006 (test-dir-detection): TEST_CASE_GEN_SYSTEM_PROMPT — tests/ 固定 grep 表現が含まれない", () => {
+  it("verification note に tests/ 固定パスの grep 表現が含まれない", () => {
+    // Old text: "verification step (which greps `tests/` for each must TC ID)"
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).not.toContain("greps `tests/`");
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).not.toContain("which greps `tests/`");
+  });
+
+  it("verification note がプロジェクトの test ファイル (*.test.ts / *.spec.ts) を参照している", () => {
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("*.test.ts");
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("*.spec.ts");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-006: TEST_CASE_GEN_BASE Test Case Format has GWT-omit instruction for Scenario-derived TCs
 // Source: tasks.md > T-02: test-case-gen system prompt を GWT 省略指示に更新
 // ---------------------------------------------------------------------------
