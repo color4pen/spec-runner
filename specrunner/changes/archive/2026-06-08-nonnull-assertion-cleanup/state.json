@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "7beb998b-b185-4a91-afa5-0dd57966b201",
   "createdAt": "2026-06-08T09:11:26.927Z",
-  "updatedAt": "2026-06-08T10:09:02.970Z",
+  "updatedAt": "2026-06-08T10:50:15.457Z",
   "request": {
     "title": "managed-agent adapter の非 null アサーションを safe access に置き換える",
     "type": "bug-fix"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/nonnull-assertion-cleanup-7beb998b",
   "error": null,
   "pipelineId": "standard",
@@ -23,7 +23,7 @@
     "createdAt": "2026-06-08T10:09:02.959Z"
   },
   "_journal": {
-    "historyCount": 68,
+    "historyCount": 69,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
