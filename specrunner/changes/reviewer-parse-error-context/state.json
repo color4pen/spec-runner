@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "jobId": "08cecf01-de5c-4a48-91fa-79e258a43cb3",
+  "createdAt": "2026-06-08T13:04:35.083Z",
+  "updatedAt": "2026-06-08T13:25:40.981Z",
+  "request": {
+    "title": "request review の parse 失敗時にエラー内容と raw output を保持する",
+    "type": "bug-fix"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "fix/reviewer-parse-error-context-08cecf01",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/564",
+    "number": 564,
+    "createdAt": "2026-06-08T13:25:40.967Z"
+  },
+  "_journal": {
+    "historyCount": 36,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

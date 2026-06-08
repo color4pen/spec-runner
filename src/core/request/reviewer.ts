@@ -8,6 +8,7 @@ import type { OneShotQueryClient } from "../port/one-shot-query-client.js";
 import type { ModelUsage } from "../port/model-usage.js";
 import { projectMdPath } from "../../util/paths.js";
 import { REQUEST_REVIEW_SYSTEM_PROMPT } from "../../prompts/request-review-system.js";
+import { stderrWrite, maskSensitive } from "../../logger/stdout.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -38,6 +39,8 @@ export interface RequestReviewResult {
 
 const VALID_VERDICTS: readonly RequestReviewVerdict[] = ["approve", "needs-discussion", "reject"];
 
+const RAW_OUTPUT_TRUNCATE_LIMIT = 500;
+
 /**
  * Fixed diagnostic message used when structured JSON output cannot be parsed.
  * Must not contain any input-derived text so it is clearly distinguishable from
@@ -48,6 +51,36 @@ export const PARSE_FAILURE_SUMMARY =
 
 function isValidVerdict(value: unknown): value is RequestReviewVerdict {
   return typeof value === "string" && (VALID_VERDICTS as readonly string[]).includes(value);
+}
+
+function truncateRawOutput(text: string): string {
+  if (text.length <= RAW_OUTPUT_TRUNCATE_LIMIT) return text;
+  return text.slice(0, RAW_OUTPUT_TRUNCATE_LIMIT) + ` [truncated, ${text.length} total chars]`;
+}
+
+function buildParseFailureResult(rawOutput: string, parseError?: string): RequestReviewResult {
+  const truncated = truncateRawOutput(rawOutput);
+  const description =
+    "Could not parse structured output from reviewer." +
+    (parseError ? ` Parse error: ${parseError}.` : "") +
+    ` Raw output (first ${RAW_OUTPUT_TRUNCATE_LIMIT} chars): ${maskSensitive(truncated)}`;
+
+  stderrWrite(
+    `[reviewer] parse failure.${parseError ? ` Parse error: ${parseError}.` : ""} Raw output: ${truncated}`,
+  );
+
+  return {
+    verdict: "needs-discussion",
+    findings: [
+      {
+        number: 1,
+        severity: "HIGH",
+        category: "parse-error",
+        description,
+      },
+    ],
+    summary: PARSE_FAILURE_SUMMARY,
+  };
 }
 
 /**
@@ -61,6 +94,8 @@ export function parseReviewOutput(text: string): RequestReviewResult {
   while ((match = jsonBlockRegex.exec(text)) !== null) {
     lastMatch = match;
   }
+
+  let parseError: string | undefined;
 
   if (lastMatch) {
     try {
@@ -82,23 +117,12 @@ export function parseReviewOutput(text: string): RequestReviewResult {
         }));
         return { ...(parsed as RequestReviewResult), findings };
       }
-    } catch {
-      // Fall through to fallback
+    } catch (err) {
+      parseError = (err as Error).message;
     }
   }
 
-  return {
-    verdict: "needs-discussion",
-    findings: [
-      {
-        number: 1,
-        severity: "HIGH",
-        category: "parse-error",
-        description: "Could not parse structured output from reviewer",
-      },
-    ],
-    summary: PARSE_FAILURE_SUMMARY,
-  };
+  return buildParseFailureResult(text, parseError);
 }
 
 // ---------------------------------------------------------------------------

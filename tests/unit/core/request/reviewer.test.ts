@@ -19,8 +19,13 @@
  * TC-RVR-016: formatHumanReadable — findings なし → "No findings."
  * TC-RVR-017: formatHumanReadable — location/recommendation optional lines
  * TC-RVR-018: formatHumanReadable — summary #N references match finding numbers
+ * TC-RVR-021: parseReviewOutput — malformed JSON → description contains Parse error and raw output
+ * TC-RVR-022: parseReviewOutput — malformed JSON → stderrWrite called with raw output substring
+ * TC-RVR-023: parseReviewOutput — long raw output → description truncated, SENTINEL_TAIL absent
+ * TC-RVR-024: parseReviewOutput — valid JSON → no stderr side effect
+ * TC-RVR-025: parseReviewOutput — empty string → parse-error finding with Raw output section
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   parseReviewOutput,
   verdictToExitCode,
@@ -559,13 +564,98 @@ describe("TC-RVR-020: parse-error finding present in all fallback modes", () => 
 
   for (const { label, text } of failureCases) {
     it(`includes category:'parse-error' finding for: ${label}`, () => {
-      const result = parseReviewOutput(text);
-      expect(result.verdict).toBe("needs-discussion");
-      const parseErrorFinding = result.findings.find((f) => f.category === "parse-error");
-      expect(parseErrorFinding).toBeDefined();
-      expect(result.summary).toBe(PARSE_FAILURE_SUMMARY);
-      // Ensure raw input is not echoed in summary
-      expect(result.summary).not.toBe(text.slice(0, 500));
+      const stderrSpy = vi.spyOn(process.stderr, "write").mockReturnValue(true);
+      try {
+        const result = parseReviewOutput(text);
+        expect(result.verdict).toBe("needs-discussion");
+        const parseErrorFinding = result.findings.find((f) => f.category === "parse-error");
+        expect(parseErrorFinding).toBeDefined();
+        expect(result.summary).toBe(PARSE_FAILURE_SUMMARY);
+        // Ensure raw input is not echoed in summary
+        expect(result.summary).not.toBe(text.slice(0, 500));
+      } finally {
+        stderrSpy.mockRestore();
+      }
     });
   }
+});
+
+// ---------------------------------------------------------------------------
+// TC-RVR-021 — TC-RVR-025: parse failure diagnostic context
+// ---------------------------------------------------------------------------
+
+describe("TC-RVR-021 — TC-RVR-025: parse failure diagnostic context", () => {
+  let stderrSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    stderrSpy = vi.spyOn(process.stderr, "write").mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // TC-RVR-021: malformed JSON → description contains Parse error and raw output substring
+  it("TC-RVR-021: malformed JSON → description contains Parse error and raw output substring", () => {
+    const text = "```json\n{ verdict: approve }\n```";
+    const result = parseReviewOutput(text);
+
+    expect(result.verdict).toBe("needs-discussion");
+    const finding = result.findings[0];
+    expect(finding?.category).toBe("parse-error");
+    expect(finding?.description).toContain("Parse error");
+    expect(finding?.description).toContain("verdict: approve");
+  });
+
+  // TC-RVR-022: parse failure → stderrWrite called with raw output substring
+  it("TC-RVR-022: malformed JSON → stderrWrite called with raw output substring", () => {
+    const text = "```json\n{ verdict: approve }\n```";
+    parseReviewOutput(text);
+
+    expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining("verdict: approve"));
+  });
+
+  // TC-RVR-023: long raw output → description truncated, SENTINEL_TAIL absent
+  it("TC-RVR-023: 600-char raw output → description truncated, SENTINEL_TAIL absent", () => {
+    const body = "x".repeat(470);
+    const tail = "SENTINEL_TAIL";
+    const padding = "y".repeat(600 - 470 - tail.length);
+    // Construct a malformed JSON block so parsing fails; the full text is > 500 chars
+    const rawContent = body + padding + tail;
+    const text = "```json\n{ " + rawContent + " }\n```";
+
+    const result = parseReviewOutput(text);
+
+    expect(result.verdict).toBe("needs-discussion");
+    const finding = result.findings[0];
+    expect(finding?.description).toContain(body.slice(0, 50)); // head present
+    expect(finding?.description).not.toContain("SENTINEL_TAIL");
+    expect(finding?.description).toContain("truncated");
+  });
+
+  // TC-RVR-024: valid JSON → no stderr side effect
+  it("TC-RVR-024: valid JSON → no stderr side effect", () => {
+    const validResult = {
+      verdict: "approve",
+      findings: [],
+      summary: "All good.",
+    };
+    const text = "```json\n" + JSON.stringify(validResult) + "\n```";
+
+    const result = parseReviewOutput(text);
+
+    expect(result.verdict).toBe("approve");
+    expect(result.summary).toBe("All good.");
+    expect(stderrSpy).not.toHaveBeenCalled();
+  });
+
+  // TC-RVR-025: empty string → parse-error finding with Raw output section
+  it("TC-RVR-025: empty string → parse-error finding with Raw output section", () => {
+    const result = parseReviewOutput("");
+
+    expect(result.verdict).toBe("needs-discussion");
+    const finding = result.findings[0];
+    expect(finding?.category).toBe("parse-error");
+    expect(finding?.description).toContain("Raw output");
+  });
 });
