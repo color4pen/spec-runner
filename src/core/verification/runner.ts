@@ -16,6 +16,7 @@ import { runTestCoveragePhase } from "./test-coverage.js";
 import { verificationResultPath } from "../../util/paths.js";
 import { normalizeCommands, spawnCommand } from "./commands.js";
 import type { VerificationConfig } from "../../config/schema.js";
+import { detectPackageManager, runCommand } from "../../util/detect-pm.js";
 
 /** Result for a single verification phase. */
 export interface PhaseResult {
@@ -61,15 +62,16 @@ async function scriptExists(scriptName: string, cwd: string): Promise<boolean> {
 }
 
 /**
- * Spawn `bun run <script>` and collect stdout/stderr.
+ * Spawn `<command> <args>` and collect stdout/stderr.
  * Returns the exit code and collected output.
  */
 function spawnScript(
-  script: string,
+  command: string,
+  args: string[],
   cwd: string,
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
-    const child = spawn("bun", ["run", script], {
+    const child = spawn(command, args, {
       cwd,
       shell: false,
       env: stripSecrets(process.env as Record<string, string | undefined>),
@@ -372,6 +374,9 @@ async function runVerificationPhases(
     }
   }
 
+  // Detect package manager from cwd to determine the run command for script phases
+  const toRunCmd = runCommand(await detectPackageManager(cwd));
+
   const phases: PhaseResult[] = [];
   let failed = false;
 
@@ -442,7 +447,8 @@ async function runVerificationPhases(
     }
 
     const startMs = Date.now();
-    const { exitCode, stdout, stderr } = await spawnScript(scriptName, cwd);
+    const [runCmd, ...runArgs] = toRunCmd(scriptName);
+    const { exitCode, stdout, stderr } = await spawnScript(runCmd, runArgs, cwd);
     const durationMs = Date.now() - startMs;
 
     const status = exitCode === 0 ? "passed" : "failed";

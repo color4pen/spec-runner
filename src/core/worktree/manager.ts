@@ -16,13 +16,15 @@ import * as fs from "node:fs/promises";
 import type { SpawnFn } from "../../util/spawn.js";
 import { spawnCommand } from "../../util/spawn.js";
 import { stderrWrite } from "../../logger/stdout.js";
+import { detectPackageManager, installCommand } from "../../util/detect-pm.js";
+import type { PackageManager } from "../../util/detect-pm.js";
 
 export interface WorktreeManager {
   /**
    * Create a worktree at .git/specrunner-worktrees/<slug>-<jobId-short>/.
    * When branchName is provided, uses -b <branchName> so the worktree starts on that branch.
    * Otherwise uses --detach <baseRef> so the worktree starts from the specified ref.
-   * Runs bun install --frozen-lockfile after creation.
+   * Detects the package manager from repoRoot and runs the appropriate install command.
    * Returns the worktree path.
    */
   create(repoRoot: string, slug: string, jobId: string, baseRef?: string, branchName?: string): Promise<string>;
@@ -57,15 +59,22 @@ const defaultSleep: SleepFn = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * Create a WorktreeManager with optional DI (for testing).
- * spawnFn: replaces git/bun invocations.
+ * spawnFn: replaces git/pm invocations.
  * rmFn: replaces fs.rm calls (avoids module-level mock conflicts in tests).
  * sleepFn: replaces setTimeout-based delay (avoids real delays in tests).
+ * detectPmFn: replaces package manager detection (avoids real fs access in tests).
  */
-export function createWorktreeManager(spawnFn?: SpawnFn, rmFn?: RmFn, sleepFn?: SleepFn): WorktreeManager {
+export function createWorktreeManager(
+  spawnFn?: SpawnFn,
+  rmFn?: RmFn,
+  sleepFn?: SleepFn,
+  detectPmFn?: (cwd: string) => Promise<PackageManager>,
+): WorktreeManager {
   const spawn = spawnFn ?? spawnCommand;
   const rm = rmFn ?? ((p: string, opts?: { recursive?: boolean; force?: boolean }) =>
     fs.rm(p, opts));
   const sleep = sleepFn ?? defaultSleep;
+  const detectPm = detectPmFn ?? detectPackageManager;
 
   return {
     async create(repoRoot: string, slug: string, jobId: string, baseRef?: string, branchName?: string): Promise<string> {
@@ -112,18 +121,16 @@ export function createWorktreeManager(spawnFn?: SpawnFn, rmFn?: RmFn, sleepFn?: 
         await sleep(delayMs);
       }
 
-      // bun install --frozen-lockfile
-      const installResult = await spawn(
-        "bun",
-        ["install", "--frozen-lockfile"],
-        { cwd: worktreePath },
-      );
+      // Detect package manager from repoRoot and run install in worktreePath
+      const pm = await detectPm(repoRoot);
+      const [installCmd, ...installArgs] = installCommand(pm);
+      const installResult = await spawn(installCmd, installArgs, { cwd: worktreePath });
       if (installResult.exitCode !== 0) {
         // Cleanup worktree before throwing
         await spawn("git", ["worktree", "remove", "--force", worktreePath], { cwd: repoRoot });
         await rm(worktreePath, { recursive: true, force: true });
         throw new Error(
-          `bun install failed (exit ${installResult.exitCode}): ${installResult.stderr.trim()}`,
+          `${installCmd} install failed (exit ${installResult.exitCode}): ${installResult.stderr.trim()}`,
         );
       }
 

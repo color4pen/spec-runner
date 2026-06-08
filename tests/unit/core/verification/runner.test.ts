@@ -449,6 +449,32 @@ describe("TC-021: test-coverage failed → verification-result.md に missing TC
   });
 });
 
+// TC-042: pnpm-lock.yaml があるとき phase fallback が pnpm run <script> を spawn する
+describe("TC-042: pnpm project → phase fallback uses pnpm run", () => {
+  it("spawns pnpm run <script> when pnpm-lock.yaml is present in cwd", async () => {
+    // Write pnpm-lock.yaml to tempDir so detectPackageManager returns "pnpm"
+    await fs.writeFile(path.join(tempDir, "pnpm-lock.yaml"), "", "utf-8");
+    await writePackageJson({ build: "echo build" });
+
+    const spawnMock = vi.mocked(childProcess.spawn);
+    const capturedCalls: Array<{ cmd: string; args: string[] }> = [];
+    spawnMock.mockImplementation((cmd: string, args: readonly string[]) => {
+      capturedCalls.push({ cmd, args: [...args] });
+      return makeMockChild(0, "ok") as ReturnType<typeof childProcess.spawn>;
+    });
+
+    const { runVerification } = await import("../../../../src/core/verification/runner.js");
+    const result = await runVerification("my-change", tempDir);
+
+    expect(result.verdict).toBe("passed");
+    // build phase should have been spawned with pnpm run build
+    const buildCall = capturedCalls.find((c) => c.cmd === "pnpm" && c.args.includes("build"));
+    expect(buildCall).toBeDefined();
+    expect(buildCall?.cmd).toBe("pnpm");
+    expect(buildCall?.args).toEqual(["run", "build"]);
+  });
+});
+
 // TC-041 (partial): verification-result.md の構造検証 (6 phases)
 describe("TC-041: verification-result.md 構造検証", () => {
   it("1行目が '# Verification Result — <slug> — iter' で始まり、6 phase セクションが存在する", async () => {

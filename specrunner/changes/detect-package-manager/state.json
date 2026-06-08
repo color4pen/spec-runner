@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "jobId": "ea3516d1-0e10-4743-aa06-4a23929cd8c9",
+  "createdAt": "2026-06-08T11:30:00.452Z",
+  "updatedAt": "2026-06-08T12:05:48.403Z",
+  "request": {
+    "title": "パッケージマネージャを自動検出して bun ハードコードを解消する",
+    "type": "spec-change"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/detect-package-manager-ea3516d1",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/562",
+    "number": 562,
+    "createdAt": "2026-06-08T12:05:48.394Z"
+  },
+  "_journal": {
+    "historyCount": 36,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

@@ -3,6 +3,7 @@
  *
  * Tests use spawn mocks (DI) so no real git operations occur.
  * fs.rm is injected via rmFn DI to avoid module-level mock conflicts.
+ * detectPmFn is injected to avoid real filesystem access in tests.
  *
  * TC-WTM-001: create — happy path (worktree add + bun install succeed → returns path)
  * TC-WTM-002: create — git worktree add fails → throws
@@ -10,10 +11,13 @@
  * TC-WTM-004: remove — calls git worktree remove + fs.rm
  * TC-WTM-005: prune — calls git worktree prune
  * TC-WTM-006: buildWorktreePath — path format is .git/specrunner-worktrees/<slug>-<jobId[:8]>
+ * TC-WTM-018: create — pnpm detected → pnpm install --frozen-lockfile
+ * TC-WTM-019: create — npm fallback → npm ci
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { createWorktreeManager, buildWorktreePath } from "../../../src/core/worktree/manager.js";
 import type { SpawnFn, SpawnResult } from "../../../src/util/spawn.js";
+import type { PackageManager } from "../../../src/util/detect-pm.js";
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -40,6 +44,11 @@ function makeRmFn(): ((path: string, options?: { recursive?: boolean; force?: bo
     ((path: string, options?: { recursive?: boolean; force?: boolean }) => Promise<void>) & ReturnType<typeof vi.fn>;
 }
 
+/** Stub detectPmFn that always returns the given PM. */
+function makePmStub(pm: PackageManager): (_cwd: string) => Promise<PackageManager> {
+  return () => Promise.resolve(pm);
+}
+
 // TC-WTM-006: buildWorktreePath path format
 describe("TC-WTM-006: buildWorktreePath", () => {
   it("formats path as .git/specrunner-worktrees/<slug>-<jobId[:8]>", () => {
@@ -61,7 +70,7 @@ describe("TC-WTM-001: create — happy path", () => {
       { exitCode: 0 }, // bun install
     ]);
 
-    const manager = createWorktreeManager(spawn);
+    const manager = createWorktreeManager(spawn, undefined, undefined, makePmStub("bun"));
     const result = await manager.create("/repo", "my-slug", "abcdef1234567890");
 
     expect(result).toBe("/repo/.git/specrunner-worktrees/my-slug-abcdef12");
@@ -83,7 +92,7 @@ describe("TC-WTM-008: create — baseRef argument", () => {
       { exitCode: 0 }, // bun install
     ]);
 
-    const manager = createWorktreeManager(spawn);
+    const manager = createWorktreeManager(spawn, undefined, undefined, makePmStub("bun"));
     await manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main");
 
     const addCall = spawn.calls.find(
@@ -101,7 +110,7 @@ describe("TC-WTM-008: create — baseRef argument", () => {
       { exitCode: 0 }, // bun install
     ]);
 
-    const manager = createWorktreeManager(spawn);
+    const manager = createWorktreeManager(spawn, undefined, undefined, makePmStub("bun"));
     await manager.create("/repo", "slug", "aaaa1111");
 
     const addCall = spawn.calls.find(
@@ -140,7 +149,7 @@ describe("TC-WTM-003: create — bun install fails → cleanup", () => {
     ]);
     const rm = makeRmFn();
 
-    const manager = createWorktreeManager(spawn, rm);
+    const manager = createWorktreeManager(spawn, rm, undefined, makePmStub("bun"));
     await expect(manager.create("/repo", "slug", "aaaa1111bbbb2222")).rejects.toThrow(
       "bun install failed",
     );
@@ -218,7 +227,7 @@ describe("TC-WTM-009: create — branchName specified uses -b flag", () => {
       { exitCode: 0 }, // bun install
     ]);
 
-    const manager = createWorktreeManager(spawn);
+    const manager = createWorktreeManager(spawn, undefined, undefined, makePmStub("bun"));
     await manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main", "feat/my-feature-abcdef12");
 
     const addCall = spawn.calls.find(
@@ -237,7 +246,7 @@ describe("TC-WTM-009: create — branchName specified uses -b flag", () => {
       { exitCode: 0 }, // bun install
     ]);
 
-    const manager = createWorktreeManager(spawn);
+    const manager = createWorktreeManager(spawn, undefined, undefined, makePmStub("bun"));
     await manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main");
 
     const addCall = spawn.calls.find(
@@ -261,7 +270,7 @@ describe("TC-WTM-010: lock contention retry succeeds on 2nd attempt", () => {
     ]);
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 
-    const manager = createWorktreeManager(spawn, undefined, sleepFn);
+    const manager = createWorktreeManager(spawn, undefined, sleepFn, makePmStub("bun"));
     const result = await manager.create("/repo", "my-slug", "abcdef1234567890");
 
     expect(result).toBe("/repo/.git/specrunner-worktrees/my-slug-abcdef12");
@@ -321,7 +330,7 @@ describe("TC-WTM-013: lock contention → branch exists → retry without -b", (
     ]);
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 
-    const manager = createWorktreeManager(spawn, undefined, sleepFn);
+    const manager = createWorktreeManager(spawn, undefined, sleepFn, makePmStub("bun"));
     const result = await manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main", "feat/my-branch");
 
     expect(result).toBe("/repo/.git/specrunner-worktrees/my-slug-abcdef12");
@@ -351,7 +360,7 @@ describe("TC-WTM-014: lock contention → branch not exists → retry with -b", 
     ]);
     const sleepFn = vi.fn().mockResolvedValue(undefined);
 
-    const manager = createWorktreeManager(spawn, undefined, sleepFn);
+    const manager = createWorktreeManager(spawn, undefined, sleepFn, makePmStub("bun"));
     await manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main", "feat/my-branch");
 
     const worktreeAddCalls = spawn.calls.filter(
@@ -435,6 +444,38 @@ describe("TC-WTM-017: all retries fail → branch cleanup failure does not propa
     await expect(
       manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main", "feat/my-branch"),
     ).rejects.toThrow("git worktree add failed");
+  });
+});
+
+// TC-WTM-018: create — pnpm detected → pnpm install --frozen-lockfile
+describe("TC-WTM-018: create — pnpm detected → pnpm install --frozen-lockfile", () => {
+  it("uses pnpm install --frozen-lockfile when pnpm stub is injected", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 0 }, // git worktree add
+      { exitCode: 0 }, // pnpm install
+    ]);
+
+    const manager = createWorktreeManager(spawn, undefined, undefined, makePmStub("pnpm"));
+    await manager.create("/repo", "my-slug", "abcdef1234567890");
+
+    const cmds = spawn.calls.map((c) => `${c.cmd} ${c.args.join(" ")}`);
+    expect(cmds[1]).toBe("pnpm install --frozen-lockfile");
+  });
+});
+
+// TC-WTM-019: create — npm fallback → npm ci
+describe("TC-WTM-019: create — npm fallback → npm ci", () => {
+  it("uses npm ci when npm stub is injected", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 0 }, // git worktree add
+      { exitCode: 0 }, // npm ci
+    ]);
+
+    const manager = createWorktreeManager(spawn, undefined, undefined, makePmStub("npm"));
+    await manager.create("/repo", "my-slug", "abcdef1234567890");
+
+    const cmds = spawn.calls.map((c) => `${c.cmd} ${c.args.join(" ")}`);
+    expect(cmds[1]).toBe("npm ci");
   });
 });
 

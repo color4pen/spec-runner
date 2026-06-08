@@ -11,7 +11,7 @@ import type { DoctorCheck } from "../types.js";
 
 // Runtime
 import { nodeVersionCheck } from "./runtime/node.js";
-import { bunVersionCheck } from "./runtime/bun.js";
+import { packageManagerCheck } from "./runtime/package-manager.js";
 import { gitVersionCheck } from "./runtime/git.js";
 import { codexCliCheck } from "./runtime/codex-cli.js";
 
@@ -47,7 +47,7 @@ import { legacyJobsDirCheck } from "./storage/legacy-jobs-dir.js";
 export const commonChecks: DoctorCheck[] = [
   // Runtime (3 — gh CLI check removed: no longer required)
   nodeVersionCheck,
-  bunVersionCheck,
+  packageManagerCheck,
   gitVersionCheck,
   // Config
   configFileExistsCheck,
@@ -89,7 +89,7 @@ export const allChecks: DoctorCheck[] = [...commonChecks, ...managedChecks, ...l
 // Re-export individual checks for direct import
 export {
   nodeVersionCheck,
-  bunVersionCheck,
+  packageManagerCheck,
   gitVersionCheck,
   codexCliCheck,
   configFileExistsCheck,
