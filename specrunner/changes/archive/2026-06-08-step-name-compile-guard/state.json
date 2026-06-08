@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "b427c084-a1a5-4a9b-922e-178aa83ea437",
   "createdAt": "2026-06-08T09:11:20.851Z",
-  "updatedAt": "2026-06-08T09:40:57.662Z",
+  "updatedAt": "2026-06-08T10:48:01.482Z",
   "request": {
     "title": "AgentStepName と AGENT_STEP_NAMES の手動同期を compile-time enforcement に置き換える",
     "type": "refactoring"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "refactor/step-name-compile-guard-b427c084",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-08T09:40:57.657Z"
   },
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 37,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
