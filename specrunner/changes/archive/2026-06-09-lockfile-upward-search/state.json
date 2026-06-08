@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "a01f26fb-cb28-46ea-9c77-9ebe0ca5ebda",
   "createdAt": "2026-06-08T17:01:58.551Z",
-  "updatedAt": "2026-06-08T17:33:31.288Z",
+  "updatedAt": "2026-06-08T17:53:23.328Z",
   "request": {
     "title": "detectPackageManager の lockfile 探索を上位ディレクトリに拡張する",
     "type": "spec-change"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/lockfile-upward-search-a01f26fb",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-08T17:33:31.278Z"
   },
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 37,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
