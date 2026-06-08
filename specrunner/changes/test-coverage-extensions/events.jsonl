@@ -1,0 +1,45 @@
+{"type":"transition","ts":"2026-06-08T17:02:03.818Z","step":"init","status":"started","message":"job created"}
+{"type":"transition","ts":"2026-06-08T17:02:05.592Z","step":"design-started","status":"started","message":"Starting design step"}
+{"type":"transition","ts":"2026-06-08T17:05:05.383Z","step":"design-verdict","status":"ok","message":"design verdict: success"}
+{"type":"step-attempt","step":"design","sessionId":"b39ecb03-62a5-4710-a6ed-f1eda000e444","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1},"startedAt":"2026-06-08T17:02:05.599Z","endedAt":"2026-06-08T17:05:03.520Z"}
+{"type":"transition","ts":"2026-06-08T17:05:05.387Z","step":"step-transition","status":"ok","message":"design → spec-review"}
+{"type":"transition","ts":"2026-06-08T17:05:05.387Z","step":"spec-review","status":"started","message":"spec-review iteration 1 started"}
+{"type":"transition","ts":"2026-06-08T17:05:05.388Z","step":"spec-review-started","status":"started","message":"Starting spec-review step"}
+{"type":"transition","ts":"2026-06-08T17:06:36.971Z","step":"spec-review-verdict","status":"ok","message":"spec-review verdict: approved"}
+{"type":"step-attempt","step":"spec-review","sessionId":"536be222-2e7b-4812-8778-4752c2583cda","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/test-coverage-extensions/spec-review-result-001.md","error":null,"toolResult":{"ok":true,"approved":true},"followUpAttempts":1},"startedAt":"2026-06-08T17:05:05.400Z","endedAt":"2026-06-08T17:06:35.434Z"}
+{"type":"transition","ts":"2026-06-08T17:06:36.975Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-06-08T17:06:36.975Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
+{"type":"transition","ts":"2026-06-08T17:06:36.977Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-06-08T17:08:08.756Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"fb14d6e3-35ee-4415-a2a7-326a865524ac","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1},"startedAt":"2026-06-08T17:06:36.990Z","endedAt":"2026-06-08T17:08:07.060Z"}
+{"type":"transition","ts":"2026-06-08T17:08:08.760Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-06-08T17:08:08.761Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
+{"type":"transition","ts":"2026-06-08T17:12:05.437Z","step":"implementer-verdict","status":"ok","message":"implementer verdict: success"}
+{"type":"step-attempt","step":"implementer","sessionId":"b7f62ebe-d989-47bb-ab9c-9cc9338f01fa","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1},"startedAt":"2026-06-08T17:08:08.773Z","endedAt":"2026-06-08T17:12:03.792Z"}
+{"type":"transition","ts":"2026-06-08T17:12:05.441Z","step":"step-transition","status":"ok","message":"implementer → verification"}
+{"type":"transition","ts":"2026-06-08T17:12:05.442Z","step":"verification","status":"started","message":"verification iteration 1 started"}
+{"type":"transition","ts":"2026-06-08T17:12:05.444Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-06-08T17:12:24.221Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/test-coverage-extensions/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-08T17:12:05.444Z","endedAt":"2026-06-08T17:12:24.219Z"}
+{"type":"transition","ts":"2026-06-08T17:12:24.224Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
+{"type":"transition","ts":"2026-06-08T17:12:24.224Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-06-08T17:12:24.226Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-06-08T17:12:24.226Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
+{"type":"transition","ts":"2026-06-08T17:15:28.867Z","step":"code-review-verdict","status":"ok","message":"code-review verdict: approved"}
+{"type":"step-attempt","step":"code-review","sessionId":"6e163bee-5c07-4c0b-acc1-d2da234425b6","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/test-coverage-extensions/review-feedback-001.md","error":null,"toolResult":{"ok":true,"approved":true,"fixableCount":0},"followUpAttempts":1},"startedAt":"2026-06-08T17:12:24.240Z","endedAt":"2026-06-08T17:15:27.287Z"}
+{"type":"transition","ts":"2026-06-08T17:15:28.870Z","step":"code-review","status":"ok","message":"code-review iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-06-08T17:15:28.871Z","step":"step-transition","status":"ok","message":"code-review → conformance"}
+{"type":"transition","ts":"2026-06-08T17:15:28.872Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-06-08T17:15:28.873Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
+{"type":"transition","ts":"2026-06-08T17:18:05.504Z","step":"conformance-verdict","status":"ok","message":"conformance verdict: approved"}
+{"type":"step-attempt","step":"conformance","sessionId":"e506d238-66ae-4159-bfc6-b79eb85f88c3","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/test-coverage-extensions/conformance-result-001.md","error":null,"toolResult":{"ok":true,"approved":true},"followUpAttempts":1},"startedAt":"2026-06-08T17:15:28.885Z","endedAt":"2026-06-08T17:18:03.913Z"}
+{"type":"transition","ts":"2026-06-08T17:18:05.507Z","step":"conformance","status":"ok","message":"conformance iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-06-08T17:18:05.507Z","step":"step-transition","status":"ok","message":"conformance → adr-gen"}
+{"type":"transition","ts":"2026-06-08T17:18:05.509Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-06-08T17:18:23.398Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"79d11648-9e18-47d0-83d6-efa2d8b98d41","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1},"startedAt":"2026-06-08T17:18:05.521Z","endedAt":"2026-06-08T17:18:21.769Z"}
+{"type":"transition","ts":"2026-06-08T17:18:23.402Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-06-08T17:18:23.404Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-06-08T17:18:27.104Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/test-coverage-extensions/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-08T17:18:23.405Z","endedAt":"2026-06-08T17:18:27.102Z"}
+{"type":"transition","ts":"2026-06-08T17:18:27.111Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}

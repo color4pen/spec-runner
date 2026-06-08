@@ -2,8 +2,10 @@
  * test-coverage phase — CLI internal processing.
  *
  * Reads test-cases.md, extracts Priority: must TC IDs via section-scan,
- * then checks if each TC ID appears in at least one *.test.ts / *.spec.ts
- * file found anywhere in the project (excluding node_modules / dist / .git).
+ * then checks if each TC ID appears in at least one test file (*.test.ts,
+ * *.spec.ts, *.test.js, *.spec.js, *.test.tsx, *.spec.tsx, *.test.jsx,
+ * *.spec.jsx, *.test.mts, *.spec.mts, *.test.mjs, *.spec.mjs)
+ * found anywhere in the project (excluding node_modules / dist / .git).
  *
  * Uses node:fs/promises and node:path only (bun:* / Bun.* are prohibited).
  */
@@ -24,8 +26,27 @@ export interface TestCoverageResult {
 /** Directory names to skip entirely during project-wide scan. */
 const SKIP_DIRS = new Set(["node_modules", "dist", ".git"]);
 
+/** File extensions recognised as test files during project-wide scan. */
+const TEST_FILE_EXTENSIONS = [
+  ".test.ts",
+  ".spec.ts",
+  ".test.js",
+  ".spec.js",
+  ".test.tsx",
+  ".spec.tsx",
+  ".test.jsx",
+  ".spec.jsx",
+  ".test.mts",
+  ".spec.mts",
+  ".test.mjs",
+  ".spec.mjs",
+] as const;
+
 /**
- * Recursively collect all *.test.ts / *.spec.ts files under a project root.
+ * Recursively collect all test files under a project root.
+ * Recognised extensions: .test.ts, .spec.ts, .test.js, .spec.js,
+ * .test.tsx, .spec.tsx, .test.jsx, .spec.jsx, .test.mts, .spec.mts,
+ * .test.mjs, .spec.mjs.
  * Skips node_modules, dist, and .git directories (exact name match only).
  * Returns an empty array if the directory does not exist or is unreadable.
  */
@@ -47,7 +68,7 @@ export async function collectProjectTestFiles(rootDir: string): Promise<string[]
         }
       } else if (
         entry.isFile() &&
-        (entry.name.endsWith(".test.ts") || entry.name.endsWith(".spec.ts"))
+        TEST_FILE_EXTENSIONS.some((ext) => entry.name.endsWith(ext))
       ) {
         result.push(full);
       }
@@ -165,7 +186,7 @@ export async function runTestCoveragePhase(
     };
   }
 
-  // Step 3: Collect *.test.ts / *.spec.ts files from the project root
+  // Step 3: Collect test files from the project root
   const testFiles = await collectProjectTestFiles(cwd);
 
   // Step 4: Read all test files into memory

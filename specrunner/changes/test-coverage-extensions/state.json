@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "jobId": "a09eb901-1951-456e-9041-9837befc52a3",
+  "createdAt": "2026-06-08T17:02:03.818Z",
+  "updatedAt": "2026-06-08T17:18:27.111Z",
+  "request": {
+    "title": "test-coverage のファイル拡張子フィルタを拡張する",
+    "type": "spec-change"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/test-coverage-extensions-a09eb901",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/572",
+    "number": 572,
+    "createdAt": "2026-06-08T17:18:27.101Z"
+  },
+  "_journal": {
+    "historyCount": 36,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}
