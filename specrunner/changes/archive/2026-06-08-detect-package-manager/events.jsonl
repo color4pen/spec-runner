@@ -43,3 +43,4 @@
 {"type":"transition","ts":"2026-06-08T12:05:48.396Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/detect-package-manager/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-08T12:05:46.524Z","endedAt":"2026-06-08T12:05:48.395Z"}
 {"type":"transition","ts":"2026-06-08T12:05:48.403Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-08T12:28:13.992Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "ea3516d1-0e10-4743-aa06-4a23929cd8c9",
   "createdAt": "2026-06-08T11:30:00.452Z",
-  "updatedAt": "2026-06-08T12:05:48.403Z",
+  "updatedAt": "2026-06-08T12:28:13.992Z",
   "request": {
     "title": "パッケージマネージャを自動検出して bun ハードコードを解消する",
     "type": "spec-change"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/detect-package-manager-ea3516d1",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-08T12:05:48.394Z"
   },
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 37,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
