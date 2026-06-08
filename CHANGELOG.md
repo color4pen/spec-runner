@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.9](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.8...specrunner-v0.1.9) (2026-06-08)
+
+
+### Features
+
+* パッケージマネージャを自動検出して bun ハードコードを解消する ([#562](https://github.com/color4pen/spec-runner/issues/562)) ([077f4fa](https://github.com/color4pen/spec-runner/commit/077f4fac516ceabcd5b11dcdd863a64d4fcbc89d))
+* 保護パスを変更する PR を無人マージ対象外にする ([#553](https://github.com/color4pen/spec-runner/issues/553)) ([3345665](https://github.com/color4pen/spec-runner/commit/3345665e077313baba8e6dc3753210f708d0deb2))
+
+
+### Bug Fixes
+
+* job finish の初回アーカイブで archive ディレクトリ不在により git mv が失敗する ([#551](https://github.com/color4pen/spec-runner/issues/551)) ([3642dd9](https://github.com/color4pen/spec-runner/commit/3642dd9281bf1d190954dabeaf974a8a62e63e44))
+* managed-agent adapter の非 null アサーションを safe access に置き換える ([#560](https://github.com/color4pen/spec-runner/issues/560)) ([626501c](https://github.com/color4pen/spec-runner/commit/626501cad104a7a516b507e7a8507d13c7cbfb65))
+* request review の parse 失敗時にエラー内容と raw output を保持する ([#564](https://github.com/color4pen/spec-runner/issues/564)) ([b3049c6](https://github.com/color4pen/spec-runner/commit/b3049c66f1ae0cbc2aea6fbd6bec09b20a99a48f))
+* validateConfig で未検証のフィールドを検証する ([#558](https://github.com/color4pen/spec-runner/issues/558)) ([1e8a465](https://github.com/color4pen/spec-runner/commit/1e8a4654965456ff9eeae9f975a0ac39603ad291))
+
 ## [0.1.8](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.7...specrunner-v0.1.8) (2026-06-07)
 
 
