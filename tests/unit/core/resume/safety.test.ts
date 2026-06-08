@@ -237,6 +237,51 @@ describe("isProcessAlive", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// isStaleRunning — sidecar pid typeof guard (T2.3 regression: D8)
+// ---------------------------------------------------------------------------
+
+describe("isStaleRunning — sidecar pid typeof guard", () => {
+  it("treats sidecar pid as absent (stale) when pid is a string", async () => {
+    // Write a temporary sidecar with pid as a string (not a number)
+    const { mkdtemp, rm, writeFile } = await import("node:fs/promises");
+    const os = await import("node:os");
+    const path = await import("node:path");
+
+    const tmpDir = await mkdtemp(path.join(os.tmpdir(), "safety-test-"));
+    try {
+      const sidecarPath = path.join(tmpDir, "liveness.json");
+      await writeFile(sidecarPath, JSON.stringify({ pid: "123", jobId: "test-job" }));
+
+      const state = makeBaseState({ status: "running" });
+      // pid is a string → typeof pid !== "number" → sidecar pid is treated as absent → stale
+      const result = isStaleRunning(state, sidecarPath);
+      expect(result).toBe(true);
+    } finally {
+      await rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("treats sidecar pid as absent (stale) when pid field is missing", async () => {
+    const { mkdtemp, rm, writeFile } = await import("node:fs/promises");
+    const os = await import("node:os");
+    const path = await import("node:path");
+
+    const tmpDir = await mkdtemp(path.join(os.tmpdir(), "safety-test-"));
+    try {
+      const sidecarPath = path.join(tmpDir, "liveness.json");
+      await writeFile(sidecarPath, JSON.stringify({ jobId: "test-job" }));
+
+      const state = makeBaseState({ status: "running" });
+      // No pid field → sidecar present but no pid → stale
+      const result = isStaleRunning(state, sidecarPath);
+      expect(result).toBe(true);
+    } finally {
+      await rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("isStaleRunning", () => {
   afterEach(() => {
     vi.useRealTimers();

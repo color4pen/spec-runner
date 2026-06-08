@@ -150,6 +150,176 @@ describe("validateConfig — step model registry validation", () => {
 });
 
 // ---------------------------------------------------------------------------
+// agents validation
+// ---------------------------------------------------------------------------
+
+describe("validateConfig — agents validation", () => {
+  it("throws when agents is not an object (string)", () => {
+    const raw = makeMinimalRawConfig({ agents: "x" });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/agents must be an object/);
+  });
+
+  it("throws when an agent entry is not an object (string)", () => {
+    const raw = makeMinimalRawConfig({ agents: { design: "x" } });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/agents\.design must be an object/);
+  });
+
+  it("throws when agentId is missing (undefined → not string)", () => {
+    const raw = makeMinimalRawConfig({
+      agents: { design: { definitionHash: "h", lastSyncedAt: "2026-01-01T00:00:00.000Z" } },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/agents\.design\.agentId must be a string/);
+  });
+
+  it("throws when definitionHash is not a string", () => {
+    const raw = makeMinimalRawConfig({
+      agents: { design: { agentId: "a", definitionHash: 123 as unknown as string, lastSyncedAt: "2026-01-01T00:00:00.000Z" } },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/agents\.design\.definitionHash must be a string/);
+  });
+
+  it("throws when lastSyncedAt is not a string", () => {
+    const raw = makeMinimalRawConfig({
+      agents: { design: { agentId: "a", definitionHash: "h", lastSyncedAt: null as unknown as string } },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/agents\.design\.lastSyncedAt must be a string/);
+  });
+
+  it("accepts a valid agent entry", () => {
+    const raw = makeMinimalRawConfig({
+      agents: { design: { agentId: "a", definitionHash: "h", lastSyncedAt: "2026-01-01T00:00:00.000Z" } },
+    });
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("accepts empty agents object", () => {
+    const raw = makeMinimalRawConfig({ agents: {} });
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("accepts agents with null entry (Partial Record)", () => {
+    const raw = makeMinimalRawConfig({ agents: { design: null } });
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("accepts config without agents field", () => {
+    const raw = makeMinimalRawConfig();
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// environment validation
+// ---------------------------------------------------------------------------
+
+describe("validateConfig — environment validation", () => {
+  it("throws when environment is not an object (string)", () => {
+    const raw = makeMinimalRawConfig({ environment: "bad" });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/environment must be an object/);
+  });
+
+  it("throws when id is not a string (number)", () => {
+    const raw = makeMinimalRawConfig({
+      environment: { id: 123 as unknown as string, lastSyncedAt: "2026-01-01T00:00:00.000Z" },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/environment\.id must be a string/);
+  });
+
+  it("throws when lastSyncedAt is not a string", () => {
+    const raw = makeMinimalRawConfig({
+      environment: { id: "env-1", lastSyncedAt: 0 as unknown as string },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/environment\.lastSyncedAt must be a string/);
+  });
+
+  it("accepts a valid environment", () => {
+    const raw = makeMinimalRawConfig({
+      environment: { id: "e", lastSyncedAt: "2026-01-01T00:00:00.000Z" },
+    });
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("accepts config without environment field", () => {
+    const raw = makeMinimalRawConfig();
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// specReview.pollIntervalMs validation
+// ---------------------------------------------------------------------------
+
+describe("validateConfig — specReview.pollIntervalMs validation", () => {
+  it("throws when pollIntervalMs is 0", () => {
+    const raw = makeMinimalRawConfig({ specReview: { pollIntervalMs: 0 } });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/specReview\.pollIntervalMs must be a positive integer/);
+  });
+
+  it("throws when pollIntervalMs is negative", () => {
+    const raw = makeMinimalRawConfig({ specReview: { pollIntervalMs: -1 } });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+  });
+
+  it("throws when pollIntervalMs is a non-integer float", () => {
+    const raw = makeMinimalRawConfig({ specReview: { pollIntervalMs: 1.5 } });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+  });
+
+  it("throws when pollIntervalMs is a string", () => {
+    const raw = makeMinimalRawConfig({ specReview: { pollIntervalMs: "10000" as unknown as number } });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+  });
+
+  it("throws when specReview is not an object", () => {
+    const raw = makeMinimalRawConfig({ specReview: "fast" as unknown });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/specReview must be an object/);
+  });
+
+  it("accepts pollIntervalMs=10000 (valid positive integer)", () => {
+    const raw = makeMinimalRawConfig({ specReview: { pollIntervalMs: 10000 } });
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("accepts specReview without pollIntervalMs", () => {
+    const raw = makeMinimalRawConfig({ specReview: {} });
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("accepts config without specReview field", () => {
+    const raw = makeMinimalRawConfig();
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// pipeline type guard validation
+// ---------------------------------------------------------------------------
+
+describe("validateConfig — pipeline type guard", () => {
+  it("throws when pipeline is a string (non-object)", () => {
+    const raw = makeMinimalRawConfig({ pipeline: "fast" as unknown });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/pipeline must be an object/);
+  });
+
+  it("throws when pipeline is a number", () => {
+    const raw = makeMinimalRawConfig({ pipeline: 42 as unknown });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/pipeline must be an object/);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // byRequestType validation
 // ---------------------------------------------------------------------------
 

@@ -418,6 +418,70 @@ describe("cancelSingleJob — job not found", () => {
 });
 
 // ---------------------------------------------------------------------------
+// cancelSingleJob — sidecar jobId typeof guard (T2.2)
+// ---------------------------------------------------------------------------
+
+describe("cancelSingleJob — sidecar jobId is a non-string (numeric)", () => {
+  it("falls through to convention path without throwing when sidecar jobId is a number", async () => {
+    // Write a job with a worktreePath in the liveness sidecar, but jobId as a number
+    const state = {
+      version: 1,
+      jobId: "numeric-sidecar-jobid",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      request: { path: "/test/request.md", title: "Test", type: "new-feature", slug: "numeric-sidecar-test" },
+      repository: { owner: "user", name: "repo" },
+      session: null,
+      step: "init",
+      status: "failed",
+      pid: null,
+      branch: null,
+      error: null,
+      history: [],
+      _journal: { historyCount: 0, stepCounts: {} },
+    };
+    const slug = "numeric-sidecar-test";
+
+    // Write slug canonical state
+    const slugDir = path.join(tempDir, "specrunner", "changes", slug);
+    await nodefs.mkdir(slugDir, { recursive: true });
+    await nodefs.writeFile(path.join(slugDir, "state.json"), JSON.stringify(state));
+    await nodefs.writeFile(path.join(slugDir, "events.jsonl"), "");
+
+    // Write liveness sidecar with jobId as a number (not string)
+    const livenessDir = path.join(tempDir, ".specrunner", "local", slug);
+    await nodefs.mkdir(livenessDir, { recursive: true });
+    await nodefs.writeFile(
+      path.join(livenessDir, "liveness.json"),
+      JSON.stringify({
+        jobId: 12345, // number, not string
+        worktreePath: "/some/worktree/that/does/not/exist",
+        pid: null,
+      }),
+    );
+
+    const deps = makeDeps();
+    // Should not throw — the guard rejects the sidecar worktreePath and falls through
+    const result = await cancelSingleJob({
+      jobId: "numeric-sidecar-jobid",
+      force: false,
+      purge: false,
+      deps,
+    });
+
+    // Best-effort completes (either success or clean failure, not an exception)
+    expect(result).toBeDefined();
+    // The sidecar worktreePath was NOT used (guard filtered it)
+    // worktreeManager.remove may have been called with convention path, not /some/worktree/...
+    const removeCalls = (deps.worktreeManager.remove as ReturnType<typeof vi.fn>).mock.calls;
+    const usedSidecarPath = removeCalls.some(
+      (args: unknown[]) => args[0] === "/some/worktree/that/does/not/exist",
+    );
+    expect(usedSidecarPath).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // cancelAllTerminated
 // ---------------------------------------------------------------------------
 

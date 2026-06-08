@@ -84,7 +84,7 @@ async function resolveWorktreePathForJob(
     const sidecarPath = path.join(repoRoot, livenessJsonPath(slug));
     const raw = await fs.readFile(sidecarPath, "utf-8");
     const sidecar = JSON.parse(raw) as Record<string, unknown>;
-    if (typeof sidecar["worktreePath"] === "string" && sidecar["jobId"] === state.jobId) {
+    if (typeof sidecar["worktreePath"] === "string" && typeof sidecar["jobId"] === "string" && sidecar["jobId"] === state.jobId) {
       return sidecar["worktreePath"];
     }
   } catch {

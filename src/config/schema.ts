@@ -311,8 +311,82 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
     );
   }
 
+  // Validate agents section if provided
+  if (obj["agents"] !== undefined && obj["agents"] !== null) {
+    if (typeof obj["agents"] !== "object") {
+      throw Object.assign(
+        new Error("CONFIG_INVALID: agents must be an object."),
+        { code: "CONFIG_INVALID" },
+      );
+    }
+    const agentsObj = obj["agents"] as Record<string, unknown>;
+    for (const [stepName, rec] of Object.entries(agentsObj)) {
+      if (rec === undefined || rec === null) continue;
+      if (typeof rec !== "object") {
+        throw Object.assign(
+          new Error(`CONFIG_INVALID: agents.${stepName} must be an object.`),
+          { code: "CONFIG_INVALID" },
+        );
+      }
+      const recObj = rec as Record<string, unknown>;
+      for (const field of ["agentId", "definitionHash", "lastSyncedAt"] as const) {
+        if (typeof recObj[field] !== "string") {
+          throw Object.assign(
+            new Error(`CONFIG_INVALID: agents.${stepName}.${field} must be a string.`),
+            { code: "CONFIG_INVALID" },
+          );
+        }
+      }
+    }
+  }
+
+  // Validate environment section if provided
+  if (obj["environment"] !== undefined && obj["environment"] !== null) {
+    if (typeof obj["environment"] !== "object") {
+      throw Object.assign(
+        new Error("CONFIG_INVALID: environment must be an object."),
+        { code: "CONFIG_INVALID" },
+      );
+    }
+    const envObj = obj["environment"] as Record<string, unknown>;
+    for (const field of ["id", "lastSyncedAt"] as const) {
+      if (typeof envObj[field] !== "string") {
+        throw Object.assign(
+          new Error(`CONFIG_INVALID: environment.${field} must be a string.`),
+          { code: "CONFIG_INVALID" },
+        );
+      }
+    }
+  }
+
+  // Validate specReview section if provided
+  if (obj["specReview"] !== undefined && obj["specReview"] !== null) {
+    if (typeof obj["specReview"] !== "object") {
+      throw Object.assign(
+        new Error("CONFIG_INVALID: specReview must be an object."),
+        { code: "CONFIG_INVALID" },
+      );
+    }
+    const specReviewObj = obj["specReview"] as Record<string, unknown>;
+    if (specReviewObj["pollIntervalMs"] !== undefined) {
+      const v = specReviewObj["pollIntervalMs"];
+      if (typeof v !== "number" || !Number.isInteger(v) || v < 1) {
+        throw Object.assign(
+          new Error("CONFIG_INVALID: specReview.pollIntervalMs must be a positive integer."),
+          { code: "CONFIG_INVALID" },
+        );
+      }
+    }
+  }
+
   // Validate pipeline.maxRetries if provided
   if (obj["pipeline"] !== undefined && obj["pipeline"] !== null) {
+    if (typeof obj["pipeline"] !== "object") {
+      throw Object.assign(
+        new Error("CONFIG_INVALID: pipeline must be an object."),
+        { code: "CONFIG_INVALID" },
+      );
+    }
     const pipeline = obj["pipeline"] as Record<string, unknown>;
     if (pipeline["maxRetries"] !== undefined) {
       const maxRetries = pipeline["maxRetries"];

@@ -46,12 +46,37 @@ export async function loadCredentials(): Promise<CredentialsFile> {
     // Ignore stat errors — file was just read
   }
 
+  let parsed: unknown;
   try {
-    return JSON.parse(raw) as CredentialsFile;
+    parsed = JSON.parse(raw);
   } catch {
     // Malformed JSON — return empty
     return {};
   }
+
+  if (typeof parsed !== "object" || parsed === null) {
+    throw Object.assign(
+      new Error("CONFIG_INVALID: credentials file must be a JSON object."),
+      { code: "CONFIG_INVALID" },
+    );
+  }
+
+  const creds = parsed as Record<string, unknown>;
+  if (creds["github"] !== undefined) {
+    const github = creds["github"];
+    if (
+      typeof github !== "object" ||
+      github === null ||
+      typeof (github as Record<string, unknown>)["token"] !== "string"
+    ) {
+      throw Object.assign(
+        new Error("CONFIG_INVALID: credentials file: github.token must be a string."),
+        { code: "CONFIG_INVALID" },
+      );
+    }
+  }
+
+  return parsed as CredentialsFile;
 }
 
 /**
