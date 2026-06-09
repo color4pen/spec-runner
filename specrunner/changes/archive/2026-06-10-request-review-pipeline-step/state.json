@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "a17288ea-d992-41eb-a7da-d4d8553786b3",
   "createdAt": "2026-06-09T15:14:27.337Z",
-  "updatedAt": "2026-06-09T16:50:42.234Z",
+  "updatedAt": "2026-06-09T17:02:03.528Z",
   "request": {
     "title": "request review をパイプラインステップ化する",
     "type": "spec-change"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/request-review-pipeline-step-a17288ea",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-09T16:50:42.224Z"
   },
   "_journal": {
-    "historyCount": 52,
+    "historyCount": 53,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
