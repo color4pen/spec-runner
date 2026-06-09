@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "68be6fb5-ffaf-4572-aaef-e8f47a90b6c8",
   "createdAt": "2026-06-09T05:42:30.606Z",
-  "updatedAt": "2026-06-09T06:12:41.170Z",
+  "updatedAt": "2026-06-09T06:39:30.586Z",
   "request": {
     "title": "--help フラグが positional 必須チェックより先に評価されるようにする",
     "type": "bug-fix"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/help-flag-before-positional-68be6fb5",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-09T06:12:41.158Z"
   },
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 37,
     "stepCounts": {
       "design": 1,
       "spec-review": 1,
