@@ -31,7 +31,7 @@ import type { FlagDef, ParsedArgs } from "./flag-parser.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
-import { logError, stderrWrite, stdoutWrite, resolveLogLevel } from "../logger/stdout.js";
+import { logError, stderrWrite, resolveLogLevel } from "../logger/stdout.js";
 import { SpecRunnerError, EXIT_CODE } from "../errors.js";
 import { ClaudeCodeOneShotQueryClient } from "../adapter/claude-code/one-shot-query-client.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
@@ -143,6 +143,8 @@ Options:
 
 /** @deprecated Use RUNTIME_RESET_USAGE */
 export const MANAGED_RESET_USAGE = RUNTIME_RESET_USAGE;
+
+export const NO_DETAILED_HELP_USAGE = "No detailed help available.\nRun 'specrunner --help' for the command list.\n";
 
 export const ARCHIVE_USAGE = `Usage: specrunner job archive <slug> [options]
 
@@ -485,15 +487,10 @@ export const COMMANDS: Record<string, CommandEntry> = {
           "with-merge": { type: "boolean" },
           "merge-wait-ms": { type: "string" },
           "dry-run": { type: "boolean" },
-          help: { type: "boolean" },
         },
         positional: { name: "slug", required: true },
         usage: ARCHIVE_USAGE,
         handler: async (parsed) => {
-          if (parsed.flags["help"]) {
-            stdoutWrite(ARCHIVE_USAGE);
-            process.exit(0);
-          }
           const slug = parsed.positional!;
           // Parse --merge-wait-ms: must be a positive integer if provided
           let mergeWaitMs: number | undefined;
@@ -561,13 +558,9 @@ export const COMMANDS: Record<string, CommandEntry> = {
       reset: {
         flags: {
           force: { type: "boolean" },
-          help: { type: "boolean" },
         },
+        usage: RUNTIME_RESET_USAGE,
         handler: async (parsed) => {
-          if (parsed.flags["help"]) {
-            stdoutWrite(RUNTIME_RESET_USAGE);
-            process.exit(0);
-          }
           process.exit(await runManagedReset({ force: !!parsed.flags["force"] }));
         },
       },

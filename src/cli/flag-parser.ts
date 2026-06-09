@@ -27,11 +27,11 @@ export class FlagParseError extends Error {
  * Rules:
  * 1. `--flag=value` → string flag stores value; boolean flag ignores value part
  * 2. `--flag` (no `=`) → boolean flag sets true; string flag consumes next arg
- * 3. `-h` → maps to `help: true`
+ * 3. `-h` / `--help` (and `--help=...`) → reserved; always sets `help: true` regardless of flagDefs
  * 4. Non-flag tokens → all collected into positionals array; positional = positionals[0]
  * 5. Unknown flag → FlagParseError
  * 6. Enum constraint violation → FlagParseError
- * 7. Required positional missing → FlagParseError
+ * 7. Required positional missing → FlagParseError (skipped when `flags["help"]` is true)
  * 8. String flag with no following value → FlagParseError
  * 9. count: N → FlagParseError if positionals.length < N
  */
@@ -82,6 +82,13 @@ export function parseFlags(
         flagName = arg.slice(2);
       }
 
+      // Reserved: --help / --help=... → always set flags["help"] = true (never unknown)
+      if (flagName === "help") {
+        flags["help"] = true;
+        i++;
+        continue;
+      }
+
       const def = flagDefs[flagName];
       if (!def) {
         throw new FlagParseError(`Unknown flag(s): --${flagName}`);
@@ -123,8 +130,8 @@ export function parseFlags(
     i++;
   }
 
-  // required positional check (count-aware)
-  if (positionalDef?.required) {
+  // required positional check (count-aware); skipped when --help/-h is set
+  if (positionalDef?.required && !flags["help"]) {
     const count = positionalDef.count ?? 1;
     if (positionals.length < count) {
       throw new FlagParseError(

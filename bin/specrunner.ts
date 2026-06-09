@@ -4,12 +4,17 @@
  * Registry-based dispatch — no switch/case.
  */
 
-import { COMMANDS, USAGE, RUNTIME_RESET_USAGE } from "../src/cli/command-registry.js";
+import { COMMANDS, USAGE, RUNTIME_RESET_USAGE, NO_DETAILED_HELP_USAGE } from "../src/cli/command-registry.js";
 import { parseFlags, FlagParseError } from "../src/cli/flag-parser.js";
 import { detectWorktree } from "../src/core/worktree/detection.js";
 import { SpecRunnerError, EXIT_CODE, worktreeGuardError } from "../src/errors.js";
 
 export { USAGE, RUNTIME_RESET_USAGE };
+
+function emitHelp(usage: string | undefined): never {
+  process.stdout.write(usage ?? NO_DETAILED_HELP_USAGE);
+  process.exit(0);
+}
 
 export async function main(): Promise<void> {
   const args = process.argv.slice(2);
@@ -51,7 +56,19 @@ export async function main(): Promise<void> {
       process.exit(2);
     }
 
-    // Worktree guard for guarded subcommands
+    const subArgs = args.slice(2);
+
+    // Pre-scan raw args for --help / -h before any other processing.
+    // This ensures help takes priority even when a required positional is absent,
+    // while preserving the original worktree guard priority for non-help invocations.
+    const rawHasHelp = subArgs.some(
+      (a) => a === "--help" || a === "-h" || a.startsWith("--help="),
+    );
+    if (rawHasHelp) {
+      emitHelp(subDef.usage);
+    }
+
+    // Worktree guard for guarded subcommands (before parseFlags, original priority)
     if (entry.guardedSubcommands?.has(sub!)) {
       const detection = await detectWorktree(process.cwd());
       if (detection.isWorktree) {
@@ -62,8 +79,19 @@ export async function main(): Promise<void> {
       }
     }
 
+    let parsed: ReturnType<typeof parseFlags>;
     try {
-      const parsed = parseFlags(args.slice(2), subDef.flags, subDef.positional);
+      parsed = parseFlags(subArgs, subDef.flags, subDef.positional);
+    } catch (e) {
+      if (e instanceof FlagParseError) {
+        process.stderr.write(e.message + "\n");
+        process.exit(2);
+      }
+      process.stderr.write(`Fatal: ${e instanceof Error ? e.message : String(e)}\n`);
+      process.exit(1);
+    }
+
+    try {
       await subDef.handler(parsed);
     } catch (e) {
       if (e instanceof FlagParseError) {
@@ -80,8 +108,18 @@ export async function main(): Promise<void> {
   // Only `run` is worktree-guarded at the top level (job start/resume/finish are guarded via guardedSubcommands)
   const WORKTREE_GUARDED_COMMANDS = new Set(["run"]);
 
+  const normalArgs = args.slice(1);
+
+  // Pre-scan raw args for --help / -h before any other processing.
+  const rawHasHelp = normalArgs.some(
+    (a) => a === "--help" || a === "-h" || a.startsWith("--help="),
+  );
+  if (rawHasHelp) {
+    emitHelp(entry.usage);
+  }
+
   try {
-    const parsed = parseFlags(args.slice(1), entry.flags, entry.positional);
+    const parsed = parseFlags(normalArgs, entry.flags, entry.positional);
 
     if (WORKTREE_GUARDED_COMMANDS.has(command)) {
       const detection = await detectWorktree(process.cwd());

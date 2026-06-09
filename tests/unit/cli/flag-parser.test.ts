@@ -294,3 +294,70 @@ describe("TC-34: --debug is Unknown flag", () => {
     ).toThrow(FlagParseError);
   });
 });
+
+// TC-HELP-01: --help without flagDefs → sets flags["help"] = true, no throw
+describe("TC-HELP-01: --help reserved flag (no flagDefs)", () => {
+  it("sets flags['help'] = true without flagDefs entry", () => {
+    const result = parseFlags(["--help"], {});
+    expect(result.flags["help"]).toBe(true);
+  });
+
+  it("does not throw for --help even without flagDefs entry", () => {
+    expect(() => parseFlags(["--help"], {})).not.toThrow();
+  });
+});
+
+// TC-HELP-02: --help=anything still sets flags["help"] = true
+describe("TC-HELP-02: --help=<value> form sets help: true", () => {
+  it("ignores the value part and sets flags['help'] = true", () => {
+    const result = parseFlags(["--help=anything"], {});
+    expect(result.flags["help"]).toBe(true);
+  });
+
+  it("does not throw for --help=anything", () => {
+    expect(() => parseFlags(["--help=anything"], {})).not.toThrow();
+  });
+});
+
+// TC-HELP-03: --help with required positional → skips positional check
+describe("TC-HELP-03: --help skips required positional check", () => {
+  it("does not throw when positional is required but --help is present", () => {
+    expect(() =>
+      parseFlags(["--help"], {}, { name: "slug", required: true }),
+    ).not.toThrow();
+  });
+
+  it("sets flags['help'] = true with required positional def", () => {
+    const result = parseFlags(["--help"], {}, { name: "slug", required: true });
+    expect(result.flags["help"]).toBe(true);
+  });
+});
+
+// TC-HELP-04: -h with required positional → skips positional check
+describe("TC-HELP-04: -h skips required positional check", () => {
+  it("does not throw when positional is required but -h is present", () => {
+    expect(() =>
+      parseFlags(["-h"], {}, { name: "slug", required: true }),
+    ).not.toThrow();
+  });
+
+  it("sets flags['help'] = true via -h with required positional def", () => {
+    const result = parseFlags(["-h"], {}, { name: "slug", required: true });
+    expect(result.flags["help"]).toBe(true);
+  });
+});
+
+// TC-HELP-05: no help flag + required positional missing → still throws (regression guard)
+describe("TC-HELP-05: no help flag + required positional missing → FlagParseError", () => {
+  it("throws FlagParseError when positional is required and no --help/-h", () => {
+    expect(() =>
+      parseFlags([], {}, { name: "slug", required: true }),
+    ).toThrow(FlagParseError);
+  });
+
+  it("error message contains the positional name 'slug'", () => {
+    expect(() =>
+      parseFlags([], {}, { name: "slug", required: true }),
+    ).toThrow("slug");
+  });
+});
