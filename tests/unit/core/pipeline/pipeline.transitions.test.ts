@@ -121,6 +121,10 @@ function makeStepObject(name: string, kind: "agent" | "cli" = "agent"): Step {
 // TC-012: STANDARD_TRANSITIONS に必要なエッジが含まれる
 describe("TC-012: STANDARD_TRANSITIONS に必要なエッジが存在する", () => {
   const requiredEdges = [
+    { step: "request-review", on: "approve",           to: "design" },
+    { step: "request-review", on: "needs-discussion",  to: "escalate" },
+    { step: "request-review", on: "reject",            to: "escalate" },
+    { step: "request-review", on: "error",             to: "escalate" },
     { step: "spec-review",   on: "approved",   to: "test-case-gen" },
     { step: "test-case-gen", on: "success",    to: "implementer" },
     { step: "test-case-gen", on: "error",      to: "escalate" },
@@ -239,9 +243,9 @@ describe("TC-001/002/005/006/007/015: conformance transition rows", () => {
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
 // TC-022: R3 cutover: 33 → 31 (removed spec-review escalation + code-review escalation)
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 27 rows total (conformance step adds 2 rows: approved→adr-gen, needs-fix→implementer)", () => {
-    // 25 previous + 2 (conformance approved→adr-gen, conformance needs-fix→implementer)
-    expect(STANDARD_TRANSITIONS.length).toBe(27);
+  it("has 31 rows total (request-review adds 4 rows, conformance adds 2 rows)", () => {
+    // 25 previous + 2 (conformance) + 4 (request-review)
+    expect(STANDARD_TRANSITIONS.length).toBe(31);
   });
 
   it("verification --passed→ end does NOT exist", () => {

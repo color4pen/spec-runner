@@ -31,7 +31,7 @@ export interface StepAttemptRecord {
   step: string;
   sessionId: string | null;
   outcome: {
-    verdict: Verdict | null;
+    verdict: Verdict | string | null;
     findingsPath: string | null;
     error: ErrorInfo | null;
     /** Result from report_result tool call. */

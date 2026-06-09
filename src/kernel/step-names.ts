@@ -11,6 +11,7 @@
  * adding or removing agent steps.
  */
 export const AGENT_STEP_NAMES = [
+  "request-review",
   "design",
   "spec-review",
   "spec-fixer",
@@ -33,6 +34,7 @@ export const CLI_STEP_NAMES = [
 ] as const;
 
 export const STEP_NAMES = {
+  REQUEST_REVIEW: "request-review",
   DESIGN: "design",
   SPEC_REVIEW: "spec-review",
   SPEC_FIXER: "spec-fixer",

@@ -7,6 +7,7 @@ import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
 import { AgentRegistry, AgentSyncer } from "../core/agent/index.js";
 import type { AgentSyncerConfig } from "../core/agent/syncer.js";
 import { AnthropicClientAdapter } from "../adapter/managed-agent/index.js";
+import { RequestReviewStep } from "../core/step/request-review.js";
 import { DesignStep } from "../core/step/design.js";
 import { SpecReviewStep } from "../core/step/spec-review.js";
 import { SpecFixerStep } from "../core/step/spec-fixer.js";
@@ -55,7 +56,7 @@ export async function runManagedSetup(): Promise<number> {
 
   logInfo("specrunner managed setup");
 
-  const registry = AgentRegistry.fromSteps([DesignStep, SpecReviewStep, SpecFixerStep, ImplementerStep, BuildFixerStep, CodeReviewStep, CodeFixerStep]);
+  const registry = AgentRegistry.fromSteps([RequestReviewStep, DesignStep, SpecReviewStep, SpecFixerStep, ImplementerStep, BuildFixerStep, CodeReviewStep, CodeFixerStep]);
 
   const storedConfig: AgentSyncerConfig = {
     getStoredAgent(role: AgentStepName) {

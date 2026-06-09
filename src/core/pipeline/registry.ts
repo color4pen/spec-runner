@@ -9,6 +9,7 @@ import { STANDARD_TRANSITIONS } from "./types.js";
 import { STEP_NAMES } from "../step/step-names.js";
 import { PIPELINE_IDS } from "../../kernel/pipeline-ids.js";
 
+import { RequestReviewStep } from "../step/request-review.js";
 import { DesignStep } from "../step/design.js";
 import { SpecReviewStep } from "../step/spec-review.js";
 import { SpecFixerStep } from "../step/spec-fixer.js";
@@ -29,6 +30,7 @@ import { PrCreateStep } from "../step/pr-create.js";
 export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
   id: PIPELINE_IDS.STANDARD,
   steps: [
+    [STEP_NAMES.REQUEST_REVIEW, RequestReviewStep],
     [STEP_NAMES.DESIGN,       DesignStep],
     [STEP_NAMES.SPEC_REVIEW,  SpecReviewStep],
     [STEP_NAMES.SPEC_FIXER,   SpecFixerStep],
@@ -55,8 +57,9 @@ export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
     [STEP_NAMES.SPEC_REVIEW]:  STEP_NAMES.SPEC_FIXER,
     [STEP_NAMES.VERIFICATION]: STEP_NAMES.BUILD_FIXER,
   },
-  startStep: STEP_NAMES.DESIGN,
+  startStep: STEP_NAMES.REQUEST_REVIEW,
   roles: {
+    [STEP_NAMES.REQUEST_REVIEW]: { role: "gate",     phase: "spec" },
     [STEP_NAMES.DESIGN]:       { role: "creator",  phase: "spec" },
     [STEP_NAMES.SPEC_REVIEW]:  { role: "reviewer", phase: "spec" },
     [STEP_NAMES.SPEC_FIXER]:   { role: "fixer",    phase: "spec" },

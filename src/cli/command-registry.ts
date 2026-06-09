@@ -17,7 +17,6 @@ import { runCancel } from "./cancel.js";
 import { runResume } from "./resume.js";
 import { runJobShow } from "./job-show.js";
 import { executeTemplate, executeValidate } from "../core/command/request.js";
-import { executeReview } from "../core/command/request-review.js";
 import { executeCreate } from "../core/command/request-create.js";
 import { executeList } from "../core/command/request-list.js";
 import { executeNew } from "../core/command/request-new.js";
@@ -64,7 +63,6 @@ Request commands:
   request ls                      active 配下の request 一覧
   request validate <file|slug>    構文 / 規律 check
   request template                雛形 markdown を stdout
-  request review <slug|file>      architect agent によるレビュー（--model でモデル上書き可）
 
 Job commands:
   job start <request-slug|file>   pipeline 開始、jobId 発行
@@ -274,49 +272,6 @@ export const COMMANDS: Record<string, CommandEntry> = {
             filePath = slugResolved;
           }
           process.exit(await executeValidate(filePath));
-        },
-      },
-      review: {
-        flags: {
-          json: { type: "boolean" },
-          model: { type: "string" },
-        },
-        positional: { name: "file-or-slug", required: true },
-        handler: async (parsed) => {
-          const input = parsed.positional!;
-          let filePath = path.resolve(process.cwd(), input);
-          let resolvedSlug: string | undefined;
-          if (!fs.existsSync(filePath)) {
-            // Try as slug
-            if (!SLUG_REGEX.test(input)) {
-              logError(`Invalid slug '${input}'. Must match /^[a-z0-9][a-z0-9-]{0,63}$/`);
-              process.exit(2);
-            }
-            const slugResolved = storeResolve(process.cwd(), input);
-            if (!fs.existsSync(slugResolved)) {
-              logError(`'${input}' is neither a file path nor an active request slug.`);
-              stderrWrite("Hint: Use 'specrunner request ls' to see available slugs.");
-              process.exit(1);
-            }
-            filePath = slugResolved;
-            resolvedSlug = input;
-          } else {
-            // File path given — try to extract slug from drafts/<slug>/request.md pattern
-            const draftMatch = filePath.match(/[/\\]drafts[/\\]([^/\\]+)[/\\]request\.md$/);
-            if (draftMatch?.[1] && SLUG_REGEX.test(draftMatch[1])) {
-              resolvedSlug = draftMatch[1];
-            }
-          }
-          let config: SpecRunnerConfig;
-          try {
-            config = await loadConfigWithOverlay();
-          } catch {
-            config = {} as SpecRunnerConfig;
-          }
-          const client = new ClaudeCodeOneShotQueryClient(config);
-          const modelFlag = parsed.flags["model"];
-          const model = typeof modelFlag === "string" && modelFlag.trim() !== "" ? modelFlag : undefined;
-          process.exit(await executeReview(filePath, { json: !!parsed.flags["json"], model }, client, resolvedSlug));
         },
       },
     },

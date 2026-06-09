@@ -123,6 +123,11 @@ export const LOOP_ERROR_CODES: Record<string, LoopErrorShape> = {
  * (but with escalation semantics). Any other value is the name of the next step to run.
  */
 export const STANDARD_TRANSITIONS: Transition[] = [
+  // --- request-review gate (first step) ---
+  { step: STEP_NAMES.REQUEST_REVIEW, on: "approve",           to: STEP_NAMES.DESIGN },
+  { step: STEP_NAMES.REQUEST_REVIEW, on: "needs-discussion",  to: "escalate" },
+  { step: STEP_NAMES.REQUEST_REVIEW, on: "reject",            to: "escalate" },
+  { step: STEP_NAMES.REQUEST_REVIEW, on: "error",             to: "escalate" },
   // design → spec-review (direct)
   { step: STEP_NAMES.DESIGN,      on: "success",   to: STEP_NAMES.SPEC_REVIEW },
   { step: STEP_NAMES.DESIGN,      on: "error",     to: "escalate" },

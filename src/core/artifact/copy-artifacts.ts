@@ -5,7 +5,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { SpawnFn } from "../../util/spawn.js";
-import { rulesDestPath, usageJsonPath } from "../../util/paths.js";
+import { rulesDestPath, usageJsonPath, draftPath, requestMdPath } from "../../util/paths.js";
 import { RULES_MD_CONTENT } from "../../prompts/rules.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
@@ -128,6 +128,47 @@ export async function cleanupOutputTemplates(
       if ((err as NodeJS.ErrnoException).code === "ENOENT") continue;
       throw err;
     }
+  }
+}
+
+/**
+ * Copy the draft's request.md (if it exists) to the change folder and stage it.
+ * Called on every resume so the agent reads the most recent draft content.
+ * Silent no-op when the draft request.md is absent.
+ * Symlinks are rejected.
+ *
+ * @param repoRoot  - Absolute path to the repository root (main worktree cwd).
+ * @param targetCwd - Working directory where the change folder lives
+ *                    (worktreePath for local with worktrees, cwd for no-worktree / managed).
+ * @param slug      - The change slug.
+ * @param spawnFn   - Spawn helper for git commands.
+ */
+export async function recopyDraftToChangeFolder(
+  repoRoot: string,
+  targetCwd: string,
+  slug: string,
+  spawnFn: SpawnFn,
+): Promise<void> {
+  const draftSrc = path.join(repoRoot, draftPath(slug));
+  const changeDest = path.join(targetCwd, requestMdPath(slug));
+
+  await rejectSymlink(draftSrc);
+
+  try {
+    await fs.access(draftSrc);
+  } catch {
+    // Draft does not exist — no-op
+    return;
+  }
+
+  await fs.mkdir(path.dirname(changeDest), { recursive: true });
+  await fs.cp(draftSrc, changeDest);
+
+  const gitAddResult = await spawnFn("git", ["add", requestMdPath(slug)], { cwd: targetCwd });
+  if (gitAddResult.exitCode !== 0) {
+    stderrWrite(
+      `Warning: failed to stage recopy'd request.md: ${gitAddResult.stderr.trim()}`,
+    );
   }
 }
 

@@ -29,6 +29,7 @@ function makeFs(overrides: Partial<FinishFs> = {}): FinishFs {
     writeFile: vi.fn().mockResolvedValue(undefined),
     unlink: vi.fn().mockResolvedValue(undefined),
     readFile: vi.fn().mockResolvedValue(""),
+    rm: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }

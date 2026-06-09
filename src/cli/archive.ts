@@ -62,6 +62,9 @@ function buildRealFs(): FinishFs {
     readFile: async (p: string) => {
       return nodeFsPromises.readFile(p, "utf-8");
     },
+    rm: async (p: string, opts: { recursive: boolean; force: boolean }) => {
+      await nodeFsPromises.rm(p, opts);
+    },
   };
 }
 

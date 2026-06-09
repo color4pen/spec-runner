@@ -30,9 +30,9 @@ import { defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
 import { FIXER_STEP_NAMES, getPreviousSessionId } from "./fixer-helpers.js";
 import type { CommitPushInfra } from "./commit-push.js";
 import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
-import type { JudgeReportResult, ProducerReportResult } from "../../core/port/report-result.js";
+import type { JudgeReportResult, ProducerReportResult, RequestReviewReportResult } from "../../core/port/report-result.js";
 
-import { JUDGE_REPORT_TOOL, CODE_REVIEW_REPORT_TOOL } from "./report-tool.js";
+import { JUDGE_REPORT_TOOL, CODE_REVIEW_REPORT_TOOL, REQUEST_REVIEW_REPORT_TOOL } from "./report-tool.js";
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -453,20 +453,24 @@ export class StepExecutor {
   ): Promise<JobState> {
     const store = this.getStore(state.jobId);
     const findingsPath = step.resultFilePath(state, deps);
-    let verdict: Verdict | null = null;
+    let verdict: Verdict | string | null = null;
     let parsed: import("./types.js").ParsedStepResult | null = null;
 
     // T-01 (outcome-cutover R3): typed outcome takes priority over prose parse.
     // Determine if this is a judge step (spec-review / code-review) by reportTool identity.
     const stepReportTool = "reportTool" in step ? step.reportTool : undefined;
     const isJudgeStep = stepReportTool === JUDGE_REPORT_TOOL || stepReportTool === CODE_REVIEW_REPORT_TOOL;
+    const isRequestReviewStep = stepReportTool === REQUEST_REVIEW_REPORT_TOOL;
 
     if (agentResult !== undefined && stepReportTool !== undefined) {
       // Agent step with reportTool — use typed outcome exclusively.
       const toolResult = agentResult.toolResult;
       if (toolResult !== null && toolResult !== undefined) {
         // Non-null toolResult: derive verdict from typed fields.
-        if (isJudgeStep) {
+        if (isRequestReviewStep) {
+          // request-review: verdict is approve/needs-discussion/reject; default to needs-discussion
+          verdict = (toolResult as RequestReviewReportResult).verdict ?? "needs-discussion";
+        } else if (isJudgeStep) {
           // judge: approved true → "approved", false/undefined → "needs-fix"
           verdict = (toolResult as JudgeReportResult).approved === true ? "approved" : "needs-fix";
         } else {
@@ -482,7 +486,9 @@ export class StepExecutor {
         }
       } else {
         // T-02: null toolResult (no-tool-call proceed path) — step-class based fallback.
-        if (isJudgeStep) {
+        if (isRequestReviewStep) {
+          verdict = "needs-discussion";
+        } else if (isJudgeStep) {
           verdict = "needs-fix";
         } else {
           const completionVerdict =

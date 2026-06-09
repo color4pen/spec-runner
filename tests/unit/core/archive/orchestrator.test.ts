@@ -10,6 +10,7 @@
  * TC-AO-IDEMPOTENT: folder 移動済み・awaiting-archive の冪等再実行
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import * as nodePath from "node:path";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
 import type { FinishFs } from "../../../../src/core/finish/types.js";
 import type { WorktreeManager } from "../../../../src/core/worktree/manager.js";
@@ -68,6 +69,7 @@ function makeFs(): FinishFs {
     writeFile: vi.fn().mockResolvedValue(undefined),
     unlink: vi.fn().mockResolvedValue(undefined),
     readFile: vi.fn().mockResolvedValue(""),
+    rm: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -487,5 +489,43 @@ describe("TC-AO-IDEMPOTENT: folder 移動済みで awaiting-archive の冪等再
       (c: unknown[]) => c[0] === "git" && Array.isArray(c[1]) && (c[1] as string[])[0] === "add",
     );
     expect(addCall).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-014: drafts/<slug> directory is deleted via fs.rm during archive
+// ---------------------------------------------------------------------------
+
+describe("TC-014: draft folder is removed via fs.rm during archive", () => {
+  it("fs.rm called with specrunner/drafts/<slug> path and { recursive: true, force: true }", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeJobState({ status: "awaiting-archive" }),
+    ]);
+
+    const { assertJobFinishable, markJobArchived } = await import("../../../../src/core/finish/job-state-update.js");
+    (assertJobFinishable as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
+    (markJobArchived as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    const { archiveChangeFolder } = await import("../../../../src/core/finish/archive-change-folder.js");
+    (archiveChangeFolder as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, skipped: false, message: "archived" });
+
+    const { commitArchive } = await import("../../../../src/core/finish/commit-archive.js");
+    (commitArchive as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, skipped: false, message: "committed" });
+
+    const mockFs = makeFs();
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+
+    const result = await runArchiveOrchestrator({ slug: SLUG, cwd: CWD, spawn: makeSpawn(0), fs: mockFs });
+
+    expect(result).toEqual({ exitCode: 0 });
+
+    const expectedDraftPath = nodePath.join(CWD, "specrunner/drafts", SLUG);
+    const rmMock = mockFs.rm as ReturnType<typeof vi.fn>;
+    const rmCall = rmMock.mock.calls.find(
+      (c: unknown[]) => c[0] === expectedDraftPath,
+    );
+    expect(rmCall).toBeDefined();
+    expect(rmCall![1]).toEqual({ recursive: true, force: true });
   });
 });

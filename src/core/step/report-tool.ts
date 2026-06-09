@@ -9,8 +9,8 @@
  * with step-class fields. The old REPORT_TOOL / REPORT_TOOL_CUSTOM_TOOL_SPEC remain for compat.
  */
 import { boolean, number, optional, string, union, literal, object, toJSONSchema } from "zod/v4-mini";
-import type { ReportToolSpec, BaseReportResult, ProducerReportResult, JudgeReportResult, CodeReviewReportResult } from "../port/report-result.js";
-import { parseBaseReportInput, parseProducerReportInput, parseJudgeReportInput, parseCodeReviewReportInput } from "../port/report-result.js";
+import type { ReportToolSpec, BaseReportResult, ProducerReportResult, JudgeReportResult, CodeReviewReportResult, RequestReviewReportResult } from "../port/report-result.js";
+import { parseBaseReportInput, parseProducerReportInput, parseJudgeReportInput, parseCodeReviewReportInput, parseRequestReviewReportInput } from "../port/report-result.js";
 import type { CustomToolSpec } from "../agent/definition.js";
 
 /**
@@ -108,4 +108,26 @@ export const CODE_REVIEW_REPORT_TOOL: ReportToolSpec<CodeReviewReportResult> = {
     fixableCount: optional(number()),
   },
   parseInput: parseCodeReviewReportInput,
+};
+
+/**
+ * Typed ReportToolSpec for request-review step (pipeline gate).
+ *
+ * Adds verdict: "approve" | "needs-discussion" | "reject" to the base schema.
+ * verdict is optional — defaults to "needs-discussion" when agent does not populate it.
+ *
+ * Verdict semantics:
+ *   approve          — no HIGH findings; request is ready for pipeline execution
+ *   needs-discussion — one or more HIGH findings that can be resolved through discussion
+ *   reject           — multiple HIGH findings with requirement contradictions; request.md must be revised
+ */
+export const REQUEST_REVIEW_REPORT_TOOL: ReportToolSpec<RequestReviewReportResult> = {
+  name: "report_result",
+  description: 'Report the completion of the request-review step. Call with ok=true for normal completion. verdict must be one of: "approve" (no HIGH findings, ready for pipeline), "needs-discussion" (HIGH findings resolvable by discussion), "reject" (structural breakdown, request.md must be revised). You MUST call this tool before ending your turn.',
+  zodSchema: {
+    ok: boolean(),
+    reason: optional(string()),
+    verdict: optional(union([literal("approve"), literal("needs-discussion"), literal("reject")])),
+  },
+  parseInput: parseRequestReviewReportInput,
 };

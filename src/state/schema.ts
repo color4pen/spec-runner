@@ -105,7 +105,7 @@ export interface ResumePoint {
  * Outcome of a single step execution.
  */
 export interface StepOutcome {
-  verdict: Verdict | null;
+  verdict: Verdict | string | null;
   findingsPath: string | null;
   error: ErrorInfo | null;
   /**
@@ -147,7 +147,7 @@ export interface StepResult {
   /** 1-origin iteration number within the step. Auto-assigned by pushStepResult. */
   iteration: number;
   session: SessionInfo | null;
-  verdict: Verdict | null;
+  verdict: Verdict | string | null;
   findingsPath: string | null;
   completedAt: string | null;
   error: ErrorInfo | null;

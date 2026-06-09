@@ -153,14 +153,18 @@ async function makeJobState() {
     request: { path: "/test/request.md", title: "Test", type: "feature" },
     repository: { owner: "testowner", name: "testrepo" },
   });
-  await makeStoreFactory(tempDir)(state.jobId).persist(state);
-  return state;
+  // Set branch so polling-style steps (including request-review) can run without BRANCH_NOT_REGISTERED.
+  // In real execution, setupWorkspace sets this before runPipeline is called.
+  const stateWithBranch = { ...state, branch: `change/test-slug-${state.jobId.slice(0, 8)}` };
+  await makeStoreFactory(tempDir)(stateWithBranch.jobId).persist(stateWithBranch);
+  return stateWithBranch;
 }
 
 function buildConfig(overrides: Record<string, unknown> = {}) {
   return {
     version: 1 as const,
     agents: {
+      "request-review": { agentId: "request-review-agent-id", definitionHash: "sha256:rrv", lastSyncedAt: new Date().toISOString() },
       design: { agentId: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
       "spec-review": { agentId: "agent_spec_review", definitionHash: "sha256:ghi", lastSyncedAt: new Date().toISOString() },
       "spec-fixer": { agentId: "agent_spec_fixer", definitionHash: "sha256:def", lastSyncedAt: new Date().toISOString() },
@@ -303,6 +307,13 @@ function buildPipelineMockClient(opts: {
         ]);
       }
 
+      // request-review gate step (always approves by default in integration tests)
+      if (agentId === "request-review-agent-id") {
+        return Promise.resolve([
+          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, verdict: "approve" } },
+        ]);
+      }
+
       // Producer steps (design, spec-fixer, test-case-gen, implementer, build-fixer, code-fixer, adr-gen)
       return Promise.resolve([
         { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, status: "success" } },
@@ -421,10 +432,10 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
     expect(result.steps?.["spec-fixer"]).toBeUndefined();
 
     // After spec-review approved, pipeline continues:
-    // design(1) + spec-review(1) + test-case-gen(1) + implementer(1) + code-review(1) + conformance(1) + adr-gen(1) = 7 sessions
-    // VerificationStep is CLI (no session). Total = 7 createSession calls.
+    // request-review(1) + design(1) + spec-review(1) + test-case-gen(1) + implementer(1) + code-review(1) + conformance(1) + adr-gen(1) = 8 sessions
+    // VerificationStep is CLI (no session). Total = 8 createSession calls.
     const createCalls = (client.createSession as ReturnType<typeof vi.fn>).mock.calls;
-    expect(createCalls.length).toBe(7);
+    expect(createCalls.length).toBe(8);
 
     // implementer should have run
     expect(result.steps?.["implementer"]).toBeDefined();
@@ -598,9 +609,9 @@ describe("TC-014: runPipeline — spec-review loop skipped when propose fails", 
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    // Only propose session was created
+    // request-review(1) + propose/design session created (1, then fails) = 2 sessions total
     const createCalls = (client.createSession as ReturnType<typeof vi.fn>).mock.calls;
-    expect(createCalls.length).toBe(1);
+    expect(createCalls.length).toBe(2);
 
     // result.status should be failed (propose failed)
     expect(result.status).not.toBe("success");

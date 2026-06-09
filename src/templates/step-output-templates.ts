@@ -15,6 +15,7 @@
 import type { JobState } from "../state/schema.js";
 import {
   changeFolderPath,
+  requestReviewResultPath,
   specReviewResultPath,
   reviewFeedbackPath,
   conformanceResultPath,
@@ -23,6 +24,39 @@ import {
 // ---------------------------------------------------------------------------
 // Template constants
 // ---------------------------------------------------------------------------
+
+/**
+ * Template for request-review-result-NNN.md (A-group).
+ *
+ * Machine-parsed fields:
+ * - verdict line: `- **verdict**: <value>` at start of line
+ * - Findings table: 6 columns
+ */
+export const REQUEST_REVIEW_RESULT_TEMPLATE = `# Request Review Result
+
+<!-- FORMAT REQUIREMENTS (machine-parsed):
+- The verdict line MUST appear before the Findings table.
+- verdict line format (exact): \`- **verdict**: <value>\` at the start of a line
+- Valid verdict values: approve | needs-discussion | reject
+  - approve:          No HIGH severity findings. Request is ready for pipeline execution.
+  - needs-discussion: One or more HIGH severity findings resolvable through discussion.
+  - reject:           Multiple HIGH findings AND requirement contradictions or structural breakdown.
+- Findings table MUST have exactly 6 columns in this order:
+  # | Severity | Category | Location | Description | Recommendation
+- Valid Severity values (uppercase): HIGH | MEDIUM | LOW
+  - HIGH:   Request-level defect — goal unclear, acceptance criteria absent/untestable, or critical external constraint unspecified
+  - MEDIUM: Scope ambiguity, recommended additions
+  - LOW:    Clarity improvements, expression refinements
+- Approval is blocked when HIGH ≥ 1.
+-->
+
+- **verdict**:
+
+## Findings
+
+| # | Severity | Category | Location | Description | Recommendation |
+|---|----------|----------|----------|-------------|----------------|
+`;
 
 /**
  * Template for spec-review-result-NNN.md (A-group).
@@ -371,6 +405,16 @@ export function getOutputTemplates(
   const changeFolder = changeFolderPath(slug);
 
   switch (stepName) {
+    case "request-review": {
+      const iteration = (state.steps?.["request-review"]?.length ?? 0) + 1;
+      return [
+        {
+          path: requestReviewResultPath(slug, iteration),
+          content: REQUEST_REVIEW_RESULT_TEMPLATE,
+        },
+      ];
+    }
+
     case "design": {
       return [
         {

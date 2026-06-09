@@ -21,6 +21,16 @@ export function changeFolderPath(slug: string): string {
 }
 
 /**
+ * Returns the relative path to the request-review result file for the given slug and iteration.
+ * Iteration is zero-padded to 3 digits.
+ * Example: requestReviewResultPath("my-change", 1) → "specrunner/changes/my-change/request-review-result-001.md"
+ */
+export function requestReviewResultPath(slug: string, iteration: number): string {
+  const nnn = String(iteration).padStart(3, "0");
+  return `${CHANGES_DIR}/${slug}/request-review-result-${nnn}.md`;
+}
+
+/**
  * Returns the relative path to the spec-review result file for the given slug and iteration.
  * Iteration is zero-padded to 3 digits.
  * Example: specReviewResultPath("my-change", 1) → "specrunner/changes/my-change/spec-review-result-001.md"

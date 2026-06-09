@@ -21,7 +21,7 @@ import type { SpawnFn } from "../../util/spawn.js";
 import { spawnCommand } from "../../util/spawn.js";
 import { JobStateStore, buildInitialJobState } from "../../store/job-state-store.js";
 import { changeFolderPath, managedMarkerPath, localSidecarDir } from "../../util/paths.js";
-import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, rejectSymlink } from "../artifact/copy-artifacts.js";
+import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, recopyDraftToChangeFolder, rejectSymlink } from "../artifact/copy-artifacts.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput } from "../port/runtime-strategy.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import type { AgentStep } from "../step/types.js";
@@ -129,6 +129,8 @@ export class ManagedRuntime implements RuntimeStrategy {
     if (!branchName) {
       // Write/refresh marker on resume too (D7: resume 後に新 marker で上書き)
       await this.writeManagedMarker(slug, jobId);
+      // Resume: recopy draft request.md into change folder (copy semantics)
+      await recopyDraftToChangeFolder(this.cwd, this.cwd, slug, this.spawnFn);
       return { cwd: this.cwd };
     }
 
@@ -195,21 +197,6 @@ export class ManagedRuntime implements RuntimeStrategy {
         ...s,
         request: { ...s.request, path: changeFolderRequestPath },
       }));
-
-      // Delete draft file from main cwd (move semantics: draft consumed on run)
-      try {
-        if (opts.requestFilePath.endsWith("/request.md")) {
-          // Directory-format draft: remove entire slug directory
-          await fs.rm(path.dirname(opts.requestFilePath), { recursive: true, force: true });
-        } else {
-          // Legacy flat-file format: remove file only
-          await fs.rm(opts.requestFilePath);
-        }
-      } catch {
-        stderrWrite(
-          `Warning: failed to delete draft file ${opts.requestFilePath} from main worktree. Remove it manually.`,
-        );
-      }
 
       // git commit request.md and rules.md
       const gitCommitResult = await this.spawnFn(

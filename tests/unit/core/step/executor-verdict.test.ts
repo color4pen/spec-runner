@@ -36,7 +36,9 @@ import {
   JUDGE_REPORT_TOOL,
   CODE_REVIEW_REPORT_TOOL,
   PRODUCER_REPORT_TOOL,
+  REQUEST_REVIEW_REPORT_TOOL,
 } from "../../../../src/core/step/report-tool.js";
+import { RequestReviewStep } from "../../../../src/core/step/request-review.js";
 
 let tempDir: string;
 
@@ -334,5 +336,93 @@ describe("TC-VERDICT-09: code-review + approved:true + fixableCount:3 → approv
     const runs = finalState.steps?.["code-review"] ?? [];
     const lastOutcome = runs[runs.length - 1]?.outcome;
     expect(lastOutcome?.toolResult).toBeDefined();
+  });
+});
+
+/** Build a request-review step with REQUEST_REVIEW_REPORT_TOOL. */
+function makeRequestReviewStep(overrides: Partial<AgentStep> = {}): AgentStep {
+  return {
+    kind: "agent",
+    name: "request-review",
+    agent: {
+      name: "specrunner-request-review",
+      role: "request-review" as AgentStepName,
+      model: "claude-sonnet-4-6",
+      system: "review the request",
+      tools: [],
+    },
+    buildMessage: () => "review it",
+    resultFilePath: () => null,
+    parseResult: () => ({ verdict: null, findingsPath: null }),
+    reportTool: REQUEST_REVIEW_REPORT_TOOL,
+    ...overrides,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// TC-003: request-review + toolResult.verdict:'approve' → 'approve'
+// ---------------------------------------------------------------------------
+
+describe("TC-003: request-review + toolResult.verdict:'approve' → 'approve'", () => {
+  it("request-review with toolResult.verdict='approve' yields verdict 'approve'", async () => {
+    const jobState = await createRunningJobState();
+    const runner = makeRunnerWithToolResult({ ok: true, verdict: "approve" });
+    const executor = new StepExecutor(new EventBus(), runner, makeStoreFactory(tempDir));
+
+    const finalState = await executor.execute(makeRequestReviewStep(), jobState, makeDeps());
+
+    expect(getLastVerdict(finalState, "request-review")).toBe("approve");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-004: request-review + toolResult null → 'needs-discussion' (proceed, no halt)
+// ---------------------------------------------------------------------------
+
+describe("TC-004: request-review + toolResult null → 'needs-discussion' proceed (no halt)", () => {
+  it("request-review with toolResult=null yields 'needs-discussion' without throwing", async () => {
+    const jobState = await createRunningJobState();
+    const runner = makeRunnerWithToolResult(null);
+    const executor = new StepExecutor(new EventBus(), runner, makeStoreFactory(tempDir));
+
+    // Must not throw
+    const finalState = await executor.execute(makeRequestReviewStep(), jobState, makeDeps());
+
+    expect(finalState.status).not.toBe("awaiting-resume");
+    expect(getLastVerdict(finalState, "request-review")).toBe("needs-discussion");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-024: request-review + toolResult.verdict:'reject' → 'reject'
+// ---------------------------------------------------------------------------
+
+describe("TC-024: request-review + toolResult.verdict:'reject' → 'reject'", () => {
+  it("request-review with toolResult.verdict='reject' yields verdict 'reject'", async () => {
+    const jobState = await createRunningJobState();
+    const runner = makeRunnerWithToolResult({ ok: true, verdict: "reject" });
+    const executor = new StepExecutor(new EventBus(), runner, makeStoreFactory(tempDir));
+
+    const finalState = await executor.execute(makeRequestReviewStep(), jobState, makeDeps());
+
+    expect(getLastVerdict(finalState, "request-review")).toBe("reject");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-022: RequestReviewStep.kind / name / reportTool contract
+// ---------------------------------------------------------------------------
+
+describe("TC-022: RequestReviewStep kind / name / reportTool", () => {
+  it("kind is 'agent'", () => {
+    expect(RequestReviewStep.kind).toBe("agent");
+  });
+
+  it("name is 'request-review'", () => {
+    expect(RequestReviewStep.name).toBe("request-review");
+  });
+
+  it("reportTool is REQUEST_REVIEW_REPORT_TOOL", () => {
+    expect(RequestReviewStep.reportTool).toBe(REQUEST_REVIEW_REPORT_TOOL);
   });
 });

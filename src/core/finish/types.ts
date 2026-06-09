@@ -44,6 +44,7 @@ export interface FinishFs {
   writeFile(path: string, content: string): Promise<void>;
   unlink(path: string): Promise<void>;
   readFile(path: string): Promise<string>;
+  rm(path: string, opts: { recursive: boolean; force: boolean }): Promise<void>;
 }
 
 /**

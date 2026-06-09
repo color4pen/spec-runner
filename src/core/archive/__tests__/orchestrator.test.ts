@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { FinishFs } from "../../finish/types.js";
 import type { SpawnFn } from "../../../util/spawn.js";
 import type { JobState } from "../../../state/schema.js";
-import { livenessJsonPath, managedMarkerPath } from "../../../util/paths.js";
+import { livenessJsonPath, managedMarkerPath, draftsDir } from "../../../util/paths.js";
 import * as nodePath from "node:path";
 
 // ---------------------------------------------------------------------------
@@ -98,6 +98,7 @@ function makeFs(unlinkImpl?: (path: string) => Promise<void>): FinishFs & { unli
     writeFile: vi.fn().mockResolvedValue(undefined),
     readFile: vi.fn().mockResolvedValue("{}"),
     unlink: unlinkImpl ? vi.fn(unlinkImpl) : vi.fn().mockResolvedValue(undefined),
+    rm: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -250,5 +251,26 @@ describe("archive orchestrator — Phase 2 marker / sidecar cleanup", () => {
     expect(result.exitCode).toBe(0);
     const calls = vi.mocked(stderrWrite).mock.calls.map(([msg]) => msg as string);
     expect(calls.some((m) => m.includes("Warning") && m.includes("marker"))).toBe(true);
+  });
+
+  it("TC-014: drafts/<slug> directory is removed via fs.rm during archive", async () => {
+    const mockFs = makeFs();
+    const worktreeManager = makeWorktreeManager();
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: makeSpawn(),
+      fs: mockFs,
+      worktreeManagerFn: () => worktreeManager,
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    const expectedDraftPath = nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG);
+    expect(vi.mocked(mockFs.rm)).toHaveBeenCalledWith(
+      expectedDraftPath,
+      { recursive: true, force: true },
+    );
   });
 });

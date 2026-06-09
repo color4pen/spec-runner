@@ -25,7 +25,7 @@ import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import { formatEscalation } from "../finish/escalation.js";
 import { logResult, stderrWrite } from "../../logger/stdout.js";
 import { KeepAlive } from "../lifecycle/keepalive.js";
-import { livenessJsonPath, managedMarkerPath } from "../../util/paths.js";
+import { livenessJsonPath, managedMarkerPath, draftsDir } from "../../util/paths.js";
 
 export interface ArchiveInput {
   /** Slug of the job to archive. */
@@ -208,6 +208,19 @@ export async function runArchiveOrchestrator(
           resumeCommand: `specrunner job archive ${slug}`,
         }),
       };
+    }
+
+    // Delete draft folder for this slug (best-effort; archive continues even if this fails)
+    try {
+      await fs.rm(nodePath.join(cwd, draftsDir(), slug), { recursive: true, force: true });
+    } catch {
+      stderrWrite(`Warning: failed to delete draft folder for ${slug}. Remove manually if needed.`);
+    }
+
+    // Stage the draft deletion (no-op if draft was untracked or absent)
+    const draftAddResult = await spawn("git", ["add", draftsDir()], { cwd });
+    if (draftAddResult.exitCode !== 0) {
+      stderrWrite(`Warning: git add ${draftsDir()}/ failed: ${draftAddResult.stderr.trim()}. Continuing.`);
     }
 
     // Stage mv + archived status change together so they land in one commit

@@ -13,6 +13,7 @@
  * via bidirectional guard in state/schema.ts — update both when adding steps.
  */
 export type AgentStepName =
+  | "request-review"
   | "design"
   | "spec-review"
   | "spec-fixer"

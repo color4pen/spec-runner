@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "jobId": "a17288ea-d992-41eb-a7da-d4d8553786b3",
+  "createdAt": "2026-06-09T15:14:27.337Z",
+  "updatedAt": "2026-06-09T16:50:42.234Z",
+  "request": {
+    "title": "request review をパイプラインステップ化する",
+    "type": "spec-change"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/request-review-pipeline-step-a17288ea",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/575",
+    "number": 575,
+    "createdAt": "2026-06-09T16:50:42.224Z"
+  },
+  "_journal": {
+    "historyCount": 52,
+    "stepCounts": {
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 3,
+      "code-fixer": 2,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

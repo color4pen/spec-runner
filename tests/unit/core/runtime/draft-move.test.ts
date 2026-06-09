@@ -1,10 +1,10 @@
 /**
- * Regression test: run after setupWorkspace deletes draft from main worktree.
+ * Regression test: setupWorkspace copies draft to change folder without deleting it.
  *
- * TC-DRAFT-001: main worktree draft deleted after setupWorkspace (legacy flat-file)
+ * TC-DRAFT-001: draft file still exists in main cwd after setupWorkspace (copy semantics)
  * TC-DRAFT-002: change folder request.md exists after setupWorkspace
- * TC-DRAFT-003: directory-format draft (<slug>/request.md) — entire slug dir removed
- * TC-DRAFT-004: legacy flat-file format (<slug>.md) — parent drafts/ dir is preserved
+ * TC-DRAFT-003: directory-format draft (<slug>/request.md) — slug dir still exists after setupWorkspace
+ * TC-DRAFT-004: legacy flat-file format (<slug>.md) — flat file still exists after setupWorkspace
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
@@ -26,8 +26,9 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-// Minimal stub of the setupWorkspace draft-move logic (legacy flat-file, extracted from local.ts)
-async function simulateSetupWorkspaceDraftMove(params: {
+// Minimal stub of the setupWorkspace draft-copy logic (extracted from local.ts)
+// New semantics: draft is COPIED to change folder, NOT deleted.
+async function simulateSetupWorkspaceDraftCopy(params: {
   mainCwd: string;
   worktreePath: string;
   slug: string;
@@ -36,7 +37,7 @@ async function simulateSetupWorkspaceDraftMove(params: {
 }): Promise<void> {
   const { mainCwd: _mainCwd, worktreePath, slug, draftFilePath, spawnFn } = params;
 
-  // Copy to change folder
+  // Copy to change folder (no deletion — copy semantics)
   const changeFolderRequestPath = path.join(worktreePath, "specrunner", "changes", slug, "request.md");
   await fs.mkdir(path.dirname(changeFolderRequestPath), { recursive: true });
   await fs.cp(draftFilePath, changeFolderRequestPath);
@@ -44,23 +45,12 @@ async function simulateSetupWorkspaceDraftMove(params: {
   // Stage
   await spawnFn("git", ["add", path.join("specrunner", "changes", slug, "request.md")]);
 
-  // Delete draft from main (mirrors the new logic in local.ts / managed.ts)
-  try {
-    if (draftFilePath.endsWith("/request.md")) {
-      await fs.rm(path.dirname(draftFilePath), { recursive: true, force: true });
-    } else {
-      await fs.rm(draftFilePath);
-    }
-  } catch {
-    process.stderr.write(`Warning: failed to delete draft file\n`);
-  }
-
   // Commit
   await spawnFn("git", ["commit", "-m", `add request.md for ${slug}`]);
 }
 
-describe("TC-DRAFT-001: main worktree draft deleted after setupWorkspace", () => {
-  it("draft file no longer exists in main cwd after run", async () => {
+describe("TC-DRAFT-001: draft file still exists in main cwd after setupWorkspace (copy semantics)", () => {
+  it("draft file remains in main cwd after run", async () => {
     // Setup: create draft in main cwd
     const draftsDir = path.join(tempDir, "specrunner", "drafts");
     await fs.mkdir(draftsDir, { recursive: true });
@@ -69,7 +59,7 @@ describe("TC-DRAFT-001: main worktree draft deleted after setupWorkspace", () =>
 
     const spawnFn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
 
-    await simulateSetupWorkspaceDraftMove({
+    await simulateSetupWorkspaceDraftCopy({
       mainCwd: tempDir,
       worktreePath: worktreeDir,
       slug: "my-feature",
@@ -77,8 +67,8 @@ describe("TC-DRAFT-001: main worktree draft deleted after setupWorkspace", () =>
       spawnFn,
     });
 
-    // Assert: draft is gone from main
-    await expect(fs.access(draftPath)).rejects.toThrow();
+    // Assert: draft is still present in main (copy semantics — not deleted)
+    await expect(fs.access(draftPath)).resolves.toBeUndefined();
   });
 });
 
@@ -91,7 +81,7 @@ describe("TC-DRAFT-002: change folder request.md exists after setupWorkspace", (
 
     const spawnFn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
 
-    await simulateSetupWorkspaceDraftMove({
+    await simulateSetupWorkspaceDraftCopy({
       mainCwd: tempDir,
       worktreePath: worktreeDir,
       slug: "my-feature",
@@ -105,8 +95,8 @@ describe("TC-DRAFT-002: change folder request.md exists after setupWorkspace", (
   });
 });
 
-describe("TC-DRAFT-003: directory-format draft — entire slug directory removed after run", () => {
-  it("removes the parent slug directory when draftFilePath ends with /request.md", async () => {
+describe("TC-DRAFT-003: directory-format draft — slug directory still exists after setupWorkspace", () => {
+  it("slug directory remains when draftFilePath ends with /request.md (copy semantics)", async () => {
     // Directory-format draft: specrunner/drafts/my-feature/request.md
     const draftsDir = path.join(tempDir, "specrunner", "drafts");
     const slugDir = path.join(draftsDir, "my-feature");
@@ -116,7 +106,7 @@ describe("TC-DRAFT-003: directory-format draft — entire slug directory removed
 
     const spawnFn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
 
-    await simulateSetupWorkspaceDraftMove({
+    await simulateSetupWorkspaceDraftCopy({
       mainCwd: tempDir,
       worktreePath: worktreeDir,
       slug: "my-feature",
@@ -124,15 +114,15 @@ describe("TC-DRAFT-003: directory-format draft — entire slug directory removed
       spawnFn,
     });
 
-    // Assert: entire slug directory is gone
-    await expect(fs.access(slugDir)).rejects.toThrow();
-    // Assert: drafts/ parent itself is still present
-    await expect(fs.access(draftsDir)).resolves.toBeUndefined();
+    // Assert: slug directory is still present (not deleted — copy semantics)
+    await expect(fs.access(slugDir)).resolves.toBeUndefined();
+    // Assert: draft file itself still exists
+    await expect(fs.access(draftPath)).resolves.toBeUndefined();
   });
 });
 
-describe("TC-DRAFT-004: legacy flat-file format — parent drafts/ directory preserved", () => {
-  it("removes only the flat file when draftFilePath does not end with /request.md", async () => {
+describe("TC-DRAFT-004: legacy flat-file format — flat file still exists after setupWorkspace", () => {
+  it("flat file remains when draftFilePath does not end with /request.md (copy semantics)", async () => {
     // Legacy flat-file draft: specrunner/drafts/my-feature.md
     const draftsDir = path.join(tempDir, "specrunner", "drafts");
     await fs.mkdir(draftsDir, { recursive: true });
@@ -141,7 +131,7 @@ describe("TC-DRAFT-004: legacy flat-file format — parent drafts/ directory pre
 
     const spawnFn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
 
-    await simulateSetupWorkspaceDraftMove({
+    await simulateSetupWorkspaceDraftCopy({
       mainCwd: tempDir,
       worktreePath: worktreeDir,
       slug: "my-feature",
@@ -149,8 +139,8 @@ describe("TC-DRAFT-004: legacy flat-file format — parent drafts/ directory pre
       spawnFn,
     });
 
-    // Assert: the flat file is gone
-    await expect(fs.access(draftPath)).rejects.toThrow();
+    // Assert: the flat file is still present (not deleted — copy semantics)
+    await expect(fs.access(draftPath)).resolves.toBeUndefined();
     // Assert: drafts/ directory still exists
     await expect(fs.access(draftsDir)).resolves.toBeUndefined();
   });

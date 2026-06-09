@@ -86,7 +86,7 @@ export class PipelineRunCommand extends CommandRunner {
 
     return {
       jobState,
-      startStep: STEP_NAMES.DESIGN,
+      startStep: STEP_NAMES.REQUEST_REVIEW,
       request,
       config,
       slug,

@@ -26,6 +26,7 @@ import { resolveCanonicalStateDir } from "../finish/resolve-canonical-state-dir.
 import {
   copyRulesToChangeFolder,
   copyDraftUsageToChangeFolder,
+  recopyDraftToChangeFolder,
   rejectSymlink,
   writeOutputTemplates,
   cleanupOutputTemplates,
@@ -314,19 +315,6 @@ export class LocalRuntime implements RuntimeStrategy {
         request: { ...s.request, path: changeFolderRequestPath },
       }), slugOpts);
 
-      // Delete main worktree draft file (move semantics)
-      try {
-        if (opts.requestFilePath.endsWith("/request.md")) {
-          await fs.rm(path.dirname(opts.requestFilePath), { recursive: true, force: true });
-        } else {
-          await fs.rm(opts.requestFilePath);
-        }
-      } catch {
-        stderrWrite(
-          `Warning: failed to delete draft file ${opts.requestFilePath} from main worktree. Remove it manually.`,
-        );
-      }
-
       // Commit change folder files as the first commit on the feature branch
       const gitCommitResult = await this.spawnFn(
         "git",
@@ -336,6 +324,11 @@ export class LocalRuntime implements RuntimeStrategy {
       if (gitCommitResult.exitCode !== 0) {
         throw new Error(`Failed to commit request file: ${gitCommitResult.stderr.trim()}`);
       }
+    }
+
+    // Resume path: recopy draft request.md into change folder (copy semantics)
+    if (!isRunPath) {
+      await recopyDraftToChangeFolder(this.cwd, workspace.cwd, slug, this.spawnFn);
     }
 
     // Record branchName in state
@@ -381,6 +374,8 @@ export class LocalRuntime implements RuntimeStrategy {
         this.workspace = workspace;
         // Refresh sidecar pid for the resuming process (T-03)
         await this.writeLivenessSidecar(slug, jobId, existingWorktreePath);
+        // Resume: recopy draft request.md into change folder (copy semantics)
+        await recopyDraftToChangeFolder(this.cwd, workspace.cwd, slug, this.spawnFn);
         return workspace;
       } else {
         // Worktree was deleted — create a new one (resume path: fetch already ran during original run)
@@ -397,6 +392,8 @@ export class LocalRuntime implements RuntimeStrategy {
         }
         await this.updateJobState(jobId, (s) => ({ ...s, worktreePath: newWorktreePath }), slugOpts);
         await this.writeLivenessSidecar(slug, jobId, newWorktreePath);
+        // Resume: recopy draft request.md into change folder (copy semantics)
+        await recopyDraftToChangeFolder(this.cwd, workspace.cwd, slug, this.spawnFn);
         return workspace;
       }
     }
@@ -416,6 +413,8 @@ export class LocalRuntime implements RuntimeStrategy {
       }
       await this.updateJobState(jobId, (s) => ({ ...s, worktreePath: newWorktreePath }), slugOpts);
       await this.writeLivenessSidecar(slug, jobId, newWorktreePath);
+      // Resume: recopy draft request.md into change folder (copy semantics)
+      await recopyDraftToChangeFolder(this.cwd, workspace.cwd, slug, this.spawnFn);
       return workspace;
     }
 
@@ -495,21 +494,6 @@ export class LocalRuntime implements RuntimeStrategy {
         ...s,
         request: { ...s.request, path: changeFolderRequestPath },
       }), { slug, stateRoot: worktreePath });
-
-      // Delete main worktree draft file (move semantics: draft consumed on run)
-      try {
-        if (opts.requestFilePath.endsWith("/request.md")) {
-          // Directory-format draft: remove entire slug directory
-          await fs.rm(path.dirname(opts.requestFilePath), { recursive: true, force: true });
-        } else {
-          // Legacy flat-file format: remove file only
-          await fs.rm(opts.requestFilePath);
-        }
-      } catch {
-        stderrWrite(
-          `Warning: failed to delete draft file ${opts.requestFilePath} from main worktree. Remove it manually.`,
-        );
-      }
 
       // Commit change folder request.md and rules.md as the first commit on the feature branch (D2)
       const gitCommitResult = await this.spawnFn(

@@ -11,6 +11,7 @@ import { describe, it, expect } from "vitest";
 import { AGENT_STEP_NAMES, CLI_STEP_NAMES, STEP_NAMES, toStepName } from "../../../../src/core/step/step-names.js";
 import type { AgentStepName, CliStepName } from "../../../../src/state/schema.js";
 import type { SpecRunnerConfig, AgentRecord } from "../../../../src/config/schema.js";
+import { RequestReviewStep } from "../../../../src/core/step/request-review.js";
 import { DesignStep } from "../../../../src/core/step/design.js";
 import { SpecReviewStep } from "../../../../src/core/step/spec-review.js";
 import { SpecFixerStep } from "../../../../src/core/step/spec-fixer.js";
@@ -29,6 +30,7 @@ const _disjointCheck: _AssertDisjoint = true;
 void _disjointCheck;
 
 const ALL_STEPS = [
+  RequestReviewStep,
   DesignStep,
   SpecReviewStep,
   SpecFixerStep,

@@ -35,7 +35,6 @@ vi.mock("../../../src/core/command/request.js", () => ({
   executeTemplate: vi.fn(),
   executeValidate: vi.fn(),
 }));
-vi.mock("../../../src/core/command/request-review.js", () => ({ executeReview: vi.fn() }));
 vi.mock("../../../src/core/command/request-create.js", () => ({ executeCreate: vi.fn() }));
 vi.mock("../../../src/core/command/request-list.js", () => ({ executeList: vi.fn() }));
 
@@ -154,5 +153,16 @@ describe("TC-40: 旧 managed コマンドの削除確認", () => {
     expect(result).toBe("process.exit(2)");
     const stderr = (stderrSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
     expect(stderr).toContain("Unknown command: managed");
+  });
+});
+
+// TC-41: 旧 request review サブコマンドが削除されている
+describe("TC-41: 旧 request review サブコマンドの削除確認", () => {
+  it("specrunner request review → 'Unknown request subcommand: review' を出力し exit 2 で終了", async () => {
+    const result = await runMain(["request", "review", "some-slug"]);
+
+    expect(result).toBe("process.exit(2)");
+    const stderr = (stderrSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
+    expect(stderr).toContain("Unknown request subcommand: review");
   });
 });

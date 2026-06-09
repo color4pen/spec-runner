@@ -5,7 +5,7 @@
  * TC-PATHS-003: draftPathLegacy() returns "specrunner/drafts/<slug>.md"
  */
 import { describe, it, expect } from "vitest";
-import { draftPath, draftPathLegacy, archivedChangesDirRel, archivedChangeFolderPath, localSlugStateJsonPath, localSlugEventsPath } from "../../../src/util/paths.js";
+import { draftPath, draftPathLegacy, archivedChangesDirRel, archivedChangeFolderPath, localSlugStateJsonPath, localSlugEventsPath, requestReviewResultPath } from "../../../src/util/paths.js";
 
 describe("TC-PATHS-001: draftPath()", () => {
   it("returns directory-format path specrunner/drafts/<slug>/request.md", () => {
@@ -71,6 +71,24 @@ describe("TC-016: localSlugEventsPath()", () => {
   it("handles slugs with hyphens", () => {
     expect(localSlugEventsPath("some-feature-slug")).toBe(
       ".specrunner/local/some-feature-slug/events.jsonl",
+    );
+  });
+});
+
+// TC-020: requestReviewResultPath() returns correct zero-padded path
+describe("TC-020: requestReviewResultPath()", () => {
+  it("requestReviewResultPath('foo', 1) returns 'specrunner/changes/foo/request-review-result-001.md'", () => {
+    expect(requestReviewResultPath("foo", 1)).toBe(
+      "specrunner/changes/foo/request-review-result-001.md",
+    );
+  });
+
+  it("pads iteration to 3 digits", () => {
+    expect(requestReviewResultPath("my-change", 2)).toBe(
+      "specrunner/changes/my-change/request-review-result-002.md",
+    );
+    expect(requestReviewResultPath("my-change", 10)).toBe(
+      "specrunner/changes/my-change/request-review-result-010.md",
     );
   });
 });

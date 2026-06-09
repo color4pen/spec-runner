@@ -214,3 +214,34 @@ export function parseCodeReviewReportInput(
 
   return { ok: true, value: result };
 }
+
+/**
+ * Typed outcome for request-review step (pipeline gate).
+ *
+ * verdict: "approve" | "needs-discussion" | "reject" — the architect's verdict on the request.
+ * Optional — undefined when the agent did not populate it (fallback: needs-discussion).
+ */
+export interface RequestReviewReportResult extends BaseReportResult {
+  verdict?: "approve" | "needs-discussion" | "reject";
+}
+
+/**
+ * Parse RequestReviewReportResult from unknown tool input.
+ * Builds on parseBaseReportInput and optionally sets verdict when value is one of the 3 valid values.
+ * Invalid verdict values are silently ignored (not in missingFields).
+ */
+export function parseRequestReviewReportInput(
+  raw: unknown,
+): { ok: true; value: RequestReviewReportResult } | { ok: false; missingFields: string[]; rawInput: unknown } {
+  const base = parseBaseReportInput(raw);
+  if (!base.ok) return base;
+
+  const obj = raw as Record<string, unknown>;
+  const result: RequestReviewReportResult = { ...base.value };
+
+  if (obj["verdict"] === "approve" || obj["verdict"] === "needs-discussion" || obj["verdict"] === "reject") {
+    result.verdict = obj["verdict"];
+  }
+
+  return { ok: true, value: result };
+}

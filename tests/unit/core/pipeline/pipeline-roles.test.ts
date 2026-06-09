@@ -93,8 +93,9 @@ function makeMinimalDeps(): PipelineDeps {
 // ---------------------------------------------------------------------------
 
 describe("TC-001: STANDARD_DESCRIPTOR.roles matches design.md D1 table", () => {
-  it("has roles for all 12 steps", () => {
+  it("has roles for all 13 steps", () => {
     const steps = [
+      "request-review",
       "design", "spec-review", "spec-fixer", "test-case-gen",
       "implementer", "verification", "build-fixer", "code-review",
       "code-fixer", "conformance", "adr-gen", "pr-create",
@@ -106,6 +107,7 @@ describe("TC-001: STANDARD_DESCRIPTOR.roles matches design.md D1 table", () => {
 
   it("has correct role/phase for each step", () => {
     const expected: Record<string, { role: string; phase: string }> = {
+      "request-review": { role: "gate",     phase: "spec" },
       "design":       { role: "creator",  phase: "spec" },
       "spec-review":  { role: "reviewer", phase: "spec" },
       "spec-fixer":   { role: "fixer",    phase: "spec" },
@@ -498,6 +500,24 @@ describe("TC-022: pipelineId-absent state resolves as STANDARD_DESCRIPTOR", () =
     // handleExhausted now records fixer step; legacy states recording reviewer resume from reviewer.
     const result = resolveResumeStep(undefined, { step: "spec-review", reason: "exhausted", iterationsExhausted: 3 });
     expect(result).toBe("spec-review");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-028: STANDARD_DESCRIPTOR.startStep matches PipelineRunCommand startStep
+// ---------------------------------------------------------------------------
+
+describe("TC-028: STANDARD_DESCRIPTOR.startStep matches PipelineRunCommand startStep", () => {
+  it("STANDARD_DESCRIPTOR.startStep is 'request-review'", () => {
+    expect(STANDARD_DESCRIPTOR.startStep).toBe("request-review");
+  });
+
+  it("PipelineRunCommand source specifies STEP_NAMES.REQUEST_REVIEW as startStep", async () => {
+    const source = await fs.readFile(
+      new URL("../../../../src/core/command/pipeline-run.ts", import.meta.url).pathname,
+      "utf-8",
+    );
+    expect(source).toContain("startStep: STEP_NAMES.REQUEST_REVIEW");
   });
 });
 

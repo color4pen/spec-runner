@@ -71,14 +71,18 @@ async function makeJobState() {
     request: { path: "/test/request.md", title: "Test", type: "spec-change" },
     repository: { owner: "testowner", name: "testrepo" },
   });
-  await makeStoreFactory(tempDir)(state.jobId).persist(state);
-  return state;
+  // Set branch so polling-style steps (including request-review) can run without BRANCH_NOT_REGISTERED.
+  // In real execution, setupWorkspace sets this before runPipeline is called.
+  const stateWithBranch = { ...state, branch: `change/test-slug-${state.jobId.slice(0, 8)}` };
+  await makeStoreFactory(tempDir)(stateWithBranch.jobId).persist(stateWithBranch);
+  return stateWithBranch;
 }
 
 function buildConfig(overrides: Record<string, unknown> = {}) {
   return {
     version: 1 as const,
     agents: {
+      "request-review": { agentId: "request-review-agent-id", definitionHash: "sha256:rrv", lastSyncedAt: new Date().toISOString() },
       design: { agentId: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
       "spec-review": { agentId: "agent_spec_review", definitionHash: "sha256:ghi", lastSyncedAt: new Date().toISOString() },
       "spec-fixer": { agentId: "agent_spec_fixer", definitionHash: "sha256:def", lastSyncedAt: new Date().toISOString() },
@@ -195,6 +199,13 @@ function buildPipelineMockClient(opts: {
       if (agentId === "conformance-agent-id") {
         return Promise.resolve([
           { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true } },
+        ]);
+      }
+
+      // request-review gate step — always approves in these tests
+      if (agentId === "request-review-agent-id") {
+        return Promise.resolve([
+          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, verdict: "approve" } },
         ]);
       }
 

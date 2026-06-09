@@ -4,7 +4,6 @@
  * TC-HELP-DISPATCH-01: job archive --help → exit 0 + ARCHIVE_USAGE
  * TC-HELP-DISPATCH-02: runtime reset --help → exit 0 + RUNTIME_RESET_USAGE
  * TC-HELP-DISPATCH-03: job resume --help → exit 0 + fallback (no slug required)
- * TC-HELP-DISPATCH-04: request review --help → exit 0 (no file-or-slug error)
  * TC-HELP-DISPATCH-05: run --help → exit 0 (normal command path)
  * TC-HELP-DISPATCH-06: job resume (no slug, no help) → exit 2 + stderr "requires a <slug>"
  * TC-HELP-DISPATCH-07: job archive -h → exit 0 + ARCHIVE_USAGE (short form)
@@ -36,9 +35,6 @@ vi.mock("../../../src/cli/managed.js", () => ({
 vi.mock("../../../src/core/command/request.js", () => ({
   executeTemplate: vi.fn().mockReturnValue(0),
   executeValidate: vi.fn().mockResolvedValue(0),
-}));
-vi.mock("../../../src/core/command/request-review.js", () => ({
-  executeReview: vi.fn().mockResolvedValue(0),
 }));
 vi.mock("../../../src/core/command/request-create.js", () => ({
   executeCreate: vi.fn().mockResolvedValue(0),
@@ -149,22 +145,6 @@ describe("TC-HELP-DISPATCH-03: job resume --help", () => {
     const { runResume } = await import("../../../src/cli/resume.js");
     await runMain(["job", "resume", "--help"]);
     expect(runResume).not.toHaveBeenCalled();
-  });
-});
-
-// TC-HELP-DISPATCH-04: request review --help → exit 0, no "requires a <file-or-slug>" error
-describe("TC-HELP-DISPATCH-04: request review --help", () => {
-  it("exits with code 0 even without slug/file argument", async () => {
-    const result = await runMain(["request", "review", "--help"]);
-    expect(result).toBe("process.exit(0)");
-  });
-
-  it("does not write 'requires a <file-or-slug>' to stderr", async () => {
-    await runMain(["request", "review", "--help"]);
-    const stderrOutput = stderrSpy.mock.calls
-      .map((c: unknown[]) => String(c[0]))
-      .join("");
-    expect(stderrOutput).not.toContain("requires a <file-or-slug>");
   });
 });
 
