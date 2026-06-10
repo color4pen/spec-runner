@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "5f04e075-fd7c-4259-b6f1-3a5b16f1755b",
   "createdAt": "2026-06-10T12:47:16.534Z",
-  "updatedAt": "2026-06-10T13:09:46.573Z",
+  "updatedAt": "2026-06-10T13:14:30.653Z",
   "request": {
     "title": "ps.checkPrMerged の unit test を追加する",
     "type": "chore"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "chore/ps-checkprmerged-test-5f04e075",
   "error": null,
   "pipelineId": "standard",
@@ -24,7 +24,7 @@
     "createdAt": "2026-06-10T13:09:46.562Z"
   },
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 47,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
