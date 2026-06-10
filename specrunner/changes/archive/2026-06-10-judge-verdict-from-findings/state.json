@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "b9134c49-6656-47c1-b83c-d892c9fddfa2",
   "createdAt": "2026-06-10T01:06:09.512Z",
-  "updatedAt": "2026-06-10T02:21:55.455Z",
+  "updatedAt": "2026-06-10T02:48:52.769Z",
   "request": {
     "title": "judge 系 step の verdict を構造化 findings から CLI が導出する",
     "type": "spec-change"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/judge-verdict-from-findings-b9134c49",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-10T02:21:55.441Z"
   },
   "_journal": {
-    "historyCount": 55,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
