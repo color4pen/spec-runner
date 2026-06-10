@@ -68,9 +68,8 @@ describe("TC-002: CodeReviewStep の agent.name / model / tools が仕様値と�
     expect(CodeReviewStep.agent.name).toBe("specrunner-code-review");
   });
 
-  it("step.agent.model === 'claude-opus-4-6[1m]'", () => {
-    // TC-004: design/review steps use claude-opus-4-6[1m] (opusplan pattern)
-    expect(CodeReviewStep.agent.model).toBe("claude-opus-4-6[1m]");
+  it("step.agent.model === 'claude-sonnet-4-6'", () => {
+    expect(CodeReviewStep.agent.model).toBe("claude-sonnet-4-6");
   });
 
   it("step.agent.tools contains agent_toolset_20260401", () => {

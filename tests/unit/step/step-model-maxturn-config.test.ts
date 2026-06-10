@@ -2,7 +2,7 @@
  * Unit tests for step model / maxTurns configuration (propose-openspec-cli-and-step-model-config)
  *
  * TC-001: AgentStep interface に maxTurns フィールドが存在する (must)
- * TC-004: 設計/レビュー step の model が claude-opus-4-6[1m] に設定されている (must)
+ * TC-004: design step の model が claude-opus-4-6[1m]、judge step が claude-sonnet-4-6 に設定されている (must)
  * TC-005: 実装/修正 step の model が claude-sonnet-4-6 に設定されている (must)
  * TC-006: 各 step の maxTurns が設計値と一致する (must)
  */
@@ -37,18 +37,18 @@ describe("TC-001: AgentStep interface has maxTurns optional field", () => {
   });
 });
 
-// TC-004: 設計/レビュー step の model が claude-opus-4-6[1m] に設定されている
-describe("TC-004: Design/review steps use claude-opus-4-6[1m] model (opusplan pattern)", () => {
+// TC-004: design step の model が claude-opus-4-6[1m] に設定されている
+describe("TC-004: Design step uses claude-opus-4-6[1m] model (opusplan pattern)", () => {
   it("DESIGN_AGENT_MODEL is claude-opus-4-6[1m]", () => {
     expect(DesignStep.agent.model).toBe("claude-opus-4-6[1m]");
   });
 
-  it("SPEC_REVIEW_AGENT_MODEL is claude-opus-4-6[1m]", () => {
-    expect(SpecReviewStep.agent.model).toBe("claude-opus-4-6[1m]");
+  it("SPEC_REVIEW_AGENT_MODEL is claude-sonnet-4-6", () => {
+    expect(SpecReviewStep.agent.model).toBe("claude-sonnet-4-6");
   });
 
-  it("CODE_REVIEW_AGENT_MODEL is claude-opus-4-6[1m]", () => {
-    expect(CodeReviewStep.agent.model).toBe("claude-opus-4-6[1m]");
+  it("CODE_REVIEW_AGENT_MODEL is claude-sonnet-4-6", () => {
+    expect(CodeReviewStep.agent.model).toBe("claude-sonnet-4-6");
   });
 });
 

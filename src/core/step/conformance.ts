@@ -8,7 +8,7 @@ import { nextIteration } from "./io-iteration.js";
 import { STEP_NAMES } from "./step-names.js";
 import { JUDGE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
-const CONFORMANCE_AGENT_MODEL = "claude-opus-4-6[1m]";
+const CONFORMANCE_AGENT_MODEL = "claude-sonnet-4-6";
 
 /**
  * Full AgentDefinition owned by ConformanceStep.

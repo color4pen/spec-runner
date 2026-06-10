@@ -10,7 +10,7 @@ import { STEP_NAMES } from "./step-names.js";
 import { buildRequestConstraintsBlock } from "../../parser/extract-section.js";
 import { CODE_REVIEW_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
-const CODE_REVIEW_AGENT_MODEL = "claude-opus-4-6[1m]";
+const CODE_REVIEW_AGENT_MODEL = "claude-sonnet-4-6";
 
 /**
  * Build the review-feedback file path for a given iteration.
