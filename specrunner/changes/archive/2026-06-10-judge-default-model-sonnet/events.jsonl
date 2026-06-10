@@ -57,3 +57,4 @@
 {"type":"transition","ts":"2026-06-10T11:34:21.906Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/judge-default-model-sonnet/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-10T11:34:20.071Z","endedAt":"2026-06-10T11:34:21.904Z"}
 {"type":"transition","ts":"2026-06-10T11:34:21.917Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-10T11:38:27.287Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

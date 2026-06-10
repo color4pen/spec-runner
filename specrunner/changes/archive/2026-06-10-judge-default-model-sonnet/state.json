@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "83aba1fe-0c31-44a3-a96e-81a51d823f54",
   "createdAt": "2026-06-10T11:17:52.022Z",
-  "updatedAt": "2026-06-10T11:34:21.917Z",
+  "updatedAt": "2026-06-10T11:38:27.287Z",
   "request": {
     "title": "判定系 step の出荷時デフォルトモデルを sonnet に変更する",
     "type": "chore"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "chore/judge-default-model-sonnet-83aba1fe",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-10T11:34:21.903Z"
   },
   "_journal": {
-    "historyCount": 47,
+    "historyCount": 48,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
