@@ -1,11 +1,30 @@
 /**
  * Config schema and validator for specrunner CLI.
- * Uses hand-written validators (no zod) per design.md.
+ * Validation is performed via a two-layer flow:
+ *   1. configSchema.safeParse (zod/v4-mini) — structural type/range/enum checks
+ *   2. runSemanticChecks — post-schema checks (model registry, byRequestType semantics)
  *
  * Design D4: agents is Record<StepName, AgentRecord> — the single canonical map.
  * Legacy `agent` (singular) and intermediate `agents.{propose,specFixer,specReview}` shapes
  * are handled by migrate.ts at load time.
  */
+import {
+  string,
+  number,
+  object,
+  array,
+  union,
+  literal,
+  optional,
+  nullable,
+  record,
+  safeParse as zodSafeParse,
+  int,
+  gte,
+  lte,
+  minLength,
+  type infer as ZodInfer,
+} from "zod/v4-mini";
 import { BUILTIN_MODEL_REGISTRY } from "./model-registry.js";
 import type { AgentStepName } from "../state/schema.js";
 import { stderrWrite } from "../logger/stdout.js";
@@ -283,6 +302,488 @@ export interface RawConfig {
   archive?: Partial<Record<string, unknown>>;
 }
 
+// ---------------------------------------------------------------------------
+// Zod schema definitions (T-01)
+// ---------------------------------------------------------------------------
+
+/** Agent record: all three string fields are required. */
+const agentRecordSchema = nullable(
+  object(
+    {
+      agentId: string("must be a string."),
+      definitionHash: string("must be a string."),
+      lastSyncedAt: string("must be a string."),
+    },
+    "must be an object.",
+  ),
+);
+
+/** byRequestType entry: step fields without nested byRequestType (nested detection is post-schema). */
+const byRequestTypeEntrySchema = nullable(
+  object(
+    {
+      maxTurns: optional(
+        nullable(
+          number("must be a positive integer or null.").check(
+            int("must be a positive integer or null."),
+            gte(1, "must be a positive integer or null."),
+          ),
+        ),
+      ),
+      model: optional(
+        string("must be a non-empty string.").check(
+          minLength(1, "must be a non-empty string."),
+        ),
+      ),
+      timeoutMs: optional(
+        nullable(
+          number("must be a non-negative integer or null.").check(
+            int("must be a non-negative integer or null."),
+            gte(0, "must be a non-negative integer or null."),
+          ),
+        ),
+      ),
+    },
+    "must be an object.",
+  ),
+);
+
+/** Step entry: includes byRequestType (value schema does not include nested byRequestType). */
+const stepEntrySchema = nullable(
+  object(
+    {
+      maxTurns: optional(
+        nullable(
+          number("must be a positive integer or null.").check(
+            int("must be a positive integer or null."),
+            gte(1, "must be a positive integer or null."),
+          ),
+        ),
+      ),
+      model: optional(
+        string("must be a non-empty string.").check(
+          minLength(1, "must be a non-empty string."),
+        ),
+      ),
+      timeoutMs: optional(
+        nullable(
+          number("must be a non-negative integer or null.").check(
+            int("must be a non-negative integer or null."),
+            gte(0, "must be a non-negative integer or null."),
+          ),
+        ),
+      ),
+      byRequestType: optional(
+        record(string(), byRequestTypeEntrySchema, "must be an object."),
+      ),
+    },
+    "must be an object.",
+  ),
+);
+
+/** Model entry: provider must be "anthropic" or "openai". */
+const modelEntrySchema = object(
+  {
+    provider: union(
+      [literal("anthropic"), literal("openai")],
+      'must be "anthropic" or "openai".',
+    ),
+  },
+  "must be an object.",
+);
+
+/** Verification command: non-empty string or object with required run field. */
+const verificationCommandSchema = union(
+  [
+    string("must be a non-empty string.").check(
+      minLength(1, "must be a non-empty string."),
+    ),
+    object(
+      {
+        run: string().check(minLength(1, "must be a non-empty string.")),
+        name: optional(string("must be a string.")),
+      },
+      "must be a string or object with a run field.",
+    ),
+  ],
+  "must be a string or object with a run field.",
+);
+
+/**
+ * Structural config schema using zod/v4-mini.
+ * Field order matches legacy validation order: runtime → agents → environment →
+ * specReview → pipeline → steps → models → progress → verification → github → logs → archive.
+ * Unknown top-level fields are stripped (default object behavior).
+ */
+export const configSchema = object({
+  version: literal(1, "Config version must be 1."),
+  runtime: optional(
+    union(
+      [literal("managed"), literal("local")],
+      'must be "managed" or "local".',
+    ),
+  ),
+  agents: optional(record(string(), agentRecordSchema, "must be an object.")),
+  environment: optional(
+    object(
+      {
+        id: string("must be a string."),
+        lastSyncedAt: string("must be a string."),
+      },
+      "must be an object.",
+    ),
+  ),
+  specReview: optional(
+    object(
+      {
+        pollIntervalMs: optional(
+          number("must be a positive integer.").check(
+            int("must be a positive integer."),
+            gte(1, "must be a positive integer."),
+          ),
+        ),
+      },
+      "must be an object.",
+    ),
+  ),
+  pipeline: optional(
+    object(
+      {
+        maxRetries: optional(
+          number("must be between 1 and 10.").check(
+            int("must be between 1 and 10."),
+            gte(1, "must be between 1 and 10."),
+            lte(10, "must be between 1 and 10."),
+          ),
+        ),
+      },
+      "must be an object.",
+    ),
+  ),
+  steps: optional(record(string(), stepEntrySchema, "must be an object.")),
+  models: optional(
+    record(string(), modelEntrySchema, "must be an object."),
+  ),
+  progress: optional(
+    object(
+      {
+        heartbeatIntervalSec: optional(
+          nullable(
+            number("must be a non-negative integer or null.").check(
+              int("must be a non-negative integer or null."),
+              gte(0, "must be a non-negative integer or null."),
+            ),
+          ),
+        ),
+      },
+      "must be an object.",
+    ),
+  ),
+  verification: optional(
+    object(
+      {
+        commands: optional(
+          array(verificationCommandSchema, "must be an array."),
+        ),
+      },
+      "must be an object.",
+    ),
+  ),
+  github: optional(
+    object(
+      {
+        host: optional(
+          string("must be a non-empty string.").check(
+            minLength(1, "must be a non-empty string."),
+          ),
+        ),
+        apiBaseUrl: optional(
+          string("must be a non-empty string.")
+            .check(minLength(1, "must be a non-empty string."))
+            .check((ctx) => {
+              if (!ctx.value.startsWith("https://")) {
+                ctx.issues.push({
+                  code: "custom",
+                  message: "must start with https://.",
+                  input: ctx.value,
+                });
+              }
+            }),
+        ),
+      },
+      "must be an object.",
+    ),
+  ),
+  logs: optional(
+    object(
+      {
+        maxJobs: optional(
+          number("must be an integer between 1 and 1000.").check(
+            int("must be an integer between 1 and 1000."),
+            gte(1, "must be an integer between 1 and 1000."),
+            lte(1000, "must be an integer between 1 and 1000."),
+          ),
+        ),
+      },
+      "must be an object.",
+    ),
+  ),
+  archive: optional(
+    object(
+      {
+        mergeWaitTimeoutMs: optional(
+          nullable(
+            number("must be a non-negative integer or null.").check(
+              int("must be a non-negative integer or null."),
+              gte(0, "must be a non-negative integer or null."),
+            ),
+          ),
+        ),
+        mergeWaitPollIntervalMs: optional(
+          number("must be a positive integer.").check(
+            int("must be a positive integer."),
+            gte(1, "must be a positive integer."),
+          ),
+        ),
+        protectedPaths: optional(
+          array(
+            string("must be a non-empty string.").check(
+              minLength(1, "must be a non-empty string."),
+            ),
+            "must be an array.",
+          ),
+        ),
+      },
+      "must be an object.",
+    ),
+  ),
+});
+
+// ---------------------------------------------------------------------------
+// T-05: compile-time structural assertions
+// ---------------------------------------------------------------------------
+
+type _InferredConfig = ZodInfer<typeof configSchema>;
+
+// These assertions catch schema ↔ interface regressions at compile time.
+// If either side changes incompatibly, the assignment to `true` will error.
+type _SchemaAssertions = {
+  version: _InferredConfig["version"] extends 1
+    ? 1 extends _InferredConfig["version"]
+      ? true
+      : never
+    : never;
+  runtime: _InferredConfig["runtime"] extends SpecRunnerConfig["runtime"]
+    ? SpecRunnerConfig["runtime"] extends _InferredConfig["runtime"]
+      ? true
+      : never
+    : never;
+  verification: _InferredConfig["verification"] extends SpecRunnerConfig["verification"]
+    ? true
+    : never;
+};
+const _schemaAssert: _SchemaAssertions = {
+  version: true,
+  runtime: true,
+  verification: true,
+};
+
+// ---------------------------------------------------------------------------
+// T-02: error translation layer
+// ---------------------------------------------------------------------------
+
+/**
+ * Render a zod path array to a human-readable string.
+ * Numeric segments → `[n]`, string segments → `.seg` (first segment: no prefix).
+ * Example: ["steps","code-review","byRequestType","spec-change","model"]
+ *       → "steps.code-review.byRequestType.spec-change.model"
+ * Example: ["verification","commands",0,"run"] → "verification.commands[0].run"
+ */
+function renderPath(path: (string | number)[]): string {
+  let result = "";
+  for (let i = 0; i < path.length; i++) {
+    const seg = path[i]!;
+    if (typeof seg === "number") {
+      result += `[${seg}]`;
+    } else if (i === 0) {
+      result = seg;
+    } else {
+      result += `.${seg}`;
+    }
+  }
+  return result;
+}
+
+/**
+ * Translate the first zod issue into a thrown Error, following the no-code exception table.
+ * Always throws; return type is `never`.
+ */
+function throwFromFirstIssue(issues: Array<{ path: (string | number)[]; message: string; code: string }>): never {
+  const issue = issues[0]!;
+  const { path, message } = issue;
+
+  // Root non-object: empty path + invalid_type → no code, no CONFIG_INVALID prefix
+  if (path.length === 0 && issue.code === "invalid_type") {
+    throw new Error("Config must be a JSON object.");
+  }
+
+  // version field failure → no code, no CONFIG_INVALID prefix
+  if (path.length === 1 && path[0] === "version") {
+    throw new Error("Config version must be 1.");
+  }
+
+  const renderedPath = renderPath(path);
+  const fullMsg = `CONFIG_INVALID: ${renderedPath} ${message}`;
+
+  // pipeline.maxRetries → no code (special no-code exception)
+  if (path[0] === "pipeline" && path[1] === "maxRetries") {
+    throw new Error(fullMsg);
+  }
+
+  // All other validation failures: code = CONFIG_INVALID
+  throw Object.assign(new Error(fullMsg), { code: "CONFIG_INVALID" });
+}
+
+// ---------------------------------------------------------------------------
+// T-03: post-schema semantic checks
+// ---------------------------------------------------------------------------
+
+const KNOWN_REQUEST_TYPES = new Set([
+  "bug-fix",
+  "spec-change",
+  "new-feature",
+  "refactoring",
+  "chore",
+]);
+
+/**
+ * Check that step models exist in the merged registry and that OpenAI models
+ * are not used with managed runtime.
+ */
+function checkModelRegistry(raw: Record<string, unknown>): void {
+  if (raw["steps"] === undefined || raw["steps"] === null) return;
+
+  const userModels = (raw["models"] ?? {}) as Record<string, { provider?: string }>;
+  const merged = { ...BUILTIN_MODEL_REGISTRY, ...userModels };
+  const allModelNames = new Set(Object.keys(merged));
+  const openaiModels = new Set(
+    Object.entries(merged)
+      .filter(([, v]) => (v as { provider?: string }).provider === "openai")
+      .map(([k]) => k),
+  );
+  const isManagedRuntime = raw["runtime"] === "managed";
+
+  const checkModel = (model: string, path: string): void => {
+    if (!allModelNames.has(model)) {
+      throw Object.assign(
+        new Error(
+          `CONFIG_INVALID: ${path} "${model}" is not in the model registry. Add it to config.models.`,
+        ),
+        { code: "CONFIG_INVALID" },
+      );
+    }
+    if (isManagedRuntime && openaiModels.has(model)) {
+      throw Object.assign(
+        new Error(
+          `CONFIG_INVALID: OpenAI model "${model}" cannot be used with runtime "managed".`,
+        ),
+        { code: "CONFIG_INVALID" },
+      );
+    }
+  };
+
+  const stepsObj = raw["steps"] as Record<string, unknown>;
+  for (const [stepKey, stepVal] of Object.entries(stepsObj)) {
+    if (!stepVal || typeof stepVal !== "object") continue;
+    const stepCfg = stepVal as Record<string, unknown>;
+
+    // Step-level model
+    if (typeof stepCfg["model"] === "string" && stepCfg["model"].length > 0) {
+      checkModel(stepCfg["model"], `steps.${stepKey}.model`);
+    }
+
+    // byRequestType models
+    if (stepCfg["byRequestType"] && typeof stepCfg["byRequestType"] === "object") {
+      const byRT = stepCfg["byRequestType"] as Record<string, unknown>;
+      for (const [typeKey, typeVal] of Object.entries(byRT)) {
+        if (!typeVal || typeof typeVal !== "object") continue;
+        const typeCfg = typeVal as Record<string, unknown>;
+        if (typeof typeCfg["model"] === "string" && typeCfg["model"].length > 0) {
+          checkModel(
+            typeCfg["model"],
+            `steps.${stepKey}.byRequestType.${typeKey}.model`,
+          );
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Check byRequestType semantics: empty string keys, nested byRequestType (1-level limit),
+ * and unknown type key warnings.
+ */
+function checkByRequestTypeSemantics(raw: Record<string, unknown>): void {
+  if (raw["steps"] === undefined || raw["steps"] === null) return;
+
+  const stepsObj = raw["steps"] as Record<string, unknown>;
+  for (const [stepKey, stepVal] of Object.entries(stepsObj)) {
+    if (!stepVal || typeof stepVal !== "object") continue;
+    const stepCfg = stepVal as Record<string, unknown>;
+
+    if (
+      stepCfg["byRequestType"] === undefined ||
+      stepCfg["byRequestType"] === null
+    )
+      continue;
+    const byRT = stepCfg["byRequestType"] as Record<string, unknown>;
+
+    for (const [typeKey, typeVal] of Object.entries(byRT)) {
+      // Empty string key
+      if (typeKey.length === 0) {
+        throw Object.assign(
+          new Error(
+            `CONFIG_INVALID: steps.${stepKey}.byRequestType contains an empty string key.`,
+          ),
+          { code: "CONFIG_INVALID" },
+        );
+      }
+
+      // Unknown type key — warning only, do not throw
+      if (!KNOWN_REQUEST_TYPES.has(typeKey)) {
+        stderrWrite(
+          `[specrunner] warn: steps.${stepKey}.byRequestType.${typeKey} is not a known request type. Known types: ${[...KNOWN_REQUEST_TYPES].join(", ")}.`,
+        );
+      }
+
+      if (!typeVal || typeof typeVal !== "object") continue;
+      const typeCfg = typeVal as Record<string, unknown>;
+
+      // Nested byRequestType — 1-level limit
+      if (typeCfg["byRequestType"] !== undefined) {
+        throw Object.assign(
+          new Error(
+            `CONFIG_INVALID: steps.${stepKey}.byRequestType.${typeKey}.byRequestType is not allowed (1-level limit).`,
+          ),
+          { code: "CONFIG_INVALID" },
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Run all post-schema semantic checks on the raw (unmodified) config object.
+ */
+function runSemanticChecks(raw: Record<string, unknown>): void {
+  checkModelRegistry(raw);
+  checkByRequestTypeSemantics(raw);
+}
+
+// ---------------------------------------------------------------------------
+// T-04: validateConfig — 2-layer flow
+// ---------------------------------------------------------------------------
+
 /**
  * Validate that the raw parsed config contains required fields.
  * Called AFTER migration — expects new canonical schema.
@@ -293,512 +794,18 @@ export interface RawConfig {
  * D7 (design.md): runtime === "local" skips apiKey validation.
  */
 export function validateConfig(raw: unknown): SpecRunnerConfig {
-  if (typeof raw !== "object" || raw === null) {
-    throw new Error("Config must be a JSON object.");
-  }
-  const obj = raw as Record<string, unknown>;
-
-  if (obj["version"] !== 1) {
-    throw new Error("Config version must be 1.");
-  }
-
-  // TC-034: reject invalid runtime values
-  const runtime = obj["runtime"];
-  if (runtime !== undefined && runtime !== "managed" && runtime !== "local") {
-    throw Object.assign(
-      new Error('CONFIG_INVALID: runtime must be "managed" or "local".'),
-      { code: "CONFIG_INVALID" },
+  // Layer 1: structural validation via zod schema
+  const result = zodSafeParse(configSchema, raw);
+  if (!result.success) {
+    throwFromFirstIssue(
+      result.error.issues as Array<{ path: (string | number)[]; message: string; code: string }>,
     );
   }
 
-  // Validate agents section if provided
-  if (obj["agents"] !== undefined && obj["agents"] !== null) {
-    if (typeof obj["agents"] !== "object") {
-      throw Object.assign(
-        new Error("CONFIG_INVALID: agents must be an object."),
-        { code: "CONFIG_INVALID" },
-      );
-    }
-    const agentsObj = obj["agents"] as Record<string, unknown>;
-    for (const [stepName, rec] of Object.entries(agentsObj)) {
-      if (rec === undefined || rec === null) continue;
-      if (typeof rec !== "object") {
-        throw Object.assign(
-          new Error(`CONFIG_INVALID: agents.${stepName} must be an object.`),
-          { code: "CONFIG_INVALID" },
-        );
-      }
-      const recObj = rec as Record<string, unknown>;
-      for (const field of ["agentId", "definitionHash", "lastSyncedAt"] as const) {
-        if (typeof recObj[field] !== "string") {
-          throw Object.assign(
-            new Error(`CONFIG_INVALID: agents.${stepName}.${field} must be a string.`),
-            { code: "CONFIG_INVALID" },
-          );
-        }
-      }
-    }
-  }
+  // Layer 2: post-schema semantic checks on the original raw (preserves unknown fields)
+  runSemanticChecks(raw as Record<string, unknown>);
 
-  // Validate environment section if provided
-  if (obj["environment"] !== undefined && obj["environment"] !== null) {
-    if (typeof obj["environment"] !== "object") {
-      throw Object.assign(
-        new Error("CONFIG_INVALID: environment must be an object."),
-        { code: "CONFIG_INVALID" },
-      );
-    }
-    const envObj = obj["environment"] as Record<string, unknown>;
-    for (const field of ["id", "lastSyncedAt"] as const) {
-      if (typeof envObj[field] !== "string") {
-        throw Object.assign(
-          new Error(`CONFIG_INVALID: environment.${field} must be a string.`),
-          { code: "CONFIG_INVALID" },
-        );
-      }
-    }
-  }
-
-  // Validate specReview section if provided
-  if (obj["specReview"] !== undefined && obj["specReview"] !== null) {
-    if (typeof obj["specReview"] !== "object") {
-      throw Object.assign(
-        new Error("CONFIG_INVALID: specReview must be an object."),
-        { code: "CONFIG_INVALID" },
-      );
-    }
-    const specReviewObj = obj["specReview"] as Record<string, unknown>;
-    if (specReviewObj["pollIntervalMs"] !== undefined) {
-      const v = specReviewObj["pollIntervalMs"];
-      if (typeof v !== "number" || !Number.isInteger(v) || v < 1) {
-        throw Object.assign(
-          new Error("CONFIG_INVALID: specReview.pollIntervalMs must be a positive integer."),
-          { code: "CONFIG_INVALID" },
-        );
-      }
-    }
-  }
-
-  // Validate pipeline.maxRetries if provided
-  if (obj["pipeline"] !== undefined && obj["pipeline"] !== null) {
-    if (typeof obj["pipeline"] !== "object") {
-      throw Object.assign(
-        new Error("CONFIG_INVALID: pipeline must be an object."),
-        { code: "CONFIG_INVALID" },
-      );
-    }
-    const pipeline = obj["pipeline"] as Record<string, unknown>;
-    if (pipeline["maxRetries"] !== undefined) {
-      const maxRetries = pipeline["maxRetries"];
-      if (typeof maxRetries !== "number" || !Number.isInteger(maxRetries) || maxRetries < 1 || maxRetries > 10) {
-        throw new Error("CONFIG_INVALID: pipeline.maxRetries must be between 1 and 10.");
-      }
-    }
-  }
-
-  // Validate steps section if provided
-  // TC-013/TC-014/TC-015/TC-016: validate maxTurns (number>=1 | null), model (non-empty string), timeoutMs (number>=1 | null)
-  if (obj["steps"] !== undefined && obj["steps"] !== null) {
-    if (typeof obj["steps"] !== "object") {
-      throw Object.assign(
-        new Error("CONFIG_INVALID: steps must be an object."),
-        { code: "CONFIG_INVALID" },
-      );
-    }
-    const stepsObj = obj["steps"] as Record<string, unknown>;
-    for (const [stepKey, stepVal] of Object.entries(stepsObj)) {
-      if (stepVal === undefined || stepVal === null) continue;
-      if (typeof stepVal !== "object") {
-        throw Object.assign(
-          new Error(`CONFIG_INVALID: steps.${stepKey} must be an object.`),
-          { code: "CONFIG_INVALID" },
-        );
-      }
-      const stepCfg = stepVal as Record<string, unknown>;
-
-      // Validate maxTurns: must be number >= 1 or null (not 0, not negative, not string)
-      if (stepCfg["maxTurns"] !== undefined) {
-        const maxTurns = stepCfg["maxTurns"];
-        if (maxTurns !== null) {
-          if (typeof maxTurns !== "number" || !Number.isInteger(maxTurns) || maxTurns < 1) {
-            throw Object.assign(
-              new Error(`CONFIG_INVALID: steps.${stepKey}.maxTurns must be a positive integer or null.`),
-              { code: "CONFIG_INVALID" },
-            );
-          }
-        }
-      }
-
-      // Validate model: must be non-empty string if provided
-      if (stepCfg["model"] !== undefined) {
-        const model = stepCfg["model"];
-        if (typeof model !== "string" || model.length === 0) {
-          throw Object.assign(
-            new Error(`CONFIG_INVALID: steps.${stepKey}.model must be a non-empty string.`),
-            { code: "CONFIG_INVALID" },
-          );
-        }
-      }
-
-      // Validate timeoutMs: must be number >= 0 or null (0 = disable timeout, negative = invalid)
-      if (stepCfg["timeoutMs"] !== undefined) {
-        const timeoutMs = stepCfg["timeoutMs"];
-        if (timeoutMs !== null) {
-          if (typeof timeoutMs !== "number" || !Number.isInteger(timeoutMs) || timeoutMs < 0) {
-            throw Object.assign(
-              new Error(`CONFIG_INVALID: steps.${stepKey}.timeoutMs must be a non-negative integer or null.`),
-              { code: "CONFIG_INVALID" },
-            );
-          }
-        }
-      }
-
-      // Validate byRequestType: object, non-empty string keys, valid StepExecutionConfig values (no nested byRequestType)
-      if (stepCfg["byRequestType"] !== undefined) {
-        const byRT = stepCfg["byRequestType"];
-        if (typeof byRT !== "object" || byRT === null) {
-          throw Object.assign(
-            new Error(`CONFIG_INVALID: steps.${stepKey}.byRequestType must be an object.`),
-            { code: "CONFIG_INVALID" },
-          );
-        }
-        const knownTypes = new Set(["bug-fix", "spec-change", "new-feature", "refactoring", "chore"]);
-        for (const [typeKey, typeVal] of Object.entries(byRT as Record<string, unknown>)) {
-          // Empty string key → CONFIG_INVALID
-          if (typeKey.length === 0) {
-            throw Object.assign(
-              new Error(`CONFIG_INVALID: steps.${stepKey}.byRequestType contains an empty string key.`),
-              { code: "CONFIG_INVALID" },
-            );
-          }
-          // Unknown type key → warning only
-          if (!knownTypes.has(typeKey)) {
-            stderrWrite(
-              `[specrunner] warn: steps.${stepKey}.byRequestType.${typeKey} is not a known request type. Known types: ${[...knownTypes].join(", ")}.`,
-            );
-          }
-          if (typeVal === undefined || typeVal === null) continue;
-          if (typeof typeVal !== "object") {
-            throw Object.assign(
-              new Error(`CONFIG_INVALID: steps.${stepKey}.byRequestType.${typeKey} must be an object.`),
-              { code: "CONFIG_INVALID" },
-            );
-          }
-          const typeCfg = typeVal as Record<string, unknown>;
-
-          // Nested byRequestType → CONFIG_INVALID (1-level limit)
-          if (typeCfg["byRequestType"] !== undefined) {
-            throw Object.assign(
-              new Error(`CONFIG_INVALID: steps.${stepKey}.byRequestType.${typeKey}.byRequestType is not allowed (1-level limit).`),
-              { code: "CONFIG_INVALID" },
-            );
-          }
-
-          // Validate maxTurns inside byRequestType entry
-          if (typeCfg["maxTurns"] !== undefined) {
-            const maxTurns = typeCfg["maxTurns"];
-            if (maxTurns !== null) {
-              if (typeof maxTurns !== "number" || !Number.isInteger(maxTurns) || maxTurns < 1) {
-                throw Object.assign(
-                  new Error(`CONFIG_INVALID: steps.${stepKey}.byRequestType.${typeKey}.maxTurns must be a positive integer or null.`),
-                  { code: "CONFIG_INVALID" },
-                );
-              }
-            }
-          }
-
-          // Validate model inside byRequestType entry
-          if (typeCfg["model"] !== undefined) {
-            const model = typeCfg["model"];
-            if (typeof model !== "string" || model.length === 0) {
-              throw Object.assign(
-                new Error(`CONFIG_INVALID: steps.${stepKey}.byRequestType.${typeKey}.model must be a non-empty string.`),
-                { code: "CONFIG_INVALID" },
-              );
-            }
-          }
-
-          // Validate timeoutMs inside byRequestType entry
-          if (typeCfg["timeoutMs"] !== undefined) {
-            const timeoutMs = typeCfg["timeoutMs"];
-            if (timeoutMs !== null) {
-              if (typeof timeoutMs !== "number" || !Number.isInteger(timeoutMs) || timeoutMs < 0) {
-                throw Object.assign(
-                  new Error(`CONFIG_INVALID: steps.${stepKey}.byRequestType.${typeKey}.timeoutMs must be a non-negative integer or null.`),
-                  { code: "CONFIG_INVALID" },
-                );
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Validate models section if provided
-  if (obj["models"] !== undefined && obj["models"] !== null) {
-    if (typeof obj["models"] !== "object") {
-      throw Object.assign(
-        new Error("CONFIG_INVALID: models must be an object."),
-        { code: "CONFIG_INVALID" },
-      );
-    }
-    const modelsObj = obj["models"] as Record<string, unknown>;
-    for (const [modelName, modelVal] of Object.entries(modelsObj)) {
-      if (typeof modelVal !== "object" || modelVal === null) {
-        throw Object.assign(
-          new Error(`CONFIG_INVALID: models.${modelName} must be an object.`),
-          { code: "CONFIG_INVALID" },
-        );
-      }
-      const entry = modelVal as Record<string, unknown>;
-      if (entry["provider"] !== "anthropic" && entry["provider"] !== "openai") {
-        throw Object.assign(
-          new Error(`CONFIG_INVALID: models.${modelName}.provider must be "anthropic" or "openai".`),
-          { code: "CONFIG_INVALID" },
-        );
-      }
-    }
-  }
-
-  // Validate progress section if provided
-  if (obj["progress"] !== undefined && obj["progress"] !== null) {
-    if (typeof obj["progress"] !== "object") {
-      throw Object.assign(
-        new Error("CONFIG_INVALID: progress must be an object."),
-        { code: "CONFIG_INVALID" },
-      );
-    }
-    const progress = obj["progress"] as Record<string, unknown>;
-    if (progress["heartbeatIntervalSec"] !== undefined) {
-      const interval = progress["heartbeatIntervalSec"];
-      if (interval !== null) {
-        if (typeof interval !== "number" || !Number.isInteger(interval) || interval < 0) {
-          throw Object.assign(
-            new Error("CONFIG_INVALID: progress.heartbeatIntervalSec must be a non-negative integer or null."),
-            { code: "CONFIG_INVALID" },
-          );
-        }
-      }
-    }
-  }
-
-  // Validate verification section if provided
-  if (obj["verification"] !== undefined && obj["verification"] !== null) {
-    if (typeof obj["verification"] !== "object") {
-      throw Object.assign(
-        new Error("CONFIG_INVALID: verification must be an object."),
-        { code: "CONFIG_INVALID" },
-      );
-    }
-    const verif = obj["verification"] as Record<string, unknown>;
-    if (verif["commands"] !== undefined) {
-      if (!Array.isArray(verif["commands"])) {
-        throw Object.assign(
-          new Error("CONFIG_INVALID: verification.commands must be an array."),
-          { code: "CONFIG_INVALID" },
-        );
-      }
-      const commands = verif["commands"] as unknown[];
-      for (let i = 0; i < commands.length; i++) {
-        const cmd = commands[i];
-        if (typeof cmd === "string") {
-          if (cmd.length === 0) {
-            throw Object.assign(
-              new Error(`CONFIG_INVALID: verification.commands[${i}] must be a non-empty string.`),
-              { code: "CONFIG_INVALID" },
-            );
-          }
-        } else if (typeof cmd === "object" && cmd !== null) {
-          const cmdObj = cmd as Record<string, unknown>;
-          if (typeof cmdObj["run"] !== "string" || cmdObj["run"].length === 0) {
-            throw Object.assign(
-              new Error(`CONFIG_INVALID: verification.commands[${i}].run must be a non-empty string.`),
-              { code: "CONFIG_INVALID" },
-            );
-          }
-          if (cmdObj["name"] !== undefined && typeof cmdObj["name"] !== "string") {
-            throw Object.assign(
-              new Error(`CONFIG_INVALID: verification.commands[${i}].name must be a string.`),
-              { code: "CONFIG_INVALID" },
-            );
-          }
-        } else {
-          throw Object.assign(
-            new Error(`CONFIG_INVALID: verification.commands[${i}] must be a string or object with a run field.`),
-            { code: "CONFIG_INVALID" },
-          );
-        }
-      }
-    }
-  }
-
-  // Validate that step models exist in the merged registry and that OpenAI models
-  // are not used with managed runtime (D6 design.md).
-  if (obj["steps"] !== undefined && obj["steps"] !== null) {
-    const stepsObj = obj["steps"] as Record<string, unknown>;
-    const userModels = (obj["models"] ?? {}) as Record<string, { provider?: string }>;
-    const merged = { ...BUILTIN_MODEL_REGISTRY, ...userModels };
-    const allModelNames = new Set(Object.keys(merged));
-    const openaiModels = new Set(
-      Object.entries(merged)
-        .filter(([, v]) => (v as { provider?: string }).provider === "openai")
-        .map(([k]) => k),
-    );
-
-    const collectStepModel = (stepKey: string, stepVal: unknown): string | undefined => {
-      if (typeof stepVal === "object" && stepVal !== null) {
-        const m = (stepVal as Record<string, unknown>)["model"];
-        if (typeof m === "string" && m.length > 0) return m;
-      }
-      return undefined;
-    };
-
-    const isManagedRuntime = runtime === "managed";
-
-    const checkModel = (model: string, path: string): void => {
-      if (!allModelNames.has(model)) {
-        throw Object.assign(
-          new Error(`CONFIG_INVALID: ${path} "${model}" is not in the model registry. Add it to config.models.`),
-          { code: "CONFIG_INVALID" },
-        );
-      }
-      if (isManagedRuntime && openaiModels.has(model)) {
-        throw Object.assign(
-          new Error(`CONFIG_INVALID: OpenAI model "${model}" cannot be used with runtime "managed".`),
-          { code: "CONFIG_INVALID" },
-        );
-      }
-    };
-
-    for (const [stepKey, stepVal] of Object.entries(stepsObj)) {
-      const model = collectStepModel(stepKey, stepVal);
-      if (model !== undefined) {
-        checkModel(model, `steps.${stepKey}.model`);
-      }
-
-      // Also validate models inside byRequestType entries
-      if (typeof stepVal === "object" && stepVal !== null) {
-        const byRT = (stepVal as Record<string, unknown>)["byRequestType"];
-        if (typeof byRT === "object" && byRT !== null) {
-          for (const [typeKey, typeVal] of Object.entries(byRT as Record<string, unknown>)) {
-            const typeModel = collectStepModel(`${stepKey}.byRequestType.${typeKey}`, typeVal);
-            if (typeModel !== undefined) {
-              checkModel(typeModel, `steps.${stepKey}.byRequestType.${typeKey}.model`);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Validate github section if provided
-  if (obj["github"] !== undefined && obj["github"] !== null) {
-    if (typeof obj["github"] !== "object") {
-      throw Object.assign(
-        new Error("CONFIG_INVALID: github must be an object."),
-        { code: "CONFIG_INVALID" },
-      );
-    }
-    const githubObj = obj["github"] as Record<string, unknown>;
-    if (githubObj["host"] !== undefined) {
-      const host = githubObj["host"];
-      if (typeof host !== "string" || host.length === 0) {
-        throw Object.assign(
-          new Error("CONFIG_INVALID: github.host must be a non-empty string."),
-          { code: "CONFIG_INVALID" },
-        );
-      }
-    }
-    if (githubObj["apiBaseUrl"] !== undefined) {
-      const apiBaseUrl = githubObj["apiBaseUrl"];
-      if (typeof apiBaseUrl !== "string" || apiBaseUrl.length === 0) {
-        throw Object.assign(
-          new Error("CONFIG_INVALID: github.apiBaseUrl must be a non-empty string."),
-          { code: "CONFIG_INVALID" },
-        );
-      }
-      if (!apiBaseUrl.startsWith("https://")) {
-        throw Object.assign(
-          new Error("CONFIG_INVALID: github.apiBaseUrl must start with https://."),
-          { code: "CONFIG_INVALID" },
-        );
-      }
-    }
-  }
-
-  // Validate logs section if provided
-  if (obj["logs"] !== undefined && obj["logs"] !== null) {
-    if (typeof obj["logs"] !== "object") {
-      throw Object.assign(
-        new Error("CONFIG_INVALID: logs must be an object."),
-        { code: "CONFIG_INVALID" },
-      );
-    }
-    const logsObj = obj["logs"] as Record<string, unknown>;
-    if (logsObj["maxJobs"] !== undefined) {
-      const maxJobs = logsObj["maxJobs"];
-      if (typeof maxJobs !== "number" || !Number.isInteger(maxJobs) || maxJobs < 1 || maxJobs > 1000) {
-        throw Object.assign(
-          new Error("CONFIG_INVALID: logs.maxJobs must be an integer between 1 and 1000."),
-          { code: "CONFIG_INVALID" },
-        );
-      }
-    }
-  }
-
-  // Validate archive section if provided
-  if (obj["archive"] !== undefined && obj["archive"] !== null) {
-    if (typeof obj["archive"] !== "object") {
-      throw Object.assign(
-        new Error("CONFIG_INVALID: archive must be an object."),
-        { code: "CONFIG_INVALID" },
-      );
-    }
-    const archiveObj = obj["archive"] as Record<string, unknown>;
-
-    if (archiveObj["mergeWaitTimeoutMs"] !== undefined) {
-      const v = archiveObj["mergeWaitTimeoutMs"];
-      if (v !== null) {
-        if (typeof v !== "number" || !Number.isInteger(v) || v < 0) {
-          throw Object.assign(
-            new Error("CONFIG_INVALID: archive.mergeWaitTimeoutMs must be a non-negative integer or null."),
-            { code: "CONFIG_INVALID" },
-          );
-        }
-      }
-    }
-
-    if (archiveObj["mergeWaitPollIntervalMs"] !== undefined) {
-      const v = archiveObj["mergeWaitPollIntervalMs"];
-      if (typeof v !== "number" || !Number.isInteger(v) || v < 1) {
-        throw Object.assign(
-          new Error("CONFIG_INVALID: archive.mergeWaitPollIntervalMs must be a positive integer."),
-          { code: "CONFIG_INVALID" },
-        );
-      }
-    }
-
-    if (archiveObj["protectedPaths"] !== undefined) {
-      const v = archiveObj["protectedPaths"];
-      if (!Array.isArray(v)) {
-        throw Object.assign(
-          new Error("CONFIG_INVALID: archive.protectedPaths must be an array."),
-          { code: "CONFIG_INVALID" },
-        );
-      }
-      for (let i = 0; i < v.length; i++) {
-        const elem = v[i];
-        if (typeof elem !== "string" || elem.length === 0) {
-          throw Object.assign(
-            new Error(`CONFIG_INVALID: archive.protectedPaths[${i}] must be a non-empty string.`),
-            { code: "CONFIG_INVALID" },
-          );
-        }
-      }
-    }
-  }
-
+  // Return the original raw cast to SpecRunnerConfig (preserves unknown fields like `jobs`).
   return raw as SpecRunnerConfig;
 }
 
@@ -818,4 +825,3 @@ export function checkConfigComplete(
   // Config no longer stores secrets.
   return null;
 }
-

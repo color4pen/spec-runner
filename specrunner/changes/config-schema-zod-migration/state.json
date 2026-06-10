@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "jobId": "4d29def0-3d13-4b93-9603-26f8b96a0a13",
+  "createdAt": "2026-06-10T02:55:05.334Z",
+  "updatedAt": "2026-06-10T04:00:04.306Z",
+  "request": {
+    "title": "config schema の手書きバリデータを zod ベースに移行する",
+    "type": "refactoring"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "refactor/config-schema-zod-migration-4d29def0",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/579",
+    "number": 579,
+    "createdAt": "2026-06-10T04:00:04.294Z"
+  },
+  "_journal": {
+    "historyCount": 50,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 2,
+      "build-fixer": 1,
+      "code-review": 1,
+      "code-fixer": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}
