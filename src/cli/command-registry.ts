@@ -193,9 +193,11 @@ export const COMMANDS: Record<string, CommandEntry> = {
   },
 
   login: {
-    flags: {},
-    handler: async () => {
-      process.exit(await runLogin());
+    flags: {
+      force: { type: "boolean" },
+    },
+    handler: async (parsed) => {
+      process.exit(await runLogin({ force: !!parsed.flags["force"] }));
     },
   },
 

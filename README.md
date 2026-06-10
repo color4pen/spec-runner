@@ -83,6 +83,24 @@ npx specrunner job resume my-feature     # Resume from last checkpoint
 | Variable | Required | Description |
 |---|---|---|
 | `SPECRUNNER_API_KEY` | Managed runtime only | Anthropic API key. Not needed for local runtime. |
+| `GH_TOKEN` | See GitHub Authentication | GitHub token (highest priority). Used for automation contexts (cron, CI). Overrides `GITHUB_TOKEN` and stored credentials. |
+| `GITHUB_TOKEN` | See GitHub Authentication | GitHub token (second priority). Automatically injected by GitHub Actions. |
+
+## GitHub Authentication
+
+SpecRunner resolves a GitHub token in order of priority: `GH_TOKEN` env → `GITHUB_TOKEN` env → `gh auth token` (gh CLI) → `credentials.json`.
+
+Three authentication paths are supported:
+
+| Path | Context | Token type | Setup |
+|---|---|---|---|
+| `specrunner login` | Interactive (device flow) | User access token (`ghu_`) | Run `specrunner login`; token is stored in `~/.config/specrunner/credentials.json`. |
+| GitHub Actions | Unattended CI | Installation token (`GITHUB_TOKEN`) | Set `env: GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}` in your workflow step. Token is injected automatically per run with scoped permissions. |
+| Self-hosted server / cron | Unattended automation | Fine-grained PAT | Create a fine-grained PAT in GitHub Settings with the minimum required repository permissions. Set `GH_TOKEN=<pat>` in the environment. Note: fine-grained PATs expire after at most 1 year and must be rotated. |
+
+Automation contexts (cron, CI, always-on schedulers) cannot run device flow and typically cannot reach the interactive keychain. Use the `GH_TOKEN` env var path for these contexts — it is independent of `specrunner login`.
+
+Run `specrunner doctor` to see which source is currently resolved.
 
 ## Command Reference
 
@@ -207,6 +225,8 @@ Run `inbox run` on a schedule so issues are processed automatically.
 **GitHub Actions**
 
 Three complementary triggers cover the common automation patterns. The `concurrency` group prevents overlapping runs.
+
+`GITHUB_TOKEN` is injected automatically by GitHub Actions for each run (see [GitHub Authentication](#github-authentication)), so no manual secret configuration is needed.
 
 ```yaml
 name: SpecRunner Inbox

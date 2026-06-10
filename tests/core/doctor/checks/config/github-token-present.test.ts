@@ -55,6 +55,7 @@ describe("githubTokenPresentCheck", () => {
     const ctx = buildMockContext({
       resolvedGitHubToken: "ghp_test",
       githubTokenSource: "env",
+      env: { GH_TOKEN: "ghp_test" },
     });
     const result = await githubTokenPresentCheck.check(ctx);
     expect(result.status).toBe("pass");
@@ -84,5 +85,55 @@ describe("githubTokenPresentCheck", () => {
     const result = await githubTokenPresentCheck.check(ctx);
     expect(result.status).toBe("pass");
     expect(result.message).toBe("GitHub token is available");
+  });
+
+  // TC-09: source env, GH_TOKEN set → details shows $GH_TOKEN
+  it("shows Resolved via $GH_TOKEN in details when source is env and GH_TOKEN is set", async () => {
+    const ctx = buildMockContext({
+      resolvedGitHubToken: "ghp_test",
+      githubTokenSource: "env",
+      env: { GH_TOKEN: "ghp_test" },
+    });
+    const result = await githubTokenPresentCheck.check(ctx);
+    expect(result.status).toBe("pass");
+    expect(result.details).toBeDefined();
+    expect(result.details).toContain("Resolved via $GH_TOKEN");
+  });
+
+  // TC-10: source env, only GITHUB_TOKEN set → details shows $GITHUB_TOKEN
+  it("shows Resolved via $GITHUB_TOKEN in details when source is env and only GITHUB_TOKEN is set", async () => {
+    const ctx = buildMockContext({
+      resolvedGitHubToken: "ghp_actions",
+      githubTokenSource: "env",
+      env: { GITHUB_TOKEN: "ghp_actions" },
+    });
+    const result = await githubTokenPresentCheck.check(ctx);
+    expect(result.status).toBe("pass");
+    expect(result.details).toBeDefined();
+    expect(result.details).toContain("Resolved via $GITHUB_TOKEN");
+  });
+
+  // TC-11: source gh → no details
+  it("does not add details when source is gh", async () => {
+    const ctx = buildMockContext({
+      resolvedGitHubToken: "ghp_gh_cli",
+      githubTokenSource: "gh",
+      env: {},
+    });
+    const result = await githubTokenPresentCheck.check(ctx);
+    expect(result.status).toBe("pass");
+    expect(result.details).toBeUndefined();
+  });
+
+  // TC-12: source credentials → no details
+  it("does not add details when source is credentials", async () => {
+    const ctx = buildMockContext({
+      resolvedGitHubToken: "ghp_creds",
+      githubTokenSource: "credentials",
+      env: {},
+    });
+    const result = await githubTokenPresentCheck.check(ctx);
+    expect(result.status).toBe("pass");
+    expect(result.details).toBeUndefined();
   });
 });

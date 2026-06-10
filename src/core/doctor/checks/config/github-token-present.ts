@@ -12,9 +12,20 @@ export const githubTokenPresentCheck: DoctorCheck = {
   async check(ctx: DoctorContext) {
     if (typeof ctx.resolvedGitHubToken === "string" && ctx.resolvedGitHubToken.length > 0) {
       const sourceLabel = ctx.githubTokenSource ? ` (source: ${ctx.githubTokenSource})` : "";
+      const details: string[] = [];
+
+      if (ctx.githubTokenSource === "env") {
+        // Identify which env var was used (GH_TOKEN takes precedence)
+        const ghToken = ctx.env["GH_TOKEN"];
+        const resolvedVarName =
+          ghToken && ghToken.length > 0 ? "GH_TOKEN" : "GITHUB_TOKEN";
+        details.push(`Resolved via $${resolvedVarName}`);
+      }
+
       return {
         status: "pass",
         message: `GitHub token is available${sourceLabel}`,
+        ...(details.length > 0 ? { details } : {}),
       };
     }
 
