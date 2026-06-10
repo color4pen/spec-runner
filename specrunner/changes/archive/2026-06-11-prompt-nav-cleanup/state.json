@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "4e42b140-2a41-4790-97e6-0901fa17fa25",
   "createdAt": "2026-06-10T14:21:33.082Z",
-  "updatedAt": "2026-06-10T15:54:11.968Z",
+  "updatedAt": "2026-06-10T16:44:16.937Z",
   "request": {
     "title": "prompt 内の古いナビゲーション文を整理する",
     "type": "chore"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "chore/prompt-nav-cleanup-4e42b140",
   "error": null,
   "pipelineId": "standard",
@@ -24,7 +24,7 @@
     "createdAt": "2026-06-10T15:54:11.957Z"
   },
   "_journal": {
-    "historyCount": 43,
+    "historyCount": 44,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
