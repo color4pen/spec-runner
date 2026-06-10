@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "jobId": "5f04e075-fd7c-4259-b6f1-3a5b16f1755b",
+  "createdAt": "2026-06-10T12:47:16.534Z",
+  "updatedAt": "2026-06-10T13:09:46.573Z",
+  "request": {
+    "title": "ps.checkPrMerged の unit test を追加する",
+    "type": "chore"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "chore/ps-checkprmerged-test-5f04e075",
+  "error": null,
+  "pipelineId": "standard",
+  "issueNumber": 599,
+  "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/601",
+    "number": 601,
+    "createdAt": "2026-06-10T13:09:46.562Z"
+  },
+  "_journal": {
+    "historyCount": 46,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "code-fixer": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

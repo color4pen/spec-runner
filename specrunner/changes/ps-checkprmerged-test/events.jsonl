@@ -1,0 +1,57 @@
+{"type":"transition","ts":"2026-06-10T12:47:16.534Z","step":"init","status":"started","message":"job created"}
+{"type":"transition","ts":"2026-06-10T12:47:18.739Z","step":"request-review-started","status":"started","message":"Starting request-review step"}
+{"type":"transition","ts":"2026-06-10T12:48:31.665Z","step":"request-review-verdict","status":"ok","message":"request-review verdict: approve"}
+{"type":"step-attempt","step":"request-review","sessionId":"070157a5-f849-4778-9e5e-a974a529878f","outcome":{"verdict":"approve","findingsPath":"specrunner/changes/ps-checkprmerged-test/request-review-result-001.md","error":null,"toolResult":{"ok":true,"verdict":"approve","findings":[]},"followUpAttempts":0},"startedAt":"2026-06-10T12:47:18.747Z","endedAt":"2026-06-10T12:48:29.818Z"}
+{"type":"transition","ts":"2026-06-10T12:48:31.669Z","step":"step-transition","status":"ok","message":"request-review → design"}
+{"type":"transition","ts":"2026-06-10T12:48:31.670Z","step":"design-started","status":"started","message":"Starting design step"}
+{"type":"transition","ts":"2026-06-10T12:50:35.604Z","step":"design-verdict","status":"ok","message":"design verdict: success"}
+{"type":"step-attempt","step":"design","sessionId":"8359c248-0d1d-46ba-905b-9f865a16d0e2","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1},"startedAt":"2026-06-10T12:48:31.681Z","endedAt":"2026-06-10T12:50:33.557Z"}
+{"type":"transition","ts":"2026-06-10T12:50:35.608Z","step":"step-transition","status":"ok","message":"design → spec-review"}
+{"type":"transition","ts":"2026-06-10T12:50:35.609Z","step":"spec-review","status":"started","message":"spec-review iteration 1 started"}
+{"type":"transition","ts":"2026-06-10T12:50:35.610Z","step":"spec-review-started","status":"started","message":"Starting spec-review step"}
+{"type":"transition","ts":"2026-06-10T12:58:32.552Z","step":"stale-detection","status":"ok","message":"running → awaiting-resume: Process not running"}
+{"type":"transition","ts":"2026-06-10T12:59:36.075Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'spec-review'"}
+{"type":"transition","ts":"2026-06-10T12:59:36.129Z","step":"spec-review","status":"started","message":"spec-review iteration 1 started"}
+{"type":"transition","ts":"2026-06-10T12:59:36.130Z","step":"spec-review-started","status":"started","message":"Starting spec-review step"}
+{"type":"transition","ts":"2026-06-10T13:01:42.318Z","step":"spec-review-verdict","status":"ok","message":"spec-review verdict: approved"}
+{"type":"step-attempt","step":"spec-review","sessionId":"d5f844d7-564c-4060-abb7-f506b5931ce6","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/ps-checkprmerged-test/spec-review-result-001.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[]},"followUpAttempts":1},"startedAt":"2026-06-10T12:59:36.137Z","endedAt":"2026-06-10T13:01:40.550Z"}
+{"type":"transition","ts":"2026-06-10T13:01:42.322Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-06-10T13:01:42.322Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
+{"type":"transition","ts":"2026-06-10T13:01:42.323Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-06-10T13:02:35.821Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"e3d65795-a6d2-4258-8b39-ab9a0f429e33","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1},"startedAt":"2026-06-10T13:01:42.334Z","endedAt":"2026-06-10T13:02:33.450Z"}
+{"type":"transition","ts":"2026-06-10T13:02:35.827Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-06-10T13:02:35.831Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
+{"type":"transition","ts":"2026-06-10T13:04:20.481Z","step":"implementer-verdict","status":"ok","message":"implementer verdict: success"}
+{"type":"step-attempt","step":"implementer","sessionId":"8d8155ac-01a0-4481-a6cd-055697347562","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1},"startedAt":"2026-06-10T13:02:35.847Z","endedAt":"2026-06-10T13:04:17.058Z"}
+{"type":"transition","ts":"2026-06-10T13:04:20.488Z","step":"step-transition","status":"ok","message":"implementer → verification"}
+{"type":"transition","ts":"2026-06-10T13:04:20.491Z","step":"verification","status":"started","message":"verification iteration 1 started"}
+{"type":"transition","ts":"2026-06-10T13:04:20.493Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-06-10T13:04:42.568Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/ps-checkprmerged-test/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-10T13:04:20.494Z","endedAt":"2026-06-10T13:04:42.566Z"}
+{"type":"transition","ts":"2026-06-10T13:04:42.573Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
+{"type":"transition","ts":"2026-06-10T13:04:42.573Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-06-10T13:04:42.576Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-06-10T13:04:42.577Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
+{"type":"transition","ts":"2026-06-10T13:06:50.881Z","step":"code-review-verdict","status":"ok","message":"code-review verdict: approved"}
+{"type":"step-attempt","step":"code-review","sessionId":"662be814-aee0-4154-a40e-f43c62f16fe8","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/ps-checkprmerged-test/review-feedback-001.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[{"severity":"low","resolution":"fixable","file":"tests/unit/cli/ps-check-pr-merged.test.ts","title":"makeJob fixture uses non-canonical request type \"feature\"","rationale":"Canonical request types are new-feature, chore, bug-fix, etc. typecheck passes so no functional impact, but consistency with the schema is preferable.","line":26}],"fixableCount":1},"followUpAttempts":1},"startedAt":"2026-06-10T13:04:42.593Z","endedAt":"2026-06-10T13:06:48.873Z"}
+{"type":"transition","ts":"2026-06-10T13:06:50.885Z","step":"code-review","status":"ok","message":"code-review iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-06-10T13:06:50.885Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
+{"type":"transition","ts":"2026-06-10T13:06:50.887Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-06-10T13:07:18.171Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"3300626e-764f-4710-9b21-675fbc63034e","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1},"startedAt":"2026-06-10T13:06:50.900Z","endedAt":"2026-06-10T13:07:16.228Z"}
+{"type":"transition","ts":"2026-06-10T13:07:18.177Z","step":"step-transition","status":"ok","message":"code-fixer → conformance"}
+{"type":"transition","ts":"2026-06-10T13:07:18.178Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-06-10T13:07:18.180Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
+{"type":"transition","ts":"2026-06-10T13:09:17.626Z","step":"conformance-verdict","status":"ok","message":"conformance verdict: approved"}
+{"type":"step-attempt","step":"conformance","sessionId":"28986d0f-95a1-4ffc-8f76-c362e424965b","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/ps-checkprmerged-test/conformance-result-001.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[{"severity":"low","resolution":"fixable","file":"specrunner/changes/ps-checkprmerged-test/spec.md","title":"spec.md の ## Requirements が空","rationale":"SHALLs/シナリオが記述されていない。chore/test-only 変更のため機能的影響はなく、非ブロッキング。"}]},"followUpAttempts":1},"startedAt":"2026-06-10T13:07:18.194Z","endedAt":"2026-06-10T13:09:15.793Z"}
+{"type":"transition","ts":"2026-06-10T13:09:17.632Z","step":"conformance","status":"ok","message":"conformance iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-06-10T13:09:17.632Z","step":"step-transition","status":"ok","message":"conformance → adr-gen"}
+{"type":"transition","ts":"2026-06-10T13:09:17.634Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-06-10T13:09:44.032Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"49f4420f-c2f9-4cd7-91a4-f640dfd7501e","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1},"startedAt":"2026-06-10T13:09:17.648Z","endedAt":"2026-06-10T13:09:42.184Z"}
+{"type":"transition","ts":"2026-06-10T13:09:44.035Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-06-10T13:09:44.037Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-06-10T13:09:46.565Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/ps-checkprmerged-test/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-10T13:09:44.037Z","endedAt":"2026-06-10T13:09:46.563Z"}
+{"type":"transition","ts":"2026-06-10T13:09:46.573Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
