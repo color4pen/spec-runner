@@ -142,6 +142,9 @@ const MASK_PATTERNS: RegExp[] = [
   /\bsk-ant-[A-Za-z0-9_-]+/g,
   /\b(gh[oprsu])_[A-Za-z0-9]+/g,
   /\bgithub_pat_[A-Za-z0-9_]+/g,
+  /\bsk-proj-[A-Za-z0-9_-]+/g,
+  /\bsk-svcacct-[A-Za-z0-9_-]+/g,
+  /\bsk-[A-Za-z0-9_-]{20,}/g,
 ];
 
 /**
@@ -152,7 +155,8 @@ export function maskSensitive(text: string): string {
   let result = text;
   for (const pattern of MASK_PATTERNS) {
     result = result.replace(pattern, (match) => {
-      const prefix = match.slice(0, match.indexOf("_") + 1);
+      const sep = match.indexOf("_") !== -1 ? match.indexOf("_") : match.lastIndexOf("-");
+      const prefix = match.slice(0, sep + 1);
       return `${prefix}...`;
     });
   }

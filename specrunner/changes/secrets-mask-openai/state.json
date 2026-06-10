@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "jobId": "6770b39c-295d-4bc4-bab0-222cd6a6b52c",
+  "createdAt": "2026-06-10T13:28:13.740Z",
+  "updatedAt": "2026-06-10T13:58:12.770Z",
+  "request": {
+    "title": "secrets masking に OpenAI 系トークンのパターンを追加する",
+    "type": "bug-fix"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "fix/secrets-mask-openai-6770b39c",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/609",
+    "number": 609,
+    "createdAt": "2026-06-10T13:58:12.758Z"
+  },
+  "_journal": {
+    "historyCount": 55,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 3,
+      "spec-fixer": 2,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}
