@@ -482,6 +482,136 @@ describe("cancelSingleJob — sidecar jobId is a non-string (numeric)", () => {
 });
 
 // ---------------------------------------------------------------------------
+// cancelSingleJob — --restore-draft flag
+// ---------------------------------------------------------------------------
+
+describe("cancelSingleJob — --restore-draft flag", () => {
+  it("writes drafts/<slug>/request.md and returns info entry when restoreDraft: true", async () => {
+    const worktreePath = path.join(tempDir, "wt");
+    const { jobId, slug } = await makeJob("failed", { worktreePath });
+
+    // Write source request.md in the worktree
+    const sourceDir = path.join(worktreePath, "specrunner", "changes", slug);
+    await nodefs.mkdir(sourceDir, { recursive: true });
+    await nodefs.writeFile(path.join(sourceDir, "request.md"), "# Test Request\n");
+
+    const result = await cancelSingleJob({ jobId, force: false, purge: false, restoreDraft: true, deps: makeDeps() });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.info).toEqual(expect.arrayContaining([expect.stringContaining("Restored draft")]));
+
+    const draftContent = await nodefs.readFile(
+      path.join(tempDir, "specrunner", "drafts", slug, "request.md"),
+      "utf-8",
+    );
+    expect(draftContent).toBe("# Test Request\n");
+  });
+
+  it("does NOT write draft when restoreDraft: false", async () => {
+    const worktreePath = path.join(tempDir, "wt");
+    const { jobId, slug } = await makeJob("failed", { worktreePath });
+
+    const sourceDir = path.join(worktreePath, "specrunner", "changes", slug);
+    await nodefs.mkdir(sourceDir, { recursive: true });
+    await nodefs.writeFile(path.join(sourceDir, "request.md"), "# Should Not Be Copied\n");
+
+    await cancelSingleJob({ jobId, force: false, purge: false, restoreDraft: false, deps: makeDeps() });
+
+    const draftFilePath = path.join(tempDir, "specrunner", "drafts", slug, "request.md");
+    await expect(nodefs.access(draftFilePath)).rejects.toThrow();
+  });
+
+  it("does NOT write draft when restoreDraft is omitted (default)", async () => {
+    const worktreePath = path.join(tempDir, "wt");
+    const { jobId, slug } = await makeJob("failed", { worktreePath });
+
+    const sourceDir = path.join(worktreePath, "specrunner", "changes", slug);
+    await nodefs.mkdir(sourceDir, { recursive: true });
+    await nodefs.writeFile(path.join(sourceDir, "request.md"), "# Should Not Be Copied\n");
+
+    await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
+
+    const draftFilePath = path.join(tempDir, "specrunner", "drafts", slug, "request.md");
+    await expect(nodefs.access(draftFilePath)).rejects.toThrow();
+  });
+
+  it("does not overwrite existing draft and returns warning", async () => {
+    const worktreePath = path.join(tempDir, "wt");
+    const { jobId, slug } = await makeJob("failed", { worktreePath });
+
+    // Write source in worktree
+    const sourceDir = path.join(worktreePath, "specrunner", "changes", slug);
+    await nodefs.mkdir(sourceDir, { recursive: true });
+    await nodefs.writeFile(path.join(sourceDir, "request.md"), "# New Content\n");
+
+    // Pre-create existing draft
+    const draftDir = path.join(tempDir, "specrunner", "drafts", slug);
+    await nodefs.mkdir(draftDir, { recursive: true });
+    await nodefs.writeFile(path.join(draftDir, "request.md"), "# Existing Content\n");
+
+    const result = await cancelSingleJob({ jobId, force: false, purge: false, restoreDraft: true, deps: makeDeps() });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([expect.stringContaining("draft already exists")]),
+    );
+
+    // Verify not overwritten
+    const content = await nodefs.readFile(path.join(draftDir, "request.md"), "utf-8");
+    expect(content).toBe("# Existing Content\n");
+  });
+
+  it("returns warning and skips when source request.md is missing", async () => {
+    const worktreePath = path.join(tempDir, "wt");
+    const { jobId, slug } = await makeJob("failed", { worktreePath });
+
+    // No request.md in worktree — just create the worktree dir
+    await nodefs.mkdir(worktreePath, { recursive: true });
+
+    const result = await cancelSingleJob({ jobId, force: false, purge: false, restoreDraft: true, deps: makeDeps() });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([expect.stringContaining("no request.md to restore")]),
+    );
+
+    const draftFilePath = path.join(tempDir, "specrunner", "drafts", slug, "request.md");
+    await expect(nodefs.access(draftFilePath)).rejects.toThrow();
+  });
+
+  it("restore happens before worktree removal (draft written even though remove is called)", async () => {
+    const worktreePath = path.join(tempDir, "wt");
+    const { jobId, slug } = await makeJob("failed", { worktreePath });
+
+    const sourceDir = path.join(worktreePath, "specrunner", "changes", slug);
+    await nodefs.mkdir(sourceDir, { recursive: true });
+    await nodefs.writeFile(path.join(sourceDir, "request.md"), "# Ordering Test\n");
+
+    const worktreeManager: WorktreeManager = {
+      create: vi.fn(),
+      remove: vi.fn().mockResolvedValue(undefined),
+      prune: vi.fn().mockResolvedValue(undefined),
+    };
+
+    const result = await cancelSingleJob({
+      jobId, force: false, purge: false, restoreDraft: true,
+      deps: makeDeps({ worktreeManager }),
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.info).toEqual(expect.arrayContaining([expect.stringContaining("Restored draft")]));
+    // worktreeManager.remove was also called (cleanup ran after restore)
+    expect(worktreeManager.remove).toHaveBeenCalled();
+
+    const content = await nodefs.readFile(
+      path.join(tempDir, "specrunner", "drafts", slug, "request.md"),
+      "utf-8",
+    );
+    expect(content).toBe("# Ordering Test\n");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // cancelAllTerminated
 // ---------------------------------------------------------------------------
 

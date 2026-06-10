@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "jobId": "c07b257e-7940-4d0b-8d79-490bf4a8e89a",
+  "createdAt": "2026-06-10T14:07:26.461Z",
+  "updatedAt": "2026-06-10T14:45:29.124Z",
+  "request": {
+    "title": "job cancel 時に request.md を drafts/ に戻すオプションを追加する",
+    "type": "new-feature"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/cancel-restore-draft-c07b257e",
+  "error": null,
+  "pipelineId": "standard",
+  "issueNumber": 608,
+  "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/610",
+    "number": 610,
+    "createdAt": "2026-06-10T14:45:29.112Z"
+  },
+  "_journal": {
+    "historyCount": 45,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "code-fixer": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

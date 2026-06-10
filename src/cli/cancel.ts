@@ -4,7 +4,7 @@
  * Exit codes: 0 (success), 1 (execution error), 2 (arg error).
  *
  * Usage:
- *   specrunner job cancel <jobId> [--force] [--purge]
+ *   specrunner job cancel <jobId> [--force] [--purge] [--restore-draft]
  *   specrunner job cancel --all-terminated [--yes]
  */
 import { JobStateStore } from "../store/job-state-store.js";
@@ -22,6 +22,7 @@ export interface RunCancelOptions {
   purge: boolean;
   allTerminated: boolean;
   yes: boolean;
+  restoreDraft: boolean;
 }
 
 /**
@@ -30,7 +31,7 @@ export interface RunCancelOptions {
  * Caller (bin/specrunner.ts) is responsible for process.exit().
  */
 export async function runCancel(opts: RunCancelOptions): Promise<number> {
-  const { jobId, force, purge, allTerminated, yes } = opts;
+  const { jobId, force, purge, allTerminated, yes, restoreDraft } = opts;
 
   // Arg validation: exclusivity checks
   if (!allTerminated && !jobId) {
@@ -43,6 +44,10 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
   }
   if (purge && allTerminated) {
     logError("--purge cannot be combined with --all-terminated (bulk cleanup always removes state files).");
+    return 2;
+  }
+  if (restoreDraft && allTerminated) {
+    logError("--restore-draft cannot be combined with --all-terminated.");
     return 2;
   }
 
@@ -88,6 +93,7 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
       jobId: resolvedJobId,
       force,
       purge,
+      restoreDraft,
       deps: {
         spawn: spawnCommand,
         worktreeManager,

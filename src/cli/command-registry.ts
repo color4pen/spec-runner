@@ -70,7 +70,7 @@ Job commands:
   job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)
   job ls                          全 job 一覧
   job show <jobId|slug>           job state 詳細
-  job cancel <jobId>              job を cancel して cleanup
+  job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)
   job resume <slug>               halted job を再開
   job archive <slug>              change folder 移動・worktree 撤去・status 更新
 
@@ -386,6 +386,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
           purge: { type: "boolean" },
           "all-terminated": { type: "boolean" },
           yes: { type: "boolean" },
+          "restore-draft": { type: "boolean" },
         },
         positional: { name: "jobId", required: false },
         handler: async (parsed) => {
@@ -403,6 +404,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
                 purge: !!parsed.flags["purge"],
                 allTerminated: !!parsed.flags["all-terminated"],
                 yes: !!parsed.flags["yes"],
+                restoreDraft: !!parsed.flags["restore-draft"],
               }),
             );
           } catch (err: unknown) {

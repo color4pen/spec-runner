@@ -22,7 +22,8 @@ import { ERROR_CODES, SpecRunnerError } from "../../errors.js";
 import { gracefulKill } from "./pid-kill.js";
 import { buildWorktreePath } from "../worktree/manager.js";
 import { getJobSlug } from "../../state/job-slug.js";
-import { livenessJsonPath, managedMarkerPath, localSidecarDir } from "../../util/paths.js";
+import { livenessJsonPath, managedMarkerPath, localSidecarDir, requestMdPath, draftPath } from "../../util/paths.js";
+import * as requestStore from "../request/store.js";
 import type { WorktreeManager } from "../worktree/manager.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import type { JobState } from "../../state/schema.js";
@@ -96,6 +97,52 @@ async function resolveWorktreePathForJob(
 }
 
 /**
+ * Restore request.md from the branch worktree into drafts/<slug>/request.md.
+ * Called only when --restore-draft is passed, and BEFORE cleanupJobResources.
+ * Failures append warnings and return early; never throw.
+ */
+async function restoreDraftFromBranch(
+  state: JobState,
+  deps: CancelDeps,
+  warnings: string[],
+  info: string[],
+): Promise<void> {
+  const slug = getJobSlug(state);
+  if (!slug) {
+    warnings.push("Warning: cannot restore draft: slug could not be derived");
+    return;
+  }
+
+  const worktreePath = await resolveWorktreePathForJob(state, deps.repoRoot);
+  if (!worktreePath) {
+    warnings.push("Warning: cannot restore draft: worktree path could not be resolved");
+    return;
+  }
+
+  const sourcePath = path.join(worktreePath, requestMdPath(slug));
+  let content: string;
+  try {
+    content = await fs.readFile(sourcePath, "utf-8");
+  } catch {
+    warnings.push(`Warning: no request.md to restore at ${sourcePath}`);
+    return;
+  }
+
+  const destPath = path.join(deps.repoRoot, draftPath(slug));
+  try {
+    await fs.access(destPath);
+    // Already exists — skip
+    warnings.push(`Warning: draft already exists at specrunner/drafts/${slug}/request.md; skipping restore`);
+    return;
+  } catch {
+    // Does not exist — proceed
+  }
+
+  await requestStore.write(deps.repoRoot, slug, content);
+  info.push(`Restored draft to specrunner/drafts/${slug}/request.md`);
+}
+
+/**
  * Best-effort cleanup: worktree removal + local/remote branch deletion.
  * Failures append warnings but never throw.
  */
@@ -153,10 +200,12 @@ export async function cancelSingleJob(opts: {
   jobId: string;
   force: boolean;
   purge: boolean;
+  restoreDraft?: boolean;
   deps: CancelDeps;
 }): Promise<CancelResult> {
-  const { jobId, force, purge, deps } = opts;
+  const { jobId, force, purge, restoreDraft = false, deps } = opts;
   const warnings: string[] = [];
+  const info: string[] = [];
 
   // Load state via sidecar → slug dir (T-05 D4)
   let state: JobState;
@@ -208,6 +257,14 @@ export async function cancelSingleJob(opts: {
     } else {
       warnings.push("Warning: no PID recorded for running job, skipping process kill.");
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Restore draft (best-effort, before cleanup so worktree is still present)
+  // ---------------------------------------------------------------------------
+
+  if (restoreDraft) {
+    await restoreDraftFromBranch(state, deps, warnings, info);
   }
 
   // ---------------------------------------------------------------------------
@@ -274,6 +331,7 @@ export async function cancelSingleJob(opts: {
   return {
     exitCode: 0,
     message: `Canceled job ${jobId}`,
+    ...(info.length > 0 ? { info } : {}),
     ...(warnings.length > 0 ? { warnings } : {}),
   };
 }

@@ -64,7 +64,7 @@ describe("T-044: initPipelineLog called with correct args for single job cancel"
     const { runCancel } = await import("../../../src/cli/cancel.js");
     const { initPipelineLog } = await import("../../../src/logger/pipeline-logger.js");
 
-    await runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false });
+    await runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false, restoreDraft: false });
 
     expect(initPipelineLog).toHaveBeenCalledWith("/repo", "test-job-id-cancel-5678");
   });
@@ -76,7 +76,7 @@ describe("T-044b: cancel:start and cancel:complete events recorded", () => {
     const { runCancel } = await import("../../../src/cli/cancel.js");
     const { logPipelineEvent } = await import("../../../src/logger/pipeline-logger.js");
 
-    await runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false });
+    await runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false, restoreDraft: false });
 
     const eventTypes = (logPipelineEvent as ReturnType<typeof vi.fn>).mock.calls.map(
       (c) => (c[0] as Record<string, unknown>)["type"],
@@ -96,7 +96,7 @@ describe("T-044c: cancel:error event recorded on cancelSingleJob exception", () 
     const { logPipelineEvent, closePipelineLog } = await import("../../../src/logger/pipeline-logger.js");
 
     await expect(
-      runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false }),
+      runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false, restoreDraft: false }),
     ).rejects.toThrow("cancel failed");
 
     const eventTypes = (logPipelineEvent as ReturnType<typeof vi.fn>).mock.calls.map(
@@ -113,8 +113,49 @@ describe("T-045: --all-terminated does not call initPipelineLog", () => {
     const { runCancel } = await import("../../../src/cli/cancel.js");
     const { initPipelineLog } = await import("../../../src/logger/pipeline-logger.js");
 
-    await runCancel({ force: false, purge: false, allTerminated: true, yes: true });
+    await runCancel({ force: false, purge: false, allTerminated: true, yes: true, restoreDraft: false });
 
     expect(initPipelineLog).not.toHaveBeenCalled();
+  });
+});
+
+// T-046: --all-terminated --restore-draft exits 2 without calling runner
+describe("T-046: --all-terminated --restore-draft exits 2", () => {
+  it("returns exit 2 when --restore-draft and --all-terminated are combined", async () => {
+    const { runCancel } = await import("../../../src/cli/cancel.js");
+    const { cancelSingleJob, cancelAllTerminated } = await import("../../../src/core/cancel/runner.js");
+
+    const exitCode = await runCancel({
+      force: false, purge: false, allTerminated: true, yes: false, restoreDraft: true,
+    });
+
+    expect(exitCode).toBe(2);
+    expect(cancelSingleJob).not.toHaveBeenCalled();
+    expect(cancelAllTerminated).not.toHaveBeenCalled();
+  });
+});
+
+// T-047: restoreDraft forwarded to cancelSingleJob
+describe("T-047: restoreDraft forwarded to cancelSingleJob", () => {
+  it("passes restoreDraft: true to cancelSingleJob when --restore-draft is set", async () => {
+    const { runCancel } = await import("../../../src/cli/cancel.js");
+    const { cancelSingleJob } = await import("../../../src/core/cancel/runner.js");
+
+    await runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false, restoreDraft: true });
+
+    expect(cancelSingleJob).toHaveBeenCalledWith(expect.objectContaining({
+      restoreDraft: true,
+    }));
+  });
+
+  it("passes restoreDraft: false to cancelSingleJob when omitted", async () => {
+    const { runCancel } = await import("../../../src/cli/cancel.js");
+    const { cancelSingleJob } = await import("../../../src/core/cancel/runner.js");
+
+    await runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false, restoreDraft: false });
+
+    expect(cancelSingleJob).toHaveBeenCalledWith(expect.objectContaining({
+      restoreDraft: false,
+    }));
   });
 });
