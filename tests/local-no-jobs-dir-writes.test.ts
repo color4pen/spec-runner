@@ -40,6 +40,7 @@ function buildMockGitHubClient() {
     mergePullRequest: vi.fn(),
     getCheckStatus: vi.fn(),
     listPullRequestFiles: vi.fn().mockResolvedValue({ files: [], truncated: false }),
+    createIssueComment: vi.fn().mockResolvedValue({ id: 1, url: "https://github.com/o/r/issues/1#issuecomment-1" }),
   };
 }
 

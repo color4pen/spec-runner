@@ -10,6 +10,7 @@ import { StepExecutor } from "../step/executor.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
+import { notifyJobTerminal } from "../notify/issue-notifier.js";
 
 /** Error codes that indicate truly fatal pipeline failures (not resumable). */
 const FATAL_ERROR_CODES: Set<string> = new Set([
@@ -380,6 +381,11 @@ export class Pipeline {
       prevLoopStep = isLoopStep ? currentStep : "";
       currentStep = nextStep as string;
     }
+
+    // Best-effort: notify linked issue of terminal state (awaiting-resume / awaiting-archive).
+    // Runs after all state transitions and persistence are complete.
+    // Failures are caught inside notifyJobTerminal and logged as warnings only.
+    await notifyJobTerminal(state, deps);
 
     return state;
   }

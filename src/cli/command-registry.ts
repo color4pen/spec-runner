@@ -66,6 +66,7 @@ Request commands:
 
 Job commands:
   job start <request-slug|file>   pipeline 開始、jobId 発行
+  job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)
   job ls                          全 job 一覧
   job show <jobId|slug>           job state 詳細
   job cancel <jobId>              job を cancel して cleanup
@@ -186,6 +187,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
       quiet: { type: "boolean" },
       json: { type: "boolean" },
       "no-worktree": { type: "boolean" },
+      issue: { type: "string" },
     },
     positional: { name: "request.md|slug", required: true },
     handler: async (parsed) => {
@@ -195,7 +197,17 @@ export const COMMANDS: Record<string, CommandEntry> = {
         verbose: !!parsed.flags["verbose"],
         debug: !!parsed.flags["debug"],
       });
-      await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] });
+      let issue: number | undefined;
+      const issueRaw = parsed.flags["issue"] as string | undefined;
+      if (issueRaw !== undefined) {
+        const n = Number(issueRaw);
+        if (!Number.isInteger(n) || n <= 0) {
+          logError(`--issue requires a positive integer (got: ${issueRaw})`);
+          process.exit(EXIT_CODE.ARG_ERROR);
+        }
+        issue = n;
+      }
+      await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"], issue });
     },
   },
 
@@ -286,6 +298,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
           quiet: { type: "boolean" },
           json: { type: "boolean" },
           "no-worktree": { type: "boolean" },
+          issue: { type: "string" },
         },
         positional: { name: "slug|file", required: true },
         handler: async (parsed) => {
@@ -295,7 +308,17 @@ export const COMMANDS: Record<string, CommandEntry> = {
             verbose: !!parsed.flags["verbose"],
             debug: !!parsed.flags["debug"],
           });
-          await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] });
+          let issue: number | undefined;
+          const issueRaw = parsed.flags["issue"] as string | undefined;
+          if (issueRaw !== undefined) {
+            const n = Number(issueRaw);
+            if (!Number.isInteger(n) || n <= 0) {
+              logError(`--issue requires a positive integer (got: ${issueRaw})`);
+              process.exit(EXIT_CODE.ARG_ERROR);
+            }
+            issue = n;
+          }
+          await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"], issue });
         },
       },
       ls: {

@@ -19,6 +19,8 @@ export interface PipelineRunOptions {
   logLevel?: LogLevel;
   json?: boolean;
   noWorktree?: boolean;
+  /** GitHub issue number to link this job to. When set, terminal transitions write a comment. */
+  issue?: number;
 }
 
 // Canonical path pattern: specrunner/drafts/<slug>/request.md
@@ -78,6 +80,11 @@ export class PipelineRunCommand extends CommandRunner {
     // Set noWorktree flag on initial state (portable — written to state.json for archive to read)
     if (this.options.noWorktree === true) {
       jobState.noWorktree = true;
+    }
+
+    // Set issueNumber on initial state so terminal notifications reach the linked issue.
+    if (this.options.issue !== undefined) {
+      jobState.issueNumber = this.options.issue;
     }
 
     // Compute branchName: CLI creates the branch before the agent runs

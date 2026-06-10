@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "jobId": "2e530f4b-252e-4f80-a166-b4b2e6f6a77a",
+  "createdAt": "2026-06-10T04:25:20.680Z",
+  "updatedAt": "2026-06-10T05:42:23.165Z",
+  "request": {
+    "title": "job を GitHub issue に紐付け、escalation / 完走を issue コメントで通知する",
+    "type": "new-feature"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/issue-notification-2e530f4b",
+  "error": null,
+  "pipelineId": "standard",
+  "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/585",
+    "number": 585,
+    "createdAt": "2026-06-10T05:42:23.159Z"
+  },
+  "_journal": {
+    "historyCount": 52,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 2,
+      "test-case-gen": 1,
+      "implementer": 2,
+      "verification": 1,
+      "code-review": 1,
+      "code-fixer": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

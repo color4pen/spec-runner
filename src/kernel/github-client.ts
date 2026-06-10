@@ -156,6 +156,26 @@ export interface GitHubClient {
   ): Promise<{ merged: boolean; message: string }>;
 
   /**
+   * Create a comment on an issue.
+   * Forge-neutral semantics: owner / repo / issueNumber / body only.
+   * Returns the created comment's id and url.
+   *
+   * Expects HTTP 201. Throws SpecRunnerError(GITHUB_API_ERROR) on non-201.
+   * Throws SpecRunnerError(GITHUB_TOKEN_EXPIRED) on 401 (via shared request() layer).
+   *
+   * @param owner  Repository owner (user or org name).
+   * @param repo   Repository name.
+   * @param issueNumber  GitHub issue number.
+   * @param body   Markdown body of the comment.
+   */
+  createIssueComment(
+    owner: string,
+    repo: string,
+    issueNumber: number,
+    body: string,
+  ): Promise<{ id: number; url: string }>;
+
+  /**
    * List the files changed by a pull request.
    * Calls GET /repos/{owner}/{repo}/pulls/{pull_number}/files with per_page=100,
    * following Link: rel="next" for pagination.

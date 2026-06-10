@@ -202,6 +202,14 @@ export interface JobState {
    * Absent (undefined) means the job ran in normal worktree mode.
    */
   noWorktree?: boolean;
+  /**
+   * GitHub issue number this job is linked to via `--issue <number>`.
+   * When set, terminal transitions (awaiting-resume / awaiting-archive) write
+   * a comment to the linked issue via GitHubClient.createIssueComment.
+   * Absent (undefined) means no issue is linked — notification is suppressed.
+   * Optional for backward compat — absent in legacy state files is valid.
+   */
+  issueNumber?: number | null;
 }
 
 /**
@@ -380,6 +388,14 @@ export function validateJobState(raw: unknown): JobState {
   if ("resumePoint" in obj && obj["resumePoint"] !== null && obj["resumePoint"] !== undefined) {
     if (typeof obj["resumePoint"] !== "object") {
       throw new Error("resumePoint must be an object when present.");
+    }
+  }
+
+  // Validate issueNumber when present (backward compat: absence is OK)
+  if ("issueNumber" in obj && obj["issueNumber"] !== null && obj["issueNumber"] !== undefined) {
+    const n = obj["issueNumber"];
+    if (typeof n !== "number" || !Number.isInteger(n) || n <= 0) {
+      throw new Error("issueNumber must be a positive integer when present.");
     }
   }
 

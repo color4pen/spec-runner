@@ -41,7 +41,7 @@ function resolveHeartbeatInterval(config: SpecRunnerConfig): number {
 
 export async function runRunCore(
   requestMdPath: string,
-  options: { cwd?: string; logLevel?: LogLevel; json?: boolean; noWorktree?: boolean },
+  options: { cwd?: string; logLevel?: LogLevel; json?: boolean; noWorktree?: boolean; issue?: number },
 ): Promise<number> {
   setLogLevel(options.logLevel ?? "default");
   const cwd = options.cwd ?? process.cwd();
@@ -96,7 +96,7 @@ export async function runRunCore(
     heartbeatIntervalSec: resolveHeartbeatInterval(config),
   });
   try {
-    return await new PipelineRunCommand(runtime, events, absolutePath, preflightResult, { ...options, noWorktree: options.noWorktree }).execute();
+    return await new PipelineRunCommand(runtime, events, absolutePath, preflightResult, { ...options, noWorktree: options.noWorktree, issue: options.issue }).execute();
   } catch (err) {
     logError((err as Error).message);
     return 1;
@@ -107,7 +107,7 @@ export async function runRunCore(
 
 export async function runRun(
   requestMdPath: string,
-  options: { cwd?: string; logLevel?: LogLevel; json?: boolean; noWorktree?: boolean },
+  options: { cwd?: string; logLevel?: LogLevel; json?: boolean; noWorktree?: boolean; issue?: number },
 ): Promise<void> {
   process.exit(await runRunCore(requestMdPath, options));
 }

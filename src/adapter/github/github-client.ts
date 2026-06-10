@@ -448,6 +448,33 @@ export class GitHubApiClient implements GitHubClient {
   }
 
   /**
+   * Create a comment on an issue.
+   * POST /repos/{owner}/{repo}/issues/{issueNumber}/comments
+   * Expects 201; returns { id, url } mapped from REST id / html_url.
+   */
+  async createIssueComment(
+    owner: string,
+    repo: string,
+    issueNumber: number,
+    body: string,
+  ): Promise<{ id: number; url: string }> {
+    const url = `${this.baseUrl}/repos/${owner}/${repo}/issues/${issueNumber}/comments`;
+    const resp = await this.request(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body }),
+    });
+
+    if (resp.status !== 201) {
+      const text = await resp.text().catch(() => "");
+      throw githubApiError(resp.status, `createIssueComment(${owner}/${repo}#${issueNumber}): ${text.slice(0, 200)}`);
+    }
+
+    const data = (await resp.json()) as { id: number; html_url: string };
+    return { id: data.id, url: data.html_url };
+  }
+
+  /**
    * List the files changed by a pull request, following Link: rel="next" pagination.
    *
    * GitHub caps this endpoint at 3000 files. When the cap is reached,
