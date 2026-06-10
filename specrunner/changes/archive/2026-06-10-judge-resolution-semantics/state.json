@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "436f3f91-64cf-46c1-8364-aa743a7a75c4",
   "createdAt": "2026-06-10T04:54:39.483Z",
-  "updatedAt": "2026-06-10T05:46:53.156Z",
+  "updatedAt": "2026-06-10T06:10:21.287Z",
   "request": {
     "title": "judge prompt の decision-needed 定義を絞り、markdown テンプレートの verdict 規則を導出ルールと整合させる",
     "type": "bug-fix"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/judge-resolution-semantics-436f3f91",
   "error": null,
   "pipelineId": "standard",
@@ -23,7 +23,7 @@
     "createdAt": "2026-06-10T05:46:53.144Z"
   },
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 47,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
