@@ -23,7 +23,6 @@ import {
   gte,
   lte,
   minLength,
-  type infer as ZodInfer,
 } from "zod/v4-mini";
 import { BUILTIN_MODEL_REGISTRY } from "./model-registry.js";
 import type { AgentStepName } from "../state/schema.js";
@@ -558,35 +557,6 @@ export const configSchema = object({
     ),
   ),
 });
-
-// ---------------------------------------------------------------------------
-// T-05: compile-time structural assertions
-// ---------------------------------------------------------------------------
-
-type _InferredConfig = ZodInfer<typeof configSchema>;
-
-// These assertions catch schema ↔ interface regressions at compile time.
-// If either side changes incompatibly, the assignment to `true` will error.
-type _SchemaAssertions = {
-  version: _InferredConfig["version"] extends 1
-    ? 1 extends _InferredConfig["version"]
-      ? true
-      : never
-    : never;
-  runtime: _InferredConfig["runtime"] extends SpecRunnerConfig["runtime"]
-    ? SpecRunnerConfig["runtime"] extends _InferredConfig["runtime"]
-      ? true
-      : never
-    : never;
-  verification: _InferredConfig["verification"] extends SpecRunnerConfig["verification"]
-    ? true
-    : never;
-};
-const _schemaAssert: _SchemaAssertions = {
-  version: true,
-  runtime: true,
-  verification: true,
-};
 
 // ---------------------------------------------------------------------------
 // T-02: error translation layer

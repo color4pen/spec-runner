@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "jobId": "a0bce75c-c074-4870-b44e-a26ee29147e6",
+  "createdAt": "2026-06-10T04:25:23.460Z",
+  "updatedAt": "2026-06-10T05:32:45.813Z",
+  "request": {
+    "title": "config の zod schema と手書き interface の乖離を typecheck で検出する",
+    "type": "chore"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "chore/config-schema-type-parity-a0bce75c",
+  "error": null,
+  "pipelineId": "standard",
+  "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/583",
+    "number": 583,
+    "createdAt": "2026-06-10T05:32:45.802Z"
+  },
+  "_journal": {
+    "historyCount": 52,
+    "stepCounts": {
+      "request-review": 2,
+      "design": 1,
+      "spec-review": 2,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "code-fixer": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}
