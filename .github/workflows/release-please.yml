@@ -13,7 +13,7 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: google-github-actions/release-please-action@v4
+      - uses: google-github-actions/release-please-action@e4dc86ba9405554aeba3c6bb2d169500e7d3b4ee # v4
         with:
           # PAT を使う（GITHUB_TOKEN ではない）: GITHUB_TOKEN で打った tag は
           # 連鎖 workflow を発火しないため publish.yml が走らない。PAT 由来の
