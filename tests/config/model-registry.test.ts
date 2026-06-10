@@ -5,6 +5,10 @@ import {
   resolveProvider,
 } from "../../src/config/model-registry.js";
 import type { SpecRunnerConfig } from "../../src/config/schema.js";
+import { DesignStep } from "../../src/core/step/design.js";
+import { SpecReviewStep } from "../../src/core/step/spec-review.js";
+import { CodeReviewStep } from "../../src/core/step/code-review.js";
+import { ConformanceStep } from "../../src/core/step/conformance.js";
 
 function makeConfig(overrides: Partial<SpecRunnerConfig> = {}): SpecRunnerConfig {
   return {
@@ -75,5 +79,37 @@ describe("resolveProvider", () => {
     } catch (err) {
       expect((err as { code?: string }).code).toBe("CONFIG_INVALID");
     }
+  });
+});
+
+describe("step default models resolve without CONFIG_INVALID (bare config)", () => {
+  const merged = mergeModelRegistry(makeConfig());
+
+  it("DesignStep default model resolves to 'anthropic'", () => {
+    expect(resolveProvider(DesignStep.agent.model, merged)).toBe("anthropic");
+  });
+
+  it("SpecReviewStep default model resolves to 'anthropic'", () => {
+    expect(resolveProvider(SpecReviewStep.agent.model, merged)).toBe("anthropic");
+  });
+
+  it("CodeReviewStep default model resolves to 'anthropic'", () => {
+    expect(resolveProvider(CodeReviewStep.agent.model, merged)).toBe("anthropic");
+  });
+
+  it("ConformanceStep default model resolves to 'anthropic'", () => {
+    expect(resolveProvider(ConformanceStep.agent.model, merged)).toBe("anthropic");
+  });
+
+  it("README example model 'claude-opus-4-6[1m]' resolves to 'anthropic'", () => {
+    expect(resolveProvider("claude-opus-4-6[1m]", merged)).toBe("anthropic");
+  });
+
+  it("existing env with user-defined 'claude-opus-4-6[1m]' keeps provider 'anthropic'", () => {
+    const configWithUserEntry = makeConfig({
+      models: { "claude-opus-4-6[1m]": { provider: "anthropic" } },
+    });
+    const mergedWithUser = mergeModelRegistry(configWithUserEntry);
+    expect(resolveProvider("claude-opus-4-6[1m]", mergedWithUser)).toBe("anthropic");
   });
 });

@@ -8,7 +8,8 @@
     "url": "https://github.com/color4pen/spec-runner"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
   },
   "files": [
     "dist/",

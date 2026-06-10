@@ -15,6 +15,7 @@ export const BUILTIN_MODEL_REGISTRY: ModelsConfig = {
   "claude-opus-4-8[1m]": { provider: "anthropic" },
   "claude-opus-4-7":   { provider: "anthropic" },
   "claude-opus-4-6":   { provider: "anthropic" },
+  "claude-opus-4-6[1m]": { provider: "anthropic" },
   "claude-sonnet-4-6": { provider: "anthropic" },
   "claude-sonnet-4-5": { provider: "anthropic" },
   "claude-opus-4-5":   { provider: "anthropic" },

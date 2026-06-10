@@ -41,14 +41,6 @@ specrunner job resume <slug>
 
 ## Installation
 
-SpecRunner is published to GitHub Packages. Add the registry entry to your `.npmrc` first:
-
-```
-@color4pen:registry=https://npm.pkg.github.com
-```
-
-Then install:
-
 ```bash
 # As a dev dependency (recommended for project use)
 npm install -D @color4pen/specrunner
