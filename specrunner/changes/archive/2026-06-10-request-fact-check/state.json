@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "dd8b31fa-b14c-4803-afd5-06bd3fc4172d",
   "createdAt": "2026-06-10T04:25:15.991Z",
-  "updatedAt": "2026-06-10T05:38:16.630Z",
+  "updatedAt": "2026-06-10T06:07:36.467Z",
   "request": {
     "title": "request の現状コード断定を design / request-review が実コードと突き合わせる",
     "type": "spec-change"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/request-fact-check-dd8b31fa",
   "error": null,
   "pipelineId": "standard",
@@ -23,7 +23,7 @@
     "createdAt": "2026-06-10T05:38:16.626Z"
   },
   "_journal": {
-    "historyCount": 66,
+    "historyCount": 67,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
