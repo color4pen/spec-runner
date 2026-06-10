@@ -9,6 +9,7 @@
  */
 import { changesDirRel, requestReviewResultPath } from "../util/paths.js";
 import { buildSystemPrompt } from "./builder.js";
+import { DECISION_NEEDED_DEFINITION, VERDICT_BLOCKING_RULES } from "./judge-rules.js";
 
 const _changesDir = changesDirRel();
 
@@ -153,7 +154,7 @@ After writing the result file, call \`report_result\` with the \`findings\` arra
 
 **Resolution 定義**:
 - \`fixable\`: request.md の修正で解決可能
-- \`decision-needed\`: 人間の設計判断が必要
+${DECISION_NEEDED_DEFINITION}
 
 **重要**: CLI が \`findings\` 配列から verdict を決定します。\`verdict\` フィールドは互換のために残されていますが routing に使用されません。
 指摘がない場合は \`findings: []\` を渡してください。
@@ -166,11 +167,11 @@ Do NOT end_turn until you have:
 
 ## Verdict Derivation Rules
 
-Derive the verdict from the Severity counts of your findings:
+${VERDICT_BLOCKING_RULES}
 
-- **approve**: No HIGH severity findings. The request is ready for pipeline execution as-is.
-- **needs-discussion**: One or more HIGH severity findings, but they can be resolved through discussion. The request may proceed with clarification.
-- **reject**: Multiple HIGH severity findings AND the request has requirement contradictions or structural breakdown. The request.md must be revised before pipeline execution.
+- **approve**: blocking findings なし（HIGH なし・decision-needed なし）。request はそのままパイプライン実行可能。
+- **needs-discussion**: blocking findings（HIGH または decision-needed）が 1 件以上。discussion で解決可能な場合は clarification 付きで進行可。
+- **reject**: blocking findings が複数かつ request に要件矛盾または構造的破綻がある場合。request.md の改訂が必要。
 
 ---
 

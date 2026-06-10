@@ -19,6 +19,8 @@ export const COMMIT_DISCIPLINE = `## git operations
 commit / push は pipeline executor が一括で行います。違反して自主 commit してしまっても pipeline は halt せず agent commit を許容しますが、commit message format が pipeline 規定 (\`<step>: <slug>\`) から外れて履歴が読みづらくなるため、必ず file edit のみで完了してください。
 `;
 
+import { VERDICT_BLOCKING_RULES } from "./judge-rules.js";
+
 /** Pipeline review rules (severity / categories / findings format / scoring / verdict). */
 export const PIPELINE_RULES = `## Severity
 
@@ -29,7 +31,7 @@ export const PIPELINE_RULES = `## Severity
 | **MEDIUM** | 品質低下、保守性問題、将来のリスク | 推奨修正。次のリファクタで対応 |
 | **LOW** | 情報提供、スタイル、微小な改善 | 任意。指摘のみ |
 
-**承認阻止条件**: CRITICAL ≥ 1 または HIGH ≥ 1 の findings が存在する場合、verdict は自動的に \`needs-fix\`。
+${VERDICT_BLOCKING_RULES}
 
 ## Categories
 

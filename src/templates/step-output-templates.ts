@@ -20,6 +20,7 @@ import {
   reviewFeedbackPath,
   conformanceResultPath,
 } from "../util/paths.js";
+import { VERDICT_BLOCKING_RULES } from "../prompts/judge-rules.js";
 
 // ---------------------------------------------------------------------------
 // Template constants
@@ -38,16 +39,16 @@ export const REQUEST_REVIEW_RESULT_TEMPLATE = `# Request Review Result
 - The verdict line MUST appear before the Findings table.
 - verdict line format (exact): \`- **verdict**: <value>\` at the start of a line
 - Valid verdict values: approve | needs-discussion | reject
-  - approve:          No HIGH severity findings. Request is ready for pipeline execution.
-  - needs-discussion: One or more HIGH severity findings resolvable through discussion.
-  - reject:           Multiple HIGH findings AND requirement contradictions or structural breakdown.
+  - approve:          No blocking findings (no HIGH, no decision-needed). Request is ready for pipeline execution.
+  - needs-discussion: One or more blocking findings (HIGH or decision-needed) resolvable through discussion.
+  - reject:           Multiple blocking findings AND requirement contradictions or structural breakdown.
 - Findings table MUST have exactly 6 columns in this order:
   # | Severity | Category | Location | Description | Recommendation
 - Valid Severity values (uppercase): HIGH | MEDIUM | LOW
   - HIGH:   Request-level defect — goal unclear, acceptance criteria absent/untestable, or critical external constraint unspecified
   - MEDIUM: Scope ambiguity, recommended additions
   - LOW:    Clarity improvements, expression refinements
-- Approval is blocked when HIGH ≥ 1.
+${VERDICT_BLOCKING_RULES}
 -->
 
 - **verdict**:
@@ -82,7 +83,7 @@ export const SPEC_REVIEW_RESULT_TEMPLATE = `# Spec Review Result
   - MEDIUM:   quality degradation, maintainability issue, future risk
   - LOW:      informational, style, minor improvement
 - If no findings, write a table row with "None" or omit the table body.
-- Approval is blocked when CRITICAL ≥ 1 OR HIGH ≥ 1.
+${VERDICT_BLOCKING_RULES}
 -->
 
 - **verdict**:
@@ -118,7 +119,8 @@ export const REVIEW_FEEDBACK_TEMPLATE = `# Code Review Feedback — iteration NN
   - Weight: decimal as defined below
 - total line format (exact): \`- **total**: <decimal>\`
 - Default weights: correctness=0.30, security=0.25, architecture=0.15, performance=0.10, maintainability=0.10, testing=0.10
-- Scores table is optional but recommended. The verdict line is the authoritative decision.
+- Scores table is optional but recommended.
+${VERDICT_BLOCKING_RULES}
 -->
 
 - **verdict**:

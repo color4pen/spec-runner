@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "jobId": "436f3f91-64cf-46c1-8364-aa743a7a75c4",
+  "createdAt": "2026-06-10T04:54:39.483Z",
+  "updatedAt": "2026-06-10T05:46:53.156Z",
+  "request": {
+    "title": "judge prompt の decision-needed 定義を絞り、markdown テンプレートの verdict 規則を導出ルールと整合させる",
+    "type": "bug-fix"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "fix/judge-resolution-semantics-436f3f91",
+  "error": null,
+  "pipelineId": "standard",
+  "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/586",
+    "number": 586,
+    "createdAt": "2026-06-10T05:46:53.144Z"
+  },
+  "_journal": {
+    "historyCount": 46,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 2,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "code-fixer": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}
