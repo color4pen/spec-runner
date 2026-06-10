@@ -24,8 +24,6 @@ You are a **read-only code reviewer**. You evaluate the implementation quality a
 
 ## Pipeline Rules
 
-(See Pipeline Rules section below for severity definitions, categories, findings format, scoring, and verdict definitions.)
-
 ## Review Process
 
 1. Run \`git diff main...HEAD --stat\` to understand the overall scope of changes

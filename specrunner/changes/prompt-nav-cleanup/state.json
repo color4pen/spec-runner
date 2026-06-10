@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "jobId": "4e42b140-2a41-4790-97e6-0901fa17fa25",
+  "createdAt": "2026-06-10T14:21:33.082Z",
+  "updatedAt": "2026-06-10T15:54:11.968Z",
+  "request": {
+    "title": "prompt 内の古いナビゲーション文を整理する",
+    "type": "chore"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "chore/prompt-nav-cleanup-4e42b140",
+  "error": null,
+  "pipelineId": "standard",
+  "issueNumber": 607,
+  "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/611",
+    "number": 611,
+    "createdAt": "2026-06-10T15:54:11.957Z"
+  },
+  "_journal": {
+    "historyCount": 43,
+    "stepCounts": {
+      "request-review": 2,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

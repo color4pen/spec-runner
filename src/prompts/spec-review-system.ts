@@ -22,8 +22,6 @@ Your task is to review the change folder and produce a verdict on the specificat
 
 ## Pipeline Rules
 
-(See Pipeline Rules section below for severity definitions, categories, findings format, scoring, and verdict definitions.)
-
 ## Your Output
 
 Write your findings to the path specified in the user message (e.g. ${_changesDir}/<slug>/spec-review-result-NNN.md).
