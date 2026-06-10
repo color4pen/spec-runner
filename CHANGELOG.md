@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.2.0](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.9...specrunner-v0.2.0) (2026-06-10)
+
+
+### Features
+
+* code-fixer への approved 時 routing を fixableCount 申告ではなく findings から導出する ([#578](https://github.com/color4pen/spec-runner/issues/578)) ([737c5c7](https://github.com/color4pen/spec-runner/commit/737c5c7de14a64ccd092cc108be44a326f4ad9d3))
+* detectPackageManager の lockfile 探索を上位ディレクトリに拡張する ([#573](https://github.com/color4pen/spec-runner/issues/573)) ([f77787e](https://github.com/color4pen/spec-runner/commit/f77787e9fb52d753a59f83c0592858dd66a4eafb))
+* issue を起点に job を自動発火する one-shot コマンド（承認ラベル起動 + /resume 再開）を追加する ([#587](https://github.com/color4pen/spec-runner/issues/587)) ([57eed4b](https://github.com/color4pen/spec-runner/commit/57eed4bf179b54eae93e0175a5b98ebf049b80f0))
+* job を GitHub issue に紐付け、escalation / 完走を issue コメントで通知する ([#585](https://github.com/color4pen/spec-runner/issues/585)) ([35c148c](https://github.com/color4pen/spec-runner/commit/35c148c66ee14e76a61952027ea06aeab6afe2db))
+* judge 系 step の verdict を構造化 findings から CLI が導出する ([#576](https://github.com/color4pen/spec-runner/issues/576)) ([b07ae4b](https://github.com/color4pen/spec-runner/commit/b07ae4b2deff8b2daca7a4f5110ed166e6e48145))
+* release は tag を打つ前に gate する（事後 rollback をやめる） ([#466](https://github.com/color4pen/spec-runner/issues/466)) ([6f355b3](https://github.com/color4pen/spec-runner/commit/6f355b36f5803abdcd72aadd431ed03379a99c56))
+* request review をパイプラインステップ化する ([#575](https://github.com/color4pen/spec-runner/issues/575)) ([9bed17d](https://github.com/color4pen/spec-runner/commit/9bed17da9c0555947657d03b7cccf60f53c087c8))
+* request の現状コード断定を design / request-review が実コードと突き合わせる ([#584](https://github.com/color4pen/spec-runner/issues/584)) ([a4f7251](https://github.com/color4pen/spec-runner/commit/a4f7251c2aa228d22eeb0ac5056070a341588a42))
+* test-coverage のファイル拡張子フィルタを拡張する ([#572](https://github.com/color4pen/spec-runner/issues/572)) ([b15e410](https://github.com/color4pen/spec-runner/commit/b15e4107a4736510f30264d6ef82d8c331bcd5fc))
+* テスト配置先の tests/ ハードコードを解消し implementer に配置を委ねる ([#569](https://github.com/color4pen/spec-runner/issues/569)) ([4ce0d28](https://github.com/color4pen/spec-runner/commit/4ce0d289b7e86a1461f983178eef67a1ee80df69))
+
+
+### Bug Fixes
+
+* --help フラグが positional 必須チェックより先に評価されるようにする ([#574](https://github.com/color4pen/spec-runner/issues/574)) ([4dd6420](https://github.com/color4pen/spec-runner/commit/4dd64200086a004926b4dd4dccd0b5a2608012e2))
+* adapter の baseBranch fallback を request.md から読む形に修正する ([#571](https://github.com/color4pen/spec-runner/issues/571)) ([623626d](https://github.com/color4pen/spec-runner/commit/623626d75ad3163f73f3117230f83f2be0c2a213))
+* codex adapter の outputSchema を OpenAI strict mode 互換に変換する ([#591](https://github.com/color4pen/spec-runner/issues/591)) ([921beb9](https://github.com/color4pen/spec-runner/commit/921beb9653b40bd9eeabeef6f9b2144f68ebca2c))
+* judge prompt の decision-needed 定義を絞り、markdown テンプレートの verdict 規則を導出ルールと整合させる ([#586](https://github.com/color4pen/spec-runner/issues/586)) ([dd9fc8d](https://github.com/color4pen/spec-runner/commit/dd9fc8d0b74f24a17ff82261b4cfe150c7c515dc))
+* request template と prompt から bun / tests/ のハードコードを除去する ([#570](https://github.com/color4pen/spec-runner/issues/570)) ([a1ebfea](https://github.com/color4pen/spec-runner/commit/a1ebfeadbae7f8c4df627cef81d6ff72ccbc675b))
+* test-coverage がプロジェクトの慣習に従ったテスト配置を許可する ([#566](https://github.com/color4pen/spec-runner/issues/566)) ([8e94914](https://github.com/color4pen/spec-runner/commit/8e949146fc7a6950e8100f3e087cf292cb51bde9))
+* verification result に実行マシンの絶対パスを残さない ([#590](https://github.com/color4pen/spec-runner/issues/590)) ([d3e4732](https://github.com/color4pen/spec-runner/commit/d3e473274ee5a16dc209df50c2416608c9776f80))
+
+
+### Miscellaneous Chores
+
+* release 0.2.0 ([a5a5e68](https://github.com/color4pen/spec-runner/commit/a5a5e68a7528cad1be72ac51bf74e9415a1f1f5b))
+
 ## [0.1.9](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.8...specrunner-v0.1.9) (2026-06-08)
 
 
