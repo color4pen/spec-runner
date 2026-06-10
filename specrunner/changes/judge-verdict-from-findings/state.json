@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "jobId": "b9134c49-6656-47c1-b83c-d892c9fddfa2",
+  "createdAt": "2026-06-10T01:06:09.512Z",
+  "updatedAt": "2026-06-10T02:21:55.455Z",
+  "request": {
+    "title": "judge 系 step の verdict を構造化 findings から CLI が導出する",
+    "type": "spec-change"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/judge-verdict-from-findings-b9134c49",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/576",
+    "number": 576,
+    "createdAt": "2026-06-10T02:21:55.441Z"
+  },
+  "_journal": {
+    "historyCount": 55,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 2,
+      "build-fixer": 1,
+      "code-review": 2,
+      "code-fixer": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

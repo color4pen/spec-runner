@@ -124,6 +124,7 @@ function buildMockRuntime(opts: {
     commitFinalState: vi.fn().mockResolvedValue(undefined),
     bootstrapJob: vi.fn().mockResolvedValue(buildJobState()),
     persistJobState: vi.fn().mockResolvedValue(undefined),
+    verifyFindingRefs: vi.fn().mockResolvedValue([]),
   };
 }
 

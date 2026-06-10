@@ -182,30 +182,39 @@ function buildPipelineMockClient(opts: {
       if (agentId === "agent_spec_review") {
         const rawVerdict = specReviewVerdicts[specReviewCount] ?? specReviewVerdicts[specReviewVerdicts.length - 1]!;
         specReviewCount++;
-        const approved = rawVerdict === "approved";
-        return Promise.resolve([
-          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved } },
-        ]);
+        if (rawVerdict === "approved") {
+          return Promise.resolve([
+            { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true, findings: [] } },
+          ]);
+        } else if (rawVerdict === "escalation") {
+          return Promise.resolve([
+            { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: false, reason: "escalation" } },
+          ]);
+        } else {
+          return Promise.resolve([
+            { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: false, findings: [{ severity: "high", resolution: "fixable", file: "src/test.ts", title: "Test issue", rationale: "Fix required" }] } },
+          ]);
+        }
       }
 
       // code-review judge step — always approved in these tests
       if (agentId === "code-review-agent-id") {
         return Promise.resolve([
-          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true } },
+          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true, findings: [] } },
         ]);
       }
 
       // conformance judge step — always approved in these tests
       if (agentId === "conformance-agent-id") {
         return Promise.resolve([
-          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true } },
+          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true, findings: [] } },
         ]);
       }
 
       // request-review gate step — always approves in these tests
       if (agentId === "request-review-agent-id") {
         return Promise.resolve([
-          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, verdict: "approve" } },
+          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, verdict: "approve", findings: [] } },
         ]);
       }
 

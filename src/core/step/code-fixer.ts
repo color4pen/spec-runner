@@ -9,7 +9,7 @@ import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath, reviewFeedbackPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { latestIteration } from "./io-iteration.js";
-import { isFixerContinuation, buildContinuationMessage } from "./fixer-helpers.js";
+import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock } from "./fixer-helpers.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
 const CODE_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
@@ -84,16 +84,43 @@ export const CodeFixerStep: AgentStep = {
     // Existence is guaranteed by pre-execution validation (STEP_INPUT_MISSING).
     const findingsPath = reviewFeedbackPath(deps.slug, latestIteration(state, STEP_NAMES.CODE_REVIEW));
 
+    // Get structured findings from the latest code-review run (if available)
+    const findings = getLatestJudgeFindings(state, STEP_NAMES.CODE_REVIEW);
+
     // Session 継続の場合は短縮 prompt（前回コンテキストが session に残っているため）
     if (isFixerContinuation(state, STEP_NAMES.CODE_FIXER)) {
       return buildContinuationMessage({
         stepName: STEP_NAMES.CODE_FIXER,
         findingsPath,
         slug: deps.slug,
+        findings,
       });
     }
 
-    // 初回は現行の full prompt
+    // 初回: findings がある場合は埋め込む、ない場合は findingsPath 方式にフォールバック
+    if (findings && findings.length > 0) {
+      const findingsBlock = buildFindingsBlock(findings);
+      return `<user-request>
+You are the code-fixer for the following change:
+
+Change folder: ${changeFolderPath(deps.slug)}
+Branch: ${branch}
+
+${findingsBlock}
+
+Please:
+1. Fix all HIGH and CRITICAL severity findings (mandatory)
+2. Fix MEDIUM severity findings only if they do not require design changes
+3. Ignore LOW severity findings
+4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+5. Do NOT add new features or make specification changes
+
+Original request:
+${deps.request.content}
+</user-request>`;
+    }
+
+    // フォールバック: 旧 toolResult を持つ job の resume → findingsPath 方式
     return `<user-request>
 You are the code-fixer for the following change:
 

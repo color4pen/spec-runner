@@ -22,7 +22,7 @@ import { spawnCommand } from "../../util/spawn.js";
 import { JobStateStore, buildInitialJobState } from "../../store/job-state-store.js";
 import { changeFolderPath, managedMarkerPath, localSidecarDir } from "../../util/paths.js";
 import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, recopyDraftToChangeFolder, rejectSymlink } from "../artifact/copy-artifacts.js";
-import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput } from "../port/runtime-strategy.js";
+import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef } from "../port/runtime-strategy.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import type { AgentStep } from "../step/types.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
@@ -318,6 +318,33 @@ export class ManagedRuntime implements RuntimeStrategy {
    */
   async commitFinalState(_deps: unknown, _state: unknown): Promise<void> {
     // no-op
+  }
+
+  async verifyFindingRefs(refs: FindingRef[], _cwd: string, branch: string | null): Promise<FindingRef[]> {
+    if (refs.length === 0) return [];
+    // branch is required to look up files via GitHub API
+    if (!branch) return [...refs];
+
+    const nonExistent: FindingRef[] = [];
+    for (const ref of refs) {
+      const content = await this.githubClient.getRawFile(
+        this.repo.owner,
+        this.repo.name,
+        branch,
+        ref.file,
+      );
+      if (content === null) {
+        nonExistent.push(ref);
+        continue;
+      }
+      if (ref.line !== undefined) {
+        const lineCount = content.split("\n").length;
+        if (ref.line > lineCount) {
+          nonExistent.push(ref);
+        }
+      }
+    }
+    return nonExistent;
   }
 
   async validateStepInputs(inputs: RequiredInput[], cwd: string, branch: string | null): Promise<void> {

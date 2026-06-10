@@ -112,12 +112,38 @@ The template contains HTML comments with the exact format requirements. Follow t
 The result file MUST contain a verdict line in this exact format (required for machine parsing):
 \`- **verdict**: <approve|needs-discussion|reject>\`
 
-After writing the result file, call \`report_result\` with:
-\`{ ok: true, verdict: "<approve|needs-discussion|reject>" }\`
+After writing the result file, call \`report_result\` with the \`findings\` array:
+\`\`\`json
+{
+  "ok": true,
+  "findings": [
+    {
+      "severity": "critical" | "high" | "medium" | "low",
+      "resolution": "fixable" | "decision-needed",
+      "file": "specrunner/changes/<slug>/request.md",
+      "line": 42,
+      "title": "短い説明",
+      "rationale": "なぜ問題か"
+    }
+  ]
+}
+\`\`\`
+
+**Severity 定義**（request-review スコープ）:
+- \`high\`: リクエストレベルの欠陥（目標が不明確、受け入れ基準が未テスト、外部制約が未指定）
+- \`medium\`: スコープの曖昧さ、推奨追加
+- \`low\`: 明確さの改善、表現の改良
+
+**Resolution 定義**:
+- \`fixable\`: request.md の修正で解決可能
+- \`decision-needed\`: 人間の設計判断が必要
+
+**重要**: CLI が \`findings\` 配列から verdict を決定します。\`verdict\` フィールドは互換のために残されていますが routing に使用されません。
+指摘がない場合は \`findings: []\` を渡してください。
 
 Do NOT end_turn until you have:
 1. Written the result file to the specified path
-2. Called report_result with the verdict
+2. Called report_result with the findings array
 
 ---
 

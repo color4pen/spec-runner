@@ -33,6 +33,8 @@ import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
 import type { JudgeReportResult, ProducerReportResult, RequestReviewReportResult } from "../../core/port/report-result.js";
 
 import { JUDGE_REPORT_TOOL, CODE_REVIEW_REPORT_TOOL, REQUEST_REVIEW_REPORT_TOOL } from "./report-tool.js";
+import { deriveJudgeVerdict, deriveRequestReviewVerdict, collectVerdictAffectingFindings } from "./judge-verdict.js";
+import type { FindingRef } from "./judge-verdict.js";
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -466,13 +468,15 @@ export class StepExecutor {
       // Agent step with reportTool — use typed outcome exclusively.
       const toolResult = agentResult.toolResult;
       if (toolResult !== null && toolResult !== undefined) {
-        // Non-null toolResult: derive verdict from typed fields.
+        // Non-null toolResult: derive verdict from findings (judge steps) or fields (producer).
         if (isRequestReviewStep) {
-          // request-review: verdict is approve/needs-discussion/reject; default to needs-discussion
-          verdict = (toolResult as RequestReviewReportResult).verdict ?? "needs-discussion";
+          // request-review: derive from findings using pure function
+          const tr = toolResult as RequestReviewReportResult;
+          verdict = deriveRequestReviewVerdict(tr.findings ?? [], tr.ok);
         } else if (isJudgeStep) {
-          // judge: approved true → "approved", false/undefined → "needs-fix"
-          verdict = (toolResult as JudgeReportResult).approved === true ? "approved" : "needs-fix";
+          // judge: derive from findings using pure function (approved boolean ignored)
+          const tr = toolResult as JudgeReportResult;
+          verdict = deriveJudgeVerdict(tr.findings ?? [], tr.ok);
         } else {
           // producer: status "error" → "error", else completionVerdict (fallback "success")
           const completionVerdict =
@@ -484,12 +488,27 @@ export class StepExecutor {
               ? "error"
               : (completionVerdict ?? "success");
         }
+
+        // Post-verdict: verify finding refs exist for judge/request-review steps
+        if ((isJudgeStep || isRequestReviewStep) && deps.runtimeStrategy) {
+          const tr = toolResult as JudgeReportResult | RequestReviewReportResult;
+          const affectingFindings = collectVerdictAffectingFindings(tr.findings ?? []);
+          if (affectingFindings.length > 0) {
+            const refs: FindingRef[] = affectingFindings.map((f) => ({ file: f.file, line: f.line }));
+            const cwd = deps.cwd ?? process.cwd();
+            const nonExistent = await deps.runtimeStrategy.verifyFindingRefs(refs, cwd, state.branch ?? null);
+            if (nonExistent.length > 0) {
+              verdict = "escalation";
+            }
+          }
+        }
       } else {
-        // T-02: null toolResult (no-tool-call proceed path) — step-class based fallback.
+        // Null toolResult (no-tool-call proceed path) — step-class based fallback.
         if (isRequestReviewStep) {
           verdict = "needs-discussion";
         } else if (isJudgeStep) {
-          verdict = "needs-fix";
+          // D7: no-tool-call judge verdict is escalation (conservative)
+          verdict = "escalation";
         } else {
           const completionVerdict =
             "completionVerdict" in step

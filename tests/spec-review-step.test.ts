@@ -86,8 +86,8 @@ function buildMockSessionClient(opts: {
     streamEvents: vi.fn().mockRejectedValue(new Error("streamEvents not used by spec-review")),
     getSessionUsage: vi.fn().mockResolvedValue(undefined),
     listEvents: vi.fn().mockResolvedValue([
-      // R3 cutover: include approved:true so spec-review (judge) returns "approved" verdict
-      { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true } },
+      // Include findings:[] so parseJudgeReportInput succeeds (findings required when ok=true)
+      { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true, findings: [] } },
     ]),
     sendEvents: vi.fn().mockResolvedValue(undefined),
   };
@@ -231,16 +231,15 @@ describe("TC-018: runSpecReviewStep — SESSION_TERMINATED error handling", () =
 // TC-019 (removed): SESSION_TIMEOUT handling removed in remove-session-timeout.
 // SESSION_TIMEOUT error code no longer exists. SESSION_TERMINATED is the only terminal error.
 
-// TC-020 (updated R3): result file not found — toolResult.approved determines verdict now.
-// R3 cutover: file content is no longer used for verdict determination in judge steps.
-// When toolResult.approved is undefined (conservative), verdict is "needs-fix" (not "escalation").
-describe("TC-020: runSpecReviewStep — conservative failsafe when result file not found (R3)", () => {
-  it("sets verdict='needs-fix' when result file is never found (toolResult.approved undefined → needs-fix)", async () => {
+// TC-020: invalid toolResult (no findings when ok=true) → no valid tool call → escalation.
+// parseJudgeReportInput requires findings when ok=true; without findings, the call is invalid.
+// Follow-up exhausted → toolResult=null → judge step → "escalation".
+describe("TC-020: runSpecReviewStep — invalid toolResult (no findings) → escalation", () => {
+  it("sets verdict='escalation' when report_result has no findings (invalid parse → no valid tool call)", async () => {
     const jobState = await makeJobState();
 
-    // Use default listEvents which has approved:true, but override with no approved to test conservative path
     const { client } = buildMockSessionClient();
-    // Override listEvents to return no approved field (simulates toolResult without approved)
+    // Override listEvents to return ok:true without findings (invalid for judge step)
     (client.listEvents as ReturnType<typeof vi.fn>).mockResolvedValue([
       { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true } },
     ]);
@@ -251,28 +250,27 @@ describe("TC-020: runSpecReviewStep — conservative failsafe when result file n
       request: buildRequest(),
       slug: "test-slug",
       sleepFn: vi.fn().mockResolvedValue(undefined),
-      githubClient: buildMockGithubClient(null), // file not found — irrelevant for verdict in R3
+      githubClient: buildMockGithubClient(null),
       owner: "testowner",
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    // R3: toolResult.approved undefined → judge step → "needs-fix" (conservative failsafe)
+    // Invalid toolResult (no findings) → no valid tool call → null toolResult → escalation
     const lastSpecReview = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
-    expect(lastSpecReview ? toLegacyStepResult(lastSpecReview).verdict : undefined).toBe("needs-fix");
+    expect(lastSpecReview ? toLegacyStepResult(lastSpecReview).verdict : undefined).toBe("escalation");
   });
 });
 
-// TC-021 (updated R3): verdict 行なし — toolResult.approved で判定 (R3 cutover)
-// R3 cutover: SpecReviewStep.parseResult is no longer used for verdict determination.
-// When toolResult.approved is undefined (conservative), verdict is "needs-fix".
-describe("TC-021: runSpecReviewStep — needs-fix when approved not set (R3 conservative fallback)", () => {
-  it("sets verdict='needs-fix' when toolResult.approved is absent (R3: no prose fallback for judge)", async () => {
+// TC-021: invalid toolResult (no findings when ok=true) → escalation.
+// Without findings, parseJudgeReportInput returns ok:false → managed runner skips tool call → null toolResult → escalation.
+describe("TC-021: runSpecReviewStep — escalation when report_result missing findings", () => {
+  it("sets verdict='escalation' when toolResult.approved is absent with no findings (invalid tool call)", async () => {
     const jobState = await makeJobState();
 
     const { client } = buildMockSessionClient();
-    // Override listEvents to return no approved field (simulates agent not setting approved)
+    // Override listEvents to return no findings (invalid for judge step)
     (client.listEvents as ReturnType<typeof vi.fn>).mockResolvedValue([
       { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true } },
     ]);
@@ -290,9 +288,9 @@ describe("TC-021: runSpecReviewStep — needs-fix when approved not set (R3 cons
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    // R3: toolResult.approved undefined → judge step → "needs-fix"
+    // No findings → invalid tool call → null toolResult → judge step → "escalation"
     const lastSpecReview2 = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
-    expect(lastSpecReview2 ? toLegacyStepResult(lastSpecReview2).verdict : undefined).toBe("needs-fix");
+    expect(lastSpecReview2 ? toLegacyStepResult(lastSpecReview2).verdict : undefined).toBe("escalation");
     // PR #72: spec-review is mid-pipeline; job-level status remains "running" after step completion.
     expect(result.status).toBe("running");
   });

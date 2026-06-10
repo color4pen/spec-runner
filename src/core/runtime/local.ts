@@ -34,7 +34,7 @@ import {
 import { commitAndPush, commitFinalState } from "../step/commit-push.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
-import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput } from "../port/runtime-strategy.js";
+import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef } from "../port/runtime-strategy.js";
 import { SpecRunnerError, ERROR_CODES, worktreeDirtyError } from "../../errors.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
@@ -591,6 +591,28 @@ export class LocalRuntime implements RuntimeStrategy {
     const branch = state.branch ?? "";
     const slug = deps.slug;
     await commitFinalState({ cwd, branch, slug, spawnFn: this.spawnFn });
+  }
+
+  async verifyFindingRefs(refs: FindingRef[], cwd: string, _branch: string | null): Promise<FindingRef[]> {
+    if (refs.length === 0) return [];
+    const nonExistent: FindingRef[] = [];
+    for (const ref of refs) {
+      const absPath = path.join(cwd, ref.file);
+      let content: string | null = null;
+      try {
+        content = await fs.readFile(absPath, "utf-8");
+      } catch {
+        nonExistent.push(ref);
+        continue;
+      }
+      if (ref.line !== undefined) {
+        const lineCount = content.split("\n").length;
+        if (ref.line > lineCount) {
+          nonExistent.push(ref);
+        }
+      }
+    }
+    return nonExistent;
   }
 
   async validateStepInputs(inputs: RequiredInput[], cwd: string, branch: string | null): Promise<void> {

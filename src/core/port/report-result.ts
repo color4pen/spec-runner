@@ -9,8 +9,8 @@ import type { ZodRawShape } from "zod/v4";
 
 export type { ZodRawShape };
 
-import type { BaseReportResult } from "../../kernel/report-result.js";
-export type { BaseReportResult } from "../../kernel/report-result.js";
+import type { BaseReportResult, Finding } from "../../kernel/report-result.js";
+export type { BaseReportResult, Finding } from "../../kernel/report-result.js";
 
 /**
  * Specification for the report_result custom tool that an agent step registers.
@@ -132,21 +132,57 @@ export interface ProducerReportResult extends BaseReportResult {
   status?: "success" | "error";
 }
 
+const VALID_SEVERITIES = new Set(["critical", "high", "medium", "low"]);
+const VALID_RESOLUTIONS = new Set(["fixable", "decision-needed"]);
+
 /**
- * Typed outcome for judge steps: spec-review.
+ * Parse and validate a findings array from unknown input.
+ * Pure function — no I/O. Uses typeof checks (no zod parse).
  *
- * approved: boolean — whether the spec/code was approved.
- * Optional — undefined when the agent did not populate it (expand phase).
+ * Returns { ok: true, value: Finding[] } if input is a valid findings array.
+ * Returns { ok: false } if input is missing, not an array, or contains invalid elements.
  */
-export interface JudgeReportResult extends BaseReportResult {
-  approved?: boolean;
+export function parseFindings(raw: unknown): { ok: true; value: Finding[] } | { ok: false } {
+  if (!Array.isArray(raw)) return { ok: false };
+  const findings: Finding[] = [];
+  for (const item of raw) {
+    if (typeof item !== "object" || item === null) return { ok: false };
+    const f = item as Record<string, unknown>;
+    if (!VALID_SEVERITIES.has(f["severity"] as string)) return { ok: false };
+    if (!VALID_RESOLUTIONS.has(f["resolution"] as string)) return { ok: false };
+    if (typeof f["file"] !== "string") return { ok: false };
+    if (typeof f["title"] !== "string") return { ok: false };
+    if (typeof f["rationale"] !== "string") return { ok: false };
+    if ("line" in f && f["line"] !== undefined && typeof f["line"] !== "number") return { ok: false };
+    const finding: Finding = {
+      severity: f["severity"] as Finding["severity"],
+      resolution: f["resolution"] as Finding["resolution"],
+      file: f["file"] as string,
+      title: f["title"] as string,
+      rationale: f["rationale"] as string,
+    };
+    if (typeof f["line"] === "number") finding.line = f["line"] as number;
+    findings.push(finding);
+  }
+  return { ok: true, value: findings };
 }
 
 /**
- * Typed outcome for code-review step (judge subtype with additional field).
+ * Typed outcome for judge steps: spec-review.
  *
- * fixableCount: number — count of auto-fixable findings.
- * Optional — undefined when the agent did not populate it (expand phase).
+ * approved: boolean — kept for backward compat; NOT used for verdict routing.
+ * findings: structured findings array — used by CLI for verdict derivation.
+ */
+export interface JudgeReportResult extends BaseReportResult {
+  approved?: boolean;
+  findings?: Finding[];
+}
+
+/**
+ * Typed outcome for code-review step (judge subtype with additional fields).
+ *
+ * fixableCount: number — kept for backward compat; NOT used for verdict routing.
+ * findings: structured findings array — used by CLI for verdict derivation.
  */
 export interface CodeReviewReportResult extends JudgeReportResult {
   fixableCount?: number;
@@ -175,8 +211,8 @@ export function parseProducerReportInput(
 
 /**
  * Parse JudgeReportResult from unknown tool input.
- * Builds on parseBaseReportInput and optionally sets approved when value is a boolean.
- * Non-boolean approved values are silently ignored (not in missingFields).
+ * When ok=true, findings are REQUIRED and must be a valid findings array.
+ * When ok=false, findings are not required (agent is declaring voluntary failure).
  */
 export function parseJudgeReportInput(
   raw: unknown,
@@ -191,12 +227,21 @@ export function parseJudgeReportInput(
     result.approved = obj["approved"];
   }
 
+  // When ok=true, findings are required and must be valid
+  if (result.ok) {
+    const parsed = parseFindings(obj["findings"]);
+    if (!parsed.ok) {
+      return { ok: false, missingFields: ["findings"], rawInput: raw };
+    }
+    result.findings = parsed.value;
+  }
+
   return { ok: true, value: result };
 }
 
 /**
  * Parse CodeReviewReportResult from unknown tool input.
- * Builds on parseJudgeReportInput (includes base + approved) and optionally sets fixableCount.
+ * Builds on parseJudgeReportInput (includes base + approved + findings) and optionally sets fixableCount.
  * Non-number fixableCount values are silently ignored (not in missingFields).
  */
 export function parseCodeReviewReportInput(
@@ -218,17 +263,18 @@ export function parseCodeReviewReportInput(
 /**
  * Typed outcome for request-review step (pipeline gate).
  *
- * verdict: "approve" | "needs-discussion" | "reject" — the architect's verdict on the request.
- * Optional — undefined when the agent did not populate it (fallback: needs-discussion).
+ * verdict: "approve" | "needs-discussion" | "reject" — kept for compat; NOT used for routing.
+ * findings: structured findings array — used by CLI for verdict derivation.
  */
 export interface RequestReviewReportResult extends BaseReportResult {
   verdict?: "approve" | "needs-discussion" | "reject";
+  findings?: Finding[];
 }
 
 /**
  * Parse RequestReviewReportResult from unknown tool input.
- * Builds on parseBaseReportInput and optionally sets verdict when value is one of the 3 valid values.
- * Invalid verdict values are silently ignored (not in missingFields).
+ * When ok=true, findings are REQUIRED and must be a valid findings array.
+ * When ok=false, findings are not required.
  */
 export function parseRequestReviewReportInput(
   raw: unknown,
@@ -241,6 +287,15 @@ export function parseRequestReviewReportInput(
 
   if (obj["verdict"] === "approve" || obj["verdict"] === "needs-discussion" || obj["verdict"] === "reject") {
     result.verdict = obj["verdict"];
+  }
+
+  // When ok=true, findings are required and must be valid
+  if (result.ok) {
+    const parsed = parseFindings(obj["findings"]);
+    if (!parsed.ok) {
+      return { ok: false, missingFields: ["findings"], rawInput: raw };
+    }
+    result.findings = parsed.value;
   }
 
   return { ok: true, value: result };

@@ -202,13 +202,18 @@ describe("TC-VERDICT-01: judge + approved:true → approved", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-VERDICT-02: judge + approved:false → "needs-fix"
+// TC-VERDICT-02: judge + high findings → "needs-fix"
 // ---------------------------------------------------------------------------
 
-describe("TC-VERDICT-02: judge + approved:false → needs-fix", () => {
-  it("spec-review with toolResult.approved=false yields verdict 'needs-fix'", async () => {
+describe("TC-VERDICT-02: judge + high findings → needs-fix", () => {
+  it("spec-review with high finding yields verdict 'needs-fix'", async () => {
     const jobState = await createRunningJobState();
-    const runner = makeRunnerWithToolResult({ ok: true, approved: false });
+    // Verdict comes from findings, not from approved field
+    const runner = makeRunnerWithToolResult({
+      ok: true,
+      approved: false,
+      findings: [{ severity: "high", resolution: "fixable", file: "src/foo.ts", title: "Bug", rationale: "Fix it" }],
+    });
     const executor = new StepExecutor(new EventBus(), runner, makeStoreFactory(tempDir));
 
     const finalState = await executor.execute(makeJudgeStep(), jobState, makeDeps());
@@ -218,28 +223,28 @@ describe("TC-VERDICT-02: judge + approved:false → needs-fix", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-VERDICT-03: judge + approved:undefined → "needs-fix"
+// TC-VERDICT-03: judge + empty findings → "approved"
 // ---------------------------------------------------------------------------
 
-describe("TC-VERDICT-03: judge + approved:undefined → needs-fix", () => {
-  it("spec-review with toolResult={ok:true} (approved unset) yields verdict 'needs-fix'", async () => {
+describe("TC-VERDICT-03: judge + empty findings → approved", () => {
+  it("spec-review with ok=true and no blocking findings yields verdict 'approved'", async () => {
     const jobState = await createRunningJobState();
-    // No 'approved' field — treated as undefined → needs-fix (conservative side)
-    const runner = makeRunnerWithToolResult({ ok: true });
+    // No blocking findings → verdict is approved (approved field is ignored for routing)
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
     const executor = new StepExecutor(new EventBus(), runner, makeStoreFactory(tempDir));
 
     const finalState = await executor.execute(makeJudgeStep(), jobState, makeDeps());
 
-    expect(getLastVerdict(finalState, "spec-review")).toBe("needs-fix");
+    expect(getLastVerdict(finalState, "spec-review")).toBe("approved");
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-VERDICT-04: judge + toolResult null → "needs-fix" (proceed, no halt)
+// TC-VERDICT-04: judge + toolResult null → "escalation" (proceed, no halt)
 // ---------------------------------------------------------------------------
 
-describe("TC-VERDICT-04: judge + toolResult null → needs-fix proceed (no halt)", () => {
-  it("spec-review with toolResult=null yields needs-fix without throwing", async () => {
+describe("TC-VERDICT-04: judge + toolResult null → escalation proceed (no halt)", () => {
+  it("spec-review with toolResult=null yields escalation without throwing", async () => {
     const jobState = await createRunningJobState();
     const runner = makeRunnerWithToolResult(null);
     const executor = new StepExecutor(new EventBus(), runner, makeStoreFactory(tempDir));
@@ -248,7 +253,7 @@ describe("TC-VERDICT-04: judge + toolResult null → needs-fix proceed (no halt)
     const finalState = await executor.execute(makeJudgeStep(), jobState, makeDeps());
 
     expect(finalState.status).not.toBe("awaiting-resume");
-    expect(getLastVerdict(finalState, "spec-review")).toBe("needs-fix");
+    expect(getLastVerdict(finalState, "spec-review")).toBe("escalation");
   });
 });
 
@@ -394,18 +399,23 @@ describe("TC-004: request-review + toolResult null → 'needs-discussion' procee
 });
 
 // ---------------------------------------------------------------------------
-// TC-024: request-review + toolResult.verdict:'reject' → 'reject'
+// TC-024: request-review + high finding → 'needs-discussion'
 // ---------------------------------------------------------------------------
 
-describe("TC-024: request-review + toolResult.verdict:'reject' → 'reject'", () => {
-  it("request-review with toolResult.verdict='reject' yields verdict 'reject'", async () => {
+describe("TC-024: request-review + high finding → needs-discussion", () => {
+  it("request-review with high finding yields verdict 'needs-discussion'", async () => {
     const jobState = await createRunningJobState();
-    const runner = makeRunnerWithToolResult({ ok: true, verdict: "reject" });
+    // New: verdict derived from findings; verdict field on toolResult is compat-only
+    const runner = makeRunnerWithToolResult({
+      ok: true,
+      verdict: "reject",
+      findings: [{ severity: "high", resolution: "fixable", file: "src/req.ts", title: "Design issue", rationale: "Review needed" }],
+    });
     const executor = new StepExecutor(new EventBus(), runner, makeStoreFactory(tempDir));
 
     const finalState = await executor.execute(makeRequestReviewStep(), jobState, makeDeps());
 
-    expect(getLastVerdict(finalState, "request-review")).toBe("reject");
+    expect(getLastVerdict(finalState, "request-review")).toBe("needs-discussion");
   });
 });
 

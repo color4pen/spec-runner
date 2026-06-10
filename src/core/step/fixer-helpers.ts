@@ -1,5 +1,5 @@
 /**
- * Shared helpers for fixer step session continuity.
+ * Shared helpers for fixer step session continuity and findings injection.
  *
  * Design: fixer ステップ（spec-fixer / build-fixer / code-fixer）の
  * session 継続に関する共通ロジックを集約する。
@@ -8,6 +8,7 @@
  */
 import { STEP_NAMES } from "./step-names.js";
 import type { JobState } from "../../state/schema.js";
+import type { Finding } from "../../kernel/report-result.js";
 
 /** fixer ステップ名の集合 */
 export const FIXER_STEP_NAMES: ReadonlySet<string> = new Set([
@@ -41,18 +42,74 @@ export function isFixerContinuation(
 }
 
 /**
+ * Get the findings from the most recent judge run for the given step.
+ * Returns the findings array from the last StepRun's toolResult, or null if:
+ * - The step has no runs
+ * - The last run has no toolResult (legacy state)
+ * - The last run's toolResult has no findings
+ */
+export function getLatestJudgeFindings(
+  state: JobState,
+  judgeStepName: string,
+): Finding[] | null {
+  const runs = state.steps?.[judgeStepName];
+  if (!runs || runs.length === 0) return null;
+  const lastRun = runs[runs.length - 1];
+  if (!lastRun) return null;
+  const toolResult = lastRun.outcome.toolResult;
+  if (!toolResult) return null;
+  const findings = (toolResult as { findings?: Finding[] }).findings;
+  if (!findings) return null;
+  return findings;
+}
+
+/**
+ * Build a formatted findings block for embedding in fixer prompts.
+ * Groups findings by severity for clear presentation.
+ */
+export function buildFindingsBlock(findings: Finding[]): string {
+  const lines: string[] = ["## Findings from review\n"];
+  for (const f of findings) {
+    const location = f.line !== undefined ? `${f.file}:${f.line}` : f.file;
+    lines.push(`### [${f.severity.toUpperCase()}] ${f.title}`);
+    lines.push(`- **File**: ${location}`);
+    lines.push(`- **Resolution**: ${f.resolution}`);
+    lines.push(`- **Rationale**: ${f.rationale}`);
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+
+/**
  * 継続時の短縮 prompt を生成する。
  * session 内に前回のコンテキストが残っているため、新しい findings パスのみを伝える。
+ * findings が提供された場合は findings 本文を埋め込む（findingsPath に依存しない）。
  */
 export function buildContinuationMessage(opts: {
   stepName: string;
   findingsPath: string;
   /** @reserved 将来のテンプレート拡張（例: ログ出力やパス解決）のために保持。現在は出力文字列には使用しない。 */
   slug: string;
+  findings?: Finding[] | null;
 }): string {
   // build-fixer は verification（CLI ステップ）からの findings、それ以外は reviewer からの findings
   const source =
     opts.stepName === STEP_NAMES.BUILD_FIXER ? "verification" : "reviewer";
+
+  if (opts.findings && opts.findings.length > 0) {
+    const findingsBlock = buildFindingsBlock(opts.findings);
+    return `<user-request>
+前回の修正に対して ${source} から新しい findings が出ました。
+
+${findingsBlock}
+
+前回のセッションの文脈を踏まえて、上記の findings の指摘事項を修正してください。
+前回試みたアプローチで不十分だった箇所は別のアプローチを検討してください。
+
+ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+</user-request>`;
+  }
+
   return `<user-request>
 前回の修正に対して ${source} から新しい findings が出ました。
 

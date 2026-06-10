@@ -8,7 +8,7 @@
  * PRODUCER_REPORT_TOOL / JUDGE_REPORT_TOOL / CODE_REVIEW_REPORT_TOOL extend {ok, reason?}
  * with step-class fields. The old REPORT_TOOL / REPORT_TOOL_CUSTOM_TOOL_SPEC remain for compat.
  */
-import { boolean, number, optional, string, union, literal, object, toJSONSchema } from "zod/v4-mini";
+import { boolean, number, optional, string, union, literal, object, array, toJSONSchema } from "zod/v4-mini";
 import type { ReportToolSpec, BaseReportResult, ProducerReportResult, JudgeReportResult, CodeReviewReportResult, RequestReviewReportResult } from "../port/report-result.js";
 import { parseBaseReportInput, parseProducerReportInput, parseJudgeReportInput, parseCodeReviewReportInput, parseRequestReviewReportInput } from "../port/report-result.js";
 import type { CustomToolSpec } from "../agent/definition.js";
@@ -76,18 +76,32 @@ export const PRODUCER_REPORT_TOOL: ReportToolSpec<ProducerReportResult> = {
 };
 
 /**
+ * Zod schema for a single finding object.
+ * Used by judge tools to report structured findings for CLI verdict derivation.
+ */
+const findingSchema = array(object({
+  severity: union([literal("critical"), literal("high"), literal("medium"), literal("low")]),
+  resolution: union([literal("fixable"), literal("decision-needed")]),
+  file: string(),
+  line: optional(number()),
+  title: string(),
+  rationale: string(),
+}));
+
+/**
  * Typed ReportToolSpec for judge steps: spec-review.
  *
- * Adds approved: boolean to the base schema (additive — existing ok/reason preserved).
- * approved is optional — agents are encouraged but not required to populate it in R2.
+ * Adds approved: boolean (compat) and findings array to the base schema.
+ * verdict is derived by the CLI from findings — approved boolean is ignored for routing.
  */
 export const JUDGE_REPORT_TOOL: ReportToolSpec<JudgeReportResult> = {
   name: "report_result",
-  description: "Report the completion of this step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. approved: true if the spec/code was approved, false if it needs fixes. You MUST call this tool before ending your turn.",
+  description: "Report the completion of this step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string }. The CLI derives the verdict from findings; the 'approved' field is kept for compatibility but is NOT used for routing. You MUST call this tool before ending your turn.",
   zodSchema: {
     ok: boolean(),
     reason: optional(string()),
     approved: optional(boolean()),
+    findings: optional(findingSchema),
   },
   parseInput: parseJudgeReportInput,
 };
@@ -95,17 +109,18 @@ export const JUDGE_REPORT_TOOL: ReportToolSpec<JudgeReportResult> = {
 /**
  * Typed ReportToolSpec for code-review step.
  *
- * Adds approved: boolean and fixableCount: number to the base schema (additive).
- * Both fields are optional — agents are encouraged but not required to populate them in R2.
+ * Adds approved: boolean (compat), fixableCount: number (compat), and findings array.
+ * verdict is derived by the CLI from findings.
  */
 export const CODE_REVIEW_REPORT_TOOL: ReportToolSpec<CodeReviewReportResult> = {
   name: "report_result",
-  description: "Report the completion of this step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. approved: true if the code was approved, false if it needs fixes. fixableCount: number of findings that can be auto-fixed. You MUST call this tool before ending your turn.",
+  description: "Report the completion of this step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string }. The CLI derives the verdict from findings; the 'approved' and 'fixableCount' fields are kept for compatibility but are NOT used for routing. You MUST call this tool before ending your turn.",
   zodSchema: {
     ok: boolean(),
     reason: optional(string()),
     approved: optional(boolean()),
     fixableCount: optional(number()),
+    findings: optional(findingSchema),
   },
   parseInput: parseCodeReviewReportInput,
 };
@@ -113,21 +128,22 @@ export const CODE_REVIEW_REPORT_TOOL: ReportToolSpec<CodeReviewReportResult> = {
 /**
  * Typed ReportToolSpec for request-review step (pipeline gate).
  *
- * Adds verdict: "approve" | "needs-discussion" | "reject" to the base schema.
- * verdict is optional — defaults to "needs-discussion" when agent does not populate it.
+ * Adds verdict: "approve" | "needs-discussion" | "reject" (compat) and findings array.
+ * Routing verdict is derived by the CLI from findings.
  *
- * Verdict semantics:
- *   approve          — no HIGH findings; request is ready for pipeline execution
- *   needs-discussion — one or more HIGH findings that can be resolved through discussion
- *   reject           — multiple HIGH findings with requirement contradictions; request.md must be revised
+ * Verdict semantics (for findings):
+ *   approve          — no blocking findings (critical/high/decision-needed)
+ *   needs-discussion — one or more blocking findings
+ *   reject           — kept for compat; CLI treats same as needs-discussion for routing
  */
 export const REQUEST_REVIEW_REPORT_TOOL: ReportToolSpec<RequestReviewReportResult> = {
   name: "report_result",
-  description: 'Report the completion of the request-review step. Call with ok=true for normal completion. verdict must be one of: "approve" (no HIGH findings, ready for pipeline), "needs-discussion" (HIGH findings resolvable by discussion), "reject" (structural breakdown, request.md must be revised). You MUST call this tool before ending your turn.',
+  description: 'Report the completion of the request-review step. Call with ok=true for normal completion. REQUIRED when ok=true: provide a \'findings\' array — each element is { severity: \'critical\'|\'high\'|\'medium\'|\'low\', resolution: \'fixable\'|\'decision-needed\', file: string, line?: number, title: string, rationale: string }. The CLI derives the verdict from findings; the \'verdict\' field is kept for compatibility but is NOT used for routing. You MUST call this tool before ending your turn.',
   zodSchema: {
     ok: boolean(),
     reason: optional(string()),
     verdict: optional(union([literal("approve"), literal("needs-discussion"), literal("reject")])),
+    findings: optional(findingSchema),
   },
   parseInput: parseRequestReviewReportInput,
 };

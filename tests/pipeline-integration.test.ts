@@ -145,6 +145,7 @@ function makeTestRuntimeStrategy(spawnFn: GitSpawnFn): RuntimeStrategy {
     async commitFinalState(): Promise<void> { /* no-op in tests */ },
     async bootstrapJob(): Promise<import("../src/state/schema.js").JobState> { throw new Error("not implemented in test"); },
     async persistJobState(): Promise<void> {},
+    async verifyFindingRefs(): Promise<import("../src/core/port/runtime-strategy.js").FindingRef[]> { return []; },
   };
 }
 
@@ -283,34 +284,48 @@ function buildPipelineMockClient(opts: {
       if (agentId === "agent_spec_review") {
         const rawVerdict = specReviewVerdicts[specReviewCount] ?? specReviewVerdicts[specReviewVerdicts.length - 1]!;
         specReviewCount++;
-        // "escalation" in specReviewVerdicts maps to approved:false in R3 (escalation transition removed)
-        const approved = rawVerdict === "approved";
-        return Promise.resolve([
-          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved } },
-        ]);
+        if (rawVerdict === "approved") {
+          return Promise.resolve([
+            { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true, findings: [] } },
+          ]);
+        } else if (rawVerdict === "escalation") {
+          return Promise.resolve([
+            { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: false, reason: "escalation" } },
+          ]);
+        } else {
+          // needs-fix: supply a high-severity finding so deriveJudgeVerdict returns "needs-fix"
+          return Promise.resolve([
+            { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: false, findings: [{ severity: "high", resolution: "fixable", file: "src/test.ts", title: "Test issue", rationale: "Fix required" }] } },
+          ]);
+        }
       }
 
       // code-review judge step
       if (agentId === "code-review-agent-id") {
         const rawVerdict = codeReviewVerdicts[codeReviewCount] ?? codeReviewVerdicts[codeReviewVerdicts.length - 1]!;
         codeReviewCount++;
-        const approved = rawVerdict === "approved";
-        return Promise.resolve([
-          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved } },
-        ]);
+        if (rawVerdict === "approved") {
+          return Promise.resolve([
+            { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true, findings: [] } },
+          ]);
+        } else {
+          return Promise.resolve([
+            { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: false, findings: [{ severity: "high", resolution: "fixable", file: "src/test.ts", title: "Code issue", rationale: "Fix required" }] } },
+          ]);
+        }
       }
 
       // conformance judge step (always approves by default in integration tests)
       if (agentId === "conformance-agent-id") {
         return Promise.resolve([
-          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true } },
+          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true, findings: [] } },
         ]);
       }
 
       // request-review gate step (always approves by default in integration tests)
       if (agentId === "request-review-agent-id") {
         return Promise.resolve([
-          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, verdict: "approve" } },
+          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, verdict: "approve", findings: [] } },
         ]);
       }
 
@@ -545,18 +560,16 @@ describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RE
   });
 });
 
-// TC-013 (updated R3 cutover): spec-review "needs-fix" → spec-fixer IS invoked.
-// R3 cutover: spec-review escalation transition removed. When spec-review is not approved,
-// verdict is "needs-fix" and the loop proceeds to spec-fixer (not immediate halt).
-// "escalation" in specReviewVerdicts maps to approved:false → needs-fix → spec-fixer runs.
+// TC-013: spec-review "needs-fix" → spec-fixer IS invoked.
+// When spec-review returns needs-fix (blocking high finding), the loop proceeds to spec-fixer.
 describe("TC-013: runPipeline — spec-review needs-fix invokes spec-fixer (R3: escalation removed)", () => {
   it("creates spec-fixer steps when spec-review returns needs-fix (approved:false)", async () => {
 
     const { runPipeline } = await import("../src/core/pipeline/index.js");
     const jobState = await makeJobState();
 
-    // "escalation" → approved:false → needs-fix → spec-fixer runs; then approved → pipeline proceeds
-    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["escalation", "approved"] });
+    // needs-fix (high finding) → spec-fixer runs; then approved → pipeline proceeds
+    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["needs-fix", "approved"] });
     const githubClient = buildMockGithubClient({ specReviewVerdicts: ["needs-fix", "approved"] });
 
     const result = await runPipeline(jobState, {

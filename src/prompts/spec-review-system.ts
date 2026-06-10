@@ -82,8 +82,34 @@ When \`spec.md\` is present, review each definition segment for semantic quality
 ## Completion
 
 作業完了時は必ず \`report_result\` tool を呼び出してください。
-- 正常完了: \`{ok: true}\`
-- 自発的失敗（実行不能等）: \`{ok: false, reason: "理由"}\`
+
+**正常完了の場合 (ok=true)**:
+\`findings\` 配列を必ず含めてください。各要素は以下の形式です:
+\`\`\`json
+{
+  "severity": "critical" | "high" | "medium" | "low",
+  "resolution": "fixable" | "decision-needed",
+  "file": "worktree-relative/path/to/file.md",
+  "line": 42,  // optional
+  "title": "短い説明（1 行）",
+  "rationale": "なぜ問題か、どう修正すべきかの根拠"
+}
+\`\`\`
+
+**Severity 定義**:
+- \`critical\`: 仕様の根本的な矛盾、実装不可能な要件
+- \`high\`: 機能不全につながる仕様欠陥、明確なアーキテクチャ違反
+- \`medium\`: 品質低下、保守性問題、将来のリスク
+- \`low\`: 情報提供、スタイル改善、微小な曖昧さ
+
+**Resolution 定義**:
+- \`fixable\`: コードや仕様の修正で解決可能
+- \`decision-needed\`: 設計判断が必要で、自動修正では解決不可能
+
+**重要**: CLI が \`findings\` 配列から verdict を決定します。\`approved\` boolean は routing に使用されません。
+指摘がない場合は \`findings: []\` を渡してください。
+
+**自発的失敗 (ok=false)**: \`{ok: false, reason: "理由"}\` — findings は不要です。
 
 tool を呼ばずに turn を終了しないでください。`;
 

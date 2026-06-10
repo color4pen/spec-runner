@@ -39,6 +39,17 @@ export interface RequiredInput {
 }
 
 /**
+ * Port DTO for a finding reference to be verified for existence.
+ * Used by verifyFindingRefs to check that referenced files/lines actually exist.
+ */
+export interface FindingRef {
+  /** Worktree-relative file path (from a Finding). */
+  file: string;
+  /** Optional line number (from a Finding). */
+  line?: number;
+}
+
+/**
  * Options for agent query execution.
  */
 export interface QueryOptions {
@@ -288,4 +299,21 @@ export interface RuntimeStrategy {
    * Must NOT throw — push failures are warned on stderr and the run continues.
    */
   commitFinalState(deps: unknown, state: unknown): Promise<void>;
+
+  /**
+   * Verify that finding references (file + optional line) actually exist.
+   *
+   * Called after judge step session ends, before verdict is finalized.
+   * Only verdict-affecting findings (critical/high/decision-needed) are passed.
+   *
+   * Contract: returns the subset of refs that do NOT exist (non-existent refs).
+   * - Empty input → empty output (no-op).
+   * - If a ref's file does not exist → included in returned array.
+   * - If a ref has a line number and the file has fewer lines → included in returned array.
+   *
+   * - local:   `path.join(cwd, file)` filesystem existence + line count check.
+   * - managed: `githubClient.getRawFile(owner, repo, branch, file)` null check + line count.
+   *            If branch is null → all refs are treated as non-existent.
+   */
+  verifyFindingRefs(refs: FindingRef[], cwd: string, branch: string | null): Promise<FindingRef[]>;
 }

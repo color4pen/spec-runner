@@ -5,7 +5,7 @@
 export type JobStatus = "running" | "awaiting-resume" | "awaiting-archive" | "failed" | "terminated" | "archived" | "canceled";
 
 import type { ModelUsage } from "../kernel/model-usage.js";
-import type { BaseReportResult } from "../kernel/report-result.js";
+import type { BaseReportResult, Finding } from "../kernel/report-result.js";
 import type { AgentStepName as AgentStepNameUnion } from "../kernel/agent-definition.js";
 /**
  * Re-export from canonical location in the kernel layer.
@@ -112,8 +112,9 @@ export interface StepOutcome {
    * Result reported by the agent via report_result tool call.
    * null = tool was not called. undefined = field absent (legacy records).
    * Added in tool-driven-step-completion.
+   * Widened to include findings array for judge steps (judge-verdict-from-findings).
    */
-  toolResult?: BaseReportResult | null;
+  toolResult?: (BaseReportResult & { findings?: Finding[] }) | null;
   /**
    * Number of follow-up retry attempts made to get the agent to call report_result.
    * 0 = the agent called the tool on the first turn (or feature not applicable).

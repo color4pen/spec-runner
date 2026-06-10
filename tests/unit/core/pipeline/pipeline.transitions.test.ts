@@ -696,6 +696,73 @@ describe("TC-008: conformance loop guard → CONFORMANCE_RETRIES_EXHAUSTED", () 
   });
 });
 
+// TC-027 (must): STANDARD_TRANSITIONS — no explicit spec-review escalation row
+// → default-to-escalate path routes to awaiting-resume
+describe("TC-027: STANDARD_TRANSITIONS default-to-escalate for spec-review escalation verdict", () => {
+  it("spec-review escalation verdict with no matching transition row → awaiting-resume via default escalate", async () => {
+    const jobState = makeMinimalState("test-tc-027");
+    await fs.mkdir(path.join(tempDir, "specrunner", "jobs"), { recursive: true });
+    await fs.writeFile(
+      path.join(tempDir, "specrunner", "jobs", `${jobState.jobId}.json`),
+      JSON.stringify(jobState),
+      "utf-8",
+    );
+
+    const events = new EventBus();
+
+    // Mock executor: spec-review returns escalation verdict (as executor derives from decision-needed finding)
+    const executeSpy = vi.fn().mockImplementation(async (step: Step, state: JobState): Promise<JobState> => {
+      if (step.name === "spec-review") {
+        return {
+          ...state,
+          status: "running",
+          step: "spec-review",
+          steps: {
+            ...state.steps,
+            "spec-review": [
+              ...(state.steps?.["spec-review"] ?? []),
+              {
+                attempt: 1,
+                sessionId: null,
+                outcome: { verdict: "escalation" as const, findingsPath: null, error: null },
+                startedAt: new Date().toISOString(),
+                endedAt: new Date().toISOString(),
+              },
+            ],
+          },
+        };
+      }
+      throw new Error(`Unexpected step: ${step.name}`);
+    });
+    const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
+
+    // STANDARD_TRANSITIONS has no spec-review --escalation→ escalate row (R3 cutover).
+    // Build steps map for all non-terminal nodes referenced in STANDARD_TRANSITIONS.
+    const allStepNames = [...new Set(
+      STANDARD_TRANSITIONS.flatMap((t) => [t.step, t.to]).filter((n) => n !== "end" && n !== "escalate"),
+    )];
+    const stepsMap = new Map(allStepNames.map((name) => [name, makeStepObject(name)]));
+
+    const pipeline = new Pipeline({
+      steps: stepsMap,
+      transitions: STANDARD_TRANSITIONS,
+      maxIterations: 3,
+      executor: mockExecutor,
+      events,
+      loopName: "spec-review",
+      loopNames: ["spec-review"],
+      loopFixerPairs: { "spec-review": "spec-fixer" },
+    });
+
+    const result = await pipeline.run("spec-review", jobState, makeMinimalDeps());
+
+    // No transition row for (spec-review, escalation) in STANDARD_TRANSITIONS
+    // → transition?.to ?? "escalate" default fires → escalate terminal → awaiting-resume
+    expect(result.status).toBe("awaiting-resume");
+    expect(result.resumePoint?.step).toBe("spec-review");
+  });
+});
+
 // TC-014: LOOP_ERROR_CODES — conformance cycle
 describe("TC-014-conformance: LOOP_ERROR_CODES — conformance cycle", () => {
   it("LOOP_ERROR_CODES['conformance'].code === 'CONFORMANCE_RETRIES_EXHAUSTED'", () => {

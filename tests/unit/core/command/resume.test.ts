@@ -112,6 +112,7 @@ function buildMockRuntime(): RuntimeStrategy {
     commitFinalState: vi.fn().mockResolvedValue(undefined),
     bootstrapJob: vi.fn().mockRejectedValue(new Error("not implemented in test")),
     persistJobState: vi.fn().mockResolvedValue(undefined),
+    verifyFindingRefs: vi.fn().mockResolvedValue([]),
   };
 }
 

@@ -171,9 +171,9 @@ function makeRunnerWithToolResult(toolResult: JudgeReportResult | null): AgentRu
   };
 }
 
-describe("GC-TYPED-01: judge approved=true → verdict 'approved'", () => {
-  it("floor: toolResult.approved=true → executor.finalizeStep が verdict='approved' を記録する", async () => {
-    const runner = makeRunnerWithToolResult({ ok: true, approved: true });
+describe("GC-TYPED-01: judge empty findings → verdict 'approved'", () => {
+  it("floor: toolResult with empty findings → executor.finalizeStep が verdict='approved' を記録する", async () => {
+    const runner = makeRunnerWithToolResult({ ok: true, approved: true, findings: [] });
     const executor = new StepExecutor(new EventBus(), runner, makeStoreFactory(tempDir));
     const state = makeMinimalState("gc-typed-01");
     const resultState = await executor.execute(makeMinimalJudgeStep(), state, makeDeps());
@@ -184,10 +184,10 @@ describe("GC-TYPED-01: judge approved=true → verdict 'approved'", () => {
   });
 });
 
-describe("GC-TYPED-02: judge approved=false ∧ fixableCount=0 → verdict 'needs-fix'", () => {
-  it("floor: toolResult.approved=false, fixableCount=0 → 矛盾を弾き verdict='needs-fix' になる", async () => {
-    // approved=false なら fixableCount=0 でも verdict は needs-fix（approved になってはいけない）
-    const runner = makeRunnerWithToolResult({ ok: false, approved: false, fixableCount: 0 } as JudgeReportResult & { fixableCount: number });
+describe("GC-TYPED-02: judge ok=false → verdict 'escalation'", () => {
+  it("floor: ok=false → 矛盾を弾き verdict='escalation' になる（approved になってはいけない）", async () => {
+    // ok=false → deriveJudgeVerdict returns "escalation" regardless of findings
+    const runner = makeRunnerWithToolResult({ ok: false, reason: "cannot review" } as JudgeReportResult);
     const executor = new StepExecutor(new EventBus(), runner, makeStoreFactory(tempDir));
     const state = makeMinimalState("gc-typed-02");
     const resultState = await executor.execute(makeMinimalJudgeStep(), state, makeDeps());
@@ -195,13 +195,13 @@ describe("GC-TYPED-02: judge approved=false ∧ fixableCount=0 → verdict 'need
     const stepRuns = resultState.steps?.["spec-review"];
     expect(stepRuns).toBeDefined();
     const verdict = stepRuns![stepRuns!.length - 1]!.outcome.verdict;
-    expect(verdict).toBe("needs-fix");
+    expect(verdict).toBe("escalation");
     expect(verdict).not.toBe("approved");
   });
 });
 
-describe("GC-TYPED-03: null toolResult (judge step) → verdict 'needs-fix'", () => {
-  it("floor: toolResult=null の judge step → executor.finalizeStep が verdict='needs-fix' を記録する", async () => {
+describe("GC-TYPED-03: null toolResult (judge step) → verdict 'escalation'", () => {
+  it("floor: toolResult=null の judge step → executor.finalizeStep が verdict='escalation' を記録する", async () => {
     const runner = makeRunnerWithToolResult(null);
     const executor = new StepExecutor(new EventBus(), runner, makeStoreFactory(tempDir));
     const state = makeMinimalState("gc-typed-03");
@@ -209,6 +209,6 @@ describe("GC-TYPED-03: null toolResult (judge step) → verdict 'needs-fix'", ()
 
     const stepRuns = resultState.steps?.["spec-review"];
     expect(stepRuns).toBeDefined();
-    expect(stepRuns![stepRuns!.length - 1]!.outcome.verdict).toBe("needs-fix");
+    expect(stepRuns![stepRuns!.length - 1]!.outcome.verdict).toBe("escalation");
   });
 });

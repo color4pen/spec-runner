@@ -74,7 +74,12 @@ function buildDeps(opts: {
       streamEvents: vi.fn().mockResolvedValue({ sseDisconnected: false, idleEndTurnDetected: true, terminated: false, terminationReason: "end_turn" }),
       getSessionUsage: vi.fn().mockResolvedValue(undefined),
       listEvents: vi.fn().mockResolvedValue([
-        { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: verdict === "approved" } },
+        {
+          type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id",
+          input: verdict === "approved"
+            ? { ok: true, approved: true, findings: [] }
+            : { ok: true, approved: false, findings: [{ severity: "high", resolution: "fixable", file: "src/test.ts", title: "Issue", rationale: "Fix required" }] },
+        },
       ]),
       sendEvents: vi.fn().mockResolvedValue(undefined),
     } as unknown as PipelineDeps["client"],
