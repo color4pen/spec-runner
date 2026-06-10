@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "28902ccd-599d-4e72-95bf-b0f208188a1b",
   "createdAt": "2026-06-10T08:06:55.758Z",
-  "updatedAt": "2026-06-10T09:14:32.179Z",
+  "updatedAt": "2026-06-10T09:22:39.806Z",
   "request": {
     "title": "README の存在しないコマンド表記 specrunner resume を修正する",
     "type": "chore"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "chore/readme-resume-command-fix-28902ccd",
   "error": null,
   "pipelineId": "standard",
@@ -23,7 +23,7 @@
     "createdAt": "2026-06-10T09:14:32.168Z"
   },
   "_journal": {
-    "historyCount": 47,
+    "historyCount": 48,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
