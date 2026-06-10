@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "jobId": "554139cc-1a14-4f0e-bc48-6060f83de40c",
+  "createdAt": "2026-06-10T02:55:07.209Z",
+  "updatedAt": "2026-06-10T03:26:47.813Z",
+  "request": {
+    "title": "README を公開向けに拡充する（pipeline 概要・コスト目安・前提と対応範囲・0.x 宣言）",
+    "type": "chore"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "chore/readme-public-release-554139cc",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/577",
+    "number": 577,
+    "createdAt": "2026-06-10T03:26:47.808Z"
+  },
+  "_journal": {
+    "historyCount": 39,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

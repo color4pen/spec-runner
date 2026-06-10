@@ -2,6 +2,43 @@
 
 A self-hosted CLI that drives multi-step development pipelines using Anthropic Claude.
 
+## Stability
+
+SpecRunner is currently **0.x**. While it is used in production for this project's own development, the state and config file formats may receive breaking changes between any two releases.
+
+Migrations are provided when formats change, but they ship in **minor releases** — not majors. Upgrade notes are included in each release changelog.
+
+## How the Pipeline Works
+
+SpecRunner reads a `request.md` file and drives a multi-step pipeline that produces a GitHub PR.
+
+### Happy path
+
+1. `request-review` — validates the request; escalates if the request is unclear or rejected
+2. `design` — creates the branch and generates specification files
+3. `spec-review` — reviews the spec; loops with `spec-fixer` until approved
+4. `test-case-gen` — generates test case definitions from the approved spec
+5. `implementer` — writes the implementation
+6. `verification` — runs build / typecheck / test / lint; loops with `build-fixer` until passed
+7. `code-review` — reviews the implementation; loops with `code-fixer` until approved
+8. `conformance` — checks architecture conformance; returns to `implementer` if fixes are needed
+9. `adr-gen` — generates an ADR when `request.adr` is `true`; passes through otherwise
+10. `pr-create` — opens the GitHub PR
+
+### Judge loops and escalation
+
+Each judge step (`spec-review`, `code-review`) returns either `approved` or `needs-fix`. A `needs-fix` verdict routes to the paired fixer step and back to the judge, repeating until the judge approves or the iteration budget is exhausted.
+
+`verification` works the same way: a `failed` result routes to `build-fixer`, then back to `verification`. A `conformance` `needs-fix` returns execution to `implementer` (full impl-phase re-entry).
+
+**Escalation is not a failure.** It means an agent reached a point that requires human judgment — an ambiguous request, unresolved findings, or a build it cannot repair. When a job escalates, its state is preserved and can be resumed:
+
+```bash
+specrunner job resume <slug>
+```
+
+`request-review` is the front gate: `needs-discussion` and `reject` verdicts escalate immediately without looping, signalling that the request needs human clarification before the pipeline can proceed.
+
 ## Installation
 
 SpecRunner is published to GitHub Packages. Add the registry entry to your `.npmrc` first:
@@ -178,6 +215,45 @@ export SPECRUNNER_API_KEY=sk-ant-...
 specrunner runtime setup
 specrunner job start my-feature
 ```
+
+## Cost
+
+Figures are aggregated from this project's own archived runs (`specrunner/changes/archive/*/usage.json`, 278 requests), summing input, output, cache-creation, and cache-read tokens per request and pricing each invocation at its model's Anthropic list rate as of 2026-06-10.
+
+| Metric | Tokens | USD |
+|--------|--------|-----|
+| Minimum | 0.64 M | $1.42 |
+| Median | 6.1 M | $8.58 |
+| Maximum | 117 M | $73.11 |
+
+Cache reads account for ~94% of all tokens; applying the cache-read discount (0.1× the base input rate) is essential for accurate cost projection. The high end of the range includes requests that looped through fixer steps many times.
+
+> The model used by each pipeline step is configurable (see [Configuration](#configuration)). Actual cost depends on request complexity, the number of fixer iterations, and the model selected.
+
+## Assumptions & Supported Scope
+
+### Trust model
+
+`request.md` is treated as **trusted input**. SpecRunner is designed for solo use where the person who writes `request.md` also reviews and merges the resulting PR. Feeding `request.md` files authored by untrusted third parties is outside the supported use case.
+
+### Verification gate coverage
+
+By default (no `verification.commands` set), the verification step detects and runs the `build`, `typecheck`, `test`, and `lint` scripts from your `package.json`. **Node.js / Bun projects are the primary supported target** for this default mode. If no matching scripts are found and `verification.commands` is also unset, the verification gate is a no-op and code quality relies entirely on the review agents' judgment.
+
+For projects in other languages (Python, Go, Rust, etc.), set `verification.commands` in your project config to run arbitrary verification commands:
+
+```jsonc
+// .specrunner/config.json
+{
+  "verification": {
+    "commands": ["ruff check", { "name": "type", "run": "mypy" }, "pytest -v"]
+  }
+}
+```
+
+### Commit history trust
+
+In repositories with external contributors, `git log` and `git diff` output is included in agent prompts. **Running SpecRunner on repositories with untrusted commit history is not recommended**, as malicious content in commit messages or diff output could influence agent behavior.
 
 ## Troubleshooting
 
