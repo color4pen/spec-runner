@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "4d29def0-3d13-4b93-9603-26f8b96a0a13",
   "createdAt": "2026-06-10T02:55:05.334Z",
-  "updatedAt": "2026-06-10T04:00:04.306Z",
+  "updatedAt": "2026-06-10T04:16:51.670Z",
   "request": {
     "title": "config schema の手書きバリデータを zod ベースに移行する",
     "type": "refactoring"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "refactor/config-schema-zod-migration-4d29def0",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-10T04:00:04.294Z"
   },
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

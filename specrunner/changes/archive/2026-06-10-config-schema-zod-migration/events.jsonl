@@ -61,3 +61,4 @@
 {"type":"transition","ts":"2026-06-10T04:00:04.297Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/config-schema-zod-migration/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-10T04:00:02.605Z","endedAt":"2026-06-10T04:00:04.296Z"}
 {"type":"transition","ts":"2026-06-10T04:00:04.306Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-10T04:16:51.670Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
