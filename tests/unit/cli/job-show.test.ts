@@ -7,6 +7,8 @@
  * TC-JSHOW-004: multiple jobs with same slug → latest updatedAt wins
  * T-047: Log: shows relative path when log file exists
  * T-048: Log: shows (none) when log file does not exist
+ * TC-005: job show prints lineage section when events.jsonl has lineage records
+ * TC-006: job show prints cost section when usage.json has invocation data
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { JobState } from "../../../src/state/schema.js";
@@ -190,6 +192,157 @@ describe("T-048: Log field shows (none) when log file does not exist", () => {
 
     const output = (stdoutSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
     expect(output).toContain("Log:     (none)");
+  });
+});
+
+// TC-005: lineage section is printed when events.jsonl has lineage records
+describe("TC-005: job show prints lineage section from events.jsonl", () => {
+  it("prints Lineage: section with step/output/input when lineage records exist", async () => {
+    const { printJobState } = await import("../../../src/cli/job-show.js");
+    const job = makeJob();
+
+    const os = await import("node:os");
+    const pathMod = await import("node:path");
+    const fsMod = await import("node:fs/promises");
+
+    const tmpDir = await fsMod.mkdtemp(pathMod.join(os.tmpdir(), "job-show-lineage-test-"));
+    try {
+      // Create change folder with events.jsonl containing a lineage record
+      const changeDir = pathMod.join(tmpDir, "specrunner", "changes", "my-feature");
+      await fsMod.mkdir(changeDir, { recursive: true });
+
+      const lineageRecord = JSON.stringify({
+        type: "lineage",
+        step: "design",
+        ts: "2026-01-01T00:01:00Z",
+        outputs: [{ path: "specrunner/changes/my-feature/design.md", hash: "sha256:abc123" }],
+        inputs: [{ path: "specrunner/changes/my-feature/request.md", hash: "sha256:def456", required: true }],
+      });
+      await fsMod.writeFile(pathMod.join(changeDir, "events.jsonl"), lineageRecord + "\n");
+
+      await printJobState(job, tmpDir);
+
+      const output = (stdoutSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
+      expect(output).toContain("Lineage:");
+      expect(output).toContain("design");
+      expect(output).toContain("specrunner/changes/my-feature/design.md");
+      expect(output).toContain("sha256:abc123");
+      expect(output).toContain("specrunner/changes/my-feature/request.md");
+    } finally {
+      await fsMod.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not print Lineage: section when no lineage records exist", async () => {
+    const { printJobState } = await import("../../../src/cli/job-show.js");
+    const job = makeJob();
+
+    const os = await import("node:os");
+    const pathMod = await import("node:path");
+    const fsMod = await import("node:fs/promises");
+
+    const tmpDir = await fsMod.mkdtemp(pathMod.join(os.tmpdir(), "job-show-no-lineage-test-"));
+    try {
+      // Change folder with events.jsonl but no lineage records
+      const changeDir = pathMod.join(tmpDir, "specrunner", "changes", "my-feature");
+      await fsMod.mkdir(changeDir, { recursive: true });
+      const stepRecord = JSON.stringify({
+        type: "transition",
+        ts: "2026-01-01T00:00:00Z",
+        step: "init",
+        status: "started",
+        message: "started",
+      });
+      await fsMod.writeFile(pathMod.join(changeDir, "events.jsonl"), stepRecord + "\n");
+
+      await printJobState(job, tmpDir);
+
+      const output = (stdoutSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
+      expect(output).not.toContain("Lineage:");
+    } finally {
+      await fsMod.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// TC-006: cost section is printed when usage.json has step invocation data
+describe("TC-006: job show prints cost section from usage.json", () => {
+  it("prints Cost by step: section when usage.json has invocation data", async () => {
+    const { printJobState } = await import("../../../src/cli/job-show.js");
+    const job = makeJob();
+
+    const os = await import("node:os");
+    const pathMod = await import("node:path");
+    const fsMod = await import("node:fs/promises");
+
+    const tmpDir = await fsMod.mkdtemp(pathMod.join(os.tmpdir(), "job-show-cost-test-"));
+    try {
+      const changeDir = pathMod.join(tmpDir, "specrunner", "changes", "my-feature");
+      await fsMod.mkdir(changeDir, { recursive: true });
+
+      // Write usage.json with a design step invocation
+      const usageData = {
+        commandInvocations: [
+          {
+            command: "job",
+            timestamp: "2026-01-01T00:01:00Z",
+            modelUsage: {
+              "claude-sonnet-4-6": {
+                inputTokens: 500,
+                outputTokens: 200,
+                cacheReadInputTokens: 0,
+                cacheCreationInputTokens: 0,
+              },
+            },
+            jobId: VALID_UUID,
+            stepName: "design",
+          },
+        ],
+      };
+      await fsMod.writeFile(
+        pathMod.join(changeDir, "usage.json"),
+        JSON.stringify(usageData),
+      );
+
+      await printJobState(job, tmpDir);
+
+      const output = (stdoutSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
+      expect(output).toContain("Cost by step:");
+      expect(output).toContain("design:");
+      expect(output).toContain("in=500");
+      expect(output).toContain("out=200");
+    } finally {
+      await fsMod.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not print Cost by step: section when usage.json has no step invocations", async () => {
+    const { printJobState } = await import("../../../src/cli/job-show.js");
+    const job = makeJob();
+
+    const os = await import("node:os");
+    const pathMod = await import("node:path");
+    const fsMod = await import("node:fs/promises");
+
+    const tmpDir = await fsMod.mkdtemp(pathMod.join(os.tmpdir(), "job-show-no-cost-test-"));
+    try {
+      const changeDir = pathMod.join(tmpDir, "specrunner", "changes", "my-feature");
+      await fsMod.mkdir(changeDir, { recursive: true });
+
+      // usage.json exists but no step invocations with stepName
+      const usageData = { commandInvocations: [] };
+      await fsMod.writeFile(
+        pathMod.join(changeDir, "usage.json"),
+        JSON.stringify(usageData),
+      );
+
+      await printJobState(job, tmpDir);
+
+      const output = (stdoutSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
+      expect(output).not.toContain("Cost by step:");
+    } finally {
+      await fsMod.rm(tmpDir, { recursive: true, force: true });
+    }
   });
 });
 

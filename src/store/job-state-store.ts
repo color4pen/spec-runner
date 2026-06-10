@@ -23,7 +23,7 @@ import {
   stepRunToRecord,
   historyEntryToRecord,
 } from "./event-journal.js";
-import type { FoldResult, InterruptionRecord } from "./event-journal.js";
+import type { FoldResult, InterruptionRecord, LineageRecord } from "./event-journal.js";
 
 /**
  * Normalized view of a JobState with steps as StepRun[].
@@ -83,7 +83,7 @@ export function buildInitialJobState(params: {
   };
 
   return {
-    version: 1,
+    version: 2,
     jobId,
     createdAt: now,
     updatedAt: now,
@@ -476,7 +476,7 @@ export class JobStateStore {
     } catch (err: unknown) {
       const code = (err as NodeJS.ErrnoException).code;
       if (code === "ENOENT") {
-        foldResult = { steps: {}, history: [], stepsTotal: 0, stepCounts: {}, historyCount: 0 };
+        foldResult = { steps: {}, history: [], stepsTotal: 0, stepCounts: {}, historyCount: 0, lineage: [] };
       } else {
         throw err;
       }
@@ -528,6 +528,16 @@ export class JobStateStore {
    * Does not update state.json — callers should persist() separately if needed.
    */
   async appendInterruption(record: InterruptionRecord): Promise<void> {
+    await appendEventRecord(this.getEventsPath(), record);
+  }
+
+  /**
+   * Append a lineage record to the events journal (D1, artifact-observability).
+   * Does not update state.json — lineage is journal-only and never materialized
+   * into NormalizedJobState (keeps projection lean).
+   * Best-effort: callers catch and swallow errors (usage.json append pattern).
+   */
+  async appendLineage(record: LineageRecord): Promise<void> {
     await appendEventRecord(this.getEventsPath(), record);
   }
 
@@ -642,7 +652,7 @@ async function loadSplitLayout(
   }
 
   // Fold events.jsonl
-  let foldResult: FoldResult = { steps: {}, history: [], stepsTotal: 0, stepCounts: {}, historyCount: 0 };
+  let foldResult: FoldResult = { steps: {}, history: [], stepsTotal: 0, stepCounts: {}, historyCount: 0, lineage: [] };
   try {
     const eventsContent = await fs.readFile(eventsPath, "utf-8");
     foldResult = fold(eventsContent);

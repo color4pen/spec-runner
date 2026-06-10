@@ -15,6 +15,7 @@ import * as nodePath from "node:path";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import { toStepName } from "./step-names.js";
 import { appendInvocation } from "../usage/store.js";
+import type { LineageRecord } from "../../store/event-journal.js";
 import { usageJsonPath } from "../../util/paths.js";
 import {
   recordFailedStepResult,
@@ -596,6 +597,39 @@ export class StepExecutor {
       }
     }
     await store.persist(state);
+
+    // D1/D5 (artifact-observability): record lineage for steps that declare writes().
+    // Best-effort: any failure is swallowed — step completion must not be blocked.
+    if (deps.runtimeStrategy && step.writes && deps.cwd) {
+      try {
+        const cwd = deps.cwd;
+        const writes = step.writes(state, deps);
+        if (writes.length > 0) {
+          const reads = step.reads ? step.reads(state, deps) : [];
+          const [outputRefs, inputRefs] = await Promise.all([
+            deps.runtimeStrategy.digestArtifacts(writes.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
+            deps.runtimeStrategy.digestArtifacts(reads.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
+          ]);
+          // Merge required field from IoRef into input ArtifactRef
+          const inputArtifactRefs = inputRefs.map((r, i) => {
+            const ioRef = reads[i];
+            if (ioRef?.required !== undefined) return { ...r, required: ioRef.required };
+            return r;
+          });
+          const lineageRecord: LineageRecord = {
+            type: "lineage",
+            step: step.name,
+            ts: completedAt,
+            outputs: outputRefs,
+            inputs: inputArtifactRefs,
+          };
+          await store.appendLineage(lineageRecord);
+        }
+      } catch {
+        // Best-effort: lineage recording failure must not affect step completion
+      }
+    }
+
     return state;
   }
 }

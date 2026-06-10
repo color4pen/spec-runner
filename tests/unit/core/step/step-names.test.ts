@@ -164,15 +164,15 @@ describe("toStepName", () => {
     }
   });
 
-  it("throws for an unregistered step name", () => {
-    expect(() => toStepName("not-a-step")).toThrow(/Unknown step name/);
+  it("returns the same value for an unregistered step name (passthrough)", () => {
+    expect(toStepName("not-a-step")).toBe("not-a-step");
   });
 
-  it("throws for an empty string", () => {
-    expect(() => toStepName("")).toThrow(/Unknown step name/);
+  it("returns empty string for an empty string (passthrough)", () => {
+    expect(toStepName("")).toBe("");
   });
 
-  it("throws for a legacy alias 'critic'", () => {
-    expect(() => toStepName("critic")).toThrow(/Unknown step name/);
+  it("returns the same value for a legacy alias 'critic' (passthrough)", () => {
+    expect(toStepName("critic")).toBe("critic");
   });
 });

@@ -42,7 +42,7 @@ function readJsonLines(filePath: string): Record<string, unknown>[] {
 
 function makeMinimalJobState(overrides: Record<string, unknown> = {}): import("../../state/schema.js").JobState {
   return {
-    version: 1,
+    version: 2,
     jobId: "test-job-id",
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",

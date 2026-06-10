@@ -13,6 +13,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
+import { fold } from "../../../src/store/event-journal.js";
 import { EventEmitter } from "node:events";
 import type { SpawnOptions, ChildProcess } from "node:child_process";
 import { StepExecutor } from "../../../src/core/step/executor.js";
@@ -104,6 +105,9 @@ function makeTestRuntimeStrategy(spawnFn: SpawnFn): RuntimeStrategy {
     async bootstrapJob(): Promise<import("../../../src/state/schema.js").JobState> { throw new Error("not implemented in test"); },
     async persistJobState(): Promise<void> {},
     async verifyFindingRefs(): Promise<import("../../../src/core/port/runtime-strategy.js").FindingRef[]> { return []; },
+    async digestArtifacts(refs: { path: string }[]): Promise<import("../../../src/store/event-journal.js").ArtifactRef[]> {
+      return refs.map((r) => ({ path: r.path, hash: null }));
+    },
   };
 }
 
@@ -550,6 +554,97 @@ describe("TC-CAP-NEW-007: agent self-commit detected → detection message writt
     const combined = stderrMessages.join("");
     expect(combined).toContain("Detected agent-authored commit(s) since step start");
     expect(combined).toContain("skipping pipeline commit and pushing as-is");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-001: finalizeStep → appendLineage path exercised when writes() is declared
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-001: finalizeStep records lineage when step declares writes()", () => {
+  it("writes a lineage record to events.jsonl after step completes", async () => {
+    const jobId = "tc-lineage-001-job";
+    const state = makeJobState(jobId);
+    await seedJobState(jobId, state);
+
+    const { spawnFn } = makeGitSpawnFnWithRevParseSequence(
+      {
+        add: { exitCode: 0 },
+        diff: { exitCode: 1 }, // staged changes present
+        commit: { exitCode: 0 },
+        push: { exitCode: 0 },
+      },
+      ["abc123before", "abc123before"],
+    );
+
+    const runner = makeSuccessRunner();
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
+
+    // Step declares writes() → triggers lineage recording in finalizeStep
+    const step = makeAgentStep({
+      name: "implementer",
+      writes: (_st, _dep) => [
+        { path: "specrunner/changes/test-slug/implementer.md" },
+      ],
+    });
+
+    await executor.execute(step, state, makeLocalDeps({}, spawnFn));
+
+    // events.jsonl lives in the changeDir assigned by makeStoreFactory
+    const eventsPath = path.join(
+      tempDir,
+      ".specrunner",
+      "test-jobs",
+      jobId,
+      "events.jsonl",
+    );
+    const content = await fs.readFile(eventsPath, "utf-8");
+    const result = fold(content);
+
+    expect(result.lineage).toHaveLength(1);
+    expect(result.lineage[0]!.step).toBe("implementer");
+    expect(result.lineage[0]!.outputs).toHaveLength(1);
+    expect(result.lineage[0]!.outputs[0]!.path).toBe("specrunner/changes/test-slug/implementer.md");
+    // digestArtifacts in makeTestRuntimeStrategy returns hash: null
+    expect(result.lineage[0]!.outputs[0]!.hash).toBeNull();
+    // inputs empty (step.reads not declared)
+    expect(result.lineage[0]!.inputs).toHaveLength(0);
+  });
+
+  it("does not write lineage when step has no writes() declaration", async () => {
+    const jobId = "tc-lineage-001b-job";
+    const state = makeJobState(jobId);
+    await seedJobState(jobId, state);
+
+    const { spawnFn } = makeGitSpawnFnWithRevParseSequence(
+      {
+        add: { exitCode: 0 },
+        diff: { exitCode: 1 },
+        commit: { exitCode: 0 },
+        push: { exitCode: 0 },
+      },
+      ["abc123", "abc123"],
+    );
+
+    const runner = makeSuccessRunner();
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
+
+    // No writes() — lineage block must be skipped
+    const step = makeAgentStep({ name: "implementer" });
+    await executor.execute(step, state, makeLocalDeps({}, spawnFn));
+
+    const eventsPath = path.join(
+      tempDir,
+      ".specrunner",
+      "test-jobs",
+      jobId,
+      "events.jsonl",
+    );
+    const content = await fs.readFile(eventsPath, "utf-8");
+    const result = fold(content);
+    expect(result.lineage).toHaveLength(0);
   });
 });
 

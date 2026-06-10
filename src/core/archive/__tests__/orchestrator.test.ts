@@ -61,7 +61,7 @@ const FAKE_BRANCH = "fix/test-job-aaaabbbb";
 
 function makeState(overrides: Partial<JobState> = {}): JobState {
   return {
-    version: 1,
+    version: 2,
     jobId: FAKE_JOB_ID,
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",

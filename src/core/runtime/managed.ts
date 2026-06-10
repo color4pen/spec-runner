@@ -23,6 +23,7 @@ import { JobStateStore, buildInitialJobState } from "../../store/job-state-store
 import { changeFolderPath, managedMarkerPath, localSidecarDir } from "../../util/paths.js";
 import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, recopyDraftToChangeFolder, rejectSymlink } from "../artifact/copy-artifacts.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef } from "../port/runtime-strategy.js";
+import type { ArtifactRef } from "../../store/event-journal.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import type { AgentStep } from "../step/types.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
@@ -394,6 +395,15 @@ export class ManagedRuntime implements RuntimeStrategy {
         `Required step input(s) not found: ${missing.join(", ")}`,
       );
     }
+  }
+
+  /**
+   * Managed runtime has no local filesystem for agent outputs.
+   * Returns hash: null for every ref (paths are preserved for lineage records).
+   * Never throws — per best-effort lineage contract.
+   */
+  async digestArtifacts(refs: { path: string }[], _cwd: string, _branch: string | null): Promise<ArtifactRef[]> {
+    return refs.map((ref) => ({ path: ref.path, hash: null }));
   }
 
   registerCleanup(jobId: string, startStep: string): CleanupHandle {

@@ -24,7 +24,7 @@ afterEach(async () => {
 async function createJobState(repoRoot: string, jobId: string, status: string): Promise<void> {
   const slug = `guard-${jobId.slice(0, 8)}`;
   const state = {
-    version: 1,
+    version: 2,
     jobId,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

@@ -15,6 +15,8 @@ import * as path from "node:path";
 import type { StepRun, HistoryEntry, ErrorInfo } from "../state/schema.js";
 import type { BaseReportResult } from "../kernel/report-result.js";
 import type { Verdict } from "../state/schema.js";
+import type { ArtifactRef } from "../state/artifact-types.js";
+export type { ArtifactRef } from "../state/artifact-types.js";
 
 // ---------------------------------------------------------------------------
 // Record types (tagged union)
@@ -70,8 +72,27 @@ export interface InterruptionRecord {
   ts: string;
 }
 
+/**
+ * Records the lineage of a step's outputs: which inputs produced which outputs.
+ * Appended to events.jsonl on step completion (best-effort).
+ * NOT materialized into state.json / NormalizedJobState.
+ *
+ * D1 (artifact-observability): lineage is journal-only, projection is not increased.
+ */
+export interface LineageRecord {
+  type: "lineage";
+  /** Producer step name (e.g. "design", "implementer"). */
+  step: string;
+  /** ISO 8601 timestamp (step's completedAt). */
+  ts: string;
+  /** Step outputs (from step.writes()). */
+  outputs: ArtifactRef[];
+  /** Step inputs (from step.reads()). */
+  inputs: ArtifactRef[];
+}
+
 /** All valid event record types. */
-export type EventRecord = StepAttemptRecord | TransitionRecord | InterruptionRecord;
+export type EventRecord = StepAttemptRecord | TransitionRecord | InterruptionRecord | LineageRecord;
 
 // ---------------------------------------------------------------------------
 // Fold result
@@ -93,6 +114,12 @@ export interface FoldResult {
    * Used to materialize resumePoint cache in state.json on load.
    */
   lastInterruption?: InterruptionRecord;
+  /**
+   * All lineage records in chronological order (D1, artifact-observability).
+   * NOT materialized into state.json / NormalizedJobState — journal-only.
+   * Empty array if no lineage records have been appended.
+   */
+  lineage: LineageRecord[];
 }
 
 // ---------------------------------------------------------------------------
@@ -150,6 +177,7 @@ export function fold(content: string): FoldResult {
   const stepGroups: Record<string, StepAttemptRecord[]> = {};
   const historyRecords: TransitionRecord[] = [];
   let lastInterruption: InterruptionRecord | undefined;
+  const lineageRecords: LineageRecord[] = [];
 
   for (const line of validLines) {
     let record: unknown;
@@ -173,7 +201,11 @@ export function fold(content: string): FoldResult {
     } else if (obj["type"] === "interruption") {
       // Track last interruption record (Stage 2 T-11: used for resumePoint materialization)
       lastInterruption = obj as unknown as InterruptionRecord;
+    } else if (obj["type"] === "lineage") {
+      // Collect lineage records in chronological order (D1, artifact-observability)
+      lineageRecords.push(obj as unknown as LineageRecord);
     }
+    // Unknown / legacy types (e.g. "history") are silently ignored for forward compat.
   }
 
   // Build steps: Record<stepName, StepRun[]>
@@ -214,6 +246,7 @@ export function fold(content: string): FoldResult {
     stepsTotal,
     stepCounts,
     historyCount: historyRecords.length,
+    lineage: lineageRecords,
     ...(lastInterruption !== undefined ? { lastInterruption } : {}),
   };
 }

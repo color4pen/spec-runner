@@ -13,9 +13,15 @@ import type { AgentStepName as AgentStepNameUnion } from "../kernel/agent-defini
  */
 export type { ModelUsage } from "../kernel/model-usage.js";
 
-import { AGENT_STEP_NAMES, CLI_STEP_NAMES, STEP_NAMES } from "../kernel/step-names.js";
+import { AGENT_STEP_NAMES, CLI_STEP_NAMES } from "../kernel/step-names.js";
 
-export type StepName = typeof STEP_NAMES[keyof typeof STEP_NAMES];
+/**
+ * StepName: extended to string to support arbitrary step names in records.
+ * Whitelist enforcement (standard pipeline steps) is done by isStandardStepName()
+ * in core/step/step-names.ts. The STEP_NAMES / AGENT_STEP_NAMES / CLI_STEP_NAMES
+ * arrays remain the single source of truth for standard pipeline step names.
+ */
+export type StepName = string;
 
 /**
  * AgentStepName: names of steps that run as AI agent sessions.
@@ -168,7 +174,14 @@ export interface PullRequestInfo {
 }
 
 export interface JobState {
-  version: 1;
+  /**
+   * Schema version.
+   * - 1: original version (pre-artifact-observability R5)
+   * - 2: introduces lineage recording (journal-side) and arbitrary step name support.
+   * Backward compat: version 1 state files are accepted and normalized to 2 on read
+   * (validateJobState). New state files always write version 2 (buildInitialJobState).
+   */
+  version: 1 | 2;
   jobId: string;
   createdAt: string;
   updatedAt: string;
@@ -319,7 +332,15 @@ export function validateJobState(raw: unknown): JobState {
   }
   const obj = raw as Record<string, unknown>;
 
-  if (obj["version"] !== 1) throw new Error("State version must be 1.");
+  // Backward compat: accept version 1 (pre-R5) and normalize to 2 on read.
+  // Version 2 introduces lineage recording (journal-side) and arbitrary step name support.
+  // Versions other than 1 or 2 are rejected.
+  if (obj["version"] !== 1 && obj["version"] !== 2) {
+    throw new Error(`State version must be 1 or 2 (got ${JSON.stringify(obj["version"])}).`);
+  }
+  if (obj["version"] === 1) {
+    obj["version"] = 2;
+  }
   if (typeof obj["jobId"] !== "string" || obj["jobId"].length === 0) {
     throw new Error("Missing required field: jobId.");
   }

@@ -19,6 +19,7 @@ import type { AgentRunner } from "./agent-runner.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { JobState, RequestInfo, RepositoryInfo } from "../../state/schema.js";
+import type { ArtifactRef } from "../../state/artifact-types.js";
 
 // ---------------------------------------------------------------------------
 // Supporting types
@@ -316,4 +317,18 @@ export interface RuntimeStrategy {
    *            If branch is null → all refs are treated as non-existent.
    */
   verifyFindingRefs(refs: FindingRef[], cwd: string, branch: string | null): Promise<FindingRef[]>;
+
+  /**
+   * Compute content hashes for a list of artifact paths (D4, artifact-observability).
+   *
+   * Called by StepExecutor.finalizeStep after a step succeeds to build a LineageRecord.
+   * Returns one ArtifactRef per input ref, preserving path and adding hash.
+   *
+   * - local:   reads each file, computes sha256 as "sha256:<hex>".
+   *            File not found / read error → hash: null (does NOT throw).
+   * - managed: no local filesystem available; returns hash: null for every ref.
+   *
+   * Never throws — callers treat the entire lineage recording as best-effort.
+   */
+  digestArtifacts(refs: { path: string }[], cwd: string, branch: string | null): Promise<ArtifactRef[]>;
 }

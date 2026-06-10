@@ -28,7 +28,7 @@ afterEach(async () => {
 
 function makeJobState(jobId = "test-job"): JobState {
   return {
-    version: 1,
+    version: 2,
     jobId,
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",

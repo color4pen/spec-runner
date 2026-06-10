@@ -6,6 +6,7 @@
  */
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import * as crypto from "node:crypto";
 import type { GitHubClient } from "../port/github-client.js";
 import type { AgentRunner } from "../port/agent-runner.js";
 import type { PipelineDeps } from "../types.js";
@@ -35,6 +36,7 @@ import { commitAndPush, commitFinalState } from "../step/commit-push.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef } from "../port/runtime-strategy.js";
+import type { ArtifactRef } from "../../store/event-journal.js";
 import { SpecRunnerError, ERROR_CODES, worktreeDirtyError } from "../../errors.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
@@ -613,6 +615,26 @@ export class LocalRuntime implements RuntimeStrategy {
       }
     }
     return nonExistent;
+  }
+
+  /**
+   * Compute sha256 content hashes for a list of artifact paths (D4, artifact-observability).
+   * Reads each file from disk; returns hash: null for missing/unreadable files.
+   * Never throws — errors are silently swallowed per the best-effort lineage contract.
+   */
+  async digestArtifacts(refs: { path: string }[], cwd: string, _branch: string | null): Promise<ArtifactRef[]> {
+    const results: ArtifactRef[] = [];
+    for (const ref of refs) {
+      const absPath = path.join(cwd, ref.path);
+      try {
+        const content = await fs.readFile(absPath);
+        const hex = crypto.createHash("sha256").update(content).digest("hex");
+        results.push({ path: ref.path, hash: `sha256:${hex}` });
+      } catch {
+        results.push({ path: ref.path, hash: null });
+      }
+    }
+    return results;
   }
 
   async validateStepInputs(inputs: RequiredInput[], cwd: string, branch: string | null): Promise<void> {
