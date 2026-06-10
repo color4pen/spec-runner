@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "73896bd5-79cc-4c7f-98a6-c20b98676fdd",
   "createdAt": "2026-06-10T07:33:24.863Z",
-  "updatedAt": "2026-06-10T07:53:35.780Z",
+  "updatedAt": "2026-06-10T08:04:04.076Z",
   "request": {
     "title": "配布を GitHub Packages から npmjs.com に切り替える",
     "type": "chore"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "chore/npmjs-publish-switch-73896bd5",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-10T07:53:35.769Z"
   },
   "_journal": {
-    "historyCount": 39,
+    "historyCount": 40,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

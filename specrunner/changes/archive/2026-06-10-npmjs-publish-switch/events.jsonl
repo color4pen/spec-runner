@@ -47,3 +47,4 @@
 {"type":"transition","ts":"2026-06-10T07:53:35.772Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/npmjs-publish-switch/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-10T07:53:33.500Z","endedAt":"2026-06-10T07:53:35.771Z"}
 {"type":"transition","ts":"2026-06-10T07:53:35.780Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-10T08:04:04.076Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
