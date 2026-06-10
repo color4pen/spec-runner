@@ -21,6 +21,7 @@ export type EventPayloadMap = {
   "step:complete": { step: string; state: JobState };
   "step:error": { step: string; error: Error; state: JobState };
   "step:progress": { step: string; tool: string; target?: string };
+  "step:retry": { step: string; attempt: number; maxRetries: number; delayMs: number };
   "verdict:parsed": { step: string; outcome: { verdict: string | null; toolResult?: BaseReportResult | null; followUpAttempts?: number } };
   "commit:push": { step: string; branch: string };
 };

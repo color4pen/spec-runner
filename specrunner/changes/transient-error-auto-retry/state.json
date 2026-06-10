@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "jobId": "72d5aa49-80e5-4e33-9f9e-dac5e4520549",
+  "createdAt": "2026-06-10T11:54:52.171Z",
+  "updatedAt": "2026-06-10T13:09:46.121Z",
+  "request": {
+    "title": "agent session の一過性エラーを有限回の自動再試行で吸収する",
+    "type": "new-feature"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/transient-error-auto-retry-72d5aa49",
+  "error": null,
+  "pipelineId": "standard",
+  "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/600",
+    "number": 600,
+    "createdAt": "2026-06-10T13:09:46.113Z"
+  },
+  "_journal": {
+    "historyCount": 64,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 3,
+      "spec-fixer": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 2,
+      "build-fixer": 1,
+      "code-review": 1,
+      "code-fixer": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

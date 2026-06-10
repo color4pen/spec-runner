@@ -36,6 +36,7 @@ import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from ".
 import type { DomainEvent } from "../../kernel/event-types.js";
 import type { StepContext } from "../../core/port/step-context.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
+import { resolveTransientRetryConfig } from "../../config/schema.js";
 import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
 import { logVerbose, stderrWrite } from "../../logger/stdout.js";
@@ -44,6 +45,8 @@ import { SessionLogWriter } from "./session-log-writer.js";
 import { stripSecrets } from "../../util/env-filter.js";
 import type { BaseReportResult, ReportToolSpec } from "../../core/port/report-result.js";
 import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
+import { retryWithBackoff } from "../../util/retry.js";
+import { isTransientAgentError } from "./transient-error.js";
 
 export type { SpawnFn } from "./git-exec.js";
 
@@ -115,6 +118,8 @@ export interface ClaudeCodeRunnerDeps {
   _queryFn?: QueryFn;
   /** Injectable for testing: replaces createSdkMcpServer to capture tool handlers. */
   _createMcpServerFn?: CreateMcpServerFn;
+  /** Injectable for testing: replaces setTimeout-based sleep in transient retry backoff. */
+  _sleepFn?: (ms: number) => Promise<void>;
 }
 
 /**
@@ -126,12 +131,14 @@ export class ClaudeCodeRunner implements AgentRunner {
   private readonly spawnFn: SpawnFn;
   private readonly queryFn: QueryFn;
   private readonly createMcpServerFn: CreateMcpServerFn;
+  private readonly sleepFn: (ms: number) => Promise<void>;
 
   constructor(deps: ClaudeCodeRunnerDeps = {}) {
     this.defaultCwd = deps.cwd ?? process.cwd();
     this.spawnFn = deps._spawnFn ?? defaultSpawnFn;
     this.queryFn = deps._queryFn ?? (sdkQuery as unknown as QueryFn);
     this.createMcpServerFn = deps._createMcpServerFn ?? createSdkMcpServer;
+    this.sleepFn = deps._sleepFn ?? ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   }
 
   async run(ctx: AgentRunContext): Promise<AgentRunResult> {
@@ -281,25 +288,67 @@ export class ClaudeCodeRunner implements AgentRunner {
 
     logVerbose("session", "query started", { stepName: step.name, runtime: "local", model: resolvedConfig.model });
 
-    try {
-      let queryResult: { lastResult: SDKResultMessage | null };
+    // Resolve transient retry config (T-04).
+    const { maxRetries, baseDelayMs } = resolveTransientRetryConfig(ctx.config);
+    // Tracks the number of transient retries actually taken in this run().
+    let transientRetryAttempts = 0;
+    // Tracks whether the resume→new-session fallback has already been attempted.
+    let resumeFallbackDone = false;
+
+    /**
+     * Inner function wrapping the main work query turn plus the existing
+     * resume→new-session fallback.  This is the unit retried on transient errors.
+     */
+    const runMainWorkTurn = async (): Promise<{ lastResult: SDKResultMessage | null }> => {
       try {
-        queryResult = await runQuery();
+        return await runQuery();
       } catch (innerErr) {
-        // Check for timeout first — do not fallback on timeout.
-        if (abortController.signal.aborted && timeoutId !== undefined) {
+        // Do not apply resume fallback when the abort controller has fired —
+        // that path is handled by the outer catch as a timeout.
+        if (abortController.signal.aborted) {
           throw innerErr;
         }
-        // If we were attempting a session resume, try falling back to a new session.
-        if (ctx.session.resumeSessionId) {
+        // On the first failure, if we were attempting a session resume, fall
+        // back to a fresh session.  Subsequent retries skip this branch since
+        // the resume option has already been removed and `resumeFallbackDone`
+        // is set to prevent the warning from repeating.
+        if (ctx.session.resumeSessionId && !resumeFallbackDone) {
+          resumeFallbackDone = true;
           stderrWrite(
             `[specrunner] warn: session resume failed for '${step.name}' (session: ${ctx.session.resumeSessionId}): ${(innerErr as Error).message}. Falling back to new session.`,
           );
           delete queryOptions["resume"];
-          queryResult = await runQuery();
-        } else {
-          throw innerErr;
+          return await runQuery();
         }
+        throw innerErr;
+      }
+    };
+
+    try {
+      let queryResult: { lastResult: SDKResultMessage | null };
+
+      if (maxRetries === 0) {
+        // Feature disabled — call runMainWorkTurn directly (no wrapper, no events).
+        queryResult = await runMainWorkTurn();
+      } else {
+        // Feature enabled — wrap with retryWithBackoff.
+        queryResult = await retryWithBackoff(runMainWorkTurn, {
+          maxAttempts: maxRetries + 1,
+          baseDelayMs,
+          isTransientError: (err) =>
+            !abortController.signal.aborted && isTransientAgentError(err),
+          sleepFn: this.sleepFn,
+          onRetry: (attempt) => {
+            const delayMs = baseDelayMs * Math.pow(2, attempt - 1);
+            transientRetryAttempts = attempt;
+            ctx.emit("step:retry", {
+              step: step.name,
+              attempt,
+              maxRetries,
+              delayMs,
+            });
+          },
+        });
       }
 
       // If agent redirect limit exceeded, return error without proceeding.
@@ -310,6 +359,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           resultContent: null,
           toolResult: null,
           followUpAttempts: 0,
+          ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
           error: Object.assign(
             new Error(`Step '${step.name}': Agent/Task tool redirect limit exceeded (max 3)`),
             { code: "AGENT_REDIRECT_LIMIT_EXCEEDED" },
@@ -327,6 +377,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           resultContent: null,
           toolResult: null,
           followUpAttempts: 0,
+          ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
           error: Object.assign(
             new Error(`Claude Code SDK query failed: ${errorResult.subtype}`),
             { code: "CLAUDE_CODE_QUERY_FAILED" },
@@ -407,6 +458,7 @@ export class ClaudeCodeRunner implements AgentRunner {
               resultContent: null,
               toolResult: capturedToolResult,
               followUpAttempts,
+              ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
               error: Object.assign(
                 new Error(`Claude Code SDK follow-up query failed: ${followErrorResult.subtype}`),
                 { code: "CLAUDE_CODE_QUERY_FAILED" },
@@ -466,6 +518,7 @@ export class ClaudeCodeRunner implements AgentRunner {
             resultContent: null,
             toolResult: capturedToolResult,
             followUpAttempts,
+            ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
             error: Object.assign(
               new Error(`result file not found: ${resultFilePath}`),
               { code: "RESULT_FILE_NOT_FOUND" },
@@ -479,6 +532,7 @@ export class ClaudeCodeRunner implements AgentRunner {
         resultContent: null,
         toolResult: capturedToolResult,
         followUpAttempts,
+        ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
         modelUsage: extractedModelUsage,
         sessionId: extractedSessionId,
       };
@@ -493,6 +547,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           resultContent: null,
           toolResult: null,
           followUpAttempts: 0,
+          ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
           error: Object.assign(
             new Error(`Step '${step.name}' timed out after ${resolvedConfig.timeoutMs}ms`),
             { code: "STEP_TIMEOUT" },
@@ -507,6 +562,7 @@ export class ClaudeCodeRunner implements AgentRunner {
         resultContent: null,
         toolResult: null,
         followUpAttempts: 0,
+        ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
         error: Object.assign(
           new Error(`Claude Code SDK query failed: ${cause.message}`),
           { code: "CLAUDE_CODE_QUERY_FAILED", cause },

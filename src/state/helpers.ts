@@ -73,6 +73,12 @@ export interface StepResultInput {
    * Added in tool-driven-step-completion.
    */
   followUpAttempts?: number;
+  /**
+   * Number of transient-error auto-retry attempts.
+   * 0 = no retries needed. Absent = feature disabled (maxRetries: 0).
+   * Added in transient-error-auto-retry.
+   */
+  transientRetryAttempts?: number;
 }
 
 /**
@@ -100,6 +106,7 @@ export function pushStepResult(
       error: partial.error,
       ...(partial.toolResult !== undefined ? { toolResult: partial.toolResult } : {}),
       ...(partial.followUpAttempts !== undefined ? { followUpAttempts: partial.followUpAttempts } : {}),
+      ...(partial.transientRetryAttempts !== undefined ? { transientRetryAttempts: partial.transientRetryAttempts } : {}),
     },
     startedAt: partial.startedAt ?? now,
     endedAt: partial.completedAt ?? now,

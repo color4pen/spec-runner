@@ -99,6 +99,7 @@ export class ProgressDisplay {
     this.events.on("step:complete", (p) => this.onStepComplete(p));
     this.events.on("step:error", (p) => this.onStepError(p));
     this.events.on("step:progress", (p) => this.onStepProgress(p));
+    this.events.on("step:retry", (p) => this.onStepRetry(p));
     this.events.on("verdict:parsed", (p) => this.onVerdictParsed(p));
     this.events.on("pipeline:complete", (p) => this.onPipelineComplete(p));
     this.events.on("pipeline:fail", (p) => this.onPipelineFail(p));
@@ -144,6 +145,11 @@ export class ProgressDisplay {
   private onStepProgress(p: { step: string; tool: string; target?: string }): void {
     this.progressCount++;
     this.lastTool = p.target ? `${p.tool} ${p.target}` : p.tool;
+  }
+
+  private onStepRetry(p: { step: string; attempt: number; maxRetries: number; delayMs: number }): void {
+    if (this.isQuiet) return;
+    process.stderr.write(maskSensitive(`[${p.step}] transient error — retrying (${p.attempt}/${p.maxRetries})…\n`));
   }
 
   private onVerdictParsed(p: { step: string; outcome: { verdict: string | null } }): void {

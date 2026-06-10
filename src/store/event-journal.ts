@@ -38,6 +38,8 @@ export interface StepAttemptRecord {
     toolResult?: BaseReportResult | null;
     /** Follow-up retry attempts to get tool call. */
     followUpAttempts?: number;
+    /** Transient-error auto-retry attempts. */
+    transientRetryAttempts?: number;
   };
   startedAt: string;
   endedAt: string;
@@ -189,6 +191,7 @@ export function fold(content: string): FoldResult {
         error: r.outcome.error,
         ...(r.outcome.toolResult !== undefined ? { toolResult: r.outcome.toolResult } : {}),
         ...(r.outcome.followUpAttempts !== undefined ? { followUpAttempts: r.outcome.followUpAttempts } : {}),
+        ...(r.outcome.transientRetryAttempts !== undefined ? { transientRetryAttempts: r.outcome.transientRetryAttempts } : {}),
       },
       startedAt: r.startedAt,
       endedAt: r.endedAt,
@@ -256,6 +259,7 @@ export function stepRunToRecord(step: string, run: StepRun): StepAttemptRecord {
       error: outcome.error,
       ...(outcome.toolResult !== undefined ? { toolResult: outcome.toolResult } : {}),
       ...(outcome.followUpAttempts !== undefined ? { followUpAttempts: outcome.followUpAttempts } : {}),
+      ...(outcome.transientRetryAttempts !== undefined ? { transientRetryAttempts: outcome.transientRetryAttempts } : {}),
     },
     startedAt: run.startedAt,
     endedAt: run.endedAt,

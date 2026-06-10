@@ -121,6 +121,13 @@ export interface StepOutcome {
    * Added in tool-driven-step-completion.
    */
   followUpAttempts?: number;
+  /**
+   * Number of transient-error auto-retry attempts made before this step succeeded
+   * or the retry budget was exhausted.
+   * 0 = no retries needed. Absent when feature was disabled (maxRetries: 0).
+   * Added in transient-error-auto-retry.
+   */
+  transientRetryAttempts?: number;
 }
 
 /**

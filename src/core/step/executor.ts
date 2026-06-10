@@ -293,7 +293,11 @@ export class StepExecutor {
         message: err.message,
         hint: (err as Error & { hint?: string }).hint ?? "",
       };
-      state = recordFailedStepResult(state, step.name, errorInfo, { completedAt, startedAt });
+      state = recordFailedStepResult(state, step.name, errorInfo, {
+        completedAt,
+        startedAt,
+        transientRetryAttempts: runResult.transientRetryAttempts,
+      });
       const { state: timeoutState } = transitionJob(state, "awaiting-resume", {
         trigger: "executor",
         reason: "timeout",
@@ -327,7 +331,11 @@ export class StepExecutor {
         message: err.message,
         hint: (err as Error & { hint?: string }).hint ?? "",
       };
-      state = recordFailedStepResult(state, step.name, errorInfo, { completedAt, startedAt });
+      state = recordFailedStepResult(state, step.name, errorInfo, {
+        completedAt,
+        startedAt,
+        transientRetryAttempts: runResult.transientRetryAttempts,
+      });
       state = await store.fail(state, errorInfo, step.name);
       await store.persist(state);
       attachStateAndRethrow(err, state);
@@ -363,6 +371,7 @@ export class StepExecutor {
       modelUsage: runResult.modelUsage,
       toolResult: runResult.toolResult,
       followUpAttempts: runResult.followUpAttempts,
+      transientRetryAttempts: runResult.transientRetryAttempts,
     });
   }
 
@@ -451,6 +460,7 @@ export class StepExecutor {
       modelUsage?: Record<string, ModelUsage>;
       toolResult?: import("../port/report-result.js").BaseReportResult | null;
       followUpAttempts?: number;
+      transientRetryAttempts?: number;
     },
   ): Promise<JobState> {
     const store = this.getStore(state.jobId);
@@ -552,6 +562,7 @@ export class StepExecutor {
       error: null,
       toolResult: agentResult?.toolResult ?? null,
       followUpAttempts: agentResult?.followUpAttempts ?? 0,
+      transientRetryAttempts: agentResult?.transientRetryAttempts,
     });
     state = await store.appendHistory(state, {
       ts: new Date().toISOString(),

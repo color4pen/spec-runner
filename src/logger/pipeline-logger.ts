@@ -107,6 +107,10 @@ export class PipelineLogger {
       });
     });
 
+    events.on("step:retry", ({ step, attempt, maxRetries, delayMs }) => {
+      this.write({ type: "step:retry", step, attempt, maxRetries, delayMs });
+    });
+
     events.on("verdict:parsed", ({ step, outcome }) => {
       this.write({
         type: "verdict:parsed",

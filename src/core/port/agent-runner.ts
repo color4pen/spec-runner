@@ -157,6 +157,13 @@ export interface AgentRunResult {
    * Required field — adapters must always set this.
    */
   followUpAttempts: number;
+  /**
+   * Number of transient-error auto-retry attempts made before the step succeeded
+   * or the budget was exhausted.
+   * 0 = no retries were needed.
+   * Absent when transientRetry.maxRetries is 0 (feature disabled).
+   */
+  transientRetryAttempts?: number;
   /** Session ID from the agent runtime (undefined when not available) */
   sessionId?: string;
   /** Agent-reported branch (managed: from register_branch tool; local: from git) */

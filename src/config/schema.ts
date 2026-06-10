@@ -238,6 +238,45 @@ export function resolveInboxConfig(config: SpecRunnerConfig): Required<InboxConf
   };
 }
 
+/**
+ * Default maximum number of automatic transient-error retries per agent step.
+ */
+export const DEFAULT_TRANSIENT_RETRY_MAX = 3;
+
+/**
+ * Default base delay in ms for the first transient retry (subsequent retries double).
+ */
+export const DEFAULT_TRANSIENT_RETRY_BASE_DELAY_MS = 1000;
+
+/**
+ * Configuration for automatic transient-error retries in agent steps.
+ * Applied to the local ClaudeCodeRunner only; ignored by managed runtime.
+ */
+export interface TransientRetryConfig {
+  /**
+   * Maximum number of automatic retries on transient errors.
+   * 0 = disable feature entirely (current behaviour — no retry wrapper, no events).
+   * Default: 3.
+   */
+  maxRetries?: number;
+  /**
+   * Base delay in ms for the first retry. Subsequent retries double (exponential backoff).
+   * Default: 1000.
+   */
+  baseDelayMs?: number;
+}
+
+/**
+ * Resolve TransientRetryConfig with defaults applied.
+ * Returns a fully-resolved config with all fields present.
+ */
+export function resolveTransientRetryConfig(config: SpecRunnerConfig): Required<TransientRetryConfig> {
+  return {
+    maxRetries: config.transientRetry?.maxRetries ?? DEFAULT_TRANSIENT_RETRY_MAX,
+    baseDelayMs: config.transientRetry?.baseDelayMs ?? DEFAULT_TRANSIENT_RETRY_BASE_DELAY_MS,
+  };
+}
+
 export interface SpecRunnerConfig {
   version: 1;
   /**
@@ -309,6 +348,12 @@ export interface SpecRunnerConfig {
    * Controls automatic issue-to-job dispatch via `specrunner inbox run`.
    */
   inbox?: InboxConfig;
+  /**
+   * Transient-error auto-retry configuration.
+   * Controls automatic retry of agent steps on transient connection/socket/5xx errors.
+   * Applied to local runtime (ClaudeCodeRunner) only; ignored by managed runtime.
+   */
+  transientRetry?: TransientRetryConfig;
 }
 
 /**
@@ -346,6 +391,8 @@ export interface RawConfig {
   archive?: Partial<Record<string, unknown>>;
   /** Inbox configuration — passed through as-is. Validated in validateConfig(). */
   inbox?: Partial<Record<string, unknown>>;
+  /** Transient-retry configuration — passed through as-is. Validated in validateConfig(). */
+  transientRetry?: Partial<Record<string, unknown>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -612,6 +659,25 @@ export const configSchema = object({
           ),
         ),
         maxStartsPerRun: optional(
+          number("must be a non-negative integer.").check(
+            int("must be a non-negative integer."),
+            gte(0, "must be a non-negative integer."),
+          ),
+        ),
+      },
+      "must be an object.",
+    ),
+  ),
+  transientRetry: optional(
+    object(
+      {
+        maxRetries: optional(
+          number("must be a non-negative integer.").check(
+            int("must be a non-negative integer."),
+            gte(0, "must be a non-negative integer."),
+          ),
+        ),
+        baseDelayMs: optional(
           number("must be a non-negative integer.").check(
             int("must be a non-negative integer."),
             gte(0, "must be a non-negative integer."),
