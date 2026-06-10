@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "jobId": "28902ccd-599d-4e72-95bf-b0f208188a1b",
+  "createdAt": "2026-06-10T08:06:55.758Z",
+  "updatedAt": "2026-06-10T09:14:32.179Z",
+  "request": {
+    "title": "README の存在しないコマンド表記 specrunner resume を修正する",
+    "type": "chore"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "chore/readme-resume-command-fix-28902ccd",
+  "error": null,
+  "pipelineId": "standard",
+  "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/592",
+    "number": 592,
+    "createdAt": "2026-06-10T09:14:32.168Z"
+  },
+  "_journal": {
+    "historyCount": 47,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 3,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}
