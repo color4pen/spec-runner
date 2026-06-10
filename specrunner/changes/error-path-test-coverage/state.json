@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "jobId": "d341ddc9-d764-47ef-9384-4794b5f6161b",
+  "createdAt": "2026-06-10T04:25:13.285Z",
+  "updatedAt": "2026-06-10T05:32:40.629Z",
+  "request": {
+    "title": "pipeline の error path（exhaustion / escalation / session 異常）のテストを拡充する",
+    "type": "chore"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "chore/error-path-test-coverage-d341ddc9",
+  "error": null,
+  "pipelineId": "standard",
+  "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/582",
+    "number": 582,
+    "createdAt": "2026-06-10T05:32:40.620Z"
+  },
+  "_journal": {
+    "historyCount": 56,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 2,
+      "build-fixer": 1,
+      "code-review": 2,
+      "code-fixer": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

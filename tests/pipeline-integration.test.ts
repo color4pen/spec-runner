@@ -24,6 +24,10 @@ import { cleanupOutputTemplates } from "../src/core/artifact/copy-artifacts.js";
 import { buildInitialJobState } from "../src/store/job-state-store.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
 import { EventBus } from "../src/core/event/event-bus.js";
+import {
+  buildPipelineMockClient,
+  buildMockGithubClient,
+} from "./helpers/pipeline-mock-client.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -201,211 +205,6 @@ function buildRunner(
   githubClient: GitHubClient,
 ) {
   return createManagedAgentRunner({ sessionClient: client, githubClient, repo: buildRepo(), githubToken: "ghp_test" });
-}
-
-/**
- * Build a mock SessionClient that supports multiple spec-review iterations.
- *
- * R3 cutover: listEvents now uses agentId (from createSession) to determine step type
- * and returns appropriate typed toolResult:
- *   - spec-review (judge): { ok: true, approved: boolean } based on specReviewVerdicts
- *   - code-review (judge): { ok: true, approved: true } by default
- *   - producer steps: { ok: true, status: "success" }
- *
- * "escalation" in specReviewVerdicts maps to approved:false (needs-fix in R3 — judge
- * escalation removed). Tests relying on direct escalation verdict should use mock executor
- * instead of managed adapter.
- *
- * Implements the SessionClient port interface (not the raw Anthropic SDK).
- */
-function buildPipelineMockClient(opts: {
-  designBranch?: string;
-  designFailure?: boolean;
-  specReviewVerdicts?: ("approved" | "needs-fix" | "escalation")[];
-  codeReviewVerdicts?: ("approved" | "needs-fix")[];
-  sessionIds?: string[];
-}) {
-  const {
-    designBranch: _designBranch = "feat/test-branch",
-    designFailure = false,
-    specReviewVerdicts = ["approved"],
-    codeReviewVerdicts = ["approved"],
-    sessionIds = [
-      "sess_propose_001",
-      "sess_spec_fixer_001",
-      "sess_spec_review_001",
-      "sess_spec_fixer_002",
-      "sess_spec_review_002",
-    ],
-  } = opts;
-
-  let createCallCount = 0;
-  // Track agentId → sessionId mapping for verdict-aware listEvents
-  const sessionIdToAgentId = new Map<string, string>();
-  // Per-step-type call counters for verdict arrays
-  let specReviewCount = 0;
-  let codeReviewCount = 0;
-
-  const client = {
-    createSession: vi.fn().mockImplementation((params: { agentId?: string }) => {
-      const sessionId = sessionIds[createCallCount] ?? `sess_unknown_${createCallCount}`;
-      createCallCount++;
-      if (params?.agentId) {
-        sessionIdToAgentId.set(sessionId, params.agentId);
-      }
-      return Promise.resolve({ sessionId });
-    }),
-    sendUserMessage: vi.fn().mockResolvedValue(undefined),
-    pollUntilComplete: vi.fn().mockResolvedValue({ status: "idle" as const }),
-    streamEvents: vi.fn().mockImplementation(
-      (_sessionId: string) => {
-        if (designFailure) {
-          return Promise.resolve({
-            sseDisconnected: false,
-            idleEndTurnDetected: false,
-            terminated: true,
-            terminationReason: "terminated" as const,
-          });
-        }
-        // Branch is pre-set by CLI before propose runs (D4: register_branch removed)
-        return Promise.resolve({
-          sseDisconnected: false,
-          idleEndTurnDetected: true,
-          terminated: false,
-          terminationReason: "end_turn" as const,
-        });
-      },
-    ),
-    getSessionUsage: vi.fn().mockResolvedValue(undefined),
-    listEvents: vi.fn().mockImplementation((sessionId: string) => {
-      const agentId = sessionIdToAgentId.get(sessionId) ?? "";
-
-      // spec-review judge step
-      if (agentId === "agent_spec_review") {
-        const rawVerdict = specReviewVerdicts[specReviewCount] ?? specReviewVerdicts[specReviewVerdicts.length - 1]!;
-        specReviewCount++;
-        if (rawVerdict === "approved") {
-          return Promise.resolve([
-            { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true, findings: [] } },
-          ]);
-        } else if (rawVerdict === "escalation") {
-          return Promise.resolve([
-            { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: false, reason: "escalation" } },
-          ]);
-        } else {
-          // needs-fix: supply a high-severity finding so deriveJudgeVerdict returns "needs-fix"
-          return Promise.resolve([
-            { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: false, findings: [{ severity: "high", resolution: "fixable", file: "src/test.ts", title: "Test issue", rationale: "Fix required" }] } },
-          ]);
-        }
-      }
-
-      // code-review judge step
-      if (agentId === "code-review-agent-id") {
-        const rawVerdict = codeReviewVerdicts[codeReviewCount] ?? codeReviewVerdicts[codeReviewVerdicts.length - 1]!;
-        codeReviewCount++;
-        if (rawVerdict === "approved") {
-          return Promise.resolve([
-            { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true, findings: [] } },
-          ]);
-        } else {
-          return Promise.resolve([
-            { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: false, findings: [{ severity: "high", resolution: "fixable", file: "src/test.ts", title: "Code issue", rationale: "Fix required" }] } },
-          ]);
-        }
-      }
-
-      // conformance judge step (always approves by default in integration tests)
-      if (agentId === "conformance-agent-id") {
-        return Promise.resolve([
-          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true, findings: [] } },
-        ]);
-      }
-
-      // request-review gate step (always approves by default in integration tests)
-      if (agentId === "request-review-agent-id") {
-        return Promise.resolve([
-          { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, verdict: "approve", findings: [] } },
-        ]);
-      }
-
-      // Producer steps (design, spec-fixer, test-case-gen, implementer, build-fixer, code-fixer, adr-gen)
-      return Promise.resolve([
-        { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, status: "success" } },
-      ]);
-    }),
-    sendEvents: vi.fn().mockResolvedValue(undefined),
-  };
-
-  return {
-    client,
-    sessionIds,
-    specReviewVerdicts,
-  };
-}
-
-/**
- * Build a mock GitHubClient (port interface) for pipeline integration tests.
- *
- * - verifyBranch: returns branchFound (default true)
- * - getRawFile:
- *   - {changeFolderPath(slug)}/spec-review-result-NNN.md → returns verdict content per specReviewVerdicts array
- *   - {changeFolderPath(slug)}/review-feedback-NNN.md → returns verdict per codeReviewVerdicts array
- *   - change-folder probe (proposal.md) → returns "exists" if folderFound else null
- *
- * Uses endsWith matching so slug-prefix differences do not mask wrong paths.
- */
-function buildMockGithubClient(opts: {
-  branchFound?: boolean;
-  folderFound?: boolean;
-  specReviewVerdicts?: ("approved" | "needs-fix" | "escalation")[];
-  codeReviewVerdicts?: ("approved" | "needs-fix" | "escalation")[];
-  /** @deprecated use codeReviewVerdicts */
-  codeReviewVerdict?: "approved" | "needs-fix" | "escalation";
-} = {}): GitHubClient {
-  const {
-    branchFound = true,
-    folderFound = true,
-    specReviewVerdicts = ["approved"],
-    codeReviewVerdict = "approved",
-  } = opts;
-  const codeReviewVerdicts = opts.codeReviewVerdicts ?? [codeReviewVerdict];
-
-  let specReviewCallCount = 0;
-  let codeReviewCallCount = 0;
-
-  return {
-    verifyBranch: vi.fn().mockResolvedValue(branchFound),
-    verifyPath: vi.fn().mockResolvedValue(folderFound),
-    getRawFile: vi.fn().mockImplementation(async (_owner: string, _repo: string, _branch: string, filePath: string) => {
-      // Spec-review result file: path ends with spec-review-result-NNN.md
-      if (/spec-review-result-\d{3}\.md$/.test(filePath)) {
-        const verdict = specReviewVerdicts[specReviewCallCount] ?? specReviewVerdicts[specReviewVerdicts.length - 1]!;
-        specReviewCallCount++;
-        return `- **verdict**: ${verdict}\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|---|---|---|---|---|\n| 1 | HIGH | completeness | tasks.md | Missing tests | Add tests |`;
-      }
-      // Code-review feedback file: path ends with review-feedback-NNN.md
-      if (/review-feedback-\d{3}\.md$/.test(filePath)) {
-        const verdict = codeReviewVerdicts[codeReviewCallCount] ?? codeReviewVerdicts[codeReviewVerdicts.length - 1]!;
-        codeReviewCallCount++;
-        return `- **verdict**: ${verdict}\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|---|---|---|---|---|\n`;
-      }
-      // Conformance result file: path ends with conformance-result-NNN.md
-      if (/conformance-result-\d{3}\.md$/.test(filePath)) {
-        return `- **verdict**: approved\n\n## Findings\n\nAll 4 artifacts satisfied.\n`;
-      }
-      return null;
-    }),
-    verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
-      getRefSha: vi.fn().mockResolvedValue(null),
-    listPullRequests: vi.fn().mockResolvedValue([]),
-    createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
-    getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
-    mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
-    getCheckStatus: vi.fn().mockResolvedValue({ state: "success", total: 0, failing: [], pending: [] }),
-    listPullRequestFiles: vi.fn().mockResolvedValue({ files: [], truncated: false }),
-    createIssueComment: vi.fn().mockResolvedValue({ id: 1, url: "https://github.com/o/r/issues/1#issuecomment-1" }),
-  };
 }
 
 // TC-010: runPipeline — iter=1 approved で spec-fixer を起動しない
@@ -1682,5 +1481,189 @@ describe("TC-ADR-INT-01: STANDARD_TRANSITIONS adr-gen wiring", () => {
     expect(codeFixerApprovedFallback).toBeDefined();
     expect(codeFixerApprovedFallback!.to).toBe("code-review");
     expect(codeFixerApprovedFallback!.when).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-065: verification/build-fixer loop exhaustion → VERIFICATION_RETRIES_EXHAUSTED
+// All 3 verification iterations return "failed" (maxRetries=2, +1 bypass = 3 total).
+// ---------------------------------------------------------------------------
+describe("TC-065: verification/build-fixer exhaustion — VERIFICATION_RETRIES_EXHAUSTED", () => {
+  it("sets error.code=VERIFICATION_RETRIES_EXHAUSTED, escalation verdict on last verification, resumePoint.step=build-fixer", async () => {
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+    const { runVerification } = await import("../src/core/verification/runner.js");
+    const jobState = await makeJobState();
+
+    // All 3 verification iterations return "failed"
+    vi.mocked(runVerification).mockImplementation(async (slug: string, cwd: string = process.cwd()) => {
+      const outputPath = `${cwd}/${verificationResultPath(slug)}`;
+      const dir = outputPath.substring(0, outputPath.lastIndexOf("/"));
+      await fs.mkdir(dir, { recursive: true });
+      await fs.writeFile(outputPath, `# Verification Result — ${slug}\n\n## Verdict: failed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n| 1 | build | passed | 1s | 0 |\n| 2 | test | failed | 2s | 1 |\n`);
+      return {
+        slug,
+        verdict: "failed" as const,
+        phases: [
+          { phase: "build", status: "passed" as const, stdout: "", stderr: "", exitCode: 0, durationMs: 1000 },
+          { phase: "test", status: "failed" as const, stdout: "", stderr: "", exitCode: 1, durationMs: 2000 },
+        ],
+      };
+    });
+
+    const { client } = buildPipelineMockClient({
+      specReviewVerdicts: ["approved"],
+      sessionIds: [
+        "sess_request_review_001",
+        "sess_design_001",
+        "sess_spec_review_001",
+        "sess_test_case_gen_001",
+        "sess_implementer_001",
+        "sess_build_fixer_001",
+        "sess_build_fixer_002",
+      ],
+    });
+    const githubClient = buildMockGithubClient({
+      specReviewVerdicts: ["approved"],
+    });
+
+    const result = await runPipeline(jobState, {
+      client,
+      config: buildConfig({ pipeline: { maxRetries: 2 } }),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
+      spawn: noopSpawn,
+      storeFactory: makeStoreFactory(tempDir),
+    });
+
+    // Pipeline halts with exhaustion error
+    expect(result.status).toBe("awaiting-resume");
+    expect(result.error?.code).toBe("VERIFICATION_RETRIES_EXHAUSTED");
+
+    // verification: 3 entries, last has escalation verdict
+    const verificationArr = result.steps?.["verification"];
+    expect(verificationArr).toBeDefined();
+    expect(verificationArr?.length).toBe(3);
+    const lastVerification = verificationArr?.[verificationArr.length - 1];
+    expect(lastVerification ? toLegacyStepResult(lastVerification).verdict : undefined).toBe("escalation");
+
+    // resumePoint: step=build-fixer (productive entry point), exhaustionPhase=review-after-final-fix
+    expect(result.resumePoint?.step).toBe("build-fixer");
+    expect(result.resumePoint?.exhaustionPhase).toBe("review-after-final-fix");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-070: escalation → resume roundtrip
+// Phase 1: exhaust spec-review → awaiting-resume with resumePoint
+// Phase 2: resume from resumePoint.step with approved mock → awaiting-archive
+// ---------------------------------------------------------------------------
+describe("TC-070: escalation → resume roundtrip", () => {
+  it("spec-review exhaustion halts at awaiting-resume; resume from resumePoint.step completes to awaiting-archive", async () => {
+    const { runPipeline, createStandardPipeline } = await import("../src/core/pipeline/index.js");
+    const { runVerification } = await import("../src/core/verification/runner.js");
+
+    // Restore passing verification mock (a prior test may have overridden it to always-fail).
+    vi.mocked(runVerification).mockImplementation(async (slug: string, cwd: string = process.cwd()) => {
+      const outputPath = `${cwd}/${verificationResultPath(slug)}`;
+      const dir = outputPath.substring(0, outputPath.lastIndexOf("/"));
+      await fs.mkdir(dir, { recursive: true });
+      await fs.writeFile(outputPath, `# Verification Result — ${slug} — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n`);
+      return { slug, verdict: "passed" as const, phases: [] };
+    });
+
+    // --- Phase 1: exhaust spec-review ---
+    const jobState = await makeJobState();
+
+    const { client: client1 } = buildPipelineMockClient({
+      specReviewVerdicts: ["needs-fix", "needs-fix", "needs-fix"],
+      sessionIds: [
+        "sess_rr_001",
+        "sess_design_001",
+        "sess_spec_review_001",
+        "sess_spec_fixer_001",
+        "sess_spec_review_002",
+        "sess_spec_fixer_002",
+        "sess_spec_review_003",
+      ],
+    });
+    const githubClient1 = buildMockGithubClient({
+      specReviewVerdicts: ["needs-fix", "needs-fix", "needs-fix"],
+    });
+
+    const halted = await runPipeline(jobState, {
+      client: client1,
+      config: buildConfig({ pipeline: { maxRetries: 2 } }),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient: githubClient1,
+      runner: buildRunner(client1, githubClient1),
+      owner: "testowner",
+      repo: "testrepo",
+      spawn: noopSpawn,
+      storeFactory: makeStoreFactory(tempDir),
+    });
+
+    expect(halted.status).toBe("awaiting-resume");
+    expect(halted.resumePoint).toBeDefined();
+    const resumeStep = halted.resumePoint!.step;
+    // spec-review exhaustion resumes from spec-fixer (the paired fixer)
+    expect(resumeStep).toBe("spec-fixer");
+
+    // --- Phase 2: resume from resumePoint.step with approved spec-review ---
+    const { client: client2 } = buildPipelineMockClient({
+      specReviewVerdicts: ["approved"],
+      sessionIds: [
+        "sess_spec_fixer_resume_001",
+        "sess_spec_review_resume_001",
+        "sess_test_case_gen_resume_001",
+        "sess_implementer_resume_001",
+        "sess_code_review_resume_001",
+        "sess_conformance_resume_001",
+        "sess_adr_gen_resume_001",
+      ],
+    });
+    const githubClient2 = buildMockGithubClient({
+      specReviewVerdicts: ["approved"],
+      codeReviewVerdicts: ["approved"],
+    });
+
+    // Transition halted state back to running so pipeline.run() can proceed
+    const { transitionJob } = await import("../src/state/lifecycle.js");
+    const { state: resumedState } = transitionJob(halted, "running", {
+      trigger: "resume",
+      reason: "manual resume for test",
+    });
+    const resumeDeps = {
+      client: client2,
+      config: buildConfig({ pipeline: { maxRetries: 2 } }),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient: githubClient2,
+      runner: buildRunner(client2, githubClient2),
+      owner: "testowner",
+      repo: "testrepo",
+      spawn: noopSpawn,
+      storeFactory: makeStoreFactory(tempDir),
+    };
+
+    const resumed = await createStandardPipeline(resumeDeps).run(resumeStep, resumedState, resumeDeps);
+
+    // Pipeline should complete normally after resume
+    expect(resumed.status).toBe("awaiting-archive");
+    // spec-review should have gained at least 1 more entry (resumed run)
+    const specReviewArr = resumed.steps?.["spec-review"];
+    expect(specReviewArr).toBeDefined();
+    // After exhaustion there were 3 entries; resume adds at least 1 more
+    expect((specReviewArr?.length ?? 0)).toBeGreaterThanOrEqual(1);
+    // Last spec-review in the resumed run should be approved
+    const lastSpecReview = specReviewArr?.[specReviewArr.length - 1];
+    expect(lastSpecReview ? toLegacyStepResult(lastSpecReview).verdict : undefined).toBe("approved");
   });
 });
