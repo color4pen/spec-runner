@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "554139cc-1a14-4f0e-bc48-6060f83de40c",
   "createdAt": "2026-06-10T02:55:07.209Z",
-  "updatedAt": "2026-06-10T03:26:47.813Z",
+  "updatedAt": "2026-06-10T04:12:19.356Z",
   "request": {
     "title": "README を公開向けに拡充する（pipeline 概要・コスト目安・前提と対応範囲・0.x 宣言）",
     "type": "chore"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "chore/readme-public-release-554139cc",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-10T03:26:47.808Z"
   },
   "_journal": {
-    "historyCount": 39,
+    "historyCount": 40,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
