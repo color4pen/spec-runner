@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "jobId": "cc90ddee-2f76-4350-9605-d89f2fe6beeb",
+  "createdAt": "2026-06-10T07:33:22.835Z",
+  "updatedAt": "2026-06-10T07:57:11.002Z",
+  "request": {
+    "title": "verification result に実行マシンの絶対パスを残さない",
+    "type": "bug-fix"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "fix/verification-output-path-mask-cc90ddee",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/590",
+    "number": 590,
+    "createdAt": "2026-06-10T07:57:10.994Z"
+  },
+  "_journal": {
+    "historyCount": 39,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

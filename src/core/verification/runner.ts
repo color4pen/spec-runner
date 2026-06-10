@@ -9,6 +9,7 @@
 import { spawn } from "node:child_process";
 import * as fs from "node:fs/promises";
 import { stripSecrets } from "../../util/env-filter.js";
+import { maskAbsolutePaths } from "../../util/path-mask.js";
 import * as path from "node:path";
 import { PHASE_NAMES, PHASE_SCRIPTS } from "./phases.js";
 import type { PhaseName, ScriptPhaseName } from "./phases.js";
@@ -107,10 +108,13 @@ function spawnScript(
 
 /**
  * Write the verification result markdown to the change folder.
+ * Absolute paths in the output are normalized before writing:
+ * paths under cwd become repo-relative; other $HOME paths become ~/…
  */
 async function writeVerificationResult(
   result: VerificationResult,
   outputPath: string,
+  cwd: string,
 ): Promise<void> {
   const iterNum = 1; // iteration number placeholder; caller provides full path
   const lines: string[] = [];
@@ -161,7 +165,8 @@ async function writeVerificationResult(
   }
 
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
-  await fs.writeFile(outputPath, lines.join("\n"), "utf-8");
+  const content = maskAbsolutePaths(lines.join("\n"), { cwd });
+  await fs.writeFile(outputPath, content, "utf-8");
 }
 
 /**
@@ -334,7 +339,7 @@ async function runVerificationCommands(
   };
 
   const outputPath = path.join(cwd, verificationResultPath(slug));
-  await writeVerificationResult(result, outputPath);
+  await writeVerificationResult(result, outputPath, cwd);
 
   return result;
 }
@@ -370,7 +375,7 @@ async function runVerificationPhases(
         errorCode: "PACKAGE_JSON_SCRIPTS_TAMPERED",
       };
       const outputPath = path.join(cwd, verificationResultPath(slug));
-      await writeVerificationResult(result, outputPath);
+      await writeVerificationResult(result, outputPath, cwd);
       return result;
     }
   }
@@ -487,7 +492,7 @@ async function runVerificationPhases(
 
   // Write result file
   const outputPath = path.join(cwd, verificationResultPath(slug));
-  await writeVerificationResult(result, outputPath);
+  await writeVerificationResult(result, outputPath, cwd);
 
   return result;
 }
