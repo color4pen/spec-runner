@@ -67,3 +67,4 @@
 {"type":"transition","ts":"2026-06-10T13:58:12.760Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/secrets-mask-openai/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-10T13:58:09.961Z","endedAt":"2026-06-10T13:58:12.759Z"}
 {"type":"transition","ts":"2026-06-10T13:58:12.770Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-10T16:43:46.965Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
