@@ -120,6 +120,32 @@ describe("TC-REQ-001: buildScaffoldTemplate() embeds type, title, slug", () => {
     expect(content).toContain("## 受け入れ基準");
     expect(content).toContain("`typecheck && test` が green");
   });
+
+  it("includes ## 現状コードの前提 section with comment and placeholder", () => {
+    const content = buildScaffoldTemplate({
+      title: "Test",
+      type: "spec-change",
+      slug: "test-change",
+    });
+    expect(content).toContain("## 現状コードの前提");
+    expect(content).toContain("file:line");
+    // HTML comment with instructions is present
+    expect(content).toContain("design / request-review");
+  });
+
+  it("## 現状コードの前提 appears between ## 背景 and ## 要件", () => {
+    const content = buildScaffoldTemplate({
+      title: "Test",
+      type: "new-feature",
+      slug: "test-feature",
+    });
+    const bgIdx = content.indexOf("## 背景");
+    const factCheckIdx = content.indexOf("## 現状コードの前提");
+    const reqIdx = content.indexOf("## 要件");
+    expect(bgIdx).toBeGreaterThan(-1);
+    expect(factCheckIdx).toBeGreaterThan(bgIdx);
+    expect(reqIdx).toBeGreaterThan(factCheckIdx);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -158,6 +184,40 @@ describe("TC-REQ-002: executeTemplate() writes template to stdout and returns 0"
   });
 });
 
+// ---------------------------------------------------------------------------
+// TC-002: request new の生成ファイルにも「現状コードの前提」節が含まれる
+// ---------------------------------------------------------------------------
+
+describe("TC-002: executeTemplate() output includes ## 現状コードの前提 section", () => {
+  let stdoutSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("output contains ## 現状コードの前提 heading", () => {
+    executeTemplate("new-feature");
+    const written = stdoutSpy.mock.calls.map((c: Parameters<typeof process.stdout.write>) => c[0]).join("");
+    expect(written).toContain("## 現状コードの前提");
+  });
+
+  it("output contains file:line guidance in the section comment", () => {
+    executeTemplate("spec-change");
+    const written = stdoutSpy.mock.calls.map((c: Parameters<typeof process.stdout.write>) => c[0]).join("");
+    expect(written).toContain("file:line");
+  });
+
+  it("output contains design / request-review consumer guidance", () => {
+    executeTemplate("bug-fix");
+    const written = stdoutSpy.mock.calls.map((c: Parameters<typeof process.stdout.write>) => c[0]).join("");
+    expect(written).toContain("design / request-review");
+  });
+});
+
 describe("TC-REQ-003: executeTemplate() with bug-fix type embeds bug-fix", () => {
   let stdoutSpy: ReturnType<typeof vi.spyOn>;
 
@@ -173,6 +233,21 @@ describe("TC-REQ-003: executeTemplate() with bug-fix type embeds bug-fix", () =>
     executeTemplate("bug-fix");
     const written = stdoutSpy.mock.calls.map((c: Parameters<typeof process.stdout.write>) => c[0]).join("");
     expect(written).toContain("**type**: bug-fix");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-REQ-007: ## 現状コードの前提 は任意（validate が green のまま）
+// ---------------------------------------------------------------------------
+
+describe("TC-REQ-007: request without ## 現状コードの前提 still passes validate", () => {
+  it("parseRequestMdContent does not throw when the section is absent", () => {
+    const noFactCheck = buildValidRequestMd();
+    // buildValidRequestMd does NOT include ## 現状コードの前提
+    expect(noFactCheck).not.toContain("## 現状コードの前提");
+    // Should not throw
+    const parsed = parseRequestMdContent(noFactCheck, "<test>");
+    expect(parsed.type).toBe("new-feature");
   });
 });
 

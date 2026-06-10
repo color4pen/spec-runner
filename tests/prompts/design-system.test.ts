@@ -221,6 +221,45 @@ describe("TC-CL-003: buildInitialMessage injects requestType into output", () =>
   });
 });
 
+// TC-FC-001: DESIGN_SYSTEM_PROMPT に現状コード断定の検証工程が含まれる
+describe("TC-FC-001: code assertion verification step is present in DESIGN_SYSTEM_PROMPT", () => {
+  it("contains the fact-check section header", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toContain("現状コード断定の検証");
+  });
+
+  it("instructs to check the entire request, not only the dedicated section", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toMatch(/request 全体が対象|全体.*対象/);
+  });
+
+  it("defines file:line as a verification target", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toMatch(/file:line/);
+  });
+
+  it("defines specific symbol names as a verification target", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toMatch(/シンボル名|symbol/i);
+  });
+
+  it("excludes intentions and future plans from verification", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toMatch(/対象外/);
+    expect(DESIGN_SYSTEM_PROMPT).toMatch(/意図|将来/);
+  });
+});
+
+// TC-FC-002: 不一致時は ok=false + reason で報告する経路が含まれる
+describe("TC-FC-002: ok=false + reason reporting path for mismatch is in DESIGN_SYSTEM_PROMPT", () => {
+  it("mentions report_result with ok: false on mismatch", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toMatch(/ok.*false|ok: false/i);
+  });
+
+  it("mentions reason in the report_result call", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toMatch(/reason/i);
+  });
+
+  it("instructs not to proceed with wrong premise", () => {
+    expect(DESIGN_SYSTEM_PROMPT).toMatch(/誤った前提.*設計|設計.*誤った前提/);
+  });
+});
+
 // TC-001: DESIGN_SYSTEM_PROMPT に "Layer-1 litmus" セクションが含まれる
 describe("TC-001: Layer-1 litmus section is present in DESIGN_SYSTEM_PROMPT", () => {
   it("contains 'Layer-1 litmus' string", () => {

@@ -23,9 +23,10 @@ Your output MUST include all of the following sections in order:
    - \`- **author**: <omit or unknown>\`
 3. A \`## 背景\` section explaining the background and motivation
 4. A \`## 目的\` section (optional but recommended) explaining the purpose
-5. A \`## 要件\` section with numbered requirements
-6. A \`## スコープ外\` section listing out-of-scope items
-7. A \`## 受け入れ基準\` section with checkboxes
+5. A \`## 現状コードの前提\` section (optional) — if the input contains factual assertions about the current codebase state anchored to file:line, specific symbol names, or file paths, collect them here. Omit this section entirely if no such assertions exist. Intentions, policies, and future plans are out of scope for this section.
+6. A \`## 要件\` section with numbered requirements
+7. A \`## スコープ外\` section listing out-of-scope items
+8. A \`## 受け入れ基準\` section with checkboxes
 
 ## Type Inference
 
