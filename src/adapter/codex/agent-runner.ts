@@ -25,6 +25,7 @@ import { getStepExecutionConfig } from "../../config/step-config.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import type { BaseReportResult, ReportToolSpec } from "../../core/port/report-result.js";
 import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
+import { toOpenAIStrictSchema, stripNullDeep } from "./strict-schema.js";
 
 // Minimal interface for the Codex SDK types used here (avoids deep SDK type dependency in tests)
 interface Turn {
@@ -88,7 +89,7 @@ export interface CodexAgentRunnerDeps {
  * Uses the same zod/v4-mini toJSONSchema transformation as toCustomToolSpec() in report-tool.ts.
  */
 function buildOutputSchema(reportTool: ReportToolSpec): object {
-  return toJSONSchema(object(reportTool.zodSchema)) as object;
+  return toOpenAIStrictSchema(toJSONSchema(object(reportTool.zodSchema)) as object);
 }
 
 /**
@@ -98,7 +99,8 @@ function buildOutputSchema(reportTool: ReportToolSpec): object {
 function tryParseToolResult(finalResponse: string, reportTool: ReportToolSpec): BaseReportResult | null {
   try {
     const json: unknown = JSON.parse(finalResponse);
-    const parseResult = reportTool.parseInput(json);
+    const normalized = stripNullDeep(json);
+    const parseResult = reportTool.parseInput(normalized);
     return parseResult.ok ? parseResult.value : null;
   } catch {
     return null;
