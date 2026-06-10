@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "a0bce75c-c074-4870-b44e-a26ee29147e6",
   "createdAt": "2026-06-10T04:25:23.460Z",
-  "updatedAt": "2026-06-10T05:32:45.813Z",
+  "updatedAt": "2026-06-10T06:02:00.149Z",
   "request": {
     "title": "config の zod schema と手書き interface の乖離を typecheck で検出する",
     "type": "chore"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "chore/config-schema-type-parity-a0bce75c",
   "error": null,
   "pipelineId": "standard",
@@ -23,7 +23,7 @@
     "createdAt": "2026-06-10T05:32:45.802Z"
   },
   "_journal": {
-    "historyCount": 52,
+    "historyCount": 53,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
