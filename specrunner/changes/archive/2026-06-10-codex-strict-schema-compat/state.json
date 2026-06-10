@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "68ff72e2-8f29-4eef-a283-2b36c1c77374",
   "createdAt": "2026-06-10T08:18:09.002Z",
-  "updatedAt": "2026-06-10T09:03:06.685Z",
+  "updatedAt": "2026-06-10T09:06:08.423Z",
   "request": {
     "title": "codex adapter の outputSchema を OpenAI strict mode 互換に変換する",
     "type": "bug-fix"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/codex-strict-schema-compat-68ff72e2",
   "error": null,
   "pipelineId": "standard",
@@ -23,7 +23,7 @@
     "createdAt": "2026-06-10T09:03:06.674Z"
   },
   "_journal": {
-    "historyCount": 48,
+    "historyCount": 49,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
