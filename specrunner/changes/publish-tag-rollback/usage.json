@@ -1,0 +1,40 @@
+{
+  "commandInvocations": [
+    {
+      "command": "request-review",
+      "timestamp": "2026-05-28T12:31:36.641Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 5411,
+          "outputTokens": 16,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 8,
+          "outputTokens": 3820,
+          "cacheReadInputTokens": 129787,
+          "cacheCreationInputTokens": 29675
+        }
+      }
+    },
+    {
+      "command": "request-review",
+      "timestamp": "2026-05-29T00:31:05.038Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 4666,
+          "outputTokens": 15,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 8,
+          "outputTokens": 6711,
+          "cacheReadInputTokens": 123517,
+          "cacheCreationInputTokens": 31997
+        }
+      }
+    }
+  ]
+}

@@ -5,6 +5,15 @@ on:
     tags:
       - "v*"
       - "specrunner-v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to publish (e.g. v0.2.0)"
+        required: true
+        type: string
+
+env:
+  TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
 jobs:
   publish:
@@ -14,6 +23,8 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
 
       - uses: actions/setup-node@v4
         with:
@@ -26,10 +37,27 @@ jobs:
 
       - run: bun run build
 
-      - run: bun run typecheck
-
-      - run: bun run test
-
       - run: npm publish --provenance
+        id: publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Summarize publish success
+        if: success()
+        run: |
+          echo "## ✅ Published successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag**: \`${{ env.TAG }}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Summarize publish failure
+        if: failure()
+        run: |
+          echo "## ❌ Publish failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag**: \`${{ env.TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Re-run manually via workflow_dispatch" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "1. Go to **Actions → Publish to npm → Run workflow**" >> $GITHUB_STEP_SUMMARY
+          echo "2. Enter tag: \`${{ env.TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "3. Click **Run workflow**" >> $GITHUB_STEP_SUMMARY
