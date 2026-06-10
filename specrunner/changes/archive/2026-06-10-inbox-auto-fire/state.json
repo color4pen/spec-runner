@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "2d80fb3c-70e1-40e4-8207-7ca27e78dd96",
   "createdAt": "2026-06-10T06:22:23.382Z",
-  "updatedAt": "2026-06-10T07:22:09.977Z",
+  "updatedAt": "2026-06-10T07:24:31.522Z",
   "request": {
     "title": "issue を起点に job を自動発火する one-shot コマンド（承認ラベル起動 + /resume 再開）を追加する",
     "type": "new-feature"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "feat/inbox-auto-fire-2d80fb3c",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-10T07:22:09.967Z"
   },
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
