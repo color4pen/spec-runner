@@ -68,3 +68,4 @@
 {"type":"transition","ts":"2026-06-10T05:32:40.623Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/error-path-test-coverage/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-10T05:32:38.506Z","endedAt":"2026-06-10T05:32:40.621Z"}
 {"type":"transition","ts":"2026-06-10T05:32:40.629Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-10T06:16:44.262Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

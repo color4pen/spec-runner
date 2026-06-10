@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "d341ddc9-d764-47ef-9384-4794b5f6161b",
   "createdAt": "2026-06-10T04:25:13.285Z",
-  "updatedAt": "2026-06-10T05:32:40.629Z",
+  "updatedAt": "2026-06-10T06:16:44.262Z",
   "request": {
     "title": "pipeline の error path（exhaustion / escalation / session 異常）のテストを拡充する",
     "type": "chore"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "chore/error-path-test-coverage-d341ddc9",
   "error": null,
   "pipelineId": "standard",
@@ -23,7 +23,7 @@
     "createdAt": "2026-06-10T05:32:40.620Z"
   },
   "_journal": {
-    "historyCount": 56,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
