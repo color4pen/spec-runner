@@ -51,10 +51,20 @@ type StepName = ...STEP_NAMES;  type AgentStepName = ...AGENT_STEP_NAMES;  type 
 ```ts
 interface BaseReportResult { ok: boolean; reason?: string }
 interface ProducerReportResult extends BaseReportResult { status?: "success" | "error" }
-interface JudgeReportResult   extends BaseReportResult { approved?: boolean }
+interface JudgeReportResult   extends BaseReportResult { approved?: boolean; findings?: Finding[] }
 interface CodeReviewReportResult extends JudgeReportResult { fixableCount?: number }
 ```
 - → `src/core/port/report-result.ts`（`ok` の意味論・routing が読むフィールドは契約側＝型 ＋ `tests/unit/contract/` が正典）
+
+### Finding — judge の指摘単位（verdict 導出の入力）
+```ts
+interface Finding { severity: "critical" | "high" | "medium" | "low";
+  resolution: "fixable" | "decision-needed"; file: string; line?: number; title: string; rationale: string }
+```
+- **不変条件**:
+  - judge 系 step（spec-review / code-review / request-review）の verdict は agent 申告値ではなく findings から CLI が決定的に導出する（純関数 `deriveJudgeVerdict` / `deriveRequestReviewVerdict` / `collectFixableFindings`）。`approved` / `fixableCount` / 申告 `verdict` は導出・routing に影響しない（受理のみ）。
+  - verdict に影響する findings（severity critical / high、または resolution decision-needed）は RuntimeStrategy の実在検証（file / line の存在確認）を通る。
+- → `src/kernel/report-result.ts`（型）/ `src/core/step/judge-verdict.ts`（導出の純関数。fs / child_process を import しない＝B-5）
 
 ### AgentDefinition / ParsedStepResult / Transition
 ```ts

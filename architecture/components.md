@@ -125,8 +125,9 @@ interface FollowUpPolicy { maxAttempts; buildPrompt(input): string }  // DEFAULT
 > domain（filter）を組み上げ・runtime を選び・依存を注入する層。**adapters を new してよい唯一の層**（B-1）。生 SDK 型は持たない（B-2）。
 
 ### RuntimeStrategy — runtime 中立の実行基盤 seam
-- **責務**: agent 実行基盤を runtime 非依存に抽象。workspace 管理・agent 実行・state 永続・cleanup の面を露出。
+- **責務**: agent 実行基盤を runtime 非依存に抽象。workspace 管理・agent 実行・state 永続・finding 参照の実在検証・cleanup の面を露出。
 - **実装**: `LocalRuntime`（worktree or no-worktree + ClaudeCodeRunner + signal cleanup）/ `ManagedRuntime`（SessionClient + ManagedAgentRunner + no-op workspace）。
+- **検証と導出の分担**: finding の file / line 参照の存在確認（I/O、runtime 差異＝local worktree fs / managed GitHub raw fetch）は本 seam（`verifyFindingRefs`）。verdict の導出（純関数）は domain（`core/step/judge-verdict.ts`）。判定を seam に、I/O を domain に置かない（B-5 / B-8 と同方向）。
 - → `src/core/port/runtime-strategy.ts`（`local.ts` / `managed.ts` が implements）
 
 ### createRuntime — runtime factory（分岐集約点）

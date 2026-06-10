@@ -4,10 +4,11 @@
 > 構造の定規は `model.md`（層 / closure / B-1〜B-10）で、本書は「actual がそこへどれだけ収束しているか」の現状記録にすぎない。設計書（`model.md` / `components.md` / `domain-model.md` / `conformance.md`）は時間に依存しない構造のみを持ち、状況断面は持たない。
 > **live な真実**は歯: `tests/unit/architecture/core-invariants.test.ts`（検査）＋ `tests/unit/architecture/arch-allowlist.ts`（既知 divergence の grandfather 台帳、削除のみで縮む ratchet）。本書はその人間向け要約。
 
-## 現状（2026-06-02 時点）
+## 現状（2026-06-10 時点）
 
 - **B-1〜B-10 ＋ §3 DSM closure に対する実 divergence = ゼロ。**
 - `arch-allowlist.ts` の残エントリは `B-1` の `R2-*-adapter` 3件のみ。これは composition-root（`core/runtime/`）が adapter を import する §3 許可 edge の記録であり、**違反ではない**。
+- 定義 doc の追随: judge findings の検証 seam / Finding VO / 導出純関数の所在を `components.md`・`domain-model.md` に反映、構造 ADR `2026-06-10-findings-verification-seam` を ratify 済み。
 
 ## burn-down 履歴（どの change が何を解消したか）
 
