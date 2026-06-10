@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "bb8b4ef3-e777-43ec-b409-be448b36a009",
   "createdAt": "2026-06-10T10:43:13.543Z",
-  "updatedAt": "2026-06-10T11:01:40.103Z",
+  "updatedAt": "2026-06-10T11:05:38.113Z",
   "request": {
     "title": "SECURITY.md を追加する（脆弱性報告窓口の明示）",
     "type": "chore"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "chore/security-policy-bb8b4ef3",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-10T11:01:40.092Z"
   },
   "_journal": {
-    "historyCount": 42,
+    "historyCount": 43,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
