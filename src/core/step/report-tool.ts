@@ -109,12 +109,14 @@ export const JUDGE_REPORT_TOOL: ReportToolSpec<JudgeReportResult> = {
 /**
  * Typed ReportToolSpec for code-review step.
  *
- * Adds approved: boolean (compat), fixableCount: number (compat), and findings array.
+ * Adds approved: boolean (compat) and findings array.
  * verdict is derived by the CLI from findings.
+ * fixableCount: number remains in zodSchema for compat with old prompt caches, but
+ * agents are not required to report it — routing is derived from findings.
  */
 export const CODE_REVIEW_REPORT_TOOL: ReportToolSpec<CodeReviewReportResult> = {
   name: "report_result",
-  description: "Report the completion of this step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string }. The CLI derives the verdict from findings; the 'approved' and 'fixableCount' fields are kept for compatibility but are NOT used for routing. You MUST call this tool before ending your turn.",
+  description: "Report the completion of this step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string }. The CLI derives the verdict from findings; the 'approved' field is kept for compatibility but is NOT used for routing. You MUST call this tool before ending your turn.",
   zodSchema: {
     ok: boolean(),
     reason: optional(string()),

@@ -2,6 +2,7 @@ import type { Verdict, JobState } from "../../state/schema.js";
 import { STEP_NAMES } from "../step/step-names.js";
 import type { CodeReviewReportResult } from "../port/report-result.js";
 import type { Step } from "../step/types.js";
+import { collectFixableFindings } from "../step/judge-verdict.js";
 
 /**
  * Pipeline-level role of a step (convergence / resume semantics).
@@ -63,7 +64,7 @@ export interface PipelineDescriptor {
  *
  * `when` is an optional context predicate. When defined, the transition only
  * fires if `when(state)` returns true. This enables context-aware routing
- * (e.g. code-review approved with fixableCount > 0 → code-fixer).
+ * (e.g. code-review approved with fixable findings ≥ 1 → code-fixer).
  */
 export interface Transition {
   step: string;
@@ -148,14 +149,15 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.BUILD_FIXER, on: "success",   to: STEP_NAMES.VERIFICATION },
   { step: STEP_NAMES.BUILD_FIXER, on: "error",     to: "escalate" },
   // --- code review loop ---
-  // code-review approved + fixableCount > 0 → code-fixer (typed routing)
+  // code-review approved + fixable findings ≥ 1 → code-fixer (findings-derived routing)
   { step: STEP_NAMES.CODE_REVIEW, on: "approved",  to: STEP_NAMES.CODE_FIXER,
     when: (s) => {
       const reviews = s.steps?.["code-review"];
       if (!reviews || reviews.length === 0) return false;
       const lastReview = reviews[reviews.length - 1];
       if (!lastReview) return false;
-      return ((lastReview.outcome?.toolResult as CodeReviewReportResult | null | undefined)?.fixableCount ?? 0) > 0;
+      const findings = (lastReview.outcome?.toolResult as CodeReviewReportResult | null | undefined)?.findings ?? [];
+      return collectFixableFindings(findings).length > 0;
     },
   },
   // code-review approved (no fixable findings) → conformance

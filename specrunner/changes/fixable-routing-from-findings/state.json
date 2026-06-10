@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "jobId": "32e070fb-b860-4957-8039-19443c36546d",
+  "createdAt": "2026-06-10T02:55:03.832Z",
+  "updatedAt": "2026-06-10T03:27:12.942Z",
+  "request": {
+    "title": "code-fixer への approved 時 routing を fixableCount 申告ではなく findings から導出する",
+    "type": "spec-change"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/fixable-routing-from-findings-32e070fb",
+  "error": null,
+  "pipelineId": "standard",
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/578",
+    "number": 578,
+    "createdAt": "2026-06-10T03:27:12.932Z"
+  },
+  "_journal": {
+    "historyCount": 39,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

@@ -272,4 +272,52 @@ describe("CodeFixerStep.buildMessage — findings injection", () => {
     expect(msg).toContain("新しい findings");
     expect(msg).not.toContain("Missing null check");
   });
+
+  it("TC-FF-C-005: initial run with low/medium fixable findings → embedded in prompt, no findingsPath", () => {
+    // Verifies D4: approved + fixable findings route to code-fixer, and those
+    // findings are embedded in the prompt (not read from review-feedback file).
+    const lowMediumFixableFindings: Finding[] = [
+      {
+        severity: "medium",
+        resolution: "fixable",
+        file: "src/core/pipeline/types.ts",
+        line: 45,
+        title: "Unused import",
+        rationale: "Import is declared but never referenced in this file",
+      },
+      {
+        severity: "low",
+        resolution: "fixable",
+        file: "src/core/step/executor.ts",
+        title: "Missing trailing newline",
+        rationale: "File should end with a newline character per style guide",
+      },
+    ];
+
+    const state = makeBaseJobState({
+      step: "code-fixer",
+      steps: {
+        // code-fixer 初回 = 前回 run なし
+        "code-review": [makeStepRun({ findings: lowMediumFixableFindings, verdict: "approved" })],
+      },
+    });
+    const deps = makeMinimalDeps();
+
+    const msg = CodeFixerStep.buildMessage!(state, deps);
+
+    // title must be embedded
+    expect(msg).toContain("Unused import");
+    expect(msg).toContain("Missing trailing newline");
+    // file must be embedded
+    expect(msg).toContain("src/core/pipeline/types.ts");
+    expect(msg).toContain("src/core/step/executor.ts");
+    // rationale must be embedded
+    expect(msg).toContain("Import is declared but never referenced");
+    expect(msg).toContain("File should end with a newline");
+    // Severity labels
+    expect(msg).toContain("[MEDIUM]");
+    expect(msg).toContain("[LOW]");
+    // review-feedback file path should NOT appear — findings are directly embedded
+    expect(msg).not.toContain("review-feedback-001.md");
+  });
 });

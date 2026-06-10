@@ -1,9 +1,9 @@
 /**
  * Unit tests for context-aware (`when`) pipeline transitions.
  *
- * TC-1: code-review approved + fixableCount > 0 → code-fixer (conditional routing)
+ * TC-1: code-review approved + fixable findings ≥ 1 → code-fixer (findings-derived routing)
  * TC-2: code-fixer approved + prior code-review approved → adr-gen
- * TC-3: code-review approved (no fixable) → adr-gen directly
+ * TC-3: code-review approved (no fixable findings) → conformance directly
  * TC-4: `when` なしの既存 transition は従来通り動作 (regression)
  * TC-WHEN-01: code-review approved → code-fixer conditional row has `when` predicate
  * TC-WHEN-02: STANDARD_TRANSITIONS row count
@@ -11,6 +11,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { STANDARD_TRANSITIONS } from "../../../src/core/pipeline/types.js";
 import type { BaseReportResult } from "../../../src/core/port/report-result.js";
+import type { Finding } from "../../../src/kernel/report-result.js";
 import { Pipeline } from "../../../src/core/pipeline/pipeline.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
@@ -190,9 +191,9 @@ describe("TC-WHEN-02: STANDARD_TRANSITIONS row count", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-017/TC-018: code-review approved → code-fixer `when` predicate (fixable routing)
+// TC-017/TC-018: code-review approved → code-fixer `when` predicate (findings-derived routing)
 // ─────────────────────────────────────────────────────────────────────────────
-describe("TC-017/TC-018: code-review approved → code-fixer when predicate (fixable routing)", () => {
+describe("TC-017/TC-018: code-review approved → code-fixer when predicate (findings-derived routing)", () => {
   function getFixableRoutingWhen() {
     const row = STANDARD_TRANSITIONS.find(
       (t) => t.step === "code-review" && t.on === "approved" && t.to === "code-fixer",
@@ -202,7 +203,13 @@ describe("TC-017/TC-018: code-review approved → code-fixer when predicate (fix
     return row!.when!;
   }
 
-  function makeStateWithCodeReviewToolResult(toolResult: BaseReportResult | null): JobState {
+  type ToolResultShape = BaseReportResult & {
+    approved?: boolean;
+    fixableCount?: number;
+    findings?: Finding[];
+  };
+
+  function makeStateWithCodeReviewToolResult(toolResult: ToolResultShape | null): JobState {
     return makeMinimalState("test", {
       "code-review": [
         {
@@ -221,21 +228,68 @@ describe("TC-017/TC-018: code-review approved → code-fixer when predicate (fix
     });
   }
 
-  it("returns true when fixableCount is 3", () => {
+  function makeFixableFinding(overrides: Partial<Finding> = {}): Finding {
+    return {
+      severity: "medium",
+      resolution: "fixable",
+      file: "src/foo.ts",
+      title: "Fixable finding",
+      rationale: "Should be fixed",
+      ...overrides,
+    };
+  }
+
+  it("returns true when findings contain a fixable finding (resolution: fixable)", () => {
     const when = getFixableRoutingWhen();
-    const toolResult = { ok: true, approved: true, fixableCount: 3 } as BaseReportResult;
+    const toolResult: ToolResultShape = {
+      ok: true,
+      approved: true,
+      findings: [makeFixableFinding()],
+    };
     expect(when(makeStateWithCodeReviewToolResult(toolResult))).toBe(true);
   });
 
-  it("returns false when fixableCount is 0", () => {
+  it("returns false when findings is empty", () => {
     const when = getFixableRoutingWhen();
-    const toolResult = { ok: true, approved: true, fixableCount: 0 } as BaseReportResult;
+    const toolResult: ToolResultShape = { ok: true, approved: true, findings: [] };
     expect(when(makeStateWithCodeReviewToolResult(toolResult))).toBe(false);
   });
 
-  it("returns false when toolResult is null (0 fallback)", () => {
+  it("returns false when toolResult is null", () => {
     const when = getFixableRoutingWhen();
     expect(when(makeStateWithCodeReviewToolResult(null))).toBe(false);
+  });
+
+  it("contradiction: fixableCount=0 + fixable findings → true (follows findings)", () => {
+    const when = getFixableRoutingWhen();
+    const toolResult: ToolResultShape = {
+      ok: true,
+      approved: true,
+      fixableCount: 0,
+      findings: [makeFixableFinding()],
+    };
+    expect(when(makeStateWithCodeReviewToolResult(toolResult))).toBe(true);
+  });
+
+  it("contradiction: fixableCount=3 + no findings field → false (follows findings)", () => {
+    const when = getFixableRoutingWhen();
+    const toolResult: ToolResultShape = {
+      ok: true,
+      approved: true,
+      fixableCount: 3,
+      // findings absent — resolves to []
+    };
+    expect(when(makeStateWithCodeReviewToolResult(toolResult))).toBe(false);
+  });
+
+  it("returns false when findings only contains decision-needed (no fixable)", () => {
+    const when = getFixableRoutingWhen();
+    const toolResult: ToolResultShape = {
+      ok: true,
+      approved: true,
+      findings: [makeFixableFinding({ resolution: "decision-needed" })],
+    };
+    expect(when(makeStateWithCodeReviewToolResult(toolResult))).toBe(false);
   });
 });
 

@@ -40,6 +40,21 @@ export function deriveJudgeVerdict(
 }
 
 /**
+ * Collect fixable findings for approved-route routing purposes.
+ * Returns findings where resolution === "fixable".
+ *
+ * At the approved verdict point, critical/high and decision-needed findings do not exist
+ * (they would have triggered needs-fix or escalation). Therefore the returned set is
+ * effectively low/medium fixable findings — candidates for the observation-fix pass via
+ * code-fixer before conformance.
+ *
+ * Pure function — no side effects, no I/O.
+ */
+export function collectFixableFindings(findings: Finding[]): Finding[] {
+  return findings.filter((f) => f.resolution === "fixable");
+}
+
+/**
  * Derive the request-review verdict from findings and ok flag.
  *
  * Blocking finding: severity critical/high OR resolution decision-needed.

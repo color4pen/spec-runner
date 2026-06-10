@@ -11,6 +11,7 @@ import {
   deriveJudgeVerdict,
   deriveRequestReviewVerdict,
   collectVerdictAffectingFindings,
+  collectFixableFindings,
 } from "../../../src/core/step/judge-verdict.js";
 import type { Finding } from "../../../src/kernel/report-result.js";
 
@@ -182,5 +183,36 @@ describe("collectVerdictAffectingFindings", () => {
     expect(result).toContain(decisionNeeded);
     expect(result).not.toContain(medium);
     expect(result).not.toContain(low);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// collectFixableFindings
+// ---------------------------------------------------------------------------
+
+describe("collectFixableFindings", () => {
+  it("returns empty array for empty input", () => {
+    expect(collectFixableFindings([])).toEqual([]);
+  });
+
+  it("returns all findings when all are fixable", () => {
+    const f1 = makeFinding({ severity: "low", resolution: "fixable" });
+    const f2 = makeFinding({ severity: "medium", resolution: "fixable" });
+    expect(collectFixableFindings([f1, f2])).toEqual([f1, f2]);
+  });
+
+  it("returns only fixable findings from mixed input", () => {
+    const fixable = makeFinding({ severity: "medium", resolution: "fixable" });
+    const decisionNeeded = makeFinding({ severity: "medium", resolution: "decision-needed" });
+    const result = collectFixableFindings([fixable, decisionNeeded]);
+    expect(result).toContain(fixable);
+    expect(result).not.toContain(decisionNeeded);
+    expect(result).toHaveLength(1);
+  });
+
+  it("returns empty array when all are decision-needed", () => {
+    const f1 = makeFinding({ severity: "low", resolution: "decision-needed" });
+    const f2 = makeFinding({ severity: "medium", resolution: "decision-needed" });
+    expect(collectFixableFindings([f1, f2])).toEqual([]);
   });
 });
