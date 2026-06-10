@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "14ad991c-1702-4009-ab3d-00d38cb04f25",
   "createdAt": "2026-06-10T13:28:47.254Z",
-  "updatedAt": "2026-06-10T16:29:08.498Z",
+  "updatedAt": "2026-06-10T16:44:28.244Z",
   "request": {
     "title": "成果物の lineage と工程ごとの cost 帰属を可視化する（記述子化 R5）",
     "type": "new-feature"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "feat/artifact-observability-14ad991c",
   "error": null,
   "pipelineId": "standard",
@@ -23,7 +23,7 @@
     "createdAt": "2026-06-10T16:29:08.484Z"
   },
   "_journal": {
-    "historyCount": 67,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
