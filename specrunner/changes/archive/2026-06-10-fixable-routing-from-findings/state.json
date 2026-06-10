@@ -2,7 +2,7 @@
   "version": 1,
   "jobId": "32e070fb-b860-4957-8039-19443c36546d",
   "createdAt": "2026-06-10T02:55:03.832Z",
-  "updatedAt": "2026-06-10T03:27:12.942Z",
+  "updatedAt": "2026-06-10T04:14:37.848Z",
   "request": {
     "title": "code-fixer への approved 時 routing を fixableCount 申告ではなく findings から導出する",
     "type": "spec-change"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/fixable-routing-from-findings-32e070fb",
   "error": null,
   "pipelineId": "standard",
@@ -22,7 +22,7 @@
     "createdAt": "2026-06-10T03:27:12.932Z"
   },
   "_journal": {
-    "historyCount": 39,
+    "historyCount": 40,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
