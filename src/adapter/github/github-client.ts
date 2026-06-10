@@ -574,6 +574,91 @@ export class GitHubApiClient implements GitHubClient {
       },
     });
   }
+
+  /**
+   * Search for open issues with a given label, excluding pull requests.
+   * Follows Link header pagination to fetch all pages.
+   */
+  async searchOpenIssuesByLabel(
+    owner: string,
+    repo: string,
+    label: string,
+  ): Promise<Array<{ number: number; title: string; body: string }>> {
+    const issues: Array<{ number: number; title: string; body: string }> = [];
+    let nextUrl: string | null =
+      `${this.baseUrl}/repos/${owner}/${repo}/issues?labels=${encodeURIComponent(label)}&state=open&per_page=100`;
+
+    while (nextUrl !== null) {
+      const resp = await this.request(nextUrl);
+      if (resp.status !== 200) {
+        throw githubApiError(resp.status, `searchOpenIssuesByLabel(${owner}/${repo} label=${label})`);
+      }
+
+      const data = (await resp.json()) as Array<{
+        number: number;
+        title: string;
+        body: string | null;
+        pull_request?: unknown;
+      }>;
+
+      for (const item of data) {
+        // Exclude pull requests (they appear in the issues endpoint but have pull_request field)
+        if (item.pull_request !== undefined) continue;
+        issues.push({
+          number: item.number,
+          title: item.title,
+          body: item.body ?? "",
+        });
+      }
+
+      const linkHeader = resp.headers.get("Link");
+      nextUrl = parseNextLink(linkHeader);
+    }
+
+    return issues;
+  }
+
+  /**
+   * List all comments on an issue in ascending creation order.
+   * Follows Link header pagination to fetch all pages.
+   */
+  async listIssueComments(
+    owner: string,
+    repo: string,
+    issueNumber: number,
+  ): Promise<Array<{ id: number; body: string; authorAssociation: string; createdAt: string }>> {
+    const comments: Array<{ id: number; body: string; authorAssociation: string; createdAt: string }> = [];
+    let nextUrl: string | null =
+      `${this.baseUrl}/repos/${owner}/${repo}/issues/${issueNumber}/comments?per_page=100`;
+
+    while (nextUrl !== null) {
+      const resp = await this.request(nextUrl);
+      if (resp.status !== 200) {
+        throw githubApiError(resp.status, `listIssueComments(${owner}/${repo}#${issueNumber})`);
+      }
+
+      const data = (await resp.json()) as Array<{
+        id: number;
+        body: string;
+        author_association: string;
+        created_at: string;
+      }>;
+
+      for (const item of data) {
+        comments.push({
+          id: item.id,
+          body: item.body,
+          authorAssociation: item.author_association,
+          createdAt: item.created_at,
+        });
+      }
+
+      const linkHeader = resp.headers.get("Link");
+      nextUrl = parseNextLink(linkHeader);
+    }
+
+    return comments;
+  }
 }
 
 // ---------------------------------------------------------------------------

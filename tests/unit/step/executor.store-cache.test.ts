@@ -104,6 +104,8 @@ function makeMinimalDeps(): Omit<PipelineDeps, "storeFactory"> {
       getCheckStatus: vi.fn().mockResolvedValue({ state: "success", total: 0, failing: [], pending: [] }),
       listPullRequestFiles: vi.fn().mockResolvedValue({ files: [], truncated: false }),
       createIssueComment: vi.fn().mockResolvedValue({ id: 1, url: "https://github.com/o/r/issues/1#issuecomment-1" }),
+    searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
+    listIssueComments: vi.fn().mockResolvedValue([]),
     },
     owner: "testowner",
     repo: "testrepo",

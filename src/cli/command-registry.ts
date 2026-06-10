@@ -16,6 +16,7 @@ import { runArchive } from "./archive.js";
 import { runCancel } from "./cancel.js";
 import { runResume } from "./resume.js";
 import { runJobShow } from "./job-show.js";
+import { runInboxRun } from "./inbox.js";
 import { executeTemplate, executeValidate } from "../core/command/request.js";
 import { executeCreate } from "../core/command/request-create.js";
 import { executeList } from "../core/command/request-list.js";
@@ -82,6 +83,9 @@ Environment commands:
   doctor                          Diagnose environment / config / auth prerequisites
   runtime setup|status|reset      Manage Anthropic runtime resources
 
+Inbox commands:
+  inbox run                       issue から job を自動発火 (承認ラベル + /resume)
+
 Aliases:
   run <slug|file>                 job start の互換 alias
 
@@ -144,6 +148,21 @@ Options:
 export const MANAGED_RESET_USAGE = RUNTIME_RESET_USAGE;
 
 export const NO_DETAILED_HELP_USAGE = "No detailed help available.\nRun 'specrunner --help' for the command list.\n";
+
+export const INBOX_RUN_USAGE = `Usage: specrunner inbox run [options]
+
+Scan GitHub issues for approval-labeled and /resume-triggered events.
+Starts new jobs from approved issues and resumes awaiting-resume jobs.
+Exits after one pass. Does not run as a daemon.
+
+Options:
+  --dry-run          Show what would happen without executing any effects
+  --limit <n>        Override inbox.maxStartsPerRun config for this run (0 = no new starts)
+  --json             Output structured JSON result
+  --verbose          More detailed output
+  --quiet            Suppress informational output
+  --help, -h         Show this help message
+`;
 
 export const ARCHIVE_USAGE = `Usage: specrunner job archive <slug> [options]
 
@@ -499,6 +518,43 @@ export const COMMANDS: Record<string, CommandEntry> = {
             stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
             process.exit(1);
           }
+        },
+      },
+    },
+  },
+
+  inbox: {
+    guardedSubcommands: new Set(["run"]),
+    subcommands: {
+      run: {
+        usage: INBOX_RUN_USAGE,
+        flags: {
+          "dry-run": { type: "boolean" },
+          limit: { type: "string" },
+          json: { type: "boolean" },
+          verbose: { type: "boolean" },
+          quiet: { type: "boolean" },
+        },
+        handler: async (parsed) => {
+          const limitRaw = parsed.flags["limit"] as string | undefined;
+          let limit: number | undefined;
+          if (limitRaw !== undefined) {
+            const n = Number(limitRaw);
+            if (!Number.isInteger(n) || n < 0) {
+              logError(`--limit requires a non-negative integer (got: ${limitRaw})`);
+              process.exit(EXIT_CODE.ARG_ERROR);
+            }
+            limit = n;
+          }
+          process.exit(
+            await runInboxRun({
+              dryRun: !!parsed.flags["dry-run"],
+              limit,
+              json: !!parsed.flags["json"],
+              verbose: !!parsed.flags["verbose"],
+              quiet: !!parsed.flags["quiet"],
+            }),
+          );
         },
       },
     },

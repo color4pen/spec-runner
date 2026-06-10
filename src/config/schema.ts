@@ -198,6 +198,46 @@ export interface GitHubHostConfig {
   apiBaseUrl?: string;
 }
 
+/**
+ * Default label name that marks an issue as approved for automatic job start.
+ */
+export const DEFAULT_INBOX_APPROVE_LABEL = "specrunner-approved";
+
+/**
+ * Default maximum number of new jobs to start in a single `inbox run` invocation.
+ * 0 means no new starts (resume-only mode).
+ */
+export const DEFAULT_INBOX_MAX_STARTS_PER_RUN = 3;
+
+/**
+ * Inbox command configuration.
+ * Controls automatic issue-to-job dispatch via `specrunner inbox run`.
+ */
+export interface InboxConfig {
+  /**
+   * GitHub label name that marks an issue as approved for automatic job start.
+   * Default: "specrunner-approved".
+   */
+  approveLabel?: string;
+  /**
+   * Maximum number of new jobs to start in a single `inbox run` invocation.
+   * 0 = resume-only mode (no new starts).
+   * Default: 3.
+   */
+  maxStartsPerRun?: number;
+}
+
+/**
+ * Resolve InboxConfig with defaults applied.
+ * Returns a fully-resolved config with all fields present.
+ */
+export function resolveInboxConfig(config: SpecRunnerConfig): Required<InboxConfig> {
+  return {
+    approveLabel: config.inbox?.approveLabel ?? DEFAULT_INBOX_APPROVE_LABEL,
+    maxStartsPerRun: config.inbox?.maxStartsPerRun ?? DEFAULT_INBOX_MAX_STARTS_PER_RUN,
+  };
+}
+
 export interface SpecRunnerConfig {
   version: 1;
   /**
@@ -264,6 +304,11 @@ export interface SpecRunnerConfig {
    * Controls --with-merge wait behaviour (timeout, poll interval).
    */
   archive?: ArchiveConfig;
+  /**
+   * Inbox command configuration.
+   * Controls automatic issue-to-job dispatch via `specrunner inbox run`.
+   */
+  inbox?: InboxConfig;
 }
 
 /**
@@ -299,6 +344,8 @@ export interface RawConfig {
   github?: Partial<Record<string, unknown>>;
   /** Archive configuration — passed through as-is. Validated in validateConfig(). */
   archive?: Partial<Record<string, unknown>>;
+  /** Inbox configuration — passed through as-is. Validated in validateConfig(). */
+  inbox?: Partial<Record<string, unknown>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -550,6 +597,24 @@ export const configSchema = object({
               minLength(1, "must be a non-empty string."),
             ),
             "must be an array.",
+          ),
+        ),
+      },
+      "must be an object.",
+    ),
+  ),
+  inbox: optional(
+    object(
+      {
+        approveLabel: optional(
+          string("must be a non-empty string.").check(
+            minLength(1, "must be a non-empty string."),
+          ),
+        ),
+        maxStartsPerRun: optional(
+          number("must be a non-negative integer.").check(
+            int("must be a non-negative integer."),
+            gte(0, "must be a non-negative integer."),
           ),
         ),
       },

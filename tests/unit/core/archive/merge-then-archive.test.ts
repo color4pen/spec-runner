@@ -62,6 +62,8 @@ function makeGitHubClient(overrides: Partial<GitHubClient> = {}): GitHubClient {
     getCheckStatus: vi.fn().mockResolvedValue(SUCCESS_ROLLUP),
     listPullRequestFiles: vi.fn().mockResolvedValue({ files: [], truncated: false }),
     createIssueComment: vi.fn().mockResolvedValue({ id: 1, url: "https://github.com/o/r/issues/1#issuecomment-1" }),
+    searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
+    listIssueComments: vi.fn().mockResolvedValue([]),
     ...overrides,
   };
 }

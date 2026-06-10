@@ -194,4 +194,44 @@ export interface GitHubClient {
     repo: string,
     prNumber: number,
   ): Promise<{ files: string[]; truncated: boolean }>;
+
+  /**
+   * Search for open issues with a given label, excluding pull requests.
+   * Calls GET /repos/{owner}/{repo}/issues?labels=<label>&state=open with per_page=100,
+   * following Link: rel="next" for pagination.
+   *
+   * - Returns array of { number, title, body } for each matching issue.
+   * - Pull requests (items with pull_request field) are excluded.
+   * - body is normalized: null values are returned as empty string.
+   * - Throws SpecRunnerError(GITHUB_API_ERROR) on non-200 responses.
+   * - Throws SpecRunnerError(GITHUB_TOKEN_EXPIRED) on 401 (via shared request() layer).
+   *
+   * @param owner  Repository owner (user or org name).
+   * @param repo   Repository name.
+   * @param label  Label name to filter by.
+   */
+  searchOpenIssuesByLabel(
+    owner: string,
+    repo: string,
+    label: string,
+  ): Promise<Array<{ number: number; title: string; body: string }>>;
+
+  /**
+   * List all comments on an issue, in ascending creation order.
+   * Calls GET /repos/{owner}/{repo}/issues/{issueNumber}/comments with per_page=100,
+   * following Link: rel="next" for pagination.
+   *
+   * - Returns array of { id, body, authorAssociation, createdAt } for each comment.
+   * - Throws SpecRunnerError(GITHUB_API_ERROR) on non-200 responses.
+   * - Throws SpecRunnerError(GITHUB_TOKEN_EXPIRED) on 401 (via shared request() layer).
+   *
+   * @param owner        Repository owner (user or org name).
+   * @param repo         Repository name.
+   * @param issueNumber  GitHub issue number.
+   */
+  listIssueComments(
+    owner: string,
+    repo: string,
+    issueNumber: number,
+  ): Promise<Array<{ id: number; body: string; authorAssociation: string; createdAt: string }>>;
 }

@@ -21,6 +21,52 @@ interface NotifyCtx {
   repo: string;
 }
 
+/** The HTML comment prefix used in all specrunner notification comments. */
+export const NOTIFICATION_COMMENT_PREFIX = "<!-- specrunner:notification";
+
+/**
+ * Returns true if the given comment body is a specrunner notification comment
+ * (i.e. contains the notification marker prefix).
+ * Used to distinguish bot-generated comments from human comments.
+ */
+export function isNotificationComment(body: string): boolean {
+  return body.includes(NOTIFICATION_COMMENT_PREFIX);
+}
+
+/**
+ * Returns true if the given comment body contains the escalation marker
+ * for the specified jobId.
+ *
+ * @param body   Comment body to inspect.
+ * @param jobId  Job ID to match against the escalation marker.
+ */
+export function matchesEscalationMarker(body: string, jobId: string): boolean {
+  return body.includes(buildMarker("escalation", jobId));
+}
+
+/**
+ * Build the body for a validation failure (reject) comment on an issue.
+ * Includes the notification marker so the bot's comment can be identified
+ * and excluded from future inbox scans.
+ *
+ * @param issueNumber   GitHub issue number (informational only).
+ * @param validateError Human-readable validation error message.
+ */
+export function buildRejectComment(issueNumber: number, validateError: string): string {
+  // Use a synthetic jobId-free marker to mark this as a bot notification.
+  // We use a fixed placeholder so the comment is identifiable but not job-specific.
+  const marker = `${NOTIFICATION_COMMENT_PREFIX} kind="reject" issue="${issueNumber}" version="1" -->`;
+  return [
+    marker,
+    "",
+    "Could not start job: request.md validation failed.",
+    "",
+    `Error: ${validateError}`,
+    "",
+    "Please fix the issue body to match request.md format and re-apply the approval label.",
+  ].join("\n");
+}
+
 /**
  * Build the machine-readable HTML comment marker for a notification.
  *

@@ -127,11 +127,139 @@ specrunner runtime status                  Show managed runtime status
 specrunner runtime reset                   Reset managed runtime config
 ```
 
+### Inbox commands (GitHub issue automation)
+
+```
+specrunner inbox run                       Poll approved issues, start / resume jobs
+```
+
 ### Aliases
 
 ```
 specrunner run <slug|file>                 Alias for: job start <slug|file>
 ```
+
+## Inbox — Automated Issue-to-Job Routing
+
+`specrunner inbox run` polls your GitHub repository for issues with the approval label (default: `specrunner-approved`) and:
+
+- **Starts** new jobs from unlinked issues whose body is a valid `request.md`
+- **Resumes** jobs in `awaiting-resume` state when a qualifying `/resume` comment is found
+- **Rejects** issues whose body fails `request.md` validation (posts a comment with the error)
+
+### Idempotency
+
+Each run is safe to call any number of times without side-effects:
+
+- **Issue linkage**: once a job has been started for an issue, that issue is skipped on every subsequent run regardless of job status
+- **Resume gating**: only `/resume` comments posted **strictly after** the escalation marker (the comment SpecRunner posts when a job escalates) are considered; earlier comments and bot-generated comments are ignored
+
+### Approval label workflow
+
+1. Create a GitHub issue whose body follows the `request.md` format (see `specrunner request template`)
+2. Apply the approval label (`specrunner-approved` by default) to the issue
+3. On the next `inbox run`, SpecRunner writes the issue body as a draft `request.md` and starts the pipeline
+
+To stop an issue from being processed, remove the label before the next run.
+
+### `/resume` workflow
+
+When a job escalates and requires human input, SpecRunner posts an escalation comment on the linked issue. To resume:
+
+1. Read the escalation comment to understand what decision is needed
+2. Post a new issue comment starting with `/resume` followed by your instructions:
+   ```
+   /resume Use option B. Skip the cache layer and go with the simpler approach.
+   ```
+3. On the next `inbox run`, SpecRunner resumes the job with your prompt as context
+
+Only comments by users with `OWNER`, `MEMBER`, or `COLLABORATOR` association on the repository are accepted.
+
+### Scheduling
+
+Run `inbox run` on a schedule so issues are processed automatically.
+
+**cron (Linux/macOS)**
+
+```cron
+*/5 * * * * cd /path/to/repo && npx specrunner inbox run --quiet
+```
+
+**launchd (macOS)**
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.yourteam.specrunner-inbox</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/npx</string>
+    <string>specrunner</string>
+    <string>inbox</string>
+    <string>run</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/path/to/repo</string>
+  <key>StartInterval</key>
+  <integer>300</integer>
+  <key>RunAtLoad</key>
+  <true/>
+</dict>
+</plist>
+```
+
+**GitHub Actions**
+
+Three complementary triggers cover the common automation patterns. The `concurrency` group prevents overlapping runs.
+
+```yaml
+name: SpecRunner Inbox
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"         # poll every 10 minutes
+  issues:
+    types: [labeled]               # fire immediately when label is applied
+  issue_comment:
+    types: [created]               # fire immediately on new comments
+
+concurrency:
+  group: specrunner-inbox
+  cancel-in-progress: false        # let in-flight runs finish; queue the next
+
+jobs:
+  inbox-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run inbox
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx specrunner inbox run
+```
+
+For the `issues.labeled` trigger you may add a filter so the workflow only fires on the approval label:
+
+```yaml
+  issues:
+    types: [labeled]
+# in the job:
+    if: github.event.label.name == 'specrunner-approved'
+```
+
+### Trust boundary
+
+Issue bodies and `/resume` comment text are passed directly to agent prompts.
+
+- The approval label is the entry gate: only issues a repository member explicitly labels are processed
+- `/resume` comments are gated to `OWNER`, `MEMBER`, and `COLLABORATOR` associations; external contributors cannot inject prompts
+
+**Running `inbox run` on repositories with untrusted issue content is not recommended.** A repository member with label-apply permission could craft a malicious issue body.
 
 ## Configuration
 
@@ -164,6 +292,23 @@ The project local config is **deep-merged** on top of the user global config —
 ```
 
 This example uses opus for design on `spec-change` / `new-feature` requests and sonnet for everything else (from user global).
+
+### Inbox configuration
+
+```jsonc
+// <repo-root>/.specrunner/config.json
+{
+  "inbox": {
+    "approveLabel": "specrunner-approved", // label to poll for; default: "specrunner-approved"
+    "maxStartsPerRun": 3                   // max new jobs started per run; 0 = resume-only; default: 3
+  }
+}
+```
+
+| Key | Default | Description |
+|---|---|---|
+| `inbox.approveLabel` | `"specrunner-approved"` | GitHub label name that marks an issue as ready to start |
+| `inbox.maxStartsPerRun` | `3` | Maximum number of new jobs started in one `inbox run` invocation. `0` disables new starts (resume-only mode). |
 
 ### byRequestType — per-request-type model selection
 
