@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { FinishFs } from "../../finish/types.js";
 import type { SpawnFn } from "../../../util/spawn.js";
 import type { JobState } from "../../../state/schema.js";
-import { livenessJsonPath, managedMarkerPath, draftsDir } from "../../../util/paths.js";
+import { livenessJsonPath, managedMarkerPath, draftsDir, localSidecarDir } from "../../../util/paths.js";
 import * as nodePath from "node:path";
 
 // ---------------------------------------------------------------------------
@@ -251,6 +251,76 @@ describe("archive orchestrator — Phase 2 marker / sidecar cleanup", () => {
     expect(result.exitCode).toBe(0);
     const calls = vi.mocked(stderrWrite).mock.calls.map(([msg]) => msg as string);
     expect(calls.some((m) => m.includes("Warning") && m.includes("marker"))).toBe(true);
+  });
+
+  it("T-sidecar-01: fs.rm is called with localSidecarDir path after successful archive", async () => {
+    const mockFs = makeFs();
+    const worktreeManager = makeWorktreeManager();
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: makeSpawn(),
+      fs: mockFs,
+      worktreeManagerFn: () => worktreeManager,
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    const expectedSidecarPath = nodePath.join(FAKE_CWD, localSidecarDir(FAKE_SLUG));
+    expect(vi.mocked(mockFs.rm)).toHaveBeenCalledWith(
+      expectedSidecarPath,
+      { recursive: true, force: true },
+    );
+  });
+
+  it("T-sidecar-02: fs.rm throwing for sidecar dir does not affect exitCode (best-effort)", async () => {
+    const mockFs: FinishFs & { unlink: ReturnType<typeof vi.fn>; rm: ReturnType<typeof vi.fn> } = {
+      ...makeFs(),
+      rm: vi.fn((p: string) => {
+        if (p === nodePath.join(FAKE_CWD, localSidecarDir(FAKE_SLUG))) {
+          return Promise.reject(new Error("EPERM"));
+        }
+        return Promise.resolve();
+      }),
+    };
+    const worktreeManager = makeWorktreeManager();
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: makeSpawn(),
+      fs: mockFs,
+      worktreeManagerFn: () => worktreeManager,
+    });
+
+    expect(result.exitCode).toBe(0);
+  });
+
+  it("T-sidecar-03: fs.rm EACCES for sidecar dir emits a Warning via stderrWrite", async () => {
+    vi.mocked(stderrWrite).mockClear();
+    const mockFs: FinishFs & { unlink: ReturnType<typeof vi.fn>; rm: ReturnType<typeof vi.fn> } = {
+      ...makeFs(),
+      rm: vi.fn((p: string) => {
+        if (p === nodePath.join(FAKE_CWD, localSidecarDir(FAKE_SLUG))) {
+          return Promise.reject(Object.assign(new Error("EACCES"), { code: "EACCES" }));
+        }
+        return Promise.resolve();
+      }),
+    };
+    const worktreeManager = makeWorktreeManager();
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: makeSpawn(),
+      fs: mockFs,
+      worktreeManagerFn: () => worktreeManager,
+    });
+
+    expect(result.exitCode).toBe(0);
+    const calls = vi.mocked(stderrWrite).mock.calls.map(([msg]) => msg as string);
+    expect(calls.some((m) => m.includes("Warning") && m.includes(FAKE_SLUG))).toBe(true);
   });
 
   it("TC-014: drafts/<slug> directory is removed via fs.rm during archive", async () => {
