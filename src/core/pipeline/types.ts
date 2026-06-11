@@ -1,17 +1,17 @@
 import type { Verdict, JobState } from "../../state/schema.js";
 import { STEP_NAMES } from "../step/step-names.js";
-import type { CodeReviewReportResult } from "../port/report-result.js";
 import type { Step } from "../step/types.js";
-import { collectFixableFindings } from "../step/judge-verdict.js";
+import { buildReviewerChainTransitions } from "./reviewer-chain.js";
 
 /**
  * Pipeline-level role of a step (convergence / resume semantics).
- * creator  — generates the phase artifact; one per phase.
- * reviewer — verdict-driven loop step; one per phase; retry exhaustion re-routes to paired fixer.
- * fixer    — repairs findings from a reviewer or gate; may have multiple per phase.
- * gate     — deterministic check or linear-progress step (verification, pr-create, etc.).
+ * creator         — generates the phase artifact; one per phase.
+ * reviewer        — verdict-driven loop step; one per phase; retry exhaustion re-routes to paired fixer.
+ * custom-reviewer — project-defined reviewer injected after code-review; shares code-fixer.
+ * fixer           — repairs findings from a reviewer or gate; may have multiple per phase.
+ * gate            — deterministic check or linear-progress step (verification, pr-create, etc.).
  */
-export type StepRole = "creator" | "reviewer" | "fixer" | "gate";
+export type StepRole = "creator" | "reviewer" | "custom-reviewer" | "fixer" | "gate";
 
 /** Pipeline phase a step belongs to. */
 export type StepPhase = "spec" | "impl";
@@ -56,6 +56,14 @@ export interface PipelineDescriptor {
    * When absent (or the step is not in the pipeline), no summary is emitted.
    */
   summaryStep?: string;
+  /**
+   * Per-step maxIterations overrides.
+   * When set for a step name, Pipeline uses this value instead of the global maxIterations
+   * for exhaustion checks on that step. Used for custom reviewers which may have
+   * different convergence budgets than the pipeline default.
+   * Keys are step names; absent = use global maxIterations.
+   */
+  maxIterationsByStep?: Readonly<Record<string, number>>;
 }
 
 /**
@@ -148,34 +156,13 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.VERIFICATION, on: "escalation", to: "escalate" },
   { step: STEP_NAMES.BUILD_FIXER, on: "success",   to: STEP_NAMES.VERIFICATION },
   { step: STEP_NAMES.BUILD_FIXER, on: "error",     to: "escalate" },
-  // --- code review loop ---
-  // code-review approved + fixable findings ≥ 1 → code-fixer (findings-derived routing)
-  { step: STEP_NAMES.CODE_REVIEW, on: "approved",  to: STEP_NAMES.CODE_FIXER,
-    when: (s) => {
-      const reviews = s.steps?.["code-review"];
-      if (!reviews || reviews.length === 0) return false;
-      const lastReview = reviews[reviews.length - 1];
-      if (!lastReview) return false;
-      const findings = (lastReview.outcome?.toolResult as CodeReviewReportResult | null | undefined)?.findings ?? [];
-      return collectFixableFindings(findings).length > 0;
-    },
-  },
-  // code-review approved (no fixable findings) → conformance
-  { step: STEP_NAMES.CODE_REVIEW, on: "approved",  to: STEP_NAMES.CONFORMANCE },
-  { step: STEP_NAMES.CODE_REVIEW, on: "needs-fix", to: STEP_NAMES.CODE_FIXER },
+  // --- code review loop (generalized via buildReviewerChainTransitions) ---
+  // For the standard pipeline (no custom reviewers), chain = ["code-review"].
+  // The generated transitions are functionally identical to the previous hardcoded rows.
+  // When custom reviewers are present, composeReviewerDescriptor regenerates transitions
+  // with the full chain; STANDARD_TRANSITIONS is only used for the base (no-reviewer) case.
   // code-review escalation removed (R3 cutover): judge halt via loop exhaustion only
-  // code-fixer → conformance (when: 直前 code-review が approved = observation fix 完了)
-  { step: STEP_NAMES.CODE_FIXER,  on: "approved",  to: STEP_NAMES.CONFORMANCE,
-    when: (s) => {
-      const reviews = s.steps?.["code-review"];
-      if (!reviews || reviews.length === 0) return false;
-      const lastReview = reviews[reviews.length - 1];
-      return lastReview?.outcome?.verdict === "approved";
-    },
-  },
-  // code-fixer → code-review (needs-fix 由来 — fallback, when なし)
-  { step: STEP_NAMES.CODE_FIXER,  on: "approved",  to: STEP_NAMES.CODE_REVIEW },
-  { step: STEP_NAMES.CODE_FIXER,  on: "error",     to: "escalate" },
+  ...buildReviewerChainTransitions([STEP_NAMES.CODE_REVIEW]),
   // --- conformance (acceptance gate, after code-review approved) ---
   { step: STEP_NAMES.CONFORMANCE, on: "approved",  to: STEP_NAMES.ADR_GEN },
   { step: STEP_NAMES.CONFORMANCE, on: "needs-fix", to: STEP_NAMES.IMPLEMENTER },

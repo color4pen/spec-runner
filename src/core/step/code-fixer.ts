@@ -6,11 +6,12 @@ import type { JobState } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
 import { CODE_FIXER_SYSTEM_PROMPT } from "../../prompts/code-fixer-system.js";
 import { branchNotSetError } from "../../errors.js";
-import { changeFolderPath, reviewFeedbackPath } from "../../util/paths.js";
+import { changeFolderPath, resolveReviewerResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { latestIteration } from "./io-iteration.js";
 import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock } from "./fixer-helpers.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
+import { deriveImplReviewerChain, resolveActiveReviewer } from "../pipeline/reviewer-chain.js";
 
 const CODE_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -65,8 +66,10 @@ export const CodeFixerStep: AgentStep = {
   maxTurns: 30,
 
   reads(state: JobState, deps: StepDeps): IoRef[] {
+    const chain = deriveImplReviewerChain(state);
+    const activeReviewer = resolveActiveReviewer(state, chain);
     return [
-      { path: reviewFeedbackPath(deps.slug, latestIteration(state, STEP_NAMES.CODE_REVIEW)) },
+      { path: resolveReviewerResultPath(deps.slug, activeReviewer, latestIteration(state, activeReviewer)) },
     ];
   },
 
@@ -80,12 +83,20 @@ export const CodeFixerStep: AgentStep = {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.CODE_FIXER);
     const branch = state.branch;
 
+    // Resolve the active reviewer so code-fixer reads from the correct findings file.
+    const chain = deriveImplReviewerChain(state);
+    const activeReviewer = resolveActiveReviewer(state, chain);
+
     // Derive findingsPath from reads declaration (D4: replace state-lookup halt).
     // Existence is guaranteed by pre-execution validation (STEP_INPUT_MISSING).
-    const findingsPath = reviewFeedbackPath(deps.slug, latestIteration(state, STEP_NAMES.CODE_REVIEW));
+    const findingsPath = resolveReviewerResultPath(deps.slug, activeReviewer, latestIteration(state, activeReviewer));
 
-    // Get structured findings from the latest code-review run (if available)
-    const findings = getLatestJudgeFindings(state, STEP_NAMES.CODE_REVIEW);
+    // Get structured findings from the latest active reviewer run (if available)
+    const findings = getLatestJudgeFindings(state, activeReviewer);
+
+    // For custom reviewers, include name in findings source identification.
+    // Standard code-review uses no prefix (backward compat).
+    const reviewerNameForMessage = activeReviewer !== STEP_NAMES.CODE_REVIEW ? activeReviewer : undefined;
 
     // Session 継続の場合は短縮 prompt（前回コンテキストが session に残っているため）
     if (isFixerContinuation(state, STEP_NAMES.CODE_FIXER)) {
@@ -94,12 +105,13 @@ export const CodeFixerStep: AgentStep = {
         findingsPath,
         slug: deps.slug,
         findings,
+        reviewerName: reviewerNameForMessage,
       });
     }
 
     // 初回: findings がある場合は埋め込む、ない場合は findingsPath 方式にフォールバック
     if (findings && findings.length > 0) {
-      const findingsBlock = buildFindingsBlock(findings);
+      const findingsBlock = buildFindingsBlock(findings, reviewerNameForMessage);
       return `<user-request>
 You are the code-fixer for the following change:
 

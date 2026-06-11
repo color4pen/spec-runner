@@ -71,6 +71,8 @@ export function buildInitialJobState(params: {
   request: RequestInfo;
   repository: RepositoryInfo;
   pipelineId?: string;
+  /** Reviewer snapshots loaded and validated at job start. Absent = no custom reviewers. */
+  reviewers?: import("../core/reviewers/types.js").ReviewerSnapshot[];
 }): JobState {
   const jobId = randomUUID();
   const now = new Date().toISOString();
@@ -82,7 +84,7 @@ export function buildInitialJobState(params: {
     message: "job created",
   };
 
-  return {
+  const state: JobState = {
     version: 2,
     jobId,
     createdAt: now,
@@ -101,6 +103,12 @@ export function buildInitialJobState(params: {
     error: null,
     pipelineId: params.pipelineId ?? STANDARD_PIPELINE_ID,
   };
+
+  if (params.reviewers && params.reviewers.length > 0) {
+    state.reviewers = params.reviewers;
+  }
+
+  return state;
 }
 
 // ---------------------------------------------------------------------------

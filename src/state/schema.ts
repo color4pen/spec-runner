@@ -7,6 +7,7 @@ export type JobStatus = "running" | "awaiting-resume" | "awaiting-archive" | "fa
 import type { ModelUsage } from "../kernel/model-usage.js";
 import type { BaseReportResult, Finding } from "../kernel/report-result.js";
 import type { AgentStepName as AgentStepNameUnion } from "../kernel/agent-definition.js";
+import type { ReviewerSnapshot } from "../kernel/reviewer-snapshot.js";
 /**
  * Re-export from canonical location in the kernel layer.
  * Both the port layer and state layer reference this single definition.
@@ -238,6 +239,13 @@ export interface JobState {
    * Optional for backward compat — absent/null in existing state files is valid.
    */
   staleRecovery?: { attempts: number; stepCount: number } | null;
+  /**
+   * Snapshot of custom reviewer definitions captured at job start.
+   * Used by composeReviewerDescriptor to build the pipeline shape for this job.
+   * Absent in legacy state files and jobs with no custom reviewers (treated as []).
+   * Optional for backward compat.
+   */
+  reviewers?: ReviewerSnapshot[];
 }
 
 /**
@@ -432,6 +440,25 @@ export function validateJobState(raw: unknown): JobState {
     const n = obj["issueNumber"];
     if (typeof n !== "number" || !Number.isInteger(n) || n <= 0) {
       throw new Error("issueNumber must be a positive integer when present.");
+    }
+  }
+
+  // Validate reviewers when present (backward compat: absence is OK → treated as [])
+  if ("reviewers" in obj && obj["reviewers"] !== null && obj["reviewers"] !== undefined) {
+    if (!Array.isArray(obj["reviewers"])) {
+      throw new Error("reviewers must be an array when present.");
+    }
+    for (const r of obj["reviewers"] as unknown[]) {
+      if (typeof r !== "object" || r === null) {
+        throw new Error("Each entry in reviewers must be an object.");
+      }
+      const rObj = r as Record<string, unknown>;
+      if (typeof rObj["name"] !== "string" || !rObj["name"]) {
+        throw new Error("Each reviewer snapshot must have a non-empty string 'name'.");
+      }
+      if (typeof rObj["maxIterations"] !== "number") {
+        throw new Error(`Reviewer snapshot "${rObj["name"]}" must have a numeric 'maxIterations'.`);
+      }
     }
   }
 

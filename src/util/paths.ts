@@ -155,6 +155,49 @@ export function draftPathLegacy(slug: string): string {
   return `${DRAFTS_DIR}/${slug}.md`;
 }
 
+/** Base directory for custom reviewer definitions. */
+const REVIEWERS_DIR = "specrunner/reviewers";
+
+/**
+ * Returns the relative path to the custom reviewers directory.
+ * Example: reviewersDirRel() → "specrunner/reviewers"
+ */
+export function reviewersDirRel(): string {
+  return REVIEWERS_DIR;
+}
+
+/**
+ * Returns the relative path to a custom reviewer result file for the given slug, reviewer name, and iteration.
+ * Iteration is zero-padded to 3 digits.
+ * Example: customReviewerResultPath("foo", "security", 2) → "specrunner/changes/foo/security-result-002.md"
+ */
+export function customReviewerResultPath(slug: string, name: string, iteration: number): string {
+  const nnn = String(iteration).padStart(3, "0");
+  return `${CHANGES_DIR}/${slug}/${name}-result-${nnn}.md`;
+}
+
+/**
+ * Unified resolver for reviewer result file paths.
+ *
+ * Returns reviewFeedbackPath for the built-in code-review step, and
+ * customReviewerResultPath for all other (custom) reviewer steps.
+ * This allows code-fixer to look up the correct findings file regardless
+ * of whether it was sent by code-review or a custom reviewer.
+ *
+ * Example:
+ *   resolveReviewerResultPath("foo", "code-review", 1) → "specrunner/changes/foo/review-feedback-001.md"
+ *   resolveReviewerResultPath("foo", "security", 1)    → "specrunner/changes/foo/security-result-001.md"
+ *
+ * TC-034: this file MUST NOT import from any other src/ module. The "code-review" literal
+ * here is the canonical step name, not a cross-module dependency.
+ */
+export function resolveReviewerResultPath(slug: string, stepName: string, iteration: number): string {
+  if (stepName === "code-review") {
+    return reviewFeedbackPath(slug, iteration);
+  }
+  return customReviewerResultPath(slug, stepName, iteration);
+}
+
 /** Base directory for project-level step rules. */
 const RULES_DIR = "specrunner/rules";
 

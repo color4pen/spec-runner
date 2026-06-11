@@ -7,10 +7,16 @@
  *         (termination guarantee: episode reset does NOT apply to conformance)
  * TC-072: Single-episode exhaustion within a fixer-pair loop is unchanged
  *         (within-episode budget continuity)
+ * TC-073: Shared-fixer forward entry gives the next reviewer a fresh fixer budget
+ *         (regression: code-fixer iterations consumed by reviewer N leaked into
+ *          reviewer N+1's episode when the chain advanced via the fixer forward row)
+ * TC-074: Same-reviewer fallback returns keep the fixer counter (no reset within
+ *         one reviewer's episode — termination guarantee for the reviewer loop)
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Pipeline } from "../../../../src/core/pipeline/pipeline.js";
 import { STANDARD_TRANSITIONS } from "../../../../src/core/pipeline/types.js";
+import { buildReviewerChainTransitions } from "../../../../src/core/pipeline/reviewer-chain.js";
 import { STANDARD_LOOP_NAMES, STANDARD_LOOP_FIXER_PAIRS } from "../../../../src/core/pipeline/run.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import { StepExecutor } from "../../../../src/core/step/executor.js";
@@ -100,8 +106,20 @@ function makeMinimalDeps(): PipelineDeps {
 }
 
 /** Append a StepRun with the given verdict to state.steps[stepName]. */
-function appendStepResult(state: JobState, stepName: string, verdict: string): JobState {
+function appendStepResult(
+  state: JobState,
+  stepName: string,
+  verdict: string,
+  fixableFindings = 0,
+): JobState {
   const existing = state.steps?.[stepName] ?? [];
+  const findings = Array.from({ length: fixableFindings }, (_, i) => ({
+    id: `F-${i + 1}`,
+    title: `finding ${i + 1}`,
+    severity: "medium",
+    resolution: "fixable",
+    refs: [],
+  }));
   const run: StepRun = {
     attempt: existing.length + 1,
     sessionId: null,
@@ -109,6 +127,9 @@ function appendStepResult(state: JobState, stepName: string, verdict: string): J
       verdict: verdict as import("../../../../src/state/schema.js").Verdict,
       findingsPath: null,
       error: null,
+      ...(fixableFindings > 0
+        ? { toolResult: { ok: true, verdict, findings } as unknown as StepRun["outcome"]["toolResult"] }
+        : {}),
     },
     startedAt: "2026-01-01T00:00:00.000Z",
     endedAt: "2026-01-01T00:00:00.000Z",
@@ -388,5 +409,178 @@ describe("TC-072: single-episode exhaustion within verification loop is unchange
     expect(result.status).toBe("awaiting-resume");
     expect(verificationCallCount).toBe(3);   // iter1 + iter2 + bypass
     expect(buildFixerCallCount).toBe(2);     // fixer exhausted at maxIterations
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Shared helpers for the custom-reviewer chain tests (TC-073 / TC-074).
+// Chain: code-review → sec (one custom reviewer sharing code-fixer).
+// ---------------------------------------------------------------------------
+const SEC_CHAIN = ["code-review", "sec"];
+
+function makeChainPipelineParams() {
+  const transitions = [
+    ...STANDARD_TRANSITIONS.filter((t) => t.step !== "code-review" && t.step !== "code-fixer"),
+    ...buildReviewerChainTransitions(SEC_CHAIN),
+  ];
+  return {
+    transitions,
+    loopNames: [...STANDARD_LOOP_NAMES, "sec"],
+    loopFixerPairs: { ...STANDARD_LOOP_FIXER_PAIRS, sec: "code-fixer" },
+    maxIterationsByStep: { sec: 2 },
+  };
+}
+
+function makeChainSteps(): Map<string, Step> {
+  return new Map<string, Step>([
+    ["implementer",  makeAgentStep("implementer", "success")],
+    ["verification", {
+      kind: "cli",
+      name: "verification",
+      run: async () => {},
+      resultFilePath: () => "/tmp/verification-result.md",
+      parseResult: () => ({ verdict: "passed" as const, findingsPath: null }),
+    }],
+    ["build-fixer",  makeAgentStep("build-fixer", "success")],
+    ["code-review",  makeAgentStep("code-review")],
+    ["code-fixer",   makeAgentStep("code-fixer", "approved")],
+    ["sec",          makeAgentStep("sec")],
+    ["conformance",  makeAgentStep("conformance")],
+    ["adr-gen",      makeAgentStep("adr-gen", "success")],
+    ["pr-create",    {
+      kind: "cli",
+      name: "pr-create",
+      run: async () => {},
+      resultFilePath: () => "/tmp/pr-create-result.md",
+      parseResult: () => ({ verdict: "success" as const, findingsPath: null }),
+    }],
+  ]);
+}
+
+// ---------------------------------------------------------------------------
+// TC-073: Shared-fixer forward entry gives the next reviewer a fresh fixer budget
+// Regression: code-review consumed the shared code-fixer's full budget
+// (needs-fix cycle + approved-with-fixable-findings observation fix), then the
+// forward row advanced the chain to sec FROM code-fixer. The episode reset
+// only fired for non-fixer entries, so sec inherited fixerIters=2 and its very
+// first needs-fix exhausted immediately — escalation attributed to sec although
+// sec's fixer never ran.
+// ---------------------------------------------------------------------------
+describe("TC-073: shared-fixer forward entry resets the next reviewer's fixer budget (regression)", () => {
+  it("sec's needs-fix gets a fixer run after code-review consumed the shared budget", async () => {
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+
+    let codeReviewCallCount = 0;
+    let secCallCount = 0;
+    let codeFixerCallCount = 0;
+
+    // Sequence:
+    //   code-review#1 needs-fix → code-fixer#1 → code-review#2 approved + fixable
+    //   → code-fixer#2 (observation fix) → forward to sec
+    //   sec#1 needs-fix → code-fixer#3 (MUST run: fresh episode) → sec#2 approved
+    //   → conformance → adr-gen → pr-create → end
+    const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
+      if (step.name === "implementer") return appendStepResult(currentState, "implementer", "success");
+      if (step.name === "verification") return appendStepResult(currentState, "verification", "passed");
+      if (step.name === "code-review") {
+        codeReviewCallCount++;
+        if (codeReviewCallCount === 1) return appendStepResult(currentState, "code-review", "needs-fix");
+        return appendStepResult(currentState, "code-review", "approved", 1); // fixable finding
+      }
+      if (step.name === "sec") {
+        secCallCount++;
+        if (secCallCount === 1) return appendStepResult(currentState, "sec", "needs-fix");
+        return appendStepResult(currentState, "sec", "approved");
+      }
+      if (step.name === "code-fixer") {
+        codeFixerCallCount++;
+        return appendStepResult(currentState, "code-fixer", "approved");
+      }
+      if (step.name === "conformance") return appendStepResult(currentState, "conformance", "approved");
+      if (step.name === "adr-gen") return appendStepResult(currentState, "adr-gen", "success");
+      if (step.name === "pr-create") return appendStepResult(currentState, "pr-create", "success");
+      throw new Error(`Unexpected step in TC-073: ${step.name}`);
+    });
+
+    const chainParams = makeChainPipelineParams();
+    const events = new EventBus();
+    const pipeline = new Pipeline({
+      steps: makeChainSteps(),
+      transitions: chainParams.transitions,
+      maxIterations: 2,
+      executor: { execute: executeSpy } as unknown as StepExecutor,
+      events,
+      loopName: "spec-review",
+      loopNames: chainParams.loopNames,
+      loopFixerPairs: chainParams.loopFixerPairs,
+      maxIterationsByStep: chainParams.maxIterationsByStep,
+    });
+
+    const result = await pipeline.run("implementer", state, deps);
+
+    // sec's episode must get its own fixer run (3rd overall), not inherit
+    // code-review's consumed budget and exhaust on entry.
+    expect(codeFixerCallCount).toBe(3);
+    expect(secCallCount).toBe(2);
+    expect(result.error?.code).not.toBe("SEC_RETRIES_EXHAUSTED");
+    expect(result.status).toBe("awaiting-archive");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-074: Same-reviewer fallback returns keep the fixer counter
+// The widened reset condition (TC-073) must NOT reset when the fixer returns
+// to the SAME reviewer (normal convergence loop) — otherwise the reviewer loop
+// would never exhaust. sec alone repeatedly needs-fix: budget must run out at
+// exactly maxIterationsByStep.sec fixer cycles.
+// ---------------------------------------------------------------------------
+describe("TC-074: same-reviewer fixer returns keep the counter (termination guarantee)", () => {
+  it("sec exhausts after exactly its per-reviewer budget of fixer cycles", async () => {
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+
+    let secCallCount = 0;
+    let codeFixerCallCount = 0;
+
+    // code-review approves cleanly (no findings) → sec entered from code-review.
+    // sec always needs-fix; code-fixer always approves → must exhaust, not loop.
+    const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
+      if (step.name === "implementer") return appendStepResult(currentState, "implementer", "success");
+      if (step.name === "verification") return appendStepResult(currentState, "verification", "passed");
+      if (step.name === "code-review") return appendStepResult(currentState, "code-review", "approved");
+      if (step.name === "sec") {
+        secCallCount++;
+        return appendStepResult(currentState, "sec", "needs-fix");
+      }
+      if (step.name === "code-fixer") {
+        codeFixerCallCount++;
+        return appendStepResult(currentState, "code-fixer", "approved");
+      }
+      throw new Error(`Unexpected step in TC-074: ${step.name}`);
+    });
+
+    const chainParams = makeChainPipelineParams();
+    const events = new EventBus();
+    const pipeline = new Pipeline({
+      steps: makeChainSteps(),
+      transitions: chainParams.transitions,
+      maxIterations: 2,
+      executor: { execute: executeSpy } as unknown as StepExecutor,
+      events,
+      loopName: "spec-review",
+      loopNames: chainParams.loopNames,
+      loopFixerPairs: chainParams.loopFixerPairs,
+      maxIterationsByStep: chainParams.maxIterationsByStep,
+    });
+
+    const result = await pipeline.run("implementer", state, deps);
+
+    // Within one episode the counter accumulates: sec runs iter1 + iter2 + bypass,
+    // the fixer runs exactly maxIterationsByStep.sec times, then exhaustion fires.
+    expect(result.error?.code).toBe("SEC_RETRIES_EXHAUSTED");
+    expect(result.status).toBe("awaiting-resume");
+    expect(secCallCount).toBe(3);          // iter1 + iter2 + bypass
+    expect(codeFixerCallCount).toBe(2);    // per-reviewer budget
   });
 });

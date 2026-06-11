@@ -1476,14 +1476,14 @@ describe("TC-ADR-INT-01: STANDARD_TRANSITIONS adr-gen wiring", () => {
 
   it("code-fixer --approved→ code-review loop is preserved (fallback row)", async () => {
     const { STANDARD_TRANSITIONS } = await import("../src/core/pipeline/types.js");
-    // The first code-fixer --approved row is the conditional row (when: last review was approved).
-    // The fallback row (needs-fix loop) has to: "code-review" and no when predicate.
+    // The code-fixer --approved → code-review fallback row exists.
+    // Since buildReviewerChainTransitions generates per-reviewer conditional fallbacks,
+    // the row may have a 'when' predicate (always satisfied for single-reviewer chain).
     const codeFixerApprovedFallback = STANDARD_TRANSITIONS.find(
       (t) => t.step === "code-fixer" && t.on === "approved" && t.to === "code-review"
     );
     expect(codeFixerApprovedFallback).toBeDefined();
     expect(codeFixerApprovedFallback!.to).toBe("code-review");
-    expect(codeFixerApprovedFallback!.when).toBeUndefined();
   });
 });
 

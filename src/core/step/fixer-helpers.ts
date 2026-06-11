@@ -66,15 +66,21 @@ export function getLatestJudgeFindings(
 /**
  * Build a formatted findings block for embedding in fixer prompts.
  * Groups findings by severity for clear presentation.
+ *
+ * @param findings     - The findings to format.
+ * @param reviewerName - Optional reviewer name for source identification (requirement 7).
+ *                       When provided, the header identifies which reviewer produced these findings.
  */
-export function buildFindingsBlock(findings: Finding[]): string {
-  const lines: string[] = ["## Findings from review\n"];
+export function buildFindingsBlock(findings: Finding[], reviewerName?: string): string {
+  const source = reviewerName ? `${reviewerName} review` : "review";
+  const lines: string[] = [`## Findings from ${source}\n`];
   for (const f of findings) {
     const location = f.line !== undefined ? `${f.file}:${f.line}` : f.file;
     lines.push(`### [${f.severity.toUpperCase()}] ${f.title}`);
     lines.push(`- **File**: ${location}`);
     lines.push(`- **Resolution**: ${f.resolution}`);
     lines.push(`- **Rationale**: ${f.rationale}`);
+    lines.push(`- **Source**: ${source}`);
     lines.push("");
   }
   return lines.join("\n");
@@ -91,13 +97,20 @@ export function buildContinuationMessage(opts: {
   /** @reserved 将来のテンプレート拡張（例: ログ出力やパス解決）のために保持。現在は出力文字列には使用しない。 */
   slug: string;
   findings?: Finding[] | null;
+  /** Reviewer name for findings source identification (requirement 7). */
+  reviewerName?: string;
 }): string {
-  // build-fixer は verification（CLI ステップ）からの findings、それ以外は reviewer からの findings
+  // build-fixer は verification（CLI ステップ）からの findings
+  // code-fixer は reviewer からの findings (reviewerName で識別)
   const source =
-    opts.stepName === STEP_NAMES.BUILD_FIXER ? "verification" : "reviewer";
+    opts.stepName === STEP_NAMES.BUILD_FIXER
+      ? "verification"
+      : opts.reviewerName
+        ? `${opts.reviewerName} reviewer`
+        : "reviewer";
 
   if (opts.findings && opts.findings.length > 0) {
-    const findingsBlock = buildFindingsBlock(opts.findings);
+    const findingsBlock = buildFindingsBlock(opts.findings, opts.reviewerName);
     return `<user-request>
 前回の修正に対して ${source} から新しい findings が出ました。
 

@@ -1,0 +1,44 @@
+{
+  "version": 2,
+  "jobId": "6cee95f4-cf5f-4697-8753-508afe7b8de8",
+  "createdAt": "2026-06-11T09:45:02.541Z",
+  "updatedAt": "2026-06-11T13:04:24.700Z",
+  "request": {
+    "title": "プロジェクト定義のカスタムレビューワー step を宣言的に追加できるようにする",
+    "type": "new-feature"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/custom-reviewers-6cee95f4",
+  "error": null,
+  "pipelineId": "standard",
+  "issueNumber": 622,
+  "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/628",
+    "number": 628,
+    "createdAt": "2026-06-11T13:04:24.686Z"
+  },
+  "_journal": {
+    "historyCount": 99,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 2,
+      "spec-review": 2,
+      "spec-fixer": 1,
+      "test-case-gen": 1,
+      "implementer": 2,
+      "verification": 4,
+      "build-fixer": 2,
+      "code-review": 3,
+      "code-fixer": 3,
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

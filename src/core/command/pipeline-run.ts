@@ -13,6 +13,10 @@ import type { EventBus } from "../event/event-bus.js";
 import { getBranchPrefix } from "../../config/type-config.js";
 import { STEP_NAMES } from "../step/step-names.js";
 import { STANDARD_PIPELINE_ID } from "../../kernel/pipeline-ids.js";
+import { loadReviewerDefinitions } from "../reviewers/load.js";
+import { validateReviewerDefinitions } from "../reviewers/validate.js";
+import type { ReviewerSnapshot } from "../reviewers/types.js";
+import * as fsPromises from "node:fs/promises";
 
 export interface PipelineRunOptions {
   cwd?: string;
@@ -62,8 +66,20 @@ export class PipelineRunCommand extends CommandRunner {
       CANONICAL_PATTERN_LEGACY.exec(this.absolutePath);
     const requestSlug: string | null = canonicalMatch ? (canonicalMatch[1] ?? null) : null;
 
-    // Bootstrap job state (no I/O; persistence is deferred to setupWorkspace)
     const cwd = this.options.cwd ?? process.cwd();
+
+    // Load and validate custom reviewer definitions BEFORE bootstrapping job.
+    // Validation errors halt the pipeline before any state is created.
+    const fsAdapter = {
+      readdir: (dir: string) => fsPromises.readdir(dir),
+      readFile: (filePath: string, encoding: string) =>
+        fsPromises.readFile(filePath, encoding as "utf-8"),
+    };
+    const reviewerDefs = await loadReviewerDefinitions(cwd, fsAdapter);
+    validateReviewerDefinitions(reviewerDefs); // throws ReviewerValidationError on violation
+    const reviewers: ReviewerSnapshot[] = reviewerDefs.map(({ filename: _f, ...rest }) => rest);
+
+    // Bootstrap job state (no I/O; persistence is deferred to setupWorkspace)
     const jobState = await this.runtime.bootstrapJob(cwd, {
       request: {
         path: this.absolutePath,
@@ -74,6 +90,12 @@ export class PipelineRunCommand extends CommandRunner {
       repository: { owner: this.preflightResult.repo.owner, name: this.preflightResult.repo.name },
       pipelineId: STANDARD_PIPELINE_ID,
     });
+
+    // Snapshot reviewer definitions into job state (pipeline shape is fixed at job start).
+    // Resume uses this snapshot, so runtime changes to reviewers/ don't affect running jobs.
+    if (reviewers.length > 0) {
+      jobState.reviewers = reviewers;
+    }
 
     logInfo(`Job ID: ${jobState.jobId}`);
 

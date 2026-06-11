@@ -11,6 +11,7 @@ import { getLatestStepResult } from "../../state/helpers.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import { notifyJobTerminal } from "../notify/issue-notifier.js";
+import { resolveActiveReviewer } from "./reviewer-chain.js";
 
 /** Error codes that indicate truly fatal pipeline failures (not resumable). */
 const FATAL_ERROR_CODES: Set<string> = new Set([
@@ -19,6 +20,33 @@ const FATAL_ERROR_CODES: Set<string> = new Set([
   "CONFIG_INCOMPLETE",
   "CONFIG_INVALID",
 ]);
+
+/**
+ * Resolve the review step that should be attributed with exhaustion for a given fixer.
+ *
+ * For one-to-one (single reviewer paired with fixer): returns that reviewer.
+ * For many-to-one (multiple reviewers sharing a fixer): uses resolveActiveReviewer
+ * to determine which reviewer is currently active.
+ *
+ * @param state         - Current job state (used by resolveActiveReviewer).
+ * @param fixerName     - Name of the fixer step being entered.
+ * @param loopFixerPairs - Review → fixer mapping from the pipeline descriptor.
+ */
+function resolvePairedReviewForFixer(
+  state: JobState,
+  fixerName: string,
+  loopFixerPairs: Record<string, string>,
+): string {
+  const pairedReviewers = Object.entries(loopFixerPairs)
+    .filter(([, fixer]) => fixer === fixerName)
+    .map(([reviewer]) => reviewer);
+
+  if (pairedReviewers.length === 0) return fixerName;
+  if (pairedReviewers.length === 1) return pairedReviewers[0]!;
+
+  // Multiple reviewers share this fixer → use active reviewer
+  return resolveActiveReviewer(state, pairedReviewers);
+}
 
 /**
  * Pipeline: state machine driven by a declarative Transition table.
@@ -38,6 +66,8 @@ export class Pipeline {
   private readonly steps: Map<string, Step>;
   private readonly transitions: Transition[];
   private readonly maxIterations: number;
+  /** Per-step maxIterations overrides. When set for a step, used instead of maxIterations. */
+  private readonly maxIterationsByStep: Record<string, number>;
   private readonly executor: StepExecutor;
   private readonly events: EventBus;
   /** Loop name for stdout progress output (matches legacy runLoopUntil output). */
@@ -59,16 +89,26 @@ export class Pipeline {
     loopNames?: string[];
     loopFixerPairs?: Record<string, string>;  // review → fixer mapping
     summaryStep?: string;
+    maxIterationsByStep?: Record<string, number>;
   }) {
     this.steps = params.steps;
     this.transitions = params.transitions;
     this.maxIterations = params.maxIterations;
+    this.maxIterationsByStep = params.maxIterationsByStep ?? {};
     this.executor = params.executor;
     this.events = params.events;
     this.loopName = params.loopName ?? (params.loopNames?.[0] ?? "");
     this.loopNames = params.loopNames ?? (this.loopName ? [this.loopName] : []);
     this.loopFixerPairs = params.loopFixerPairs ?? {};
     this.summaryStep = params.summaryStep;
+  }
+
+  /**
+   * Resolve the effective maxIterations for a given step name.
+   * Returns step-specific override if present, else the global maxIterations.
+   */
+  private resolveMaxIterations(stepName: string): number {
+    return this.maxIterationsByStep[stepName] ?? this.maxIterations;
   }
 
   /**
@@ -315,12 +355,28 @@ export class Pipeline {
       // Loops WITHOUT a dedicated fixer (conformance) are intentionally excluded:
       // pairedFixerForNext is undefined → their lifetime counter is preserved
       // (termination guarantee for whole-phase re-execution).
+      //
+      // Shared-fixer forward entry: with multiple reviewers sharing one fixer, the
+      // fixer's "approved" can ADVANCE the chain to the NEXT reviewer (observation-fix
+      // completion). Arriving from the shared fixer is then still the START of that
+      // reviewer's episode — detected by comparing the reviewer the fixer was serving
+      // (resolveActiveReviewer over the fixer's siblings) with the reviewer being
+      // entered. Same-reviewer fallback returns keep their counters (same episode).
       const pairedFixerForNext = this.loopNames.includes(nextStep as string)
         ? this.loopFixerPairs[nextStep as string]
         : undefined;
-      if (pairedFixerForNext !== undefined && currentStep !== pairedFixerForNext) {
-        loopIters.set(nextStep as string, 0);
-        fixerIters.set(pairedFixerForNext, 0);
+      if (pairedFixerForNext !== undefined) {
+        let newEpisode = currentStep !== pairedFixerForNext;
+        if (!newEpisode) {
+          const siblings = Object.entries(this.loopFixerPairs)
+            .filter(([, fixer]) => fixer === pairedFixerForNext)
+            .map(([reviewer]) => reviewer);
+          newEpisode = siblings.length > 1 && resolveActiveReviewer(state, siblings) !== nextStep;
+        }
+        if (newEpisode) {
+          loopIters.set(nextStep as string, 0);
+          fixerIters.set(pairedFixerForNext, 0);
+        }
       }
 
       // --- Check current loop step exhaustion (for loop steps without a paired fixer) ---
@@ -352,12 +408,13 @@ export class Pipeline {
       // --- Check fixer exhaustion before entering fixer step ---
       // Fixer exhausted: the review that triggered this needs-fix has already used the bypass.
       // Find the paired review for this fixer to escalate properly.
+      // For many-to-one (multiple reviewers sharing a fixer), use resolveActiveReviewer
+      // so the exhaustion is attributed to the reviewer that actually triggered this fixer run.
       const fixerNames = new Set(Object.values(this.loopFixerPairs));
       if (fixerNames.has(nextStep as string)) {
-        const pairedReview = Object.entries(this.loopFixerPairs)
-          .find(([_, fixer]) => fixer === nextStep)?.[0];
-        const exhaustedLoopName = pairedReview ?? (nextStep as string);
-        const r = await this.tryExhaust(state, deps, { iteration: fixerIters.get(nextStep as string) ?? 0, stepName: exhaustedLoopName, phase: "review-after-final-fix", reportIteration: this.maxIterations });
+        const exhaustedLoopName = resolvePairedReviewForFixer(state, nextStep as string, this.loopFixerPairs);
+        const effectiveMax = this.resolveMaxIterations(exhaustedLoopName);
+        const r = await this.tryExhaust(state, deps, { iteration: fixerIters.get(nextStep as string) ?? 0, stepName: exhaustedLoopName, phase: "review-after-final-fix", reportIteration: effectiveMax });
         if (r.exhausted) { state = r.state; break; }
       }
 
@@ -411,18 +468,19 @@ export class Pipeline {
       bypassIteration?: number;
     },
   ): Promise<{ exhausted: boolean; state: JobState }> {
+    const effectiveMax = this.resolveMaxIterations(opts.stepName);
     // Not yet exhausted
-    if (opts.iteration < this.maxIterations) {
+    if (opts.iteration < effectiveMax) {
       return { exhausted: false, state };
     }
     // Bypass: paired fixer has also reached max → allow one extra review
-    if (opts.bypassIteration !== undefined && opts.bypassIteration >= this.maxIterations) {
+    if (opts.bypassIteration !== undefined && opts.bypassIteration >= effectiveMax) {
       return { exhausted: false, state };
     }
     // Exhausted
     const reportedIteration = opts.reportIteration ?? opts.iteration;
-    logPipelineDiag("pipeline:loop:exhausted", `step=${opts.stepName}, iter=${reportedIteration}, max=${this.maxIterations}`);
-    this.events.emit("pipeline:iteration:exhausted", { step: opts.stepName, iteration: reportedIteration, maxIterations: this.maxIterations });
+    logPipelineDiag("pipeline:loop:exhausted", `step=${opts.stepName}, iter=${reportedIteration}, max=${effectiveMax}`);
+    this.events.emit("pipeline:iteration:exhausted", { step: opts.stepName, iteration: reportedIteration, maxIterations: effectiveMax });
     const next = await this.handleExhausted(state, deps, opts.stepName, opts.phase);
     this.printPipelineFinished(next);
     return { exhausted: true, state: next };
@@ -495,9 +553,10 @@ export class Pipeline {
         updatedSteps = { ...updatedSteps, [exhaustedLoopName]: updatedResults };
       }
     }
+    const effectiveMax = this.resolveMaxIterations(exhaustedLoopName);
     const lastIteration = loopResults.length > 0
-      ? (loopResults[loopResults.length - 1] as StepRun).attempt ?? this.maxIterations
-      : this.maxIterations;
+      ? (loopResults[loopResults.length - 1] as StepRun).attempt ?? effectiveMax
+      : effectiveMax;
     const nnn = String(lastIteration).padStart(3, "0");
 
     // Lookup error shape from LOOP_ERROR_CODES (no hardcode)
@@ -514,17 +573,17 @@ export class Pipeline {
     const stateWithSteps = { ...state, steps: updatedSteps };
     const { state: exhaustedState } = transitionJob(stateWithSteps, "awaiting-resume", {
       trigger: "pipeline",
-      reason: errorShape.message(this.maxIterations),
+      reason: errorShape.message(effectiveMax),
       patch: {
         resumePoint: {
           step: resumeStep,
-          reason: errorShape.message(this.maxIterations),
-          iterationsExhausted: this.maxIterations,
+          reason: errorShape.message(effectiveMax),
+          iterationsExhausted: effectiveMax,
           ...(exhaustionPhase && { exhaustionPhase }),
         },
         error: {
           code: errorShape.code,
-          message: errorShape.message(this.maxIterations),
+          message: errorShape.message(effectiveMax),
           hint: errorShape.hint(nnn),
         },
       },

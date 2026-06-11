@@ -12,6 +12,7 @@ import {
   DESIGN_ONLY_DESCRIPTOR,
   getPipelineDescriptor,
 } from "./registry.js";
+import { composeReviewerDescriptor } from "./compose-reviewers.js";
 
 /**
  * Loop step names used by the standard pipeline.
@@ -65,6 +66,7 @@ export function buildPipeline(
     loopNames: [...descriptor.loopNames],
     loopFixerPairs: { ...descriptor.loopFixerPairs },
     summaryStep: descriptor.summaryStep,
+    maxIterationsByStep: descriptor.maxIterationsByStep ? { ...descriptor.maxIterationsByStep } : undefined,
   });
 }
 
@@ -74,6 +76,7 @@ export function buildPipeline(
 
 /**
  * Resolve the pipeline descriptor from jobState.pipelineId and construct a Pipeline.
+ * Applies composeReviewerDescriptor to inject any custom reviewers from job state.
  * Used by CommandRunner to build the pipeline for a specific job.
  *
  * @param jobState - job state carrying the pipelineId (defaults to "standard" if absent)
@@ -85,7 +88,8 @@ export function buildPipelineForJob(
   deps: PipelineDeps,
   events?: EventBus,
 ): Pipeline {
-  const descriptor = getPipelineDescriptor(getPipelineId(jobState));
+  const base = getPipelineDescriptor(getPipelineId(jobState));
+  const descriptor = composeReviewerDescriptor(base, jobState.reviewers);
   return buildPipeline(descriptor, deps, events);
 }
 
@@ -123,7 +127,8 @@ export async function runPipeline(
   events?: EventBus,
 ): Promise<JobState> {
   const bus = events ?? new EventBus();
-  const descriptor = getPipelineDescriptor(getPipelineId(jobState));
+  const base = getPipelineDescriptor(getPipelineId(jobState));
+  const descriptor = composeReviewerDescriptor(base, jobState.reviewers);
   const pipeline = buildPipeline(descriptor, deps, bus);
   return pipeline.run(descriptor.startStep, jobState, deps);
 }
