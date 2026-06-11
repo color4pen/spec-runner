@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "136b674e-b8f8-4c83-a734-2db8f3ce7bf3",
   "createdAt": "2026-06-11T17:30:02.544Z",
-  "updatedAt": "2026-06-11T18:00:38.970Z",
+  "updatedAt": "2026-06-11T20:40:29.106Z",
   "request": {
     "title": "archive 済み job の machine-local sidecar が削除されず無限に増える",
     "type": "bug-fix"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/local-sidecar-cleanup-136b674e",
   "error": null,
   "pipelineId": "standard",
@@ -23,7 +23,7 @@
     "createdAt": "2026-06-11T18:00:38.955Z"
   },
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
