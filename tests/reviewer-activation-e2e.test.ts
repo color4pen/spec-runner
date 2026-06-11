@@ -186,6 +186,7 @@ function buildConfig(reviewerNames: string[] = []) {
       "code-fixer": { agentId: "code-fixer-agent-id", definitionHash: "sha256:cfx", lastSyncedAt: new Date().toISOString() },
       conformance: { agentId: "conformance-agent-id", definitionHash: "sha256:cnf", lastSyncedAt: new Date().toISOString() },
       "adr-gen": { agentId: "adr-gen-agent-id", definitionHash: "sha256:adr", lastSyncedAt: new Date().toISOString() },
+      "regression-gate": { agentId: "regression-gate-agent-id", definitionHash: "sha256:rgt", lastSyncedAt: new Date().toISOString() },
       ...customEntries,
     } as Record<string, { agentId: string; definitionHash: string; lastSyncedAt: string }>,
     pipeline: { maxRetries: 3 },
