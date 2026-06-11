@@ -26,7 +26,7 @@ import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import { formatEscalation } from "../finish/escalation.js";
 import { logResult, stderrWrite } from "../../logger/stdout.js";
 import { KeepAlive } from "../lifecycle/keepalive.js";
-import { livenessJsonPath, managedMarkerPath, draftsDir } from "../../util/paths.js";
+import { livenessJsonPath, managedMarkerPath, draftsDir, localSidecarDir } from "../../util/paths.js";
 
 export interface ArchiveInput {
   /** Slug of the job to archive. */
@@ -290,6 +290,13 @@ export async function runArchiveOrchestrator(
       if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
         stderrWrite(`Warning: failed to delete managed marker for ${slug}.`);
       }
+    }
+
+    // Delete sidecar directory (best-effort)
+    try {
+      await fs.rm(nodePath.join(cwd, localSidecarDir(slug)), { recursive: true, force: true });
+    } catch (err) {
+      stderrWrite(`Warning: failed to remove sidecar directory for ${slug}.`);
     }
 
     // Delete feature branch (best-effort)

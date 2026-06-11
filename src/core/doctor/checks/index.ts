@@ -43,6 +43,7 @@ import { environmentProviderAliveCheck } from "./agents/environment-provider-ali
 // Storage
 import { localStateWritableCheck } from "./storage/local-state-writable.js";
 import { legacyJobsDirCheck } from "./storage/legacy-jobs-dir.js";
+import { orphanSidecarsCheck } from "./storage/orphan-sidecars.js";
 
 export const commonChecks: DoctorCheck[] = [
   // Runtime (3 — gh CLI check removed: no longer required)
@@ -64,6 +65,7 @@ export const commonChecks: DoctorCheck[] = [
   // Storage
   localStateWritableCheck,
   legacyJobsDirCheck,
+  orphanSidecarsCheck,
 ];
 
 export const managedChecks: DoctorCheck[] = [
@@ -109,4 +111,5 @@ export {
   environmentProviderAliveCheck,
   localStateWritableCheck,
   legacyJobsDirCheck,
+  orphanSidecarsCheck,
 };
