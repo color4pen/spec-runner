@@ -6,6 +6,7 @@
  * TC-008: CodeFixerStep.resultFilePath が null を返す (must)
  * TC-009: CodeFixerStep.parseResult が NULL_PARSE_RESULT を返す (must)
  * TC-010: CodeFixerStep の completionVerdict が "approved" である (must)
+ * TC-022: ゲートが active のとき code-fixer がゲートの結果パスを解決する (must)
  * TC-025: CodeFixerStep.buildMessage が直近の review-feedback パスを埋め込む (should)
  * TC-026: CodeFixerStep.buildMessage が前段 review-feedback 不在時に CODE_FIXER_NO_REVIEW_RESULT を throw する (should)
  */
@@ -17,7 +18,8 @@ import { AGENT_TOOLSET_TYPE } from "../../../src/core/agent/definition.js";
 import { buildContinuationMessage } from "../../../src/core/step/fixer-helpers.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { StepDeps } from "../../../src/core/step/types.js";
-import { reviewFeedbackPath, changeFolderPath } from "../../../src/util/paths.js";
+import { reviewFeedbackPath, changeFolderPath, resolveReviewerResultPath } from "../../../src/util/paths.js";
+import { REGRESSION_GATE_STEP_NAME } from "../../../src/core/step/regression-gate.js";
 
 function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
   return {
@@ -147,6 +149,64 @@ describe("TC-009: CodeFixerStep.parseResult が NULL_PARSE_RESULT を返す", ()
 describe("TC-010: CodeFixerStep の completionVerdict が 'approved' である", () => {
   it("completionVerdict === 'approved'", () => {
     expect(CodeFixerStep.completionVerdict).toBe("approved");
+  });
+});
+
+// TC-022: gate active → code-fixer reads regression-gate result path
+describe("TC-022: ゲートが active のとき code-fixer.reads() がゲートの結果パスを返す", () => {
+  function makeStateWithGateActive(): JobState {
+    return makeMinimalState({
+      reviewers: [
+        {
+          name: "custom-reviewer",
+          maxIterations: 3,
+          purpose: "Test reviewer",
+          criteria: "Test criteria",
+          judgment: "Test judgment",
+          freeText: "",
+        },
+      ],
+      steps: {
+        "code-review": [
+          {
+            attempt: 1,
+            sessionId: null,
+            outcome: { verdict: "approved" as const, findingsPath: null, error: null },
+            startedAt: "2026-01-01T01:00:00.000Z",
+            endedAt: "2026-01-01T01:30:00.000Z",
+          },
+        ],
+        [REGRESSION_GATE_STEP_NAME]: [
+          {
+            attempt: 1,
+            sessionId: null,
+            outcome: {
+              verdict: "needs-fix" as const,
+              findingsPath: `specrunner/changes/my-change/${REGRESSION_GATE_STEP_NAME}-result-001.md`,
+              error: null,
+            },
+            startedAt: "2026-01-01T03:00:00.000Z",
+            endedAt: "2026-01-01T03:30:00.000Z",
+          },
+        ],
+      },
+    });
+  }
+
+  it("reads() が regression-gate-result-001.md を指す IoRef を返す", () => {
+    const state = makeStateWithGateActive();
+    const deps = makeMinimalDeps("my-change");
+    const ioRefs = CodeFixerStep.reads!(state, deps);
+    const expectedPath = resolveReviewerResultPath("my-change", REGRESSION_GATE_STEP_NAME, 1);
+    expect(ioRefs).toHaveLength(1);
+    expect(ioRefs[0]!.path).toBe(expectedPath);
+  });
+
+  it("reads() のパスが regression-gate-result-NNN.md 形式と一致する", () => {
+    const state = makeStateWithGateActive();
+    const deps = makeMinimalDeps("my-change");
+    const ioRefs = CodeFixerStep.reads!(state, deps);
+    expect(ioRefs[0]!.path).toContain(`${REGRESSION_GATE_STEP_NAME}-result-001.md`);
   });
 });
 

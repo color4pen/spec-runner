@@ -15,6 +15,7 @@ import { STEP_NAMES } from "../step/step-names.js";
 import type { ReviewerSnapshot } from "../reviewers/types.js";
 import type { CodeReviewReportResult } from "../port/report-result.js";
 import { collectFixableFindings } from "../step/judge-verdict.js";
+import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";
 
 /**
  * Derive the full reviewer chain for the impl phase from job state.
@@ -29,6 +30,26 @@ export function deriveImplReviewerChain(
     ? stateOrSnapshots
     : (stateOrSnapshots as JobState).reviewers ?? [];
   return [STEP_NAMES.CODE_REVIEW, ...snapshots.map((s) => s.name)];
+}
+
+/**
+ * Derive the full fixer chain for code-fixer (reviewer chain + regression-gate when applicable).
+ *
+ * Returns ["code-review"] when no custom reviewers are present (zero-reviewer case).
+ * Returns ["code-review", ...customNames, "regression-gate"] when custom reviewers are present.
+ *
+ * code-fixer uses this chain to resolve the active reviewer (where to read findings from),
+ * which includes the regression-gate when it is part of the pipeline.
+ *
+ * @param state - Current job state.
+ */
+export function deriveImplFixerChain(state: JobState): string[] {
+  const chain = deriveImplReviewerChain(state);
+  const hasReviewers = (state.reviewers?.length ?? 0) > 0;
+  if (hasReviewers) {
+    return [...chain, REGRESSION_GATE_STEP_NAME];
+  }
+  return chain;
 }
 
 /**

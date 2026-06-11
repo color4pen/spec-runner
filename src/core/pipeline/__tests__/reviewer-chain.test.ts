@@ -9,10 +9,12 @@
 import { describe, it, expect } from "vitest";
 import {
   deriveImplReviewerChain,
+  deriveImplFixerChain,
   resolveActiveReviewer,
   nextAfterReviewer,
 } from "../reviewer-chain.js";
 import { STEP_NAMES } from "../../step/step-names.js";
+import { REGRESSION_GATE_STEP_NAME } from "../../step/regression-gate.js";
 import type { JobState } from "../../../state/schema.js";
 import type { ReviewerSnapshot } from "../../reviewers/types.js";
 
@@ -67,6 +69,37 @@ describe("deriveImplReviewerChain", () => {
   it("accepts empty array (no custom reviewers)", () => {
     const chain = deriveImplReviewerChain([]);
     expect(chain).toEqual([STEP_NAMES.CODE_REVIEW]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// deriveImplFixerChain
+// ---------------------------------------------------------------------------
+
+describe("deriveImplFixerChain", () => {
+  it("(a) returns ['code-review'] when state has no custom reviewers", () => {
+    const chain = deriveImplFixerChain(makeState());
+    expect(chain).toEqual([STEP_NAMES.CODE_REVIEW]);
+  });
+
+  it("(b) returns ['code-review', ...names, 'regression-gate'] when reviewers non-empty", () => {
+    const state: JobState = { ...makeState(), reviewers: [makeSnapshot("security"), makeSnapshot("perf")] };
+    const chain = deriveImplFixerChain(state);
+    expect(chain).toEqual([STEP_NAMES.CODE_REVIEW, "security", "perf", REGRESSION_GATE_STEP_NAME]);
+  });
+
+  it("does not include regression-gate when reviewers is empty array", () => {
+    const state: JobState = { ...makeState(), reviewers: [] };
+    const chain = deriveImplFixerChain(state);
+    expect(chain).toEqual([STEP_NAMES.CODE_REVIEW]);
+    expect(chain).not.toContain(REGRESSION_GATE_STEP_NAME);
+  });
+
+  it("does not include regression-gate when reviewers is undefined", () => {
+    const state: JobState = { ...makeState(), reviewers: undefined };
+    const chain = deriveImplFixerChain(state);
+    expect(chain).toEqual([STEP_NAMES.CODE_REVIEW]);
+    expect(chain).not.toContain(REGRESSION_GATE_STEP_NAME);
   });
 });
 
