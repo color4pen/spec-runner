@@ -101,8 +101,8 @@
 - [x] unit: `LocalRuntime.validateStepOutputs` — 実体付き → 空、欠落 / 空 / scaffold 一致 → produced violation、`tasks.md` `[ ]` 残 → tasks-complete violation（`tests/unit/runtime/` に `validate-step-inputs.test.ts` と対の形で追加）。
 - [x] unit: `ManagedRuntime.validateStepOutputs` — `cat-file` / `getRawFile` mock で存在 / 欠落 / 空を網羅、fetch が stdout 非汚染。
 - [x] unit: executor gate — produced 欠落で `finalizeStepArtifacts` 到達前 halt（mock runner / mock strategy）、follow-up 残存で halt、全充足で素通り（`tests/unit/step/executor-input-validation.test.ts` と対の形）。
-- [ ] unit: claude-code / managed-agent adapter — `outputVerification` 設定時に同一 session へ follow-up が送られ `followUpAttempts` が加算、violation 解消で打ち切り（mock queryFn / sessionClient）。
-- [ ] snapshot: 標準 pipeline の stdout が不変（`tests/cli-stdout-snapshot.test.ts` 等）。
+- [x] unit: claude-code / managed-agent adapter — `outputVerification` 設定時に同一 session へ follow-up が送られ `followUpAttempts` が加算、violation 解消で打ち切り（mock queryFn / sessionClient）。
+- [x] snapshot: 標準 pipeline の stdout が不変（`tests/cli-stdout-snapshot.test.ts` 等）。
 
 **Acceptance Criteria**:
 - 上記が green。両 runtime の検証を mock で網羅。

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d18f671a-8c03-48b1-a22e-60f969606bd9",
   "createdAt": "2026-06-11T14:40:03.121Z",
-  "updatedAt": "2026-06-11T15:52:40.180Z",
+  "updatedAt": "2026-06-11T15:56:49.086Z",
   "request": {
     "title": "step 完了時に宣言された契約を機械検証し、不足は follow-up で修復させる",
     "type": "new-feature"
@@ -11,14 +11,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/step-completion-verification-d18f671a",
   "error": null,
   "pipelineId": "standard",
   "issueNumber": 627,
   "_journal": {
-    "historyCount": 33,
+    "historyCount": 37,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -26,7 +26,7 @@
       "test-case-gen": 1,
       "implementer": 1,
       "verification": 1,
-      "code-review": 1,
+      "code-review": 2,
       "code-fixer": 1
     }
   }
