@@ -109,16 +109,19 @@ async function makeJobState(reviewers?: ReviewerSnapshot[]) {
 function buildCustomMockClient(opts: {
   codeReviewVerdicts?: ("approved" | "needs-fix")[];
   reviewerVerdicts?: Record<string, ("approved" | "needs-fix" | "ok-false")[]>;
+  regressionGateVerdicts?: ("approved" | "needs-fix" | "decision-needed")[];
 } = {}) {
   const {
     codeReviewVerdicts = ["approved"],
     reviewerVerdicts = {},
+    regressionGateVerdicts = ["approved"],
   } = opts;
 
   let createCallCount = 0;
   const sessionIdToAgentId = new Map<string, string>();
   let codeReviewCount = 0;
   const reviewerCounts: Record<string, number> = {};
+  let regressionGateCount = 0;
 
   const client = {
     createSession: vi.fn().mockImplementation((params: { agentId?: string }) => {
@@ -223,6 +226,53 @@ function buildCustomMockClient(opts: {
         }
       }
 
+      // regression-gate
+      if (agentId === "regression-gate-agent-id") {
+        const rawVerdict = regressionGateVerdicts[regressionGateCount] ?? regressionGateVerdicts[regressionGateVerdicts.length - 1]!;
+        regressionGateCount++;
+        if (rawVerdict === "approved") {
+          return Promise.resolve([{
+            type: "agent.custom_tool_use",
+            name: "report_result",
+            id: "mock-id",
+            input: { ok: true, approved: true, findings: [] },
+          }]);
+        } else if (rawVerdict === "decision-needed") {
+          return Promise.resolve([{
+            type: "agent.custom_tool_use",
+            name: "report_result",
+            id: "mock-id",
+            input: {
+              ok: true,
+              findings: [{
+                severity: "high",
+                resolution: "decision-needed",
+                file: "src/contradiction.ts",
+                title: "Contradictory fixes",
+                rationale: "Fixing A re-introduces B",
+              }],
+            },
+          }]);
+        } else {
+          // needs-fix: regression detected
+          return Promise.resolve([{
+            type: "agent.custom_tool_use",
+            name: "report_result",
+            id: "mock-id",
+            input: {
+              ok: true,
+              findings: [{
+                severity: "high",
+                resolution: "fixable",
+                file: "src/regressed.ts",
+                title: "Regression detected",
+                rationale: "A previously-fixed issue has returned",
+              }],
+            },
+          }]);
+        }
+      }
+
       // conformance
       if (agentId === "conformance-agent-id") {
         return Promise.resolve([{
@@ -280,6 +330,8 @@ function buildConfig(reviewerNames: string[] = []) {
       "code-fixer": { agentId: "code-fixer-agent-id", definitionHash: "sha256:cfx", lastSyncedAt: new Date().toISOString() },
       "conformance": { agentId: "conformance-agent-id", definitionHash: "sha256:cnf", lastSyncedAt: new Date().toISOString() },
       "adr-gen": { agentId: "adr-gen-agent-id", definitionHash: "sha256:adr", lastSyncedAt: new Date().toISOString() },
+      // regression-gate is always registered when custom reviewers are present
+      "regression-gate": { agentId: "regression-gate-agent-id", definitionHash: "sha256:rgt", lastSyncedAt: new Date().toISOString() },
       ...customAgentEntries,
     } as Record<string, { agentId: string; definitionHash: string; lastSyncedAt: string }>,
     pipeline: { maxRetries: 3 },
@@ -766,6 +818,132 @@ describe("TC-042: non-existent file ref in custom reviewer finding → escalatio
     // Non-existent file ref → verdict escalation → pipeline awaiting-resume
     expect(result.status).toBe("awaiting-resume");
     expect(mockRuntimeStrategy.verifyFindingRefs).toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Regression-gate E2E scenarios (T-08)
+// ---------------------------------------------------------------------------
+
+// TC-RG-01: regression detected → code-fixer → approved → conformance
+describe("TC-RG-01: regression-gate detects regression → code-fixer → approved → conformance", () => {
+  it("regression-gate reports high/fixable → code-fixer → gate re-runs → approved → conformance", async () => {
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+
+    const reviewerSnapshots = [makeSnapshot("security")];
+    const jobState = await makeJobState(reviewerSnapshots);
+
+    const { client } = buildCustomMockClient({
+      codeReviewVerdicts: ["approved"],
+      reviewerVerdicts: { security: ["approved"] },
+      // gate: needs-fix (regression) on first call, approved on second
+      regressionGateVerdicts: ["needs-fix", "approved"],
+    });
+    const githubClient = buildMockGithubClient();
+
+    const result = await runPipeline(jobState, {
+      client,
+      config: buildConfig(["security"]) as Parameters<typeof runPipeline>[1]["config"],
+      request: buildRequest(),
+      slug: "cr-slug",
+      cwd: tempDir,
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
+      spawn: noopSpawn,
+      storeFactory: makeStoreFactory(tempDir),
+    });
+
+    expect(result.status).toBe("awaiting-archive");
+
+    // regression-gate ran twice (needs-fix → approved)
+    const gateArr = result.steps?.["regression-gate"];
+    expect(gateArr, "regression-gate should have run").toBeDefined();
+    expect(gateArr?.length).toBe(2);
+    expect(toLegacyStepResult(gateArr![0]!).verdict).toBe("needs-fix");
+    expect(toLegacyStepResult(gateArr![1]!).verdict).toBe("approved");
+
+    // code-fixer ran for the regression
+    expect(result.steps?.["code-fixer"], "code-fixer should have run").toBeDefined();
+
+    // conformance ran after regression-gate approved
+    expect(result.steps?.["conformance"], "conformance should have run after gate").toBeDefined();
+  });
+});
+
+// TC-RG-02: regression-gate reports decision-needed → escalation
+describe("TC-RG-02: regression-gate decision-needed → escalation", () => {
+  it("decision-needed from regression-gate escalates to awaiting-resume", async () => {
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+
+    const reviewerSnapshots = [makeSnapshot("security")];
+    const jobState = await makeJobState(reviewerSnapshots);
+
+    const { client } = buildCustomMockClient({
+      codeReviewVerdicts: ["approved"],
+      reviewerVerdicts: { security: ["approved"] },
+      regressionGateVerdicts: ["decision-needed"],
+    });
+    const githubClient = buildMockGithubClient();
+
+    const result = await runPipeline(jobState, {
+      client,
+      config: buildConfig(["security"]) as Parameters<typeof runPipeline>[1]["config"],
+      request: buildRequest(),
+      slug: "cr-slug",
+      cwd: tempDir,
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
+      spawn: noopSpawn,
+      storeFactory: makeStoreFactory(tempDir),
+    });
+
+    // decision-needed → escalation → awaiting-resume
+    expect(result.status).toBe("awaiting-resume");
+  });
+});
+
+// TC-RG-03: regression-gate exhaustion → REGRESSION_GATE_RETRIES_EXHAUSTED → awaiting-resume
+describe("TC-RG-03: regression-gate exhaustion → awaiting-resume", () => {
+  it("regression-gate with maxIterations=1 exhausts after budget", async () => {
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+
+    // Use a reviewer with 1 iteration to trigger exhaustion quickly
+    const reviewerSnapshots = [makeSnapshot("security", 3)];
+    const jobState = await makeJobState(reviewerSnapshots);
+
+    const { client } = buildCustomMockClient({
+      codeReviewVerdicts: ["approved"],
+      reviewerVerdicts: { security: ["approved"] },
+      // gate always returns needs-fix → should exhaust at REGRESSION_GATE_MAX_ITERATIONS (3)
+      regressionGateVerdicts: ["needs-fix", "needs-fix", "needs-fix", "needs-fix"],
+    });
+    const githubClient = buildMockGithubClient();
+
+    const result = await runPipeline(jobState, {
+      client,
+      config: buildConfig(["security"]) as Parameters<typeof runPipeline>[1]["config"],
+      request: buildRequest(),
+      slug: "cr-slug",
+      cwd: tempDir,
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
+      spawn: noopSpawn,
+      storeFactory: makeStoreFactory(tempDir),
+    });
+
+    // regression-gate exhausted → awaiting-resume
+    expect(result.status).toBe("awaiting-resume");
+    // error code should be REGRESSION_GATE_RETRIES_EXHAUSTED
+    expect(result.error?.code).toBe("REGRESSION_GATE_RETRIES_EXHAUSTED");
   });
 });
 

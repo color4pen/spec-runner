@@ -622,9 +622,10 @@ describe("TC-024: LOOP_ERROR_CODES — pr-create が含まれない", () => {
     expect(keys).toContain("verification");
     expect(keys).toContain("code-review");
     expect(keys).toContain("conformance");
+    expect(keys).toContain("regression-gate");
     expect(keys).not.toContain("delta-spec-validation");
     expect(keys).not.toContain("pr-create");
-    expect(keys).toHaveLength(4);
+    expect(keys).toHaveLength(5);
   });
 });
 

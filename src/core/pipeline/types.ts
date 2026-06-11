@@ -1,5 +1,6 @@
 import type { Verdict, JobState } from "../../state/schema.js";
 import { STEP_NAMES } from "../step/step-names.js";
+import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";
 import type { Step } from "../step/types.js";
 import { buildReviewerChainTransitions } from "./reviewer-chain.js";
 
@@ -116,6 +117,11 @@ export const LOOP_ERROR_CODES: Record<string, LoopErrorShape> = {
     code: "CONFORMANCE_RETRIES_EXHAUSTED",
     message: (n) => `conformance did not approve after ${n} iterations`,
     hint: (nnn) => `Review conformance-result-${nnn}.md and fix the implementation manually.`,
+  },
+  [REGRESSION_GATE_STEP_NAME]: {
+    code: "REGRESSION_GATE_RETRIES_EXHAUSTED",
+    message: (n) => `regression-gate did not approve after ${n} iterations`,
+    hint: (nnn) => `Review regression-gate-result-${nnn}.md and fix the regressions manually.`,
   },
 };
 

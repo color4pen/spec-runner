@@ -11,7 +11,7 @@ import { STEP_NAMES } from "./step-names.js";
 import { latestIteration } from "./io-iteration.js";
 import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock } from "./fixer-helpers.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
-import { deriveImplReviewerChain, resolveActiveReviewer } from "../pipeline/reviewer-chain.js";
+import { deriveImplFixerChain, resolveActiveReviewer } from "../pipeline/reviewer-chain.js";
 
 const CODE_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -66,7 +66,7 @@ export const CodeFixerStep: AgentStep = {
   maxTurns: 30,
 
   reads(state: JobState, deps: StepDeps): IoRef[] {
-    const chain = deriveImplReviewerChain(state);
+    const chain = deriveImplFixerChain(state);
     const activeReviewer = resolveActiveReviewer(state, chain);
     return [
       { path: resolveReviewerResultPath(deps.slug, activeReviewer, latestIteration(state, activeReviewer)) },
@@ -84,7 +84,7 @@ export const CodeFixerStep: AgentStep = {
     const branch = state.branch;
 
     // Resolve the active reviewer so code-fixer reads from the correct findings file.
-    const chain = deriveImplReviewerChain(state);
+    const chain = deriveImplFixerChain(state);
     const activeReviewer = resolveActiveReviewer(state, chain);
 
     // Derive findingsPath from reads declaration (D4: replace state-lookup halt).
