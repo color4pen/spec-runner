@@ -2,9 +2,9 @@
 
 ## T-01: Add `includeArchived` option to `JobStateStore.list`
 
-- [ ] Add `opts?: { includeArchived?: boolean }` parameter to the `JobStateStore.list` static method signature (`src/store/job-state-store.ts`)
-- [ ] Wrap section 1b (archive directory scan, lines ~237-259) in `if (opts?.includeArchived === true) { ... }` so it is skipped by default
-- [ ] Ensure the rest of the method (sections 2, 3, 4) is unaffected
+- [x] Add `opts?: { includeArchived?: boolean }` parameter to the `JobStateStore.list` static method signature (`src/store/job-state-store.ts`)
+- [x] Wrap section 1b (archive directory scan, lines ~237-259) in `if (opts?.includeArchived === true) { ... }` so it is skipped by default
+- [x] Ensure the rest of the method (sections 2, 3, 4) is unaffected
 
 **Acceptance Criteria**:
 - `JobStateStore.list(root)` (no opts) does not enter the archive scan block
@@ -13,9 +13,11 @@
 
 ## T-02: Update display and resolution callers to opt in
 
-- [ ] `src/cli/ps.ts` line ~130: replace `JobStateStore.list(repoRoot)` with `JobStateStore.list(repoRoot, { includeArchived: opts.all === true || opts.status === 'archived' })`
-- [ ] `src/cli/job-show.ts` line ~65: replace `JobStateStore.list(repoRoot)` with `JobStateStore.list(repoRoot, { includeArchived: true })`
-- [ ] `src/store/job-state-store.ts` `resolveId` method (~line 374): replace `JobStateStore.list(repoRoot)` with `JobStateStore.list(repoRoot, { includeArchived: true })`
+- [x] `src/cli/ps.ts` line ~130: replace `JobStateStore.list(repoRoot)` with `JobStateStore.list(repoRoot, { includeArchived: opts.all === true || opts.status === 'archived' })`
+- [x] `src/cli/job-show.ts` line ~65: replace `JobStateStore.list(repoRoot)` with `JobStateStore.list(repoRoot, { includeArchived: true })`
+- [x] `src/store/job-state-store.ts` `resolveId` method (~line 374): replace `JobStateStore.list(repoRoot)` with `JobStateStore.list(repoRoot, { includeArchived: true })`
+- [x] `src/core/finish/resolve-target.ts` `resolveBySlug`: add `{ includeArchived: true }` (required for existing multi-slug tests)
+- [x] `src/core/resume/resolve-job.ts` `resolveJobStateBySlug`: add `{ includeArchived: true }` (required for existing multi-slug tests)
 
 **Acceptance Criteria**:
 - `runPs({})` calls `list` without `includeArchived: true`
@@ -26,13 +28,13 @@
 
 ## T-03: Add archive-skip test
 
-- [ ] Create `src/store/__tests__/job-state-store-archive-skip.test.ts`
-- [ ] Set up a temporary `repoRoot` with `specrunner/changes/archive/` containing at least 3 stub subdirectories (each with a minimal valid `state.json`)
-- [ ] Spy on `fs.readdir` (from `node:fs/promises`) to capture call arguments
-- [ ] Call `JobStateStore.list(repoRoot)` (default, no opts)
-- [ ] Assert that `fs.readdir` was never called with a path containing `archive`
-- [ ] Call `JobStateStore.list(repoRoot, { includeArchived: true })`
-- [ ] Assert that `fs.readdir` was called with the archive path at least once
+- [x] Create `src/store/__tests__/job-state-store-archive-skip.test.ts`
+- [x] Set up a temporary `repoRoot` with `specrunner/changes/archive/` containing at least 3 stub subdirectories (each with a minimal valid `state.json`)
+- [x] Spy on `fs.readdir` (from `node:fs/promises`) to capture call arguments (via `vi.mock` — ESM namespace is not configurable by `vi.spyOn`)
+- [x] Call `JobStateStore.list(repoRoot)` (default, no opts)
+- [x] Assert that `fs.readdir` was never called with a path starting with the archive directory
+- [x] Call `JobStateStore.list(repoRoot, { includeArchived: true })`
+- [x] Assert that `fs.readdir` was called with the archive path at least once
 
 **Acceptance Criteria**:
 - Test is green under `bun run test`
@@ -40,8 +42,8 @@
 
 ## T-04: Verify `typecheck && test`
 
-- [ ] Run `bun run typecheck` — zero type errors
-- [ ] Run `bun run test` — all tests green, including pre-existing tests
+- [x] Run `bun run typecheck` — zero type errors
+- [x] Run `bun run test` — all tests green, including pre-existing tests
 
 **Acceptance Criteria**:
 - No regressions in existing test suite

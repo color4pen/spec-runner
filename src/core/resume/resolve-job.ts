@@ -16,7 +16,7 @@ import type { JobState } from "../../state/schema.js";
  * because it requires PR info via buildResolvedTarget().
  */
 export async function resolveJobStateBySlug(slug: string, repoRoot: string): Promise<JobState | null> {
-  const allStates = await JobStateStore.list(repoRoot);
+  const allStates = await JobStateStore.list(repoRoot, { includeArchived: true });
   const matching = allStates.filter((s) => getJobSlug(s) === slug);
 
   if (matching.length === 0) {

@@ -62,7 +62,7 @@ export async function runJobShow(input: string): Promise<number> {
     }
   } else {
     // Resolve by slug
-    const allJobs = await JobStateStore.list(repoRoot);
+    const allJobs = await JobStateStore.list(repoRoot, { includeArchived: true });
     const matching = allJobs.filter((j) => getJobSlug(j) === input);
     if (matching.length === 0) {
       stderrWrite(`Error: Job not found for slug: ${input}`);

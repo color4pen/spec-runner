@@ -127,7 +127,7 @@ export async function runPs(
   // Read-only command — fallback to cwd if git unavailable
   const repoRoot = opts.repoRoot ?? (await resolveRepoRoot()) ?? process.cwd();
 
-  const allJobs = await JobStateStore.list(repoRoot);
+  const allJobs = await JobStateStore.list(repoRoot, { includeArchived: opts.all === true || opts.status === "archived" });
 
   let jobs: typeof allJobs;
   if (opts.status) {
