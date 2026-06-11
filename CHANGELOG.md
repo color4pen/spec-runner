@@ -1,32 +1,5 @@
 # Changelog
 
-## [0.2.1](https://github.com/color4pen/spec-runner/compare/specrunner-v0.2.0...specrunner-v0.2.1) (2026-06-11)
-
-
-### Features
-
-* agent session の一過性エラーを有限回の自動再試行で吸収する ([#600](https://github.com/color4pen/spec-runner/issues/600)) ([74a63f7](https://github.com/color4pen/spec-runner/commit/74a63f7e75e162aa808d3d1d25ca683fa15d91c9))
-* git transport（fetch / push）を解決済みトークンで自己認証する ([#614](https://github.com/color4pen/spec-runner/issues/614)) ([ee610f7](https://github.com/color4pen/spec-runner/commit/ee610f7b6c9165239edd8ee7cdb7bc32e8acca42))
-* inbox run が孤児化した running job を検出して自動回復する ([#618](https://github.com/color4pen/spec-runner/issues/618)) ([94a7ab2](https://github.com/color4pen/spec-runner/commit/94a7ab22ec909a1536c945e269527dce3b496f6b))
-* job cancel 時に request.md を drafts/ に戻すオプションを追加する ([#610](https://github.com/color4pen/spec-runner/issues/610)) ([ad81329](https://github.com/color4pen/spec-runner/commit/ad813297e41de346724434c44bcf5dedf7605775))
-* PR の Fixes 行を job state の issueNumber から導出する ([#620](https://github.com/color4pen/spec-runner/issues/620)) ([23fe762](https://github.com/color4pen/spec-runner/commit/23fe762f8678eb77a26eb74740bb417e4264c071))
-* step 完了時に宣言された契約を機械検証し、不足は follow-up で修復させる ([#633](https://github.com/color4pen/spec-runner/issues/633)) ([02e0ee8](https://github.com/color4pen/spec-runner/commit/02e0ee887a9b8c994533d85091f1fa2dbb0e9dd5))
-* カスタムレビューワーの起動条件を宣言的に指定できるようにする ([#632](https://github.com/color4pen/spec-runner/issues/632)) ([325ec83](https://github.com/color4pen/spec-runner/commit/325ec83f9e5ccf598a2a0675557b80b7c24f9a8c))
-* プロジェクト定義のカスタムレビューワー step を宣言的に追加できるようにする ([#628](https://github.com/color4pen/spec-runner/issues/628)) ([e813245](https://github.com/color4pen/spec-runner/commit/e8132452aa9f378ea53e8cf7c2a5b27693f26797))
-* レビュー収束後の退行ゲートで累積 findings を最終コードと再照合する ([#631](https://github.com/color4pen/spec-runner/issues/631)) ([3a58c89](https://github.com/color4pen/spec-runner/commit/3a58c89b635737fcaae78a293372dd8b6103e7b6))
-* 成果物の lineage と工程ごとの cost 帰属を可視化する（記述子化 R5） ([#612](https://github.com/color4pen/spec-runner/issues/612)) ([8db4941](https://github.com/color4pen/spec-runner/commit/8db4941b9051eb84f02d15d4b555bdd02a684f8e))
-* 自動化文脈の GitHub トークン経路を対話ログインと分離する ([#613](https://github.com/color4pen/spec-runner/issues/613)) ([2031f78](https://github.com/color4pen/spec-runner/commit/2031f78ee1d82e2fa6e8e35fd47bc021dc1a793d))
-
-
-### Bug Fixes
-
-* archive 済み job の machine-local sidecar が削除されず無限に増える ([#637](https://github.com/color4pen/spec-runner/issues/637)) ([a8a831e](https://github.com/color4pen/spec-runner/commit/a8a831e35013c3992579625501fa78bd795fbaf2))
-* inbox の start 実行直前に issue の linkage を再確認する ([#621](https://github.com/color4pen/spec-runner/issues/621)) ([10d784d](https://github.com/color4pen/spec-runner/commit/10d784da81a0d85137c4c1514ec3e0cfb11587b7))
-* init: .gitignore に node_modules/ を含める ([#617](https://github.com/color4pen/spec-runner/issues/617)) ([5ecd36f](https://github.com/color4pen/spec-runner/commit/5ecd36f53234a365181c10f5032fdba01a9f3074))
-* job 一覧が archive 全件をロードし、履歴の長さに比例して遅くなる ([#638](https://github.com/color4pen/spec-runner/issues/638)) ([64f7664](https://github.com/color4pen/spec-runner/commit/64f76643b954e2f46559de0cec3201e245f9d3ed))
-* secrets masking に OpenAI 系トークンのパターンを追加する ([#609](https://github.com/color4pen/spec-runner/issues/609)) ([e6f94b4](https://github.com/color4pen/spec-runner/commit/e6f94b47185c0817d648f71fdf7e2ad6faa25b48))
-* transient リトライが stream idle timeout と error result 経路を取りこぼす ([#626](https://github.com/color4pen/spec-runner/issues/626)) ([e9d5adb](https://github.com/color4pen/spec-runner/commit/e9d5adbc027af9e2bc65b927b9db5b457b699998))
-
 ## [0.2.0](https://github.com/color4pen/spec-runner/compare/specrunner-v0.1.9...specrunner-v0.2.0) (2026-06-10)
 
 
