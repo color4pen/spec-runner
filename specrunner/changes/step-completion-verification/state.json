@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d18f671a-8c03-48b1-a22e-60f969606bd9",
   "createdAt": "2026-06-11T14:40:03.121Z",
-  "updatedAt": "2026-06-11T16:03:11.993Z",
+  "updatedAt": "2026-06-11T16:06:38.152Z",
   "request": {
     "title": "step 完了時に宣言された契約を機械検証し、不足は follow-up で修復させる",
     "type": "new-feature"
@@ -11,14 +11,19 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/step-completion-verification-d18f671a",
   "error": null,
   "pipelineId": "standard",
   "issueNumber": 627,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/633",
+    "number": 633,
+    "createdAt": "2026-06-11T16:06:38.139Z"
+  },
   "_journal": {
-    "historyCount": 45,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -28,7 +33,9 @@
       "verification": 1,
       "code-review": 2,
       "code-fixer": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
