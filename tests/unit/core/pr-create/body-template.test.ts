@@ -146,6 +146,38 @@ describe("renderPrBody — Fixes line from parsedRequest.issue", () => {
   });
 });
 
+// TC: Fixes line from jobState.issueNumber (issueNumber priority)
+describe("renderPrBody — Fixes line from jobState.issueNumber", () => {
+  it("includes 'Fixes #42' when jobState.issueNumber is 42", () => {
+    const parsedRequest = makeParsedRequest();
+    const jobState = makeMinimalState({ issueNumber: 42, steps: {} });
+    const body = renderPrBody({ parsedRequest, jobState, slug: "pr-create-step" });
+    expect(body).toContain("Fixes #42");
+  });
+
+  it("prefers issueNumber over parsedRequest.issue when both are set", () => {
+    const parsedRequest = makeParsedRequest({ issue: "#264" });
+    const jobState = makeMinimalState({ issueNumber: 42, steps: {} });
+    const body = renderPrBody({ parsedRequest, jobState, slug: "pr-create-step" });
+    expect(body).toContain("Fixes #42");
+    expect(body).not.toContain("Fixes #264");
+  });
+
+  it("falls back to parsedRequest.issue when issueNumber is not set", () => {
+    const parsedRequest = makeParsedRequest({ issue: "#264" });
+    const jobState = makeMinimalState({ steps: {} });
+    const body = renderPrBody({ parsedRequest, jobState, slug: "pr-create-step" });
+    expect(body).toContain("Fixes #264");
+  });
+
+  it("omits Fixes line when both issueNumber and parsedRequest.issue are absent", () => {
+    const parsedRequest = makeParsedRequest();
+    const jobState = makeMinimalState({ steps: {} });
+    const body = renderPrBody({ parsedRequest, jobState, slug: "pr-create-step" });
+    expect(body).not.toMatch(/Fixes #/);
+  });
+});
+
 // Additional: body with no sections (no 背景/目的)
 describe("renderPrBody — sections absent", () => {
   it("still produces a valid body when sections are empty", () => {

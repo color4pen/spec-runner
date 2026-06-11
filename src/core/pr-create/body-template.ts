@@ -70,7 +70,10 @@ export function renderPrBody(params: {
   }
 
   // --- Fixes line (auto-close linked issue on PR merge) ---
-  if (parsedRequest.issue) {
+  // issueNumber (from job state) takes priority; falls back to request.md issue field.
+  if (jobState.issueNumber != null) {
+    sections.push(`Fixes #${jobState.issueNumber}`);
+  } else if (parsedRequest.issue) {
     sections.push(`Fixes ${parsedRequest.issue}`);
   }
 

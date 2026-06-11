@@ -1,0 +1,42 @@
+{
+  "version": 2,
+  "jobId": "bcc0bb20-0df8-4dbe-9680-eed4b8cf22d6",
+  "createdAt": "2026-06-11T04:54:27.974Z",
+  "updatedAt": "2026-06-11T05:24:02.809Z",
+  "request": {
+    "title": "PR の Fixes 行を job state の issueNumber から導出する",
+    "type": "spec-change"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/pr-fixes-issue-link-bcc0bb20",
+  "error": null,
+  "pipelineId": "standard",
+  "issueNumber": 615,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/620",
+    "number": 620,
+    "createdAt": "2026-06-11T05:24:02.796Z"
+  },
+  "_journal": {
+    "historyCount": 58,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 3,
+      "build-fixer": 2,
+      "code-review": 1,
+      "code-fixer": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}
