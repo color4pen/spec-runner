@@ -296,29 +296,55 @@ export class ClaudeCodeRunner implements AgentRunner {
     let resumeFallbackDone = false;
 
     /**
+     * If the query returned an error result whose text is a known transient
+     * pattern, convert it to a throw so that retryWithBackoff can catch and
+     * retry it.  Non-transient error results are returned unchanged.
+     */
+    const maybeThrowTransientResult = (
+      r: { lastResult: SDKResultMessage | null },
+    ): { lastResult: SDKResultMessage | null } => {
+      const lr = r.lastResult;
+      if (lr && lr.subtype !== "success") {
+        const errors = (lr as SDKResultMessage & { errors?: string[] }).errors ?? [];
+        const joinedText = errors.join(" ").trim();
+        if (joinedText && isTransientAgentError(new Error(joinedText))) {
+          throw Object.assign(
+            new Error(`Claude Code SDK query failed: ${joinedText}`),
+            { code: "CLAUDE_CODE_QUERY_FAILED_TRANSIENT" },
+          );
+        }
+      }
+      return r;
+    };
+
+    /**
      * Inner function wrapping the main work query turn plus the existing
      * resume→new-session fallback.  This is the unit retried on transient errors.
      */
     const runMainWorkTurn = async (): Promise<{ lastResult: SDKResultMessage | null }> => {
       try {
-        return await runQuery();
+        return maybeThrowTransientResult(await runQuery());
       } catch (innerErr) {
         // Do not apply resume fallback when the abort controller has fired —
         // that path is handled by the outer catch as a timeout.
         if (abortController.signal.aborted) {
           throw innerErr;
         }
+        // Transient error result throws should propagate directly to
+        // retryWithBackoff — the resume fallback is for SDK-level throws only.
+        const isTransientResult =
+          (innerErr as { code?: string })?.code === "CLAUDE_CODE_QUERY_FAILED_TRANSIENT";
         // On the first failure, if we were attempting a session resume, fall
         // back to a fresh session.  Subsequent retries skip this branch since
         // the resume option has already been removed and `resumeFallbackDone`
         // is set to prevent the warning from repeating.
-        if (ctx.session.resumeSessionId && !resumeFallbackDone) {
+        if (!isTransientResult && ctx.session.resumeSessionId && !resumeFallbackDone) {
           resumeFallbackDone = true;
           stderrWrite(
             `[specrunner] warn: session resume failed for '${step.name}' (session: ${ctx.session.resumeSessionId}): ${(innerErr as Error).message}. Falling back to new session.`,
           );
           delete queryOptions["resume"];
-          return await runQuery();
+          return maybeThrowTransientResult(await runQuery());
         }
         throw innerErr;
       }

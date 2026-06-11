@@ -31,6 +31,7 @@ const SIMPLE_TOKENS_LC: string[] = [
   "etimedout",
   "request timed out",
   "socket timeout",
+  "stream idle timeout",
   // Named 5xx descriptors
   "internal server error",
   "bad gateway",

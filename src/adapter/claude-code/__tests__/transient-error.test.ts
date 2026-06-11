@@ -100,6 +100,18 @@ describe("network tokens", () => {
   it("socket timeout is transient", () => {
     expect(isTransientAgentError(mkError("socket timeout"))).toBe(true);
   });
+
+  it("stream idle timeout is transient", () => {
+    expect(isTransientAgentError(mkError("stream idle timeout"))).toBe(true);
+  });
+
+  it("full SDK-wrapped stream idle timeout form is transient", () => {
+    expect(isTransientAgentError(mkError("Claude Code returned an error result: API Error: Stream idle timeout - partial response received"))).toBe(true);
+  });
+
+  it("Stream Idle Timeout (mixed case) is transient", () => {
+    expect(isTransientAgentError(mkError("Stream Idle Timeout"))).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------

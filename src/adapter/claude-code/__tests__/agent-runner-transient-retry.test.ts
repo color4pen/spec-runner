@@ -432,3 +432,150 @@ describe("transientRetryAttempts value on various outcomes", () => {
     expect(result.transientRetryAttempts).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Error result retry path (T-03 / T-04)
+// ---------------------------------------------------------------------------
+
+/** Yield a minimal error result (subtype !== "success"). */
+async function* errorResultStream(
+  errors: string[],
+  subtype = "error_during_execution",
+): AsyncGenerator<unknown, void> {
+  yield {
+    type: "result",
+    subtype,
+    errors,
+    is_error: true,
+    num_turns: 1,
+    duration_ms: 100,
+    duration_api_ms: 80,
+  };
+}
+
+const STREAM_IDLE_TIMEOUT_MSG = "Stream idle timeout";
+
+// AC-ER1: transient error result → success on retry
+describe("AC-ER1: transient error result then success", () => {
+  it("completes, transientRetryAttempts=1, step:retry once, queryFn called twice", async () => {
+    let callCount = 0;
+    const queryFn: QueryFn = async function* (_params) {
+      callCount++;
+      if (callCount === 1) {
+        yield* errorResultStream([STREAM_IDLE_TIMEOUT_MSG]);
+      } else {
+        yield* successStream();
+      }
+    };
+
+    const retryEvents: Array<{ attempt: number }> = [];
+    const emitFn = (event: string, payload: Record<string, unknown>) => {
+      if (event === "step:retry") {
+        retryEvents.push(payload as { attempt: number });
+      }
+    };
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _sleepFn: async () => {},
+    });
+    const result = await runner.run(
+      makeCtx(makeAgentStep(), makeJobState(), makeConfig({ maxRetries: 3 }), emitFn),
+    );
+
+    expect(result.completionReason).toBe("success");
+    expect(result.transientRetryAttempts).toBe(1);
+    expect(callCount).toBe(2);
+    expect(retryEvents).toHaveLength(1);
+    expect(retryEvents[0]!.attempt).toBe(1);
+  });
+});
+
+// AC-ER2: persistent transient error result → exhaustion
+describe("AC-ER2: persistent transient error result exhausts budget", () => {
+  it("queryFn called maxRetries+1 times, completionReason=error, transientRetryAttempts=maxRetries, step:retry 3 times", async () => {
+    const maxRetries = 3;
+    let callCount = 0;
+    const queryFn: QueryFn = async function* (_params) {
+      callCount++;
+      yield* errorResultStream([STREAM_IDLE_TIMEOUT_MSG]);
+    };
+
+    const retryEvents: Array<{ attempt: number }> = [];
+    const emitFn = (event: string, payload: Record<string, unknown>) => {
+      if (event === "step:retry") {
+        retryEvents.push(payload as { attempt: number });
+      }
+    };
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _sleepFn: async () => {},
+    });
+    const result = await runner.run(
+      makeCtx(makeAgentStep(), makeJobState(), makeConfig({ maxRetries }), emitFn),
+    );
+
+    expect(callCount).toBe(maxRetries + 1);
+    expect(result.completionReason).toBe("error");
+    expect(result.transientRetryAttempts).toBe(maxRetries);
+    expect(retryEvents).toHaveLength(maxRetries);
+    expect(retryEvents.map((e) => e.attempt)).toEqual([1, 2, 3]);
+  });
+});
+
+// AC-ER3: non-transient error result → no retry
+describe("AC-ER3: non-transient error result — no retry", () => {
+  it("queryFn called once, no step:retry, completionReason=error with CLAUDE_CODE_QUERY_FAILED", async () => {
+    let callCount = 0;
+    const queryFn: QueryFn = async function* (_params) {
+      callCount++;
+      yield* errorResultStream(["something unexpected"]);
+    };
+
+    const retryEvents: string[] = [];
+    const emitFn = (event: string) => {
+      if (event === "step:retry") retryEvents.push(event);
+    };
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _sleepFn: async () => {},
+    });
+    const result = await runner.run(
+      makeCtx(makeAgentStep(), makeJobState(), makeConfig({ maxRetries: 3 }), emitFn),
+    );
+
+    expect(callCount).toBe(1);
+    expect(retryEvents).toHaveLength(0);
+    expect(result.completionReason).toBe("error");
+    expect((result.error as Error & { code?: string })?.code).toBe("CLAUDE_CODE_QUERY_FAILED");
+  });
+});
+
+// AC-ER4: error result with no errors field → no retry
+describe("AC-ER4: error result with no errors field — no retry", () => {
+  it("queryFn called once, completionReason=error", async () => {
+    let callCount = 0;
+    const queryFn: QueryFn = async function* (_params) {
+      callCount++;
+      // Yield error result with no errors field (empty array handled same as missing)
+      yield* errorResultStream([]);
+    };
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _sleepFn: async () => {},
+    });
+    const result = await runner.run(
+      makeCtx(makeAgentStep(), makeJobState(), makeConfig({ maxRetries: 3 })),
+    );
+
+    expect(callCount).toBe(1);
+    expect(result.completionReason).toBe("error");
+  });
+});
