@@ -75,7 +75,7 @@ async function resolveBySlug(
   repoRoot: string,
   stdoutWrite: (msg: string) => void,
 ): Promise<ResolveTargetResult> {
-  const allStates = await JobStateStore.list(repoRoot);
+  const allStates = await JobStateStore.list(repoRoot, { includeArchived: true });
   const matching = allStates.filter((s) => getJobSlug(s) === slug);
 
   if (matching.length === 0) {

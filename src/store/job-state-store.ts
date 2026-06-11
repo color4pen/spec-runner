@@ -200,10 +200,14 @@ export class JobStateStore {
   /**
    * List all valid job states from slug-based stores.
    * Scans (1) slug-based states in current checkout and local worktrees,
-   * (2) archived states, (3) machine-local sidecar supplement, (4) managed markers.
+   * (2) archived states (only when opts.includeArchived === true),
+   * (3) machine-local sidecar supplement, (4) managed markers.
    * Deduplicates by jobId: newest updatedAt wins.
+   *
+   * By default archived states are skipped entirely (no directory scan).
+   * Pass { includeArchived: true } to include archived states (e.g. --all, job show).
    */
-  static async list(repoRoot: string): Promise<JobState[]> {
+  static async list(repoRoot: string, opts?: { includeArchived?: boolean }): Promise<JobState[]> {
     const stateMap = new Map<string, JobState>(); // jobId → most-recent state
 
     const tryMerge = (state: JobState) => {
@@ -235,27 +239,29 @@ export class JobStateStore {
     }
 
     // 1b. Archived states in current checkout (specrunner/changes/archive/*/state.json)
-    // Archived state files (status="archived") are included in --all listings.
-    const archiveDir = path.join(repoRoot, "specrunner", "changes", "archive");
-    try {
-      const archiveEntries = await fs.readdir(archiveDir, { withFileTypes: true });
-      for (const entry of archiveEntries) {
-        if (!entry.isDirectory()) continue;
-        const datedSlug = entry.name;
-        // Extract slug from "<YYYY-MM-DD>-<slug>" (strip date prefix if present)
-        const { slug: archiveSlug } = parseArchiveDirName(datedSlug);
-        const stateJsonPath = path.join(archiveDir, datedSlug, "state.json");
-        const eventsPath = path.join(archiveDir, datedSlug, "events.jsonl");
-        try {
-          const state = await loadSplitLayout(stateJsonPath, eventsPath, { slug: archiveSlug, stateRoot: repoRoot });
-          tryMerge(state);
-        } catch {
-          // Skip malformed archive state
+    // Only scanned when opts.includeArchived === true to avoid O(archive-size) cost on every list().
+    if (opts?.includeArchived === true) {
+      const archiveDir = path.join(repoRoot, "specrunner", "changes", "archive");
+      try {
+        const archiveEntries = await fs.readdir(archiveDir, { withFileTypes: true });
+        for (const entry of archiveEntries) {
+          if (!entry.isDirectory()) continue;
+          const datedSlug = entry.name;
+          // Extract slug from "<YYYY-MM-DD>-<slug>" (strip date prefix if present)
+          const { slug: archiveSlug } = parseArchiveDirName(datedSlug);
+          const stateJsonPath = path.join(archiveDir, datedSlug, "state.json");
+          const eventsPath = path.join(archiveDir, datedSlug, "events.jsonl");
+          try {
+            const state = await loadSplitLayout(stateJsonPath, eventsPath, { slug: archiveSlug, stateRoot: repoRoot });
+            tryMerge(state);
+          } catch {
+            // Skip malformed archive state
+          }
         }
+      } catch (err: unknown) {
+        const code = (err as NodeJS.ErrnoException).code;
+        if (code !== "ENOENT") throw err;
       }
-    } catch (err: unknown) {
-      const code = (err as NodeJS.ErrnoException).code;
-      if (code !== "ENOENT") throw err;
     }
 
     // 2. Slug-based states in local worktrees (.git/specrunner-worktrees/*/specrunner/changes/*/state.json)
@@ -370,8 +376,9 @@ export class JobStateStore {
     }
 
     // Candidate set: list() jobIds ∪ sidecar index jobIds (D3)
+    // includeArchived: true so archived jobs remain resolvable by prefix.
     const [states, sidecarEntries] = await Promise.all([
-      JobStateStore.list(repoRoot),
+      JobStateStore.list(repoRoot, { includeArchived: true }),
       listLocalSidecars(repoRoot),
     ]);
 
