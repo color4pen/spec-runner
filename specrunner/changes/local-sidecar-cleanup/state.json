@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "136b674e-b8f8-4c83-a734-2db8f3ce7bf3",
   "createdAt": "2026-06-11T17:30:02.544Z",
-  "updatedAt": "2026-06-11T17:57:29.920Z",
+  "updatedAt": "2026-06-11T17:57:53.362Z",
   "request": {
     "title": "archive 済み job の machine-local sidecar が削除されず無限に増える",
     "type": "bug-fix"
@@ -11,14 +11,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "conformance",
   "status": "running",
   "branch": "fix/local-sidecar-cleanup-136b674e",
   "error": null,
   "pipelineId": "standard",
   "issueNumber": 635,
   "_journal": {
-    "historyCount": 37,
+    "historyCount": 41,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -27,7 +27,8 @@
       "implementer": 1,
       "verification": 2,
       "build-fixer": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1
     }
   }
 }
