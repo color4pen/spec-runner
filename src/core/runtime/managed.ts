@@ -412,12 +412,12 @@ export class ManagedRuntime implements RuntimeStrategy {
 
   /**
    * Custom reviewer activation (listChangedFiles) is not supported in the managed runtime.
-   * Returns [] as a fail-safe so all managed reviewers activate unconditionally.
    *
    * Known constraint: managed runtime does not have a local git worktree to run
    * `git diff --name-only`, so path-based activation conditions cannot be evaluated.
-   * All managed custom reviewers activate regardless of paths/requestTypes conditions
-   * (conservative: over-activate rather than silently skip).
+   * Returns [] — reviewers with paths conditions will not match any file and will be
+   * skipped (fail-safe: under-activate rather than evaluate against stale or fabricated data).
+   * Reviewers without paths conditions are unaffected and activate normally.
    */
   async listChangedFiles(
     _baseBranch: string,
