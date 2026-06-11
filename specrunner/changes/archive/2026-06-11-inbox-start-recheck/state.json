@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "32b371a0-cd74-4adf-88b5-6abb1a9ded32",
   "createdAt": "2026-06-11T05:50:01.571Z",
-  "updatedAt": "2026-06-11T06:13:04.586Z",
+  "updatedAt": "2026-06-11T06:45:51.110Z",
   "request": {
     "title": "inbox の start 実行直前に issue の linkage を再確認する",
     "type": "bug-fix"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/inbox-start-recheck-32b371a0",
   "error": null,
   "pipelineId": "standard",
@@ -23,7 +23,7 @@
     "createdAt": "2026-06-11T06:13:04.572Z"
   },
   "_journal": {
-    "historyCount": 42,
+    "historyCount": 43,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
