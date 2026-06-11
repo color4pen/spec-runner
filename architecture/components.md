@@ -21,6 +21,12 @@ interface Transition { step: string; on: Verdict | string; to: string | "end" | 
 - **責務**: 「step が verdict を出したらどこへ」をデータで宣言。`when` は型付き state のみ参照（`fileContent` を読んだら arch test 違反）。
 - → `src/core/pipeline/types.ts`（`STANDARD_TRANSITIONS`）
 
+### Reviewers — 宣言的レビューレンズ subsystem
+- **責務**: `specrunner/reviewers/<name>.md`（frontmatter: name / maxIterations / model / paths / requestTypes、本文: 目的・観点・判定基準 + 自由欄）を job 開始時にロード・検証し、`JobState.reviewers` に snapshot する。pipeline 合成時に `composeReviewerDescriptor` が base descriptor を拡張: custom reviewer step 群を code-review の後に挿入し、チェーン全体の遷移を `buildReviewerChainTransitions` で再生成し、末尾に regression-gate（修正済み findings の台帳照合）を付与する。snapshots 空のとき base を参照同一で返す（ゼロ overhead 不変条件）。
+- **契約の所在**: reviewer の system prompt は CLI 所有の固定フレーム（judge 契約・findings 形式・結果ファイル義務）に md 内容をスロット注入して組む — ユーザー定義が契約を上書きできない。verdict 導出・findings 実在検証・exhaustion は組み込み judge と同一機構。activation（paths / requestTypes）は実行時に StepExecutor が `RuntimeStrategy.listChangedFiles` の観測で決定論判定し、不一致は `verdict: "skipped"`（approved と別値）として記録する。
+- **協調**: composeReviewerDescriptor（合成）/ reviewer-chain 純関数群（`deriveImplReviewerChain` / `resolveActiveReviewer` — 共用 code-fixer の戻り先・予算帰属の多対一解決）/ StepExecutor（activation gate）/ findings-ledger（regression-gate の入力）。
+- → `src/core/reviewers/`（load / validate / definition）、`src/core/pipeline/compose-reviewers.ts`、`src/core/pipeline/reviewer-chain.ts`、`src/core/step/custom-reviewer.ts`、`src/core/step/regression-gate.ts`
+
 ### Step（filter 抽象）— discriminated union `AgentStep | CliStep`
 - **責務**: pipeline の filter。1 step = 1 関心。
 - **AgentStep 契約**（agent session で動く step）:
@@ -132,6 +138,7 @@ interface FollowUpPolicy { maxAttempts; buildPrompt(input): string }  // DEFAULT
 - **実装**: `LocalRuntime`（worktree or no-worktree + ClaudeCodeRunner + signal cleanup）/ `ManagedRuntime`（SessionClient + ManagedAgentRunner + no-op workspace）。
 - **検証と導出の分担**: finding の file / line 参照の存在確認（I/O、runtime 差異＝local worktree fs / managed GitHub raw fetch）は本 seam（`verifyFindingRefs`）。verdict の導出（純関数）は domain（`core/step/judge-verdict.ts`）。判定を seam に、I/O を domain に置かない（B-5 / B-8 と同方向）。
 - **出力検証（`validateStepOutputs`）**: step 実行後、`OutputContract[]` を受け取り `OutputCheckResult`（violations）を返す。no-throw 契約。`produced`（ファイル欠落 / 空 / scaffold 一致）と `tasks-complete`（未チェック `[ ]` 残存）の 2 kind を処理。LocalRuntime = ローカル fs 読み取り、ManagedRuntime = origin fetch 後 `getRawFile`（stdout 非汚染）。
+- **変更ファイル観測（`listChangedFiles`）**: base branch との差分ファイル一覧を返す（reviewer activation の判定材料）。LocalRuntime = `git diff --name-only`、ManagedRuntime = `[]`（local git なし → paths 条件付き reviewer は安全側 skip、文書化済み制約）。
 - → `src/core/port/runtime-strategy.ts`（`local.ts` / `managed.ts` が implements）
 
 ### createRuntime — runtime factory（分岐集約点）

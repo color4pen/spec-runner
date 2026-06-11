@@ -17,19 +17,31 @@ CLI-first の dual runtime アーキテクチャ。
 
 - **Local runtime**: Claude Agent SDK 経由でローカルに agent セッションを実行
 - **Managed runtime**: Anthropic Managed Agents API 経由でクラウド上の agent を実行
-- **Pipeline**: 12 ステップの state-machine で request.md → PR を自動生成
-  1. design — ブランチ作成・仕様生成
-  2. spec-review — 仕様レビュー
-  3. spec-fixer — 仕様修正（spec-review が needs-fix の場合）
-  4. test-case-gen — テストケース生成
-  5. implementer — コード実装
-  6. verification — ビルド・テスト検証
-  7. build-fixer — ビルド修正（verification 失敗時）
-  8. code-review — コードレビュー
-  9. code-fixer — コード修正（code-review が needs-fix の場合）
-  10. conformance — アーキテクチャ適合性検証
-  11. adr-gen — ADR 生成（request.adr === true の場合）
-  12. pr-create — GitHub PR 作成
+- **Pipeline**: 13 ステップの state-machine で request.md → PR を自動生成
+  1. request-review — request の受け入れ判定（不明瞭・却下は即 escalation）
+  2. design — ブランチ作成・仕様生成
+  3. spec-review — 仕様レビュー
+  4. spec-fixer — 仕様修正（spec-review が needs-fix の場合）
+  5. test-case-gen — テストケース生成
+  6. implementer — コード実装
+  7. verification — ビルド・テスト検証
+  8. build-fixer — ビルド修正（verification 失敗時）
+  9. code-review — コードレビュー
+  10. code-fixer — コード修正（code-review または custom reviewer が needs-fix の場合）
+  11. conformance — アーキテクチャ適合性検証
+  12. adr-gen — ADR 生成（request.adr === true の場合）
+  13. pr-create — GitHub PR 作成
+
+  `specrunner/reviewers/` に custom reviewer 定義があるとき、チェーンは動的に延長される:
+  code-review の後に custom reviewer 群が宣言順で直列実行され（needs-fix は共用 code-fixer と収束）、
+  その後に regression-gate（レビュー中に修正された全 findings が最終コードでも修正されたままかの台帳照合）が走り、
+  conformance へ進む。reviewer 定義は job 開始時に state へ snapshot され、実行中の定義変更は影響しない。
+
+### レビュー観点の拡張（コード変更なし）
+
+- **rules**（`specrunner/rules/<step>/*.md`）: 既存 step の prompt に規律を追記する。セッション数は増えない
+- **custom reviewers**（`specrunner/reviewers/<name>.md`）: 独立した収束ループ・予算・model を持つレビューレンズを宣言的に追加する。
+  frontmatter の `paths`（glob）/ `requestTypes` で起動条件を宣言でき、不一致の job では skip される（skip は approved と区別して state に記録）
 
 ### 設計パターン
 

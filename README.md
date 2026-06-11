@@ -112,8 +112,9 @@ specrunner request generate "<text>"       Generate request.md via LLM
 specrunner request ls                      List active requests
 specrunner request validate <file|slug>    Validate request.md syntax (static, no LLM)
 specrunner request template                Print scaffold template to stdout
-specrunner request review <slug|file>      Architect review (one-shot LLM, stateless)
 ```
+
+See [docs/request-authoring.md](docs/request-authoring.md) for how to write effective requests (premise verification, granularity, splitting).
 
 ### Job commands (stateful execution)
 
@@ -141,6 +142,13 @@ specrunner runtime reset                   Reset managed runtime config
 
 ```
 specrunner inbox run                       Poll approved issues, start / resume jobs
+```
+
+### Extension commands (rules / custom reviewers)
+
+```
+specrunner rules new <step> <slug>         Scaffold a rules file (extra discipline injected into a step)
+specrunner reviewers new <name>            Scaffold a custom reviewer definition
 ```
 
 ### Aliases
@@ -272,6 +280,18 @@ Issue bodies and `/resume` comment text are passed directly to agent prompts.
 - `/resume` comments are gated to `OWNER`, `MEMBER`, and `COLLABORATOR` associations; external contributors cannot inject prompts
 
 **Running `inbox run` on repositories with untrusted issue content is not recommended.** A repository member with label-apply permission could craft a malicious issue body.
+
+See [docs/operations.md](docs/operations.md) for the full unattended-loop runbook: the three authentication layers required for cron (API token / git transport / agent runtime), crontab pitfalls, failure-resilience behavior, and diagnostics.
+
+## Extending the Review Chain
+
+The review side of the pipeline is extensible without code changes:
+
+- **Rules** (`specrunner/rules/<step>/*.md`) add extra discipline to an existing step's prompt. Cheap (no extra session), but shares the step's convergence loop.
+- **Custom reviewers** (`specrunner/reviewers/<name>.md`) add an independent review lens with its own convergence loop, budget, and optional model override. Declared as data (purpose / criteria / judgment sections in markdown), validated at job start, and run serially after `code-review`. Activation can be scoped declaratively with `paths` globs and `requestTypes` so a lens only runs when the diff touches its domain.
+- When custom reviewers are present, a **regression gate** runs automatically after the chain: it re-checks every finding that was reported and fixed during review against the final code, catching fixes that were silently undone by later changes.
+
+Scaffold a definition with `specrunner reviewers new <name>` — the template documents the format.
 
 ## Configuration
 
