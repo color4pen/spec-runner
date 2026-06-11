@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b2823f3e-ebff-46fc-9bb7-1d758f4c3e6e",
   "createdAt": "2026-06-11T14:30:02.116Z",
-  "updatedAt": "2026-06-11T14:34:28.294Z",
+  "updatedAt": "2026-06-11T14:51:09.016Z",
   "request": {
     "title": "レビュー収束後の退行ゲートで累積 findings を最終コードと再照合する",
     "type": "new-feature"
@@ -11,16 +11,17 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/review-regression-gate-b2823f3e",
   "error": null,
   "pipelineId": "standard",
   "issueNumber": 624,
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
