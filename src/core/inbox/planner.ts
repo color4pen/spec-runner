@@ -6,9 +6,69 @@
 import type { JobState } from "../../state/schema.js";
 import { isNotificationComment, matchesEscalationMarker } from "../notify/issue-notifier.js";
 import { parseRequestMdContent } from "../../parser/request-md.js";
-import type { IssueRef, IssueComment, StartAction, RejectAction, ResumeAction, InboxPlan } from "./types.js";
+import { getJobSlug } from "../../state/job-slug.js";
+import type { IssueRef, IssueComment, StartAction, RejectAction, ResumeAction, RecoverAction, EscalateAction, InboxPlan } from "./types.js";
 
-export type { IssueRef, IssueComment, StartAction, RejectAction, ResumeAction, InboxPlan };
+export type { IssueRef, IssueComment, StartAction, RejectAction, ResumeAction, RecoverAction, EscalateAction, InboxPlan };
+
+/** Maximum consecutive auto-recovery attempts before crash-loop escalation. */
+export const MAX_STALE_RECOVERY_ATTEMPTS = 3;
+
+/**
+ * Count total step-run executions across all steps in a job state.
+ * Returns the sum of all StepRun array lengths (steps undefined → 0).
+ */
+export function countStepRuns(state: JobState): number {
+  return Object.values(state.steps ?? {}).reduce((n, runs) => n + runs.length, 0);
+}
+
+/**
+ * Plan recover / escalate actions for stale-running jobs.
+ *
+ * Pure function — no I/O, no process.kill, no fs access.
+ * Precondition: every job in staleJobs has status === "running".
+ *
+ * @param staleJobs   Jobs already confirmed to be stale-running (process dead).
+ * @param maxAttempts Maximum consecutive auto-recovery attempts (default MAX_STALE_RECOVERY_ATTEMPTS).
+ */
+export function planStaleRecoveries(
+  staleJobs: JobState[],
+  maxAttempts = MAX_STALE_RECOVERY_ATTEMPTS,
+): { recovers: RecoverAction[]; escalates: EscalateAction[] } {
+  const recovers: RecoverAction[] = [];
+  const escalates: EscalateAction[] = [];
+
+  for (const job of staleJobs) {
+    const slug = getJobSlug(job);
+    if (!slug) continue;
+
+    const currentCount = countStepRuns(job);
+    const stored = job.staleRecovery ?? null;
+    // Reset attempt counter when there has been progress since last recovery
+    const effective =
+      stored && stored.stepCount === currentCount ? stored.attempts : 0;
+
+    if (effective >= maxAttempts) {
+      escalates.push({
+        kind: "escalate",
+        slug,
+        jobId: job.jobId,
+        issueNumber: job.issueNumber,
+        step: job.step,
+      });
+    } else {
+      recovers.push({
+        kind: "recover",
+        slug,
+        jobId: job.jobId,
+        issueNumber: job.issueNumber,
+        staleRecovery: { attempts: effective + 1, stepCount: currentCount },
+      });
+    }
+  }
+
+  return { recovers, escalates };
+}
 
 /**
  * Author associations that are allowed to trigger /resume.
@@ -159,13 +219,15 @@ export function parseResumePrompt(body: string): string | null {
 }
 
 /**
- * Compose planStarts and planResumes into a single InboxPlan.
+ * Compose planStarts, planResumes, and planStaleRecoveries into a single InboxPlan.
  */
 export function planInbox(input: {
   approvedIssues: IssueRef[];
   jobStates: JobState[];
   maxStarts: number;
   commentsByIssue: Map<number, IssueComment[]>;
+  /** Set of jobIds confirmed to be stale-running (process dead). Defaults to empty set. */
+  staleRunningJobIds?: Set<string>;
 }): InboxPlan {
   const { starts, rejects } = planStarts(
     input.approvedIssues,
@@ -179,5 +241,11 @@ export function planInbox(input: {
 
   const resumes = planResumes(awaitingJobs, input.commentsByIssue);
 
-  return { starts, rejects, resumes };
+  const staleRunningJobIds = input.staleRunningJobIds ?? new Set<string>();
+  const staleJobs = input.jobStates.filter(
+    (s) => s.status === "running" && staleRunningJobIds.has(s.jobId),
+  );
+  const { recovers, escalates } = planStaleRecoveries(staleJobs);
+
+  return { starts, rejects, resumes, recovers, escalates };
 }

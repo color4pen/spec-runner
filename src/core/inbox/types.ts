@@ -47,9 +47,31 @@ export interface ResumeAction {
   resumePrompt: string | null;
 }
 
+/** Action: auto-resume an orphaned (stale) running job. */
+export interface RecoverAction {
+  kind: "recover";
+  slug: string;
+  jobId: string;
+  issueNumber?: number | null;
+  /** New staleRecovery value to persist before resuming. */
+  staleRecovery: { attempts: number; stepCount: number };
+}
+
+/** Action: cap exceeded — escalate a stale running job to awaiting-resume. */
+export interface EscalateAction {
+  kind: "escalate";
+  slug: string;
+  jobId: string;
+  issueNumber?: number | null;
+  /** Job step at detection time, used to build the synthetic resumePoint. */
+  step: string;
+}
+
 /** The aggregate plan produced by planInbox. */
 export interface InboxPlan {
   starts: StartAction[];
   rejects: RejectAction[];
   resumes: ResumeAction[];
+  recovers: RecoverAction[];
+  escalates: EscalateAction[];
 }

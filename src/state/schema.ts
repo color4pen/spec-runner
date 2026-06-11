@@ -230,6 +230,14 @@ export interface JobState {
    * Optional for backward compat — absent in legacy state files is valid.
    */
   issueNumber?: number | null;
+  /**
+   * Crash-loop guard for inbox auto-recovery of orphaned running jobs.
+   * - attempts: consecutive auto-recoveries with no progress since the last recovery.
+   * - stepCount: total step-run count (Σ steps[*].length) observed at the last recovery,
+   *   used as a progress fingerprint. When the current count differs, attempts resets to 0.
+   * Optional for backward compat — absent/null in existing state files is valid.
+   */
+  staleRecovery?: { attempts: number; stepCount: number } | null;
 }
 
 /**

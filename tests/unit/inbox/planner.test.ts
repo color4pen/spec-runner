@@ -8,9 +8,10 @@
  * - planInbox: composition
  */
 import { describe, it, expect } from "vitest";
-import { planStarts, planResumes, parseResumePrompt, planInbox } from "../../../src/core/inbox/planner.js";
+import { planStarts, planResumes, parseResumePrompt, planInbox, planStaleRecoveries, countStepRuns, MAX_STALE_RECOVERY_ATTEMPTS } from "../../../src/core/inbox/planner.js";
 import type { IssueRef, IssueComment } from "../../../src/core/inbox/types.js";
 import type { JobState } from "../../../src/state/schema.js";
+import type { StepRun } from "../../../src/state/schema.js";
 import { buildMarker } from "../../../src/core/notify/issue-notifier.js";
 
 // ---------------------------------------------------------------------------
@@ -340,5 +341,184 @@ describe("planInbox", () => {
     });
     expect(plan.starts).toHaveLength(0);
     expect(plan.resumes).toHaveLength(0);
+  });
+
+  it("planInbox with staleRunningJobIds routes stale job to recovers", () => {
+    const staleJob = makeJobState({
+      status: "running",
+      jobId: "stale-job-id",
+      request: { path: "/specrunner/changes/my-feature/request.md", title: "T", type: "bug-fix", slug: "my-feature" },
+    });
+    const staleIds = new Set(["stale-job-id"]);
+    const plan = planInbox({
+      approvedIssues: [],
+      jobStates: [staleJob],
+      maxStarts: 5,
+      commentsByIssue: new Map(),
+      staleRunningJobIds: staleIds,
+    });
+    expect(plan.recovers).toHaveLength(1);
+    expect(plan.escalates).toHaveLength(0);
+    expect(plan.recovers[0]!.slug).toBe("my-feature");
+  });
+
+  it("planInbox without staleRunningJobIds produces empty recovers/escalates", () => {
+    const runningJob = makeJobState({ status: "running" });
+    const plan = planInbox({
+      approvedIssues: [],
+      jobStates: [runningJob],
+      maxStarts: 5,
+      commentsByIssue: new Map(),
+    });
+    expect(plan.recovers).toHaveLength(0);
+    expect(plan.escalates).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// countStepRuns
+// ---------------------------------------------------------------------------
+
+function makeStepRun(attempt = 1): StepRun {
+  return {
+    attempt,
+    sessionId: null,
+    outcome: { verdict: "approved", findingsPath: null, error: null },
+    startedAt: "2024-01-01T00:00:00.000Z",
+    endedAt: "2024-01-01T00:00:01.000Z",
+  };
+}
+
+describe("countStepRuns", () => {
+  it("returns 0 when steps is undefined", () => {
+    const state = makeJobState({ steps: undefined });
+    expect(countStepRuns(state)).toBe(0);
+  });
+
+  it("returns 0 when steps is empty", () => {
+    const state = makeJobState({ steps: {} });
+    expect(countStepRuns(state)).toBe(0);
+  });
+
+  it("returns total step run count across all steps", () => {
+    const state = makeJobState({
+      steps: {
+        design: [makeStepRun(1), makeStepRun(2)],
+        review: [makeStepRun(1)],
+        build: [makeStepRun(1), makeStepRun(2), makeStepRun(3)],
+      },
+    });
+    expect(countStepRuns(state)).toBe(6);
+  });
+
+  it("returns sum of a single step with multiple runs", () => {
+    const state = makeJobState({
+      steps: { design: [makeStepRun(1), makeStepRun(2), makeStepRun(3)] },
+    });
+    expect(countStepRuns(state)).toBe(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// planStaleRecoveries
+// ---------------------------------------------------------------------------
+
+function makeRunningJob(overrides: Partial<JobState> = {}): JobState {
+  return makeJobState({
+    status: "running",
+    request: { path: "/specrunner/changes/my-feature/request.md", title: "T", type: "bug-fix", slug: "my-feature" },
+    ...overrides,
+  });
+}
+
+describe("planStaleRecoveries", () => {
+  it("no staleRecovery stored → recover with attempts=1, stepCount=current", () => {
+    const job = makeRunningJob({ steps: { design: [makeStepRun(1)] } });
+    const { recovers, escalates } = planStaleRecoveries([job]);
+    expect(escalates).toHaveLength(0);
+    expect(recovers).toHaveLength(1);
+    const rec = recovers[0]!;
+    expect(rec.kind).toBe("recover");
+    expect(rec.slug).toBe("my-feature");
+    expect(rec.staleRecovery.attempts).toBe(1);
+    expect(rec.staleRecovery.stepCount).toBe(1);
+  });
+
+  it("stored.stepCount matches current & attempts < limit → recover with attempts+1", () => {
+    const job = makeRunningJob({
+      steps: { design: [makeStepRun(1)] },
+      staleRecovery: { attempts: 1, stepCount: 1 },
+    });
+    const { recovers, escalates } = planStaleRecoveries([job]);
+    expect(escalates).toHaveLength(0);
+    expect(recovers).toHaveLength(1);
+    expect(recovers[0]!.staleRecovery.attempts).toBe(2);
+    expect(recovers[0]!.staleRecovery.stepCount).toBe(1);
+  });
+
+  it("stored.stepCount differs from current (progress) → recover with attempts=1, new stepCount", () => {
+    const job = makeRunningJob({
+      steps: { design: [makeStepRun(1), makeStepRun(2)] },
+      staleRecovery: { attempts: 2, stepCount: 1 }, // was 1, now 2
+    });
+    const { recovers, escalates } = planStaleRecoveries([job]);
+    expect(escalates).toHaveLength(0);
+    expect(recovers).toHaveLength(1);
+    expect(recovers[0]!.staleRecovery.attempts).toBe(1);
+    expect(recovers[0]!.staleRecovery.stepCount).toBe(2);
+  });
+
+  it("stored.stepCount matches current & attempts >= limit → escalate", () => {
+    const job = makeRunningJob({
+      steps: { design: [makeStepRun(1)] },
+      staleRecovery: { attempts: MAX_STALE_RECOVERY_ATTEMPTS, stepCount: 1 },
+    });
+    const { recovers, escalates } = planStaleRecoveries([job]);
+    expect(recovers).toHaveLength(0);
+    expect(escalates).toHaveLength(1);
+    const esc = escalates[0]!;
+    expect(esc.kind).toBe("escalate");
+    expect(esc.slug).toBe("my-feature");
+    expect(esc.step).toBe(job.step);
+  });
+
+  it("boundary: attempts exactly at limit → escalate", () => {
+    const job = makeRunningJob({
+      staleRecovery: { attempts: MAX_STALE_RECOVERY_ATTEMPTS, stepCount: 0 },
+    });
+    const { recovers, escalates } = planStaleRecoveries([job]);
+    expect(recovers).toHaveLength(0);
+    expect(escalates).toHaveLength(1);
+  });
+
+  it("boundary: attempts one below limit → recover", () => {
+    const job = makeRunningJob({
+      staleRecovery: { attempts: MAX_STALE_RECOVERY_ATTEMPTS - 1, stepCount: 0 },
+    });
+    const { recovers, escalates } = planStaleRecoveries([job]);
+    expect(recovers).toHaveLength(1);
+    expect(escalates).toHaveLength(0);
+  });
+
+  it("job with empty slug is excluded from both lists", () => {
+    const job = makeJobState({
+      status: "running",
+      // slug null + no branch → getJobSlug returns ""
+      request: { path: "", title: "T", type: "bug-fix", slug: null },
+      branch: null,
+    });
+    const { recovers, escalates } = planStaleRecoveries([job]);
+    expect(recovers).toHaveLength(0);
+    expect(escalates).toHaveLength(0);
+  });
+
+  it("staleRunningJobIds not containing running job → job not recovered/escalated", () => {
+    const runningJob = makeRunningJob();
+    // staleRunningJobIds does NOT include this job's id
+    const staleIds = new Set<string>();
+    const staleJobs = [runningJob].filter((s) => staleIds.has(s.jobId));
+    const { recovers, escalates } = planStaleRecoveries(staleJobs);
+    expect(recovers).toHaveLength(0);
+    expect(escalates).toHaveLength(0);
   });
 });

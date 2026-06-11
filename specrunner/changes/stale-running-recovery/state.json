@@ -1,0 +1,42 @@
+{
+  "version": 2,
+  "jobId": "ab627b9c-209d-4055-b84e-6dab74408c07",
+  "createdAt": "2026-06-11T04:05:02.195Z",
+  "updatedAt": "2026-06-11T04:54:25.469Z",
+  "request": {
+    "title": "inbox run が孤児化した running job を検出して自動回復する",
+    "type": "new-feature"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/stale-running-recovery-ab627b9c",
+  "error": null,
+  "pipelineId": "standard",
+  "issueNumber": 616,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/618",
+    "number": 618,
+    "createdAt": "2026-06-11T04:54:25.454Z"
+  },
+  "_journal": {
+    "historyCount": 50,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 2,
+      "build-fixer": 1,
+      "code-review": 1,
+      "code-fixer": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

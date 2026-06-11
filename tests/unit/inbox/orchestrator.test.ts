@@ -97,11 +97,14 @@ function makeGitHubClient(overrides: Partial<GitHubClient> = {}): GitHubClient {
   } as GitHubClient;
 }
 
-function makeEffects() {
+function makeEffects(overrides: { isStale?: (state: unknown) => boolean } = {}) {
   return {
     startJob: vi.fn().mockResolvedValue(undefined),
     resumeJob: vi.fn().mockResolvedValue(undefined),
     postRejectComment: vi.fn().mockResolvedValue(undefined),
+    isStale: vi.fn().mockImplementation(overrides.isStale ?? (() => false)),
+    persistState: vi.fn().mockResolvedValue(undefined),
+    notifyEscalation: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -328,5 +331,134 @@ describe("runInboxOrchestrator — unrelated jobs unaffected", () => {
     expect(effects.resumeJob).not.toHaveBeenCalled();
     expect(client.listIssueComments).not.toHaveBeenCalled();
     expect(summary.errors).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stale-running recovery tests
+// ---------------------------------------------------------------------------
+
+function makeRunningJobState(overrides: Partial<JobState> = {}): JobState {
+  return makeJobState({
+    jobId: "ddddeeee-0000-0000-0000-000000000001",
+    status: "running",
+    step: "design",
+    pid: 99999,
+    request: {
+      path: "/specrunner/changes/my-feature/request.md",
+      title: "My feature",
+      type: "new-feature",
+      slug: "my-feature",
+    },
+    branch: "feat/my-feature",
+    ...overrides,
+  });
+}
+
+describe("runInboxOrchestrator — stale-running recovery", () => {
+  beforeEach(() => {
+    vi.mocked(JobStateStore.list).mockResolvedValue([]);
+  });
+
+  it("calls persistState then resumeJob for stale-running job (isStale=true, low attempts)", async () => {
+    const staleJob = makeRunningJobState();
+    vi.mocked(JobStateStore.list).mockResolvedValue([staleJob]);
+
+    const client = makeGitHubClient({ searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]) });
+    const effects = makeEffects({ isStale: () => true });
+
+    const summary = await runInboxOrchestrator(makeOpts(client, effects));
+
+    expect(effects.persistState).toHaveBeenCalledOnce();
+    const persistedState = vi.mocked(effects.persistState).mock.calls[0]![1] as JobState;
+    expect(persistedState.staleRecovery).toEqual({ attempts: 1, stepCount: 0 });
+
+    expect(effects.resumeJob).toHaveBeenCalledOnce();
+    expect(effects.resumeJob).toHaveBeenCalledWith("my-feature", undefined);
+
+    expect(summary.recovered).toHaveLength(1);
+    expect(summary.recovered[0]!.slug).toBe("my-feature");
+    expect(summary.errors).toHaveLength(0);
+  });
+
+  it("does NOT recover/escalate a running job when isStale=false", async () => {
+    const runningJob = makeRunningJobState();
+    vi.mocked(JobStateStore.list).mockResolvedValue([runningJob]);
+
+    const client = makeGitHubClient({ searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]) });
+    const effects = makeEffects({ isStale: () => false });
+
+    const summary = await runInboxOrchestrator(makeOpts(client, effects));
+
+    expect(effects.persistState).not.toHaveBeenCalled();
+    expect(effects.resumeJob).not.toHaveBeenCalled();
+    expect(effects.notifyEscalation).not.toHaveBeenCalled();
+    expect(summary.recovered).toHaveLength(0);
+    expect(summary.escalated).toHaveLength(0);
+  });
+
+  it("escalates when attempts >= MAX_STALE_RECOVERY_ATTEMPTS (no resumeJob, persistState + notifyEscalation)", async () => {
+    const { MAX_STALE_RECOVERY_ATTEMPTS } = await import("../../../src/core/inbox/planner.js");
+    const staleJob = makeRunningJobState({
+      issueNumber: 42,
+      staleRecovery: { attempts: MAX_STALE_RECOVERY_ATTEMPTS, stepCount: 0 },
+    });
+    vi.mocked(JobStateStore.list).mockResolvedValue([staleJob]);
+
+    const client = makeGitHubClient({ searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]) });
+    const effects = makeEffects({ isStale: () => true });
+
+    const summary = await runInboxOrchestrator(makeOpts(client, effects));
+
+    expect(effects.resumeJob).not.toHaveBeenCalled();
+    expect(effects.persistState).toHaveBeenCalledOnce();
+    const persistedState = vi.mocked(effects.persistState).mock.calls[0]![1] as JobState;
+    expect(persistedState.status).toBe("awaiting-resume");
+    expect(persistedState.staleRecovery).toBeNull();
+
+    expect(effects.notifyEscalation).toHaveBeenCalledOnce();
+    const notifiedState = vi.mocked(effects.notifyEscalation).mock.calls[0]![0] as JobState;
+    expect(notifiedState.status).toBe("awaiting-resume");
+
+    expect(summary.escalated).toHaveLength(1);
+    expect(summary.escalated[0]!.issueNumber).toBe(42);
+    expect(summary.errors).toHaveLength(0);
+  });
+
+  it("dry-run: recover/escalate effects not called but summary reflects counts", async () => {
+    const { MAX_STALE_RECOVERY_ATTEMPTS } = await import("../../../src/core/inbox/planner.js");
+    const staleJob = makeRunningJobState({ staleRecovery: null });
+    const staleEscJob = makeRunningJobState({
+      jobId: "ddddeeee-0000-0000-0000-000000000002",
+      request: { path: "/specrunner/changes/other-feat/request.md", title: "O", type: "bug-fix", slug: "other-feat" },
+      staleRecovery: { attempts: MAX_STALE_RECOVERY_ATTEMPTS, stepCount: 0 },
+    });
+    vi.mocked(JobStateStore.list).mockResolvedValue([staleJob, staleEscJob]);
+
+    const client = makeGitHubClient({ searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]) });
+    const effects = makeEffects({ isStale: () => true });
+
+    const summary = await runInboxOrchestrator(makeOpts(client, effects, { dryRun: true }));
+
+    expect(effects.persistState).not.toHaveBeenCalled();
+    expect(effects.resumeJob).not.toHaveBeenCalled();
+    expect(effects.notifyEscalation).not.toHaveBeenCalled();
+    expect(summary.recovered).toHaveLength(1);
+    expect(summary.escalated).toHaveLength(1);
+  });
+
+  it("recover persistState failure adds to errors but does not stop other actions", async () => {
+    const staleJob = makeRunningJobState();
+    vi.mocked(JobStateStore.list).mockResolvedValue([staleJob]);
+
+    const client = makeGitHubClient({ searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]) });
+    const effects = makeEffects({ isStale: () => true });
+    vi.mocked(effects.persistState).mockRejectedValue(new Error("disk full"));
+
+    const summary = await runInboxOrchestrator(makeOpts(client, effects));
+
+    expect(summary.errors).toHaveLength(1);
+    expect(summary.errors[0]!.action).toBe("recover:my-feature");
+    expect(summary.recovered).toHaveLength(0);
   });
 });

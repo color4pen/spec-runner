@@ -4,14 +4,20 @@
  * Dependencies are injected for testability. Default implementations delegate to
  * existing core/CLI commands (runRunCore, runResumeCore, store, github client).
  */
+import * as path from "node:path";
 import type { GitHubClient } from "../port/github-client.js";
 import type { JobState } from "../../state/schema.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { planInbox } from "./planner.js";
 import type { InboxPlan, StartAction, RejectAction, ResumeAction, IssueComment } from "./types.js";
-import { buildRejectComment } from "../notify/issue-notifier.js";
+import { buildRejectComment, notifyJobTerminal } from "../notify/issue-notifier.js";
 import { stderrWrite, logResult } from "../../logger/stdout.js";
 import { write as writeDraft } from "../request/store.js";
+import { getJobSlug } from "../../state/job-slug.js";
+import { livenessJsonPath } from "../../util/paths.js";
+import { isStaleRunning } from "../resume/safety.js";
+import { resolveStateStoreByJobId } from "../job-access/resolve-state-store.js";
+import { transitionJob } from "../../state/lifecycle.js";
 
 /** Effect functions injected by caller (allows mocking in tests). */
 export interface InboxEffects {
@@ -21,6 +27,12 @@ export interface InboxEffects {
   resumeJob(slug: string, resumePrompt: string | undefined): Promise<void>;
   /** Post a reject comment on an issue. */
   postRejectComment(issueNumber: number, body: string): Promise<void>;
+  /** Decide whether a running job is orphaned (process dead). */
+  isStale(state: JobState): boolean;
+  /** Persist a patched job state (best-effort) by jobId. */
+  persistState(jobId: string, state: JobState): Promise<void>;
+  /** Fire the terminal escalation notification for an awaiting-resume state. */
+  notifyEscalation(state: JobState): Promise<void>;
 }
 
 /** Options for runInboxOrchestrator. */
@@ -41,6 +53,8 @@ export interface InboxRunSummary {
   started: Array<{ issueNumber: number; slug: string }>;
   rejected: Array<{ issueNumber: number; reason: string }>;
   resumed: Array<{ slug: string; issueNumber: number }>;
+  recovered: Array<{ slug: string; jobId: string }>;
+  escalated: Array<{ slug: string; jobId: string; issueNumber: number | null }>;
   errors: Array<{ action: string; error: string }>;
 }
 
@@ -91,6 +105,19 @@ export async function runInboxOrchestrator(opts: RunInboxOptions): Promise<Inbox
   );
 
   // ---------------------------------------------------------------------------
+  // 1b. Collect stale-running job IDs (before plan — effects needed here)
+  // ---------------------------------------------------------------------------
+
+  const effects = buildEffects(opts);
+
+  const staleRunningJobIds = new Set<string>();
+  for (const s of allJobStates) {
+    if (s.status === "running" && effects.isStale(s)) {
+      staleRunningJobIds.add(s.jobId);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // 2. Plan
   // ---------------------------------------------------------------------------
 
@@ -99,6 +126,7 @@ export async function runInboxOrchestrator(opts: RunInboxOptions): Promise<Inbox
     jobStates: allJobStates,
     maxStarts: maxStartsPerRun,
     commentsByIssue,
+    staleRunningJobIds,
   });
 
   // ---------------------------------------------------------------------------
@@ -108,21 +136,31 @@ export async function runInboxOrchestrator(opts: RunInboxOptions): Promise<Inbox
   if (dryRun) {
     if (!json) {
       stderrWrite("[inbox] dry-run: no effects will be executed.");
-      stderrWrite(`[inbox] plan: ${plan.starts.length} start(s), ${plan.rejects.length} reject(s), ${plan.resumes.length} resume(s)`);
+      stderrWrite(
+        `[inbox] plan: ${plan.starts.length} start(s), ${plan.rejects.length} reject(s), ${plan.resumes.length} resume(s), ${plan.recovers.length} recover(s), ${plan.escalates.length} escalate(s)`,
+      );
       for (const s of plan.starts) {
-        stderrWrite(`  start  issue#${s.issue.number} → slug=${s.slug}`);
+        stderrWrite(`  start    issue#${s.issue.number} → slug=${s.slug}`);
       }
       for (const r of plan.rejects) {
-        stderrWrite(`  reject issue#${r.issue.number}: ${r.reason}`);
+        stderrWrite(`  reject   issue#${r.issue.number}: ${r.reason}`);
       }
       for (const res of plan.resumes) {
-        stderrWrite(`  resume ${res.slug} (issue#${res.issueNumber})`);
+        stderrWrite(`  resume   ${res.slug} (issue#${res.issueNumber})`);
+      }
+      for (const rec of plan.recovers) {
+        stderrWrite(`  recover  ${rec.slug} (attempt ${rec.staleRecovery.attempts})`);
+      }
+      for (const esc of plan.escalates) {
+        stderrWrite(`  escalate ${esc.slug} (step=${esc.step})`);
       }
     }
     return {
       started: plan.starts.map((s) => ({ issueNumber: s.issue.number, slug: s.slug })),
       rejected: plan.rejects.map((r) => ({ issueNumber: r.issue.number, reason: r.reason })),
       resumed: plan.resumes.map((r) => ({ slug: r.slug, issueNumber: r.issueNumber })),
+      recovered: plan.recovers.map((r) => ({ slug: r.slug, jobId: r.jobId })),
+      escalated: plan.escalates.map((e) => ({ slug: e.slug, jobId: e.jobId, issueNumber: e.issueNumber ?? null })),
       errors: [],
     };
   }
@@ -135,10 +173,10 @@ export async function runInboxOrchestrator(opts: RunInboxOptions): Promise<Inbox
     started: [],
     rejected: [],
     resumed: [],
+    recovered: [],
+    escalated: [],
     errors: [],
   };
-
-  const effects = buildEffects(opts);
 
   // Execute starts
   for (const action of plan.starts) {
@@ -186,6 +224,52 @@ export async function runInboxOrchestrator(opts: RunInboxOptions): Promise<Inbox
     }
   }
 
+  // Execute recovers (stale-running auto-resume, independent of maxStartsPerRun)
+  for (const action of plan.recovers) {
+    try {
+      const job = allJobStates.find((s) => s.jobId === action.jobId)!;
+      const patched = { ...job, staleRecovery: action.staleRecovery, updatedAt: new Date().toISOString() };
+      await effects.persistState(action.jobId, patched);
+      await effects.resumeJob(action.slug, undefined);
+      summary.recovered.push({ slug: action.slug, jobId: action.jobId });
+      if (!json) {
+        stderrWrite(`[inbox] recovered stale job slug=${action.slug} (attempt ${action.staleRecovery.attempts})`);
+      }
+    } catch (err) {
+      summary.errors.push({ action: `recover:${action.slug}`, error: (err as Error).message });
+      stderrWrite(`[inbox] warn: recover ${action.slug}: ${(err as Error).message}`);
+    }
+  }
+
+  // Execute escalates (crash-loop guard — transition to awaiting-resume + notify)
+  for (const action of plan.escalates) {
+    try {
+      const job = allJobStates.find((s) => s.jobId === action.jobId)!;
+      const { state: escalated } = transitionJob(job, "awaiting-resume", {
+        trigger: "stale-recovery-exhausted",
+        reason: "Auto-recovery exceeded max attempts (crash loop suspected)",
+        patch: {
+          pid: null,
+          resumePoint: {
+            step: action.step,
+            reason: "Auto-recovery exceeded max attempts (crash loop suspected)",
+            iterationsExhausted: 0,
+          },
+          staleRecovery: null,
+        },
+      });
+      await effects.persistState(action.jobId, escalated);
+      await effects.notifyEscalation(escalated);
+      summary.escalated.push({ slug: action.slug, jobId: action.jobId, issueNumber: action.issueNumber ?? null });
+      if (!json) {
+        stderrWrite(`[inbox] escalated stale job slug=${action.slug} to awaiting-resume`);
+      }
+    } catch (err) {
+      summary.errors.push({ action: `escalate:${action.slug}`, error: (err as Error).message });
+      stderrWrite(`[inbox] warn: escalate ${action.slug}: ${(err as Error).message}`);
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // 5. JSON output
   // ---------------------------------------------------------------------------
@@ -219,12 +303,31 @@ function buildEffects(opts: RunInboxOptions): InboxEffects {
     async postRejectComment(issueNumber: number, body: string): Promise<void> {
       await githubClient.createIssueComment(owner, repo, issueNumber, body);
     },
+    isStale(state: JobState): boolean {
+      const slug = getJobSlug(state);
+      const sidecarPath = slug ? path.join(repoRoot, livenessJsonPath(slug)) : undefined;
+      return isStaleRunning(state, sidecarPath);
+    },
+    async persistState(jobId: string, state: JobState): Promise<void> {
+      const store = await resolveStateStoreByJobId(repoRoot, jobId);
+      if (store) {
+        await store.persist(state);
+      } else {
+        stderrWrite(`[inbox] warn: persistState: no writable store found for job ${jobId} — skipping`);
+      }
+    },
+    async notifyEscalation(state: JobState): Promise<void> {
+      await notifyJobTerminal(state, { githubClient, owner, repo });
+    },
   };
 
   return {
     startJob: opts.effects?.startJob ?? defaultEffects.startJob,
     resumeJob: opts.effects?.resumeJob ?? defaultEffects.resumeJob,
     postRejectComment: opts.effects?.postRejectComment ?? defaultEffects.postRejectComment,
+    isStale: opts.effects?.isStale ?? defaultEffects.isStale,
+    persistState: opts.effects?.persistState ?? defaultEffects.persistState,
+    notifyEscalation: opts.effects?.notifyEscalation ?? defaultEffects.notifyEscalation,
   };
 }
 

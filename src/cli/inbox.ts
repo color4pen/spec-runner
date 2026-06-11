@@ -94,7 +94,7 @@ export async function runInboxRun(options: InboxRunCliOptions): Promise<number> 
 
     // Human-readable summary (non-JSON mode)
     if (!options.json && !options.dryRun) {
-      const total = summary.started.length + summary.rejected.length + summary.resumed.length;
+      const total = summary.started.length + summary.rejected.length + summary.resumed.length + summary.recovered.length + summary.escalated.length;
       if (total === 0 && summary.errors.length === 0) {
         stderrWrite("[inbox] Nothing to do.");
       }
