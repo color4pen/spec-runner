@@ -33,6 +33,8 @@ export interface InboxEffects {
   persistState(jobId: string, state: JobState): Promise<void>;
   /** Fire the terminal escalation notification for an awaiting-resume state. */
   notifyEscalation(state: JobState): Promise<void>;
+  /** Return true if any existing job is already linked to the given issue number. */
+  isIssueLinked(issueNumber: number): Promise<boolean>;
 }
 
 /** Options for runInboxOrchestrator. */
@@ -181,6 +183,12 @@ export async function runInboxOrchestrator(opts: RunInboxOptions): Promise<Inbox
   // Execute starts
   for (const action of plan.starts) {
     try {
+      if (await effects.isIssueLinked(action.issue.number)) {
+        stderrWrite(
+          `[inbox] skip: issue#${action.issue.number} already linked — skipping start`,
+        );
+        continue;
+      }
       await executeStart(action, effects);
       summary.started.push({ issueNumber: action.issue.number, slug: action.slug });
       if (!json) {
@@ -319,6 +327,10 @@ function buildEffects(opts: RunInboxOptions): InboxEffects {
     async notifyEscalation(state: JobState): Promise<void> {
       await notifyJobTerminal(state, { githubClient, owner, repo });
     },
+    async isIssueLinked(issueNumber: number): Promise<boolean> {
+      const states = await JobStateStore.list(repoRoot);
+      return states.some((s) => s.issueNumber === issueNumber);
+    },
   };
 
   return {
@@ -328,6 +340,7 @@ function buildEffects(opts: RunInboxOptions): InboxEffects {
     isStale: opts.effects?.isStale ?? defaultEffects.isStale,
     persistState: opts.effects?.persistState ?? defaultEffects.persistState,
     notifyEscalation: opts.effects?.notifyEscalation ?? defaultEffects.notifyEscalation,
+    isIssueLinked: opts.effects?.isIssueLinked ?? defaultEffects.isIssueLinked,
   };
 }
 

@@ -1,0 +1,41 @@
+{
+  "version": 2,
+  "jobId": "32b371a0-cd74-4adf-88b5-6abb1a9ded32",
+  "createdAt": "2026-06-11T05:50:01.571Z",
+  "updatedAt": "2026-06-11T06:13:04.586Z",
+  "request": {
+    "title": "inbox の start 実行直前に issue の linkage を再確認する",
+    "type": "bug-fix"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "fix/inbox-start-recheck-32b371a0",
+  "error": null,
+  "pipelineId": "standard",
+  "issueNumber": 619,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/621",
+    "number": 621,
+    "createdAt": "2026-06-11T06:13:04.572Z"
+  },
+  "_journal": {
+    "historyCount": 42,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 1,
+      "code-fixer": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}
