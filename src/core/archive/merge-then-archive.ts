@@ -48,6 +48,8 @@ export interface MergeThenArchiveInput {
   githubClient: GitHubClient;
   owner: string;
   repo: string;
+  /** Resolved GitHub token for authenticating git push operations. Optional. */
+  githubToken?: string;
   /** Base branch name (default: "main"). */
   baseBranch?: string;
   /** Injectable sleep for testing. */
@@ -90,6 +92,7 @@ export async function runMergeThenArchive(
     githubClient,
     owner,
     repo,
+    githubToken,
     baseBranch,
     sleepFn = defaultSleep,
     worktreeManagerFn,
@@ -155,7 +158,7 @@ export async function runMergeThenArchive(
   // ---------------------------------------------------------------------------
   if (prData.state === "MERGED") {
     stdoutWrite(`PR #${prNumber} already merged. Running archive directly.`);
-    return runArchiveOrchestrator({ slug, cwd, spawn, fs, baseBranch, worktreeManagerFn }, stdoutWrite);
+    return runArchiveOrchestrator({ slug, cwd, spawn, fs, baseBranch, worktreeManagerFn, githubToken }, stdoutWrite);
   }
 
   // ---------------------------------------------------------------------------
@@ -251,7 +254,7 @@ export async function runMergeThenArchive(
     // Already merged (e.g. merged by another process)
     if (prData.state === "MERGED") {
       stdoutWrite(`PR #${prNumber} already merged. Running archive directly.`);
-      return runArchiveOrchestrator({ slug, cwd, spawn, fs, baseBranch, worktreeManagerFn }, stdoutWrite);
+      return runArchiveOrchestrator({ slug, cwd, spawn, fs, baseBranch, worktreeManagerFn, githubToken }, stdoutWrite);
     }
 
     // Conflict check
@@ -428,7 +431,7 @@ export async function runMergeThenArchive(
   // ---------------------------------------------------------------------------
   // Step 6: merge success → run archive orchestrator
   // ---------------------------------------------------------------------------
-  return runArchiveOrchestrator({ slug, cwd, spawn, fs, baseBranch, worktreeManagerFn }, stdoutWrite);
+  return runArchiveOrchestrator({ slug, cwd, spawn, fs, baseBranch, worktreeManagerFn, githubToken }, stdoutWrite);
 }
 
 function defaultSleep(ms: number): Promise<void> {

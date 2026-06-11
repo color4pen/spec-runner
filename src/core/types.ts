@@ -2,6 +2,7 @@ import type { SessionClient } from "./port/session-client.js";
 import type { GitHubClient } from "./port/github-client.js";
 import type { AgentRunner } from "./port/agent-runner.js";
 import type { SpawnFn } from "../util/spawn.js";
+import type { SpawnFn as GitExecSpawnFn } from "../util/git-exec.js";
 import type { JobStateStore } from "../store/job-state-store.js";
 import type { RuntimeStrategy } from "./port/runtime-strategy.js";
 
@@ -70,6 +71,12 @@ export interface PipelineDeps extends StepContext {
    * Optional for backward compatibility with existing tests.
    */
   repoRoot?: string;
+  /**
+   * git-exec.ts SpawnFn wrapped with transport auth (extraheader injection).
+   * Injected by LocalRuntime.buildDeps() for StepExecutor commit/push operations.
+   * Optional for backward compatibility with existing tests that don't inject it.
+   */
+  gitTransportSpawn?: GitExecSpawnFn;
   /**
    * Runtime strategy for step artifact lifecycle delegation (B-8 seam).
    * Injected by RuntimeStrategy.buildDeps() so executor stays runtime-agnostic.

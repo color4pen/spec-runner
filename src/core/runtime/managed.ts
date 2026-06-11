@@ -19,6 +19,7 @@ import { toStepName } from "../step/step-names.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { spawnCommand } from "../../util/spawn.js";
+import { createTransportAuth } from "../../git/transport-auth.js";
 import { JobStateStore, buildInitialJobState } from "../../store/job-state-store.js";
 import { changeFolderPath, managedMarkerPath, localSidecarDir } from "../../util/paths.js";
 import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, recopyDraftToChangeFolder, rejectSymlink } from "../artifact/copy-artifacts.js";
@@ -40,6 +41,7 @@ interface ManagedCleanupInternals {
 
 export class ManagedRuntime implements RuntimeStrategy {
   private readonly spawnFn: SpawnFn;
+  private readonly wrappedSpawnFn: SpawnFn;
   /** Current slug set by setupWorkspace(); used by registerCleanup() for marker management. */
   private currentSlug: string | null = null;
 
@@ -52,6 +54,8 @@ export class ManagedRuntime implements RuntimeStrategy {
     private readonly githubToken: string,
   ) {
     this.spawnFn = spawnFn ?? spawnCommand;
+    const transportAuth = createTransportAuth({ token: githubToken, cwd });
+    this.wrappedSpawnFn = transportAuth.wrapSpawn(this.spawnFn);
   }
 
   /**
@@ -149,7 +153,7 @@ export class ManagedRuntime implements RuntimeStrategy {
     }
 
     // git push origin <branchName>
-    const pushBranchResult = await this.spawnFn(
+    const pushBranchResult = await this.wrappedSpawnFn(
       "git",
       ["push", "origin", branchName],
       { cwd: this.cwd },
@@ -210,7 +214,7 @@ export class ManagedRuntime implements RuntimeStrategy {
       }
 
       // git push origin <branchName>
-      const pushCommitResult = await this.spawnFn(
+      const pushCommitResult = await this.wrappedSpawnFn(
         "git",
         ["push", "origin", branchName],
         { cwd: this.cwd },
@@ -354,7 +358,7 @@ export class ManagedRuntime implements RuntimeStrategy {
     // Fetch origin branch to ensure latest refs are available (stdout not emitted).
     // Ignore fetch errors — cat-file will catch missing refs below.
     if (branch) {
-      await this.spawnFn("git", ["fetch", "origin", branch], { cwd }).catch(() => {});
+      await this.wrappedSpawnFn("git", ["fetch", "origin", branch], { cwd }).catch(() => {});
     }
 
     const missing: string[] = [];

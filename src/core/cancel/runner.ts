@@ -27,6 +27,7 @@ import * as requestStore from "../request/store.js";
 import type { WorktreeManager } from "../worktree/manager.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import type { JobState } from "../../state/schema.js";
+import { createTransportAuth } from "../../git/transport-auth.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -46,6 +47,8 @@ export interface CancelDeps {
   kill: (pid: number, signal: string) => void;
   isAlive: (pid: number) => boolean;
   repoRoot: string;
+  /** Resolved GitHub token for authenticating git push --delete (C10). Optional. */
+  githubToken?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -151,7 +154,12 @@ async function cleanupJobResources(
   deps: CancelDeps,
   warnings: string[],
 ): Promise<void> {
-  const { spawn, worktreeManager, repoRoot } = deps;
+  const { worktreeManager, repoRoot } = deps;
+
+  // Wrap spawn with transport auth for remote branch delete push (C10, best-effort).
+  // If token is absent, auth args resolve to [] and spawn behaves as plain git.
+  const transportAuth = createTransportAuth({ token: deps.githubToken, cwd: repoRoot });
+  const spawn = transportAuth.wrapSpawn(deps.spawn);
 
   // 1. git worktree prune (orphan references)
   try {

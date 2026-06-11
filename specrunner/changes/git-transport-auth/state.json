@@ -1,0 +1,41 @@
+{
+  "version": 2,
+  "jobId": "f6cf6958-4ad5-4ba4-8417-4afe8e081d29",
+  "createdAt": "2026-06-11T02:03:32.777Z",
+  "updatedAt": "2026-06-11T03:22:19.933Z",
+  "request": {
+    "title": "git transport（fetch / push）を解決済みトークンで自己認証する",
+    "type": "spec-change"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/git-transport-auth-f6cf6958",
+  "error": null,
+  "pipelineId": "standard",
+  "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/614",
+    "number": 614,
+    "createdAt": "2026-06-11T03:22:19.921Z"
+  },
+  "_journal": {
+    "historyCount": 61,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1,
+      "code-review": 2,
+      "code-fixer": 2,
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

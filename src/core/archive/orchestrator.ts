@@ -11,6 +11,7 @@
 import * as fs from "node:fs/promises";
 import * as nodePath from "node:path";
 import type { SpawnFn } from "../../util/spawn.js";
+import { createTransportAuth } from "../../git/transport-auth.js";
 import type { FinishFs } from "../finish/types.js";
 import type { WorktreeManager } from "../worktree/manager.js";
 import { JobStateStore } from "../../store/job-state-store.js";
@@ -38,6 +39,8 @@ export interface ArchiveInput {
   baseBranch?: string;
   /** Injectable WorktreeManager for testing. */
   worktreeManagerFn?: () => WorktreeManager;
+  /** Resolved GitHub token for authenticating git push/fetch operations. Optional. */
+  githubToken?: string;
 }
 
 export type ArchiveResult =
@@ -83,8 +86,13 @@ export async function runArchiveOrchestrator(
   input: ArchiveInput,
   stdoutWrite: (msg: string) => void = logResult,
 ): Promise<ArchiveResult> {
-  const { slug, cwd, spawn, fs, worktreeManagerFn } = input;
+  const { slug, cwd, fs, worktreeManagerFn } = input;
   const baseBranch = input.baseBranch ?? "main";
+
+  // Wrap spawn with transport auth for git push operations (C8, C9).
+  // If githubToken is absent, auth args resolve to [] and spawn behaves as plain git.
+  const transportAuth = createTransportAuth({ token: input.githubToken, cwd });
+  const spawn = transportAuth.wrapSpawn(input.spawn);
 
   // ---------------------------------------------------------------------------
   // Phase 0: resolve job state + finishable gate

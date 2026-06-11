@@ -15,6 +15,9 @@ import { createWorktreeManager } from "../core/worktree/manager.js";
 import { spawnCommand } from "../util/spawn.js";
 import { resolveRepoRootOrFail } from "../util/repo-root.js";
 import { initPipelineLog, logPipelineEvent, closePipelineLog } from "../logger/pipeline-logger.js";
+import { resolveGitHubToken } from "../core/credentials/github.js";
+import { loadConfig } from "../config/store.js";
+import { resolveGitHubHost } from "../config/github-host.js";
 
 export interface RunCancelOptions {
   jobId?: string;
@@ -83,6 +86,18 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
 
   const worktreeManager = createWorktreeManager();
 
+  // Optionally resolve GitHub token for authenticated remote branch delete (C10).
+  // Failure is suppressed — cancel local cleanup must not depend on token availability.
+  let cancelToken: string | undefined;
+  try {
+    let githubHost = "github.com";
+    try { const cfg = await loadConfig(); githubHost = resolveGitHubHost(cfg.github); } catch { /* default host */ }
+    const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
+    cancelToken = resolved.token;
+  } catch {
+    // Token not required — best-effort for remote branch delete
+  }
+
   // Initialize pipeline log for the resolved job
   initPipelineLog(repoRoot, resolvedJobId);
   logPipelineEvent({ type: "cancel:start", jobId: resolvedJobId });
@@ -104,6 +119,7 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
           return true;
         },
         repoRoot,
+        githubToken: cancelToken,
       },
     });
     logPipelineEvent({ type: "cancel:complete", jobId: resolvedJobId, exitCode: result.exitCode });

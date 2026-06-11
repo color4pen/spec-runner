@@ -207,6 +207,7 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
           spawn: spawnCommand,
           fs: buildRealFs(),
           githubClient,
+          githubToken,
           owner,
           repo: repoName,
           baseBranch,
@@ -217,7 +218,23 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
         logResult,
       );
     } else {
-      // No --with-merge: run archive orchestrator directly
+      // No --with-merge: optionally resolve token for authenticated git push
+      let archiveToken: string | undefined;
+      try {
+        let githubHost = "github.com";
+        try {
+          const config = await loadConfig();
+          githubHost = resolveGitHubHost(config.github);
+        } catch {
+          // Config not available — use default host
+        }
+        const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
+        archiveToken = resolved.token;
+      } catch {
+        // Token not required for non-merge path — best-effort
+      }
+
+      // Run archive orchestrator directly
       archiveResult = await runArchiveOrchestrator(
         {
           slug: opts.slug,
@@ -225,6 +242,7 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
           spawn: spawnCommand,
           fs: buildRealFs(),
           baseBranch,
+          githubToken: archiveToken,
         },
         logResult,
       );

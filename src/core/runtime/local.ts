@@ -19,6 +19,8 @@ import { DispatchingAgentRunner } from "../../adapter/dispatching/agent-runner.j
 import { createWorktreeManager } from "../worktree/manager.js";
 import { spawnCommand } from "../../util/spawn.js";
 import type { SpawnFn } from "../../util/spawn.js";
+import { createTransportAuth } from "../../git/transport-auth.js";
+import { defaultSpawnFn } from "../../util/git-exec.js";
 import { JobStateStore, buildInitialJobState } from "../../store/job-state-store.js";
 import type { RequestInfo, RepositoryInfo } from "../../state/schema.js";
 import { transitionJob } from "../../state/lifecycle.js";
@@ -82,6 +84,9 @@ export class LocalRuntime implements RuntimeStrategy {
   private readonly manager: ReturnType<typeof createWorktreeManager>;
   private readonly spawnFn: SpawnFn;
   private readonly queryFn: QueryFn;
+  private readonly transportAuth: ReturnType<typeof createTransportAuth>;
+  /** util/spawn.ts SpawnFn wrapped with transport auth injection. */
+  private readonly wrappedSpawnFn: SpawnFn;
 
   // Set by setupWorkspace(); used by buildDeps() and registerCleanup()
   private workspace: WorkspaceContext | null = null;
@@ -97,6 +102,8 @@ export class LocalRuntime implements RuntimeStrategy {
     this.manager = opts.manager ?? createWorktreeManager();
     this.spawnFn = opts.spawnFn ?? spawnCommand;
     this.queryFn = opts.queryFn ?? defaultQueryFn;
+    this.transportAuth = createTransportAuth({ token: this.githubToken, cwd: opts.cwd });
+    this.wrappedSpawnFn = this.transportAuth.wrapSpawn(this.spawnFn);
   }
 
   /**
@@ -348,6 +355,10 @@ export class LocalRuntime implements RuntimeStrategy {
   ): Promise<WorkspaceContext> {
     this.currentSlug = slug;
 
+    // Pre-warm transport auth cache so git-exec spawn wrapper has synchronously-accessible
+    // auth args before any StepExecutor push calls. Best-effort: suppressed on failure.
+    await this.transportAuth.authArgs().catch(() => {});
+
     // No-worktree mode: bypass worktree creation and use cwd directly
     if (opts?.noWorktree) {
       return this.setupWorkspaceNoWorktree(slug, jobId, opts);
@@ -421,7 +432,9 @@ export class LocalRuntime implements RuntimeStrategy {
     }
 
     // Run path: fetch origin to ensure freshness, then create new worktree from origin/main
-    const fetchResult = await this.spawnFn("git", ["fetch", "origin"], { cwd: this.cwd });
+    // Pre-warm transport auth cache so git-exec spawn wrapper is ready for subsequent push calls.
+    await this.transportAuth.authArgs().catch(() => {});
+    const fetchResult = await this.wrappedSpawnFn("git", ["fetch", "origin"], { cwd: this.cwd });
     if (fetchResult.exitCode !== 0) {
       throw new Error(`git fetch origin failed (exit ${fetchResult.exitCode}): ${fetchResult.stderr.trim()}`);
     }
@@ -536,13 +549,14 @@ export class LocalRuntime implements RuntimeStrategy {
       repo: this.repo,
       cwd: workspace.cwd,
       runner: this.createAgentRunner(),
-      spawn: spawnCommand,
+      spawn: this.wrappedSpawnFn,
       storeFactory: (id: string) => {
         const stateRoot = workspace.worktreePath ?? workspace.cwd;
         return new JobStateStore(id, this.cwd, { slug, stateRoot });
       },
       repoRoot: this.cwd,
       runtimeStrategy: this,
+      gitTransportSpawn: this.transportAuth.wrapGitExecSpawn(defaultSpawnFn),
     };
   }
 
@@ -592,7 +606,7 @@ export class LocalRuntime implements RuntimeStrategy {
     const cwd = deps.cwd ?? process.cwd();
     const branch = state.branch ?? "";
     const slug = deps.slug;
-    await commitFinalState({ cwd, branch, slug, spawnFn: this.spawnFn });
+    await commitFinalState({ cwd, branch, slug, spawnFn: this.wrappedSpawnFn });
   }
 
   async verifyFindingRefs(refs: FindingRef[], cwd: string, _branch: string | null): Promise<FindingRef[]> {
