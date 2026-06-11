@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f0b58f6e-ef11-4e33-b990-c917bb9802eb",
   "createdAt": "2026-06-11T14:35:02.643Z",
-  "updatedAt": "2026-06-11T14:55:18.840Z",
+  "updatedAt": "2026-06-11T14:58:32.764Z",
   "request": {
     "title": "カスタムレビューワーの起動条件を宣言的に指定できるようにする",
     "type": "new-feature"
@@ -11,17 +11,18 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "feat/reviewer-activation-conditions-f0b58f6e",
   "error": null,
   "pipelineId": "standard",
   "issueNumber": 623,
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
