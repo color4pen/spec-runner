@@ -632,6 +632,28 @@ export class LocalRuntime implements RuntimeStrategy {
   }
 
   /**
+   * List files changed between baseBranch and the current HEAD.
+   * Runs `git diff --name-only <baseBranch>...HEAD` in cwd.
+   * Never throws — returns [] on any error (git failure, non-zero exit, etc.).
+   */
+  async listChangedFiles(baseBranch: string, cwd: string, _branch: string | null): Promise<string[]> {
+    try {
+      const result = await this.spawnFn(
+        "git",
+        ["diff", "--name-only", `${baseBranch}...HEAD`],
+        { cwd },
+      );
+      if (result.exitCode !== 0) return [];
+      return result.stdout
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+    } catch {
+      return [];
+    }
+  }
+
+  /**
    * Compute sha256 content hashes for a list of artifact paths (D4, artifact-observability).
    * Reads each file from disk; returns hash: null for missing/unreadable files.
    * Never throws — errors are silently swallowed per the best-effort lineage contract.

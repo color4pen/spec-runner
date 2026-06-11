@@ -187,9 +187,9 @@ describe("TC-WHEN-01: conditional transition row has `when` predicate", () => {
 // TC-WHEN-02: STANDARD_TRANSITIONS has expected row count
 // ─────────────────────────────────────────────────────────────────────────────
 describe("TC-WHEN-02: STANDARD_TRANSITIONS row count", () => {
-  it("has correct number of rows (request-review adds 4, conformance adds 2 rows)", () => {
-    // 25 previous + 2 (conformance) + 4 (request-review)
-    expect(STANDARD_TRANSITIONS.length).toBe(31);
+  it("has correct number of rows (request-review adds 4, conformance adds 2 rows, code-review skipped adds 1)", () => {
+    // 25 previous + 2 (conformance) + 4 (request-review) + 1 (code-review skipped → conformance)
+    expect(STANDARD_TRANSITIONS.length).toBe(32);
   });
 });
 

@@ -7,6 +7,7 @@ import type { ReviewScores } from "../../kernel/review-scores.js";
 import type { FindingSeverityCounts } from "../../kernel/review-findings.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
 import type { ReportToolSpec, BaseReportResult } from "./report-result.js";
+import type { ReviewerActivation } from "../../kernel/reviewer-snapshot.js";
 
 // Re-export AgentDefinition for convenience
 export type { AgentDefinition };
@@ -217,6 +218,18 @@ export interface AgentStep {
    * preparation that cannot be done inside buildMessage (pure function constraint).
    */
   enrichContext?(dynamicContext: DynamicContext, cwd: string, slug: string): Promise<DynamicContext>;
+
+  /**
+   * Declarative activation conditions for this reviewer step.
+   * When present, StepExecutor evaluates the conditions before running the agent.
+   * Conditions not satisfied → step is skipped (verdict: "skipped") without running the agent.
+   *
+   * Only set for custom reviewer steps that declare paths or requestTypes in their frontmatter.
+   * Standard pipeline steps and unconstrained reviewers leave this undefined.
+   *
+   * Design D5 (reviewer-activation-conditions): CLI-side deterministic gate.
+   */
+  activation?: ReviewerActivation;
 }
 
 /**

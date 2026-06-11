@@ -231,6 +231,47 @@ describe("validateReviewerDefinitions", () => {
     expect(() => validateReviewerDefinitions([def])).not.toThrow();
   });
 
+  // T-04: paths validation
+  it("throws when paths is an empty array", () => {
+    const def = makeDef({ paths: [] });
+    expect(() => validateReviewerDefinitions([def])).toThrow(ReviewerValidationError);
+    try {
+      validateReviewerDefinitions([def]);
+    } catch (e) {
+      expect((e as ReviewerValidationError).violations.some((v) => v.message.includes("paths"))).toBe(true);
+    }
+  });
+
+  it("throws when paths contains an empty string element", () => {
+    const def = makeDef({ paths: ["src/**", ""] });
+    expect(() => validateReviewerDefinitions([def])).toThrow(ReviewerValidationError);
+  });
+
+  it("passes when paths is a non-empty array of non-empty strings", () => {
+    const def = makeDef({ paths: ["src/**", "lib/**"] });
+    expect(() => validateReviewerDefinitions([def])).not.toThrow();
+  });
+
+  it("throws when requestTypes is an empty array", () => {
+    const def = makeDef({ requestTypes: [] });
+    expect(() => validateReviewerDefinitions([def])).toThrow(ReviewerValidationError);
+  });
+
+  it("throws when requestTypes contains an empty string element", () => {
+    const def = makeDef({ requestTypes: ["new-feature", ""] });
+    expect(() => validateReviewerDefinitions([def])).toThrow(ReviewerValidationError);
+  });
+
+  it("passes when requestTypes is a non-empty array of non-empty strings", () => {
+    const def = makeDef({ requestTypes: ["new-feature", "bug-fix"] });
+    expect(() => validateReviewerDefinitions([def])).not.toThrow();
+  });
+
+  it("passes when both paths and requestTypes are undefined", () => {
+    const def = makeDef();
+    expect(() => validateReviewerDefinitions([def])).not.toThrow();
+  });
+
   // multiple violations collected before throw
   it("collects multiple violations in a single throw", () => {
     const def1 = makeDef({ name: "security", filename: "other.md", purpose: "" });

@@ -107,6 +107,46 @@ export function validateReviewerDefinitions(defs: ReviewerDefinition[]): void {
     } else {
       seenNames.set(def.name, filename);
     }
+
+    // (7) paths — when present: must be a non-empty array of non-empty strings
+    if (def.paths !== undefined) {
+      if (!Array.isArray(def.paths) || def.paths.length === 0) {
+        violations.push({
+          filename,
+          message: `paths must be a non-empty array when present`,
+        });
+      } else {
+        for (const p of def.paths) {
+          if (typeof p !== "string" || p.trim() === "") {
+            violations.push({
+              filename,
+              message: `each element of paths must be a non-empty string`,
+            });
+            break;
+          }
+        }
+      }
+    }
+
+    // (8) requestTypes — when present: must be a non-empty array of non-empty strings
+    if (def.requestTypes !== undefined) {
+      if (!Array.isArray(def.requestTypes) || def.requestTypes.length === 0) {
+        violations.push({
+          filename,
+          message: `requestTypes must be a non-empty array when present`,
+        });
+      } else {
+        for (const rt of def.requestTypes) {
+          if (typeof rt !== "string" || rt.trim() === "") {
+            violations.push({
+              filename,
+              message: `each element of requestTypes must be a non-empty string`,
+            });
+            break;
+          }
+        }
+      }
+    }
   }
 
   if (violations.length > 0) {

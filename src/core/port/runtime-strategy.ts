@@ -331,4 +331,22 @@ export interface RuntimeStrategy {
    * Never throws — callers treat the entire lineage recording as best-effort.
    */
   digestArtifacts(refs: { path: string }[], cwd: string, branch: string | null): Promise<ArtifactRef[]>;
+
+  /**
+   * List files changed between baseBranch and the current HEAD (or the given branch).
+   *
+   * Used by the reviewer activation gate to evaluate `paths` conditions.
+   *
+   * Contract:
+   * - Never throws. Returns [] on any error (git unavailable, non-zero exit, etc.).
+   * - Returns repo-relative paths (e.g. "src/auth/login.ts").
+   *
+   * - local:   `git diff --name-only <baseBranch>...HEAD` executed in cwd.
+   * - managed: returns [] (custom reviewer activation not supported in managed runtime).
+   *
+   * @param baseBranch - Base branch name (e.g. "main").
+   * @param cwd        - Working directory for the git command.
+   * @param branch     - Current branch (informational; local impl uses HEAD directly).
+   */
+  listChangedFiles(baseBranch: string, cwd: string, branch: string | null): Promise<string[]>;
 }

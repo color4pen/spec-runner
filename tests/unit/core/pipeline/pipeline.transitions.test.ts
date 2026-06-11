@@ -246,9 +246,9 @@ describe("TC-001/002/005/006/007/015: conformance transition rows", () => {
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
 // TC-022: R3 cutover: 33 → 31 (removed spec-review escalation + code-review escalation)
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 31 rows total (request-review adds 4 rows, conformance adds 2 rows)", () => {
-    // 25 previous + 2 (conformance) + 4 (request-review)
-    expect(STANDARD_TRANSITIONS.length).toBe(31);
+  it("has 32 rows total (request-review adds 4 rows, conformance adds 2 rows, code-review skipped adds 1)", () => {
+    // 25 previous + 2 (conformance) + 4 (request-review) + 1 (code-review skipped → conformance)
+    expect(STANDARD_TRANSITIONS.length).toBe(32);
   });
 
   it("verification --passed→ end does NOT exist", () => {

@@ -22,6 +22,7 @@ import { executeCreate } from "../core/command/request-create.js";
 import { executeList } from "../core/command/request-list.js";
 import { executeNew } from "../core/command/request-new.js";
 import { executeRulesNew } from "../core/command/rules-new.js";
+import { executeReviewersNew } from "../core/command/reviewers-new.js";
 import { showUsage } from "../core/command/usage-show.js";
 import { showUsageSummary } from "../core/command/usage-summary.js";
 import { resolveWithFallback as storeResolve } from "../core/request/store.js";
@@ -77,6 +78,9 @@ Job commands:
 Rules commands:
   rules new <step> <slug>         step 用の rules ファイルを scaffold
 
+Reviewer commands:
+  reviewers new <name>            カスタムレビューワーの雛形を scaffold
+
 Environment commands:
   init                            config scaffold
   login                           GitHub Device Flow OAuth
@@ -127,6 +131,29 @@ Ordering:
 Examples:
   specrunner rules new implementer no-inline-comment
   specrunner rules new code-review prefer-explicit-types
+
+Options:
+  --help, -h    Show this help message
+`;
+
+export const REVIEWERS_USAGE = `Usage: specrunner reviewers new <name>
+
+Scaffold a custom reviewer definition file at specrunner/reviewers/<name>.md.
+
+Arguments:
+  <name>   Reviewer name (lowercase alphanumeric, hyphens, underscores; must start with a letter or digit)
+
+The generated file includes:
+  - Frontmatter with name, maxIterations, and commented-out activation conditions
+  - Required sections: ## 目的 / ## 観点 / ## 判定基準
+
+Activation conditions (optional — add to frontmatter to enable selective activation):
+  paths:         glob patterns for changed files (at least one must match)
+  requestTypes:  request types that activate this reviewer
+
+Examples:
+  specrunner reviewers new security
+  specrunner reviewers new perf-check
 
 Options:
   --help, -h    Show this help message
@@ -574,6 +601,20 @@ export const COMMANDS: Record<string, CommandEntry> = {
           const stepName = parsed.positionals[0]!;
           const ruleSlug = parsed.positionals[1]!;
           process.exit(await executeRulesNew(stepName, ruleSlug, process.cwd()));
+        },
+      },
+    },
+  },
+
+  reviewers: {
+    usage: REVIEWERS_USAGE,
+    subcommands: {
+      new: {
+        flags: {},
+        positional: { name: "name", required: true },
+        handler: async (parsed) => {
+          const name = parsed.positional!;
+          process.exit(await executeReviewersNew(name, process.cwd()));
         },
       },
     },

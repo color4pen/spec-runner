@@ -153,6 +153,7 @@ function makeTestRuntimeStrategy(spawnFn: GitSpawnFn): RuntimeStrategy {
     async digestArtifacts(refs: { path: string }[]): Promise<import("../src/store/event-journal.js").ArtifactRef[]> {
       return refs.map((r) => ({ path: r.path, hash: null }));
     },
+    async listChangedFiles(): Promise<string[]> { return []; },
   };
 }
 

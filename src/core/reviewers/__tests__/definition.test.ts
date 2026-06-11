@@ -195,6 +195,90 @@ describe("parseReviewerDefinition — freeText", () => {
 });
 
 // ---------------------------------------------------------------------------
+// T-03: paths / requestTypes frontmatter parsing
+// ---------------------------------------------------------------------------
+
+const INLINE_PATHS_MD = `---
+name: security
+maxIterations: 3
+paths: ["src/**", "lib/**"]
+requestTypes: ["new-feature", "spec-change"]
+---
+
+## 目的
+
+セキュリティ検査。
+
+## 観点
+
+観点。
+
+## 判定基準
+
+判定基準。
+`;
+
+describe("parseReviewerDefinition — inline array paths/requestTypes", () => {
+  it('parses inline flow paths: ["src/**", "lib/**"]', () => {
+    const def = parseReviewerDefinition("security.md", INLINE_PATHS_MD);
+    expect(def.paths).toEqual(["src/**", "lib/**"]);
+  });
+
+  it('parses inline flow requestTypes: ["new-feature", "spec-change"]', () => {
+    const def = parseReviewerDefinition("security.md", INLINE_PATHS_MD);
+    expect(def.requestTypes).toEqual(["new-feature", "spec-change"]);
+  });
+});
+
+const BLOCK_PATHS_MD = `---
+name: security
+maxIterations: 3
+paths:
+  - src/**
+  - lib/**
+requestTypes:
+  - new-feature
+  - spec-change
+---
+
+## 目的
+
+セキュリティ検査。
+
+## 観点
+
+観点。
+
+## 判定基準
+
+判定基準。
+`;
+
+describe("parseReviewerDefinition — block sequence paths/requestTypes", () => {
+  it("parses block sequence paths", () => {
+    const def = parseReviewerDefinition("security.md", BLOCK_PATHS_MD);
+    expect(def.paths).toEqual(["src/**", "lib/**"]);
+  });
+
+  it("parses block sequence requestTypes", () => {
+    const def = parseReviewerDefinition("security.md", BLOCK_PATHS_MD);
+    expect(def.requestTypes).toEqual(["new-feature", "spec-change"]);
+  });
+});
+
+describe("parseReviewerDefinition — paths/requestTypes absent", () => {
+  it("paths is undefined when not in frontmatter", () => {
+    const def = parseReviewerDefinition("security.md", VALID_MD);
+    expect(def.paths).toBeUndefined();
+  });
+
+  it("requestTypes is undefined when not in frontmatter", () => {
+    const def = parseReviewerDefinition("security.md", VALID_MD);
+    expect(def.requestTypes).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-034: no node:fs import in definition.ts
 // ---------------------------------------------------------------------------
 

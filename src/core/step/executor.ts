@@ -21,6 +21,7 @@ import {
   recordFailedStepResult,
   attachStateAndRethrow,
 } from "./executor-helpers.js";
+import { evaluateActivation } from "../reviewers/activation.js";
 import type { ErrorInfo } from "../../state/schema.js";
 import { getBranchPrefix } from "../../config/type-config.js";
 import { transitionJob } from "../../state/lifecycle.js";
@@ -173,6 +174,25 @@ export class StepExecutor {
     });
 
     const cwd = deps.cwd ?? process.cwd();
+
+    // ---------------------------------------------------------------------------
+    // Activation gate (reviewer-activation-conditions D5)
+    // Only evaluated when step.activation is set (custom reviewers with conditions).
+    // Standard pipeline steps and unconstrained reviewers are unaffected (no-op path).
+    // ---------------------------------------------------------------------------
+    if (step.activation) {
+      const baseBranch = deps.request.baseBranch ?? "main";
+      const changedFiles = deps.runtimeStrategy
+        ? await deps.runtimeStrategy.listChangedFiles(baseBranch, cwd, state.branch ?? null)
+        : [];
+      const decision = evaluateActivation(step.activation, {
+        changedFiles,
+        requestType: deps.request.type,
+      });
+      if (!decision.activated) {
+        return this.finalizeSkippedStep(step, state, decision.reason);
+      }
+    }
 
     let projectContext: string | undefined;
     if (step.needsProjectContext === true) {
@@ -374,6 +394,56 @@ export class StepExecutor {
       followUpAttempts: runResult.followUpAttempts,
       transientRetryAttempts: runResult.transientRetryAttempts,
     });
+  }
+
+  /**
+   * Finalize a step that was skipped due to activation conditions not being met.
+   *
+   * Contract:
+   * - Agent is NOT started.
+   * - No commit or push is performed.
+   * - No output template is placed.
+   * - A StepRun with verdict: "skipped" + skipReason is recorded in state.
+   * - A warning history entry is appended.
+   * - verdict:parsed is emitted for pipeline transition routing.
+   * - State is persisted.
+   */
+  private async finalizeSkippedStep(
+    step: AgentStep,
+    state: JobState,
+    skipReason: string,
+  ): Promise<JobState> {
+    const store = this.getStore(state.jobId);
+    const now = new Date().toISOString();
+
+    state = pushStepResult(state, step.name, {
+      session: null,
+      verdict: "skipped" as import("../../state/schema.js").Verdict,
+      findingsPath: null,
+      completedAt: now,
+      startedAt: now,
+      error: null,
+      skipReason,
+    });
+
+    state = await store.appendHistory(state, {
+      ts: now,
+      step: `${step.name}-skipped`,
+      status: "warning",
+      message: `${step.name} skipped: ${skipReason}`,
+    });
+
+    this.events.emit("verdict:parsed", {
+      step: step.name,
+      outcome: {
+        verdict: "skipped",
+        toolResult: null,
+        followUpAttempts: 0,
+      },
+    });
+
+    await store.persist(state);
+    return state;
   }
 
   /**

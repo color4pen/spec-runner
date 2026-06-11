@@ -60,7 +60,8 @@ export type Verdict =
   | "passed"
   | "failed"
   | "success"
-  | "error";
+  | "error"
+  | "skipped";
 
 export interface HistoryEntry {
   ts: string;
@@ -135,6 +136,12 @@ export interface StepOutcome {
    * Added in transient-error-auto-retry.
    */
   transientRetryAttempts?: number;
+  /**
+   * Human-readable reason for a skipped verdict.
+   * Only present when verdict === "skipped".
+   * Documents which activation condition was not satisfied.
+   */
+  skipReason?: string;
 }
 
 /**
@@ -458,6 +465,17 @@ export function validateJobState(raw: unknown): JobState {
       }
       if (typeof rObj["maxIterations"] !== "number") {
         throw new Error(`Reviewer snapshot "${rObj["name"]}" must have a numeric 'maxIterations'.`);
+      }
+      // Backward compat: paths/requestTypes are optional. When present must be arrays.
+      if ("paths" in rObj && rObj["paths"] !== null && rObj["paths"] !== undefined) {
+        if (!Array.isArray(rObj["paths"])) {
+          throw new Error(`Reviewer snapshot "${rObj["name"]}" paths must be an array when present.`);
+        }
+      }
+      if ("requestTypes" in rObj && rObj["requestTypes"] !== null && rObj["requestTypes"] !== undefined) {
+        if (!Array.isArray(rObj["requestTypes"])) {
+          throw new Error(`Reviewer snapshot "${rObj["name"]}" requestTypes must be an array when present.`);
+        }
       }
     }
   }
