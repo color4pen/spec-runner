@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b07e41e3-f897-4cd8-a574-f64403223ef1",
   "createdAt": "2026-06-11T11:25:03.484Z",
-  "updatedAt": "2026-06-11T11:51:51.833Z",
+  "updatedAt": "2026-06-11T13:16:52.347Z",
   "request": {
     "title": "transient リトライが stream idle timeout と error result 経路を取りこぼす",
     "type": "bug-fix"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/transient-retry-coverage-b07e41e3",
   "error": null,
   "pipelineId": "standard",
@@ -23,7 +23,7 @@
     "createdAt": "2026-06-11T11:51:51.798Z"
   },
   "_journal": {
-    "historyCount": 39,
+    "historyCount": 40,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
