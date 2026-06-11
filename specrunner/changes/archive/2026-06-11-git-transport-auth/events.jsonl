@@ -89,3 +89,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/git-transport-auth/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-11T03:22:18.178Z","endedAt":"2026-06-11T03:22:19.922Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-11T03:22:19.922Z","outputs":[{"path":"specrunner/changes/git-transport-auth/pr-create-result.md","hash":"sha256:ca25f781bf993c8a225f6044c06672871022cc5b61b90c33300c9de3af83e4ad"}],"inputs":[{"path":"change/git-transport-auth-f6cf6958","hash":null}]}
 {"type":"transition","ts":"2026-06-11T03:22:19.933Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-11T03:35:00.212Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
