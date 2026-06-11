@@ -127,6 +127,7 @@ function buildMockRuntime(opts: {
     verifyFindingRefs: vi.fn().mockResolvedValue([]),
     digestArtifacts: vi.fn().mockResolvedValue([]),
     listChangedFiles: vi.fn().mockResolvedValue([]),
+    validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
   };
 }
 

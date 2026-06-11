@@ -790,6 +790,7 @@ describe("TC-042: non-existent file ref in custom reviewer finding → escalatio
     // Minimal runtimeStrategy mock: verifyFindingRefs returns all refs as non-existent
     const mockRuntimeStrategy = {
       validateStepInputs: vi.fn().mockResolvedValue(undefined),
+      validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
       captureHeadSha: vi.fn().mockResolvedValue(null),
       prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
       finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),

@@ -361,6 +361,7 @@ describe("TC-T05-ref: spec-review with high finding referencing non-existent fil
       async prepareStepArtifacts() {},
       async finalizeStepArtifacts() {},
       async validateStepInputs() {},
+      async validateStepOutputs(): Promise<import("../src/core/port/output-contract.js").OutputCheckResult> { return { violations: [] }; },
       async commitFinalState() {},
       async persistJobState() {},
       async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },

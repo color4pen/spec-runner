@@ -501,6 +501,34 @@ export class ManagedAgentRunner implements AgentRunner {
       }
     }
 
+    // Output verification follow-up loop (D3: step-completion-verification).
+    // Runs after postWorkPrompts, only when outputVerification is configured.
+    const outputVerif = ctx.policy?.outputVerification;
+    if (outputVerif) {
+      for (let attempt = 1; attempt <= outputVerif.maxAttempts; attempt++) {
+        let checkResult: import("../../core/port/output-contract.js").OutputCheckResult;
+        try {
+          checkResult = await outputVerif.detect();
+        } catch {
+          // best-effort: detection failure → skip remaining attempts
+          break;
+        }
+        const followUpViolations = checkResult.violations.filter((v) => v.policy === "follow-up");
+        if (followUpViolations.length === 0) break;
+
+        const repairPrompt = outputVerif.buildPrompt(followUpViolations, attempt);
+        try {
+          await this.executeFollowUpTurn(sessionId, ctx.step, repairPrompt, effectiveTimeoutMs);
+        } catch {
+          stderrWrite(
+            `[specrunner] warn: output verification repair turn ${attempt} failed for '${ctx.step.name}'. Continuing.\n`,
+          );
+          break;
+        }
+        followUpAttempts++;
+      }
+    }
+
     const modelUsage = await this.readSessionUsage(sessionId, ctx.step.agent.model);
     const fileContent = await this.fetchResultFile(ctx.step, ctx.state, stepCtx);
 

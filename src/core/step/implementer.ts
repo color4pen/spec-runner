@@ -1,5 +1,6 @@
 import type { AgentStep, IoRef } from "./types.js";
 import { NULL_PARSE_RESULT } from "./types.js";
+import type { OutputContract } from "../port/output-contract.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
@@ -111,7 +112,20 @@ export const ImplementerStep: AgentStep = {
   writes(_state: JobState, deps: StepDeps): IoRef[] {
     return [
       { path: changeFolderPath(deps.slug), artifact: "gitState" },
-      { path: `${changeFolderPath(deps.slug)}/tasks.md` },
+      // tasks.md is validated via outputContracts (tasks-complete) rather than produced.
+      // It already exists as a scaffold from the design step — overwrite alone is not sufficient;
+      // we need to verify that all checkboxes are marked [x].
+      { path: `${changeFolderPath(deps.slug)}/tasks.md`, verify: false },
+    ];
+  },
+
+  outputContracts(_state: JobState, deps: StepDeps): OutputContract[] {
+    return [
+      {
+        kind: "tasks-complete",
+        path: `${changeFolderPath(deps.slug)}/tasks.md`,
+        policy: "follow-up",
+      },
     ];
   },
 

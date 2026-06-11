@@ -20,6 +20,7 @@ import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { JobState, RequestInfo, RepositoryInfo } from "../../state/schema.js";
 import type { ArtifactRef } from "../../state/artifact-types.js";
+import type { OutputContract, OutputCheckResult } from "./output-contract.js";
 
 // ---------------------------------------------------------------------------
 // Supporting types
@@ -280,6 +281,34 @@ export interface RuntimeStrategy {
    * D3 (step-io-contracts): pre-execution validation seam in RuntimeStrategy.
    */
   validateStepInputs(inputs: RequiredInput[], cwd: string, branch: string | null): Promise<void>;
+
+  /**
+   * Validate declared step output contracts after the agent session completes.
+   * Called by StepExecutor after runner.run() succeeds, before finalizeStepArtifacts.
+   *
+   * Contract: NEVER throws — returns an OutputCheckResult with violations.
+   * Empty contracts → empty result (fast path).
+   *
+   * - local:
+   *     "produced":       fs.readFile(join(cwd, path)).
+   *                       Missing / empty-trim / scaffold byte-match → violation (detail: []).
+   *     "tasks-complete": fs.readFile → parseIncompleteTaskLabels non-empty → violation
+   *                       (detail contains incomplete task labels).
+   * - managed:
+   *     Fetches origin/<branch> first (stdout-clean, failure ignored).
+   *     "produced":       githubClient.getRawFile(owner, repo, branch, path).
+   *                       null / empty-trim / scaffold byte-match → violation (detail: []).
+   *     "tasks-complete": getRawFile → parseIncompleteTaskLabels non-empty → violation
+   *                       (detail contains incomplete task labels).
+   *     branch null → all contracts are treated as violations.
+   *
+   * D3 (step-io-contracts): post-execution validation seam, symmetric to validateStepInputs.
+   */
+  validateStepOutputs(
+    contracts: OutputContract[],
+    cwd: string,
+    branch: string | null,
+  ): Promise<OutputCheckResult>;
 
   // ---------------------------------------------------------------------------
   // Pipeline terminal phase (D5 seam)

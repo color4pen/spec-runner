@@ -25,6 +25,8 @@ import { changeFolderPath, managedMarkerPath, localSidecarDir } from "../../util
 import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, recopyDraftToChangeFolder, rejectSymlink } from "../artifact/copy-artifacts.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef } from "../port/runtime-strategy.js";
 import type { ArtifactRef } from "../../store/event-journal.js";
+import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
+import { parseIncompleteTaskLabels } from "../step/output-verify.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import type { AgentStep } from "../step/types.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
@@ -350,6 +352,62 @@ export class ManagedRuntime implements RuntimeStrategy {
       }
     }
     return nonExistent;
+  }
+
+  /**
+   * Validate declared step output contracts after the agent session completes.
+   * No-throw — returns OutputCheckResult with violations.
+   * Empty contracts → empty result.
+   *
+   * Fetches origin/<branch> first (stdout-clean) to ensure latest refs are available.
+   * branch null → all contracts treated as violations.
+   */
+  async validateStepOutputs(
+    contracts: OutputContract[],
+    cwd: string,
+    branch: string | null,
+  ): Promise<OutputCheckResult> {
+    if (contracts.length === 0) return { violations: [] };
+
+    // Fetch to ensure latest remote refs are available (stdout-clean, failure ignored).
+    if (branch) {
+      await this.wrappedSpawnFn("git", ["fetch", "origin", branch], { cwd }).catch(() => {});
+    }
+
+    const violations: import("../port/output-contract.js").OutputViolation[] = [];
+    for (const contract of contracts) {
+      if (!branch) {
+        // No branch available — cannot verify remote content
+        violations.push({ kind: contract.kind, path: contract.path, policy: contract.policy, detail: [] });
+        continue;
+      }
+
+      if (contract.kind === "produced") {
+        const content = await this.githubClient.getRawFile(
+          this.repo.owner, this.repo.name, branch, contract.path,
+        );
+        const isViolation =
+          content === null ||
+          content.trim().length === 0 ||
+          (contract.scaffold !== undefined && content === contract.scaffold);
+        if (isViolation) {
+          violations.push({ kind: contract.kind, path: contract.path, policy: contract.policy, detail: [] });
+        }
+      } else if (contract.kind === "tasks-complete") {
+        const content = await this.githubClient.getRawFile(
+          this.repo.owner, this.repo.name, branch, contract.path,
+        );
+        if (content === null) {
+          violations.push({ kind: contract.kind, path: contract.path, policy: contract.policy, detail: [] });
+          continue;
+        }
+        const incomplete = parseIncompleteTaskLabels(content);
+        if (incomplete.length > 0) {
+          violations.push({ kind: contract.kind, path: contract.path, policy: contract.policy, detail: incomplete });
+        }
+      }
+    }
+    return { violations };
   }
 
   async validateStepInputs(inputs: RequiredInput[], cwd: string, branch: string | null): Promise<void> {

@@ -154,6 +154,9 @@ function makeTestRuntimeStrategy(spawnFn: GitSpawnFn): RuntimeStrategy {
       return refs.map((r) => ({ path: r.path, hash: null }));
     },
     async listChangedFiles(): Promise<string[]> { return []; },
+    async validateStepOutputs(): Promise<import("../src/core/port/output-contract.js").OutputCheckResult> {
+      return { violations: [] };
+    },
   };
 }
 

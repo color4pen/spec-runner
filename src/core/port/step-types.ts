@@ -8,6 +8,7 @@ import type { FindingSeverityCounts } from "../../kernel/review-findings.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
 import type { ReportToolSpec, BaseReportResult } from "./report-result.js";
 import type { ReviewerActivation } from "../../kernel/reviewer-snapshot.js";
+import type { OutputContract } from "./output-contract.js";
 
 // Re-export AgentDefinition for convenience
 export type { AgentDefinition };
@@ -31,6 +32,16 @@ export interface IoRef {
    * Default: "file". "gitState" = git state (branch/worktree) rather than a file.
    */
   artifact?: "file" | "gitState";
+  /**
+   * Whether to include this write in the produced output contracts (writes only).
+   * Default: true. false = exclude from post-execution verification.
+   *
+   * Use false when the write is conditional on runtime state (e.g. only written
+   * for certain request types) and absence in the normal pipeline path is expected.
+   *
+   * D3 (step-completion-verification): output contract opt-out.
+   */
+  verify?: boolean;
 }
 
 /**
@@ -207,6 +218,20 @@ export interface AgentStep {
    * D1 (step-io-contracts): machine-readable declaration makes data flow explicit.
    */
   writes?(state: JobState, deps: StepDeps): IoRef[];
+
+  /**
+   * Declare additional output contracts beyond the produced contracts auto-derived from writes().
+   * Pure function — no I/O allowed.
+   *
+   * Used to declare contracts that are not file-existence checks, e.g.:
+   *   "tasks-complete": all tasks in tasks.md must be checked before the step commits.
+   *
+   * Optional — steps that only have file-existence contracts may omit this.
+   * Steps that do not implement this are unaffected by the output gate (backward compat).
+   *
+   * D3 (step-completion-verification): step-declared output contracts seam.
+   */
+  outputContracts?(state: JobState, deps: StepDeps): OutputContract[];
 
   /**
    * Enrich dynamic context with step-specific data before buildMessage is called.

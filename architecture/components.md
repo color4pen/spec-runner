@@ -30,7 +30,8 @@ interface Transition { step: string; on: Verdict | string; to: string | "end" | 
   resultFilePath(state, deps): string | null;
   parseResult(content, deps): ParsedStepResult;  // pure（I/O 禁止）
   reads?(state, deps): IoRef[];             // pure — 入力宣言（util/paths 由来 path、{n} 解決済み）
-  writes?(state, deps): IoRef[];            // pure — 出力宣言（宣言のみ、事前検証なし）
+  writes?(state, deps): IoRef[];            // pure — 出力宣言（IoRef.verify:false で検証除外）
+  outputContracts?(state, deps): OutputContract[];  // pure — 追加出力契約（tasks-complete 等）
   reportTool?: ReportToolSpec; completionVerdict?: Verdict; ...
   ```
 - **CliStep 契約**（deterministic に動く step）:
@@ -42,13 +43,14 @@ interface Transition { step: string; on: Verdict | string; to: string | "end" | 
   reads?(state, deps): IoRef[];             // pure — 入力宣言
   writes?(state, deps): IoRef[];            // pure — 出力宣言
   ```
-- **不変条件**: `buildMessage`/`parseResult`/`reads`/`writes` は pure（I/O 禁止＝B-5）。CLI step だけ `spawn` を注入で受ける。
-- **I/O 契約**: `reads` の required 入力は StepExecutor が実行前に `RuntimeStrategy.validateStepInputs` で存在を検証（欠落時 `STEP_INPUT_MISSING`）。`writes` は宣言のみ（事前検証なし）。
+- **不変条件**: `buildMessage`/`parseResult`/`reads`/`writes`/`outputContracts` は pure（I/O 禁止＝B-5）。CLI step だけ `spawn` を注入で受ける。
+- **I/O 契約**: `reads` の required 入力は StepExecutor が実行前に `RuntimeStrategy.validateStepInputs` で存在を検証（欠落時 `STEP_INPUT_MISSING`）。`writes` の出力は実行後に `RuntimeStrategy.validateStepOutputs` で検証（欠落・空・scaffold 一致 → `STEP_OUTPUT_MISSING`）。`IoRef.verify:false` で個別除外可（条件付き出力等）。`outputContracts` は `tasks-complete`（全チェックボックス確認）等 kind-specific な追加契約。
 - → `src/core/step/types.ts`
 
 ### StepExecutor — step 実行エンジン
 - **責務**: AgentStep なら `AgentRunner.run(ctx)` を呼び、CliStep なら `step.run()` を呼ぶ。結果を `StepRun` として finalize し state に記録。`reportTool` 登録・follow-up 制御・project.md 注入（`needsProjectContext`）。
-- **協調**: AgentRunner（port）/ Step / JobStateStore / EventBus。
+- **出力契約ゲート**: runner 成功後・`finalizeStepArtifacts`（commit）前に、`writes()` 宣言 + `outputContracts()` を `RuntimeStrategy.validateStepOutputs` に渡して検証。violation あり → `STEP_OUTPUT_MISSING`。`follow-up` class の契約は `OutputVerificationPolicy`（`ctx.policy.outputVerification`）として adapter に注入し、同セッション内の repair loop を可能にする。
+- **協調**: AgentRunner（port）/ Step / JobStateStore / EventBus / RuntimeStrategy（output gate）。
 - → `src/core/step/`
 
 ### AgentRegistry / AgentDefinition
@@ -103,7 +105,8 @@ interface AgentDefinition { readonly name: string; readonly role: AgentStepName;
 interface AgentRunContext { step; state; branch; slug; cwd; config; requestType?;
   input: { requestContent; requestAdr?; requestBaseBranch?; dynamicContext?; projectContext? };
   session: { resumeSessionId?; resumePrompt?; logPath? };
-  policy: { postWorkPrompts?; reportTool?; toolReportRetry? };
+  policy: { postWorkPrompts?; reportTool?; toolReportRetry?;
+    outputVerification?: OutputVerificationPolicy };  // follow-up class の repair loop
   emit(event, payload) }
 interface AgentRunResult { completionReason: "success"|"error"|"timeout"; resultContent: string|null;
   toolResult: BaseReportResult|null; followUpAttempts: number; sessionId?; agentBranch?; error?; modelUsage? }
@@ -125,9 +128,10 @@ interface FollowUpPolicy { maxAttempts; buildPrompt(input): string }  // DEFAULT
 > domain（filter）を組み上げ・runtime を選び・依存を注入する層。**adapters を new してよい唯一の層**（B-1）。生 SDK 型は持たない（B-2）。
 
 ### RuntimeStrategy — runtime 中立の実行基盤 seam
-- **責務**: agent 実行基盤を runtime 非依存に抽象。workspace 管理・agent 実行・state 永続・finding 参照の実在検証・cleanup の面を露出。
+- **責務**: agent 実行基盤を runtime 非依存に抽象。workspace 管理・agent 実行・state 永続・finding 参照の実在検証・step 出力契約の検証・cleanup の面を露出。
 - **実装**: `LocalRuntime`（worktree or no-worktree + ClaudeCodeRunner + signal cleanup）/ `ManagedRuntime`（SessionClient + ManagedAgentRunner + no-op workspace）。
 - **検証と導出の分担**: finding の file / line 参照の存在確認（I/O、runtime 差異＝local worktree fs / managed GitHub raw fetch）は本 seam（`verifyFindingRefs`）。verdict の導出（純関数）は domain（`core/step/judge-verdict.ts`）。判定を seam に、I/O を domain に置かない（B-5 / B-8 と同方向）。
+- **出力検証（`validateStepOutputs`）**: step 実行後、`OutputContract[]` を受け取り `OutputCheckResult`（violations）を返す。no-throw 契約。`produced`（ファイル欠落 / 空 / scaffold 一致）と `tasks-complete`（未チェック `[ ]` 残存）の 2 kind を処理。LocalRuntime = ローカル fs 読み取り、ManagedRuntime = origin fetch 後 `getRawFile`（stdout 非汚染）。
 - → `src/core/port/runtime-strategy.ts`（`local.ts` / `managed.ts` が implements）
 
 ### createRuntime — runtime factory（分岐集約点）

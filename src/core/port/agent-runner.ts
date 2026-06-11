@@ -15,6 +15,7 @@ import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
 import type { DomainEvent } from "../../kernel/event-types.js";
 import type { BaseReportResult, ReportToolSpec, FollowUpPolicy } from "./report-result.js";
+import type { OutputVerificationPolicy } from "./output-contract.js";
 
 import type { ModelUsage } from "./model-usage.js";
 export type { ModelUsage } from "./model-usage.js";
@@ -87,6 +88,15 @@ export interface AgentRunPolicy {
    * When absent and reportTool is set, DEFAULT_TOOL_RETRY is used.
    */
   toolReportRetry?: FollowUpPolicy;
+  /**
+   * Output verification policy for follow-up-class contracts.
+   * When set, the adapter runs a repair loop after postWorkPrompts:
+   *   detect() → violations → buildPrompt → send same-session turn → repeat.
+   * When absent, no output verification loop is run (backward compat).
+   *
+   * D3 (step-completion-verification): follow-up repair seam in AgentRunPolicy.
+   */
+  outputVerification?: OutputVerificationPolicy;
 }
 
 /**

@@ -39,6 +39,8 @@ import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef } from "../port/runtime-strategy.js";
 import type { ArtifactRef } from "../../store/event-journal.js";
+import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
+import { parseIncompleteTaskLabels } from "../step/output-verify.js";
 import { SpecRunnerError, ERROR_CODES, worktreeDirtyError } from "../../errors.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
@@ -671,6 +673,52 @@ export class LocalRuntime implements RuntimeStrategy {
       }
     }
     return results;
+  }
+
+  /**
+   * Validate declared step output contracts after the agent session completes.
+   * No-throw — returns OutputCheckResult with violations.
+   * Empty contracts → empty result.
+   */
+  async validateStepOutputs(
+    contracts: OutputContract[],
+    cwd: string,
+    _branch: string | null,
+  ): Promise<OutputCheckResult> {
+    if (contracts.length === 0) return { violations: [] };
+    const violations: import("../port/output-contract.js").OutputViolation[] = [];
+    for (const contract of contracts) {
+      if (contract.kind === "produced") {
+        const absPath = path.join(cwd, contract.path);
+        let content: string | null = null;
+        try {
+          content = await fs.readFile(absPath, "utf-8");
+        } catch {
+          // File missing → violation
+        }
+        const isViolation =
+          content === null ||
+          content.trim().length === 0 ||
+          (contract.scaffold !== undefined && content === contract.scaffold);
+        if (isViolation) {
+          violations.push({ kind: contract.kind, path: contract.path, policy: contract.policy, detail: [] });
+        }
+      } else if (contract.kind === "tasks-complete") {
+        const absPath = path.join(cwd, contract.path);
+        let content: string | null = null;
+        try {
+          content = await fs.readFile(absPath, "utf-8");
+        } catch {
+          violations.push({ kind: contract.kind, path: contract.path, policy: contract.policy, detail: [] });
+          continue;
+        }
+        const incomplete = parseIncompleteTaskLabels(content);
+        if (incomplete.length > 0) {
+          violations.push({ kind: contract.kind, path: contract.path, policy: contract.policy, detail: incomplete });
+        }
+      }
+    }
+    return { violations };
   }
 
   async validateStepInputs(inputs: RequiredInput[], cwd: string, branch: string | null): Promise<void> {
