@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "jobId": "d18f671a-8c03-48b1-a22e-60f969606bd9",
+  "createdAt": "2026-06-11T14:40:03.121Z",
+  "updatedAt": "2026-06-11T14:40:07.403Z",
+  "request": {
+    "title": "step 完了時に宣言された契約を機械検証し、不足は follow-up で修復させる",
+    "type": "new-feature"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "request-review",
+  "status": "running",
+  "branch": "feat/step-completion-verification-d18f671a",
+  "error": null,
+  "pipelineId": "standard",
+  "issueNumber": 627,
+  "_journal": {
+    "historyCount": 2,
+    "stepCounts": {}
+  }
+}
