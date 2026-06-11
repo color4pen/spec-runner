@@ -68,7 +68,7 @@ describe("TC-DRAFT-001: draft file still exists in main cwd after setupWorkspace
     });
 
     // Assert: draft is still present in main (copy semantics — not deleted)
-    await expect(fs.access(draftPath)).resolves.toBeUndefined();
+    await expect(fs.access(draftPath).then(() => undefined)).resolves.toBeUndefined();
   });
 });
 
@@ -91,7 +91,7 @@ describe("TC-DRAFT-002: change folder request.md exists after setupWorkspace", (
 
     // Assert: change folder request.md exists in worktree
     const changeFolderReqPath = path.join(worktreeDir, "specrunner", "changes", "my-feature", "request.md");
-    await expect(fs.access(changeFolderReqPath)).resolves.toBeUndefined();
+    await expect(fs.access(changeFolderReqPath).then(() => undefined)).resolves.toBeUndefined();
   });
 });
 
@@ -115,9 +115,9 @@ describe("TC-DRAFT-003: directory-format draft — slug directory still exists a
     });
 
     // Assert: slug directory is still present (not deleted — copy semantics)
-    await expect(fs.access(slugDir)).resolves.toBeUndefined();
+    await expect(fs.access(slugDir).then(() => undefined)).resolves.toBeUndefined();
     // Assert: draft file itself still exists
-    await expect(fs.access(draftPath)).resolves.toBeUndefined();
+    await expect(fs.access(draftPath).then(() => undefined)).resolves.toBeUndefined();
   });
 });
 
@@ -140,8 +140,8 @@ describe("TC-DRAFT-004: legacy flat-file format — flat file still exists after
     });
 
     // Assert: the flat file is still present (not deleted — copy semantics)
-    await expect(fs.access(draftPath)).resolves.toBeUndefined();
+    await expect(fs.access(draftPath).then(() => undefined)).resolves.toBeUndefined();
     // Assert: drafts/ directory still exists
-    await expect(fs.access(draftsDir)).resolves.toBeUndefined();
+    await expect(fs.access(draftsDir).then(() => undefined)).resolves.toBeUndefined();
   });
 });

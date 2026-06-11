@@ -162,6 +162,40 @@ describe("ensureDotSpecrunnerGitignore", () => {
     expect(exceptionLines.length).toBe(1);
   });
 
+  it("TC-GI-NM-01: creates node_modules/ entry when .gitignore does not exist", async () => {
+    // No .gitignore in tempDir
+    await ensureDotSpecrunnerGitignore(tempDir);
+    const content = await readGitignore();
+    const lines = content.split("\n");
+    expect(lines.some((l) => l.trim() === "node_modules/")).toBe(true);
+  });
+
+  it("TC-GI-NM-02: does not duplicate node_modules/ when already present", async () => {
+    await writeGitignore("node_modules/\n.specrunner/*\n!.specrunner/config.json\n");
+    await ensureDotSpecrunnerGitignore(tempDir);
+    const content = await readGitignore();
+    const count = content.split("\n").filter((l) => l.trim() === "node_modules/").length;
+    expect(count).toBe(1);
+  });
+
+  it("TC-GI-NM-03: adds node_modules/ as non-comment line when only a comment line exists", async () => {
+    await writeGitignore("# node_modules/\n.specrunner/*\n!.specrunner/config.json\n");
+    await ensureDotSpecrunnerGitignore(tempDir);
+    const content = await readGitignore();
+    const lines = content.split("\n");
+    const nonCommentNodeModules = lines.filter((l) => !l.trim().startsWith("#") && l.trim() === "node_modules/");
+    expect(nonCommentNodeModules.length).toBe(1);
+  });
+
+  it("TC-GI-NM-04: is idempotent — calling twice produces the same result", async () => {
+    await writeGitignore("dist/\n");
+    await ensureDotSpecrunnerGitignore(tempDir);
+    const afterFirst = await readGitignore();
+    await ensureDotSpecrunnerGitignore(tempDir);
+    const afterSecond = await readGitignore();
+    expect(afterSecond).toBe(afterFirst);
+  });
+
   it("preserves existing content when appending", async () => {
     const original = "node_modules/\ndist/\n.env\n";
     await writeGitignore(original);

@@ -34,6 +34,7 @@ export async function ensureDotSpecrunnerGitignore(repoRoot: string): Promise<vo
   const GLOB_LINE = ".specrunner/*";
   const EXCEPTION_LINE = "!.specrunner/config.json";
   const OLD_LINE = ".specrunner/";
+  const NODE_MODULES_LINE = "node_modules/";
 
   const isNonComment = (line: string): boolean => !line.trim().startsWith("#");
 
@@ -80,6 +81,15 @@ export async function ensureDotSpecrunnerGitignore(repoRoot: string): Promise<vo
     lines.splice(globIdx + 1, 0, EXCEPTION_LINE);
   }
   // Both present: no structural change needed (content may still differ due to step 1/2)
+
+  // Step 4: Ensure node_modules/ is present as a non-comment line
+  const nodeModulesIdx = lines.findIndex((line) => isNonComment(line) && line.trim() === NODE_MODULES_LINE);
+  if (nodeModulesIdx === -1) {
+    const insertAt = lines[lines.length - 1] === "" ? lines.length - 1 : lines.length;
+    lines.splice(insertAt, 0, NODE_MODULES_LINE);
+    // Ensure the file ends with a newline
+    if (lines[lines.length - 1] !== "") lines.push("");
+  }
 
   const newContent = lines.join("\n");
   if (newContent === content) return;

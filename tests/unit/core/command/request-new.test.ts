@@ -101,7 +101,7 @@ describe("TC-NEW-005: valid slug with hyphens and digits", () => {
     expect(result).toBe(0);
 
     const filePath = path.join(tempDir, "specrunner", "drafts", "my-feature-123", "request.md");
-    await expect(fs.access(filePath)).resolves.toBeUndefined();
+    await expect(fs.access(filePath).then(() => undefined)).resolves.toBeUndefined();
   });
 });
 

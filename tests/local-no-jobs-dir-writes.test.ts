@@ -162,7 +162,7 @@ describe("TC-NJW-002: LocalRuntime.setupWorkspace() writes slug store, not .spec
     // Worktree slug store must exist
     const worktreePath = createdPaths[0]!;
     const slugStateFile = path.join(worktreePath, changeFolderPath("run-slug"), "state.json");
-    await expect(fs.access(slugStateFile)).resolves.toBeUndefined();
+    await expect(fs.access(slugStateFile).then(() => undefined)).resolves.toBeUndefined();
 
     // jobs-dir entry must NOT exist
     expect(await jobsDirAbsent(jobState.jobId)).toBe(true);

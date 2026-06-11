@@ -57,7 +57,7 @@ describe("TC-RULES-001: valid step-name + rule-slug creates file", () => {
     expect(result).toBe(0);
 
     const filePath = path.join(tempDir, "specrunner", "rules", "implementer", "01-no-inline-comment.md");
-    await expect(fs.access(filePath)).resolves.toBeUndefined();
+    await expect(fs.access(filePath).then(() => undefined)).resolves.toBeUndefined();
 
     expect(getStdout()).toContain("specrunner/rules/implementer/01-no-inline-comment.md");
   });
@@ -74,7 +74,7 @@ describe("TC-RULES-004: existing file → next number used", () => {
     const result = await invokeExecuteRulesNew("implementer", "new-rule");
     expect(result).toBe(0);
 
-    await expect(fs.access(path.join(rulesDir, "02-new-rule.md"))).resolves.toBeUndefined();
+    await expect(fs.access(path.join(rulesDir, "02-new-rule.md")).then(() => undefined)).resolves.toBeUndefined();
   });
 
   it("creates 04- when 01, 03 exist (gap at 02)", async () => {
@@ -87,7 +87,7 @@ describe("TC-RULES-004: existing file → next number used", () => {
     expect(result).toBe(0);
 
     // max=3, next=4
-    await expect(fs.access(path.join(rulesDir, "04-baz.md"))).resolves.toBeUndefined();
+    await expect(fs.access(path.join(rulesDir, "04-baz.md")).then(() => undefined)).resolves.toBeUndefined();
   });
 });
 
@@ -138,7 +138,7 @@ describe("TC-RULES-005: slug with underscore → warning + conversion", () => {
     expect(stderr).toContain("no-inline-comment");
 
     await expect(
-      fs.access(path.join(tempDir, "specrunner", "rules", "implementer", "01-no-inline-comment.md")),
+      fs.access(path.join(tempDir, "specrunner", "rules", "implementer", "01-no-inline-comment.md")).then(() => undefined),
     ).resolves.toBeUndefined();
   });
 });
@@ -153,7 +153,7 @@ describe("TC-RULES-006: slug with space → warning + conversion", () => {
     expect(getStderr()).toContain("Warning");
 
     await expect(
-      fs.access(path.join(tempDir, "specrunner", "rules", "implementer", "01-no-inline-comment.md")),
+      fs.access(path.join(tempDir, "specrunner", "rules", "implementer", "01-no-inline-comment.md")).then(() => undefined),
     ).resolves.toBeUndefined();
   });
 });
@@ -203,7 +203,7 @@ describe("TC-RULES-008: slug-level collision returns exit 1", () => {
     const result = await invokeExecuteRulesNew("implementer", "my-new-rule");
     expect(result).toBe(0);
 
-    await expect(fs.access(path.join(rulesDir, "02-my-new-rule.md"))).resolves.toBeUndefined();
+    await expect(fs.access(path.join(rulesDir, "02-my-new-rule.md")).then(() => undefined)).resolves.toBeUndefined();
   });
 });
 
@@ -215,7 +215,7 @@ describe("TC-RULES-009: empty directory starts from 01-", () => {
     expect(result).toBe(0);
 
     await expect(
-      fs.access(path.join(tempDir, "specrunner", "rules", "code-fixer", "01-first-rule.md")),
+      fs.access(path.join(tempDir, "specrunner", "rules", "code-fixer", "01-first-rule.md")).then(() => undefined),
     ).resolves.toBeUndefined();
 
     expect(getStdout()).toContain("01-first-rule.md");
@@ -228,7 +228,7 @@ describe("TC-RULES-009: empty directory starts from 01-", () => {
     const result = await invokeExecuteRulesNew("adr-gen", "bootstrap");
     expect(result).toBe(0);
 
-    await expect(fs.access(path.join(rulesDir, "01-bootstrap.md"))).resolves.toBeUndefined();
+    await expect(fs.access(path.join(rulesDir, "01-bootstrap.md")).then(() => undefined)).resolves.toBeUndefined();
   });
 });
 
@@ -265,7 +265,7 @@ describe("TC-RULES-011: README.md does not affect numbering", () => {
     const result = await invokeExecuteRulesNew("spec-review", "my-rule", tempDir);
     expect(result).toBe(0);
 
-    await expect(fs.access(path.join(rulesDir, "01-my-rule.md"))).resolves.toBeUndefined();
+    await expect(fs.access(path.join(rulesDir, "01-my-rule.md")).then(() => undefined)).resolves.toBeUndefined();
   });
 
   it("computes correct next number ignoring README.md", async () => {
@@ -278,7 +278,7 @@ describe("TC-RULES-011: README.md does not affect numbering", () => {
     const result = await invokeExecuteRulesNew("build-fixer", "new-rule", tempDir);
     expect(result).toBe(0);
 
-    await expect(fs.access(path.join(rulesDir, "04-new-rule.md"))).resolves.toBeUndefined();
+    await expect(fs.access(path.join(rulesDir, "04-new-rule.md")).then(() => undefined)).resolves.toBeUndefined();
   });
 });
 

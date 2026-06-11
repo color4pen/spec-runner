@@ -1,0 +1,42 @@
+{
+  "version": 2,
+  "jobId": "42c78d4f-42d3-47ec-806d-ed77974511d4",
+  "createdAt": "2026-06-11T03:35:01.596Z",
+  "updatedAt": "2026-06-11T04:19:48.852Z",
+  "request": {
+    "title": "init: .gitignore に node_modules/ を含める",
+    "type": "bug-fix"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "fix/init-gitignore-node-modules-42c78d4f",
+  "error": null,
+  "pipelineId": "standard",
+  "issueNumber": 606,
+  "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/617",
+    "number": 617,
+    "createdAt": "2026-06-11T04:19:48.812Z"
+  },
+  "_journal": {
+    "historyCount": 55,
+    "stepCounts": {
+      "request-review": 3,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 2,
+      "build-fixer": 1,
+      "code-review": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

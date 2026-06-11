@@ -352,6 +352,6 @@ describe("TC-RECOPY-005: recopyDraftToChangeFolder — target directory created 
 
     // Assert: change folder and file were created
     const destPath = path.join(targetCwd, "specrunner", "changes", slug, "request.md");
-    await expect(fs.access(destPath)).resolves.toBeUndefined();
+    await expect(fs.access(destPath).then(() => undefined)).resolves.toBeUndefined();
   });
 });

@@ -185,8 +185,8 @@ describe("T-01: specrunner init でプロジェクトディレクトリが作成
     const draftsDir = path.join(gitTempDir, "specrunner", "drafts");
     const changesDir = path.join(gitTempDir, "specrunner", "changes");
 
-    await expect(fs.access(draftsDir)).resolves.toBeUndefined();
-    await expect(fs.access(changesDir)).resolves.toBeUndefined();
+    await expect(fs.access(draftsDir).then(() => undefined)).resolves.toBeUndefined();
+    await expect(fs.access(changesDir).then(() => undefined)).resolves.toBeUndefined();
   });
 
   it("冪等性: 2 回 runInit しても正常に完了する", async () => {
@@ -201,7 +201,7 @@ describe("T-01: specrunner init でプロジェクトディレクトリが作成
     const draftsDir = path.join(gitTempDir, "specrunner", "drafts");
     const changesDir = path.join(gitTempDir, "specrunner", "changes");
 
-    await expect(fs.access(draftsDir)).resolves.toBeUndefined();
-    await expect(fs.access(changesDir)).resolves.toBeUndefined();
+    await expect(fs.access(draftsDir).then(() => undefined)).resolves.toBeUndefined();
+    await expect(fs.access(changesDir).then(() => undefined)).resolves.toBeUndefined();
   });
 });
