@@ -126,6 +126,7 @@ function makeRuntimeStrategy(
     async prepareStepArtifacts() {},
     async finalizeStepArtifacts() {},
     async validateStepInputs() {},
+    async validateStepOutputs() { return { violations: [] }; },
     async commitFinalState() {},
     async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
     async persistJobState() {},

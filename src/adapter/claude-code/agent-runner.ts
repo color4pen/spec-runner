@@ -516,6 +516,60 @@ export class ClaudeCodeRunner implements AgentRunner {
         }
       }
 
+      // Output verification follow-up loop (D3: step-completion-verification).
+      // Runs after postWorkPrompts, only when outputVerification is configured.
+      // session未確立時 (extractedSessionId === undefined) は skip。
+      const outputVerif = ctx.policy?.outputVerification;
+      if (outputVerif && extractedSessionId) {
+        for (let attempt = 1; attempt <= outputVerif.maxAttempts; attempt++) {
+          let checkResult: import("../../core/port/output-contract.js").OutputCheckResult;
+          try {
+            checkResult = await outputVerif.detect();
+          } catch {
+            // best-effort: detection failure → skip remaining attempts
+            break;
+          }
+          const followUpViolations = checkResult.violations.filter((v) => v.policy === "follow-up");
+          if (followUpViolations.length === 0) break;
+
+          const repairPrompt = outputVerif.buildPrompt(followUpViolations, attempt);
+          const repairOptions: Record<string, unknown> = {
+            ...queryOptions,
+            resume: extractedSessionId,
+          };
+          delete repairOptions["mcpServers"];
+          try {
+            const repairMessages = this.queryFn({ prompt: repairPrompt, options: repairOptions });
+            for await (const message of repairMessages as AsyncGenerator<SDKMessage, void>) {
+              emitToolProgress(message, ctx.emit, step.name);
+              if (message.type === "result" && (message as SDKResultMessage).subtype === "success") {
+                const su = (message as SDKResultSuccess);
+                const rawUsage = su.modelUsage;
+                if (rawUsage && typeof rawUsage === "object" && Object.keys(rawUsage).length > 0) {
+                  const summed: Record<string, ModelUsage> = { ...(extractedModelUsage ?? {}) };
+                  for (const [model, usage] of Object.entries(rawUsage)) {
+                    const prev = summed[model];
+                    summed[model] = {
+                      inputTokens: (prev?.inputTokens ?? 0) + usage.inputTokens,
+                      outputTokens: (prev?.outputTokens ?? 0) + usage.outputTokens,
+                      cacheReadInputTokens: (prev?.cacheReadInputTokens ?? 0) + usage.cacheReadInputTokens,
+                      cacheCreationInputTokens: (prev?.cacheCreationInputTokens ?? 0) + usage.cacheCreationInputTokens,
+                    };
+                  }
+                  extractedModelUsage = summed;
+                }
+              }
+            }
+          } catch {
+            // best-effort: repair turn failure → preserve work turn result
+            stderrWrite(
+              `[specrunner] warn: output verification repair turn ${attempt} failed for '${step.name}'. Continuing.\n`,
+            );
+          }
+          followUpAttempts++;
+        }
+      }
+
       logVerbose("session", "query completed", { stepName: step.name, runtime: "local", sessionId: extractedSessionId });
 
       // Write session summary to session log (session ID, model, token usage)

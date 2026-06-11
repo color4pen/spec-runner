@@ -1927,3 +1927,95 @@ describe("ManagedAgentRunner requestBaseBranch propagation", () => {
     expect(stepCtxArg?.request?.baseBranch).toBe("main");
   });
 });
+
+// ---------------------------------------------------------------------------
+// T-08: outputVerification follow-up loop (ManagedAgentRunner, polling 経路)
+// ---------------------------------------------------------------------------
+
+describe("ManagedAgentRunner polling 経路 outputVerification follow-up loop", () => {
+  it("violations あり → sendUserMessage が repair 分追加で呼ばれ followUpAttempts が加算される", async () => {
+    const sessionClient = makeMockSessionClient();
+    const sendUserMessageSpy = sessionClient.sendUserMessage as ReturnType<typeof vi.fn>;
+    const pollSpy = sessionClient.pollUntilComplete as ReturnType<typeof vi.fn>;
+
+    const violations = [
+      { kind: "tasks-complete" as const, path: "tasks.md", policy: "follow-up" as const, detail: ["T-01: implement foo"] },
+    ];
+    const outputVerification = {
+      detect: vi.fn().mockResolvedValue({ violations }),
+      maxAttempts: 2,
+      buildPrompt: vi.fn().mockReturnValue("repair: complete remaining tasks"),
+    };
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const ctx = makeCtx({
+      step: makePollingStyleStep("spec-review", "spec-review"),
+      policy: { outputVerification },
+    });
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    // 1 initial + 2 repair turns = 3 sendUserMessage calls
+    expect(sendUserMessageSpy).toHaveBeenCalledTimes(3);
+    // pollUntilComplete: 1 initial + 2 repair = 3 calls
+    expect(pollSpy).toHaveBeenCalledTimes(3);
+    expect(result.followUpAttempts).toBe(2);
+    expect(outputVerification.detect).toHaveBeenCalledTimes(2);
+    expect(outputVerification.buildPrompt).toHaveBeenCalledTimes(2);
+    // repair turn prompts
+    expect(sendUserMessageSpy).toHaveBeenNthCalledWith(2, expect.any(String), "repair: complete remaining tasks");
+    expect(sendUserMessageSpy).toHaveBeenNthCalledWith(3, expect.any(String), "repair: complete remaining tasks");
+  });
+
+  it("violations が 1 回の repair で解消 → ループ早期終了 (sendUserMessage 2 回、followUpAttempts 1)", async () => {
+    const sessionClient = makeMockSessionClient();
+    const sendUserMessageSpy = sessionClient.sendUserMessage as ReturnType<typeof vi.fn>;
+
+    let detectCallCount = 0;
+    const outputVerification = {
+      detect: vi.fn().mockImplementation(async () => {
+        detectCallCount++;
+        if (detectCallCount === 1) {
+          // First check: violation exists
+          return {
+            violations: [
+              { kind: "tasks-complete" as const, path: "tasks.md", policy: "follow-up" as const, detail: ["T-01"] },
+            ],
+          };
+        }
+        // Second check: violation resolved after first repair
+        return { violations: [] };
+      }),
+      maxAttempts: 3,
+      buildPrompt: vi.fn().mockReturnValue("repair prompt"),
+    };
+
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient: makeMockGithubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const ctx = makeCtx({
+      step: makePollingStyleStep("spec-review", "spec-review"),
+      policy: { outputVerification },
+    });
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    // 1 initial + 1 repair = 2 sendUserMessage calls
+    expect(sendUserMessageSpy).toHaveBeenCalledTimes(2);
+    // detect() called 2 times: 1st finds violation → repair, 2nd finds none → break
+    expect(detectCallCount).toBe(2);
+    expect(result.followUpAttempts).toBe(1);
+  });
+});

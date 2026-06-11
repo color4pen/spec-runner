@@ -8,6 +8,13 @@ import type { DomainEvent } from "../event/types.js";
 import type { AgentRunner } from "../port/agent-runner.js";
 import type { RequiredInput } from "../port/runtime-strategy.js";
 import type { JobStateStore } from "../../store/job-state-store.js";
+import {
+  buildAllOutputContracts,
+  buildOutputFollowUpPrompt,
+  partitionByPolicy,
+  OUTPUT_FOLLOWUP_MAX_ATTEMPTS,
+} from "./output-verify.js";
+import type { OutputContract } from "../port/output-contract.js";
 import { pushStepResult } from "../../state/helpers.js";
 import { stderrWrite, logVerbose, isLevelEnabled } from "../../logger/stdout.js";
 import { getAgentLogDir } from "../../util/xdg.js";
@@ -230,6 +237,24 @@ export class StepExecutor {
       sessionLogPath = nodePath.join(agentLogDir, `${step.name}-${attempt}.jsonl`);
     }
 
+    // Build outputVerification policy for follow-up-class contracts.
+    // Only constructed when runtimeStrategy is available and step declares follow-up contracts.
+    // Bound to (followUpContracts, cwd, branch) so detect() has no free parameters.
+    let outputVerification: import("../port/output-contract.js").OutputVerificationPolicy | undefined;
+    if (deps.runtimeStrategy) {
+      const followUpContracts: OutputContract[] = (step.outputContracts?.(state, deps) ?? [])
+        .filter((c) => c.policy === "follow-up");
+      if (followUpContracts.length > 0) {
+        const strategy = deps.runtimeStrategy;
+        const branch = state.branch ?? null;
+        outputVerification = {
+          detect: () => strategy.validateStepOutputs(followUpContracts, cwd, branch),
+          maxAttempts: OUTPUT_FOLLOWUP_MAX_ATTEMPTS,
+          buildPrompt: (violations, _attempt) => buildOutputFollowUpPrompt(violations),
+        };
+      }
+    }
+
     const ctx = {
       step,
       state,
@@ -254,6 +279,7 @@ export class StepExecutor {
         postWorkPrompts: allFollowUpPrompts.length > 0 ? allFollowUpPrompts : undefined,
         reportTool: step.reportTool,
         toolReportRetry: step.reportTool ? DEFAULT_TOOL_RETRY : undefined,
+        outputVerification,
       },
       emit: (event: DomainEvent, payload: Record<string, unknown>) => {
         // Forward adapter events to the event bus
@@ -367,6 +393,52 @@ export class StepExecutor {
     // executor proceeds to finalizeStep. Verdict is determined by step-class:
     //   judge  → "needs-fix"  (conservative; fixer loop → loop exhaustion = grounded halt)
     //   producer → completionVerdict (downstream grounded step verifies correctness)
+
+    // Output contract gate (D3: step-completion-verification).
+    // Runs after runner.run() succeeds, before finalizeStepArtifacts (commit).
+    // Only active when runtimeStrategy is available and step declares contracts.
+    // runtimeStrategy 未注入 / 契約 0 件 / violation 0 件 → 素通り。
+    if (deps.runtimeStrategy) {
+      const allContracts = buildAllOutputContracts(step, state, deps);
+
+      if (allContracts.length > 0) {
+        const checkResult = await deps.runtimeStrategy.validateStepOutputs(
+          allContracts, cwd, state.branch ?? null,
+        );
+        const { followUp, halt } = partitionByPolicy(checkResult);
+
+        // Gate: halt violations OR remaining follow-up violations → STEP_OUTPUT_MISSING
+        if (halt.length > 0 || followUp.length > 0) {
+          const allViolations = [...halt, ...followUp];
+          const violationPaths = allViolations.map((v) =>
+            v.kind === "tasks-complete"
+              ? `${v.path} (incomplete tasks: ${v.detail.join(", ") || "see file"})`
+              : v.path,
+          );
+          const pathList = violationPaths.map((p) => `  - ${p}`).join("\n");
+          const branchNote = state.branch ? ` on branch '${state.branch}'` : "";
+          const errorInfo: ErrorInfo = {
+            code: "STEP_OUTPUT_MISSING",
+            message: `Step '${step.name}' output contract(s) not satisfied${branchNote}: ${violationPaths.join(", ")}`,
+            hint: `Required step output(s) missing or incomplete${branchNote}.\nViolations:\n${pathList}`,
+          };
+          state = recordFailedStepResult(state, step.name, errorInfo, { startedAt });
+          state = await store.fail(state, errorInfo, step.name);
+          state = await store.appendHistory(state, {
+            ts: new Date().toISOString(),
+            step: `${step.name}-failed`,
+            status: "error",
+            message: `${step.name} failed: STEP_OUTPUT_MISSING — ${errorInfo.message}`,
+          });
+          await store.persist(state);
+          const gateErr = Object.assign(
+            new Error(errorInfo.message),
+            { code: "STEP_OUTPUT_MISSING", hint: errorInfo.hint },
+          );
+          attachStateAndRethrow(gateErr, state);
+        }
+      }
+    }
 
     // Delete B-group templates and commit-push (delegated to RuntimeStrategy seam).
     // LocalRuntime: cleanupOutputTemplates() + commitAndPush(). ManagedRuntime / no strategy: no-op.

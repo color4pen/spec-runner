@@ -157,9 +157,12 @@ export const AdrGenStep: AgentStep = {
     // ADR 成果物の path は adr-gen 内の宣言にのみ置く（プロジェクト規律）。
     // Path format: specrunner/adr/{YYYY-MM-DD}-{slug}.md (date is runtime-resolved by agent).
     // Declared as the canonical output directory to document adr-gen's ownership.
+    // verify: false — the actual filename includes a runtime-resolved date prefix
+    // (specrunner/adr/YYYY-MM-DD-{slug}.md) that differs from the declared path.
+    // Existence of the correct filename cannot be verified against this declaration.
     if (!deps.request.adr) return [];
     return [
-      { path: `specrunner/adr/${deps.slug}.md` },
+      { path: `specrunner/adr/${deps.slug}.md`, verify: false },
     ];
   },
 
