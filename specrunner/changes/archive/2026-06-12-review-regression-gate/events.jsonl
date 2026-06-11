@@ -62,3 +62,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/review-regression-gate/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-11T15:36:53.884Z","endedAt":"2026-06-11T15:36:56.118Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-11T15:36:56.118Z","outputs":[{"path":"specrunner/changes/review-regression-gate/pr-create-result.md","hash":"sha256:3f58eb38bd5d92e72cde59d29b2df12326351985268717222d0b94102f99bbe7"}],"inputs":[{"path":"feat/review-regression-gate-b2823f3e","hash":null}]}
 {"type":"transition","ts":"2026-06-11T15:36:56.133Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-11T16:55:44.882Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
