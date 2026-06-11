@@ -114,6 +114,7 @@ function buildMockRuntime(): RuntimeStrategy {
     persistJobState: vi.fn().mockResolvedValue(undefined),
     verifyFindingRefs: vi.fn().mockResolvedValue([]),
     digestArtifacts: vi.fn().mockResolvedValue([]),
+    listChangedFiles: vi.fn().mockResolvedValue([]),
   };
 }
 

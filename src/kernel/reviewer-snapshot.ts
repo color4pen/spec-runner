@@ -9,6 +9,26 @@
  */
 
 /**
+ * Declarative activation conditions for a reviewer.
+ * Both fields are optional; omitting a field removes that constraint.
+ * Both present → AND semantics (both conditions must be satisfied).
+ *
+ * Design D2: CLI evaluates these deterministically from observable facts.
+ */
+export interface ReviewerActivation {
+  /**
+   * Glob patterns for changed files.
+   * At least one changed file must match at least one pattern.
+   */
+  paths?: string[];
+  /**
+   * Request types that activate this reviewer.
+   * The job's request type must appear in this list.
+   */
+  requestTypes?: string[];
+}
+
+/**
  * Immutable snapshot of a reviewer definition stored in JobState.
  * Captured at job start; used by pipeline composition and step execution.
  * Persisted in state.json.
@@ -28,4 +48,10 @@ export interface ReviewerSnapshot {
   judgment: string;
   /** Remaining free-text content (after required sections). */
   freeText: string;
+  /**
+   * Activation conditions declared in frontmatter.
+   * Absent means no conditions (always activate).
+   */
+  paths?: string[];
+  requestTypes?: string[];
 }

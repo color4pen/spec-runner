@@ -42,6 +42,8 @@ export interface StepAttemptRecord {
     followUpAttempts?: number;
     /** Transient-error auto-retry attempts. */
     transientRetryAttempts?: number;
+    /** Human-readable reason when verdict === "skipped". */
+    skipReason?: string;
   };
   startedAt: string;
   endedAt: string;
@@ -224,6 +226,7 @@ export function fold(content: string): FoldResult {
         ...(r.outcome.toolResult !== undefined ? { toolResult: r.outcome.toolResult } : {}),
         ...(r.outcome.followUpAttempts !== undefined ? { followUpAttempts: r.outcome.followUpAttempts } : {}),
         ...(r.outcome.transientRetryAttempts !== undefined ? { transientRetryAttempts: r.outcome.transientRetryAttempts } : {}),
+        ...(r.outcome.skipReason !== undefined ? { skipReason: r.outcome.skipReason } : {}),
       },
       startedAt: r.startedAt,
       endedAt: r.endedAt,
@@ -293,6 +296,7 @@ export function stepRunToRecord(step: string, run: StepRun): StepAttemptRecord {
       ...(outcome.toolResult !== undefined ? { toolResult: outcome.toolResult } : {}),
       ...(outcome.followUpAttempts !== undefined ? { followUpAttempts: outcome.followUpAttempts } : {}),
       ...(outcome.transientRetryAttempts !== undefined ? { transientRetryAttempts: outcome.transientRetryAttempts } : {}),
+      ...(outcome.skipReason !== undefined ? { skipReason: outcome.skipReason } : {}),
     },
     startedAt: run.startedAt,
     endedAt: run.endedAt,

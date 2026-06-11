@@ -410,6 +410,23 @@ export class ManagedRuntime implements RuntimeStrategy {
     return refs.map((ref) => ({ path: ref.path, hash: null }));
   }
 
+  /**
+   * Custom reviewer activation (listChangedFiles) is not supported in the managed runtime.
+   * Returns [] as a fail-safe so all managed reviewers activate unconditionally.
+   *
+   * Known constraint: managed runtime does not have a local git worktree to run
+   * `git diff --name-only`, so path-based activation conditions cannot be evaluated.
+   * All managed custom reviewers activate regardless of paths/requestTypes conditions
+   * (conservative: over-activate rather than silently skip).
+   */
+  async listChangedFiles(
+    _baseBranch: string,
+    _cwd: string,
+    _branch: string | null,
+  ): Promise<string[]> {
+    return [];
+  }
+
   registerCleanup(jobId: string, startStep: string): CleanupHandle {
     const slug = this.currentSlug;
 

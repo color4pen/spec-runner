@@ -79,6 +79,7 @@ ${opts.requestContent}
  * - Uses JUDGE_REPORT_TOOL (singleton identity) so executor's isJudgeStep check fires.
  * - Uses customReviewerResultPath for result file identification.
  * - Has needsProjectContext: true and gitWrite: true like code-review.
+ * - Sets activation when the snapshot declares paths or requestTypes constraints.
  */
 export function createCustomReviewerStep(snapshot: ReviewerSnapshot): AgentStep {
   const agentDef: AgentDefinition = {
@@ -94,6 +95,13 @@ export function createCustomReviewerStep(snapshot: ReviewerSnapshot): AgentStep 
     capabilities: { gitWrite: true },
   };
 
+  // Only attach activation when the snapshot declares at least one condition.
+  // Steps without conditions skip the gate entirely (behavior identical to pre-feature).
+  const hasActivationConditions = !!(snapshot.paths || snapshot.requestTypes);
+  const activation = hasActivationConditions
+    ? { paths: snapshot.paths, requestTypes: snapshot.requestTypes }
+    : undefined;
+
   return {
     kind: "agent",
     name: snapshot.name,
@@ -107,6 +115,8 @@ export function createCustomReviewerStep(snapshot: ReviewerSnapshot): AgentStep 
     reportTool: JUDGE_REPORT_TOOL,
 
     maxTurns: 20,
+
+    activation,
 
     reads(state: JobState, deps: StepDeps): IoRef[] {
       const folder = changeFolderPath(deps.slug);

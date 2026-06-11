@@ -44,6 +44,8 @@ export function parseReviewerDefinition(filename: string, content: string): Revi
     judgment: sections["判定基準"] ?? "",
     freeText: sections["__free__"] ?? "",
     filename,
+    paths: fm.paths,
+    requestTypes: fm.requestTypes,
   };
 }
 
@@ -55,6 +57,8 @@ interface ParsedFrontmatter {
   name?: string;
   maxIterations?: number;
   model?: string;
+  paths?: string[];
+  requestTypes?: string[];
 }
 
 /**
@@ -89,29 +93,107 @@ function splitFrontmatter(content: string): { frontmatter: string; body: string 
 
 /**
  * Parse a YAML-style frontmatter block into key/value pairs.
- * Only supports simple `key: value` lines (no nested objects or arrays).
+ *
+ * Scalar keys supported: name, maxIterations, model.
+ * Array keys supported: paths, requestTypes.
+ *
+ * Array syntax:
+ *   Inline flow: paths: ["src/**", "lib/**"]
+ *   Block sequence:
+ *     paths:
+ *       - src/**
+ *       - lib/**
  */
 function parseFrontmatter(fm: string): ParsedFrontmatter {
   const result: ParsedFrontmatter = {};
   if (!fm.trim()) return result;
 
-  for (const line of fm.split("\n")) {
+  const lines = fm.split("\n");
+  const ARRAY_KEYS = new Set(["paths", "requestTypes"]);
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i]!;
     const colonIdx = line.indexOf(":");
-    if (colonIdx === -1) continue;
+    if (colonIdx === -1) {
+      i++;
+      continue;
+    }
     const key = line.slice(0, colonIdx).trim();
-    const value = line.slice(colonIdx + 1).trim();
+    const rest = line.slice(colonIdx + 1).trim();
 
     if (key === "name") {
-      result.name = value;
+      result.name = rest;
     } else if (key === "maxIterations") {
-      const n = parseInt(value, 10);
+      const n = parseInt(rest, 10);
       result.maxIterations = isNaN(n) ? NaN : n;
     } else if (key === "model") {
-      result.model = value || undefined;
+      result.model = rest || undefined;
+    } else if (ARRAY_KEYS.has(key)) {
+      if (rest.startsWith("[")) {
+        // Inline flow: key: ["a", "b"] or key: [a, b]
+        result[key as "paths" | "requestTypes"] = parseInlineArray(rest);
+      } else {
+        // Block sequence — collect indented `  - item` lines that follow
+        const items: string[] = [];
+        let j = i + 1;
+        while (j < lines.length) {
+          const nextLine = lines[j]!;
+          const trimmed = nextLine.trimStart();
+          if (trimmed.startsWith("- ")) {
+            // Strip leading whitespace, then "- ", then optional quotes/spaces
+            const rawItem = trimmed.slice(2).trim();
+            items.push(stripQuotes(rawItem));
+            j++;
+          } else if (trimmed.length === 0) {
+            // Blank line — end of block sequence
+            break;
+          } else if (/^\s/.test(nextLine) || trimmed.startsWith("-")) {
+            // Still indented but doesn't match "- " — skip
+            j++;
+          } else {
+            break;
+          }
+        }
+        if (items.length > 0) {
+          result[key as "paths" | "requestTypes"] = items;
+        }
+        i = j;
+        continue;
+      }
     }
+
+    i++;
   }
 
   return result;
+}
+
+/**
+ * Parse an inline YAML flow array: ["a", "b"] or [a, b].
+ * Handles elements wrapped in single or double quotes and bare strings.
+ * Leading/trailing whitespace and quotes are stripped from each element.
+ */
+function parseInlineArray(raw: string): string[] {
+  // Strip outer [ ]
+  const inner = raw.replace(/^\s*\[/, "").replace(/\]\s*$/, "");
+  if (!inner.trim()) return [];
+
+  // Split by commas, then strip quotes/whitespace from each element
+  return inner
+    .split(",")
+    .map((s) => stripQuotes(s.trim()))
+    .filter((s) => s.length > 0);
+}
+
+/**
+ * Strip surrounding single or double quotes from a string value.
+ */
+function stripQuotes(s: string): string {
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    return s.slice(1, -1);
+  }
+  return s;
 }
 
 /**

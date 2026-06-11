@@ -154,6 +154,13 @@ export function buildReviewerChainTransitions(chain: string[]): Transition[] {
       on: "needs-fix",
       to: STEP_NAMES.CODE_FIXER,
     });
+
+    // skipped → next reviewer / conformance (skip ≠ approved, bypass code-fixer)
+    transitions.push({
+      step: reviewer,
+      on: "skipped",
+      to: next,
+    });
   }
 
   // --- code-fixer → reviewer/next transitions (per reviewer, priority order) ---

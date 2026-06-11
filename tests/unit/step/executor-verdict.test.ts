@@ -96,6 +96,7 @@ function makeRuntimeStrategy(
     async persistJobState(): Promise<void> {},
     verifyFindingRefs: verifyFindingRefsFn,
     async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null })); },
+    async listChangedFiles(): Promise<string[]> { return []; },
   };
 }
 

@@ -79,6 +79,11 @@ export interface StepResultInput {
    * Added in transient-error-auto-retry.
    */
   transientRetryAttempts?: number;
+  /**
+   * Human-readable reason when verdict === "skipped".
+   * Documents which activation condition was not satisfied.
+   */
+  skipReason?: string;
 }
 
 /**
@@ -107,6 +112,7 @@ export function pushStepResult(
       ...(partial.toolResult !== undefined ? { toolResult: partial.toolResult } : {}),
       ...(partial.followUpAttempts !== undefined ? { followUpAttempts: partial.followUpAttempts } : {}),
       ...(partial.transientRetryAttempts !== undefined ? { transientRetryAttempts: partial.transientRetryAttempts } : {}),
+      ...(partial.skipReason !== undefined ? { skipReason: partial.skipReason } : {}),
     },
     startedAt: partial.startedAt ?? now,
     endedAt: partial.completedAt ?? now,

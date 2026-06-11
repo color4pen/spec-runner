@@ -36,6 +36,18 @@ export interface ReviewerDefinition {
   freeText: string;
   /** Source filename (e.g. "security.md") — for validation error messages. */
   filename: string;
+  /**
+   * Glob patterns for changed files (from frontmatter `paths:`).
+   * When present, at least one changed file must match for the reviewer to activate.
+   * Absent means no path constraint.
+   */
+  paths?: string[];
+  /**
+   * Request types that activate this reviewer (from frontmatter `requestTypes:`).
+   * When present, the job's request type must appear in this list.
+   * Absent means no request-type constraint.
+   */
+  requestTypes?: string[];
 }
 
 /**
