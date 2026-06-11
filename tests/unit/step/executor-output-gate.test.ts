@@ -112,6 +112,7 @@ function makeRuntimeStrategy(
       return refs.map((r) => ({ path: r.path, hash: null }));
     },
     validateStepOutputs: validateFn,
+    async listChangedFiles(): Promise<string[]> { return []; },
   };
   return { strategy, finalizeSpy };
 }
