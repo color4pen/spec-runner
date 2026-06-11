@@ -16,14 +16,14 @@ import { parseReviewerDefinition } from "../../../src/core/reviewers/definition.
 import { validateReviewerDefinitions } from "../../../src/core/reviewers/validate.js";
 
 let tempDir: string;
-let stderrSpy: ReturnType<typeof import("vitest").vi.spyOn>;
-let stdoutSpy: ReturnType<typeof import("vitest").vi.spyOn>;
+let _stderrSpy: ReturnType<typeof import("vitest").vi.spyOn>;
+let _stdoutSpy: ReturnType<typeof import("vitest").vi.spyOn>;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "reviewers-new-test-"));
   const { vi } = await import("vitest");
-  stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
-  stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+  _stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+  _stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
