@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ab627b9c-209d-4055-b84e-6dab74408c07",
   "createdAt": "2026-06-11T04:05:02.195Z",
-  "updatedAt": "2026-06-11T04:54:25.469Z",
+  "updatedAt": "2026-06-11T05:42:29.894Z",
   "request": {
     "title": "inbox run が孤児化した running job を検出して自動回復する",
     "type": "new-feature"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "feat/stale-running-recovery-ab627b9c",
   "error": null,
   "pipelineId": "standard",
@@ -23,7 +23,7 @@
     "createdAt": "2026-06-11T04:54:25.454Z"
   },
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
