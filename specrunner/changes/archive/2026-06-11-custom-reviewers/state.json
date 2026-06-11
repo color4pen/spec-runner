@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6cee95f4-cf5f-4697-8753-508afe7b8de8",
   "createdAt": "2026-06-11T09:45:02.541Z",
-  "updatedAt": "2026-06-11T13:04:24.700Z",
+  "updatedAt": "2026-06-11T13:50:01.248Z",
   "request": {
     "title": "プロジェクト定義のカスタムレビューワー step を宣言的に追加できるようにする",
     "type": "new-feature"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "feat/custom-reviewers-6cee95f4",
   "error": null,
   "pipelineId": "standard",
@@ -24,7 +24,7 @@
     "createdAt": "2026-06-11T13:04:24.686Z"
   },
   "_journal": {
-    "historyCount": 99,
+    "historyCount": 100,
     "stepCounts": {
       "request-review": 1,
       "design": 2,
