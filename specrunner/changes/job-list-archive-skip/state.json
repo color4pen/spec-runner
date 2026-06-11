@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "02cbdcea-5cf4-4094-b27d-9a60f89aa894",
   "createdAt": "2026-06-11T17:35:02.541Z",
-  "updatedAt": "2026-06-11T18:02:38.216Z",
+  "updatedAt": "2026-06-11T18:03:10.908Z",
   "request": {
     "title": "job 一覧が archive 全件をロードし、履歴の長さに比例して遅くなる",
     "type": "bug-fix"
@@ -11,14 +11,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "conformance",
   "status": "running",
   "branch": "fix/job-list-archive-skip-02cbdcea",
   "error": null,
   "pipelineId": "standard",
   "issueNumber": 634,
   "_journal": {
-    "historyCount": 29,
+    "historyCount": 33,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -26,7 +26,8 @@
       "test-case-gen": 1,
       "implementer": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1
     }
   }
 }
