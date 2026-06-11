@@ -295,7 +295,7 @@ export async function runArchiveOrchestrator(
     // Delete sidecar directory (best-effort)
     try {
       await fs.rm(nodePath.join(cwd, localSidecarDir(slug)), { recursive: true, force: true });
-    } catch (err) {
+    } catch {
       stderrWrite(`Warning: failed to remove sidecar directory for ${slug}.`);
     }
 
