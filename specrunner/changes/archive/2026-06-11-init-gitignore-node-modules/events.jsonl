@@ -78,3 +78,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/init-gitignore-node-modules/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-11T04:19:47.046Z","endedAt":"2026-06-11T04:19:48.815Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-11T04:19:48.815Z","outputs":[{"path":"specrunner/changes/init-gitignore-node-modules/pr-create-result.md","hash":"sha256:7ca7ea9c1cde454927e65f1b2ddf3ac516f6e31ddafe71b12421d6ea57851487"}],"inputs":[{"path":"fix/init-gitignore-node-modules-42c78d4f","hash":null}]}
 {"type":"transition","ts":"2026-06-11T04:19:48.852Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-11T05:47:08.510Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

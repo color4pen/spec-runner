@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "42c78d4f-42d3-47ec-806d-ed77974511d4",
   "createdAt": "2026-06-11T03:35:01.596Z",
-  "updatedAt": "2026-06-11T04:19:48.852Z",
+  "updatedAt": "2026-06-11T05:47:08.510Z",
   "request": {
     "title": "init: .gitignore に node_modules/ を含める",
     "type": "bug-fix"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/init-gitignore-node-modules-42c78d4f",
   "error": null,
   "pipelineId": "standard",
@@ -24,7 +24,7 @@
     "createdAt": "2026-06-11T04:19:48.812Z"
   },
   "_journal": {
-    "historyCount": 55,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 3,
       "design": 1,
