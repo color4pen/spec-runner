@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bcc0bb20-0df8-4dbe-9680-eed4b8cf22d6",
   "createdAt": "2026-06-11T04:54:27.974Z",
-  "updatedAt": "2026-06-11T05:24:02.809Z",
+  "updatedAt": "2026-06-11T05:47:03.091Z",
   "request": {
     "title": "PR の Fixes 行を job state の issueNumber から導出する",
     "type": "spec-change"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/pr-fixes-issue-link-bcc0bb20",
   "error": null,
   "pipelineId": "standard",
@@ -23,7 +23,7 @@
     "createdAt": "2026-06-11T05:24:02.796Z"
   },
   "_journal": {
-    "historyCount": 58,
+    "historyCount": 59,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
