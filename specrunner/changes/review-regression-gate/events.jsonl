@@ -41,3 +41,9 @@
 {"type":"transition","ts":"2026-06-11T15:22:43.132Z","step":"code-review","status":"ok","message":"code-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-11T15:22:43.132Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-06-11T15:22:43.144Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-06-11T15:28:05.069Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"9f1b7291-4f2d-4f68-88bd-fa7f1243831b","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-11T15:22:43.195Z","endedAt":"2026-06-11T15:28:03.139Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-06-11T15:28:03.139Z","outputs":[{"path":"specrunner/changes/review-regression-gate","hash":null}],"inputs":[{"path":"specrunner/changes/review-regression-gate/review-feedback-001.md","hash":"sha256:3bbca7d7b5b6556ef5229f226c79765ef7ea62f888398319935bb80d25275e2d"}]}
+{"type":"transition","ts":"2026-06-11T15:28:05.080Z","step":"step-transition","status":"ok","message":"code-fixer → conformance"}
+{"type":"transition","ts":"2026-06-11T15:28:05.083Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-06-11T15:28:05.086Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
