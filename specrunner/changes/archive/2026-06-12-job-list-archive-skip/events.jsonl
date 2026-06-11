@@ -61,3 +61,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/job-list-archive-skip/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-11T18:06:56.620Z","endedAt":"2026-06-11T18:06:58.513Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-11T18:06:58.513Z","outputs":[{"path":"specrunner/changes/job-list-archive-skip/pr-create-result.md","hash":"sha256:030c84591702c6677d36ee4d2d4383caf4a4add898dbba44b7cc8c814dc142a0"}],"inputs":[{"path":"fix/job-list-archive-skip-02cbdcea","hash":null}]}
 {"type":"transition","ts":"2026-06-11T18:06:58.528Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-11T20:43:28.070Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
