@@ -2,14 +2,14 @@
 
 ## T-01: RCA — confirm follow-up turn as the failing path
 
-- [ ] Open `.specrunner/logs/e9602244-4d28-46da-8cc8-d8a109881172.log` (on the machine
+- [x] Open `.specrunner/logs/e9602244-4d28-46da-8cc8-d8a109881172.log` (on the machine
       where the job ran) and confirm the presence of `step:start` and `step:error` for
       the `code-review` step with **no** `step:retry` event between them.
-- [ ] Confirm the error message matches
+- [x] Confirm the error message matches
       `Claude Code SDK query failed: Claude Code returned an error result: API Error: Stream idle timeout - partial response received`
       (single `Claude Code SDK query failed:` prefix — characteristic of the outer catch,
       not of `maybeThrowTransientResult`).
-- [ ] Add a comment in the test file for T-02 referencing the log job ID as evidence.
+- [x] Add a comment in the test file for T-02 referencing the log job ID as evidence.
 
 **Acceptance Criteria**:
 - The log analysis is captured as a comment in the test file so future readers can
@@ -21,7 +21,7 @@
 
 File: `src/adapter/claude-code/agent-runner.ts`
 
-- [ ] Inside `ClaudeCodeRunner.run()`, immediately after `runMainWorkTurn` is defined
+- [x] Inside `ClaudeCodeRunner.run()`, immediately after `runMainWorkTurn` is defined
       (around line 320), define a new `async` helper:
 
   ```typescript
@@ -32,7 +32,7 @@ File: `src/adapter/claude-code/agent-runner.ts`
   ): Promise<SDKResultMessage | null> => { ... }
   ```
 
-- [ ] Inside the helper, implement the following logic wrapped in `retryWithBackoff`:
+- [x] Inside the helper, implement the following logic wrapped in `retryWithBackoff`:
   1. Call `this.queryFn({ prompt, options })` and iterate the async generator.
   2. Call `onMessage(message)` for every yielded item.
   3. Collect the last `message.type === "result"` item as `lastResult`.
@@ -48,7 +48,7 @@ File: `src/adapter/claude-code/agent-runner.ts`
      - `sleepFn: this.sleepFn`
      - `onRetry: (attempt) => { transientRetryAttempts++; ctx.emit("step:retry", { step: step.name, attempt, maxRetries, delayMs: baseDelayMs * Math.pow(2, attempt - 1) }); }`
 
-- [ ] Change the main-work-turn `onRetry` callback from `transientRetryAttempts = attempt`
+- [x] Change the main-work-turn `onRetry` callback from `transientRetryAttempts = attempt`
       to `transientRetryAttempts++` (D2).
 
 **Acceptance Criteria**:
@@ -61,11 +61,11 @@ File: `src/adapter/claude-code/agent-runner.ts`
 
 File: `src/adapter/claude-code/agent-runner.ts`
 
-- [ ] Locate the `postWorkPrompts` loop (the `for (const followPrompt of ctx.policy.postWorkPrompts!)` block).
-- [ ] Replace the bare `this.queryFn(...)` call + `for await` iteration + `followLastResult`
+- [x] Locate the `postWorkPrompts` loop (the `for (const followPrompt of ctx.policy.postWorkPrompts!)` block).
+- [x] Replace the bare `this.queryFn(...)` call + `for await` iteration + `followLastResult`
       collection with a single `await runFollowUpQueryWithRetry(followPrompt, followUpOptions, onMessage)` call, where `onMessage` emits `step:progress` (call `emitToolProgress` as the current loop already does).
-- [ ] Assign the return value to `followLastResult` directly.
-- [ ] Keep the existing non-success check and early `return { completionReason: "error", ... }` block unchanged — the helper only adds retry before returning a non-success result.
+- [x] Assign the return value to `followLastResult` directly.
+- [x] Keep the existing non-success check and early `return { completionReason: "error", ... }` block unchanged — the helper only adds retry before returning a non-success result.
 
 **Acceptance Criteria**:
 - A transient SDK exception thrown during a postWorkPrompts query is retried before halting.
@@ -78,14 +78,14 @@ File: `src/adapter/claude-code/agent-runner.ts`
 
 File: `src/adapter/claude-code/agent-runner.ts`
 
-- [ ] Locate the `report_result follow-up retry` loop (the `for (let attempt = 1; attempt <= retryPolicy.maxAttempts; attempt++)` block after the main work turn).
-- [ ] Replace the bare `this.queryFn(...)` call + `for await` iteration inside this loop
+- [x] Locate the `report_result follow-up retry` loop (the `for (let attempt = 1; attempt <= retryPolicy.maxAttempts; attempt++)` block after the main work turn).
+- [x] Replace the bare `this.queryFn(...)` call + `for await` iteration inside this loop
       with `await runFollowUpQueryWithRetry(retryPrompt, retryOptions)`.
   - The loop is already iterating for "no tool call" retries; transient retries are now
     handled inside the helper automatically.
   - No message handler is needed (the current loop already ignores messages except for
     `result`, and tool capture happens via the MCP closure).
-- [ ] Remove the manual `for await` loop that was replaced.
+- [x] Remove the manual `for await` loop that was replaced.
 
 **Acceptance Criteria**:
 - A transient SDK exception thrown during a report_result follow-up query is retried
@@ -97,7 +97,7 @@ File: `src/adapter/claude-code/agent-runner.ts`
 
 File: `tests/unit/adapter/claude-code/agent-runner.test.ts`
 
-- [ ] Add a test group:
+- [x] Add a test group:
   `describe("postWorkPrompts follow-up — transient SDK exception triggers retry")`
 
   - Scenario A — **transient SDK exception**:
@@ -130,7 +130,7 @@ File: `tests/unit/adapter/claude-code/agent-runner.test.ts`
 
 File: `tests/unit/adapter/claude-code/agent-runner.test.ts`
 
-- [ ] Add a test group:
+- [x] Add a test group:
   `describe("report_result follow-up — transient SDK exception triggers retry")`
 
   - `reportTool` configured, `queryFn`:
@@ -149,10 +149,10 @@ File: `tests/unit/adapter/claude-code/agent-runner.test.ts`
 
 ## T-07: Verify existing transient retry tests remain green
 
-- [ ] Run `bun run typecheck && bun run test`.
-- [ ] Confirm all pre-existing tests (including tests from #600 and #626) pass without
+- [x] Run `bun run typecheck && bun run test`.
+- [x] Confirm all pre-existing tests (including tests from #600 and #626) pass without
       modification.
-- [ ] Confirm the two new test groups (T-05, T-06) pass.
+- [x] Confirm the two new test groups (T-05, T-06) pass.
 
 **Acceptance Criteria**:
 - `typecheck` exits 0.
