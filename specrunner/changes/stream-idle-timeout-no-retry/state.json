@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "3d03875d-c889-4739-898e-eb3e7259e32c",
   "createdAt": "2026-06-12T03:05:02.422Z",
-  "updatedAt": "2026-06-12T03:05:06.964Z",
+  "updatedAt": "2026-06-12T03:11:43.552Z",
   "request": {
     "title": "transient 判定対象の stream idle timeout が code-review でリトライされず halt した",
     "type": "bug-fix"
@@ -11,7 +11,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "fix/stream-idle-timeout-no-retry-3d03875d",
   "error": null,
@@ -48,7 +48,9 @@
   ],
   "issueNumber": 646,
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
