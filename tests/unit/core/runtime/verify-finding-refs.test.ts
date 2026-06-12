@@ -6,11 +6,15 @@
  * TC-VFR-L-003: local runtime — line within bounds → not returned
  * TC-VFR-L-004: local runtime — line out of bounds → returned
  * TC-VFR-L-005: local runtime — empty input → empty output
+ * TC-VFR-L-006: local runtime — existing directory (no line) → not returned
+ * TC-VFR-L-007: local runtime — existing directory + line → returned
  * TC-VFR-M-001: managed runtime — getRawFile returns content → not returned
  * TC-VFR-M-002: managed runtime — getRawFile returns null → returned
  * TC-VFR-M-003: managed runtime — branch is null → all refs returned
  * TC-VFR-M-004: managed runtime — empty input → empty output
  * TC-VFR-M-005: managed runtime — line out of bounds → returned
+ * TC-VFR-M-006: managed runtime — getRawFile returns JSON array (directory, no line) → not returned
+ * TC-VFR-M-007: managed runtime — getRawFile returns JSON array (directory) + line → returned
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
@@ -122,6 +126,33 @@ describe("LocalRuntime.verifyFindingRefs", () => {
     );
     expect(result).toHaveLength(1);
     expect(result[0]?.line).toBe(100);
+  });
+
+  it("TC-VFR-L-006: existing directory (no line) → not returned", async () => {
+    const dirPath = path.join(tempDir, "tests", "unit", "adapter", "github");
+    await fs.mkdir(dirPath, { recursive: true });
+
+    const runtime = makeLocalRuntime();
+    const result = await runtime.verifyFindingRefs(
+      [{ file: "tests/unit/adapter/github" }],
+      tempDir,
+      "main",
+    );
+    expect(result).toEqual([]);
+  });
+
+  it("TC-VFR-L-007: existing directory + line → returned", async () => {
+    const dirPath = path.join(tempDir, "tests", "unit", "adapter", "github");
+    await fs.mkdir(dirPath, { recursive: true });
+
+    const runtime = makeLocalRuntime();
+    const result = await runtime.verifyFindingRefs(
+      [{ file: "tests/unit/adapter/github", line: 5 }],
+      tempDir,
+      "main",
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0]?.file).toBe("tests/unit/adapter/github");
   });
 });
 
@@ -236,5 +267,46 @@ describe("ManagedRuntime.verifyFindingRefs", () => {
     );
     expect(result).toHaveLength(1);
     expect(result[0]?.line).toBe(100);
+  });
+
+  it("TC-VFR-M-006: getRawFile returns JSON array (directory, no line) → not returned", async () => {
+    const githubClient = buildMockGitHubClient(
+      async () => JSON.stringify([{ name: "foo.ts", type: "file" }]),
+    );
+    const runtime = new ManagedRuntime(
+      tempDir,
+      buildMockSessionClient(),
+      githubClient,
+      { owner: "testowner", name: "testrepo" },
+      makeNoop() as never,
+      "token",
+    );
+    const result = await runtime.verifyFindingRefs(
+      [{ file: "tests/unit/adapter/github" }],
+      tempDir,
+      "main",
+    );
+    expect(result).toEqual([]);
+  });
+
+  it("TC-VFR-M-007: getRawFile returns JSON array (directory) + line → returned", async () => {
+    const githubClient = buildMockGitHubClient(
+      async () => JSON.stringify([{ name: "foo.ts", type: "file" }]),
+    );
+    const runtime = new ManagedRuntime(
+      tempDir,
+      buildMockSessionClient(),
+      githubClient,
+      { owner: "testowner", name: "testrepo" },
+      makeNoop() as never,
+      "token",
+    );
+    const result = await runtime.verifyFindingRefs(
+      [{ file: "tests/unit/adapter/github", line: 5 }],
+      tempDir,
+      "main",
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0]?.file).toBe("tests/unit/adapter/github");
   });
 });
