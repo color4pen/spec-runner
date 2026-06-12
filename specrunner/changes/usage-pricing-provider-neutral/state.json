@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "175cafd1-3e7c-476b-a05b-44568aec13bd",
   "createdAt": "2026-06-12T07:10:02.999Z",
-  "updatedAt": "2026-06-12T07:38:31.122Z",
+  "updatedAt": "2026-06-12T07:41:30.653Z",
   "request": {
     "title": "usage / pricing と one-shot デフォルトモデルの provider 中立化",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/usage-pricing-provider-neutral-175cafd1",
   "error": null,
   "pipelineId": "standard",
@@ -48,8 +48,13 @@
     }
   ],
   "issueNumber": 660,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/665",
+    "number": 665,
+    "createdAt": "2026-06-12T07:41:30.641Z"
+  },
   "_journal": {
-    "historyCount": 49,
+    "historyCount": 54,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -61,7 +66,9 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
