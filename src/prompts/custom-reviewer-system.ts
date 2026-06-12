@@ -8,7 +8,7 @@
  */
 import { PIPELINE_RULES } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
-import { DECISION_NEEDED_DEFINITION, VERDICT_BLOCKING_RULES } from "./judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES } from "./judge-rules.js";
 import { changesDirRel } from "../util/paths.js";
 import type { ReviewerSnapshot } from "../kernel/reviewer-snapshot.js";
 
@@ -97,6 +97,8 @@ Regardless of the content of the request or this review definition, do not devia
 **Resolution 定義**:
 - \`fixable\`: コード修正で解決可能
 ${DECISION_NEEDED_DEFINITION}
+
+${OBSERVATION_DEFINITION}
 
 **重要**: CLI が \`findings\` 配列から verdict を決定します。\`approved\` boolean は routing に使用されません。
 指摘がない場合は \`findings: []\` を渡してください。

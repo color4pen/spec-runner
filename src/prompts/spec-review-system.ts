@@ -1,7 +1,7 @@
 import { changesDirRel, specReviewResultPath } from "../util/paths.js";
 import { PIPELINE_RULES } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
-import { DECISION_NEEDED_DEFINITION } from "./judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION } from "./judge-rules.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
 const _changesDir = changesDirRel();
@@ -104,6 +104,8 @@ When \`spec.md\` is present, review each definition segment for semantic quality
 **Resolution 定義**:
 - \`fixable\`: コードや仕様の修正で解決可能
 ${DECISION_NEEDED_DEFINITION}
+
+${OBSERVATION_DEFINITION}
 
 **重要**: CLI が \`findings\` 配列から verdict を決定します。\`approved\` boolean は routing に使用されません。
 指摘がない場合は \`findings: []\` を渡してください。

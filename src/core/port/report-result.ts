@@ -9,8 +9,8 @@ import type { ZodRawShape } from "zod/v4";
 
 export type { ZodRawShape };
 
-import type { BaseReportResult, Finding, FixTarget } from "../../kernel/report-result.js";
-export type { BaseReportResult, Finding, FixTarget } from "../../kernel/report-result.js";
+import type { BaseReportResult, Finding, FixTarget, Observation } from "../../kernel/report-result.js";
+export type { BaseReportResult, Finding, FixTarget, Observation } from "../../kernel/report-result.js";
 
 /**
  * Specification for the report_result custom tool that an agent step registers.
@@ -173,14 +173,50 @@ export function parseFindings(raw: unknown): { ok: true; value: Finding[] } | { 
 }
 
 /**
+ * Parse and validate an observations array from unknown input.
+ * Pure function — no I/O. Uses typeof checks (no zod parse).
+ *
+ * Each element is validated for: severity ∈ 4 values, file string, title string,
+ * rationale string, line number or absent. No resolution field.
+ *
+ * Returns { ok: true, value: Observation[] } if input is a valid observations array.
+ * Returns { ok: false } if input is not an array or contains invalid elements.
+ * Callers should treat { ok: false } as silent-ignore (best-effort parse).
+ */
+export function parseObservations(raw: unknown): { ok: true; value: Observation[] } | { ok: false } {
+  if (!Array.isArray(raw)) return { ok: false };
+  const observations: Observation[] = [];
+  for (const item of raw) {
+    if (typeof item !== "object" || item === null) return { ok: false };
+    const o = item as Record<string, unknown>;
+    if (!VALID_SEVERITIES.has(o["severity"] as string)) return { ok: false };
+    if (typeof o["file"] !== "string") return { ok: false };
+    if (typeof o["title"] !== "string") return { ok: false };
+    if (typeof o["rationale"] !== "string") return { ok: false };
+    if ("line" in o && o["line"] !== undefined && o["line"] !== null && typeof o["line"] !== "number") return { ok: false };
+    const observation: Observation = {
+      severity: o["severity"] as Observation["severity"],
+      file: o["file"] as string,
+      title: o["title"] as string,
+      rationale: o["rationale"] as string,
+    };
+    if (typeof o["line"] === "number") observation.line = o["line"] as number;
+    observations.push(observation);
+  }
+  return { ok: true, value: observations };
+}
+
+/**
  * Typed outcome for judge steps: spec-review.
  *
  * approved: boolean — kept for backward compat; NOT used for verdict routing.
  * findings: structured findings array — used by CLI for verdict derivation.
+ * observations: optional informational records — NOT used for verdict routing.
  */
 export interface JudgeReportResult extends BaseReportResult {
   approved?: boolean;
   findings?: Finding[];
+  observations?: Observation[];
 }
 
 /**
@@ -188,6 +224,7 @@ export interface JudgeReportResult extends BaseReportResult {
  *
  * fixableCount: number — kept for backward compat; NOT used for verdict routing.
  * findings: structured findings array — used by CLI for verdict derivation.
+ * observations: inherited from JudgeReportResult — NOT used for verdict routing.
  */
 export interface CodeReviewReportResult extends JudgeReportResult {
   fixableCount?: number;
@@ -218,6 +255,7 @@ export function parseProducerReportInput(
  * Parse JudgeReportResult from unknown tool input.
  * When ok=true, findings are REQUIRED and must be a valid findings array.
  * When ok=false, findings are not required (agent is declaring voluntary failure).
+ * observations are always optional (best-effort silent-ignore on invalid input).
  */
 export function parseJudgeReportInput(
   raw: unknown,
@@ -241,12 +279,21 @@ export function parseJudgeReportInput(
     result.findings = parsed.value;
   }
 
+  // observations: best-effort silent-ignore — absence or invalid input leaves field unset
+  if ("observations" in obj) {
+    const parsedObs = parseObservations(obj["observations"]);
+    if (parsedObs.ok) {
+      result.observations = parsedObs.value;
+    }
+    // invalid observations: silently ignored, NOT added to missingFields
+  }
+
   return { ok: true, value: result };
 }
 
 /**
  * Parse CodeReviewReportResult from unknown tool input.
- * Builds on parseJudgeReportInput (includes base + approved + findings) and optionally sets fixableCount.
+ * Builds on parseJudgeReportInput (includes base + approved + findings + observations) and optionally sets fixableCount.
  * Non-number fixableCount values are silently ignored (not in missingFields).
  */
 export function parseCodeReviewReportInput(
@@ -270,10 +317,12 @@ export function parseCodeReviewReportInput(
  *
  * verdict: "approve" | "needs-discussion" | "reject" — kept for compat; NOT used for routing.
  * findings: structured findings array — used by CLI for verdict derivation.
+ * observations: optional informational records — NOT used for verdict routing.
  */
 export interface RequestReviewReportResult extends BaseReportResult {
   verdict?: "approve" | "needs-discussion" | "reject";
   findings?: Finding[];
+  observations?: Observation[];
 }
 
 /**
@@ -301,6 +350,7 @@ export function parseConformanceReportInput(
  * Parse RequestReviewReportResult from unknown tool input.
  * When ok=true, findings are REQUIRED and must be a valid findings array.
  * When ok=false, findings are not required.
+ * observations are always optional (best-effort silent-ignore on invalid input).
  */
 export function parseRequestReviewReportInput(
   raw: unknown,
@@ -322,6 +372,15 @@ export function parseRequestReviewReportInput(
       return { ok: false, missingFields: ["findings"], rawInput: raw };
     }
     result.findings = parsed.value;
+  }
+
+  // observations: best-effort silent-ignore — absence or invalid input leaves field unset
+  if ("observations" in obj) {
+    const parsedObs = parseObservations(obj["observations"]);
+    if (parsedObs.ok) {
+      result.observations = parsedObs.value;
+    }
+    // invalid observations: silently ignored, NOT added to missingFields
   }
 
   return { ok: true, value: result };

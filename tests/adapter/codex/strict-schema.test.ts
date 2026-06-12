@@ -8,6 +8,8 @@ import { toOpenAIStrictSchema, stripNullDeep } from "../../../src/adapter/codex/
 import {
   JUDGE_REPORT_TOOL,
   PRODUCER_REPORT_TOOL,
+  CODE_REVIEW_REPORT_TOOL,
+  REQUEST_REVIEW_REPORT_TOOL,
   toCustomToolSpec,
 } from "../../../src/core/step/report-tool.js";
 import {
@@ -150,6 +152,16 @@ describe("toOpenAIStrictSchema — PRODUCER_REPORT_TOOL (union optional status)"
     const anyOf = statusProp["anyOf"] as Array<Record<string, unknown>>;
     expect(anyOf.some((b) => b["type"] === "null")).toBe(true);
   });
+
+  it("observations is NOT in required (producer tools have no observations channel)", () => {
+    const required = strict["required"] as string[];
+    expect(required).not.toContain("observations");
+  });
+
+  it("observations property is NOT present in schema properties", () => {
+    const props = strict["properties"] as Record<string, unknown>;
+    expect(props).not.toHaveProperty("observations");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -286,5 +298,127 @@ describe("toCustomToolSpec (Claude side) is unaffected by codex conversion", () 
     // findings should be a plain array type
     expect(typeof props["findings"]!["type"]).toBe("string");
     expect(props["findings"]!["type"]).toBe("array");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-08: observations in strict schema for judge-family tools
+// ---------------------------------------------------------------------------
+
+describe("toOpenAIStrictSchema — JUDGE_REPORT_TOOL observations (T-08)", () => {
+  const baseSchema = toJSONSchema(object(JUDGE_REPORT_TOOL.zodSchema)) as Record<string, unknown>;
+  const strict = toOpenAIStrictSchema(baseSchema) as Record<string, unknown>;
+
+  it("top-level required contains 'observations'", () => {
+    const required = strict["required"] as string[];
+    expect(required).toContain("observations");
+  });
+
+  it("observations (optional array) → type includes null", () => {
+    const props = strict["properties"] as Record<string, Record<string, unknown>>;
+    const obsProp = props["observations"]!;
+    expect(Array.isArray(obsProp["type"])).toBe(true);
+    expect((obsProp["type"] as string[]).includes("null")).toBe(true);
+    expect((obsProp["type"] as string[]).includes("array")).toBe(true);
+  });
+
+  it("observation items: required contains severity/file/title/rationale/line", () => {
+    const props = strict["properties"] as Record<string, Record<string, unknown>>;
+    const obsProp = props["observations"]!;
+    const items = obsProp["items"] as Record<string, unknown>;
+    const itemRequired = items["required"] as string[];
+    expect(itemRequired).toContain("severity");
+    expect(itemRequired).toContain("file");
+    expect(itemRequired).toContain("title");
+    expect(itemRequired).toContain("rationale");
+    expect(itemRequired).toContain("line");
+  });
+
+  it("observation items: 'resolution' is NOT present in items properties", () => {
+    const props = strict["properties"] as Record<string, Record<string, unknown>>;
+    const obsProp = props["observations"]!;
+    const items = obsProp["items"] as Record<string, unknown>;
+    const itemProps = items["properties"] as Record<string, unknown>;
+    expect(itemProps).not.toHaveProperty("resolution");
+  });
+
+  it("observation items: line (optional number) → type includes null", () => {
+    const props = strict["properties"] as Record<string, Record<string, unknown>>;
+    const obsProp = props["observations"]!;
+    const items = obsProp["items"] as Record<string, unknown>;
+    const itemProps = items["properties"] as Record<string, Record<string, unknown>>;
+    const lineProp = itemProps["line"]!;
+    expect(Array.isArray(lineProp["type"])).toBe(true);
+    expect((lineProp["type"] as string[]).includes("null")).toBe(true);
+    expect((lineProp["type"] as string[]).includes("number")).toBe(true);
+  });
+
+  it("observation items: severity/file/title/rationale are NOT nullable", () => {
+    const props = strict["properties"] as Record<string, Record<string, unknown>>;
+    const obsProp = props["observations"]!;
+    const items = obsProp["items"] as Record<string, unknown>;
+    const itemProps = items["properties"] as Record<string, Record<string, unknown>>;
+    for (const key of ["file", "title", "rationale"] as const) {
+      const prop = itemProps[key]!;
+      expect(typeof prop["type"]).toBe("string");
+      expect(prop["type"]).not.toContain("null");
+    }
+    // severity is anyOf (union) — should NOT have null branch
+    const severityProp = itemProps["severity"]!;
+    if (Array.isArray(severityProp["anyOf"])) {
+      const anyOf = severityProp["anyOf"] as Array<Record<string, unknown>>;
+      expect(anyOf.some((b) => b["type"] === "null")).toBe(false);
+    }
+  });
+});
+
+describe("toOpenAIStrictSchema — CODE_REVIEW_REPORT_TOOL has observations (T-08)", () => {
+  const baseSchema = toJSONSchema(object(CODE_REVIEW_REPORT_TOOL.zodSchema)) as Record<string, unknown>;
+  const strict = toOpenAIStrictSchema(baseSchema) as Record<string, unknown>;
+
+  it("top-level required contains 'observations'", () => {
+    const required = strict["required"] as string[];
+    expect(required).toContain("observations");
+  });
+
+  it("observation items do NOT contain 'resolution'", () => {
+    const props = strict["properties"] as Record<string, Record<string, unknown>>;
+    const obsProp = props["observations"]!;
+    const items = obsProp["items"] as Record<string, unknown>;
+    const itemProps = items["properties"] as Record<string, unknown>;
+    expect(itemProps).not.toHaveProperty("resolution");
+  });
+});
+
+describe("toOpenAIStrictSchema — REQUEST_REVIEW_REPORT_TOOL has observations (T-08)", () => {
+  const baseSchema = toJSONSchema(object(REQUEST_REVIEW_REPORT_TOOL.zodSchema)) as Record<string, unknown>;
+  const strict = toOpenAIStrictSchema(baseSchema) as Record<string, unknown>;
+
+  it("top-level required contains 'observations'", () => {
+    const required = strict["required"] as string[];
+    expect(required).toContain("observations");
+  });
+
+  it("observation items do NOT contain 'resolution'", () => {
+    const props = strict["properties"] as Record<string, Record<string, unknown>>;
+    const obsProp = props["observations"]!;
+    const items = obsProp["items"] as Record<string, unknown>;
+    const itemProps = items["properties"] as Record<string, unknown>;
+    expect(itemProps).not.toHaveProperty("resolution");
+  });
+});
+
+describe("stripNullDeep — observations line:null stripping", () => {
+  it("removes line:null from observation array elements", () => {
+    const input = {
+      ok: true,
+      findings: [],
+      observations: [
+        { severity: "low", file: "a.ts", title: "Note", rationale: "r", line: null },
+      ],
+    };
+    const result = stripNullDeep(input) as Record<string, unknown>;
+    const observations = result["observations"] as Array<Record<string, unknown>>;
+    expect(observations[0]).not.toHaveProperty("line");
   });
 });

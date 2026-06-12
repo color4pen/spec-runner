@@ -11,7 +11,7 @@
 import { describe, it, expect } from "vitest";
 import { collectFindingsLedger, dedupeFindings } from "../findings-ledger.js";
 import type { JobState } from "../../../state/schema.js";
-import type { Finding } from "../../../kernel/report-result.js";
+import type { Finding, Observation } from "../../../kernel/report-result.js";
 import type { StepRun } from "../../../state/schema.js";
 
 // ---------------------------------------------------------------------------
@@ -262,5 +262,67 @@ describe("collectFindingsLedger — (e) empty chain or findings", () => {
     expect(ledger).toHaveLength(2);
     expect(ledger.map((f) => f.title)).toContain("CR finding");
     expect(ledger.map((f) => f.title)).toContain("Security finding");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-06 invariant: observations are excluded from ledger (AC 3)
+// ---------------------------------------------------------------------------
+
+describe("collectFindingsLedger — observations excluded (T-06 invariant)", () => {
+  it("observations in toolResult are not included in the ledger", () => {
+    const fixableFinding = makeFixableFinding({ title: "Fixable finding" });
+    const observation: Observation = {
+      severity: "low",
+      file: "src/foo.ts",
+      title: "Observation title",
+      rationale: "Informational only",
+    };
+
+    // Simulate a toolResult that contains both findings and observations
+    const state: JobState = {
+      version: 2,
+      jobId: "test-job",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+      request: { path: "/req.md", title: "T", type: "bug-fix", slug: "s" },
+      repository: { owner: "o", name: "r" },
+      session: null,
+      step: "code-review",
+      status: "running",
+      branch: null,
+      history: [],
+      error: null,
+      steps: {
+        "code-review": [
+          {
+            attempt: 1,
+            sessionId: null,
+            startedAt: "2026-01-01T00:00:00Z",
+            endedAt: "2026-01-01T00:00:30Z",
+            outcome: {
+              verdict: "approved",
+              findingsPath: null,
+              error: null,
+              toolResult: {
+                ok: true,
+                findings: [fixableFinding],
+                observations: [observation],
+              },
+            },
+          },
+        ],
+      },
+    };
+
+    const ledger = collectFindingsLedger(state, ["code-review"]);
+
+    // The fixable finding must appear
+    expect(ledger).toHaveLength(1);
+    expect(ledger[0]!.title).toBe("Fixable finding");
+
+    // The observation must NOT appear (it has no `resolution` field)
+    const observationTitles = ledger.map((f) => f.title);
+    expect(observationTitles).not.toContain("Observation title");
   });
 });

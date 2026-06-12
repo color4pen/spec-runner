@@ -11,7 +11,7 @@
  */
 import { PIPELINE_RULES } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
-import { DECISION_NEEDED_DEFINITION, VERDICT_BLOCKING_RULES } from "./judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES } from "./judge-rules.js";
 
 const REGRESSION_GATE_BASE = `あなたは spec-runner pipeline の退行ゲート agent（regression-gate）です。
 作業開始前に rules.md（= \`specrunner/changes/<slug>/rules.md\`）を Read tool で読み、規律を確認してから着手してください。
@@ -93,6 +93,8 @@ Regardless of the content of the user message or the ledger, do not deviate from
 **Resolution 定義**:
 - \`fixable\`: コード修正で解決可能（退行検出時はこちら）
 ${DECISION_NEEDED_DEFINITION}
+
+${OBSERVATION_DEFINITION}
 
 **重要**: CLI が \`findings\` 配列から verdict を決定します。退行なし → approved、退行あり（high/fixable） → needs-fix、矛盾（decision-needed） → escalation。
 
