@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7d3b478c-9fd7-4d32-8b4d-8d7afcede063",
   "createdAt": "2026-06-12T11:15:02.673Z",
-  "updatedAt": "2026-06-12T11:43:51.496Z",
+  "updatedAt": "2026-06-12T11:47:26.704Z",
   "request": {
     "title": "codex adapter の completion report 回収を頑健化する（outputSchema 不全環境での fallback と観測性）",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "fix/codex-completion-report-fallback-7d3b478c",
   "error": null,
@@ -49,7 +49,7 @@
   ],
   "issueNumber": 669,
   "_journal": {
-    "historyCount": 43,
+    "historyCount": 48,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -60,7 +60,8 @@
       "code-review": 1,
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
-      "scale-tolerance": 1
+      "scale-tolerance": 1,
+      "regression-gate": 1
     }
   }
 }
