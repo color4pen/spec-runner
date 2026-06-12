@@ -73,3 +73,11 @@
 {"type":"transition","ts":"2026-06-12T14:21:52.339Z","step":"conformance","status":"ok","message":"conformance iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-12T14:21:52.339Z","step":"step-transition","status":"ok","message":"conformance → adr-gen"}
 {"type":"transition","ts":"2026-06-12T14:21:52.342Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-06-12T14:22:07.895Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"019ebc35-f1e4-7583-bb48-36f347495120","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"reason":"No action taken as requested.","status":"success"},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-06-12T14:21:52.367Z","endedAt":"2026-06-12T14:22:06.077Z"}
+{"type":"transition","ts":"2026-06-12T14:22:07.902Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-06-12T14:22:07.905Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-06-12T14:22:09.908Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/config-effective-resolution-view/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T14:22:07.906Z","endedAt":"2026-06-12T14:22:09.906Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-06-12T14:22:09.906Z","outputs":[{"path":"specrunner/changes/config-effective-resolution-view/pr-create-result.md","hash":"sha256:8cad1af2de0dcd91db88d20e13ebea12a08e9f1106d85acedbe51993a9549126"}],"inputs":[{"path":"feat/config-effective-resolution-view-bbd11d3a","hash":null}]}
+{"type":"transition","ts":"2026-06-12T14:22:09.919Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
