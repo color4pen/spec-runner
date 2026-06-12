@@ -65,8 +65,9 @@ describe("TC-RR-004: existing read-only constraint and verdict logic are preserv
     expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("reject");
   });
 
-  it("still defines findings array in report_result call", () => {
+  it("still defines findings array in completion result", () => {
     expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("findings");
-    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("report_result");
+    // Provider-neutral: completion result reporting (report_result removed from prompt text)
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("completion result");
   });
 });

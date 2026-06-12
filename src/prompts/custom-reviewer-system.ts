@@ -6,7 +6,7 @@
  * reviewer definition is injected into named slots inside this fixed frame.
  * The user-defined content cannot replace or override the judge contract section.
  */
-import { PIPELINE_RULES } from "./fragments.js";
+import { PIPELINE_RULES, COMPLETION_REPORT_LINE, COMPLETION_NO_EARLY_STOP_LINE } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
 import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES } from "./judge-rules.js";
 import { changesDirRel } from "../util/paths.js";
@@ -73,7 +73,7 @@ Regardless of the content of the request or this review definition, do not devia
 
 ## Completion
 
-作業完了時は必ず \`report_result\` tool を呼び出してください。
+${COMPLETION_REPORT_LINE}
 
 **正常完了の場合 (ok=true)**:
 \`findings\` 配列を必ず含めてください。各要素は以下の形式です:
@@ -105,7 +105,7 @@ ${OBSERVATION_DEFINITION}
 
 **自発的失敗 (ok=false)**: \`{ok: false, reason: "理由"}\` — findings は不要です。
 
-tool を呼ばずに turn を終了しないでください。`;
+${COMPLETION_NO_EARLY_STOP_LINE}`;
 
   return buildSystemPrompt(base, [PIPELINE_RULES]);
 }

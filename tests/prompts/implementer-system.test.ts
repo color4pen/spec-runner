@@ -88,8 +88,12 @@ describe("IMPLEMENTER_SYSTEM_PROMPT — basic requirements", () => {
     expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("tasks.md");
   });
 
-  it("contains end_turn instruction instead of commit + push (StepExecutor handles commit+push)", () => {
-    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("end_turn");
+  it("contains neutral finish instruction instead of commit + push (StepExecutor handles commit+push)", () => {
+    // Provider-neutral: "実装が完了したら作業を終える" or equivalent
+    const hasFinishInstruction =
+      IMPLEMENTER_SYSTEM_PROMPT.includes("作業を終える") ||
+      IMPLEMENTER_SYSTEM_PROMPT.includes("完了結果を報告");
+    expect(hasFinishInstruction).toBe(true);
   });
 });
 

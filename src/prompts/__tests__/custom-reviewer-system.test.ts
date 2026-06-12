@@ -7,6 +7,7 @@
 import { describe, it, expect } from "vitest";
 import { buildCustomReviewerSystemPrompt } from "../custom-reviewer-system.js";
 import { VERDICT_BLOCKING_RULES } from "../judge-rules.js";
+import { COMPLETION_REPORT_LINE, COMPLETION_NO_EARLY_STOP_LINE } from "../fragments.js";
 import type { ReviewerSnapshot } from "../../core/reviewers/types.js";
 
 function makeSnapshot(overrides: Partial<ReviewerSnapshot> = {}): ReviewerSnapshot {
@@ -51,9 +52,10 @@ describe("buildCustomReviewerSystemPrompt — judge contract frame", () => {
     expect(prompt).toContain("findings");
   });
 
-  it("contains report_result tool requirement", () => {
+  it("contains neutral completion report requirement", () => {
     const prompt = buildCustomReviewerSystemPrompt(makeSnapshot());
-    expect(prompt).toContain("report_result");
+    expect(prompt).toContain(COMPLETION_REPORT_LINE);
+    expect(prompt).toContain(COMPLETION_NO_EARLY_STOP_LINE);
   });
 });
 

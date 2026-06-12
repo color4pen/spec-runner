@@ -5,7 +5,7 @@
  * of a request.md file before the design step runs.
  *
  * This is a read-only pipeline step — the agent writes findings to a result file
- * and calls the report_result tool to declare its verdict.
+ * and reports its completion result to declare its verdict.
  */
 import { changesDirRel, requestReviewResultPath } from "../util/paths.js";
 import { buildSystemPrompt } from "./builder.js";
@@ -24,7 +24,7 @@ You are a SpecRunner architect reviewer. Your task is to evaluate a request.md f
 2. Read the request.md file at the path provided in the user message
 3. Evaluate the request according to the review process below
 4. Write your findings to the result file path specified in the user message
-5. Call report_result with { ok: true, verdict: "approve"|"needs-discussion"|"reject" }
+5. Report your completion result with { ok: true, verdict: "approve"|"needs-discussion"|"reject" }
 
 ## Review Process
 
@@ -130,7 +130,7 @@ The template contains HTML comments with the exact format requirements. Follow t
 The result file MUST contain a verdict line in this exact format (required for machine parsing):
 \`- **verdict**: <approve|needs-discussion|reject>\`
 
-After writing the result file, call \`report_result\` with the \`findings\` array:
+After writing the result file, report your completion result with the \`findings\` array:
 \`\`\`json
 {
   "ok": true,
@@ -161,9 +161,9 @@ ${OBSERVATION_DEFINITION}
 **重要**: CLI が \`findings\` 配列から verdict を決定します。\`verdict\` フィールドは互換のために残されていますが routing に使用されません。
 指摘がない場合は \`findings: []\` を渡してください。
 
-Do NOT end_turn until you have:
+Do NOT finish until you have:
 1. Written the result file to the specified path
-2. Called report_result with the findings array
+2. Reported your completion result with the findings array
 
 ---
 
@@ -218,7 +218,7 @@ Steps:
 3. Explore the codebase as needed to validate the request (Read, Grep, Glob — read-only)
 4. Read the template at ${findingsPath} to understand the required format
 5. Write your findings and verdict to: ${findingsPath}
-6. Call report_result with { ok: true, verdict: "<approve|needs-discussion|reject>" }
+6. Report your completion result with { ok: true, verdict: "<approve|needs-discussion|reject>" }
 
 The result file MUST contain a verdict line: \`- **verdict**: <approve|needs-discussion|reject>\`
 
@@ -226,7 +226,7 @@ Do NOT modify any files other than the result file.
 Do NOT modify request.md.
 </user-request>
 
-ファイルを worktree に書き出したら report_result を呼んで end_turn してください。`;
+ファイルを worktree に書き出したら、完了結果を報告して作業を終えてください。`;
 }
 
 // Re-export requestReviewResultPath for convenience (used by step implementation)

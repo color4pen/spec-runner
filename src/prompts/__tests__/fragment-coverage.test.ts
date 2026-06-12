@@ -6,14 +6,23 @@
  * 2. All 3 judge prompts reference the shared DECISION_NEEDED_DEFINITION (T-02).
  * 3. DECISION_NEEDED_DEFINITION contains the 4 required elements per spec.md.
  * 4. VERDICT_BLOCKING_RULES is accurate relative to judge-verdict.ts derivation.
+ * 5. All 14 prompt symbols are provider-neutral (no report_result / end_turn).
  */
 import { describe, it, expect } from "vitest";
+import { DESIGN_SYSTEM_PROMPT, DESIGN_INITIAL_MESSAGE_TEMPLATE, buildInitialMessage } from "../design-system.js";
+import { IMPLEMENTER_SYSTEM_PROMPT } from "../implementer-system.js";
+import { TEST_CASE_GEN_SYSTEM_PROMPT, buildTestCaseGenInitialMessage } from "../test-case-gen-system.js";
+import { CODE_FIXER_SYSTEM_PROMPT } from "../code-fixer-system.js";
+import { BUILD_FIXER_SYSTEM_PROMPT } from "../build-fixer-system.js";
+import { SPEC_FIXER_SYSTEM_PROMPT } from "../spec-fixer-system.js";
+import { ADR_GEN_SYSTEM_PROMPT } from "../adr-gen-system.js";
+import { CONFORMANCE_SYSTEM_PROMPT } from "../conformance-system.js";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../code-review-system.js";
-import { SPEC_REVIEW_SYSTEM_PROMPT } from "../spec-review-system.js";
-import { REQUEST_REVIEW_SYSTEM_PROMPT } from "../request-review-system.js";
+import { SPEC_REVIEW_SYSTEM_PROMPT, buildSpecReviewInitialMessage } from "../spec-review-system.js";
 import { REGRESSION_GATE_SYSTEM_PROMPT } from "../regression-gate-system.js";
+import { REQUEST_REVIEW_SYSTEM_PROMPT, buildRequestReviewInitialMessage } from "../request-review-system.js";
 import { buildCustomReviewerSystemPrompt } from "../custom-reviewer-system.js";
-import { PIPELINE_RULES } from "../fragments.js";
+import { PIPELINE_RULES, COMPLETION_DIRECTIVE, COMPLETION_REPORT_LINE, COMPLETION_NO_EARLY_STOP_LINE } from "../fragments.js";
 import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES } from "../judge-rules.js";
 import type { ReviewerSnapshot } from "../../kernel/reviewer-snapshot.js";
 
@@ -196,5 +205,146 @@ describe("5 judge prompts contain OBSERVATION_DEFINITION (T-09 AC)", () => {
 
   it("REGRESSION_GATE_SYSTEM_PROMPT contains OBSERVATION_DEFINITION", () => {
     expect(REGRESSION_GATE_SYSTEM_PROMPT).toContain(OBSERVATION_DEFINITION);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-07: Provider-neutral completion contract — all 14 prompt symbols
+// ---------------------------------------------------------------------------
+
+/** Minimal builder inputs for initial-message factories. */
+function makeMinimalDesignInitialMessage(): string {
+  return buildInitialMessage("req content", "test-slug", "feat/test-slug");
+}
+
+function makeMinimalTestCaseGenInitialMessage(): string {
+  return buildTestCaseGenInitialMessage({
+    slug: "test-slug",
+    branch: "feat/test-slug",
+    requestContent: "req content",
+  });
+}
+
+function makeMinimalSpecReviewInitialMessage(): string {
+  return buildSpecReviewInitialMessage({
+    slug: "test-slug",
+    requestType: "spec-change",
+    iteration: 1,
+  });
+}
+
+function makeMinimalRequestReviewInitialMessage(): string {
+  return buildRequestReviewInitialMessage({
+    slug: "test-slug",
+    requestType: "spec-change",
+    branch: "feat/test-slug",
+    iteration: 1,
+    findingsPath: "specrunner/changes/test-slug/request-review-result-001.md",
+  });
+}
+
+/** All 14 prompt surface strings for neutrality iteration. */
+const allPromptSymbols: Array<[string, string]> = [
+  ["DESIGN_SYSTEM_PROMPT", DESIGN_SYSTEM_PROMPT],
+  ["DESIGN_INITIAL_MESSAGE_TEMPLATE", DESIGN_INITIAL_MESSAGE_TEMPLATE],
+  ["buildInitialMessage()", makeMinimalDesignInitialMessage()],
+  ["IMPLEMENTER_SYSTEM_PROMPT", IMPLEMENTER_SYSTEM_PROMPT],
+  ["TEST_CASE_GEN_SYSTEM_PROMPT", TEST_CASE_GEN_SYSTEM_PROMPT],
+  ["buildTestCaseGenInitialMessage()", makeMinimalTestCaseGenInitialMessage()],
+  ["CODE_FIXER_SYSTEM_PROMPT", CODE_FIXER_SYSTEM_PROMPT],
+  ["BUILD_FIXER_SYSTEM_PROMPT", BUILD_FIXER_SYSTEM_PROMPT],
+  ["SPEC_FIXER_SYSTEM_PROMPT", SPEC_FIXER_SYSTEM_PROMPT],
+  ["ADR_GEN_SYSTEM_PROMPT", ADR_GEN_SYSTEM_PROMPT],
+  ["CONFORMANCE_SYSTEM_PROMPT", CONFORMANCE_SYSTEM_PROMPT],
+  ["CODE_REVIEW_SYSTEM_PROMPT", CODE_REVIEW_SYSTEM_PROMPT],
+  ["SPEC_REVIEW_SYSTEM_PROMPT", SPEC_REVIEW_SYSTEM_PROMPT],
+  ["buildSpecReviewInitialMessage()", makeMinimalSpecReviewInitialMessage()],
+  ["REGRESSION_GATE_SYSTEM_PROMPT", REGRESSION_GATE_SYSTEM_PROMPT],
+  ["REQUEST_REVIEW_SYSTEM_PROMPT", REQUEST_REVIEW_SYSTEM_PROMPT],
+  ["buildRequestReviewInitialMessage()", makeMinimalRequestReviewInitialMessage()],
+  ["buildCustomReviewerSystemPrompt()", buildCustomReviewerSystemPrompt(makeMinimalReviewerSnapshot())],
+];
+
+describe("T-07: all prompt symbols do not contain report_result", () => {
+  for (const [name, content] of allPromptSymbols) {
+    it(`${name} does not contain "report_result"`, () => {
+      expect(content).not.toContain("report_result");
+    });
+  }
+});
+
+describe("T-07: all prompt symbols do not contain end_turn", () => {
+  for (const [name, content] of allPromptSymbols) {
+    it(`${name} does not contain "end_turn"`, () => {
+      expect(content).not.toContain("end_turn");
+    });
+  }
+});
+
+describe("T-07: all prompt symbols do not contain old completion intro/outro text", () => {
+  for (const [name, content] of allPromptSymbols) {
+    it(`${name} does not contain old intro "作業完了時は必ず"`, () => {
+      expect(content).not.toContain("作業完了時は必ず");
+    });
+    it(`${name} does not contain old outro "tool を呼ばずに turn を終了"`, () => {
+      expect(content).not.toContain("tool を呼ばずに turn を終了");
+    });
+  }
+});
+
+describe("T-07: producer 8 prompts contain COMPLETION_DIRECTIVE", () => {
+  const producerPrompts: Array<[string, string]> = [
+    ["DESIGN_SYSTEM_PROMPT", DESIGN_SYSTEM_PROMPT],
+    ["IMPLEMENTER_SYSTEM_PROMPT", IMPLEMENTER_SYSTEM_PROMPT],
+    ["TEST_CASE_GEN_SYSTEM_PROMPT", TEST_CASE_GEN_SYSTEM_PROMPT],
+    ["CODE_FIXER_SYSTEM_PROMPT", CODE_FIXER_SYSTEM_PROMPT],
+    ["BUILD_FIXER_SYSTEM_PROMPT", BUILD_FIXER_SYSTEM_PROMPT],
+    ["SPEC_FIXER_SYSTEM_PROMPT", SPEC_FIXER_SYSTEM_PROMPT],
+    ["ADR_GEN_SYSTEM_PROMPT", ADR_GEN_SYSTEM_PROMPT],
+    ["CONFORMANCE_SYSTEM_PROMPT", CONFORMANCE_SYSTEM_PROMPT],
+  ];
+  for (const [name, content] of producerPrompts) {
+    it(`${name} contains COMPLETION_DIRECTIVE`, () => {
+      expect(content).toContain(COMPLETION_DIRECTIVE);
+    });
+  }
+});
+
+describe("T-07: judge 4 prompts contain COMPLETION_REPORT_LINE and COMPLETION_NO_EARLY_STOP_LINE", () => {
+  const judgePrompts: Array<[string, string]> = [
+    ["CODE_REVIEW_SYSTEM_PROMPT", CODE_REVIEW_SYSTEM_PROMPT],
+    ["SPEC_REVIEW_SYSTEM_PROMPT", SPEC_REVIEW_SYSTEM_PROMPT],
+    ["REGRESSION_GATE_SYSTEM_PROMPT", REGRESSION_GATE_SYSTEM_PROMPT],
+    ["buildCustomReviewerSystemPrompt()", buildCustomReviewerSystemPrompt(makeMinimalReviewerSnapshot())],
+  ];
+  for (const [name, content] of judgePrompts) {
+    it(`${name} contains COMPLETION_REPORT_LINE`, () => {
+      expect(content).toContain(COMPLETION_REPORT_LINE);
+    });
+    it(`${name} contains COMPLETION_NO_EARLY_STOP_LINE`, () => {
+      expect(content).toContain(COMPLETION_NO_EARLY_STOP_LINE);
+    });
+  }
+});
+
+describe("T-07: VERDICT_BLOCKING_RULES does not contain report_result", () => {
+  it("VERDICT_BLOCKING_RULES does not contain report_result", () => {
+    expect(VERDICT_BLOCKING_RULES).not.toContain("report_result");
+  });
+
+  it("VERDICT_BLOCKING_RULES still contains decision-needed", () => {
+    expect(VERDICT_BLOCKING_RULES).toContain("decision-needed");
+  });
+
+  it("VERDICT_BLOCKING_RULES still contains escalation", () => {
+    expect(VERDICT_BLOCKING_RULES).toContain("escalation");
+  });
+
+  it("VERDICT_BLOCKING_RULES still contains needs-fix", () => {
+    expect(VERDICT_BLOCKING_RULES).toContain("needs-fix");
+  });
+
+  it("VERDICT_BLOCKING_RULES still contains findings 由来の導出が優先", () => {
+    expect(VERDICT_BLOCKING_RULES).toContain("findings 由来の導出が優先");
   });
 });
