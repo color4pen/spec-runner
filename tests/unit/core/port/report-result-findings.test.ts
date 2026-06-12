@@ -5,7 +5,8 @@
  * - parseJudgeReportInput: findings required when ok=true, optional when ok=false
  * - parseCodeReviewReportInput: same findings semantics
  * - parseRequestReviewReportInput: same findings semantics
- * - parseFindings: standalone validation
+ * - parseFindings: standalone validation + fixTarget capture
+ * - parseConformanceReportInput: fixTarget capture for conformance step
  */
 import { describe, it, expect } from "vitest";
 import {
@@ -13,6 +14,7 @@ import {
   parseCodeReviewReportInput,
   parseRequestReviewReportInput,
   parseFindings,
+  parseConformanceReportInput,
 } from "../../../../src/core/port/report-result.js";
 
 // ---------------------------------------------------------------------------
@@ -101,6 +103,42 @@ describe("parseFindings", () => {
 
   it("null element → ok:false", () => {
     expect(parseFindings([null]).ok).toBe(false);
+  });
+
+  // fixTarget capture tests (T-02)
+  it("valid fixTarget 'spec-fixer' is captured", () => {
+    const result = parseFindings([{ ...validFinding, fixTarget: "spec-fixer" }]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+    expect(result.value[0]?.fixTarget).toBe("spec-fixer");
+  });
+
+  it("valid fixTarget 'implementer' is captured", () => {
+    const result = parseFindings([{ ...validFinding, fixTarget: "implementer" }]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+    expect(result.value[0]?.fixTarget).toBe("implementer");
+  });
+
+  it("valid fixTarget 'code-fixer' is captured", () => {
+    const result = parseFindings([{ ...validFinding, fixTarget: "code-fixer" }]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+    expect(result.value[0]?.fixTarget).toBe("code-fixer");
+  });
+
+  it("invalid fixTarget value is ignored (undefined, not in missingFields)", () => {
+    const result = parseFindings([{ ...validFinding, fixTarget: "bogus-target" }]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+    expect(result.value[0]?.fixTarget).toBeUndefined();
+  });
+
+  it("absent fixTarget stays undefined", () => {
+    const result = parseFindings([validFinding]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+    expect(result.value[0]?.fixTarget).toBeUndefined();
   });
 });
 
@@ -231,5 +269,52 @@ describe("parseRequestReviewReportInput — findings validation", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.verdict).toBe("approve");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseConformanceReportInput — fixTarget capture (T-02)
+// ---------------------------------------------------------------------------
+
+describe("parseConformanceReportInput — fixTarget capture", () => {
+  it("{ok:true, findings:[{fixTarget:'spec-fixer'}]} → finding has fixTarget", () => {
+    const result = parseConformanceReportInput({
+      ok: true,
+      findings: [{ ...validFinding, fixTarget: "spec-fixer" }],
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+    expect(result.value.findings?.[0]?.fixTarget).toBe("spec-fixer");
+  });
+
+  it("invalid fixTarget is ignored (undefined on finding)", () => {
+    const result = parseConformanceReportInput({
+      ok: true,
+      findings: [{ ...validFinding, fixTarget: "bogus" }],
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+    expect(result.value.findings?.[0]?.fixTarget).toBeUndefined();
+  });
+
+  it("{ok:true, findings:[]} → ok:true with empty findings", () => {
+    const result = parseConformanceReportInput({ ok: true, findings: [] });
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+    expect(result.value.findings).toEqual([]);
+  });
+
+  it("{ok:true} without findings → ok:false (findings required)", () => {
+    const result = parseConformanceReportInput({ ok: true });
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("unreachable");
+    expect(result.missingFields).toContain("findings");
+  });
+
+  it("{ok:false} → ok:true (findings not required)", () => {
+    const result = parseConformanceReportInput({ ok: false, reason: "cannot review" });
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+    expect(result.value.ok).toBe(false);
   });
 });

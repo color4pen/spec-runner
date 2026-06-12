@@ -5,10 +5,10 @@ import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { SPEC_FIXER_SYSTEM_PROMPT } from "../../prompts/spec-fixer-system.js";
 import { branchNotSetError } from "../../errors.js";
-import { changeFolderPath, specReviewResultPath } from "../../util/paths.js";
+import { changeFolderPath, specReviewResultPath, conformanceResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { latestIteration } from "./io-iteration.js";
-import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock } from "./fixer-helpers.js";
+import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock, getConformanceFixContext } from "./fixer-helpers.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
 const SPEC_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
@@ -83,7 +83,14 @@ export const SpecFixerStep: AgentStep = {
   maxTurns: 25,
 
   reads(state: JobState, deps: StepDeps): IoRef[] {
-    // reads the most recent spec-review result (required — executor validates before running)
+    // Conformance-triggered entry: read conformance result file
+    const conformanceFindings = getConformanceFixContext(state, STEP_NAMES.SPEC_FIXER);
+    if (conformanceFindings !== null) {
+      return [
+        { path: conformanceResultPath(deps.slug, latestIteration(state, STEP_NAMES.CONFORMANCE)) },
+      ];
+    }
+    // Normal entry: read most recent spec-review result (required — executor validates before running)
     return [
       { path: specReviewResultPath(deps.slug, latestIteration(state, STEP_NAMES.SPEC_REVIEW)) },
     ];
@@ -100,7 +107,41 @@ export const SpecFixerStep: AgentStep = {
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.SPEC_FIXER);
 
-    // Derive findingsPath from reads declaration (D4: replace state-lookup halt).
+    // Conformance-triggered entry: use conformance findings
+    const conformanceFindings = getConformanceFixContext(state, STEP_NAMES.SPEC_FIXER);
+    if (conformanceFindings !== null) {
+      const findingsPath = conformanceResultPath(deps.slug, latestIteration(state, STEP_NAMES.CONFORMANCE));
+      if (isFixerContinuation(state, STEP_NAMES.SPEC_FIXER)) {
+        return buildContinuationMessage({
+          stepName: STEP_NAMES.SPEC_FIXER,
+          findingsPath,
+          slug: deps.slug,
+          findings: conformanceFindings,
+          reviewerName: "conformance",
+        });
+      }
+      const findingsBlock = buildFindingsBlock(conformanceFindings, "conformance");
+      return `<user-request>
+You are the spec-fixer for the following change:
+
+Change folder: ${changeFolderPath(deps.slug)}
+Branch: ${state.branch}
+
+## Conformance non-conformities (must resolve)
+
+${findingsBlock}
+
+Please:
+1. For each finding above, fix the spec.md or design.md artifact as indicated by the rationale
+2. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+3. Do NOT modify the conformance result file itself
+
+If any finding cannot be fixed, add a comment at the end of design.md:
+<!-- spec-fixer-deferred: [finding title] [reason] -->
+</user-request>`;
+    }
+
+    // Normal entry: derive findingsPath from reads declaration (D4: replace state-lookup halt).
     // Existence is guaranteed by pre-execution validation (STEP_INPUT_MISSING).
     const findingsPath = specReviewResultPath(deps.slug, latestIteration(state, STEP_NAMES.SPEC_REVIEW));
 

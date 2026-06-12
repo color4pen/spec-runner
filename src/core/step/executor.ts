@@ -41,8 +41,8 @@ import type { CommitPushInfra } from "./commit-push.js";
 import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
 import type { JudgeReportResult, ProducerReportResult, RequestReviewReportResult } from "../../core/port/report-result.js";
 
-import { JUDGE_REPORT_TOOL, CODE_REVIEW_REPORT_TOOL, REQUEST_REVIEW_REPORT_TOOL } from "./report-tool.js";
-import { deriveJudgeVerdict, deriveRequestReviewVerdict, collectVerdictAffectingFindings } from "./judge-verdict.js";
+import { JUDGE_REPORT_TOOL, CODE_REVIEW_REPORT_TOOL, REQUEST_REVIEW_REPORT_TOOL, CONFORMANCE_REPORT_TOOL } from "./report-tool.js";
+import { deriveJudgeVerdict, deriveRequestReviewVerdict, deriveConformanceVerdict, collectVerdictAffectingFindings } from "./judge-verdict.js";
 import type { FindingRef } from "./judge-verdict.js";
 
 /**
@@ -614,7 +614,9 @@ export class StepExecutor {
     // T-01 (outcome-cutover R3): typed outcome takes priority over prose parse.
     // Determine if this is a judge step (spec-review / code-review) by reportTool identity.
     const stepReportTool = "reportTool" in step ? step.reportTool : undefined;
-    const isJudgeStep = stepReportTool === JUDGE_REPORT_TOOL || stepReportTool === CODE_REVIEW_REPORT_TOOL;
+    const isConformanceStep = stepReportTool === CONFORMANCE_REPORT_TOOL;
+    // isJudgeStep: include conformance so that verifyFindingRefs and no-tool-call escalation apply
+    const isJudgeStep = stepReportTool === JUDGE_REPORT_TOOL || stepReportTool === CODE_REVIEW_REPORT_TOOL || isConformanceStep;
     const isRequestReviewStep = stepReportTool === REQUEST_REVIEW_REPORT_TOOL;
 
     if (agentResult !== undefined && stepReportTool !== undefined) {
@@ -626,6 +628,10 @@ export class StepExecutor {
           // request-review: derive from findings using pure function
           const tr = toolResult as RequestReviewReportResult;
           verdict = deriveRequestReviewVerdict(tr.findings ?? [], tr.ok);
+        } else if (isConformanceStep) {
+          // conformance: derive routed needs-fix verdict (needs-fix:<target>)
+          const tr = toolResult as JudgeReportResult;
+          verdict = deriveConformanceVerdict(tr.findings ?? [], tr.ok);
         } else if (isJudgeStep) {
           // judge: derive from findings using pure function (approved boolean ignored)
           const tr = toolResult as JudgeReportResult;

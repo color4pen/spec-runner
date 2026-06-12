@@ -379,6 +379,20 @@ export class Pipeline {
         }
       }
 
+      // --- Unpaired step → fixer episode reset ---
+      // When a step with no paired fixer (e.g. conformance) routes to a fixer step,
+      // reset the fixer's iter counter and its paired reviewer's counter so the fixer
+      // gets a fresh budget. This prevents the fixer's pre-existing budget (from its
+      // previous reviewer episode) from exhausting immediately on this entry.
+      if (!(currentStep in this.loopFixerPairs)) {
+        const fixerNames = new Set(Object.values(this.loopFixerPairs));
+        if (typeof nextStep === "string" && fixerNames.has(nextStep)) {
+          fixerIters.set(nextStep, 0);
+          const pairedReview = resolvePairedReviewForFixer(state, nextStep, this.loopFixerPairs);
+          loopIters.set(pairedReview, 0);
+        }
+      }
+
       // --- Check current loop step exhaustion (for loop steps without a paired fixer) ---
       // Loop steps that route to a non-loop step on needs-fix (e.g. conformance → implementer)
       // bypass the "entering next loop step" guard below: the retry path traverses other loop
@@ -419,7 +433,7 @@ export class Pipeline {
       }
 
       // Print needs-fix transition message for loop steps
-      if (isAnyLoopStep && outcome === "needs-fix") {
+      if (isAnyLoopStep && (outcome === "needs-fix" || outcome.startsWith("needs-fix:"))) {
         this.events.emit("pipeline:iteration:verdict", { step: currentStep, iteration: loopIter, verdict: "needs-fix", action: "fixer" });
       }
 

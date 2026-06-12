@@ -151,6 +151,26 @@ describe("TC-012: STANDARD_TRANSITIONS に必要なエッジが存在する", ()
   }
 });
 
+// TC-TRANS-CONF: conformance needs-fix:* transitions
+describe("TC-TRANS-CONF: STANDARD_TRANSITIONS has 3 conformance needs-fix:<target> entries + legacy", () => {
+  const conformanceEdges = [
+    { step: "conformance", on: "approved",             to: "adr-gen" },
+    { step: "conformance", on: "needs-fix:spec-fixer", to: "spec-fixer" },
+    { step: "conformance", on: "needs-fix:implementer", to: "implementer" },
+    { step: "conformance", on: "needs-fix:code-fixer", to: "code-fixer" },
+    { step: "conformance", on: "needs-fix",            to: "implementer" }, // backward compat
+  ];
+
+  for (const edge of conformanceEdges) {
+    it(`conformance --${edge.on}→ ${edge.to}`, () => {
+      const found = STANDARD_TRANSITIONS.find(
+        (t) => t.step === edge.step && t.on === edge.on && t.to === edge.to,
+      );
+      expect(found).toBeDefined();
+    });
+  }
+});
+
 // TC-011: verification passed → code-review (新 transition)
 describe("TC-011: verification passed → code-review transition が存在する", () => {
   it("STANDARD_TRANSITIONS has verification --passed→ code-review", () => {
@@ -247,9 +267,9 @@ describe("TC-001/002/005/006/007/015: conformance transition rows", () => {
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
 // TC-022: R3 cutover: 33 → 31 (removed spec-review escalation + code-review escalation)
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 32 rows total (request-review adds 4 rows, conformance adds 2 rows, code-review skipped adds 1)", () => {
-    // 25 previous + 2 (conformance) + 4 (request-review) + 1 (code-review skipped → conformance)
-    expect(STANDARD_TRANSITIONS.length).toBe(32);
+  it("has 35 rows total (conformance adds 5 rows: approved + 3 needs-fix:<target> + 1 legacy needs-fix)", () => {
+    // 32 previous + 3 (conformance needs-fix:spec-fixer / needs-fix:implementer / needs-fix:code-fixer)
+    expect(STANDARD_TRANSITIONS.length).toBe(35);
   });
 
   it("verification --passed→ end does NOT exist", () => {

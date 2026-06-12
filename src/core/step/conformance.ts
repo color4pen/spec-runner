@@ -6,7 +6,7 @@ import { CONFORMANCE_SYSTEM_PROMPT } from "../../prompts/conformance-system.js";
 import { conformanceResultPath, changeFolderPath, requestMdPath } from "../../util/paths.js";
 import { nextIteration } from "./io-iteration.js";
 import { STEP_NAMES } from "./step-names.js";
-import { JUDGE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
+import { CONFORMANCE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
 const CONFORMANCE_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -24,7 +24,7 @@ const conformanceAgentDefinition: AgentDefinition = {
   system: CONFORMANCE_SYSTEM_PROMPT,
   tools: [
     { type: AGENT_TOOLSET_TYPE },
-    toCustomToolSpec(JUDGE_REPORT_TOOL),
+    toCustomToolSpec(CONFORMANCE_REPORT_TOOL),
   ],
   capabilities: { gitWrite: true },
 };
@@ -54,7 +54,7 @@ export const ConformanceStep: AgentStep = {
   toolHandlers: undefined,
 
   needsProjectContext: true,
-  reportTool: JUDGE_REPORT_TOOL,
+  reportTool: CONFORMANCE_REPORT_TOOL,
 
   // maxTurns: conformance is read-heavy with focused judgment; 15 is sufficient.
   // Same as spec-review (read + judgment only).

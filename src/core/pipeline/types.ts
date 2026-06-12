@@ -170,7 +170,11 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   // code-review escalation removed (R3 cutover): judge halt via loop exhaustion only
   ...buildReviewerChainTransitions([STEP_NAMES.CODE_REVIEW]),
   // --- conformance (acceptance gate, after code-review approved) ---
-  { step: STEP_NAMES.CONFORMANCE, on: "approved",  to: STEP_NAMES.ADR_GEN },
+  { step: STEP_NAMES.CONFORMANCE, on: "approved",             to: STEP_NAMES.ADR_GEN },
+  { step: STEP_NAMES.CONFORMANCE, on: "needs-fix:spec-fixer", to: STEP_NAMES.SPEC_FIXER },
+  { step: STEP_NAMES.CONFORMANCE, on: "needs-fix:implementer", to: STEP_NAMES.IMPLEMENTER },
+  { step: STEP_NAMES.CONFORMANCE, on: "needs-fix:code-fixer", to: STEP_NAMES.CODE_FIXER },
+  // Backward-compat: plain "needs-fix" (legacy history / pre-fixTarget jobs) → implementer
   { step: STEP_NAMES.CONFORMANCE, on: "needs-fix", to: STEP_NAMES.IMPLEMENTER },
   // --- adr-gen (single shot, after conformance approved) ---
   { step: STEP_NAMES.ADR_GEN,     on: "success",   to: STEP_NAMES.PR_CREATE },

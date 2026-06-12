@@ -9,8 +9,8 @@ import type { ZodRawShape } from "zod/v4";
 
 export type { ZodRawShape };
 
-import type { BaseReportResult, Finding } from "../../kernel/report-result.js";
-export type { BaseReportResult, Finding } from "../../kernel/report-result.js";
+import type { BaseReportResult, Finding, FixTarget } from "../../kernel/report-result.js";
+export type { BaseReportResult, Finding, FixTarget } from "../../kernel/report-result.js";
 
 /**
  * Specification for the report_result custom tool that an agent step registers.
@@ -134,6 +134,7 @@ export interface ProducerReportResult extends BaseReportResult {
 
 const VALID_SEVERITIES = new Set(["critical", "high", "medium", "low"]);
 const VALID_RESOLUTIONS = new Set(["fixable", "decision-needed"]);
+const VALID_FIX_TARGETS = new Set<FixTarget>(["implementer", "code-fixer", "spec-fixer"]);
 
 /**
  * Parse and validate a findings array from unknown input.
@@ -162,6 +163,10 @@ export function parseFindings(raw: unknown): { ok: true; value: Finding[] } | { 
       rationale: f["rationale"] as string,
     };
     if (typeof f["line"] === "number") finding.line = f["line"] as number;
+    // fixTarget: capture when present and valid; ignore invalid values (not in missingFields)
+    if (typeof f["fixTarget"] === "string" && VALID_FIX_TARGETS.has(f["fixTarget"] as FixTarget)) {
+      finding.fixTarget = f["fixTarget"] as FixTarget;
+    }
     findings.push(finding);
   }
   return { ok: true, value: findings };
@@ -269,6 +274,27 @@ export function parseCodeReviewReportInput(
 export interface RequestReviewReportResult extends BaseReportResult {
   verdict?: "approve" | "needs-discussion" | "reject";
   findings?: Finding[];
+}
+
+/**
+ * Typed outcome for conformance step.
+ * Identity subtype of JudgeReportResult — no additional fields.
+ * Separate type enables conformance-specific routing via CLI verdict derivation.
+ * fixTarget values on individual findings are captured by parseFindings.
+ */
+export type ConformanceReportResult = JudgeReportResult;
+
+/**
+ * Parse ConformanceReportResult from unknown tool input.
+ * Delegates to parseJudgeReportInput and casts result type to ConformanceReportResult.
+ * fixTarget fields within findings are captured by the extended parseFindings.
+ */
+export function parseConformanceReportInput(
+  raw: unknown,
+): { ok: true; value: ConformanceReportResult } | { ok: false; missingFields: string[]; rawInput: unknown } {
+  return parseJudgeReportInput(raw) as
+    | { ok: true; value: ConformanceReportResult }
+    | { ok: false; missingFields: string[]; rawInput: unknown };
 }
 
 /**
