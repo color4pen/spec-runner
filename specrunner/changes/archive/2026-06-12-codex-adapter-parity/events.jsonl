@@ -104,3 +104,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/codex-adapter-parity/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T08:09:13.102Z","endedAt":"2026-06-12T08:09:15.223Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-12T08:09:15.223Z","outputs":[{"path":"specrunner/changes/codex-adapter-parity/pr-create-result.md","hash":"sha256:6eb750d8941a85566edac71eedcdbde121ee6439dda70a644a9d98ea7fcdc27d"}],"inputs":[{"path":"feat/codex-adapter-parity-4d6adbde","hash":null}]}
 {"type":"transition","ts":"2026-06-12T08:09:15.234Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-12T08:58:31.758Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
