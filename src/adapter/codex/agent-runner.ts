@@ -6,9 +6,13 @@
  *
  * D1 (design.md): prompt construction mirrors ClaudeCodeRunner.
  * D2 (design.md): sandboxMode "workspace-write" for all steps.
+ * D3 (design.md): JSONL verbose log via SessionLogWriter when ctx.session.logPath is set.
+ * D4 (design.md): step:progress events emitted on tool-item start.
+ * D5 (design.md): transient-error auto-retry via retryWithBackoff (main + follow-up turns).
+ * D6 (design.md): output-verification repair loop mirrors ClaudeCodeRunner.
  *
  * tool-driven-step-completion (codex-typed-outcome):
- * - ctx.policy.reportTool set → outputSchema injected into thread.run() for main work turn.
+ * - ctx.policy.reportTool set → outputSchema injected into thread.runStreamed() for main work turn.
  * - finalResponse is parsed as JSON and validated via reportTool.parseInput().
  * - follow-up retry loop mirrors ClaudeCodeRunner (up to toolReportRetry.maxAttempts).
  * - postWorkPrompts turns do NOT receive outputSchema (tool detection is main-work-turn only).
@@ -19,6 +23,10 @@ import { object, toJSONSchema } from "zod/v4-mini";
 import { Codex } from "@openai/codex-sdk";
 import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
+import { SessionLogWriter } from "../shared/session-log-writer.js";
+import { isTransientAgentError } from "../shared/transient-error.js";
+import { retryWithBackoff } from "../../util/retry.js";
+import { resolveTransientRetryConfig } from "../../config/schema.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from "../../core/port/agent-runner.js";
 import type { StepContext } from "../../core/port/step-context.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
@@ -58,11 +66,49 @@ interface CodexUsage {
   reasoning_output_tokens?: number;
 }
 
+// Minimal event shapes for runStreamed (mirrors SDK's ThreadEvent)
+interface ItemStartedEvent {
+  type: "item.started";
+  item: ThreadItem;
+}
+interface ItemUpdatedEvent {
+  type: "item.updated";
+  item: ThreadItem;
+}
+interface ItemCompletedEvent {
+  type: "item.completed";
+  item: ThreadItem & { text?: string };
+}
+interface TurnCompletedEvent {
+  type: "turn.completed";
+  usage?: CodexUsage;
+}
+interface TurnFailedEvent {
+  type: "turn.failed";
+  error: { message: string };
+}
+interface FatalErrorEvent {
+  type: "error";
+  message: string;
+}
+
+type CodexThreadEvent =
+  | ItemStartedEvent
+  | ItemUpdatedEvent
+  | ItemCompletedEvent
+  | TurnCompletedEvent
+  | TurnFailedEvent
+  | FatalErrorEvent
+  | { type: string; [key: string]: unknown };
+
 // Injectable for testing
 export interface CodexThread {
   /** Unique identifier for this thread (used for session continuity). null when not yet assigned. */
   id: string | null;
-  run(prompt: string, opts?: { signal?: AbortSignal; outputSchema?: unknown }): Promise<Turn>;
+  runStreamed(
+    prompt: string,
+    opts?: { signal?: AbortSignal; outputSchema?: unknown },
+  ): Promise<{ events: AsyncGenerator<CodexThreadEvent> }>;
 }
 
 export interface CodexInstance {
@@ -82,10 +128,12 @@ export interface CodexInstance {
 export interface CodexAgentRunnerDeps {
   /** Injectable factory for testing. Defaults to `() => new Codex()`. */
   _codexFactory?: () => CodexInstance;
+  /** Injectable sleep function for deterministic retry tests. Defaults to setTimeout-based. */
+  _sleepFn?: (ms: number) => Promise<void>;
 }
 
 /**
- * Build a JSON Schema object from a ReportToolSpec for use as outputSchema in thread.run().
+ * Build a JSON Schema object from a ReportToolSpec for use as outputSchema in runStreamed().
  * Uses the same zod/v4-mini toJSONSchema transformation as toCustomToolSpec() in report-tool.ts.
  */
 function buildOutputSchema(reportTool: ReportToolSpec): object {
@@ -107,11 +155,47 @@ function tryParseToolResult(finalResponse: string, reportTool: ReportToolSpec): 
   }
 }
 
+/**
+ * Map a started ThreadItem to a progress payload for step:progress events.
+ * Returns null for items that don't have a meaningful progress representation.
+ */
+export function extractCodexProgress(item: ThreadItem): { tool: string; target?: string } | null {
+  switch (item.type) {
+    case "command_execution": {
+      const cmd = item["command"];
+      if (typeof cmd !== "string") return { tool: "Bash" };
+      return { tool: "Bash", target: cmd.length > 40 ? cmd.slice(0, 40) + "…" : cmd };
+    }
+    case "file_change": {
+      const changes = item["changes"];
+      if (!Array.isArray(changes) || changes.length === 0) return { tool: "Edit" };
+      const firstPath = (changes[0] as { path?: string })?.path;
+      return { tool: "Edit", ...(typeof firstPath === "string" ? { target: firstPath } : {}) };
+    }
+    case "mcp_tool_call": {
+      const toolName = item["tool_name"] ?? item["tool"];
+      const server = item["server"];
+      return {
+        tool: typeof toolName === "string" ? toolName : "mcp_tool_call",
+        ...(typeof server === "string" ? { target: server } : {}),
+      };
+    }
+    case "web_search": {
+      const query = item["query"];
+      return { tool: "WebSearch", ...(typeof query === "string" ? { target: query } : {}) };
+    }
+    default:
+      return null;
+  }
+}
+
 export class CodexAgentRunner implements AgentRunner {
   private readonly codexFactory: () => CodexInstance;
+  private readonly sleepFn: (ms: number) => Promise<void>;
 
   constructor(deps: CodexAgentRunnerDeps = {}) {
     this.codexFactory = deps._codexFactory ?? (() => new Codex() as unknown as CodexInstance);
+    this.sleepFn = deps._sleepFn ?? ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   }
 
   async run(ctx: AgentRunContext): Promise<AgentRunResult> {
@@ -158,13 +242,130 @@ export class CodexAgentRunner implements AgentRunner {
       timeoutId = setTimeout(() => abortController.abort(), resolvedConfig.timeoutMs);
     }
 
-    // Build outputSchema if reportTool is configured (T-02, T-03)
+    // Build outputSchema if reportTool is configured
     const reportTool: ReportToolSpec | undefined = ctx.policy?.reportTool;
     const outputSchema: object | undefined = reportTool ? buildOutputSchema(reportTool) : undefined;
 
-    let turn: Turn;
-    let threadId: string | null;
-    let activeThread: CodexThread;
+    // Resolve transient retry config
+    const { maxRetries, baseDelayMs } = resolveTransientRetryConfig(ctx.config);
+    let transientRetryAttempts = 0;
+    let resumeFallbackDone = false;
+
+    // Open session log writer if logPath is set
+    const sessionLogWriter = ctx.session.logPath ? new SessionLogWriter(ctx.session.logPath) : null;
+
+    let turn!: Turn;
+    let threadId: string | null = null;
+    // eslint-disable-next-line prefer-const
+    let activeThread!: CodexThread;
+    let modelUsage: Record<string, ModelUsage> | undefined;
+
+    /**
+     * Consume a runStreamed event stream and reconstruct a Turn.
+     * Emits step:progress on item.started for tool items.
+     * Writes every event to the session log writer when active.
+     * Throws on turn.failed or fatal error events.
+     */
+    const executeTurn = async (
+      thread: CodexThread,
+      prompt: string,
+      opts: { signal?: AbortSignal; outputSchema?: unknown },
+      logWriter: SessionLogWriter | null,
+    ): Promise<Turn> => {
+      const { events } = await thread.runStreamed(prompt, opts);
+      const items: (ThreadItem & { text?: string })[] = [];
+      let finalResponse = "";
+      let usage: CodexUsage | null = null;
+
+      for await (const ev of events) {
+        // Write every event to JSONL log
+        if (logWriter !== null) {
+          const entry: Record<string, unknown> = { type: ev.type };
+          if ("item" in ev && ev.item !== undefined) entry["item"] = ev.item;
+          if ("usage" in ev && ev.usage !== undefined) entry["usage"] = ev.usage;
+          if ("error" in ev && ev.error !== undefined) entry["error"] = ev.error;
+          if ("message" in ev && ev.message !== undefined) entry["message"] = ev.message;
+          logWriter.write(entry);
+        }
+
+        if (ev.type === "item.started") {
+          const startedEv = ev as ItemStartedEvent;
+          const p = extractCodexProgress(startedEv.item);
+          if (p !== null) {
+            ctx.emit("step:progress", {
+              step: step.name,
+              tool: p.tool,
+              ...(p.target !== undefined ? { target: p.target } : {}),
+            });
+          }
+        } else if (ev.type === "item.completed") {
+          const completedEv = ev as ItemCompletedEvent;
+          items.push(completedEv.item);
+          if (completedEv.item.type === "agent_message" && typeof completedEv.item.text === "string") {
+            finalResponse = completedEv.item.text;
+          }
+        } else if (ev.type === "turn.completed") {
+          const completedEv = ev as TurnCompletedEvent;
+          if (completedEv.usage) {
+            usage = completedEv.usage;
+          }
+        } else if (ev.type === "turn.failed") {
+          const failedEv = ev as TurnFailedEvent;
+          throw new Error(failedEv.error.message);
+        } else if (ev.type === "error") {
+          const errorEv = ev as FatalErrorEvent;
+          throw new Error(errorEv.message);
+        }
+      }
+
+      return { items, finalResponse, usage };
+    };
+
+    /**
+     * Wrap a follow-up executeTurn call in retryWithBackoff with the same
+     * maxRetries/baseDelayMs and onRetry as the main turn.
+     */
+    const runFollowUpTurnWithRetry = (
+      thread: CodexThread,
+      prompt: string,
+      opts: { signal?: AbortSignal; outputSchema?: unknown },
+    ): Promise<Turn> => {
+      const inner = () => executeTurn(thread, prompt, opts, sessionLogWriter);
+      if (maxRetries === 0) return inner();
+      return retryWithBackoff(inner, {
+        maxAttempts: maxRetries + 1,
+        baseDelayMs,
+        isTransientError: (err) => !abortController.signal.aborted && isTransientAgentError(err),
+        sleepFn: this.sleepFn,
+        onRetry: (attempt) => {
+          transientRetryAttempts++;
+          ctx.emit("step:retry", {
+            step: step.name,
+            attempt,
+            maxRetries,
+            delayMs: baseDelayMs * Math.pow(2, attempt - 1),
+          });
+        },
+      });
+    };
+
+    /**
+     * Accumulate turn usage onto a running total.
+     * Returns the new accumulated usage or just the new turn's usage if no previous.
+     */
+    const accumulateUsage = (
+      prev: CodexUsage | null,
+      next: CodexUsage | null,
+    ): CodexUsage | null => {
+      if (!next) return prev;
+      if (!prev) return next;
+      return {
+        input_tokens: prev.input_tokens + next.input_tokens,
+        output_tokens: prev.output_tokens + next.output_tokens,
+        cached_input_tokens: (prev.cached_input_tokens ?? 0) + (next.cached_input_tokens ?? 0),
+      };
+    };
+
     try {
       const codex = this.codexFactory();
 
@@ -175,38 +376,75 @@ export class CodexAgentRunner implements AgentRunner {
         skipGitRepoCheck: true,
       });
 
-      let thread: CodexThread;
-      if (ctx.session.resumeSessionId) {
-        try {
-          thread = codex.resumeThread(ctx.session.resumeSessionId);
-        } catch (resumeErr) {
-          stderrWrite(
-            `[specrunner] warn: codex session resume failed for '${step.name}' (thread: ${ctx.session.resumeSessionId}): ${(resumeErr as Error).message}. Falling back to new thread.`,
-          );
+      /**
+       * Main work turn: handles resume→fresh-thread fallback.
+       * This is the unit retried on transient errors (D2).
+       */
+      const runMainWorkTurn = async (): Promise<Turn> => {
+        let thread: CodexThread;
+        if (ctx.session.resumeSessionId) {
+          try {
+            thread = codex.resumeThread(ctx.session.resumeSessionId);
+          } catch (resumeErr) {
+            stderrWrite(
+              `[specrunner] warn: codex session resume failed for '${step.name}' (thread: ${ctx.session.resumeSessionId}): ${(resumeErr as Error).message}. Falling back to new thread.`,
+            );
+            thread = startFreshThread();
+          }
+        } else {
           thread = startFreshThread();
         }
-      } else {
-        thread = startFreshThread();
-      }
-      activeThread = thread;
 
-      try {
-        // T-03: inject outputSchema into main work turn when reportTool is set
-        turn = await activeThread.run(fullPrompt, { signal: abortController.signal, ...(outputSchema ? { outputSchema } : {}) });
-        threadId = activeThread.id;
-      } catch (runErr) {
-        // If resume was used and thread.run() failed, retry with a fresh thread.
-        if (ctx.session.resumeSessionId && !abortController.signal.aborted) {
-          stderrWrite(
-            `[specrunner] warn: codex thread.run() failed for '${step.name}' after resume (thread: ${ctx.session.resumeSessionId}): ${(runErr as Error).message}. Falling back to new thread.`,
+        try {
+          const mainTurn = await executeTurn(
+            thread,
+            fullPrompt,
+            { signal: abortController.signal, ...(outputSchema ? { outputSchema } : {}) },
+            sessionLogWriter,
           );
-          const freshThread = startFreshThread();
-          activeThread = freshThread;
-          turn = await freshThread.run(fullPrompt, { signal: abortController.signal, ...(outputSchema ? { outputSchema } : {}) });
-          threadId = freshThread.id;
-        } else {
+          activeThread = thread;
+          threadId = thread.id;
+          return mainTurn;
+        } catch (runErr) {
+          // If resume was used and the turn failed, retry with a fresh thread (once).
+          if (ctx.session.resumeSessionId && !resumeFallbackDone && !abortController.signal.aborted) {
+            resumeFallbackDone = true;
+            stderrWrite(
+              `[specrunner] warn: codex thread failed for '${step.name}' after resume (thread: ${ctx.session.resumeSessionId}): ${(runErr as Error).message}. Falling back to new thread.`,
+            );
+            const freshThread = startFreshThread();
+            const freshTurn = await executeTurn(
+              freshThread,
+              fullPrompt,
+              { signal: abortController.signal, ...(outputSchema ? { outputSchema } : {}) },
+              sessionLogWriter,
+            );
+            activeThread = freshThread;
+            threadId = freshThread.id;
+            return freshTurn;
+          }
           throw runErr;
         }
+      };
+
+      if (maxRetries === 0) {
+        turn = await runMainWorkTurn();
+      } else {
+        turn = await retryWithBackoff(runMainWorkTurn, {
+          maxAttempts: maxRetries + 1,
+          baseDelayMs,
+          isTransientError: (err) => !abortController.signal.aborted && isTransientAgentError(err),
+          sleepFn: this.sleepFn,
+          onRetry: (attempt) => {
+            transientRetryAttempts++;
+            ctx.emit("step:retry", {
+              step: step.name,
+              attempt,
+              maxRetries,
+              delayMs: baseDelayMs * Math.pow(2, attempt - 1),
+            });
+          },
+        });
       }
 
       // T-04: Parse finalResponse to extract typed toolResult
@@ -220,29 +458,19 @@ export class CodexAgentRunner implements AgentRunner {
       if (capturedToolResult === null && reportTool) {
         const retryPolicy = ctx.policy?.toolReportRetry ?? DEFAULT_TOOL_RETRY;
         for (let attempt = 1; attempt <= retryPolicy.maxAttempts; attempt++) {
-          // Codex は report_result tool ではなく outputSchema で構造化出力するため、
-          // tool 呼び出しを促す DEFAULT_TOOL_RETRY のプロンプトではなく schema 準拠の JSON 再要求にする。
           const retryPrompt =
             "前の応答を出力スキーマに一致する JSON として取得できませんでした。" +
             "説明文や追加テキストを付けず、スキーマに一致する JSON のみで返してください。" +
             ` (attempt ${attempt}/${retryPolicy.maxAttempts})`;
-          const prevUsage = turn.usage ? { ...turn.usage } : null;
-          const retryTurn = await activeThread.run(retryPrompt, { signal: abortController.signal, outputSchema });
+          const retryTurn = await runFollowUpTurnWithRetry(
+            activeThread,
+            retryPrompt,
+            { signal: abortController.signal, outputSchema },
+          );
           followUpAttempts++;
 
-          // Accumulate usage (per-turn addition for Codex)
-          if (retryTurn.usage && prevUsage) {
-            turn = {
-              ...retryTurn,
-              usage: {
-                input_tokens: prevUsage.input_tokens + retryTurn.usage.input_tokens,
-                output_tokens: prevUsage.output_tokens + retryTurn.usage.output_tokens,
-                cached_input_tokens: (prevUsage.cached_input_tokens ?? 0) + (retryTurn.usage.cached_input_tokens ?? 0),
-              },
-            };
-          } else {
-            turn = retryTurn;
-          }
+          // Accumulate usage
+          turn = { ...retryTurn, usage: accumulateUsage(turn.usage, retryTurn.usage) };
 
           capturedToolResult = tryParseToolResult(retryTurn.finalResponse, reportTool);
           if (capturedToolResult !== null) break;
@@ -252,22 +480,12 @@ export class CodexAgentRunner implements AgentRunner {
       // T-06: Follow-up turns (postWorkPrompts loop): run on same thread — no outputSchema
       if (shouldRunFollowUp(ctx, "success")) {
         for (const followPrompt of ctx.policy.postWorkPrompts!) {
-          const prevUsage = turn.usage ? { ...turn.usage } : null;
-          // Intentionally no outputSchema here — tool detection is main-work-turn only
-          const followTurn = await activeThread.run(followPrompt, { signal: abortController.signal });
-
-          // Accumulate usage (adapter native: per-turn addition for Codex)
-          let accumulatedUsage = followTurn.usage;
-          if (followTurn.usage && prevUsage) {
-            accumulatedUsage = {
-              input_tokens: prevUsage.input_tokens + followTurn.usage.input_tokens,
-              output_tokens: prevUsage.output_tokens + followTurn.usage.output_tokens,
-              cached_input_tokens: (prevUsage.cached_input_tokens ?? 0) + (followTurn.usage.cached_input_tokens ?? 0),
-            };
-          }
-
-          // Update turn to follow turn result (with accumulated usage)
-          turn = { ...followTurn, usage: accumulatedUsage };
+          const followTurn = await runFollowUpTurnWithRetry(
+            activeThread,
+            followPrompt,
+            { signal: abortController.signal },
+          );
+          turn = { ...followTurn, usage: accumulateUsage(turn.usage, followTurn.usage) };
         }
       }
 
@@ -278,34 +496,7 @@ export class CodexAgentRunner implements AgentRunner {
         stderrWrite(`[codex] file changes: ${paths.join(", ")}`);
       }
 
-      // Read result file from local fs (same as ClaudeCodeRunner — D1)
-      const resultFilePath = step.resultFilePath(state, stepCtx);
-      let resultContent: string | null = null;
-      if (resultFilePath !== null) {
-        const absolutePath = path.isAbsolute(resultFilePath)
-          ? resultFilePath
-          : path.join(cwd, resultFilePath);
-        try {
-          resultContent = await fs.readFile(absolutePath, "utf-8");
-        } catch {
-          return {
-            completionReason: "error",
-            resultContent: null,
-            toolResult: capturedToolResult,
-            followUpAttempts,
-            error: Object.assign(
-              new Error(`result file not found: ${resultFilePath}`),
-              { code: "RESULT_FILE_NOT_FOUND" },
-            ),
-          };
-        }
-      } else {
-        resultContent = turn.finalResponse;
-      }
-
       // Map Codex usage → ModelUsage
-      // cached_input_tokens → cacheReadInputTokens; cacheCreationInputTokens has no Codex equivalent → 0
-      let modelUsage: Record<string, ModelUsage> | undefined;
       if (turn.usage) {
         const u = turn.usage;
         const usage: ModelUsage = {
@@ -317,6 +508,92 @@ export class CodexAgentRunner implements AgentRunner {
         modelUsage = { [resolvedConfig.model]: usage };
       }
 
+      // D6: Output verification repair loop (mirrors ClaudeCodeRunner)
+      const outputVerif = ctx.policy?.outputVerification;
+      if (outputVerif && threadId) {
+        for (let attempt = 1; attempt <= outputVerif.maxAttempts; attempt++) {
+          let checkResult: import("../../core/port/output-contract.js").OutputCheckResult;
+          try {
+            checkResult = await outputVerif.detect();
+          } catch {
+            // best-effort: detection failure → skip remaining attempts
+            break;
+          }
+          const followUpViolations = checkResult.violations.filter((v) => v.policy === "follow-up");
+          if (followUpViolations.length === 0) break;
+
+          const repairPrompt = outputVerif.buildPrompt(followUpViolations, attempt);
+          try {
+            const repairTurn = await runFollowUpTurnWithRetry(
+              activeThread,
+              repairPrompt,
+              { signal: abortController.signal },
+            );
+            // Accumulate usage from repair turn
+            const repairUsage = accumulateUsage(turn.usage, repairTurn.usage);
+            if (repairUsage && turn.usage !== repairUsage) {
+              turn = { ...turn, usage: repairUsage };
+              // Update modelUsage
+              if (repairTurn.usage) {
+                const u = repairTurn.usage;
+                const prev = modelUsage?.[resolvedConfig.model];
+                if (prev) {
+                  modelUsage = {
+                    [resolvedConfig.model]: {
+                      inputTokens: prev.inputTokens + u.input_tokens,
+                      outputTokens: prev.outputTokens + u.output_tokens,
+                      cacheReadInputTokens: (prev.cacheReadInputTokens ?? 0) + (u.cached_input_tokens ?? 0),
+                      cacheCreationInputTokens: prev.cacheCreationInputTokens ?? 0,
+                    },
+                  };
+                }
+              }
+            }
+          } catch {
+            // best-effort: repair turn failure → preserve work turn result
+            stderrWrite(
+              `[specrunner] warn: output verification repair turn ${attempt} failed for '${step.name}'. Continuing.\n`,
+            );
+          }
+          followUpAttempts++;
+        }
+      }
+
+      // Write session summary to session log (session ID, model, token usage)
+      sessionLogWriter?.writeSummary({
+        sessionId: threadId ?? undefined,
+        model: resolvedConfig.model,
+        modelUsage,
+      });
+      sessionLogWriter?.close();
+
+      // Read result file from local fs (same as ClaudeCodeRunner)
+      const resultFilePath = step.resultFilePath(state, stepCtx);
+      let resultContent: string | null = null;
+      if (resultFilePath !== null) {
+        const absolutePath = path.isAbsolute(resultFilePath)
+          ? resultFilePath
+          : path.join(cwd, resultFilePath);
+        try {
+          resultContent = await fs.readFile(absolutePath, "utf-8");
+        } catch {
+          sessionLogWriter?.close(); // already closed above, but idempotent
+          return {
+            completionReason: "error",
+            resultContent: null,
+            toolResult: capturedToolResult,
+            followUpAttempts,
+            ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
+            error: Object.assign(
+              new Error(`result file not found: ${resultFilePath}`),
+              { code: "RESULT_FILE_NOT_FOUND" },
+            ),
+          };
+        }
+      } else {
+        resultContent = turn.finalResponse;
+      }
+
       const baseResult: AgentRunResult = {
         completionReason: "success",
         resultContent: null,
@@ -324,16 +601,20 @@ export class CodexAgentRunner implements AgentRunner {
         followUpAttempts,
         modelUsage,
         sessionId: threadId ?? undefined,
+        ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
       };
       return mergeFollowUpResult(baseResult, resultContent);
     } catch (err) {
       if (abortController.signal.aborted && timeoutId !== undefined) {
         clearTimeout(timeoutId);
+        sessionLogWriter?.writeSummary({ sessionId: threadId ?? undefined, model: resolvedConfig.model, modelUsage });
+        sessionLogWriter?.close();
         return {
           completionReason: "timeout",
           resultContent: null,
           toolResult: null,
           followUpAttempts: 0,
+          ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
           error: Object.assign(
             new Error(`Step '${step.name}' timed out after ${resolvedConfig.timeoutMs}ms`),
             { code: "STEP_TIMEOUT" },
@@ -341,11 +622,14 @@ export class CodexAgentRunner implements AgentRunner {
         };
       }
       const cause = err as Error;
+      sessionLogWriter?.writeSummary({ sessionId: threadId ?? undefined, model: resolvedConfig.model, modelUsage });
+      sessionLogWriter?.close();
       return {
         completionReason: "error",
         resultContent: null,
         toolResult: null,
         followUpAttempts: 0,
+        ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
         error: Object.assign(
           new Error(cause.message),
           { code: "CODEX_SDK_ERROR", cause },

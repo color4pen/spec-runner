@@ -8,17 +8,17 @@ tests and the green gate.
 
 ## T-01: Extract `isTransientAgentError` to `src/adapter/shared/transient-error.ts` (D5)
 
-- [ ] Move the full contents of `src/adapter/claude-code/transient-error.ts` (the
+- [x] Move the full contents of `src/adapter/claude-code/transient-error.ts` (the
       `SIMPLE_TOKENS_LC` / `STATUS_5XX_PATTERN` tables, `collectMessages`,
       `isTransientMessage`, `isTransientAgentError`) into a new file
       `src/adapter/shared/transient-error.ts`. Keep behaviour byte-for-byte identical.
-- [ ] Export the token table so a future codex-specific token can be added with evidence,
+- [x] Export the token table so a future codex-specific token can be added with evidence,
       e.g. `export const TRANSIENT_TOKENS: readonly string[] = SIMPLE_TOKENS_LC;`
       (do NOT add any new tokens in this request — fail-closed; no invented Codex strings).
-- [ ] Replace `src/adapter/claude-code/transient-error.ts` with a re-export shim:
+- [x] Replace `src/adapter/claude-code/transient-error.ts` with a re-export shim:
       `export { isTransientAgentError } from "../shared/transient-error.js";`
       (and re-export `TRANSIENT_TOKENS` if any consumer needs it).
-- [ ] Do NOT edit `src/adapter/claude-code/agent-runner.ts` or
+- [x] Do NOT edit `src/adapter/claude-code/agent-runner.ts` or
       `src/adapter/claude-code/__tests__/transient-error.test.ts` — their import paths must
       keep resolving through the shim.
 
@@ -32,13 +32,13 @@ tests and the green gate.
 
 ## T-02: Extract `SessionLogWriter` to `src/adapter/shared/session-log-writer.ts` (D3)
 
-- [ ] Move the full `SessionLogWriter` class from
+- [x] Move the full `SessionLogWriter` class from
       `src/adapter/claude-code/session-log-writer.ts` into a new file
       `src/adapter/shared/session-log-writer.ts`. Update the internal `ModelUsage` import to
       the correct relative path (`../../core/port/agent-runner.js` from `shared/`).
-- [ ] Replace `src/adapter/claude-code/session-log-writer.ts` with a re-export shim:
+- [x] Replace `src/adapter/claude-code/session-log-writer.ts` with a re-export shim:
       `export { SessionLogWriter } from "../shared/session-log-writer.js";`
-- [ ] Do NOT edit `src/adapter/claude-code/agent-runner.ts` or
+- [x] Do NOT edit `src/adapter/claude-code/agent-runner.ts` or
       `src/adapter/claude-code/__tests__/session-log-writer.test.ts` — they keep importing
       from their current paths via the shim.
 
@@ -54,23 +54,23 @@ tests and the green gate.
 
 File: `src/adapter/codex/agent-runner.ts`
 
-- [ ] Extend the injectable `CodexThread` interface to add
+- [x] Extend the injectable `CodexThread` interface to add
       `runStreamed(prompt: string, opts?: { signal?: AbortSignal; outputSchema?: unknown }):
       Promise<{ events: AsyncGenerator<CodexThreadEvent> }>` and remove the runner's reliance
       on `run`. Define minimal local `CodexThreadEvent` / `ThreadItem` interfaces (mirroring
       the SDK's `item.started` / `item.updated` / `item.completed` / `turn.completed` /
       `turn.failed` / `error` shapes) to avoid a deep SDK type dependency — same minimalism
       as the existing `Turn` / `CodexUsage` interfaces.
-- [ ] Add a constructor dep `_sleepFn?: (ms: number) => Promise<void>` (default
+- [x] Add a constructor dep `_sleepFn?: (ms: number) => Promise<void>` (default
       `setTimeout`-based), mirroring `ClaudeCodeRunnerDeps._sleepFn`, for deterministic
       retry tests.
-- [ ] Add a pure module helper
+- [x] Add a pure module helper
       `extractCodexProgress(item): { tool: string; target?: string } | null` per D4:
       `command_execution → { "Bash", <command truncated ~40> }`,
       `file_change → { "Edit", <first changed path> }`,
       `mcp_tool_call → { <tool>, <server> }`,
       `web_search → { "WebSearch", <query> }`, else `null`.
-- [ ] Add a private async helper `executeTurn(thread, prompt, opts, logWriter)` that:
+- [x] Add a private async helper `executeTurn(thread, prompt, opts, logWriter)` that:
   - calls `thread.runStreamed(prompt, opts)` and iterates `events`;
   - for `item.started`: `const p = extractCodexProgress(ev.item); if (p) ctx.emit(
     "step:progress", { step: step.name, tool: p.tool, ...(p.target ? { target: p.target } :
@@ -84,12 +84,12 @@ File: `src/adapter/codex/agent-runner.ts`
   - for `turn.failed` (use `ev.error.message`) or a fatal `error` event (use `ev.message`):
     `throw new Error(message)` so transient classification + resume fallback handle it;
   - returns `{ items, finalResponse, usage } as Turn`.
-- [ ] Open `const sessionLogWriter = ctx.session.logPath ? new SessionLogWriter(
+- [x] Open `const sessionLogWriter = ctx.session.logPath ? new SessionLogWriter(
       ctx.session.logPath) : null;` (import from `../shared/session-log-writer.js`). Call
       `sessionLogWriter?.writeSummary({ sessionId: threadId ?? undefined, model:
       resolvedConfig.model, modelUsage })` then `sessionLogWriter?.close()` on **every**
       return path (success, RESULT_FILE_NOT_FOUND, timeout, error catch).
-- [ ] Replace the existing 4 `activeThread.run(...)` / `freshThread.run(...)` call sites
+- [x] Replace the existing 4 `activeThread.run(...)` / `freshThread.run(...)` call sites
       (main turn, resume-fallback turn, typed-outcome retry turn, postWorkPrompts turn) with
       `executeTurn(...)` calls. Preserve the existing usage-accumulation arithmetic — it now
       reads `turn.usage` from the reconstructed `Turn`.
@@ -108,18 +108,18 @@ File: `src/adapter/codex/agent-runner.ts`
 
 File: `src/adapter/codex/agent-runner.ts`
 
-- [ ] Import `retryWithBackoff` from `../../util/retry.js` and `isTransientAgentError` from
+- [x] Import `retryWithBackoff` from `../../util/retry.js` and `isTransientAgentError` from
       `../shared/transient-error.js`. Import `resolveTransientRetryConfig` from
       `../../config/schema.js`.
-- [ ] Resolve `const { maxRetries, baseDelayMs } = resolveTransientRetryConfig(ctx.config);`
+- [x] Resolve `const { maxRetries, baseDelayMs } = resolveTransientRetryConfig(ctx.config);`
       and declare `let transientRetryAttempts = 0;` and `let resumeFallbackDone = false;`.
-- [ ] Restructure the main-turn block into a `runMainWorkTurn()` unit that performs the
+- [x] Restructure the main-turn block into a `runMainWorkTurn()` unit that performs the
       `startThread` / `resumeThread` selection and the existing resume→fresh-thread fallback,
       returning the `executeTurn(...)` result. The resume fallback fires only on the first
       failure when `ctx.session.resumeSessionId` was used and `!resumeFallbackDone` and
       `!abortController.signal.aborted` (set `resumeFallbackDone = true`). Mirror
       `ClaudeCodeRunner.runMainWorkTurn` (`agent-runner.ts:324-351`).
-- [ ] Invoke the main turn as:
+- [x] Invoke the main turn as:
   ```ts
   let turn: Turn;
   if (maxRetries === 0) {
@@ -138,15 +138,15 @@ File: `src/adapter/codex/agent-runner.ts`
     });
   }
   ```
-- [ ] Add `runFollowUpTurnWithRetry(thread, prompt, opts)` that wraps `executeTurn` in
+- [x] Add `runFollowUpTurnWithRetry(thread, prompt, opts)` that wraps `executeTurn` in
       `retryWithBackoff` with the **same** options and the same incrementing `onRetry`.
       Route the typed-outcome retry loop, the `postWorkPrompts` loop, and the
       output-verification repair turn (T-06) through it.
-- [ ] Include `transientRetryAttempts` on every returned `AgentRunResult` **only when
+- [x] Include `transientRetryAttempts` on every returned `AgentRunResult` **only when
       `maxRetries > 0`**: `...(maxRetries > 0 ? { transientRetryAttempts } : {})` on the
       success result, the RESULT_FILE_NOT_FOUND result, the timeout result, and the error
       catch result. Leave it absent when `maxRetries === 0`.
-- [ ] Keep the timeout (`STEP_TIMEOUT`) and non-transient error (`CODEX_SDK_ERROR`) catch
+- [x] Keep the timeout (`STEP_TIMEOUT`) and non-transient error (`CODEX_SDK_ERROR`) catch
       branches; a non-transient throw reaches the outer catch unchanged after no retries.
 
 **Acceptance Criteria**:
@@ -162,12 +162,12 @@ File: `src/adapter/codex/agent-runner.ts`
 
 File: `src/adapter/codex/agent-runner.ts`
 
-- [ ] Verify the main work turn and the typed-outcome retry turns still pass
+- [x] Verify the main work turn and the typed-outcome retry turns still pass
       `{ signal, outputSchema }` to `executeTurn` → `runStreamed` (TurnOptions are identical
       between `run` and `runStreamed`).
-- [ ] Verify `postWorkPrompts` turns and output-verification repair turns are still invoked
+- [x] Verify `postWorkPrompts` turns and output-verification repair turns are still invoked
       **without** `outputSchema` (tool detection is main-work-turn only).
-- [ ] Verify `tryParseToolResult` still reads `turn.finalResponse` (now reconstructed from
+- [x] Verify `tryParseToolResult` still reads `turn.finalResponse` (now reconstructed from
       the final `agent_message` item).
 
 **Acceptance Criteria**:
@@ -180,7 +180,7 @@ File: `src/adapter/codex/agent-runner.ts`
 
 File: `src/adapter/codex/agent-runner.ts`
 
-- [ ] After the `postWorkPrompts` block, add the repair loop, mirroring
+- [x] After the `postWorkPrompts` block, add the repair loop, mirroring
       `ClaudeCodeRunner` (`agent-runner.ts:572-621`): run only when
       `ctx.policy?.outputVerification` is set and a session was established
       (`threadId` truthy). For `attempt` in `1..maxAttempts`:
@@ -191,7 +191,7 @@ File: `src/adapter/codex/agent-runner.ts`
     repairPrompt, { signal })` (no `outputSchema`), inside a `try/catch` that warns and
     continues on failure (best-effort); accumulate usage into `modelUsage`/`turn`;
   - `followUpAttempts++;`
-- [ ] Ensure the accumulated `modelUsage` is what gets written to the session-log summary
+- [x] Ensure the accumulated `modelUsage` is what gets written to the session-log summary
       and returned.
 
 **Acceptance Criteria**:
@@ -204,16 +204,16 @@ File: `src/adapter/codex/agent-runner.ts`
 
 ## T-07: Refresh stale jsdoc (D7)
 
-- [ ] `src/config/schema.ts` — in `TransientRetryConfig` (~line 300) and
+- [x] `src/config/schema.ts` — in `TransientRetryConfig` (~line 300) and
       `SpecRunnerConfig.transientRetry` (~line 401), change "Applied to the local
       ClaudeCodeRunner only; ignored by managed runtime." →
       "Applied to local runtime runners (ClaudeCodeRunner and CodexAgentRunner); ignored by
       the managed runtime."
-- [ ] `src/core/port/agent-runner.ts` (~line 186) — change the `modelUsage` jsdoc "Only
+- [x] `src/core/port/agent-runner.ts` (~line 186) — change the `modelUsage` jsdoc "Only
       populated by ClaudeCodeRunner (SDK provides this); ManagedAgentRunner leaves it
       undefined." → "Populated by local runtime runners (ClaudeCodeRunner, CodexAgentRunner);
       ManagedAgentRunner leaves it undefined."
-- [ ] Comments only — no behaviour change.
+- [x] Comments only — no behaviour change.
 
 **Acceptance Criteria**:
 - The three jsdoc sites reference CodexAgentRunner; none claims ClaudeCodeRunner
@@ -225,19 +225,19 @@ File: `src/adapter/codex/agent-runner.ts`
 
 File: `tests/adapter/codex/agent-runner.test.ts`
 
-- [ ] Add a helper `makeStreamedTurn({ finalResponse, items, usage })` that returns
+- [x] Add a helper `makeStreamedTurn({ finalResponse, items, usage })` that returns
       `{ events }` where `events` is an async generator yielding, in order: one
       `{ type: "item.completed", item }` per `items` entry, one
       `{ type: "item.completed", item: { type: "agent_message", text: finalResponse } }`,
       and one `{ type: "turn.completed", usage } }` (omit when `usage` is null).
-- [ ] Update `makeThread` / inline thread mocks to expose `runStreamed: vi.fn()...` instead
+- [x] Update `makeThread` / inline thread mocks to expose `runStreamed: vi.fn()...` instead
       of `run`, returning `makeStreamedTurn(...)`. For multi-turn tests, drive distinct
       per-call return values exactly as the current `run` mocks do.
-- [ ] Translate every assertion on `thread.run` / `mockRun` to `thread.runStreamed`. The
+- [x] Translate every assertion on `thread.run` / `mockRun` to `thread.runStreamed`. The
       opts argument (`{ signal, outputSchema }`) is asserted identically (now the 2nd arg of
       `runStreamed`). Call-count assertions (1 turn / 2 turns / 3 turns / retries) are
       unchanged in number.
-- [ ] Keep the timeout test working: the `runStreamed` mock rejects (or yields an
+- [x] Keep the timeout test working: the `runStreamed` mock rejects (or yields an
       `error`/`turn.failed` event) when the injected `signal` aborts.
 
 **Acceptance Criteria**:
@@ -252,7 +252,7 @@ File: `tests/adapter/codex/agent-runner.test.ts`
 
 Files under `tests/adapter/codex/` (new files alongside `agent-runner.test.ts`).
 
-- [ ] `agent-runner-transient-retry.test.ts` — mirror the claude-code transient-retry
+- [x] `agent-runner-transient-retry.test.ts` — mirror the claude-code transient-retry
       suite for codex:
   - main turn: 1 transient → success, `transientRetryAttempts === 1`, one `step:retry`;
   - main turn: persistent transient → attempted `maxRetries + 1` times, `error`,
@@ -266,13 +266,13 @@ Files under `tests/adapter/codex/` (new files alongside `agent-runner.test.ts`).
   - Simulate a transient error either by rejecting `runStreamed` with
     `new Error("ConnectionRefused")` or by yielding a `turn.failed` event with a transient
     message; cover both shapes.
-- [ ] `agent-runner-observability.test.ts`:
+- [x] `agent-runner-observability.test.ts`:
   - `logPath` set (a real temp file): after `run()`, the file exists, every line is
     JSON-parseable, and a `session:summary` line is present. `logPath` unset: the file is
     not created.
   - `step:progress`: a turn that yields an `item.started` for a `command_execution` causes
     an `emit("step:progress", { step, tool, ... })` call.
-- [ ] `agent-runner-output-verification.test.ts`:
+- [x] `agent-runner-output-verification.test.ts`:
   - `ctx.policy.outputVerification.detect` returns one `follow-up` violation then none;
     assert one extra repair turn runs on the same thread and `completionReason === "success"`;
   - a repair-turn failure (rejecting `runStreamed`) is best-effort: result still reflects
@@ -287,8 +287,8 @@ Files under `tests/adapter/codex/` (new files alongside `agent-runner.test.ts`).
 
 ## T-10: Green gate
 
-- [ ] Run `bun run typecheck && bun run test`.
-- [ ] Confirm the full suite is green, including the migrated codex tests (T-08), the new
+- [x] Run `bun run typecheck && bun run test`.
+- [x] Confirm the full suite is green, including the migrated codex tests (T-08), the new
       tests (T-09), and the untouched claude-code transient-error / session-log-writer tests
       (which resolve through the T-01/T-02 shims).
 

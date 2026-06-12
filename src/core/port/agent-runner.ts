@@ -183,7 +183,7 @@ export interface AgentRunResult {
   /**
    * Per-model token usage from the agent run.
    * Keys are model names (e.g. "claude-opus-4-6").
-   * Only populated by ClaudeCodeRunner (SDK provides this); ManagedAgentRunner leaves it undefined.
+   * Populated by local runtime runners (ClaudeCodeRunner, CodexAgentRunner); ManagedAgentRunner leaves it undefined.
    */
   modelUsage?: Record<string, ModelUsage>;
 }
