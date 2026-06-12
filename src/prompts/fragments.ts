@@ -123,3 +123,26 @@ iteration 2 以降では必ず以下を含める:
 | \`regressing\` | Total スコアが前回より 0.3 以上低下 | 即 escalation |
 
 **停滞検出**: \`plateaued\` が 2 iteration 連続した場合、verdict を \`escalation\` にする。`;
+
+// ---------------------------------------------------------------------------
+// Provider-neutral completion contract tokens (D1 / D2 in design.md)
+// ---------------------------------------------------------------------------
+
+/** Completion report instruction (provider-neutral). */
+export const COMPLETION_REPORT_LINE = `作業が完了したら、完了結果を報告してください。`;
+
+/** Anti-early-stop instruction (provider-neutral). */
+export const COMPLETION_NO_EARLY_STOP_LINE = `完了結果を報告せずに作業を終えないでください。`;
+
+/**
+ * Provider-neutral completion directive for producer-step system prompt footers.
+ * Replaces the old `report_result` tool-specific footer.
+ * Composed from COMPLETION_REPORT_LINE and COMPLETION_NO_EARLY_STOP_LINE.
+ */
+export const COMPLETION_DIRECTIVE = `## Completion
+
+${COMPLETION_REPORT_LINE}
+- 正常完了: \`{ok: true}\`
+- 自発的失敗（実行不能等）: \`{ok: false, reason: "理由"}\`
+
+${COMPLETION_NO_EARLY_STOP_LINE}`;

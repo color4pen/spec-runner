@@ -53,9 +53,9 @@ export const OBSERVATION_DEFINITION =
  * in `src/core/step/judge-verdict.ts`.
  */
 export const VERDICT_BLOCKING_RULES =
-`**Verdict blocking rules (derived by CLI from report_result findings)**:
+`**Verdict blocking rules (derived by CLI from the reported findings)**:
 - \`decision-needed\` ≥ 1 → \`escalation\`（request-review では \`needs-discussion\`）
 - \`critical\` または \`high\` ≥ 1 → \`needs-fix\`
 - それ以外 → \`approved\`
 
-markdown の verdict 行と \`report_result\` findings が矛盾した場合、**findings 由来の導出が優先**されます。verdict 行は人間向けの要約であり、機械ルーティングには使用されません。`;
+markdown の verdict 行と報告された findings が矛盾した場合、**findings 由来の導出が優先**されます。verdict 行は人間向けの要約であり、機械ルーティングには使用されません。`;

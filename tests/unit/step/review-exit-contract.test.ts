@@ -324,14 +324,14 @@ describe("TC-009: code-review round-trip — resultFilePath and buildReviewFeedb
 
 // -------------------------------------------------------------------------
 // TC-010: spec-review system prompt — StepExecutor now handles commit+push (local runtime)
-// Updated: agents write files and end_turn; CLI commit+push replaces agent-driven push
+// Updated: agents write files and finish; CLI commit+push replaces agent-driven push
 // -------------------------------------------------------------------------
-describe("TC-010: spec-review system prompt includes end_turn instructions (StepExecutor owns commit+push)", () => {
+describe("TC-010: spec-review system prompt includes finish instructions (StepExecutor owns commit+push)", () => {
   it("SPEC_REVIEW_SYSTEM_PROMPT instructs agent to write files to worktree", () => {
     const hasWriteInstruction =
       SPEC_REVIEW_SYSTEM_PROMPT.includes("Write the result file to the worktree") ||
       SPEC_REVIEW_SYSTEM_PROMPT.includes("worktree") ||
-      SPEC_REVIEW_SYSTEM_PROMPT.includes("end_turn");
+      SPEC_REVIEW_SYSTEM_PROMPT.includes("作業を終えて");
     expect(hasWriteInstruction).toBe(true);
   });
 
@@ -345,8 +345,12 @@ describe("TC-010: spec-review system prompt includes end_turn instructions (Step
     expect(hasAgentPushInstruction).toBe(false);
   });
 
-  it("SPEC_REVIEW_SYSTEM_PROMPT contains end_turn instruction", () => {
-    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("end_turn");
+  it("SPEC_REVIEW_SYSTEM_PROMPT contains neutral finish instruction", () => {
+    // Provider-neutral: "作業を終えて" or "Do NOT finish" (no more end_turn)
+    const hasFinishInstruction =
+      SPEC_REVIEW_SYSTEM_PROMPT.includes("作業を終えて") ||
+      SPEC_REVIEW_SYSTEM_PROMPT.includes("Do NOT finish");
+    expect(hasFinishInstruction).toBe(true);
   });
 
   it("buildSpecReviewInitialMessage contains findings path for local runtime", () => {
@@ -358,8 +362,11 @@ describe("TC-010: spec-review system prompt includes end_turn instructions (Step
     });
     // Must contain slug reference
     expect(msg).toContain("my-slug");
-    // Must contain end-session instruction (CLI handles commit+push)
-    expect(msg).toContain("end_turn");
+    // Must contain neutral end-session instruction (CLI handles commit+push)
+    const hasFinishInstruction =
+      msg.includes("作業を終えてください") ||
+      msg.includes("完了結果を報告");
+    expect(hasFinishInstruction).toBe(true);
   });
 
   it("buildSpecReviewInitialMessage includes correct findings path for iteration 1", () => {

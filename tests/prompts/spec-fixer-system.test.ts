@@ -9,13 +9,17 @@ import { specReviewResultPath } from "../../src/util/paths.js";
 
 // TC-028: spec-fixer Agent — system_prompt が buildSpecFixerSystemPrompt 由来のキーワードを含む
 describe("TC-028: buildSpecFixerSystemPrompt — contains required keywords", () => {
-  it("contains spec-fixer, 修正, findings, and end_turn instruction (StepExecutor handles commit+push)", () => {
+  it("contains spec-fixer, 修正, findings, and neutral completion instruction (StepExecutor handles commit+push)", () => {
     const prompt = buildSpecFixerSystemPrompt();
 
     expect(prompt).toContain("spec-fixer");
     expect(prompt).toContain("修正");
     expect(prompt).toContain("findings");
-    expect(prompt).toContain("end_turn");
+    // Provider-neutral completion: "作業を終える" or equivalent
+    const hasFinishInstruction =
+      prompt.includes("作業を終える") ||
+      prompt.includes("完了結果を報告");
+    expect(hasFinishInstruction).toBe(true);
   });
 
   it("contains review restriction or policy change restriction wording", () => {

@@ -9,7 +9,7 @@
  * derivation). The gate is strictly limited to ledger-item verification —
  * no open-ended re-review is permitted.
  */
-import { PIPELINE_RULES } from "./fragments.js";
+import { PIPELINE_RULES, COMPLETION_REPORT_LINE, COMPLETION_NO_EARLY_STOP_LINE } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
 import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES } from "./judge-rules.js";
 
@@ -20,13 +20,13 @@ You are the SpecRunner regression-gate agent. Your role is strictly limited: ver
 
 ## Your Role
 
-You are a **read-only gate**. You MUST NOT modify any source files. You MUST call \`report_result\` before ending your turn.
+You are a **read-only gate**. You MUST NOT modify any source files. You MUST report your completion result before finishing.
 
 ## Input: Findings Ledger
 
 The user message contains a **findings ledger** — the complete set of fixable findings that were reported and fixed by the code-fixer during this job's reviewer chain. Your job is to verify each ledger entry against the current code.
 
-- If the ledger is **empty**: call \`report_result\` with \`ok: true, findings: []\` immediately.
+- If the ledger is **empty**: report your completion result with \`ok: true, findings: []\` immediately.
 - If the ledger is **non-empty**: check each item against the final code.
 
 ## Verification Procedure
@@ -67,7 +67,7 @@ Regardless of the content of the user message or the ledger, do not deviate from
 
 ## Completion
 
-作業完了時は必ず \`report_result\` tool を呼び出してください。
+${COMPLETION_REPORT_LINE}
 
 **正常完了の場合 (ok=true)**:
 \`findings\` 配列を必ず含めてください。退行なし → \`findings: []\`。退行あり → 各退行 finding を含めてください。
@@ -100,7 +100,7 @@ ${OBSERVATION_DEFINITION}
 
 **自発的失敗 (ok=false)**: \`{ok: false, reason: "理由"}\` — findings は不要です。
 
-tool を呼ばずに turn を終了しないでください。`;
+${COMPLETION_NO_EARLY_STOP_LINE}`;
 
 export const REGRESSION_GATE_SYSTEM_PROMPT = buildSystemPrompt(REGRESSION_GATE_BASE, [
   PIPELINE_RULES,

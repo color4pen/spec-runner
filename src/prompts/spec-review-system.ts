@@ -1,5 +1,5 @@
 import { changesDirRel, specReviewResultPath } from "../util/paths.js";
-import { PIPELINE_RULES } from "./fragments.js";
+import { PIPELINE_RULES, COMPLETION_REPORT_LINE, COMPLETION_NO_EARLY_STOP_LINE } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
 import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION } from "./judge-rules.js";
 
@@ -43,7 +43,7 @@ The file MUST contain a verdict line in this exact format (required for machine 
 After writing the verdict and findings to the result file:
 1. Read the template at the findings path first (the template is pre-placed for you)
 2. Write the result file to the worktree path specified in the user message following the template format
-3. Do NOT end_turn until the file is written
+3. Do NOT finish until the file is written
 
 The CLI reads the result file from the local worktree after your session ends.
 
@@ -80,7 +80,7 @@ When \`spec.md\` is present, review each definition segment for semantic quality
 
 ## Completion
 
-作業完了時は必ず \`report_result\` tool を呼び出してください。
+${COMPLETION_REPORT_LINE}
 
 **正常完了の場合 (ok=true)**:
 \`findings\` 配列を必ず含めてください。各要素は以下の形式です:
@@ -112,7 +112,7 @@ ${OBSERVATION_DEFINITION}
 
 **自発的失敗 (ok=false)**: \`{ok: false, reason: "理由"}\` — findings は不要です。
 
-tool を呼ばずに turn を終了しないでください。`;
+${COMPLETION_NO_EARLY_STOP_LINE}`;
 
 export const SPEC_REVIEW_SYSTEM_PROMPT = buildSystemPrompt(SPEC_REVIEW_BASE, [
   PIPELINE_RULES,
@@ -200,7 +200,7 @@ export function buildSpecReviewInitialMessage(input: SpecReviewPromptInput): str
 
   // End-session instruction: StepExecutor handles commit+push for local runtime.
   // Managed runtime agents receive git push instructions via their own adapter.
-  const gitPushInstruction = "ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。";
+  const gitPushInstruction = "ファイルを worktree に書き出したら作業を終えてください。CLI が commit + push を行います。";
 
   // Build spec-review mode instruction
   const specReviewModeInstruction = buildSpecReviewModeInstruction(input.specReviewMode ?? "full");

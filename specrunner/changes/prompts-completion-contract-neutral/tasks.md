@@ -45,8 +45,8 @@
 
 ## T-01: 中立完了文言の定数を fragments.ts に追加する
 
-- [ ] `src/prompts/fragments.ts` に `COMPLETION_REPORT_LINE` / `COMPLETION_NO_EARLY_STOP_LINE` / `COMPLETION_DIRECTIVE` を export 定数として追加する（上記「正準中立トークン」の文字列で定義。`COMPLETION_DIRECTIVE` は 2 行定数から合成）
-- [ ] `COMPLETION_DIRECTIVE` 内に `report_result` / `end_turn` / `tool を呼び出して` / `turn を終了` が現れないこと
+- [x] `src/prompts/fragments.ts` に `COMPLETION_REPORT_LINE` / `COMPLETION_NO_EARLY_STOP_LINE` / `COMPLETION_DIRECTIVE` を export 定数として追加する（上記「正準中立トークン」の文字列で定義。`COMPLETION_DIRECTIVE` は 2 行定数から合成）
+- [x] `COMPLETION_DIRECTIVE` 内に `report_result` / `end_turn` / `tool を呼び出して` / `turn を終了` が現れないこと
 
 **Acceptance Criteria**:
 - `fragments.ts` から 3 定数が export される
@@ -68,8 +68,8 @@
 tool を呼ばずに turn を終了しないでください。
 ```
 
-- [ ] 各ファイルの BASE 文字列末尾から上記フッターを除去し、`buildSystemPrompt(BASE, [...既存fragments, COMPLETION_DIRECTIVE])` の **最後の fragment** として `COMPLETION_DIRECTIVE` を append する（既存の `COMMIT_DISCIPLINE` / `PIPELINE_RULES` の後ろ）
-- [ ] `fragments.ts` から `COMPLETION_DIRECTIVE` を import する
+- [x] 各ファイルの BASE 文字列末尾から上記フッターを除去し、`buildSystemPrompt(BASE, [...既存fragments, COMPLETION_DIRECTIVE])` の **最後の fragment** として `COMPLETION_DIRECTIVE` を append する（既存の `COMMIT_DISCIPLINE` / `PIPELINE_RULES` の後ろ）
+- [x] `fragments.ts` から `COMPLETION_DIRECTIVE` を import する
 
 **Acceptance Criteria**:
 - 8 prompt の出力末尾に `COMPLETION_DIRECTIVE` が含まれる
@@ -80,13 +80,13 @@ tool を呼ばずに turn を終了しないでください。
 
 対象: code-review / spec-review / regression-gate / custom-reviewer。findings ブロックは step 固有のため維持し、導入文と締め文のみ中立化する。
 
-- [ ] `## Completion` 直下の `作業完了時は必ず \`report_result\` tool を呼び出してください。` を `${COMPLETION_REPORT_LINE}` 参照に置換する
-- [ ] フッター末尾の `tool を呼ばずに turn を終了しないでください。` を `${COMPLETION_NO_EARLY_STOP_LINE}` 参照に置換する
-- [ ] regression-gate の本文 2 箇所も中立化する:
+- [x] `## Completion` 直下の `作業完了時は必ず \`report_result\` tool を呼び出してください。` を `${COMPLETION_REPORT_LINE}` 参照に置換する
+- [x] フッター末尾の `tool を呼ばずに turn を終了しないでください。` を `${COMPLETION_NO_EARLY_STOP_LINE}` 参照に置換する
+- [x] regression-gate の本文 2 箇所も中立化する:
   - `You MUST call \`report_result\` before ending your turn.` → `You MUST report your completion result before finishing.`
   - `call \`report_result\` with \`ok: true, findings: []\` immediately.` → `report your completion result with \`ok: true, findings: []\` immediately.`
-- [ ] 各ファイルで `fragments.ts` から必要な定数を import する
-- [ ] findings JSON 形式・severity / resolution 定義・`DECISION_NEEDED_DEFINITION` / `OBSERVATION_DEFINITION` の参照は **変更しない**
+- [x] 各ファイルで `fragments.ts` から必要な定数を import する
+- [x] findings JSON 形式・severity / resolution 定義・`DECISION_NEEDED_DEFINITION` / `OBSERVATION_DEFINITION` の参照は **変更しない**
 
 **Acceptance Criteria**:
 - 4 prompt の完了セクションに `COMPLETION_REPORT_LINE` と `COMPLETION_NO_EARLY_STOP_LINE` が含まれる
@@ -97,14 +97,14 @@ tool を呼ばずに turn を終了しないでください。
 
 `request-review-system.ts` は producer/judge 共通フッターを持たないため個別に置換する。
 
-- [ ] system prompt 本文:
+- [x] system prompt 本文:
   - `Call report_result with { ok: true, verdict: ... }`（手順 5）→ `Report your completion result with { ok: true, verdict: ... }`
   - `After writing the result file, call \`report_result\` with the \`findings\` array:` → `After writing the result file, report your completion result with the \`findings\` array:`
   - `Do NOT end_turn until you have:` / `Called report_result with the findings array` → `Do NOT finish until you have:` / `Reported your completion result with the findings array`
-- [ ] `buildRequestReviewInitialMessage` 出力:
+- [x] `buildRequestReviewInitialMessage` 出力:
   - `6. Call report_result with { ok: true, verdict: ... }` → `6. Report your completion result with { ok: true, verdict: ... }`
   - `ファイルを worktree に書き出したら report_result を呼んで end_turn してください。` → `ファイルを worktree に書き出したら、完了結果を報告して作業を終えてください。`
-- [ ] JSDoc コメント（`calls the report_result tool to declare its verdict`）も整合のため `reports its completion result to declare its verdict` に更新する（モデル非提示のため任意だが一貫性のため実施）
+- [x] JSDoc コメント（`calls the report_result tool to declare its verdict`）も整合のため `reports its completion result to declare its verdict` に更新する（モデル非提示のため任意だが一貫性のため実施）
 
 **Acceptance Criteria**:
 - `REQUEST_REVIEW_SYSTEM_PROMPT` と `buildRequestReviewInitialMessage(...)` 出力に `report_result` / `end_turn` が含まれない
@@ -112,10 +112,10 @@ tool を呼ばずに turn を終了しないでください。
 
 ## T-05: VERDICT_BLOCKING_RULES の完了機構参照を中立化する（意味は不変）
 
-- [ ] `src/prompts/judge-rules.ts` の `VERDICT_BLOCKING_RULES`:
+- [x] `src/prompts/judge-rules.ts` の `VERDICT_BLOCKING_RULES`:
   - `**Verdict blocking rules (derived by CLI from report_result findings)**:` → `**Verdict blocking rules (derived by CLI from the reported findings)**:`
   - `markdown の verdict 行と \`report_result\` findings が矛盾した場合、` → `markdown の verdict 行と報告された findings が矛盾した場合、`
-- [ ] blocking 判定行（`decision-needed` → `escalation`、`critical`/`high` → `needs-fix`、それ以外 → `approved`、`findings 由来の導出が優先`）は **一字も変えない**
+- [x] blocking 判定行（`decision-needed` → `escalation`、`critical`/`high` → `needs-fix`、それ以外 → `approved`、`findings 由来の導出が優先`）は **一字も変えない**
 
 **Acceptance Criteria**:
 - `VERDICT_BLOCKING_RULES` に `report_result` が含まれない
@@ -126,12 +126,12 @@ tool を呼ばずに turn を終了しないでください。
 
 T-02〜T-04 で消えなかった `end_turn`（本文・チェックリスト・初期メッセージ）を中立語（`作業を終える` / `セッションを終了する` / `finish`）に置換する。意味は保持する。
 
-- [ ] `design-system.ts`: 本文・`## 完了条件`・`## Completion Checklist (MUST: end_turn 前に self-check)` 見出し・`session を終了（end_turn）`・各チェック項目、および `DESIGN_INITIAL_MESSAGE_TEMPLATE` の `Do not end_turn until all files are written.` を中立化する。line 57 は `\`report_result\` を ok:false + reason で呼んで報告し、end_turn すること。` を `完了結果を ok:false + reason で報告し、作業を終えること。` に置換する
-- [ ] `implementer-system.ts`: `実装が完了したら end_turn する` → `実装が完了したら作業を終える`
-- [ ] `code-fixer-system.ts` / `build-fixer-system.ts` / `spec-fixer-system.ts`: `修正が完了したら end_turn する` → `修正が完了したら作業を終える`
-- [ ] `adr-gen-system.ts`: `理由を述べて end_turn してください:` → `理由を述べて作業を終えてください:`
-- [ ] `test-case-gen-system.ts`: `Do NOT end_turn until the file is written` → `Do NOT finish until the file is written`、`buildTestCaseGenInitialMessage` 出力の `ファイルを worktree に書き出したら end_turn してください。` → `ファイルを worktree に書き出したら作業を終えてください。`
-- [ ] `spec-review-system.ts`: `Do NOT end_turn until the file is written` → `Do NOT finish until the file is written`、`buildSpecReviewInitialMessage` の `gitPushInstruction`（`ファイルを worktree に書き出したら end_turn してください。`）を中立化する
+- [x] `design-system.ts`: 本文・`## 完了条件`・`## Completion Checklist (MUST: end_turn 前に self-check)` 見出し・`session を終了（end_turn）`・各チェック項目、および `DESIGN_INITIAL_MESSAGE_TEMPLATE` の `Do not end_turn until all files are written.` を中立化する。line 57 は `\`report_result\` を ok:false + reason で呼んで報告し、end_turn すること。` を `完了結果を ok:false + reason で報告し、作業を終えること。` に置換する
+- [x] `implementer-system.ts`: `実装が完了したら end_turn する` → `実装が完了したら作業を終える`
+- [x] `code-fixer-system.ts` / `build-fixer-system.ts` / `spec-fixer-system.ts`: `修正が完了したら end_turn する` → `修正が完了したら作業を終える`
+- [x] `adr-gen-system.ts`: `理由を述べて end_turn してください:` → `理由を述べて作業を終えてください:`
+- [x] `test-case-gen-system.ts`: `Do NOT end_turn until the file is written` → `Do NOT finish until the file is written`、`buildTestCaseGenInitialMessage` 出力の `ファイルを worktree に書き出したら end_turn してください。` → `ファイルを worktree に書き出したら作業を終えてください。`
+- [x] `spec-review-system.ts`: `Do NOT end_turn until the file is written` → `Do NOT finish until the file is written`、`buildSpecReviewInitialMessage` の `gitPushInstruction`（`ファイルを worktree に書き出したら end_turn してください。`）を中立化する
 
 **Acceptance Criteria**:
 - T-02 表の全 exported シンボル（system prompt 定数・template・builder 出力）に `end_turn` が含まれない
@@ -140,13 +140,13 @@ T-02〜T-04 で消えなかった `end_turn`（本文・チェックリスト・
 
 ## T-07: fragment-coverage テストに neutrality 断言を追加する
 
-- [ ] `src/prompts/__tests__/fragment-coverage.test.ts` に describe ブロックを追加し、14 ファイル表の全 exported シンボル（system prompt 定数 + `buildCustomReviewerSystemPrompt(makeMinimalReviewerSnapshot())` + 4 つの初期メッセージ template / builder 出力）について以下を断言する:
+- [x] `src/prompts/__tests__/fragment-coverage.test.ts` に describe ブロックを追加し、14 ファイル表の全 exported シンボル（system prompt 定数 + `buildCustomReviewerSystemPrompt(makeMinimalReviewerSnapshot())` + 4 つの初期メッセージ template / builder 出力）について以下を断言する:
   - `report_result` を含まない（`not.toContain("report_result")`）
   - `end_turn` を含まない（`not.toContain("end_turn")`）
   - 旧導入文 `作業完了時は必ず` と旧締め文 `tool を呼ばずに turn を終了` を含まない
-- [ ] producer 系 8 prompt が `COMPLETION_DIRECTIVE` を含むことを断言する
-- [ ] judge 系 4 prompt が `COMPLETION_REPORT_LINE` と `COMPLETION_NO_EARLY_STOP_LINE` を含むことを断言する
-- [ ] `VERDICT_BLOCKING_RULES` が `report_result` を含まないことを断言する（既存の content 断言は維持）
+- [x] producer 系 8 prompt が `COMPLETION_DIRECTIVE` を含むことを断言する
+- [x] judge 系 4 prompt が `COMPLETION_REPORT_LINE` と `COMPLETION_NO_EARLY_STOP_LINE` を含むことを断言する
+- [x] `VERDICT_BLOCKING_RULES` が `report_result` を含まないことを断言する（既存の content 断言は維持）
 
 **Acceptance Criteria**:
 - 追加テストが green
@@ -154,8 +154,8 @@ T-02〜T-04 で消えなかった `end_turn`（本文・チェックリスト・
 
 ## T-08: 既存 prompt テストを中立文言に追従させる
 
-- [ ] `src/prompts/__tests__/custom-reviewer-system.test.ts` の `it("contains report_result tool requirement")`（`expect(prompt).toContain("report_result")`）を、中立完了文言の存在断言に更新する（例: `COMPLETION_REPORT_LINE` または `COMPLETION_NO_EARLY_STOP_LINE` を `toContain`）。テスト名も実態に合わせて更新する
-- [ ] このテストファイルの他の断言（VERDICT_BLOCKING_RULES / read-only reviewer / severity / resolution / slot 注入）は変更しない
+- [x] `src/prompts/__tests__/custom-reviewer-system.test.ts` の `it("contains report_result tool requirement")`（`expect(prompt).toContain("report_result")`）を、中立完了文言の存在断言に更新する（例: `COMPLETION_REPORT_LINE` または `COMPLETION_NO_EARLY_STOP_LINE` を `toContain`）。テスト名も実態に合わせて更新する
+- [x] このテストファイルの他の断言（VERDICT_BLOCKING_RULES / read-only reviewer / severity / resolution / slot 注入）は変更しない
 
 **Acceptance Criteria**:
 - `custom-reviewer-system.test.ts` が green
@@ -163,9 +163,9 @@ T-02〜T-04 で消えなかった `end_turn`（本文・チェックリスト・
 
 ## T-09: 検証
 
-- [ ] `bun run typecheck` が green
-- [ ] `bun run test` が green
-- [ ] claude-code 経路の既存 runtime テストが **無変更**で green であることを確認する（diff に `src/adapter/claude-code/__tests__/` の変更が含まれないこと）
+- [x] `bun run typecheck` が green
+- [x] `bun run test` が green
+- [x] claude-code 経路の既存 runtime テストが **無変更**で green であることを確認する（diff に `src/adapter/claude-code/__tests__/` の変更が含まれないこと）
 
 **Acceptance Criteria**:
 - `typecheck && test` が green

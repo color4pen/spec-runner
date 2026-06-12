@@ -175,8 +175,13 @@ describe("TC-CL-001: DESIGN_SYSTEM_PROMPT contains Completion Checklist section"
     expect(DESIGN_SYSTEM_PROMPT).toContain("refactoring");
   });
 
-  it("instructs agent not to end_turn if any checklist item is ✗", () => {
-    expect(DESIGN_SYSTEM_PROMPT).toMatch(/end_turn.*fix|fix.*end_turn|✗.*end_turn|end_turn.*✗/s);
+  it("instructs agent not to finish if any checklist item is ✗", () => {
+    // Neutral language: "✗ が 1 つでもあれば作業を終えず修正を継続する" or equivalent
+    const hasNeutralInstruction =
+      DESIGN_SYSTEM_PROMPT.includes("作業を終えず修正を継続する") ||
+      DESIGN_SYSTEM_PROMPT.includes("do NOT finish") ||
+      (DESIGN_SYSTEM_PROMPT.includes("✗") && DESIGN_SYSTEM_PROMPT.includes("修正"));
+    expect(hasNeutralInstruction).toBe(true);
   });
 });
 
