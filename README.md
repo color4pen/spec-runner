@@ -1,6 +1,16 @@
 # SpecRunner
 
-A self-hosted CLI that drives multi-step development pipelines using Anthropic Claude.
+**request.md in, pull request out** — a self-hosted AI CI/CD runner powered by Anthropic Claude.
+
+- **Verdicts are derived, not self-reported.** Review agents return findings; the CLI derives `approved` / `needs-fix` from them, verifies that every referenced file:line actually exists, and owns all loop budgets and transitions. Agents are never asked to judge their own work.
+- **State lives in your repository, not in a process.** Job history is branch-borne, decisions live on GitHub issues, knowledge is committed files. Kill the process, reboot the machine, close the laptop — the next scheduled run picks up exactly where things stood.
+- **Runs anywhere Node runs.** `npm install -D @color4pen/specrunner` and one crontab line. No daemon, no Docker, no SaaS contract, no IDE switch.
+
+The reasoning behind these choices is in [docs/design-philosophy.md](docs/design-philosophy.md).
+
+## Built by itself
+
+Every feature in v0.3.0 was implemented, reviewed, and merged by this pipeline running unattended on its own repository — including declarative reviewer activation ([#632](https://github.com/color4pen/spec-runner/pull/632)), the post-review regression gate ([#631](https://github.com/color4pen/spec-runner/pull/631)), and step output contracts ([#633](https://github.com/color4pen/spec-runner/pull/633)). The commit history is the demo.
 
 ## Stability
 
@@ -292,6 +302,20 @@ The review side of the pipeline is extensible without code changes:
 - When custom reviewers are present, a **regression gate** runs automatically after the chain: it re-checks every finding that was reported and fixed during review against the final code, catching fixes that were silently undone by later changes.
 
 Scaffold a definition with `specrunner reviewers new <name>` — the template documents the format.
+
+The data-extensible surface is the review chain. The pipeline's shape itself — which steps exist and in what order — is code, not configuration: changing it means changing SpecRunner.
+
+## Where SpecRunner Sits
+
+Nearby tools solve adjacent problems at different layers:
+
+| Layer | What it manages | Tools |
+|---|---|---|
+| Context & task management | Shared knowledge bases and task lists for interactive coding agents | Archon |
+| Spec authoring frameworks | How to write specs and hand them to an agent | GitHub Spec Kit, BMAD |
+| Execution pipeline | The unattended run from spec to verified PR — judge loops, budgets, escalation, state | **SpecRunner**, GitHub Copilot coding agent |
+
+SpecRunner is the execution layer: it assumes a spec (`request.md`) and owns everything between it and an open PR. Compared with platform-bound agents, it is self-hosted, model-configurable per step, and leaves an auditable state trail inside your repository.
 
 ## Configuration
 
