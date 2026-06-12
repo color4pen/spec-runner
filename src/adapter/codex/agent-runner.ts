@@ -256,7 +256,6 @@ export class CodexAgentRunner implements AgentRunner {
 
     let turn!: Turn;
     let threadId: string | null = null;
-    // eslint-disable-next-line prefer-const
     let activeThread!: CodexThread;
     let modelUsage: Record<string, ModelUsage> | undefined;
 
