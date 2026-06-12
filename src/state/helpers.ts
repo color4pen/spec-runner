@@ -1,5 +1,6 @@
 import type { JobState, StepResult, StepRun, ModelUsage } from "./schema.js";
 import type { BaseReportResult, Finding, Observation } from "../kernel/report-result.js";
+import type { CompletionReportDiagnostic } from "../kernel/completion-report-diagnostic.js";
 
 /**
  * Convert a StepRun to StepResult shape (legacy view).
@@ -84,6 +85,12 @@ export interface StepResultInput {
    * Documents which activation condition was not satisfied.
    */
   skipReason?: string;
+  /**
+   * Diagnostics from failed completion-report extraction attempts (Codex adapter only).
+   * Adapter-populated; absent on success.
+   * Added in codex-completion-contract-injection.
+   */
+  completionReportDiagnostics?: CompletionReportDiagnostic[];
 }
 
 /**
@@ -113,6 +120,7 @@ export function pushStepResult(
       ...(partial.followUpAttempts !== undefined ? { followUpAttempts: partial.followUpAttempts } : {}),
       ...(partial.transientRetryAttempts !== undefined ? { transientRetryAttempts: partial.transientRetryAttempts } : {}),
       ...(partial.skipReason !== undefined ? { skipReason: partial.skipReason } : {}),
+      ...(partial.completionReportDiagnostics !== undefined ? { completionReportDiagnostics: partial.completionReportDiagnostics } : {}),
     },
     startedAt: partial.startedAt ?? now,
     endedAt: partial.completedAt ?? now,

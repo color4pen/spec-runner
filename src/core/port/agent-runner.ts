@@ -140,6 +140,9 @@ export interface AgentRunContext {
   emit: (event: DomainEvent, payload: Record<string, unknown>) => void;
 }
 
+import type { CompletionReportDiagnostic } from "../../kernel/completion-report-diagnostic.js";
+export type { CompletionReportDiagnostic } from "../../kernel/completion-report-diagnostic.js";
+
 /**
  * Result returned by AgentRunner.run() after executing an agent step.
  *
@@ -186,6 +189,14 @@ export interface AgentRunResult {
    * Populated by local runtime runners (ClaudeCodeRunner, CodexAgentRunner); ManagedAgentRunner leaves it undefined.
    */
   modelUsage?: Record<string, ModelUsage>;
+  /**
+   * Diagnostics from failed completion-report extraction attempts (Codex adapter only).
+   * Each entry records the phase (main/retry), attempt number, failure reason, and a
+   * raw response fragment for post-mortem analysis.
+   * Absent when all extractions succeeded (happy path).
+   * Added in codex-completion-contract-injection.
+   */
+  completionReportDiagnostics?: CompletionReportDiagnostic[];
 }
 
 /**

@@ -6,6 +6,7 @@ export type JobStatus = "running" | "awaiting-resume" | "awaiting-archive" | "fa
 
 import type { ModelUsage } from "../kernel/model-usage.js";
 import type { BaseReportResult, Finding, Observation } from "../kernel/report-result.js";
+import type { CompletionReportDiagnostic } from "../kernel/completion-report-diagnostic.js";
 import type { AgentStepName as AgentStepNameUnion } from "../kernel/agent-definition.js";
 import type { ReviewerSnapshot } from "../kernel/reviewer-snapshot.js";
 /**
@@ -147,6 +148,12 @@ export interface StepOutcome {
    * Documents which activation condition was not satisfied.
    */
   skipReason?: string;
+  /**
+   * Diagnostics from failed completion-report extraction attempts (Codex adapter only).
+   * Adapter-populated; absent on success.
+   * Added in codex-completion-contract-injection.
+   */
+  completionReportDiagnostics?: CompletionReportDiagnostic[];
 }
 
 /**
