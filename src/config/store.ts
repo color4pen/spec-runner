@@ -126,6 +126,77 @@ export async function loadConfig(repoRoot?: string): Promise<SpecRunnerConfig> {
   throw configMissingError();
 }
 
+export interface ConfigLayerMetadata {
+  path: string;
+  exists: boolean;
+}
+
+export interface SourceAwareConfigLoadResult {
+  config: SpecRunnerConfig;
+  userGlobal: ConfigLayerMetadata & { migrated: unknown | null };
+  projectLocal: ConfigLayerMetadata & { migrated: unknown | null };
+}
+
+/**
+ * Load config with the same semantics as loadConfig(), while preserving the two
+ * input layers for read-only source attribution.
+ */
+export async function loadConfigWithSourceMetadata(repoRoot?: string): Promise<SourceAwareConfigLoadResult> {
+  const userGlobalPath = getConfigPath();
+  const projectLocalPath = repoRoot
+    ? path.join(repoRoot, ".specrunner", "config.json")
+    : path.join(process.cwd(), ".specrunner", "config.json");
+
+  let userGlobalMigrated: unknown | null = null;
+  try {
+    const content = await fs.readFile(userGlobalPath, "utf-8");
+    userGlobalMigrated = parseAndMigrate(content, "user global config");
+  } catch (err: unknown) {
+    if (err instanceof SpecRunnerError) throw err;
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code !== "ENOENT") throw err;
+  }
+
+  let projectLocalMigrated: unknown | null = null;
+  if (repoRoot) {
+    try {
+      const content = await fs.readFile(projectLocalPath, "utf-8");
+      projectLocalMigrated = parseAndMigrate(content, "project local config");
+    } catch (err: unknown) {
+      if (err instanceof SpecRunnerError) throw err;
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") throw err;
+    }
+  }
+
+  let config: SpecRunnerConfig;
+  if (userGlobalMigrated !== null && projectLocalMigrated !== null) {
+    const userGlobal = validateAndWrap(userGlobalMigrated);
+    const merged = deepMergeConfig(userGlobal, projectLocalMigrated as Partial<SpecRunnerConfig>);
+    config = validateAndWrap(merged);
+  } else if (projectLocalMigrated !== null) {
+    config = validateAndWrap(projectLocalMigrated);
+  } else if (userGlobalMigrated !== null) {
+    config = validateAndWrap(userGlobalMigrated);
+  } else {
+    throw configMissingError();
+  }
+
+  return {
+    config,
+    userGlobal: {
+      path: userGlobalPath,
+      exists: userGlobalMigrated !== null,
+      migrated: userGlobalMigrated,
+    },
+    projectLocal: {
+      path: projectLocalPath,
+      exists: projectLocalMigrated !== null,
+      migrated: projectLocalMigrated,
+    },
+  };
+}
+
 /**
  * Save config to disk using atomic write. Enforces 0600 permissions.
  * Writes only new canonical schema — legacy fields are stripped.

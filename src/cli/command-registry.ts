@@ -17,6 +17,7 @@ import { runCancel } from "./cancel.js";
 import { runResume } from "./resume.js";
 import { runJobShow } from "./job-show.js";
 import { runInboxRun } from "./inbox.js";
+import { runConfigEffective } from "./config-effective.js";
 import { executeTemplate, executeValidate } from "../core/command/request.js";
 import { executeCreate } from "../core/command/request-create.js";
 import { executeList } from "../core/command/request-list.js";
@@ -84,6 +85,7 @@ Reviewer commands:
 Environment commands:
   init                            config scaffold
   login                           GitHub Device Flow OAuth
+  config effective [--type <t>]   Show effective step model/maxTurns/timeoutMs and source
   doctor                          Diagnose environment / config / auth prerequisites
   runtime setup|status|reset      Manage Anthropic runtime resources
 
@@ -189,6 +191,23 @@ Options:
   --verbose          More detailed output
   --quiet            Suppress informational output
   --help, -h         Show this help message
+`;
+
+export const CONFIG_EFFECTIVE_USAGE = `Usage: specrunner config effective [options]
+
+Show each standard agent step's effective model, maxTurns, timeoutMs, and the source
+that supplied each value. Deterministic CLI-only steps are not listed.
+
+Options:
+  --type <requestType>  Resolve byRequestType entries for a request type
+  --json                Output stable JSON with full source metadata
+  --help, -h            Show this help message
+
+Request types:
+  new-feature, bug-fix, spec-change, refactoring, chore
+
+Note: managed runtime ignores configured model for execution, but this command still
+shows the configured effective value.
 `;
 
 export const ARCHIVE_USAGE = `Usage: specrunner job archive <slug> [options]
@@ -549,6 +568,24 @@ export const COMMANDS: Record<string, CommandEntry> = {
             stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
             process.exit(1);
           }
+        },
+      },
+    },
+  },
+
+  config: {
+    subcommands: {
+      effective: {
+        usage: CONFIG_EFFECTIVE_USAGE,
+        flags: {
+          type: { type: "string" },
+          json: { type: "boolean" },
+        },
+        handler: async (parsed) => {
+          process.exit(await runConfigEffective({
+            requestType: parsed.flags["type"] as string | undefined,
+            json: !!parsed.flags["json"],
+          }));
         },
       },
     },
