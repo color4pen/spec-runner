@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "64eb1157-825f-4a53-991c-3636717f3c33",
   "createdAt": "2026-06-12T15:00:03.006Z",
-  "updatedAt": "2026-06-12T15:33:45.304Z",
+  "updatedAt": "2026-06-12T15:39:34.888Z",
   "request": {
     "title": "codex adapter: main turn に完了報告の明示指示を注入し、回収失敗の診断を構造化記録に残す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "cross-boundary-invariants",
+  "step": "scale-tolerance",
   "status": "running",
   "branch": "change/codex-completion-contract-injection-64eb1157",
   "error": null,
@@ -49,7 +49,7 @@
   ],
   "issueNumber": 673,
   "_journal": {
-    "historyCount": 30,
+    "historyCount": 35,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -57,7 +57,8 @@
       "test-case-gen": 1,
       "implementer": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "cross-boundary-invariants": 1
     }
   }
 }
