@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bbd11d3a-acb4-4dda-b221-4d0462f4f343",
   "createdAt": "2026-06-12T13:35:03.449Z",
-  "updatedAt": "2026-06-12T14:18:50.632Z",
+  "updatedAt": "2026-06-12T14:21:52.342Z",
   "request": {
     "title": "step 実効設定（model 等）の解決結果と適用 source を可視化するコマンド面を追加する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "feat/config-effective-resolution-view-bbd11d3a",
   "error": null,
@@ -50,7 +50,7 @@
   "issueNumber": 672,
   "resumePoint": null,
   "_journal": {
-    "historyCount": 49,
+    "historyCount": 53,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -61,7 +61,8 @@
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
