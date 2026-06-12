@@ -34,3 +34,16 @@
 {"type":"transition","ts":"2026-06-12T07:49:55.487Z","step":"verification","status":"warning","message":"verification iteration 1 completed with verdict: failed"}
 {"type":"transition","ts":"2026-06-12T07:49:55.488Z","step":"step-transition","status":"ok","message":"verification → build-fixer"}
 {"type":"transition","ts":"2026-06-12T07:49:55.493Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}
+{"type":"transition","ts":"2026-06-12T07:50:47.110Z","step":"build-fixer-verdict","status":"ok","message":"build-fixer verdict: success"}
+{"type":"step-attempt","step":"build-fixer","sessionId":"2581dd75-dd48-4086-b5a9-d47d4ef18f7f","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-12T07:49:55.522Z","endedAt":"2026-06-12T07:50:45.314Z"}
+{"type":"lineage","step":"build-fixer","ts":"2026-06-12T07:50:45.314Z","outputs":[{"path":"specrunner/changes/codex-adapter-parity","hash":null}],"inputs":[{"path":"specrunner/changes/codex-adapter-parity/verification-result.md","hash":"sha256:4cbdd47e3af751c466458a74d37af05f86e626fdd920cc2e80b8a97d1aa94e4c"}]}
+{"type":"transition","ts":"2026-06-12T07:50:47.116Z","step":"step-transition","status":"ok","message":"build-fixer → verification"}
+{"type":"transition","ts":"2026-06-12T07:50:47.117Z","step":"verification","status":"started","message":"verification iteration 2 started"}
+{"type":"transition","ts":"2026-06-12T07:50:47.119Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-06-12T07:51:59.753Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/codex-adapter-parity/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T07:50:47.120Z","endedAt":"2026-06-12T07:51:59.751Z"}
+{"type":"lineage","step":"verification","ts":"2026-06-12T07:51:59.751Z","outputs":[{"path":"specrunner/changes/codex-adapter-parity/verification-result.md","hash":"sha256:21099dd897acac6a5bafe003ffcaaf395343873f320a5b2cccad3c717f17b696"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-06-12T07:51:59.760Z","step":"verification","status":"ok","message":"verification iteration 2 completed with verdict: passed"}
+{"type":"transition","ts":"2026-06-12T07:51:59.761Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-06-12T07:51:59.763Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T07:51:59.765Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
