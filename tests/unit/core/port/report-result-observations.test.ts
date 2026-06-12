@@ -77,6 +77,14 @@ describe("parseObservations — valid inputs", () => {
     expect(result.value[0]).not.toHaveProperty("line");
   });
 
+  it("parses observation with line: null (treated as absent)", () => {
+    const raw = [{ severity: "low", file: "a.ts", title: "t", rationale: "r", line: null }];
+    const result = parseObservations(raw);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value[0]).not.toHaveProperty("line");
+  });
+
   it("accepts all 4 severity values", () => {
     for (const sev of ["critical", "high", "medium", "low"] as const) {
       const raw = [{ severity: sev, file: "a.ts", title: "t", rationale: "r" }];

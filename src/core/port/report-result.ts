@@ -193,7 +193,7 @@ export function parseObservations(raw: unknown): { ok: true; value: Observation[
     if (typeof o["file"] !== "string") return { ok: false };
     if (typeof o["title"] !== "string") return { ok: false };
     if (typeof o["rationale"] !== "string") return { ok: false };
-    if ("line" in o && o["line"] !== undefined && typeof o["line"] !== "number") return { ok: false };
+    if ("line" in o && o["line"] !== undefined && o["line"] !== null && typeof o["line"] !== "number") return { ok: false };
     const observation: Observation = {
       severity: o["severity"] as Observation["severity"],
       file: o["file"] as string,

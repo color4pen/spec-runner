@@ -152,6 +152,16 @@ describe("toOpenAIStrictSchema — PRODUCER_REPORT_TOOL (union optional status)"
     const anyOf = statusProp["anyOf"] as Array<Record<string, unknown>>;
     expect(anyOf.some((b) => b["type"] === "null")).toBe(true);
   });
+
+  it("observations is NOT in required (producer tools have no observations channel)", () => {
+    const required = strict["required"] as string[];
+    expect(required).not.toContain("observations");
+  });
+
+  it("observations property is NOT present in schema properties", () => {
+    const props = strict["properties"] as Record<string, unknown>;
+    expect(props).not.toHaveProperty("observations");
+  });
 });
 
 // ---------------------------------------------------------------------------
