@@ -28,7 +28,7 @@ Example:
   // mirror style
   const { testsRoot, sourceRoot } = placement;
 
-  const exampleSource = "src/foo/bar.ts";
+  const exampleSource = sourceRoot ? `${sourceRoot}/foo/bar.ts` : "src/foo/bar.ts";
   let exampleTest: string;
   if (sourceRoot) {
     // Strip sourceRoot prefix then place under testsRoot
