@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4d6adbde-647d-4e0f-b4fa-19a486a70065",
   "createdAt": "2026-06-12T07:15:03.265Z",
-  "updatedAt": "2026-06-12T08:03:39.374Z",
+  "updatedAt": "2026-06-12T08:08:48.705Z",
   "request": {
     "title": "codex adapter に claude-code adapter と同等の運用機能（retry / 観測性 / 出力検証）を実装する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "feat/codex-adapter-parity-4d6adbde",
   "error": null,
@@ -49,20 +49,21 @@
   ],
   "issueNumber": 659,
   "_journal": {
-    "historyCount": 59,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 2,
+      "verification": 3,
       "build-fixer": 1,
       "code-review": 1,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
