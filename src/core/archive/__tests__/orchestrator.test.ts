@@ -344,3 +344,70 @@ describe("archive orchestrator — Phase 2 marker / sidecar cleanup", () => {
     );
   });
 });
+
+describe("archive orchestrator — remote branch deletion idempotency", () => {
+  beforeEach(() => {
+    vi.mocked(JobStateStore.list).mockResolvedValue([makeState()]);
+    vi.mocked(stderrWrite).mockClear();
+  });
+
+  it("T-branch-01: does not warn when the remote branch is already absent", async () => {
+    const spawn = vi.fn().mockImplementation((_cmd: string, args: string[]) => {
+      if (args[0] === "push" && args[1] === "origin" && args[2] === "--delete") {
+        return Promise.resolve({
+          exitCode: 1,
+          stdout: "",
+          stderr: "error: unable to delete 'refs/heads/fix/test': remote ref does not exist",
+        });
+      }
+      return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
+    }) as SpawnFn;
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn,
+      fs: makeFs(),
+      worktreeManagerFn: () => makeWorktreeManager(),
+    });
+
+    expect(result.exitCode).toBe(0);
+    const calls = vi.mocked(stderrWrite).mock.calls.map(([msg]) => msg as string);
+    expect(calls.some((m) => m.includes("failed to delete remote branch"))).toBe(false);
+  });
+
+  it("T-branch-02: warns when remote branch deletion fails for another reason", async () => {
+    const spawn = vi.fn().mockImplementation((_cmd: string, args: string[]) => {
+      if (args[0] === "push" && args[1] === "origin" && args[2] === "--delete") {
+        return Promise.resolve({ exitCode: 128, stdout: "", stderr: "remote: Repository not found." });
+      }
+      return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
+    }) as SpawnFn;
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn,
+      fs: makeFs(),
+      worktreeManagerFn: () => makeWorktreeManager(),
+    });
+
+    expect(result.exitCode).toBe(0);
+    const calls = vi.mocked(stderrWrite).mock.calls.map(([msg]) => msg as string);
+    expect(calls.some((m) => m.includes("failed to delete remote branch"))).toBe(true);
+  });
+
+  it("T-branch-03: does not warn when remote branch deletion succeeds", async () => {
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: makeSpawn(),
+      fs: makeFs(),
+      worktreeManagerFn: () => makeWorktreeManager(),
+    });
+
+    expect(result.exitCode).toBe(0);
+    const calls = vi.mocked(stderrWrite).mock.calls.map(([msg]) => msg as string);
+    expect(calls.some((m) => m.includes("failed to delete remote branch"))).toBe(false);
+  });
+});
