@@ -76,3 +76,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/usage-pricing-provider-neutral/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T07:41:28.787Z","endedAt":"2026-06-12T07:41:30.641Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-12T07:41:30.641Z","outputs":[{"path":"specrunner/changes/usage-pricing-provider-neutral/pr-create-result.md","hash":"sha256:b3dc857ef67893af39093870e178b453611609bd200e5dc6f17f8f402c66108a"}],"inputs":[{"path":"change/usage-pricing-provider-neutral-175cafd1","hash":null}]}
 {"type":"transition","ts":"2026-06-12T07:41:30.653Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-12T08:56:07.299Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
