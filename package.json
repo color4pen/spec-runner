@@ -25,7 +25,7 @@
   },
   "type": "module",
   "bin": {
-    "specrunner": "./dist/specrunner.js"
+    "specrunner": "dist/specrunner.js"
   },
   "scripts": {
     "build": "tsup",

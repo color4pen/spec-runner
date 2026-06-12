@@ -8,6 +8,7 @@ import { COMMANDS, USAGE, RUNTIME_RESET_USAGE, NO_DETAILED_HELP_USAGE } from "..
 import { parseFlags, FlagParseError } from "../src/cli/flag-parser.js";
 import { detectWorktree } from "../src/core/worktree/detection.js";
 import { SpecRunnerError, EXIT_CODE, worktreeGuardError } from "../src/errors.js";
+import { getVersion } from "../src/cli/version.js";
 
 export { USAGE, RUNTIME_RESET_USAGE };
 
@@ -22,6 +23,11 @@ export async function main(): Promise<void> {
 
   if (command === "--help" || command === "-h") {
     process.stdout.write(USAGE);
+    process.exit(0);
+  }
+
+  if (command === "--version") {
+    process.stdout.write(`${getVersion()}\n`);
     process.exit(0);
   }
 
