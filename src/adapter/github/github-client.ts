@@ -619,6 +619,18 @@ export class GitHubApiClient implements GitHubClient {
   }
 
   /**
+   * Remove a label from an issue.
+   * DELETE /repos/{owner}/{repo}/issues/{issueNumber}/labels/{label}
+   * 200 or 204 → success; 404 → success (idempotent); other non-2xx → throws GITHUB_API_ERROR.
+   */
+  async removeLabel(owner: string, repo: string, issueNumber: number, label: string): Promise<void> {
+    const url = `${this.baseUrl}/repos/${owner}/${repo}/issues/${issueNumber}/labels/${encodeURIComponent(label)}`;
+    const resp = await this.request(url, { method: "DELETE" });
+    if (resp.status === 200 || resp.status === 204 || resp.status === 404) return;
+    throw githubApiError(resp.status, `removeLabel(${owner}/${repo}#${issueNumber} label=${label})`);
+  }
+
+  /**
    * List all comments on an issue in ascending creation order.
    * Follows Link header pagination to fetch all pages.
    */

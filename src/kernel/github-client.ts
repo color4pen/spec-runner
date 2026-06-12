@@ -234,4 +234,20 @@ export interface GitHubClient {
     repo: string,
     issueNumber: number,
   ): Promise<Array<{ id: number; body: string; authorAssociation: string; createdAt: string }>>;
+
+  /**
+   * Remove a label from an issue.
+   * DELETE /repos/{owner}/{repo}/issues/{issueNumber}/labels/{label}
+   *
+   * - 200 or 204 → success (resolves without throwing).
+   * - 404 → success (idempotent — label was already absent).
+   * - other non-2xx → throws SpecRunnerError(GITHUB_API_ERROR).
+   * - 401 → throws SpecRunnerError(GITHUB_TOKEN_EXPIRED) (via shared request() layer).
+   *
+   * @param owner        Repository owner (user or org name).
+   * @param repo         Repository name.
+   * @param issueNumber  GitHub issue number.
+   * @param label        Label name to remove.
+   */
+  removeLabel(owner: string, repo: string, issueNumber: number, label: string): Promise<void>;
 }
