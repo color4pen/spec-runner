@@ -14,6 +14,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { StepRun, HistoryEntry, ErrorInfo } from "../state/schema.js";
 import type { BaseReportResult } from "../kernel/report-result.js";
+import type { CompletionReportDiagnostic } from "../kernel/completion-report-diagnostic.js";
 import type { Verdict } from "../state/schema.js";
 import type { ArtifactRef } from "../state/artifact-types.js";
 export type { ArtifactRef } from "../state/artifact-types.js";
@@ -44,6 +45,8 @@ export interface StepAttemptRecord {
     transientRetryAttempts?: number;
     /** Human-readable reason when verdict === "skipped". */
     skipReason?: string;
+    /** Completion-report extraction diagnostics (Codex adapter only). Absent on success. */
+    completionReportDiagnostics?: CompletionReportDiagnostic[];
   };
   startedAt: string;
   endedAt: string;
@@ -227,6 +230,7 @@ export function fold(content: string): FoldResult {
         ...(r.outcome.followUpAttempts !== undefined ? { followUpAttempts: r.outcome.followUpAttempts } : {}),
         ...(r.outcome.transientRetryAttempts !== undefined ? { transientRetryAttempts: r.outcome.transientRetryAttempts } : {}),
         ...(r.outcome.skipReason !== undefined ? { skipReason: r.outcome.skipReason } : {}),
+        ...(r.outcome.completionReportDiagnostics !== undefined ? { completionReportDiagnostics: r.outcome.completionReportDiagnostics } : {}),
       },
       startedAt: r.startedAt,
       endedAt: r.endedAt,
@@ -297,6 +301,7 @@ export function stepRunToRecord(step: string, run: StepRun): StepAttemptRecord {
       ...(outcome.followUpAttempts !== undefined ? { followUpAttempts: outcome.followUpAttempts } : {}),
       ...(outcome.transientRetryAttempts !== undefined ? { transientRetryAttempts: outcome.transientRetryAttempts } : {}),
       ...(outcome.skipReason !== undefined ? { skipReason: outcome.skipReason } : {}),
+      ...(outcome.completionReportDiagnostics !== undefined ? { completionReportDiagnostics: outcome.completionReportDiagnostics } : {}),
     },
     startedAt: run.startedAt,
     endedAt: run.endedAt,

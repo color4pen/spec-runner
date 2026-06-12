@@ -465,6 +465,7 @@ export class StepExecutor {
       toolResult: runResult.toolResult,
       followUpAttempts: runResult.followUpAttempts,
       transientRetryAttempts: runResult.transientRetryAttempts,
+      completionReportDiagnostics: runResult.completionReportDiagnostics,
     });
   }
 
@@ -604,6 +605,7 @@ export class StepExecutor {
       toolResult?: import("../port/report-result.js").BaseReportResult | null;
       followUpAttempts?: number;
       transientRetryAttempts?: number;
+      completionReportDiagnostics?: import("../port/agent-runner.js").CompletionReportDiagnostic[];
     },
   ): Promise<JobState> {
     const store = this.getStore(state.jobId);
@@ -712,6 +714,7 @@ export class StepExecutor {
       toolResult: agentResult?.toolResult ?? null,
       followUpAttempts: agentResult?.followUpAttempts ?? 0,
       transientRetryAttempts: agentResult?.transientRetryAttempts,
+      completionReportDiagnostics: agentResult?.completionReportDiagnostics,
     });
     state = await store.appendHistory(state, {
       ts: new Date().toISOString(),

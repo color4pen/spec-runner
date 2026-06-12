@@ -22,12 +22,15 @@ import * as path from "node:path";
 import { object, toJSONSchema } from "zod/v4-mini";
 import { Codex } from "@openai/codex-sdk";
 import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
+import { buildMainTurnCompletionInstruction, buildCompletionRetryPrompt } from "./completion-report-prompt.js";
+export { COMPLETION_REPORT_MEANS, buildMainTurnCompletionInstruction, buildCompletionRetryPrompt } from "./completion-report-prompt.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
 import { SessionLogWriter } from "../shared/session-log-writer.js";
 import { isTransientAgentError } from "../shared/transient-error.js";
 import { retryWithBackoff } from "../../util/retry.js";
 import { resolveTransientRetryConfig } from "../../config/schema.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from "../../core/port/agent-runner.js";
+import type { CompletionReportDiagnostic } from "../../kernel/completion-report-diagnostic.js";
 import type { StepContext } from "../../core/port/step-context.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
 import { stderrWrite } from "../../logger/stdout.js";
@@ -282,7 +285,7 @@ export class CodexAgentRunner implements AgentRunner {
 
     const baseMessage = step.buildMessage(state, stepCtx);
     const additionalInstructions = buildAdditionalInstructions(ctx);
-    const fullPrompt = additionalInstructions
+    const baseFullPrompt = additionalInstructions
       ? `${baseMessage}\n\n${additionalInstructions}`
       : baseMessage;
 
@@ -301,6 +304,12 @@ export class CodexAgentRunner implements AgentRunner {
     // Build outputSchema if reportTool is configured
     const reportTool: ReportToolSpec | undefined = ctx.policy?.reportTool;
     const outputSchema: object | undefined = reportTool ? buildOutputSchema(reportTool) : undefined;
+
+    // Inject completion-report instruction into the main work turn when reportTool is set.
+    // The means clause is a single source (buildMainTurnCompletionInstruction) shared with retry prompts.
+    const fullPrompt = reportTool
+      ? `${baseFullPrompt}\n\n${buildMainTurnCompletionInstruction()}`
+      : baseFullPrompt;
 
     // Resolve transient retry config
     const { maxRetries, baseDelayMs } = resolveTransientRetryConfig(ctx.config);
@@ -504,6 +513,7 @@ export class CodexAgentRunner implements AgentRunner {
 
       // T-04: Parse finalResponse to extract typed toolResult
       let capturedToolResult: BaseReportResult | null = null;
+      const completionReportDiagnostics: CompletionReportDiagnostic[] = [];
       if (reportTool) {
         const mainParseAttempt = tryExtractToolResult(turn.finalResponse, reportTool);
         capturedToolResult = mainParseAttempt.toolResult;
@@ -511,6 +521,11 @@ export class CodexAgentRunner implements AgentRunner {
           stderrWrite(
             `[codex] completion report parse failed (main turn): ${mainParseAttempt.failureReason}; fragment: "${mainParseAttempt.rawFragment}"`,
           );
+          completionReportDiagnostics.push({
+            phase: "main",
+            failureReason: mainParseAttempt.failureReason ?? "unknown",
+            rawFragment: mainParseAttempt.rawFragment ?? "",
+          });
         }
       }
 
@@ -519,9 +534,7 @@ export class CodexAgentRunner implements AgentRunner {
       if (capturedToolResult === null && reportTool) {
         const retryPolicy = ctx.policy?.toolReportRetry ?? DEFAULT_TOOL_RETRY;
         for (let attempt = 1; attempt <= retryPolicy.maxAttempts; attempt++) {
-          const retryPrompt =
-            `前の応答から JSON を取得できませんでした。コードフェンスや説明文を付けず、スキーマに一致する JSON オブジェクトのみを返してください。` +
-            ` (attempt ${attempt}/${retryPolicy.maxAttempts})`;
+          const retryPrompt = buildCompletionRetryPrompt(attempt, retryPolicy.maxAttempts);
           const retryTurn = await runFollowUpTurnWithRetry(
             activeThread,
             retryPrompt,
@@ -538,6 +551,12 @@ export class CodexAgentRunner implements AgentRunner {
             stderrWrite(
               `[codex] completion report parse failed (attempt ${attempt}/${retryPolicy.maxAttempts}): ${retryParseAttempt.failureReason}; fragment: "${retryParseAttempt.rawFragment}"`,
             );
+            completionReportDiagnostics.push({
+              phase: "retry",
+              attempt,
+              failureReason: retryParseAttempt.failureReason ?? "unknown",
+              rawFragment: retryParseAttempt.rawFragment ?? "",
+            });
           }
           if (capturedToolResult !== null) break;
         }
@@ -668,6 +687,7 @@ export class CodexAgentRunner implements AgentRunner {
         modelUsage,
         sessionId: threadId ?? undefined,
         ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
+        ...(completionReportDiagnostics.length > 0 ? { completionReportDiagnostics } : {}),
       };
       return mergeFollowUpResult(baseResult, resultContent);
     } catch (err) {
