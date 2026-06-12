@@ -428,6 +428,45 @@ For projects in other languages (Python, Go, Rust, etc.), set `verification.comm
 }
 ```
 
+### Test file placement
+
+By default (no `tests.placement` set), the implementer agent follows the existing test placement pattern it finds in the project. This works well for projects where the LLM reliably infers the convention, but can produce "dead" test files in projects with strict `include` patterns (e.g. pnpm monorepos with vitest configured to only pick up files under a specific directory).
+
+Set `tests.placement` in your project config to declare the convention explicitly:
+
+```jsonc
+// .specrunner/config.json — sibling (test next to source)
+{
+  "tests": {
+    "placement": {
+      "style": "sibling"
+      // optional: "suffix": ".spec.ts"   (default: ".test.ts")
+    }
+  }
+}
+```
+
+```jsonc
+// .specrunner/config.json — mirror (tests/ tree mirrors src/)
+{
+  "tests": {
+    "placement": {
+      "style": "mirror",
+      "testsRoot": "tests",
+      "sourceRoot": "src"
+      // optional: "suffix": ".spec.ts"   (default: ".test.ts")
+    }
+  }
+}
+```
+
+| style | Placement rule | Example |
+|-------|---------------|---------|
+| `sibling` | Same directory as the source file | `src/foo/bar.ts` → `src/foo/bar.test.ts` |
+| `mirror` | Under `testsRoot/`, stripping `sourceRoot/` prefix | `src/foo/bar.ts` → `tests/foo/bar.test.ts` |
+
+When `sourceRoot` is omitted from a `mirror` config, the full source path is preserved under `testsRoot/` (e.g. `src/foo/bar.ts` → `tests/src/foo/bar.test.ts`).
+
 ### Commit history trust
 
 In repositories with external contributors, `git log` and `git diff` output is included in agent prompts. **Running SpecRunner on repositories with untrusted commit history is not recommended**, as malicious content in commit messages or diff output could influence agent behavior.
