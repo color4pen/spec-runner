@@ -37,6 +37,12 @@ CLI-first の dual runtime アーキテクチャ。
   その後に regression-gate（レビュー中に修正された全 findings が最終コードでも修正されたままかの台帳照合）が走り、
   conformance へ進む。reviewer 定義は job 開始時に state へ snapshot され、実行中の定義変更は影響しない。
 
+  **再検証チョークポイント（post-fixer reverification）**: conformance が approved を返した時点で、
+  implementer / build-fixer / code-fixer のいずれかが最後の verification より後にコードを変更していた場合、
+  conformance → verification が再実行され、その passed を確認してから adr-gen → pr-create へ進む。
+  verification が fresh な状態（budget リセット済み）で再実行されるため、再検証が即 escalation で打ち切られることはない。
+  コードが変更されていなければ再検証はスキップされ、conformance → adr-gen へ直接進む。
+
 ### レビュー観点の拡張（コード変更なし）
 
 - **rules**（`specrunner/rules/<step>/*.md`）: 既存 step の prompt に規律を追記する。セッション数は増えない

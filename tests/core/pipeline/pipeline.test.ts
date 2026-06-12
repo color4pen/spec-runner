@@ -573,7 +573,9 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
 
     expect(find("implementer",  "success")).toMatchObject({ to: "verification" });
     expect(find("implementer",  "error")).toMatchObject({ to: "escalate" });
-    expect(find("verification", "passed")).toMatchObject({ to: "code-review" });
+    // verification passed has two rows: conditional (conformanceApproved → adr-gen) + fallback (→ code-review)
+    expect(findWithTo("verification", "passed", "code-review")).toBeDefined(); // fallback (initial path)
+    expect(findWithTo("verification", "passed", "adr-gen")).toBeDefined(); // conditional (re-verification path)
     expect(find("verification", "failed")).toMatchObject({ to: "build-fixer" });
     expect(find("verification", "escalation")).toMatchObject({ to: "escalate" });
     expect(find("build-fixer",  "success")).toMatchObject({ to: "verification" });
@@ -588,8 +590,9 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     expect(find("code-fixer",   "approved")).toMatchObject({ to: "conformance" }); // conditional first
     expect(findWithTo("code-fixer", "approved", "code-review")).toBeDefined(); // fallback exists
     expect(find("code-fixer",   "error")).toMatchObject({ to: "escalate" });
-    // conformance rows
-    expect(find("conformance",  "approved")).toMatchObject({ to: "adr-gen" });
+    // conformance rows: conditional (codeChanged → verification) + fallback (→ adr-gen)
+    expect(findWithTo("conformance", "approved", "verification")).toBeDefined(); // conditional (re-verify)
+    expect(findWithTo("conformance", "approved", "adr-gen")).toBeDefined(); // fallback (skip re-verify)
     expect(find("conformance",  "needs-fix")).toMatchObject({ to: "implementer" });
     // adr-gen rows
     expect(find("adr-gen",      "success")).toMatchObject({ to: "pr-create" });
