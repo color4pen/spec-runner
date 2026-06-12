@@ -9,9 +9,10 @@ import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath, resolveReviewerResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { latestIteration } from "./io-iteration.js";
-import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock } from "./fixer-helpers.js";
+import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock, getConformanceFixContext } from "./fixer-helpers.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import { deriveImplFixerChain, resolveActiveReviewer } from "../pipeline/reviewer-chain.js";
+import { conformanceResultPath } from "../../util/paths.js";
 
 const CODE_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -66,6 +67,14 @@ export const CodeFixerStep: AgentStep = {
   maxTurns: 30,
 
   reads(state: JobState, deps: StepDeps): IoRef[] {
+    // Conformance-triggered entry: read conformance result file
+    const conformanceFindings = getConformanceFixContext(state, STEP_NAMES.CODE_FIXER);
+    if (conformanceFindings !== null) {
+      return [
+        { path: conformanceResultPath(deps.slug, latestIteration(state, STEP_NAMES.CONFORMANCE)) },
+      ];
+    }
+    // Normal entry: read active reviewer result
     const chain = deriveImplFixerChain(state);
     const activeReviewer = resolveActiveReviewer(state, chain);
     return [
@@ -83,7 +92,43 @@ export const CodeFixerStep: AgentStep = {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.CODE_FIXER);
     const branch = state.branch;
 
-    // Resolve the active reviewer so code-fixer reads from the correct findings file.
+    // Conformance-triggered entry: use conformance findings
+    const conformanceFindings = getConformanceFixContext(state, STEP_NAMES.CODE_FIXER);
+    if (conformanceFindings !== null) {
+      const findingsPath = conformanceResultPath(deps.slug, latestIteration(state, STEP_NAMES.CONFORMANCE));
+      if (isFixerContinuation(state, STEP_NAMES.CODE_FIXER)) {
+        return buildContinuationMessage({
+          stepName: STEP_NAMES.CODE_FIXER,
+          findingsPath,
+          slug: deps.slug,
+          findings: conformanceFindings,
+          reviewerName: "conformance",
+        });
+      }
+      const findingsBlock = buildFindingsBlock(conformanceFindings, "conformance");
+      return `<user-request>
+You are the code-fixer for the following change:
+
+Change folder: ${changeFolderPath(deps.slug)}
+Branch: ${branch}
+
+## Conformance non-conformities (must resolve)
+
+${findingsBlock}
+
+Please:
+1. Fix all HIGH and CRITICAL severity findings from the conformance review (mandatory)
+2. Fix MEDIUM severity findings only if they do not require design changes
+3. Ignore LOW severity findings
+4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+5. Do NOT add new features or make specification changes
+
+Original request:
+${deps.request.content}
+</user-request>`;
+    }
+
+    // Normal entry: resolve the active reviewer
     const chain = deriveImplFixerChain(state);
     const activeReviewer = resolveActiveReviewer(state, chain);
 

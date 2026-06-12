@@ -54,6 +54,21 @@ The file MUST contain a verdict line in this exact format (required for machine 
 
 Include a findings section describing what was checked for each of the 4 items, and specific failures if verdict is needs-fix.
 
+## Fix Routing (fixTarget)
+
+For each finding in your findings array, set \`fixTarget\` to indicate which step should address it.
+The CLI aggregates fixTarget values to determine routing — the final decision is made by the CLI, not by you.
+
+| Finding nature | fixTarget |
+|----------------|-----------|
+| spec.md / design.md artifact is wrong or missing | \`spec-fixer\` |
+| Implementation is missing or incomplete per tasks.md/design.md | \`implementer\` |
+| Local code non-conformity (isolated code-level issue, not a spec/design error) | \`code-fixer\` |
+| Not sure | omit (defaults to \`implementer\`) |
+
+Priority when multiple findings have different fixTargets: the CLI applies spec-fixer > implementer > code-fixer.
+You do NOT need to declare the overall routing — set fixTarget per finding and the CLI will aggregate.
+
 ## Constraints
 
 - Do NOT modify any source files

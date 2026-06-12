@@ -10,9 +10,11 @@ import type { TestPlacement } from "../../config/schema.js";
 import { IMPLEMENTER_SYSTEM_PROMPT } from "../../prompts/implementer-system.js";
 import { renderTestPlacementInstruction } from "../../prompts/test-placement.js";
 import { branchNotSetError } from "../../errors.js";
-import { changeFolderPath } from "../../util/paths.js";
+import { changeFolderPath, conformanceResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
+import { getConformanceFixContext, buildFindingsBlock } from "./fixer-helpers.js";
+import { latestIteration } from "./io-iteration.js";
 
 const IMPLEMENTER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -112,12 +114,21 @@ export const ImplementerStep: AgentStep = {
   // Design D3 (propose-openspec-cli-and-step-model-config).
   maxTurns: 60,
 
-  reads(_state: JobState, deps: StepDeps): IoRef[] {
+  reads(state: JobState, deps: StepDeps): IoRef[] {
     const folder = changeFolderPath(deps.slug);
-    return [
+    const baseReads: IoRef[] = [
       { path: `${folder}/tasks.md` },
       { path: `${folder}/spec.md` },
     ];
+    // Conformance-triggered entry: also read conformance result file
+    const conformanceFindings = getConformanceFixContext(state, STEP_NAMES.IMPLEMENTER);
+    if (conformanceFindings !== null) {
+      return [
+        ...baseReads,
+        { path: conformanceResultPath(deps.slug, latestIteration(state, STEP_NAMES.CONFORMANCE)) },
+      ];
+    }
+    return baseReads;
   },
 
   writes(_state: JobState, deps: StepDeps): IoRef[] {
@@ -142,6 +153,27 @@ export const ImplementerStep: AgentStep = {
 
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.IMPLEMENTER);
+
+    // Conformance-triggered entry: append conformance non-conformities section
+    const conformanceFindings = getConformanceFixContext(state, STEP_NAMES.IMPLEMENTER);
+    if (conformanceFindings !== null && conformanceFindings.length > 0) {
+      const baseMessage = buildImplementerInitialMessage({
+        slug: deps.slug,
+        branch: state.branch,
+        requestContent: deps.request.content,
+        dynamicContext: deps.dynamicContext,
+      });
+      const findingsBlock = buildFindingsBlock(conformanceFindings, "conformance");
+      // Append the conformance section before the closing tag
+      const insertBefore = "</user-request>";
+      const idx = baseMessage.lastIndexOf(insertBefore);
+      if (idx !== -1) {
+        return `${baseMessage.slice(0, idx)}\n## Conformance non-conformities (must resolve)\n\n${findingsBlock}\n${baseMessage.slice(idx)}`;
+      }
+      // Fallback: just append
+      return `${baseMessage}\n\n## Conformance non-conformities (must resolve)\n\n${findingsBlock}`;
+    }
+
     return buildImplementerInitialMessage({
       slug: deps.slug,
       branch: state.branch,

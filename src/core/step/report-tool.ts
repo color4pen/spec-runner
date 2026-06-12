@@ -9,8 +9,8 @@
  * with step-class fields. The old REPORT_TOOL / REPORT_TOOL_CUSTOM_TOOL_SPEC remain for compat.
  */
 import { boolean, number, optional, string, union, literal, object, array, toJSONSchema } from "zod/v4-mini";
-import type { ReportToolSpec, BaseReportResult, ProducerReportResult, JudgeReportResult, CodeReviewReportResult, RequestReviewReportResult } from "../port/report-result.js";
-import { parseBaseReportInput, parseProducerReportInput, parseJudgeReportInput, parseCodeReviewReportInput, parseRequestReviewReportInput } from "../port/report-result.js";
+import type { ReportToolSpec, BaseReportResult, ProducerReportResult, JudgeReportResult, CodeReviewReportResult, RequestReviewReportResult, ConformanceReportResult } from "../port/report-result.js";
+import { parseBaseReportInput, parseProducerReportInput, parseJudgeReportInput, parseCodeReviewReportInput, parseRequestReviewReportInput, parseConformanceReportInput } from "../port/report-result.js";
 import type { CustomToolSpec } from "../agent/definition.js";
 
 /**
@@ -125,6 +125,45 @@ export const CODE_REVIEW_REPORT_TOOL: ReportToolSpec<CodeReviewReportResult> = {
     findings: optional(findingSchema),
   },
   parseInput: parseCodeReviewReportInput,
+};
+
+/**
+ * Zod schema for a single conformance finding object.
+ * Extends the base findingSchema with the optional fixTarget field.
+ * Used exclusively by CONFORMANCE_REPORT_TOOL.
+ */
+const conformanceFindingSchema = array(object({
+  severity: union([literal("critical"), literal("high"), literal("medium"), literal("low")]),
+  resolution: union([literal("fixable"), literal("decision-needed")]),
+  file: string(),
+  line: optional(number()),
+  title: string(),
+  rationale: string(),
+  fixTarget: optional(union([literal("implementer"), literal("code-fixer"), literal("spec-fixer")])),
+}));
+
+/**
+ * Typed ReportToolSpec for the conformance step.
+ *
+ * Extends the judge findings schema with fixTarget for fix routing.
+ * The CLI derives the routing target from findings (R7 contract — not agent-declared).
+ *
+ * fixTarget semantics (per finding):
+ *   "spec-fixer"  — spec/design errors: the spec or design artifact is wrong/incomplete
+ *   "implementer" — implementation gaps: the implementation is missing or incomplete
+ *   "code-fixer"  — local code non-conformities: isolated code-level issues
+ *   (omitted)     — defaults to "implementer"
+ */
+export const CONFORMANCE_REPORT_TOOL: ReportToolSpec<ConformanceReportResult> = {
+  name: "report_result",
+  description: "Report the completion of the conformance step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string, fixTarget?: 'implementer'|'code-fixer'|'spec-fixer' }. The CLI derives the routing target from findings; do NOT declare a routing verdict yourself. fixTarget routing: 'spec-fixer' = spec/design artifact is wrong; 'implementer' = implementation is missing or incomplete; 'code-fixer' = local code non-conformity; omit to default to 'implementer'. You MUST call this tool before ending your turn.",
+  zodSchema: {
+    ok: boolean(),
+    reason: optional(string()),
+    approved: optional(boolean()),
+    findings: optional(conformanceFindingSchema),
+  },
+  parseInput: parseConformanceReportInput,
 };
 
 /**

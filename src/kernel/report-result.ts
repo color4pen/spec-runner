@@ -15,6 +15,13 @@ export type FindingSeverity = "critical" | "high" | "medium" | "low";
 export type FindingResolution = "fixable" | "decision-needed";
 
 /**
+ * Target step to route a conformance needs-fix finding to.
+ * Used exclusively by the conformance step to signal which fixer should address each finding.
+ * CLI aggregates these values to derive the final routing target (R7 contract).
+ */
+export type FixTarget = "implementer" | "code-fixer" | "spec-fixer";
+
+/**
  * A single finding reported by a judge agent via the report_result findings array.
  * Represents a single identified issue with severity, resolution, and location.
  */
@@ -29,4 +36,11 @@ export interface Finding {
   title: string;
   /** Rationale explaining why this is an issue. */
   rationale: string;
+  /**
+   * Target step for conformance findings only.
+   * When present, signals which fixer step should address this finding.
+   * CLI aggregates fixTarget values from all critical/high findings to derive routing.
+   * Absent for non-conformance judge steps.
+   */
+  fixTarget?: FixTarget;
 }

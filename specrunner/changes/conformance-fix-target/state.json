@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e9602244-4d28-46da-8cc8-d8a109881172",
   "createdAt": "2026-06-11T23:59:17.617Z",
-  "updatedAt": "2026-06-12T00:28:50.652Z",
+  "updatedAt": "2026-06-12T00:32:39.523Z",
   "request": {
     "title": "conformance の needs-fix に戻り先 step を導出させ、空振りの implementer 再入を解消する",
     "type": "spec-change"
@@ -11,7 +11,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "implementer",
   "status": "running",
   "branch": "change/conformance-fix-target-e9602244",
   "error": null,
@@ -48,11 +48,12 @@
   ],
   "issueNumber": 561,
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }
