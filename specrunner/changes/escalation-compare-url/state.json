@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "73f15a52-ba5d-4ac7-820e-3745bfb1f071",
   "createdAt": "2026-06-12T05:40:03.023Z",
-  "updatedAt": "2026-06-12T06:03:58.450Z",
+  "updatedAt": "2026-06-12T06:04:25.565Z",
   "request": {
     "title": "escalation 通知コメントに branch の compare URL を含め、停止した job の差分確認を GitHub 上で完結させる",
     "type": "new-feature"
@@ -11,7 +11,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/escalation-compare-url-73f15a52",
   "error": null,
@@ -48,7 +48,7 @@
   ],
   "issueNumber": 649,
   "_journal": {
-    "historyCount": 40,
+    "historyCount": 45,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -58,7 +58,8 @@
       "verification": 1,
       "code-review": 1,
       "cross-boundary-invariants": 1,
-      "scale-tolerance": 1
+      "scale-tolerance": 1,
+      "regression-gate": 1
     }
   }
 }
