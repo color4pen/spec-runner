@@ -11,6 +11,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { CodexAgentRunner } from "../../../src/adapter/codex/agent-runner.js";
 import type { CodexThread, CodexAgentRunnerDeps } from "../../../src/adapter/codex/agent-runner.js";
+import { REPORT_TOOL } from "../../../src/core/step/report-tool.js";
 import type { AgentRunContext } from "../../../src/core/port/agent-runner.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
@@ -317,5 +318,49 @@ describe("CodexAgentRunner transient retry — follow-up turn", () => {
 
     const retryEvents = emitSpy.mock.calls.filter((c) => c[0] === "step:retry");
     expect(retryEvents.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("CodexAgentRunner transient retry — typed-outcome follow-up turn", () => {
+  it("typed-outcome follow-up: transient error once then succeeds → transientRetryAttempts ≥ 1, ≥1 step:retry", async () => {
+    // Call 1: main turn succeeds with unparseable response → triggers T-05 follow-up loop.
+    // Call 2: typed-outcome follow-up (attempt 1) throws transient error → retried.
+    // Call 3: typed-outcome follow-up (after retry) succeeds with valid JSON.
+    let callCount = 0;
+    const thread: CodexThread = {
+      id: "typed-outcome-transient",
+      runStreamed: vi.fn().mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // Main turn: success with non-JSON, so tryParseToolResult returns null
+          return Promise.resolve({ events: successStream("not json") });
+        }
+        if (callCount === 2) {
+          // First typed-outcome follow-up: transient error
+          return Promise.resolve({ events: transientFailStream("ConnectionRefused: unable to connect") });
+        }
+        // After transient retry: success with valid JSON
+        return Promise.resolve({ events: successStream(JSON.stringify({ ok: true })) });
+      }),
+    };
+
+    const emitSpy = vi.fn();
+    const factory = vi.fn().mockReturnValue({
+      startThread: vi.fn().mockReturnValue(thread),
+      resumeThread: vi.fn().mockReturnValue(thread),
+    });
+    const runner = makeRunner({ _codexFactory: factory });
+
+    const ctx = makeCtx({ emit: emitSpy, policy: { reportTool: REPORT_TOOL } });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.transientRetryAttempts).toBeGreaterThanOrEqual(1);
+
+    const retryEvents = emitSpy.mock.calls.filter((c) => c[0] === "step:retry");
+    expect(retryEvents.length).toBeGreaterThanOrEqual(1);
+
+    // runStreamed called 3 times: main + failed follow-up + retried follow-up
+    expect(callCount).toBe(3);
   });
 });
