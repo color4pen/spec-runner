@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4d6adbde-647d-4e0f-b4fa-19a486a70065",
   "createdAt": "2026-06-12T07:15:03.265Z",
-  "updatedAt": "2026-06-12T08:08:48.705Z",
+  "updatedAt": "2026-06-12T08:09:15.234Z",
   "request": {
     "title": "codex adapter に claude-code adapter と同等の運用機能（retry / 観測性 / 出力検証）を実装する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/codex-adapter-parity-4d6adbde",
   "error": null,
   "pipelineId": "standard",
@@ -48,8 +48,13 @@
     }
   ],
   "issueNumber": 659,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/666",
+    "number": 666,
+    "createdAt": "2026-06-12T08:09:15.222Z"
+  },
   "_journal": {
-    "historyCount": 68,
+    "historyCount": 73,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -63,7 +68,9 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
