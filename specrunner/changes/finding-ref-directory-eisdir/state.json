@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0a7e33bb-22de-41e6-bd5d-191741c85d90",
   "createdAt": "2026-06-12T02:55:02.988Z",
-  "updatedAt": "2026-06-12T02:57:11.011Z",
+  "updatedAt": "2026-06-12T03:01:50.901Z",
   "request": {
     "title": "findingRef 検証が実在ディレクトリを不存在と誤判定し、needs-fix を escalation に強制する",
     "type": "bug-fix"
@@ -11,7 +11,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "fix/finding-ref-directory-eisdir-0a7e33bb",
   "error": null,
@@ -48,9 +48,10 @@
   ],
   "issueNumber": 647,
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
