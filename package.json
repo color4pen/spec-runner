@@ -1,6 +1,6 @@
 {
   "name": "@color4pen/specrunner",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "AI CI/CD runner — submit request.md, get a PR back",
   "license": "MIT",
   "repository": {
