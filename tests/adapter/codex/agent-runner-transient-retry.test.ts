@@ -210,6 +210,53 @@ describe("CodexAgentRunner transient retry — main turn", () => {
     expect((thread.runStreamed as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
   });
 
+  it("abort signal active: transient error does not trigger retry (guard exercised)", async () => {
+    vi.useFakeTimers();
+    try {
+      let callCount = 0;
+      const thread: CodexThread = {
+        id: "abort-transient",
+        runStreamed: vi.fn().mockImplementation((_prompt: string, opts?: { signal?: AbortSignal }) => {
+          callCount++;
+          // Simulate: signal fires first, then a genuinely transient error is thrown.
+          return new Promise<never>((_resolve, reject) => {
+            opts?.signal?.addEventListener("abort", () => {
+              reject(new Error("ConnectionRefused: unable to connect"));
+            });
+          });
+        }),
+      };
+
+      const emitSpy = vi.fn();
+      const factory = vi.fn().mockReturnValue({
+        startThread: vi.fn().mockReturnValue(thread),
+        resumeThread: vi.fn().mockReturnValue(thread),
+      });
+      const runner = makeRunner({ _codexFactory: factory });
+
+      const config: SpecRunnerConfig = {
+        ...makeConfig(3),
+        steps: { implementer: { timeoutMs: 100 } },
+      };
+      const runPromise = runner.run(makeCtx({ emit: emitSpy, config }));
+
+      await vi.advanceTimersByTimeAsync(100);
+      const result = await runPromise;
+
+      // Abort wins: timeout result, not error
+      expect(result.completionReason).toBe("timeout");
+
+      // isTransientError guard (!signal.aborted) suppressed retry
+      const retryEvents = emitSpy.mock.calls.filter((c) => c[0] === "step:retry");
+      expect(retryEvents).toHaveLength(0);
+
+      // runStreamed called exactly once — no retry
+      expect(callCount).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("maxRetries = 0 → 1 attempt, no step:retry, transientRetryAttempts absent from result", async () => {
     const thread: CodexThread = {
       id: "t5",
