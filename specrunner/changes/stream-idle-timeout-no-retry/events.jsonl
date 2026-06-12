@@ -67,3 +67,11 @@
 {"type":"transition","ts":"2026-06-12T03:47:30.138Z","step":"conformance","status":"ok","message":"conformance iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-12T03:47:30.139Z","step":"step-transition","status":"ok","message":"conformance → adr-gen"}
 {"type":"transition","ts":"2026-06-12T03:47:30.144Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-06-12T03:47:48.270Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"1d5b606a-6655-4eb0-9ff4-c752b17f6259","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-12T03:47:30.173Z","endedAt":"2026-06-12T03:47:46.605Z"}
+{"type":"transition","ts":"2026-06-12T03:47:48.276Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-06-12T03:47:48.279Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-06-12T03:47:50.230Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/stream-idle-timeout-no-retry/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T03:47:48.280Z","endedAt":"2026-06-12T03:47:50.229Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-06-12T03:47:50.229Z","outputs":[{"path":"specrunner/changes/stream-idle-timeout-no-retry/pr-create-result.md","hash":"sha256:da58dfd1b36cdbdf6a3b58fb81190c16f09c843d3a67a77b20a649a588c776d3"}],"inputs":[{"path":"fix/stream-idle-timeout-no-retry-3d03875d","hash":null}]}
+{"type":"transition","ts":"2026-06-12T03:47:50.239Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
