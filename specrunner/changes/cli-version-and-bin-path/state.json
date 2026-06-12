@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6586f770-b3d2-4b54-a9c6-c8e0810708b5",
   "createdAt": "2026-06-12T07:05:02.808Z",
-  "updatedAt": "2026-06-12T07:28:26.526Z",
+  "updatedAt": "2026-06-12T07:29:05.029Z",
   "request": {
     "title": "公開 CLI の体裁: --version コマンドの追加と bin パスの正規化",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/cli-version-and-bin-path-6586f770",
   "error": null,
@@ -49,7 +49,7 @@
   ],
   "issueNumber": 663,
   "_journal": {
-    "historyCount": 29,
+    "historyCount": 43,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -57,7 +57,10 @@
       "test-case-gen": 1,
       "implementer": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1
     }
   }
 }
