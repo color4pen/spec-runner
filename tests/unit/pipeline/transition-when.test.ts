@@ -188,9 +188,80 @@ describe("TC-WHEN-01: conditional transition row has `when` predicate", () => {
 // TC-WHEN-02: STANDARD_TRANSITIONS has expected row count
 // ─────────────────────────────────────────────────────────────────────────────
 describe("TC-WHEN-02: STANDARD_TRANSITIONS row count", () => {
-  it("has correct number of rows (request-review adds 4, conformance adds 5 rows, code-review skipped adds 1)", () => {
-    // 32 previous + 3 (conformance needs-fix:spec-fixer / needs-fix:implementer / needs-fix:code-fixer)
-    expect(STANDARD_TRANSITIONS.length).toBe(35);
+  it("has correct number of rows (+2 for post-fixer reverification when-guards)", () => {
+    // 35 previous + 2 (conformance approved→verification when, verification passed→adr-gen when)
+    expect(STANDARD_TRANSITIONS.length).toBe(37);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-015: conformance approved → verification (when codeChangedSinceLastVerification)
+// ─────────────────────────────────────────────────────────────────────────────
+describe("TC-015: conformance approved → verification when-guard exists", () => {
+  it("STANDARD_TRANSITIONS has conformance --approved→ verification row with `when` function", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "conformance" && t.on === "approved" && t.to === "verification",
+    );
+    expect(row).toBeDefined();
+    expect(typeof row!.when).toBe("function");
+  });
+
+  it("conformance --approved→ verification row appears before conformance --approved→ adr-gen", () => {
+    const verificationIdx = STANDARD_TRANSITIONS.findIndex(
+      (t) => t.step === "conformance" && t.on === "approved" && t.to === "verification",
+    );
+    const adrGenIdx = STANDARD_TRANSITIONS.findIndex(
+      (t) => t.step === "conformance" && t.on === "approved" && t.to === "adr-gen",
+    );
+    expect(verificationIdx).toBeGreaterThanOrEqual(0);
+    expect(adrGenIdx).toBeGreaterThanOrEqual(0);
+    expect(verificationIdx).toBeLessThan(adrGenIdx);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-016: verification passed → adr-gen (when conformanceApprovedLatest)
+// ─────────────────────────────────────────────────────────────────────────────
+describe("TC-016: verification passed → adr-gen when-guard exists", () => {
+  it("STANDARD_TRANSITIONS has verification --passed→ adr-gen row with `when` function", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "verification" && t.on === "passed" && t.to === "adr-gen",
+    );
+    expect(row).toBeDefined();
+    expect(typeof row!.when).toBe("function");
+  });
+
+  it("verification --passed→ adr-gen row appears before verification --passed→ code-review", () => {
+    const adrGenIdx = STANDARD_TRANSITIONS.findIndex(
+      (t) => t.step === "verification" && t.on === "passed" && t.to === "adr-gen",
+    );
+    const codeReviewIdx = STANDARD_TRANSITIONS.findIndex(
+      (t) => t.step === "verification" && t.on === "passed" && t.to === "code-review",
+    );
+    expect(adrGenIdx).toBeGreaterThanOrEqual(0);
+    expect(codeReviewIdx).toBeGreaterThanOrEqual(0);
+    expect(adrGenIdx).toBeLessThan(codeReviewIdx);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-017: fallback rows (no `when`) are retained alongside the new when-guards
+// ─────────────────────────────────────────────────────────────────────────────
+describe("TC-017: fallback rows (no when) are retained", () => {
+  it("conformance --approved→ adr-gen (no when) still exists", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "conformance" && t.on === "approved" && t.to === "adr-gen" && !t.when,
+    );
+    expect(row).toBeDefined();
+    expect(row!.when).toBeUndefined();
+  });
+
+  it("verification --passed→ code-review (no when) still exists", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "verification" && t.on === "passed" && t.to === "code-review" && !t.when,
+    );
+    expect(row).toBeDefined();
+    expect(row!.when).toBeUndefined();
   });
 });
 
@@ -298,27 +369,36 @@ describe("TC-017/TC-018: code-review approved → code-fixer when predicate (fin
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-2: code-fixer approved + prior code-review approved → conformance → adr-gen
+// TC-2: code-fixer approved + prior code-review approved → conformance → verification → adr-gen
+// (post-fixer-reverification: code-fixer ran after verification, so re-verify is triggered)
 // ─────────────────────────────────────────────────────────────────────────────
-describe("TC-2: code-fixer approved (code-review done) → conformance → adr-gen", () => {
-  it("routes to conformance (then adr-gen) when code-review was previously approved", async () => {
+describe("TC-2: code-fixer approved (code-review done) → conformance → verification → adr-gen", () => {
+  it("routes through verification re-check before adr-gen when code-fixer ran after verification", async () => {
     const jobId = "tc-when-02";
-    // Pre-seed code-review with one approved attempt
+    // Pre-seed code-review with one approved attempt (before code-fixer runs)
+    const T0 = "2026-01-01T00:00:01.000Z"; // code-review timestamp (before code-fixer)
     const state = makeMinimalState(jobId, {
       "code-review": [
         {
           attempt: 1,
           sessionId: null,
           outcome: { verdict: "approved" as const, findingsPath: null, error: null },
-          startedAt: new Date().toISOString(),
-          endedAt: new Date().toISOString(),
+          startedAt: T0,
+          endedAt: T0,
         },
       ],
     });
     await seedJobState(jobId, state);
 
+    let stepCounter = 1;
+    function nextTs() {
+      stepCounter++;
+      return `2026-01-01T00:00:0${stepCounter}.000Z`;
+    }
+
     const events = new EventBus();
     const executeSpy = vi.fn().mockImplementation(async (step: Step, s: JobState): Promise<JobState> => {
+      const ts = nextTs();
       if (step.name === "code-fixer") {
         return {
           ...s,
@@ -330,8 +410,8 @@ describe("TC-2: code-fixer approved (code-review done) → conformance → adr-g
                 attempt: 1,
                 sessionId: null,
                 outcome: { verdict: "approved" as const, findingsPath: null, error: null },
-                startedAt: new Date().toISOString(),
-                endedAt: new Date().toISOString(),
+                startedAt: ts,
+                endedAt: ts, // T2 > T0 (code-review) → no verification run yet → re-verify
               },
             ],
           },
@@ -348,8 +428,27 @@ describe("TC-2: code-fixer approved (code-review done) → conformance → adr-g
                 attempt: 1,
                 sessionId: null,
                 outcome: { verdict: "approved" as const, findingsPath: null, error: null },
-                startedAt: new Date().toISOString(),
-                endedAt: new Date().toISOString(),
+                startedAt: ts,
+                endedAt: ts,
+              },
+            ],
+          },
+        };
+      }
+      if (step.name === "verification") {
+        // Re-verification: conformance is already approved → after pass, goes to adr-gen
+        return {
+          ...s,
+          steps: {
+            ...s.steps,
+            "verification": [
+              ...(s.steps?.["verification"] ?? []),
+              {
+                attempt: 1,
+                sessionId: null,
+                outcome: { verdict: "passed" as const, findingsPath: null, error: null },
+                startedAt: ts,
+                endedAt: ts,
               },
             ],
           },
@@ -366,8 +465,8 @@ describe("TC-2: code-fixer approved (code-review done) → conformance → adr-g
                 attempt: 1,
                 sessionId: null,
                 outcome: { verdict: "success" as const, findingsPath: null, error: null },
-                startedAt: new Date().toISOString(),
-                endedAt: new Date().toISOString(),
+                startedAt: ts,
+                endedAt: ts,
               },
             ],
           },
@@ -384,8 +483,8 @@ describe("TC-2: code-fixer approved (code-review done) → conformance → adr-g
                 attempt: 1,
                 sessionId: null,
                 outcome: { verdict: "success" as const, findingsPath: null, error: null },
-                startedAt: new Date().toISOString(),
-                endedAt: new Date().toISOString(),
+                startedAt: ts,
+                endedAt: ts,
               },
             ],
           },
@@ -399,6 +498,14 @@ describe("TC-2: code-fixer approved (code-review done) → conformance → adr-g
       steps: new Map([
         ["code-fixer", makeStepObject("code-fixer")],
         ["conformance", makeStepObject("conformance")],
+        ["verification", {
+          kind: "cli" as const,
+          name: "verification",
+          run: async () => {},
+          resultFilePath: () => "/tmp/verification-result.md",
+          parseResult: () => ({ verdict: "passed" as const, findingsPath: null }),
+        }],
+        ["build-fixer", makeStepObject("build-fixer")],
         ["adr-gen", makeStepObject("adr-gen")],
         ["pr-create", makeStepObject("pr-create")],
       ]),
@@ -407,14 +514,16 @@ describe("TC-2: code-fixer approved (code-review done) → conformance → adr-g
       executor: mockExecutor,
       events,
       loopName: "code-fixer",
-      loopNames: ["code-fixer", "conformance"],
+      loopNames: ["code-fixer", "conformance", "verification"],
     });
 
     await pipeline.run("code-fixer", state, makeMinimalDeps());
 
     // conformance must have been called
     expect(executeSpy).toHaveBeenCalledWith(expect.objectContaining({ name: "conformance" }), expect.anything(), expect.anything());
-    // adr-gen must have been called
+    // verification must have been called (re-verification triggered by code-fixer running after no verification)
+    expect(executeSpy).toHaveBeenCalledWith(expect.objectContaining({ name: "verification" }), expect.anything(), expect.anything());
+    // adr-gen must have been called (after re-verification passed)
     expect(executeSpy).toHaveBeenCalledWith(expect.objectContaining({ name: "adr-gen" }), expect.anything(), expect.anything());
     // code-review must NOT have been called again
     expect(executeSpy).not.toHaveBeenCalledWith(expect.objectContaining({ name: "code-review" }), expect.anything(), expect.anything());

@@ -3,6 +3,7 @@ import { STEP_NAMES } from "../step/step-names.js";
 import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";
 import type { Step } from "../step/types.js";
 import { buildReviewerChainTransitions } from "./reviewer-chain.js";
+import { codeChangedSinceLastVerification, conformanceApprovedLatest } from "./reverification.js";
 
 /**
  * Pipeline-level role of a step (convergence / resume semantics).
@@ -157,6 +158,7 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.SPEC_FIXER,  on: "error",     to: "escalate" },
   { step: STEP_NAMES.IMPLEMENTER, on: "success",   to: STEP_NAMES.VERIFICATION },
   { step: STEP_NAMES.IMPLEMENTER, on: "error",     to: "escalate" },
+  { step: STEP_NAMES.VERIFICATION, on: "passed",   to: STEP_NAMES.ADR_GEN,    when: conformanceApprovedLatest },
   { step: STEP_NAMES.VERIFICATION, on: "passed",   to: STEP_NAMES.CODE_REVIEW },
   { step: STEP_NAMES.VERIFICATION, on: "failed",   to: STEP_NAMES.BUILD_FIXER },
   { step: STEP_NAMES.VERIFICATION, on: "escalation", to: "escalate" },
@@ -170,6 +172,7 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   // code-review escalation removed (R3 cutover): judge halt via loop exhaustion only
   ...buildReviewerChainTransitions([STEP_NAMES.CODE_REVIEW]),
   // --- conformance (acceptance gate, after code-review approved) ---
+  { step: STEP_NAMES.CONFORMANCE, on: "approved", to: STEP_NAMES.VERIFICATION, when: codeChangedSinceLastVerification },
   { step: STEP_NAMES.CONFORMANCE, on: "approved",             to: STEP_NAMES.ADR_GEN },
   { step: STEP_NAMES.CONFORMANCE, on: "needs-fix:spec-fixer", to: STEP_NAMES.SPEC_FIXER },
   { step: STEP_NAMES.CONFORMANCE, on: "needs-fix:implementer", to: STEP_NAMES.IMPLEMENTER },
