@@ -183,7 +183,6 @@ describe("runInboxOrchestrator — reject label removal", () => {
         { number: issueNumber, title: `Issue ${issueNumber}`, body: "not a valid request.md body" },
       ]),
       listIssueComments: vi.fn().mockResolvedValue([]),
-      createIssueComment: vi.fn().mockResolvedValue(undefined),
     };
   }
 
