@@ -41,3 +41,21 @@
 {"type":"transition","ts":"2026-06-12T09:46:47.449Z","step":"code-review","status":"ok","message":"code-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-12T09:46:47.449Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-06-12T09:46:47.453Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-06-12T09:47:10.295Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"07bf452b-e563-4368-9b26-410264fc3635","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-12T09:46:47.479Z","endedAt":"2026-06-12T09:47:08.167Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-06-12T09:47:08.167Z","outputs":[{"path":"specrunner/changes/prompts-completion-contract-neutral","hash":null}],"inputs":[{"path":"specrunner/changes/prompts-completion-contract-neutral/review-feedback-001.md","hash":"sha256:1355eac29da37c20a0936a4838c02bfcd38efb485ae6cb41b1e42bfd6851004a"}]}
+{"type":"transition","ts":"2026-06-12T09:47:10.303Z","step":"step-transition","status":"ok","message":"code-fixer → cross-boundary-invariants"}
+{"type":"transition","ts":"2026-06-12T09:47:10.305Z","step":"cross-boundary-invariants","status":"started","message":"cross-boundary-invariants iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T09:47:10.307Z","step":"cross-boundary-invariants-started","status":"started","message":"Starting cross-boundary-invariants step"}
+{"type":"transition","ts":"2026-06-12T09:47:10.342Z","step":"cross-boundary-invariants-skipped","status":"warning","message":"cross-boundary-invariants skipped: no changed files matched paths [src/core/pipeline/**, src/core/step/**, src/state/**, src/store/**]"}
+{"type":"step-attempt","step":"cross-boundary-invariants","sessionId":null,"outcome":{"verdict":"skipped","findingsPath":null,"error":null,"skipReason":"no changed files matched paths [src/core/pipeline/**, src/core/step/**, src/state/**, src/store/**]"},"startedAt":"2026-06-12T09:47:10.342Z","endedAt":"2026-06-12T09:47:10.342Z"}
+{"type":"transition","ts":"2026-06-12T09:47:10.347Z","step":"cross-boundary-invariants","status":"warning","message":"cross-boundary-invariants iteration 1 completed with verdict: skipped"}
+{"type":"transition","ts":"2026-06-12T09:47:10.347Z","step":"step-transition","status":"ok","message":"cross-boundary-invariants → scale-tolerance"}
+{"type":"transition","ts":"2026-06-12T09:47:10.350Z","step":"scale-tolerance","status":"started","message":"scale-tolerance iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T09:47:10.352Z","step":"scale-tolerance-started","status":"started","message":"Starting scale-tolerance step"}
+{"type":"transition","ts":"2026-06-12T09:47:10.384Z","step":"scale-tolerance-skipped","status":"warning","message":"scale-tolerance skipped: no changed files matched paths [src/store/**, src/adapter/github/**, src/core/inbox/**, src/logger/**]"}
+{"type":"step-attempt","step":"scale-tolerance","sessionId":null,"outcome":{"verdict":"skipped","findingsPath":null,"error":null,"skipReason":"no changed files matched paths [src/store/**, src/adapter/github/**, src/core/inbox/**, src/logger/**]"},"startedAt":"2026-06-12T09:47:10.384Z","endedAt":"2026-06-12T09:47:10.384Z"}
+{"type":"transition","ts":"2026-06-12T09:47:10.390Z","step":"scale-tolerance","status":"warning","message":"scale-tolerance iteration 1 completed with verdict: skipped"}
+{"type":"transition","ts":"2026-06-12T09:47:10.390Z","step":"step-transition","status":"ok","message":"scale-tolerance → regression-gate"}
+{"type":"transition","ts":"2026-06-12T09:47:10.392Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T09:47:10.393Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
