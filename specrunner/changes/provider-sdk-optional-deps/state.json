@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "104182e4-e3b4-4a26-9c6c-9f69eaaae8be",
   "createdAt": "2026-06-12T13:38:00.592Z",
-  "updatedAt": "2026-06-12T13:38:04.398Z",
+  "updatedAt": "2026-06-12T13:45:04.142Z",
   "request": {
     "title": "provider SDK を dynamic import + optionalDependencies 化し、未使用 provider のバイナリ 190MB を install から外せるようにする",
     "type": "spec-change",
@@ -48,8 +48,11 @@
     }
   ],
   "issueNumber": 662,
+  "resumePoint": null,
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 6,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }

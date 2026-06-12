@@ -1,2 +1,8 @@
 {"type":"transition","ts":"2026-06-12T13:38:00.592Z","step":"init","status":"started","message":"job created"}
 {"type":"transition","ts":"2026-06-12T13:38:04.398Z","step":"request-review-started","status":"started","message":"Starting request-review step"}
+{"type":"transition","ts":"2026-06-12T13:40:46.984Z","step":"request-review-verdict","status":"ok","message":"request-review verdict: needs-discussion"}
+{"type":"step-attempt","step":"request-review","sessionId":"019ebc0d-d888-7b53-82f2-216b490f26ae","outcome":{"verdict":"needs-discussion","findingsPath":"specrunner/changes/provider-sdk-optional-deps/request-review-result-001.md","error":null,"toolResult":null,"followUpAttempts":2,"transientRetryAttempts":0},"startedAt":"2026-06-12T13:38:04.422Z","endedAt":"2026-06-12T13:40:44.833Z"}
+{"type":"lineage","step":"request-review","ts":"2026-06-12T13:40:44.833Z","outputs":[{"path":"specrunner/changes/provider-sdk-optional-deps/request-review-result-002.md","hash":null}],"inputs":[{"path":"specrunner/changes/provider-sdk-optional-deps/request.md","hash":"sha256:4f516ad99811a5005027af7a97b329e4f81e0d234dd2e5d93d03dd5f50226434"}]}
+{"type":"transition","ts":"2026-06-12T13:40:46.991Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: request-review escalated"}
+{"type":"transition","ts":"2026-06-12T13:45:03.939Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'request-review'"}
+{"type":"transition","ts":"2026-06-12T13:45:04.141Z","step":"request-review-started","status":"started","message":"Starting request-review step"}
