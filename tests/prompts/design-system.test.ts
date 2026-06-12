@@ -252,11 +252,11 @@ describe("TC-FC-001: code assertion verification step is present in DESIGN_SYSTE
 
 // TC-FC-002: 不一致時は ok=false + reason で報告する経路が含まれる
 describe("TC-FC-002: ok=false + reason reporting path for mismatch is in DESIGN_SYSTEM_PROMPT", () => {
-  it("mentions report_result with ok: false on mismatch", () => {
+  it("mentions ok: false on mismatch", () => {
     expect(DESIGN_SYSTEM_PROMPT).toMatch(/ok.*false|ok: false/i);
   });
 
-  it("mentions reason in the report_result call", () => {
+  it("mentions reason in the completion call", () => {
     expect(DESIGN_SYSTEM_PROMPT).toMatch(/reason/i);
   });
 
