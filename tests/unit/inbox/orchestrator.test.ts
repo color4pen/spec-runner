@@ -81,6 +81,7 @@ function makeGitHubClient(overrides: Partial<GitHubClient> = {}): GitHubClient {
   return {
     searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
     listIssueComments: vi.fn().mockResolvedValue([]),
+    removeLabel: vi.fn().mockResolvedValue(undefined),
     createIssueComment: vi.fn().mockResolvedValue({ id: 1, url: "https://..." }),
     verifyBranch: vi.fn(),
     getRawFile: vi.fn(),
@@ -206,6 +207,7 @@ describe("runInboxOrchestrator — resume", () => {
     const client = makeGitHubClient({
       searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
       listIssueComments: vi.fn().mockResolvedValue(comments),
+      removeLabel: vi.fn().mockResolvedValue(undefined),
     });
     const effects = makeEffects();
 
@@ -225,6 +227,7 @@ describe("runInboxOrchestrator — resume", () => {
     const client = makeGitHubClient({
       searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
       listIssueComments: vi.fn().mockResolvedValue(comments),
+      removeLabel: vi.fn().mockResolvedValue(undefined),
     });
     const effects = makeEffects();
 
@@ -243,6 +246,7 @@ describe("runInboxOrchestrator — resume", () => {
     const client = makeGitHubClient({
       searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
       listIssueComments: vi.fn().mockResolvedValue(comments),
+      removeLabel: vi.fn().mockResolvedValue(undefined),
     });
     const effects = makeEffects();
 
@@ -262,6 +266,7 @@ describe("runInboxOrchestrator — resume", () => {
     const client = makeGitHubClient({
       searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
       listIssueComments: vi.fn().mockResolvedValue(comments),
+      removeLabel: vi.fn().mockResolvedValue(undefined),
     });
     const effects = makeEffects();
 
@@ -297,6 +302,7 @@ describe("runInboxOrchestrator — dry-run", () => {
     const client = makeGitHubClient({
       searchOpenIssuesByLabel: vi.fn().mockResolvedValue(issues),
       listIssueComments: vi.fn().mockResolvedValue(comments),
+      removeLabel: vi.fn().mockResolvedValue(undefined),
     });
     const effects = makeEffects();
 

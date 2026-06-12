@@ -27,6 +27,8 @@ export interface InboxEffects {
   resumeJob(slug: string, resumePrompt: string | undefined): Promise<void>;
   /** Post a reject comment on an issue. */
   postRejectComment(issueNumber: number, body: string): Promise<void>;
+  /** Remove the approval label from an issue after a reject. */
+  removeApprovalLabel(issueNumber: number): Promise<void>;
   /** Decide whether a running job is orphaned (process dead). */
   isStale(state: JobState): boolean;
   /** Persist a patched job state (best-effort) by jobId. */
@@ -92,9 +94,17 @@ export async function runInboxOrchestrator(opts: RunInboxOptions): Promise<Inbox
       s.status === "awaiting-resume" && s.issueNumber != null,
   );
 
+  // Unlinked approved issues also need comments for reject dedup
+  const linkedIssueNumbers = new Set<number>(
+    allJobStates.filter((s) => s.issueNumber != null).map((s) => s.issueNumber!),
+  );
+  const unlinkedApprovedIssues = approvedIssues.filter(
+    (i) => !linkedIssueNumbers.has(i.number),
+  );
+
   const commentsByIssue = new Map<number, IssueComment[]>();
-  await Promise.all(
-    awaitingWithIssue.map(async (job) => {
+  await Promise.all([
+    ...awaitingWithIssue.map(async (job) => {
       try {
         const comments = await githubClient.listIssueComments(owner, repo, job.issueNumber);
         commentsByIssue.set(job.issueNumber, comments);
@@ -104,7 +114,17 @@ export async function runInboxOrchestrator(opts: RunInboxOptions): Promise<Inbox
         );
       }
     }),
-  );
+    ...unlinkedApprovedIssues.map(async (issue) => {
+      try {
+        const comments = await githubClient.listIssueComments(owner, repo, issue.number);
+        commentsByIssue.set(issue.number, comments);
+      } catch (err) {
+        stderrWrite(
+          `[inbox] warn: failed to fetch comments for issue #${issue.number}: ${(err as Error).message}`,
+        );
+      }
+    }),
+  ]);
 
   // ---------------------------------------------------------------------------
   // 1b. Collect stale-running job IDs (before plan — effects needed here)
@@ -206,6 +226,13 @@ export async function runInboxOrchestrator(opts: RunInboxOptions): Promise<Inbox
     try {
       const commentBody = buildRejectComment(action.issue.number, action.reason);
       await effects.postRejectComment(action.issue.number, commentBody);
+      try {
+        await effects.removeApprovalLabel(action.issue.number);
+      } catch (labelErr) {
+        stderrWrite(
+          `[inbox] warn: failed to remove approval label from issue#${action.issue.number}: ${(labelErr as Error).message}`,
+        );
+      }
       summary.rejected.push({ issueNumber: action.issue.number, reason: action.reason });
       if (!json) {
         stderrWrite(`[inbox] rejected issue#${action.issue.number}: ${action.reason}`);
@@ -311,6 +338,9 @@ function buildEffects(opts: RunInboxOptions): InboxEffects {
     async postRejectComment(issueNumber: number, body: string): Promise<void> {
       await githubClient.createIssueComment(owner, repo, issueNumber, body);
     },
+    async removeApprovalLabel(issueNumber: number): Promise<void> {
+      await githubClient.removeLabel(owner, repo, issueNumber, opts.approveLabel);
+    },
     isStale(state: JobState): boolean {
       const slug = getJobSlug(state);
       const sidecarPath = slug ? path.join(repoRoot, livenessJsonPath(slug)) : undefined;
@@ -337,6 +367,7 @@ function buildEffects(opts: RunInboxOptions): InboxEffects {
     startJob: opts.effects?.startJob ?? defaultEffects.startJob,
     resumeJob: opts.effects?.resumeJob ?? defaultEffects.resumeJob,
     postRejectComment: opts.effects?.postRejectComment ?? defaultEffects.postRejectComment,
+    removeApprovalLabel: opts.effects?.removeApprovalLabel ?? defaultEffects.removeApprovalLabel,
     isStale: opts.effects?.isStale ?? defaultEffects.isStale,
     persistState: opts.effects?.persistState ?? defaultEffects.persistState,
     notifyEscalation: opts.effects?.notifyEscalation ?? defaultEffects.notifyEscalation,

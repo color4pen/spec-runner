@@ -110,6 +110,7 @@ function buildDeps(opts: {
       createIssueComment: vi.fn().mockResolvedValue({ id: 1, url: "https://github.com/o/r/issues/1#issuecomment-1" }),
     searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
     listIssueComments: vi.fn().mockResolvedValue([]),
+    removeLabel: vi.fn().mockResolvedValue(undefined),
     },
     owner: "user",
     repo: "repo",

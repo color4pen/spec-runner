@@ -76,21 +76,43 @@ export function planStaleRecoveries(
 const ALLOWED_AUTHOR_ASSOCIATIONS = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
 
 /**
+ * Returns true if the latest notification comment on the issue is a reject for that issue.
+ * Used to suppress duplicate reject comments (dedup).
+ *
+ * @param comments     All comments on the issue, in any order.
+ * @param issueNumber  The issue number to match in the reject marker.
+ */
+function hasLatestRejectNotification(comments: IssueComment[], issueNumber: number): boolean {
+  let latest: IssueComment | null = null;
+  for (const comment of comments) {
+    if (!isNotificationComment(comment.body)) continue;
+    if (latest === null || comment.createdAt > latest.createdAt) {
+      latest = comment;
+    }
+  }
+  if (latest === null) return false;
+  return latest.body.includes(`kind="reject" issue="${issueNumber}"`);
+}
+
+/**
  * Plan start/reject actions for approved issues.
  *
  * - Issues already linked to any job (any status) are skipped.
  * - Remaining issues are validated as request.md content.
  * - Valid issues → StartAction (up to maxStarts).
- * - Invalid issues → RejectAction (no limit).
+ * - Invalid issues → RejectAction (no limit), unless the latest notification comment
+ *   is already a reject for this issue (dedup).
  *
- * @param approvedIssues  Issues with the approval label.
- * @param jobStates       All known job states (used to find already-linked issues).
- * @param maxStarts       Maximum number of StartActions to return (0 = no starts).
+ * @param approvedIssues   Issues with the approval label.
+ * @param jobStates        All known job states (used to find already-linked issues).
+ * @param maxStarts        Maximum number of StartActions to return (0 = no starts).
+ * @param commentsByIssue  Optional map of issueNumber → comments for reject dedup.
  */
 export function planStarts(
   approvedIssues: IssueRef[],
   jobStates: JobState[],
   maxStarts: number,
+  commentsByIssue?: Map<number, IssueComment[]>,
 ): { starts: StartAction[]; rejects: RejectAction[] } {
   // Build set of issue numbers already linked to any job
   const linkedIssueNumbers = new Set<number>();
@@ -113,6 +135,11 @@ export function planStarts(
       const parsed = parseRequestMdContent(issue.body, `issue#${issue.number}`);
       slug = parsed.slug;
     } catch (err) {
+      // Dedup: skip if the latest notification comment is already a reject for this issue
+      if (commentsByIssue) {
+        const comments = commentsByIssue.get(issue.number) ?? [];
+        if (hasLatestRejectNotification(comments, issue.number)) continue;
+      }
       rejects.push({
         kind: "reject",
         issue,
@@ -233,6 +260,7 @@ export function planInbox(input: {
     input.approvedIssues,
     input.jobStates,
     input.maxStarts,
+    input.commentsByIssue,
   );
 
   const awaitingJobs = input.jobStates.filter(
