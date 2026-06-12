@@ -77,3 +77,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/codex-completion-contract-injection/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T15:45:41.912Z","endedAt":"2026-06-12T15:45:44.332Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-12T15:45:44.332Z","outputs":[{"path":"specrunner/changes/codex-completion-contract-injection/pr-create-result.md","hash":"sha256:47843eaefcf9b0408b27f3cc9a60c570c844c191242cfead00a1de61101623d3"}],"inputs":[{"path":"change/codex-completion-contract-injection-64eb1157","hash":null}]}
 {"type":"transition","ts":"2026-06-12T15:45:44.342Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-12T23:39:00.439Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
