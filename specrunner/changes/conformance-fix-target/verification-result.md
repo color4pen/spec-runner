@@ -1,15 +1,15 @@
 # Verification Result — conformance-fix-target — iter 1
 
-## Verdict: failed
+## Verdict: passed
 
 ## Phase Results
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 1.3s | 0 |
-| 2 | typecheck | passed | 3.1s | 0 |
+| 1 | build | passed | 0.3s | 0 |
+| 2 | typecheck | passed | 3.0s | 0 |
 | 3 | test | passed | 15.7s | 0 |
-| 4 | lint | failed | 3.8s | 1 |
+| 4 | lint | passed | 3.3s | 0 |
 
 ## Phase: build
 
@@ -22,7 +22,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 823.63 KB
-ESM ⚡️ Build success in 59ms
+ESM ⚡️ Build success in 45ms
 
 $ tsup
 
@@ -47,25 +47,13 @@ job-run-	slug-job-run-1	init	running (stale?)	feat/test	162d
 
  Test Files  359 passed (359)
       Tests  4562 passed (4562)
-   Start at  09:50:44
-   Duration  15.38s (transform 3.40s, setup 0ms, import 11.27s, tests 20.06s, environment 19ms)
+   Start at  09:51:41
+   Duration  15.35s (transform 3.39s, setup 0ms, import 11.82s, tests 19.18s, environment 19ms)
 
 
 $ vitest run
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-0UjWr1/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-hyN7ki/specrunner/credentials.json has loose permissions (recommend 0600).
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-TBfZ00/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-JoYKKS/specrunner/credentials.json has loose permissions (recommend 0600).
 [inbox] started job slug=fix-login-bug from issue#1
 [inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
 [inbox] started job slug=fix-login-bug from issue#1
@@ -81,6 +69,18 @@ Retrying worktree add: lock contention (attempt 2/3)
   recover  my-feature (attempt 1)
   escalate other-feat (step=design)
 [inbox] warn: recover my-feature: disk full
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
@@ -106,17 +106,7 @@ See: https://vitest.dev/guide/mocking/modules#how-it-works
 
 ## Phase: lint
 
-Step 'lint' failed
-
 ```
-
-src/core/port/report-result.ts
-  285:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
-
-✖ 1 problem (1 error, 0 warnings)
-
-
 $ eslint ./src ./tests --max-warnings 0
-error: script "lint" exited with code 1
 
 ```
