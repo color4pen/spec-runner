@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.3.1](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.0...specrunner-v0.3.1) (2026-06-12)
+
+
+### Features
+
+* code 変更後に機械検証を経ずに pr-create へ到達できる遷移経路を塞ぐ ([#657](https://github.com/color4pen/spec-runner/issues/657)) ([254aa6e](https://github.com/color4pen/spec-runner/commit/254aa6ea7983e2f9e238a0b8e98645bef3ded3a9))
+* conformance の needs-fix に戻り先 step を導出させ、空振りの implementer 再入を解消する ([#648](https://github.com/color4pen/spec-runner/issues/648)) ([5664ab9](https://github.com/color4pen/spec-runner/commit/5664ab962b89fb4ec9eb73f26d20b0851220202b))
+* escalation 通知コメントに branch の compare URL を含め、停止した job の差分確認を GitHub 上で完結させる ([#658](https://github.com/color4pen/spec-runner/issues/658)) ([91b46f5](https://github.com/color4pen/spec-runner/commit/91b46f5f21c2f2d542c74f474e1a432bcca85ebe))
+* judge report tool に observations チャネルを追加し、非アクション観察を verdict 駆動から分離する ([#651](https://github.com/color4pen/spec-runner/issues/651)) ([4b3fe6e](https://github.com/color4pen/spec-runner/commit/4b3fe6eb104922c45369a37e929324fde596782c))
+* プロジェクトのテスト配置規約を config で宣言し、生成テストの配置を決定的にする ([#643](https://github.com/color4pen/spec-runner/issues/643)) ([109a8f4](https://github.com/color4pen/spec-runner/commit/109a8f4aed4542887f33dd68e05cc34a1bc9fe2f))
+
+
+### Bug Fixes
+
+* findingRef 検証が実在ディレクトリを不存在と誤判定し、needs-fix を escalation に強制する ([#654](https://github.com/color4pen/spec-runner/issues/654)) ([ee65b0a](https://github.com/color4pen/spec-runner/commit/ee65b0a864b8986c4c06f3c947ed0ec813eda518))
+* inbox の reject が承認ラベルを剥がさず、同一 reject コメントを 5 分毎に積み続ける ([#650](https://github.com/color4pen/spec-runner/issues/650)) ([1017c55](https://github.com/color4pen/spec-runner/commit/1017c55e3516ed3547dacd324c7cb11ff71cdca9))
+* transient 判定対象の stream idle timeout が code-review でリトライされず halt した ([#656](https://github.com/color4pen/spec-runner/issues/656)) ([86ecf9d](https://github.com/color4pen/spec-runner/commit/86ecf9d5e2c87eb09e79eb3be442494031159a1d))
+
 ## [0.3.0](https://github.com/color4pen/spec-runner/compare/specrunner-v0.2.0...specrunner-v0.3.0) (2026-06-11)
 
 
