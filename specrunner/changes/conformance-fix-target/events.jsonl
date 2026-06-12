@@ -34,3 +34,23 @@
 {"type":"transition","ts":"2026-06-12T00:51:04.661Z","step":"verification","status":"warning","message":"verification iteration 1 completed with verdict: failed"}
 {"type":"transition","ts":"2026-06-12T00:51:04.661Z","step":"step-transition","status":"ok","message":"verification → build-fixer"}
 {"type":"transition","ts":"2026-06-12T00:51:04.665Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}
+{"type":"transition","ts":"2026-06-12T00:51:37.403Z","step":"build-fixer-verdict","status":"ok","message":"build-fixer verdict: success"}
+{"type":"step-attempt","step":"build-fixer","sessionId":"d3093a0f-9259-42a0-ac92-c78dcb6dc598","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-12T00:51:04.680Z","endedAt":"2026-06-12T00:51:35.807Z"}
+{"type":"lineage","step":"build-fixer","ts":"2026-06-12T00:51:35.807Z","outputs":[{"path":"specrunner/changes/conformance-fix-target","hash":null}],"inputs":[{"path":"specrunner/changes/conformance-fix-target/verification-result.md","hash":"sha256:e7b86ffb968cd0d2587d4f1ff2416cb2fb85e4a403317b34da6eeac1ce29267b"}]}
+{"type":"transition","ts":"2026-06-12T00:51:37.411Z","step":"step-transition","status":"ok","message":"build-fixer → verification"}
+{"type":"transition","ts":"2026-06-12T00:51:37.414Z","step":"verification","status":"started","message":"verification iteration 2 started"}
+{"type":"transition","ts":"2026-06-12T00:51:37.416Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-06-12T00:52:01.571Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/conformance-fix-target/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T00:51:37.417Z","endedAt":"2026-06-12T00:52:01.569Z"}
+{"type":"lineage","step":"verification","ts":"2026-06-12T00:52:01.569Z","outputs":[{"path":"specrunner/changes/conformance-fix-target/verification-result.md","hash":"sha256:d2a1a472b1b58ed5d7a5e8b138a94b5dd45d990a4f1c177846a9dac8330eff4d"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-06-12T00:52:01.578Z","step":"verification","status":"ok","message":"verification iteration 2 completed with verdict: passed"}
+{"type":"transition","ts":"2026-06-12T00:52:01.578Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-06-12T00:52:01.581Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T00:52:01.582Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
+{"type":"transition","ts":"2026-06-12T01:05:40.846Z","step":"store-fail","status":"ok","message":"running → failed: Claude Code SDK query failed: Claude Code returned an error result: API Error: Stream idle timeout - partial response received"}
+{"type":"step-attempt","step":"code-review","sessionId":null,"outcome":{"verdict":null,"findingsPath":null,"error":{"code":"CLAUDE_CODE_QUERY_FAILED","message":"Claude Code SDK query failed: Claude Code returned an error result: API Error: Stream idle timeout - partial response received","hint":""},"transientRetryAttempts":0},"startedAt":"2026-06-12T00:52:01.598Z","endedAt":"2026-06-12T01:05:40.845Z"}
+{"type":"transition","ts":"2026-06-12T01:05:40.853Z","step":"code-review","status":"error","message":"code-review iteration 1 completed with verdict: error"}
+{"type":"transition","ts":"2026-06-12T01:05:40.853Z","step":"pipeline","status":"ok","message":"failed → awaiting-resume: Claude Code SDK query failed: Claude Code returned an error result: API Error: Stream idle timeout - partial response received"}
+{"type":"transition","ts":"2026-06-12T01:10:18.372Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'code-review'"}
+{"type":"transition","ts":"2026-06-12T01:10:18.442Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T01:10:18.443Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
