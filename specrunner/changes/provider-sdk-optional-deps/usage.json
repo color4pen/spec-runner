@@ -27,6 +27,20 @@
       },
       "jobId": "104182e4-e3b4-4a26-9c6c-9f69eaaae8be",
       "stepName": "request-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T14:01:39.091Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 472172,
+          "outputTokens": 3560,
+          "cacheReadInputTokens": 391296,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "104182e4-e3b4-4a26-9c6c-9f69eaaae8be",
+      "stepName": "request-review"
     }
   ]
 }
