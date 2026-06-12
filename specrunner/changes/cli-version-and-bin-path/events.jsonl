@@ -91,3 +91,11 @@
 {"type":"transition","ts":"2026-06-12T07:36:21.178Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
 {"type":"transition","ts":"2026-06-12T07:36:21.178Z","step":"step-transition","status":"ok","message":"verification → adr-gen"}
 {"type":"transition","ts":"2026-06-12T07:36:21.183Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-06-12T07:36:39.797Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"41f7c3cc-0f55-4746-a607-9b189ac8dcf1","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-12T07:36:21.221Z","endedAt":"2026-06-12T07:36:38.028Z"}
+{"type":"transition","ts":"2026-06-12T07:36:39.810Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-06-12T07:36:39.819Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-06-12T07:36:41.543Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/cli-version-and-bin-path/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T07:36:39.821Z","endedAt":"2026-06-12T07:36:41.542Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-06-12T07:36:41.542Z","outputs":[{"path":"specrunner/changes/cli-version-and-bin-path/pr-create-result.md","hash":"sha256:0d6c3733dbf973db094a525e25fef62b863c1d69f4b8981770a074602928b36e"}],"inputs":[{"path":"feat/cli-version-and-bin-path-6586f770","hash":null}]}
+{"type":"transition","ts":"2026-06-12T07:36:41.554Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
