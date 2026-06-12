@@ -29,7 +29,7 @@ export interface OneShotQueryOptions {
    * Set to the command name (e.g. "request-review") to pick up step-level config overrides.
    */
   stepName?: string;
-  /** Model identifier. Default: "claude-sonnet-4-5". Feeds into config chain stepDefaults. */
+  /** Model identifier. Default: DEFAULT_ONE_SHOT_MODEL（config 解決チェーン経由）. Feeds into config chain stepDefaults. */
   model?: string;
   /**
    * 指定時、config 解決チェーンの結果より優先して使うモデル。

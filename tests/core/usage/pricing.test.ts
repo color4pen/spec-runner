@@ -21,6 +21,7 @@ import {
   formatUsd,
   MODEL_PRICING,
 } from "../../../src/core/usage/pricing.js";
+import { BUILTIN_MODEL_REGISTRY } from "../../../src/config/model-registry.js";
 import type { ModelUsage } from "../../../src/core/port/model-usage.js";
 
 // ---------------------------------------------------------------------------
@@ -221,5 +222,73 @@ describe("formatUsd — additional cases", () => {
   it("rounds to 4 decimal places (toFixed semantics)", () => {
     // 1.23456789 → toFixed(4) = "1.2346"
     expect(formatUsd(1.23456789)).toBe("$1.2346");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// OpenAI / Codex モデルの pricing
+// ---------------------------------------------------------------------------
+
+describe("OpenAI model pricing — computeCostUsd returns non-null", () => {
+  const usage: ModelUsage = {
+    inputTokens: 1_000_000,
+    outputTokens: 1_000_000,
+    cacheReadInputTokens: 1_000_000,
+    cacheCreationInputTokens: 0,
+  };
+
+  it("gpt-5.3-codex returns a finite number", () => {
+    const cost = computeCostUsd("gpt-5.3-codex", usage);
+    expect(cost).not.toBeNull();
+    expect(typeof cost).toBe("number");
+    expect(Number.isFinite(cost)).toBe(true);
+  });
+
+  it("gpt-5.3-codex cost matches 4-axis formula from MODEL_PRICING", () => {
+    const p = MODEL_PRICING["gpt-5.3-codex"]!;
+    expect(p).toBeDefined();
+    const expected =
+      (usage.inputTokens / 1e6) * p.input +
+      (usage.outputTokens / 1e6) * p.output +
+      (usage.cacheReadInputTokens / 1e6) * p.cacheRead +
+      (usage.cacheCreationInputTokens / 1e6) * p.cacheWrite;
+    const actual = computeCostUsd("gpt-5.3-codex", usage);
+    expect(actual).toBeCloseTo(expected, 10);
+  });
+
+  it("o3 returns non-null with positive tokens", () => {
+    const cost = computeCostUsd("o3", usage);
+    expect(cost).not.toBeNull();
+    expect(typeof cost).toBe("number");
+  });
+});
+
+describe("unknown model returns null / formatUsd shows $?", () => {
+  const usage: ModelUsage = {
+    inputTokens: 1000,
+    outputTokens: 500,
+    cacheReadInputTokens: 0,
+    cacheCreationInputTokens: 0,
+  };
+
+  it("totally-unknown-model-xyz → computeCostUsd returns null", () => {
+    expect(computeCostUsd("totally-unknown-model-xyz", usage)).toBeNull();
+  });
+
+  it("formatUsd(null) returns '$?'", () => {
+    expect(formatUsd(null)).toBe("$?");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Drift guard: all BUILTIN_MODEL_REGISTRY entries must have pricing
+// ---------------------------------------------------------------------------
+
+describe("drift guard — BUILTIN_MODEL_REGISTRY × MODEL_PRICING coverage", () => {
+  it("every model in BUILTIN_MODEL_REGISTRY has a non-null lookupPricing result", () => {
+    for (const modelName of Object.keys(BUILTIN_MODEL_REGISTRY)) {
+      const pricing = lookupPricing(modelName);
+      expect(pricing, `missing pricing for ${modelName}`).not.toBeNull();
+    }
   });
 });

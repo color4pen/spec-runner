@@ -16,6 +16,7 @@ import {
   type SDKResultSuccess,
 } from "@anthropic-ai/claude-agent-sdk";
 import { getStepExecutionConfig } from "../../config/step-config.js";
+import { DEFAULT_ONE_SHOT_MODEL } from "../../config/model-registry.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ModelUsage } from "../../core/port/model-usage.js";
@@ -51,7 +52,7 @@ export interface QueryOneShotOptions {
    * Set to the command name (e.g. "request-review") to pick up step-level config overrides.
    */
   stepName?: string;
-  /** Model identifier. Default: "claude-sonnet-4-5". Feeds into config chain stepDefaults. */
+  /** Model identifier. Default: DEFAULT_ONE_SHOT_MODEL（config 解決チェーン経由）. Feeds into config chain stepDefaults. */
   model?: string;
   /**
    * 指定時、config 解決チェーンの結果より優先して使うモデル。
@@ -99,7 +100,7 @@ export async function queryOneShot(
 
   // Step 1: Resolve execution config via 4-level chain
   const resolvedConfig = getStepExecutionConfig(config, opts.stepName ?? "one-shot", {
-    model: opts.model ?? "claude-sonnet-4-5",
+    model: opts.model ?? DEFAULT_ONE_SHOT_MODEL,
     maxTurns: opts.maxTurns,
     timeoutMs: opts.timeoutMs,
   });

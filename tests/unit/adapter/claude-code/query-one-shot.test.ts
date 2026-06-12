@@ -9,6 +9,7 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { queryOneShot, type QueryFn } from "../../../../src/adapter/claude-code/query-one-shot.js";
+import { DEFAULT_ONE_SHOT_MODEL } from "../../../../src/config/model-registry.js";
 import { SpecRunnerError } from "../../../../src/errors.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
 
@@ -363,6 +364,49 @@ describe("TC-OSQ-07: modelOverride overrides config resolution chain model", () 
     );
 
     expect(capturedOptions?.["model"]).toBe("claude-opus-4-5");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-OSQ-08: one-shot default model config resolution
+// ---------------------------------------------------------------------------
+
+describe("TC-OSQ-08: one-shot default model — config resolution", () => {
+  /** Capture model from query options */
+  function makeCaptureQueryFn(): { queryFn: QueryFn; getModel: () => string | undefined } {
+    let captured: string | undefined;
+    const queryFn = vi.fn().mockImplementation(
+      ({ options }: { prompt: string; options?: Record<string, unknown> }) => {
+        captured = options?.["model"] as string | undefined;
+        return (async function* () {
+          yield { type: "result", subtype: "success", result: "done", session_id: undefined };
+        })();
+      },
+    ) as unknown as QueryFn;
+    return { queryFn, getModel: () => captured };
+  }
+
+  it("uses config.steps.defaults.model when opts.model is not specified", async () => {
+    const { queryFn, getModel } = makeCaptureQueryFn();
+    const config = makeConfig({
+      steps: { defaults: { model: "claude-opus-4-6" } },
+    });
+
+    await queryOneShot({ systemPrompt: "sys", prompt: "user" }, config, queryFn);
+
+    expect(getModel()).toBe("claude-opus-4-6");
+  });
+
+  it("uses DEFAULT_ONE_SHOT_MODEL when config has no model and opts.model is not specified", async () => {
+    const { queryFn, getModel } = makeCaptureQueryFn();
+
+    await queryOneShot(
+      { systemPrompt: "sys", prompt: "user" },
+      makeConfig(),
+      queryFn,
+    );
+
+    expect(getModel()).toBe(DEFAULT_ONE_SHOT_MODEL);
   });
 });
 

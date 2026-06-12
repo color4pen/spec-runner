@@ -29,6 +29,12 @@ export const BUILTIN_MODEL_REGISTRY: ModelsConfig = {
 };
 
 /**
+ * Fallback model for one-shot queries when config resolution chain yields no model.
+ * Used by query-one-shot.ts; override via config.steps.defaults.model or opts.model.
+ */
+export const DEFAULT_ONE_SHOT_MODEL = "claude-sonnet-4-5";
+
+/**
  * Merge built-in registry with user-defined models.
  * User entries override built-ins (same key → user wins).
  */
