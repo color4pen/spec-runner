@@ -84,6 +84,11 @@ export interface RequestInfo {
    * null for legacy state files or non-canonical paths (e.g. /tmp/...).
    * Optional for backward compat — absent in existing state files. */
   slug?: string | null;
+  /** Base branch for this request (e.g. "main", "develop").
+   * Set from request.md base-branch at job start.
+   * Optional for backward compat — absent in legacy state files.
+   * When absent, escalation notifications fall back to "main". */
+  baseBranch?: string | null;
 }
 
 export interface RepositoryInfo {
