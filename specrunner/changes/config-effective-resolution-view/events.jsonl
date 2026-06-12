@@ -1,2 +1,8 @@
 {"type":"transition","ts":"2026-06-12T13:35:03.449Z","step":"init","status":"started","message":"job created"}
 {"type":"transition","ts":"2026-06-12T13:35:08.482Z","step":"request-review-started","status":"started","message":"Starting request-review step"}
+{"type":"transition","ts":"2026-06-12T13:37:59.346Z","step":"request-review-verdict","status":"ok","message":"request-review verdict: needs-discussion"}
+{"type":"step-attempt","step":"request-review","sessionId":"019ebc0b-2d94-7701-9435-ff1d8680c54d","outcome":{"verdict":"needs-discussion","findingsPath":"specrunner/changes/config-effective-resolution-view/request-review-result-001.md","error":null,"toolResult":null,"followUpAttempts":2,"transientRetryAttempts":0},"startedAt":"2026-06-12T13:35:08.515Z","endedAt":"2026-06-12T13:37:57.188Z"}
+{"type":"lineage","step":"request-review","ts":"2026-06-12T13:37:57.188Z","outputs":[{"path":"specrunner/changes/config-effective-resolution-view/request-review-result-002.md","hash":null}],"inputs":[{"path":"specrunner/changes/config-effective-resolution-view/request.md","hash":"sha256:1574d4c4a9b5444a8895cb44b9e822d6cb3564904fc08911718d69c03d19aa47"}]}
+{"type":"transition","ts":"2026-06-12T13:37:59.353Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: request-review escalated"}
+{"type":"transition","ts":"2026-06-12T13:46:36.560Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'request-review'"}
+{"type":"transition","ts":"2026-06-12T13:46:36.737Z","step":"request-review-started","status":"started","message":"Starting request-review step"}
