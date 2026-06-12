@@ -119,6 +119,26 @@
       },
       "jobId": "73f15a52-ba5d-4ac7-820e-3745bfb1f071",
       "stepName": "code-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T06:03:56.468Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 5615,
+          "outputTokens": 22,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 1138,
+          "outputTokens": 8835,
+          "cacheReadInputTokens": 506694,
+          "cacheCreationInputTokens": 62641
+        }
+      },
+      "jobId": "73f15a52-ba5d-4ac7-820e-3745bfb1f071",
+      "stepName": "cross-boundary-invariants"
     }
   ]
 }
