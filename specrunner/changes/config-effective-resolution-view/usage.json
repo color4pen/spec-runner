@@ -1,0 +1,144 @@
+{
+  "commandInvocations": [
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T13:37:57.188Z",
+      "modelUsage": {
+        "gpt-5.4": {
+          "inputTokens": 2304876,
+          "outputTokens": 16741,
+          "cacheReadInputTokens": 1987200,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "bbd11d3a-acb4-4dda-b221-4d0462f4f343",
+      "stepName": "request-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T13:49:22.171Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 523872,
+          "outputTokens": 3633,
+          "cacheReadInputTokens": 409088,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "bbd11d3a-acb4-4dda-b221-4d0462f4f343",
+      "stepName": "request-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T13:59:11.750Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 2146368,
+          "outputTokens": 22223,
+          "cacheReadInputTokens": 1867520,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "bbd11d3a-acb4-4dda-b221-4d0462f4f343",
+      "stepName": "design"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T14:00:57.006Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 301689,
+          "outputTokens": 4125,
+          "cacheReadInputTokens": 210432,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "bbd11d3a-acb4-4dda-b221-4d0462f4f343",
+      "stepName": "spec-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T14:02:58.580Z",
+      "modelUsage": {
+        "gpt-5.4-mini": {
+          "inputTokens": 231646,
+          "outputTokens": 9236,
+          "cacheReadInputTokens": 197376,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "bbd11d3a-acb4-4dda-b221-4d0462f4f343",
+      "stepName": "test-case-gen"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T14:12:53.212Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 7200162,
+          "outputTokens": 38322,
+          "cacheReadInputTokens": 6670336,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "bbd11d3a-acb4-4dda-b221-4d0462f4f343",
+      "stepName": "implementer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T14:18:14.762Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 2089314,
+          "outputTokens": 12470,
+          "cacheReadInputTokens": 1706240,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "bbd11d3a-acb4-4dda-b221-4d0462f4f343",
+      "stepName": "code-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T14:18:48.728Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 84848,
+          "outputTokens": 558,
+          "cacheReadInputTokens": 65024,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "bbd11d3a-acb4-4dda-b221-4d0462f4f343",
+      "stepName": "regression-gate"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T14:21:50.398Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 1092057,
+          "outputTokens": 5637,
+          "cacheReadInputTokens": 983040,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "bbd11d3a-acb4-4dda-b221-4d0462f4f343",
+      "stepName": "conformance"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T14:22:06.077Z",
+      "modelUsage": {
+        "gpt-5.4-mini": {
+          "inputTokens": 14561,
+          "outputTokens": 63,
+          "cacheReadInputTokens": 2432,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "bbd11d3a-acb4-4dda-b221-4d0462f4f343",
+      "stepName": "adr-gen"
+    }
+  ]
+}

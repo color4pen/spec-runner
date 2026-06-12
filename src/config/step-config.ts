@@ -17,6 +17,7 @@
  * TC-001 through TC-012 are covered by tests/config/step-config.test.ts
  */
 import type { SpecRunnerConfig } from "./schema.js";
+import type { SourceAwareConfigLoadResult } from "./store.js";
 
 /**
  * Resolved execution config for a single step.
@@ -101,6 +102,187 @@ export function getStepExecutionConfig(
   );
 
   return { model, maxTurns, timeoutMs };
+}
+
+export type TraceField = "model" | "maxTurns" | "timeoutMs";
+export type TraceConfigLevel =
+  | "step.byRequestType"
+  | "step"
+  | "defaults.byRequestType"
+  | "defaults";
+export type TraceSourceLevel = TraceConfigLevel | "stepdef" | "sdk";
+export type TraceSourceLayer = "project" | "user" | "stepdef" | "sdk";
+
+export interface TracedStepConfigSource {
+  layer: TraceSourceLayer;
+  level: TraceSourceLevel;
+  path: string | null;
+  configPath?: string;
+}
+
+export interface TracedStepConfigField<T> {
+  value: T;
+  source: TracedStepConfigSource;
+}
+
+export interface TracedStepExecutionConfig {
+  step: string;
+  requestType: string | null;
+  fields: {
+    model: TracedStepConfigField<string>;
+    maxTurns: TracedStepConfigField<number | null>;
+    timeoutMs: TracedStepConfigField<number | null>;
+  };
+}
+
+interface TraceLayerInputs {
+  userGlobal?: { migrated: unknown | null; path: string };
+  projectLocal?: { migrated: unknown | null; path: string };
+}
+
+interface Candidate<T> {
+  value: T | undefined;
+  level: TraceConfigLevel;
+  path: string;
+}
+
+export function traceStepExecutionConfig(
+  config: SpecRunnerConfig,
+  stepName: string,
+  stepDefaults: StepDefaults,
+  requestType?: string,
+  layers: TraceLayerInputs = {},
+): TracedStepExecutionConfig {
+  return {
+    step: stepName,
+    requestType: requestType ?? null,
+    fields: {
+      model: traceField(
+        buildConfigCandidates(config, stepName, "model", requestType),
+        stepDefaults.model,
+        layers,
+      ) as TracedStepConfigField<string>,
+      maxTurns: traceField(
+        buildConfigCandidates(config, stepName, "maxTurns", requestType),
+        stepDefaults.maxTurns,
+        layers,
+      ) as TracedStepConfigField<number | null>,
+      timeoutMs: traceField(
+        buildConfigCandidates(config, stepName, "timeoutMs", requestType),
+        stepDefaults.timeoutMs,
+        layers,
+      ) as TracedStepConfigField<number | null>,
+    },
+  };
+}
+
+export function traceStepExecutionConfigFromLoadResult(
+  loadResult: SourceAwareConfigLoadResult,
+  stepName: string,
+  stepDefaults: StepDefaults,
+  requestType?: string,
+): TracedStepExecutionConfig {
+  return traceStepExecutionConfig(loadResult.config, stepName, stepDefaults, requestType, {
+    userGlobal: { migrated: loadResult.userGlobal.migrated, path: loadResult.userGlobal.path },
+    projectLocal: { migrated: loadResult.projectLocal.migrated, path: loadResult.projectLocal.path },
+  });
+}
+
+function buildConfigCandidates(
+  config: SpecRunnerConfig,
+  stepName: string,
+  field: TraceField,
+  requestType?: string,
+): Candidate<string | number | null>[] {
+  const candidates: Candidate<string | number | null>[] = [];
+  const stepLevel = config.steps?.[stepName];
+  const defaultsLevel = config.steps?.defaults;
+
+  if (requestType) {
+    candidates.push({
+      value: stepLevel?.byRequestType?.[requestType]?.[field],
+      level: "step.byRequestType",
+      path: `steps.${stepName}.byRequestType.${requestType}.${field}`,
+    });
+  }
+  candidates.push({
+    value: stepLevel?.[field],
+    level: "step",
+    path: `steps.${stepName}.${field}`,
+  });
+  if (requestType) {
+    candidates.push({
+      value: defaultsLevel?.byRequestType?.[requestType]?.[field],
+      level: "defaults.byRequestType",
+      path: `steps.defaults.byRequestType.${requestType}.${field}`,
+    });
+  }
+  candidates.push({
+    value: defaultsLevel?.[field],
+    level: "defaults",
+    path: `steps.defaults.${field}`,
+  });
+  return candidates;
+}
+
+function traceField<T extends string | number | null>(
+  candidates: Candidate<T>[],
+  stepDefault: T | undefined,
+  layers: TraceLayerInputs,
+): TracedStepConfigField<T | null> {
+  for (const candidate of candidates) {
+    if (candidate.value !== undefined) {
+      return {
+        value: candidate.value,
+        source: resolveConfigCandidateSource(candidate.level, candidate.path, layers),
+      };
+    }
+  }
+  if (stepDefault !== undefined) {
+    return {
+      value: stepDefault,
+      source: { layer: "stepdef", level: "stepdef", path: null },
+    };
+  }
+  return {
+    value: null,
+    source: { layer: "sdk", level: "sdk", path: null },
+  };
+}
+
+function resolveConfigCandidateSource(
+  level: TraceConfigLevel,
+  dottedPath: string,
+  layers: TraceLayerInputs,
+): TracedStepConfigSource {
+  if (hasDottedPath(layers.projectLocal?.migrated, dottedPath)) {
+    return {
+      layer: "project",
+      level,
+      path: dottedPath,
+      configPath: layers.projectLocal?.path,
+    };
+  }
+  if (hasDottedPath(layers.userGlobal?.migrated, dottedPath)) {
+    return {
+      layer: "user",
+      level,
+      path: dottedPath,
+      configPath: layers.userGlobal?.path,
+    };
+  }
+  return { layer: "user", level, path: dottedPath, configPath: layers.userGlobal?.path };
+}
+
+function hasDottedPath(root: unknown, dottedPath: string): boolean {
+  if (typeof root !== "object" || root === null) return false;
+  let current: unknown = root;
+  for (const part of dottedPath.split(".")) {
+    if (typeof current !== "object" || current === null) return false;
+    if (!Object.prototype.hasOwnProperty.call(current, part)) return false;
+    current = (current as Record<string, unknown>)[part];
+  }
+  return true;
 }
 
 /**
