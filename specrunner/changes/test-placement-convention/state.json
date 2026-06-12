@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c1f9dd5d-4022-4734-867e-4ddf4b6e7f98",
   "createdAt": "2026-06-11T23:59:12.727Z",
-  "updatedAt": "2026-06-12T00:25:27.132Z",
+  "updatedAt": "2026-06-12T00:31:52.696Z",
   "request": {
     "title": "プロジェクトのテスト配置規約を config で宣言し、生成テストの配置を決定的にする",
     "type": "new-feature"
@@ -47,8 +47,9 @@
     }
   ],
   "issueNumber": 565,
+  "resumePoint": null,
   "_journal": {
-    "historyCount": 33,
+    "historyCount": 39,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -57,7 +58,8 @@
       "implementer": 1,
       "verification": 1,
       "code-review": 1,
-      "code-fixer": 1
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1
     }
   }
 }
