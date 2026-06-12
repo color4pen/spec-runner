@@ -75,3 +75,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/finding-ref-directory-eisdir/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T03:17:09.090Z","endedAt":"2026-06-12T03:17:10.898Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-12T03:17:10.898Z","outputs":[{"path":"specrunner/changes/finding-ref-directory-eisdir/pr-create-result.md","hash":"sha256:9856dce4e736c8f7028e545acf6808c6601e243a068d4e64a19884a8c286f7fa"}],"inputs":[{"path":"fix/finding-ref-directory-eisdir-0a7e33bb","hash":null}]}
 {"type":"transition","ts":"2026-06-12T03:17:10.913Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-12T04:44:10.375Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
