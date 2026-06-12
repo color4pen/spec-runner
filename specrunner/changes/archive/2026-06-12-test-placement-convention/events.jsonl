@@ -99,3 +99,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/test-placement-convention/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T00:41:13.882Z","endedAt":"2026-06-12T00:41:15.828Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-12T00:41:15.828Z","outputs":[{"path":"specrunner/changes/test-placement-convention/pr-create-result.md","hash":"sha256:a8dca2814422b65dffbcfddfea687d16c0deeb838a024d65add431b88839737d"}],"inputs":[{"path":"feat/test-placement-convention-c1f9dd5d","hash":null}]}
 {"type":"transition","ts":"2026-06-12T00:41:15.840Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-12T02:09:40.579Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
