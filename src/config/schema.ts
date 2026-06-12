@@ -594,7 +594,8 @@ const verificationCommandSchema = union(
 /**
  * Structural config schema using zod/v4-mini.
  * Field order matches legacy validation order: runtime → agents → environment →
- * specReview → pipeline → steps → models → progress → verification → github → logs → archive.
+ * specReview → pipeline → steps → models → progress → verification → github → logs → archive →
+ * inbox → transientRetry → tests.
  * Unknown top-level fields are stripped (default object behavior).
  */
 export const configSchema = object({
