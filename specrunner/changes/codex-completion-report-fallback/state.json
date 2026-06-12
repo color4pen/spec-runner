@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7d3b478c-9fd7-4d32-8b4d-8d7afcede063",
   "createdAt": "2026-06-12T11:15:02.673Z",
-  "updatedAt": "2026-06-12T11:52:43.164Z",
+  "updatedAt": "2026-06-12T11:53:11.094Z",
   "request": {
     "title": "codex adapter の completion report 回収を頑健化する（outputSchema 不全環境での fallback と観測性）",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/codex-completion-report-fallback-7d3b478c",
   "error": null,
   "pipelineId": "standard",
@@ -48,8 +48,13 @@
     }
   ],
   "issueNumber": 669,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/670",
+    "number": 670,
+    "createdAt": "2026-06-12T11:53:11.077Z"
+  },
   "_journal": {
-    "historyCount": 57,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -62,7 +67,9 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }

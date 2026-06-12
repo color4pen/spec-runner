@@ -79,3 +79,11 @@
 {"type":"transition","ts":"2026-06-12T11:52:43.158Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
 {"type":"transition","ts":"2026-06-12T11:52:43.159Z","step":"step-transition","status":"ok","message":"verification → adr-gen"}
 {"type":"transition","ts":"2026-06-12T11:52:43.164Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-06-12T11:53:08.887Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"42418844-6464-4731-ab38-f87c3dfe8042","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-12T11:52:43.192Z","endedAt":"2026-06-12T11:53:07.169Z"}
+{"type":"transition","ts":"2026-06-12T11:53:08.897Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-06-12T11:53:08.902Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-06-12T11:53:11.080Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/codex-completion-report-fallback/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T11:53:08.904Z","endedAt":"2026-06-12T11:53:11.078Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-06-12T11:53:11.078Z","outputs":[{"path":"specrunner/changes/codex-completion-report-fallback/pr-create-result.md","hash":"sha256:4dd725bc8d15b5a141f178a2dae52bcf27bc76df7d8b70a1ee1393a1c35e6df1"}],"inputs":[{"path":"fix/codex-completion-report-fallback-7d3b478c","hash":null}]}
+{"type":"transition","ts":"2026-06-12T11:53:11.094Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
