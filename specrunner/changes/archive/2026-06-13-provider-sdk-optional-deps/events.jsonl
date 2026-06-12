@@ -130,3 +130,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/provider-sdk-optional-deps/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T23:23:13.156Z","endedAt":"2026-06-12T23:23:16.009Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-12T23:23:16.009Z","outputs":[{"path":"specrunner/changes/provider-sdk-optional-deps/pr-create-result.md","hash":"sha256:86e6b3fe0879251563ce47313a937105f15f2fe0262888f4f036652e5dd85ecd"}],"inputs":[{"path":"change/provider-sdk-optional-deps-104182e4","hash":null}]}
 {"type":"transition","ts":"2026-06-12T23:23:16.020Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-12T23:41:36.752Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
