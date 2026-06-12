@@ -61,3 +61,15 @@
 {"type":"transition","ts":"2026-06-12T01:50:43.082Z","step":"code-review","status":"ok","message":"code-review iteration 2 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-12T01:50:43.082Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-06-12T01:50:43.084Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-06-12T01:51:42.027Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"7715d8ba-1d89-4a9d-8932-e24f696af90f","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-06-12T01:50:43.095Z","endedAt":"2026-06-12T01:51:39.383Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-06-12T01:51:39.383Z","outputs":[{"path":"specrunner/changes/inbox-reject-dedup","hash":null}],"inputs":[{"path":"specrunner/changes/inbox-reject-dedup/review-feedback-003.md","hash":"sha256:364659ad43775cf0b1fffff4fffc05b9cd8f8abdb8faad2433f2614780dabfd0"}]}
+{"type":"transition","ts":"2026-06-12T01:51:42.032Z","step":"step-transition","status":"ok","message":"code-fixer → cross-boundary-invariants"}
+{"type":"transition","ts":"2026-06-12T01:51:42.033Z","step":"cross-boundary-invariants","status":"started","message":"cross-boundary-invariants iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T01:51:42.034Z","step":"cross-boundary-invariants-started","status":"started","message":"Starting cross-boundary-invariants step"}
+{"type":"transition","ts":"2026-06-12T01:51:42.064Z","step":"cross-boundary-invariants-skipped","status":"warning","message":"cross-boundary-invariants skipped: no changed files matched paths [src/core/pipeline/**, src/core/step/**, src/state/**, src/store/**]"}
+{"type":"step-attempt","step":"cross-boundary-invariants","sessionId":null,"outcome":{"verdict":"skipped","findingsPath":null,"error":null,"skipReason":"no changed files matched paths [src/core/pipeline/**, src/core/step/**, src/state/**, src/store/**]"},"startedAt":"2026-06-12T01:51:42.064Z","endedAt":"2026-06-12T01:51:42.064Z"}
+{"type":"transition","ts":"2026-06-12T01:51:42.066Z","step":"cross-boundary-invariants","status":"warning","message":"cross-boundary-invariants iteration 1 completed with verdict: skipped"}
+{"type":"transition","ts":"2026-06-12T01:51:42.066Z","step":"step-transition","status":"ok","message":"cross-boundary-invariants → scale-tolerance"}
+{"type":"transition","ts":"2026-06-12T01:51:42.067Z","step":"scale-tolerance","status":"started","message":"scale-tolerance iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T01:51:42.067Z","step":"scale-tolerance-started","status":"started","message":"Starting scale-tolerance step"}

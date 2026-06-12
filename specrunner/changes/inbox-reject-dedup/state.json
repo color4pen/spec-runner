@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "02d89876-5535-4994-af6e-ab11a4293576",
   "createdAt": "2026-06-12T01:05:03.201Z",
-  "updatedAt": "2026-06-12T01:50:43.084Z",
+  "updatedAt": "2026-06-12T01:51:42.067Z",
   "request": {
     "title": "inbox の reject が承認ラベルを剥がさず、同一 reject コメントを 5 分毎に積み続ける",
     "type": "bug-fix"
@@ -11,7 +11,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "scale-tolerance",
   "status": "running",
   "branch": "fix/inbox-reject-dedup-02d89876",
   "error": null,
@@ -49,7 +49,7 @@
   "issueNumber": 645,
   "resumePoint": null,
   "_journal": {
-    "historyCount": 43,
+    "historyCount": 52,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -58,7 +58,8 @@
       "implementer": 1,
       "verification": 1,
       "code-review": 3,
-      "code-fixer": 1
+      "code-fixer": 2,
+      "cross-boundary-invariants": 1
     }
   }
 }
