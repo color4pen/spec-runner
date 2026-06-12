@@ -2667,3 +2667,285 @@ describe("ClaudeCodeRunner outputVerification follow-up loop", () => {
     expect(result.followUpAttempts).toBe(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T-05: postWorkPrompts follow-up — transient error triggers retry
+// ---------------------------------------------------------------------------
+
+describe("postWorkPrompts follow-up — transient SDK exception triggers retry", () => {
+  // RCA evidence: job e9602244-4d28-46da-8cc8-d8a109881172 (2026-06-12)
+  // code-review step: step:start → step:error with NO step:retry events.
+  // Error: "Claude Code SDK query failed: Claude Code returned an error result:
+  //         API Error: Stream idle timeout - partial response received"
+  // The follow-up turn was executed outside the retryWithBackoff wrapper for
+  // runMainWorkTurn, so transient errors were never retried in that path.
+
+  function makeTransientConfig(): SpecRunnerConfig {
+    return { version: 1, runtime: "local", agents: {}, transientRetry: { maxRetries: 1 } };
+  }
+
+  function makeSuccessYield(sessionId = "sess-follow"): unknown {
+    return {
+      type: "result" as const,
+      subtype: "success" as const,
+      result: "done",
+      duration_ms: 10,
+      duration_api_ms: 10,
+      is_error: false,
+      num_turns: 1,
+      stop_reason: "end_turn",
+      total_cost_usd: 0,
+      usage: { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+      modelUsage: {},
+      permission_denials: [],
+      uuid: "test-uuid",
+      session_id: sessionId,
+    };
+  }
+
+  it("Scenario A — transient SDK exception in follow-up is retried", async () => {
+    let callCount = 0;
+
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      if (callCount === 1) {
+        // Main work turn: success
+        yield makeSuccessYield("sess-main") as unknown;
+      } else if (callCount === 2) {
+        // First follow-up invocation: transient SDK throw
+        throw new Error("stream idle timeout");
+      } else {
+        // Second follow-up invocation (after transient retry): success
+        yield makeSuccessYield("sess-main") as unknown;
+      }
+    } as QueryFn;
+
+    const emitFn = vi.fn();
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _sleepFn: async () => {},
+    });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: { postWorkPrompts: ["verify your work"] },
+      config: makeTransientConfig(),
+      emit: emitFn,
+    };
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.transientRetryAttempts).toBeGreaterThanOrEqual(1);
+
+    const retryEvents = (emitFn.mock.calls as Array<[string, Record<string, unknown>]>)
+      .filter((c) => c[0] === "step:retry")
+      .map((c) => c[1]);
+    expect(retryEvents.length).toBeGreaterThanOrEqual(1);
+    expect(retryEvents[0]).toMatchObject({ step: "spec-review", attempt: 1, maxRetries: 1 });
+  });
+
+  it("Scenario B — transient error result in follow-up is retried", async () => {
+    let callCount = 0;
+
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      if (callCount === 1) {
+        // Main work turn: success
+        yield makeSuccessYield("sess-main") as unknown;
+      } else if (callCount === 2) {
+        // First follow-up invocation: transient error result
+        yield {
+          type: "result" as const,
+          subtype: "error_during_execution" as const,
+          errors: ["API Error: Stream idle timeout"],
+          is_error: true,
+          num_turns: 1,
+          duration_ms: 100,
+          duration_api_ms: 80,
+        } as unknown;
+      } else {
+        // Second follow-up invocation (after transient retry): success
+        yield makeSuccessYield("sess-main") as unknown;
+      }
+    } as QueryFn;
+
+    const emitFn = vi.fn();
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _sleepFn: async () => {},
+    });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: { postWorkPrompts: ["verify your work"] },
+      config: makeTransientConfig(),
+      emit: emitFn,
+    };
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.transientRetryAttempts).toBeGreaterThanOrEqual(1);
+
+    const retryEvents = (emitFn.mock.calls as Array<[string, Record<string, unknown>]>)
+      .filter((c) => c[0] === "step:retry")
+      .map((c) => c[1]);
+    expect(retryEvents.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("Scenario C — non-transient error result in follow-up is not retried", async () => {
+    let callCount = 0;
+
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      if (callCount === 1) {
+        // Main work turn: success
+        yield makeSuccessYield("sess-main") as unknown;
+      } else {
+        // Follow-up: non-transient error result
+        yield {
+          type: "result" as const,
+          subtype: "error_during_execution" as const,
+          errors: ["something completely unexpected"],
+          is_error: true,
+          num_turns: 1,
+          duration_ms: 100,
+          duration_api_ms: 80,
+        } as unknown;
+      }
+    } as QueryFn;
+
+    const emitFn = vi.fn();
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _sleepFn: async () => {},
+    });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: { postWorkPrompts: ["verify your work"] },
+      config: makeTransientConfig(),
+      emit: emitFn,
+    };
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("error");
+    expect(result.transientRetryAttempts).toBe(0);
+
+    const retryEvents = (emitFn.mock.calls as Array<[string, unknown]>)
+      .filter((c) => c[0] === "step:retry");
+    expect(retryEvents).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-06: report_result follow-up — transient SDK exception triggers retry
+// ---------------------------------------------------------------------------
+
+describe("report_result follow-up — transient SDK exception triggers retry", () => {
+  it("transient SDK exception in report_result follow-up is retried before halting", async () => {
+    const { mockFn, getHandler } = makeMockCreateMcpServerFn();
+    let callCount = 0;
+
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      if (callCount === 1) {
+        // Main work turn: success, does NOT call report tool
+        yield {
+          type: "result" as const,
+          subtype: "success" as const,
+          result: "done",
+          duration_ms: 10,
+          duration_api_ms: 10,
+          is_error: false,
+          num_turns: 1,
+          stop_reason: "end_turn",
+          total_cost_usd: 0,
+          usage: { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+          modelUsage: {},
+          permission_denials: [],
+          uuid: "t06-main-uuid",
+          session_id: "t06-session",
+        } as unknown;
+      } else if (callCount === 2) {
+        // First follow-up attempt: transient SDK exception
+        throw new Error("stream idle timeout");
+      } else {
+        // Second follow-up attempt (after transient retry): success, calls report tool
+        const handler = getHandler();
+        if (handler) {
+          await handler({ ok: true });
+        }
+        yield {
+          type: "result" as const,
+          subtype: "success" as const,
+          result: "done",
+          duration_ms: 10,
+          duration_api_ms: 10,
+          is_error: false,
+          num_turns: 1,
+          stop_reason: "end_turn",
+          total_cost_usd: 0,
+          usage: { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+          modelUsage: {},
+          permission_denials: [],
+          uuid: "t06-retry-uuid",
+          session_id: "t06-session",
+        } as unknown;
+      }
+    } as QueryFn;
+
+    const emitFn = vi.fn();
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _createMcpServerFn: mockFn,
+      _sleepFn: async () => {},
+    });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState(),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: { reportTool: makeReportTool() },
+      config: { version: 1, runtime: "local", agents: {}, transientRetry: { maxRetries: 1 } },
+      emit: emitFn,
+    };
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.transientRetryAttempts).toBeGreaterThanOrEqual(1);
+
+    const retryEvents = (emitFn.mock.calls as Array<[string, Record<string, unknown>]>)
+      .filter((c) => c[0] === "step:retry")
+      .map((c) => c[1]);
+    expect(retryEvents.length).toBeGreaterThanOrEqual(1);
+    expect(retryEvents[0]).toMatchObject({ step: "spec-review", attempt: 1, maxRetries: 1 });
+    expect(typeof retryEvents[0]!["delayMs"]).toBe("number");
+  });
+});

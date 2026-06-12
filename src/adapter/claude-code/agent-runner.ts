@@ -350,6 +350,64 @@ export class ClaudeCodeRunner implements AgentRunner {
       }
     };
 
+    /**
+     * Follow-up query turn with transient-error auto-retry.
+     *
+     * RCA evidence: job e9602244-4d28-46da-8cc8-d8a109881172 (2026-06-12),
+     * code-review step: step:start → step:error with NO step:retry events.
+     * Error: "Claude Code SDK query failed: Claude Code returned an error result:
+     *         API Error: Stream idle timeout - partial response received"
+     * The error originated in a postWorkPrompts or report_result follow-up turn,
+     * which executed outside the retryWithBackoff wrapper for runMainWorkTurn.
+     *
+     * - SDK-level throws are retried when isTransientAgentError returns true.
+     * - Error results with a transient token are converted to throws and retried.
+     * - Non-transient error results are returned as-is (caller decides handling).
+     */
+    const runFollowUpQueryWithRetry = async (
+      prompt: string,
+      options: Record<string, unknown>,
+      onMessage: (msg: SDKMessage) => void = () => {},
+    ): Promise<SDKResultMessage | null> => {
+      const inner = async (): Promise<SDKResultMessage | null> => {
+        const messages = this.queryFn({ prompt, options });
+        let lastResult: SDKResultMessage | null = null;
+        for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
+          onMessage(message);
+          if (message.type === "result") {
+            lastResult = message as SDKResultMessage;
+          }
+        }
+        if (lastResult && lastResult.subtype !== "success") {
+          const errors = (lastResult as SDKResultMessage & { errors?: string[] }).errors ?? [];
+          const joinedText = errors.join(" ").trim();
+          if (joinedText && isTransientAgentError(new Error(joinedText))) {
+            throw Object.assign(
+              new Error(`Claude Code SDK query failed: ${joinedText}`),
+              { code: "CLAUDE_CODE_QUERY_FAILED_TRANSIENT" },
+            );
+          }
+        }
+        return lastResult;
+      };
+
+      return retryWithBackoff(inner, {
+        maxAttempts: maxRetries + 1,
+        baseDelayMs,
+        isTransientError: (err) => !abortController.signal.aborted && isTransientAgentError(err),
+        sleepFn: this.sleepFn,
+        onRetry: (attempt) => {
+          transientRetryAttempts++;
+          ctx.emit("step:retry", {
+            step: step.name,
+            attempt,
+            maxRetries,
+            delayMs: baseDelayMs * Math.pow(2, attempt - 1),
+          });
+        },
+      });
+    };
+
     try {
       let queryResult: { lastResult: SDKResultMessage | null };
 
@@ -366,7 +424,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           sleepFn: this.sleepFn,
           onRetry: (attempt) => {
             const delayMs = baseDelayMs * Math.pow(2, attempt - 1);
-            transientRetryAttempts = attempt;
+            transientRetryAttempts++;
             ctx.emit("step:retry", {
               step: step.name,
               attempt,
@@ -443,12 +501,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           };
           // Remove MCP server from retry options to avoid re-registering
           // (the closure is still active so tool calls will be captured)
-          const retryMessages = this.queryFn({ prompt: retryPrompt, options: retryOptions });
-          for await (const message of retryMessages as AsyncGenerator<SDKMessage, void>) {
-            if (message.type === "result") {
-              void (message as SDKResultMessage);
-            }
-          }
+          await runFollowUpQueryWithRetry(retryPrompt, retryOptions);
           followUpAttempts++;
 
           if (capturedToolResult !== null) break;
@@ -468,14 +521,11 @@ export class ClaudeCodeRunner implements AgentRunner {
           };
           // Remove MCP server from postWork prompts — tool detection is main-work-turn only
           delete followUpOptions["mcpServers"];
-          const followMessages = this.queryFn({ prompt: followPrompt, options: followUpOptions });
-          let followLastResult: SDKResultMessage | null = null;
-          for await (const message of followMessages as AsyncGenerator<SDKMessage, void>) {
-            emitToolProgress(message, ctx.emit, step.name);
-            if (message.type === "result") {
-              followLastResult = message as SDKResultMessage;
-            }
-          }
+          const followLastResult = await runFollowUpQueryWithRetry(
+            followPrompt,
+            followUpOptions,
+            (msg) => emitToolProgress(msg, ctx.emit, step.name),
+          );
 
           if (followLastResult && followLastResult.subtype !== "success") {
             const followErrorResult = followLastResult as SDKResultMessage & { errors?: string[] };
