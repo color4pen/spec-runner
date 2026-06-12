@@ -101,3 +101,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/inbox-reject-dedup/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T01:58:06.461Z","endedAt":"2026-06-12T01:58:08.500Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-12T01:58:08.500Z","outputs":[{"path":"specrunner/changes/inbox-reject-dedup/pr-create-result.md","hash":"sha256:0e7c913c40ed1682d2c364d46bc8e99d8350125e76bd45585e0a847a68c56c02"}],"inputs":[{"path":"fix/inbox-reject-dedup-02d89876","hash":null}]}
 {"type":"transition","ts":"2026-06-12T01:58:08.515Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-12T02:18:03.601Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
