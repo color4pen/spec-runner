@@ -103,6 +103,20 @@
       },
       "jobId": "c812a533-2ddc-43c9-9171-36d42394c808",
       "stepName": "code-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T12:49:56.020Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 38932,
+          "outputTokens": 368,
+          "cacheReadInputTokens": 3840,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "c812a533-2ddc-43c9-9171-36d42394c808",
+      "stepName": "regression-gate"
     }
   ]
 }

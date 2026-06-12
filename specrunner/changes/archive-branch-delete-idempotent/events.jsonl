@@ -77,3 +77,10 @@
 {"type":"transition","ts":"2026-06-12T12:49:34.524Z","step":"step-transition","status":"ok","message":"scale-tolerance → regression-gate"}
 {"type":"transition","ts":"2026-06-12T12:49:34.525Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
 {"type":"transition","ts":"2026-06-12T12:49:34.526Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-06-12T12:49:57.576Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"019ebbe1-717e-7632-8104-2a90abda4514","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/archive-branch-delete-idempotent/regression-gate-result-001.md","error":null,"toolResult":{"ok":true,"reason":"Ledger was empty, so the regression gate was approved immediately. Wrote `specrunner/changes/archive-branch-delete-idempotent/regression-gate-result-001.md` with the required verdict line.","approved":true,"findings":[]},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-06-12T12:49:34.534Z","endedAt":"2026-06-12T12:49:56.020Z"}
+{"type":"lineage","step":"regression-gate","ts":"2026-06-12T12:49:56.020Z","outputs":[{"path":"specrunner/changes/archive-branch-delete-idempotent/regression-gate-result-002.md","hash":null}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-06-12T12:49:57.581Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-06-12T12:49:57.581Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-06-12T12:49:57.584Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T12:49:57.585Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
