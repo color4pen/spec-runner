@@ -616,14 +616,23 @@ export class LocalRuntime implements RuntimeStrategy {
     const nonExistent: FindingRef[] = [];
     for (const ref of refs) {
       const absPath = path.join(cwd, ref.file);
-      let content: string | null = null;
+      let stat: import("node:fs").Stats;
       try {
-        content = await fs.readFile(absPath, "utf-8");
+        stat = await fs.stat(absPath);
       } catch {
         nonExistent.push(ref);
         continue;
       }
+      if (stat.isDirectory()) {
+        // Directory exists: valid only when no line is specified
+        if (ref.line !== undefined) {
+          nonExistent.push(ref);
+        }
+        continue;
+      }
+      // Regular file: check line bounds if specified
       if (ref.line !== undefined) {
+        const content = await fs.readFile(absPath, "utf-8");
         const lineCount = content.split("\n").length;
         if (ref.line > lineCount) {
           nonExistent.push(ref);

@@ -344,6 +344,22 @@ export class ManagedRuntime implements RuntimeStrategy {
         nonExistent.push(ref);
         continue;
       }
+      // Detect directory: GitHub API returns a JSON array for directory listings
+      let isDirectory = false;
+      try {
+        const parsed: unknown = JSON.parse(content);
+        if (Array.isArray(parsed)) {
+          isDirectory = true;
+        }
+      } catch {
+        // Not JSON — treat as regular file content
+      }
+      if (isDirectory) {
+        if (ref.line !== undefined) {
+          nonExistent.push(ref);
+        }
+        continue;
+      }
       if (ref.line !== undefined) {
         const lineCount = content.split("\n").length;
         if (ref.line > lineCount) {

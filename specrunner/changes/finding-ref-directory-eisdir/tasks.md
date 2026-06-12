@@ -4,11 +4,11 @@
 
 対象: `src/core/runtime/local.ts`
 
-- [ ] `fs.readFile` による存在判定を `fs.stat` に置き換える
-- [ ] `stat` が throw した場合（ENOENT 等）→ `nonExistent.push(ref)` して continue（従来通り）
-- [ ] `stat.isDirectory()` が true かつ `ref.line === undefined` → continue（existent 扱い）
-- [ ] `stat.isDirectory()` が true かつ `ref.line !== undefined` → `nonExistent.push(ref)` して continue（不正 ref）
-- [ ] `stat.isDirectory()` が false（ファイル）→ `ref.line` が指定されている場合のみ `fs.readFile` で行数 check（従来ロジックと同じ）
+- [x] `fs.readFile` による存在判定を `fs.stat` に置き換える
+- [x] `stat` が throw した場合（ENOENT 等）→ `nonExistent.push(ref)` して continue（従来通り）
+- [x] `stat.isDirectory()` が true かつ `ref.line === undefined` → continue（existent 扱い）
+- [x] `stat.isDirectory()` が true かつ `ref.line !== undefined` → `nonExistent.push(ref)` して continue（不正 ref）
+- [x] `stat.isDirectory()` が false（ファイル）→ `ref.line` が指定されている場合のみ `fs.readFile` で行数 check（従来ロジックと同じ）
 
 **Acceptance Criteria**:
 - 実在ディレクトリを `file` に持ち `line` なしの FindingRef が nonExistent に含まれない
@@ -21,11 +21,11 @@
 
 対象: `src/core/runtime/managed.ts`
 
-- [ ] `getRawFile` 返却後、`content !== null` の場合に `JSON.parse(content)` を試みる
-- [ ] parse 成功かつ `Array.isArray(parsed)` が true → ディレクトリと判定
-- [ ] ディレクトリかつ `ref.line === undefined` → continue（existent 扱い）
-- [ ] ディレクトリかつ `ref.line !== undefined` → `nonExistent.push(ref)` して continue（不正 ref）
-- [ ] それ以外（ファイル）→ 従来の line check ロジックをそのまま適用
+- [x] `getRawFile` 返却後、`content !== null` の場合に `JSON.parse(content)` を試みる
+- [x] parse 成功かつ `Array.isArray(parsed)` が true → ディレクトリと判定
+- [x] ディレクトリかつ `ref.line === undefined` → continue（existent 扱い）
+- [x] ディレクトリかつ `ref.line !== undefined` → `nonExistent.push(ref)` して continue（不正 ref）
+- [x] それ以外（ファイル）→ 従来の line check ロジックをそのまま適用
 
 **Acceptance Criteria**:
 - `getRawFile` が JSON 配列を返す（ディレクトリ相当）かつ `line` なしの FindingRef が nonExistent に含まれない
@@ -38,13 +38,13 @@
 
 対象: `tests/unit/core/runtime/verify-finding-refs.test.ts`
 
-- [ ] `TC-VFR-L-006`: local — 実在ディレクトリ（line なし）→ 返却配列が空
+- [x] `TC-VFR-L-006`: local — 実在ディレクトリ（line なし）→ 返却配列が空
   - `fs.mkdir` で tempDir 配下にディレクトリを作成し `verifyFindingRefs` で参照
-- [ ] `TC-VFR-L-007`: local — 実在ディレクトリ + line → 返却配列に含まれる
+- [x] `TC-VFR-L-007`: local — 実在ディレクトリ + line → 返却配列に含まれる
   - 同ディレクトリを使い `line: 5` を指定
-- [ ] `TC-VFR-M-006`: managed — `getRawFile` が JSON 配列文字列を返す（line なし）→ 返却配列が空
+- [x] `TC-VFR-M-006`: managed — `getRawFile` が JSON 配列文字列を返す（line なし）→ 返却配列が空
   - `buildMockGitHubClient(async () => JSON.stringify([{name: "foo.ts", type: "file"}]))` を使用
-- [ ] `TC-VFR-M-007`: managed — `getRawFile` が JSON 配列文字列を返す + line → 返却配列に含まれる
+- [x] `TC-VFR-M-007`: managed — `getRawFile` が JSON 配列文字列を返す + line → 返却配列に含まれる
   - 同 mock に `line: 5` を指定
 
 **Acceptance Criteria**:
@@ -54,8 +54,8 @@
 
 ## T-04: typecheck && test の確認
 
-- [ ] `bun run typecheck` が error なし
-- [ ] `bun run test` が全 pass（新規 + 既存）
+- [x] `bun run typecheck` が error なし
+- [x] `bun run test` が全 pass（新規 + 既存）
 
 **Acceptance Criteria**:
 - `bun run typecheck` exit code 0

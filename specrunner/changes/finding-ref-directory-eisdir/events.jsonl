@@ -17,3 +17,8 @@
 {"type":"transition","ts":"2026-06-12T03:04:32.011Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-12T03:04:32.011Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
 {"type":"transition","ts":"2026-06-12T03:04:32.015Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-06-12T03:06:08.357Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"fae9fb19-527c-47dc-afc2-d66e48ece5af","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-12T03:04:32.043Z","endedAt":"2026-06-12T03:06:03.834Z"}
+{"type":"lineage","step":"test-case-gen","ts":"2026-06-12T03:06:03.834Z","outputs":[{"path":"specrunner/changes/finding-ref-directory-eisdir/test-cases.md","hash":"sha256:402e134a879c72880a075888b2c0f5073b5f6412832ac03b98dd5b942cdcf8b7"}],"inputs":[{"path":"specrunner/changes/finding-ref-directory-eisdir/design.md","hash":"sha256:9df3f35766db9035db6da4be69b890915165d5b3ee32dc63928e753081e16613"},{"path":"specrunner/changes/finding-ref-directory-eisdir/tasks.md","hash":"sha256:0394e2f02ca4ed540edff02a2c26b596f6031da304600085bdd5c81a432d6e46"}]}
+{"type":"transition","ts":"2026-06-12T03:06:08.368Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-06-12T03:06:08.372Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
