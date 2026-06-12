@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2d87d816-4e42-4d00-9b06-abad55b7a84e",
   "createdAt": "2026-06-12T01:00:03.486Z",
-  "updatedAt": "2026-06-12T02:00:52.991Z",
+  "updatedAt": "2026-06-12T02:34:39.873Z",
   "request": {
     "title": "judge report tool に observations チャネルを追加し、非アクション観察を verdict 駆動から分離する",
     "type": "spec-change"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/observations-channel-2d87d816",
   "error": null,
   "pipelineId": "standard",
@@ -53,7 +53,7 @@
     "createdAt": "2026-06-12T02:00:52.975Z"
   },
   "_journal": {
-    "historyCount": 65,
+    "historyCount": 66,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
