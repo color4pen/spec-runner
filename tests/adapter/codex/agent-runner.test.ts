@@ -6,13 +6,17 @@ import * as nodePath from "node:path";
 import * as fs from "node:fs/promises";
 import { describe, it, expect, vi } from "vitest";
 import { CodexAgentRunner } from "../../../src/adapter/codex/agent-runner.js";
-import type { CodexInstance, CodexThread } from "../../../src/adapter/codex/agent-runner.js";
+import type { CodexInstance, CodexThread, CodexAgentRunnerDeps } from "../../../src/adapter/codex/agent-runner.js";
 import type { AgentRunContext } from "../../../src/core/port/agent-runner.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { DynamicContext } from "../../../src/git/dynamic-context.js";
 import { REPORT_TOOL } from "../../../src/core/step/report-tool.js";
+
+// ---------------------------------------------------------------------------
+// Test helpers
+// ---------------------------------------------------------------------------
 
 function makeJobState(): JobState {
   return {
@@ -37,6 +41,8 @@ function makeConfig(): SpecRunnerConfig {
     version: 1,
     runtime: "local",
     agents: {},
+    // Disable transient retry by default so existing tests are unaffected
+    transientRetry: { maxRetries: 0 },
   };
 }
 
@@ -74,6 +80,34 @@ function makeCtx(overrides: Partial<AgentRunContext> = {}): AgentRunContext {
   };
 }
 
+/** Build the async generator for a single streamed turn. */
+async function* makeEventStream(params: {
+  finalResponse: string;
+  items?: Array<{ type: string; [key: string]: unknown }>;
+  usage?: { input_tokens: number; output_tokens: number; cached_input_tokens?: number } | null;
+}) {
+  const items = params.items ?? [];
+  for (const item of items) {
+    yield { type: "item.completed", item };
+  }
+  yield {
+    type: "item.completed",
+    item: { type: "agent_message", text: params.finalResponse },
+  };
+  if (params.usage !== undefined && params.usage !== null) {
+    yield { type: "turn.completed", usage: params.usage };
+  }
+}
+
+/** Return value shape for runStreamed mock. */
+function makeStreamedTurn(params: {
+  finalResponse: string;
+  items?: Array<{ type: string; [key: string]: unknown }>;
+  usage?: { input_tokens: number; output_tokens: number; cached_input_tokens?: number } | null;
+}) {
+  return { events: makeEventStream(params) };
+}
+
 function makeThread(turnResult: {
   finalResponse: string;
   items?: unknown[];
@@ -82,11 +116,11 @@ function makeThread(turnResult: {
 }): CodexThread {
   return {
     id: turnResult.id ?? "thread-default-id",
-    run: vi.fn().mockResolvedValue({
+    runStreamed: vi.fn().mockResolvedValue(makeStreamedTurn({
       finalResponse: turnResult.finalResponse,
-      items: turnResult.items ?? [],
-      usage: turnResult.usage ?? null,
-    }),
+      items: (turnResult.items as Array<{ type: string }> | undefined) ?? [],
+      usage: turnResult.usage as { input_tokens: number; output_tokens: number; cached_input_tokens?: number } | null | undefined ?? null,
+    })),
   };
 }
 
@@ -97,16 +131,24 @@ function makeCodexFactory(thread: CodexThread): () => CodexInstance {
   });
 }
 
+function makeRunner(deps: CodexAgentRunnerDeps = {}): CodexAgentRunner {
+  return new CodexAgentRunner({ _sleepFn: async () => {}, ...deps });
+}
+
+// ---------------------------------------------------------------------------
+// Main suite
+// ---------------------------------------------------------------------------
+
 describe("CodexAgentRunner", () => {
   it("implements AgentRunner interface (has run method)", () => {
-    const runner = new CodexAgentRunner();
+    const runner = makeRunner();
     expect(typeof runner.run).toBe("function");
   });
 
   it("returns success with finalResponse when resultFilePath is null", async () => {
     const thread = makeThread({ finalResponse: "done!" });
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const result = await runner.run(makeCtx());
     expect(result.completionReason).toBe("success");
@@ -117,7 +159,7 @@ describe("CodexAgentRunner", () => {
     const thread = makeThread({ finalResponse: "" });
     const mockStartThread = vi.fn().mockReturnValue(thread);
     const factory = vi.fn().mockReturnValue({ startThread: mockStartThread });
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const ctx = makeCtx({ cwd: "/my/worktree" });
     await runner.run(ctx);
@@ -131,7 +173,7 @@ describe("CodexAgentRunner", () => {
     const thread = makeThread({ finalResponse: "" });
     const mockStartThread = vi.fn().mockReturnValue(thread);
     const factory = vi.fn().mockReturnValue({ startThread: mockStartThread });
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     await runner.run(makeCtx());
 
@@ -152,7 +194,7 @@ describe("CodexAgentRunner", () => {
     };
     const thread = makeThread({ finalResponse: "ok", usage });
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const result = await runner.run(makeCtx());
     expect(result.modelUsage).toBeDefined();
@@ -167,10 +209,11 @@ describe("CodexAgentRunner", () => {
   it("returns error when Codex SDK throws", async () => {
     const factory = vi.fn().mockReturnValue({
       startThread: vi.fn().mockReturnValue({
-        run: vi.fn().mockRejectedValue(new Error("network failure")),
+        id: "t1",
+        runStreamed: vi.fn().mockRejectedValue(new Error("network failure")),
       }),
     });
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const result = await runner.run(makeCtx());
     expect(result.completionReason).toBe("error");
@@ -180,9 +223,9 @@ describe("CodexAgentRunner", () => {
 
   it("includes branch, slug, and projectContext in prompt via additionalInstructions", async () => {
     const thread = makeThread({ finalResponse: "" });
-    const mockRun = thread.run as ReturnType<typeof vi.fn>;
+    const mockRunStreamed = thread.runStreamed as ReturnType<typeof vi.fn>;
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     await runner.run(makeCtx({
       branch: "feat/my-feature",
@@ -190,7 +233,7 @@ describe("CodexAgentRunner", () => {
       input: { requestContent: "# Request\nDo something", projectContext: "<project context text>" },
     }));
 
-    const promptPassed = (mockRun.mock.calls[0] as [string])[0];
+    const promptPassed = (mockRunStreamed.mock.calls[0] as [string])[0];
     expect(promptPassed).toContain("feat/my-feature");
     expect(promptPassed).toContain("my-feature");
     expect(promptPassed).toContain("<project context text>");
@@ -199,7 +242,7 @@ describe("CodexAgentRunner", () => {
   it("returns RESULT_FILE_NOT_FOUND error when result file is missing", async () => {
     const thread = makeThread({ finalResponse: "" });
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const step = makeAgentStep({
       resultFilePath: () => "/nonexistent/path/result.md",
@@ -217,7 +260,7 @@ describe("CodexAgentRunner", () => {
     try {
       const thread = makeThread({ finalResponse: "agent final response" });
       const factory = makeCodexFactory(thread);
-      const runner = new CodexAgentRunner({ _codexFactory: factory });
+      const runner = makeRunner({ _codexFactory: factory });
 
       const step = makeAgentStep({ resultFilePath: () => tmpFile });
       const result = await runner.run(makeCtx({ step }));
@@ -231,15 +274,13 @@ describe("CodexAgentRunner", () => {
   });
 
   // TC-03: timeout handling via AbortController
-  it("returns timeout when timeoutMs fires before thread.run resolves", async () => {
+  it("returns timeout when timeoutMs fires before runStreamed resolves", async () => {
     vi.useFakeTimers();
     try {
-      let abortReject: ((e: Error) => void) | undefined;
       const thread: CodexThread = {
         id: "thread-timeout-test",
-        run: vi.fn().mockImplementation((_prompt: string, opts?: { signal?: AbortSignal }) => {
+        runStreamed: vi.fn().mockImplementation((_prompt: string, opts?: { signal?: AbortSignal }) => {
           return new Promise<never>((_resolve, reject) => {
-            abortReject = reject;
             opts?.signal?.addEventListener("abort", () => {
               reject(new Error("AbortError"));
             });
@@ -248,9 +289,12 @@ describe("CodexAgentRunner", () => {
       };
       const mockStartThread = vi.fn().mockReturnValue(thread);
       const factory = vi.fn().mockReturnValue({ startThread: mockStartThread, resumeThread: vi.fn() });
-      const runner = new CodexAgentRunner({ _codexFactory: factory });
+      const runner = makeRunner({ _codexFactory: factory });
 
-      const config: SpecRunnerConfig = { ...makeConfig(), steps: { implementer: { timeoutMs: 100 } } };
+      const config: SpecRunnerConfig = {
+        ...makeConfig(),
+        steps: { implementer: { timeoutMs: 100 } },
+      };
       const runPromise = runner.run(makeCtx({ config }));
 
       await vi.advanceTimersByTimeAsync(100);
@@ -260,9 +304,6 @@ describe("CodexAgentRunner", () => {
       expect(result.completionReason).toBe("timeout");
       expect((result.error as { code?: string })?.code).toBe("STEP_TIMEOUT");
       expect(result.resultContent).toBeNull();
-
-      // suppress unused-variable warning
-      void abortReject;
     } finally {
       vi.useRealTimers();
     }
@@ -272,7 +313,7 @@ describe("CodexAgentRunner", () => {
   it("propagates requestBaseBranch to StepContext.request.baseBranch when supplied", async () => {
     const thread = makeThread({ finalResponse: "" });
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const buildMessage = vi.fn().mockReturnValue("build message result");
     const step = makeAgentStep({ buildMessage });
@@ -288,7 +329,7 @@ describe("CodexAgentRunner", () => {
   it("falls back to baseBranch \"main\" when requestBaseBranch is absent", async () => {
     const thread = makeThread({ finalResponse: "" });
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const buildMessage = vi.fn().mockReturnValue("build message result");
     const step = makeAgentStep({ buildMessage });
@@ -304,7 +345,7 @@ describe("CodexAgentRunner", () => {
   it("calls enrichContext before buildMessage and passes enriched dynamicContext", async () => {
     const thread = makeThread({ finalResponse: "" });
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const initialDynamicCtx: DynamicContext = {
       gitLog: "",
@@ -347,7 +388,7 @@ describe("CodexAgentRunner session continuity (resumeSessionId)", () => {
       startThread: mockStartThread,
       resumeThread: mockResumeThread,
     });
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const ctx = makeCtx({ session: { resumeSessionId: "thread-existing" } });
     const result = await runner.run(ctx);
@@ -365,7 +406,7 @@ describe("CodexAgentRunner session continuity (resumeSessionId)", () => {
       startThread: mockStartThread,
       resumeThread: mockResumeThread,
     });
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const ctx = makeCtx();
     const result = await runner.run(ctx);
@@ -391,7 +432,7 @@ describe("CodexAgentRunner session continuity (resumeSessionId)", () => {
       startThread: mockStartThread,
       resumeThread: mockResumeThread,
     });
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const ctx = makeCtx({ session: { resumeSessionId: "thread-expired" } });
     const result = await runner.run(ctx);
@@ -412,7 +453,7 @@ describe("CodexAgentRunner session continuity (resumeSessionId)", () => {
       startThread: mockStartThread,
       resumeThread: mockResumeThread,
     });
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     // Test with resumeSessionId set
     const ctxResume = makeCtx({ session: { resumeSessionId: "thread-id-123" } });
@@ -433,47 +474,47 @@ describe("CodexAgentRunner session continuity (resumeSessionId)", () => {
 // ---------------------------------------------------------------------------
 
 describe("CodexAgentRunner follow-up 2-turn execution", () => {
-  it("followUpPrompt 指定時に thread.run が 2 回呼ばれる (同一 thread)", async () => {
+  it("followUpPrompt 指定時に thread.runStreamed が 2 回呼ばれる (同一 thread)", async () => {
     const thread = makeThread({ finalResponse: "done", id: "thread-001" });
-    const mockRun = thread.run as ReturnType<typeof vi.fn>;
+    const mockRunStreamed = thread.runStreamed as ReturnType<typeof vi.fn>;
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "fix format violations" }), policy: { postWorkPrompts: ["fix format violations"] } });
     const result = await runner.run(ctx);
 
     expect(result.completionReason).toBe("success");
-    expect(mockRun).toHaveBeenCalledTimes(2);
+    expect(mockRunStreamed).toHaveBeenCalledTimes(2);
   });
 
-  it("2 回目の thread.run prompt が followUpPrompt", async () => {
+  it("2 回目の thread.runStreamed prompt が followUpPrompt", async () => {
     const thread = makeThread({ finalResponse: "done", id: "thread-002" });
-    const mockRun = thread.run as ReturnType<typeof vi.fn>;
+    const mockRunStreamed = thread.runStreamed as ReturnType<typeof vi.fn>;
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "read rules and fix" }), policy: { postWorkPrompts: ["read rules and fix"] } });
     await runner.run(ctx);
 
-    expect(mockRun).toHaveBeenCalledTimes(2);
+    expect(mockRunStreamed).toHaveBeenCalledTimes(2);
     // First call with full work prompt
-    const firstCallPrompt = (mockRun.mock.calls[0] as [string])[0];
+    const firstCallPrompt = (mockRunStreamed.mock.calls[0] as [string])[0];
     expect(firstCallPrompt).not.toBe("read rules and fix");
     // Second call with follow-up prompt
-    const secondCallPrompt = (mockRun.mock.calls[1] as [string])[0];
+    const secondCallPrompt = (mockRunStreamed.mock.calls[1] as [string])[0];
     expect(secondCallPrompt).toBe("read rules and fix");
   });
 
-  it("followUpPrompt 未指定時に thread.run が 1 回のみ", async () => {
+  it("followUpPrompt 未指定時に thread.runStreamed が 1 回のみ", async () => {
     const thread = makeThread({ finalResponse: "done", id: "thread-003" });
-    const mockRun = thread.run as ReturnType<typeof vi.fn>;
+    const mockRunStreamed = thread.runStreamed as ReturnType<typeof vi.fn>;
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const ctx = makeCtx(); // no followUpPrompt
     await runner.run(ctx);
 
-    expect(mockRun).toHaveBeenCalledTimes(1);
+    expect(mockRunStreamed).toHaveBeenCalledTimes(1);
   });
 
   it("modelUsage が turn 1 + turn 2 の加算 (per-turn 加算)", async () => {
@@ -483,13 +524,12 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
     let callCount = 0;
     const thread: CodexThread = {
       id: "thread-usage",
-      run: vi.fn().mockImplementation(() => {
+      runStreamed: vi.fn().mockImplementation(() => {
         callCount++;
-        return Promise.resolve({
+        return Promise.resolve(makeStreamedTurn({
           finalResponse: "done",
-          items: [],
           usage: callCount === 1 ? turn1Usage : turn2Usage,
-        });
+        }));
       }),
     };
 
@@ -497,7 +537,7 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
       startThread: vi.fn().mockReturnValue(thread),
       resumeThread: vi.fn().mockReturnValue(thread),
     });
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "fix it" }), policy: { postWorkPrompts: ["fix it"] } });
     const result = await runner.run(ctx);
@@ -517,10 +557,10 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
 
     const thread: CodexThread = {
       id: "thread-signal",
-      run: vi.fn().mockImplementation((_prompt: string, opts?: { signal?: AbortSignal }) => {
+      runStreamed: vi.fn().mockImplementation((_prompt: string, opts?: { signal?: AbortSignal }) => {
         callCount++;
         receivedSignals.push(opts?.signal);
-        return Promise.resolve({ finalResponse: "done", items: [], usage: null });
+        return Promise.resolve(makeStreamedTurn({ finalResponse: "done" }));
       }),
     };
 
@@ -528,7 +568,7 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
       startThread: vi.fn().mockReturnValue(thread),
       resumeThread: vi.fn().mockReturnValue(thread),
     });
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const ctx = makeCtx({ step: makeAgentStep({ followUpPrompt: "follow" }), policy: { postWorkPrompts: ["follow"] } });
     await runner.run(ctx);
@@ -540,29 +580,29 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
     expect(receivedSignals[0]).toBe(receivedSignals[1]); // same signal
   });
 
-  it("followUpPrompts 2 件: thread.run が 3 回呼ばれる", async () => {
+  it("followUpPrompts 2 件: thread.runStreamed が 3 回呼ばれる", async () => {
     const thread = makeThread({ finalResponse: "done", id: "thread-n-stage" });
-    const mockRun = thread.run as ReturnType<typeof vi.fn>;
+    const mockRunStreamed = thread.runStreamed as ReturnType<typeof vi.fn>;
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const ctx = makeCtx({ policy: { postWorkPrompts: ["rule-1", "rule-2"] } });
     const result = await runner.run(ctx);
 
     expect(result.completionReason).toBe("success");
-    expect(mockRun).toHaveBeenCalledTimes(3);
+    expect(mockRunStreamed).toHaveBeenCalledTimes(3);
   });
 
   it("Thread.id が null の場合 sessionId が undefined になる", async () => {
     const nullIdThread: CodexThread = {
       id: null,
-      run: vi.fn().mockResolvedValue({ finalResponse: "done", items: [], usage: null }),
+      runStreamed: vi.fn().mockResolvedValue(makeStreamedTurn({ finalResponse: "done" })),
     };
     const factory = vi.fn().mockReturnValue({
       startThread: vi.fn().mockReturnValue(nullIdThread),
       resumeThread: vi.fn().mockReturnValue(nullIdThread),
     });
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const ctx = makeCtx();
     const result = await runner.run(ctx);
@@ -577,18 +617,18 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
 // ---------------------------------------------------------------------------
 
 describe("CodexAgentRunner typed outcome (codex-typed-outcome)", () => {
-  // T-07 test a: reportTool set → thread.run() called with outputSchema
-  it("reportTool set → thread.run() called with outputSchema in opts", async () => {
+  // T-07 test a: reportTool set → thread.runStreamed() called with outputSchema
+  it("reportTool set → thread.runStreamed() called with outputSchema in opts", async () => {
     const validResponse = JSON.stringify({ ok: true });
     const thread = makeThread({ finalResponse: validResponse });
-    const mockRun = thread.run as ReturnType<typeof vi.fn>;
+    const mockRunStreamed = thread.runStreamed as ReturnType<typeof vi.fn>;
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL } });
     await runner.run(ctx);
 
-    const firstCallOpts = (mockRun.mock.calls[0] as [string, { signal?: AbortSignal; outputSchema?: unknown }])[1];
+    const firstCallOpts = (mockRunStreamed.mock.calls[0] as [string, { signal?: AbortSignal; outputSchema?: unknown }])[1];
     expect(firstCallOpts).toBeDefined();
     expect(firstCallOpts.outputSchema).toBeDefined();
     expect(typeof firstCallOpts.outputSchema).toBe("object");
@@ -598,16 +638,16 @@ describe("CodexAgentRunner typed outcome (codex-typed-outcome)", () => {
   it("finalResponse valid JSON → toolResult populated, followUpAttempts: 0", async () => {
     const validResponse = JSON.stringify({ ok: true });
     const thread = makeThread({ finalResponse: validResponse });
-    const mockRun = thread.run as ReturnType<typeof vi.fn>;
+    const mockRunStreamed = thread.runStreamed as ReturnType<typeof vi.fn>;
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL } });
     const result = await runner.run(ctx);
 
     expect(result.toolResult).toEqual({ ok: true });
     expect(result.followUpAttempts).toBe(0);
-    expect(mockRun).toHaveBeenCalledTimes(1);
+    expect(mockRunStreamed).toHaveBeenCalledTimes(1);
   });
 
   // T-07 test c: finalResponse invalid → follow-up retry → retry has valid JSON → toolResult populated
@@ -615,21 +655,21 @@ describe("CodexAgentRunner typed outcome (codex-typed-outcome)", () => {
     let callCount = 0;
     const thread: CodexThread = {
       id: "thread-retry-success",
-      run: vi.fn().mockImplementation(() => {
+      runStreamed: vi.fn().mockImplementation(() => {
         callCount++;
         if (callCount === 1) {
           // Main turn: invalid JSON (no outputSchema result yet)
-          return Promise.resolve({ finalResponse: "not valid json", items: [], usage: null });
+          return Promise.resolve(makeStreamedTurn({ finalResponse: "not valid json" }));
         }
         // First retry: valid JSON
-        return Promise.resolve({ finalResponse: JSON.stringify({ ok: true }), items: [], usage: null });
+        return Promise.resolve(makeStreamedTurn({ finalResponse: JSON.stringify({ ok: true }) }));
       }),
     };
     const factory = vi.fn().mockReturnValue({
       startThread: vi.fn().mockReturnValue(thread),
       resumeThread: vi.fn().mockReturnValue(thread),
     });
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL } });
     const result = await runner.run(ctx);
@@ -640,27 +680,27 @@ describe("CodexAgentRunner typed outcome (codex-typed-outcome)", () => {
   });
 
   // TC-013: retry turns also receive outputSchema
-  it("retry turn → thread.run() also called with outputSchema in opts", async () => {
+  it("retry turn → thread.runStreamed() also called with outputSchema in opts", async () => {
     let callCount = 0;
     const capturedOpts: Array<{ signal?: AbortSignal; outputSchema?: unknown }> = [];
     const thread: CodexThread = {
       id: "thread-retry-schema",
-      run: vi.fn().mockImplementation((_prompt: string, opts?: { signal?: AbortSignal; outputSchema?: unknown }) => {
+      runStreamed: vi.fn().mockImplementation((_prompt: string, opts?: { signal?: AbortSignal; outputSchema?: unknown }) => {
         callCount++;
         capturedOpts.push(opts ?? {});
         if (callCount === 1) {
           // Main turn: invalid JSON → triggers retry
-          return Promise.resolve({ finalResponse: "not valid json", items: [], usage: null });
+          return Promise.resolve(makeStreamedTurn({ finalResponse: "not valid json" }));
         }
         // First retry: valid JSON
-        return Promise.resolve({ finalResponse: JSON.stringify({ ok: true }), items: [], usage: null });
+        return Promise.resolve(makeStreamedTurn({ finalResponse: JSON.stringify({ ok: true }) }));
       }),
     };
     const factory = vi.fn().mockReturnValue({
       startThread: vi.fn().mockReturnValue(thread),
       resumeThread: vi.fn().mockReturnValue(thread),
     });
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL } });
     await runner.run(ctx);
@@ -675,9 +715,9 @@ describe("CodexAgentRunner typed outcome (codex-typed-outcome)", () => {
   // T-07 test d: all retries exhausted → toolResult: null, followUpAttempts: maxAttempts
   it("all retries exhausted → toolResult: null, followUpAttempts: maxAttempts (2)", async () => {
     const thread = makeThread({ finalResponse: "not json at all" });
-    const mockRun = thread.run as ReturnType<typeof vi.fn>;
+    const mockRunStreamed = thread.runStreamed as ReturnType<typeof vi.fn>;
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     // DEFAULT_TOOL_RETRY.maxAttempts = 2
     const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL } });
@@ -686,25 +726,25 @@ describe("CodexAgentRunner typed outcome (codex-typed-outcome)", () => {
     expect(result.toolResult).toBeNull();
     expect(result.followUpAttempts).toBe(2);
     // main + 2 retries = 3 calls total
-    expect(mockRun).toHaveBeenCalledTimes(3);
+    expect(mockRunStreamed).toHaveBeenCalledTimes(3);
   });
 
   // T-07 test e: reportTool not set → toolResult: null, no outputSchema (backward compat)
   it("reportTool not set → toolResult: null, followUpAttempts: 0 (backward compat)", async () => {
     const thread = makeThread({ finalResponse: "some text content" });
-    const mockRun = thread.run as ReturnType<typeof vi.fn>;
+    const mockRunStreamed = thread.runStreamed as ReturnType<typeof vi.fn>;
     const factory = makeCodexFactory(thread);
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const ctx = makeCtx(); // no reportTool
     const result = await runner.run(ctx);
 
     expect(result.toolResult).toBeNull();
     expect(result.followUpAttempts).toBe(0);
-    expect(mockRun).toHaveBeenCalledTimes(1);
+    expect(mockRunStreamed).toHaveBeenCalledTimes(1);
 
     // outputSchema must NOT be present when reportTool is not set
-    const firstCallOpts = (mockRun.mock.calls[0] as [string, { signal?: AbortSignal; outputSchema?: unknown }])[1];
+    const firstCallOpts = (mockRunStreamed.mock.calls[0] as [string, { signal?: AbortSignal; outputSchema?: unknown }])[1];
     expect(firstCallOpts).not.toHaveProperty("outputSchema");
   });
 
@@ -714,16 +754,16 @@ describe("CodexAgentRunner typed outcome (codex-typed-outcome)", () => {
     let callCount = 0;
     const thread: CodexThread = {
       id: "thread-postwork",
-      run: vi.fn().mockImplementation(() => {
+      runStreamed: vi.fn().mockImplementation(() => {
         callCount++;
-        return Promise.resolve({ finalResponse: validResponse, items: [], usage: null });
+        return Promise.resolve(makeStreamedTurn({ finalResponse: validResponse }));
       }),
     };
     const factory = vi.fn().mockReturnValue({
       startThread: vi.fn().mockReturnValue(thread),
       resumeThread: vi.fn().mockReturnValue(thread),
     });
-    const runner = new CodexAgentRunner({ _codexFactory: factory });
+    const runner = makeRunner({ _codexFactory: factory });
 
     const ctx = makeCtx({
       policy: {
@@ -736,11 +776,11 @@ describe("CodexAgentRunner typed outcome (codex-typed-outcome)", () => {
     expect(callCount).toBe(2); // main + 1 postWorkPrompt
 
     // First call (main work) should have outputSchema
-    const mainCallOpts = ((thread.run as ReturnType<typeof vi.fn>).mock.calls[0] as [string, { outputSchema?: unknown }])[1];
+    const mainCallOpts = ((thread.runStreamed as ReturnType<typeof vi.fn>).mock.calls[0] as [string, { outputSchema?: unknown }])[1];
     expect(mainCallOpts?.outputSchema).toBeDefined();
 
     // Second call (postWorkPrompt) should NOT have outputSchema
-    const followCallOpts = ((thread.run as ReturnType<typeof vi.fn>).mock.calls[1] as [string, { outputSchema?: unknown }])[1];
+    const followCallOpts = ((thread.runStreamed as ReturnType<typeof vi.fn>).mock.calls[1] as [string, { outputSchema?: unknown }])[1];
     expect(followCallOpts).not.toHaveProperty("outputSchema");
   });
 });

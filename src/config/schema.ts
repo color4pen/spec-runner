@@ -297,7 +297,8 @@ export const DEFAULT_TRANSIENT_RETRY_BASE_DELAY_MS = 1000;
 
 /**
  * Configuration for automatic transient-error retries in agent steps.
- * Applied to the local ClaudeCodeRunner only; ignored by managed runtime.
+ * Applied to local runtime runners (ClaudeCodeRunner and CodexAgentRunner); ignored by
+ * the managed runtime.
  */
 export interface TransientRetryConfig {
   /**
@@ -398,7 +399,8 @@ export interface SpecRunnerConfig {
   /**
    * Transient-error auto-retry configuration.
    * Controls automatic retry of agent steps on transient connection/socket/5xx errors.
-   * Applied to local runtime (ClaudeCodeRunner) only; ignored by managed runtime.
+   * Applied to local runtime runners (ClaudeCodeRunner and CodexAgentRunner); ignored by
+   * the managed runtime.
    */
   transientRetry?: TransientRetryConfig;
   /**
