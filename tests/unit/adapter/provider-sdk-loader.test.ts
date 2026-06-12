@@ -20,7 +20,10 @@ function assertMissingProviderError(err: unknown, packageName: string): boolean 
   const specrunnerError = err as SpecRunnerError;
   expect(specrunnerError.code).toBe(ERROR_CODES.PROVIDER_SDK_MISSING);
   expect(specrunnerError.message).toContain(packageName);
-  expect(specrunnerError.hint).toContain(`bun add ${packageName}`);
+  // Install command is package-manager aware (lockfile detection); assert shape, not a specific PM.
+  expect(specrunnerError.hint).toMatch(/(bun add|npm install|pnpm add|yarn add) /);
+  expect(specrunnerError.hint).toContain(packageName);
+  expect(specrunnerError.message).toContain(`npm install -g ${packageName}`);
   return true;
 }
 
@@ -132,5 +135,51 @@ describe("provider SDK loaders", () => {
         throw cause;
       },
     })).rejects.toBe(cause);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// addPackageCommand: PM-aware install hint (lockfile detection)
+// ---------------------------------------------------------------------------
+
+import { addPackageCommand, loadOptionalProviderSdk } from "../../../src/adapter/shared/provider-sdk-loader.js";
+
+describe("addPackageCommand", () => {
+  it("uses 'npm install' for npm and '<pm> add' for others", () => {
+    expect(addPackageCommand("npm", "@x/pkg")).toBe("npm install @x/pkg");
+    expect(addPackageCommand("bun", "@x/pkg")).toBe("bun add @x/pkg");
+    expect(addPackageCommand("pnpm", "@x/pkg")).toBe("pnpm add @x/pkg");
+    expect(addPackageCommand("yarn", "@x/pkg")).toBe("yarn add @x/pkg");
+  });
+});
+
+describe("loadOptionalProviderSdk — PM-aware hint", () => {
+  it("builds the hint with the injected detected package manager", async () => {
+    try {
+      await loadOptionalProviderSdk({
+        info: { providerName: "Test", packageName: "@x/test-pkg" },
+        importer: () => Promise.reject(missingModuleError("@x/test-pkg")),
+        detectPm: async () => "npm",
+      });
+      throw new Error("expected rejection");
+    } catch (err) {
+      const e = err as SpecRunnerError;
+      expect(e.code).toBe(ERROR_CODES.PROVIDER_SDK_MISSING);
+      expect(e.hint).toContain("npm install @x/test-pkg");
+    }
+  });
+
+  it("falls back to npm when detection fails", async () => {
+    try {
+      await loadOptionalProviderSdk({
+        info: { providerName: "Test", packageName: "@x/test-pkg" },
+        importer: () => Promise.reject(missingModuleError("@x/test-pkg")),
+        detectPm: async () => { throw new Error("detect failed"); },
+      });
+      throw new Error("expected rejection");
+    } catch (err) {
+      const e = err as SpecRunnerError;
+      expect(e.hint).toContain("npm install @x/test-pkg");
+    }
   });
 });

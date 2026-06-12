@@ -25,7 +25,6 @@ export async function loadClaudeAgentSdk(deps: ClaudeAgentSdkLoaderDeps = {}): P
     info: {
       providerName: "Claude",
       packageName: CLAUDE_AGENT_SDK_PACKAGE,
-      installCommand: `bun add ${CLAUDE_AGENT_SDK_PACKAGE}`,
     },
     importer: deps.importer ?? ((specifier) => import(specifier)),
   });

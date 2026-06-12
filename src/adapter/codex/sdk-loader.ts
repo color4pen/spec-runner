@@ -18,7 +18,6 @@ export async function loadCodexSdk(deps: CodexSdkLoaderDeps = {}): Promise<Codex
     info: {
       providerName: "OpenAI/Codex",
       packageName: CODEX_SDK_PACKAGE,
-      installCommand: `bun add ${CODEX_SDK_PACKAGE}`,
     },
     importer: deps.importer ?? ((specifier) => import(specifier)),
   });
