@@ -75,3 +75,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/stream-idle-timeout-no-retry/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T03:47:48.280Z","endedAt":"2026-06-12T03:47:50.229Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-12T03:47:50.229Z","outputs":[{"path":"specrunner/changes/stream-idle-timeout-no-retry/pr-create-result.md","hash":"sha256:da58dfd1b36cdbdf6a3b58fb81190c16f09c843d3a67a77b20a649a588c776d3"}],"inputs":[{"path":"fix/stream-idle-timeout-no-retry-3d03875d","hash":null}]}
 {"type":"transition","ts":"2026-06-12T03:47:50.239Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-12T04:46:08.989Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
