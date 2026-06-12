@@ -77,3 +77,9 @@
 {"type":"transition","ts":"2026-06-12T08:01:52.170Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-12T08:01:52.170Z","step":"step-transition","status":"ok","message":"regression-gate → code-fixer"}
 {"type":"transition","ts":"2026-06-12T08:01:52.173Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-06-12T08:03:39.359Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"3509fff4-22e6-4036-9528-ba68a5ec5508","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-06-12T08:01:52.194Z","endedAt":"2026-06-12T08:03:36.992Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-06-12T08:03:36.992Z","outputs":[{"path":"specrunner/changes/codex-adapter-parity","hash":null}],"inputs":[{"path":"specrunner/changes/codex-adapter-parity/regression-gate-result-001.md","hash":"sha256:23537121bec3423711ef3fbc7620c816065ff1b4412e331facf973ec17eefa67"}]}
+{"type":"transition","ts":"2026-06-12T08:03:39.369Z","step":"step-transition","status":"ok","message":"code-fixer → conformance"}
+{"type":"transition","ts":"2026-06-12T08:03:39.371Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T08:03:39.374Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
