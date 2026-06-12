@@ -571,7 +571,7 @@ const mirrorPlacementSchema = object(
  */
 const testPlacementSchema = union(
   [siblingPlacementSchema, mirrorPlacementSchema],
-  'tests.placement must have style "sibling" or "mirror" with required fields.',
+  'must have style "sibling" or "mirror" with required fields.',
 );
 
 /** Verification command: non-empty string or object with required run field. */
