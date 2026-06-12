@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "73f15a52-ba5d-4ac7-820e-3745bfb1f071",
   "createdAt": "2026-06-12T05:40:03.023Z",
-  "updatedAt": "2026-06-12T06:07:09.025Z",
+  "updatedAt": "2026-06-12T06:07:28.192Z",
   "request": {
     "title": "escalation 通知コメントに branch の compare URL を含め、停止した job の差分確認を GitHub 上で完結させる",
     "type": "new-feature"
@@ -11,8 +11,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/escalation-compare-url-73f15a52",
   "error": null,
   "pipelineId": "standard",
@@ -47,8 +47,13 @@
     }
   ],
   "issueNumber": 649,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/658",
+    "number": 658,
+    "createdAt": "2026-06-12T06:07:28.178Z"
+  },
   "_journal": {
-    "historyCount": 49,
+    "historyCount": 54,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -60,7 +65,9 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
