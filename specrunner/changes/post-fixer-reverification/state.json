@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24fae6fa-1266-4274-858e-e5d60ab4f32e",
   "createdAt": "2026-06-12T03:00:03.434Z",
-  "updatedAt": "2026-06-12T03:13:04.125Z",
+  "updatedAt": "2026-06-12T03:16:52.420Z",
   "request": {
     "title": "code 変更後に機械検証を経ずに pr-create へ到達できる遷移経路を塞ぐ",
     "type": "spec-change"
@@ -11,7 +11,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/post-fixer-reverification-24fae6fa",
   "error": null,
@@ -48,10 +48,11 @@
   ],
   "issueNumber": 653,
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
