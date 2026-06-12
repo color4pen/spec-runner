@@ -41,3 +41,21 @@
 {"type":"transition","ts":"2026-06-12T11:43:27.727Z","step":"code-review","status":"ok","message":"code-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-12T11:43:27.728Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-06-12T11:43:27.733Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-06-12T11:43:51.410Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"2a40dbd9-e370-47d2-8890-2e274a6e028d","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"reason":"All findings are LOW severity. No changes required.","status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-12T11:43:27.766Z","endedAt":"2026-06-12T11:43:49.595Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-06-12T11:43:49.595Z","outputs":[{"path":"specrunner/changes/codex-completion-report-fallback","hash":null}],"inputs":[{"path":"specrunner/changes/codex-completion-report-fallback/review-feedback-001.md","hash":"sha256:b2c6b69142c3e6a236dd364607e8ad666ccd1439d00754e49b39d531f2888db6"}]}
+{"type":"transition","ts":"2026-06-12T11:43:51.417Z","step":"step-transition","status":"ok","message":"code-fixer → cross-boundary-invariants"}
+{"type":"transition","ts":"2026-06-12T11:43:51.419Z","step":"cross-boundary-invariants","status":"started","message":"cross-boundary-invariants iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T11:43:51.420Z","step":"cross-boundary-invariants-started","status":"started","message":"Starting cross-boundary-invariants step"}
+{"type":"transition","ts":"2026-06-12T11:43:51.451Z","step":"cross-boundary-invariants-skipped","status":"warning","message":"cross-boundary-invariants skipped: no changed files matched paths [src/core/pipeline/**, src/core/step/**, src/state/**, src/store/**]"}
+{"type":"step-attempt","step":"cross-boundary-invariants","sessionId":null,"outcome":{"verdict":"skipped","findingsPath":null,"error":null,"skipReason":"no changed files matched paths [src/core/pipeline/**, src/core/step/**, src/state/**, src/store/**]"},"startedAt":"2026-06-12T11:43:51.451Z","endedAt":"2026-06-12T11:43:51.451Z"}
+{"type":"transition","ts":"2026-06-12T11:43:51.456Z","step":"cross-boundary-invariants","status":"warning","message":"cross-boundary-invariants iteration 1 completed with verdict: skipped"}
+{"type":"transition","ts":"2026-06-12T11:43:51.456Z","step":"step-transition","status":"ok","message":"cross-boundary-invariants → scale-tolerance"}
+{"type":"transition","ts":"2026-06-12T11:43:51.459Z","step":"scale-tolerance","status":"started","message":"scale-tolerance iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T11:43:51.461Z","step":"scale-tolerance-started","status":"started","message":"Starting scale-tolerance step"}
+{"type":"transition","ts":"2026-06-12T11:43:51.488Z","step":"scale-tolerance-skipped","status":"warning","message":"scale-tolerance skipped: no changed files matched paths [src/store/**, src/adapter/github/**, src/core/inbox/**, src/logger/**]"}
+{"type":"step-attempt","step":"scale-tolerance","sessionId":null,"outcome":{"verdict":"skipped","findingsPath":null,"error":null,"skipReason":"no changed files matched paths [src/store/**, src/adapter/github/**, src/core/inbox/**, src/logger/**]"},"startedAt":"2026-06-12T11:43:51.488Z","endedAt":"2026-06-12T11:43:51.488Z"}
+{"type":"transition","ts":"2026-06-12T11:43:51.493Z","step":"scale-tolerance","status":"warning","message":"scale-tolerance iteration 1 completed with verdict: skipped"}
+{"type":"transition","ts":"2026-06-12T11:43:51.493Z","step":"step-transition","status":"ok","message":"scale-tolerance → regression-gate"}
+{"type":"transition","ts":"2026-06-12T11:43:51.494Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T11:43:51.496Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
