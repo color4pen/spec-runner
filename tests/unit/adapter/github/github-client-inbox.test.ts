@@ -1,5 +1,5 @@
 /**
- * T-02 adapter tests: searchOpenIssuesByLabel and listIssueComments.
+ * T-02 adapter tests: searchOpenIssuesByLabel, listIssueComments, and removeLabel.
  *
  * TC-IL-001: searchOpenIssuesByLabel — returns only issues (PR excluded)
  * TC-IL-002: searchOpenIssuesByLabel — follows Link header pagination
@@ -10,6 +10,9 @@
  * TC-LC-002: listIssueComments — follows Link header pagination
  * TC-LC-003: listIssueComments — 401 → GITHUB_TOKEN_EXPIRED
  * TC-LC-004: listIssueComments — non-200 → GITHUB_API_ERROR
+ * TC-RL-001: removeLabel — 204 → resolves
+ * TC-RL-002: removeLabel — 404 → resolves (idempotent)
+ * TC-RL-003: removeLabel — 422 → throws GITHUB_API_ERROR
  */
 import { describe, it, expect, vi } from "vitest";
 import { GitHubApiClient } from "../../../../src/adapter/github/github-client.js";
@@ -210,6 +213,44 @@ describe("TC-LC-004: listIssueComments — non-200 → GITHUB_API_ERROR", () => 
     const client = buildClient(mockFetch as unknown as typeof fetch);
 
     await expect(client.listIssueComments(OWNER, REPO, 42)).rejects.toSatisfy(
+      (err: unknown) =>
+        err instanceof SpecRunnerError && err.code === ERROR_CODES.GITHUB_API_ERROR,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// removeLabel
+// ---------------------------------------------------------------------------
+
+describe("TC-RL-001: removeLabel — 204 → resolves", () => {
+  it("resolves when server returns 204 No Content", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(makeResponse(204, null));
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+
+    await expect(client.removeLabel(OWNER, REPO, 42, "specrunner:approve")).resolves.toBeUndefined();
+  });
+});
+
+describe("TC-RL-002: removeLabel — 404 → resolves (idempotent)", () => {
+  it("resolves without throwing when label does not exist on the issue", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      makeResponse(404, { message: "Label does not exist" }),
+    );
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+
+    await expect(client.removeLabel(OWNER, REPO, 42, "specrunner:approve")).resolves.toBeUndefined();
+  });
+});
+
+describe("TC-RL-003: removeLabel — 422 → throws GITHUB_API_ERROR", () => {
+  it("throws GITHUB_API_ERROR on 422 Unprocessable Entity", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      makeResponse(422, { message: "Validation Failed" }),
+    );
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+
+    await expect(client.removeLabel(OWNER, REPO, 42, "specrunner:approve")).rejects.toSatisfy(
       (err: unknown) =>
         err instanceof SpecRunnerError && err.code === ERROR_CODES.GITHUB_API_ERROR,
     );

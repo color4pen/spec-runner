@@ -252,6 +252,48 @@ describe("runInboxOrchestrator — reject label removal", () => {
     expect(removeApprovalLabel).not.toHaveBeenCalled();
     expect(summary.errors).toHaveLength(1);
   });
+
+  it("TC-011: listIssueComments is called for unlinked approved issues in collection phase", async () => {
+    const client = makeRejectClient(710);
+    const effects = makeEffects();
+
+    await runInboxOrchestrator({
+      githubClient: client as never,
+      owner: "test",
+      repo: "repo",
+      repoRoot: "/repo",
+      approveLabel: "specrunner:approve",
+      maxStartsPerRun: 5,
+      dryRun: false,
+      effects,
+    });
+
+    expect(client.listIssueComments).toHaveBeenCalledWith("test", "repo", 710);
+  });
+
+  it("TC-012: listIssueComments failure for unlinked approved issue is non-fatal and logs warn", async () => {
+    const client = makeRejectClient(711);
+    (client.listIssueComments as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error("network failure"),
+    );
+    const effects = makeEffects();
+
+    const summary = await runInboxOrchestrator({
+      githubClient: client as never,
+      owner: "test",
+      repo: "repo",
+      repoRoot: "/repo",
+      approveLabel: "specrunner:approve",
+      maxStartsPerRun: 5,
+      dryRun: false,
+      effects,
+    });
+
+    expect(summary.errors).toHaveLength(0);
+    const warnCalls = vi.mocked(stderrWrite).mock.calls.map(([m]) => m as string);
+    expect(warnCalls.some((m) => m.includes("warn") && m.includes("711"))).toBe(true);
+    expect(summary.rejected).toHaveLength(1);
+  });
 });
 
 // ---------------------------------------------------------------------------
