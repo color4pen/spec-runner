@@ -44,3 +44,29 @@ export interface Finding {
    */
   fixTarget?: FixTarget;
 }
+
+/**
+ * A single observation reported by a judge agent via the report_result observations array.
+ *
+ * Observations are informational records that do NOT affect verdict routing.
+ * They represent noteworthy information that is not actionable — no fix is required,
+ * no human decision is needed.
+ *
+ * Design:
+ * - severity is for recording purposes only; it does NOT route to code-fixer,
+ *   findings-ledger, or regression-gate. Verdict derivation reads only `findings`.
+ * - `resolution` is intentionally absent — observations are never fixable or
+ *   decision-needed by definition.
+ */
+export interface Observation {
+  /** Severity for recording purposes only — NOT used for verdict routing or pipeline branching. */
+  severity: FindingSeverity;
+  /** Worktree-relative file path where the observation applies. */
+  file: string;
+  /** Optional line number within the file. */
+  line?: number;
+  /** Short title / summary of the observation. */
+  title: string;
+  /** Rationale explaining what was observed and why it is noteworthy. */
+  rationale: string;
+}

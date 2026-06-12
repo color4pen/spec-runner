@@ -1,5 +1,5 @@
 import type { JobState, StepResult, StepRun, ModelUsage } from "./schema.js";
-import type { BaseReportResult, Finding } from "../kernel/report-result.js";
+import type { BaseReportResult, Finding, Observation } from "../kernel/report-result.js";
 
 /**
  * Convert a StepRun to StepResult shape (legacy view).
@@ -65,9 +65,9 @@ export interface StepResultInput {
   /**
    * Result from report_result tool call.
    * null = tool was not called. Added in tool-driven-step-completion.
-   * Widened to include findings array for judge steps (judge-verdict-from-findings).
+   * Widened to include findings and observations arrays for judge steps.
    */
-  toolResult?: (BaseReportResult & { findings?: Finding[] }) | null;
+  toolResult?: (BaseReportResult & { findings?: Finding[]; observations?: Observation[] }) | null;
   /**
    * Number of follow-up retry attempts. 0 = first turn success.
    * Added in tool-driven-step-completion.

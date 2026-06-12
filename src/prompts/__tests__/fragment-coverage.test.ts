@@ -11,8 +11,11 @@ import { describe, it, expect } from "vitest";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../code-review-system.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT } from "../spec-review-system.js";
 import { REQUEST_REVIEW_SYSTEM_PROMPT } from "../request-review-system.js";
+import { REGRESSION_GATE_SYSTEM_PROMPT } from "../regression-gate-system.js";
+import { buildCustomReviewerSystemPrompt } from "../custom-reviewer-system.js";
 import { PIPELINE_RULES } from "../fragments.js";
-import { DECISION_NEEDED_DEFINITION, VERDICT_BLOCKING_RULES } from "../judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES } from "../judge-rules.js";
+import type { ReviewerSnapshot } from "../../kernel/reviewer-snapshot.js";
 
 // ---------------------------------------------------------------------------
 // PIPELINE_RULES inclusion
@@ -144,5 +147,54 @@ describe("old 'verdict line is authoritative' text is removed from prompts", () 
   it("REQUEST_REVIEW_SYSTEM_PROMPT Verdict Derivation Rules does not say HIGH-only blocking", () => {
     // The old rules said "No HIGH severity findings" for approve — no mention of decision-needed
     expect(REQUEST_REVIEW_SYSTEM_PROMPT).not.toContain("No HIGH severity findings. The request is ready");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-09: OBSERVATION_DEFINITION content and 5-prompt coverage
+// ---------------------------------------------------------------------------
+
+function makeMinimalReviewerSnapshot(): ReviewerSnapshot {
+  return {
+    name: "test-reviewer",
+    maxIterations: 3,
+    purpose: "Test purpose",
+    criteria: "Test criteria",
+    judgment: "Test judgment",
+    freeText: "",
+  };
+}
+
+describe("OBSERVATION_DEFINITION constant content (T-09)", () => {
+  it("contains '対応不要だが記録すべき観察'", () => {
+    expect(OBSERVATION_DEFINITION).toContain("対応不要だが記録すべき観察");
+  });
+
+  it("contains prohibition: reproductible problems must be findings", () => {
+    expect(OBSERVATION_DEFINITION).toContain("再現手順を構成できる問題");
+    expect(OBSERVATION_DEFINITION).toContain("finding");
+  });
+});
+
+describe("5 judge prompts contain OBSERVATION_DEFINITION (T-09 AC)", () => {
+  it("CODE_REVIEW_SYSTEM_PROMPT contains OBSERVATION_DEFINITION", () => {
+    expect(CODE_REVIEW_SYSTEM_PROMPT).toContain(OBSERVATION_DEFINITION);
+  });
+
+  it("SPEC_REVIEW_SYSTEM_PROMPT contains OBSERVATION_DEFINITION", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain(OBSERVATION_DEFINITION);
+  });
+
+  it("REQUEST_REVIEW_SYSTEM_PROMPT contains OBSERVATION_DEFINITION", () => {
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain(OBSERVATION_DEFINITION);
+  });
+
+  it("buildCustomReviewerSystemPrompt contains OBSERVATION_DEFINITION", () => {
+    const prompt = buildCustomReviewerSystemPrompt(makeMinimalReviewerSnapshot());
+    expect(prompt).toContain(OBSERVATION_DEFINITION);
+  });
+
+  it("REGRESSION_GATE_SYSTEM_PROMPT contains OBSERVATION_DEFINITION", () => {
+    expect(REGRESSION_GATE_SYSTEM_PROMPT).toContain(OBSERVATION_DEFINITION);
   });
 });

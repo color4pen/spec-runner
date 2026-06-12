@@ -4,6 +4,8 @@
  * Verifies that deriveJudgeVerdict and deriveRequestReviewVerdict behaviour is
  * unchanged by the prose-only changes in this change set (T-05 AC: derivation
  * tests pass without modification).
+ *
+ * Also verifies T-06 invariant: observations do NOT affect verdict derivation.
  */
 import { describe, it, expect } from "vitest";
 import {
@@ -12,6 +14,7 @@ import {
   collectVerdictAffectingFindings,
   collectFixableFindings,
 } from "../judge-verdict.js";
+import { parseJudgeReportInput } from "../../port/report-result.js";
 import type { Finding } from "../../../kernel/report-result.js";
 
 function finding(
@@ -145,5 +148,45 @@ describe("collectFixableFindings", () => {
 
   it("returns empty array when no fixable findings", () => {
     expect(collectFixableFindings([finding("high", "decision-needed")])).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-06 invariant: observations do NOT affect verdict derivation (AC 1)
+// ---------------------------------------------------------------------------
+
+describe("observations do NOT affect verdict derivation (T-06 invariant)", () => {
+  it("verdict is approved when findings is empty, even with critical observation", () => {
+    // Parse a toolResult with no findings but a critical observation
+    const raw = {
+      ok: true,
+      findings: [],
+      observations: [
+        {
+          severity: "critical",
+          file: "src/foo.ts",
+          title: "Known architectural risk",
+          rationale: "Documented in design.md, no action required",
+        },
+      ],
+    };
+    const parsed = parseJudgeReportInput(raw);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+
+    const findings = parsed.value.findings ?? [];
+    const verdict = deriveJudgeVerdict(findings, parsed.value.ok);
+    expect(verdict).toBe("approved");
+  });
+
+  it("collectVerdictAffectingFindings returns 0 when findings is empty (observations not consulted)", () => {
+    const findings: Finding[] = [];
+    expect(collectVerdictAffectingFindings(findings)).toHaveLength(0);
+  });
+
+  it("verdict is needs-fix from finding, even when observation with same content exists", () => {
+    // The finding drives routing; the observation is irrelevant
+    const findings = [finding("high", "fixable")];
+    expect(deriveJudgeVerdict(findings, true)).toBe("needs-fix");
   });
 });

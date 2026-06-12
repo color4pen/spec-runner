@@ -9,7 +9,7 @@
  */
 import { changesDirRel, requestReviewResultPath } from "../util/paths.js";
 import { buildSystemPrompt } from "./builder.js";
-import { DECISION_NEEDED_DEFINITION, VERDICT_BLOCKING_RULES } from "./judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES } from "./judge-rules.js";
 
 const _changesDir = changesDirRel();
 
@@ -155,6 +155,8 @@ After writing the result file, call \`report_result\` with the \`findings\` arra
 **Resolution 定義**:
 - \`fixable\`: request.md の修正で解決可能
 ${DECISION_NEEDED_DEFINITION}
+
+${OBSERVATION_DEFINITION}
 
 **重要**: CLI が \`findings\` 配列から verdict を決定します。\`verdict\` フィールドは互換のために残されていますが routing に使用されません。
 指摘がない場合は \`findings: []\` を渡してください。

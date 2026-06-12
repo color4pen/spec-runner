@@ -22,6 +22,26 @@ export const DECISION_NEEDED_DEFINITION =
   - 迷った場合は \`fixable\` に倒す`;
 
 /**
+ * Definition of `observations` for use in judge step prompts.
+ *
+ * Paired with DECISION_NEEDED_DEFINITION — inject both wherever findings/resolution
+ * guidance is provided.
+ *
+ * Key invariants encoded in this definition:
+ * - observations are informational records; verdict routing ignores them entirely
+ * - a problem that can be reproduced with steps is a finding, not an observation
+ */
+export const OBSERVATION_DEFINITION =
+`- \`observations\` 配列（省略可）: **対応不要だが記録すべき観察**。verdict には影響しない。
+  - 形式: \`{ severity, file, line?, title, rationale }\`（\`resolution\` フィールドなし）
+  - severity は記録用であり、routing・fixer・台帳照合には一切使われない
+  - **再現手順を構成できる問題を observation に入れることは禁止** — それは \`finding\` として報告する
+  - 置き場の判断基準:
+    - 指摘対応が必要 → \`finding\`（resolution: fixable / decision-needed）
+    - 対応不要・既知リスク・設計文書記載済み → \`observation\`
+    - 迷った場合は \`finding\` に倒す（observation への誘導を優先しない）`;
+
+/**
  * Verdict blocking rules for use in prompts, pipeline rules, and result templates.
  *
  * Describes:

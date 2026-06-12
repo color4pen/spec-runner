@@ -13,6 +13,7 @@
 import { describe, it, expect } from "vitest";
 import { SpecFixerStep } from "../../../src/core/step/spec-fixer.js";
 import { CodeFixerStep } from "../../../src/core/step/code-fixer.js";
+import { getLatestJudgeFindings, buildFindingsBlock } from "../../../src/core/step/fixer-helpers.js";
 import type { JobState, StepRun } from "../../../src/state/schema.js";
 import type { StepDeps } from "../../../src/core/step/types.js";
 import type { Finding } from "../../../src/kernel/report-result.js";
@@ -319,5 +320,91 @@ describe("CodeFixerStep.buildMessage — findings injection", () => {
     expect(msg).toContain("[LOW]");
     // review-feedback file path should NOT appear — findings are directly embedded
     expect(msg).not.toContain("review-feedback-001.md");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-06 invariant: observations are excluded from fixer input (AC 2)
+// ---------------------------------------------------------------------------
+
+describe("fixer invariant — observations not included in fixer input (T-06)", () => {
+  const findingWithObs: Finding = {
+    severity: "high",
+    resolution: "fixable",
+    file: "src/core/foo.ts",
+    line: 10,
+    title: "Real fixable issue",
+    rationale: "Must be fixed",
+  };
+
+  function makeStateWithObservations(): JobState {
+    return makeBaseJobState({
+      step: "code-fixer",
+      steps: {
+        "code-review": [
+          makeStepRun({
+            findings: [findingWithObs],
+            verdict: "approved",
+          }),
+        ],
+      },
+    });
+  }
+
+  it("getLatestJudgeFindings returns only findings (not observations)", () => {
+    // Add observations to the toolResult directly to simulate a mixed toolResult
+    const state = makeBaseJobState({
+      step: "code-fixer",
+      steps: {
+        "code-review": [
+          {
+            attempt: 1,
+            sessionId: null,
+            outcome: {
+              verdict: "approved",
+              findingsPath: null,
+              error: null,
+              toolResult: {
+                ok: true,
+                findings: [findingWithObs],
+                observations: [
+                  {
+                    severity: "low",
+                    file: "src/note.ts",
+                    title: "Observation only — not actionable",
+                    rationale: "Informational",
+                  },
+                ],
+              },
+            },
+            startedAt: "2026-01-01T00:00:00.000Z",
+            endedAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+      },
+    });
+
+    const findings = getLatestJudgeFindings(state, "code-review");
+    expect(findings).not.toBeNull();
+    expect(findings).toHaveLength(1);
+    expect(findings![0]!.title).toBe("Real fixable issue");
+  });
+
+  it("buildFindingsBlock output does not contain observation title", () => {
+    // buildFindingsBlock only receives findings (already filtered by getLatestJudgeFindings)
+    const output = buildFindingsBlock([findingWithObs]);
+    expect(output).toContain("Real fixable issue");
+    expect(output).not.toContain("Observation only — not actionable");
+  });
+
+  it("code-fixer buildMessage does not embed observation title in prompt", () => {
+    const state = makeStateWithObservations();
+    const deps = makeMinimalDeps();
+    const msg = CodeFixerStep.buildMessage!(state, deps);
+
+    // findings content must appear
+    expect(msg).toContain("Real fixable issue");
+    // observation title must NOT appear
+    expect(msg).not.toContain("Observation only — not actionable");
   });
 });
