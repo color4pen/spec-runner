@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2d87d816-4e42-4d00-9b06-abad55b7a84e",
   "createdAt": "2026-06-12T01:00:03.486Z",
-  "updatedAt": "2026-06-12T01:51:54.453Z",
+  "updatedAt": "2026-06-12T01:53:07.590Z",
   "request": {
     "title": "judge report tool に observations チャネルを追加し、非アクション観察を verdict 駆動から分離する",
     "type": "spec-change"
@@ -11,7 +11,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/observations-channel-2d87d816",
   "error": null,
@@ -48,7 +48,7 @@
   ],
   "issueNumber": 644,
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -60,7 +60,7 @@
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "regression-gate": 1
+      "regression-gate": 2
     }
   }
 }
