@@ -41,3 +41,9 @@
 {"type":"transition","ts":"2026-06-12T00:25:00.340Z","step":"code-review","status":"ok","message":"code-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-12T00:25:00.341Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-06-12T00:25:00.346Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-06-12T00:25:27.117Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"c836216e-6504-4b38-9b3b-35da85628f1b","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-12T00:25:00.361Z","endedAt":"2026-06-12T00:25:25.746Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-06-12T00:25:25.746Z","outputs":[{"path":"specrunner/changes/test-placement-convention","hash":null}],"inputs":[{"path":"specrunner/changes/test-placement-convention/review-feedback-001.md","hash":"sha256:29d95f5ff63096cf49e68c58dbbb56ac3a0cce47b4b189da43842113045211ae"}]}
+{"type":"transition","ts":"2026-06-12T00:25:27.128Z","step":"step-transition","status":"ok","message":"code-fixer → cross-boundary-invariants"}
+{"type":"transition","ts":"2026-06-12T00:25:27.130Z","step":"cross-boundary-invariants","status":"started","message":"cross-boundary-invariants iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T00:25:27.132Z","step":"cross-boundary-invariants-started","status":"started","message":"Starting cross-boundary-invariants step"}
