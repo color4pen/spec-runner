@@ -187,6 +187,20 @@
       },
       "jobId": "104182e4-e3b4-4a26-9c6c-9f69eaaae8be",
       "stepName": "code-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T23:15:58.450Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 384762,
+          "outputTokens": 3153,
+          "cacheReadInputTokens": 289536,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "104182e4-e3b4-4a26-9c6c-9f69eaaae8be",
+      "stepName": "regression-gate"
     }
   ]
 }
