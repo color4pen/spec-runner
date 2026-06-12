@@ -83,6 +83,20 @@
       },
       "jobId": "bbd11d3a-acb4-4dda-b221-4d0462f4f343",
       "stepName": "implementer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T14:18:14.762Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 2089314,
+          "outputTokens": 12470,
+          "cacheReadInputTokens": 1706240,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "bbd11d3a-acb4-4dda-b221-4d0462f4f343",
+      "stepName": "code-review"
     }
   ]
 }
