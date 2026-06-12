@@ -61,3 +61,15 @@
 {"type":"transition","ts":"2026-06-12T00:35:55.024Z","step":"cross-boundary-invariants","status":"ok","message":"cross-boundary-invariants iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-12T00:35:55.024Z","step":"step-transition","status":"ok","message":"cross-boundary-invariants → code-fixer"}
 {"type":"transition","ts":"2026-06-12T00:35:55.026Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-06-12T00:36:17.873Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"c836216e-6504-4b38-9b3b-35da85628f1b","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-06-12T00:35:55.035Z","endedAt":"2026-06-12T00:36:16.302Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-06-12T00:36:16.302Z","outputs":[{"path":"specrunner/changes/test-placement-convention","hash":null}],"inputs":[{"path":"specrunner/changes/test-placement-convention/cross-boundary-invariants-result-002.md","hash":"sha256:a66ff503b666f9445f2b556697485ab86535618325672d192bbe9bd9d605c9fd"}]}
+{"type":"transition","ts":"2026-06-12T00:36:17.884Z","step":"step-transition","status":"ok","message":"code-fixer → scale-tolerance"}
+{"type":"transition","ts":"2026-06-12T00:36:17.885Z","step":"scale-tolerance","status":"started","message":"scale-tolerance iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T00:36:17.887Z","step":"scale-tolerance-started","status":"started","message":"Starting scale-tolerance step"}
+{"type":"transition","ts":"2026-06-12T00:36:17.913Z","step":"scale-tolerance-skipped","status":"warning","message":"scale-tolerance skipped: no changed files matched paths [src/store/**, src/adapter/github/**, src/core/inbox/**, src/logger/**]"}
+{"type":"step-attempt","step":"scale-tolerance","sessionId":null,"outcome":{"verdict":"skipped","findingsPath":null,"error":null,"skipReason":"no changed files matched paths [src/store/**, src/adapter/github/**, src/core/inbox/**, src/logger/**]"},"startedAt":"2026-06-12T00:36:17.913Z","endedAt":"2026-06-12T00:36:17.913Z"}
+{"type":"transition","ts":"2026-06-12T00:36:17.915Z","step":"scale-tolerance","status":"warning","message":"scale-tolerance iteration 1 completed with verdict: skipped"}
+{"type":"transition","ts":"2026-06-12T00:36:17.915Z","step":"step-transition","status":"ok","message":"scale-tolerance → regression-gate"}
+{"type":"transition","ts":"2026-06-12T00:36:17.916Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T00:36:17.917Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
