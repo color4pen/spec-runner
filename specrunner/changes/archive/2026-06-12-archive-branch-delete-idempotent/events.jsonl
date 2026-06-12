@@ -98,3 +98,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/archive-branch-delete-idempotent/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T12:56:59.900Z","endedAt":"2026-06-12T12:57:01.715Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-12T12:57:01.715Z","outputs":[{"path":"specrunner/changes/archive-branch-delete-idempotent/pr-create-result.md","hash":"sha256:116cf71f58542873d3a041403d275a32796b6f660857db455059fba4406fcdf1"}],"inputs":[{"path":"fix/archive-branch-delete-idempotent-c812a533","hash":null}]}
 {"type":"transition","ts":"2026-06-12T12:57:01.775Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-12T13:27:15.082Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

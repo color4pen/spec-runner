@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c812a533-2ddc-43c9-9171-36d42394c808",
   "createdAt": "2026-06-12T10:22:27.589Z",
-  "updatedAt": "2026-06-12T12:57:01.775Z",
+  "updatedAt": "2026-06-12T13:27:15.082Z",
   "request": {
     "title": "archive / cancel の remote branch 削除を冪等にし、auto-delete 済み branch への偽 warning を消す",
     "type": "bug-fix",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/archive-branch-delete-idempotent-c812a533",
   "error": null,
   "pipelineId": "standard",
@@ -47,14 +47,18 @@
       ]
     }
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "pr-create",
+    "reason": "signal",
+    "iterationsExhausted": 0
+  },
   "pullRequest": {
     "url": "https://github.com/color4pen/spec-runner/pull/671",
     "number": 671,
     "createdAt": "2026-06-12T12:57:01.714Z"
   },
   "_journal": {
-    "historyCount": 71,
+    "historyCount": 72,
     "stepCounts": {
       "request-review": 4,
       "design": 1,
