@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bbd11d3a-acb4-4dda-b221-4d0462f4f343",
   "createdAt": "2026-06-12T13:35:03.449Z",
-  "updatedAt": "2026-06-12T14:22:09.919Z",
+  "updatedAt": "2026-06-12T14:54:17.650Z",
   "request": {
     "title": "step 実効設定（model 等）の解決結果と適用 source を可視化するコマンド面を追加する",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "feat/config-effective-resolution-view-bbd11d3a",
   "error": null,
   "pipelineId": "standard",
@@ -55,7 +55,7 @@
     "createdAt": "2026-06-12T14:22:09.905Z"
   },
   "_journal": {
-    "historyCount": 58,
+    "historyCount": 59,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
