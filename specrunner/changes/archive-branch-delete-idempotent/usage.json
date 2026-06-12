@@ -1,0 +1,18 @@
+{
+  "commandInvocations": [
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T10:27:25.118Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 924599,
+          "outputTokens": 7122,
+          "cacheReadInputTokens": 751232,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "c812a533-2ddc-43c9-9171-36d42394c808",
+      "stepName": "request-review"
+    }
+  ]
+}

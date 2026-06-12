@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c812a533-2ddc-43c9-9171-36d42394c808",
   "createdAt": "2026-06-12T10:22:27.589Z",
-  "updatedAt": "2026-06-12T10:25:41.310Z",
+  "updatedAt": "2026-06-12T12:25:37.747Z",
   "request": {
     "title": "archive / cancel の remote branch 削除を冪等にし、auto-delete 済み branch への偽 warning を消す",
     "type": "bug-fix",
@@ -49,9 +49,9 @@
   ],
   "resumePoint": null,
   "_journal": {
-    "historyCount": 6,
+    "historyCount": 13,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 3
     }
   }
 }

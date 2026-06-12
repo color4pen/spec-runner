@@ -5,3 +5,14 @@
 {"type":"transition","ts":"2026-06-12T10:22:46.698Z","step":"pipeline","status":"ok","message":"failed → awaiting-resume: {\"type\":\"error\",\"status\":400,\"error\":{\"type\":\"invalid_request_error\",\"message\":\"The 'gpt-5.3-codex' model is not supported when using Codex with a ChatGPT account.\"}}"}
 {"type":"transition","ts":"2026-06-12T10:25:41.264Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'request-review'"}
 {"type":"transition","ts":"2026-06-12T10:25:41.310Z","step":"request-review-started","status":"started","message":"Starting request-review step"}
+{"type":"transition","ts":"2026-06-12T10:27:26.856Z","step":"request-review-verdict","status":"ok","message":"request-review verdict: needs-discussion"}
+{"type":"step-attempt","step":"request-review","sessionId":"019ebb5d-b6a4-72b0-9d5c-842a39ad2791","outcome":{"verdict":"needs-discussion","findingsPath":"specrunner/changes/archive-branch-delete-idempotent/request-review-result-002.md","error":null,"toolResult":null,"followUpAttempts":2,"transientRetryAttempts":0},"startedAt":"2026-06-12T10:25:41.317Z","endedAt":"2026-06-12T10:27:25.118Z"}
+{"type":"lineage","step":"request-review","ts":"2026-06-12T10:27:25.118Z","outputs":[{"path":"specrunner/changes/archive-branch-delete-idempotent/request-review-result-003.md","hash":null}],"inputs":[{"path":"specrunner/changes/archive-branch-delete-idempotent/request.md","hash":"sha256:cc5f96f94cbb376d89aeb6f2e788c704736a32f69ef2506e7e1ac9e79c0486a7"}]}
+{"type":"transition","ts":"2026-06-12T10:27:26.864Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: request-review escalated"}
+{"type":"transition","ts":"2026-06-12T12:07:37.341Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'request-review'"}
+{"type":"transition","ts":"2026-06-12T12:07:37.401Z","step":"request-review-started","status":"started","message":"Starting request-review step"}
+{"type":"interruption","reason":"signal","ts":"2026-06-12T12:25:12.705Z"}
+{"type":"transition","ts":"2026-06-12T12:25:12.706Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"step-attempt","step":"request-review","sessionId":null,"outcome":{"verdict":null,"findingsPath":null,"error":{"code":"CODEX_SDK_ERROR","message":"Codex Exec exited with signal SIGTERM: Reading prompt from stdin...\n","hint":""},"transientRetryAttempts":0},"startedAt":"2026-06-12T12:07:37.409Z","endedAt":"2026-06-12T12:25:12.709Z"}
+{"type":"transition","ts":"2026-06-12T12:25:37.688Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'request-review'"}
+{"type":"transition","ts":"2026-06-12T12:25:37.747Z","step":"request-review-started","status":"started","message":"Starting request-review step"}
