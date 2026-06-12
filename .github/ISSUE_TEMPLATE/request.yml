@@ -1,0 +1,58 @@
+name: Request
+description: specrunner pipeline で実行する作業依頼を起票する
+title: "[Request] "
+labels: ["request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        起票はあくまで候補入りです。実行はレビュー後に `specrunner-approved` ラベルを付与した時点で inbox が発火します。
+        この本文は request.md 生成の入力になります。現状コードについての断定は、書く直前に grep で再検証してください（記憶や過去メモの前提は merge で腐っていることがあります）。
+  - type: dropdown
+    id: type
+    attributes:
+      label: type
+      description: 設計追加を含むなら bug-fix ではなく spec-change / new-feature を選ぶ
+      options:
+        - new-feature
+        - spec-change
+        - refactoring
+        - bug-fix
+        - chore
+    validations:
+      required: true
+  - type: textarea
+    id: background
+    attributes:
+      label: 背景
+      description: 変更の背景・動機。発端になった事象があれば実例ごと書く
+    validations:
+      required: true
+  - type: textarea
+    id: current-code
+    attributes:
+      label: 現状コードの前提
+      description: 「今のコードはこうなっている」という断定は file:line を伴ってここに書く。未検証の前提として扱われ、design / request-review が実コードと突き合わせる。意図・方針・将来の構想はここに書かない
+      placeholder: "- src/core/step/executor.ts:133 — ..."
+  - type: textarea
+    id: requirements
+    attributes:
+      label: 要件
+      description: 実装の最重量部（既存機構の一般化・暗黙の前提の変更）は行間に隠さず要件として名指しする。粒度は 1 request = 1 つのレビュー収束ループで直しきれる範囲。超えるなら土台と上物に分割する
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: スコープ外
+      description: 隣接するが本 request では扱わない範囲
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 受け入れ基準
+      description: 機械検証できる文にする（「〜をテストで固定する」「既存テスト無変更で green」）。「適切に動作する」のような判定不能な文は conformance が照合できない
+      placeholder: |
+        - [ ] ...
+        - [ ] `typecheck && test` が green
+    validations:
+      required: true
