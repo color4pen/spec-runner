@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "175cafd1-3e7c-476b-a05b-44568aec13bd",
   "createdAt": "2026-06-12T07:10:02.999Z",
-  "updatedAt": "2026-06-12T07:21:16.178Z",
+  "updatedAt": "2026-06-12T07:23:23.518Z",
   "request": {
     "title": "usage / pricing と one-shot デフォルトモデルの provider 中立化",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/usage-pricing-provider-neutral-175cafd1",
   "error": null,
@@ -49,10 +49,11 @@
   ],
   "issueNumber": 660,
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
