@@ -1,7 +1,7 @@
 /**
  * CodexAgentRunner: AgentRunner adapter for OpenAI Codex SDK (local runtime).
  *
- * Implements AgentRunner port using @openai/codex-sdk Codex class.
+ * Implements AgentRunner port using the Codex SDK Codex class.
  * Mirrors ClaudeCodeRunner in structure; uses sandboxMode instead of allowedTools.
  *
  * D1 (design.md): prompt construction mirrors ClaudeCodeRunner.
@@ -20,7 +20,6 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { object, toJSONSchema } from "zod/v4-mini";
-import { Codex } from "@openai/codex-sdk";
 import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
 import { buildMainTurnCompletionInstruction, buildCompletionRetryPrompt } from "./completion-report-prompt.js";
 export { COMPLETION_REPORT_MEANS, buildMainTurnCompletionInstruction, buildCompletionRetryPrompt } from "./completion-report-prompt.js";
@@ -37,6 +36,8 @@ import { stderrWrite } from "../../logger/stdout.js";
 import type { BaseReportResult, ReportToolSpec } from "../../core/port/report-result.js";
 import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
 import { toOpenAIStrictSchema, stripNullDeep } from "./strict-schema.js";
+import { SpecRunnerError } from "../../errors.js";
+import { loadCodexSdk, type CodexSdkLoader } from "./sdk-loader.js";
 
 // Minimal interface for the Codex SDK types used here (avoids deep SDK type dependency in tests)
 interface Turn {
@@ -131,6 +132,8 @@ export interface CodexInstance {
 export interface CodexAgentRunnerDeps {
   /** Injectable factory for testing. Defaults to `() => new Codex()`. */
   _codexFactory?: () => CodexInstance;
+  /** Injectable for testing: replaces the dynamic Codex SDK loader. */
+  _loadSdkFn?: CodexSdkLoader;
   /** Injectable sleep function for deterministic retry tests. Defaults to setTimeout-based. */
   _sleepFn?: (ms: number) => Promise<void>;
 }
@@ -249,15 +252,19 @@ export function extractCodexProgress(item: ThreadItem): { tool: string; target?:
 }
 
 export class CodexAgentRunner implements AgentRunner {
-  private readonly codexFactory: () => CodexInstance;
+  private readonly injectedCodexFactory?: () => CodexInstance;
+  private readonly loadSdkFn: CodexSdkLoader;
   private readonly sleepFn: (ms: number) => Promise<void>;
 
   constructor(deps: CodexAgentRunnerDeps = {}) {
-    this.codexFactory = deps._codexFactory ?? (() => new Codex() as unknown as CodexInstance);
+    this.injectedCodexFactory = deps._codexFactory;
+    this.loadSdkFn = deps._loadSdkFn ?? loadCodexSdk;
     this.sleepFn = deps._sleepFn ?? ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   }
 
   async run(ctx: AgentRunContext): Promise<AgentRunResult> {
+    const sdk = this.injectedCodexFactory ? null : await this.loadSdkFn();
+    const codexFactory = this.injectedCodexFactory ?? (() => new sdk!.Codex());
     const cwd = ctx.cwd;
     const step = ctx.step;
     const state = ctx.state;
@@ -431,7 +438,7 @@ export class CodexAgentRunner implements AgentRunner {
     };
 
     try {
-      const codex = this.codexFactory();
+      const codex = codexFactory();
 
       const startFreshThread = (): CodexThread => codex.startThread({
         workingDirectory: cwd,
@@ -691,6 +698,7 @@ export class CodexAgentRunner implements AgentRunner {
       };
       return mergeFollowUpResult(baseResult, resultContent);
     } catch (err) {
+      if (err instanceof SpecRunnerError) throw err;
       if (abortController.signal.aborted && timeoutId !== undefined) {
         clearTimeout(timeoutId);
         sessionLogWriter?.writeSummary({ sessionId: threadId ?? undefined, model: resolvedConfig.model, modelUsage });

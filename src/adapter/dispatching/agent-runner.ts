@@ -6,16 +6,14 @@
  * RuntimeStrategy.createAgentRunner() signature is unchanged — this class is a drop-in.
  */
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../core/port/agent-runner.js";
-import type { ClaudeCodeRunner } from "../claude-code/agent-runner.js";
-import { CodexAgentRunner } from "../codex/agent-runner.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
 import { mergeModelRegistry, resolveProvider } from "../../config/model-registry.js";
 
 export class DispatchingAgentRunner implements AgentRunner {
-  private readonly claudeRunner: ClaudeCodeRunner;
-  private codexRunner: CodexAgentRunner | null = null;
+  private readonly claudeRunner: AgentRunner;
+  private codexRunner: AgentRunner | null = null;
 
-  constructor(claudeRunner: ClaudeCodeRunner) {
+  constructor(claudeRunner: AgentRunner) {
     this.claudeRunner = claudeRunner;
   }
 
@@ -31,6 +29,7 @@ export class DispatchingAgentRunner implements AgentRunner {
 
     if (provider === "openai") {
       if (!this.codexRunner) {
+        const { CodexAgentRunner } = await import("../codex/agent-runner.js");
         this.codexRunner = new CodexAgentRunner();
       }
       return this.codexRunner.run(ctx);
