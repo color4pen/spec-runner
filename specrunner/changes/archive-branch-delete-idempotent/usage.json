@@ -61,6 +61,20 @@
       },
       "jobId": "c812a533-2ddc-43c9-9171-36d42394c808",
       "stepName": "spec-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T12:32:47.215Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 105919,
+          "outputTokens": 3578,
+          "cacheReadInputTokens": 60288,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "c812a533-2ddc-43c9-9171-36d42394c808",
+      "stepName": "test-case-gen"
     }
   ]
 }

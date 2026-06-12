@@ -27,6 +27,7 @@ import { formatEscalation } from "../finish/escalation.js";
 import { logResult, stderrWrite } from "../../logger/stdout.js";
 import { KeepAlive } from "../lifecycle/keepalive.js";
 import { livenessJsonPath, managedMarkerPath, draftsDir, localSidecarDir } from "../../util/paths.js";
+import { isRemoteRefNotFound } from "../../util/git-push.js";
 
 export interface ArchiveInput {
   /** Slug of the job to archive. */
@@ -306,7 +307,7 @@ export async function runArchiveOrchestrator(
         stderrWrite(`Warning: failed to delete local branch ${branch}.`);
       }
       const remoteDelResult = await spawn("git", ["push", "origin", "--delete", branch], { cwd });
-      if (remoteDelResult.exitCode !== 0) {
+      if (remoteDelResult.exitCode !== 0 && !isRemoteRefNotFound(remoteDelResult.stderr)) {
         stderrWrite(`Warning: failed to delete remote branch ${branch}.`);
       }
     }

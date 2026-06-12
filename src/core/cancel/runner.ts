@@ -28,6 +28,7 @@ import type { WorktreeManager } from "../worktree/manager.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import type { JobState } from "../../state/schema.js";
 import { createTransportAuth } from "../../git/transport-auth.js";
+import { isRemoteRefNotFound } from "../../util/git-push.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -190,7 +191,7 @@ async function cleanupJobResources(
 
     // 4. Delete remote branch (best-effort)
     const remoteResult = await spawn("git", ["push", "origin", "--delete", branch], { cwd: repoRoot });
-    if (remoteResult.exitCode !== 0) {
+    if (remoteResult.exitCode !== 0 && !isRemoteRefNotFound(remoteResult.stderr)) {
       warnings.push(`Warning: failed to delete remote branch '${branch}': ${remoteResult.stderr.trim()}`);
     }
   }

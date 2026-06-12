@@ -2,9 +2,9 @@
 
 ## T-01: `isRemoteRefNotFound` ヘルパーを作成する
 
-- [ ] `src/util/git-push.ts` を新規作成する
-- [ ] `export function isRemoteRefNotFound(stderr: string): boolean` を実装する。`stderr.toLowerCase().includes("remote ref does not exist")` で判定する
-- [ ] `src/util/__tests__/git-push.test.ts` を新規作成し、以下のケースをカバーする:
+- [x] `src/util/git-push.ts` を新規作成する
+- [x] `export function isRemoteRefNotFound(stderr: string): boolean` を実装する。`stderr.toLowerCase().includes("remote ref does not exist")` で判定する
+- [x] `src/util/__tests__/git-push.test.ts` を新規作成し、以下のケースをカバーする:
   - 空文字列 → `false`
   - `"remote ref does not exist"` を含む文字列 → `true`
   - 大文字混じり (`"Remote Ref Does Not Exist"`) → `true`（case-insensitive）
@@ -20,8 +20,8 @@
 
 対象: `src/core/archive/orchestrator.ts:308-311`
 
-- [ ] `isRemoteRefNotFound` を `../../util/git-push.js` からインポートする
-- [ ] `remoteDelResult.exitCode !== 0` の判定を `remoteDelResult.exitCode !== 0 && !isRemoteRefNotFound(remoteDelResult.stderr)` に変更する
+- [x] `isRemoteRefNotFound` を `../../util/git-push.js` からインポートする
+- [x] `remoteDelResult.exitCode !== 0` の判定を `remoteDelResult.exitCode !== 0 && !isRemoteRefNotFound(remoteDelResult.stderr)` に変更する
 
 変更前:
 ```ts
@@ -49,8 +49,8 @@ if (remoteDelResult.exitCode !== 0 && !isRemoteRefNotFound(remoteDelResult.stder
 
 対象: `src/core/cancel/runner.ts:192-194`
 
-- [ ] `isRemoteRefNotFound` を `../../util/git-push.js` からインポートする
-- [ ] `remoteResult.exitCode !== 0` の判定を `remoteResult.exitCode !== 0 && !isRemoteRefNotFound(remoteResult.stderr)` に変更する
+- [x] `isRemoteRefNotFound` を `../../util/git-push.js` からインポートする
+- [x] `remoteResult.exitCode !== 0` の判定を `remoteResult.exitCode !== 0 && !isRemoteRefNotFound(remoteResult.stderr)` に変更する
 
 変更前:
 ```ts
@@ -80,15 +80,15 @@ if (remoteResult.exitCode !== 0 && !isRemoteRefNotFound(remoteResult.stderr)) {
 
 以下の 3 テストを `describe("archive orchestrator — remote branch deletion idempotency", ...)` ブロックとして追加する:
 
-- [ ] **T-branch-01**: remote branch が存在しない（`exitCode !== 0` かつ stderr に `remote ref does not exist`）→ `stderrWrite` が remote branch に関する warning を出力しない
+- [x] **T-branch-01**: remote branch が存在しない（`exitCode !== 0` かつ stderr に `remote ref does not exist`）→ `stderrWrite` が remote branch に関する warning を出力しない
   - `makeSpawn` の代わりに remote push だけ `{ exitCode: 1, stdout: "", stderr: "error: unable to delete 'refs/heads/fix/test': remote ref does not exist" }` を返す spy を用意する
   - `stderrWrite` の呼び出し内容を確認し、`"failed to delete remote branch"` を含む呼び出しがないことを assert する
 
-- [ ] **T-branch-02**: remote push が認証エラーで失敗（`exitCode !== 0` かつ stderr に `remote ref does not exist` を含まない）→ warning が出力される
+- [x] **T-branch-02**: remote push が認証エラーで失敗（`exitCode !== 0` かつ stderr に `remote ref does not exist` を含まない）→ warning が出力される
   - remote push だけ `{ exitCode: 128, stdout: "", stderr: "remote: Repository not found." }` を返す spy を用意する
   - `stderrWrite` に `"failed to delete remote branch"` を含む呼び出しがあることを assert する
 
-- [ ] **T-branch-03**: remote push が成功（`exitCode === 0`）→ warning が出力されない
+- [x] **T-branch-03**: remote push が成功（`exitCode === 0`）→ warning が出力されない
   - 全コマンド exitCode 0 の標準 `makeSpawn()` を使う
   - `stderrWrite` に `"failed to delete remote branch"` を含む呼び出しがないことを assert する
 
@@ -104,15 +104,15 @@ if (remoteResult.exitCode !== 0 && !isRemoteRefNotFound(remoteResult.stderr)) {
 
 cancel runner の branch 削除ロジックは `cleanupJobBranches` 関数（`runner.ts:154` 付近）にある。この関数を直接テストするのは dependencies が多いため、`cleanupJobBranches` が依存する `spawn` と `worktreeManager` を inject して `cancelSingleJob` 経由でテストする。
 
-- [ ] test ファイルを作成し、必要な vi.mock を設定する（`JobStateStore`, `loadStateByJobId`, `resolveStateStoreByJobId`, `transitionJob`, `stdoutWrite`, `gracefulKill`, `createTransportAuth` 等）
-- [ ] **T-cancel-branch-01**: remote branch が存在しない → `result.warnings` に remote branch の warning が含まれない
+- [x] test ファイルを作成し、必要な vi.mock を設定する（`JobStateStore`, `loadStateByJobId`, `resolveStateStoreByJobId`, `transitionJob`, `stdoutWrite`, `gracefulKill`, `createTransportAuth` 等）
+- [x] **T-cancel-branch-01**: remote branch が存在しない → `result.warnings` に remote branch の warning が含まれない
   - remote push に `{ exitCode: 1, stderr: "error: unable to delete 'refs/heads/fix/test': remote ref does not exist" }` を返す spawn spy
   - `result.warnings` の内容を確認する
 
-- [ ] **T-cancel-branch-02**: remote push が認証エラー → `result.warnings` に warning が含まれる
+- [x] **T-cancel-branch-02**: remote push が認証エラー → `result.warnings` に warning が含まれる
   - remote push に `{ exitCode: 128, stderr: "remote: Repository not found." }` を返す spawn spy
 
-- [ ] **T-cancel-branch-03**: remote push が成功 → `result.warnings` に remote branch の warning が含まれない
+- [x] **T-cancel-branch-03**: remote push が成功 → `result.warnings` に remote branch の warning が含まれない
   - 全コマンド exitCode 0 の spawn spy
 
 **Acceptance Criteria**:
@@ -122,8 +122,8 @@ cancel runner の branch 削除ロジックは `cleanupJobBranches` 関数（`ru
 
 ## T-06: `typecheck && test` を green にする
 
-- [ ] `bun run typecheck` が 0 で終了する
-- [ ] `bun run test` が 0 で終了する
+- [x] `bun run typecheck` が 0 で終了する
+- [x] `bun run test` が 0 で終了する
 
 **Acceptance Criteria**:
 - 両コマンドが正常終了する
