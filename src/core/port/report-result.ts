@@ -282,7 +282,7 @@ export interface RequestReviewReportResult extends BaseReportResult {
  * Separate type enables conformance-specific routing via CLI verdict derivation.
  * fixTarget values on individual findings are captured by parseFindings.
  */
-export interface ConformanceReportResult extends JudgeReportResult {}
+export type ConformanceReportResult = JudgeReportResult;
 
 /**
  * Parse ConformanceReportResult from unknown tool input.
