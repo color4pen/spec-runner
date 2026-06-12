@@ -93,3 +93,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/prompts-completion-contract-neutral/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T09:56:54.362Z","endedAt":"2026-06-12T09:56:56.541Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-12T09:56:56.541Z","outputs":[{"path":"specrunner/changes/prompts-completion-contract-neutral/pr-create-result.md","hash":"sha256:977f306f2a56275b3e8727ed675253229e0ce5bb55a4e7e2d1101f52e39a666b"}],"inputs":[{"path":"change/prompts-completion-contract-neutral-f21c2e89","hash":null}]}
 {"type":"transition","ts":"2026-06-12T09:56:56.564Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-12T10:15:50.085Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

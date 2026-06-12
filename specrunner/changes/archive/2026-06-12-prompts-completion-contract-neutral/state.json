@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f21c2e89-ff3c-491e-9fbb-fb22962c7382",
   "createdAt": "2026-06-12T09:05:02.754Z",
-  "updatedAt": "2026-06-12T09:56:56.564Z",
+  "updatedAt": "2026-06-12T10:15:50.085Z",
   "request": {
     "title": "agent prompt の完了契約文言（report_result / end_turn）を provider 非依存にする",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/prompts-completion-contract-neutral-f21c2e89",
   "error": null,
   "pipelineId": "standard",
@@ -54,7 +54,7 @@
     "createdAt": "2026-06-12T09:56:56.524Z"
   },
   "_journal": {
-    "historyCount": 65,
+    "historyCount": 66,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
