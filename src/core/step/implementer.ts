@@ -6,7 +6,9 @@ import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
+import type { TestPlacement } from "../../config/schema.js";
 import { IMPLEMENTER_SYSTEM_PROMPT } from "../../prompts/implementer-system.js";
+import { renderTestPlacementInstruction } from "../../prompts/test-placement.js";
 import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
@@ -39,14 +41,19 @@ const implementerAgentDefinition: AgentDefinition = {
  * When dynamicContext is provided and has gitLog or diffStat, a branch context
  * section is prepended so the agent understands what has already been done on
  * the branch without having to run git commands itself.
+ *
+ * When placement is provided, a deterministic test file placement directive is
+ * appended, overriding the default "follow existing placement pattern" guidance.
+ * When placement is absent, the message is identical to the pre-change behavior.
  */
 export function buildImplementerInitialMessage(opts: {
   slug: string;
   branch: string;
   requestContent: string;
   dynamicContext?: DynamicContext;
+  placement?: TestPlacement;
 }): string {
-  const { slug, branch, requestContent, dynamicContext } = opts;
+  const { slug, branch, requestContent, dynamicContext, placement } = opts;
 
   const contextLines: string[] = [];
   if (dynamicContext?.gitLog) {
@@ -57,6 +64,10 @@ export function buildImplementerInitialMessage(opts: {
   }
   const contextSection = contextLines.length > 0
     ? `\n\n${contextLines.join("\n\n")}`
+    : "";
+
+  const placementSection = placement
+    ? `\n\n${renderTestPlacementInstruction(placement)}`
     : "";
 
   return `<user-request>
@@ -74,7 +85,7 @@ Please:
 
 Original request:
 ${requestContent}
-</user-request>${contextSection}`;
+</user-request>${contextSection}${placementSection}`;
 }
 
 /**
@@ -136,6 +147,7 @@ export const ImplementerStep: AgentStep = {
       branch: state.branch,
       requestContent: deps.request.content,
       dynamicContext: deps.dynamicContext,
+      placement: deps.config.tests?.placement,
     });
   },
 

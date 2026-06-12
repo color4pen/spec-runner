@@ -149,6 +149,53 @@ export interface LogsConfig {
 }
 
 /**
+ * Default test file suffix used by renderTestPlacementInstruction when suffix is not specified.
+ */
+export const DEFAULT_TEST_SUFFIX = ".test.ts";
+
+/**
+ * sibling placement: test file is placed in the same directory as the source file.
+ * Example: src/foo/bar.ts → src/foo/bar.test.ts
+ */
+export interface SiblingPlacement {
+  style: "sibling";
+  /** File suffix for the generated test file. Defaults to DEFAULT_TEST_SUFFIX (".test.ts"). */
+  suffix?: string;
+}
+
+/**
+ * mirror placement: test files are placed under testsRoot, mirroring the source tree.
+ * Example (testsRoot: "tests", sourceRoot: "src"): src/foo/bar.ts → tests/foo/bar.test.ts
+ * Example (testsRoot: "tests", no sourceRoot): src/foo/bar.ts → tests/src/foo/bar.test.ts
+ */
+export interface MirrorPlacement {
+  style: "mirror";
+  /** Root directory for mirrored test files (non-empty string, e.g. "tests"). */
+  testsRoot: string;
+  /** Source root prefix to strip when mirroring (e.g. "src"). Optional. */
+  sourceRoot?: string;
+  /** File suffix for the generated test file. Defaults to DEFAULT_TEST_SUFFIX (".test.ts"). */
+  suffix?: string;
+}
+
+/**
+ * TestPlacement is a discriminated union on `style`.
+ * Declared in project config under `tests.placement`.
+ */
+export type TestPlacement = SiblingPlacement | MirrorPlacement;
+
+/**
+ * Test file generation settings for this project.
+ */
+export interface TestsConfig {
+  /**
+   * Declares where generated test files should be placed.
+   * When absent, the implementer agent follows the existing test placement pattern in the project.
+   */
+  placement?: TestPlacement;
+}
+
+/**
  * Default wait timeout for --with-merge (10 minutes).
  * Covers most typical CI pipelines. Set archive.mergeWaitTimeoutMs: null for unlimited.
  */
@@ -354,6 +401,13 @@ export interface SpecRunnerConfig {
    * Applied to local runtime (ClaudeCodeRunner) only; ignored by managed runtime.
    */
   transientRetry?: TransientRetryConfig;
+  /**
+   * Test file generation settings.
+   * When tests.placement is set, the implementer step injects a deterministic
+   * test placement directive into its user message, overriding free-form agent judgment.
+   * When absent, the implementer follows the existing test placement pattern in the project.
+   */
+  tests?: TestsConfig;
 }
 
 /**
@@ -393,6 +447,8 @@ export interface RawConfig {
   inbox?: Partial<Record<string, unknown>>;
   /** Transient-retry configuration — passed through as-is. Validated in validateConfig(). */
   transientRetry?: Partial<Record<string, unknown>>;
+  /** Tests configuration — passed through as-is. Validated in validateConfig(). */
+  tests?: unknown;
 }
 
 // ---------------------------------------------------------------------------
@@ -483,6 +539,39 @@ const modelEntrySchema = object(
     ),
   },
   "must be an object.",
+);
+
+/** Non-empty string helper used by test placement schemas. */
+const nonEmptyString = (msg: string) =>
+  string(msg).check(minLength(1, msg));
+
+/** sibling: test file placed in the same directory as the source file. */
+const siblingPlacementSchema = object(
+  {
+    style: literal("sibling", 'style must be "sibling" or "mirror".'),
+    suffix: optional(nonEmptyString("must be a non-empty string.")),
+  },
+  'must be an object with style "sibling" or "mirror".',
+);
+
+/** mirror: test files placed under testsRoot, mirroring the source tree. */
+const mirrorPlacementSchema = object(
+  {
+    style: literal("mirror", 'style must be "sibling" or "mirror".'),
+    testsRoot: nonEmptyString("must be a non-empty string."),
+    sourceRoot: optional(nonEmptyString("must be a non-empty string.")),
+    suffix: optional(nonEmptyString("must be a non-empty string.")),
+  },
+  'must be an object with style "sibling" or "mirror".',
+);
+
+/**
+ * Schema for tests.placement discriminated union.
+ * Valid values: { style: "sibling", suffix? } | { style: "mirror", testsRoot, sourceRoot?, suffix? }
+ */
+const testPlacementSchema = union(
+  [siblingPlacementSchema, mirrorPlacementSchema],
+  'tests.placement must have style "sibling" or "mirror" with required fields.',
 );
 
 /** Verification command: non-empty string or object with required run field. */
@@ -683,6 +772,14 @@ export const configSchema = object({
             gte(0, "must be a non-negative integer."),
           ),
         ),
+      },
+      "must be an object.",
+    ),
+  ),
+  tests: optional(
+    object(
+      {
+        placement: optional(testPlacementSchema),
       },
       "must be an object.",
     ),

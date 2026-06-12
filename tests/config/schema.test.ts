@@ -495,3 +495,161 @@ describe("validateConfig — byRequestType validation", () => {
     expect(() => validateConfig(raw)).not.toThrow();
   });
 });
+
+// ---------------------------------------------------------------------------
+// tests.placement validation (T-05 / TC-001 – TC-005, TC-011, TC-012, TC-013)
+// ---------------------------------------------------------------------------
+
+import { DEFAULT_TEST_SUFFIX } from "../../src/config/schema.js";
+
+// TC-013: DEFAULT_TEST_SUFFIX が ".test.ts" としてエクスポートされる
+describe("TC-013: DEFAULT_TEST_SUFFIX export", () => {
+  it('DEFAULT_TEST_SUFFIX is ".test.ts"', () => {
+    expect(DEFAULT_TEST_SUFFIX).toBe(".test.ts");
+  });
+});
+
+// TC-005: absent tests section stays valid
+describe("TC-005: validateConfig — absent tests section is valid", () => {
+  it("does not throw when tests field is absent", () => {
+    const raw = makeMinimalRawConfig();
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("does not throw when tests field is present but placement is absent", () => {
+    const raw = makeMinimalRawConfig({ tests: {} });
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+});
+
+// TC-001: valid sibling placement loads
+describe("TC-001: validateConfig — valid sibling placement", () => {
+  it("accepts { style: 'sibling' } without suffix", () => {
+    const raw = makeMinimalRawConfig({
+      tests: { placement: { style: "sibling" } },
+    });
+    expect(() => validateConfig(raw)).not.toThrow();
+    const cfg = validateConfig(raw);
+    expect(cfg.tests?.placement?.style).toBe("sibling");
+  });
+
+  it("accepts { style: 'sibling', suffix: '.spec.ts' }", () => {
+    const raw = makeMinimalRawConfig({
+      tests: { placement: { style: "sibling", suffix: ".spec.ts" } },
+    });
+    expect(() => validateConfig(raw)).not.toThrow();
+    const cfg = validateConfig(raw);
+    expect(cfg.tests?.placement?.style).toBe("sibling");
+  });
+});
+
+// TC-002: valid mirror placement loads
+describe("TC-002: validateConfig — valid mirror placement", () => {
+  it("accepts { style: 'mirror', testsRoot: 'tests' }", () => {
+    const raw = makeMinimalRawConfig({
+      tests: { placement: { style: "mirror", testsRoot: "tests" } },
+    });
+    expect(() => validateConfig(raw)).not.toThrow();
+    const cfg = validateConfig(raw);
+    expect(cfg.tests?.placement?.style).toBe("mirror");
+    if (cfg.tests?.placement?.style === "mirror") {
+      expect(cfg.tests.placement.testsRoot).toBe("tests");
+    }
+  });
+
+  it("accepts { style: 'mirror', testsRoot: 'tests', sourceRoot: 'src' }", () => {
+    const raw = makeMinimalRawConfig({
+      tests: { placement: { style: "mirror", testsRoot: "tests", sourceRoot: "src" } },
+    });
+    expect(() => validateConfig(raw)).not.toThrow();
+    const cfg = validateConfig(raw);
+    if (cfg.tests?.placement?.style === "mirror") {
+      expect(cfg.tests.placement.testsRoot).toBe("tests");
+      expect(cfg.tests.placement.sourceRoot).toBe("src");
+    }
+  });
+
+  it("accepts mirror with suffix override", () => {
+    const raw = makeMinimalRawConfig({
+      tests: {
+        placement: { style: "mirror", testsRoot: "tests", sourceRoot: "src", suffix: ".spec.ts" },
+      },
+    });
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+});
+
+// TC-003: unknown style is rejected at load
+describe("TC-003: validateConfig — unknown style is rejected", () => {
+  it("throws CONFIG_INVALID for unknown style 'colocated'", () => {
+    const raw = makeMinimalRawConfig({
+      tests: { placement: { style: "colocated" } },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/tests\.placement/);
+  });
+
+  it("throws CONFIG_INVALID for unknown style 'flat'", () => {
+    const raw = makeMinimalRawConfig({
+      tests: { placement: { style: "flat" } },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/tests\.placement/);
+  });
+});
+
+// TC-004: mirror without testsRoot is rejected at load
+describe("TC-004: validateConfig — mirror without testsRoot is rejected", () => {
+  it("throws CONFIG_INVALID when style is 'mirror' but testsRoot is absent", () => {
+    const raw = makeMinimalRawConfig({
+      tests: { placement: { style: "mirror" } },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/tests\.placement/);
+  });
+});
+
+// TC-011: mirror の testsRoot が空文字のとき schema 検証エラーになる
+describe("TC-011: validateConfig — mirror with empty testsRoot is rejected", () => {
+  it("throws CONFIG_INVALID when testsRoot is empty string", () => {
+    const raw = makeMinimalRawConfig({
+      tests: { placement: { style: "mirror", testsRoot: "" } },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/tests\.placement/);
+  });
+});
+
+// TC-012: suffix が空文字のとき schema 検証エラーになる
+describe("TC-012: validateConfig — empty suffix is rejected", () => {
+  it("throws CONFIG_INVALID when suffix is empty string (sibling)", () => {
+    const raw = makeMinimalRawConfig({
+      tests: { placement: { style: "sibling", suffix: "" } },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/tests\.placement/);
+  });
+
+  it("throws CONFIG_INVALID when suffix is empty string (mirror)", () => {
+    const raw = makeMinimalRawConfig({
+      tests: { placement: { style: "mirror", testsRoot: "tests", suffix: "" } },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+    expect(() => validateConfig(raw)).toThrow(/tests\.placement/);
+  });
+});
+
+// Additional: type mismatch for testsRoot
+describe("validateConfig — tests.placement type mismatch", () => {
+  it("throws CONFIG_INVALID when testsRoot is a number", () => {
+    const raw = makeMinimalRawConfig({
+      tests: { placement: { style: "mirror", testsRoot: 42 } },
+    });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+  });
+
+  it("throws CONFIG_INVALID when tests is not an object", () => {
+    const raw = makeMinimalRawConfig({ tests: "invalid" });
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+  });
+});
