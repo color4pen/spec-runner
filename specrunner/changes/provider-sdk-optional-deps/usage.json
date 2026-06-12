@@ -215,6 +215,20 @@
       },
       "jobId": "104182e4-e3b4-4a26-9c6c-9f69eaaae8be",
       "stepName": "conformance"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T23:23:10.589Z",
+      "modelUsage": {
+        "gpt-5.4-mini": {
+          "inputTokens": 928004,
+          "outputTokens": 10562,
+          "cacheReadInputTokens": 675456,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "104182e4-e3b4-4a26-9c6c-9f69eaaae8be",
+      "stepName": "adr-gen"
     }
   ]
 }
