@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "104182e4-e3b4-4a26-9c6c-9f69eaaae8be",
   "createdAt": "2026-06-12T13:38:00.592Z",
-  "updatedAt": "2026-06-12T14:21:52.249Z",
+  "updatedAt": "2026-06-12T14:32:56.444Z",
   "request": {
     "title": "provider SDK を dynamic import + optionalDependencies 化し、未使用 provider のバイナリ 190MB を install から外せるようにする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/provider-sdk-optional-deps-104182e4",
   "error": null,
@@ -50,12 +50,14 @@
   "issueNumber": 662,
   "resumePoint": null,
   "_journal": {
-    "historyCount": 28,
+    "historyCount": 37,
     "stepCounts": {
       "request-review": 4,
       "design": 1,
       "spec-review": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1
     }
   }
 }
