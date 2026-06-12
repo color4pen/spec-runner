@@ -145,6 +145,20 @@
       },
       "jobId": "104182e4-e3b4-4a26-9c6c-9f69eaaae8be",
       "stepName": "code-fixer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T23:09:25.714Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 1388368,
+          "outputTokens": 10249,
+          "cacheReadInputTokens": 1140480,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "104182e4-e3b4-4a26-9c6c-9f69eaaae8be",
+      "stepName": "code-review"
     }
   ]
 }
