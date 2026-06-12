@@ -5,10 +5,12 @@
     "": {
       "name": "spec-runner",
       "dependencies": {
-        "@anthropic-ai/claude-agent-sdk": "^0.2.128",
         "@anthropic-ai/sdk": "^0.91.0",
-        "@openai/codex-sdk": "^0.130.0",
         "zod": "^4.0.0",
+      },
+      "optionalDependencies": {
+        "@anthropic-ai/claude-agent-sdk": "^0.2.128",
+        "@openai/codex-sdk": "^0.130.0",
       },
       "devDependencies": {
         "@types/node": "^20",

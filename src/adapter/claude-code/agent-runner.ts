@@ -1,7 +1,7 @@
 /**
  * ClaudeCodeRunner: AgentRunner adapter for Claude Code SDK (local runtime).
  *
- * Implements AgentRunner port using @anthropic-ai/claude-agent-sdk query().
+ * Implements AgentRunner port using the Claude Agent SDK query API.
  * No SessionClient or @anthropic-ai/sdk import — fully isolated from managed adapter.
  *
  * Design D8 (design.md): composition root injects ClaudeCodeRunner when runtime === "local".
@@ -23,15 +23,9 @@
  */
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import {
-  query as sdkQuery,
-  createSdkMcpServer,
-  type SDKMessage,
-  type SDKResultMessage,
-  type SDKResultSuccess,
-} from "@anthropic-ai/claude-agent-sdk";
 import { defaultSpawnFn, type SpawnFn } from "./git-exec.js";
 import { isToolUse } from "./message-types.js";
+import { loadClaudeAgentSdk, type ClaudeAgentSdkLoader, type ClaudeSdkCreateMcpServer } from "./sdk-loader.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from "../../core/port/agent-runner.js";
 import type { DomainEvent } from "../../kernel/event-types.js";
 import type { StepContext } from "../../core/port/step-context.js";
@@ -47,6 +41,7 @@ import type { BaseReportResult, ReportToolSpec } from "../../core/port/report-re
 import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
 import { retryWithBackoff } from "../../util/retry.js";
 import { isTransientAgentError } from "./transient-error.js";
+import { SpecRunnerError } from "../../errors.js";
 
 export type { SpawnFn } from "./git-exec.js";
 
@@ -108,9 +103,21 @@ export type QueryFn = (params: {
 }) => AsyncGenerator<unknown, void>;
 
 /** Default QueryFn backed by the Claude Agent SDK. Exported for injection into composition-root (local.ts). */
-export const defaultQueryFn: QueryFn = sdkQuery as unknown as QueryFn;
+export const defaultQueryFn: QueryFn = async function* defaultQuery(params) {
+  const sdk = await loadClaudeAgentSdk();
+  yield* sdk.query(params);
+};
 
-export type CreateMcpServerFn = typeof createSdkMcpServer;
+type SDKMessage = { type: string; [key: string]: unknown };
+type SDKResultMessage = { type: "result"; subtype: string; [key: string]: unknown };
+type SDKResultSuccess = SDKResultMessage & {
+  subtype: "success";
+  result: string;
+  session_id?: string;
+  modelUsage?: Record<string, ModelUsage>;
+};
+
+export type CreateMcpServerFn = ClaudeSdkCreateMcpServer;
 
 export interface ClaudeCodeRunnerDeps {
   cwd?: string;
@@ -118,6 +125,8 @@ export interface ClaudeCodeRunnerDeps {
   _queryFn?: QueryFn;
   /** Injectable for testing: replaces createSdkMcpServer to capture tool handlers. */
   _createMcpServerFn?: CreateMcpServerFn;
+  /** Injectable for testing: replaces the dynamic Claude Agent SDK loader. */
+  _loadSdkFn?: ClaudeAgentSdkLoader;
   /** Injectable for testing: replaces setTimeout-based sleep in transient retry backoff. */
   _sleepFn?: (ms: number) => Promise<void>;
 }
@@ -129,19 +138,22 @@ export interface ClaudeCodeRunnerDeps {
 export class ClaudeCodeRunner implements AgentRunner {
   private readonly defaultCwd: string;
   private readonly spawnFn: SpawnFn;
-  private readonly queryFn: QueryFn;
-  private readonly createMcpServerFn: CreateMcpServerFn;
+  private readonly injectedQueryFn?: QueryFn;
+  private readonly injectedCreateMcpServerFn?: CreateMcpServerFn;
+  private readonly loadSdkFn: ClaudeAgentSdkLoader;
   private readonly sleepFn: (ms: number) => Promise<void>;
 
   constructor(deps: ClaudeCodeRunnerDeps = {}) {
     this.defaultCwd = deps.cwd ?? process.cwd();
     this.spawnFn = deps._spawnFn ?? defaultSpawnFn;
-    this.queryFn = deps._queryFn ?? (sdkQuery as unknown as QueryFn);
-    this.createMcpServerFn = deps._createMcpServerFn ?? createSdkMcpServer;
+    this.injectedQueryFn = deps._queryFn;
+    this.injectedCreateMcpServerFn = deps._createMcpServerFn;
+    this.loadSdkFn = deps._loadSdkFn ?? loadClaudeAgentSdk;
     this.sleepFn = deps._sleepFn ?? ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   }
 
   async run(ctx: AgentRunContext): Promise<AgentRunResult> {
+    const queryFn = this.injectedQueryFn;
     const cwd = ctx.cwd || this.defaultCwd;
     const step = ctx.step;
     const state = ctx.state;
@@ -214,8 +226,9 @@ export class ClaudeCodeRunner implements AgentRunner {
 
     const reportTool: ReportToolSpec | undefined = ctx.policy?.reportTool;
     if (reportTool) {
+      const createMcpServerFn = this.injectedCreateMcpServerFn ?? (await this.loadSdkFn()).createSdkMcpServer;
       const toolSpec = reportTool;
-      reportMcpServer = this.createMcpServerFn({
+      reportMcpServer = createMcpServerFn({
         name: "specrunner_report",
         tools: [
           {
@@ -255,7 +268,8 @@ export class ClaudeCodeRunner implements AgentRunner {
     const runQuery = async (): Promise<{ lastResult: SDKResultMessage | null }> => {
       let lastResult: SDKResultMessage | null = null;
       logPipelineDiag("query:start", `step=${step.name}`);
-      const messages = this.queryFn({ prompt: fullPrompt, options: queryOptions });
+      const effectiveQueryFn = queryFn ?? (await this.loadSdkFn()).query;
+      const messages = effectiveQueryFn({ prompt: fullPrompt, options: queryOptions });
       for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
         emitToolProgress(message, ctx.emit, step.name);
         // Write message to session log if enabled
@@ -370,7 +384,8 @@ export class ClaudeCodeRunner implements AgentRunner {
       onMessage: (msg: SDKMessage) => void = () => {},
     ): Promise<SDKResultMessage | null> => {
       const inner = async (): Promise<SDKResultMessage | null> => {
-        const messages = this.queryFn({ prompt, options });
+        const effectiveQueryFn = queryFn ?? (await this.loadSdkFn()).query;
+        const messages = effectiveQueryFn({ prompt, options });
         let lastResult: SDKResultMessage | null = null;
         for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
           onMessage(message);
@@ -589,7 +604,8 @@ export class ClaudeCodeRunner implements AgentRunner {
           };
           delete repairOptions["mcpServers"];
           try {
-            const repairMessages = this.queryFn({ prompt: repairPrompt, options: repairOptions });
+            const effectiveQueryFn = queryFn ?? (await this.loadSdkFn()).query;
+            const repairMessages = effectiveQueryFn({ prompt: repairPrompt, options: repairOptions });
             for await (const message of repairMessages as AsyncGenerator<SDKMessage, void>) {
               emitToolProgress(message, ctx.emit, step.name);
               if (message.type === "result" && (message as SDKResultMessage).subtype === "success") {
@@ -684,6 +700,8 @@ export class ClaudeCodeRunner implements AgentRunner {
           ),
         };
       }
+      if (err instanceof SpecRunnerError) throw err;
+
       const cause = err as Error;
       logVerbose("session", "query error", { stepName: step.name, runtime: "local", error: cause.message });
       sessionLogWriter?.close();

@@ -549,14 +549,14 @@ describe("TC-024: ClaudeCodeRunner does not import SessionClient or @anthropic-a
     expect(importLines).toHaveLength(0);
   });
 
-  it("claude-code/agent-runner.ts imports from @anthropic-ai/claude-agent-sdk", async () => {
+  it("claude-code/agent-runner.ts does not import @anthropic-ai/claude-agent-sdk directly", async () => {
     const filePath = path.resolve(__dirname, "../../../../src/adapter/claude-code/agent-runner.ts");
     const content = await fs.readFile(filePath, "utf-8");
     const importLines = content
       .split("\n")
       .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*"))
       .filter((l) => /from\s+["']@anthropic-ai\/claude-agent-sdk/.test(l));
-    expect(importLines.length).toBeGreaterThan(0);
+    expect(importLines).toHaveLength(0);
   });
 
   it("no file in src/adapter/claude-code/ has import statement for @anthropic-ai/sdk", async () => {

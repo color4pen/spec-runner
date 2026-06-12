@@ -9,17 +9,12 @@
  * - AgentRunner: step / state / branch / slug / emit — pipeline step context
  * - queryOneShot: systemPrompt / prompt / config — one-shot command context
  */
-import {
-  query as sdkQuery,
-  type SDKMessage,
-  type SDKResultMessage,
-  type SDKResultSuccess,
-} from "@anthropic-ai/claude-agent-sdk";
 import { getStepExecutionConfig } from "../../config/step-config.js";
 import { DEFAULT_ONE_SHOT_MODEL } from "../../config/model-registry.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ModelUsage } from "../../core/port/model-usage.js";
+import { loadClaudeAgentSdk, type ClaudeAgentSdkLoader } from "./sdk-loader.js";
 
 // ---------------------------------------------------------------------------
 // QueryFn type (local definition — avoids circular dependency with agent-runner.ts)
@@ -29,6 +24,15 @@ export type QueryFn = (params: {
   prompt: string | AsyncIterable<unknown>;
   options?: Record<string, unknown>;
 }) => AsyncGenerator<unknown, void>;
+
+type SDKMessage = { type: string; [key: string]: unknown };
+type SDKResultMessage = { type: "result"; subtype: string; [key: string]: unknown };
+type SDKResultSuccess = SDKResultMessage & {
+  subtype: "success";
+  result: string;
+  session_id?: string;
+  modelUsage?: Record<string, ModelUsage>;
+};
 
 // ---------------------------------------------------------------------------
 // Interfaces
@@ -95,8 +99,9 @@ export async function queryOneShot(
   opts: QueryOneShotOptions,
   config: SpecRunnerConfig,
   queryFn?: QueryFn,
+  loadSdkFn: ClaudeAgentSdkLoader = loadClaudeAgentSdk,
 ): Promise<QueryOneShotResult> {
-  const fn = queryFn ?? (sdkQuery as unknown as QueryFn);
+  const fn = queryFn ?? (await loadSdkFn()).query;
 
   // Step 1: Resolve execution config via 4-level chain
   const resolvedConfig = getStepExecutionConfig(config, opts.stepName ?? "one-shot", {
