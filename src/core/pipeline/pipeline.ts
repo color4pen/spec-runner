@@ -4,7 +4,6 @@ import { LOOP_ERROR_CODES } from "./types.js";
 import type { JobState, Verdict, StepRun } from "../../state/schema.js";
 import { appendHistoryEntry } from "../../state/schema.js";
 import { toStepName } from "../step/step-names.js";
-import { STEP_NAMES } from "../../kernel/step-names.js";
 import type { PipelineDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import { StepExecutor } from "../step/executor.js";
@@ -380,12 +379,12 @@ export class Pipeline {
         }
       }
 
-      // --- Conformance → fixer episode reset ---
-      // When conformance (no paired fixer) routes to a fixer step, reset the fixer's iter
-      // counter and its paired reviewer's counter so the fixer gets a fresh budget.
-      // This prevents the fixer's pre-existing budget (from its previous reviewer episode)
-      // from exhausting immediately on conformance-triggered entry.
-      if (currentStep === STEP_NAMES.CONFORMANCE) {
+      // --- Unpaired step → fixer episode reset ---
+      // When a step with no paired fixer (e.g. conformance) routes to a fixer step,
+      // reset the fixer's iter counter and its paired reviewer's counter so the fixer
+      // gets a fresh budget. This prevents the fixer's pre-existing budget (from its
+      // previous reviewer episode) from exhausting immediately on this entry.
+      if (!(currentStep in this.loopFixerPairs)) {
         const fixerNames = new Set(Object.values(this.loopFixerPairs));
         if (typeof nextStep === "string" && fixerNames.has(nextStep)) {
           fixerIters.set(nextStep, 0);
