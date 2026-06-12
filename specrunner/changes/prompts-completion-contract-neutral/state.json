@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f21c2e89-ff3c-491e-9fbb-fb22962c7382",
   "createdAt": "2026-06-12T09:05:02.754Z",
-  "updatedAt": "2026-06-12T09:53:35.776Z",
+  "updatedAt": "2026-06-12T09:56:56.564Z",
   "request": {
     "title": "agent prompt の完了契約文言（report_result / end_turn）を provider 非依存にする",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/prompts-completion-contract-neutral-f21c2e89",
   "error": null,
   "pipelineId": "standard",
@@ -48,8 +48,13 @@
     }
   ],
   "issueNumber": 661,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/668",
+    "number": 668,
+    "createdAt": "2026-06-12T09:56:56.524Z"
+  },
   "_journal": {
-    "historyCount": 60,
+    "historyCount": 65,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -62,7 +67,9 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
