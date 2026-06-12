@@ -53,3 +53,21 @@
 {"type":"transition","ts":"2026-06-12T07:57:27.417Z","step":"code-review","status":"ok","message":"code-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-12T07:57:27.417Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-06-12T07:57:27.421Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-06-12T08:00:27.069Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"3509fff4-22e6-4036-9528-ba68a5ec5508","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-12T07:57:27.445Z","endedAt":"2026-06-12T08:00:25.228Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-06-12T08:00:25.228Z","outputs":[{"path":"specrunner/changes/codex-adapter-parity","hash":null}],"inputs":[{"path":"specrunner/changes/codex-adapter-parity/review-feedback-001.md","hash":"sha256:ea0f3774081d0911f4a94543be7700d3b473be8f6566e475eb9b980fb8a4833a"}]}
+{"type":"transition","ts":"2026-06-12T08:00:27.083Z","step":"step-transition","status":"ok","message":"code-fixer → cross-boundary-invariants"}
+{"type":"transition","ts":"2026-06-12T08:00:27.086Z","step":"cross-boundary-invariants","status":"started","message":"cross-boundary-invariants iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T08:00:27.090Z","step":"cross-boundary-invariants-started","status":"started","message":"Starting cross-boundary-invariants step"}
+{"type":"transition","ts":"2026-06-12T08:00:27.141Z","step":"cross-boundary-invariants-skipped","status":"warning","message":"cross-boundary-invariants skipped: no changed files matched paths [src/core/pipeline/**, src/core/step/**, src/state/**, src/store/**]"}
+{"type":"step-attempt","step":"cross-boundary-invariants","sessionId":null,"outcome":{"verdict":"skipped","findingsPath":null,"error":null,"skipReason":"no changed files matched paths [src/core/pipeline/**, src/core/step/**, src/state/**, src/store/**]"},"startedAt":"2026-06-12T08:00:27.141Z","endedAt":"2026-06-12T08:00:27.141Z"}
+{"type":"transition","ts":"2026-06-12T08:00:27.148Z","step":"cross-boundary-invariants","status":"warning","message":"cross-boundary-invariants iteration 1 completed with verdict: skipped"}
+{"type":"transition","ts":"2026-06-12T08:00:27.148Z","step":"step-transition","status":"ok","message":"cross-boundary-invariants → scale-tolerance"}
+{"type":"transition","ts":"2026-06-12T08:00:27.152Z","step":"scale-tolerance","status":"started","message":"scale-tolerance iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T08:00:27.154Z","step":"scale-tolerance-started","status":"started","message":"Starting scale-tolerance step"}
+{"type":"transition","ts":"2026-06-12T08:00:27.201Z","step":"scale-tolerance-skipped","status":"warning","message":"scale-tolerance skipped: no changed files matched paths [src/store/**, src/adapter/github/**, src/core/inbox/**, src/logger/**]"}
+{"type":"step-attempt","step":"scale-tolerance","sessionId":null,"outcome":{"verdict":"skipped","findingsPath":null,"error":null,"skipReason":"no changed files matched paths [src/store/**, src/adapter/github/**, src/core/inbox/**, src/logger/**]"},"startedAt":"2026-06-12T08:00:27.201Z","endedAt":"2026-06-12T08:00:27.201Z"}
+{"type":"transition","ts":"2026-06-12T08:00:27.218Z","step":"scale-tolerance","status":"warning","message":"scale-tolerance iteration 1 completed with verdict: skipped"}
+{"type":"transition","ts":"2026-06-12T08:00:27.219Z","step":"step-transition","status":"ok","message":"scale-tolerance → regression-gate"}
+{"type":"transition","ts":"2026-06-12T08:00:27.223Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T08:00:27.226Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
