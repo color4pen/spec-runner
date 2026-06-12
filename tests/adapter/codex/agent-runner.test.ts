@@ -679,8 +679,8 @@ describe("CodexAgentRunner typed outcome (codex-typed-outcome)", () => {
     expect(callCount).toBe(2); // main + 1 retry
   });
 
-  // TC-013: retry turns also receive outputSchema
-  it("retry turn → thread.runStreamed() also called with outputSchema in opts", async () => {
+  // TC-013: main turn receives outputSchema; retry turns do NOT (T-03)
+  it("main turn has outputSchema; retry turn does NOT have outputSchema in opts", async () => {
     let callCount = 0;
     const capturedOpts: Array<{ signal?: AbortSignal; outputSchema?: unknown }> = [];
     const thread: CodexThread = {
@@ -708,8 +708,8 @@ describe("CodexAgentRunner typed outcome (codex-typed-outcome)", () => {
     expect(callCount).toBe(2); // main + 1 retry
     // Main turn must have outputSchema
     expect(capturedOpts[0]).toHaveProperty("outputSchema");
-    // Retry turn must also have outputSchema
-    expect(capturedOpts[1]).toHaveProperty("outputSchema");
+    // Retry turn must NOT have outputSchema (T-03: removed to avoid hang on outputSchema-incompatible models)
+    expect(capturedOpts[1]).not.toHaveProperty("outputSchema");
   });
 
   // T-07 test d: all retries exhausted → toolResult: null, followUpAttempts: maxAttempts

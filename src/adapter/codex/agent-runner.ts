@@ -141,18 +141,74 @@ function buildOutputSchema(reportTool: ReportToolSpec): object {
 }
 
 /**
- * Try to parse finalResponse as JSON and validate it against the reportTool.parseInput().
- * Returns the parsed result on success, null on any failure (JSON parse error or validation failure).
+ * Result of a single tool result extraction attempt.
  */
-function tryParseToolResult(finalResponse: string, reportTool: ReportToolSpec): BaseReportResult | null {
-  try {
-    const json: unknown = JSON.parse(finalResponse);
-    const normalized = stripNullDeep(json);
-    const parseResult = reportTool.parseInput(normalized);
-    return parseResult.ok ? parseResult.value : null;
-  } catch {
-    return null;
+export interface ParseAttemptResult {
+  toolResult: BaseReportResult | null;
+  failureReason: string | null;
+  rawFragment: string | null;
+}
+
+/**
+ * Try to extract a completion report from finalResponse using three fallback strategies:
+ * 1. Raw parse: JSON.parse(finalResponse.trim()) → stripNullDeep → parseInput
+ * 2. Code-fence: extract JSON from ```...``` block, parse, validate
+ * 3. Bracket: extract substring from first '{' to last '}', parse, validate
+ *
+ * Returns ParseAttemptResult with:
+ * - toolResult non-null on first successful strategy
+ * - toolResult null with failureReason and rawFragment (≤200 chars + "…") when all fail
+ *
+ * failureReason values: "json-parse-error" | "validation-failed" | "no-json-found"
+ */
+export function tryExtractToolResult(finalResponse: string, reportTool: ReportToolSpec): ParseAttemptResult {
+  const makeFragment = (): string =>
+    finalResponse.length > 200 ? finalResponse.slice(0, 200) + "…" : finalResponse;
+
+  let lastFailureReason: string = "no-json-found";
+
+  const tryParseAndValidate = (candidate: string): BaseReportResult | null => {
+    try {
+      const json: unknown = JSON.parse(candidate);
+      const normalized = stripNullDeep(json);
+      const parseResult = reportTool.parseInput(normalized);
+      if (parseResult.ok) {
+        return parseResult.value;
+      }
+      lastFailureReason = "validation-failed";
+      return null;
+    } catch {
+      lastFailureReason = "json-parse-error";
+      return null;
+    }
+  };
+
+  // Strategy 1: raw parse
+  const s1Result = tryParseAndValidate(finalResponse.trim());
+  if (s1Result !== null) return { toolResult: s1Result, failureReason: null, rawFragment: null };
+
+  // Strategy 2: code-fence extraction
+  const fenceMatch = /```(?:json)?\s*\n?([\s\S]*?)```/.exec(finalResponse);
+  if (fenceMatch?.[1] !== undefined) {
+    const s2Result = tryParseAndValidate(fenceMatch[1].trim());
+    if (s2Result !== null) return { toolResult: s2Result, failureReason: null, rawFragment: null };
   }
+
+  // Strategy 3: bracket extraction
+  const firstBrace = finalResponse.indexOf('{');
+  const lastBrace = finalResponse.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    const s3Result = tryParseAndValidate(finalResponse.slice(firstBrace, lastBrace + 1));
+    if (s3Result !== null) return { toolResult: s3Result, failureReason: null, rawFragment: null };
+  } else if (firstBrace === -1) {
+    lastFailureReason = "no-json-found";
+  }
+
+  return {
+    toolResult: null,
+    failureReason: lastFailureReason,
+    rawFragment: makeFragment(),
+  };
 }
 
 /**
@@ -449,7 +505,13 @@ export class CodexAgentRunner implements AgentRunner {
       // T-04: Parse finalResponse to extract typed toolResult
       let capturedToolResult: BaseReportResult | null = null;
       if (reportTool) {
-        capturedToolResult = tryParseToolResult(turn.finalResponse, reportTool);
+        const mainParseAttempt = tryExtractToolResult(turn.finalResponse, reportTool);
+        capturedToolResult = mainParseAttempt.toolResult;
+        if (mainParseAttempt.toolResult === null) {
+          stderrWrite(
+            `[codex] completion report parse failed (main turn): ${mainParseAttempt.failureReason}; fragment: "${mainParseAttempt.rawFragment}"`,
+          );
+        }
       }
 
       // T-05: follow-up retry loop when capturedToolResult is still null
@@ -458,20 +520,25 @@ export class CodexAgentRunner implements AgentRunner {
         const retryPolicy = ctx.policy?.toolReportRetry ?? DEFAULT_TOOL_RETRY;
         for (let attempt = 1; attempt <= retryPolicy.maxAttempts; attempt++) {
           const retryPrompt =
-            "前の応答を出力スキーマに一致する JSON として取得できませんでした。" +
-            "説明文や追加テキストを付けず、スキーマに一致する JSON のみで返してください。" +
+            `前の応答から JSON を取得できませんでした。コードフェンスや説明文を付けず、スキーマに一致する JSON オブジェクトのみを返してください。` +
             ` (attempt ${attempt}/${retryPolicy.maxAttempts})`;
           const retryTurn = await runFollowUpTurnWithRetry(
             activeThread,
             retryPrompt,
-            { signal: abortController.signal, outputSchema },
+            { signal: abortController.signal },
           );
           followUpAttempts++;
 
           // Accumulate usage
           turn = { ...retryTurn, usage: accumulateUsage(turn.usage, retryTurn.usage) };
 
-          capturedToolResult = tryParseToolResult(retryTurn.finalResponse, reportTool);
+          const retryParseAttempt = tryExtractToolResult(retryTurn.finalResponse, reportTool);
+          capturedToolResult = retryParseAttempt.toolResult;
+          if (retryParseAttempt.toolResult === null) {
+            stderrWrite(
+              `[codex] completion report parse failed (attempt ${attempt}/${retryPolicy.maxAttempts}): ${retryParseAttempt.failureReason}; fragment: "${retryParseAttempt.rawFragment}"`,
+            );
+          }
           if (capturedToolResult !== null) break;
         }
       }

@@ -4,15 +4,15 @@
 
 Add a `ParseAttemptResult` interface and implement `tryExtractToolResult` in `src/adapter/codex/agent-runner.ts`, replacing the existing `tryParseToolResult` function.
 
-- [ ] Define `interface ParseAttemptResult { toolResult: BaseReportResult | null; failureReason: string | null; rawFragment: string | null }` in `agent-runner.ts`
-- [ ] Implement `tryExtractToolResult(finalResponse: string, reportTool: ReportToolSpec): ParseAttemptResult`
+- [x] Define `interface ParseAttemptResult { toolResult: BaseReportResult | null; failureReason: string | null; rawFragment: string | null }` in `agent-runner.ts`
+- [x] Implement `tryExtractToolResult(finalResponse: string, reportTool: ReportToolSpec): ParseAttemptResult`
   - Strategy 1 (raw parse): `JSON.parse(finalResponse.trim())` → `stripNullDeep` → `parseInput`; on success return `{ toolResult: result, failureReason: null, rawFragment: null }`
   - Strategy 2 (code-fence): regex ` /```(?:json)?\s*\n?([\s\S]*?)```/ ` to extract fence body, parse, validate
   - Strategy 3 (bracket): `finalResponse.indexOf('{')` / `finalResponse.lastIndexOf('}')`, extract substring, parse, validate
   - If all three fail: return `{ toolResult: null, failureReason: <last failure reason>, rawFragment: <first 200 chars of finalResponse + "…" if truncated> }`
   - `failureReason` values: `"json-parse-error"` (JSON.parse threw), `"validation-failed"` (parseInput returned ok: false), `"no-json-found"` (no `{` found in string)
-- [ ] Remove the old `tryParseToolResult` function
-- [ ] Update all two call sites (line ~452 and ~474) to use `tryExtractToolResult`
+- [x] Remove the old `tryParseToolResult` function
+- [x] Update all two call sites (line ~452 and ~474) to use `tryExtractToolResult`
 
 **Acceptance Criteria**:
 - `tryExtractToolResult` with raw JSON `finalResponse` returns `toolResult` non-null (strategy 1 wins)
@@ -26,9 +26,9 @@ Add a `ParseAttemptResult` interface and implement `tryExtractToolResult` in `sr
 
 At both call sites of `tryExtractToolResult`, emit a `stderrWrite` line when `toolResult` is null.
 
-- [ ] At the main turn call site (~line 452): after `tryExtractToolResult`, if `toolResult` is null, call `stderrWrite` with: `[codex] completion report parse failed (main turn): <failureReason>; fragment: "<rawFragment>"`
-- [ ] At the retry loop call site (~line 474): after `tryExtractToolResult`, if `toolResult` is null, call `stderrWrite` with: `[codex] completion report parse failed (attempt <attempt>/<maxAttempts>): <failureReason>; fragment: "<rawFragment>"`
-- [ ] Confirm that `rawFragment` from `tryExtractToolResult` is already truncated to ≤200 chars (enforced in T-01); no additional truncation needed here
+- [x] At the main turn call site (~line 452): after `tryExtractToolResult`, if `toolResult` is null, call `stderrWrite` with: `[codex] completion report parse failed (main turn): <failureReason>; fragment: "<rawFragment>"`
+- [x] At the retry loop call site (~line 474): after `tryExtractToolResult`, if `toolResult` is null, call `stderrWrite` with: `[codex] completion report parse failed (attempt <attempt>/<maxAttempts>): <failureReason>; fragment: "<rawFragment>"`
+- [x] Confirm that `rawFragment` from `tryExtractToolResult` is already truncated to ≤200 chars (enforced in T-01); no additional truncation needed here
 
 **Acceptance Criteria**:
 - When the main turn finalResponse is unrecoverable, a line is written to stderr containing `failureReason` and `rawFragment`
@@ -40,9 +40,9 @@ At both call sites of `tryExtractToolResult`, emit a `stderrWrite` line when `to
 
 Modify the `toolReportRetry` loop to omit `outputSchema` and update the retry prompt.
 
-- [ ] In the `toolReportRetry` loop (~line 464), change `runFollowUpTurnWithRetry(activeThread, retryPrompt, { signal: abortController.signal, outputSchema })` to `runFollowUpTurnWithRetry(activeThread, retryPrompt, { signal: abortController.signal })`
-- [ ] Update `retryPrompt` text to: `"前の応答から JSON を取得できませんでした。コードフェンスや説明文を付けず、スキーマに一致する JSON オブジェクトのみを返してください。 (attempt ${attempt}/${retryPolicy.maxAttempts})"`
-- [ ] Verify the main work turn (`executeTurn` at ~line 398) still passes `outputSchema` unchanged
+- [x] In the `toolReportRetry` loop (~line 464), change `runFollowUpTurnWithRetry(activeThread, retryPrompt, { signal: abortController.signal, outputSchema })` to `runFollowUpTurnWithRetry(activeThread, retryPrompt, { signal: abortController.signal })`
+- [x] Update `retryPrompt` text to: `"前の応答から JSON を取得できませんでした。コードフェンスや説明文を付けず、スキーマに一致する JSON オブジェクトのみを返してください。 (attempt ${attempt}/${retryPolicy.maxAttempts})"`
+- [x] Verify the main work turn (`executeTurn` at ~line 398) still passes `outputSchema` unchanged
 
 **Acceptance Criteria**:
 - The `toolReportRetry` retry loop calls `runFollowUpTurnWithRetry` without an `outputSchema` property
@@ -53,16 +53,16 @@ Modify the `toolReportRetry` loop to omit `outputSchema` and update the retry pr
 
 Create `src/adapter/codex/__tests__/agent-runner-completion-report.test.ts` with unit tests for the extraction and observability logic.
 
-- [ ] Test: raw JSON finalResponse → `toolResult` non-null, `failureReason` null (strategy 1)
-- [ ] Test: ` ```json\n{...}\n``` ` finalResponse → `toolResult` non-null (strategy 2)
-- [ ] Test: ` ```\n{...}\n``` ` (no language tag) → `toolResult` non-null (strategy 2)
-- [ ] Test: inline code fence ` ```json {...} ``` ` → `toolResult` non-null (strategy 2)
-- [ ] Test: `"Explanation text\n{...}"` → `toolResult` non-null (strategy 3)
-- [ ] Test: `"{...}\ntrailing text"` → `toolResult` non-null (strategy 3)
-- [ ] Test: schema-invalid JSON `'{"unexpected":"field"}'` → `toolResult` null, `failureReason: "validation-failed"`
-- [ ] Test: non-JSON prose → `toolResult` null, `failureReason: "no-json-found"`, `rawFragment` ≤200 chars
-- [ ] Test: finalResponse longer than 200 chars, unrecoverable → `rawFragment` ends with `…` and is ≤201 chars total
-- [ ] Test: `tryParseToolResult` is not exported (removed)
+- [x] Test: raw JSON finalResponse → `toolResult` non-null, `failureReason` null (strategy 1)
+- [x] Test: ` ```json\n{...}\n``` ` finalResponse → `toolResult` non-null (strategy 2)
+- [x] Test: ` ```\n{...}\n``` ` (no language tag) → `toolResult` non-null (strategy 2)
+- [x] Test: inline code fence ` ```json {...} ``` ` → `toolResult` non-null (strategy 2)
+- [x] Test: `"Explanation text\n{...}"` → `toolResult` non-null (strategy 3)
+- [x] Test: `"{...}\ntrailing text"` → `toolResult` non-null (strategy 3)
+- [x] Test: schema-invalid JSON `'{"unexpected":"field"}'` → `toolResult` null, `failureReason: "validation-failed"`
+- [x] Test: non-JSON prose → `toolResult` null, `failureReason: "no-json-found"`, `rawFragment` ≤200 chars
+- [x] Test: finalResponse longer than 200 chars, unrecoverable → `rawFragment` ends with `…` and is ≤201 chars total
+- [x] Test: `tryParseToolResult` is not exported (removed)
 
 For test fixtures, use a minimal `reportTool` stub that:
 - Has a `zodSchema` with a required `verdict` string field
@@ -76,9 +76,9 @@ For test fixtures, use a minimal `reportTool` stub that:
 
 Add a test in `src/adapter/codex/__tests__/agent-runner-completion-report.test.ts` (same file as T-04) that exercises the full `CodexAgentRunner.run()` path with mocked thread.
 
-- [ ] Test: main turn + all retry turns return unrecoverable finalResponse → `result.toolResult` is null and `result.completionReason` is `"success"` (the work itself succeeded; toolResult null → escalation is the pipeline's responsibility)
-- [ ] Test: main turn returns code-fenced JSON (recoverable by D1) → `result.toolResult` non-null; no retry turns executed
-- [ ] Test: main turn returns unrecoverable JSON, first retry returns code-fenced JSON → `result.toolResult` non-null; `result.followUpAttempts` equals 1
+- [x] Test: main turn + all retry turns return unrecoverable finalResponse → `result.toolResult` is null and `result.completionReason` is `"success"` (the work itself succeeded; toolResult null → escalation is the pipeline's responsibility)
+- [x] Test: main turn returns code-fenced JSON (recoverable by D1) → `result.toolResult` non-null; no retry turns executed
+- [x] Test: main turn returns unrecoverable JSON, first retry returns code-fenced JSON → `result.toolResult` non-null; `result.followUpAttempts` equals 1
 
 Use `CodexAgentRunnerDeps._codexFactory` injection to supply a mock `CodexInstance`.
 
@@ -89,8 +89,8 @@ Use `CodexAgentRunnerDeps._codexFactory` injection to supply a mock `CodexInstan
 
 ## T-06: Verify `typecheck && test` green
 
-- [ ] Run `bun run typecheck` — zero errors
-- [ ] Run `bun run test` — all tests pass, no regressions in existing test files
+- [x] Run `bun run typecheck` — zero errors
+- [x] Run `bun run test` — all tests pass, no regressions in existing test files
 
 **Acceptance Criteria**:
 - `bun run typecheck` exits 0
