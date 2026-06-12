@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c1f9dd5d-4022-4734-867e-4ddf4b6e7f98",
   "createdAt": "2026-06-11T23:59:12.727Z",
-  "updatedAt": "2026-06-12T00:37:51.766Z",
+  "updatedAt": "2026-06-12T00:38:08.198Z",
   "request": {
     "title": "プロジェクトのテスト配置規約を config で宣言し、生成テストの配置を決定的にする",
     "type": "new-feature"
@@ -11,7 +11,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/test-placement-convention-c1f9dd5d",
   "error": null,
@@ -49,7 +49,7 @@
   "issueNumber": 565,
   "resumePoint": null,
   "_journal": {
-    "historyCount": 56,
+    "historyCount": 60,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -58,7 +58,7 @@
       "implementer": 1,
       "verification": 1,
       "code-review": 1,
-      "code-fixer": 2,
+      "code-fixer": 3,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "regression-gate": 1

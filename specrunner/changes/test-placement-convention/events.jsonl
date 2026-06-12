@@ -79,3 +79,9 @@
 {"type":"transition","ts":"2026-06-12T00:37:51.764Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-12T00:37:51.764Z","step":"step-transition","status":"ok","message":"regression-gate → code-fixer"}
 {"type":"transition","ts":"2026-06-12T00:37:51.766Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-06-12T00:38:08.192Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"c836216e-6504-4b38-9b3b-35da85628f1b","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-06-12T00:37:51.776Z","endedAt":"2026-06-12T00:38:06.495Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-06-12T00:38:06.495Z","outputs":[{"path":"specrunner/changes/test-placement-convention","hash":null}],"inputs":[{"path":"specrunner/changes/test-placement-convention/regression-gate-result-001.md","hash":"sha256:c4584cc7541f879fc52c7da4852328180856f3ce97dfc3b139302f6030535da7"}]}
+{"type":"transition","ts":"2026-06-12T00:38:08.196Z","step":"step-transition","status":"ok","message":"code-fixer → conformance"}
+{"type":"transition","ts":"2026-06-12T00:38:08.197Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-06-12T00:38:08.198Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
