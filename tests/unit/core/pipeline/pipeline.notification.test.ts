@@ -73,7 +73,7 @@ function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
     jobId: "test-notification-job",
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
-    request: { path: "/repo/specrunner/changes/my-slug/request.md", title: "Test", type: "new-feature", slug: "my-slug" },
+    request: { path: "/repo/specrunner/changes/my-slug/request.md", title: "Test", type: "new-feature", slug: "my-slug", baseBranch: "main" },
     repository: { owner: "testowner", name: "testrepo" },
     session: null,
     step: "design",
@@ -235,6 +235,8 @@ describe("TC-PN-002: issueNumber set + escalation → createIssueComment called"
     expect(issueNumber).toBe(42);
     expect(body).toContain('kind="escalation"');
     expect(body).toContain("specrunner job resume");
+    // compare URL is included when branch is set
+    expect(body).toContain("https://github.com/testowner/testrepo/compare/main...feat/my-slug-12345678");
   });
 });
 

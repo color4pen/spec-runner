@@ -12,10 +12,16 @@
  * TC-N-009: notifyJobTerminal — issueNumber absent → createIssueComment NOT called
  * TC-N-010: notifyJobTerminal — createIssueComment throws → notifyJobTerminal resolves, state unchanged
  * TC-N-011: notifyJobTerminal — status other than awaiting-resume/archive → no-op
+ * TC-N-012: buildCompareUrl — produces correct GitHub compare URL
+ * TC-N-013: buildEscalationComment — compare URL present when branch is set
+ * TC-N-014: buildEscalationComment — compare URL absent when branch is null
+ * TC-N-015: buildEscalationComment — compare URL uses baseBranch when set
+ * TC-N-016: buildEscalationComment — compare URL falls back to main when baseBranch absent
  */
 import { describe, it, expect, vi } from "vitest";
 import {
   buildMarker,
+  buildCompareUrl,
   buildEscalationComment,
   buildCompletionComment,
   notifyJobTerminal,
@@ -303,5 +309,126 @@ describe("TC-N-011: notifyJobTerminal — status other than terminal → no-op",
     await notifyJobTerminal(state, { githubClient: client, owner: "o", repo: "r" });
 
     expect(client.createIssueComment).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-N-012: buildCompareUrl — pure function
+// ---------------------------------------------------------------------------
+
+describe("TC-N-012: buildCompareUrl — produces correct GitHub compare URL", () => {
+  it("returns correct URL for given owner/repo/base/branch", () => {
+    const url = buildCompareUrl("owner", "repo", "main", "feat/my-slug-12345678");
+    expect(url).toBe("https://github.com/owner/repo/compare/main...feat/my-slug-12345678");
+  });
+
+  it("uses non-main base branch verbatim", () => {
+    const url = buildCompareUrl("acme", "monorepo", "develop", "feat/foo-abcdef01");
+    expect(url).toBe("https://github.com/acme/monorepo/compare/develop...feat/foo-abcdef01");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-N-013: buildEscalationComment — compare URL present when branch is set
+// ---------------------------------------------------------------------------
+
+describe("TC-N-013: buildEscalationComment — compare URL included when branch is set", () => {
+  it("body contains compare URL for branch-set state", () => {
+    const state = makeState({
+      status: "awaiting-resume",
+      branch: "feat/my-slug-12345678",
+      repository: { owner: "owner", name: "repo" },
+      request: { path: "/repo/specrunner/changes/my-slug/request.md", title: "Test", type: "new-feature", slug: "my-slug", baseBranch: "main" },
+      resumePoint: { step: "code-review", reason: "too many iterations", iterationsExhausted: 3 },
+    });
+    const body = buildEscalationComment(state);
+
+    expect(body).toContain("https://github.com/owner/repo/compare/main...feat/my-slug-12345678");
+    // Existing elements still present
+    expect(body).toContain('kind="escalation"');
+    expect(body).toContain("code-review");
+    expect(body).toContain("too many iterations");
+    expect(body).toContain("specrunner job resume my-slug");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-N-014: buildEscalationComment — compare URL absent when branch is null
+// ---------------------------------------------------------------------------
+
+describe("TC-N-014: buildEscalationComment — compare URL absent when branch is null", () => {
+  it("body does not contain /compare/ when branch is null", () => {
+    const state = makeState({
+      status: "awaiting-resume",
+      branch: null,
+      resumePoint: { step: "request-review", reason: "unclear request", iterationsExhausted: 1 },
+    });
+    const body = buildEscalationComment(state);
+
+    expect(body).not.toContain("/compare/");
+    // Traditional elements still present
+    expect(body).toContain('kind="escalation"');
+    expect(body).toContain("request-review");
+    expect(body).toContain("unclear request");
+    expect(body).toContain("specrunner job resume my-slug");
+  });
+
+  it("body does not contain /compare/ when branch is empty string", () => {
+    const state = makeState({
+      status: "awaiting-resume",
+      branch: "" as unknown as null,
+    });
+    const body = buildEscalationComment(state);
+
+    expect(body).not.toContain("/compare/");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-N-015: buildEscalationComment — baseBranch reflected in URL
+// ---------------------------------------------------------------------------
+
+describe("TC-N-015: buildEscalationComment — baseBranch is reflected in compare URL", () => {
+  it("uses baseBranch=develop in URL when set", () => {
+    const state = makeState({
+      status: "awaiting-resume",
+      branch: "feat/my-slug-12345678",
+      repository: { owner: "owner", name: "repo" },
+      request: { path: "/repo/specrunner/changes/my-slug/request.md", title: "Test", type: "new-feature", slug: "my-slug", baseBranch: "develop" },
+    });
+    const body = buildEscalationComment(state);
+
+    expect(body).toContain("https://github.com/owner/repo/compare/develop...feat/my-slug-12345678");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-N-016: buildEscalationComment — falls back to main when baseBranch absent
+// ---------------------------------------------------------------------------
+
+describe("TC-N-016: buildEscalationComment — fallback to main when baseBranch absent", () => {
+  it("uses main as base when baseBranch is undefined (legacy state)", () => {
+    const state = makeState({
+      status: "awaiting-resume",
+      branch: "feat/my-slug-12345678",
+      repository: { owner: "owner", name: "repo" },
+      // request without baseBranch (legacy state)
+      request: { path: "/repo/specrunner/changes/my-slug/request.md", title: "Test", type: "new-feature", slug: "my-slug" },
+    });
+    const body = buildEscalationComment(state);
+
+    expect(body).toContain("https://github.com/owner/repo/compare/main...feat/my-slug-12345678");
+  });
+
+  it("uses main as base when baseBranch is null", () => {
+    const state = makeState({
+      status: "awaiting-resume",
+      branch: "feat/my-slug-12345678",
+      repository: { owner: "owner", name: "repo" },
+      request: { path: "/repo/specrunner/changes/my-slug/request.md", title: "Test", type: "new-feature", slug: "my-slug", baseBranch: null },
+    });
+    const body = buildEscalationComment(state);
+
+    expect(body).toContain("https://github.com/owner/repo/compare/main...feat/my-slug-12345678");
   });
 });

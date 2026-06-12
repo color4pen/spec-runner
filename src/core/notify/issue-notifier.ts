@@ -82,8 +82,19 @@ export function buildMarker(kind: "escalation" | "completed", jobId: string): st
 }
 
 /**
+ * Build a GitHub compare URL for the given repository and branches (pure).
+ *
+ * Format: `https://github.com/{owner}/{repo}/compare/{base}...{branch}`
+ * Values are inserted verbatim; no percent-encoding is applied
+ * (branch names are system-generated and contain only URL-safe characters).
+ */
+export function buildCompareUrl(owner: string, repo: string, base: string, branch: string): string {
+  return `https://github.com/${owner}/${repo}/compare/${base}...${branch}`;
+}
+
+/**
  * Build the escalation comment body (pure).
- * Includes: marker, stopped step, resume reason, and resume command.
+ * Includes: marker, stopped step, resume reason, compare URL (when branch is set), and resume command.
  */
 export function buildEscalationComment(state: JobState): string {
   const marker = buildMarker("escalation", state.jobId);
@@ -94,7 +105,7 @@ export function buildEscalationComment(state: JobState): string {
     ? `specrunner job resume ${slug}`
     : "specrunner job resume <slug>";
 
-  return [
+  const lines: string[] = [
     marker,
     "",
     "Job stopped (awaiting-resume)",
@@ -102,9 +113,19 @@ export function buildEscalationComment(state: JobState): string {
     `Step: ${step}`,
     `Reason: ${reason}`,
     "",
-    "To resume:",
-    `  ${resumeCmd}`,
-  ].join("\n");
+  ];
+
+  if (state.branch) {
+    const base = state.request.baseBranch ?? "main";
+    const url = buildCompareUrl(state.repository.owner, state.repository.name, base, state.branch);
+    lines.push(`Diff: ${url}`);
+    lines.push("");
+  }
+
+  lines.push("To resume:");
+  lines.push(`  ${resumeCmd}`);
+
+  return lines.join("\n");
 }
 
 /**

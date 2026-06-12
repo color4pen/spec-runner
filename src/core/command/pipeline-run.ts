@@ -86,6 +86,7 @@ export class PipelineRunCommand extends CommandRunner {
         title: request.title,
         type: request.type,
         slug: requestSlug,
+        baseBranch: request.baseBranch,
       },
       repository: { owner: this.preflightResult.repo.owner, name: this.preflightResult.repo.name },
       pipelineId: STANDARD_PIPELINE_ID,
