@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e9602244-4d28-46da-8cc8-d8a109881172",
   "createdAt": "2026-06-11T23:59:17.617Z",
-  "updatedAt": "2026-06-12T01:41:18.461Z",
+  "updatedAt": "2026-06-12T02:29:38.543Z",
   "request": {
     "title": "conformance の needs-fix に戻り先 step を導出させ、空振りの implementer 再入を解消する",
     "type": "spec-change"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/conformance-fix-target-e9602244",
   "error": null,
   "pipelineId": "standard",
@@ -54,7 +54,7 @@
     "createdAt": "2026-06-12T01:41:18.450Z"
   },
   "_journal": {
-    "historyCount": 74,
+    "historyCount": 75,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

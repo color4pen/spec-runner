@@ -106,3 +106,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/conformance-fix-target/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T01:41:16.534Z","endedAt":"2026-06-12T01:41:18.451Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-12T01:41:18.451Z","outputs":[{"path":"specrunner/changes/conformance-fix-target/pr-create-result.md","hash":"sha256:d9c4ebed58603bea06583c89a66d523e59b3ecae1df6ba6fd9736e43b1196b0b"}],"inputs":[{"path":"change/conformance-fix-target-e9602244","hash":null}]}
 {"type":"transition","ts":"2026-06-12T01:41:18.461Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-12T02:29:38.543Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
