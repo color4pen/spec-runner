@@ -76,3 +76,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/escalation-compare-url/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-12T06:07:26.150Z","endedAt":"2026-06-12T06:07:28.179Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-12T06:07:28.179Z","outputs":[{"path":"specrunner/changes/escalation-compare-url/pr-create-result.md","hash":"sha256:0bcb39d9f28cf240ab959ef0c8073ae58c03b34f43ddbc930ec525c0278372f1"}],"inputs":[{"path":"feat/escalation-compare-url-73f15a52","hash":null}]}
 {"type":"transition","ts":"2026-06-12T06:07:28.192Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-12T06:15:14.896Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

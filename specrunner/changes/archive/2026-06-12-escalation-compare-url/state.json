@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "73f15a52-ba5d-4ac7-820e-3745bfb1f071",
   "createdAt": "2026-06-12T05:40:03.023Z",
-  "updatedAt": "2026-06-12T06:07:28.192Z",
+  "updatedAt": "2026-06-12T06:15:14.896Z",
   "request": {
     "title": "escalation 通知コメントに branch の compare URL を含め、停止した job の差分確認を GitHub 上で完結させる",
     "type": "new-feature"
@@ -12,7 +12,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "feat/escalation-compare-url-73f15a52",
   "error": null,
   "pipelineId": "standard",
@@ -53,7 +53,7 @@
     "createdAt": "2026-06-12T06:07:28.178Z"
   },
   "_journal": {
-    "historyCount": 54,
+    "historyCount": 55,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
