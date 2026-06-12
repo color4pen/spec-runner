@@ -41,6 +41,7 @@ import type { BaseReportResult, ReportToolSpec } from "../../core/port/report-re
 import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
 import { retryWithBackoff } from "../../util/retry.js";
 import { isTransientAgentError } from "./transient-error.js";
+import { SpecRunnerError } from "../../errors.js";
 
 export type { SpawnFn } from "./git-exec.js";
 
@@ -152,7 +153,7 @@ export class ClaudeCodeRunner implements AgentRunner {
   }
 
   async run(ctx: AgentRunContext): Promise<AgentRunResult> {
-    const queryFn = this.injectedQueryFn ?? (await this.loadSdkFn()).query;
+    const queryFn = this.injectedQueryFn;
     const cwd = ctx.cwd || this.defaultCwd;
     const step = ctx.step;
     const state = ctx.state;
@@ -267,7 +268,8 @@ export class ClaudeCodeRunner implements AgentRunner {
     const runQuery = async (): Promise<{ lastResult: SDKResultMessage | null }> => {
       let lastResult: SDKResultMessage | null = null;
       logPipelineDiag("query:start", `step=${step.name}`);
-      const messages = queryFn({ prompt: fullPrompt, options: queryOptions });
+      const effectiveQueryFn = queryFn ?? (await this.loadSdkFn()).query;
+      const messages = effectiveQueryFn({ prompt: fullPrompt, options: queryOptions });
       for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
         emitToolProgress(message, ctx.emit, step.name);
         // Write message to session log if enabled
@@ -382,7 +384,8 @@ export class ClaudeCodeRunner implements AgentRunner {
       onMessage: (msg: SDKMessage) => void = () => {},
     ): Promise<SDKResultMessage | null> => {
       const inner = async (): Promise<SDKResultMessage | null> => {
-        const messages = queryFn({ prompt, options });
+        const effectiveQueryFn = queryFn ?? (await this.loadSdkFn()).query;
+        const messages = effectiveQueryFn({ prompt, options });
         let lastResult: SDKResultMessage | null = null;
         for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
           onMessage(message);
@@ -601,7 +604,8 @@ export class ClaudeCodeRunner implements AgentRunner {
           };
           delete repairOptions["mcpServers"];
           try {
-            const repairMessages = queryFn({ prompt: repairPrompt, options: repairOptions });
+            const effectiveQueryFn = queryFn ?? (await this.loadSdkFn()).query;
+            const repairMessages = effectiveQueryFn({ prompt: repairPrompt, options: repairOptions });
             for await (const message of repairMessages as AsyncGenerator<SDKMessage, void>) {
               emitToolProgress(message, ctx.emit, step.name);
               if (message.type === "result" && (message as SDKResultMessage).subtype === "success") {
@@ -696,6 +700,8 @@ export class ClaudeCodeRunner implements AgentRunner {
           ),
         };
       }
+      if (err instanceof SpecRunnerError) throw err;
+
       const cause = err as Error;
       logVerbose("session", "query error", { stepName: step.name, runtime: "local", error: cause.message });
       sessionLogWriter?.close();

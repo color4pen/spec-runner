@@ -13,14 +13,20 @@ export interface OptionalProviderSdkLoaderDeps<T> {
   importer: Importer<T>;
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export function isMissingTopLevelPackageError(err: unknown, packageName: string): boolean {
   if (!(err instanceof Error)) return false;
   const code = (err as { code?: unknown }).code;
   const message = err.message;
   if (code !== "ERR_MODULE_NOT_FOUND" && code !== "MODULE_NOT_FOUND") return false;
-  return message.includes(`'${packageName}'`) ||
-    message.includes(`"${packageName}"`) ||
-    message.includes(packageName);
+  const escapedPackageName = escapeRegExp(packageName);
+  const directSpecifierPattern = new RegExp(
+    String.raw`(?:Cannot find (?:package|module)|Failed to resolve module specifier)\s+['"\`]${escapedPackageName}['"\`]`,
+  );
+  return directSpecifierPattern.test(message) && !/node_modules[\\/]/.test(message);
 }
 
 export async function loadOptionalProviderSdk<T>(deps: OptionalProviderSdkLoaderDeps<T>): Promise<T> {
