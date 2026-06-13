@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0cf67fba-919e-4c4b-9725-0d80c2da89f8",
   "createdAt": "2026-06-13T14:45:02.753Z",
-  "updatedAt": "2026-06-13T15:03:50.337Z",
+  "updatedAt": "2026-06-13T15:09:35.265Z",
   "request": {
     "title": "pipeline profile に権限スコープを宣言し、スコープ超過を diff から導出して既存 escalation に載せる土台を入れる",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/scope-exceeded-escalation-0cf67fba",
   "error": null,
@@ -49,10 +49,11 @@
   ],
   "issueNumber": 688,
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
