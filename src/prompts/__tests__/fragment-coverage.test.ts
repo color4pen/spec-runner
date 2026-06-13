@@ -104,6 +104,12 @@ describe("3 judge prompts contain options requirement (via DECISION_NEEDED_DEFIN
     expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("label");
     expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("consequence");
   });
+
+  it("CONFORMANCE_SYSTEM_PROMPT contains options requirement", () => {
+    expect(CONFORMANCE_SYSTEM_PROMPT).toContain("options");
+    expect(CONFORMANCE_SYSTEM_PROMPT).toContain("label");
+    expect(CONFORMANCE_SYSTEM_PROMPT).toContain("consequence");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -121,6 +127,10 @@ describe("3 judge prompts reference DECISION_NEEDED_DEFINITION", () => {
 
   it("REQUEST_REVIEW_SYSTEM_PROMPT contains DECISION_NEEDED_DEFINITION", () => {
     expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain(DECISION_NEEDED_DEFINITION);
+  });
+
+  it("CONFORMANCE_SYSTEM_PROMPT contains DECISION_NEEDED_DEFINITION", () => {
+    expect(CONFORMANCE_SYSTEM_PROMPT).toContain(DECISION_NEEDED_DEFINITION);
   });
 });
 
