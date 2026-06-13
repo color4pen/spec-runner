@@ -99,6 +99,7 @@ const findingSchema = array(object({
   title: string(),
   rationale: string(),
   options: optional(array(decisionOptionSchema)),
+  origin: optional(literal("scope")),
 }));
 
 /**
@@ -171,6 +172,7 @@ const conformanceFindingSchema = array(object({
   rationale: string(),
   fixTarget: optional(union([literal("implementer"), literal("code-fixer"), literal("spec-fixer")])),
   options: optional(array(decisionOptionSchema)),
+  origin: optional(literal("scope")),
 }));
 
 /**

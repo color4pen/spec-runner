@@ -40,6 +40,8 @@ import { FIXER_STEP_NAMES, getPreviousSessionId } from "./fixer-helpers.js";
 import type { CommitPushInfra } from "./commit-push.js";
 import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
 import type { JudgeReportResult, ProducerReportResult, RequestReviewReportResult } from "../../core/port/report-result.js";
+import type { PermissionScope } from "../pipeline/types.js";
+import { computeExtraScopeFindings } from "./scope-check.js";
 
 import { JUDGE_REPORT_TOOL, CODE_REVIEW_REPORT_TOOL, REQUEST_REVIEW_REPORT_TOOL, CONFORMANCE_REPORT_TOOL } from "./report-tool.js";
 import { deriveJudgeVerdict, deriveRequestReviewVerdict, deriveConformanceVerdict, collectVerdictAffectingFindings } from "./judge-verdict.js";
@@ -60,6 +62,12 @@ export class StepExecutor {
   private readonly sleepFn: (ms: number) => Promise<void>;
   private readonly storeFactory: StoreFactory;
   private readonly commitPushInfra: CommitPushInfra;
+  /**
+   * Optional permission scope from the pipeline descriptor.
+   * undefined = no scope checking (default behavior, existing behavior preserved).
+   * When set, scope breach synthesis activates only at the declared checkpoint step.
+   */
+  private readonly permissionScope: PermissionScope | undefined;
 
   constructor(
     private readonly events: EventBus,
@@ -67,11 +75,13 @@ export class StepExecutor {
     storeFactory: StoreFactory,
     spawnFn?: SpawnFn,
     sleepFn?: (ms: number) => Promise<void>,
+    permissionScope?: PermissionScope,
   ) {
     this.storeFactory = storeFactory;
     this.spawnFn = spawnFn ?? defaultSpawnFn;
     this.sleepFn = sleepFn ?? ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
     this.commitPushInfra = { spawnFn: this.spawnFn, sleepFn: this.sleepFn, events: this.events };
+    this.permissionScope = permissionScope;
   }
 
   /**
@@ -632,11 +642,24 @@ export class StepExecutor {
     const isJudgeStep = stepReportTool === JUDGE_REPORT_TOOL || stepReportTool === CODE_REVIEW_REPORT_TOOL || isConformanceStep;
     const isRequestReviewStep = stepReportTool === REQUEST_REVIEW_REPORT_TOOL;
 
+    // Track effective toolResult for persistence. Updated to include scope findings when a breach
+    // is synthesized; otherwise equals agentResult.toolResult (unchanged, byte-equivalent).
+    let persistToolResult: (import("../port/report-result.js").BaseReportResult & { findings?: import("../../kernel/report-result.js").Finding[] }) | null =
+      (agentResult?.toolResult as (import("../port/report-result.js").BaseReportResult & { findings?: import("../../kernel/report-result.js").Finding[] }) | null | undefined) ?? null;
+
     if (agentResult !== undefined && stepReportTool !== undefined) {
       // Agent step with reportTool — use typed outcome exclusively.
       const toolResult = agentResult.toolResult;
       if (toolResult !== null && toolResult !== undefined) {
         // Non-null toolResult: derive verdict from findings (judge steps) or fields (producer).
+
+        // Scope breach synthesis: delegate to sibling scope-check.ts (executor-bloat guard).
+        // Returns [] when permissionScope absent / step not checkpoint / no breach.
+        // Only meaningful for judge/conformance steps; guard in computeExtraScopeFindings.
+        const extraScopeFindings = (isJudgeStep || isConformanceStep)
+          ? await computeExtraScopeFindings(step.name, this.permissionScope, state, deps)
+          : [];
+
         if (isRequestReviewStep) {
           // request-review: derive from findings using pure function
           // Filter already-decided findings before verdict derivation (D8)
@@ -647,15 +670,17 @@ export class StepExecutor {
         } else if (isConformanceStep) {
           // conformance: derive routed needs-fix verdict (needs-fix:<target>)
           // Filter already-decided findings before verdict derivation (D8)
+          // extraScopeFindings (if any) merged before filtering
           const tr = toolResult as JudgeReportResult;
-          const allFindings = tr.findings ?? [];
+          const allFindings = [...(tr.findings ?? []), ...extraScopeFindings];
           const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
           verdict = deriveConformanceVerdict(undecidedFindings, tr.ok);
         } else if (isJudgeStep) {
           // judge: derive from findings using pure function (approved boolean ignored)
           // Filter already-decided findings before verdict derivation (D8)
+          // extraScopeFindings (if any) merged before filtering
           const tr = toolResult as JudgeReportResult;
-          const allFindings = tr.findings ?? [];
+          const allFindings = [...(tr.findings ?? []), ...extraScopeFindings];
           const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
           verdict = deriveJudgeVerdict(undecidedFindings, tr.ok);
         } else {
@@ -670,10 +695,27 @@ export class StepExecutor {
               : (completionVerdict ?? "success");
         }
 
+        // Build the effective toolResult for persistence.
+        // When scope findings were synthesized, merge them into findings so that
+        // getOpenDecisionFindings() can read them for escalation comment rendering.
+        // When no scope findings, effectiveToolResult === toolResult (unchanged).
+        const effectiveToolResult: import("../port/report-result.js").BaseReportResult & { findings?: import("../../kernel/report-result.js").Finding[] } =
+          extraScopeFindings.length > 0
+            ? {
+                ...(toolResult as JudgeReportResult),
+                findings: [
+                  ...((toolResult as JudgeReportResult).findings ?? []),
+                  ...extraScopeFindings,
+                ],
+              }
+            : (toolResult as import("../port/report-result.js").BaseReportResult & { findings?: import("../../kernel/report-result.js").Finding[] });
+        persistToolResult = effectiveToolResult;
+
         // Post-verdict: verify finding refs exist for judge/request-review steps
         // Use undecided findings only — decided findings should not re-trigger escalation (D8)
+        // For judge/conformance steps, effectiveToolResult includes scope findings.
         if ((isJudgeStep || isRequestReviewStep) && deps.runtimeStrategy) {
-          const tr = toolResult as JudgeReportResult | RequestReviewReportResult;
+          const tr = effectiveToolResult as JudgeReportResult | RequestReviewReportResult;
           const allFindings = tr.findings ?? [];
           const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
           const affectingFindings = collectVerdictAffectingFindings(undecidedFindings);
@@ -734,7 +776,7 @@ export class StepExecutor {
       completedAt,
       startedAt,
       error: null,
-      toolResult: agentResult?.toolResult ?? null,
+      toolResult: persistToolResult,
       followUpAttempts: agentResult?.followUpAttempts ?? 0,
       transientRetryAttempts: agentResult?.transientRetryAttempts,
       completionReportDiagnostics: agentResult?.completionReportDiagnostics,

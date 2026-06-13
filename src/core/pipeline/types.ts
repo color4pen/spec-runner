@@ -25,6 +25,35 @@ export interface StepRoleEntry {
 }
 
 /**
+ * A single forbidden surface declared in a PermissionScope.
+ * The CLI matches base...HEAD changed files against `paths` globs to detect breaches.
+ */
+export interface ForbiddenSurface {
+  /** Stable identifier for this surface, used in escalation rationale. */
+  id: string;
+  /** Glob patterns matched against base...HEAD changed-file paths. */
+  paths: readonly string[];
+}
+
+/**
+ * Permission scope declaration for a pipeline profile.
+ *
+ * When present on a PipelineDescriptor, the CLI evaluates changed files against
+ * forbidden surfaces at the `checkpoint` judge step and synthesizes a scope-breach
+ * decision-needed finding when a surface is violated.
+ *
+ * absent = 無制限 = 現行挙動 (no scope checking performed)
+ * checkpoint は finding から verdict を導出する judge 系 step であること
+ * path 粒度。content 粒度は将来拡張
+ */
+export interface PermissionScope {
+  /** Step name where scope is evaluated (must be a judge step). */
+  checkpoint: string;
+  /** Machine-axis forbidden surfaces enumerated as glob-matched path sets. */
+  forbidden: readonly ForbiddenSurface[];
+}
+
+/**
  * Declarative description of a complete pipeline configuration.
  * Registry maps pipeline identifiers to their corresponding descriptor.
  * Consumers build Pipeline instances from a descriptor via buildPipeline().
@@ -66,6 +95,16 @@ export interface PipelineDescriptor {
    * Keys are step names; absent = use global maxIterations.
    */
   maxIterationsByStep?: Readonly<Record<string, number>>;
+  /**
+   * Optional permission scope declaration for this pipeline profile.
+   *
+   * absent = 無制限 = 現行挙動 (no scope checking performed — existing behavior preserved)
+   * When present, the CLI evaluates changed files against `forbidden` surfaces at the
+   * `checkpoint` judge step and synthesizes a scope-breach decision-needed finding.
+   * checkpoint は finding から verdict を導出する judge 系 step であること
+   * Path granularity only; content granularity is future extension.
+   */
+  permissionScope?: PermissionScope;
 }
 
 /**

@@ -199,6 +199,10 @@ export function parseFindings(raw: unknown, strict = false): { ok: true; value: 
         finding.options = parsedOptions;
       }
     }
+    // origin: capture when present and valid ("scope" only); invalid values silently ignored
+    if (f["origin"] === "scope") {
+      finding.origin = "scope";
+    }
     findings.push(finding);
   }
   return { ok: true, value: findings };
