@@ -27,8 +27,13 @@ vi.mock("../../../src/core/credentials/github.js", () => ({
   saveCredentials: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("../../../src/core/credentials/claude-code.js", () => ({
+  saveClaudeCodeOAuthToken: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Mock logger
 vi.mock("../../../src/logger/stdout.js", () => ({
+  logError: vi.fn(),
   logInfo: vi.fn(),
   logSuccess: vi.fn(),
   logWarn: vi.fn(),
@@ -38,6 +43,7 @@ import { runLogin } from "../../../src/cli/login.js";
 import { runDeviceFlow } from "../../../src/auth/github-device.js";
 import { logWarn } from "../../../src/logger/stdout.js";
 import { saveCredentials, loadCredentials } from "../../../src/core/credentials/github.js";
+import { saveClaudeCodeOAuthToken } from "../../../src/core/credentials/claude-code.js";
 
 describe("runLogin()", () => {
   beforeEach(() => {
@@ -115,5 +121,84 @@ describe("runLogin()", () => {
     expect(exitCode).toBe(0);
     expect(logWarn).toHaveBeenCalledWith(expect.stringContaining("GITHUB_TOKEN"));
     expect(runDeviceFlow).toHaveBeenCalled();
+  });
+
+  it("preserves bare login GitHub provider behavior", async () => {
+    vi.mocked(runDeviceFlow).mockResolvedValue({ accessToken: "ghu_test" });
+
+    await runLogin({ env: {} });
+
+    expect(runDeviceFlow).toHaveBeenCalled();
+    expect(saveClaudeCodeOAuthToken).not.toHaveBeenCalled();
+  });
+
+  it("stores Claude token with provider claude", async () => {
+    const exitCode = await runLogin({
+      provider: "claude",
+      env: {},
+      promptToken: async () => " claude-token ",
+    });
+
+    expect(exitCode).toBe(0);
+    expect(runDeviceFlow).not.toHaveBeenCalled();
+    expect(saveClaudeCodeOAuthToken).toHaveBeenCalledWith("claude-token");
+  });
+
+  it("retains existing Claude token without force", async () => {
+    vi.mocked(loadCredentials).mockResolvedValue({
+      anthropic: { claudeCodeOAuthToken: "existing-token" },
+    });
+
+    const exitCode = await runLogin({
+      provider: "claude",
+      env: {},
+      force: false,
+      promptToken: async () => "new-token",
+    });
+
+    expect(exitCode).toBe(0);
+    expect(saveClaudeCodeOAuthToken).not.toHaveBeenCalled();
+    expect(logWarn).toHaveBeenCalledWith(expect.stringContaining("Existing Claude Code token retained"));
+  });
+
+  it("overwrites existing Claude token with force", async () => {
+    vi.mocked(loadCredentials).mockResolvedValue({
+      anthropic: { claudeCodeOAuthToken: "existing-token" },
+    });
+
+    const exitCode = await runLogin({
+      provider: "claude",
+      env: {},
+      force: true,
+      promptToken: async () => "new-token",
+    });
+
+    expect(exitCode).toBe(0);
+    expect(saveClaudeCodeOAuthToken).toHaveBeenCalledWith("new-token");
+  });
+
+  it("warns when CLAUDE_CODE_OAUTH_TOKEN env is set without printing the value", async () => {
+    const exitCode = await runLogin({
+      provider: "claude",
+      env: { CLAUDE_CODE_OAUTH_TOKEN: "secret-env-token" },
+      promptToken: async () => "new-token",
+    });
+
+    expect(exitCode).toBe(0);
+    expect(logWarn).toHaveBeenCalledWith(expect.stringContaining("CLAUDE_CODE_OAUTH_TOKEN"));
+    for (const call of vi.mocked(logWarn).mock.calls) {
+      expect(call[0]).not.toContain("secret-env-token");
+    }
+  });
+
+  it("rejects empty Claude token input", async () => {
+    const exitCode = await runLogin({
+      provider: "claude",
+      env: {},
+      promptToken: async () => "   ",
+    });
+
+    expect(exitCode).toBe(1);
+    expect(saveClaudeCodeOAuthToken).not.toHaveBeenCalled();
   });
 });

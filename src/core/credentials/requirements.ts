@@ -4,7 +4,7 @@
  * are needed for a given runtime without hardcoding provider names.
  */
 
-export type CredentialKey = "github.token" | "anthropic.apiKey";
+export type CredentialKey = "github.token" | "anthropic.apiKey" | "anthropic.claudeCodeOAuthToken";
 
 export interface RequiredCredential {
   key: CredentialKey;
@@ -13,6 +13,7 @@ export interface RequiredCredential {
 
 const LOCAL_REQUIREMENTS: RequiredCredential[] = [
   { key: "github.token", envVar: "GH_TOKEN" },
+  { key: "anthropic.claudeCodeOAuthToken", envVar: "CLAUDE_CODE_OAUTH_TOKEN" },
 ];
 
 const MANAGED_REQUIREMENTS: RequiredCredential[] = [

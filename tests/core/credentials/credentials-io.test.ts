@@ -56,11 +56,30 @@ describe("TC-CREDIO-001: valid github credentials", () => {
 // TC-CREDIO-002
 describe("TC-CREDIO-002: anthropic-only credentials", () => {
   it("does not throw for anthropic-only credentials", async () => {
-    await writeCredentials({ anthropic: { apiKey: "sk-x" } });
+    await writeCredentials({ anthropic: { apiKey: "sk-x", claudeCodeOAuthToken: "claude-token" } });
     const { loadCredentials } = await import("../../../src/core/credentials/credentials-io.js");
     await expect(loadCredentials()).resolves.not.toThrow();
     const creds = await loadCredentials();
-    expect((creds as Record<string, unknown>)["anthropic"]).toBeDefined();
+    expect(creds.anthropic?.apiKey).toBe("sk-x");
+    expect(creds.anthropic?.claudeCodeOAuthToken).toBe("claude-token");
+  });
+});
+
+describe("TC-CREDIO-008: malformed anthropic credential fields", () => {
+  it("rejects non-string anthropic.apiKey", async () => {
+    await writeCredentials({ anthropic: { apiKey: 123 } });
+    const { loadCredentials } = await import("../../../src/core/credentials/credentials-io.js");
+    await expect(loadCredentials()).rejects.toMatchObject({ code: "CONFIG_INVALID" });
+    await expect(loadCredentials()).rejects.toThrow(/anthropic\.apiKey must be a string/);
+  });
+
+  it("rejects non-string anthropic.claudeCodeOAuthToken without exposing value", async () => {
+    await writeCredentials({ anthropic: { claudeCodeOAuthToken: { secret: "do-not-print" } } });
+    const { loadCredentials } = await import("../../../src/core/credentials/credentials-io.js");
+    await expect(loadCredentials()).rejects.toMatchObject({ code: "CONFIG_INVALID" });
+    const err = await loadCredentials().catch((e: unknown) => e);
+    expect(String((err as Error).message)).toContain("anthropic.claudeCodeOAuthToken must be a string");
+    expect(String((err as Error).message)).not.toContain("do-not-print");
   });
 });
 

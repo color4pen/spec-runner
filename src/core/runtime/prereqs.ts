@@ -5,6 +5,7 @@
  * core/runtime/ composition-root (B-8 invariant).
  */
 import { resolveSpecRunnerApiKey } from "../credentials/anthropic.js";
+import { resolveClaudeCodeOAuthToken } from "../credentials/claude-code.js";
 import { requirementsFor } from "../credentials/requirements.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { RuntimeCredentials } from "../port/runtime-prereqs.js";
@@ -34,6 +35,13 @@ export async function checkRuntimePrereqs(
           hint: "Save an API key via 'specrunner login --provider anthropic', set SPECRUNNER_API_KEY env var, then run 'specrunner managed setup'.",
         };
       }
+    } else if (req.key === "anthropic.claudeCodeOAuthToken") {
+      // Local Claude Code can still authenticate through Claude's own interactive
+      // stores. Resolve best-effort so the matrix key is handled explicitly
+      // without making non-headless local users fail preflight.
+      await resolveClaudeCodeOAuthToken(env, { optional: true }).catch(() => undefined);
+    } else if (req.key === "github.token") {
+      // GitHub is resolved in preflight before runtime prereqs.
     }
   }
 

@@ -107,6 +107,8 @@ function makeCtx(options: {
     githubTokenSource: null,
     resolvedSpecRunnerApiKey: null,
     specRunnerApiKeySource: null,
+    resolvedClaudeCodeOAuthToken: null,
+    claudeCodeOAuthTokenSource: null,
   };
 }
 

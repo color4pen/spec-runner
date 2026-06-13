@@ -19,6 +19,7 @@ import { createGitHubClient } from "../adapter/github/github-client.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
 import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
+import { resolveClaudeCodeOAuthToken } from "../core/credentials/claude-code.js";
 import { stdoutWrite } from "../logger/stdout.js";
 
 const execFileAsync = promisify(childProcess.execFile);
@@ -120,6 +121,22 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
     // resolver with optional:true doesn't throw, but safety catch
   }
 
+  // Resolve Claude Code OAuth token (best-effort — doctor works even without token)
+  let resolvedClaudeCodeOAuthToken: string | null = null;
+  let claudeCodeOAuthTokenSource: "credentials" | "env" | null = null;
+  try {
+    const resolved = await resolveClaudeCodeOAuthToken(
+      process.env as Record<string, string | undefined>,
+      { optional: true },
+    );
+    if (resolved) {
+      resolvedClaudeCodeOAuthToken = resolved.token;
+      claudeCodeOAuthTokenSource = resolved.source;
+    }
+  } catch {
+    // resolver with optional:true doesn't throw, but safety catch
+  }
+
   // Build GitHub client (uses resolved token — may be null → empty string fallback)
   const githubClient: DoctorGitHubClient = createGitHubClient(globalThis.fetch, resolvedGitHubToken ?? "", githubApiBaseUrl);
 
@@ -140,6 +157,8 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
     githubTokenSource,
     resolvedSpecRunnerApiKey,
     specRunnerApiKeySource,
+    resolvedClaudeCodeOAuthToken,
+    claudeCodeOAuthTokenSource,
   };
 
   // Run runtime-specific checks

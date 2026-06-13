@@ -76,6 +76,35 @@ export async function loadCredentials(): Promise<CredentialsFile> {
     }
   }
 
+  if (creds["anthropic"] !== undefined) {
+    const anthropic = creds["anthropic"];
+    if (typeof anthropic !== "object" || anthropic === null) {
+      throw Object.assign(
+        new Error("CONFIG_INVALID: credentials file: anthropic must be an object."),
+        { code: "CONFIG_INVALID" },
+      );
+    }
+    const anthropicRecord = anthropic as Record<string, unknown>;
+    if (
+      anthropicRecord["apiKey"] !== undefined &&
+      typeof anthropicRecord["apiKey"] !== "string"
+    ) {
+      throw Object.assign(
+        new Error("CONFIG_INVALID: credentials file: anthropic.apiKey must be a string."),
+        { code: "CONFIG_INVALID" },
+      );
+    }
+    if (
+      anthropicRecord["claudeCodeOAuthToken"] !== undefined &&
+      typeof anthropicRecord["claudeCodeOAuthToken"] !== "string"
+    ) {
+      throw Object.assign(
+        new Error("CONFIG_INVALID: credentials file: anthropic.claudeCodeOAuthToken must be a string."),
+        { code: "CONFIG_INVALID" },
+      );
+    }
+  }
+
   return parsed as CredentialsFile;
 }
 

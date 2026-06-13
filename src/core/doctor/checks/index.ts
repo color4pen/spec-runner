@@ -19,6 +19,7 @@ import { codexCliCheck } from "./runtime/codex-cli.js";
 import { configFileExistsCheck } from "./config/file-exists.js";
 import { managedKeyPresentCheck } from "./config/managed-key-present.js";
 import { githubTokenPresentCheck } from "./config/github-token-present.js";
+import { claudeCodeTokenPresentCheck } from "./config/claude-code-token-present.js";
 
 // Env
 import { githubClientIdCheck } from "./env/github-client-id.js";
@@ -79,6 +80,7 @@ export const managedChecks: DoctorCheck[] = [
 ];
 
 export const localChecks: DoctorCheck[] = [
+  claudeCodeTokenPresentCheck,
   codexCliCheck,
 ];
 
@@ -97,6 +99,7 @@ export {
   configFileExistsCheck,
   managedKeyPresentCheck,
   githubTokenPresentCheck,
+  claudeCodeTokenPresentCheck,
   githubClientIdCheck,
   managedKeyValidCheck,
   githubTokenValidCheck,

@@ -1,13 +1,17 @@
+import * as readline from "node:readline";
 import { runDeviceFlow } from "../auth/github-device.js";
 import { loadConfig, saveConfig } from "../config/store.js";
 import { loadCredentials, saveCredentials } from "../core/credentials/github.js";
-import { logInfo, logSuccess, logWarn } from "../logger/stdout.js";
+import { saveClaudeCodeOAuthToken } from "../core/credentials/claude-code.js";
+import { logError, logInfo, logSuccess, logWarn } from "../logger/stdout.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import { resolveGitHubHost } from "../config/github-host.js";
 
 export interface LoginOpts {
   force?: boolean;
   env?: Record<string, string | undefined>;
+  provider?: "github" | "claude";
+  promptToken?: (message: string) => Promise<string>;
 }
 
 /**
@@ -24,6 +28,11 @@ export interface LoginOpts {
 export async function runLogin(opts?: LoginOpts): Promise<number> {
   const force = opts?.force ?? false;
   const env = opts?.env ?? (process.env as Record<string, string | undefined>);
+  const provider = opts?.provider ?? "github";
+
+  if (provider === "claude") {
+    return runClaudeLogin({ force, env, promptToken: opts?.promptToken });
+  }
 
   logInfo("Authenticating with GitHub...");
 
@@ -84,4 +93,50 @@ export async function runLogin(opts?: LoginOpts): Promise<number> {
 
   logSuccess("GitHub authentication complete. Token saved to credentials file.");
   return 0;
+}
+
+async function runClaudeLogin(opts: {
+  force: boolean;
+  env: Record<string, string | undefined>;
+  promptToken?: (message: string) => Promise<string>;
+}): Promise<number> {
+  logInfo("Authenticating Claude Code...");
+  logInfo("Generate a long-lived OAuth token with: claude setup-token");
+
+  const envToken = opts.env["CLAUDE_CODE_OAUTH_TOKEN"];
+  if (envToken && envToken.length > 0) {
+    logWarn("$CLAUDE_CODE_OAUTH_TOKEN is set and will take precedence over credentials. The stored token will not be used for resolution.");
+  }
+
+  if (!opts.force) {
+    const existingCreds = await loadCredentials();
+    if (
+      existingCreds.anthropic?.claudeCodeOAuthToken &&
+      existingCreds.anthropic.claudeCodeOAuthToken.length > 0
+    ) {
+      logWarn("Existing Claude Code token retained. To overwrite, run: specrunner login --provider claude --force");
+      return 0;
+    }
+  }
+
+  const prompt = opts.promptToken ?? promptLine;
+  const token = (await prompt("Paste Claude Code OAuth token from 'claude setup-token': ")).trim();
+  if (token.length === 0) {
+    logError("Claude Code OAuth token cannot be empty.");
+    return 1;
+  }
+
+  await saveClaudeCodeOAuthToken(token);
+  logSuccess("Claude Code OAuth token saved to credentials file.");
+  return 0;
+}
+
+function promptLine(message: string): Promise<string> {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    rl.question(message, (answer) => {
+      rl.close();
+      resolve(answer);
+    });
+  });
 }

@@ -120,6 +120,16 @@ export interface DoctorContext {
    * null when no key is available (resolvedSpecRunnerApiKey is null).
    */
   specRunnerApiKeySource: "credentials" | "env" | null;
+  /**
+   * Resolved Claude Code OAuth token from env or credentials.
+   * null when no token is available.
+   */
+  resolvedClaudeCodeOAuthToken: string | null;
+  /**
+   * Source of the resolved Claude Code OAuth token ("credentials" or "env").
+   * null when no token is available.
+   */
+  claudeCodeOAuthTokenSource: "credentials" | "env" | null;
 }
 
 /**

@@ -84,7 +84,7 @@ Reviewer commands:
 
 Environment commands:
   init                            config scaffold
-  login                           GitHub Device Flow OAuth
+  login                           GitHub Device Flow OAuth (default) or Claude Code token login
   config effective [--type <t>]   Show effective step model/maxTurns/timeoutMs and source
   doctor                          Diagnose environment / config / auth prerequisites
   runtime setup|status|reset      Manage Anthropic runtime resources
@@ -210,6 +210,22 @@ Note: managed runtime ignores configured model for execution, but this command s
 shows the configured effective value.
 `;
 
+export const LOGIN_USAGE = `Usage: specrunner login [options]
+
+Authenticate and store credentials in ~/.config/specrunner/credentials.json.
+Bare 'specrunner login' keeps the existing GitHub Device Flow behavior.
+
+Options:
+  --provider <github|claude>  Credential provider to login. Default: github
+  --force                     Overwrite an existing stored credential
+  --help, -h                  Show this help message
+
+Claude Code:
+  Run 'claude setup-token', then run 'specrunner login --provider claude'
+  and paste the generated OAuth token. After 'specrunner doctor' reports
+  source: credentials.json, remove CLAUDE_CODE_OAUTH_TOKEN from crontab.
+`;
+
 export const ARCHIVE_USAGE = `Usage: specrunner job archive <slug> [options]
 
 Archive the completed change folder, remove worktree, and update job status.
@@ -241,9 +257,12 @@ export const COMMANDS: Record<string, CommandEntry> = {
   login: {
     flags: {
       force: { type: "boolean" },
+      provider: { type: "string", values: ["github", "claude"] as const },
     },
+    usage: LOGIN_USAGE,
     handler: async (parsed) => {
-      process.exit(await runLogin({ force: !!parsed.flags["force"] }));
+      const provider = (parsed.flags["provider"] as "github" | "claude" | undefined) ?? "github";
+      process.exit(await runLogin({ force: !!parsed.flags["force"], provider }));
     },
   },
 
