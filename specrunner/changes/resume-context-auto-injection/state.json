@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "dcf6307c-ab73-4d63-8b01-11e01f23fd0f",
   "createdAt": "2026-06-13T10:15:03.208Z",
-  "updatedAt": "2026-06-13T10:24:48.012Z",
+  "updatedAt": "2026-06-13T10:26:22.700Z",
   "request": {
     "title": "resume 時の再開コンテキストを state から自動生成し、素の resume を常に正しくする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/resume-context-auto-injection-dcf6307c",
   "error": null,
@@ -49,11 +49,11 @@
   ],
   "issueNumber": 676,
   "_journal": {
-    "historyCount": 17,
+    "historyCount": 21,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1,
+      "spec-review": 2,
       "spec-fixer": 1
     }
   }
