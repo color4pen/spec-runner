@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.3.2](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.1...specrunner-v0.3.2) (2026-06-13)
+
+
+### Features
+
+* agent prompt の完了契約文言（report_result / end_turn）を provider 非依存にする ([#668](https://github.com/color4pen/spec-runner/issues/668)) ([6539e7d](https://github.com/color4pen/spec-runner/commit/6539e7ddf5edf671d82f84ed7bb4f26e27a2d510))
+* claude の認証 token を specrunner login で管理し、cron 等 headless 環境で crontab に secrets を書かずに動くようにする ([#683](https://github.com/color4pen/spec-runner/issues/683)) ([23b7156](https://github.com/color4pen/spec-runner/commit/23b7156bc66fbf0c1eeb5e6aad76b7cacd082c0a))
+* codex adapter に claude-code adapter と同等の運用機能（retry / 観測性 / 出力検証）を実装する ([#666](https://github.com/color4pen/spec-runner/issues/666)) ([0d0b058](https://github.com/color4pen/spec-runner/commit/0d0b058deb35a2a3f610ba608744e2ee1e8f2f06))
+* codex adapter: main turn に完了報告の明示指示を注入し、回収失敗の診断を構造化記録に残す ([#679](https://github.com/color4pen/spec-runner/issues/679)) ([a017970](https://github.com/color4pen/spec-runner/commit/a0179701604aa084ff261046ce073e90139a9bf8))
+* decision-needed に選択肢の提示を必須化し、人間の判断を構造化して記録・尊重する ([#685](https://github.com/color4pen/spec-runner/issues/685)) ([82262fc](https://github.com/color4pen/spec-runner/commit/82262fc1186953d55fee593fbcea3d342b3ecaae))
+* provider SDK を dynamic import + optionalDependencies 化し、未使用 provider のバイナリ 190MB を install から外せるようにする ([#680](https://github.com/color4pen/spec-runner/issues/680)) ([2422f57](https://github.com/color4pen/spec-runner/commit/2422f572812f533fcfb0f3ae7ed6d40b37c4bbdc))
+* resume 時の再開コンテキストを state から自動生成し、素の resume を常に正しくする ([#686](https://github.com/color4pen/spec-runner/issues/686)) ([2979ca6](https://github.com/color4pen/spec-runner/commit/2979ca6b1f901950a51ac1537b46e27e8003404f))
+* step 実効設定（model 等）の解決結果と適用 source を可視化するコマンド面を追加する ([#675](https://github.com/color4pen/spec-runner/issues/675)) ([cdc91a6](https://github.com/color4pen/spec-runner/commit/cdc91a69f4ed98e81ba637951697251c5f89a1d7))
+* usage / pricing と one-shot デフォルトモデルの provider 中立化 ([#665](https://github.com/color4pen/spec-runner/issues/665)) ([ef893ce](https://github.com/color4pen/spec-runner/commit/ef893ce3c75360f72e1e71351c0ee66ee0980b2d))
+* 公開 CLI の体裁: --version コマンドの追加と bin パスの正規化 ([#664](https://github.com/color4pen/spec-runner/issues/664)) ([87d97b6](https://github.com/color4pen/spec-runner/commit/87d97b61a134ee386341c3b47fd551cdc1b07e55))
+
+
+### Bug Fixes
+
+* archive / cancel の remote branch 削除を冪等にし、auto-delete 済み branch への偽 warning を消す ([#671](https://github.com/color4pen/spec-runner/issues/671)) ([bab13ac](https://github.com/color4pen/spec-runner/commit/bab13aca281c323bd2f8414bceb117a6c48763ef))
+* codex adapter が resumePrompt を消費せず、escalation 後の人間判断が agent に届かない ([#682](https://github.com/color4pen/spec-runner/issues/682)) ([a375a5e](https://github.com/color4pen/spec-runner/commit/a375a5ec2c5e6a259489e6fed2d33ee2e89fe6d6))
+* codex adapter の completion report 回収を頑健化する（outputSchema 不全環境での fallback と観測性） ([#670](https://github.com/color4pen/spec-runner/issues/670)) ([37cf72e](https://github.com/color4pen/spec-runner/commit/37cf72e23313afb1a53c4f300caeb6897be16f5b))
+
 ## [0.3.1](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.0...specrunner-v0.3.1) (2026-06-12)
 
 
