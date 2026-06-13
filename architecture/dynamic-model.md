@@ -47,6 +47,13 @@
 - **不変条件**: liveness は Aggregate に属さない。失っても（別マシン・CI・掃除）git から論理ジョブを復元でき、束縛は再 establish される。
 - → 確立・撤去・再導出の手順は behavior（spec / in-loop change）。
 
+### resume context — 再開時の文脈注入の束縛
+- **束縛**: resume 実行で、`ResumeContextSnapshot`（`resumePoint` の写し）＋ 人間の `--prompt` を、最初の agent step の prompt（`AgentRunContext.session.resumePrompt`）へ注入する束縛。自動文脈は state から決定的に生成する（attempt 数 / 前回 verdict / 停止理由 / 「worktree の前 attempt 成果物は完了を意味しない」の再開意味論）。
+- **寿命**: one-shot。最初の agent step が消費し後続には残さない（unmatched snapshot も同時に破棄）。初回 run（resume でない）では注入されない。
+- **不変条件**: 自動文脈が存在する ⟺ 解決後の startStep ＝ 記録された `resumePoint.step`（`--from` で別 step を選ぶと自動文脈は伝播しない）。人間 `--prompt` はこの制約の対象外で、常に最初の agent step へ載る。
+- **binder**: `ResumeCommand`（snapshot 捕捉・startStep 一致判定）→ `CommandRunner`（deps へ）→ `StepExecutor`（`buildResumePrompt` で合成・one-shot 消費）。再開位置の解決（`resolveResumeStep`: `--from` > `resumePoint.step` > throw）は behavior。
+- → `src/core/resume/resume-context.ts`（`ResumeContextSnapshot` / `buildResumePrompt`）／ `src/core/resume/resolve-step.ts`（位置解決）／ `src/core/command/resume.ts`（伝播ゲート）
+
 ---
 
 ## 使い方

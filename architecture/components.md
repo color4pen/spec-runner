@@ -175,6 +175,8 @@ interface FollowUpPolicy { maxAttempts; buildPrompt(input): string }  // DEFAULT
 - **不変条件**: SDK 型を返り値・引数で core に漏らさない（B-2）。port の DTO に変換する。
 - → `src/adapter/*/`
 
+> **provider SDK は optional + 動的ロード**: `@anthropic-ai/claude-agent-sdk` / `@openai/codex-sdk` は `optionalDependencies`（既定 install では入るが `--omit=optional` で外せる）。各 adapter は共有 seam `adapter/shared/provider-sdk-loader.ts` の動的 `import()` で SDK を遅延ロードし、未インストール時は PM 検出付きの install 案内エラー（`PROVIDER_SDK_MISSING`）で停止する。未使用 provider のバイナリを install から外せるようにしつつ、SDK 依存を adapter 内に封じる（B-2 の延長）。→ `src/adapter/shared/provider-sdk-loader.ts`
+
 > **外部 API ↔ port DTO の変換（anti-corruption）**: REST/GraphQL の field を port DTO へ写す変換責務（例: `mergeable_state` → `mergeStateStatus` の正規化）は各 adapter（`src/adapter/github/github-client.ts` 等）が正典。SDK / API の breaking change の blast radius は B-2 で adapters に封じ込める。変換表は本書に複製しない（コード正典）。
 
 > **host / endpoint も adapter-contained**: GitHub host / baseURL は config 駆動で composition-root から adapter に注入する（`createGitHubClient` の引数）。`GitHubClient` port interface は host を露出しない（host 非依存）。GHES 等への向け先変更の blast radius は adapter + comp-root 配線に閉じる（B-2 の延長 ＝ 外部 endpoint host も core に漏らさない）。**multi-provider 抽象（GitLab 等の別 port）は採らない**（未使用 port を避ける、`model.md` §1）。詳細は ADR `architecture/adr/2026-06-02-github-auth-host-decoupling.md`。

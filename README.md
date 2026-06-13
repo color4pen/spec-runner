@@ -10,11 +10,11 @@ The reasoning behind these choices is in [docs/design-philosophy.md](docs/design
 
 ## Built by itself
 
-Every feature in v0.3.0 was implemented, reviewed, and merged by this pipeline running unattended on its own repository — including declarative reviewer activation ([#632](https://github.com/color4pen/spec-runner/pull/632)), the post-review regression gate ([#631](https://github.com/color4pen/spec-runner/pull/631)), and step output contracts ([#633](https://github.com/color4pen/spec-runner/pull/633)). The commit history is the demo.
+Every feature here was implemented, reviewed, and merged by this pipeline running unattended on its own repository — including declarative reviewer activation, the post-review regression gate, and step output contracts.
 
 ## Stability
 
-SpecRunner is currently **0.x**. While it is used in production for this project's own development, the state and config file formats may receive breaking changes between any two releases.
+SpecRunner is **0.x**. While it is used in production for this project's own development, the state and config file formats may receive breaking changes between any two releases.
 
 Migrations are provided when formats change, but they ship in **minor releases** — not majors. Upgrade notes are included in each release changelog.
 
@@ -58,6 +58,17 @@ npm install -D @color4pen/specrunner
 # Or globally
 npm install -g @color4pen/specrunner
 ```
+
+Provider SDKs (`@anthropic-ai/claude-agent-sdk` for the local runtime, `@openai/codex-sdk` for Codex) ship as **optional dependencies** and install by default, so a standard install runs out of the box. To slim the install (skip the unused provider's SDK), install with `--omit=optional` and add only the SDK for the provider you use:
+
+```bash
+npm install -D --omit=optional @color4pen/specrunner
+npm install -D @anthropic-ai/claude-agent-sdk   # Claude (local runtime, default)
+# or
+npm install -D @openai/codex-sdk                # Codex
+```
+
+If a required provider SDK is missing at run time, specrunner stops the step with the exact install command.
 
 ## Quick Start
 
@@ -419,17 +430,7 @@ specrunner job start my-feature
 
 ## Cost
 
-Figures are aggregated from this project's own archived runs (`specrunner/changes/archive/*/usage.json`, 278 requests), summing input, output, cache-creation, and cache-read tokens per request and pricing each invocation at its model's Anthropic list rate as of 2026-06-10.
-
-| Metric | Tokens | USD |
-|--------|--------|-----|
-| Minimum | 0.64 M | $1.42 |
-| Median | 6.1 M | $8.58 |
-| Maximum | 117 M | $73.11 |
-
-Cache reads account for ~94% of all tokens; applying the cache-read discount (0.1× the base input rate) is essential for accurate cost projection. The high end of the range includes requests that looped through fixer steps many times.
-
-> The model used by each pipeline step is configurable (see [Configuration](#configuration)). Actual cost depends on request complexity, the number of fixer iterations, and the model selected.
+The model used by each pipeline step is configurable (see [Configuration](#configuration)). Actual cost depends on request complexity, the number of fixer iterations, and the model selected; cache reads dominate token volume, so applying the cache-read discount is essential for accurate projection. Measured figures from this project's own runs are in [docs/cost.md](docs/cost.md).
 
 ## Assumptions & Supported Scope
 

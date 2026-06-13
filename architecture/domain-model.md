@@ -51,7 +51,7 @@ type StepName = ...STEP_NAMES;  type AgentStepName = ...AGENT_STEP_NAMES;  type 
 ```ts
 interface BaseReportResult { ok: boolean; reason?: string }
 interface ProducerReportResult extends BaseReportResult { status?: "success" | "error" }
-interface JudgeReportResult   extends BaseReportResult { approved?: boolean; findings?: Finding[] }
+interface JudgeReportResult   extends BaseReportResult { approved?: boolean; findings?: Finding[]; observations?: Observation[] }
 interface CodeReviewReportResult extends JudgeReportResult { fixableCount?: number }
 ```
 - → `src/core/port/report-result.ts`（`ok` の意味論・routing が読むフィールドは契約側＝型 ＋ `tests/unit/contract/` が正典）
@@ -59,12 +59,33 @@ interface CodeReviewReportResult extends JudgeReportResult { fixableCount?: numb
 ### Finding — judge の指摘単位（verdict 導出の入力）
 ```ts
 interface Finding { severity: "critical" | "high" | "medium" | "low";
-  resolution: "fixable" | "decision-needed"; file: string; line?: number; title: string; rationale: string }
+  resolution: "fixable" | "decision-needed"; file: string; line?: number; title: string; rationale: string; options?: DecisionOption[] }
 ```
 - **不変条件**:
   - judge 系 step（spec-review / code-review / request-review）の verdict は agent 申告値ではなく findings から CLI が決定的に導出する（純関数 `deriveJudgeVerdict` / `deriveRequestReviewVerdict` / `collectFixableFindings`）。`approved` / `fixableCount` / 申告 `verdict` は導出・routing に影響しない（受理のみ）。
   - verdict に影響する findings（severity critical / high、または resolution decision-needed）は RuntimeStrategy の実在検証（file / line の存在確認）を通る。
+  - `resolution: "decision-needed"` の finding は選択肢 `options`（各 `{label, consequence}`）を ≥2 持つ（新規 tool 入力は strict 検証で拒否、legacy state read は寛容）。2 案を articulate できないものは定義上 `fixable`。
+  - decision ledger（`JobState.decisions`）に決定済みの finding は verdict 導出から除外される＝ 同一論点の再報告は re-escalation を起こさない。
 - → `src/kernel/report-result.ts`（型）/ `src/core/step/judge-verdict.ts`（導出の純関数。fs / child_process を import しない＝B-5）
+
+### DecisionOption / Observation — finding 周辺の VO
+```ts
+interface DecisionOption { label: string; consequence: string }   // decision-needed finding の選択肢
+interface Observation { severity: "critical"|"high"|"medium"|"low"; file: string; line?: number; title: string; rationale: string }  // resolution 無し
+```
+- **Observation**: 「対応不要・記録のみ」の観察。findings と対の独立チャネルで、**verdict に影響しない**（judge / request-review の typed outcome に `observations?` として載る）。「要対応」は finding、「対応不要の記録」は observation という振り分け。
+- → `src/kernel/report-result.ts`
+
+### Decision ledger — 人間判断の台帳（`JobState.decisions`）
+```ts
+interface DecisionRecord { id: string; step: string; findingKey: string;
+  finding: { title: string; file: string; line?: number; rationale: string; severity; options? };  // 決定時の finding snapshot
+  selectedOption: { number: number; label: string; consequence: string };
+  resumeComment?: string; decidedAt: string; source: "issue-comment" }
+```
+- **役割**: escalation した `decision-needed` finding への人間の選択を構造化し JobState に記録する（projection 側 `JobState.decisions?: DecisionRecord[]`、legacy 欠落 = 空台帳）。
+- **不変条件**: `findingKey` は `computeFindingKey`（step / file / line / 正規化 title / 正規化 rationale）で決定的に導出。verdict 導出は台帳に合致する finding を blocking として数えない（蒸し返しの構造的封殺）。
+- → `src/core/decision/decision-ledger.ts`（key 導出・台帳照合の純関数）/ `src/state/schema.ts`（`DecisionRecord` / `JobState.decisions`）
 
 ### AgentDefinition / ParsedStepResult / Transition
 ```ts
