@@ -94,3 +94,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/scope-exceeded-escalation/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-13T16:05:41.022Z","endedAt":"2026-06-13T16:05:42.886Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-13T16:05:42.886Z","outputs":[{"path":"specrunner/changes/scope-exceeded-escalation/pr-create-result.md","hash":"sha256:6cfa734b8b80226da1a5dfde66e97e0794ba88898c0adda34dd087b05de6c4af"}],"inputs":[{"path":"change/scope-exceeded-escalation-0cf67fba","hash":null}]}
 {"type":"transition","ts":"2026-06-13T16:05:42.897Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-13T16:25:24.294Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
