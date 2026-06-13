@@ -1,0 +1,170 @@
+{
+  "commandInvocations": [
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T23:56:42.233Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 4277,
+          "outputTokens": 16,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 11,
+          "outputTokens": 2910,
+          "cacheReadInputTokens": 324866,
+          "cacheCreationInputTokens": 50814
+        }
+      },
+      "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
+      "stepName": "request-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-12T23:59:20.749Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 5342,
+          "outputTokens": 18,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 21,
+          "outputTokens": 6544,
+          "cacheReadInputTokens": 569573,
+          "cacheCreationInputTokens": 35397
+        }
+      },
+      "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
+      "stepName": "design"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-13T00:01:16.285Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 261762,
+          "outputTokens": 3517,
+          "cacheReadInputTokens": 189312,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
+      "stepName": "spec-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-13T00:02:25.820Z",
+      "modelUsage": {
+        "gpt-5.4-mini": {
+          "inputTokens": 495002,
+          "outputTokens": 2749,
+          "cacheReadInputTokens": 447488,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
+      "stepName": "spec-fixer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-13T00:03:45.303Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 196170,
+          "outputTokens": 2480,
+          "cacheReadInputTokens": 148096,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
+      "stepName": "spec-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-13T00:05:48.467Z",
+      "modelUsage": {
+        "gpt-5.4-mini": {
+          "inputTokens": 340526,
+          "outputTokens": 8652,
+          "cacheReadInputTokens": 280448,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
+      "stepName": "test-case-gen"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-13T00:11:45.547Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 3412021,
+          "outputTokens": 24377,
+          "cacheReadInputTokens": 3003392,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
+      "stepName": "implementer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-13T00:14:50.437Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 1033187,
+          "outputTokens": 6602,
+          "cacheReadInputTokens": 779776,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
+      "stepName": "code-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-13T00:15:27.990Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 154780,
+          "outputTokens": 666,
+          "cacheReadInputTokens": 91008,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
+      "stepName": "regression-gate"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-13T00:17:05.751Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 305672,
+          "outputTokens": 3518,
+          "cacheReadInputTokens": 236544,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
+      "stepName": "conformance"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-13T00:17:23.808Z",
+      "modelUsage": {
+        "gpt-5.4-mini": {
+          "inputTokens": 13447,
+          "outputTokens": 80,
+          "cacheReadInputTokens": 2432,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
+      "stepName": "adr-gen"
+    }
+  ]
+}
