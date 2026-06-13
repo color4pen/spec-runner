@@ -61,6 +61,17 @@ export interface Finding {
    * Each option has a `label` and `consequence` to help the human make an informed choice.
    */
   options?: DecisionOption[];
+  /**
+   * Optional discriminator indicating the origin of this finding.
+   *
+   * absent = in-scope = 現行 (existing behavior — no change)
+   * "scope" = this finding was derived from a scope boundary check (machine or semantic source)
+   *
+   * Coarse — carries only "scope-derived vs not"; detailed reasons go in `rationale`.
+   * Additive and backward-compatible: absent origin is treated identically to all
+   * pre-existing behavior.
+   */
+  origin?: "scope";
 }
 
 /**

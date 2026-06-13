@@ -302,6 +302,27 @@ describe("B-5: verdict/transition logic in core/pipeline/ must not have direct I
     // No allowlist filtering needed: zero violations expected.
     expect(violationLines(matches)).toEqual([]);
   });
+
+  /**
+   * B-5 extension: scope.ts (and all of core/pipeline/) must not import or
+   * call child_process / execSync / spawnSync.  The scope breach derivation
+   * function is a pure domain function; all subprocess access must flow
+   * through the RuntimeStrategy seam (same as verifyFindingRefs).
+   *
+   * This complements the fs call-site check above and fixes the scope.ts
+   * B-5 coverage gap that would exist if only fs calls were checked.
+   */
+  it("grep finds no child_process imports or execSync/spawnSync call-sites in src/core/pipeline/", () => {
+    const raw = grepE(
+      `"(child_process|execSync|spawnSync)"`,
+      "src/core/pipeline",
+    );
+    const matches = parseGrepOutput(raw).filter(
+      (m) => !isCommentLine(m.content),
+    );
+    // No allowlist filtering needed: zero violations expected.
+    expect(violationLines(matches)).toEqual([]);
+  });
 });
 
 describe("B-6: core/ must not reference process.env directly (must use stripSecrets seam)", () => {
