@@ -94,7 +94,7 @@ Alternatives considered:
 
 **D5. Render decision-needed findings from the latest escalated step run**
 
-`buildEscalationComment(state)` should append a `Decisions needed` section when the latest run for `state.resumePoint.step` has tool-result findings with `resolution: "decision-needed"` and valid options. Each undecided finding should be numbered by finding order, and each option should be numbered by option order:
+`buildEscalationComment(state)` should append a `Decisions needed` section when the latest run for `state.resumePoint.step` has tool-result findings with `resolution: "decision-needed"` and valid options. The renderer must treat every finding field as untrusted plain text: escape or otherwise encode the title, file, line, rationale, option labels, and option consequences so they cannot introduce Markdown structure, HTML, mentions, or stray `/resume`-style instructions. Each undecided finding should be numbered by finding order, and each option should be numbered by option order:
 
 ```text
 Decisions needed:
@@ -109,7 +109,7 @@ Reply with:
 
 For multiple findings, the command example should include all open decisions, e.g. `/resume 1=2 2=1`.
 
-Rationale: Numbering by notification order makes human selection compact and matches the requested `/resume 1=2 2=1` style. Rendering only the latest escalated step keeps the comment relevant and bounded.
+Rationale: Numbering by notification order makes human selection compact and matches the requested `/resume 1=2 2=1` style. Rendering only the latest escalated step keeps the comment relevant and bounded. Escaping model-controlled text prevents the comment body from being used as a secondary instruction channel or from spoofing the decision UI.
 
 Alternatives considered:
 
