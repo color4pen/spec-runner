@@ -70,3 +70,9 @@
 {"type":"transition","ts":"2026-06-13T02:22:26.039Z","step":"cross-boundary-invariants","status":"warning","message":"cross-boundary-invariants iteration 1 completed with verdict: needs-fix"}
 {"type":"transition","ts":"2026-06-13T02:22:26.039Z","step":"step-transition","status":"ok","message":"cross-boundary-invariants → code-fixer"}
 {"type":"transition","ts":"2026-06-13T02:22:26.042Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-06-13T02:27:03.892Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"b22b924a-5c47-4071-b7a2-64d0a52f9585","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-06-13T02:22:26.068Z","endedAt":"2026-06-13T02:27:01.955Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-06-13T02:27:01.955Z","outputs":[{"path":"specrunner/changes/decision-options-ledger","hash":null}],"inputs":[{"path":"specrunner/changes/decision-options-ledger/cross-boundary-invariants-result-001.md","hash":"sha256:8ab655e457f328a19ff092273a703f110ad848476a810e072fb8621ad58cf30f"}]}
+{"type":"transition","ts":"2026-06-13T02:27:03.903Z","step":"step-transition","status":"ok","message":"code-fixer → cross-boundary-invariants"}
+{"type":"transition","ts":"2026-06-13T02:27:03.905Z","step":"cross-boundary-invariants","status":"started","message":"cross-boundary-invariants iteration 2 started"}
+{"type":"transition","ts":"2026-06-13T02:27:03.907Z","step":"cross-boundary-invariants-started","status":"started","message":"Starting cross-boundary-invariants step"}
