@@ -36,6 +36,7 @@ import type { CleanupHandle, RuntimeStrategy, WorkspaceOptions } from "../port/r
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { PipelineDeps } from "../types.js";
+import type { ResumeContextSnapshot } from "../resume/resume-context.js";
 import { collectDynamicContext } from "../../git/dynamic-context.js";
 import { specReviewResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "../step/step-names.js";
@@ -62,6 +63,8 @@ export interface PrepareResult {
   repoRoot: string;
   /** resume 時に注入する追加プロンプト。ResumeCommand のみが設定する。 */
   resumePrompt?: string;
+  /** resumePoint snapshot captured before ResumeCommand clears live state.resumePoint. */
+  resumeContext?: ResumeContextSnapshot;
   /** --json flag: when true, emit terminal contract JSON to stdout. */
   json?: boolean;
 }
@@ -165,6 +168,9 @@ export abstract class CommandRunner {
         // Step 3c: propagate resumePrompt from prepare() into deps (one-shot injection)
         if (prepared.resumePrompt) {
           deps.resumePrompt = prepared.resumePrompt;
+        }
+        if (prepared.resumeContext) {
+          deps.resumeContext = prepared.resumeContext;
         }
 
         // Step 3b: collect dynamic context and attach to deps (once per run, not per-step)

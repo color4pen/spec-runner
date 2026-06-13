@@ -35,7 +35,7 @@ afterEach(async () => {
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.clearAllMocks();
   vi.restoreAllMocks();
-  vi.resetModules();
+  (vi as unknown as { resetModules?: () => void }).resetModules?.();
 });
 
 // ---------------------------------------------------------------------------
@@ -193,5 +193,26 @@ describe("TC-RESUME-PROMPT-002: PrepareResult に resumePrompt がないとき d
     await command.execute();
 
     expect(capturedDeps.resumePrompt).toBeUndefined();
+  });
+});
+
+describe("resumeContext snapshot propagation", () => {
+  it("prepared resumeContext is propagated into PipelineDeps", async () => {
+    const runtime = buildMockRuntime();
+    const resumeContext = {
+      resumePoint: {
+        step: "implementer",
+        reason: "escalation",
+        iterationsExhausted: 2,
+      },
+    };
+    const command = new TestCommand(
+      runtime,
+      buildPrepareResult({ resumeContext }),
+    );
+
+    await command.execute();
+
+    expect(capturedDeps.resumeContext).toEqual(resumeContext);
   });
 });

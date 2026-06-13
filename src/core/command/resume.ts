@@ -259,6 +259,7 @@ export class ResumeCommand extends CommandRunner {
         bootstrapState: updatedState,
         noWorktree: this.options.noWorktree,
       },
+      resumeContext: resumePoint ? { resumePoint } : undefined,
       resumePrompt: this.options.prompt,
       json: this.options.json ?? false,
     };

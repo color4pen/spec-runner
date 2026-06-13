@@ -2,26 +2,26 @@
 
 ## T-01: Add deterministic resume context builder
 
-- [ ] Create a pure helper module under `src/core/resume/`, for example
+- [x] Create a pure helper module under `src/core/resume/`, for example
   `resume-context.ts`.
-- [ ] Add an exported function that accepts the current `JobState`, current
+- [x] Add an exported function that accepts the current `JobState`, current
   agent step name, the deterministic `resumeContext` snapshot, and optional
   human resume prompt.
-- [ ] Return `undefined` when there is no automatic context and no human prompt.
-- [ ] Return the human prompt unchanged when automatic context does not qualify
+- [x] Return `undefined` when there is no automatic context and no human prompt.
+- [x] Return the human prompt unchanged when automatic context does not qualify
   but a human prompt exists.
-- [ ] Generate automatic context only when
+- [x] Generate automatic context only when
   `resumeContext.resumePoint.step` equals the current step name.
-- [ ] Compute prior attempts from `state.steps?.[stepName] ?? []`, select the
+- [x] Compute prior attempts from `state.steps?.[stepName] ?? []`, select the
   last prior run, and render both previous and current attempt numbers.
-- [ ] Render previous verdict, `resumeContext.resumePoint.reason`,
+- [x] Render previous verdict, `resumeContext.resumePoint.reason`,
   `resumeContext.resumePoint.iterationsExhausted`, optional
   `resumeContext.resumePoint.exhaustionPhase`,
   and previous `findingsPath` when available.
-- [ ] Include fixed wording that says existing worktree artifacts may be from a
+- [x] Include fixed wording that says existing worktree artifacts may be from a
   previous attempt and do not mean the current attempt is complete; the agent
   must work or judge again for this attempt.
-- [ ] Structure the builder internally as an ordered list of deterministic
+- [x] Structure the builder internally as an ordered list of deterministic
   section builders so future state-backed sections, such as decision ledger
   data, can be appended without adapter changes.
 
@@ -34,17 +34,17 @@
 
 ## T-02: Wire builder into StepExecutor one-shot prompt handling
 
-- [ ] Import the resume context builder in `src/core/step/executor.ts`.
-- [ ] Use the builder when constructing `ctx.session.resumePrompt` for agent
+- [x] Import the resume context builder in `src/core/step/executor.ts`.
+- [x] Use the builder when constructing `ctx.session.resumePrompt` for agent
   steps.
-- [ ] Pass the current state, `step.name`, `deps.resumeContext`, and
+- [x] Pass the current state, `step.name`, `deps.resumeContext`, and
   `deps.resumePrompt` into the builder.
-- [ ] Keep the existing one-shot consumption behavior by clearing
+- [x] Keep the existing one-shot consumption behavior by clearing
   `deps.resumePrompt` after the first agent step consumes the composed prompt.
-- [ ] Preserve or introduce the pipeline snapshot handoff from `resume.ts` or
+- [x] Preserve or introduce the pipeline snapshot handoff from `resume.ts` or
   `runner.ts` so `StepExecutor` can still qualify automatic context after the
   live `state.resumePoint` is cleared.
-- [ ] Do not change adapter prompt wrapping or `/resume` parsing unless a
+- [x] Do not change adapter prompt wrapping or `/resume` parsing unless a
   failing test proves an implementation-local typing adjustment is required.
 
 **Acceptance Criteria**:
@@ -56,15 +56,15 @@
 
 ## T-03: Add unit tests for context generation
 
-- [ ] Add focused tests for the new builder module.
-- [ ] Cover no `resumeContext` returning only the human prompt or
+- [x] Add focused tests for the new builder module.
+- [x] Cover no `resumeContext` returning only the human prompt or
   `undefined`.
-- [ ] Cover matching `resumeContext.resumePoint.step` with one prior run.
-- [ ] Cover multiple prior attempts selecting the latest attempt as the previous
+- [x] Cover matching `resumeContext.resumePoint.step` with one prior run.
+- [x] Cover multiple prior attempts selecting the latest attempt as the previous
   run and calculating the upcoming attempt number.
-- [ ] Cover deterministic output by calling the builder twice with identical
+- [x] Cover deterministic output by calling the builder twice with identical
   inputs.
-- [ ] Cover optional metadata such as missing verdict, missing findings path, and
+- [x] Cover optional metadata such as missing verdict, missing findings path, and
   present `exhaustionPhase`.
 
 **Acceptance Criteria**:
@@ -75,16 +75,16 @@
 
 ## T-04: Update StepExecutor resume prompt tests
 
-- [ ] Extend `tests/unit/core/step/executor.test.ts` or add a neighboring test
+- [x] Extend `tests/unit/core/step/executor.test.ts` or add a neighboring test
   file that captures `AgentRunContext`.
-- [ ] Add a test for escalation-style plain resume: state has a captured
+- [x] Add a test for escalation-style plain resume: state has a captured
   `deps.resumeContext`, prior `steps[step]`, no `deps.resumePrompt`, and
   captured prompt contains the automatic context.
-- [ ] Add a test for resume with human prose: captured prompt contains automatic
+- [x] Add a test for resume with human prose: captured prompt contains automatic
   context and the human prose, with human prose after the automatic section.
-- [ ] Add or preserve a test proving initial non-resume execution with no human
+- [x] Add or preserve a test proving initial non-resume execution with no human
   prompt leaves `ctx.session.resumePrompt` undefined.
-- [ ] Preserve existing one-shot behavior tests, adjusting exact equality only
+- [x] Preserve existing one-shot behavior tests, adjusting exact equality only
   where the state now qualifies for automatic context.
 
 **Acceptance Criteria**:
@@ -96,11 +96,11 @@
 
 ## T-05: Verify the change
 
-- [ ] Run the focused unit tests for the new builder and executor prompt
+- [x] Run the focused unit tests for the new builder and executor prompt
   behavior.
-- [ ] Run `bun run typecheck`.
-- [ ] Run `bun run test`.
-- [ ] If the repository uses a combined verification script that covers both
+- [x] Run `bun run typecheck`.
+- [x] Run `bun run test`.
+- [x] If the repository uses a combined verification script that covers both
   typecheck and tests, run it in addition to or instead of duplicate commands.
 
 **Acceptance Criteria**:
