@@ -129,3 +129,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/decision-options-ledger/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-13T02:51:18.425Z","endedAt":"2026-06-13T02:51:20.297Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-13T02:51:20.297Z","outputs":[{"path":"specrunner/changes/decision-options-ledger/pr-create-result.md","hash":"sha256:bc257b432ca094807fd646a03fc1f79d78bfe7774c677a8d6a07e8b3522a0564"}],"inputs":[{"path":"change/decision-options-ledger-294dcbf1","hash":null}]}
 {"type":"transition","ts":"2026-06-13T02:51:20.307Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-13T09:53:18.466Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
