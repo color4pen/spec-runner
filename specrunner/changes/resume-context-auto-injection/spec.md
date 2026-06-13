@@ -2,16 +2,33 @@
 
 ## Requirements
 
-### Requirement: The executor shall generate resume context from state
+### Requirement: Resume runs shall preserve a deterministic resume snapshot
 
-When an agent step is executed as the first step of a resume run and the job has
-a `resumePoint`, the executor SHALL build deterministic resume context from
-`JobState` and pass it through the existing `resumePrompt` field.
+When the resume command clears the live `resumePoint` before the pipeline
+starts, the pipeline SHALL carry a deterministic `resumeContext` snapshot that
+contains the original `resumePoint` for the first agent step.
+
+#### Scenario: resume preparation captures the snapshot
+
+**Given** a job state whose live `resumePoint` will be cleared before the
+pipeline begins
+**And** the resume command has already captured `resumeContext.resumePoint`
+**When** the first agent step starts
+**Then** the executor can still determine whether the step is the resumed step
+**And** it can still render the previous resume metadata from the snapshot.
+
+### Requirement: The executor shall generate resume context from the snapshot
+
+When an agent step is executed as the first step of a resume run and the
+pipeline provides a `resumeContext` snapshot, the executor SHALL build
+deterministic resume context from `JobState` plus that snapshot and pass it
+through the existing `resumePrompt` field.
 
 #### Scenario: plain resume after escalation
 
-**Given** a job state with `resumePoint.step` equal to the step being executed
-**And** `state.steps[resumePoint.step]` contains one or more prior attempts
+**Given** a job state whose live `resumePoint` has already been cleared
+**And** `deps.resumeContext.resumePoint.step` is equal to the step being executed
+**And** `state.steps[deps.resumeContext.resumePoint.step]` contains one or more prior attempts
 **And** the resume command supplied no human prompt
 **When** `StepExecutor` builds the `AgentRunContext`
 **Then** `ctx.session.resumePrompt` contains an auto-generated context block
@@ -24,11 +41,13 @@ come from an earlier attempt and do not prove the current attempt is complete.
 ### Requirement: Human resume prose shall supplement automatic context
 
 Human-provided resume prose from `--prompt` or `/resume` comments MUST be
-preserved as an additional supplement after the automatically generated context.
+preserved as an additional supplement after the automatically generated context
+from the resume snapshot.
 
 #### Scenario: resume with human prompt
 
-**Given** a job state that qualifies for automatic resume context
+**Given** a job state that qualifies for automatic resume context via
+`deps.resumeContext`
 **And** `deps.resumePrompt` contains human prose
 **When** `StepExecutor` builds the `AgentRunContext`
 **Then** `ctx.session.resumePrompt` contains the automatic context
@@ -38,11 +57,11 @@ preserved as an additional supplement after the automatically generated context.
 ### Requirement: Non-resume runs shall not receive resume context
 
 The executor MUST NOT inject automatic resume context for normal first-run
-execution or for state that has no active `resumePoint`.
+execution or for state that has no active resume snapshot.
 
 #### Scenario: initial run
 
-**Given** a running job state with no `resumePoint`
+**Given** a running job state with no `resumeContext`
 **And** no human resume prompt
 **When** `StepExecutor` builds the `AgentRunContext`
 **Then** `ctx.session.resumePrompt` is `undefined`.

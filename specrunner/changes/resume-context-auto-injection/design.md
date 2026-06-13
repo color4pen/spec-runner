@@ -39,17 +39,19 @@ records prior attempts and outcomes.
 
 ## Decisions
 
-### D1. Generate automatic context in `StepExecutor`
+### D1. Generate automatic context in `StepExecutor` from a resume snapshot
 
 `StepExecutor` should compose the effective resume prompt immediately before it
-builds `AgentRunContext`. It already has the step, state, and one-shot human
-`deps.resumePrompt`, and it is the last shared point before local, managed, and
-codex adapters diverge.
+builds `AgentRunContext`. It already has the step, state, one-shot human
+`deps.resumePrompt`, and a deterministic `deps.resumeContext` snapshot captured
+before `state.resumePoint` is cleared. That snapshot keeps the resume metadata
+needed for qualification and rendering while `state.steps` still provides the
+prior attempts.
 
-Rationale: executor-level composition updates every runtime through the existing
-`resumePrompt` path. Putting this in `resume.ts` or `runner.ts` would require
-those layers to know which agent step will actually consume the prompt and would
-make the one-shot behavior harder to keep correct.
+Rationale: executor-level composition keeps every runtime on the existing
+`resumePrompt` path while allowing `resume.ts` to clear the live `resumePoint`
+before the pipeline starts. Passing a snapshot avoids making adapters aware of
+resume lifecycle details and preserves one-shot behavior.
 
 Alternatives considered:
 
@@ -58,25 +60,26 @@ Alternatives considered:
 - Generate in adapters: rejected because it duplicates logic and violates the
   scoped requirement to keep adapter injection unchanged.
 
-### D2. Add a deterministic state-backed builder module
+### D2. Add a deterministic snapshot-backed builder module
 
 Introduce a small pure helper, for example
 `src/core/resume/resume-context.ts`, that accepts `JobState`, current
-`AgentStepName`, and optional human prompt, then returns the composed prompt or
+`AgentStepName`, a deterministic resume snapshot that contains the original
+`resumePoint`, and optional human prompt, then returns the composed prompt or
 `undefined`.
 
-The helper should only use explicit state fields:
+The helper should only use explicit stored fields:
 
-- `state.resumePoint`
+- `resumeContext.resumePoint`
 - `state.steps?.[stepName]`
 - the last prior `StepRun` for that step
 - `StepRun.attempt`
 - `StepRun.outcome.verdict`
 - `StepRun.outcome.findingsPath`, when present, as a path reference rather than
   parsed prose
-- `state.resumePoint.reason`
-- `state.resumePoint.iterationsExhausted`
-- `state.resumePoint.exhaustionPhase`, when present
+- `resumeContext.resumePoint.reason`
+- `resumeContext.resumePoint.iterationsExhausted`
+- `resumeContext.resumePoint.exhaustionPhase`, when present
 
 Rationale: a pure helper is easy to unit test, keeps formatting separate from
 executor orchestration, and gives future state-backed sections a single home.
@@ -89,15 +92,17 @@ Alternatives considered:
   is a deterministic projection and should not become another mutable source of
   truth.
 
-### D3. Qualify automatic injection by active resume state
+### D3. Qualify automatic injection by the resume snapshot
 
-Automatic context should be generated when `state.resumePoint?.step` equals the
-current agent step name. If there is no `resumePoint`, or the current step does
-not match it, no automatic context should be added.
+Automatic context should be generated when
+`deps.resumeContext?.resumePoint.step` equals the current agent step name. If
+there is no resume snapshot, or the current step does not match it, no
+automatic context should be added.
 
 Rationale: this preserves first-run behavior and limits injection to the step
-the pipeline is resuming. It also keeps the existing one-shot prompt consumption:
-after the first agent step consumes the composed prompt, `deps.resumePrompt` is
+the pipeline is resuming even when the live `state.resumePoint` has already
+been cleared. It also keeps the existing one-shot prompt consumption: after
+the first agent step consumes the composed prompt, `deps.resumePrompt` is
 cleared.
 
 Alternatives considered:
@@ -148,9 +153,9 @@ Alternatives considered:
 
 [Risk] Automatic context could be injected on an unexpected step if stale
 `resumePoint` is present.
-Mitigation: require `resumePoint.step === step.name` before generating automatic
-context, and rely on existing resume preparation clearing `resumePoint` when a
-resume run starts.
+Mitigation: require `deps.resumeContext?.resumePoint.step === step.name` before
+generating automatic context, and capture that snapshot before the resume
+preparation path clears the live `state.resumePoint`.
 
 [Risk] Attempt count semantics can be misunderstood as previous attempts rather
 than the upcoming attempt.
