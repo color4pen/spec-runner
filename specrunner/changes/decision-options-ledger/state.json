@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "294dcbf1-f662-415a-8cb2-0f6f7f23b9d4",
   "createdAt": "2026-06-13T00:47:04.682Z",
-  "updatedAt": "2026-06-13T01:27:52.757Z",
+  "updatedAt": "2026-06-13T02:02:38.649Z",
   "request": {
     "title": "decision-needed に選択肢の提示を必須化し、人間の判断を構造化して記録・尊重する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/decision-options-ledger-294dcbf1",
   "error": null,
@@ -50,13 +50,15 @@
   "issueNumber": 677,
   "resumePoint": null,
   "_journal": {
-    "historyCount": 28,
+    "historyCount": 37,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 2,
       "spec-fixer": 1,
-      "test-case-gen": 2
+      "test-case-gen": 2,
+      "implementer": 1,
+      "verification": 1
     }
   }
 }
