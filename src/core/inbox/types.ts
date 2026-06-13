@@ -45,6 +45,12 @@ export interface ResumeAction {
   issueNumber: number;
   /** Text to pass as resumePrompt. null if /resume had no body text. */
   resumePrompt: string | null;
+  /**
+   * Decision records to append to state before resuming.
+   * Only set when the /resume comment contained valid N=M selection tokens.
+   * Absent when the comment was prose-only.
+   */
+  decisions?: import("../../state/schema.js").DecisionRecord[];
 }
 
 /** Action: auto-resume an orphaned (stale) running job. */

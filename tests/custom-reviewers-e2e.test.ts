@@ -250,6 +250,10 @@ function buildCustomMockClient(opts: {
                 file: "src/contradiction.ts",
                 title: "Contradictory fixes",
                 rationale: "Fixing A re-introduces B",
+                options: [
+                  { label: "Option A: fix A only", consequence: "B regression persists" },
+                  { label: "Option B: fix B only", consequence: "A regression persists" },
+                ],
               }],
             },
           }]);

@@ -20,6 +20,8 @@ import type { RuntimeStrategy, FindingRef } from "../../../src/core/port/runtime
 import { JUDGE_REPORT_TOOL, CODE_REVIEW_REPORT_TOOL } from "../../../src/core/step/report-tool.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
+import { computeFindingKey } from "../../../src/core/decision/decision-ledger.js";
+import type { Finding } from "../../../src/kernel/report-result.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -369,6 +371,190 @@ describe("TC-VD-004: all finding refs exist → verdict is derived correctly", (
 // ---------------------------------------------------------------------------
 // TC-VD-005: T-14 — decision-needed finding → executor escalates → pipeline awaiting-resume
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// TC-VD-006 through TC-VD-008: T-08 — decision ledger filtering in executor
+// ---------------------------------------------------------------------------
+
+describe("TC-VD-006: decided decision-needed finding → approved (not escalated)", () => {
+  it("finding already in ledger is filtered out — verdict is approved", async () => {
+    const jobId = "tc-vd-006";
+
+    const finding: Finding = {
+      severity: "medium",
+      resolution: "decision-needed",
+      file: "src/design.ts",
+      title: "Architecture decision required",
+      rationale: "Two valid approaches — pick one",
+      options: [
+        { label: "Option A", consequence: "Consequence A" },
+        { label: "Option B", consequence: "Consequence B" },
+      ],
+    };
+
+    const findingKey = computeFindingKey("spec-review", finding);
+
+    const state: JobState = {
+      ...makeJobState(jobId),
+      decisions: [
+        {
+          id: "decision-2026-01-01T00:00:00.000Z-1",
+          step: "spec-review",
+          findingKey,
+          finding: {
+            title: finding.title,
+            file: finding.file,
+            rationale: finding.rationale,
+            severity: finding.severity,
+          },
+          selectedOption: { number: 1, label: "Option A", consequence: "Consequence A" },
+          decidedAt: "2026-01-01T00:00:00.000Z",
+          source: "issue-comment",
+        },
+      ],
+    };
+    await seedJobState(jobId, state);
+
+    const runtimeStrategy = makeRuntimeStrategy(async () => []);
+    const runner = makeRunnerWithToolResult({
+      ok: true,
+      findings: [finding],
+    });
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
+    const step = makeJudgeStep();
+    const resultState = await executor.execute(step, state, makeDeps({}, runtimeStrategy));
+
+    const runs = resultState.steps?.["spec-review"];
+    const lastRun = runs?.[runs.length - 1];
+    // Finding was already decided → filtered out → no blocking findings → approved
+    expect(lastRun?.outcome.verdict).toBe("approved");
+    // Original toolResult still stored (auditability)
+    expect(lastRun?.outcome.toolResult?.findings).toHaveLength(1);
+  });
+});
+
+describe("TC-VD-007: undecided decision-needed finding → still escalates", () => {
+  it("finding not in ledger → still triggers escalation", async () => {
+    const jobId = "tc-vd-007";
+
+    const decidedFinding: Finding = {
+      severity: "low",
+      resolution: "decision-needed",
+      file: "src/other.ts",
+      title: "Other decision",
+      rationale: "Different rationale",
+    };
+    const undecidedFinding: Finding = {
+      severity: "medium",
+      resolution: "decision-needed",
+      file: "src/design.ts",
+      title: "Architecture decision required",
+      rationale: "Two valid approaches — pick one",
+    };
+
+    // Ledger has decidedFinding but NOT undecidedFinding
+    const state: JobState = {
+      ...makeJobState(jobId),
+      decisions: [
+        {
+          id: "decision-2026-01-01T00:00:00.000Z-1",
+          step: "spec-review",
+          findingKey: computeFindingKey("spec-review", decidedFinding),
+          finding: {
+            title: decidedFinding.title,
+            file: decidedFinding.file,
+            rationale: decidedFinding.rationale,
+            severity: decidedFinding.severity,
+          },
+          selectedOption: { number: 1, label: "Option A", consequence: "Consequence A" },
+          decidedAt: "2026-01-01T00:00:00.000Z",
+          source: "issue-comment",
+        },
+      ],
+    };
+    await seedJobState(jobId, state);
+
+    const runtimeStrategy = makeRuntimeStrategy(async () => []);
+    const runner = makeRunnerWithToolResult({
+      ok: true,
+      findings: [undecidedFinding], // undecided finding is still returned
+    });
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
+    const step = makeJudgeStep();
+    const resultState = await executor.execute(step, state, makeDeps({}, runtimeStrategy));
+
+    const runs = resultState.steps?.["spec-review"];
+    const lastRun = runs?.[runs.length - 1];
+    // undecidedFinding not in ledger → still escalates
+    expect(lastRun?.outcome.verdict).toBe("escalation");
+  });
+});
+
+describe("TC-VD-008: fixable finding still routes to needs-fix even when ledger has entries", () => {
+  it("fixable high finding + decided decision-needed → needs-fix (fixable not filtered)", async () => {
+    const jobId = "tc-vd-008";
+
+    const decidedFinding: Finding = {
+      severity: "low",
+      resolution: "decision-needed",
+      file: "src/design.ts",
+      title: "Architecture decision required",
+      rationale: "Pick one",
+      options: [
+        { label: "Option A", consequence: "Consequence A" },
+        { label: "Option B", consequence: "Consequence B" },
+      ],
+    };
+    const fixableFinding: Finding = {
+      severity: "high",
+      resolution: "fixable",
+      file: "src/critical.ts",
+      title: "Critical bug",
+      rationale: "Must be fixed",
+    };
+
+    const state: JobState = {
+      ...makeJobState(jobId),
+      decisions: [
+        {
+          id: "decision-2026-01-01T00:00:00.000Z-1",
+          step: "spec-review",
+          findingKey: computeFindingKey("spec-review", decidedFinding),
+          finding: {
+            title: decidedFinding.title,
+            file: decidedFinding.file,
+            rationale: decidedFinding.rationale,
+            severity: decidedFinding.severity,
+          },
+          selectedOption: { number: 1, label: "Option A", consequence: "Consequence A" },
+          decidedAt: "2026-01-01T00:00:00.000Z",
+          source: "issue-comment",
+        },
+      ],
+    };
+    await seedJobState(jobId, state);
+
+    const runtimeStrategy = makeRuntimeStrategy(async () => []);
+    const runner = makeRunnerWithToolResult({
+      ok: true,
+      findings: [decidedFinding, fixableFinding],
+    });
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
+    const step = makeJudgeStep();
+    const resultState = await executor.execute(step, state, makeDeps({}, runtimeStrategy));
+
+    const runs = resultState.steps?.["spec-review"];
+    const lastRun = runs?.[runs.length - 1];
+    // decidedFinding filtered out; fixableFinding remains → needs-fix
+    expect(lastRun?.outcome.verdict).toBe("needs-fix");
+  });
+});
 
 describe("TC-VD-005: decision-needed finding → verdict escalated to escalation", () => {
   it("spec-review with decision-needed finding → escalation (pipeline awaiting-resume)", async () => {

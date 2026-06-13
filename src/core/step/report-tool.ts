@@ -76,8 +76,20 @@ export const PRODUCER_REPORT_TOOL: ReportToolSpec<ProducerReportResult> = {
 };
 
 /**
+ * Zod schema for a single decision option within a decision-needed finding.
+ */
+const decisionOptionSchema = object({
+  label: string(),
+  consequence: string(),
+});
+
+/**
  * Zod schema for a single finding object.
  * Used by judge tools to report structured findings for CLI verdict derivation.
+ *
+ * `options` is required when `resolution` is `"decision-needed"` (at least two options).
+ * For `"fixable"` findings, `options` must not be provided.
+ * The hand-written `parseFindings` in report-result.ts enforces the ≥2 options rule at parse time.
  */
 const findingSchema = array(object({
   severity: union([literal("critical"), literal("high"), literal("medium"), literal("low")]),
@@ -86,6 +98,7 @@ const findingSchema = array(object({
   line: optional(number()),
   title: string(),
   rationale: string(),
+  options: optional(array(decisionOptionSchema)),
 }));
 
 /**
@@ -157,6 +170,7 @@ const conformanceFindingSchema = array(object({
   title: string(),
   rationale: string(),
   fixTarget: optional(union([literal("implementer"), literal("code-fixer"), literal("spec-fixer")])),
+  options: optional(array(decisionOptionSchema)),
 }));
 
 /**

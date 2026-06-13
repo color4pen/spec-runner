@@ -157,6 +157,10 @@ export function buildPipelineMockClient(opts: BuildPipelineMockClientOpts = {}) 
                     file: "src/design.ts",
                     title: "Human decision required",
                     rationale: "This change requires product owner sign-off",
+                    options: [
+                      { label: "Option A: proceed as-is", consequence: "No sign-off required, risk remains" },
+                      { label: "Option B: await sign-off", consequence: "Blocked until product owner reviews" },
+                    ],
                   },
                 ],
               },

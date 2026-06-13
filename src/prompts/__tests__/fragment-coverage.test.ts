@@ -68,6 +68,45 @@ describe("DECISION_NEEDED_DEFINITION constant content", () => {
 });
 
 // ---------------------------------------------------------------------------
+// DECISION_NEEDED_DEFINITION — options requirement (T-03 AC)
+// ---------------------------------------------------------------------------
+
+describe("DECISION_NEEDED_DEFINITION contains options requirement", () => {
+  it("mentions 'options' field requirement", () => {
+    expect(DECISION_NEEDED_DEFINITION).toContain("options");
+  });
+
+  it("mentions label and consequence fields", () => {
+    expect(DECISION_NEEDED_DEFINITION).toContain("label");
+    expect(DECISION_NEEDED_DEFINITION).toContain("consequence");
+  });
+
+  it("requires at least 2 options", () => {
+    expect(DECISION_NEEDED_DEFINITION).toContain("2 件以上");
+  });
+});
+
+describe("3 judge prompts contain options requirement (via DECISION_NEEDED_DEFINITION)", () => {
+  it("CODE_REVIEW_SYSTEM_PROMPT contains options requirement", () => {
+    expect(CODE_REVIEW_SYSTEM_PROMPT).toContain("options");
+    expect(CODE_REVIEW_SYSTEM_PROMPT).toContain("label");
+    expect(CODE_REVIEW_SYSTEM_PROMPT).toContain("consequence");
+  });
+
+  it("SPEC_REVIEW_SYSTEM_PROMPT contains options requirement", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("options");
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("label");
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain("consequence");
+  });
+
+  it("REQUEST_REVIEW_SYSTEM_PROMPT contains options requirement", () => {
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("options");
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("label");
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain("consequence");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // 3 prompts reference DECISION_NEEDED_DEFINITION (T-02 AC: shared reference)
 // ---------------------------------------------------------------------------
 

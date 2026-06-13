@@ -9,8 +9,8 @@ import type { ZodRawShape } from "zod/v4";
 
 export type { ZodRawShape };
 
-import type { BaseReportResult, Finding, FixTarget, Observation } from "../../kernel/report-result.js";
-export type { BaseReportResult, Finding, FixTarget, Observation } from "../../kernel/report-result.js";
+import type { BaseReportResult, Finding, FixTarget, Observation, DecisionOption } from "../../kernel/report-result.js";
+export type { BaseReportResult, Finding, FixTarget, Observation, DecisionOption } from "../../kernel/report-result.js";
 
 /**
  * Specification for the report_result custom tool that an agent step registers.
@@ -140,10 +140,15 @@ const VALID_FIX_TARGETS = new Set<FixTarget>(["implementer", "code-fixer", "spec
  * Parse and validate a findings array from unknown input.
  * Pure function — no I/O. Uses typeof checks (no zod parse).
  *
+ * @param raw    Raw input to validate.
+ * @param strict When true, `decision-needed` findings MUST have at least two valid options
+ *               (each with non-empty `label` and `consequence`). Use true for new live tool
+ *               calls; false (default) for legacy persisted state reads.
+ *
  * Returns { ok: true, value: Finding[] } if input is a valid findings array.
  * Returns { ok: false } if input is missing, not an array, or contains invalid elements.
  */
-export function parseFindings(raw: unknown): { ok: true; value: Finding[] } | { ok: false } {
+export function parseFindings(raw: unknown, strict = false): { ok: true; value: Finding[] } | { ok: false } {
   if (!Array.isArray(raw)) return { ok: false };
   const findings: Finding[] = [];
   for (const item of raw) {
@@ -155,6 +160,19 @@ export function parseFindings(raw: unknown): { ok: true; value: Finding[] } | { 
     if (typeof f["title"] !== "string") return { ok: false };
     if (typeof f["rationale"] !== "string") return { ok: false };
     if ("line" in f && f["line"] !== undefined && typeof f["line"] !== "number") return { ok: false };
+
+    // Strict mode: decision-needed findings require at least two valid options
+    if (strict && f["resolution"] === "decision-needed") {
+      const opts = f["options"];
+      if (!Array.isArray(opts) || opts.length < 2) return { ok: false };
+      for (const opt of opts) {
+        if (typeof opt !== "object" || opt === null) return { ok: false };
+        const o = opt as Record<string, unknown>;
+        if (typeof o["label"] !== "string" || o["label"].trim() === "") return { ok: false };
+        if (typeof o["consequence"] !== "string" || o["consequence"].trim() === "") return { ok: false };
+      }
+    }
+
     const finding: Finding = {
       severity: f["severity"] as Finding["severity"],
       resolution: f["resolution"] as Finding["resolution"],
@@ -166,6 +184,20 @@ export function parseFindings(raw: unknown): { ok: true; value: Finding[] } | { 
     // fixTarget: capture when present and valid; ignore invalid values (not in missingFields)
     if (typeof f["fixTarget"] === "string" && VALID_FIX_TARGETS.has(f["fixTarget"] as FixTarget)) {
       finding.fixTarget = f["fixTarget"] as FixTarget;
+    }
+    // options: capture when present and well-formed; legacy findings without options remain valid
+    if (Array.isArray(f["options"])) {
+      const parsedOptions: DecisionOption[] = [];
+      let optionsValid = true;
+      for (const opt of f["options"] as unknown[]) {
+        if (typeof opt !== "object" || opt === null) { optionsValid = false; break; }
+        const o = opt as Record<string, unknown>;
+        if (typeof o["label"] !== "string" || typeof o["consequence"] !== "string") { optionsValid = false; break; }
+        parsedOptions.push({ label: o["label"], consequence: o["consequence"] });
+      }
+      if (optionsValid && parsedOptions.length > 0) {
+        finding.options = parsedOptions;
+      }
     }
     findings.push(finding);
   }
@@ -270,9 +302,9 @@ export function parseJudgeReportInput(
     result.approved = obj["approved"];
   }
 
-  // When ok=true, findings are required and must be valid
+  // When ok=true, findings are required and must be valid (strict: decision-needed requires options)
   if (result.ok) {
-    const parsed = parseFindings(obj["findings"]);
+    const parsed = parseFindings(obj["findings"], true);
     if (!parsed.ok) {
       return { ok: false, missingFields: ["findings"], rawInput: raw };
     }
@@ -365,9 +397,9 @@ export function parseRequestReviewReportInput(
     result.verdict = obj["verdict"];
   }
 
-  // When ok=true, findings are required and must be valid
+  // When ok=true, findings are required and must be valid (strict: decision-needed requires options)
   if (result.ok) {
-    const parsed = parseFindings(obj["findings"]);
+    const parsed = parseFindings(obj["findings"], true);
     if (!parsed.ok) {
       return { ok: false, missingFields: ["findings"], rawInput: raw };
     }

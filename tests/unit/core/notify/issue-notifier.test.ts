@@ -26,8 +26,10 @@ import {
   buildCompletionComment,
   notifyJobTerminal,
 } from "../../../../src/core/notify/issue-notifier.js";
+import { computeFindingKey } from "../../../../src/core/decision/decision-ledger.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import type { GitHubClient } from "../../../../src/core/port/github-client.js";
+import type { Finding } from "../../../../src/kernel/report-result.js";
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -399,6 +401,193 @@ describe("TC-N-015: buildEscalationComment — baseBranch is reflected in compar
     const body = buildEscalationComment(state);
 
     expect(body).toContain("https://github.com/owner/repo/compare/develop...feat/my-slug-12345678");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-N-017 through TC-N-021: buildEscalationComment — open decision rendering
+// ---------------------------------------------------------------------------
+
+function makeStateWithDecisionFindings(
+  overrides: Partial<JobState> = {},
+  findingOverrides?: Finding[],
+): JobState {
+  const defaultFindings: Finding[] = [
+    {
+      severity: "low",
+      resolution: "decision-needed",
+      file: "src/design.ts",
+      title: "Human decision required",
+      rationale: "This change requires product owner sign-off",
+      options: [
+        { label: "Option A: proceed as-is", consequence: "No sign-off, risk remains" },
+        { label: "Option B: await sign-off", consequence: "Blocked until reviewed" },
+      ],
+    },
+  ];
+  const findings: Finding[] = findingOverrides ?? defaultFindings;
+
+  return makeState({
+    status: "awaiting-resume",
+    resumePoint: {
+      step: "spec-review",
+      reason: "decision required",
+      iterationsExhausted: 0,
+    },
+    steps: {
+      "spec-review": [
+        {
+          attempt: 1,
+          sessionId: null,
+          startedAt: "2026-01-01T00:00:00.000Z",
+          endedAt: "2026-01-01T00:00:01.000Z",
+          outcome: {
+            verdict: "escalation",
+            findingsPath: null,
+            error: null,
+            toolResult: { ok: true, findings },
+          },
+        },
+      ],
+    },
+    ...overrides,
+  });
+}
+
+describe("TC-N-017: buildEscalationComment — renders single open decision with options", () => {
+  it("body contains finding title, options, and /resume example", () => {
+    const state = makeStateWithDecisionFindings();
+    const body = buildEscalationComment(state);
+
+    expect(body).toContain("Human decision required");
+    expect(body).toContain("Option A: proceed as-is");
+    expect(body).toContain("Option B: await sign-off");
+    expect(body).toContain("/resume 1=");
+  });
+});
+
+describe("TC-N-018: buildEscalationComment — renders multiple open decisions", () => {
+  it("body contains both findings and a multi-selection /resume example", () => {
+    const findings: Finding[] = [
+      {
+        severity: "low",
+        resolution: "decision-needed",
+        file: "src/api.ts",
+        title: "API versioning choice",
+        rationale: "Need to pick v1 or v2",
+        options: [
+          { label: "v1: stable", consequence: "No migration needed" },
+          { label: "v2: breaking", consequence: "Clients need update" },
+        ],
+      },
+      {
+        severity: "low",
+        resolution: "decision-needed",
+        file: "src/db.ts",
+        title: "Database migration approach",
+        rationale: "Need to pick migration strategy",
+        options: [
+          { label: "online: live migration", consequence: "Complex rollout" },
+          { label: "offline: maintenance window", consequence: "Downtime required" },
+        ],
+      },
+    ];
+    const state = makeStateWithDecisionFindings({}, findings);
+    const body = buildEscalationComment(state);
+
+    expect(body).toContain("API versioning choice");
+    expect(body).toContain("v1: stable");
+    expect(body).toContain("Database migration approach");
+    expect(body).toContain("online: live migration");
+    // Should show example for both findings
+    expect(body).toContain("1=");
+    expect(body).toContain("2=");
+  });
+});
+
+describe("TC-N-019: buildEscalationComment — already-decided findings suppressed", () => {
+  it("decided finding is not rendered as open decision", () => {
+    const finding: Finding = {
+      severity: "low",
+      resolution: "decision-needed",
+      file: "src/design.ts",
+      title: "Human decision required",
+      rationale: "This change requires product owner sign-off",
+      options: [
+        { label: "Option A: proceed as-is", consequence: "No sign-off, risk remains" },
+        { label: "Option B: await sign-off", consequence: "Blocked until reviewed" },
+      ],
+    };
+    const findingKey = computeFindingKey("spec-review", finding);
+
+    const state = makeStateWithDecisionFindings({
+      decisions: [
+        {
+          id: "decision-2026-01-01T00:00:00.000Z-1",
+          step: "spec-review",
+          findingKey,
+          finding: {
+            title: finding.title,
+            file: finding.file,
+            rationale: finding.rationale,
+            severity: finding.severity,
+          },
+          selectedOption: { number: 1, label: "Option A: proceed as-is", consequence: "No sign-off, risk remains" },
+          decidedAt: "2026-01-01T00:00:00.000Z",
+          source: "issue-comment",
+        },
+      ],
+    });
+    const body = buildEscalationComment(state);
+
+    // Finding is already decided — should NOT appear in the decisions section
+    expect(body).not.toContain("/resume 1=");
+    // But the standard escalation content should still be present
+    expect(body).toContain('kind="escalation"');
+  });
+});
+
+describe("TC-N-020: buildEscalationComment — graceful with no-options legacy finding", () => {
+  it("does not render decision section when decision-needed finding has no options", () => {
+    const legacyFinding: Finding = {
+      severity: "low",
+      resolution: "decision-needed",
+      file: "src/legacy.ts",
+      title: "Legacy decision",
+      rationale: "No options available",
+      // options intentionally absent (legacy)
+    };
+    const state = makeStateWithDecisionFindings({}, [legacyFinding]);
+    const body = buildEscalationComment(state);
+
+    // Should not render decision section (no options to select from)
+    expect(body).not.toContain("/resume 1=");
+    // Standard escalation elements remain
+    expect(body).toContain('kind="escalation"');
+    expect(body).toContain("specrunner job resume my-slug");
+  });
+});
+
+describe("TC-N-021: buildEscalationComment — existing elements intact with decisions", () => {
+  it("compare URL, marker, step, reason, and resume command remain when decisions are present", () => {
+    const state = makeStateWithDecisionFindings({
+      branch: "feat/my-slug-12345678",
+      repository: { owner: "owner", name: "repo" },
+      request: {
+        path: "/repo/specrunner/changes/my-slug/request.md",
+        title: "Test",
+        type: "new-feature",
+        slug: "my-slug",
+        baseBranch: "main",
+      },
+    });
+    const body = buildEscalationComment(state);
+
+    expect(body).toContain('kind="escalation"');
+    expect(body).toContain("spec-review");
+    expect(body).toContain("decision required");
+    expect(body).toContain("specrunner job resume my-slug");
+    expect(body).toContain("https://github.com/owner/repo/compare/main...feat/my-slug-12345678");
   });
 });
 

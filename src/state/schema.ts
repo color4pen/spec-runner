@@ -5,7 +5,7 @@
 export type JobStatus = "running" | "awaiting-resume" | "awaiting-archive" | "failed" | "terminated" | "archived" | "canceled";
 
 import type { ModelUsage } from "../kernel/model-usage.js";
-import type { BaseReportResult, Finding, Observation } from "../kernel/report-result.js";
+import type { BaseReportResult, Finding, Observation, DecisionOption, FindingSeverity } from "../kernel/report-result.js";
 import type { CompletionReportDiagnostic } from "../kernel/completion-report-diagnostic.js";
 import type { AgentStepName as AgentStepNameUnion } from "../kernel/agent-definition.js";
 import type { ReviewerSnapshot } from "../kernel/reviewer-snapshot.js";
@@ -193,6 +193,53 @@ export interface PullRequestInfo {
   createdAt: string;
 }
 
+/**
+ * A snapshot of a finding stored in the decision ledger.
+ * Captures the fields that identify and describe the finding at the time of the decision.
+ */
+export interface DecisionFindingSnapshot {
+  title: string;
+  file: string;
+  line?: number;
+  rationale: string;
+  severity: FindingSeverity;
+  options?: DecisionOption[];
+}
+
+/**
+ * A single selected option recorded in the decision ledger.
+ */
+export interface DecisionSelectedOption {
+  /** 1-based index of the selected option within the finding's options array. */
+  number: number;
+  label: string;
+  consequence: string;
+}
+
+/**
+ * A recorded human decision for a `decision-needed` finding.
+ * Persisted in `JobState.decisions` before the job resumes.
+ * Verdict derivation uses the decision ledger to suppress re-escalation of already-decided findings.
+ */
+export interface DecisionRecord {
+  /** Stable unique ID for this decision record (e.g. "decision-<ISO timestamp>-<counter>"). */
+  id: string;
+  /** Step that produced the decision-needed finding (e.g. "spec-review"). */
+  step: string;
+  /** Deterministic finding key derived from step, file, line, title, and rationale (normalized). */
+  findingKey: string;
+  /** Snapshot of the finding at the time the decision was made. */
+  finding: DecisionFindingSnapshot;
+  /** The option selected by the human. */
+  selectedOption: DecisionSelectedOption;
+  /** Raw /resume comment body or prose supplement when available. */
+  resumeComment?: string;
+  /** ISO 8601 timestamp when the decision was recorded. */
+  decidedAt: string;
+  /** How the decision was sourced. Currently always "issue-comment". */
+  source: "issue-comment";
+}
+
 export interface JobState {
   /**
    * Schema version.
@@ -265,6 +312,13 @@ export interface JobState {
    * Optional for backward compat.
    */
   reviewers?: ReviewerSnapshot[];
+  /**
+   * Human decision ledger — records of decisions made for `decision-needed` findings.
+   * Verdict derivation uses this ledger to suppress re-escalation of already-decided findings.
+   * Absent (undefined/null) in legacy state files → treated as an empty ledger (no decisions).
+   * Optional for backward compat.
+   */
+  decisions?: DecisionRecord[];
 }
 
 /**

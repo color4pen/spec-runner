@@ -273,6 +273,151 @@ describe("parseRequestReviewReportInput — findings validation", () => {
 });
 
 // ---------------------------------------------------------------------------
+// parseFindings — strict mode (decision-needed options enforcement)
+// ---------------------------------------------------------------------------
+
+describe("parseFindings strict mode — decision-needed options enforcement", () => {
+  const decisionNeededBase = {
+    severity: "low" as const,
+    resolution: "decision-needed" as const,
+    file: "src/design.ts",
+    title: "Human choice required",
+    rationale: "Product owner must decide",
+  };
+
+  it("decision-needed with 2+ valid options → ok:true in strict mode", () => {
+    const result = parseFindings(
+      [
+        {
+          ...decisionNeededBase,
+          options: [
+            { label: "Option A", consequence: "Low risk" },
+            { label: "Option B", consequence: "High risk" },
+          ],
+        },
+      ],
+      true,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+    expect(result.value[0]?.options).toHaveLength(2);
+  });
+
+  it("decision-needed with 3 options → ok:true in strict mode", () => {
+    const result = parseFindings(
+      [
+        {
+          ...decisionNeededBase,
+          options: [
+            { label: "A", consequence: "C-A" },
+            { label: "B", consequence: "C-B" },
+            { label: "C", consequence: "C-C" },
+          ],
+        },
+      ],
+      true,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it("decision-needed without options → ok:false in strict mode", () => {
+    const result = parseFindings([decisionNeededBase], true);
+    expect(result.ok).toBe(false);
+  });
+
+  it("decision-needed with empty options array → ok:false in strict mode", () => {
+    const result = parseFindings([{ ...decisionNeededBase, options: [] }], true);
+    expect(result.ok).toBe(false);
+  });
+
+  it("decision-needed with one option → ok:false in strict mode (need ≥2)", () => {
+    const result = parseFindings(
+      [{ ...decisionNeededBase, options: [{ label: "Only option", consequence: "consequence" }] }],
+      true,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("decision-needed with malformed option (missing label) → ok:false in strict mode", () => {
+    const result = parseFindings(
+      [{ ...decisionNeededBase, options: [{ consequence: "no label" }, { label: "B", consequence: "C-B" }] }],
+      true,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("decision-needed with malformed option (missing consequence) → ok:false in strict mode", () => {
+    const result = parseFindings(
+      [{ ...decisionNeededBase, options: [{ label: "A" }, { label: "B", consequence: "C-B" }] }],
+      true,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("decision-needed with empty label → ok:false in strict mode", () => {
+    const result = parseFindings(
+      [
+        {
+          ...decisionNeededBase,
+          options: [
+            { label: "  ", consequence: "C-A" },
+            { label: "B", consequence: "C-B" },
+          ],
+        },
+      ],
+      true,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("decision-needed with empty consequence → ok:false in strict mode", () => {
+    const result = parseFindings(
+      [
+        {
+          ...decisionNeededBase,
+          options: [
+            { label: "A", consequence: "" },
+            { label: "B", consequence: "C-B" },
+          ],
+        },
+      ],
+      true,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("fixable finding does not require options in strict mode", () => {
+    const result = parseFindings([validFinding], true); // validFinding is resolution:"fixable"
+    expect(result.ok).toBe(true);
+  });
+
+  it("decision-needed without options → ok:true in non-strict mode (backward compat)", () => {
+    const result = parseFindings([decisionNeededBase]); // strict defaults to false
+    expect(result.ok).toBe(true);
+  });
+
+  it("options field captured when present and valid", () => {
+    const result = parseFindings(
+      [
+        {
+          ...decisionNeededBase,
+          options: [
+            { label: "Opt A", consequence: "Consequence A" },
+            { label: "Opt B", consequence: "Consequence B" },
+          ],
+        },
+      ],
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+    const f = result.value[0]!;
+    expect(f.options).toHaveLength(2);
+    expect(f.options![0]!.label).toBe("Opt A");
+    expect(f.options![1]!.consequence).toBe("Consequence B");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // parseConformanceReportInput — fixTarget capture (T-02)
 // ---------------------------------------------------------------------------
 
