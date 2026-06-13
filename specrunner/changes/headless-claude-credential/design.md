@@ -66,9 +66,9 @@ Add a resolver in the credentials layer, for example `resolveClaudeCodeOAuthToke
 
 ### D3. Inject only into the local Claude SDK environment
 
-Before constructing or finalizing `queryOptions.env` in `src/adapter/claude-code/agent-runner.ts`, build the env from `stripSecrets(process.env)` and then set `CLAUDE_CODE_OAUTH_TOKEN` from the resolver only when the original process env does not already contain a non-empty value.
+Before constructing or finalizing `queryOptions.env` in `src/adapter/claude-code/agent-runner.ts`, build the env from `stripSecrets(process.env)`, resolve the Claude Code OAuth token with env precedence, and then set `CLAUDE_CODE_OAUTH_TOKEN` on `queryOptions.env` whenever the resolver returns a non-empty value.
 
-**Rationale**: The SDK consumes the upstream env var. Injecting at the adapter boundary gives the SDK what it needs while keeping the secret out of broader process-level state and preserving the existing `stripSecrets` boundary.
+**Rationale**: `stripSecrets(process.env)` must not be the last writer for `CLAUDE_CODE_OAUTH_TOKEN`, because an env-provided token needs to reach the SDK and still take precedence over any file-backed fallback. Injecting at the adapter boundary keeps the secret out of broader process-level state while preserving env-first resolution.
 
 **Alternatives considered**:
 
