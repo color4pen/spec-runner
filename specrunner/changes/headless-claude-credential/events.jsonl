@@ -96,3 +96,11 @@
 {"type":"transition","ts":"2026-06-13T01:48:35.767Z","step":"conformance","status":"ok","message":"conformance iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-13T01:48:35.768Z","step":"step-transition","status":"ok","message":"conformance → adr-gen"}
 {"type":"transition","ts":"2026-06-13T01:48:35.771Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-06-13T01:48:52.693Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"890718d9-b456-4797-938f-4ed1bb1aa59d","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-13T01:48:35.797Z","endedAt":"2026-06-13T01:48:50.846Z"}
+{"type":"transition","ts":"2026-06-13T01:48:52.699Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-06-13T01:48:52.702Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-06-13T01:48:54.565Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/headless-claude-credential/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-13T01:48:52.704Z","endedAt":"2026-06-13T01:48:54.563Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-06-13T01:48:54.563Z","outputs":[{"path":"specrunner/changes/headless-claude-credential/pr-create-result.md","hash":"sha256:8c56583ccb34b13a66b840346fafe52da52e50c2315e394b51f406983d2939a5"}],"inputs":[{"path":"feat/headless-claude-credential-4c0c7b83","hash":null}]}
+{"type":"transition","ts":"2026-06-13T01:48:54.573Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
