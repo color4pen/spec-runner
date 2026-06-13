@@ -128,7 +128,7 @@ function makeMockCreateMcpServerFn(): {
 // Codex helpers
 // ---------------------------------------------------------------------------
 
-function makeSuccessCodexThread(): CodexThread {
+function _makeSuccessCodexThread(): CodexThread {
   return {
     id: "mock-thread-id",
     runStreamed: async (_prompt: string, _opts?: unknown) => {
