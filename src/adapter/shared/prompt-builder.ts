@@ -1,5 +1,10 @@
 import type { AgentRunContext } from "../../core/port/agent-runner.js";
 
+export function buildResumeSection(ctx: AgentRunContext): string {
+  if (!ctx.session.resumePrompt) return "";
+  return `\n\n<resume-context>\n${ctx.session.resumePrompt}\n</resume-context>`;
+}
+
 export function buildAdditionalInstructions(ctx: AgentRunContext): string {
   const { branch, slug } = ctx;
   const lines: string[] = [];

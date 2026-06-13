@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
   "createdAt": "2026-06-12T23:55:05.270Z",
-  "updatedAt": "2026-06-13T00:03:47.897Z",
+  "updatedAt": "2026-06-13T00:05:50.657Z",
   "request": {
     "title": "codex adapter が resumePrompt を消費せず、escalation 後の人間判断が agent に届かない",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "implementer",
   "status": "running",
   "branch": "fix/codex-resume-prompt-injection-be18e082",
   "error": null,
@@ -49,12 +49,13 @@
   ],
   "issueNumber": 674,
   "_journal": {
-    "historyCount": 21,
+    "historyCount": 24,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 2,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "test-case-gen": 1
     }
   }
 }

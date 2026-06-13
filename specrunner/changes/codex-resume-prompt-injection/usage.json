@@ -81,6 +81,20 @@
       },
       "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
       "stepName": "spec-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-13T00:05:48.467Z",
+      "modelUsage": {
+        "gpt-5.4-mini": {
+          "inputTokens": 340526,
+          "outputTokens": 8652,
+          "cacheReadInputTokens": 280448,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
+      "stepName": "test-case-gen"
     }
   ]
 }

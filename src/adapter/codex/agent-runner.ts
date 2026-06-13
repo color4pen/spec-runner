@@ -20,7 +20,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { object, toJSONSchema } from "zod/v4-mini";
-import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
+import { buildAdditionalInstructions, buildResumeSection } from "../shared/prompt-builder.js";
 import { buildMainTurnCompletionInstruction, buildCompletionRetryPrompt } from "./completion-report-prompt.js";
 export { COMPLETION_REPORT_MEANS, buildMainTurnCompletionInstruction, buildCompletionRetryPrompt } from "./completion-report-prompt.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
@@ -292,9 +292,10 @@ export class CodexAgentRunner implements AgentRunner {
 
     const baseMessage = step.buildMessage(state, stepCtx);
     const additionalInstructions = buildAdditionalInstructions(ctx);
+    const resumeSection = buildResumeSection(ctx);
     const baseFullPrompt = additionalInstructions
-      ? `${baseMessage}\n\n${additionalInstructions}`
-      : baseMessage;
+      ? `${baseMessage}${resumeSection}\n\n${additionalInstructions}`
+      : `${baseMessage}${resumeSection}`;
 
     const dynamicMaxTurns = step.getMaxTurns?.(state);
     const resolvedConfig = getStepExecutionConfig(ctx.config, step.name, {
