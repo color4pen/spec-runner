@@ -137,6 +137,20 @@
       },
       "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
       "stepName": "regression-gate"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-13T00:17:05.751Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 305672,
+          "outputTokens": 3518,
+          "cacheReadInputTokens": 236544,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
+      "stepName": "conformance"
     }
   ]
 }
