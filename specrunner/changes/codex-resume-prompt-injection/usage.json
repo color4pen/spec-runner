@@ -67,6 +67,20 @@
       },
       "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
       "stepName": "spec-fixer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-13T00:03:45.303Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 196170,
+          "outputTokens": 2480,
+          "cacheReadInputTokens": 148096,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "be18e082-2602-43bf-8e99-2ca9df22d874",
+      "stepName": "spec-review"
     }
   ]
 }
