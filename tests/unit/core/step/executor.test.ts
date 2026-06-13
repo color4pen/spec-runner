@@ -311,6 +311,27 @@ describe("resume context auto injection", () => {
     expect(capturedCtxList[0]!.session.resumePrompt).toBeUndefined();
   });
 
+  it("human resume prose is still one-shot when no automatic resume context is present", async () => {
+    const jobState = await createRunningJobState();
+    const { runner, capturedCtxList } = makeCapturingRunner();
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
+
+    const deps = makeDeps({ resumePrompt: "human prose only" });
+    const firstStep = {
+      ...makeAgentStep(),
+      name: "design",
+    } satisfies AgentStep;
+    const secondStep = makeAgentStep();
+
+    const state1 = await executor.execute(firstStep, jobState, deps);
+    await executor.execute(secondStep, state1, deps);
+
+    expect(capturedCtxList[0]!.session.resumePrompt).toBe("human prose only");
+    expect(capturedCtxList[1]!.session.resumePrompt).toBeUndefined();
+  });
+
   it("consumes the composed automatic and human resume prompt only once", async () => {
     const jobState = {
       ...(await createRunningJobState()),

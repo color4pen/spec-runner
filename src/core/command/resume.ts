@@ -259,7 +259,9 @@ export class ResumeCommand extends CommandRunner {
         bootstrapState: updatedState,
         noWorktree: this.options.noWorktree,
       },
-      resumeContext: resumePoint ? { resumePoint } : undefined,
+      // Automatic resume context is only valid when we actually resume from the recorded step.
+      // `--from` can intentionally redirect execution to a different start step.
+      resumeContext: resumePoint && startStep === resumePoint.step ? { resumePoint } : undefined,
       resumePrompt: this.options.prompt,
       json: this.options.json ?? false,
     };
