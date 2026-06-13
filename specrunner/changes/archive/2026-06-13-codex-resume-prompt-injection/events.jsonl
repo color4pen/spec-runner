@@ -87,3 +87,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/codex-resume-prompt-injection/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-13T00:17:26.003Z","endedAt":"2026-06-13T00:17:28.486Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-13T00:17:28.486Z","outputs":[{"path":"specrunner/changes/codex-resume-prompt-injection/pr-create-result.md","hash":"sha256:5c25644a3bf93614b4eff5c167d76bdbeaea5ad7f1ed9c67039b6258202b9809"}],"inputs":[{"path":"fix/codex-resume-prompt-injection-be18e082","hash":null}]}
 {"type":"transition","ts":"2026-06-13T00:17:28.497Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-13T00:30:40.670Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
