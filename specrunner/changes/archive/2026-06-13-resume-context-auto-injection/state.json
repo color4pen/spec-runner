@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "dcf6307c-ab73-4d63-8b01-11e01f23fd0f",
   "createdAt": "2026-06-13T10:15:03.208Z",
-  "updatedAt": "2026-06-13T11:20:22.709Z",
+  "updatedAt": "2026-06-13T12:00:08.995Z",
   "request": {
     "title": "resume 時の再開コンテキストを state から自動生成し、素の resume を常に正しくする",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/resume-context-auto-injection-dcf6307c",
   "error": null,
   "pipelineId": "standard",
@@ -55,7 +55,7 @@
     "createdAt": "2026-06-13T11:20:22.696Z"
   },
   "_journal": {
-    "historyCount": 74,
+    "historyCount": 75,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
