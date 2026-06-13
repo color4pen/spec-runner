@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4c0c7b83-bdcb-437f-8442-d956fb84553d",
   "createdAt": "2026-06-13T00:40:02.757Z",
-  "updatedAt": "2026-06-13T00:47:04.531Z",
+  "updatedAt": "2026-06-13T00:47:53.390Z",
   "request": {
     "title": "claude の認証 token を specrunner login で管理し、cron 等 headless 環境で crontab に secrets を書かずに動くようにする",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/headless-claude-credential-4c0c7b83",
   "error": null,
@@ -49,11 +49,12 @@
   ],
   "issueNumber": 681,
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 17,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "spec-fixer": 1
     }
   }
 }

@@ -17,3 +17,9 @@
 {"type":"transition","ts":"2026-06-13T00:47:04.526Z","step":"spec-review","status":"warning","message":"spec-review iteration 1 completed with verdict: needs-fix"}
 {"type":"transition","ts":"2026-06-13T00:47:04.527Z","step":"step-transition","status":"ok","message":"spec-review → spec-fixer"}
 {"type":"transition","ts":"2026-06-13T00:47:04.531Z","step":"spec-fixer-started","status":"started","message":"Starting spec-fixer step"}
+{"type":"transition","ts":"2026-06-13T00:47:53.380Z","step":"spec-fixer-verdict","status":"ok","message":"spec-fixer verdict: approved"}
+{"type":"step-attempt","step":"spec-fixer","sessionId":"019ebe72-55f4-72e2-b6bb-0bbff12c3cd8","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-06-13T00:47:04.558Z","endedAt":"2026-06-13T00:47:51.583Z"}
+{"type":"lineage","step":"spec-fixer","ts":"2026-06-13T00:47:51.583Z","outputs":[{"path":"specrunner/changes/headless-claude-credential/design.md","hash":"sha256:0be9f8c031b1d291cd0f2628e083cb87a732b70db462120bab74df6be8a3ad0c"},{"path":"specrunner/changes/headless-claude-credential/spec.md","hash":"sha256:3599969d9c13b28714ed04818ae34d7ab0b7f5e364c49beeb93ea5499e7c4c98"}],"inputs":[{"path":"specrunner/changes/headless-claude-credential/spec-review-result-001.md","hash":"sha256:43542b4a0546dbd43cb7518f6618860f703ad88122361e00620ed670fc1e873a"}]}
+{"type":"transition","ts":"2026-06-13T00:47:53.387Z","step":"step-transition","status":"ok","message":"spec-review complete → spec-review (iter 2)"}
+{"type":"transition","ts":"2026-06-13T00:47:53.389Z","step":"spec-review","status":"started","message":"spec-review iteration 2 started"}
+{"type":"transition","ts":"2026-06-13T00:47:53.390Z","step":"spec-review-started","status":"started","message":"Starting spec-review step"}
