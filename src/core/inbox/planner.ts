@@ -3,10 +3,11 @@
  *
  * No I/O. All decisions are deterministic given their inputs.
  */
-import type { JobState } from "../../state/schema.js";
+import type { JobState, DecisionRecord } from "../../state/schema.js";
 import { isNotificationComment, matchesEscalationMarker } from "../notify/issue-notifier.js";
 import { parseRequestMdContent } from "../../parser/request-md.js";
 import { getJobSlug } from "../../state/job-slug.js";
+import { computeFindingKey, getOpenDecisionFindings } from "../decision/decision-ledger.js";
 import type { IssueRef, IssueComment, StartAction, RejectAction, ResumeAction, RecoverAction, EscalateAction, InboxPlan } from "./types.js";
 
 export type { IssueRef, IssueComment, StartAction, RejectAction, ResumeAction, RecoverAction, EscalateAction, InboxPlan };
@@ -215,17 +216,221 @@ export function planResumes(
     }
 
     if (bestCandidate !== null) {
-      resumes.push({
-        kind: "resume",
-        slug: job.request.slug,
-        jobId: job.jobId,
-        issueNumber: job.issueNumber,
-        resumePrompt: parseResumePrompt(bestCandidate.body),
-      });
+      const parsed = parseResumeDecisionInput(bestCandidate.body);
+
+      if (parsed.selections.length > 0) {
+        // Structured selection path: validate against open decisions
+        const openFindings = getOpenDecisionFindings(job);
+        const findingsWithOptions = openFindings.filter(
+          (f) => f.options && f.options.length >= 2,
+        );
+
+        if (findingsWithOptions.length === 0) {
+          // No open decisions with options — treat selections as prose (pass through)
+          resumes.push({
+            kind: "resume",
+            slug: job.request.slug,
+            jobId: job.jobId,
+            issueNumber: job.issueNumber,
+            resumePrompt: parseResumePrompt(bestCandidate.body),
+          });
+        } else {
+          // Validate: all open findings must be covered exactly once, options must be valid
+          const decisionRecords = resolveDecisions(
+            parsed.selections,
+            findingsWithOptions,
+            job,
+            bestCandidate.body,
+          );
+          if (decisionRecords !== null) {
+            resumes.push({
+              kind: "resume",
+              slug: job.request.slug,
+              jobId: job.jobId,
+              issueNumber: job.issueNumber,
+              resumePrompt: parsed.resumePrompt,
+              decisions: decisionRecords,
+            });
+          }
+          // If decisionRecords is null, selections were invalid — skip this comment
+          // (job remains awaiting-resume, user can provide a corrected /resume)
+        }
+      } else {
+        // Prose-only resume — check for malformed decision tokens first.
+        // If the comment contains malformed decision-like tokens (e.g. "1=", "0=1")
+        // and the job has open decisions, the user likely intended a structured
+        // selection but got the syntax wrong.  Leave the job awaiting-resume so
+        // they can correct the /resume comment.
+        if (parsed.hasInvalidDecisionTokens) {
+          const openFindings = getOpenDecisionFindings(job);
+          const findingsWithOptions = openFindings.filter(
+            (f) => f.options && f.options.length >= 2,
+          );
+          if (findingsWithOptions.length > 0) {
+            continue;
+          }
+        }
+        resumes.push({
+          kind: "resume",
+          slug: job.request.slug,
+          jobId: job.jobId,
+          issueNumber: job.issueNumber,
+          resumePrompt: parsed.resumePrompt,
+        });
+      }
     }
   }
 
   return resumes;
+}
+
+/**
+ * Resolve structured decision selections into DecisionRecord entries.
+ * Returns null when selections are invalid (wrong range, duplicates, or incomplete coverage).
+ *
+ * Validation rules:
+ * - Every finding number N must be in range [1, openFindings.length]
+ * - Every option number M must be in range [1, finding.options.length]
+ * - No duplicate finding numbers
+ * - All open findings must have exactly one selection
+ */
+function resolveDecisions(
+  selections: ResumeDecisionSelection[],
+  openFindings: import("../../kernel/report-result.js").Finding[],
+  job: JobState,
+  rawComment: string,
+): DecisionRecord[] | null {
+  const step = job.resumePoint?.step ?? job.step;
+
+  // Check for duplicates
+  const seenFindingNumbers = new Set<number>();
+  for (const sel of selections) {
+    if (seenFindingNumbers.has(sel.findingNumber)) return null;
+    seenFindingNumbers.add(sel.findingNumber);
+  }
+
+  // Check all open findings are covered
+  if (selections.length !== openFindings.length) return null;
+
+  // Validate each selection and build records
+  const records: DecisionRecord[] = [];
+  const decidedAt = new Date().toISOString();
+
+  for (const sel of selections) {
+    if (sel.findingNumber < 1 || sel.findingNumber > openFindings.length) return null;
+    const finding = openFindings[sel.findingNumber - 1]!;
+    const options = finding.options ?? [];
+    if (sel.optionNumber < 1 || sel.optionNumber > options.length) return null;
+    const selectedOpt = options[sel.optionNumber - 1]!;
+
+    const findingKey = computeFindingKey(step, finding);
+    const id = `decision-${decidedAt}-${sel.findingNumber}`;
+
+    records.push({
+      id,
+      step,
+      findingKey,
+      finding: {
+        title: finding.title,
+        file: finding.file,
+        line: finding.line,
+        rationale: finding.rationale,
+        severity: finding.severity,
+        options: finding.options,
+      },
+      selectedOption: {
+        number: sel.optionNumber,
+        label: selectedOpt.label,
+        consequence: selectedOpt.consequence,
+      },
+      resumeComment: rawComment,
+      decidedAt,
+      source: "issue-comment",
+    });
+  }
+
+  return records;
+}
+
+/**
+ * A single selection from a /resume N=M token.
+ */
+export interface ResumeDecisionSelection {
+  /** 1-based index of the finding within the rendered decision list. */
+  findingNumber: number;
+  /** 1-based index of the selected option within the finding's options array. */
+  optionNumber: number;
+}
+
+/**
+ * Result of parsing a /resume comment body for decision selections and prose.
+ */
+export interface ParsedResumeInput {
+  /** Structured N=M selections extracted from the leading token sequence. */
+  selections: ResumeDecisionSelection[];
+  /** Remaining prose after stripping /resume and any leading N=M tokens. Null if empty. */
+  resumePrompt: string | null;
+  /**
+   * True when malformed decision-like tokens (e.g. "1=", "0=1") appeared in the
+   * leading position where N=M selection tokens are expected.  Used by planResumes
+   * to keep the job awaiting-resume when open decisions exist.
+   */
+  hasInvalidDecisionTokens: boolean;
+}
+
+/**
+ * Parse a /resume comment body for decision selections and prose supplement.
+ *
+ * Selection tokens are `N=M` words at the start of the remainder after `/resume`,
+ * where N and M are positive integers (1-based). Tokens are consumed left-to-right
+ * and stop at the first word that is not an `N=M` token. Everything remaining is prose.
+ *
+ * Invalid N=M tokens (N=0 or M=0) are not treated as selection tokens.
+ *
+ * @example
+ * parseResumeDecisionInput("/resume")              → { selections: [], resumePrompt: null }
+ * parseResumeDecisionInput("/resume fix it")       → { selections: [], resumePrompt: "fix it" }
+ * parseResumeDecisionInput("/resume 1=2 2=1 note") → { selections: [{findingNumber:1,optionNumber:2},{findingNumber:2,optionNumber:1}], resumePrompt: "note" }
+ */
+export function parseResumeDecisionInput(body: string): ParsedResumeInput {
+  const trimmed = body.trimStart();
+  const withoutCommand = trimmed.replace(/^\/resume/, "").trim();
+
+  const parts = withoutCommand.split(/\s+/).filter((p) => p.length > 0);
+  const selections: ResumeDecisionSelection[] = [];
+  const proseParts: string[] = [];
+
+  let inTokens = true;
+  let hasInvalidDecisionTokens = false;
+  for (const part of parts) {
+    if (inTokens && /^\d+=\d+$/.test(part)) {
+      const eqIdx = part.indexOf("=");
+      const n = parseInt(part.slice(0, eqIdx), 10);
+      const m = parseInt(part.slice(eqIdx + 1), 10);
+      if (n > 0 && m > 0) {
+        selections.push({ findingNumber: n, optionNumber: m });
+        continue;
+      }
+      // n=0 or m=0 → invalid token, treat as prose and stop token scanning
+      hasInvalidDecisionTokens = true;
+      inTokens = false;
+      proseParts.push(part);
+    } else {
+      // Token that starts with digit(s) and "=" is a malformed decision token
+      // (e.g. "1=", "1=abc") — user likely intended a selection but got it wrong.
+      if (inTokens && /^\d+=/.test(part)) {
+        hasInvalidDecisionTokens = true;
+      }
+      inTokens = false;
+      proseParts.push(part);
+    }
+  }
+
+  return {
+    selections,
+    resumePrompt: proseParts.length > 0 ? proseParts.join(" ") : null,
+    hasInvalidDecisionTokens,
+  };
 }
 
 /**

@@ -22,6 +22,18 @@ export type FindingResolution = "fixable" | "decision-needed";
 export type FixTarget = "implementer" | "code-fixer" | "spec-fixer";
 
 /**
+ * A single option presented alongside a `decision-needed` finding.
+ * Reviewers MUST provide at least two options for any `decision-needed` finding.
+ * If a reviewer cannot articulate two viable options, the issue is `fixable`, not `decision-needed`.
+ */
+export interface DecisionOption {
+  /** Short label identifying this option (e.g. "Option A: keep current approach"). */
+  label: string;
+  /** Description of the consequence if this option is chosen. */
+  consequence: string;
+}
+
+/**
  * A single finding reported by a judge agent via the report_result findings array.
  * Represents a single identified issue with severity, resolution, and location.
  */
@@ -43,6 +55,12 @@ export interface Finding {
    * Absent for non-conformance judge steps.
    */
   fixTarget?: FixTarget;
+  /**
+   * Structured options for `resolution: "decision-needed"` findings.
+   * New tool calls MUST include at least two options; legacy persisted findings may omit this field.
+   * Each option has a `label` and `consequence` to help the human make an informed choice.
+   */
+  options?: DecisionOption[];
 }
 
 /**

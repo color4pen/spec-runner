@@ -8,7 +8,7 @@
  * - planInbox: composition
  */
 import { describe, it, expect } from "vitest";
-import { planStarts, planResumes, parseResumePrompt, planInbox, planStaleRecoveries, countStepRuns, MAX_STALE_RECOVERY_ATTEMPTS } from "../../../src/core/inbox/planner.js";
+import { planStarts, planResumes, parseResumePrompt, parseResumeDecisionInput, planInbox, planStaleRecoveries, countStepRuns, MAX_STALE_RECOVERY_ATTEMPTS } from "../../../src/core/inbox/planner.js";
 import type { IssueRef, IssueComment } from "../../../src/core/inbox/types.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { StepRun } from "../../../src/state/schema.js";
@@ -520,5 +520,354 @@ describe("planStaleRecoveries", () => {
     const { recovers, escalates } = planStaleRecoveries(staleJobs);
     expect(recovers).toHaveLength(0);
     expect(escalates).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseResumeDecisionInput (T-06)
+// ---------------------------------------------------------------------------
+
+describe("parseResumeDecisionInput", () => {
+  it("/resume → empty selections, null resumePrompt", () => {
+    const result = parseResumeDecisionInput("/resume");
+    expect(result.selections).toEqual([]);
+    expect(result.resumePrompt).toBeNull();
+  });
+
+  it("/resume prose only → empty selections, prose in resumePrompt", () => {
+    const result = parseResumeDecisionInput("/resume fix the issue");
+    expect(result.selections).toEqual([]);
+    expect(result.resumePrompt).toBe("fix the issue");
+  });
+
+  it("/resume 1=2 → single selection, null prose", () => {
+    const result = parseResumeDecisionInput("/resume 1=2");
+    expect(result.selections).toHaveLength(1);
+    expect(result.selections[0]).toEqual({ findingNumber: 1, optionNumber: 2 });
+    expect(result.resumePrompt).toBeNull();
+  });
+
+  it("/resume 1=2 2=1 → two selections, null prose", () => {
+    const result = parseResumeDecisionInput("/resume 1=2 2=1");
+    expect(result.selections).toHaveLength(2);
+    expect(result.selections[0]).toEqual({ findingNumber: 1, optionNumber: 2 });
+    expect(result.selections[1]).toEqual({ findingNumber: 2, optionNumber: 1 });
+    expect(result.resumePrompt).toBeNull();
+  });
+
+  it("/resume 1=2 2=1 note → two selections + prose", () => {
+    const result = parseResumeDecisionInput("/resume 1=2 2=1 note for agent");
+    expect(result.selections).toHaveLength(2);
+    expect(result.selections[0]).toEqual({ findingNumber: 1, optionNumber: 2 });
+    expect(result.selections[1]).toEqual({ findingNumber: 2, optionNumber: 1 });
+    expect(result.resumePrompt).toBe("note for agent");
+  });
+
+  it("N=0 token is not a valid selection — treated as prose, stops token scan", () => {
+    const result = parseResumeDecisionInput("/resume 0=1 note");
+    expect(result.selections).toEqual([]);
+    expect(result.resumePrompt).toBe("0=1 note");
+  });
+
+  it("M=0 token is not a valid selection — treated as prose, stops token scan", () => {
+    const result = parseResumeDecisionInput("/resume 1=0 note");
+    expect(result.selections).toEqual([]);
+    expect(result.resumePrompt).toBe("1=0 note");
+  });
+
+  it("word that is not N=M stops token scanning and becomes prose", () => {
+    const result = parseResumeDecisionInput("/resume 1=2 word 3=4");
+    expect(result.selections).toHaveLength(1);
+    expect(result.selections[0]).toEqual({ findingNumber: 1, optionNumber: 2 });
+    expect(result.resumePrompt).toBe("word 3=4");
+  });
+
+  it("leading whitespace before /resume is ignored", () => {
+    const result = parseResumeDecisionInput("   /resume 1=2");
+    expect(result.selections).toHaveLength(1);
+    expect(result.resumePrompt).toBeNull();
+  });
+
+  it("/resume with only whitespace → empty selections, null prompt", () => {
+    const result = parseResumeDecisionInput("/resume   ");
+    expect(result.selections).toEqual([]);
+    expect(result.resumePrompt).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// planResumes — decision recording (T-07)
+// ---------------------------------------------------------------------------
+
+function makeDecisionFinding(title: string, file: string) {
+  return {
+    severity: "low" as const,
+    resolution: "decision-needed" as const,
+    file,
+    title,
+    rationale: `Rationale for ${title}`,
+    options: [
+      { label: "Option A", consequence: "Consequence A" },
+      { label: "Option B", consequence: "Consequence B" },
+    ],
+  };
+}
+
+function makeAwaitingJobWithDecisions(issueNumber: number): JobState {
+  const finding = makeDecisionFinding("Human decision required", "src/design.ts");
+  return makeJobState({
+    jobId: JOB_ID,
+    status: "awaiting-resume",
+    issueNumber,
+    step: "spec-review",
+    request: {
+      path: "/specrunner/changes/my-feature/request.md",
+      title: "My feature",
+      type: "new-feature",
+      slug: "my-feature",
+    },
+    resumePoint: {
+      step: "spec-review",
+      reason: "decision required",
+      iterationsExhausted: 0,
+    },
+    steps: {
+      "spec-review": [
+        {
+          attempt: 1,
+          sessionId: null,
+          startedAt: "2026-01-01T00:00:00.000Z",
+          endedAt: "2026-01-01T00:00:01.000Z",
+          outcome: {
+            verdict: "escalation",
+            findingsPath: null,
+            error: null,
+            toolResult: { ok: true, findings: [finding] },
+          },
+        },
+      ],
+    },
+  });
+}
+
+describe("planResumes — decision recording (T-07)", () => {
+  it("/resume 1=1 on job with one open decision → ResumeAction with one decision record", () => {
+    const job = makeAwaitingJobWithDecisions(20);
+    const comments: IssueComment[] = [
+      makeComment(1, ESCALATION_MARKER, "OWNER", CUTOFF_TS),
+      makeComment(2, "/resume 1=1", "OWNER", AFTER_CUTOFF),
+    ];
+    const map = new Map([[20, comments]]);
+    const result = planResumes([job], map);
+
+    expect(result).toHaveLength(1);
+    const action = result[0]!;
+    expect(action.decisions).toHaveLength(1);
+    const rec = action.decisions![0]!;
+    expect(rec.step).toBe("spec-review");
+    expect(rec.source).toBe("issue-comment");
+    expect(rec.selectedOption.number).toBe(1);
+    expect(rec.selectedOption.label).toBe("Option A");
+    expect(rec.finding.title).toBe("Human decision required");
+    expect(rec.findingKey).toBeTruthy();
+    expect(rec.decidedAt).toBeTruthy();
+  });
+
+  it("/resume 1=2 → selects second option", () => {
+    const job = makeAwaitingJobWithDecisions(21);
+    const comments: IssueComment[] = [
+      makeComment(1, ESCALATION_MARKER, "OWNER", CUTOFF_TS),
+      makeComment(2, "/resume 1=2", "OWNER", AFTER_CUTOFF),
+    ];
+    const map = new Map([[21, comments]]);
+    const result = planResumes([job], map);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]!.decisions![0]!.selectedOption.number).toBe(2);
+    expect(result[0]!.decisions![0]!.selectedOption.label).toBe("Option B");
+  });
+
+  it("prose after selections reaches resumePrompt", () => {
+    const job = makeAwaitingJobWithDecisions(22);
+    const comments: IssueComment[] = [
+      makeComment(1, ESCALATION_MARKER, "OWNER", CUTOFF_TS),
+      makeComment(2, "/resume 1=1 please also check X", "OWNER", AFTER_CUTOFF),
+    ];
+    const map = new Map([[22, comments]]);
+    const result = planResumes([job], map);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]!.resumePrompt).toBe("please also check X");
+    expect(result[0]!.decisions).toHaveLength(1);
+  });
+
+  it("duplicate finding numbers in /resume → job stays awaiting-resume (no ResumeAction)", () => {
+    const job = makeAwaitingJobWithDecisions(23);
+    const comments: IssueComment[] = [
+      makeComment(1, ESCALATION_MARKER, "OWNER", CUTOFF_TS),
+      makeComment(2, "/resume 1=1 1=2", "OWNER", AFTER_CUTOFF),
+    ];
+    const map = new Map([[23, comments]]);
+    const result = planResumes([job], map);
+
+    // Duplicate finding number → invalid → no action
+    expect(result).toHaveLength(0);
+  });
+
+  it("finding number out of range → no ResumeAction", () => {
+    const job = makeAwaitingJobWithDecisions(24);
+    const comments: IssueComment[] = [
+      makeComment(1, ESCALATION_MARKER, "OWNER", CUTOFF_TS),
+      makeComment(2, "/resume 5=1", "OWNER", AFTER_CUTOFF), // only 1 finding, N=5 is out of range
+    ];
+    const map = new Map([[24, comments]]);
+    const result = planResumes([job], map);
+
+    expect(result).toHaveLength(0);
+  });
+
+  it("option number out of range → no ResumeAction", () => {
+    const job = makeAwaitingJobWithDecisions(25);
+    const comments: IssueComment[] = [
+      makeComment(1, ESCALATION_MARKER, "OWNER", CUTOFF_TS),
+      makeComment(2, "/resume 1=9", "OWNER", AFTER_CUTOFF), // only 2 options, M=9 is out of range
+    ];
+    const map = new Map([[25, comments]]);
+    const result = planResumes([job], map);
+
+    expect(result).toHaveLength(0);
+  });
+
+  it("incomplete coverage (1 open decision, 0 selections) → treated as prose-only resume", () => {
+    const job = makeAwaitingJobWithDecisions(26);
+    const comments: IssueComment[] = [
+      makeComment(1, ESCALATION_MARKER, "OWNER", CUTOFF_TS),
+      makeComment(2, "/resume just prose no selections", "OWNER", AFTER_CUTOFF),
+    ];
+    const map = new Map([[26, comments]]);
+    const result = planResumes([job], map);
+
+    // Prose-only resume is always allowed
+    expect(result).toHaveLength(1);
+    expect(result[0]!.decisions).toBeUndefined();
+    expect(result[0]!.resumePrompt).toBe("just prose no selections");
+  });
+
+  it("TC-025: /resume 1= (malformed token) with open decisions → job stays awaiting-resume", () => {
+    const job = makeAwaitingJobWithDecisions(40);
+    const comments: IssueComment[] = [
+      makeComment(1, ESCALATION_MARKER, "OWNER", CUTOFF_TS),
+      makeComment(2, "/resume 1=", "OWNER", AFTER_CUTOFF),
+    ];
+    const map = new Map([[40, comments]]);
+    const result = planResumes([job], map);
+
+    // Malformed token "1=" with open decisions → no resume action
+    expect(result).toHaveLength(0);
+  });
+
+  it("TC-024: /resume 0=1 (zero finding number) with open decisions → job stays awaiting-resume", () => {
+    const job = makeAwaitingJobWithDecisions(41);
+    const comments: IssueComment[] = [
+      makeComment(1, ESCALATION_MARKER, "OWNER", CUTOFF_TS),
+      makeComment(2, "/resume 0=1", "OWNER", AFTER_CUTOFF),
+    ];
+    const map = new Map([[41, comments]]);
+    const result = planResumes([job], map);
+
+    // "0=1" parsed as invalid (n=0) → hasInvalidDecisionTokens=true, open decisions → no resume
+    expect(result).toHaveLength(0);
+  });
+
+  it("malformed decision token with NO open decisions → prose-only resume allowed", () => {
+    // Same job structure as "no open decisions" test but with a malformed token
+    const job = makeJobState({
+      jobId: JOB_ID,
+      status: "awaiting-resume",
+      issueNumber: 42,
+      request: {
+        path: "/specrunner/changes/my-feature/request.md",
+        title: "My feature",
+        type: "new-feature",
+        slug: "my-feature",
+      },
+      resumePoint: {
+        step: "spec-review",
+        reason: "iterations exhausted",
+        iterationsExhausted: 3,
+      },
+      steps: {
+        "spec-review": [
+          {
+            attempt: 1,
+            sessionId: null,
+            startedAt: "2026-01-01T00:00:00.000Z",
+            endedAt: "2026-01-01T00:00:01.000Z",
+            outcome: {
+              verdict: "approved",
+              findingsPath: null,
+              error: null,
+              toolResult: { ok: true, findings: [] },
+            },
+          },
+        ],
+      },
+    });
+    const comments: IssueComment[] = [
+      makeComment(1, ESCALATION_MARKER, "OWNER", CUTOFF_TS),
+      makeComment(2, "/resume 1= something", "OWNER", AFTER_CUTOFF),
+    ];
+    const map = new Map([[42, comments]]);
+    const result = planResumes([job], map);
+
+    // No open decisions → malformed token doesn't block resume
+    expect(result).toHaveLength(1);
+    expect(result[0]!.decisions).toBeUndefined();
+  });
+
+  it("job with no open decisions treats N=M tokens as prose-only resume", () => {
+    // No open decision-needed findings
+    const job = makeJobState({
+      jobId: JOB_ID,
+      status: "awaiting-resume",
+      issueNumber: 27,
+      request: {
+        path: "/specrunner/changes/my-feature/request.md",
+        title: "My feature",
+        type: "new-feature",
+        slug: "my-feature",
+      },
+      resumePoint: {
+        step: "spec-review",
+        reason: "iterations exhausted",
+        iterationsExhausted: 3,
+      },
+      steps: {
+        "spec-review": [
+          {
+            attempt: 1,
+            sessionId: null,
+            startedAt: "2026-01-01T00:00:00.000Z",
+            endedAt: "2026-01-01T00:00:01.000Z",
+            outcome: {
+              verdict: "approved",
+              findingsPath: null,
+              error: null,
+              toolResult: { ok: true, findings: [] },
+            },
+          },
+        ],
+      },
+    });
+    const comments: IssueComment[] = [
+      makeComment(1, ESCALATION_MARKER, "OWNER", CUTOFF_TS),
+      makeComment(2, "/resume 1=2 some note", "OWNER", AFTER_CUTOFF),
+    ];
+    const map = new Map([[27, comments]]);
+    const result = planResumes([job], map);
+
+    // No open decisions → treated as prose resume
+    expect(result).toHaveLength(1);
+    expect(result[0]!.decisions).toBeUndefined();
   });
 });

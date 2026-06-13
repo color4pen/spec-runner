@@ -13,13 +13,17 @@
  * Resolution `decision-needed` bullet point for judge prompt "Resolution 定義" sections.
  *
  * Limited to items only the request author can decide.
+ * Requires at least two structured options with label and consequence.
  * Designed to replace the `- \`decision-needed\`: ...` line in each prompt's Resolution block.
  */
 export const DECISION_NEEDED_DEFINITION =
 `- \`decision-needed\`: **request 作成者でなければ決められない事項に限る**。
   - 該当例: 要件同士の矛盾 / 複数の妥当な選択肢があり作成者の意図が必要 / 前提となる文脈の不足
   - 非該当例: 実装者が選べる技術判断 / 推奨改善 / ドキュメント追記の提案 → これらは \`fixable\` と適切な severity で表現する
-  - 迷った場合は \`fixable\` に倒す`;
+  - 迷った場合は \`fixable\` に倒す
+  - **必須**: \`options\` に 2 件以上の選択肢を記載すること。各選択肢は \`{ label: string; consequence: string }\` の形式。
+    選択肢を 2 件以上書けない場合、その指摘は \`decision-needed\` ではなく \`fixable\` として報告する。
+  - 例: \`options: [{ label: "A: 現行 API を維持", consequence: "後方互換を保てるが新機能が遅れる" }, { label: "B: API を刷新", consequence: "移行コストが発生するが長期的に保守性が向上する" }]\``;
 
 /**
  * Definition of `observations` for use in judge step prompts.

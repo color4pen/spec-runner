@@ -247,6 +247,18 @@ export async function runInboxOrchestrator(opts: RunInboxOptions): Promise<Inbox
   // Execute resumes
   for (const action of plan.resumes) {
     try {
+      // Persist decision records to state before resuming (T-07)
+      if (action.decisions && action.decisions.length > 0) {
+        const job = allJobStates.find((s) => s.jobId === action.jobId);
+        if (job) {
+          const updatedWithDecisions: import("../../state/schema.js").JobState = {
+            ...job,
+            decisions: [...(job.decisions ?? []), ...action.decisions],
+            updatedAt: new Date().toISOString(),
+          };
+          await effects.persistState(action.jobId, updatedWithDecisions);
+        }
+      }
       await effects.resumeJob(action.slug, action.resumePrompt ?? undefined);
       summary.resumed.push({ slug: action.slug, issueNumber: action.issueNumber });
       if (!json) {

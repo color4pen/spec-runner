@@ -44,6 +44,7 @@ import type { JudgeReportResult, ProducerReportResult, RequestReviewReportResult
 import { JUDGE_REPORT_TOOL, CODE_REVIEW_REPORT_TOOL, REQUEST_REVIEW_REPORT_TOOL, CONFORMANCE_REPORT_TOOL } from "./report-tool.js";
 import { deriveJudgeVerdict, deriveRequestReviewVerdict, deriveConformanceVerdict, collectVerdictAffectingFindings } from "./judge-verdict.js";
 import type { FindingRef } from "./judge-verdict.js";
+import { filterUndecidedFindings } from "../decision/decision-ledger.js";
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -628,16 +629,25 @@ export class StepExecutor {
         // Non-null toolResult: derive verdict from findings (judge steps) or fields (producer).
         if (isRequestReviewStep) {
           // request-review: derive from findings using pure function
+          // Filter already-decided findings before verdict derivation (D8)
           const tr = toolResult as RequestReviewReportResult;
-          verdict = deriveRequestReviewVerdict(tr.findings ?? [], tr.ok);
+          const allFindings = tr.findings ?? [];
+          const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
+          verdict = deriveRequestReviewVerdict(undecidedFindings, tr.ok);
         } else if (isConformanceStep) {
           // conformance: derive routed needs-fix verdict (needs-fix:<target>)
+          // Filter already-decided findings before verdict derivation (D8)
           const tr = toolResult as JudgeReportResult;
-          verdict = deriveConformanceVerdict(tr.findings ?? [], tr.ok);
+          const allFindings = tr.findings ?? [];
+          const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
+          verdict = deriveConformanceVerdict(undecidedFindings, tr.ok);
         } else if (isJudgeStep) {
           // judge: derive from findings using pure function (approved boolean ignored)
+          // Filter already-decided findings before verdict derivation (D8)
           const tr = toolResult as JudgeReportResult;
-          verdict = deriveJudgeVerdict(tr.findings ?? [], tr.ok);
+          const allFindings = tr.findings ?? [];
+          const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
+          verdict = deriveJudgeVerdict(undecidedFindings, tr.ok);
         } else {
           // producer: status "error" → "error", else completionVerdict (fallback "success")
           const completionVerdict =
@@ -651,9 +661,12 @@ export class StepExecutor {
         }
 
         // Post-verdict: verify finding refs exist for judge/request-review steps
+        // Use undecided findings only — decided findings should not re-trigger escalation (D8)
         if ((isJudgeStep || isRequestReviewStep) && deps.runtimeStrategy) {
           const tr = toolResult as JudgeReportResult | RequestReviewReportResult;
-          const affectingFindings = collectVerdictAffectingFindings(tr.findings ?? []);
+          const allFindings = tr.findings ?? [];
+          const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
+          const affectingFindings = collectVerdictAffectingFindings(undecidedFindings);
           if (affectingFindings.length > 0) {
             const refs: FindingRef[] = affectingFindings.map((f) => ({ file: f.file, line: f.line }));
             const cwd = deps.cwd ?? process.cwd();

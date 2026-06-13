@@ -468,3 +468,294 @@ describe("runInboxOrchestrator — stale-running recovery", () => {
     expect(summary.recovered).toHaveLength(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Decision ledger integration: /resume with N=M selections (T-09)
+// ---------------------------------------------------------------------------
+
+const DECISION_JOB_ID = "eeeeffffaaaa-0000-0000-0000-000000000001";
+const DECISION_ESCALATION_MARKER = buildMarker("escalation", DECISION_JOB_ID);
+const DECISION_CUTOFF_TS = "2026-01-01T12:00:00Z";
+const DECISION_AFTER_CUTOFF_TS = "2026-01-01T13:00:00Z";
+
+function makeDecisionJobState(overrides: Partial<JobState> = {}): JobState {
+  return {
+    version: 2,
+    jobId: DECISION_JOB_ID,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    request: {
+      path: "/specrunner/changes/my-feature/request.md",
+      title: "My feature",
+      type: "new-feature",
+      slug: "my-feature",
+    },
+    repository: { owner: "test", name: "repo" },
+    session: null,
+    step: "spec-review",
+    status: "awaiting-resume",
+    branch: "feat/my-feature",
+    history: [],
+    error: null,
+    issueNumber: 30,
+    resumePoint: {
+      step: "spec-review",
+      reason: "decision required",
+      iterationsExhausted: 0,
+    },
+    steps: {
+      "spec-review": [
+        {
+          attempt: 1,
+          sessionId: null,
+          startedAt: "2026-01-01T00:00:00.000Z",
+          endedAt: "2026-01-01T00:00:01.000Z",
+          outcome: {
+            verdict: "escalation",
+            findingsPath: null,
+            error: null,
+            toolResult: {
+              ok: true,
+              findings: [
+                {
+                  severity: "low",
+                  resolution: "decision-needed",
+                  file: "src/design.ts",
+                  title: "Human decision required",
+                  rationale: "Product owner must choose approach",
+                  options: [
+                    { label: "Option A: approach A", consequence: "Consequence A" },
+                    { label: "Option B: approach B", consequence: "Consequence B" },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      ],
+    },
+    ...overrides,
+  } as JobState;
+}
+
+describe("runInboxOrchestrator — decision ledger (T-09)", () => {
+  beforeEach(() => {
+    vi.mocked(JobStateStore.list).mockResolvedValue([]);
+  });
+
+  it("/resume 1=1 → persistState called with decision record, then resumeJob called", async () => {
+    const job = makeDecisionJobState();
+    vi.mocked(JobStateStore.list).mockResolvedValue([job]);
+
+    const comments = [
+      { id: 1, body: DECISION_ESCALATION_MARKER, authorAssociation: "OWNER", createdAt: DECISION_CUTOFF_TS },
+      { id: 2, body: "/resume 1=1", authorAssociation: "OWNER", createdAt: DECISION_AFTER_CUTOFF_TS },
+    ];
+    const client = makeGitHubClient({
+      searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
+      listIssueComments: vi.fn().mockResolvedValue(comments),
+    });
+    const effects = makeEffects();
+
+    const summary = await runInboxOrchestrator(makeOpts(client, effects));
+
+    // persistState called first with the decision record
+    expect(effects.persistState).toHaveBeenCalledOnce();
+    const [_jobId, persistedState] = vi.mocked(effects.persistState).mock.calls[0] as [string, JobState];
+    expect(persistedState.decisions).toHaveLength(1);
+    expect(persistedState.decisions![0]!.selectedOption.number).toBe(1);
+    expect(persistedState.decisions![0]!.selectedOption.label).toBe("Option A: approach A");
+    expect(persistedState.decisions![0]!.source).toBe("issue-comment");
+
+    // resumeJob called after
+    expect(effects.resumeJob).toHaveBeenCalledOnce();
+    expect(summary.resumed).toHaveLength(1);
+  });
+
+  it("/resume 1=2 → selects second option in decision record", async () => {
+    const job = makeDecisionJobState();
+    vi.mocked(JobStateStore.list).mockResolvedValue([job]);
+
+    const comments = [
+      { id: 1, body: DECISION_ESCALATION_MARKER, authorAssociation: "OWNER", createdAt: DECISION_CUTOFF_TS },
+      { id: 2, body: "/resume 1=2", authorAssociation: "OWNER", createdAt: DECISION_AFTER_CUTOFF_TS },
+    ];
+    const client = makeGitHubClient({
+      searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
+      listIssueComments: vi.fn().mockResolvedValue(comments),
+    });
+    const effects = makeEffects();
+
+    await runInboxOrchestrator(makeOpts(client, effects));
+
+    const [_jobId, persistedState] = vi.mocked(effects.persistState).mock.calls[0] as [string, JobState];
+    expect(persistedState.decisions![0]!.selectedOption.number).toBe(2);
+    expect(persistedState.decisions![0]!.selectedOption.label).toBe("Option B: approach B");
+  });
+
+  it("/resume 1=9 (option out of range) → resumeJob NOT called, job stays awaiting-resume", async () => {
+    const job = makeDecisionJobState();
+    vi.mocked(JobStateStore.list).mockResolvedValue([job]);
+
+    const comments = [
+      { id: 1, body: DECISION_ESCALATION_MARKER, authorAssociation: "OWNER", createdAt: DECISION_CUTOFF_TS },
+      { id: 2, body: "/resume 1=9", authorAssociation: "OWNER", createdAt: DECISION_AFTER_CUTOFF_TS },
+    ];
+    const client = makeGitHubClient({
+      searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
+      listIssueComments: vi.fn().mockResolvedValue(comments),
+    });
+    const effects = makeEffects();
+
+    const summary = await runInboxOrchestrator(makeOpts(client, effects));
+
+    expect(effects.persistState).not.toHaveBeenCalled();
+    expect(effects.resumeJob).not.toHaveBeenCalled();
+    expect(summary.resumed).toHaveLength(0);
+  });
+
+  it("/resume prose (no selections) → resumeJob called without decisions (prose-only)", async () => {
+    const job = makeDecisionJobState();
+    vi.mocked(JobStateStore.list).mockResolvedValue([job]);
+
+    const comments = [
+      { id: 1, body: DECISION_ESCALATION_MARKER, authorAssociation: "OWNER", createdAt: DECISION_CUTOFF_TS },
+      { id: 2, body: "/resume please try approach A instead", authorAssociation: "OWNER", createdAt: DECISION_AFTER_CUTOFF_TS },
+    ];
+    const client = makeGitHubClient({
+      searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
+      listIssueComments: vi.fn().mockResolvedValue(comments),
+    });
+    const effects = makeEffects();
+
+    const summary = await runInboxOrchestrator(makeOpts(client, effects));
+
+    // Prose-only resume → no decisions persisted, but resume proceeds
+    expect(effects.persistState).not.toHaveBeenCalled();
+    expect(effects.resumeJob).toHaveBeenCalledOnce();
+    expect(summary.resumed).toHaveLength(1);
+  });
+
+  it("already-decided finding → job still resumes (finding suppressed in next run via executor)", async () => {
+    // Pre-populate decisions so the finding is already decided
+    const { computeFindingKey } = await import("../../../src/core/decision/decision-ledger.js");
+    const finding = {
+      severity: "low" as const,
+      resolution: "decision-needed" as const,
+      file: "src/design.ts",
+      title: "Human decision required",
+      rationale: "Product owner must choose approach",
+      options: [
+        { label: "Option A: approach A", consequence: "Consequence A" },
+        { label: "Option B: approach B", consequence: "Consequence B" },
+      ],
+    };
+    const job = makeDecisionJobState({
+      decisions: [
+        {
+          id: "decision-pre",
+          step: "spec-review",
+          findingKey: computeFindingKey("spec-review", finding),
+          finding: { title: finding.title, file: finding.file, rationale: finding.rationale, severity: finding.severity },
+          selectedOption: { number: 1, label: "Option A: approach A", consequence: "Consequence A" },
+          decidedAt: "2026-01-01T00:00:00.000Z",
+          source: "issue-comment",
+        },
+      ],
+    });
+    vi.mocked(JobStateStore.list).mockResolvedValue([job]);
+
+    // No open decisions (all decided) → prose-only resume is fine
+    const comments = [
+      { id: 1, body: DECISION_ESCALATION_MARKER, authorAssociation: "OWNER", createdAt: DECISION_CUTOFF_TS },
+      { id: 2, body: "/resume proceed", authorAssociation: "OWNER", createdAt: DECISION_AFTER_CUTOFF_TS },
+    ];
+    const client = makeGitHubClient({
+      searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
+      listIssueComments: vi.fn().mockResolvedValue(comments),
+    });
+    const effects = makeEffects();
+
+    const summary = await runInboxOrchestrator(makeOpts(client, effects));
+
+    // Prose resume succeeds since all decisions are already recorded
+    expect(effects.resumeJob).toHaveBeenCalledOnce();
+    expect(summary.resumed).toHaveLength(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Backward compatibility: old-format tool results without options (T-09)
+// ---------------------------------------------------------------------------
+
+describe("backward compat — old decision-needed findings without options", () => {
+  it("job with legacy decision-needed finding (no options) does not crash orchestrator", async () => {
+    const legacyJob: JobState = {
+      version: 1,
+      jobId: "legacy-job-id-001",
+      createdAt: "2025-01-01T00:00:00.000Z",
+      updatedAt: "2025-01-01T00:00:00.000Z",
+      request: { path: "/specrunner/changes/old-feature/request.md", title: "Old feature", type: "new-feature", slug: "old-feature" },
+      repository: { owner: "test", name: "repo" },
+      session: null,
+      step: "spec-review",
+      status: "awaiting-resume",
+      branch: "feat/old-feature",
+      history: [],
+      error: null,
+      issueNumber: 50,
+      resumePoint: {
+        step: "spec-review",
+        reason: "decision required",
+        iterationsExhausted: 0,
+      },
+      steps: {
+        "spec-review": [
+          {
+            attempt: 1,
+            sessionId: null,
+            startedAt: "2025-01-01T00:00:00.000Z",
+            endedAt: "2025-01-01T00:00:01.000Z",
+            outcome: {
+              verdict: "escalation",
+              findingsPath: null,
+              error: null,
+              toolResult: {
+                ok: true,
+                findings: [
+                  {
+                    // Legacy: decision-needed without options field
+                    severity: "low",
+                    resolution: "decision-needed",
+                    file: "src/legacy.ts",
+                    title: "Legacy decision",
+                    rationale: "Old format without options",
+                  },
+                ],
+              },
+            },
+          },
+        ],
+      },
+    };
+
+    const legacyEscalationMarker = buildMarker("escalation", "legacy-job-id-001");
+    vi.mocked(JobStateStore.list).mockResolvedValue([legacyJob]);
+
+    const comments = [
+      { id: 1, body: legacyEscalationMarker, authorAssociation: "OWNER", createdAt: DECISION_CUTOFF_TS },
+      { id: 2, body: "/resume please proceed", authorAssociation: "OWNER", createdAt: DECISION_AFTER_CUTOFF_TS },
+    ];
+    const client = makeGitHubClient({
+      searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
+      listIssueComments: vi.fn().mockResolvedValue(comments),
+    });
+    const effects = makeEffects();
+
+    // Should not throw; legacy finding has no options → treated as no-options, prose-only resume allowed
+    const summary = await runInboxOrchestrator(makeOpts(client, effects));
+
+    expect(effects.resumeJob).toHaveBeenCalledOnce();
+    expect(summary.errors).toHaveLength(0);
+  });
+});

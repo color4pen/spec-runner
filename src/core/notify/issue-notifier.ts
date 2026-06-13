@@ -10,6 +10,7 @@
 import type { GitHubClient } from "../port/github-client.js";
 import type { JobState } from "../../state/schema.js";
 import { logWarn } from "../../logger/stdout.js";
+import { getOpenDecisionFindings } from "../decision/decision-ledger.js";
 
 /**
  * Minimum context required to write issue comments.
@@ -93,8 +94,29 @@ export function buildCompareUrl(owner: string, repo: string, base: string, branc
 }
 
 /**
+ * Escape a plain-text value for safe inclusion in a GitHub markdown comment.
+ *
+ * Prevents model-controlled text from introducing:
+ * - HTML tags (< and >)
+ * - Line breaks that could start a new /resume-style instruction
+ * - HTML entity injection via &
+ *
+ * Note: This does not escape Markdown emphasis (* _ ` etc.) to keep the
+ * output readable; those characters are acceptable in rendered comment bodies.
+ * The primary risk — multi-line injection via \n — is addressed by flattening.
+ */
+function escapePlainText(text: string): string {
+  return String(text)
+    .replace(/\r?\n/g, " ")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/**
  * Build the escalation comment body (pure).
- * Includes: marker, stopped step, resume reason, compare URL (when branch is set), and resume command.
+ * Includes: marker, stopped step, resume reason, compare URL (when branch is set),
+ * open decision options (when present), and resume command.
  */
 export function buildEscalationComment(state: JobState): string {
   const marker = buildMarker("escalation", state.jobId);
@@ -119,6 +141,41 @@ export function buildEscalationComment(state: JobState): string {
     const base = state.request.baseBranch ?? "main";
     const url = buildCompareUrl(state.repository.owner, state.repository.name, base, state.branch);
     lines.push(`Diff: ${url}`);
+    lines.push("");
+  }
+
+  // Render open decision-needed findings and their options (D5)
+  const openFindings = getOpenDecisionFindings(state);
+  const findingsWithOptions = openFindings.filter(
+    (f) => f.options && f.options.length >= 2,
+  );
+
+  if (findingsWithOptions.length > 0) {
+    lines.push("Decisions needed:");
+    lines.push("");
+
+    const exampleParts: string[] = [];
+
+    findingsWithOptions.forEach((finding, findingIdx) => {
+      const findingNum = findingIdx + 1;
+      const locationSuffix = finding.line !== undefined
+        ? ` (${escapePlainText(finding.file)}:${finding.line})`
+        : ` (${escapePlainText(finding.file)})`;
+      lines.push(`${findingNum}. ${escapePlainText(finding.title)}${locationSuffix}`);
+      lines.push(`   ${escapePlainText(finding.rationale)}`);
+
+      finding.options!.forEach((opt, optIdx) => {
+        const optNum = optIdx + 1;
+        lines.push(`   ${optNum}. ${escapePlainText(opt.label)} — Consequence: ${escapePlainText(opt.consequence)}`);
+      });
+
+      // Use the first option as the example selection (1-indexed)
+      exampleParts.push(`${findingNum}=1`);
+      lines.push("");
+    });
+
+    lines.push("Reply with:");
+    lines.push(`  /resume ${exampleParts.join(" ")}`);
     lines.push("");
   }
 
