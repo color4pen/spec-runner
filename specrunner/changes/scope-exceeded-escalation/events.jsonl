@@ -41,3 +41,9 @@
 {"type":"transition","ts":"2026-06-13T15:42:25.442Z","step":"code-review","status":"ok","message":"code-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-13T15:42:25.443Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-06-13T15:42:25.446Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-06-13T15:42:49.055Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"3be59b8c-2c82-41a4-8e1e-350fcdb78436","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-13T15:42:25.474Z","endedAt":"2026-06-13T15:42:47.312Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-06-13T15:42:47.312Z","outputs":[{"path":"specrunner/changes/scope-exceeded-escalation","hash":null}],"inputs":[{"path":"specrunner/changes/scope-exceeded-escalation/review-feedback-001.md","hash":"sha256:5d2eb4d280c2c1e666792d1501b99847bcc8182b842142999439133b358f7717"}]}
+{"type":"transition","ts":"2026-06-13T15:42:49.063Z","step":"step-transition","status":"ok","message":"code-fixer → cross-boundary-invariants"}
+{"type":"transition","ts":"2026-06-13T15:42:49.065Z","step":"cross-boundary-invariants","status":"started","message":"cross-boundary-invariants iteration 1 started"}
+{"type":"transition","ts":"2026-06-13T15:42:49.067Z","step":"cross-boundary-invariants-started","status":"started","message":"Starting cross-boundary-invariants step"}
