@@ -78,3 +78,10 @@
 {"type":"transition","ts":"2026-06-13T11:14:27.946Z","step":"step-transition","status":"ok","message":"scale-tolerance → regression-gate"}
 {"type":"transition","ts":"2026-06-13T11:14:27.948Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
 {"type":"transition","ts":"2026-06-13T11:14:27.949Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-06-13T11:15:33.366Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"019ec0b0-ba9a-7920-af8e-0144e5a20848","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/resume-context-auto-injection/regression-gate-result-001.md","error":null,"toolResult":{"ok":true,"reason":"Wrote specrunner/changes/resume-context-auto-injection/regression-gate-result-001.md with verdict approved. Verified the ledger regression remains fixed and ran the focused executor resume-context tests successfully.","approved":true,"findings":[],"observations":[]},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-06-13T11:14:27.976Z","endedAt":"2026-06-13T11:15:31.367Z"}
+{"type":"lineage","step":"regression-gate","ts":"2026-06-13T11:15:31.367Z","outputs":[{"path":"specrunner/changes/resume-context-auto-injection/regression-gate-result-002.md","hash":null}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-06-13T11:15:33.374Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-06-13T11:15:33.374Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-06-13T11:15:33.376Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-06-13T11:15:33.377Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
