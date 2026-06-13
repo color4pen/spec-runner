@@ -43,10 +43,14 @@ Follow the fixture/mock pattern established in `completion-contract-injection.te
 - `makeCapturingMockThread` / `makeMockCodexInstance` / `makeCtx` helpers (copy or import pattern, not the existing module export).
 
 - [ ] **Test A — resumePrompt set**: Build `AgentRunContext` with `session: { resumePrompt: "Human judgment: accept HIGH finding" }`. Run `runner.run(ctx)`. Assert `calls[0].prompt` contains `<resume-context>` and `"Human judgment: accept HIGH finding"`.
-- [ ] **Test B — resumePrompt unset**: Build `AgentRunContext` with `session: {}`. Run `runner.run(ctx)`. Assert `calls[0].prompt` does NOT contain `<resume-context>`.
+- [ ] **Test B — resumePrompt unset**: Build `AgentRunContext` with `session: {}` and no `reportTool`. Run `runner.run(ctx)`. Assert `calls[0].prompt` is exactly the pre-change prompt construction for the same inputs, for example:
+  ```
+  `${baseMessage}\n\n${additionalInstructions}`
+  ```
+  and also assert the prompt does NOT contain `<resume-context>`.
 - [ ] Both tests use a step where `resultFilePath` returns `null` (finalResponse path) to avoid needing temp-file setup.
 
 **Acceptance Criteria**:
 - Test A passes: prompt contains the resume judgment wrapped in `<resume-context>` tags.
-- Test B passes: prompt does not contain `<resume-context>`.
+- Test B passes: prompt is byte-for-byte identical to the pre-change prompt when `resumePrompt` is absent, and still does not contain `<resume-context>`.
 - `bun run typecheck && bun run test` green.
