@@ -20,29 +20,29 @@ tests/unit/contract/agent-runner-contracts.test.ts
 
 ### Sub-tasks
 
-- [ ] Define `FixtureOpts` type: `{ tempDir: string; sleepFn: (ms: number) => Promise<void> }`
+- [x] Define `FixtureOpts` type: `{ tempDir: string; sleepFn: (ms: number) => Promise<void> }`
 
-- [ ] Define `RunnerFixture` interface with four methods:
+- [x] Define `RunnerFixture` interface with four methods:
   - `makeCapturingPrompt(opts: FixtureOpts): { runner: AgentRunner; getCapturedMainTurnPrompt(): string | undefined }`
   - `makeWithReportToolSuccess(opts: FixtureOpts): AgentRunner`
   - `makeWithTransientError(opts: FixtureOpts): AgentRunner`
   - `makeCountingInvocations(opts: FixtureOpts): { runner: AgentRunner; getCallCount(): number }`
 
-- [ ] Implement `claudeCodeFixture`:
+- [x] Implement `claudeCodeFixture`:
   - Import `ClaudeCodeRunner`, `QueryFn`, `CreateMcpServerFn` from `src/adapter/claude-code/agent-runner.js`
   - `makeCapturingPrompt`: build a `_queryFn` that stores `params.prompt` from the first call in a closure, then yields a minimal success result message (`type:"result"`, `subtype:"success"`, `session_id:"test-session"`, `modelUsage:{}`)
   - `makeWithReportToolSuccess`: combine a `makeMockCreateMcpServerFn()` helper (captures handler) with a `_queryFn` that calls `getHandler()({ok:true})` before yielding the success result
   - `makeWithTransientError`: build a `_queryFn` that throws `new Error("ECONNREFUSED")` on the first call and yields a success result on subsequent calls
   - `makeCountingInvocations`: build a `_queryFn` that increments a counter on each call and yields a success result with `session_id:"test-session"` (required for postWorkPrompts loop to execute)
 
-- [ ] Implement `codexFixture`:
+- [x] Implement `codexFixture`:
   - Import `CodexAgentRunner`, `CodexInstance`, `CodexThread` from `src/adapter/codex/agent-runner.js`
   - `makeCapturingPrompt`: build a mock `CodexThread` whose `runStreamed` captures the `prompt` arg on the first call; thread yields `item.completed` with `agent_message` text `""` and `turn.completed`. Wrap in a `CodexInstance` via `_codexFactory`.
   - `makeWithReportToolSuccess`: mock thread returns `agent_message` with `text: '{"ok":true}'` as `finalResponse`. The codex adapter calls `tryExtractToolResult(finalResponse, reportTool)` which parses this as `{ok:true}`.
   - `makeWithTransientError`: mock thread whose `runStreamed` throws `new Error("ECONNREFUSED")` on first call, succeeds on second. Inject `_sleepFn: opts.sleepFn` to avoid real delays.
   - `makeCountingInvocations`: mock thread that increments a counter on each `runStreamed` call and returns a successful turn.
 
-- [ ] Define shared `makeMinCtx(overrides)` helper that builds a minimal valid `AgentRunContext`:
+- [x] Define shared `makeMinCtx(overrides)` helper that builds a minimal valid `AgentRunContext`:
   - `step`: minimal `AgentStep` with `kind:"agent"`, no `reportTool`, `buildMessage: () => "test"`, `resultFilePath: () => null`, `parseResult: () => ({verdict:"approved", findingsPath:null})`
   - `state`: minimal `JobState` (version, jobId, branch, etc.)
   - `config`: `{ version:1, runtime:"local", agents:{} }` as `SpecRunnerConfig`
@@ -51,7 +51,7 @@ tests/unit/contract/agent-runner-contracts.test.ts
   - `session`: `{}`, `policy`: `{}`
   - `emit`: `vi.fn()` (captures events for assertion)
 
-- [ ] Define `REGISTERED_LOCAL_RUNNERS: Record<string, RunnerFixture>`:
+- [x] Define `REGISTERED_LOCAL_RUNNERS: Record<string, RunnerFixture>`:
   ```ts
   const REGISTERED_LOCAL_RUNNERS: Record<string, RunnerFixture> = {
     "claude-code": claudeCodeFixture,
@@ -59,7 +59,7 @@ tests/unit/contract/agent-runner-contracts.test.ts
   };
   ```
 
-- [ ] Implement registration completeness test (outside `describeAgentRunnerContracts`):
+- [x] Implement registration completeness test (outside `describeAgentRunnerContracts`):
   ```ts
   describe("AgentRunner contract suite — registration completeness", () => {
     it("all local adapter directories with agent-runner.ts are registered", () => {
@@ -76,7 +76,7 @@ tests/unit/contract/agent-runner-contracts.test.ts
   });
   ```
 
-- [ ] Implement `describeAgentRunnerContracts(fixture: RunnerFixture)`:
+- [x] Implement `describeAgentRunnerContracts(fixture: RunnerFixture)`:
 
   **Contract 1 — resumePrompt**:
   ```
@@ -152,7 +152,7 @@ tests/unit/contract/agent-runner-contracts.test.ts
   });
   ```
 
-- [ ] Call `describeAgentRunnerContracts` for each registered fixture:
+- [x] Call `describeAgentRunnerContracts` for each registered fixture:
   ```ts
   for (const fixture of Object.values(REGISTERED_LOCAL_RUNNERS)) {
     describeAgentRunnerContracts(fixture);
@@ -167,9 +167,9 @@ tests/unit/contract/agent-runner-contracts.test.ts
 
 ## T-02: Verify typecheck and tests pass
 
-- [ ] Run `bun run typecheck` — exits 0 with no type errors
-- [ ] Run `bun run test tests/unit/contract/agent-runner-contracts.test.ts` — all tests green
-- [ ] Run `bun run test` — full suite remains green
+- [x] Run `bun run typecheck` — exits 0 with no type errors
+- [x] Run `bun run test tests/unit/contract/agent-runner-contracts.test.ts` — all tests green
+- [x] Run `bun run test` — full suite remains green
 
 **Acceptance Criteria**:
 - `bun run typecheck && bun run test` exits 0
