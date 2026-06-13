@@ -104,3 +104,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/headless-claude-credential/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-13T01:48:52.704Z","endedAt":"2026-06-13T01:48:54.563Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-13T01:48:54.563Z","outputs":[{"path":"specrunner/changes/headless-claude-credential/pr-create-result.md","hash":"sha256:8c56583ccb34b13a66b840346fafe52da52e50c2315e394b51f406983d2939a5"}],"inputs":[{"path":"feat/headless-claude-credential-4c0c7b83","hash":null}]}
 {"type":"transition","ts":"2026-06-13T01:48:54.573Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-13T09:51:10.239Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

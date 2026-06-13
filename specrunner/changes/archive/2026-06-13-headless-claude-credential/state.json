@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4c0c7b83-bdcb-437f-8442-d956fb84553d",
   "createdAt": "2026-06-13T00:40:02.757Z",
-  "updatedAt": "2026-06-13T01:48:54.573Z",
+  "updatedAt": "2026-06-13T09:51:10.239Z",
   "request": {
     "title": "claude の認証 token を specrunner login で管理し、cron 等 headless 環境で crontab に secrets を書かずに動くようにする",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "feat/headless-claude-credential-4c0c7b83",
   "error": null,
   "pipelineId": "standard",
@@ -55,7 +55,7 @@
     "createdAt": "2026-06-13T01:48:54.562Z"
   },
   "_journal": {
-    "historyCount": 74,
+    "historyCount": 75,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
