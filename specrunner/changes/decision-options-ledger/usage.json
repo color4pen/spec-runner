@@ -41,6 +41,20 @@
       },
       "jobId": "294dcbf1-f662-415a-8cb2-0f6f7f23b9d4",
       "stepName": "spec-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-13T00:53:51.620Z",
+      "modelUsage": {
+        "gpt-5.4-mini": {
+          "inputTokens": 101227,
+          "outputTokens": 1365,
+          "cacheReadInputTokens": 81152,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "294dcbf1-f662-415a-8cb2-0f6f7f23b9d4",
+      "stepName": "spec-fixer"
     }
   ]
 }
