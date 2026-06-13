@@ -109,3 +109,11 @@
 {"type":"transition","ts":"2026-06-13T02:03:25.453Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
 {"type":"transition","ts":"2026-06-13T02:03:25.454Z","step":"step-transition","status":"ok","message":"verification → adr-gen"}
 {"type":"transition","ts":"2026-06-13T02:03:25.457Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-06-13T02:03:42.624Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"344989da-06dd-461b-ac9c-5fd71e3fac07","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-13T02:03:25.484Z","endedAt":"2026-06-13T02:03:40.715Z"}
+{"type":"transition","ts":"2026-06-13T02:03:42.630Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-06-13T02:03:42.633Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-06-13T02:03:44.388Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/agent-runner-contract-tests/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-13T02:03:42.634Z","endedAt":"2026-06-13T02:03:44.386Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-06-13T02:03:44.386Z","outputs":[{"path":"specrunner/changes/agent-runner-contract-tests/pr-create-result.md","hash":"sha256:821e64fa0cc4f76e50bc9fb593db8b742ecdb8ae12dbb4b07fbc5ec6406cd09a"}],"inputs":[{"path":"chore/agent-runner-contract-tests-df69f88f","hash":null}]}
+{"type":"transition","ts":"2026-06-13T02:03:44.396Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
