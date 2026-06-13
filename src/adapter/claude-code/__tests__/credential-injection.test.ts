@@ -115,19 +115,6 @@ function makeCaptureQueryFn(): {
   return { queryFn, capturedOptions };
 }
 
-/**
- * Build an env-filter mock: strips nothing except CLAUDE_CODE_OAUTH_TOKEN
- * (simulating the real stripSecrets behavior for the token).
- */
-function makeProcessEnvWithoutToken(
-  base: Record<string, string | undefined> = {},
-): Record<string, string | undefined> {
-  // Clone without CLAUDE_CODE_OAUTH_TOKEN to simulate stripSecrets removal
-  const result: Record<string, string | undefined> = { ...base };
-  delete result["CLAUDE_CODE_OAUTH_TOKEN"];
-  return result;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // TC-003: Credential injection when env is absent
 // ─────────────────────────────────────────────────────────────────────────────
