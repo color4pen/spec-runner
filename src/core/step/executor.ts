@@ -762,7 +762,7 @@ export class StepExecutor {
       step: step.name,
       outcome: {
         verdict,
-        toolResult: agentResult?.toolResult ?? null,
+        toolResult: persistToolResult,
         followUpAttempts: agentResult?.followUpAttempts ?? 0,
       },
     });
