@@ -296,8 +296,9 @@ export class StepExecutor {
       },
     };
 
-    // One-shot: 最初の agent ステップで消費し、後続ステップには引き継がない
-    if (effectiveResumePrompt) {
+    // One-shot: resume-related inputs are consumed by the first agent step that sees them.
+    // This clears unmatched snapshots too, so stale resume context cannot leak into a later step.
+    if (deps.resumePrompt !== undefined || deps.resumeContext !== undefined) {
       deps.resumePrompt = undefined;
       deps.resumeContext = undefined;
     }
