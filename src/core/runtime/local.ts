@@ -15,6 +15,7 @@ import type { ParsedRequest } from "../../parser/request-md.js";
 import type { JobState } from "../../state/schema.js";
 import { toStepName } from "../step/step-names.js";
 import { createClaudeCodeRunner, defaultQueryFn, type QueryFn } from "../../adapter/claude-code/agent-runner.js";
+import { resolveClaudeCodeOAuthToken } from "../credentials/claude-code.js";
 import { DispatchingAgentRunner } from "../../adapter/dispatching/agent-runner.js";
 import { createWorktreeManager } from "../worktree/manager.js";
 import { spawnCommand } from "../../util/spawn.js";
@@ -243,7 +244,11 @@ export class LocalRuntime implements RuntimeStrategy {
 
   createAgentRunner(): AgentRunner {
     const worktreeCwd = this.workspace?.cwd ?? this.cwd;
-    const claudeRunner = createClaudeCodeRunner({ cwd: worktreeCwd, _queryFn: this.queryFn });
+    const claudeRunner = createClaudeCodeRunner({
+      cwd: worktreeCwd,
+      _queryFn: this.queryFn,
+      _resolveClaudeCodeOAuthTokenFn: resolveClaudeCodeOAuthToken,
+    });
     return new DispatchingAgentRunner(claudeRunner);
   }
 

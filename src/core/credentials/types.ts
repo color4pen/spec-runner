@@ -9,5 +9,6 @@ export interface CredentialsFile {
   };
   anthropic?: {
     apiKey?: string;
+    claudeCodeOAuthToken?: string;
   };
 }

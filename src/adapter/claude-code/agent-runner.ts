@@ -46,6 +46,16 @@ import { SpecRunnerError } from "../../errors.js";
 export type { SpawnFn } from "./git-exec.js";
 
 /**
+ * Injectable type for the Claude Code OAuth token resolver.
+ * Injected by the composition root (core/runtime/local.ts) so this adapter
+ * does not import from the domain (core/credentials/) directly.
+ */
+export type ClaudeCodeOAuthTokenResolver = (
+  env: Record<string, string | undefined>,
+  opts: { optional: true },
+) => Promise<{ token: string; source: "env" | "credentials" } | undefined>;
+
+/**
  * Best-effort extraction of a human-readable target string from a tool's input.
  * Returns undefined when no meaningful target can be inferred.
  */
@@ -129,6 +139,12 @@ export interface ClaudeCodeRunnerDeps {
   _loadSdkFn?: ClaudeAgentSdkLoader;
   /** Injectable for testing: replaces setTimeout-based sleep in transient retry backoff. */
   _sleepFn?: (ms: number) => Promise<void>;
+  /**
+   * Injectable Claude Code OAuth token resolver.
+   * Injected from composition root (core/runtime/local.ts) to avoid adapter→domain import.
+   * When undefined, token injection is skipped (tests and environments without credential file).
+   */
+  _resolveClaudeCodeOAuthTokenFn?: ClaudeCodeOAuthTokenResolver;
 }
 
 /**
@@ -142,6 +158,7 @@ export class ClaudeCodeRunner implements AgentRunner {
   private readonly injectedCreateMcpServerFn?: CreateMcpServerFn;
   private readonly loadSdkFn: ClaudeAgentSdkLoader;
   private readonly sleepFn: (ms: number) => Promise<void>;
+  private readonly resolveClaudeCodeOAuthTokenFn?: ClaudeCodeOAuthTokenResolver;
 
   constructor(deps: ClaudeCodeRunnerDeps = {}) {
     this.defaultCwd = deps.cwd ?? process.cwd();
@@ -149,6 +166,7 @@ export class ClaudeCodeRunner implements AgentRunner {
     this.injectedQueryFn = deps._queryFn;
     this.injectedCreateMcpServerFn = deps._createMcpServerFn;
     this.loadSdkFn = deps._loadSdkFn ?? loadClaudeAgentSdk;
+    this.resolveClaudeCodeOAuthTokenFn = deps._resolveClaudeCodeOAuthTokenFn;
     this.sleepFn = deps._sleepFn ?? ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   }
 
@@ -247,6 +265,17 @@ export class ClaudeCodeRunner implements AgentRunner {
       });
     }
 
+    const sdkEnv = stripSecrets(process.env as Record<string, string | undefined>);
+    if (this.resolveClaudeCodeOAuthTokenFn) {
+      const resolvedClaudeCodeToken = await this.resolveClaudeCodeOAuthTokenFn(
+        process.env as Record<string, string | undefined>,
+        { optional: true },
+      );
+      if (resolvedClaudeCodeToken) {
+        sdkEnv["CLAUDE_CODE_OAUTH_TOKEN"] = resolvedClaudeCodeToken.token;
+      }
+    }
+
     const queryOptions: Record<string, unknown> = {
       cwd,
       allowedTools: ["Read", "Edit", "Write", "Bash", "Grep", "Glob"],
@@ -255,7 +284,7 @@ export class ClaudeCodeRunner implements AgentRunner {
       ...maxTurnsOption,
       model: resolvedConfig.model,
       abortController,
-      env: stripSecrets(process.env as Record<string, string | undefined>),
+      env: sdkEnv,
       ...resumeOption,
       ...(reportMcpServer ? { mcpServers: { specrunner_report: reportMcpServer } } : {}),
     };

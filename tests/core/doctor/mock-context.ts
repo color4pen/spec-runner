@@ -72,6 +72,8 @@ export function buildMockContext(overrides?: Partial<DoctorContext>): DoctorCont
     githubTokenSource: "credentials",
     resolvedSpecRunnerApiKey: "sk-ant-test123",
     specRunnerApiKeySource: "env",
+    resolvedClaudeCodeOAuthToken: "claude-oauth-test123",
+    claudeCodeOAuthTokenSource: "credentials",
     ...overrides,
   };
 }
