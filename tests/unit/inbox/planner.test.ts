@@ -753,6 +753,78 @@ describe("planResumes — decision recording (T-07)", () => {
     expect(result[0]!.resumePrompt).toBe("just prose no selections");
   });
 
+  it("TC-025: /resume 1= (malformed token) with open decisions → job stays awaiting-resume", () => {
+    const job = makeAwaitingJobWithDecisions(40);
+    const comments: IssueComment[] = [
+      makeComment(1, ESCALATION_MARKER, "OWNER", CUTOFF_TS),
+      makeComment(2, "/resume 1=", "OWNER", AFTER_CUTOFF),
+    ];
+    const map = new Map([[40, comments]]);
+    const result = planResumes([job], map);
+
+    // Malformed token "1=" with open decisions → no resume action
+    expect(result).toHaveLength(0);
+  });
+
+  it("TC-024: /resume 0=1 (zero finding number) with open decisions → job stays awaiting-resume", () => {
+    const job = makeAwaitingJobWithDecisions(41);
+    const comments: IssueComment[] = [
+      makeComment(1, ESCALATION_MARKER, "OWNER", CUTOFF_TS),
+      makeComment(2, "/resume 0=1", "OWNER", AFTER_CUTOFF),
+    ];
+    const map = new Map([[41, comments]]);
+    const result = planResumes([job], map);
+
+    // "0=1" parsed as invalid (n=0) → hasInvalidDecisionTokens=true, open decisions → no resume
+    expect(result).toHaveLength(0);
+  });
+
+  it("malformed decision token with NO open decisions → prose-only resume allowed", () => {
+    // Same job structure as "no open decisions" test but with a malformed token
+    const job = makeJobState({
+      jobId: JOB_ID,
+      status: "awaiting-resume",
+      issueNumber: 42,
+      request: {
+        path: "/specrunner/changes/my-feature/request.md",
+        title: "My feature",
+        type: "new-feature",
+        slug: "my-feature",
+      },
+      resumePoint: {
+        step: "spec-review",
+        reason: "iterations exhausted",
+        iterationsExhausted: 3,
+      },
+      steps: {
+        "spec-review": [
+          {
+            attempt: 1,
+            sessionId: null,
+            startedAt: "2026-01-01T00:00:00.000Z",
+            endedAt: "2026-01-01T00:00:01.000Z",
+            outcome: {
+              verdict: "approved",
+              findingsPath: null,
+              error: null,
+              toolResult: { ok: true, findings: [] },
+            },
+          },
+        ],
+      },
+    });
+    const comments: IssueComment[] = [
+      makeComment(1, ESCALATION_MARKER, "OWNER", CUTOFF_TS),
+      makeComment(2, "/resume 1= something", "OWNER", AFTER_CUTOFF),
+    ];
+    const map = new Map([[42, comments]]);
+    const result = planResumes([job], map);
+
+    // No open decisions → malformed token doesn't block resume
+    expect(result).toHaveLength(1);
+    expect(result[0]!.decisions).toBeUndefined();
+  });
+
   it("job with no open decisions treats N=M tokens as prose-only resume", () => {
     // No open decision-needed findings
     const job = makeJobState({

@@ -256,7 +256,20 @@ export function planResumes(
           // (job remains awaiting-resume, user can provide a corrected /resume)
         }
       } else {
-        // Prose-only resume — always allowed
+        // Prose-only resume — check for malformed decision tokens first.
+        // If the comment contains malformed decision-like tokens (e.g. "1=", "0=1")
+        // and the job has open decisions, the user likely intended a structured
+        // selection but got the syntax wrong.  Leave the job awaiting-resume so
+        // they can correct the /resume comment.
+        if (parsed.hasInvalidDecisionTokens) {
+          const openFindings = getOpenDecisionFindings(job);
+          const findingsWithOptions = openFindings.filter(
+            (f) => f.options && f.options.length >= 2,
+          );
+          if (findingsWithOptions.length > 0) {
+            continue;
+          }
+        }
         resumes.push({
           kind: "resume",
           slug: job.request.slug,
@@ -357,6 +370,12 @@ export interface ParsedResumeInput {
   selections: ResumeDecisionSelection[];
   /** Remaining prose after stripping /resume and any leading N=M tokens. Null if empty. */
   resumePrompt: string | null;
+  /**
+   * True when malformed decision-like tokens (e.g. "1=", "0=1") appeared in the
+   * leading position where N=M selection tokens are expected.  Used by planResumes
+   * to keep the job awaiting-resume when open decisions exist.
+   */
+  hasInvalidDecisionTokens: boolean;
 }
 
 /**
@@ -382,6 +401,7 @@ export function parseResumeDecisionInput(body: string): ParsedResumeInput {
   const proseParts: string[] = [];
 
   let inTokens = true;
+  let hasInvalidDecisionTokens = false;
   for (const part of parts) {
     if (inTokens && /^\d+=\d+$/.test(part)) {
       const eqIdx = part.indexOf("=");
@@ -392,9 +412,15 @@ export function parseResumeDecisionInput(body: string): ParsedResumeInput {
         continue;
       }
       // n=0 or m=0 → invalid token, treat as prose and stop token scanning
+      hasInvalidDecisionTokens = true;
       inTokens = false;
       proseParts.push(part);
     } else {
+      // Token that starts with digit(s) and "=" is a malformed decision token
+      // (e.g. "1=", "1=abc") — user likely intended a selection but got it wrong.
+      if (inTokens && /^\d+=/.test(part)) {
+        hasInvalidDecisionTokens = true;
+      }
       inTokens = false;
       proseParts.push(part);
     }
@@ -403,6 +429,7 @@ export function parseResumeDecisionInput(body: string): ParsedResumeInput {
   return {
     selections,
     resumePrompt: proseParts.length > 0 ? proseParts.join(" ") : null,
+    hasInvalidDecisionTokens,
   };
 }
 
