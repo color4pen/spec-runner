@@ -23,7 +23,7 @@ import { createTransportAuth } from "../../git/transport-auth.js";
 import { JobStateStore, buildInitialJobState } from "../../store/job-state-store.js";
 import { changeFolderPath, managedMarkerPath, localSidecarDir } from "../../util/paths.js";
 import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, recopyDraftToChangeFolder, rejectSymlink } from "../artifact/copy-artifacts.js";
-import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef } from "../port/runtime-strategy.js";
+import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef } from "../port/runtime-strategy.js";
 import type { ArtifactRef } from "../../store/event-journal.js";
 import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
 import { parseIncompleteTaskLabels } from "../step/output-verify.js";
@@ -41,7 +41,7 @@ interface ManagedCleanupInternals {
   signalCleanup: () => Promise<void>;
 }
 
-export class ManagedRuntime implements RuntimeStrategy {
+export class ManagedRuntime implements RealRuntimeStrategy {
   private readonly spawnFn: SpawnFn;
   private readonly wrappedSpawnFn: SpawnFn;
   /** Current slug set by setupWorkspace(); used by registerCleanup() for marker management. */
@@ -499,6 +499,15 @@ export class ManagedRuntime implements RuntimeStrategy {
     _branch: string | null,
   ): Promise<string[]> {
     return [];
+  }
+
+  /**
+   * ManagedRuntime cannot derive changed files — no local git worktree is available.
+   * Returns false — scope-check will synthesize an UNKNOWN finding (fail-closed) instead
+   * of calling listChangedFiles, which would silently return [] (fail-open).
+   */
+  canDeriveChangedFiles(): boolean {
+    return false;
   }
 
   registerCleanup(jobId: string, startStep: string): CleanupHandle {

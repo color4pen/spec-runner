@@ -819,6 +819,74 @@ describe("B-10: host↔token 束縛 — composition-root の全呼び出しで h
   });
 });
 
+// ─── B-11: bare implements RuntimeStrategy 不在 pin ──────────────────────────
+
+describe("B-11 (arch pin): src/core/runtime/ 具象クラスは bare implements RuntimeStrategy を使わない", () => {
+  /**
+   * B-11: concrete runtime classes in src/core/runtime/ must implement RealRuntimeStrategy,
+   * not bare RuntimeStrategy.
+   *
+   * This ensures canDeriveChangedFiles() is required for all concrete runtimes,
+   * making predicate omission a compile-time error (type-level pin).
+   *
+   * Test fakes in tests/ are excluded — the optional predicate in RuntimeStrategy port
+   * remains the convenience for test fakes.
+   *
+   * This test only checks "bare implements" absence, not individual methods —
+   * so it has zero maintenance cost as RuntimeStrategy methods evolve over time.
+   */
+  it("src/core/runtime/ に bare 'implements RuntimeStrategy' が存在しない (RealRuntimeStrategy のみ許容)", () => {
+    // Grep for any "implements RuntimeStrategy" in src/core/runtime/
+    const raw = grepE(`"implements RuntimeStrategy"`, "src/core/runtime");
+    const matches = parseGrepOutput(raw);
+
+    // Exclude comment lines
+    const nonComment = matches.filter((m) => !isCommentLine(m.content));
+
+    // Exclude lines that use RealRuntimeStrategy (the correct form for real runtimes)
+    const bareImplements = nonComment.filter(
+      (m) => !m.content.includes("RealRuntimeStrategy"),
+    );
+
+    // No bare "implements RuntimeStrategy" should remain in src/core/runtime/
+    expect(violationLines(bareImplements)).toEqual([]);
+  });
+
+  it("B-11 regression guard: bare implements RuntimeStrategy (without Real prefix) is detected", () => {
+    // Simulate a new runtime class that uses bare implements RuntimeStrategy
+    const injectedMatches: GrepMatch[] = [
+      {
+        file: "src/core/runtime/some-new-runtime.ts",
+        line: 10,
+        content: "export class SomeNewRuntime implements RuntimeStrategy {",
+      },
+    ];
+
+    // Filter: not RealRuntimeStrategy → should be detected
+    const bareImplements = injectedMatches.filter(
+      (m) => !isCommentLine(m.content) && !m.content.includes("RealRuntimeStrategy"),
+    );
+    expect(bareImplements).toHaveLength(1);
+  });
+
+  it("B-11: RealRuntimeStrategy is not falsely detected as bare implements", () => {
+    // Simulate a correct runtime class using RealRuntimeStrategy
+    const injectedMatches: GrepMatch[] = [
+      {
+        file: "src/core/runtime/local.ts",
+        line: 81,
+        content: "export class LocalRuntime implements RealRuntimeStrategy {",
+      },
+    ];
+
+    // Filter: contains RealRuntimeStrategy → correctly excluded
+    const bareImplements = injectedMatches.filter(
+      (m) => !isCommentLine(m.content) && !m.content.includes("RealRuntimeStrategy"),
+    );
+    expect(bareImplements).toHaveLength(0);
+  });
+});
+
 // ─── DSM closure: §3 全層 whitelist enforcement ───────────────────────────────
 
 /**

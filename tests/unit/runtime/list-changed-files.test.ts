@@ -112,3 +112,30 @@ describe("ManagedRuntime.listChangedFiles", () => {
     expect(files).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T-02: canDeriveChangedFiles predicate
+// ---------------------------------------------------------------------------
+
+describe("LocalRuntime.canDeriveChangedFiles", () => {
+  it("returns true (local runtime has git worktree and can run git diff)", () => {
+    const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
+    const runtime = makeLocalRuntime(noopSpawn);
+    expect(runtime.canDeriveChangedFiles()).toBe(true);
+  });
+});
+
+describe("ManagedRuntime.canDeriveChangedFiles", () => {
+  it("returns false (managed runtime has no local worktree, cannot derive changed files)", () => {
+    const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
+    const runtime = new ManagedRuntime(
+      "/repo",
+      stubSession,
+      stubGithub,
+      { owner: "owner", name: "repo" },
+      noopSpawn,
+      "token",
+    );
+    expect(runtime.canDeriveChangedFiles()).toBe(false);
+  });
+});

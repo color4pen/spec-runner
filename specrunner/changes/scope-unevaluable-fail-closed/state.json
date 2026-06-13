@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5a3000bc-ef40-47a5-9eb8-82046b3a9328",
   "createdAt": "2026-06-13T16:55:02.871Z",
-  "updatedAt": "2026-06-13T17:12:58.832Z",
+  "updatedAt": "2026-06-13T17:16:08.881Z",
   "request": {
     "title": "scope を評価できない runtime では breach を黙って通さず escalation する（fail-closed）— RuntimeStrategy に評価可能性 predicate を追加",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "implementer",
   "status": "running",
   "branch": "change/scope-unevaluable-fail-closed-5a3000bc",
   "error": null,
@@ -49,11 +49,12 @@
   ],
   "issueNumber": 691,
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }

@@ -38,7 +38,7 @@ import {
 import { commitAndPush, commitFinalState } from "../step/commit-push.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
-import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef } from "../port/runtime-strategy.js";
+import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef } from "../port/runtime-strategy.js";
 import type { ArtifactRef } from "../../store/event-journal.js";
 import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
 import { parseIncompleteTaskLabels } from "../step/output-verify.js";
@@ -78,7 +78,7 @@ export interface LocalRuntimeOptions {
   queryFn?: QueryFn;
 }
 
-export class LocalRuntime implements RuntimeStrategy {
+export class LocalRuntime implements RealRuntimeStrategy {
   private readonly cwd: string;
   private readonly githubClient: GitHubClient;
   private readonly githubToken: string;
@@ -667,6 +667,14 @@ export class LocalRuntime implements RuntimeStrategy {
     } catch {
       return [];
     }
+  }
+
+  /**
+   * LocalRuntime can derive changed files via `git diff --name-only`.
+   * Returns true — scope-check may proceed with listChangedFiles for breach evaluation.
+   */
+  canDeriveChangedFiles(): boolean {
+    return true;
   }
 
   /**

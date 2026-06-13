@@ -145,3 +145,63 @@ export function synthesizeScopeFindings(
 
   return [finding];
 }
+
+// ---------------------------------------------------------------------------
+// synthesizeScopeUnverifiableFinding
+// ---------------------------------------------------------------------------
+
+/**
+ * Synthesize a deterministic UNKNOWN finding for when scope cannot be evaluated.
+ *
+ * Used by scope-check when canDeriveChangedFiles() === false: the runtime cannot
+ * derive changed files, so the declared permissionScope cannot be verified.
+ *
+ * Properties of the synthesized finding:
+ * - origin: "scope"             — machine-source scope evaluation (same routing path)
+ * - resolution: "decision-needed" — routes through existing escalation path
+ * - severity: "high"
+ * - file: deterministic anchor (change request.md, always present in worktree)
+ * - title: distinct from breach finding (different computeFindingKey)
+ * - options: exactly 3 deterministic choices (satisfies ≥2 options contract)
+ *
+ * Deterministic: same ctx → same file, title, rationale, options → same computeFindingKey.
+ * Human-resolved UNKNOWN is suppressed by decision-ledger (no re-escalation).
+ *
+ * Pure function — no I/O, no side effects.
+ */
+export function synthesizeScopeUnverifiableFinding(ctx: SynthesisContext): Finding[] {
+  const rationale =
+    "この runtime では changed-files を導出できないため、宣言された permissionScope を検証できなかった。" +
+    " スコープ内とも超過とも確定していない（UNKNOWN）。" +
+    " listChangedFiles が [] を返すのは構造的な制約であり、変更なしを意味しない。";
+
+  const options: DecisionOption[] = [
+    {
+      label: "Option A: changed-files を導出できる runtime（例: local）で実行し直す",
+      consequence:
+        "local runtime など git worktree を持つ環境でこのジョブを再実行し、scope 検証を完走させる。",
+    },
+    {
+      label: "Option B: この profile の permissionScope 宣言を外す",
+      consequence:
+        "pipeline profile から permissionScope を削除する。以降この profile では scope 検証は走らない。",
+    },
+    {
+      label: "Option C: scope 検証なしで進めることを受け入れる（リスク受容）",
+      consequence:
+        "scope を検証できないまま前進する。禁止サーフェスに触れていても検出されない可能性があることを承認者が受容する。",
+    },
+  ];
+
+  const finding: Finding = {
+    severity: "high",
+    resolution: "decision-needed",
+    origin: "scope",
+    file: `specrunner/changes/${ctx.slug}/request.md`,
+    title: "scope を検証できなかった（UNKNOWN）: runtime が changed-files を導出できない",
+    rationale,
+    options,
+  };
+
+  return [finding];
+}
