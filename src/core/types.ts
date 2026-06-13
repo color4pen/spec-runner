@@ -5,6 +5,7 @@ import type { SpawnFn } from "../util/spawn.js";
 import type { SpawnFn as GitExecSpawnFn } from "../util/git-exec.js";
 import type { JobStateStore } from "../store/job-state-store.js";
 import type { RuntimeStrategy } from "./port/runtime-strategy.js";
+import type { ResumeContextSnapshot } from "./resume/resume-context.js";
 
 export type { StepContext } from "./port/step-context.js";
 import type { StepContext } from "./port/step-context.js";
@@ -65,6 +66,11 @@ export interface PipelineDeps extends StepContext {
    * StepExecutor が最初の agent ステップで消費し undefined にする。
    */
   resumePrompt?: string;
+  /**
+   * Snapshot captured before resume preparation clears state.resumePoint.
+   * StepExecutor uses it to deterministically build automatic resume context.
+   */
+  resumeContext?: ResumeContextSnapshot;
   /**
    * Absolute path to the git repository root.
    * Used by StepExecutor to compute agent session log paths (debug level).

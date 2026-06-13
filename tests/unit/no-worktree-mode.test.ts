@@ -579,3 +579,94 @@ describe("TC-NW-013: exit-guard → awaiting-resume → ResumeCommand.prepare() 
     expect(afterPrepare.status).toBe("running");
   });
 });
+
+
+describe("resume snapshot propagation respects resolved startStep", () => {
+  it("keeps automatic resumeContext when resuming from resumePoint.step", async () => {
+    const slug = "resume-context-same-step";
+    const jobState = await makeJobState(slug);
+    await writeRequestMd(tempDir, slug);
+
+    const awaitingResumeState: JobState = {
+      ...jobState,
+      status: "awaiting-resume",
+      step: "design",
+      noWorktree: true,
+      resumePoint: { step: "design", reason: "signal", iterationsExhausted: 0 },
+    };
+    const store = new JobStateStore(awaitingResumeState.jobId, tempDir, { slug, stateRoot: tempDir });
+    await store.persist(awaitingResumeState);
+
+    const events = new EventBus();
+    const cmd = new ResumeCommand(
+      {} as never,
+      events,
+      slug,
+      { noWorktree: true, cwd: tempDir },
+    );
+
+    const result = await (cmd as unknown as { prepare(): Promise<{ startStep: string; resumeContext?: { resumePoint: { step: string } } }> }).prepare();
+
+    expect(result.startStep).toBe("design");
+    expect(result.resumeContext?.resumePoint.step).toBe("design");
+  });
+
+  it("keeps automatic resumeContext when --from matches resumePoint.step", async () => {
+    const slug = "resume-context-explicit-same-step";
+    const jobState = await makeJobState(slug);
+    await writeRequestMd(tempDir, slug);
+
+    const awaitingResumeState: JobState = {
+      ...jobState,
+      status: "awaiting-resume",
+      step: "design",
+      noWorktree: true,
+      resumePoint: { step: "design", reason: "signal", iterationsExhausted: 0 },
+    };
+    const store = new JobStateStore(awaitingResumeState.jobId, tempDir, { slug, stateRoot: tempDir });
+    await store.persist(awaitingResumeState);
+
+    const events = new EventBus();
+    const cmd = new ResumeCommand(
+      {} as never,
+      events,
+      slug,
+      { noWorktree: true, cwd: tempDir, from: "design" },
+    );
+
+    const result = await (cmd as unknown as { prepare(): Promise<{ startStep: string; resumeContext?: { resumePoint: { step: string } } }> }).prepare();
+
+    expect(result.startStep).toBe("design");
+    expect(result.resumeContext?.resumePoint.step).toBe("design");
+  });
+
+  it("drops automatic resumeContext when --from selects a different step, but preserves human prompt", async () => {
+    const slug = "resume-context-different-step";
+    const jobState = await makeJobState(slug);
+    await writeRequestMd(tempDir, slug);
+
+    const awaitingResumeState: JobState = {
+      ...jobState,
+      status: "awaiting-resume",
+      step: "design",
+      noWorktree: true,
+      resumePoint: { step: "design", reason: "signal", iterationsExhausted: 0 },
+    };
+    const store = new JobStateStore(awaitingResumeState.jobId, tempDir, { slug, stateRoot: tempDir });
+    await store.persist(awaitingResumeState);
+
+    const events = new EventBus();
+    const cmd = new ResumeCommand(
+      {} as never,
+      events,
+      slug,
+      { noWorktree: true, cwd: tempDir, from: "spec-review", prompt: "human note" },
+    );
+
+    const result = await (cmd as unknown as { prepare(): Promise<{ startStep: string; resumeContext?: unknown; resumePrompt?: string }> }).prepare();
+
+    expect(result.startStep).toBe("spec-review");
+    expect(result.resumeContext).toBeUndefined();
+    expect(result.resumePrompt).toBe("human note");
+  });
+});

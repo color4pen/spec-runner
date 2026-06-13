@@ -16,7 +16,7 @@ import type { AgentRunner, AgentRunContext } from "../../../../src/core/port/age
 import type { AgentStep } from "../../../../src/core/step/types.js";
 import type { AgentStepName } from "../../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
-import type { JobState } from "../../../../src/state/schema.js";
+import type { JobState, StepRun } from "../../../../src/state/schema.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
@@ -63,6 +63,21 @@ function makeAgentStep(): AgentStep {
     buildMessage: () => "do the thing",
     resultFilePath: () => null,
     parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+  };
+}
+
+function makePriorStepRun(overrides: Partial<StepRun> = {}): StepRun {
+  return {
+    attempt: 1,
+    sessionId: "session-1",
+    outcome: {
+      verdict: "escalation",
+      findingsPath: "specrunner/changes/test/implementer-result.md",
+      error: null,
+    },
+    startedAt: "2026-01-01T00:00:00.000Z",
+    endedAt: "2026-01-01T00:01:00.000Z",
+    ...overrides,
   };
 }
 
@@ -209,6 +224,146 @@ describe("TC-EXEC-003: 2 回目以降の agent step では ctx.resumePrompt が 
 
     expect(capturedCtxList).toHaveLength(1);
     expect(capturedCtxList[0]!.session.resumePrompt).toBeUndefined();
+  });
+});
+
+describe("resume context auto injection", () => {
+  it("plain resume injects automatic context from the resume snapshot", async () => {
+    const jobState = {
+      ...(await createRunningJobState()),
+      resumePoint: null,
+      steps: { implementer: [makePriorStepRun()] },
+    };
+    const { runner, capturedCtxList } = makeCapturingRunner();
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
+
+    const deps = makeDeps({
+      resumeContext: {
+        resumePoint: {
+          step: "implementer",
+          reason: "escalation",
+          iterationsExhausted: 2,
+        },
+      },
+    });
+    const step = makeAgentStep();
+
+    await executor.execute(step, jobState, deps);
+
+    const prompt = capturedCtxList[0]!.session.resumePrompt;
+    expect(prompt).toContain("## Automatic resume context");
+    expect(prompt).toContain("- previousAttempt: 1");
+    expect(prompt).toContain("- currentAttempt: 2");
+    expect(prompt).toContain("- previousVerdict: escalation");
+    expect(prompt).toContain("- stopReason: escalation");
+    expect(prompt).toContain("existing worktree artifacts may be from a previous attempt");
+    expect(prompt).toContain("do not mean the current attempt is complete");
+  });
+
+  it("resume with human prose includes automatic context first and human prose after it", async () => {
+    const jobState = {
+      ...(await createRunningJobState()),
+      resumePoint: null,
+      steps: { implementer: [makePriorStepRun()] },
+    };
+    const { runner, capturedCtxList } = makeCapturingRunner();
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
+
+    const deps = makeDeps({
+      resumeContext: {
+        resumePoint: {
+          step: "implementer",
+          reason: "escalation",
+          iterationsExhausted: 2,
+        },
+      },
+      resumePrompt: "human prose for this attempt",
+    });
+    const step = makeAgentStep();
+
+    await executor.execute(step, jobState, deps);
+
+    const prompt = capturedCtxList[0]!.session.resumePrompt;
+    expect(prompt).toContain("## Automatic resume context");
+    expect(prompt).toContain("## Human supplied resume note");
+    expect(prompt).toContain("human prose for this attempt");
+    expect(prompt!.indexOf("## Automatic resume context")).toBeLessThan(
+      prompt!.indexOf("human prose for this attempt"),
+    );
+  });
+
+  it("non-resume execution without human prompt leaves ctx.session.resumePrompt undefined", async () => {
+    const jobState = await createRunningJobState();
+    const { runner, capturedCtxList } = makeCapturingRunner();
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
+
+    const deps = makeDeps();
+    const step = makeAgentStep();
+
+    await executor.execute(step, jobState, deps);
+
+    expect(capturedCtxList[0]!.session.resumePrompt).toBeUndefined();
+  });
+
+  it("human resume prose is still one-shot when no automatic resume context is present", async () => {
+    const jobState = await createRunningJobState();
+    const { runner, capturedCtxList } = makeCapturingRunner();
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
+
+    const deps = makeDeps({ resumePrompt: "human prose only" });
+    const firstStep = {
+      ...makeAgentStep(),
+      name: "design",
+    } satisfies AgentStep;
+    const secondStep = makeAgentStep();
+
+    const state1 = await executor.execute(firstStep, jobState, deps);
+    await executor.execute(secondStep, state1, deps);
+
+    expect(capturedCtxList[0]!.session.resumePrompt).toBe("human prose only");
+    expect(capturedCtxList[1]!.session.resumePrompt).toBeUndefined();
+  });
+
+  it("consumes the composed automatic and human resume prompt only once", async () => {
+    const jobState = {
+      ...(await createRunningJobState()),
+      resumePoint: null,
+      steps: { implementer: [makePriorStepRun()] },
+    };
+    const { runner, capturedCtxList } = makeCapturingRunner();
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
+
+    const deps = makeDeps({
+      resumeContext: {
+        resumePoint: {
+          step: "implementer",
+          reason: "escalation",
+          iterationsExhausted: 2,
+        },
+      },
+      resumePrompt: "human prose",
+    });
+    const step = makeAgentStep();
+
+    const state1 = await executor.execute(step, jobState, deps);
+    await executor.execute(step, state1, deps);
+
+    expect(capturedCtxList).toHaveLength(2);
+    expect(capturedCtxList[0]!.session.resumePrompt).toContain("## Automatic resume context");
+    expect(capturedCtxList[0]!.session.resumePrompt).toContain("human prose");
+    expect(capturedCtxList[1]!.session.resumePrompt).toBeUndefined();
+    expect(deps.resumePrompt).toBeUndefined();
+    expect(deps.resumeContext).toBeUndefined();
   });
 });
 

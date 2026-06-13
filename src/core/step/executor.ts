@@ -45,6 +45,7 @@ import { JUDGE_REPORT_TOOL, CODE_REVIEW_REPORT_TOOL, REQUEST_REVIEW_REPORT_TOOL,
 import { deriveJudgeVerdict, deriveRequestReviewVerdict, deriveConformanceVerdict, collectVerdictAffectingFindings } from "./judge-verdict.js";
 import type { FindingRef } from "./judge-verdict.js";
 import { filterUndecidedFindings } from "../decision/decision-ledger.js";
+import { buildResumePrompt } from "../resume/resume-context.js";
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -256,6 +257,13 @@ export class StepExecutor {
       }
     }
 
+    const effectiveResumePrompt = buildResumePrompt({
+      state,
+      stepName: step.name,
+      resumeContext: deps.resumeContext,
+      humanResumePrompt: deps.resumePrompt,
+    });
+
     const ctx = {
       step,
       state,
@@ -273,7 +281,7 @@ export class StepExecutor {
       },
       session: {
         resumeSessionId,
-        resumePrompt: deps.resumePrompt,
+        resumePrompt: effectiveResumePrompt,
         logPath: sessionLogPath,
       },
       policy: {
@@ -288,9 +296,11 @@ export class StepExecutor {
       },
     };
 
-    // One-shot: 最初の agent ステップで消費し、後続ステップには引き継がない
-    if (deps.resumePrompt) {
+    // One-shot: resume-related inputs are consumed by the first agent step that sees them.
+    // This clears unmatched snapshots too, so stale resume context cannot leak into a later step.
+    if (deps.resumePrompt !== undefined || deps.resumeContext !== undefined) {
       deps.resumePrompt = undefined;
+      deps.resumeContext = undefined;
     }
 
     // Capture HEAD SHA before agent executes (delegated to RuntimeStrategy seam).
