@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "294dcbf1-f662-415a-8cb2-0f6f7f23b9d4",
   "createdAt": "2026-06-13T00:47:04.682Z",
-  "updatedAt": "2026-06-13T02:48:42.919Z",
+  "updatedAt": "2026-06-13T02:51:20.307Z",
   "request": {
     "title": "decision-needed に選択肢の提示を必須化し、人間の判断を構造化して記録・尊重する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/decision-options-ledger-294dcbf1",
   "error": null,
   "pipelineId": "standard",
@@ -49,8 +49,13 @@
   ],
   "issueNumber": 677,
   "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/685",
+    "number": 685,
+    "createdAt": "2026-06-13T02:51:20.296Z"
+  },
   "_journal": {
-    "historyCount": 83,
+    "historyCount": 88,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -64,7 +69,9 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
