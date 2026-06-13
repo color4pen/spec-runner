@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "df69f88f-a5dc-44e1-8f3a-396f5746e084",
   "createdAt": "2026-06-13T00:45:02.343Z",
-  "updatedAt": "2026-06-13T00:45:06.098Z",
+  "updatedAt": "2026-06-13T01:15:02.968Z",
   "request": {
     "title": "AgentRunner の共有コントラクトテストを導入し、adapter 間の暗黙契約の欠落を構造的に防ぐ",
     "type": "chore",
@@ -48,8 +48,11 @@
     }
   ],
   "issueNumber": 678,
+  "resumePoint": null,
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 6,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
