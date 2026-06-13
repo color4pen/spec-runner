@@ -117,3 +117,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/agent-runner-contract-tests/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-13T02:03:42.634Z","endedAt":"2026-06-13T02:03:44.386Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-13T02:03:44.386Z","outputs":[{"path":"specrunner/changes/agent-runner-contract-tests/pr-create-result.md","hash":"sha256:821e64fa0cc4f76e50bc9fb593db8b742ecdb8ae12dbb4b07fbc5ec6406cd09a"}],"inputs":[{"path":"chore/agent-runner-contract-tests-df69f88f","hash":null}]}
 {"type":"transition","ts":"2026-06-13T02:03:44.396Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-13T09:48:54.599Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
