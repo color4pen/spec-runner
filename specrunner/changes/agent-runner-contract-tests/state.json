@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "df69f88f-a5dc-44e1-8f3a-396f5746e084",
   "createdAt": "2026-06-13T00:45:02.343Z",
-  "updatedAt": "2026-06-13T01:59:08.908Z",
+  "updatedAt": "2026-06-13T02:03:25.457Z",
   "request": {
     "title": "AgentRunner の共有コントラクトテストを導入し、adapter 間の暗黙契約の欠落を構造的に防ぐ",
     "type": "chore",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "chore/agent-runner-contract-tests-df69f88f",
   "error": null,
@@ -50,20 +50,21 @@
   "issueNumber": 678,
   "resumePoint": null,
   "_journal": {
-    "historyCount": 68,
+    "historyCount": 77,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 2,
+      "verification": 3,
       "build-fixer": 1,
       "code-review": 1,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "regression-gate": 2
+      "regression-gate": 2,
+      "conformance": 1
     }
   }
 }
