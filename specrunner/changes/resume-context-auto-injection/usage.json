@@ -13,6 +13,20 @@
       },
       "jobId": "dcf6307c-ab73-4d63-8b01-11e01f23fd0f",
       "stepName": "request-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-06-13T10:20:17.575Z",
+      "modelUsage": {
+        "gpt-5.5": {
+          "inputTokens": 1135638,
+          "outputTokens": 13784,
+          "cacheReadInputTokens": 996864,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "dcf6307c-ab73-4d63-8b01-11e01f23fd0f",
+      "stepName": "design"
     }
   ]
 }
