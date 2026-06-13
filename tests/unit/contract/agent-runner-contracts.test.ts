@@ -57,6 +57,7 @@ export interface RunnerFixture {
     runner: AgentRunner;
     getCapturedMainTurnPrompt(): string | undefined;
   };
+  makeMinimalRunner(opts: FixtureOpts): AgentRunner;
   makeWithReportToolSuccess(opts: FixtureOpts): AgentRunner;
   makeWithTransientError(opts: FixtureOpts): AgentRunner;
   makeCountingInvocations(opts: FixtureOpts): {
@@ -172,6 +173,17 @@ const claudeCodeFixture: RunnerFixture = {
     };
   },
 
+  makeMinimalRunner(opts) {
+    const queryFn: QueryFn = async function* (_params) {
+      yield* claudeSuccessStream();
+    };
+    return new ClaudeCodeRunner({
+      cwd: opts.tempDir,
+      _queryFn: queryFn,
+      _sleepFn: opts.sleepFn,
+    });
+  },
+
   makeWithReportToolSuccess(opts) {
     const { createMcpServerFn, getHandler } = makeMockCreateMcpServerFn();
     const queryFn: QueryFn = async function* (_params) {
@@ -246,6 +258,14 @@ const codexFixture: RunnerFixture = {
       runner,
       getCapturedMainTurnPrompt: () => capturedPrompt,
     };
+  },
+
+  makeMinimalRunner(opts) {
+    const thread = _makeSuccessCodexThread();
+    return new CodexAgentRunner({
+      _codexFactory: () => makeCodexInstance(thread),
+      _sleepFn: opts.sleepFn,
+    });
   },
 
   makeWithReportToolSuccess(opts) {
@@ -415,6 +435,10 @@ describe("AgentRunner contract suite — registration completeness", () => {
       ).toContain(dir);
     }
   });
+
+  it("managed-agent is not present in REGISTERED_LOCAL_RUNNERS", () => {
+    expect(Object.keys(REGISTERED_LOCAL_RUNNERS)).not.toContain("managed-agent");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -472,7 +496,7 @@ function describeAgentRunnerContracts(fixture: RunnerFixture): void {
   describe(`AgentRunner contract [${fixture.name}] — logPath`, () => {
     it("creates JSONL file at logPath and writes at least one line", async () => {
       const logPath = path.join(tempDir, "agent-session.jsonl");
-      const { runner } = fixture.makeCapturingPrompt({ tempDir, sleepFn });
+      const runner = fixture.makeMinimalRunner({ tempDir, sleepFn });
       const ctx = makeMinCtx({ tempDir, session: { logPath } });
       await runner.run(ctx);
       expect(fs.existsSync(logPath)).toBe(true);
