@@ -59,3 +59,9 @@
 {"type":"transition","ts":"2026-06-13T10:44:07.406Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: code-fixer escalated"}
 {"type":"transition","ts":"2026-06-13T11:05:03.964Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'code-fixer'"}
 {"type":"transition","ts":"2026-06-13T11:05:04.123Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-06-13T11:11:35.959Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"019ec090-e2ff-7090-9b9d-4ecf8e49e1df","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-06-13T11:05:04.149Z","endedAt":"2026-06-13T11:11:34.122Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-06-13T11:11:34.122Z","outputs":[{"path":"specrunner/changes/resume-context-auto-injection","hash":null}],"inputs":[{"path":"specrunner/changes/resume-context-auto-injection/review-feedback-001.md","hash":"sha256:6789baf3889a743db2bdf35b1612696ba7cabab52852c37581381f3b8b6fc639"}]}
+{"type":"transition","ts":"2026-06-13T11:11:35.969Z","step":"step-transition","status":"ok","message":"code-fixer → cross-boundary-invariants"}
+{"type":"transition","ts":"2026-06-13T11:11:35.971Z","step":"cross-boundary-invariants","status":"started","message":"cross-boundary-invariants iteration 1 started"}
+{"type":"transition","ts":"2026-06-13T11:11:35.973Z","step":"cross-boundary-invariants-started","status":"started","message":"Starting cross-boundary-invariants step"}
