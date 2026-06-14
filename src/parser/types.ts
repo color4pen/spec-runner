@@ -31,4 +31,6 @@ export interface ParsedRequest {
   sections?: ParsedRequestSections;
   /** Issue reference from Meta section (e.g. "#264"). undefined if not present. */
   issue?: string;
+  /** Pipeline id from Meta section (registry id). undefined = standard (existing behavior). */
+  pipeline?: string;
 }

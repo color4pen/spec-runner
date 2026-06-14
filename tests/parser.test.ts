@@ -423,3 +423,84 @@ Content.
     expect(result.sections?.["目的"]).toBeUndefined();
   });
 });
+
+// TC-T01-001: Meta に pipeline フィールドが存在する場合
+describe("TC-T01-001: Meta に pipeline が存在する場合は pipeline フィールドとして抽出される", () => {
+  it("pipeline: design-only → result.pipeline === 'design-only'", () => {
+    const content = `# My Request
+
+## Meta
+
+- **type**: new-feature
+- **slug**: my-request
+- **base-branch**: main
+- **adr**: false
+- **pipeline**: design-only
+
+## Description
+
+Content.
+`;
+    const result = parseRequestMdContent(content);
+    expect(result.pipeline).toBe("design-only");
+  });
+
+  it("pipeline: standard → result.pipeline === 'standard'", () => {
+    const content = `# My Request
+
+## Meta
+
+- **type**: new-feature
+- **slug**: my-request
+- **base-branch**: main
+- **adr**: false
+- **pipeline**: standard
+
+## Description
+
+Content.
+`;
+    const result = parseRequestMdContent(content);
+    expect(result.pipeline).toBe("standard");
+  });
+
+  it("pipeline: some-other-id → result.pipeline === 'some-other-id' (no validation at parser layer)", () => {
+    const content = `# My Request
+
+## Meta
+
+- **type**: new-feature
+- **slug**: my-request
+- **base-branch**: main
+- **adr**: false
+- **pipeline**: some-other-id
+
+## Description
+
+Content.
+`;
+    const result = parseRequestMdContent(content);
+    expect(result.pipeline).toBe("some-other-id");
+  });
+});
+
+// TC-T01-002: Meta に pipeline フィールドが存在しない場合は undefined
+describe("TC-T01-002: Meta に pipeline が存在しない場合は pipeline === undefined", () => {
+  it("pipeline field absent → result.pipeline === undefined", () => {
+    const content = `# My Request
+
+## Meta
+
+- **type**: new-feature
+- **slug**: my-request
+- **base-branch**: main
+- **adr**: false
+
+## Description
+
+Content.
+`;
+    const result = parseRequestMdContent(content);
+    expect(result.pipeline).toBeUndefined();
+  });
+});
