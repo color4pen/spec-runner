@@ -21,6 +21,7 @@ import {
   DescriptorInputCompletenessError,
   VALIDATOR_PROBE_SLUG,
 } from "../pipeline/descriptor-input-completeness.js";
+import { descriptorHasReviewerInsertionPoint } from "../pipeline/reviewer-capability.js";
 import { loadReviewerDefinitions } from "../reviewers/load.js";
 import { validateReviewerDefinitions } from "../reviewers/validate.js";
 import type { ReviewerSnapshot } from "../reviewers/types.js";
@@ -130,9 +131,10 @@ export class PipelineRunCommand extends CommandRunner {
       pipelineId,
     });
 
-    // Snapshot reviewer definitions into job state (pipeline shape is fixed at job start).
-    // Resume uses this snapshot, so runtime changes to reviewers/ don't affect running jobs.
-    if (reviewers.length > 0) {
+    // Snapshot reviewer definitions into job state only when the resolved descriptor
+    // has a reviewer stage. design-only (no CONFORMANCE anchor) never reaches the reviewer
+    // chain, so snapshotting there would leave a never-executed reviewer in state (INV-8).
+    if (reviewers.length > 0 && descriptorHasReviewerInsertionPoint(descriptor)) {
       jobState.reviewers = reviewers;
     }
 
