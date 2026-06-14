@@ -83,7 +83,7 @@ Steps:
 2. Review the implementation files changed in this branch
 3. Read the spec in ${changeFolderPath(opts.slug)}/ (design.md, tasks.md)
 4. Refer to the Pipeline Rules in your system prompt for the findings format and severity definitions
-5. Check test coverage against ${changeFolderPath(opts.slug)}/test-cases.md (must scenarios)
+5. If ${changeFolderPath(opts.slug)}/test-cases.md exists, check test coverage against it (must scenarios); otherwise review code and tests as written
 6. Write your findings and verdict to: ${opts.findingsPath}
 
 The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escalation>\`
@@ -120,7 +120,11 @@ export const CodeReviewStep: AgentStep = {
     return [
       { path: `${folder}/design.md` },
       { path: `${folder}/tasks.md` },
-      { path: `${folder}/test-cases.md` },
+      // test-cases.md is a soft input (required: false): present in standard pipeline
+      // (produced by test-case-gen), absent in fast profile (test-case-gen skipped).
+      // When present, must-scenario comparison is included; when absent, code + tests
+      // are reviewed as written. Absence never halts the step (no STEP_INPUT_MISSING).
+      { path: `${folder}/test-cases.md`, required: false },
       { path: ".", artifact: "gitState" },
     ];
   },

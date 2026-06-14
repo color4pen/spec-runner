@@ -41,7 +41,11 @@ const testCaseGenAgentDefinition: AgentDefinition = {
  * No custom tool handlers — uses the standard agent toolset.
  * No result file parsed — completion detected via session idle (completionVerdict).
  * completionVerdict: "success" — session completion maps to "success" for transitions.
- * requiresCommit omitted (false) — test-cases.md absence is detected downstream by code-review.
+ *
+ * Output guarantee: writes() declares test-cases.md with verify enabled (verify !== false).
+ * The generic output gate (producedContractsFromWrites → validateStepOutputs, policy "halt")
+ * will emit STEP_OUTPUT_MISSING if the agent completes without producing test-cases.md.
+ * This is the producer's own safety net — code-review no longer carries this responsibility.
  *
  * Design D1 (add-test-case-generation-step): same pattern as implementer.
  * Design D6: maxTurns = 15 (design-reading only; matches spec-review).
@@ -84,7 +88,9 @@ export const TestCaseGenStep: AgentStep = {
 
   resultFilePath(_state: JobState, _deps: StepDeps): string | null {
     // test-case-gen does not produce a pipeline-parsed verdict file.
-    // The agent commits test-cases.md directly; pipeline detects completion via session idle.
+    // The agent commits test-cases.md directly; completionVerdict: "success" marks the step done.
+    // Output-gate verification (writes() → producedContractsFromWrites → validateStepOutputs)
+    // ensures test-cases.md was actually written.
     return null;
   },
 

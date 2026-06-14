@@ -15,9 +15,16 @@ import { STEP_NAMES } from "../step/step-names.js";
 import { STANDARD_PIPELINE_ID } from "../../kernel/pipeline-ids.js";
 import { getPipelineDescriptor } from "../pipeline/registry.js";
 import { assertRuntimeSupportsScope } from "../pipeline/runtime-capability-gate.js";
+import { composeReviewerDescriptor } from "../pipeline/compose-reviewers.js";
+import {
+  validateDescriptorInputCompleteness,
+  DescriptorInputCompletenessError,
+  VALIDATOR_PROBE_SLUG,
+} from "../pipeline/descriptor-input-completeness.js";
 import { loadReviewerDefinitions } from "../reviewers/load.js";
 import { validateReviewerDefinitions } from "../reviewers/validate.js";
 import type { ReviewerSnapshot } from "../reviewers/types.js";
+import { requestMdPath } from "../../util/paths.js";
 import * as fsPromises from "node:fs/promises";
 
 export interface PipelineRunOptions {
@@ -88,6 +95,27 @@ export class PipelineRunCommand extends CommandRunner {
     const pipelineId = request.pipeline ?? STANDARD_PIPELINE_ID;
     const descriptor = getPipelineDescriptor(pipelineId);
     assertRuntimeSupportsScope(descriptor, this.runtime);
+
+    // Compose the actual runtime descriptor (base + custom reviewers) and validate
+    // input-completeness BEFORE bootstrapping the job. This catches authoring errors
+    // (e.g. producer removed from a slim pipeline while consumer still requires the output)
+    // before any job state is created. Runs in the same preflight slot as
+    // validateReviewerDefinitions / assertRuntimeSupportsScope.
+    const composedDescriptor = composeReviewerDescriptor(descriptor, reviewers);
+    // Ambient inputs must use VALIDATOR_PROBE_SLUG because the validator calls
+    // step.reads/writes with internal probe deps (slug = VALIDATOR_PROBE_SLUG).
+    // Using the real slug would produce path mismatches (request.md path components differ).
+    const ambientInputs = [requestMdPath(VALIDATOR_PROBE_SLUG)];
+    const inputViolations = validateDescriptorInputCompleteness(composedDescriptor, ambientInputs);
+    if (inputViolations.length > 0) {
+      const details = inputViolations
+        .map((v) => `  [${v.step}] ${v.path}`)
+        .join("\n");
+      throw new DescriptorInputCompletenessError(
+        `Pipeline "${pipelineId}" descriptor has unsatisfied required inputs:\n${details}`,
+        inputViolations,
+      );
+    }
 
     // Bootstrap job state (no I/O; persistence is deferred to setupWorkspace)
     const jobState = await this.runtime.bootstrapJob(cwd, {

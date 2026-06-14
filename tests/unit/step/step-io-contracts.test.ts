@@ -240,6 +240,25 @@ describe("CodeReviewStep reads/writes", () => {
     expect(gitRefs.length).toBeGreaterThan(0);
   });
 
+  // T-07: test-cases.md must be a soft (optional) read after T-01 change
+  it("test-cases.md read is soft (required: false)", () => {
+    const refs = CodeReviewStep.reads!(makeState(), makeDeps());
+    const folder = changeFolderPath(SLUG);
+    const testCasesRef = refs.find(r => r.path === `${folder}/test-cases.md`);
+    expect(testCasesRef).toBeDefined();
+    expect(testCasesRef?.required).toBe(false);
+  });
+
+  // T-07: design.md and tasks.md must remain required reads
+  it("design.md and tasks.md reads are required (not soft)", () => {
+    const refs = CodeReviewStep.reads!(makeState(), makeDeps());
+    const folder = changeFolderPath(SLUG);
+    const designRef = refs.find(r => r.path === `${folder}/design.md`);
+    const tasksRef = refs.find(r => r.path === `${folder}/tasks.md`);
+    expect(designRef?.required).not.toBe(false);
+    expect(tasksRef?.required).not.toBe(false);
+  });
+
   it("writes review-feedback at next iteration", () => {
     const state = makeState({ "code-review": 1 });
     const refs = CodeReviewStep.writes!(state, makeDeps());
