@@ -41,3 +41,9 @@
 {"type":"transition","ts":"2026-06-14T08:08:17.199Z","step":"code-review","status":"ok","message":"code-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-14T08:08:17.200Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-06-14T08:08:17.203Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-06-14T08:08:45.781Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"2ecfa1bd-dcd9-4339-8c39-d763e034357e","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-14T08:08:17.224Z","endedAt":"2026-06-14T08:08:43.993Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-06-14T08:08:43.993Z","outputs":[{"path":"specrunner/changes/pipeline-selection-capability-gate","hash":null}],"inputs":[{"path":"specrunner/changes/pipeline-selection-capability-gate/review-feedback-001.md","hash":"sha256:8fd2365b18f8c2546cea52de2c8b256ef46d5e70844151ed21dec928d8394467"}]}
+{"type":"transition","ts":"2026-06-14T08:08:45.789Z","step":"step-transition","status":"ok","message":"code-fixer → cross-boundary-invariants"}
+{"type":"transition","ts":"2026-06-14T08:08:45.791Z","step":"cross-boundary-invariants","status":"started","message":"cross-boundary-invariants iteration 1 started"}
+{"type":"transition","ts":"2026-06-14T08:08:45.793Z","step":"cross-boundary-invariants-started","status":"started","message":"Starting cross-boundary-invariants step"}
