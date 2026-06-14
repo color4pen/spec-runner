@@ -12,7 +12,6 @@ import { describe, it, expect } from "vitest";
 import {
   validateDescriptorInputCompleteness,
   VALIDATOR_PROBE_SLUG,
-  type DescriptorInputViolation,
 } from "../../../src/core/pipeline/descriptor-input-completeness.js";
 import {
   PIPELINE_REGISTRY,

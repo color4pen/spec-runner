@@ -19,7 +19,6 @@ import {
 } from "../../../../src/core/pipeline/registry.js";
 import {
   DescriptorInputCompletenessError,
-  VALIDATOR_PROBE_SLUG,
 } from "../../../../src/core/pipeline/descriptor-input-completeness.js";
 import type { PipelineDescriptor } from "../../../../src/core/pipeline/types.js";
 import type { RuntimeStrategy, CleanupHandle, WorkspaceContext } from "../../../../src/core/port/runtime-strategy.js";
