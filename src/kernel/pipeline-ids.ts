@@ -8,6 +8,7 @@
 export const PIPELINE_IDS = {
   STANDARD: "standard",
   DESIGN_ONLY: "design-only",
+  FAST: "fast",
 } as const;
 
 /** Convenience re-export for the common case. */

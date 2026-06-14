@@ -225,3 +225,49 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.PR_CREATE,   on: "success",   to: "end" },
   { step: STEP_NAMES.PR_CREATE,   on: "error",     to: "escalate" },
 ];
+
+/**
+ * Fast pipeline transition table.
+ *
+ * Derived from STANDARD_TRANSITIONS with spec-review / spec-fixer / test-case-gen / adr-gen
+ * rows removed. design goes directly to implementer (no spec-review gate).
+ * conformance approved goes directly to pr-create (no adr-gen step).
+ * reverification chokepoints (conformanceApprovedLatest / codeChangedSinceLastVerification)
+ * are preserved with the same when-guard ordering as standard.
+ *
+ * needs-fix:spec-fixer is intentionally absent → no matching transition → escalate fallback
+ * (pipeline.ts:298 `?? "escalate"`). This is correct: spec/design-level fixes are outside
+ * the fast profile's slim design contract, and escalation is the honest outcome.
+ */
+export const FAST_TRANSITIONS: Transition[] = [
+  // --- request-review gate (first step) ---
+  { step: STEP_NAMES.REQUEST_REVIEW, on: "approve",          to: STEP_NAMES.DESIGN },
+  { step: STEP_NAMES.REQUEST_REVIEW, on: "needs-discussion", to: "escalate" },
+  { step: STEP_NAMES.REQUEST_REVIEW, on: "reject",           to: "escalate" },
+  { step: STEP_NAMES.REQUEST_REVIEW, on: "error",            to: "escalate" },
+  // --- design → implementer (spec-review / test-case-gen bypassed) ---
+  { step: STEP_NAMES.DESIGN,       on: "success", to: STEP_NAMES.IMPLEMENTER },
+  { step: STEP_NAMES.DESIGN,       on: "error",   to: "escalate" },
+  // --- implementer → verification ---
+  { step: STEP_NAMES.IMPLEMENTER,  on: "success", to: STEP_NAMES.VERIFICATION },
+  { step: STEP_NAMES.IMPLEMENTER,  on: "error",   to: "escalate" },
+  // --- verification loop (reverification chokepoint: when-guarded rows first) ---
+  { step: STEP_NAMES.VERIFICATION, on: "passed",    to: STEP_NAMES.PR_CREATE,    when: conformanceApprovedLatest },
+  { step: STEP_NAMES.VERIFICATION, on: "passed",    to: STEP_NAMES.CODE_REVIEW },
+  { step: STEP_NAMES.VERIFICATION, on: "failed",    to: STEP_NAMES.BUILD_FIXER },
+  { step: STEP_NAMES.VERIFICATION, on: "escalation", to: "escalate" },
+  { step: STEP_NAMES.BUILD_FIXER,  on: "success",   to: STEP_NAMES.VERIFICATION },
+  { step: STEP_NAMES.BUILD_FIXER,  on: "error",     to: "escalate" },
+  // --- code-review loop (same generator as standard, chain=["code-review"]) ---
+  ...buildReviewerChainTransitions([STEP_NAMES.CODE_REVIEW]),
+  // --- conformance (acceptance gate + scope checkpoint; adr-gen absent) ---
+  { step: STEP_NAMES.CONFORMANCE, on: "approved",              to: STEP_NAMES.VERIFICATION, when: codeChangedSinceLastVerification },
+  { step: STEP_NAMES.CONFORMANCE, on: "approved",              to: STEP_NAMES.PR_CREATE },
+  { step: STEP_NAMES.CONFORMANCE, on: "needs-fix:implementer", to: STEP_NAMES.IMPLEMENTER },
+  { step: STEP_NAMES.CONFORMANCE, on: "needs-fix:code-fixer",  to: STEP_NAMES.CODE_FIXER },
+  // Backward-compat: plain "needs-fix" → implementer (catch-all; no spec-fixer row — escalates)
+  { step: STEP_NAMES.CONFORMANCE, on: "needs-fix",             to: STEP_NAMES.IMPLEMENTER },
+  // --- pr-create (terminal) ---
+  { step: STEP_NAMES.PR_CREATE,   on: "success",               to: "end" },
+  { step: STEP_NAMES.PR_CREATE,   on: "error",                 to: "escalate" },
+];

@@ -5,7 +5,7 @@
  * Dependency direction: registry → step / types / kernel (no import from run.ts).
  */
 import type { PipelineDescriptor } from "./types.js";
-import { STANDARD_TRANSITIONS } from "./types.js";
+import { STANDARD_TRANSITIONS, FAST_TRANSITIONS } from "./types.js";
 import { STEP_NAMES } from "../step/step-names.js";
 import { PIPELINE_IDS } from "../../kernel/pipeline-ids.js";
 
@@ -101,12 +101,75 @@ export const DESIGN_ONLY_DESCRIPTOR: PipelineDescriptor = {
 };
 
 /**
+ * Fast pipeline descriptor: 9-step slim profile with permissionScope.
+ *
+ * Removes spec-review / spec-fixer / test-case-gen / adr-gen from the standard pipeline.
+ * design goes directly to implementer; conformance goes directly to pr-create (no adr-gen).
+ * permissionScope (checkpoint=conformance, 3 forbidden surfaces) is declared so that:
+ *   - #689 scope breach detection fires at the conformance checkpoint.
+ *   - #693 capability gate rejects this profile before bootstrapJob when the runtime
+ *     cannot derive changed files (inherited automatically via permissionScope presence).
+ *
+ * The 3 forbidden surfaces:
+ *   public-types      — src/core/port/** (Ports & Adapters public interfaces)
+ *   persisted-format  — src/state/schema.ts (JobState schema)
+ *   state-transitions — src/state/lifecycle.ts (state-transition table)
+ */
+export const FAST_DESCRIPTOR: PipelineDescriptor = {
+  id: PIPELINE_IDS.FAST,
+  steps: [
+    [STEP_NAMES.REQUEST_REVIEW, RequestReviewStep],
+    [STEP_NAMES.DESIGN,         DesignStep],
+    [STEP_NAMES.IMPLEMENTER,    ImplementerStep],
+    [STEP_NAMES.VERIFICATION,   VerificationStep],
+    [STEP_NAMES.BUILD_FIXER,    BuildFixerStep],
+    [STEP_NAMES.CODE_REVIEW,    CodeReviewStep],
+    [STEP_NAMES.CODE_FIXER,     CodeFixerStep],
+    [STEP_NAMES.CONFORMANCE,    ConformanceStep],
+    [STEP_NAMES.PR_CREATE,      PrCreateStep],
+  ],
+  transitions: FAST_TRANSITIONS,
+  loopName: STEP_NAMES.CODE_REVIEW,
+  loopNames: [
+    STEP_NAMES.VERIFICATION,
+    STEP_NAMES.CODE_REVIEW,
+    STEP_NAMES.CONFORMANCE,
+  ],
+  loopFixerPairs: {
+    [STEP_NAMES.CODE_REVIEW]:  STEP_NAMES.CODE_FIXER,
+    [STEP_NAMES.VERIFICATION]: STEP_NAMES.BUILD_FIXER,
+  },
+  startStep: STEP_NAMES.REQUEST_REVIEW,
+  roles: {
+    [STEP_NAMES.REQUEST_REVIEW]: { role: "gate",     phase: "spec" },
+    [STEP_NAMES.DESIGN]:         { role: "creator",  phase: "spec" },
+    [STEP_NAMES.IMPLEMENTER]:    { role: "creator",  phase: "impl" },
+    [STEP_NAMES.VERIFICATION]:   { role: "gate",     phase: "impl" },
+    [STEP_NAMES.BUILD_FIXER]:    { role: "fixer",    phase: "impl" },
+    [STEP_NAMES.CODE_REVIEW]:    { role: "reviewer", phase: "impl" },
+    [STEP_NAMES.CODE_FIXER]:     { role: "fixer",    phase: "impl" },
+    [STEP_NAMES.CONFORMANCE]:    { role: "gate",     phase: "impl" },
+    [STEP_NAMES.PR_CREATE]:      { role: "gate",     phase: "impl" },
+  },
+  summaryStep: STEP_NAMES.CODE_REVIEW,
+  permissionScope: {
+    checkpoint: STEP_NAMES.CONFORMANCE,
+    forbidden: [
+      { id: "public-types",      paths: ["src/core/port/**"] },
+      { id: "persisted-format",  paths: ["src/state/schema.ts"] },
+      { id: "state-transitions", paths: ["src/state/lifecycle.ts"] },
+    ],
+  },
+};
+
+/**
  * Registry mapping pipeline ids to their descriptors.
- * Two entries: standard (12-step) and design-only (1-step).
+ * Three entries: standard (12-step), design-only (1-step), fast (9-step slim with scope).
  */
 export const PIPELINE_REGISTRY: Record<string, PipelineDescriptor> = {
   [PIPELINE_IDS.STANDARD]:    STANDARD_DESCRIPTOR,
   [PIPELINE_IDS.DESIGN_ONLY]: DESIGN_ONLY_DESCRIPTOR,
+  [PIPELINE_IDS.FAST]:        FAST_DESCRIPTOR,
 };
 
 /**
