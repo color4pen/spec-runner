@@ -57,6 +57,7 @@ export function parseRequestMdContent(
     adr,
     sections: raw.sections,
     issue: raw.issue,
+    pipeline: raw.pipeline,
   };
 }
 
@@ -124,6 +125,17 @@ export function parseRequestMdRaw(
     }
   }
 
+  // Extract pipeline from Meta section: "- **pipeline**: value" (optional)
+  let pipeline: string | undefined = undefined;
+  const pipelinePattern = /^\s*-\s+\*\*pipeline\*\*:\s+(.+)$/;
+  for (const line of lines) {
+    const m = pipelinePattern.exec(line);
+    if (m?.[1]) {
+      pipeline = m[1].trim();
+      break;
+    }
+  }
+
   // Extract adr from Meta section: "- **adr**: true|false" (required)
   let adrRaw: string | null = null;
   const adrPattern = /^\s*-\s+\*\*adr\*\*:\s+(true|false)\s*$/;
@@ -159,6 +171,7 @@ export function parseRequestMdRaw(
     adrRaw,
     adrAnyValue,
     issue,
+    pipeline,
     sections,
     filePath,
     content,

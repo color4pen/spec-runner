@@ -13,6 +13,8 @@ import type { EventBus } from "../event/event-bus.js";
 import { getBranchPrefix } from "../../config/type-config.js";
 import { STEP_NAMES } from "../step/step-names.js";
 import { STANDARD_PIPELINE_ID } from "../../kernel/pipeline-ids.js";
+import { getPipelineDescriptor } from "../pipeline/registry.js";
+import { assertRuntimeSupportsScope } from "../pipeline/runtime-capability-gate.js";
 import { loadReviewerDefinitions } from "../reviewers/load.js";
 import { validateReviewerDefinitions } from "../reviewers/validate.js";
 import type { ReviewerSnapshot } from "../reviewers/types.js";
@@ -79,6 +81,14 @@ export class PipelineRunCommand extends CommandRunner {
     validateReviewerDefinitions(reviewerDefs); // throws ReviewerValidationError on violation
     const reviewers: ReviewerSnapshot[] = reviewerDefs.map(({ filename: _f, ...rest }) => rest);
 
+    // Resolve pipeline id and run preflight capability gate BEFORE bootstrapping job.
+    // Unknown id throws via getPipelineDescriptor (existing registry error).
+    // Scope-declaring descriptor + incapable runtime throws UnsupportedRuntimeCapabilityError.
+    // Both halt before any state is created (same position as validateReviewerDefinitions above).
+    const pipelineId = request.pipeline ?? STANDARD_PIPELINE_ID;
+    const descriptor = getPipelineDescriptor(pipelineId);
+    assertRuntimeSupportsScope(descriptor, this.runtime);
+
     // Bootstrap job state (no I/O; persistence is deferred to setupWorkspace)
     const jobState = await this.runtime.bootstrapJob(cwd, {
       request: {
@@ -89,7 +99,7 @@ export class PipelineRunCommand extends CommandRunner {
         baseBranch: request.baseBranch,
       },
       repository: { owner: this.preflightResult.repo.owner, name: this.preflightResult.repo.name },
-      pipelineId: STANDARD_PIPELINE_ID,
+      pipelineId,
     });
 
     // Snapshot reviewer definitions into job state (pipeline shape is fixed at job start).

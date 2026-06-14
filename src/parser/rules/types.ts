@@ -28,6 +28,8 @@ export interface ParsedRequestRaw {
   /** raw value when adr pattern is partially matched (invalid value), null when absent */
   adrAnyValue: string | null;
   issue: string | undefined;
+  /** Pipeline id from Meta section (registry id). undefined = standard. */
+  pipeline: string | undefined;
   sections: ParsedRequestSections;
   filePath: string;
   content: string;

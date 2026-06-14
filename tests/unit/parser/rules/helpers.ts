@@ -10,6 +10,7 @@ export function makeRaw(overrides: Partial<ParsedRequestRaw> = {}): ParsedReques
     adrRaw: "false",
     adrAnyValue: null,
     issue: undefined,
+    pipeline: undefined,
     sections: {},
     filePath: "<string>",
     content: "",
