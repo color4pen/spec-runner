@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4ac7388c-5bff-4c4e-8ff3-06f32a489e0e",
   "createdAt": "2026-06-14T16:35:02.244Z",
-  "updatedAt": "2026-06-14T17:58:40.783Z",
+  "updatedAt": "2026-06-14T18:02:57.143Z",
   "request": {
     "title": "test-cases.md を code-review の soft input にし producer に出力保証を移す ＋ descriptor を起動前 validator で検算する（fast STEP_INPUT_MISSING 修正）",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/test-cases-input-decouple-4ac7388c",
   "error": null,
   "pipelineId": "standard",
@@ -48,8 +48,13 @@
     }
   ],
   "issueNumber": 699,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/700",
+    "number": 700,
+    "createdAt": "2026-06-14T18:02:57.128Z"
+  },
   "_journal": {
-    "historyCount": 73,
+    "historyCount": 78,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -63,7 +68,9 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
