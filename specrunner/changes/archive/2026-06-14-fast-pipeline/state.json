@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "3cf0dbc6-c29e-4e9d-9259-49403f53a5b9",
   "createdAt": "2026-06-14T11:30:02.697Z",
-  "updatedAt": "2026-06-14T12:37:57.780Z",
+  "updatedAt": "2026-06-14T12:59:04.969Z",
   "request": {
     "title": "軽量 fast pipeline profile を追加する — permissionScope を宣言する最初の利用者",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "feat/fast-pipeline-3cf0dbc6",
   "error": null,
   "pipelineId": "standard",
@@ -54,7 +54,7 @@
     "createdAt": "2026-06-14T12:37:57.769Z"
   },
   "_journal": {
-    "historyCount": 70,
+    "historyCount": 71,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
