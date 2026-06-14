@@ -34,3 +34,16 @@
 {"type":"transition","ts":"2026-06-14T17:28:13.141Z","step":"verification","status":"warning","message":"verification iteration 1 completed with verdict: failed"}
 {"type":"transition","ts":"2026-06-14T17:28:13.141Z","step":"step-transition","status":"ok","message":"verification → build-fixer"}
 {"type":"transition","ts":"2026-06-14T17:28:13.145Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}
+{"type":"transition","ts":"2026-06-14T17:29:24.309Z","step":"build-fixer-verdict","status":"ok","message":"build-fixer verdict: success"}
+{"type":"step-attempt","step":"build-fixer","sessionId":"08405a4d-5eca-41a4-9aaf-5acac5a02e57","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-14T17:28:13.165Z","endedAt":"2026-06-14T17:29:22.498Z"}
+{"type":"lineage","step":"build-fixer","ts":"2026-06-14T17:29:22.498Z","outputs":[{"path":"specrunner/changes/test-cases-input-decouple","hash":null}],"inputs":[{"path":"specrunner/changes/test-cases-input-decouple/verification-result.md","hash":"sha256:9819854c0532cf43e8f24bf7ccd049f062d2a991fbe440c5b3908998824b0d11"}]}
+{"type":"transition","ts":"2026-06-14T17:29:24.320Z","step":"step-transition","status":"ok","message":"build-fixer → verification"}
+{"type":"transition","ts":"2026-06-14T17:29:24.324Z","step":"verification","status":"started","message":"verification iteration 2 started"}
+{"type":"transition","ts":"2026-06-14T17:29:24.326Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-06-14T17:30:53.506Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/test-cases-input-decouple/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-14T17:29:24.327Z","endedAt":"2026-06-14T17:30:53.504Z"}
+{"type":"lineage","step":"verification","ts":"2026-06-14T17:30:53.504Z","outputs":[{"path":"specrunner/changes/test-cases-input-decouple/verification-result.md","hash":"sha256:b2d5cdf46931425e2ab6969596aac6c8d2b3b059a4e36452b3e3b87560dd5246"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-06-14T17:30:53.511Z","step":"verification","status":"ok","message":"verification iteration 2 completed with verdict: passed"}
+{"type":"transition","ts":"2026-06-14T17:30:53.512Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-06-14T17:30:53.514Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-06-14T17:30:53.515Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
