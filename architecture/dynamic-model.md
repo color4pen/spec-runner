@@ -32,8 +32,9 @@
 
 ### Pipeline 状態機械（steps × transitions）
 - **状態 ＝ step**、**遷移 ＝ transition 表**（`{from, on: <outcome 値>, to}`）＋ loop（`to` が前 step を指す ＋ 上限）。どの遷移にも一致しない outcome は **fail-closed（escalate）**。
-- 状態集合（step）・許可遷移・収束意味論は記述子（`PipelineDescriptor`）が持ち、`pipelineId` で選ぶ。
-- → `src/core/pipeline/`（transition 表・収束意味論が正典）。routing の解決手順は behavior（spec）。
+- 状態集合（step）・許可遷移・収束意味論は記述子（`PipelineDescriptor`）が持ち、`pipelineId` で選ぶ。registry は `standard` / `design-only` / `fast` の 3 本。`pipelineId` は request.md Meta の `pipeline`（absent = `standard`）から job 生成時に**一度だけ**解決し、途中で付け替えない。
+- **scope checkpoint**: descriptor が `permissionScope`（`domain-model.md`）を宣言する場合、その `checkpoint`（judge step）で最終 diff の変更ファイルを forbidden surface に当てて breach を機械導出し、`origin:"scope"` の decision-needed finding を当該 step の findings に合成してから verdict を導出する（＝この step に「scope を越えたら escalate」を束ねる）。`fast` が最初の宣言 profile（checkpoint = `conformance`）。
+- → `src/core/pipeline/`（transition 表・収束意味論が正典）／ `src/core/pipeline/registry.ts`（記述子）。routing の解決手順は behavior（spec）。
 
 ---
 
@@ -53,6 +54,13 @@
 - **不変条件**: 自動文脈が存在する ⟺ 解決後の startStep ＝ 記録された `resumePoint.step`（`--from` で別 step を選ぶと自動文脈は伝播しない）。人間 `--prompt` はこの制約の対象外で、常に最初の agent step へ載る。
 - **binder**: `ResumeCommand`（snapshot 捕捉・startStep 一致判定）→ `CommandRunner`（deps へ）→ `StepExecutor`（`buildResumePrompt` で合成・one-shot 消費）。再開位置の解決（`resolveResumeStep`: `--from` > `resumePoint.step` > throw）は behavior。
 - → `src/core/resume/resume-context.ts`（`ResumeContextSnapshot` / `buildResumePrompt`）／ `src/core/resume/resolve-step.ts`（位置解決）／ `src/core/command/resume.ts`（伝播ゲート）
+
+### capability gate — pipeline profile ↔ runtime 能力の着手前束縛
+- **束縛**: job 生成時、解決した descriptor が `permissionScope` を宣言し、かつ runtime が changed-files を導出できない（`canDeriveChangedFiles?.() === false`）場合、**`bootstrapJob` の前に** typed error で拒否する。判定は `permissionScope` の有無から導出し profile 名でハードコードしない（将来の宣言 profile も同じ gate を継承）。
+- **寿命**: 着手前 preflight。`validateReviewerDefinitions` と同じ「検査して throw＝状態を作らない」前例位置に並ぶ。発火時 **job state / worktree は一切作られない**。
+- **不変条件**: scope を検証できない runtime では「黙って通す（fail-open）」を選ばず**着手前に止める**（fail-closed）。これは多層防御の front であり、front をすり抜けた場合の back が scope checkpoint の escalation。resume 経路は本 gate を持たない（着手前 preflight の設計、back が担保）。
+- **binder**: `PipelineRunCommand.prepare`（`assertRuntimeSupportsScope`）。real runtime 側が能力 interface を実装していることは B-11 が固定。
+- → `src/core/pipeline/runtime-capability-gate.ts`（gate）／ `src/core/command/pipeline-run.ts`（着手前呼び出し）
 
 ---
 

@@ -10,7 +10,8 @@
 ## domain（core、runtime/port 除く）
 
 ### Pipeline — 実行オーケストレータ
-- **責務**: step を実行し、`STANDARD_TRANSITIONS` を引いて次 step を決め、loop 枯渇を `LOOP_ERROR_CODES` で halt にする。
+- **責務**: step を実行し、transition 表を引いて次 step を決め、loop 枯渇を `LOOP_ERROR_CODES` で halt にする。
+- **profile / 権限スコープ**: registry は `standard` / `design-only` / `fast`（記述子で選択、`dynamic-model.md`）。descriptor は任意で `permissionScope`（`domain-model.md`）を持ち、その `checkpoint`（judge step）で scope breach を評価する（→ Scope derivation）。
 - **協調**: StepExecutor（各 step 実行）/ Transition table（routing）/ JobStateStore（state 永続）。
 - → `src/core/pipeline/`
 
@@ -19,7 +20,13 @@
 interface Transition { step: string; on: Verdict | string; to: string | "end" | "escalate"; when?: (state: JobState) => boolean }
 ```
 - **責務**: 「step が verdict を出したらどこへ」をデータで宣言。`when` は型付き state のみ参照（`fileContent` を読んだら arch test 違反）。
-- → `src/core/pipeline/types.ts`（`STANDARD_TRANSITIONS`）
+- → `src/core/pipeline/types.ts`（`STANDARD_TRANSITIONS` / `FAST_TRANSITIONS`）
+
+### Scope derivation — 権限スコープの breach 機械導出（pure）
+- **責務**: `(permissionScope, 最終 diff の changed-files, state)` から forbidden surface の breach 有無と抵触面を導出し（`deriveScopeBreach`）、breach / 評価不能（UNKNOWN）を `origin:"scope"` の decision-needed finding に**決定的に合成**する（`synthesizeScopeFindings` / `synthesizeScopeUnverifiableFinding`）。agent 申告でない**第2の verdict 入力源**。
+- **不変条件**: pure（`fs`/`child_process` を import しない＝B-5）。changed-files は RuntimeStrategy seam（`listChangedFiles`、`verifyFindingRefs` と同型）経由で受け取る。合成 finding は既存の `deriveJudgeVerdict` → escalation → decision-ledger を通り並行機構を作らない。`canDeriveChangedFiles?.() === false` の runtime では breach 評価を行わず UNKNOWN を合成（fail-closed）。
+- **協調**: StepExecutor（checkpoint judge step で合成 findings を merge）/ RuntimeStrategy（diff seam）/ judge-verdict（導出）/ decision-ledger（蒸し返し封殺）。
+- → `src/core/pipeline/scope.ts`（純関数）/ `src/core/step/scope-check.ts`（checkpoint での呼び出し）
 
 ### Reviewers — 宣言的レビューレンズ subsystem
 - **責務**: `specrunner/reviewers/<name>.md`（frontmatter: name / maxIterations / model / paths / requestTypes、本文: 目的・観点・判定基準 + 自由欄）を job 開始時にロード・検証し、`JobState.reviewers` に snapshot する。pipeline 合成時に `composeReviewerDescriptor` が base descriptor を拡張: custom reviewer step 群を code-review の後に挿入し、チェーン全体の遷移を `buildReviewerChainTransitions` で再生成し、末尾に regression-gate（修正済み findings の台帳照合）を付与する。snapshots 空のとき base を参照同一で返す（ゼロ overhead 不変条件）。
@@ -139,7 +146,8 @@ interface FollowUpPolicy { maxAttempts; buildPrompt(input): string }  // DEFAULT
 - **検証と導出の分担**: finding の file / line 参照の存在確認（I/O、runtime 差異＝local worktree fs / managed GitHub raw fetch）は本 seam（`verifyFindingRefs`）。verdict の導出（純関数）は domain（`core/step/judge-verdict.ts`）。判定を seam に、I/O を domain に置かない（B-5 / B-8 と同方向）。
 - **出力検証（`validateStepOutputs`）**: step 実行後、`OutputContract[]` を受け取り `OutputCheckResult`（violations）を返す。no-throw 契約。`produced`（ファイル欠落 / 空 / scaffold 一致）と `tasks-complete`（未チェック `[ ]` 残存）の 2 kind を処理。LocalRuntime = ローカル fs 読み取り、ManagedRuntime = origin fetch 後 `getRawFile`（stdout 非汚染）。
 - **変更ファイル観測（`listChangedFiles`）**: base branch との差分ファイル一覧を返す（reviewer activation の判定材料）。LocalRuntime = `git diff --name-only`、ManagedRuntime = `[]`（local git なし → paths 条件付き reviewer は安全側 skip、文書化済み制約）。
-- → `src/core/port/runtime-strategy.ts`（`local.ts` / `managed.ts` が implements）
+- **能力 predicate（`canDeriveChangedFiles?(): boolean`）**: changed-files を機械導出できる runtime かを表す optional メタ情報。LocalRuntime=`true` / ManagedRuntime=`false`。absent は現行経路（`listChangedFiles`）へフォールスルー。**scope-check のみが参照**し reviewer activation は参照しない（activation は `[]` で安全側 skip を維持）。具象 runtime は本 predicate を必須化した交差型 `RealRuntimeStrategy` を implements する（B-11）。
+- → `src/core/port/runtime-strategy.ts`（`RuntimeStrategy` / `RealRuntimeStrategy`。`local.ts` / `managed.ts` が implements）
 
 ### createRuntime — runtime factory（分岐集約点）
 - **責務**: `config.runtime`（local / managed）の分岐を**ここ1箇所に閉じて** RuntimeStrategy を組む（B-8）。
@@ -148,8 +156,9 @@ interface FollowUpPolicy { maxAttempts; buildPrompt(input): string }  // DEFAULT
 
 ### CommandRunner — pipeline 実行の Template Method
 - **責務**: run / resume 共通の実行骨格。`prepare`（subclass override の唯一点）→ `setupWorkspace` → `buildDeps` → `registerCleanup` → runPipeline → `handleResult` → `teardown` の固定7段。subclass は `prepare()` のみ override。
+- **profile 選択 + 着手前 capability gate**: `PipelineRunCommand.prepare` が request.md Meta の `pipeline` から `pipelineId` を解決（absent=`standard`、未知 id は registry エラー）し、`permissionScope` を宣言する descriptor ＋ 非対応 runtime を **`bootstrapJob` の前に** reject する（`assertRuntimeSupportsScope` → `runtime-capability-gate.ts`、`dynamic-model.md` の capability gate）。判定は `permissionScope` の有無から導出し profile 名でハードコードしない。
 - **協調**: RuntimeStrategy（注入）/ EventBus / Pipeline / JobStateStore / KeepAlive。
-- → `src/core/command/runner.ts`（`PipelineRunCommand` / `ResumeCommand` が extends）
+- → `src/core/command/runner.ts`（`PipelineRunCommand` / `ResumeCommand` が extends）／ `src/core/pipeline/runtime-capability-gate.ts`
 
 ---
 
@@ -186,4 +195,4 @@ interface FollowUpPolicy { maxAttempts; buildPrompt(input): string }  // DEFAULT
 ## 使い方（write / review の入口）
 
 - **書く**: 新 step を足す → `Step`（AgentStep|CliStep）契約を実装。新 IO 先 → `core/port` に interface を足し adapter で実装（B-1）。型は domain-model.md。
-- **レビューする**: この責務・interface に沿っているか（判断レビュー）＋ 依存方向（B-1〜B-9、決定的レビュー＝歯）。詳細は `conformance.md`。
+- **レビューする**: この責務・interface に沿っているか（判断レビュー）＋ 依存方向（B-x 不変条件、決定的レビュー＝歯）。詳細は `conformance.md`。

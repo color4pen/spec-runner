@@ -72,7 +72,7 @@ composition-root ─→ (all)
 ## 4. Load-bearing 構造不変条件（the「must」＋ なぜ）
 
 > ここは**構造**（層・依存・配置）の不変条件のみ。振る舞い・step-outcome 契約の不変条件は扱わない（その強制は `tests/unit/contract/` と型が担う）。
-> **2 系統**（混同しない）: **B-1〜B-4 = 依存方向**（§3 DSM の edge に写る。dependency-cruiser / import 検査で assert）。**B-5〜B-10 = edge に写らない構造制約**（判定系の純粋性・credential/secret の seam 経由封じ込め・runtime 分岐集約・status 単一 mutator・host↔token 束縛。import / call-site の grep 検査で assert）。後者も「どの seam を通すか / どこに分岐を置くか / どの mutator を通すか / どの host へ token を送るか」という**静的な call-site 制約**であり、振る舞い（routing が何を読むか）ではない。B-6/B-7/B-10 は値（型でなく）の封じ込めで B-2 と対をなす。
+> **2 系統**（混同しない）: **B-1〜B-4 = 依存方向**（§3 DSM の edge に写る。dependency-cruiser / import 検査で assert）。**B-5〜B-11 = edge に写らない構造制約**（判定系の純粋性・credential/secret の seam 経由封じ込め・runtime 分岐集約・status 単一 mutator・host↔token 束縛・concrete runtime の能力 interface 実装。import / call-site の grep 検査で assert）。後者も「どの seam を通すか / どこに分岐を置くか / どの mutator を通すか / どの host へ token を送るか」という**静的な call-site 制約**であり、振る舞い（routing が何を読むか）ではない。B-6/B-7/B-10 は値（型でなく）の封じ込めで B-2 と対をなす。
 
 | # | invariant | なぜ |
 |---|---|---|
@@ -86,6 +86,7 @@ composition-root ─→ (all)
 | **B-8** | runtime（local / managed）の分岐は `createRuntime` factory に集約。domain / CLI に `config.runtime` の分岐を散らさない | runtime 追加・差し替えの影響を1点に閉じる（ruling D2 の依拠根拠）。分岐散在を構造的に禁止 |
 | **B-9** | `JobState.status` の変更は `transitionJob`（`state/lifecycle.ts`）経由のみ。patch / persist で status を直書きしない | 不正な状態遷移を `VALID_TRANSITIONS` で構造的に弾く。status mutation を単一 mutator に集約し、FSM 検証を bypass する raw 書き込みを禁止 |
 | **B-10** | GitHub token は紐づく host にしか送らない（github.com 用 token を非 github.com host へ、enterprise token を github.com へ送らない）| credential を誤った送信先 host へ漏らさない（published security advisory パターン）。B-6（subprocess への入口の封じ込め）と対をなす**送信先**の封じ込め |
+| **B-11** | `src/core/runtime/` の具象 runtime は `RealRuntimeStrategy`（`RuntimeStrategy` に `canDeriveChangedFiles` を必須化した交差型）を implements する。bare `implements RuntimeStrategy` を使わない | `permissionScope` を宣言する pipeline が要求する「changed-files 導出能力」を、将来の real runtime が実装し忘れて fail-open に戻ることを、コンパイル時（必須メソッド）＋ grep（bare implements 禁止）で構造的に封じる |
 
 ---
 
@@ -99,7 +100,7 @@ composition-root ─→ (all)
 
 ## 6. 強制（歯）と trust placement
 
-- **歯**: `tests/unit/architecture/core-invariants.test.ts` が §4 の B-1〜B-10 と §3 closure（DSM）を **src 全体**で grep / import 検査する。既知 divergence は `arch-allowlist.ts` に grandfather し、allowlist は**削除のみで縮む ratchet**（許可されない edge / seam 違反 / status 直書きを新たに足すと red）。`module-boundary.test.ts` も併存。
+- **歯**: `tests/unit/architecture/core-invariants.test.ts` が §4 の B-1〜B-11 と §3 closure（DSM）を **src 全体**で grep / import 検査する。既知 divergence は `arch-allowlist.ts` に grandfather し、allowlist は**削除のみで縮む ratchet**（許可されない edge / seam 違反 / status 直書きを新たに足すと red）。`module-boundary.test.ts` も併存。
 - **trust placement**: CI の required check に入れ、**merge は GitHub gate（branch protection）に委ね、CLI(archive) は merge を持たない**（`finish-respect-branch-protection` → `archive-command`）＋ **`CODEOWNERS` でこの model.md と歯をループ外固定**。
 - 現状の divergence・burn-down 履歴は構造でなく状況断面 → `divergence-status.md` を参照。
 

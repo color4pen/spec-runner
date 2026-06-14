@@ -1,14 +1,15 @@
 # divergence status — 状況断面（snapshot・mutable・非 authority）
 
 > **これは状況断面（point-in-time snapshot）であり、構造の authority ではない。**
-> 構造の定規は `model.md`（層 / closure / B-1〜B-10）で、本書は「actual がそこへどれだけ収束しているか」の現状記録にすぎない。設計書（`model.md` / `components.md` / `domain-model.md` / `conformance.md`）は時間に依存しない構造のみを持ち、状況断面は持たない。
+> 構造の定規は `model.md`（層 / closure / B-x 不変条件）で、本書は「actual がそこへどれだけ収束しているか」の現状記録にすぎない。設計書（`model.md` / `components.md` / `domain-model.md` / `conformance.md`）は時間に依存しない構造のみを持ち、状況断面は持たない。
 > **live な真実**は歯: `tests/unit/architecture/core-invariants.test.ts`（検査）＋ `tests/unit/architecture/arch-allowlist.ts`（既知 divergence の grandfather 台帳、削除のみで縮む ratchet）。本書はその人間向け要約。
 
-## 現状（2026-06-10 時点）
+## 現状（2026-06-14 時点）
 
-- **B-1〜B-10 ＋ §3 DSM closure に対する実 divergence = ゼロ。**
+- **B-1〜B-11 ＋ §3 DSM closure に対する実 divergence = ゼロ。**
 - `arch-allowlist.ts` の残エントリは `B-1` の `R2-*-adapter` 3件のみ。これは composition-root（`core/runtime/`）が adapter を import する §3 許可 edge の記録であり、**違反ではない**。
 - 定義 doc の追随: judge findings の検証 seam / Finding VO / 導出純関数の所在を `components.md`・`domain-model.md` に反映、構造 ADR `2026-06-10-findings-verification-seam` を ratify 済み。
+- **scope/permission サブシステム ＋ pipeline 選択 ＋ fast profile を反映済み**（弧 #689→#692→#693→#694）: B-11（concrete runtime の能力 interface）を `model.md` §4 ＋歯に追加、`permissionScope` / `Finding.origin` / scope derivation（機械導出の第2 escalation 源）を `domain-model.md`・`components.md` に、pipeline 選択 / 着手前 capability gate / scope checkpoint 束縛を `dynamic-model.md` に反映。`PIPELINE_REGISTRY` は `standard` / `design-only` / `fast` の 3 本で、`permissionScope` 宣言は `fast` の1件。
 
 ## burn-down 履歴（どの change が何を解消したか）
 
@@ -30,11 +31,15 @@
 | 歯を core/request scoped → src 全体へ | `arch-upward-edge-ratchet` / `arch-test-core-wide-ratchet` / `arch-closure-src-wide` |
 | DSM domain→comp-root (5) | `dsm-runtime-strategy-demote`（`RuntimeStrategy`/prereqs を ports 降格）|
 | DSM adapter/ports→domain (16) | `dsm-domain-type-demote`（共有型を `src/kernel/` 等へ降格）|
+| permissionScope / scope breach 機械導出（第2 escalation 源）| `scope-exceeded-escalation` |
+| B-11 concrete runtime の能力 interface（歯＋`RealRuntimeStrategy`）| `scope-unevaluable-fail-closed` |
+| pipeline 選択（Meta）＋ 着手前 capability gate | `pipeline-selection-capability-gate` |
+| fast profile（最初の `permissionScope` 宣言）| `fast-pipeline` |
 
 ## enforcement / 配線の status
 
-- **歯（決定的レビュー B-1〜B-10 + closure）**: 実装済み（`core-invariants.test.ts`、src 全体）。
+- **歯（決定的レビュー B-1〜B-11 + closure）**: 実装済み（`core-invariants.test.ts`、src 全体）。
 - **writer 注入**（`architecture/` を design/implementer の prompt へ）: 未着手。
-- **reviewer 注入**（review criteria に B-1〜B-10 を追加）: 未着手。
+- **reviewer 注入**（review criteria に B-1〜B-11 を追加）: 未着手。
 - **`tests/` 二重構造（`tests/core/` と `tests/unit/`）整理**: 未着手。
 - T1 trust（branch protection）: private repo・owner 手動 gate のため対象外。
