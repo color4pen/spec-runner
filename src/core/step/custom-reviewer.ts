@@ -123,7 +123,10 @@ export function createCustomReviewerStep(snapshot: ReviewerSnapshot): AgentStep 
       return [
         { path: `${folder}/design.md` },
         { path: `${folder}/tasks.md` },
-        { path: `${folder}/test-cases.md` },
+        // test-cases.md is a soft input (required: false): absent in fast profile.
+        // Custom reviewers do not use test-cases.md in their user message, so
+        // absence never affects their review logic.
+        { path: `${folder}/test-cases.md`, required: false },
         { path: ".", artifact: "gitState" },
       ];
     },

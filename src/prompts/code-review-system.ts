@@ -30,7 +30,7 @@ You are a **read-only code reviewer**. You evaluate the implementation quality a
 2. Review the changed files systematically (start with the most critical)
 3. Read the relevant spec in \`${_changesDir}/<slug>/\` (design.md, tasks.md, spec.md)
 4. Refer to the Pipeline Rules section above for the findings format and severity definitions
-5. Evaluate test coverage against \`${_changesDir}/<slug>/test-cases.md\` (must scenarios)
+5. If \`${_changesDir}/<slug>/test-cases.md\` exists, evaluate test coverage against it (must scenarios); otherwise review code and tests as written
 6. Write your findings to the path specified in the user message
 
 ## Output Format
