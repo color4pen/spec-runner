@@ -113,3 +113,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/test-cases-input-decouple/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-14T18:02:55.202Z","endedAt":"2026-06-14T18:02:57.130Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-14T18:02:57.130Z","outputs":[{"path":"specrunner/changes/test-cases-input-decouple/pr-create-result.md","hash":"sha256:99051e052aa00b588c14d20a73affb5face5c533853f683af3d30205fd08ad7a"}],"inputs":[{"path":"change/test-cases-input-decouple-4ac7388c","hash":null}]}
 {"type":"transition","ts":"2026-06-14T18:02:57.143Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-14T23:37:48.350Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
