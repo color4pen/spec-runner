@@ -27,7 +27,7 @@ import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import type { PreflightResult } from "../../../../src/core/preflight.js";
 import type { ParsedRequest } from "../../../../src/parser/types.js";
 import type { Step } from "../../../../src/core/step/types.js";
-import { changeFolderPath } from "../../../../src/util/paths.js";
+import { changeFolderPath, requestMdPath } from "../../../../src/util/paths.js";
 import { loadReviewerDefinitions } from "../../../../src/core/reviewers/load.js";
 import type { ReviewerDefinition } from "../../../../src/core/reviewers/types.js";
 
@@ -103,7 +103,7 @@ function makeCleanDescriptor(): PipelineDescriptor {
     ...noopStep,
     name: "clean-step",
     // Reads request.md using deps.slug — will be VALIDATOR_PROBE_SLUG at validation time.
-    reads: (_state, deps) => [{ path: `specrunner/changes/${deps.slug}/request.md` }],
+    reads: (_state, deps) => [{ path: requestMdPath(deps.slug) }],
     writes: () => [],
   };
 
