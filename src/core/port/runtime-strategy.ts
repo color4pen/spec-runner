@@ -378,4 +378,42 @@ export interface RuntimeStrategy {
    * @param branch     - Current branch (informational; local impl uses HEAD directly).
    */
   listChangedFiles(baseBranch: string, cwd: string, branch: string | null): Promise<string[]>;
+
+  /**
+   * Seam meta-information: whether this runtime can mechanically derive changed files.
+   *
+   * Used exclusively by scope-check (fail-closed path). Reviewer activation consumers
+   * MUST NOT reference this predicate — they maintain fail-safe (under-activate) via
+   * listChangedFiles alone.
+   *
+   * - `true`  — runtime can derive changed files (e.g. LocalRuntime with git worktree).
+   * - `false` — runtime cannot derive changed files (e.g. ManagedRuntime, no local worktree).
+   * - absent  — fall through to the existing listChangedFiles path (= #689 behavior).
+   *             fail-closed scope evaluation does NOT fire for runtimes without this predicate.
+   *
+   * Optional to preserve backward compatibility with test fakes typed as RuntimeStrategy:
+   * absent is treated as "evaluate via listChangedFiles" (not as "cannot derive").
+   * Only predicate=false triggers fail-closed UNKNOWN escalation.
+   *
+   * listChangedFiles contract (return type, Never-throws, [] on error) is unaffected.
+   */
+  canDeriveChangedFiles?(): boolean;
 }
+
+// ---------------------------------------------------------------------------
+// RealRuntimeStrategy — intersection type for concrete runtime implementations
+// ---------------------------------------------------------------------------
+
+/**
+ * Intersection type that concrete runtime classes in src/core/runtime/ must implement.
+ *
+ * Extends RuntimeStrategy with a required (non-optional) canDeriveChangedFiles().
+ * Using this type for LocalRuntime and ManagedRuntime ensures that:
+ * - predicate implementation is enforced at compile time for real runtimes.
+ * - test fakes typed as RuntimeStrategy remain unaffected (optional predicate).
+ * - a future concrete runtime that omits canDeriveChangedFiles() fails to compile.
+ *
+ * Port interface (RuntimeStrategy) keeps predicate optional for test-fake convenience.
+ * Composition-root implementations use RealRuntimeStrategy to close the optional hole.
+ */
+export type RealRuntimeStrategy = RuntimeStrategy & { canDeriveChangedFiles(): boolean };

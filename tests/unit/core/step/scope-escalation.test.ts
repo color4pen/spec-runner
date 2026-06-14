@@ -34,7 +34,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 
 // Scope module
-import { synthesizeScopeFindings } from "../../../../src/core/pipeline/scope.js";
+import { synthesizeScopeFindings, synthesizeScopeUnverifiableFinding } from "../../../../src/core/pipeline/scope.js";
 
 // Pipeline types + registry
 import type { PermissionScope, PipelineDescriptor } from "../../../../src/core/pipeline/types.js";
@@ -781,5 +781,460 @@ describe("T-07: buildEscalationComment renders scope findings", () => {
     const comment = buildEscalationComment(state);
     expect(comment).toContain("Option A");
     expect(comment).toContain("Option B");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-04: synthesizeScopeUnverifiableFinding unit tests
+// ---------------------------------------------------------------------------
+
+describe("T-04: synthesizeScopeUnverifiableFinding — UNKNOWN finding determinism", () => {
+  it("same ctx produces same file anchor", () => {
+    const ctx = { slug: "my-feature" };
+    const f1 = synthesizeScopeUnverifiableFinding(ctx)[0]!;
+    const f2 = synthesizeScopeUnverifiableFinding(ctx)[0]!;
+    expect(f1.file).toBe(f2.file);
+    expect(f1.file).toBe("specrunner/changes/my-feature/request.md");
+  });
+
+  it("same ctx produces same title", () => {
+    const ctx = { slug: "my-feature" };
+    const f1 = synthesizeScopeUnverifiableFinding(ctx)[0]!;
+    const f2 = synthesizeScopeUnverifiableFinding(ctx)[0]!;
+    expect(f1.title).toBe(f2.title);
+  });
+
+  it("same ctx produces same rationale", () => {
+    const ctx = { slug: "my-feature" };
+    const f1 = synthesizeScopeUnverifiableFinding(ctx)[0]!;
+    const f2 = synthesizeScopeUnverifiableFinding(ctx)[0]!;
+    expect(f1.rationale).toBe(f2.rationale);
+  });
+
+  it("same ctx produces same options (≥2)", () => {
+    const ctx = { slug: "my-feature" };
+    const f1 = synthesizeScopeUnverifiableFinding(ctx)[0]!;
+    const f2 = synthesizeScopeUnverifiableFinding(ctx)[0]!;
+    expect(f1.options?.length).toBeGreaterThanOrEqual(2);
+    expect(f1.options).toEqual(f2.options);
+  });
+
+  it("resolution is decision-needed", () => {
+    const f = synthesizeScopeUnverifiableFinding({ slug: "my-feature" })[0]!;
+    expect(f.resolution).toBe("decision-needed");
+  });
+
+  it("origin is 'scope'", () => {
+    const f = synthesizeScopeUnverifiableFinding({ slug: "my-feature" })[0]!;
+    expect(f.origin).toBe("scope");
+  });
+
+  it("severity is 'high'", () => {
+    const f = synthesizeScopeUnverifiableFinding({ slug: "my-feature" })[0]!;
+    expect(f.severity).toBe("high");
+  });
+
+  it("UNKNOWN finding computeFindingKey differs from breach finding computeFindingKey", () => {
+    const ctx = { slug: "my-feature" };
+    const breach = { breached: true, surfaces: ["src-auth"] };
+    const breachFinding = synthesizeScopeFindings(breach, ctx)[0]!;
+    const unknownFinding = synthesizeScopeUnverifiableFinding(ctx)[0]!;
+    // Different titles → different keys
+    expect(computeFindingKey("spec-review", unknownFinding)).not.toBe(
+      computeFindingKey("spec-review", breachFinding),
+    );
+  });
+
+  it("UNKNOWN finding computeFindingKey is stable across calls", () => {
+    const ctx = { slug: "my-feature" };
+    const f = synthesizeScopeUnverifiableFinding(ctx)[0]!;
+    expect(computeFindingKey("spec-review", f)).toBe(computeFindingKey("spec-review", f));
+  });
+
+  it("slug is embedded in the file anchor path", () => {
+    const f = synthesizeScopeUnverifiableFinding({ slug: "some-other-slug" })[0]!;
+    expect(f.file).toBe("specrunner/changes/some-other-slug/request.md");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-06: fail-closed escalation integration tests (canDeriveChangedFiles=false)
+// ---------------------------------------------------------------------------
+
+/**
+ * Make a RuntimeStrategy fake with canDeriveChangedFiles=false.
+ * listChangedFiles is a spy so tests can verify it is never called.
+ */
+function makeUnevaluableRuntimeStrategy(): RuntimeStrategy & { listChangedFiles: ReturnType<typeof vi.fn> } {
+  const listFn = vi.fn().mockResolvedValue([]);
+  return {
+    async *query() {},
+    createAgentRunner() {
+      return {
+        async run() {
+          return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
+        },
+      };
+    },
+    async setupWorkspace() { return { cwd: "" }; },
+    buildDeps() { return {} as never; },
+    registerCleanup() { return {} as never; },
+    async teardown() {},
+    async captureHeadSha() { return null; },
+    async prepareStepArtifacts() {},
+    async finalizeStepArtifacts() {},
+    async validateStepInputs() {},
+    async validateStepOutputs() { return { violations: [] }; },
+    async commitFinalState() {},
+    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
+    async persistJobState() {},
+    async verifyFindingRefs() { return []; },
+    async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
+    listChangedFiles: listFn,
+    canDeriveChangedFiles: () => false,
+  };
+}
+
+describe("T-06: canDeriveChangedFiles=false → UNKNOWN finding escalation (fail-closed)", () => {
+  it("permissionScope + checkpoint + canDeriveChangedFiles=false → verdict escalation", async () => {
+    const jobState = await createRunningJobState();
+    const strategy = makeUnevaluableRuntimeStrategy();
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      FORBIDDEN_SCOPE,
+    );
+
+    const step = makeJudgeStep("spec-review");
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    const outcome = getLastOutcome(finalState, "spec-review");
+    expect(outcome?.verdict).toBe("escalation");
+  });
+
+  it("canDeriveChangedFiles=false → listChangedFiles is NOT called", async () => {
+    const jobState = await createRunningJobState();
+    const strategy = makeUnevaluableRuntimeStrategy();
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      FORBIDDEN_SCOPE,
+    );
+
+    const step = makeJudgeStep("spec-review");
+    await executor.execute(step, jobState, makeDeps(strategy));
+
+    // listChangedFiles must NOT be called when predicate returns false
+    expect(strategy.listChangedFiles).not.toHaveBeenCalled();
+  });
+
+  it("canDeriveChangedFiles=false → UNKNOWN finding in toolResult (origin:scope, resolution:decision-needed)", async () => {
+    const jobState = await createRunningJobState();
+    const strategy = makeUnevaluableRuntimeStrategy();
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      FORBIDDEN_SCOPE,
+    );
+
+    const step = makeJudgeStep("spec-review");
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    const outcome = getLastOutcome(finalState, "spec-review");
+    const tr = outcome?.toolResult as { findings?: Finding[] } | null;
+    const scopeFindings = (tr?.findings ?? []).filter((f) => f.origin === "scope");
+    expect(scopeFindings).toHaveLength(1);
+    expect(scopeFindings[0]!.resolution).toBe("decision-needed");
+    expect(scopeFindings[0]!.severity).toBe("high");
+  });
+
+  it("canDeriveChangedFiles=false → UNKNOWN finding has ≥2 options", async () => {
+    const jobState = await createRunningJobState();
+    const strategy = makeUnevaluableRuntimeStrategy();
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      FORBIDDEN_SCOPE,
+    );
+
+    const step = makeJudgeStep("spec-review");
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    const outcome = getLastOutcome(finalState, "spec-review");
+    const tr = outcome?.toolResult as { findings?: Finding[] } | null;
+    const scopeFinding = (tr?.findings ?? []).find((f) => f.origin === "scope");
+    expect(scopeFinding?.options?.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("canDeriveChangedFiles=false → UNKNOWN finding is in getOpenDecisionFindings (resumePoint=checkpoint)", async () => {
+    const jobState = await createRunningJobState();
+    const strategy = makeUnevaluableRuntimeStrategy();
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      FORBIDDEN_SCOPE,
+    );
+
+    const step = makeJudgeStep("spec-review");
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    const openFindings = getOpenDecisionFindings({
+      ...finalState,
+      resumePoint: { step: "spec-review", reason: "escalation", iterationsExhausted: 0 },
+    });
+    const scopeFindings = openFindings.filter((f) => f.origin === "scope");
+    expect(scopeFindings).toHaveLength(1);
+  });
+
+  it("canDeriveChangedFiles=false → UNKNOWN finding renders in buildEscalationComment", async () => {
+    const ctx = { slug: "my-feature" };
+    const unknownFinding = synthesizeScopeUnverifiableFinding(ctx)[0]!;
+
+    const state: JobState = {
+      version: 2,
+      jobId: "test-job-unknown-001",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      request: { path: "/repo/specrunner/changes/my-feature/request.md", title: "Test", type: "new-feature", slug: "my-feature" },
+      repository: { owner: "testowner", name: "testrepo" },
+      session: null,
+      step: "spec-review",
+      status: "awaiting-resume",
+      branch: "feat/my-feature",
+      history: [],
+      error: null,
+      resumePoint: { step: "spec-review", reason: "escalation", iterationsExhausted: 0 },
+      steps: {
+        "spec-review": [{
+          attempt: 1,
+          sessionId: null,
+          startedAt: "2026-01-01T00:00:00.000Z",
+          endedAt: "2026-01-01T00:01:00.000Z",
+          outcome: {
+            verdict: "escalation",
+            findingsPath: null,
+            error: null,
+            toolResult: { ok: true, findings: [unknownFinding] },
+          },
+        }],
+      },
+    };
+
+    const comment = buildEscalationComment(state);
+    expect(comment).toContain("Decisions needed:");
+    // Should contain Option A/B/C labels
+    expect(comment).toContain("Option A");
+    expect(comment).toContain("Option B");
+    expect(comment).toContain("Option C");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-06: Resolved UNKNOWN does not re-escalate
+// ---------------------------------------------------------------------------
+
+describe("T-06: resolved UNKNOWN finding is suppressed by filterUndecidedFindings", () => {
+  it("UNKNOWN finding with matching decision record → filtered out → no re-escalation", () => {
+    const ctx = { slug: "my-feature" };
+    const unknownFinding = synthesizeScopeUnverifiableFinding(ctx)[0]!;
+    const findingKey = computeFindingKey("spec-review", unknownFinding);
+
+    const decisionRecord: DecisionRecord = {
+      id: "decision-unknown-001",
+      step: "spec-review",
+      findingKey,
+      finding: {
+        title: unknownFinding.title,
+        file: unknownFinding.file,
+        rationale: unknownFinding.rationale,
+        severity: unknownFinding.severity,
+      },
+      selectedOption: { number: 3, label: "Option C: scope 検証なしで進めることを受け入れる（リスク受容）", consequence: "proceed" },
+      decidedAt: "2026-01-01T00:00:00.000Z",
+      source: "issue-comment",
+    };
+
+    const undecided = filterUndecidedFindings("spec-review", [unknownFinding], [decisionRecord]);
+    expect(undecided).toHaveLength(0);
+
+    const verdict = deriveJudgeVerdict(undecided, true);
+    expect(verdict).toBe("approved");
+  });
+
+  it("UNKNOWN finding without decision record → triggers escalation", () => {
+    const ctx = { slug: "my-feature" };
+    const unknownFinding = synthesizeScopeUnverifiableFinding(ctx)[0]!;
+
+    const undecided = filterUndecidedFindings("spec-review", [unknownFinding], []);
+    expect(undecided).toHaveLength(1);
+
+    const verdict = deriveJudgeVerdict(undecided, true);
+    expect(verdict).toBe("escalation");
+  });
+
+  it("pre-decided UNKNOWN → executor verdict is approved (not escalation)", async () => {
+    const ctx = { slug: "my-feature" };
+    const unknownFinding = synthesizeScopeUnverifiableFinding(ctx)[0]!;
+    const findingKey = computeFindingKey("spec-review", unknownFinding);
+
+    const decisionRecord: DecisionRecord = {
+      id: "decision-unknown-002",
+      step: "spec-review",
+      findingKey,
+      finding: {
+        title: unknownFinding.title,
+        file: unknownFinding.file,
+        rationale: unknownFinding.rationale,
+        severity: unknownFinding.severity,
+      },
+      selectedOption: { number: 1, label: "Option A: changed-files を導出できる runtime で実行し直す", consequence: "re-run" },
+      decidedAt: "2026-01-01T00:00:00.000Z",
+      source: "issue-comment",
+    };
+
+    const jobState = await createRunningJobState({ decisions: [decisionRecord] });
+    const strategy = makeUnevaluableRuntimeStrategy();
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      FORBIDDEN_SCOPE,
+    );
+
+    const step = makeJudgeStep("spec-review");
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    // With UNKNOWN finding already decided, verdict should NOT be escalation
+    const outcome = getLastOutcome(finalState, "spec-review");
+    expect(outcome?.verdict).toBe("approved");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-07: Evaluation path parity (#689 behavior preserved)
+// ---------------------------------------------------------------------------
+
+describe("T-07: canDeriveChangedFiles=true → #689 breach parity", () => {
+  /**
+   * Make a RuntimeStrategy with canDeriveChangedFiles=true (explicit).
+   * Same shape as makeRuntimeStrategy but with explicit predicate.
+   */
+  function makeEvaluableRuntimeStrategy(changedFiles: string[]): RuntimeStrategy {
+    return {
+      ...makeRuntimeStrategy(changedFiles),
+      canDeriveChangedFiles: () => true,
+    };
+  }
+
+  it("predicate=true + breach → verdict escalation (same as #689)", async () => {
+    const jobState = await createRunningJobState();
+    const strategy = makeEvaluableRuntimeStrategy(["src/auth/login.ts"]);
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      FORBIDDEN_SCOPE,
+    );
+
+    const step = makeJudgeStep("spec-review");
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    const outcome = getLastOutcome(finalState, "spec-review");
+    expect(outcome?.verdict).toBe("escalation");
+  });
+
+  it("predicate=true + no breach → verdict approved (same as #689)", async () => {
+    const jobState = await createRunningJobState();
+    // No forbidden surface files changed
+    const strategy = makeEvaluableRuntimeStrategy(["src/core/pipeline/types.ts"]);
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      FORBIDDEN_SCOPE,
+    );
+
+    const step = makeJudgeStep("spec-review");
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    const outcome = getLastOutcome(finalState, "spec-review");
+    expect(outcome?.verdict).toBe("approved");
+  });
+
+  it("predicate=true + breach → breach finding (not UNKNOWN)", async () => {
+    const jobState = await createRunningJobState();
+    const strategy = makeEvaluableRuntimeStrategy(["src/auth/login.ts"]);
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      FORBIDDEN_SCOPE,
+    );
+
+    const step = makeJudgeStep("spec-review");
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    const outcome = getLastOutcome(finalState, "spec-review");
+    const tr = outcome?.toolResult as { findings?: Finding[] } | null;
+    const scopeFindings = (tr?.findings ?? []).filter((f) => f.origin === "scope");
+    expect(scopeFindings).toHaveLength(1);
+    // Should be a breach finding (title contains "Scope exceeded")
+    expect(scopeFindings[0]!.title).toContain("Scope exceeded");
+    // NOT an UNKNOWN finding
+    expect(scopeFindings[0]!.title).not.toContain("UNKNOWN");
+  });
+});
+
+describe("T-07: predicate absent → #689 parity (existing tests confirm this)", () => {
+  it("predicate absent + breach → same escalation as #689 (backward compat)", async () => {
+    // makeRuntimeStrategy does NOT have canDeriveChangedFiles (predicate absent)
+    const jobState = await createRunningJobState();
+    const strategy = makeRuntimeStrategy(["src/auth/login.ts"]); // no canDeriveChangedFiles
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      FORBIDDEN_SCOPE,
+    );
+
+    const step = makeJudgeStep("spec-review");
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    const outcome = getLastOutcome(finalState, "spec-review");
+    // Absent predicate → fallthrough to listChangedFiles → breach found → escalation
+    expect(outcome?.verdict).toBe("escalation");
+  });
+
+  it("predicate absent + no breach → approved (backward compat)", async () => {
+    const jobState = await createRunningJobState();
+    const strategy = makeRuntimeStrategy(["src/core/pipeline/types.ts"]); // no forbidden file
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      FORBIDDEN_SCOPE,
+    );
+
+    const step = makeJudgeStep("spec-review");
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    const outcome = getLastOutcome(finalState, "spec-review");
+    expect(outcome?.verdict).toBe("approved");
   });
 });

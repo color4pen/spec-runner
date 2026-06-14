@@ -17,7 +17,7 @@ import type { Finding } from "../../kernel/report-result.js";
 import type { PermissionScope } from "../pipeline/types.js";
 import type { JobState } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
-import { deriveScopeBreach, synthesizeScopeFindings } from "../pipeline/scope.js";
+import { deriveScopeBreach, synthesizeScopeFindings, synthesizeScopeUnverifiableFinding } from "../pipeline/scope.js";
 
 /**
  * Compute synthesized scope findings for a judge/conformance step.
@@ -41,6 +41,14 @@ export async function computeExtraScopeFindings(
   if (!permissionScope) return [];
   if (stepName !== permissionScope.checkpoint) return [];
   if (!deps.runtimeStrategy) return [];
+
+  // Fail-closed: if the runtime explicitly declares it cannot derive changed files,
+  // skip listChangedFiles (which would silently return [] = fail-open) and synthesize
+  // an UNKNOWN decision-needed finding instead.
+  // predicate absent or true → fall through to existing listChangedFiles path (#689 behavior).
+  if (deps.runtimeStrategy.canDeriveChangedFiles?.() === false) {
+    return synthesizeScopeUnverifiableFinding({ slug: deps.slug });
+  }
 
   const baseBranch = deps.request.baseBranch ?? "main";
   const cwd = deps.cwd ?? process.cwd();
