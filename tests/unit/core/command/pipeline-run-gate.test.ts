@@ -62,7 +62,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  // Remove fixture descriptor — production registry stays at 2 entries.
+  // Remove fixture descriptor — production registry stays at 3 entries.
   delete (PIPELINE_REGISTRY as Record<string, PipelineDescriptor>)[FIXTURE_ID];
 
   await fs.rm(tempDir, { recursive: true, force: true });
