@@ -28,6 +28,8 @@ import type { PreflightResult } from "../../../../src/core/preflight.js";
 import type { ParsedRequest } from "../../../../src/parser/types.js";
 import type { Step } from "../../../../src/core/step/types.js";
 import { changeFolderPath } from "../../../../src/util/paths.js";
+import { loadReviewerDefinitions } from "../../../../src/core/reviewers/load.js";
+import type { ReviewerDefinition } from "../../../../src/core/reviewers/types.js";
 
 // ---------------------------------------------------------------------------
 // Mock loadReviewerDefinitions to avoid real filesystem access
@@ -301,5 +303,98 @@ describe("T-08-3: standard pipeline passes the input-completeness gate (regressi
 
     await expect(command.testPrepare()).resolves.toBeDefined();
     expect(runtime.bootstrapJob).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-009 / T-08-4: Custom reviewer composition path — required read violation
+//
+// Exercises the path where loadReviewerDefinitions returns a non-empty reviewer,
+// composeReviewerDescriptor inserts a custom reviewer step (which reads design.md
+// and tasks.md as required), and those reads are unsatisfied by the base descriptor.
+// Verifies DescriptorInputCompletenessError is thrown from prepare() BEFORE bootstrapJob.
+// ---------------------------------------------------------------------------
+
+describe("TC-009 / T-08-4: custom reviewer composition — required read violation detected in composed descriptor", () => {
+  /**
+   * A minimal base pipeline with no step that produces design.md or tasks.md.
+   * When composeReviewerDescriptor appends a custom reviewer (which reads design.md
+   * and tasks.md as required), those required reads go unsatisfied → violation.
+   */
+  const TC009_BASE_PIPELINE_ID = "test-tc009-custom-reviewer-no-producer";
+
+  /** Minimal fake reviewer definition that passes validateReviewerDefinitions. */
+  const fakeReviewerDef: ReviewerDefinition = {
+    name: "tc009-fake",
+    filename: "tc009-fake.md",
+    maxIterations: 3,
+    purpose: "TC-009 integration test fixture",
+    criteria: "Test criteria",
+    judgment: "Test judgment",
+    freeText: "",
+  };
+
+  beforeEach(() => {
+    // Register a minimal base descriptor with no producer for design.md / tasks.md.
+    // The noop step writes nothing, so the custom reviewer's required reads are unsatisfied.
+    (PIPELINE_REGISTRY as Record<string, PipelineDescriptor>)[TC009_BASE_PIPELINE_ID] = {
+      ...STANDARD_DESCRIPTOR,
+      id: TC009_BASE_PIPELINE_ID,
+      steps: [["tc009-noop", { ...noopStep, name: "tc009-noop" }]],
+      permissionScope: undefined,
+    };
+  });
+
+  afterEach(() => {
+    delete (PIPELINE_REGISTRY as Record<string, PipelineDescriptor>)[TC009_BASE_PIPELINE_ID];
+  });
+
+  it("prepare() throws DescriptorInputCompletenessError when composed descriptor has unsatisfied required read from custom reviewer", async () => {
+    // Override the global mock for this test: return a valid reviewer definition.
+    // composeReviewerDescriptor will insert a custom reviewer step (reads design.md + tasks.md)
+    // into the no-producer base descriptor → unsatisfied required reads → violation.
+    vi.mocked(loadReviewerDefinitions).mockResolvedValueOnce([fakeReviewerDef]);
+
+    const runtime = makeFakeRuntime();
+    const preflightResult = makeFakePreflightResult(TC009_BASE_PIPELINE_ID);
+    const command = makeCommand(preflightResult, runtime);
+
+    await expect(command.testPrepare()).rejects.toBeInstanceOf(DescriptorInputCompletenessError);
+  });
+
+  it("bootstrapJob is NOT called when custom reviewer composition triggers violation gate", async () => {
+    vi.mocked(loadReviewerDefinitions).mockResolvedValueOnce([fakeReviewerDef]);
+
+    const runtime = makeFakeRuntime();
+    const preflightResult = makeFakePreflightResult(TC009_BASE_PIPELINE_ID);
+    const command = makeCommand(preflightResult, runtime);
+
+    await expect(command.testPrepare()).rejects.toBeInstanceOf(DescriptorInputCompletenessError);
+    expect(runtime.bootstrapJob).not.toHaveBeenCalled();
+  });
+
+  it("error violations include the custom reviewer step name and an unsatisfied file path", async () => {
+    vi.mocked(loadReviewerDefinitions).mockResolvedValueOnce([fakeReviewerDef]);
+
+    const runtime = makeFakeRuntime();
+    const preflightResult = makeFakePreflightResult(TC009_BASE_PIPELINE_ID);
+    const command = makeCommand(preflightResult, runtime);
+
+    let caughtError: unknown;
+    try {
+      await command.testPrepare();
+    } catch (err) {
+      caughtError = err;
+    }
+
+    expect(caughtError).toBeInstanceOf(DescriptorInputCompletenessError);
+    const e = caughtError as DescriptorInputCompletenessError;
+
+    // The custom reviewer step name ("tc009-fake") must appear in violations
+    expect(e.violations.some((v) => v.step === "tc009-fake")).toBe(true);
+    // The unsatisfied required read is design.md or tasks.md (custom reviewer's required reads)
+    expect(
+      e.violations.some((v) => v.path.includes("design.md") || v.path.includes("tasks.md")),
+    ).toBe(true);
   });
 });
