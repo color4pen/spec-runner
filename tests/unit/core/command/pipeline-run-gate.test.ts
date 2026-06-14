@@ -274,7 +274,7 @@ describe("T-05-4: pipeline 未指定 → pipelineId='standard'（既定経路の
 });
 
 // ---------------------------------------------------------------------------
-// T-05-5: afterEach 後に PIPELINE_REGISTRY が元の 2 本に戻っている
+// T-05-5: afterEach 後に PIPELINE_REGISTRY が元の 3 本に戻っている
 // ---------------------------------------------------------------------------
 
 describe("T-05-5: PIPELINE_REGISTRY がテスト間でリークしない（afterEach で delete 済み）", () => {
@@ -282,8 +282,58 @@ describe("T-05-5: PIPELINE_REGISTRY がテスト間でリークしない（after
     expect(PIPELINE_REGISTRY[FIXTURE_ID]).toBeDefined();
   });
 
-  it("PIPELINE_REGISTRY still has standard and design-only entries", () => {
+  it("PIPELINE_REGISTRY still has standard, design-only, and fast entries", () => {
     expect(PIPELINE_REGISTRY["standard"]).toBeDefined();
     expect(PIPELINE_REGISTRY["design-only"]).toBeDefined();
+    expect(PIPELINE_REGISTRY["fast"]).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-06: request.pipeline="fast" + canDerive=false → 着手前 reject、bootstrapJob 未呼び出し
+// ---------------------------------------------------------------------------
+
+describe("T-06: request.pipeline='fast' + canDerive=false → UnsupportedRuntimeCapabilityError、bootstrapJob 未呼び出し", () => {
+  it("prepare() throws UnsupportedRuntimeCapabilityError for fast + canDerive=false", async () => {
+    const runtime = makeFakeRuntime(false);
+    const preflightResult = makeFakePreflightResult("fast");
+    const command = makeCommand(preflightResult, runtime);
+
+    await expect(command.testPrepare()).rejects.toBeInstanceOf(
+      UnsupportedRuntimeCapabilityError,
+    );
+  });
+
+  it("bootstrapJob is NOT called for fast + canDerive=false (job state never created)", async () => {
+    const runtime = makeFakeRuntime(false);
+    const preflightResult = makeFakePreflightResult("fast");
+    const command = makeCommand(preflightResult, runtime);
+
+    await expect(command.testPrepare()).rejects.toBeInstanceOf(
+      UnsupportedRuntimeCapabilityError,
+    );
+
+    expect(runtime.bootstrapJob).not.toHaveBeenCalled();
+  });
+
+  it("prepare() succeeds for fast + canDerive=true", async () => {
+    const runtime = makeFakeRuntime(true);
+    const preflightResult = makeFakePreflightResult("fast");
+    const command = makeCommand(preflightResult, runtime);
+
+    await expect(command.testPrepare()).resolves.toBeDefined();
+  });
+
+  it("bootstrapJob is called with pipelineId='fast' when canDerive=true", async () => {
+    const runtime = makeFakeRuntime(true);
+    const preflightResult = makeFakePreflightResult("fast");
+    const command = makeCommand(preflightResult, runtime);
+
+    await command.testPrepare();
+
+    expect(runtime.bootstrapJob).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ pipelineId: "fast" }),
+    );
   });
 });
