@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "3cf0dbc6-c29e-4e9d-9259-49403f53a5b9",
   "createdAt": "2026-06-14T11:30:02.697Z",
-  "updatedAt": "2026-06-14T11:58:45.874Z",
+  "updatedAt": "2026-06-14T12:12:49.306Z",
   "request": {
     "title": "軽量 fast pipeline profile を追加する — permissionScope を宣言する最初の利用者",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "feat/fast-pipeline-3cf0dbc6",
   "error": null,
@@ -49,12 +49,14 @@
   ],
   "issueNumber": 694,
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 25,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1
     }
   }
 }
