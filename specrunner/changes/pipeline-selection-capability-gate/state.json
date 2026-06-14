@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e0c1b803-425e-46ff-a142-36c1a4558526",
   "createdAt": "2026-06-14T07:20:02.319Z",
-  "updatedAt": "2026-06-14T10:44:34.258Z",
+  "updatedAt": "2026-06-14T10:48:43.789Z",
   "request": {
     "title": "pipeline を request.md で選択可能にし、scope を強制できない runtime を着手前に拒否する汎用 gate を入れる",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/pipeline-selection-capability-gate-e0c1b803",
   "error": null,
@@ -50,7 +50,7 @@
   "issueNumber": 693,
   "resumePoint": null,
   "_journal": {
-    "historyCount": 49,
+    "historyCount": 54,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -61,7 +61,8 @@
       "code-review": 1,
       "code-fixer": 1,
       "cross-boundary-invariants": 2,
-      "scale-tolerance": 1
+      "scale-tolerance": 1,
+      "regression-gate": 1
     }
   }
 }
