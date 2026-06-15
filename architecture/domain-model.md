@@ -59,13 +59,15 @@ interface CodeReviewReportResult extends JudgeReportResult { fixableCount?: numb
 ### Finding — judge の指摘単位（verdict 導出の入力）
 ```ts
 interface Finding { severity: "critical" | "high" | "medium" | "low";
-  resolution: "fixable" | "decision-needed"; file: string; line?: number; title: string; rationale: string; options?: DecisionOption[] }
+  resolution: "fixable" | "decision-needed"; file: string; line?: number; title: string; rationale: string; options?: DecisionOption[]; origin?: "scope" }
 ```
 - **不変条件**:
   - judge 系 step（spec-review / code-review / request-review）の verdict は agent 申告値ではなく findings から CLI が決定的に導出する（純関数 `deriveJudgeVerdict` / `deriveRequestReviewVerdict` / `collectFixableFindings`）。`approved` / `fixableCount` / 申告 `verdict` は導出・routing に影響しない（受理のみ）。
   - verdict に影響する findings（severity critical / high、または resolution decision-needed）は RuntimeStrategy の実在検証（file / line の存在確認）を通る。
   - `resolution: "decision-needed"` の finding は選択肢 `options`（各 `{label, consequence}`）を ≥2 持つ（新規 tool 入力は strict 検証で拒否、legacy state read は寛容）。2 案を articulate できないものは定義上 `fixable`。
   - decision ledger（`JobState.decisions`）に決定済みの finding は verdict 導出から除外される＝ 同一論点の再報告は re-escalation を起こさない。
+  - `origin?: "scope"` は finding の**出自**の discriminator（粗く「scope 由来か否か」のみ。absent = in-scope = 現行。細かい理由は `rationale` に接地）。出自は resolution（解消形）とは別軸で、新 resolution 値は導入しない。
+  - **verdict 導出の入力は2源**: agent 申告の finding ＋ **CLI が機械導出する scope finding**。後者は `permissionScope` の breach（または評価不能）から純関数で `origin:"scope"` の decision-needed finding として**合成**され、agent 申告の finding と**同一の `deriveJudgeVerdict` → escalation → decision-ledger 経路**を通る（並行機構を作らない）。「判断は導出する、自己申告させない」を境界（権限）にも適用した形。
 - → `src/kernel/report-result.ts`（型）/ `src/core/step/judge-verdict.ts`（導出の純関数。fs / child_process を import しない＝B-5）
 
 ### DecisionOption / Observation — finding 周辺の VO
@@ -86,6 +88,15 @@ interface DecisionRecord { id: string; step: string; findingKey: string;
 - **役割**: escalation した `decision-needed` finding への人間の選択を構造化し JobState に記録する（projection 側 `JobState.decisions?: DecisionRecord[]`、legacy 欠落 = 空台帳）。
 - **不変条件**: `findingKey` は `computeFindingKey`（step / file / line / 正規化 title / 正規化 rationale）で決定的に導出。verdict 導出は台帳に合致する finding を blocking として数えない（蒸し返しの構造的封殺）。
 - → `src/core/decision/decision-ledger.ts`（key 導出・台帳照合の純関数）/ `src/state/schema.ts`（`DecisionRecord` / `JobState.decisions`）
+
+### PermissionScope / ForbiddenSurface — pipeline profile の権限スコープ宣言
+```ts
+interface ForbiddenSurface { id: string; paths: readonly string[] }   // base...HEAD 変更ファイルに当てる glob denylist
+interface PermissionScope { checkpoint: string; forbidden: readonly ForbiddenSurface[] }  // checkpoint = breach を評価する judge step
+```
+- **役割**: `PipelineDescriptor.permissionScope?`（任意・absent = 無制限 = 現行）として、その profile が「触らないと約束する面」を宣言する。`checkpoint` の judge step で、最終 diff の変更ファイルを `forbidden` の glob に当てて breach を機械導出する。
+- **不変条件**: breach 判定は純関数（`deriveScopeBreach`。I/O は RuntimeStrategy seam 経由＝B-5）。breach も評価不能（UNKNOWN）も `origin:"scope"` の decision-needed finding に**合成**され、既存の judge verdict 導出経路へ載る。`permissionScope` を宣言する profile は changed-files 導出可能な runtime を要求する（着手前 capability gate → `dynamic-model.md`、real runtime 側の能力必須化は B-11）。
+- → `src/core/pipeline/types.ts`（型）/ `src/core/pipeline/scope.ts`（breach 導出・finding 合成の純関数）
 
 ### AgentDefinition / ParsedStepResult / Transition
 ```ts
