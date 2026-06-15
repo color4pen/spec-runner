@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.3](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.2...specrunner-v0.3.3) (2026-06-15)
+
+
+### Features
+
+* pipeline profile に権限スコープを宣言し、スコープ超過を diff から導出して既存 escalation に載せる土台を入れる ([#689](https://github.com/color4pen/spec-runner/issues/689)) ([ce4267d](https://github.com/color4pen/spec-runner/commit/ce4267d21a657cb9976903d79f41a7297d216198))
+* pipeline を request.md で選択可能にし、scope を強制できない runtime を着手前に拒否する汎用 gate を入れる ([#695](https://github.com/color4pen/spec-runner/issues/695)) ([8da84fe](https://github.com/color4pen/spec-runner/commit/8da84fe143a51b8b4a935c47a20e58db9b677667))
+* reviewer phase を持たない pipeline では reviewer を job state に snapshot しない — INV-8 の cleanup（fast pipeline 初回 dogfood） ([#701](https://github.com/color4pen/spec-runner/issues/701)) ([6058191](https://github.com/color4pen/spec-runner/commit/6058191800d38abb3ca07d06e3cbbd19a15f8b46))
+* scope を評価できない runtime では breach を黙って通さず escalation する（fail-closed）— RuntimeStrategy に評価可能性 predicate を追加 ([#692](https://github.com/color4pen/spec-runner/issues/692)) ([4f2b8a9](https://github.com/color4pen/spec-runner/commit/4f2b8a9639571a741ca57a00de4ccec562165031))
+* test-cases.md を code-review の soft input にし producer に出力保証を移す ＋ descriptor を起動前 validator で検算する（fast STEP_INPUT_MISSING 修正） ([#700](https://github.com/color4pen/spec-runner/issues/700)) ([45160c7](https://github.com/color4pen/spec-runner/commit/45160c764b82f0d112e6cf085f9347a30cde78ae))
+* 軽量 fast pipeline profile を追加する — permissionScope を宣言する最初の利用者 ([#696](https://github.com/color4pen/spec-runner/issues/696)) ([7ce64e2](https://github.com/color4pen/spec-runner/commit/7ce64e2aa22213a6cdac6eb867fe042609887086))
+
 ## [0.3.2](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.1...specrunner-v0.3.2) (2026-06-13)
 
 
