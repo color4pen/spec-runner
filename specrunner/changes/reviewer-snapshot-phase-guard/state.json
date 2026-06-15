@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d4b3325d-1ed2-4747-a9c2-2aba9a8a25cc",
   "createdAt": "2026-06-14T13:45:02.496Z",
-  "updatedAt": "2026-06-14T23:58:58.833Z",
+  "updatedAt": "2026-06-15T00:02:40.682Z",
   "request": {
     "title": "reviewer phase を持たない pipeline では reviewer を job state に snapshot しない — INV-8 の cleanup（fast pipeline 初回 dogfood）",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/reviewer-snapshot-phase-guard-d4b3325d",
   "error": null,
   "pipelineId": "fast",
@@ -49,8 +49,13 @@
   ],
   "issueNumber": 697,
   "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/701",
+    "number": 701,
+    "createdAt": "2026-06-15T00:02:40.669Z"
+  },
   "_journal": {
-    "historyCount": 44,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -59,7 +64,9 @@
       "code-review": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "pr-create": 1
     }
   }
 }
