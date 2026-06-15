@@ -68,3 +68,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/reviewer-snapshot-phase-guard/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-15T00:02:38.530Z","endedAt":"2026-06-15T00:02:40.670Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-15T00:02:40.670Z","outputs":[{"path":"specrunner/changes/reviewer-snapshot-phase-guard/pr-create-result.md","hash":"sha256:568cc1e95bc12288a6298bd6262977e94ea98cf9d2aad97fbea961fcadfa1c2b"}],"inputs":[{"path":"change/reviewer-snapshot-phase-guard-d4b3325d","hash":null}]}
 {"type":"transition","ts":"2026-06-15T00:02:40.681Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-15T00:16:25.884Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
