@@ -210,7 +210,6 @@ export async function saveConfig(cfg: SpecRunnerConfig): Promise<void> {
   delete toSave["agent"]; // never write legacy agent field
   delete toSave["timeout"]; // removed in remove-session-timeout (D3)
   delete toSave["anthropic"]; // removed in managed-command-extraction
-  delete toSave["github"]; // removed in github-credential-env-separation (secrets moved to credentials.json)
 
   await atomicWriteJson(configPath, toSave, { mode: CONFIG_MODE });
 }

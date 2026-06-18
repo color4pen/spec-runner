@@ -1,11 +1,12 @@
 import * as readline from "node:readline";
+import * as fs from "node:fs/promises";
 import { runDeviceFlow } from "../auth/github-device.js";
 import { loadConfig, saveConfig } from "../config/store.js";
 import { loadCredentials, saveCredentials } from "../core/credentials/github.js";
 import { saveClaudeCodeOAuthToken } from "../core/credentials/claude-code.js";
 import { logError, logInfo, logSuccess, logWarn } from "../logger/stdout.js";
-import type { SpecRunnerConfig } from "../config/schema.js";
 import { resolveGitHubHost } from "../config/github-host.js";
+import { getConfigPath } from "../util/xdg.js";
 
 export interface LoginOpts {
   force?: boolean;
@@ -71,20 +72,20 @@ export async function runLogin(opts?: LoginOpts): Promise<number> {
     return 1;
   }
 
-  // Load or initialize config scaffold (ensures config.json exists with version + agents)
-  let config: SpecRunnerConfig;
+  // Create config scaffold only when the config file does not exist yet.
+  // Using fs.access (file presence) rather than loadConfig() so a malformed
+  // config is treated as "exists" and is never silently overwritten.
+  const configPath = getConfigPath();
   try {
-    config = await loadConfig();
+    await fs.access(configPath);
+    // Config file already exists — skip scaffold generation
   } catch {
-    // No config yet — create minimal scaffold
-    config = {
+    // Config file absent — create minimal scaffold
+    await saveConfig({
       version: 1,
       agents: {},
-    };
+    });
   }
-
-  // Save config scaffold (without github field — secrets go to credentials file)
-  await saveConfig(config);
 
   // Save token to credentials file (0600, provider-keyed JSON)
   const creds = await loadCredentials();

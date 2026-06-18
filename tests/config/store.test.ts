@@ -12,7 +12,8 @@ import * as path from "node:path";
 import * as os from "node:os";
 import * as fs from "node:fs/promises";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { loadConfig, saveProjectConfig } from "../../src/config/store.js";
+import { loadConfig, saveConfig, saveProjectConfig } from "../../src/config/store.js";
+import type { SpecRunnerConfig } from "../../src/config/schema.js";
 import { SpecRunnerError } from "../../src/errors.js";
 
 // ---------------------------------------------------------------------------
@@ -238,6 +239,72 @@ describe("loadConfig — parse error in project local", () => {
     await expect(loadWithEnv(dirs.xdgConfigDir, dirs.repoRoot)).rejects.toMatchObject({
       code: "CONFIG_INVALID",
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// saveConfig
+// ---------------------------------------------------------------------------
+
+describe("saveConfig", () => {
+  let dirs: TempDirs;
+  let origXdg: string | undefined;
+
+  beforeEach(async () => {
+    dirs = await makeTempDirs();
+    origXdg = process.env["XDG_CONFIG_HOME"];
+    process.env["XDG_CONFIG_HOME"] = dirs.xdgConfigDir;
+  });
+
+  afterEach(async () => {
+    if (origXdg === undefined) {
+      delete process.env["XDG_CONFIG_HOME"];
+    } else {
+      process.env["XDG_CONFIG_HOME"] = origXdg;
+    }
+    await cleanup(dirs.tmpDir);
+  });
+
+  it("TC-001: retains github field (GHES host config survives saveConfig)", async () => {
+    const cfg = {
+      version: 1,
+      agents: {},
+      github: { host: "ghes.example.com", apiBaseUrl: "https://ghes.example.com/api/v3" },
+    } as SpecRunnerConfig;
+
+    await saveConfig(cfg);
+
+    const written = JSON.parse(
+      await fs.readFile(
+        path.join(dirs.xdgConfigDir, "specrunner", "config.json"),
+        "utf-8",
+      ),
+    );
+    expect(written.github).toBeDefined();
+    expect(written.github.host).toBe("ghes.example.com");
+    expect(written.github.apiBaseUrl).toBe("https://ghes.example.com/api/v3");
+  });
+
+  it("TC-002: strips legacy agent / timeout / anthropic fields", async () => {
+    const cfg = {
+      version: 1,
+      agents: {},
+      agent: "legacy-agent",
+      timeout: 1000,
+      anthropic: { key: "abc" },
+    } as unknown as SpecRunnerConfig;
+
+    await saveConfig(cfg);
+
+    const written = JSON.parse(
+      await fs.readFile(
+        path.join(dirs.xdgConfigDir, "specrunner", "config.json"),
+        "utf-8",
+      ),
+    );
+    expect(written.agent).toBeUndefined();
+    expect(written.timeout).toBeUndefined();
+    expect(written.anthropic).toBeUndefined();
   });
 });
 

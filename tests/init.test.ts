@@ -131,6 +131,45 @@ describe("TC-011: specrunner init で既存の steps は上書きされない", 
     expect(config.steps.defaults.maxTurns).toBe(90);
     expect(config.steps.defaults.model).toBe("claude-haiku-4-5");
   });
+
+  it("2 回目実行後も config.json のコンテンツが変わらない", async () => {
+    const { runInit } = await import("../src/cli/init.js");
+    await runInit({});
+
+    const configPath = path.join(tempDir, "specrunner", "config.json");
+    const contentAfterFirst = await fs.readFile(configPath, "utf-8");
+
+    await runInit({});
+
+    const contentAfterSecond = await fs.readFile(configPath, "utf-8");
+    expect(contentAfterSecond).toBe(contentAfterFirst);
+  });
+});
+
+// T-01/T-02 (config-write-hygiene): init で github フィールドが保持される
+describe("config-write-hygiene: runInit で github フィールドが保持される", () => {
+  it("github: { host } がある config で runInit を実行しても github フィールドが保持される", async () => {
+    const configDir = path.join(tempDir, "specrunner");
+    await fs.mkdir(configDir, { recursive: true });
+    const existingConfig = {
+      version: 1,
+      agents: {},
+      github: { host: "ghes.example.com", apiBaseUrl: "https://ghes.example.com/api/v3" },
+      steps: { defaults: { model: "claude-sonnet-4-6", maxTurns: null, timeoutMs: null } },
+    };
+    const configPath = path.join(configDir, "config.json");
+    await fs.writeFile(configPath, JSON.stringify(existingConfig), { mode: 0o600 });
+
+    const { runInit } = await import("../src/cli/init.js");
+    await runInit({});
+
+    const raw = await fs.readFile(configPath, "utf-8");
+    const config = JSON.parse(raw);
+
+    expect(config.github).toBeDefined();
+    expect(config.github.host).toBe("ghes.example.com");
+    expect(config.github.apiBaseUrl).toBe("https://ghes.example.com/api/v3");
+  });
 });
 
 // TC-002: init で git repo 外では specrunner/ ディレクトリが作成されない
@@ -203,5 +242,26 @@ describe("T-01: specrunner init でプロジェクトディレクトリが作成
 
     await expect(fs.access(draftsDir).then(() => undefined)).resolves.toBeUndefined();
     await expect(fs.access(changesDir).then(() => undefined)).resolves.toBeUndefined();
+  });
+
+  it("config が存在する場合でも project scaffold（drafts/, changes/）は作成される", async () => {
+    vi.spyOn(process, "cwd").mockReturnValue(gitTempDir);
+
+    // Pre-create the global config so init skips scaffold generation
+    const configDir = path.join(tempDir, "specrunner");
+    await fs.mkdir(configDir, { recursive: true });
+    const existingConfig = { version: 1, agents: {}, steps: { defaults: { model: "claude-sonnet-4-6", maxTurns: null, timeoutMs: null } } };
+    await fs.writeFile(path.join(configDir, "config.json"), JSON.stringify(existingConfig), { mode: 0o600 });
+
+    const { runInit } = await import("../src/cli/init.js");
+    const result = await runInit({});
+
+    expect(result).toBe(0);
+
+    const draftsPath = path.join(gitTempDir, "specrunner", "drafts");
+    const changesPath = path.join(gitTempDir, "specrunner", "changes");
+
+    await expect(fs.access(draftsPath).then(() => undefined)).resolves.toBeUndefined();
+    await expect(fs.access(changesPath).then(() => undefined)).resolves.toBeUndefined();
   });
 });
