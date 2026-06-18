@@ -69,6 +69,108 @@ tick 内の起動は逐次（1 つの tick プロセスが pipeline を完走ま
 | セッション実行中のスリープ・回線断 | transient エラーとして上限つき自動リトライ。上限超過で escalation 通知 → `/resume` |
 | 実行プロセスの死（kill・クラッシュ） | 次の tick が孤児を検出し自動 resume。進捗のない再起動が続く場合は上限後に escalation |
 
+## スケジューリング例
+
+### launchd (macOS)
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.yourteam.specrunner-inbox</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/npx</string>
+    <string>specrunner</string>
+    <string>inbox</string>
+    <string>run</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/path/to/repo</string>
+  <key>StartInterval</key>
+  <integer>300</integer>
+  <key>RunAtLoad</key>
+  <true/>
+</dict>
+</plist>
+```
+
+### GitHub Actions
+
+3 つのトリガーで一般的な自動化パターンをカバーする。`concurrency` グループで実行の重複を防ぐ。
+
+`GITHUB_TOKEN` は GitHub Actions が run ごとに自動注入するため、手動の secret 設定は不要。
+
+```yaml
+name: SpecRunner Inbox
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"         # 10 分ごとに poll
+  issues:
+    types: [labeled]               # ラベル付与で即時発火
+  issue_comment:
+    types: [created]               # 新コメントで即時発火
+
+concurrency:
+  group: specrunner-inbox
+  cancel-in-progress: false        # 実行中の run は完了させ、次を queue
+
+jobs:
+  inbox-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run inbox
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx specrunner inbox run
+```
+
+`issues.labeled` トリガーに承認ラベルのフィルタを追加する場合:
+
+```yaml
+  issues:
+    types: [labeled]
+# job 側:
+    if: github.event.label.name == 'specrunner-approved'
+```
+
+## inbox の挙動詳細
+
+### 冪等性
+
+各 `inbox run` は何度呼んでも副作用なく安全に実行できる。
+
+- **issue linkage**: 一度 job が開始された issue は、以降の run では job の状態に関わらずスキップされる
+- **resume gating**: escalation マーカー（SpecRunner が escalation 時に投稿するコメント）より**厳密に後**に投稿された `/resume` コメントのみ受理する。それ以前のコメントや bot 生成のコメントは無視される
+
+### `/resume` ワークフロー
+
+job が escalation した場合、SpecRunner はリンクされた issue に escalation コメントを投稿する。再開するには:
+
+1. escalation コメントを読み、どの判断が必要かを理解する
+2. `/resume` で始まる新しい issue コメントを投稿する:
+   ```
+   /resume Use option B. Skip the cache layer and go with the simpler approach.
+   ```
+3. 次の `inbox run` が job を再開する。コメントの内容が context として agent に渡される
+
+`OWNER`、`MEMBER`、`COLLABORATOR` の association を持つユーザーのコメントのみ受理される。
+
+### 信頼境界
+
+issue body と `/resume` コメントのテキストは agent prompt にそのまま渡される。
+
+- 承認ラベルがゲート: リポジトリメンバーが明示的にラベルを付けた issue のみ処理される
+- `/resume` コメントは `OWNER` / `MEMBER` / `COLLABORATOR` に限定される。外部コントリビュータはプロンプトを注入できない
+
+**untrusted な issue content を持つリポジトリでの `inbox run` の実行は推奨しない。** ラベル付与権限を持つリポジトリメンバーが悪意ある issue body を作成する可能性がある。
+
 ## 診断
 
 - `specrunner doctor` — 環境・認証・設定の事前診断

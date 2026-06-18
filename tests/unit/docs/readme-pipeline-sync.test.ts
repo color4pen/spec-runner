@@ -30,7 +30,7 @@ describe("README required section headings", () => {
     "## Stability",
     "## How the Pipeline Works",
     "## Cost",
-    "## Assumptions & Supported Scope",
+    "## Assumptions",
   ];
 
   it.each(REQUIRED_HEADINGS)(
