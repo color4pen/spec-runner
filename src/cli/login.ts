@@ -1,10 +1,12 @@
 import * as readline from "node:readline";
+import * as fs from "node:fs/promises";
 import { runDeviceFlow } from "../auth/github-device.js";
 import { loadConfig, saveConfig } from "../config/store.js";
 import { loadCredentials, saveCredentials } from "../core/credentials/github.js";
 import { saveClaudeCodeOAuthToken } from "../core/credentials/claude-code.js";
 import { logError, logInfo, logSuccess, logWarn } from "../logger/stdout.js";
 import { resolveGitHubHost } from "../config/github-host.js";
+import { getConfigPath } from "../util/xdg.js";
 
 export interface LoginOpts {
   force?: boolean;
@@ -70,12 +72,15 @@ export async function runLogin(opts?: LoginOpts): Promise<number> {
     return 1;
   }
 
-  // Create config scaffold if it does not exist yet
+  // Create config scaffold only when the config file does not exist yet.
+  // Using fs.access (file presence) rather than loadConfig() so a malformed
+  // config is treated as "exists" and is never silently overwritten.
+  const configPath = getConfigPath();
   try {
-    await loadConfig();
-    // Config already exists — skip scaffold generation
+    await fs.access(configPath);
+    // Config file already exists — skip scaffold generation
   } catch {
-    // No config yet — create minimal scaffold
+    // Config file absent — create minimal scaffold
     await saveConfig({
       version: 1,
       agents: {},

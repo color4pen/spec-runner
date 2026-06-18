@@ -9,6 +9,7 @@
  * TC-LOGIN-013: GITHUB_TOKEN set, no existing creds → warn about GITHUB_TOKEN priority, device flow runs, exit 0
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import * as fs from "node:fs/promises";
 
 // Mock runDeviceFlow — will be configured per test
 vi.mock("../../../src/auth/github-device.js", () => ({
@@ -39,6 +40,17 @@ vi.mock("../../../src/logger/stdout.js", () => ({
   logWarn: vi.fn(),
 }));
 
+// Mock xdg so getConfigPath returns a deterministic path
+vi.mock("../../../src/util/xdg.js", () => ({
+  getConfigPath: vi.fn().mockReturnValue("/mock/specrunner/config.json"),
+  resolveGitHubHost: vi.fn(),
+}));
+
+// Mock fs.access — login.ts uses it for config-file existence check
+vi.mock("node:fs/promises", () => ({
+  access: vi.fn().mockResolvedValue(undefined), // default: config file exists
+}));
+
 import { runLogin } from "../../../src/cli/login.js";
 import { runDeviceFlow } from "../../../src/auth/github-device.js";
 import { logWarn } from "../../../src/logger/stdout.js";
@@ -51,6 +63,10 @@ describe("runLogin()", () => {
     vi.clearAllMocks();
     // Default: no existing credentials
     vi.mocked(loadCredentials).mockResolvedValue({});
+    // Default: config file exists (fs.access succeeds) — scaffold not created
+    vi.mocked(fs.access).mockResolvedValue(undefined);
+    // Default: loadConfig succeeds (used for GitHub host resolution)
+    vi.mocked(loadConfig).mockResolvedValue({ version: 1, agents: {} });
   });
 
   it("TC-LOGIN-001: runDeviceFlow() succeeds → token saved, no warning, exit 0", async () => {
@@ -204,8 +220,8 @@ describe("runLogin()", () => {
   });
 
   it("TC-LOGIN-014: config が存在する場合は saveConfig が呼ばれない", async () => {
-    // loadConfig returns a config (config exists) — saveConfig must not be called
-    vi.mocked(loadConfig).mockResolvedValue({ version: 1, agents: {} });
+    // fs.access succeeds (config file exists) — saveConfig must not be called
+    vi.mocked(fs.access).mockResolvedValue(undefined);
     vi.mocked(runDeviceFlow).mockResolvedValue({ accessToken: "ghu_test" });
 
     const exitCode = await runLogin({ env: {} });
@@ -218,8 +234,8 @@ describe("runLogin()", () => {
   });
 
   it("TC-LOGIN-015: config が存在しない場合は saveConfig が呼ばれる", async () => {
-    // loadConfig throws (config does not exist) — saveConfig must be called to create scaffold
-    vi.mocked(loadConfig).mockRejectedValue(new Error("CONFIG_MISSING"));
+    // fs.access throws ENOENT (config file absent) — saveConfig must be called to create scaffold
+    vi.mocked(fs.access).mockRejectedValue(Object.assign(new Error("ENOENT"), { code: "ENOENT" }));
     vi.mocked(runDeviceFlow).mockResolvedValue({ accessToken: "ghu_test" });
 
     const exitCode = await runLogin({ env: {} });

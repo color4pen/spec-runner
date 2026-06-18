@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ec4a6797-369d-4b4b-9d5b-3f6b2ab6c6f9",
   "createdAt": "2026-06-18T04:10:01.979Z",
-  "updatedAt": "2026-06-18T04:27:10.865Z",
+  "updatedAt": "2026-06-18T04:33:22.600Z",
   "request": {
     "title": "config 書き込み経路がグローバル config を不必要に書き換える + stale strip が GHES host 設定を消す",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "fix/config-write-hygiene-ec4a6797",
   "error": null,
@@ -49,14 +49,15 @@
   ],
   "issueNumber": 703,
   "_journal": {
-    "historyCount": 25,
+    "historyCount": 29,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1
     }
   }
 }
