@@ -9,16 +9,16 @@
 npm install -D @color4pen/specrunner
 
 # Set up
-specrunner init
-specrunner login
+npx specrunner init
+npx specrunner login
 
 # Create a request, edit it, run the pipeline
-specrunner request new my-feature
+npx specrunner request new my-feature
 #  → specrunner/drafts/my-feature/request.md
-specrunner run my-feature
+npx specrunner run my-feature
 
 # Review the PR, then archive
-specrunner job archive --with-merge my-feature
+npx specrunner job archive --with-merge my-feature
 ```
 
 When a job escalates (ambiguous request, unresolvable findings, unfixable build), its state is preserved:
@@ -86,7 +86,7 @@ Two layers, deep-merged (project overrides global):
 }
 ```
 
-For the full configuration reference (verification commands, test placement, inbox settings, archive settings, log retention, GitHub Enterprise host), see [docs/configuration.md](docs/configuration.md).
+For the full configuration reference (environment variables, verification commands, test placement, inbox settings, archive settings, log retention, GitHub Enterprise host), see [docs/configuration.md](docs/configuration.md).
 
 ## Extending the Review Chain
 
@@ -107,6 +107,8 @@ For unattended operation, SpecRunner can poll GitHub issues instead of running f
 - **Starts** new jobs from issues whose body is a valid `request.md`
 - **Resumes** jobs when a `/resume` comment is posted after escalation
 - **Rejects** issues that fail validation (posts a comment with the error)
+
+Basic flow: create a GitHub issue whose body follows the `request.md` format → apply the approval label → the next `inbox run` picks it up.
 
 Schedule it with cron, launchd, or GitHub Actions to run the pipeline without touching the CLI. See [docs/operations.md](docs/operations.md) for the full unattended-loop runbook (authentication layers, crontab setup, scheduling examples, failure resilience).
 
@@ -138,29 +140,42 @@ specrunner run my-feature
 
 ## Command Reference
 
+### Request commands
+
 ```
 specrunner request new <slug>              Create request.md from template
 specrunner request generate "<text>"       Generate request.md via LLM
 specrunner request ls                      List active requests
 specrunner request validate <file|slug>    Validate request.md syntax
 specrunner request template                Print scaffold template to stdout
+```
 
+### Job commands
+
+```
 specrunner run <slug|file>                 Start pipeline (alias: job start)
 specrunner job ls                          List all jobs
 specrunner job show <jobId|slug>           Show job state
 specrunner job resume <slug>               Resume a halted job
 specrunner job cancel <jobId>              Cancel job and cleanup
 specrunner job archive <slug>              Archive and teardown
+```
 
+### Environment commands
+
+```
 specrunner init                            Initialize config scaffold
 specrunner login                           GitHub Device Flow OAuth
 specrunner doctor                          Diagnose environment / config / auth
 specrunner runtime setup                   Set up managed runtime
 specrunner runtime status                  Show managed runtime status
 specrunner runtime reset                   Reset managed runtime config
+```
 
+### Inbox & extension commands
+
+```
 specrunner inbox run                       Poll approved issues, start / resume jobs
-
 specrunner rules new <step> <slug>         Scaffold a rules file
 specrunner reviewers new <name>            Scaffold a custom reviewer definition
 ```

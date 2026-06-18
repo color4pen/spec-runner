@@ -1,5 +1,19 @@
 # Configuration Reference
 
+- [Config layers](#config-layers)
+- [Environment variables](#environment-variables)
+- [Steps](#steps--per-step-model-and-execution-config)
+- [Models](#models--custom-model-registry)
+- [Verification](#verification)
+- [Test placement](#test-placement)
+- [Inbox](#inbox)
+- [Archive](#archive)
+- [Pipeline](#pipeline)
+- [Logs](#logs)
+- [Progress display](#progress-display)
+- [GitHub Enterprise (GHES)](#github-enterprise-ghes)
+- [Transient error retries](#transient-error-retries)
+
 ## Config layers
 
 SpecRunner uses a two-layer config system. Project local is deep-merged on top of user global — only specify the fields you want to change.
@@ -178,7 +192,7 @@ When `sourceRoot` is omitted, the full source path is preserved under `testsRoot
 
 | Key | Default | Description |
 |---|---|---|
-| `pipeline.maxRetries` | `2` | Max spec-review iterations. Range: 1-10 |
+| `pipeline.maxRetries` | `2` | Max spec-review → spec-fixer loop iterations (does not affect code-review or verification loops). Range: 1-10 |
 
 ## Logs
 
