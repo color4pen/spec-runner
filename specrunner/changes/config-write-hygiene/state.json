@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ec4a6797-369d-4b4b-9d5b-3f6b2ab6c6f9",
   "createdAt": "2026-06-18T04:10:01.979Z",
-  "updatedAt": "2026-06-18T04:48:59.843Z",
+  "updatedAt": "2026-06-18T04:49:24.039Z",
   "request": {
     "title": "config 書き込み経路がグローバル config を不必要に書き換える + stale strip が GHES host 設定を消す",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/config-write-hygiene-ec4a6797",
   "error": null,
   "pipelineId": "standard",
@@ -48,8 +48,13 @@
     }
   ],
   "issueNumber": 703,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/704",
+    "number": 704,
+    "createdAt": "2026-06-18T04:49:24.029Z"
+  },
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 67,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -62,7 +67,9 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
