@@ -41,3 +41,9 @@
 {"type":"transition","ts":"2026-06-18T04:33:22.595Z","step":"code-review","status":"warning","message":"code-review iteration 1 completed with verdict: needs-fix"}
 {"type":"transition","ts":"2026-06-18T04:33:22.596Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-06-18T04:33:22.600Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-06-18T04:40:08.305Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"a4585135-427b-425e-972f-6110ed50c9e8","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-18T04:33:22.626Z","endedAt":"2026-06-18T04:40:06.231Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-06-18T04:40:06.231Z","outputs":[{"path":"specrunner/changes/config-write-hygiene","hash":null}],"inputs":[{"path":"specrunner/changes/config-write-hygiene/review-feedback-001.md","hash":"sha256:43b501f18ee50a6922602b9cb0c24d31f47cbbaf55ceb13866845ee69e98dbab"}]}
+{"type":"transition","ts":"2026-06-18T04:40:08.315Z","step":"step-transition","status":"ok","message":"code-fixer → code-review"}
+{"type":"transition","ts":"2026-06-18T04:40:08.317Z","step":"code-review","status":"started","message":"code-review iteration 2 started"}
+{"type":"transition","ts":"2026-06-18T04:40:08.318Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
