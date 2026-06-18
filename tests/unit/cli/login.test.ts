@@ -44,6 +44,7 @@ import { runDeviceFlow } from "../../../src/auth/github-device.js";
 import { logWarn } from "../../../src/logger/stdout.js";
 import { saveCredentials, loadCredentials } from "../../../src/core/credentials/github.js";
 import { saveClaudeCodeOAuthToken } from "../../../src/core/credentials/claude-code.js";
+import { loadConfig, saveConfig } from "../../../src/config/store.js";
 
 describe("runLogin()", () => {
   beforeEach(() => {
@@ -200,5 +201,35 @@ describe("runLogin()", () => {
 
     expect(exitCode).toBe(1);
     expect(saveClaudeCodeOAuthToken).not.toHaveBeenCalled();
+  });
+
+  it("TC-LOGIN-014: config が存在する場合は saveConfig が呼ばれない", async () => {
+    // loadConfig returns a config (config exists) — saveConfig must not be called
+    vi.mocked(loadConfig).mockResolvedValue({ version: 1, agents: {} });
+    vi.mocked(runDeviceFlow).mockResolvedValue({ accessToken: "ghu_test" });
+
+    const exitCode = await runLogin({ env: {} });
+
+    expect(exitCode).toBe(0);
+    expect(saveConfig).not.toHaveBeenCalled();
+    expect(saveCredentials).toHaveBeenCalledWith(
+      expect.objectContaining({ github: { token: "ghu_test" } }),
+    );
+  });
+
+  it("TC-LOGIN-015: config が存在しない場合は saveConfig が呼ばれる", async () => {
+    // loadConfig throws (config does not exist) — saveConfig must be called to create scaffold
+    vi.mocked(loadConfig).mockRejectedValue(new Error("CONFIG_MISSING"));
+    vi.mocked(runDeviceFlow).mockResolvedValue({ accessToken: "ghu_test" });
+
+    const exitCode = await runLogin({ env: {} });
+
+    expect(exitCode).toBe(0);
+    expect(saveConfig).toHaveBeenCalledWith(
+      expect.objectContaining({ version: 1, agents: {} }),
+    );
+    expect(saveCredentials).toHaveBeenCalledWith(
+      expect.objectContaining({ github: { token: "ghu_test" } }),
+    );
   });
 });

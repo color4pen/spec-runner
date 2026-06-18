@@ -4,7 +4,6 @@ import { loadConfig, saveConfig } from "../config/store.js";
 import { loadCredentials, saveCredentials } from "../core/credentials/github.js";
 import { saveClaudeCodeOAuthToken } from "../core/credentials/claude-code.js";
 import { logError, logInfo, logSuccess, logWarn } from "../logger/stdout.js";
-import type { SpecRunnerConfig } from "../config/schema.js";
 import { resolveGitHubHost } from "../config/github-host.js";
 
 export interface LoginOpts {
@@ -71,20 +70,17 @@ export async function runLogin(opts?: LoginOpts): Promise<number> {
     return 1;
   }
 
-  // Load or initialize config scaffold (ensures config.json exists with version + agents)
-  let config: SpecRunnerConfig;
+  // Create config scaffold if it does not exist yet
   try {
-    config = await loadConfig();
+    await loadConfig();
+    // Config already exists — skip scaffold generation
   } catch {
     // No config yet — create minimal scaffold
-    config = {
+    await saveConfig({
       version: 1,
       agents: {},
-    };
+    });
   }
-
-  // Save config scaffold (without github field — secrets go to credentials file)
-  await saveConfig(config);
 
   // Save token to credentials file (0600, provider-keyed JSON)
   const creds = await loadCredentials();
