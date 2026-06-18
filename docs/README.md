@@ -5,7 +5,7 @@
 | 置き場 | 読者 | 性質 | 腐り方 |
 |---|---|---|---|
 | `README.md` | 使い始める人 | 本筋の通り道（install → request → run → archive）+ 各領域への導線 | 散文。本筋以外を足さないことで守る |
-| `docs/` | 使い込む人 | how-to（request の書き方、無人運用） | 散文。**最小の冊数**を保つ |
+| `docs/` | 使い込む人 | how-to（request の書き方、無人運用、設定リファレンス） | 散文。**最小の冊数**を保つ |
 | `architecture/` | 構造を変える人 | 構造の正典 + 設計 ADR | 定義 doc は変更に追随、ADR は追記専用 |
 | `specrunner/project.md` | **agent**（毎 job 注入） | プロジェクト概要・不変の構造知識 | 腐ると agent を直接誤導する。機能の形が変わったら必ず追随 |
 | `specrunner/rules/` `specrunner/reviewers/` | **agent**（実行される） | 規律・レビューレンズ（データとしての知識） | load-time validation と実行で常時運動。黙って腐れない |

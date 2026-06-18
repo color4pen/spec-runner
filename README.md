@@ -2,64 +2,57 @@
 
 **request.md in, pull request out** — a self-hosted AI CI/CD runner powered by Anthropic Claude.
 
-- **Verdicts are derived, not self-reported.** Review agents return findings; the CLI derives `approved` / `needs-fix` from them, verifies that every referenced file:line actually exists, and owns all loop budgets and transitions. Agents are never asked to judge their own work.
-- **State lives in your repository, not in a process.** Job history is branch-borne, decisions live on GitHub issues, knowledge is committed files. Kill the process, reboot the machine, close the laptop — the next scheduled run picks up exactly where things stood.
-- **Runs anywhere Node runs.** `npm install -D @color4pen/specrunner` and one crontab line. No daemon, no Docker, no SaaS contract, no IDE switch.
+## Quick Start
 
-The reasoning behind these choices is in [docs/design-philosophy.md](docs/design-philosophy.md).
+```bash
+# Install
+npm install -D @color4pen/specrunner
 
-## Built by itself
+# Set up
+specrunner init
+specrunner login
 
-Every feature here was implemented, reviewed, and merged by this pipeline running unattended on its own repository — including declarative reviewer activation, the post-review regression gate, and step output contracts.
+# Create a request, edit it, run the pipeline
+specrunner request new my-feature
+#  → specrunner/drafts/my-feature/request.md
+specrunner run my-feature
 
-## Stability
+# Review the PR, then archive
+specrunner job archive --with-merge my-feature
+```
 
-SpecRunner is **0.x**. While it is used in production for this project's own development, the state and config file formats may receive breaking changes between any two releases.
+When a job escalates (ambiguous request, unresolvable findings, unfixable build), its state is preserved:
 
-Migrations are provided when formats change, but they ship in **minor releases** — not majors. Upgrade notes are included in each release changelog.
+```bash
+specrunner job resume my-feature
+```
 
 ## How the Pipeline Works
 
-SpecRunner reads a `request.md` file and drives a multi-step pipeline that produces a GitHub PR.
+1. **request-review** — validates the request; escalates if unclear or rejected
+2. **design** — creates branch, generates spec files
+3. **spec-review** / **spec-fixer** — reviews the spec; loops until approved
+4. **test-case-gen** — generates test case definitions
+5. **implementer** — writes the implementation
+6. **verification** / **build-fixer** — runs build/typecheck/test/lint; loops until passed
+7. **code-review** / **code-fixer** — reviews the code; loops until approved
+8. **conformance** — checks architecture conformance; returns to implementer if needed
+9. **adr-gen** — generates an ADR when `request.adr` is `true`
+10. **pr-create** — opens the GitHub PR
 
-### Happy path
-
-1. `request-review` — validates the request; escalates if the request is unclear or rejected
-2. `design` — creates the branch and generates specification files
-3. `spec-review` — reviews the spec; loops with `spec-fixer` until approved
-4. `test-case-gen` — generates test case definitions from the approved spec
-5. `implementer` — writes the implementation
-6. `verification` — runs build / typecheck / test / lint; loops with `build-fixer` until passed
-7. `code-review` — reviews the implementation; loops with `code-fixer` until approved
-8. `conformance` — checks architecture conformance; returns to `implementer` if fixes are needed
-9. `adr-gen` — generates an ADR when `request.adr` is `true`; passes through otherwise
-10. `pr-create` — opens the GitHub PR
-
-### Judge loops and escalation
-
-Each judge step (`spec-review`, `code-review`) returns either `approved` or `needs-fix`. A `needs-fix` verdict routes to the paired fixer step and back to the judge, repeating until the judge approves or the iteration budget is exhausted.
-
-`verification` works the same way: a `failed` result routes to `build-fixer`, then back to `verification`. A `conformance` `needs-fix` returns execution to `implementer` (full impl-phase re-entry).
-
-**Escalation is not a failure.** It means an agent reached a point that requires human judgment — an ambiguous request, unresolved findings, or a build it cannot repair. When a job escalates, its state is preserved and can be resumed:
-
-```bash
-specrunner job resume <slug>
-```
-
-`request-review` is the front gate: `needs-discussion` and `reject` verdicts escalate immediately without looping, signalling that the request needs human clarification before the pipeline can proceed.
+Each judge step returns `approved` or `needs-fix`. Verdicts are derived by the CLI from agent findings — agents never judge their own work. When iteration budgets are exhausted, the job escalates for human input.
 
 ## Installation
 
 ```bash
-# As a dev dependency (recommended for project use)
+# As a dev dependency (recommended)
 npm install -D @color4pen/specrunner
 
 # Or globally
 npm install -g @color4pen/specrunner
 ```
 
-Provider SDKs (`@anthropic-ai/claude-agent-sdk` for the local runtime, `@openai/codex-sdk` for Codex) ship as **optional dependencies** and install by default, so a standard install runs out of the box. To slim the install (skip the unused provider's SDK), install with `--omit=optional` and add only the SDK for the provider you use:
+Provider SDKs (`@anthropic-ai/claude-agent-sdk` for local runtime, `@openai/codex-sdk` for Codex) ship as optional dependencies and install by default. To slim the install:
 
 ```bash
 npm install -D --omit=optional @color4pen/specrunner
@@ -68,282 +61,17 @@ npm install -D @anthropic-ai/claude-agent-sdk   # Claude (local runtime, default
 npm install -D @openai/codex-sdk                # Codex
 ```
 
-If a required provider SDK is missing at run time, specrunner stops the step with the exact install command.
-
-## Quick Start
-
-```bash
-# 1. Initialize config scaffold + project directories
-npx specrunner init
-
-# 2. Authenticate with GitHub
-npx specrunner login
-
-# 3. Create a new request from template
-npx specrunner request new my-feature
-
-# 4. Edit the generated request file
-#    specrunner/drafts/my-feature/request.md
-
-# 5. Start the pipeline
-npx specrunner run my-feature
-
-# 6. Archive when awaiting-archive (merge + archive in one step)
-npx specrunner job archive --with-merge my-feature
-```
-
-### Failure / resume flow
-
-```bash
-npx specrunner job ls                    # Find the failed job
-npx specrunner job resume my-feature     # Resume from last checkpoint
-```
-
-## Environment Variables
-
-| Variable | Required | Description |
-|---|---|---|
-| `SPECRUNNER_API_KEY` | Managed runtime only | Anthropic API key. Not needed for local runtime. |
-| `GH_TOKEN` | See GitHub Authentication | GitHub token (highest priority). Used for automation contexts (cron, CI). Overrides `GITHUB_TOKEN` and stored credentials. |
-| `GITHUB_TOKEN` | See GitHub Authentication | GitHub token (second priority). Automatically injected by GitHub Actions. |
-
-## GitHub Authentication
-
-SpecRunner resolves a GitHub token in order of priority: `GH_TOKEN` env → `GITHUB_TOKEN` env → `gh auth token` (gh CLI) → `credentials.json`.
-
-Three authentication paths are supported:
-
-| Path | Context | Token type | Setup |
-|---|---|---|---|
-| `specrunner login` | Interactive (device flow) | User access token (`ghu_`) | Run `specrunner login`; token is stored in `~/.config/specrunner/credentials.json`. |
-| GitHub Actions | Unattended CI | Installation token (`GITHUB_TOKEN`) | Set `env: GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}` in your workflow step. Token is injected automatically per run with scoped permissions. |
-| Self-hosted server / cron | Unattended automation | Fine-grained PAT | Create a fine-grained PAT in GitHub Settings with the minimum required repository permissions. Set `GH_TOKEN=<pat>` in the environment. Note: fine-grained PATs expire after at most 1 year and must be rotated. |
-
-Automation contexts (cron, CI, always-on schedulers) cannot run device flow and typically cannot reach the interactive keychain. Use the `GH_TOKEN` env var path for these contexts — it is independent of `specrunner login`.
-
-Run `specrunner doctor` to see which source is currently resolved.
-
-## Command Reference
-
-### Request commands (static document operations)
-
-```
-specrunner request new <slug>              Create request.md from template
-specrunner request generate "<text>"       Generate request.md via LLM
-specrunner request ls                      List active requests
-specrunner request validate <file|slug>    Validate request.md syntax (static, no LLM)
-specrunner request template                Print scaffold template to stdout
-```
-
-See [docs/request-authoring.md](docs/request-authoring.md) for how to write effective requests (premise verification, granularity, splitting).
-
-### Job commands (stateful execution)
-
-```
-specrunner job start <request-slug|file>   Start pipeline, issue jobId
-specrunner job ls                          List all jobs
-specrunner job show <jobId|slug>           Show job state details
-specrunner job cancel <jobId>              Cancel job and cleanup
-specrunner job resume <slug>               Resume a halted job
-specrunner job archive <slug>              Archive change folder, teardown worktree, update status
-```
-
-### Environment commands
-
-```
-specrunner init                            Initialize config scaffold
-specrunner login                           GitHub Device Flow OAuth
-specrunner doctor                          Diagnose environment / config / auth
-specrunner runtime setup                   Set up Anthropic Managed Agents (managed runtime)
-specrunner runtime status                  Show managed runtime status
-specrunner runtime reset                   Reset managed runtime config
-```
-
-### Inbox commands (GitHub issue automation)
-
-```
-specrunner inbox run                       Poll approved issues, start / resume jobs
-```
-
-### Extension commands (rules / custom reviewers)
-
-```
-specrunner rules new <step> <slug>         Scaffold a rules file (extra discipline injected into a step)
-specrunner reviewers new <name>            Scaffold a custom reviewer definition
-```
-
-### Aliases
-
-```
-specrunner run <slug|file>                 Alias for: job start <slug|file>
-```
-
-## Inbox — Automated Issue-to-Job Routing
-
-`specrunner inbox run` polls your GitHub repository for issues with the approval label (default: `specrunner-approved`) and:
-
-- **Starts** new jobs from unlinked issues whose body is a valid `request.md`
-- **Resumes** jobs in `awaiting-resume` state when a qualifying `/resume` comment is found
-- **Rejects** issues whose body fails `request.md` validation (posts a comment with the error)
-
-### Idempotency
-
-Each run is safe to call any number of times without side-effects:
-
-- **Issue linkage**: once a job has been started for an issue, that issue is skipped on every subsequent run regardless of job status
-- **Resume gating**: only `/resume` comments posted **strictly after** the escalation marker (the comment SpecRunner posts when a job escalates) are considered; earlier comments and bot-generated comments are ignored
-
-### Approval label workflow
-
-1. Create a GitHub issue whose body follows the `request.md` format (see `specrunner request template`)
-2. Apply the approval label (`specrunner-approved` by default) to the issue
-3. On the next `inbox run`, SpecRunner writes the issue body as a draft `request.md` and starts the pipeline
-
-To stop an issue from being processed, remove the label before the next run.
-
-### `/resume` workflow
-
-When a job escalates and requires human input, SpecRunner posts an escalation comment on the linked issue. To resume:
-
-1. Read the escalation comment to understand what decision is needed
-2. Post a new issue comment starting with `/resume` followed by your instructions:
-   ```
-   /resume Use option B. Skip the cache layer and go with the simpler approach.
-   ```
-3. On the next `inbox run`, SpecRunner resumes the job with your prompt as context
-
-Only comments by users with `OWNER`, `MEMBER`, or `COLLABORATOR` association on the repository are accepted.
-
-### Scheduling
-
-Run `inbox run` on a schedule so issues are processed automatically.
-
-**cron (Linux/macOS)**
-
-```cron
-*/5 * * * * cd /path/to/repo && npx specrunner inbox run --quiet
-```
-
-**launchd (macOS)**
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key>
-  <string>com.yourteam.specrunner-inbox</string>
-  <key>ProgramArguments</key>
-  <array>
-    <string>/usr/local/bin/npx</string>
-    <string>specrunner</string>
-    <string>inbox</string>
-    <string>run</string>
-  </array>
-  <key>WorkingDirectory</key>
-  <string>/path/to/repo</string>
-  <key>StartInterval</key>
-  <integer>300</integer>
-  <key>RunAtLoad</key>
-  <true/>
-</dict>
-</plist>
-```
-
-**GitHub Actions**
-
-Three complementary triggers cover the common automation patterns. The `concurrency` group prevents overlapping runs.
-
-`GITHUB_TOKEN` is injected automatically by GitHub Actions for each run (see [GitHub Authentication](#github-authentication)), so no manual secret configuration is needed.
-
-```yaml
-name: SpecRunner Inbox
-
-on:
-  schedule:
-    - cron: "*/10 * * * *"         # poll every 10 minutes
-  issues:
-    types: [labeled]               # fire immediately when label is applied
-  issue_comment:
-    types: [created]               # fire immediately on new comments
-
-concurrency:
-  group: specrunner-inbox
-  cancel-in-progress: false        # let in-flight runs finish; queue the next
-
-jobs:
-  inbox-run:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run inbox
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx specrunner inbox run
-```
-
-For the `issues.labeled` trigger you may add a filter so the workflow only fires on the approval label:
-
-```yaml
-  issues:
-    types: [labeled]
-# in the job:
-    if: github.event.label.name == 'specrunner-approved'
-```
-
-### Trust boundary
-
-Issue bodies and `/resume` comment text are passed directly to agent prompts.
-
-- The approval label is the entry gate: only issues a repository member explicitly labels are processed
-- `/resume` comments are gated to `OWNER`, `MEMBER`, and `COLLABORATOR` associations; external contributors cannot inject prompts
-
-**Running `inbox run` on repositories with untrusted issue content is not recommended.** A repository member with label-apply permission could craft a malicious issue body.
-
-See [docs/operations.md](docs/operations.md) for the full unattended-loop runbook: the three authentication layers required for cron (API token / git transport / agent runtime), crontab pitfalls, failure-resilience behavior, and diagnostics.
-
-## Extending the Review Chain
-
-The review side of the pipeline is extensible without code changes:
-
-- **Rules** (`specrunner/rules/<step>/*.md`) add extra discipline to an existing step's prompt. Cheap (no extra session), but shares the step's convergence loop.
-- **Custom reviewers** (`specrunner/reviewers/<name>.md`) add an independent review lens with its own convergence loop, budget, and optional model override. Declared as data (purpose / criteria / judgment sections in markdown), validated at job start, and run serially after `code-review`. Activation can be scoped declaratively with `paths` globs and `requestTypes` so a lens only runs when the diff touches its domain.
-- When custom reviewers are present, a **regression gate** runs automatically after the chain: it re-checks every finding that was reported and fixed during review against the final code, catching fixes that were silently undone by later changes.
-
-Scaffold a definition with `specrunner reviewers new <name>` — the template documents the format.
-
-The data-extensible surface is the review chain. The pipeline's shape itself — which steps exist and in what order — is code, not configuration: changing it means changing SpecRunner.
-
-## Where SpecRunner Sits
-
-Nearby tools solve adjacent problems at different layers:
-
-| Layer | What it manages | Tools |
-|---|---|---|
-| Context & task management | Shared knowledge bases and task lists for interactive coding agents | Archon |
-| Spec authoring frameworks | How to write specs and hand them to an agent | GitHub Spec Kit, BMAD |
-| Execution pipeline | The unattended run from spec to verified PR — judge loops, budgets, escalation, state | **SpecRunner**, GitHub Copilot coding agent |
-
-SpecRunner is the execution layer: it assumes a spec (`request.md`) and owns everything between it and an open PR. Compared with platform-bound agents, it is self-hosted, model-configurable per step, and leaves an auditable state trail inside your repository.
-
 ## Configuration
 
-### User global config
+Two layers, deep-merged (project overrides global):
 
-SpecRunner stores its configuration at `~/.config/specrunner/config.json` (XDG_CONFIG_HOME).
-Run `specrunner init` to create the initial scaffold.
-
-### Project local config (per-repo override)
-
-Place a partial config at `<repo-root>/.specrunner/config.json` to override settings for a specific repository.
-The project local config is **deep-merged** on top of the user global config — you only need to specify the fields you want to change.
-
-`specrunner init` configures `.gitignore` with `.specrunner/*` + `!.specrunner/config.json`, so `config.json` can be committed and shared with your team while machine-generated state (`jobs/`, `logs/`, etc.) stays ignored.
+| Layer | Path | Created by |
+|---|---|---|
+| User global | `~/.config/specrunner/config.json` | `specrunner init` |
+| Project local | `<repo>/.specrunner/config.json` | Hand-created (partial overlay) |
 
 ```jsonc
-// <repo-root>/.specrunner/config.json
+// .specrunner/config.json — project local example
 {
   "version": 1,
   "steps": {
@@ -358,165 +86,121 @@ The project local config is **deep-merged** on top of the user global config —
 }
 ```
 
-This example uses opus for design on `spec-change` / `new-feature` requests and sonnet for everything else (from user global).
+For the full configuration reference (verification commands, test placement, inbox settings, archive settings, log retention, GitHub Enterprise host), see [docs/configuration.md](docs/configuration.md).
 
-### Inbox configuration
+## Extending the Review Chain
 
-```jsonc
-// <repo-root>/.specrunner/config.json
-{
-  "inbox": {
-    "approveLabel": "specrunner-approved", // label to poll for; default: "specrunner-approved"
-    "maxStartsPerRun": 3                   // max new jobs started per run; 0 = resume-only; default: 3
-  }
-}
-```
+- **Rules** (`specrunner/rules/<step>/*.md`) — extra discipline injected into a step's prompt. No extra session.
+- **Custom reviewers** (`specrunner/reviewers/<name>.md`) — independent review lens with its own convergence loop, budget, and model override. Scoped with `paths` globs and `requestTypes`.
+- **Regression gate** — runs automatically when custom reviewers are present. Re-checks every fixed finding against the final code.
 
-| Key | Default | Description |
-|---|---|---|
-| `inbox.approveLabel` | `"specrunner-approved"` | GitHub label name that marks an issue as ready to start |
-| `inbox.maxStartsPerRun` | `3` | Maximum number of new jobs started in one `inbox run` invocation. `0` disables new starts (resume-only mode). |
+Scaffold a definition: `specrunner reviewers new <name>`.
 
-### byRequestType — per-request-type model selection
+The extensible surface is the review chain. The pipeline shape is code, not configuration.
 
-Each step config supports a `byRequestType` object to select a different model based on the request type:
+## Automation with GitHub Issues
 
-```jsonc
-{
-  "steps": {
-    "code-review": {
-      "model": "claude-sonnet-4-6",
-      "byRequestType": {
-        "spec-change": { "model": "claude-opus-4-6[1m]" }
-      }
-    }
-  }
-}
-```
+For unattended operation, SpecRunner can poll GitHub issues instead of running from drafts.
 
-Resolution order (first defined wins):
-1. `steps.<step>.byRequestType.<requestType>.<field>`
-2. `steps.<step>.<field>`
-3. `steps.defaults.byRequestType.<requestType>.<field>`
-4. `steps.defaults.<field>`
-5. Step hardcoded default
-6. SDK default
+`specrunner inbox run` polls for issues with the approval label (default: `specrunner-approved`) and:
 
-> Note: under the **managed** runtime, `model` / `byRequestType.model` are ignored — managed agents use their pre-registered model. These fields are effective only under the **local** runtime.
+- **Starts** new jobs from issues whose body is a valid `request.md`
+- **Resumes** jobs when a `/resume` comment is posted after escalation
+- **Rejects** issues that fail validation (posts a comment with the error)
+
+Schedule it with cron, launchd, or GitHub Actions to run the pipeline without touching the CLI. See [docs/operations.md](docs/operations.md) for the full unattended-loop runbook (authentication layers, crontab setup, scheduling examples, failure resilience).
+
+## Authentication
+
+Token resolution order: `GH_TOKEN` env > `GITHUB_TOKEN` env > `gh auth token` > `credentials.json`.
+
+| Context | Setup |
+|---|---|
+| Interactive | `specrunner login` (device flow) |
+| GitHub Actions | `GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}` (injected automatically) |
+| Self-hosted / cron | Fine-grained PAT via `GH_TOKEN` env var |
+
+Run `specrunner doctor` to see which source is currently resolved.
 
 ## Runtime Modes
 
-### Local runtime (default)
+**Local (default)** — runs agents locally via the Claude Agent SDK. No API key needed beyond the GitHub token.
 
-Runs agents locally via the Claude Agent SDK. No additional API key needed beyond the GitHub token.
-
-```bash
-specrunner init
-specrunner login
-specrunner job start my-feature
-```
-
-### Managed runtime (Anthropic Managed Agents)
-
-Runs agents in Anthropic's cloud. Requires `SPECRUNNER_API_KEY` (Anthropic API key).
+**Managed** — runs agents in Anthropic's cloud. Requires `SPECRUNNER_API_KEY`.
 
 ```bash
-specrunner init
-specrunner login
 export SPECRUNNER_API_KEY=sk-ant-...
 specrunner runtime setup
-specrunner job start my-feature
+specrunner run my-feature
 ```
+
+## Command Reference
+
+```
+specrunner request new <slug>              Create request.md from template
+specrunner request generate "<text>"       Generate request.md via LLM
+specrunner request ls                      List active requests
+specrunner request validate <file|slug>    Validate request.md syntax
+specrunner request template                Print scaffold template to stdout
+
+specrunner run <slug|file>                 Start pipeline (alias: job start)
+specrunner job ls                          List all jobs
+specrunner job show <jobId|slug>           Show job state
+specrunner job resume <slug>               Resume a halted job
+specrunner job cancel <jobId>              Cancel job and cleanup
+specrunner job archive <slug>              Archive and teardown
+
+specrunner init                            Initialize config scaffold
+specrunner login                           GitHub Device Flow OAuth
+specrunner doctor                          Diagnose environment / config / auth
+specrunner runtime setup                   Set up managed runtime
+specrunner runtime status                  Show managed runtime status
+specrunner runtime reset                   Reset managed runtime config
+
+specrunner inbox run                       Poll approved issues, start / resume jobs
+
+specrunner rules new <step> <slug>         Scaffold a rules file
+specrunner reviewers new <name>            Scaffold a custom reviewer definition
+```
+
+See [docs/request-authoring.md](docs/request-authoring.md) for how to write effective requests.
 
 ## Cost
 
-The model used by each pipeline step is configurable (see [Configuration](#configuration)). Actual cost depends on request complexity, the number of fixer iterations, and the model selected; cache reads dominate token volume, so applying the cache-read discount is essential for accurate projection. Measured figures from this project's own runs are in [docs/cost.md](docs/cost.md).
+Actual cost depends on request complexity, fixer iterations, and model selected. Cache reads dominate token volume. Measured figures from this project's own runs are in [docs/cost.md](docs/cost.md).
 
-## Assumptions & Supported Scope
+## Design Principles
 
-### Trust model
+- **Verdicts are derived, not self-reported.** Review agents return findings; the CLI derives verdicts, verifies file:line references, and owns all transitions. Agents never judge their own work.
+- **State lives in your repository, not in a process.** Job history is branch-borne. Kill the process, reboot — the next run picks up where things stood.
+- **Runs anywhere Node runs.** One `npm install` and a crontab line. No daemon, no Docker, no SaaS.
 
-`request.md` is treated as **trusted input**. SpecRunner is designed for solo use where the person who writes `request.md` also reviews and merges the resulting PR. Feeding `request.md` files authored by untrusted third parties is outside the supported use case.
+The reasoning behind these choices is in [docs/design-philosophy.md](docs/design-philosophy.md).
 
-### Verification gate coverage
+## Built by itself
 
-By default (no `verification.commands` set), the verification step detects and runs the `build`, `typecheck`, `test`, and `lint` scripts from your `package.json`. **Node.js / Bun projects are the primary supported target** for this default mode. If no matching scripts are found and `verification.commands` is also unset, the verification gate is a no-op and code quality relies entirely on the review agents' judgment.
+Every feature was implemented, reviewed, and merged by this pipeline running on its own repository.
 
-For projects in other languages (Python, Go, Rust, etc.), set `verification.commands` in your project config to run arbitrary verification commands:
+## Stability
 
-```jsonc
-// .specrunner/config.json
-{
-  "verification": {
-    "commands": ["ruff check", { "name": "type", "run": "mypy" }, "pytest -v"]
-  }
-}
-```
+SpecRunner is **0.x**. State and config file formats may receive breaking changes between releases. Migrations are provided in minor releases with upgrade notes in the changelog.
 
-### Test file placement
+## Assumptions
 
-By default (no `tests.placement` set), the implementer agent follows the existing test placement pattern it finds in the project. This works well for projects where the LLM reliably infers the convention, but can produce "dead" test files in projects with strict `include` patterns (e.g. pnpm monorepos with vitest configured to only pick up files under a specific directory).
-
-Set `tests.placement` in your project config to declare the convention explicitly:
-
-```jsonc
-// .specrunner/config.json — sibling (test next to source)
-{
-  "tests": {
-    "placement": {
-      "style": "sibling"
-      // optional: "suffix": ".spec.ts"   (default: ".test.ts")
-    }
-  }
-}
-```
-
-```jsonc
-// .specrunner/config.json — mirror (tests/ tree mirrors src/)
-{
-  "tests": {
-    "placement": {
-      "style": "mirror",
-      "testsRoot": "tests",
-      "sourceRoot": "src"
-      // optional: "suffix": ".spec.ts"   (default: ".test.ts")
-    }
-  }
-}
-```
-
-| style | Placement rule | Example |
-|-------|---------------|---------|
-| `sibling` | Same directory as the source file | `src/foo/bar.ts` → `src/foo/bar.test.ts` |
-| `mirror` | Under `testsRoot/`, stripping `sourceRoot/` prefix | `src/foo/bar.ts` → `tests/foo/bar.test.ts` |
-
-When `sourceRoot` is omitted from a `mirror` config, the full source path is preserved under `testsRoot/` (e.g. `src/foo/bar.ts` → `tests/src/foo/bar.test.ts`).
-
-### Commit history trust
-
-In repositories with external contributors, `git log` and `git diff` output is included in agent prompts. **Running SpecRunner on repositories with untrusted commit history is not recommended**, as malicious content in commit messages or diff output could influence agent behavior.
+- **Trust model**: `request.md` is trusted input. Designed for solo use where the author also reviews and merges the PR.
+- **Verification**: Default verification detects Node.js/Bun `package.json` scripts. For other languages, set `verification.commands` in config. See [docs/configuration.md](docs/configuration.md#verification).
+- **Commit history trust**: `git log` / `git diff` output is included in agent prompts. Running on repositories with untrusted commit history is not recommended.
 
 ## Troubleshooting
 
 ### Lint failure in verification pipeline
 
-If `bun run lint` (or a custom lint command in `verification.commands`) fails during verification:
-
-1. Run auto-fix to resolve mechanical issues automatically:
-   ```bash
-   bun run lint --fix
-   ```
-2. Review remaining warnings manually — these require human judgment (e.g. intentional `any` usage, complex control flow).
-3. Prefix intentionally unused variables with `_` to suppress `no-unused-vars` warnings (e.g. `_unused`).
-4. Re-run `bun run lint` to confirm 0 warnings / 0 errors before committing.
+1. Run `bun run lint --fix` to resolve mechanical issues
+2. Review remaining warnings manually
+3. Prefix unused variables with `_` to suppress `no-unused-vars`
 
 ### Silent exit (process exits without error)
 
-If `specrunner run` or `specrunner job resume` exits unexpectedly without error output:
-
-1. Enable pipeline diagnostic logging:
-   ```bash
-   SPECRUNNER_DEBUG=pipeline specrunner run <request>
-   ```
-2. Check which boundary log point was the last one emitted — this identifies where the event loop exited prematurely.
-3. The job state will have been transitioned to `awaiting-resume` by the exit guard. Run `specrunner job resume <slug>` to continue.
+1. Enable diagnostic logging: `SPECRUNNER_DEBUG=pipeline specrunner run <request>`
+2. Check which boundary log point was last emitted
+3. Job state is preserved — run `specrunner job resume <slug>` to continue
