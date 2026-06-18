@@ -91,7 +91,7 @@ For the full configuration reference (verification commands, test placement, inb
 ## Extending the Review Chain
 
 - **Rules** (`specrunner/rules/<step>/*.md`) — extra discipline injected into a step's prompt. No extra session.
-- **Custom reviewers** (`specrunner/reviewers/<name>.md`) — independent review lens with its own convergence loop, budget, and model override. Scoped with `paths` globs and `requestTypes`.
+- **Custom reviewers** (`specrunner/reviewers/<name>.md`) — independent review lens with its own convergence loop, budget, and model override. Declared as data (purpose / criteria / judgment sections in markdown), validated at job start, and run serially after `code-review`. Scoped with `paths` globs and `requestTypes`.
 - **Regression gate** — runs automatically when custom reviewers are present. Re-checks every fixed finding against the final code.
 
 Scaffold a definition: `specrunner reviewers new <name>`.
@@ -118,7 +118,9 @@ Token resolution order: `GH_TOKEN` env > `GITHUB_TOKEN` env > `gh auth token` > 
 |---|---|
 | Interactive | `specrunner login` (device flow) |
 | GitHub Actions | `GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}` (injected automatically) |
-| Self-hosted / cron | Fine-grained PAT via `GH_TOKEN` env var |
+| Self-hosted / cron | Fine-grained PAT via `GH_TOKEN` env var (expires after at most 1 year; must be rotated) |
+
+Automation contexts (cron, CI, always-on schedulers) cannot run device flow and typically cannot reach the interactive keychain. Use the `GH_TOKEN` env var for these contexts. See [docs/operations.md](docs/operations.md) for the full authentication setup.
 
 Run `specrunner doctor` to see which source is currently resolved.
 

@@ -162,7 +162,7 @@ job が escalation した場合、SpecRunner はリンクされた issue に esc
 
 `OWNER`、`MEMBER`、`COLLABORATOR` の association を持つユーザーのコメントのみ受理される。
 
-### trust boundary
+### 信頼境界
 
 issue body と `/resume` コメントのテキストは agent prompt にそのまま渡される。
 
