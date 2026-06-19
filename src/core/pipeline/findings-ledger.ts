@@ -10,6 +10,7 @@
 import type { JobState } from "../../state/schema.js";
 import type { Finding } from "../../kernel/report-result.js";
 import { collectFixableFindings } from "../step/judge-verdict.js";
+import { getLatestJudgeFindings } from "../step/fixer-helpers.js";
 
 /**
  * Collect all fixable findings from every StepRun in the given reviewer chain.
@@ -41,6 +42,45 @@ export function collectFindingsLedger(
       const fixable = collectFixableFindings(findings);
       all.push(...fixable);
     }
+  }
+
+  return dedupeFindings(all);
+}
+
+/**
+ * Collect fixable findings from needs-fix members for the parallel coordinator's code-fixer input.
+ *
+ * Design D5 (reviewer-parallel-execution): after a parallel review round, the coordinator
+ * collects fixable findings from all `needs-fix` members and passes them to a single
+ * code-fixer session. approved / skipped members are excluded.
+ *
+ * The last StepRun verdict is used to determine needs-fix status.
+ * `collectFindingsLedger` (regression-gate ledger) is intentionally left unchanged (D9).
+ *
+ * @param state   - Current job state.
+ * @param members - Reviewer step names to inspect (coordinator fan-out members).
+ */
+export function collectParallelFixerFindings(
+  state: JobState,
+  members: string[],
+): Finding[] {
+  const all: Finding[] = [];
+
+  for (const name of members) {
+    const runs = state.steps?.[name] ?? [];
+    if (runs.length === 0) continue;
+    const lastRun = runs[runs.length - 1];
+    if (!lastRun) continue;
+
+    // Only collect from needs-fix members
+    const verdict = lastRun.outcome.verdict;
+    if (verdict !== "needs-fix") continue;
+
+    const findings = getLatestJudgeFindings(state, name);
+    if (!findings || findings.length === 0) continue;
+
+    const fixable = collectFixableFindings(findings);
+    all.push(...fixable);
   }
 
   return dedupeFindings(all);

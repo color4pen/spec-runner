@@ -171,3 +171,57 @@ describe("TC-NEW-02: validateJobState — resumePoint type validation", () => {
     expect(() => validateJobState(raw)).toThrow(/resumePoint must be an object/);
   });
 });
+
+// TC-RS-01: reviewerStatuses — schema validation and backward compatibility (T-01)
+describe("TC-RS-01: validateJobState — reviewerStatuses backward compatibility", () => {
+  it("does not throw when reviewerStatuses is absent (backward compat)", () => {
+    const raw = makeMinimalV1State();
+    expect(() => validateJobState(raw)).not.toThrow();
+  });
+
+  it("does not throw when reviewerStatuses is a valid array", () => {
+    const raw = makeMinimalV1State();
+    (raw as Record<string, unknown>)["reviewerStatuses"] = [
+      { name: "security", status: "pending" },
+      { name: "perf", status: "approved", approvedAtCommit: "sha-abc" },
+    ];
+    expect(() => validateJobState(raw)).not.toThrow();
+  });
+
+  it("round-trips reviewerStatuses through validateJobState", () => {
+    const raw = makeMinimalV1State();
+    const statuses = [
+      { name: "security", status: "approved", approvedAtCommit: "sha1", activationPaths: ["src/**"], invalidatedByCommit: null },
+      { name: "perf", status: "pending", approvedAtCommit: null, activationPaths: undefined, invalidatedByCommit: null },
+    ];
+    (raw as Record<string, unknown>)["reviewerStatuses"] = statuses;
+    const state = validateJobState(raw) as JobState;
+    const rs = (state as unknown as Record<string, unknown>)["reviewerStatuses"] as typeof statuses;
+    expect(rs[0]?.name).toBe("security");
+    expect(rs[0]?.status).toBe("approved");
+    expect(rs[1]?.name).toBe("perf");
+    expect(rs[1]?.status).toBe("pending");
+  });
+
+  it("throws when reviewerStatuses is not an array", () => {
+    const raw = makeMinimalV1State();
+    (raw as Record<string, unknown>)["reviewerStatuses"] = { name: "security", status: "pending" };
+    expect(() => validateJobState(raw)).toThrow(/reviewerStatuses must be an array/);
+  });
+
+  it("throws when a reviewerStatus entry has an invalid status value", () => {
+    const raw = makeMinimalV1State();
+    (raw as Record<string, unknown>)["reviewerStatuses"] = [
+      { name: "security", status: "invalid-status" },
+    ];
+    expect(() => validateJobState(raw)).toThrow();
+  });
+
+  it("throws when a reviewerStatus entry is missing name", () => {
+    const raw = makeMinimalV1State();
+    (raw as Record<string, unknown>)["reviewerStatuses"] = [
+      { status: "pending" },
+    ];
+    expect(() => validateJobState(raw)).toThrow();
+  });
+});

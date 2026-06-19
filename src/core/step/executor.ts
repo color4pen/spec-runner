@@ -68,6 +68,25 @@ export class StepExecutor {
    * When set, scope breach synthesis activates only at the declared checkpoint step.
    */
   private readonly permissionScope: PermissionScope | undefined;
+  /**
+   * Commit serialization mutex for parallel reviewer execution.
+   *
+   * Design D3 (reviewer-parallel-execution): when multiple member steps execute in
+   * parallel via Promise.allSettled, each one calls finalizeStepArtifacts (which runs
+   * `git add -A && commit && push`). Running these concurrently causes `index.lock`
+   * conflicts and state write races.
+   *
+   * This promise-chain acts as a simple FIFO mutex: each finalizeStepArtifacts call
+   * appends to the chain and awaits the previous one before starting.
+   *
+   * - Single-step (non-parallel) path: the chain always has length 1 → zero overhead.
+   * - Parallel path: commits are queued and executed one at a time.
+   * - commit/push is seconds-order; FIFO is sufficient (no priority needed).
+   *
+   * NOTE: session execution, activation listChangedFiles, prepareStepArtifacts, and
+   * verdict derivation are all still concurrent — only the commit/push is serialized.
+   */
+  private commitMutex: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly events: EventBus,
@@ -464,9 +483,36 @@ export class StepExecutor {
     // Delete B-group templates and commit-push (delegated to RuntimeStrategy seam).
     // LocalRuntime: cleanupOutputTemplates() + commitAndPush(). ManagedRuntime / no strategy: no-op.
     // commitAndPush errors are recorded in state here (executor owns state), then rethrown.
-    await (deps.runtimeStrategy?.finalizeStepArtifacts(step, state, deps, headBeforeStep, this.commitPushInfra) ?? Promise.resolve())
-      .catch(async (thrownErr: unknown) => {
-        const err = thrownErr as Error & { code?: string; hint?: string };
+    //
+    // Design D3 (reviewer-parallel-execution): finalizeStepArtifacts is serialized via a
+    // FIFO promise-chain mutex to prevent git index.lock conflicts when multiple member steps
+    // execute concurrently (Promise.allSettled fan-out in pipeline.ts).
+    //
+    // Pattern:
+    //   const myFinalize = this.commitMutex.catch(() => {}).then(async () => { ... });
+    //   this.commitMutex = myFinalize;   // next call waits for this one
+    //   await myFinalize;                // this call waits only for itself (not future calls)
+    //
+    // Single-step (non-parallel) path: mutex is always immediately resolved → zero overhead.
+    // The .catch(() => {}) absorbs prior chain failures so each call gets its own error handling.
+    {
+      const stateForFinalize = state;
+      const headForFinalize = headBeforeStep;
+      let finalizeError: unknown;
+
+      const myFinalize = this.commitMutex
+        .catch(() => {}) // Absorb any previous chain error; each call handles its own
+        .then(async () => {
+          if (!deps.runtimeStrategy) return;
+          // errors are caught below to capture in finalizeError for the outer scope
+          await deps.runtimeStrategy.finalizeStepArtifacts(step, stateForFinalize, deps, headForFinalize, this.commitPushInfra)
+            .catch((err: unknown) => { finalizeError = err; });
+        });
+      this.commitMutex = myFinalize;
+      await myFinalize;
+
+      if (finalizeError !== undefined) {
+        const err = finalizeError as Error & { code?: string; hint?: string };
         const errorInfo: ErrorInfo = {
           code: err.code ?? "COMMIT_AND_PUSH_FAILED",
           message: err.message,
@@ -477,7 +523,8 @@ export class StepExecutor {
         await store.persist(state);
         attachStateAndRethrow(err, state);
         return null as never;
-      });
+      }
+    }
 
     return this.finalizeStep(step, state, deps, runResult.resultContent, completedAt, startedAt, {
       sessionId: runResult.sessionId,

@@ -953,5 +953,166 @@ describe("TC-RG-03: regression-gate exhaustion → awaiting-resume", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// TC-050: Resume skip — approved reviewer is excluded from coordinator fan-out (T-09 / T-12)
+// Design D8: selectPendingMembers excludes approved/skipped reviewers on resume.
+// ---------------------------------------------------------------------------
+
+describe("TC-050: resume skip — approved reviewer excluded from coordinator fan-out", () => {
+  it("coordinator skips approved reviewer and runs only the pending reviewer", async () => {
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+
+    // Two reviewers declared; security is pre-approved in reviewerStatuses (resume state)
+    const reviewerSnapshots = [makeSnapshot("security"), makeSnapshot("perf")];
+    const jobState = await makeJobState(reviewerSnapshots);
+
+    // Pre-populate reviewerStatuses: security is already approved, perf is pending.
+    // This simulates resuming after a partial coordinator run (design D8).
+    const jobStateWithResume = {
+      ...jobState,
+      reviewerStatuses: [
+        { name: "security", status: "approved" as const, approvedAtCommit: "sha-from-prior-run" },
+        { name: "perf", status: "pending" as const },
+      ],
+    };
+
+    // Mock client: perf approves; security should NOT be called (it's approved → skipped).
+    const { client } = buildCustomMockClient({
+      codeReviewVerdicts: ["approved"],
+      reviewerVerdicts: {
+        perf: ["approved"],
+        // security intentionally absent — if it were called, it would fall through to the
+        // generic handler which produces an unexpected result (exposing the bug).
+      },
+    });
+    const githubClient = buildMockGithubClient();
+
+    const result = await runPipeline(jobStateWithResume as Parameters<typeof runPipeline>[0], {
+      client,
+      config: buildConfig(["security", "perf"]) as Parameters<typeof runPipeline>[1]["config"],
+      request: buildRequest(),
+      slug: "cr-slug",
+      cwd: tempDir,
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
+      spawn: noopSpawn,
+      storeFactory: makeStoreFactory(tempDir),
+    });
+
+    expect(result.status).toBe("awaiting-archive");
+
+    // perf ran exactly once
+    expect(result.steps?.["perf"], "perf should have run").toBeDefined();
+    expect(result.steps?.["perf"]?.length).toBe(1);
+    expect(toLegacyStepResult(result.steps!["perf"]![0]!).verdict).toBe("approved");
+
+    // security did NOT run (already approved — skipped by selectPendingMembers)
+    expect(result.steps?.["security"], "security should NOT have run (already approved)").toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-051: Invalidation — approved reviewer re-runs when fixer touches their activation paths (T-12)
+// Design D6: computeInvalidations fires when listChangedFiles returns matching files.
+// ---------------------------------------------------------------------------
+
+describe("TC-051: invalidation — approved reviewer re-runs when fixer touched their activation paths", () => {
+  it("coordinator invalidates approved reviewer whose activation paths were touched by fixer", async () => {
+    const { buildPipelineForJob } = await import("../src/core/pipeline/run.js");
+    const { EventBus } = await import("../src/core/event/event-bus.js");
+
+    // security with activationPaths: ["src/**"]
+    const reviewerSnapshots = [{ ...makeSnapshot("security"), paths: ["src/**"] }];
+    const jobState = await makeJobState(reviewerSnapshots);
+
+    // Pre-populate reviewerStatuses: security was approved in a prior coordinator round.
+    // The coordinator will check if the fixer touched src/**, invalidate, and re-run security.
+    const jobStateWithApproved = {
+      ...jobState,
+      reviewerStatuses: [
+        {
+          name: "security",
+          status: "approved" as const,
+          approvedAtCommit: "sha-prior",
+          activationPaths: ["src/**"] as string[],
+          invalidatedByCommit: null as string | null,
+        },
+      ],
+    };
+
+    // security runs once (after invalidation) and approves
+    const { client } = buildCustomMockClient({
+      codeReviewVerdicts: ["approved"],
+      reviewerVerdicts: {
+        security: ["approved"],
+      },
+    });
+    const githubClient = buildMockGithubClient();
+
+    // Mock runtimeStrategy: listChangedFiles returns src/ files (simulates fixer touching paths).
+    // Design D6: listChangedFiles is called with approvedAtCommit as the base, reusing existing seam.
+    // No new seam introduced (see pipeline.ts coordinator fan-out).
+    const mockRuntimeStrategy = {
+      validateStepInputs: vitest.fn().mockResolvedValue(undefined),
+      validateStepOutputs: vitest.fn().mockResolvedValue({ violations: [] }),
+      captureHeadSha: vitest.fn().mockResolvedValue("sha-current"),
+      prepareStepArtifacts: vitest.fn().mockResolvedValue(undefined),
+      finalizeStepArtifacts: vitest.fn().mockResolvedValue(undefined),
+      verifyFindingRefs: vitest.fn().mockImplementation(async (refs: { file: string }[]) => refs),
+      digestArtifacts: vitest.fn().mockResolvedValue([]),
+      commitFinalState: vitest.fn().mockResolvedValue(undefined),
+      // Returns src/feature.ts — matches ["src/**"] activation paths → invalidation fires
+      listChangedFiles: vitest.fn().mockResolvedValue(["src/feature.ts"]),
+    };
+
+    const deps = {
+      client,
+      config: buildConfig(["security"]) as Parameters<typeof buildPipelineForJob>[1]["config"],
+      request: buildRequest(),
+      slug: "cr-slug",
+      cwd: tempDir,
+      sleepFn: vitest.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
+      spawn: noopSpawn,
+      storeFactory: makeStoreFactory(tempDir),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      runtimeStrategy: mockRuntimeStrategy as any,
+    };
+
+    const bus = new EventBus();
+    const pipeline = buildPipelineForJob(
+      jobStateWithApproved as Parameters<typeof buildPipelineForJob>[0],
+      deps,
+      bus,
+    );
+
+    // Start from coordinator directly (skipping design/spec-review/implementer/code-review)
+    const result = await pipeline.run(
+      "custom-reviewers",
+      jobStateWithApproved as Parameters<typeof buildPipelineForJob>[0],
+      deps,
+    );
+
+    expect(result.status).toBe("awaiting-archive");
+
+    // security was invalidated (activated because src/feature.ts matches src/**) and ran again
+    expect(result.steps?.["security"], "security should have run after invalidation").toBeDefined();
+    expect(result.steps?.["security"]?.length).toBeGreaterThan(0);
+
+    // listChangedFiles was called with the prior approvedAtCommit as base (design D6 seam reuse)
+    expect(mockRuntimeStrategy.listChangedFiles).toHaveBeenCalledWith(
+      "sha-prior",
+      tempDir,
+      expect.anything(),
+    );
+  });
+});
+
 // Suppress unused import warning
 void vitest;

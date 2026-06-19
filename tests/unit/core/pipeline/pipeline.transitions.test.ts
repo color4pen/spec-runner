@@ -646,7 +646,9 @@ describe("TC-024: LOOP_ERROR_CODES — pr-create が含まれない", () => {
     expect(keys).toContain("regression-gate");
     expect(keys).not.toContain("delta-spec-validation");
     expect(keys).not.toContain("pr-create");
-    expect(keys).toHaveLength(5);
+    // Updated: reviewer-parallel-execution adds "custom-reviewers" coordinator entry
+    expect(keys).toContain("custom-reviewers");
+    expect(keys).toHaveLength(6);
   });
 });
 

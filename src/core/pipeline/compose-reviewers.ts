@@ -13,11 +13,12 @@
  * (reference-identical) for zero-overhead no-reviewer case.
  */
 import type { PipelineDescriptor } from "./types.js";
+import { CUSTOM_REVIEWERS_STEP_NAME } from "./types.js";
 import { STEP_NAMES } from "../step/step-names.js";
 import type { ReviewerSnapshot } from "../reviewers/types.js";
 import { createCustomReviewerStep } from "../step/custom-reviewer.js";
 import { createRegressionGateStep, REGRESSION_GATE_STEP_NAME, REGRESSION_GATE_MAX_ITERATIONS } from "../step/regression-gate.js";
-import { buildReviewerChainTransitions, deriveImplReviewerChain } from "./reviewer-chain.js";
+import { buildParallelReviewerTransitions } from "./reviewer-chain.js";
 
 /**
  * Build a PipelineDescriptor that incorporates the given reviewer snapshots.
@@ -36,13 +37,11 @@ export function composeReviewerDescriptor(
     return base;
   }
 
-  // Build the full reviewer chain: ["code-review", ...custom names]
-  const chain = deriveImplReviewerChain(snapshots);
-
-  // The fixer chain includes the regression-gate (since custom reviewers are present).
-  const fixableChain = [...chain, REGRESSION_GATE_STEP_NAME];
+  const coordinator = CUSTOM_REVIEWERS_STEP_NAME;
+  const memberNames = snapshots.map((s) => s.name);
 
   // --- Steps: insert custom reviewers + regression-gate before conformance ---
+  // The coordinator is a virtual node managed by the engine — NOT in the steps Map.
   const baseSteps = [...base.steps];
   const conformanceIdx = baseSteps.findIndex(([name]) => name === STEP_NAMES.CONFORMANCE);
   const insertIdx = conformanceIdx !== -1 ? conformanceIdx : baseSteps.length;
@@ -56,9 +55,8 @@ export function composeReviewerDescriptor(
     ...baseSteps.slice(insertIdx),
   ];
 
-  // --- Transitions: replace the reviewer/fixer section with the full chain (incl. gate) ---
+  // --- Transitions: replace the reviewer/fixer section with parallel coordinator transitions ---
   // Remove all existing code-review / code-fixer / custom reviewer / regression-gate transitions from base.
-  // Then append regenerated transitions for the full fixable chain.
   const baseTransitions = base.transitions.filter(
     (t) =>
       t.step !== STEP_NAMES.CODE_REVIEW &&
@@ -66,11 +64,9 @@ export function composeReviewerDescriptor(
       t.step !== REGRESSION_GATE_STEP_NAME &&
       !snapshots.some((s) => t.step === s.name),
   );
-  const chainTransitions = buildReviewerChainTransitions(fixableChain);
+  const parallelTransitions = buildParallelReviewerTransitions({ coordinator, members: memberNames });
 
-  // Insert chain transitions in place of where the code-review rows were.
-  // Find the insertion index: after VERIFICATION/BUILD_FIXER, before CONFORMANCE.
-  // Use the position of the first conformance row as anchor.
+  // Insert parallel transitions in place of where the code-review rows were.
   const conformanceTransIdx = baseTransitions.findIndex(
     (t) => t.step === STEP_NAMES.CONFORMANCE,
   );
@@ -78,32 +74,54 @@ export function composeReviewerDescriptor(
 
   const newTransitions = [
     ...baseTransitions.slice(0, insertTransIdx),
-    ...chainTransitions,
+    ...parallelTransitions,
     ...baseTransitions.slice(insertTransIdx),
   ];
 
-  // --- loopNames: extend with custom reviewer names + regression-gate ---
-  const newLoopNames = [...base.loopNames, ...snapshots.map((s) => s.name), REGRESSION_GATE_STEP_NAME];
+  // --- loopNames: extend with coordinator + regression-gate ---
+  // Design D4: coordinator is registered as a loop step for exhaustion / episode-reset tracking.
+  // Member steps are NOT added to loopNames: they never appear as currentStep or nextStep in
+  // the main engine loop (they run inside runCoordinatorFanOut fan-out, not via transitions).
+  const newLoopNames = [
+    ...base.loopNames,
+    coordinator,
+    REGRESSION_GATE_STEP_NAME,
+  ];
 
-  // --- loopFixerPairs: add reviewer → code-fixer and regression-gate → code-fixer ---
+  // --- loopFixerPairs ---
+  // Only the coordinator (not individual members) maps to code-fixer.
+  // Members are internal to the coordinator fan-out; the engine never routes to them directly.
+  // Including members in loopFixerPairs would cause resolvePairedReviewForFixer to consider
+  // member startedAt times, corrupting the episode-reset logic and preventing exhaustion.
   const newLoopFixerPairs = {
     ...base.loopFixerPairs,
-    ...Object.fromEntries(snapshots.map((s) => [s.name, STEP_NAMES.CODE_FIXER])),
+    [coordinator]: STEP_NAMES.CODE_FIXER,
     [REGRESSION_GATE_STEP_NAME]: STEP_NAMES.CODE_FIXER,
   };
 
-  // --- roles: add custom-reviewer / impl for each custom reviewer + gate / impl for regression-gate ---
+  // --- roles ---
+  // coordinator: gate / impl (virtual orchestration node)
+  // members: custom-reviewer / impl
+  // regression-gate: gate / impl
   const newRoles = {
     ...base.roles,
+    [coordinator]: { role: "gate" as const, phase: "impl" as const },
     ...Object.fromEntries(
       snapshots.map((s) => [s.name, { role: "custom-reviewer" as const, phase: "impl" as const }]),
     ),
     [REGRESSION_GATE_STEP_NAME]: { role: "gate" as const, phase: "impl" as const },
   };
 
-  // --- maxIterationsByStep: per-reviewer budgets + gate budget ---
+  // --- maxIterationsByStep ---
+  // coordinator: max of member maxIterations (Open Question initial policy: member max)
+  const memberMaxIterations = snapshots.map((s) => s.maxIterations);
+  const coordinatorMaxIterations = memberMaxIterations.length > 0
+    ? Math.max(...memberMaxIterations)
+    : 3; // fallback default
+
   const newMaxIterationsByStep: Record<string, number> = {
     ...(base.maxIterationsByStep ?? {}),
+    [coordinator]: coordinatorMaxIterations,
     ...Object.fromEntries(snapshots.map((s) => [s.name, s.maxIterations])),
     [REGRESSION_GATE_STEP_NAME]: REGRESSION_GATE_MAX_ITERATIONS,
   };
@@ -116,5 +134,6 @@ export function composeReviewerDescriptor(
     loopFixerPairs: newLoopFixerPairs,
     roles: newRoles,
     maxIterationsByStep: newMaxIterationsByStep,
+    parallelReview: { coordinator, members: memberNames },
   };
 }

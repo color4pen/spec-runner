@@ -7,6 +7,7 @@
 import { describe, it, expect } from "vitest";
 import { composeReviewerDescriptor } from "../../../../src/core/pipeline/compose-reviewers.js";
 import { STANDARD_DESCRIPTOR } from "../../../../src/core/pipeline/registry.js";
+import { CUSTOM_REVIEWERS_STEP_NAME } from "../../../../src/core/pipeline/types.js";
 import type { ReviewerSnapshot } from "../../../../src/core/reviewers/types.js";
 
 function makeReviewerSnapshot(name: string): ReviewerSnapshot {
@@ -86,9 +87,13 @@ describe("TC-007: composeReviewerDescriptor preserves reverification transitions
     ];
     const composed = composeReviewerDescriptor(STANDARD_DESCRIPTOR, snapshots);
 
-    // Custom reviewers appear in transitions
+    // Coordinator (not individual member steps) appears in the transition table.
+    // In the parallel architecture, member steps have no outgoing transition rows —
+    // they are driven internally via coordinator fan-out.
+    const coordinatorRow = composed.transitions.find((t) => t.step === CUSTOM_REVIEWERS_STEP_NAME);
+    expect(coordinatorRow).toBeDefined();
     const secRow = composed.transitions.find((t) => t.step === "security");
-    expect(secRow).toBeDefined();
+    expect(secRow).toBeUndefined();
 
     // Reverification rows are still there
     expect(

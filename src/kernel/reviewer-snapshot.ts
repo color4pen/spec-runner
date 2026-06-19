@@ -29,6 +29,41 @@ export interface ReviewerActivation {
 }
 
 /**
+ * Per-reviewer execution status record stored in JobState.reviewerStatuses.
+ *
+ * Design D1: parallel execution requires a dedicated status record because
+ * `StepRun[]` verdict inference breaks when multiple reviewers complete concurrently.
+ *
+ * Persisted in state.json as a top-level projection field (same round-trip semantics
+ * as `reviewers` / `decisions`). Event-journal threading is NOT required for this field.
+ * JSDoc: state.json projection で round-trip、event-journal threading 不要
+ */
+export interface ReviewerStatus {
+  /** Reviewer name (matches ReviewerSnapshot.name). */
+  name: string;
+  /** Current execution status. */
+  status: "pending" | "approved" | "skipped";
+  /**
+   * HEAD SHA at the time this reviewer was approved.
+   * Used as the starting point for invalidation diff (approvedAtCommit..HEAD).
+   * null = not yet approved.
+   */
+  approvedAtCommit?: string | null;
+  /**
+   * Activation paths copied from ReviewerSnapshot.paths at status initialization.
+   * Used by computeInvalidations to determine whether fixer-touched files overlap.
+   * undefined = always-activate reviewer (no path constraint).
+   */
+  activationPaths?: string[];
+  /**
+   * HEAD SHA of the commit that invalidated this reviewer (set by computeInvalidations).
+   * Present when the reviewer was pending-by-invalidation after a fixer run.
+   * null = not invalidated.
+   */
+  invalidatedByCommit?: string | null;
+}
+
+/**
  * Immutable snapshot of a reviewer definition stored in JobState.
  * Captured at job start; used by pipeline composition and step execution.
  * Persisted in state.json.
