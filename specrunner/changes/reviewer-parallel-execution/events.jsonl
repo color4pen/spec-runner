@@ -34,3 +34,16 @@
 {"type":"transition","ts":"2026-06-19T14:25:24.305Z","step":"verification","status":"warning","message":"verification iteration 1 completed with verdict: failed"}
 {"type":"transition","ts":"2026-06-19T14:25:24.305Z","step":"step-transition","status":"ok","message":"verification → build-fixer"}
 {"type":"transition","ts":"2026-06-19T14:25:24.307Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}
+{"type":"transition","ts":"2026-06-19T14:25:58.742Z","step":"build-fixer-verdict","status":"ok","message":"build-fixer verdict: success"}
+{"type":"step-attempt","step":"build-fixer","sessionId":"a1054eff-da0c-4057-8985-66a74a09a84f","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-19T14:25:24.319Z","endedAt":"2026-06-19T14:25:57.401Z"}
+{"type":"lineage","step":"build-fixer","ts":"2026-06-19T14:25:57.401Z","outputs":[{"path":"specrunner/changes/reviewer-parallel-execution","hash":null}],"inputs":[{"path":"specrunner/changes/reviewer-parallel-execution/verification-result.md","hash":"sha256:59ff0bee4efc56c8b143dbe671f3059d69a9c7e12cd7aab195d8d267c63b3ac5"}]}
+{"type":"transition","ts":"2026-06-19T14:25:58.748Z","step":"step-transition","status":"ok","message":"build-fixer → verification"}
+{"type":"transition","ts":"2026-06-19T14:25:58.749Z","step":"verification","status":"started","message":"verification iteration 2 started"}
+{"type":"transition","ts":"2026-06-19T14:25:58.750Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-06-19T14:26:23.058Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/reviewer-parallel-execution/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-19T14:25:58.751Z","endedAt":"2026-06-19T14:26:23.057Z"}
+{"type":"lineage","step":"verification","ts":"2026-06-19T14:26:23.057Z","outputs":[{"path":"specrunner/changes/reviewer-parallel-execution/verification-result.md","hash":"sha256:203147fa35234d0739251273779412c24774bea0024f0b666837dccc5409b161"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-06-19T14:26:23.063Z","step":"verification","status":"ok","message":"verification iteration 2 completed with verdict: passed"}
+{"type":"transition","ts":"2026-06-19T14:26:23.063Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-06-19T14:26:23.064Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-06-19T14:26:23.065Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
