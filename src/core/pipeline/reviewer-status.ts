@@ -178,11 +178,14 @@ export function aggregateVerdict(
  * This function receives the already-computed `touchedFiles` list as a pure argument.
  * No I/O is performed here.
  *
- * Managed runtime (touchedFiles = []) → no invalidation fires (fail-safe, non-intrusive).
+ * Managed runtime (touchedFiles = []) → no invalidation fires for path-constrained reviewers
+ * (evaluateActivation requires at least one touched file to match activationPaths).
+ * Exception: always-activate reviewers (activationPaths: undefined) are always invalidated
+ * regardless of touchedFiles — evaluateActivation ignores changedFiles when paths is undefined.
  * NOTE: local implementation uses approvedAtCommit-based listChangedFiles in the engine.
  *
- * paths undefined reviewer → evaluateActivation returns activated: true (always-activate)
- * → always reverts to pending after a fixer run.
+ * paths undefined reviewer (always-activate) → evaluateActivation returns activated: true
+ * unconditionally → always reverts to pending after any fixer run, even with touchedFiles = [].
  *
  * @param statuses     - Current reviewer status records.
  * @param touchedFiles - Files changed by the fixer (from git diff, passed by engine).
