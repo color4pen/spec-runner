@@ -11,7 +11,6 @@
  */
 import type { JobState } from "../../state/schema.js";
 import type { Transition } from "./types.js";
-import { CUSTOM_REVIEWERS_STEP_NAME } from "./types.js";
 import { STEP_NAMES } from "../step/step-names.js";
 import type { ReviewerSnapshot } from "../reviewers/types.js";
 import type { CodeReviewReportResult } from "../port/report-result.js";

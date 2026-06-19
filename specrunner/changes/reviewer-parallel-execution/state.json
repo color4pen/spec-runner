@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "05519b8e-26eb-4d4a-898b-542129319450",
   "createdAt": "2026-06-19T12:54:27.501Z",
-  "updatedAt": "2026-06-19T13:30:48.618Z",
+  "updatedAt": "2026-06-19T14:25:24.307Z",
   "request": {
     "title": "カスタムレビュワーの並列実行 + per-reviewer status tracking + invalidation",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "build-fixer",
   "status": "running",
   "branch": "feat/reviewer-parallel-execution-05519b8e",
   "error": null,
@@ -48,12 +48,14 @@
     }
   ],
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 24,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1
     }
   }
 }
