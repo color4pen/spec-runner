@@ -113,3 +113,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/reviewer-parallel-execution/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-19T15:20:43.981Z","endedAt":"2026-06-19T15:20:46.176Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-19T15:20:46.176Z","outputs":[{"path":"specrunner/changes/reviewer-parallel-execution/pr-create-result.md","hash":"sha256:78cd3f9ef5f3eb9cdf5d253049e595edbf072c18563038b540809e6bd9375571"}],"inputs":[{"path":"feat/reviewer-parallel-execution-05519b8e","hash":null}]}
 {"type":"transition","ts":"2026-06-19T15:20:46.181Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-19T15:22:46.060Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

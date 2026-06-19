@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "05519b8e-26eb-4d4a-898b-542129319450",
   "createdAt": "2026-06-19T12:54:27.501Z",
-  "updatedAt": "2026-06-19T15:20:46.181Z",
+  "updatedAt": "2026-06-19T15:22:46.060Z",
   "request": {
     "title": "カスタムレビュワーの並列実行 + per-reviewer status tracking + invalidation",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "feat/reviewer-parallel-execution-05519b8e",
   "error": null,
   "pipelineId": "standard",
@@ -53,7 +53,7 @@
     "createdAt": "2026-06-19T15:20:46.176Z"
   },
   "_journal": {
-    "historyCount": 78,
+    "historyCount": 79,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
