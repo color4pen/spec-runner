@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "05519b8e-26eb-4d4a-898b-542129319450",
   "createdAt": "2026-06-19T12:54:27.501Z",
-  "updatedAt": "2026-06-19T15:15:43.456Z",
+  "updatedAt": "2026-06-19T15:20:46.181Z",
   "request": {
     "title": "カスタムレビュワーの並列実行 + per-reviewer status tracking + invalidation",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/reviewer-parallel-execution-05519b8e",
   "error": null,
   "pipelineId": "standard",
@@ -47,8 +47,13 @@
       ]
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/709",
+    "number": 709,
+    "createdAt": "2026-06-19T15:20:46.176Z"
+  },
   "_journal": {
-    "historyCount": 73,
+    "historyCount": 78,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -62,7 +67,9 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
