@@ -13,6 +13,9 @@ import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, 
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import { deriveImplFixerChain, resolveActiveReviewer } from "../pipeline/reviewer-chain.js";
 import { conformanceResultPath } from "../../util/paths.js";
+import { collectParallelFixerFindings } from "../pipeline/findings-ledger.js";
+import { CUSTOM_REVIEWERS_STEP_NAME } from "../pipeline/types.js";
+import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";
 
 const CODE_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -51,6 +54,56 @@ const codeFixerAgentDefinition: AgentDefinition = {
  * Design D7: resultFilePath = null, parseResult = NULL_PARSE_RESULT, completionVerdict = "approved".
  * Design D6: separate Agent with dedicated system prompt (gitWrite: true).
  */
+/**
+ * Determine if the code-fixer is being invoked from the custom reviewer coordinator loop.
+ *
+ * Design D5 / D7 (reviewer-parallel-execution): in the composed path (custom reviewers
+ * present), the code-fixer can be triggered by:
+ * 1. conformance → code-fixer (conformanceFixInProgress — detected by getConformanceFixContext)
+ * 2. regression-gate → code-fixer (regressionGateActive)
+ * 3. code-review → code-fixer (standard, before coordinator starts)
+ * 4. coordinator → code-fixer (custom reviewer needs-fix)
+ *
+ * This function detects case 4: composed path AND coordinator has run AND its latest
+ * verdict is needs-fix.
+ *
+ * Standard path (no custom reviewers, state.reviewers empty) always returns false.
+ */
+function isCoordinatorLoopActive(state: JobState): boolean {
+  if (!state.reviewers?.length) return false; // standard path
+  if (getConformanceFixContext(state, STEP_NAMES.CODE_FIXER) !== null) return false; // conformance triggered
+
+  // Check if regression-gate is the active source
+  const gateRuns = state.steps?.[REGRESSION_GATE_STEP_NAME] ?? [];
+  if (gateRuns.length > 0) {
+    const lastGate = gateRuns[gateRuns.length - 1];
+    if (lastGate?.outcome.verdict === "needs-fix") return false; // regression-gate triggered
+  }
+
+  // Check if code-review is the active source (coordinator hasn't started yet)
+  const coordinatorRuns = state.steps?.[CUSTOM_REVIEWERS_STEP_NAME] ?? [];
+  if (coordinatorRuns.length === 0) return false; // coordinator hasn't run → code-review loop
+
+  // Coordinator has run and its latest verdict indicates needs-fix triggered this fixer
+  const lastCoordinator = coordinatorRuns[coordinatorRuns.length - 1];
+  return lastCoordinator?.outcome.verdict === "needs-fix";
+}
+
+/**
+ * Get needs-fix member names from the coordinator's last round.
+ * Used by reads() to determine which result files to pre-validate.
+ */
+function getNeedsFixMembers(state: JobState): string[] {
+  return (state.reviewers ?? [])
+    .filter((r) => {
+      const runs = state.steps?.[r.name] ?? [];
+      if (runs.length === 0) return false;
+      const last = runs[runs.length - 1];
+      return last?.outcome.verdict === "needs-fix";
+    })
+    .map((r) => r.name);
+}
+
 export const CodeFixerStep: AgentStep = {
   kind: "agent",
   name: STEP_NAMES.CODE_FIXER,
@@ -74,7 +127,21 @@ export const CodeFixerStep: AgentStep = {
         { path: conformanceResultPath(deps.slug, latestIteration(state, STEP_NAMES.CONFORMANCE)) },
       ];
     }
-    // Normal entry: read active reviewer result
+
+    // Composed path (custom reviewers present) + coordinator loop active:
+    // read needs-fix member result files for pre-validation.
+    // Design D5 (reviewer-parallel-execution): aggregated findings from all needs-fix members.
+    if (isCoordinatorLoopActive(state)) {
+      const needsFixMembers = getNeedsFixMembers(state);
+      if (needsFixMembers.length > 0) {
+        return needsFixMembers.map((name) => ({
+          path: resolveReviewerResultPath(deps.slug, name, latestIteration(state, name)),
+        }));
+      }
+    }
+
+    // Standard path (reviewers empty) or non-coordinator composed path:
+    // read active reviewer result file.
     const chain = deriveImplFixerChain(state);
     const activeReviewer = resolveActiveReviewer(state, chain);
     return [
@@ -95,6 +162,7 @@ export const CodeFixerStep: AgentStep = {
     // Conformance-triggered entry: use conformance findings
     const conformanceFindings = getConformanceFixContext(state, STEP_NAMES.CODE_FIXER);
     if (conformanceFindings !== null) {
+      // (conformance path — unchanged)
       const findingsPath = conformanceResultPath(deps.slug, latestIteration(state, STEP_NAMES.CONFORMANCE));
       if (isFixerContinuation(state, STEP_NAMES.CODE_FIXER)) {
         return buildContinuationMessage({
@@ -128,7 +196,79 @@ ${deps.request.content}
 </user-request>`;
     }
 
-    // Normal entry: resolve the active reviewer
+    // Composed path (custom reviewers) + coordinator loop active:
+    // aggregate findings from all needs-fix members into one fixer prompt.
+    // Design D5 (reviewer-parallel-execution): all needs-fix findings → single fixer session.
+    if (isCoordinatorLoopActive(state)) {
+      const needsFixMembers = getNeedsFixMembers(state);
+      const aggregatedFindings = collectParallelFixerFindings(state, needsFixMembers);
+
+      if (isFixerContinuation(state, STEP_NAMES.CODE_FIXER)) {
+        // Continuation: use short prompt with aggregated findings
+        const findingsPath = needsFixMembers.length > 0
+          ? resolveReviewerResultPath(deps.slug, needsFixMembers[0]!, latestIteration(state, needsFixMembers[0]!))
+          : changeFolderPath(deps.slug);
+        return buildContinuationMessage({
+          stepName: STEP_NAMES.CODE_FIXER,
+          findingsPath,
+          slug: deps.slug,
+          findings: aggregatedFindings.length > 0 ? aggregatedFindings : null,
+          reviewerName: "custom reviewers",
+        });
+      }
+
+      if (aggregatedFindings.length > 0) {
+        const findingsBlock = buildFindingsBlock(aggregatedFindings, "custom reviewers");
+        return `<user-request>
+You are the code-fixer for the following change:
+
+Change folder: ${changeFolderPath(deps.slug)}
+Branch: ${branch}
+
+${findingsBlock}
+
+Please:
+1. Fix all HIGH and CRITICAL severity findings (mandatory)
+2. Fix MEDIUM severity findings only if they do not require design changes
+3. Ignore LOW severity findings
+4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+5. Do NOT add new features or make specification changes
+
+Original request:
+${deps.request.content}
+</user-request>`;
+      }
+
+      // Fallback: no structured findings → point to first result file
+      if (needsFixMembers.length > 0) {
+        const findingsPath = resolveReviewerResultPath(
+          deps.slug,
+          needsFixMembers[0]!,
+          latestIteration(state, needsFixMembers[0]!),
+        );
+        return `<user-request>
+You are the code-fixer for the following change:
+
+Change folder: ${changeFolderPath(deps.slug)}
+Branch: ${branch}
+Review feedback: ${findingsPath}
+
+Please:
+1. Read the review feedback at ${findingsPath}
+2. Fix all HIGH severity findings (mandatory)
+3. Fix MEDIUM severity findings only if they do not require design changes
+4. Ignore LOW severity findings
+5. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+6. Do NOT modify the review-feedback file itself
+7. Do NOT add new features or make specification changes
+
+Original request:
+${deps.request.content}
+</user-request>`;
+      }
+    }
+
+    // Normal entry: resolve the active reviewer (standard path or non-coordinator composed path)
     const chain = deriveImplFixerChain(state);
     const activeReviewer = resolveActiveReviewer(state, chain);
 

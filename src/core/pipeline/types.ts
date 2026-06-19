@@ -54,6 +54,22 @@ export interface PermissionScope {
 }
 
 /**
+ * Parallel review configuration declared on PipelineDescriptor.
+ *
+ * Design D2 (reviewer-parallel-execution): when custom reviewers are present,
+ * composeReviewerDescriptor synthesizes a virtual coordinator node that the
+ * engine fan-outs to member steps in parallel.
+ *
+ * The coordinator step is NOT in the steps Map; the engine detects it here.
+ */
+export interface ParallelReviewConfig {
+  /** Virtual coordinator step name (e.g. "custom-reviewers"). */
+  coordinator: string;
+  /** Member reviewer step names in declaration order. */
+  members: readonly string[];
+}
+
+/**
  * Declarative description of a complete pipeline configuration.
  * Registry maps pipeline identifiers to their corresponding descriptor.
  * Consumers build Pipeline instances from a descriptor via buildPipeline().
@@ -105,6 +121,16 @@ export interface PipelineDescriptor {
    * Path granularity only; content granularity is future extension.
    */
   permissionScope?: PermissionScope;
+  /**
+   * Parallel review configuration for custom reviewer fan-out.
+   *
+   * Design D2 (reviewer-parallel-execution): set by composeReviewerDescriptor when
+   * custom reviewers are present. Absent for zero-reviewer (standard/fast) pipelines.
+   * Consumed by Pipeline.runInternal to detect the coordinator node and fan-out members.
+   *
+   * absent = standard sequential execution (zero-reviewer backward compat preserved)
+   */
+  parallelReview?: ParallelReviewConfig;
 }
 
 /**
@@ -163,7 +189,24 @@ export const LOOP_ERROR_CODES: Record<string, LoopErrorShape> = {
     message: (n) => `regression-gate did not approve after ${n} iterations`,
     hint: (nnn) => `Review regression-gate-result-${nnn}.md and fix the regressions manually.`,
   },
+  // Design D4 (reviewer-parallel-execution): coordinator exhaustion.
+  // CUSTOM_REVIEWERS_STEP_NAME cannot be referenced directly here (circular import risk),
+  // so we use the string literal. The constant is exported for external use.
+  "custom-reviewers": {
+    code: "CUSTOM_REVIEWERS_RETRIES_EXHAUSTED",
+    message: (n) => `custom reviewers did not approve after ${n} iterations`,
+    hint: (nnn) => `Review the latest reviewer results and address findings manually. (iteration ${nnn})`,
+  },
 };
+
+/**
+ * Virtual coordinator step name used for the custom reviewer parallel fan-out.
+ *
+ * Design D2 (reviewer-parallel-execution): the coordinator is NOT in the pipeline
+ * steps Map; it exists only as an entry in parallelReview and loopNames.
+ * The engine detects it at runtime to fan-out member execution.
+ */
+export const CUSTOM_REVIEWERS_STEP_NAME = "custom-reviewers" as const;
 
 /**
  * Standard pipeline transition table.
