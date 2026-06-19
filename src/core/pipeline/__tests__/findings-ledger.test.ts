@@ -267,6 +267,44 @@ describe("collectFindingsLedger — (e) empty chain or findings", () => {
 });
 
 // ---------------------------------------------------------------------------
+// TC-026: coordinator synthetic run does not contaminate collectFindingsLedger
+// ---------------------------------------------------------------------------
+
+describe("collectFindingsLedger — TC-026: coordinator synthetic run excluded from ledger", () => {
+  it("coordinator step in state but not in chain does not contribute findings", () => {
+    const memberAFinding = makeFixableFinding({ file: "src/a.ts", title: "Member A finding" });
+    const memberBFinding = makeFixableFinding({ file: "src/b.ts", title: "Member B finding" });
+    const coordinatorFinding = makeFixableFinding({ file: "src/c.ts", title: "Coordinator synthetic finding" });
+
+    // Coordinator synthetic StepRun exists in state (as written by the engine after fan-out)
+    const state = makeState({
+      "code-review": [
+        { outcome: { verdict: "approved", findingsPath: null, error: null, toolResult: { ok: true, findings: [] } } },
+      ],
+      "A": [
+        { outcome: { verdict: "needs-fix", findingsPath: null, error: null, toolResult: { ok: true, findings: [memberAFinding] } } },
+      ],
+      "B": [
+        { outcome: { verdict: "approved", findingsPath: null, error: null, toolResult: { ok: true, findings: [memberBFinding] } } },
+      ],
+      // Coordinator synthetic run — must NOT appear in the ledger chain
+      "custom-reviewers": [
+        { outcome: { verdict: "needs-fix", findingsPath: null, error: null, toolResult: { ok: true, findings: [coordinatorFinding] } } },
+      ],
+    });
+
+    // Chain excludes "custom-reviewers" — regression-gate passes only member chains
+    const ledger = collectFindingsLedger(state, ["code-review", "A", "B"]);
+
+    // Member findings are collected; coordinator synthetic findings are NOT
+    const titles = ledger.map((f) => f.title);
+    expect(titles).toContain("Member A finding");
+    expect(titles).toContain("Member B finding");
+    expect(titles).not.toContain("Coordinator synthetic finding");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // (f) collectParallelFixerFindings — TC-024 / TC-025
 // ---------------------------------------------------------------------------
 

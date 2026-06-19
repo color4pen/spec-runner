@@ -93,9 +93,9 @@ function resolvePairedReviewForFixer(
 export function mergeParallelReviewerStates(
   base: JobState,
   results: JobState[],
-  memberNames?: string[],
+  memberNames: string[],
 ): JobState {
-  const memberSet = new Set(memberNames ?? []);
+  const memberSet = new Set(memberNames);
   const baseHistoryLen = base.history.length;
   let merged = base;
 
