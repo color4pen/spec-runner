@@ -8,7 +8,8 @@ import type { ModelUsage } from "../kernel/model-usage.js";
 import type { BaseReportResult, Finding, Observation, DecisionOption, FindingSeverity } from "../kernel/report-result.js";
 import type { CompletionReportDiagnostic } from "../kernel/completion-report-diagnostic.js";
 import type { AgentStepName as AgentStepNameUnion } from "../kernel/agent-definition.js";
-import type { ReviewerSnapshot } from "../kernel/reviewer-snapshot.js";
+import type { ReviewerSnapshot, ReviewerStatus } from "../kernel/reviewer-snapshot.js";
+export type { ReviewerStatus } from "../kernel/reviewer-snapshot.js";
 /**
  * Re-export from canonical location in the kernel layer.
  * Both the port layer and state layer reference this single definition.
@@ -319,6 +320,19 @@ export interface JobState {
    * Optional for backward compat.
    */
   decisions?: DecisionRecord[];
+  /**
+   * Per-reviewer execution status records for custom reviewer parallel execution.
+   *
+   * Design D1 (reviewer-parallel-execution): tracks each reviewer's status
+   * (pending / approved / skipped) and approvedAtCommit for invalidation.
+   *
+   * state.json projection で round-trip、event-journal threading 不要
+   * (`reviewers` / `decisions` と同型の top-level フィールド)。
+   *
+   * Absent in jobs without custom reviewers and in legacy state files.
+   * Optional for backward compat.
+   */
+  reviewerStatuses?: ReviewerStatus[];
 }
 
 /**
@@ -542,6 +556,27 @@ export function validateJobState(raw: unknown): JobState {
         if (!Array.isArray(rObj["requestTypes"])) {
           throw new Error(`Reviewer snapshot "${rObj["name"]}" requestTypes must be an array when present.`);
         }
+      }
+    }
+  }
+
+  // Validate reviewerStatuses when present (backward compat: absence is OK → treated as undefined)
+  // Design D1 (reviewer-parallel-execution): lightweight check — array with name + status per entry.
+  if ("reviewerStatuses" in obj && obj["reviewerStatuses"] !== null && obj["reviewerStatuses"] !== undefined) {
+    if (!Array.isArray(obj["reviewerStatuses"])) {
+      throw new Error("reviewerStatuses must be an array when present.");
+    }
+    const VALID_REVIEWER_STATUSES: Set<string> = new Set(["pending", "approved", "skipped"]);
+    for (const rs of obj["reviewerStatuses"] as unknown[]) {
+      if (typeof rs !== "object" || rs === null) {
+        throw new Error("Each entry in reviewerStatuses must be an object.");
+      }
+      const rsObj = rs as Record<string, unknown>;
+      if (typeof rsObj["name"] !== "string" || !rsObj["name"]) {
+        throw new Error("Each reviewerStatus entry must have a non-empty string 'name'.");
+      }
+      if (typeof rsObj["status"] !== "string" || !VALID_REVIEWER_STATUSES.has(rsObj["status"] as string)) {
+        throw new Error(`reviewerStatus "${rsObj["name"]}" has invalid status: ${JSON.stringify(rsObj["status"])}. Must be "pending", "approved", or "skipped".`);
       }
     }
   }
