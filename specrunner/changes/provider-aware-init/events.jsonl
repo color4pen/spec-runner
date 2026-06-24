@@ -84,3 +84,15 @@
 {"type":"transition","ts":"2026-06-24T02:45:29.398Z","step":"verification","status":"warning","message":"verification iteration 1 completed with verdict: failed"}
 {"type":"transition","ts":"2026-06-24T02:45:29.398Z","step":"step-transition","status":"ok","message":"verification → build-fixer"}
 {"type":"transition","ts":"2026-06-24T02:45:29.399Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}
+{"type":"transition","ts":"2026-06-24T02:47:09.071Z","step":"build-fixer-verdict","status":"ok","message":"build-fixer verdict: success"}
+{"type":"step-attempt","step":"build-fixer","sessionId":"4921bac0-ec95-40ad-a405-aee9a8600d3c","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-24T02:45:29.408Z","endedAt":"2026-06-24T02:47:07.710Z"}
+{"type":"lineage","step":"build-fixer","ts":"2026-06-24T02:47:07.710Z","outputs":[{"path":"specrunner/changes/provider-aware-init","hash":null}],"inputs":[{"path":"specrunner/changes/provider-aware-init/verification-result.md","hash":"sha256:7a7881491b0c1e9f3baefcedb5c66eee08e550e7917a6009902ec6808c9bc44c"}]}
+{"type":"transition","ts":"2026-06-24T02:47:09.078Z","step":"step-transition","status":"ok","message":"build-fixer → verification"}
+{"type":"transition","ts":"2026-06-24T02:47:09.079Z","step":"verification","status":"started","message":"verification iteration 2 started"}
+{"type":"transition","ts":"2026-06-24T02:47:09.080Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-06-24T02:47:34.708Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/provider-aware-init/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-24T02:47:09.081Z","endedAt":"2026-06-24T02:47:34.707Z"}
+{"type":"lineage","step":"verification","ts":"2026-06-24T02:47:34.707Z","outputs":[{"path":"specrunner/changes/provider-aware-init/verification-result.md","hash":"sha256:39b8e3f075c615cc8d1457d9946f19c267990f4bd10bee9bfe89589bafd5aca3"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-06-24T02:47:34.713Z","step":"verification","status":"ok","message":"verification iteration 2 completed with verdict: passed"}
+{"type":"transition","ts":"2026-06-24T02:47:34.714Z","step":"step-transition","status":"ok","message":"verification → adr-gen"}
+{"type":"transition","ts":"2026-06-24T02:47:34.717Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
