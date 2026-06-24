@@ -7,6 +7,8 @@ import { spawnCommand } from "../util/spawn.js";
 import { ensureDotSpecrunnerGitignore } from "../util/gitignore.js";
 import { changesDirRel, draftsDir } from "../util/paths.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
+import { PROVIDER_DEFAULTS } from "../config/model-registry.js";
+import type { Provider } from "../config/model-registry.js";
 
 /**
  * Run the specrunner init command.
@@ -17,6 +19,7 @@ import type { SpecRunnerConfig } from "../config/schema.js";
  */
 export async function runInit(options: {
   runtime?: "managed" | "local";
+  provider?: Provider;
 }): Promise<number> {
   const { runtime } = options;
 
@@ -49,20 +52,32 @@ export async function runInit(options: {
       // No existing config — OK for first run
     }
 
+    // Resolve provider defaults for scaffold generation.
+    // Provider branching is confined to a single table lookup; no if/else on provider name.
+    const resolvedProvider: Provider = options.provider ?? "anthropic";
+    const providerEntry = PROVIDER_DEFAULTS[resolvedProvider];
+
+    // TC-010: add steps.defaults if not already present
+    // TC-011: do not overwrite existing steps config
+    // D4 (design.md): null = unlimited for maxTurns; null = no timeout for timeoutMs
+    const defaultSteps: NonNullable<SpecRunnerConfig["steps"]> = {
+      defaults: {
+        model: providerEntry.defaults,
+        maxTurns: null,
+        timeoutMs: null,
+      },
+    };
+    // Only add steps.design when the provider table defines a design model (e.g. openai).
+    // For anthropic, omit steps.design so the DesignStep hardcoded model resolves at level 5 (legacy shape).
+    if (providerEntry.design !== undefined) {
+      defaultSteps["design"] = { model: providerEntry.design };
+    }
+
     const newConfig: SpecRunnerConfig = {
       ...existingConfig,
       version: 1,
       agents: existingConfig.agents ?? {},
-      // TC-010: add steps.defaults if not already present
-      // TC-011: do not overwrite existing steps config
-      // D4 (design.md): null = unlimited for maxTurns; null = no timeout for timeoutMs
-      steps: existingConfig.steps ?? {
-        defaults: {
-          model: "claude-sonnet-4-6",
-          maxTurns: null,
-          timeoutMs: null,
-        },
-      },
+      steps: existingConfig.steps ?? defaultSteps,
     } as SpecRunnerConfig;
 
     // Do NOT write runtime (let it default to local)

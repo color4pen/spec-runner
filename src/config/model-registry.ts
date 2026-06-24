@@ -11,21 +11,50 @@ export interface ModelsConfig {
 }
 
 export const BUILTIN_MODEL_REGISTRY: ModelsConfig = {
-  "claude-opus-4-8":     { provider: "anthropic" },
-  "claude-opus-4-8[1m]": { provider: "anthropic" },
-  "claude-opus-4-7":   { provider: "anthropic" },
-  "claude-opus-4-6":   { provider: "anthropic" },
-  "claude-opus-4-6[1m]": { provider: "anthropic" },
-  "claude-sonnet-4-6": { provider: "anthropic" },
-  "claude-sonnet-4-5": { provider: "anthropic" },
-  "claude-opus-4-5":   { provider: "anthropic" },
-  "claude-haiku-4-5":  { provider: "anthropic" },
-  "o3":                { provider: "openai" },
-  "gpt-5.4":           { provider: "openai" },
-  "gpt-5.3-codex":     { provider: "openai" },
-  "gpt-5.2-codex":     { provider: "openai" },
-  "gpt-5.1":           { provider: "openai" },
-  "gpt-5.5":           { provider: "openai" },
+  "claude-opus-4-8":       { provider: "anthropic" },
+  "claude-opus-4-8[1m]":   { provider: "anthropic" },
+  "claude-opus-4-7":       { provider: "anthropic" },
+  "claude-opus-4-6":       { provider: "anthropic" },
+  "claude-opus-4-6[1m]":   { provider: "anthropic" },
+  "claude-sonnet-4-6":     { provider: "anthropic" },
+  "claude-sonnet-4-5":     { provider: "anthropic" },
+  "claude-opus-4-5":       { provider: "anthropic" },
+  "claude-haiku-4-5":      { provider: "anthropic" },
+  "gpt-5.5":               { provider: "openai" },
+  "gpt-5.4":               { provider: "openai" },
+  "gpt-5.4-mini":          { provider: "openai" },
+  "gpt-5.3-codex-spark":   { provider: "openai" },
+};
+
+/**
+ * Per-provider default models used by `specrunner init` scaffold generation.
+ *
+ * - `defaults`: written to `steps.defaults.model` (all steps)
+ * - `design`:   written to `steps.design.model` when defined (high-quality step override)
+ *               Undefined means the step-definition hardcoded model resolves at level 5.
+ *
+ * Invariant: every model name listed here MUST exist in BUILTIN_MODEL_REGISTRY.
+ *   anthropic.defaults  → "claude-sonnet-4-6"    ✓ in BUILTIN_MODEL_REGISTRY
+ *   openai.defaults     → "gpt-5.4-mini"         ✓ in BUILTIN_MODEL_REGISTRY
+ *   openai.design       → "gpt-5.5"              ✓ in BUILTIN_MODEL_REGISTRY
+ */
+export interface ProviderDefaults {
+  /** Model for all steps (steps.defaults.model in generated config). */
+  defaults: string;
+  /** Model for design step (steps.design.model in generated config). Omit to inherit hardcoded default. */
+  design?: string;
+}
+
+export const PROVIDER_DEFAULTS: Record<Provider, ProviderDefaults> = {
+  anthropic: {
+    defaults: "claude-sonnet-4-6",
+    // design is intentionally absent: DesignStep hardcodes claude-opus-4-6[1m] at level 5,
+    // matching the legacy scaffold shape (design.md D3).
+  },
+  openai: {
+    defaults: "gpt-5.4-mini",
+    design: "gpt-5.5",
+  },
 };
 
 /**

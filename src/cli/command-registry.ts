@@ -246,11 +246,14 @@ export const COMMANDS: Record<string, CommandEntry> = {
   init: {
     flags: {
       runtime: { type: "string", values: ["managed", "local"] as const },
+      provider: { type: "string", values: ["anthropic", "openai"] as const },
     },
     handler: async (parsed) => {
       const runtimeRaw = parsed.flags["runtime"] as string | undefined;
       const runtime = runtimeRaw as "managed" | "local" | undefined;
-      process.exit(await runInit({ runtime }));
+      // Value-domain validation is handled by the flag-parser; pass undefined as-is to runInit.
+      const provider = parsed.flags["provider"] as "anthropic" | "openai" | undefined;
+      process.exit(await runInit({ runtime, provider }));
     },
   },
 

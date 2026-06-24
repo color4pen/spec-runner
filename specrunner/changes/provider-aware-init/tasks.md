@@ -4,18 +4,18 @@
 
 対象ファイル: `src/config/model-registry.ts`
 
-- [ ] `BUILTIN_MODEL_REGISTRY` から OpenAI エントリ `o3`, `gpt-5.1`, `gpt-5.2-codex`,
+- [x] `BUILTIN_MODEL_REGISTRY` から OpenAI エントリ `o3`, `gpt-5.1`, `gpt-5.2-codex`,
       `gpt-5.3-codex` を削除する
-- [ ] `BUILTIN_MODEL_REGISTRY` に `"gpt-5.4-mini": { provider: "openai" }` と
+- [x] `BUILTIN_MODEL_REGISTRY` に `"gpt-5.4-mini": { provider: "openai" }` と
       `"gpt-5.3-codex-spark": { provider: "openai" }` を追加する
-- [ ] `gpt-5.4`, `gpt-5.5` および全 anthropic エントリは変更しない
-- [ ] provider デフォルトテーブルを新しい export 定数として追加する。`Provider` 型・
+- [x] `gpt-5.4`, `gpt-5.5` および全 anthropic エントリは変更しない
+- [x] provider デフォルトテーブルを新しい export 定数として追加する。`Provider` 型・
       `BUILTIN_MODEL_REGISTRY` と同一ファイルに置く（新ファイルを作らない）:
   - `defaults`（全ステップ向け）と任意の `design`（高品質ステップ向け）を持つ型を定義する
   - `anthropic`: `defaults = "claude-sonnet-4-6"`、`design` は持たせない（design step の
     ハードコード `claude-opus-4-6[1m]` に解決させ、legacy scaffold 形状を保つ — design.md D3）
   - `openai`: `defaults = "gpt-5.4-mini"`、`design = "gpt-5.5"`
-- [ ] テーブルの各モデル名（全 provider の `defaults` / `design`）が `BUILTIN_MODEL_REGISTRY`
+- [x] テーブルの各モデル名（全 provider の `defaults` / `design`）が `BUILTIN_MODEL_REGISTRY`
       に存在することをコメントで明示する（不変条件: init が書くモデルは必ず registry にある）
 
 **Acceptance Criteria**:
@@ -30,19 +30,19 @@
 
 対象ファイル: `src/cli/init.ts`
 
-- [ ] `runInit` の options 型に `provider?: Provider`（T-01 で定義した `Provider` 型）を追加する。
+- [x] `runInit` の options 型に `provider?: Provider`（T-01 で定義した `Provider` 型）を追加する。
       `runtime?` は既存のまま残す
-- [ ] `provider` 未指定時は `"anthropic"` を既定値とする
-- [ ] T-01 の provider デフォルトテーブルから、選択 provider のエントリを引く
-- [ ] scaffold 生成（`existingConfig.steps ?? { ... }` の `{ ... }` 部分）を provider 対応にする:
+- [x] `provider` 未指定時は `"anthropic"` を既定値とする
+- [x] T-01 の provider デフォルトテーブルから、選択 provider のエントリを引く
+- [x] scaffold 生成（`existingConfig.steps ?? { ... }` の `{ ... }` 部分）を provider 対応にする:
   - `steps.defaults` は従来どおり `{ model: <provider defaults>, maxTurns: null, timeoutMs: null }`
   - テーブルに `design` が定義されている場合のみ `steps.design = { model: <provider design> }` を
     追加する（anthropic では追加しない）
-- [ ] provider 名による `if` 分岐をハードコードしない。分岐はテーブル lookup と
+- [x] provider 名による `if` 分岐をハードコードしない。分岐はテーブル lookup と
       「`design` が定義されているか」の 1 判定のみに閉じる（design.md D1 / D3）
-- [ ] config-write-hygiene の挙動（グローバル config が存在すれば scaffold 生成を丸ごとスキップ）
+- [x] config-write-hygiene の挙動（グローバル config が存在すれば scaffold 生成を丸ごとスキップ）
       は維持する。provider 展開は「config 不在の初回生成」経路の中だけで行う
-- [ ] `delete runtime` / `delete anthropic` の既存処理、project scaffold 作成、ログ出力は変更しない
+- [x] `delete runtime` / `delete anthropic` の既存処理、project scaffold 作成、ログ出力は変更しない
 
 **Acceptance Criteria**:
 - `runInit({ provider: "openai" })`（config 不在）で生成された config が
@@ -58,14 +58,14 @@
 
 対象ファイル: `src/cli/command-registry.ts`
 
-- [ ] `COMMANDS.init.flags` に
+- [x] `COMMANDS.init.flags` に
       `provider: { type: "string", values: ["anthropic", "openai"] as const }` を追加する
       （既存の `runtime` フラグは残す）
-- [ ] init handler で `parsed.flags["provider"]` を読み、`runInit({ runtime, provider })` に渡す。
+- [x] init handler で `parsed.flags["provider"]` を読み、`runInit({ runtime, provider })` に渡す。
       値域検証は flag-parser が担うため handler 側で再検証しない（design.md D5）
-- [ ] `provider` 未指定（`undefined`）はそのまま `runInit` に渡し、T-02 の既定値 `anthropic` に
+- [x] `provider` 未指定（`undefined`）はそのまま `runInit` に渡し、T-02 の既定値 `anthropic` に
       委ねる
-- [ ] login の `provider` フラグ（`values: ["github", "claude"]`）には触れない。init とは独立した
+- [x] login の `provider` フラグ（`values: ["github", "claude"]`）には触れない。init とは独立した
       別 `FlagDef` であり同名・別意味で問題ない
 
 **Acceptance Criteria**:
@@ -84,17 +84,17 @@ doctor は openai step を検出できなくなり、dispatch ルーティング
 
 対象ファイル:
 
-- [ ] `tests/config/model-registry.test.ts`
+- [x] `tests/config/model-registry.test.ts`
   - L29-30 の `BUILTIN_MODEL_REGISTRY["o3"]` / `["gpt-5.3-codex"]` 参照を、維持/追加された
     現行 openai モデル（例: `gpt-5.5` / `gpt-5.4-mini`）への参照に置換する
   - L71 の `resolveProvider("o3", merged)` を現行 openai モデル（例: `gpt-5.4-mini`）に置換する
-- [ ] `tests/config/schema.test.ts`
+- [x] `tests/config/schema.test.ts`
   - L128 / L137 / L463 の `model: "o3"` を `model: "gpt-5.4-mini"` に置換する
     （local 受理ケース・managed 拒否ケース・byRequestType managed 拒否ケースの意図は不変）
-- [ ] `tests/adapter/dispatching/agent-runner.test.ts`
+- [x] `tests/adapter/dispatching/agent-runner.test.ts`
   - L105 の `makeCtx("o3")` を `makeCtx("gpt-5.4-mini")` に置換する（openai → CodexAgentRunner
     へ dispatch する意図は不変）
-- [ ] `tests/core/doctor/checks/runtime/codex-cli.test.ts`
+- [x] `tests/core/doctor/checks/runtime/codex-cli.test.ts`
   - L45 / L63 / L78 の `model: "o3"` を `model: "gpt-5.4-mini"` に置換する（openai step 検出の
     意図は不変）
 
@@ -111,22 +111,22 @@ doctor は openai step を検出できなくなり、dispatch ルーティング
 
 ### init provider テスト（`tests/init.test.ts`）
 
-- [ ] `runInit({ provider: "openai" })`（config 不在）→ 生成 config に
+- [x] `runInit({ provider: "openai" })`（config 不在）→ 生成 config に
       `steps.defaults.model: "gpt-5.4-mini"` と `steps.design.model: "gpt-5.5"` が含まれる
-- [ ] `runInit({ provider: "anthropic" })`（config 不在）→ `steps.defaults.model: "claude-sonnet-4-6"`
+- [x] `runInit({ provider: "anthropic" })`（config 不在）→ `steps.defaults.model: "claude-sonnet-4-6"`
       かつ `steps.design` が undefined（legacy byte 一致）
-- [ ] `runInit({})`（config 不在、フラグなし）→ `runInit({ provider: "anthropic" })` と同一形状
+- [x] `runInit({})`（config 不在、フラグなし）→ `runInit({ provider: "anthropic" })` と同一形状
       （`steps.design` undefined、`provider` フィールドなし）
-- [ ] グローバル config が存在する状態で `runInit({ provider: "openai" })` を実行しても config が
+- [x] グローバル config が存在する状態で `runInit({ provider: "openai" })` を実行しても config が
       書き換わらない（事前作成した config のコンテンツ不変）
 
 ### registry 整合性テスト（`tests/config/model-registry.test.ts`）
 
-- [ ] deprecated モデル（`o3`, `gpt-5.1`, `gpt-5.2-codex`, `gpt-5.3-codex`）が
+- [x] deprecated モデル（`o3`, `gpt-5.1`, `gpt-5.2-codex`, `gpt-5.3-codex`）が
       `BUILTIN_MODEL_REGISTRY` に存在しないことを検査する
-- [ ] 現行モデル（`gpt-5.4-mini`, `gpt-5.3-codex-spark`）が provider `openai` で存在することを
+- [x] 現行モデル（`gpt-5.4-mini`, `gpt-5.3-codex-spark`）が provider `openai` で存在することを
       検査する
-- [ ] PROVIDER_DEFAULTS の全モデル名（全 provider の `defaults` / `design`）が
+- [x] PROVIDER_DEFAULTS の全モデル名（全 provider の `defaults` / `design`）が
       `resolveProvider(name, merged)` で例外なく解決できることを検査する（init が書くモデルが
       必ず registry にある不変条件のガード）
 

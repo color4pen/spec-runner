@@ -172,6 +172,115 @@ describe("config-write-hygiene: runInit で github フィールドが保持さ�
   });
 });
 
+// T-05: provider-aware init tests
+describe("provider-aware init — openai provider", () => {
+  it("runInit({ provider: 'openai' }) sets steps.defaults.model to gpt-5.4-mini", async () => {
+    const { runInit } = await import("../src/cli/init.js");
+    await runInit({ provider: "openai" });
+
+    const configPath = path.join(tempDir, "specrunner", "config.json");
+    const raw = await fs.readFile(configPath, "utf-8");
+    const config = JSON.parse(raw);
+
+    expect(config.steps?.defaults?.model).toBe("gpt-5.4-mini");
+  });
+
+  it("runInit({ provider: 'openai' }) sets steps.design.model to gpt-5.5", async () => {
+    const { runInit } = await import("../src/cli/init.js");
+    await runInit({ provider: "openai" });
+
+    const configPath = path.join(tempDir, "specrunner", "config.json");
+    const raw = await fs.readFile(configPath, "utf-8");
+    const config = JSON.parse(raw);
+
+    expect(config.steps?.design?.model).toBe("gpt-5.5");
+  });
+
+  it("runInit({ provider: 'openai' }) does not add provider field to config", async () => {
+    const { runInit } = await import("../src/cli/init.js");
+    await runInit({ provider: "openai" });
+
+    const configPath = path.join(tempDir, "specrunner", "config.json");
+    const raw = await fs.readFile(configPath, "utf-8");
+    const config = JSON.parse(raw);
+
+    expect(config.provider).toBeUndefined();
+  });
+});
+
+describe("provider-aware init — anthropic provider (legacy shape)", () => {
+  it("runInit({ provider: 'anthropic' }) sets steps.defaults.model to claude-sonnet-4-6", async () => {
+    const { runInit } = await import("../src/cli/init.js");
+    await runInit({ provider: "anthropic" });
+
+    const configPath = path.join(tempDir, "specrunner", "config.json");
+    const raw = await fs.readFile(configPath, "utf-8");
+    const config = JSON.parse(raw);
+
+    expect(config.steps?.defaults?.model).toBe("claude-sonnet-4-6");
+  });
+
+  it("runInit({ provider: 'anthropic' }) does not add steps.design key", async () => {
+    const { runInit } = await import("../src/cli/init.js");
+    await runInit({ provider: "anthropic" });
+
+    const configPath = path.join(tempDir, "specrunner", "config.json");
+    const raw = await fs.readFile(configPath, "utf-8");
+    const config = JSON.parse(raw);
+
+    expect(config.steps?.design).toBeUndefined();
+  });
+});
+
+describe("provider-aware init — no provider flag (anthropic default)", () => {
+  it("runInit({}) produces same shape as runInit({ provider: 'anthropic' })", async () => {
+    const { runInit } = await import("../src/cli/init.js");
+
+    // First init (no flag)
+    await runInit({});
+    const configPath = path.join(tempDir, "specrunner", "config.json");
+    const rawNoFlag = await fs.readFile(configPath, "utf-8");
+    const configNoFlag = JSON.parse(rawNoFlag);
+
+    // Remove config to allow second init
+    await fs.rm(configPath);
+
+    // Second init (explicit anthropic)
+    await runInit({ provider: "anthropic" });
+    const rawExplicit = await fs.readFile(configPath, "utf-8");
+    const configExplicit = JSON.parse(rawExplicit);
+
+    expect(configNoFlag.steps).toEqual(configExplicit.steps);
+    expect(configNoFlag.steps?.design).toBeUndefined();
+    expect(configNoFlag.provider).toBeUndefined();
+  });
+});
+
+describe("provider-aware init — config exists (no overwrite)", () => {
+  it("runInit({ provider: 'openai' }) does not overwrite existing global config", async () => {
+    // Pre-create global config
+    const configDir = path.join(tempDir, "specrunner");
+    await fs.mkdir(configDir, { recursive: true });
+    const existingConfig = {
+      version: 1,
+      agents: {},
+      steps: { defaults: { model: "claude-sonnet-4-6", maxTurns: null, timeoutMs: null } },
+    };
+    const configPath = path.join(configDir, "config.json");
+    const originalContent = JSON.stringify(existingConfig);
+    await fs.writeFile(configPath, originalContent, { mode: 0o600 });
+
+    const { runInit } = await import("../src/cli/init.js");
+    await runInit({ provider: "openai" });
+
+    const raw = await fs.readFile(configPath, "utf-8");
+    expect(raw).toBe(originalContent);
+    const config = JSON.parse(raw);
+    expect(config.steps?.defaults?.model).toBe("claude-sonnet-4-6");
+    expect(config.steps?.design).toBeUndefined();
+  });
+});
+
 // TC-002: init で git repo 外では specrunner/ ディレクトリが作成されない
 describe("TC-002: specrunner init — git repo 外では specrunner/ が作成されない", () => {
   let nonGitTempDir: string;

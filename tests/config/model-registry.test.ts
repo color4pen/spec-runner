@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   BUILTIN_MODEL_REGISTRY,
+  PROVIDER_DEFAULTS,
   mergeModelRegistry,
   resolveProvider,
 } from "../../src/config/model-registry.js";
@@ -26,8 +27,8 @@ describe("BUILTIN_MODEL_REGISTRY", () => {
   });
 
   it("contains openai models", () => {
-    expect(BUILTIN_MODEL_REGISTRY["o3"]?.provider).toBe("openai");
-    expect(BUILTIN_MODEL_REGISTRY["gpt-5.3-codex"]?.provider).toBe("openai");
+    expect(BUILTIN_MODEL_REGISTRY["gpt-5.5"]?.provider).toBe("openai");
+    expect(BUILTIN_MODEL_REGISTRY["gpt-5.4-mini"]?.provider).toBe("openai");
   });
 });
 
@@ -68,7 +69,7 @@ describe("resolveProvider", () => {
 
   it("known openai model → 'openai'", () => {
     const merged = mergeModelRegistry(makeConfig());
-    expect(resolveProvider("o3", merged)).toBe("openai");
+    expect(resolveProvider("gpt-5.4-mini", merged)).toBe("openai");
   });
 
   it("unknown model → throws code: 'CONFIG_INVALID'", () => {
@@ -111,5 +112,70 @@ describe("step default models resolve without CONFIG_INVALID (bare config)", () 
     });
     const mergedWithUser = mergeModelRegistry(configWithUserEntry);
     expect(resolveProvider("claude-opus-4-6[1m]", mergedWithUser)).toBe("anthropic");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-05: registry integrity for deprecated / current models
+// ---------------------------------------------------------------------------
+
+describe("BUILTIN_MODEL_REGISTRY — deprecated models removed", () => {
+  it("does not contain 'o3' (deprecated)", () => {
+    expect(BUILTIN_MODEL_REGISTRY["o3"]).toBeUndefined();
+  });
+
+  it("does not contain 'gpt-5.1' (deprecated)", () => {
+    expect(BUILTIN_MODEL_REGISTRY["gpt-5.1"]).toBeUndefined();
+  });
+
+  it("does not contain 'gpt-5.2-codex' (deprecated)", () => {
+    expect(BUILTIN_MODEL_REGISTRY["gpt-5.2-codex"]).toBeUndefined();
+  });
+
+  it("does not contain 'gpt-5.3-codex' (deprecated)", () => {
+    expect(BUILTIN_MODEL_REGISTRY["gpt-5.3-codex"]).toBeUndefined();
+  });
+});
+
+describe("BUILTIN_MODEL_REGISTRY — current OpenAI models present", () => {
+  it("contains 'gpt-5.4-mini' with provider openai", () => {
+    expect(BUILTIN_MODEL_REGISTRY["gpt-5.4-mini"]?.provider).toBe("openai");
+  });
+
+  it("contains 'gpt-5.3-codex-spark' with provider openai", () => {
+    expect(BUILTIN_MODEL_REGISTRY["gpt-5.3-codex-spark"]?.provider).toBe("openai");
+  });
+
+  it("still contains 'gpt-5.4' with provider openai", () => {
+    expect(BUILTIN_MODEL_REGISTRY["gpt-5.4"]?.provider).toBe("openai");
+  });
+
+  it("still contains 'gpt-5.5' with provider openai", () => {
+    expect(BUILTIN_MODEL_REGISTRY["gpt-5.5"]?.provider).toBe("openai");
+  });
+});
+
+describe("PROVIDER_DEFAULTS — invariant: all models exist in BUILTIN_MODEL_REGISTRY", () => {
+  const merged = mergeModelRegistry(makeConfig());
+
+  it("anthropic defaults model resolves in registry", () => {
+    expect(() => resolveProvider(PROVIDER_DEFAULTS["anthropic"].defaults, merged)).not.toThrow();
+    expect(resolveProvider(PROVIDER_DEFAULTS["anthropic"].defaults, merged)).toBe("anthropic");
+  });
+
+  it("anthropic has no design model (legacy scaffold shape preserved)", () => {
+    expect(PROVIDER_DEFAULTS["anthropic"].design).toBeUndefined();
+  });
+
+  it("openai defaults model resolves in registry", () => {
+    expect(() => resolveProvider(PROVIDER_DEFAULTS["openai"].defaults, merged)).not.toThrow();
+    expect(resolveProvider(PROVIDER_DEFAULTS["openai"].defaults, merged)).toBe("openai");
+  });
+
+  it("openai design model resolves in registry", () => {
+    const designModel = PROVIDER_DEFAULTS["openai"].design;
+    expect(designModel).toBeDefined();
+    expect(() => resolveProvider(designModel!, merged)).not.toThrow();
+    expect(resolveProvider(designModel!, merged)).toBe("openai");
   });
 });
