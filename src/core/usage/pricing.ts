@@ -153,6 +153,22 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     cacheRead: 2.5,
     cacheWrite: 0,
   },
+
+  // gpt-5.4-mini — approximate (no separate published price as of 2026-06-24)
+  "gpt-5.4-mini": {
+    input: 1.1,
+    output: 4.4,
+    cacheRead: 0.275,
+    cacheWrite: 0,
+  },
+
+  // gpt-5.3-codex-spark — approximate using o3 tier (no separate published price as of 2026-06-24)
+  "gpt-5.3-codex-spark": {
+    input: 10.0,
+    output: 40.0,
+    cacheRead: 2.5,
+    cacheWrite: 0,
+  },
 };
 
 /**

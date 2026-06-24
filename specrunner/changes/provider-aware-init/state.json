@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7aea0894-7e00-40a1-ab3a-348428102430",
   "createdAt": "2026-06-24T01:57:07.229Z",
-  "updatedAt": "2026-06-24T02:40:25.942Z",
+  "updatedAt": "2026-06-24T02:45:29.399Z",
   "request": {
     "title": "init で provider を選択し、provider に応じたデフォルトモデルを scaffold に書く + model registry 更新",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "build-fixer",
   "status": "running",
   "branch": "feat/provider-aware-init-7aea0894",
   "error": null,
@@ -74,20 +74,21 @@
     }
   ],
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 59,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 2,
       "code-fixer": 1,
       "scale-tolerance": 1,
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
