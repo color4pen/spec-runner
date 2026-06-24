@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7aea0894-7e00-40a1-ab3a-348428102430",
   "createdAt": "2026-06-24T01:57:07.229Z",
-  "updatedAt": "2026-06-24T02:47:34.717Z",
+  "updatedAt": "2026-06-24T02:47:55.712Z",
   "request": {
     "title": "init で provider を選択し、provider に応じたデフォルトモデルを scaffold に書く + model registry 更新",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/provider-aware-init-7aea0894",
   "error": null,
   "pipelineId": "standard",
@@ -73,8 +73,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/711",
+    "number": 711,
+    "createdAt": "2026-06-24T02:47:55.706Z"
+  },
   "_journal": {
-    "historyCount": 67,
+    "historyCount": 72,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -89,7 +94,9 @@
       "custom-reviewers": 1,
       "regression-gate": 1,
       "conformance": 1,
-      "build-fixer": 1
+      "build-fixer": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
