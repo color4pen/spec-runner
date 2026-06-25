@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f21520a3-49cc-4a2b-90f7-2dd6265d9dd2",
   "createdAt": "2026-06-25T02:37:41.888Z",
-  "updatedAt": "2026-06-25T03:27:51.111Z",
+  "updatedAt": "2026-06-25T03:29:38.187Z",
   "request": {
     "title": "init で provider を選択し、provider に応じたデフォルトモデルを scaffold に書く + model registry 更新",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "feat/provider-aware-init-f21520a3",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,7 @@
     "createdAt": "2026-06-25T03:27:51.097Z"
   },
   "_journal": {
-    "historyCount": 75,
+    "historyCount": 76,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
