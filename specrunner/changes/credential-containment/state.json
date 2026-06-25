@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e2c14490-4ebc-4be5-9970-119afc4d4e7f",
   "createdAt": "2026-06-25T10:45:57.468Z",
-  "updatedAt": "2026-06-25T11:27:25.417Z",
+  "updatedAt": "2026-06-25T11:29:51.221Z",
   "request": {
     "title": "subprocess / SDK spawn と log から credential を漏らさない（B-6 / B-7 封じ込めの実適用）",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "cross-boundary-invariants",
+  "step": "regression-gate",
   "status": "running",
   "branch": "fix/credential-containment-e2c14490",
   "error": null,
@@ -47,8 +47,34 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "cbc83bea5aab2d2bf33d3bfd54b6874041ba7764",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 34,
+    "historyCount": 40,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -58,7 +84,9 @@
       "verification": 1,
       "code-review": 1,
       "code-fixer": 1,
-      "cross-boundary-invariants": 1
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
