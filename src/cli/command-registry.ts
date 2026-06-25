@@ -246,11 +246,14 @@ export const COMMANDS: Record<string, CommandEntry> = {
   init: {
     flags: {
       runtime: { type: "string", values: ["managed", "local"] as const },
+      provider: { type: "string", values: ["anthropic", "openai"] as const },
     },
     handler: async (parsed) => {
       const runtimeRaw = parsed.flags["runtime"] as string | undefined;
       const runtime = runtimeRaw as "managed" | "local" | undefined;
-      process.exit(await runInit({ runtime }));
+      const providerRaw = parsed.flags["provider"] as string | undefined;
+      const provider = providerRaw as "anthropic" | "openai" | undefined;
+      process.exit(await runInit({ runtime, provider }));
     },
   },
 

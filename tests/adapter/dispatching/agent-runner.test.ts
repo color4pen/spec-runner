@@ -102,7 +102,7 @@ describe("DispatchingAgentRunner", () => {
     const claudeRunner = makeMockRunner();
     const dispatcher = new DispatchingAgentRunner(claudeRunner as never);
 
-    const ctx = makeCtx("o3");
+    const ctx = makeCtx("gpt-5.4");
     const result = await dispatcher.run(ctx);
     // claude runner must NOT be called for an OpenAI model
     expect(claudeRunner.run).not.toHaveBeenCalled();

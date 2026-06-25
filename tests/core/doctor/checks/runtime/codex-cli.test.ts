@@ -42,7 +42,7 @@ describe("codexCliCheck — OpenAI model steps present", () => {
     const ctx = buildMockContext({
       execFile,
       config: buildMockConfig({
-        steps: { implementer: { model: "o3" } },
+        steps: { implementer: { model: "gpt-5.4" } },
       }),
     });
     const result = await codexCliCheck.check(ctx);
@@ -60,7 +60,7 @@ describe("codexCliCheck — OpenAI model steps present", () => {
     const ctx = buildMockContext({
       execFile,
       config: buildMockConfig({
-        steps: { implementer: { model: "o3" } },
+        steps: { implementer: { model: "gpt-5.4" } },
       }),
     });
     const result = await codexCliCheck.check(ctx);
@@ -75,7 +75,7 @@ describe("codexCliCheck — OpenAI model steps present", () => {
     const ctx = buildMockContext({
       execFile,
       config: buildMockConfig({
-        steps: { implementer: { model: "o3" } },
+        steps: { implementer: { model: "gpt-5.4" } },
       }),
     });
     const result = await codexCliCheck.check(ctx);

@@ -1,12 +1,43 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import * as readline from "node:readline";
 import { loadConfig, saveConfig } from "../config/store.js";
 import { getConfigPath } from "../util/xdg.js";
 import { logInfo, logSuccess, logError } from "../logger/stdout.js";
 import { spawnCommand } from "../util/spawn.js";
 import { ensureDotSpecrunnerGitignore } from "../util/gitignore.js";
 import { changesDirRel, draftsDir } from "../util/paths.js";
-import type { SpecRunnerConfig } from "../config/schema.js";
+import type { SpecRunnerConfig, StepConfigMap, StepExecutionConfig } from "../config/schema.js";
+import { PROVIDER_DEFAULTS } from "../config/model-registry.js";
+import type { Provider } from "../config/model-registry.js";
+
+/**
+ * Resolve which provider to use for init scaffold generation.
+ *
+ * Priority:
+ * 1. `flagProvider` — explicit --provider flag value
+ * 2. Non-TTY (CI) — defaults to "anthropic" (current-compatible)
+ * 3. TTY — prompts user interactively via `io.ask`
+ *
+ * The `io` seam makes this testable without real stdin/readline.
+ */
+export async function resolveInitProvider(
+  flagProvider: Provider | undefined,
+  io: { isTTY: boolean; ask: (prompt: string) => Promise<string> },
+): Promise<Provider> {
+  if (flagProvider !== undefined) {
+    return flagProvider;
+  }
+  if (!io.isTTY) {
+    return "anthropic";
+  }
+  const answer = await io.ask("Which provider? [1] Anthropic  [2] OpenAI  (default: 1): ");
+  const trimmed = answer.trim().toLowerCase();
+  if (trimmed === "2" || trimmed === "openai" || trimmed === "o") {
+    return "openai";
+  }
+  return "anthropic";
+}
 
 /**
  * Run the specrunner init command.
@@ -17,8 +48,9 @@ import type { SpecRunnerConfig } from "../config/schema.js";
  */
 export async function runInit(options: {
   runtime?: "managed" | "local";
+  provider?: Provider;
 }): Promise<number> {
-  const { runtime } = options;
+  const { runtime, provider: flagProvider } = options;
 
   if (runtime === "managed") {
     logError("init no longer sets up managed runtime. Run 'init' for config scaffold, then set SPECRUNNER_API_KEY and run 'managed setup'.");
@@ -41,6 +73,20 @@ export async function runInit(options: {
   }
 
   if (!configExists) {
+    // Resolve provider — only when we need to write the scaffold
+    const isTTY = !!process.stdin.isTTY;
+    const provider = await resolveInitProvider(flagProvider, {
+      isTTY,
+      ask: (prompt: string) =>
+        new Promise<string>((resolve) => {
+          const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+          rl.question(prompt, (answer) => {
+            rl.close();
+            resolve(answer);
+          });
+        }),
+    });
+
     // Load existing config (best-effort)
     let existingConfig: Partial<SpecRunnerConfig> = {};
     try {
@@ -49,20 +95,33 @@ export async function runInit(options: {
       // No existing config — OK for first run
     }
 
+    const defaults = PROVIDER_DEFAULTS[provider];
+
+    // Build steps section from provider defaults
+    // TC-010: add steps.defaults if not already present
+    // TC-011: do not overwrite existing steps config
+    // D4 (design.md): null = unlimited for maxTurns; null = no timeout for timeoutMs
+    let steps: StepConfigMap | undefined = existingConfig.steps;
+    if (!steps) {
+      const stepsDefaults: StepExecutionConfig = {
+        model: defaults.defaultModel,
+        maxTurns: null,
+        timeoutMs: null,
+      };
+      steps = { defaults: stepsDefaults };
+      // Only write steps.design when designModel is defined (e.g. openai).
+      // For anthropic, design.ts built-in already handles claude-opus-4-6[1m]; omitting keeps
+      // scaffold byte-identical to the legacy format.
+      if (defaults.designModel !== undefined) {
+        steps["design"] = { model: defaults.designModel };
+      }
+    }
+
     const newConfig: SpecRunnerConfig = {
       ...existingConfig,
       version: 1,
       agents: existingConfig.agents ?? {},
-      // TC-010: add steps.defaults if not already present
-      // TC-011: do not overwrite existing steps config
-      // D4 (design.md): null = unlimited for maxTurns; null = no timeout for timeoutMs
-      steps: existingConfig.steps ?? {
-        defaults: {
-          model: "claude-sonnet-4-6",
-          maxTurns: null,
-          timeoutMs: null,
-        },
-      },
+      steps,
     } as SpecRunnerConfig;
 
     // Do NOT write runtime (let it default to local)
