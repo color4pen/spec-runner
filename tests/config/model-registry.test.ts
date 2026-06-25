@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   BUILTIN_MODEL_REGISTRY,
+  PROVIDER_DEFAULTS,
   mergeModelRegistry,
   resolveProvider,
 } from "../../src/config/model-registry.js";
@@ -91,6 +92,28 @@ describe("resolveProvider", () => {
     } catch (err) {
       expect((err as { code?: string }).code).toBe("CONFIG_INVALID");
     }
+  });
+});
+
+// TC-009: PROVIDER_DEFAULTS の各フィールド値を直接検証
+describe("PROVIDER_DEFAULTS (TC-009)", () => {
+  it("anthropic.defaultModel is claude-sonnet-4-6", () => {
+    expect(PROVIDER_DEFAULTS.anthropic.defaultModel).toBe("claude-sonnet-4-6");
+  });
+
+  it("openai.defaultModel is gpt-5.4-mini", () => {
+    expect(PROVIDER_DEFAULTS.openai.defaultModel).toBe("gpt-5.4-mini");
+  });
+
+  it("openai.designModel is gpt-5.5", () => {
+    expect(PROVIDER_DEFAULTS.openai.designModel).toBe("gpt-5.5");
+  });
+});
+
+// TC-010: anthropic に designModel が存在しないことを検証
+describe("PROVIDER_DEFAULTS anthropic has no designModel (TC-010)", () => {
+  it("anthropic.designModel is undefined", () => {
+    expect(PROVIDER_DEFAULTS.anthropic.designModel).toBeUndefined();
   });
 });
 
