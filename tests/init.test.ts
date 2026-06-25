@@ -3,6 +3,7 @@ import * as fs from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import * as path from "node:path";
 import * as os from "node:os";
+import { resolveInitProvider } from "../src/cli/init.js";
 
 let tempDir: string;
 let originalXdgConfigHome: string | undefined;
@@ -263,5 +264,142 @@ describe("T-01: specrunner init でプロジェクトディレクトリが作成
 
     await expect(fs.access(draftsPath).then(() => undefined)).resolves.toBeUndefined();
     await expect(fs.access(changesPath).then(() => undefined)).resolves.toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveInitProvider — unit tests (no real stdin/TTY dependency)
+// ---------------------------------------------------------------------------
+
+describe("resolveInitProvider — flag provider", () => {
+  it("returns the flag value immediately when flagProvider is 'openai'", async () => {
+    const ask = vi.fn();
+    const result = await resolveInitProvider("openai", { isTTY: false, ask });
+    expect(result).toBe("openai");
+    expect(ask).not.toHaveBeenCalled();
+  });
+
+  it("returns the flag value immediately when flagProvider is 'anthropic'", async () => {
+    const ask = vi.fn();
+    const result = await resolveInitProvider("anthropic", { isTTY: true, ask });
+    expect(result).toBe("anthropic");
+    expect(ask).not.toHaveBeenCalled();
+  });
+});
+
+describe("resolveInitProvider — non-TTY defaults to anthropic", () => {
+  it("returns anthropic without prompting when isTTY=false and no flag", async () => {
+    const ask = vi.fn();
+    const result = await resolveInitProvider(undefined, { isTTY: false, ask });
+    expect(result).toBe("anthropic");
+    expect(ask).not.toHaveBeenCalled();
+  });
+});
+
+describe("resolveInitProvider — TTY prompts user", () => {
+  it("returns openai when user enters '2'", async () => {
+    const result = await resolveInitProvider(undefined, { isTTY: true, ask: async () => "2" });
+    expect(result).toBe("openai");
+  });
+
+  it("returns openai when user enters 'openai'", async () => {
+    const result = await resolveInitProvider(undefined, { isTTY: true, ask: async () => "openai" });
+    expect(result).toBe("openai");
+  });
+
+  it("returns openai when user enters 'o'", async () => {
+    const result = await resolveInitProvider(undefined, { isTTY: true, ask: async () => "o" });
+    expect(result).toBe("openai");
+  });
+
+  it("returns anthropic when user presses Enter (empty string)", async () => {
+    const result = await resolveInitProvider(undefined, { isTTY: true, ask: async () => "" });
+    expect(result).toBe("anthropic");
+  });
+
+  it("returns anthropic when user enters '1'", async () => {
+    const result = await resolveInitProvider(undefined, { isTTY: true, ask: async () => "1" });
+    expect(result).toBe("anthropic");
+  });
+
+  it("returns anthropic when user enters 'anthropic'", async () => {
+    const result = await resolveInitProvider(undefined, { isTTY: true, ask: async () => "anthropic" });
+    expect(result).toBe("anthropic");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// runInit — provider scaffold tests
+// ---------------------------------------------------------------------------
+
+describe("runInit — provider: openai scaffold", () => {
+  it("generates config with gpt-5.4-mini as defaults model and gpt-5.5 as design model", async () => {
+    const { runInit } = await import("../src/cli/init.js");
+    const result = await runInit({ provider: "openai" });
+
+    expect(result).toBe(0);
+
+    const configPath = path.join(tempDir, "specrunner", "config.json");
+    const raw = await fs.readFile(configPath, "utf-8");
+    const config = JSON.parse(raw);
+
+    expect(config.steps?.defaults?.model).toBe("gpt-5.4-mini");
+    expect(config.steps?.defaults?.maxTurns).toBeNull();
+    expect(config.steps?.defaults?.timeoutMs).toBeNull();
+    expect(config.steps?.design?.model).toBe("gpt-5.5");
+  });
+});
+
+describe("runInit — provider: anthropic scaffold (legacy-compatible)", () => {
+  it("generates config identical to legacy (no steps.design block)", async () => {
+    const { runInit } = await import("../src/cli/init.js");
+    await runInit({ provider: "anthropic" });
+
+    const configPath = path.join(tempDir, "specrunner", "config.json");
+    const raw = await fs.readFile(configPath, "utf-8");
+    const config = JSON.parse(raw);
+
+    expect(config.steps?.defaults?.model).toBe("claude-sonnet-4-6");
+    expect(config.steps?.design).toBeUndefined();
+  });
+});
+
+describe("runInit — no provider flag, non-TTY (CI compatibility)", () => {
+  it("defaults to anthropic scaffold when stdin is not a TTY", async () => {
+    // process.stdin.isTTY is undefined/false in test environment
+    const { runInit } = await import("../src/cli/init.js");
+    await runInit({});
+
+    const configPath = path.join(tempDir, "specrunner", "config.json");
+    const raw = await fs.readFile(configPath, "utf-8");
+    const config = JSON.parse(raw);
+
+    expect(config.steps?.defaults?.model).toBe("claude-sonnet-4-6");
+    expect(config.steps?.design).toBeUndefined();
+  });
+});
+
+describe("runInit — config exists, provider flag is ignored", () => {
+  it("does not overwrite existing config when --provider openai is passed", async () => {
+    // Write an existing config
+    const configDir = path.join(tempDir, "specrunner");
+    await fs.mkdir(configDir, { recursive: true });
+    const existingConfig = {
+      version: 1,
+      agents: {},
+      steps: { defaults: { model: "claude-sonnet-4-6", maxTurns: null, timeoutMs: null } },
+    };
+    const configPath = path.join(configDir, "config.json");
+    await fs.writeFile(configPath, JSON.stringify(existingConfig), { mode: 0o600 });
+
+    const { runInit } = await import("../src/cli/init.js");
+    await runInit({ provider: "openai" });
+
+    const raw = await fs.readFile(configPath, "utf-8");
+    const config = JSON.parse(raw);
+
+    // Should be unchanged — openai defaults NOT applied
+    expect(config.steps?.defaults?.model).toBe("claude-sonnet-4-6");
+    expect(config.steps?.design).toBeUndefined();
   });
 });

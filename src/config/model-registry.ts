@@ -20,12 +20,40 @@ export const BUILTIN_MODEL_REGISTRY: ModelsConfig = {
   "claude-sonnet-4-5": { provider: "anthropic" },
   "claude-opus-4-5":   { provider: "anthropic" },
   "claude-haiku-4-5":  { provider: "anthropic" },
-  "o3":                { provider: "openai" },
-  "gpt-5.4":           { provider: "openai" },
-  "gpt-5.3-codex":     { provider: "openai" },
-  "gpt-5.2-codex":     { provider: "openai" },
-  "gpt-5.1":           { provider: "openai" },
   "gpt-5.5":           { provider: "openai" },
+  "gpt-5.4":           { provider: "openai" },
+  "gpt-5.4-mini":      { provider: "openai" },
+  "gpt-5.3-codex-spark": { provider: "openai" },
+};
+
+/**
+ * Provider-specific default models used by `specrunner init` to scaffold config.
+ * - `defaultModel`: written to `steps.defaults.model`
+ * - `designModel`: when defined, written to `steps.design.model` (higher-quality model for design step).
+ *   When omitted, design step falls back to its built-in default (e.g. claude-opus-4-6[1m] for anthropic).
+ */
+export interface ProviderDefaults {
+  /** Default model for all steps (`steps.defaults.model`). */
+  defaultModel: string;
+  /** Optional override for design step (`steps.design.model`). */
+  designModel?: string;
+}
+
+/**
+ * Per-provider scaffold defaults.
+ *
+ * anthropic: designModel is omitted intentionally — design.ts:12 already hard-codes
+ * claude-opus-4-6[1m] as its built-in default, so omitting preserves legacy scaffold
+ * byte-equality (no extra `steps.design` block written to config).
+ */
+export const PROVIDER_DEFAULTS: Record<Provider, ProviderDefaults> = {
+  anthropic: {
+    defaultModel: "claude-sonnet-4-6",
+  },
+  openai: {
+    defaultModel: "gpt-5.4-mini",
+    designModel: "gpt-5.5",
+  },
 };
 
 /**

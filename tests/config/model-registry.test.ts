@@ -25,9 +25,21 @@ describe("BUILTIN_MODEL_REGISTRY", () => {
     expect(BUILTIN_MODEL_REGISTRY["claude-opus-4-6"]?.provider).toBe("anthropic");
   });
 
-  it("contains openai models", () => {
-    expect(BUILTIN_MODEL_REGISTRY["o3"]?.provider).toBe("openai");
-    expect(BUILTIN_MODEL_REGISTRY["gpt-5.3-codex"]?.provider).toBe("openai");
+  it("contains current openai models", () => {
+    expect(BUILTIN_MODEL_REGISTRY["gpt-5.4"]?.provider).toBe("openai");
+    expect(BUILTIN_MODEL_REGISTRY["gpt-5.5"]?.provider).toBe("openai");
+  });
+
+  it("contains newly added openai models", () => {
+    expect(BUILTIN_MODEL_REGISTRY["gpt-5.4-mini"]?.provider).toBe("openai");
+    expect(BUILTIN_MODEL_REGISTRY["gpt-5.3-codex-spark"]?.provider).toBe("openai");
+  });
+
+  it("does not contain deprecated openai models", () => {
+    expect(BUILTIN_MODEL_REGISTRY["o3"]).toBeUndefined();
+    expect(BUILTIN_MODEL_REGISTRY["gpt-5.1"]).toBeUndefined();
+    expect(BUILTIN_MODEL_REGISTRY["gpt-5.2-codex"]).toBeUndefined();
+    expect(BUILTIN_MODEL_REGISTRY["gpt-5.3-codex"]).toBeUndefined();
   });
 });
 
@@ -68,7 +80,7 @@ describe("resolveProvider", () => {
 
   it("known openai model → 'openai'", () => {
     const merged = mergeModelRegistry(makeConfig());
-    expect(resolveProvider("o3", merged)).toBe("openai");
+    expect(resolveProvider("gpt-5.4", merged)).toBe("openai");
   });
 
   it("unknown model → throws code: 'CONFIG_INVALID'", () => {

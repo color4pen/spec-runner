@@ -125,7 +125,7 @@ describe("validateConfig — step model registry validation", () => {
     const raw = {
       version: 1,
       runtime: "local",
-      steps: { implementer: { model: "o3" } },
+      steps: { implementer: { model: "gpt-5.4" } },
     };
     expect(() => validateConfig(raw)).not.toThrow();
   });
@@ -134,7 +134,7 @@ describe("validateConfig — step model registry validation", () => {
     const raw = {
       version: 1,
       runtime: "managed",
-      steps: { implementer: { model: "o3" } },
+      steps: { implementer: { model: "gpt-5.4" } },
     };
     expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
     expect(() => validateConfig(raw)).toThrow(/cannot be used with runtime "managed"/);
@@ -460,7 +460,7 @@ describe("validateConfig — byRequestType validation", () => {
       steps: {
         implementer: {
           byRequestType: {
-            "bug-fix": { model: "o3" },
+            "bug-fix": { model: "gpt-5.4" },
           },
         },
       },
