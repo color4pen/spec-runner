@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e2c14490-4ebc-4be5-9970-119afc4d4e7f",
   "createdAt": "2026-06-25T10:45:57.468Z",
-  "updatedAt": "2026-06-25T10:59:08.906Z",
+  "updatedAt": "2026-06-25T11:05:21.802Z",
   "request": {
     "title": "subprocess / SDK spawn と log から credential を漏らさない（B-6 / B-7 封じ込めの実適用）",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "fix/credential-containment-e2c14490",
   "error": null,
@@ -48,10 +48,11 @@
     }
   ],
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
