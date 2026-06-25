@@ -3,8 +3,6 @@ import type { StepContext } from "./step-context.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import type { CustomToolHandler } from "../../kernel/tool-types.js";
 import type { AgentDefinition } from "../../kernel/agent-definition.js";
-import type { ReviewScores } from "../../kernel/review-scores.js";
-import type { FindingSeverityCounts } from "../../kernel/review-findings.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
 import type { ReportToolSpec, BaseReportResult } from "./report-result.js";
 import type { ReviewerActivation } from "../../kernel/reviewer-snapshot.js";
@@ -73,22 +71,11 @@ export interface ParsedStepResult {
   verdict: import("../../state/schema.js").Verdict | null;
   findingsPath: string | null;
   /**
-   * Structured scores extracted from the agent's review output.
-   * Only set by CodeReviewStep when the agent outputs a Scores table.
-   * Optional — other steps leave this undefined.
-   *
-   * D2: scores is optional; existing steps are unaffected.
-   */
-  scores?: ReviewScores & Pick<FindingSeverityCounts, "critical" | "high">;
-  /**
    * PR info extracted by PrCreateStep. Other steps leave this undefined.
    * StepExecutor.finalizeStep() reflects this into state.pullRequest when present.
    */
   pullRequest?: { url: string; number: number; createdAt: string };
 }
-
-// Re-export for convenience so consumers don't need to import from parser directly.
-export type { ReviewScores, FindingSeverityCounts };
 
 /**
  * NULL_PARSE_RESULT: shared constant for steps that have no file-based verdict.

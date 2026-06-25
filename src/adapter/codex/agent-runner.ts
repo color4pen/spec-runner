@@ -35,7 +35,7 @@ import { getStepExecutionConfig } from "../../config/step-config.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import type { BaseReportResult, ReportToolSpec } from "../../core/port/report-result.js";
 import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
-import { toOpenAIStrictSchema, stripNullDeep } from "./strict-schema.js";
+import { toOpenAIStrictSchema } from "./strict-schema.js";
 import { SpecRunnerError } from "../../errors.js";
 import { loadCodexSdk, type CodexSdkLoader } from "./sdk-loader.js";
 
@@ -157,7 +157,7 @@ export interface ParseAttemptResult {
 
 /**
  * Try to extract a completion report from finalResponse using three fallback strategies:
- * 1. Raw parse: JSON.parse(finalResponse.trim()) → stripNullDeep → parseInput
+ * 1. Raw parse: JSON.parse(finalResponse.trim()) → parseInput
  * 2. Code-fence: extract JSON from ```...``` block, parse, validate
  * 3. Bracket: extract substring from first '{' to last '}', parse, validate
  *
@@ -176,8 +176,7 @@ export function tryExtractToolResult(finalResponse: string, reportTool: ReportTo
   const tryParseAndValidate = (candidate: string): BaseReportResult | null => {
     try {
       const json: unknown = JSON.parse(candidate);
-      const normalized = stripNullDeep(json);
-      const parseResult = reportTool.parseInput(normalized);
+      const parseResult = reportTool.parseInput(json);
       if (parseResult.ok) {
         return parseResult.value;
       }

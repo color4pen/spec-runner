@@ -41,6 +41,24 @@ interface ManagedCleanupInternals {
   signalCleanup: () => Promise<void>;
 }
 
+/**
+ * Detect whether a parsed JSON value is a GitHub API directory listing.
+ * GitHub API returns a JSON array of entries, each with `name` and `type` fields,
+ * when the requested path is a directory.
+ *
+ * Returns false for empty arrays and plain non-object arrays (e.g. JSON array files).
+ */
+export function isGitHubDirectoryListing(value: unknown): boolean {
+  if (!Array.isArray(value) || value.length === 0) return false;
+  const first = value[0] as Record<string, unknown>;
+  return (
+    typeof first === "object" &&
+    first !== null &&
+    typeof first["name"] === "string" &&
+    typeof first["type"] === "string"
+  );
+}
+
 export class ManagedRuntime implements RealRuntimeStrategy {
   private readonly spawnFn: SpawnFn;
   private readonly wrappedSpawnFn: SpawnFn;
@@ -344,11 +362,11 @@ export class ManagedRuntime implements RealRuntimeStrategy {
         nonExistent.push(ref);
         continue;
       }
-      // Detect directory: GitHub API returns a JSON array for directory listings
+      // Detect directory: GitHub API returns a JSON array of entries, each with `name` and `type` fields
       let isDirectory = false;
       try {
         const parsed: unknown = JSON.parse(content);
-        if (Array.isArray(parsed)) {
+        if (isGitHubDirectoryListing(parsed)) {
           isDirectory = true;
         }
       } catch {

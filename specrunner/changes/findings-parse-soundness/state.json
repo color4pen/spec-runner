@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2e78ebe2-2fb8-4ec9-bdba-e8b92d94be31",
   "createdAt": "2026-06-25T10:46:39.813Z",
-  "updatedAt": "2026-06-25T10:59:59.240Z",
+  "updatedAt": "2026-06-25T11:02:26.872Z",
   "request": {
     "title": "judge の findings/scores パース健全性を回復し、verdict 導出の取りこぼし・誤りをなくす",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "implementer",
   "status": "running",
   "branch": "fix/findings-parse-soundness-2e78ebe2",
   "error": null,
@@ -48,11 +48,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }

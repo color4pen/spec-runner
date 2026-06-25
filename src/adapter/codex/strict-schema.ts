@@ -87,29 +87,3 @@ export function toOpenAIStrictSchema(schema: object): object {
 
   return { ...s };
 }
-
-/**
- * Recursively remove keys with null values from objects.
- *
- * - object: drop null-valued keys, recurse into remaining values
- * - array: recurse into each element
- * - other (primitive): return as-is
- *
- * Input is never mutated.
- */
-export function stripNullDeep(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(stripNullDeep);
-  }
-  if (value !== null && typeof value === "object") {
-    const obj = value as Record<string, unknown>;
-    const result: Record<string, unknown> = {};
-    for (const key of Object.keys(obj)) {
-      if (obj[key] !== null) {
-        result[key] = stripNullDeep(obj[key]);
-      }
-    }
-    return result;
-  }
-  return value;
-}

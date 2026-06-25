@@ -9,6 +9,7 @@ import * as os from "node:os";
 import { tryExtractToolResult, CodexAgentRunner } from "../agent-runner.js";
 import type { CodexInstance, CodexThread } from "../agent-runner.js";
 import type { ReportToolSpec, BaseReportResult } from "../../../core/port/report-result.js";
+import { parseJudgeReportInput } from "../../../core/port/report-result.js";
 import type { AgentRunContext } from "../../../core/port/agent-runner.js";
 import type { JobState } from "../../../state/schema.js";
 import type { AgentStep } from "../../../core/step/types.js";
@@ -128,6 +129,51 @@ describe("tryExtractToolResult — unit tests", () => {
     it("tryParseToolResult is not exported from agent-runner", async () => {
       const mod = await import("../agent-runner.js");
       expect("tryParseToolResult" in mod).toBe(false);
+    });
+  });
+
+  describe("T-04: line: null in findings — runtime parity after stripNullDeep removal", () => {
+    const judgeReportTool: ReportToolSpec<BaseReportResult> = {
+      name: "report_result",
+      description: "Report completion",
+      zodSchema: {},
+      parseInput: parseJudgeReportInput,
+    };
+
+    it("findings with line: null → toolResult non-null (kernel parser normalizes null)", () => {
+      const jsonWithNullLine = JSON.stringify({
+        ok: true,
+        findings: [
+          {
+            severity: "high",
+            resolution: "fixable",
+            file: "a.ts",
+            title: "T",
+            rationale: "R",
+            line: null,
+          },
+        ],
+      });
+      const result = tryExtractToolResult(jsonWithNullLine, judgeReportTool);
+      expect(result.toolResult).not.toBeNull();
+      expect(result.failureReason).toBeNull();
+    });
+
+    it("findings with mixed null and number line values → toolResult non-null", () => {
+      const json = JSON.stringify({
+        ok: true,
+        findings: [
+          { severity: "high", resolution: "fixable", file: "a.ts", title: "T", rationale: "R", line: null },
+          { severity: "low", resolution: "fixable", file: "b.ts", title: "U", rationale: "S", line: 10 },
+        ],
+      });
+      const result = tryExtractToolResult(json, judgeReportTool);
+      expect(result.toolResult).not.toBeNull();
+    });
+
+    it("stripNullDeep is not exported from strict-schema", async () => {
+      const mod = await import("../strict-schema.js");
+      expect("stripNullDeep" in mod).toBe(false);
     });
   });
 });
