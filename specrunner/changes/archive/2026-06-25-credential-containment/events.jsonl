@@ -86,3 +86,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/credential-containment/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-25T11:36:32.009Z","endedAt":"2026-06-25T11:36:33.636Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-25T11:36:33.636Z","outputs":[{"path":"specrunner/changes/credential-containment/pr-create-result.md","hash":"sha256:180d3a10cd64354fdca43abb876b6696f5d6cce38b6bc773ce5fdcde61ec65cd"}],"inputs":[{"path":"fix/credential-containment-e2c14490","hash":null}]}
 {"type":"transition","ts":"2026-06-25T11:36:33.649Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-25T11:39:49.405Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
