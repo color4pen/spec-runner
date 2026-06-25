@@ -159,7 +159,7 @@ export function parseFindings(raw: unknown, strict = false): { ok: true; value: 
     if (typeof f["file"] !== "string") return { ok: false };
     if (typeof f["title"] !== "string") return { ok: false };
     if (typeof f["rationale"] !== "string") return { ok: false };
-    if ("line" in f && f["line"] !== undefined && typeof f["line"] !== "number") return { ok: false };
+    if ("line" in f && f["line"] !== undefined && f["line"] !== null && typeof f["line"] !== "number") return { ok: false };
 
     // Strict mode: decision-needed findings require at least two valid options
     if (strict && f["resolution"] === "decision-needed") {

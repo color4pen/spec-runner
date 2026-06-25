@@ -1,10 +1,13 @@
 /**
- * Tests for toOpenAIStrictSchema and stripNullDeep
+ * Tests for toOpenAIStrictSchema
  * (codex adapter OpenAI strict mode compatibility)
+ *
+ * Note: stripNullDeep was removed. Null normalization is now handled by the
+ * kernel parser (parseFindings / parseObservations) directly.
  */
 import { describe, it, expect } from "vitest";
 import { object, toJSONSchema } from "zod/v4-mini";
-import { toOpenAIStrictSchema, stripNullDeep } from "../../../src/adapter/codex/strict-schema.js";
+import { toOpenAIStrictSchema } from "../../../src/adapter/codex/strict-schema.js";
 import {
   JUDGE_REPORT_TOOL,
   PRODUCER_REPORT_TOOL,
@@ -13,7 +16,6 @@ import {
   toCustomToolSpec,
 } from "../../../src/core/step/report-tool.js";
 import {
-  parseBaseReportInput,
   parseJudgeReportInput,
 } from "../../../src/core/port/report-result.js";
 
@@ -165,74 +167,10 @@ describe("toOpenAIStrictSchema — PRODUCER_REPORT_TOOL (union optional status)"
 });
 
 // ---------------------------------------------------------------------------
-// T-06: stripNullDeep + parse — null equals undefined in typed outcome
+// T-06: parseJudgeReportInput: line: null in findings is valid (kernel parser)
 // ---------------------------------------------------------------------------
 
-describe("stripNullDeep", () => {
-  it("removes null-valued keys from a flat object", () => {
-    const result = stripNullDeep({ ok: true, reason: null });
-    expect(result).toEqual({ ok: true });
-  });
-
-  it("does not modify non-null values", () => {
-    const result = stripNullDeep({ ok: false, reason: "fail" });
-    expect(result).toEqual({ ok: false, reason: "fail" });
-  });
-
-  it("removes line: null from findings array elements", () => {
-    const input = {
-      ok: true,
-      findings: [
-        { severity: "high", resolution: "fixable", file: "a.ts", title: "t", rationale: "r", line: null },
-      ],
-    };
-    const result = stripNullDeep(input) as Record<string, unknown>;
-    const findings = result["findings"] as Array<Record<string, unknown>>;
-    expect(findings[0]).not.toHaveProperty("line");
-  });
-
-  it("recurses into nested array of objects", () => {
-    const input = {
-      items: [{ a: null, b: 1 }, { a: 2, c: null }],
-    };
-    const result = stripNullDeep(input) as Record<string, unknown>;
-    const items = result["items"] as Array<Record<string, unknown>>;
-    expect(items[0]).toEqual({ b: 1 });
-    expect(items[1]).toEqual({ a: 2 });
-  });
-
-  it("does not mutate input", () => {
-    const input = { ok: true, reason: null };
-    const copy = { ...input };
-    stripNullDeep(input);
-    expect(input).toEqual(copy);
-  });
-
-  it("returns primitive as-is", () => {
-    expect(stripNullDeep(42)).toBe(42);
-    expect(stripNullDeep("hello")).toBe("hello");
-    expect(stripNullDeep(true)).toBe(true);
-    expect(stripNullDeep(null)).toBeNull();
-  });
-});
-
-describe("stripNullDeep + parseBaseReportInput: null equals undefined outcome", () => {
-  it("{ ok: true, reason: null } parses the same as { ok: true }", () => {
-    const withNull = stripNullDeep({ ok: true, reason: null });
-    const withUndefined = { ok: true };
-
-    const resultFromNull = parseBaseReportInput(withNull);
-    const resultFromUndefined = parseBaseReportInput(withUndefined);
-
-    expect(resultFromNull.ok).toBe(true);
-    expect(resultFromUndefined.ok).toBe(true);
-    if (resultFromNull.ok && resultFromUndefined.ok) {
-      expect(resultFromNull.value).toEqual(resultFromUndefined.value);
-    }
-  });
-});
-
-describe("stripNullDeep + parseJudgeReportInput: line: null in findings is valid", () => {
+describe("parseJudgeReportInput: line: null in findings is valid", () => {
   it("line: null in findings → same outcome as omitting line", () => {
     const withNullLine = {
       ok: true,
@@ -247,7 +185,7 @@ describe("stripNullDeep + parseJudgeReportInput: line: null in findings is valid
       ],
     };
 
-    const resultWithNull = parseJudgeReportInput(stripNullDeep(withNullLine));
+    const resultWithNull = parseJudgeReportInput(withNullLine);
     const resultWithoutLine = parseJudgeReportInput(withoutLine);
 
     // Both should parse successfully
@@ -259,16 +197,18 @@ describe("stripNullDeep + parseJudgeReportInput: line: null in findings is valid
     }
   });
 
-  it("line: null stripped → findings element does not have line property", () => {
+  it("line: null → finding does not have line property", () => {
     const input = {
       ok: true,
       findings: [
         { severity: "high", resolution: "fixable", file: "a.ts", title: "t", rationale: "r", line: null },
       ],
     };
-    const normalized = stripNullDeep(input) as Record<string, unknown>;
-    const findings = normalized["findings"] as Array<Record<string, unknown>>;
-    expect(findings[0]).not.toHaveProperty("line");
+    const result = parseJudgeReportInput(input);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.findings![0]).not.toHaveProperty("line");
+    }
   });
 });
 
@@ -408,8 +348,8 @@ describe("toOpenAIStrictSchema — REQUEST_REVIEW_REPORT_TOOL has observations (
   });
 });
 
-describe("stripNullDeep — observations line:null stripping", () => {
-  it("removes line:null from observation array elements", () => {
+describe("parseJudgeReportInput — observations line:null normalization", () => {
+  it("line:null in observation → observation retained without line field", () => {
     const input = {
       ok: true,
       findings: [],
@@ -417,8 +357,11 @@ describe("stripNullDeep — observations line:null stripping", () => {
         { severity: "low", file: "a.ts", title: "Note", rationale: "r", line: null },
       ],
     };
-    const result = stripNullDeep(input) as Record<string, unknown>;
-    const observations = result["observations"] as Array<Record<string, unknown>>;
-    expect(observations[0]).not.toHaveProperty("line");
+    const result = parseJudgeReportInput(input);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.observations).toBeDefined();
+      expect(result.value.observations![0]).not.toHaveProperty("line");
+    }
   });
 });
