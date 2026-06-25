@@ -3,8 +3,10 @@ import { maskSensitive } from "../stdout.js";
 
 describe("maskSensitive", () => {
   describe("existing patterns", () => {
-    it("masks sk-ant- tokens", () => {
-      expect(maskSensitive("sk-ant-api03-abcdef")).toBe("sk-ant-api03-...");
+    it("masks sk-ant- tokens (prefix captured, body fully hidden)", () => {
+      // New behavior: captures the fixed prefix (sk-ant-), masks entire body.
+      // A token like sk-ant-api03-abcdef → sk-ant-... (not sk-ant-api03-...)
+      expect(maskSensitive("sk-ant-api03-abcdef")).toBe("sk-ant-...");
     });
 
     it("masks gh_-prefixed tokens (gho_, ghp_, etc.)", () => {
@@ -15,8 +17,9 @@ describe("maskSensitive", () => {
       expect(maskSensitive("ghu_abc123")).toBe("ghu_...");
     });
 
-    it("masks github_pat_ tokens", () => {
-      expect(maskSensitive("github_pat_abc123_def")).toBe("github_...");
+    it("masks github_pat_ tokens (prefix captured, body fully hidden)", () => {
+      // New behavior: captures the full prefix (github_pat_), masks entire body.
+      expect(maskSensitive("github_pat_abc123_def")).toBe("github_pat_...");
     });
   });
 
@@ -44,7 +47,8 @@ describe("maskSensitive", () => {
     it("masks all keys in a string containing multiple keys", () => {
       const input = "anthropic=sk-ant-api03-abcdef openai=sk-proj-abcdefghijklmnopqrstu";
       const result = maskSensitive(input);
-      expect(result).toBe("anthropic=sk-ant-api03-... openai=sk-proj-...");
+      // New behavior: prefix captured by regex group; body fully hidden.
+      expect(result).toBe("anthropic=sk-ant-... openai=sk-proj-...");
     });
 
     it("returns unchanged string when no keys present", () => {

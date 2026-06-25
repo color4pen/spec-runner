@@ -158,7 +158,9 @@ describe("logVerbose file writes", () => {
     const logPath = path.join(tempDir, ".specrunner", "logs", "test-job-004.log");
     const content = fs.readFileSync(logPath, "utf-8");
     expect(content).not.toContain("secretkeyabcdefghijk");
-    expect(content).toContain("sk-ant-api03_...");
+    // New masking behavior: captures the fixed prefix (sk-ant-) via regex group,
+    // masking the entire body including the api03_ sub-part.
+    expect(content).toContain("sk-ant-...");
   });
 
   it("TC-VL-09: append mode — two init/close cycles append two entries to same file", async () => {

@@ -58,4 +58,36 @@ describe("stripSecrets", () => {
     const result = stripSecrets(env);
     expect(result["PATH"]).toBe("/usr/bin");
   });
+
+  it("(e) removes pattern-matched keys (*_TOKEN / *_API_KEY / *_SECRET)", () => {
+    const env: Record<string, string | undefined> = {
+      MY_CORP_TOKEN: "v1",
+      SVC_API_KEY: "v2",
+      DB_SECRET: "v3",
+      PATH: "/usr",
+    };
+    const result = stripSecrets(env);
+    expect(result["MY_CORP_TOKEN"]).toBeUndefined();
+    expect(result["SVC_API_KEY"]).toBeUndefined();
+    expect(result["DB_SECRET"]).toBeUndefined();
+    expect(result["PATH"]).toBe("/usr");
+  });
+
+  it("(f) preserves benign variables (PATH, HOME, XDG_*, SPECRUNNER_DEBUG)", () => {
+    const env: Record<string, string | undefined> = {
+      GH_TOKEN: "ghp_secret",
+      ANTHROPIC_API_KEY: "sk-ant-secret",
+      PATH: "/usr/bin",
+      HOME: "/home/user",
+      XDG_CONFIG_HOME: "/home/user/.config",
+      SPECRUNNER_DEBUG: "pipeline",
+    };
+    const result = stripSecrets(env);
+    expect(result["GH_TOKEN"]).toBeUndefined();
+    expect(result["ANTHROPIC_API_KEY"]).toBeUndefined();
+    expect(result["PATH"]).toBe("/usr/bin");
+    expect(result["HOME"]).toBe("/home/user");
+    expect(result["XDG_CONFIG_HOME"]).toBe("/home/user/.config");
+    expect(result["SPECRUNNER_DEBUG"]).toBe("pipeline");
+  });
 });

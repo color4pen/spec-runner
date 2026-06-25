@@ -1,5 +1,6 @@
 import { spawn as nodeSpawn } from "node:child_process";
 import type { SpawnOptions, ChildProcess } from "node:child_process";
+import { stripSecrets } from "./env-filter.js";
 
 export type SpawnFn = (bin: string, args: string[], opts: SpawnOptions) => ChildProcess;
 
@@ -15,6 +16,7 @@ export function runSubprocess(
     const child = spawnFn(bin, args, {
       cwd: opts.cwd,
       stdio: ["pipe", "pipe", "pipe"],
+      env: stripSecrets(process.env as Record<string, string | undefined>) as Record<string, string>,
     });
 
     let stdout = "";

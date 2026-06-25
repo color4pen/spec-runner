@@ -4,7 +4,7 @@ import type { CodexInstance } from "./agent-runner.js";
 export const CODEX_SDK_PACKAGE = "@openai/codex-sdk";
 
 export interface CodexSdk {
-  Codex: new () => CodexInstance;
+  Codex: new (opts?: { env?: Record<string, string>; apiKey?: string }) => CodexInstance;
 }
 
 export type CodexSdkLoader = () => Promise<CodexSdk>;
