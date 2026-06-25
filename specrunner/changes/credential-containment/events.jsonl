@@ -78,3 +78,11 @@
 {"type":"transition","ts":"2026-06-25T11:36:08.967Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
 {"type":"transition","ts":"2026-06-25T11:36:08.967Z","step":"step-transition","status":"ok","message":"verification → adr-gen"}
 {"type":"transition","ts":"2026-06-25T11:36:08.971Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-06-25T11:36:32.005Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"96616637-a403-4440-bb6a-6e2d811e0b93","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-25T11:36:08.987Z","endedAt":"2026-06-25T11:36:30.686Z"}
+{"type":"transition","ts":"2026-06-25T11:36:32.007Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-06-25T11:36:32.009Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-06-25T11:36:33.638Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/credential-containment/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-25T11:36:32.009Z","endedAt":"2026-06-25T11:36:33.636Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-06-25T11:36:33.636Z","outputs":[{"path":"specrunner/changes/credential-containment/pr-create-result.md","hash":"sha256:180d3a10cd64354fdca43abb876b6696f5d6cce38b6bc773ce5fdcde61ec65cd"}],"inputs":[{"path":"fix/credential-containment-e2c14490","hash":null}]}
+{"type":"transition","ts":"2026-06-25T11:36:33.649Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
