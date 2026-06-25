@@ -65,3 +65,11 @@
 {"type":"transition","ts":"2026-06-25T11:19:56.317Z","step":"conformance","status":"ok","message":"conformance iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-25T11:19:56.317Z","step":"step-transition","status":"ok","message":"conformance → adr-gen"}
 {"type":"transition","ts":"2026-06-25T11:19:56.320Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-06-25T11:20:16.309Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"9056f146-5de6-4f8d-aa4d-134198b9a23e","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-25T11:19:56.330Z","endedAt":"2026-06-25T11:20:14.857Z"}
+{"type":"transition","ts":"2026-06-25T11:20:16.316Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-06-25T11:20:16.322Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-06-25T11:20:18.145Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/findings-parse-soundness/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-25T11:20:16.323Z","endedAt":"2026-06-25T11:20:18.143Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-06-25T11:20:18.143Z","outputs":[{"path":"specrunner/changes/findings-parse-soundness/pr-create-result.md","hash":"sha256:c91a1f7d4ca873a0ed112c6e40c7cb09be332478c4304d5eb108016c78872768"}],"inputs":[{"path":"fix/findings-parse-soundness-2e78ebe2","hash":null}]}
+{"type":"transition","ts":"2026-06-25T11:20:18.159Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}

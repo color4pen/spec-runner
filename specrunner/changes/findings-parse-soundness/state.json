@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2e78ebe2-2fb8-4ec9-bdba-e8b92d94be31",
   "createdAt": "2026-06-25T10:46:39.813Z",
-  "updatedAt": "2026-06-25T11:19:56.320Z",
+  "updatedAt": "2026-06-25T11:20:18.159Z",
   "request": {
     "title": "judge の findings/scores パース健全性を回復し、verdict 導出の取りこぼし・誤りをなくす",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/findings-parse-soundness-2e78ebe2",
   "error": null,
   "pipelineId": "standard",
@@ -73,8 +73,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/713",
+    "number": 713,
+    "createdAt": "2026-06-25T11:20:18.142Z"
+  },
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -87,7 +92,9 @@
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
