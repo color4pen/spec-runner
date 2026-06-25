@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2e78ebe2-2fb8-4ec9-bdba-e8b92d94be31",
   "createdAt": "2026-06-25T10:46:39.813Z",
-  "updatedAt": "2026-06-25T11:20:18.159Z",
+  "updatedAt": "2026-06-25T11:23:42.002Z",
   "request": {
     "title": "judge の findings/scores パース健全性を回復し、verdict 導出の取りこぼし・誤りをなくす",
     "type": "bug-fix",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/findings-parse-soundness-2e78ebe2",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,7 @@
     "createdAt": "2026-06-25T11:20:18.142Z"
   },
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 52,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
