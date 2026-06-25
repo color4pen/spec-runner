@@ -183,6 +183,7 @@ async function checkPackageJsonScriptsIntegrity(
     const child = spawn("git", ["show", `origin/${baseBranch}:package.json`], {
       cwd,
       shell: false,
+      env: stripSecrets(process.env as Record<string, string | undefined>),
     });
 
     const chunks: Buffer[] = [];

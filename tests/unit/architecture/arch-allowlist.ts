@@ -99,6 +99,56 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
   //
   // B-3 実違反ゼロ達成: 全エントリ burn-down 完了。
 
+  // ── B-6: process.env 直読みの known-safe call-site ────────────────────────
+  //
+  // B-6 (model.md §4): env must flow through the stripSecrets seam before
+  // being passed to a subprocess or external SDK.  The entries below are
+  // call-sites that read a single, benign (or explicitly-forwarded) key from
+  // process.env WITHOUT passing the full env object to any child process.
+  //
+  // Governance: each entry must document why the raw read is safe.
+  {
+    file: "src/util/env-filter.ts",
+    pattern: "SPECRUNNER_DEBUG",
+    invariant: "B-6",
+    tracking: "B6-specrunner-debug-read",
+    comment: "getDebugSubsystems() reads a single non-secret diagnostic key; not passed to subprocess.",
+  },
+  {
+    file: "src/util/xdg.ts",
+    pattern: "XDG_CONFIG_HOME",
+    invariant: "B-6",
+    tracking: "B6-xdg-config-home-read",
+    comment: "XDG path read; not a secret, not passed to subprocess.",
+  },
+  {
+    file: "src/util/xdg.ts",
+    pattern: "XDG_STATE_HOME",
+    invariant: "B-6",
+    tracking: "B6-xdg-state-home-read",
+    comment: "XDG path read; not a secret, not passed to subprocess.",
+  },
+  {
+    file: "src/adapter/claude-code/agent-runner.ts",
+    pattern: "as Record<string, string | undefined>",
+    invariant: "B-6",
+    tracking: "B6-claude-oauth-token-resolver-input",
+    comment:
+      "Token resolver reads process.env to extract CLAUDE_CODE_OAUTH_TOKEN; result is explicitly injected " +
+      "into the already-stripped sdkEnv — not passed raw to a subprocess. See agent-runner.ts line that " +
+      "passes process.env to resolveClaudeCodeOAuthTokenFn (the function name is on the preceding line).",
+  },
+  {
+    file: "src/adapter/codex/agent-runner.ts",
+    pattern: "OPENAI_API_KEY",
+    invariant: "B-6",
+    tracking: "B6-codex-openai-apikey-read",
+    comment:
+      "Reads OPENAI_API_KEY from process.env to forward it as an explicit apiKey option to new Codex(). " +
+      "The key is already stripped from strippedEnv by the preceding stripSecrets call. " +
+      "Not passed as full env to a subprocess — only forwarded as a named SDK parameter.",
+  },
+
   // ── DSM: §3 全層 closure whitelist 違反 ────────────────────────────────────
   //
   // DSM (architecture/model.md §3): 許可された edge 以外の import は divergence。

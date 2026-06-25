@@ -138,27 +138,30 @@ export function getVerboseLogFilePath(): string | null {
   return currentLogPath;
 }
 
-const MASK_PATTERNS: RegExp[] = [
-  /\bsk-ant-[A-Za-z0-9_-]+/g,
-  /\b(gh[oprsu])_[A-Za-z0-9]+/g,
-  /\bgithub_pat_[A-Za-z0-9_]+/g,
-  /\bsk-proj-[A-Za-z0-9_-]+/g,
-  /\bsk-svcacct-[A-Za-z0-9_-]+/g,
-  /\bsk-[A-Za-z0-9_-]{20,}/g,
+/**
+ * Each entry is [pattern, replacer] where `pattern` captures the fixed prefix in group $1.
+ * The `gi` flags make matching case-insensitive while preserving the original casing of $1.
+ * Ordered from most-specific to least-specific to avoid partial masking by a broader rule.
+ */
+const MASK_PATTERNS: Array<[RegExp, string]> = [
+  [/\b(sk-ant-)[A-Za-z0-9_-]+/gi, "$1..."],
+  [/\b(gh[oprsu]_)[A-Za-z0-9]+/gi, "$1..."],
+  [/\b(github_pat_)[A-Za-z0-9_]+/gi, "$1..."],
+  [/\b(sk-proj-)[A-Za-z0-9_-]+/gi, "$1..."],
+  [/\b(sk-svcacct-)[A-Za-z0-9_-]+/gi, "$1..."],
+  [/\b(sk-)[A-Za-z0-9_-]{20,}/gi, "$1..."],
 ];
 
 /**
  * Mask sensitive values (API keys, tokens) in a string.
- * Replaces the token with a safe short form.
+ * Replaces each matched token with the captured fixed prefix followed by "..." so that
+ * the token type is identifiable but the secret body is fully hidden.
+ * Matching is case-insensitive; the replacement preserves the original case of the prefix.
  */
 export function maskSensitive(text: string): string {
   let result = text;
-  for (const pattern of MASK_PATTERNS) {
-    result = result.replace(pattern, (match) => {
-      const sep = match.indexOf("_") !== -1 ? match.indexOf("_") : match.lastIndexOf("-");
-      const prefix = match.slice(0, sep + 1);
-      return `${prefix}...`;
-    });
+  for (const [pattern, replacer] of MASK_PATTERNS) {
+    result = result.replace(pattern, replacer);
   }
   return result;
 }

@@ -325,19 +325,29 @@ describe("B-5: verdict/transition logic in core/pipeline/ must not have direct I
   });
 });
 
-describe("B-6: core/ must not reference process.env directly (must use stripSecrets seam)", () => {
+describe("B-6: core/, adapter/, util/ must not reference process.env directly (must use stripSecrets seam)", () => {
   /**
    * B-6 (model.md §4): subprocess / SDK query env must pass through the
    * `stripSecrets` seam (util/env-filter) so credentials are never leaked
    * to child processes or external APIs.
    *
-   * Scope: all of src/core/ (excluding __tests__/).
+   * Scope: src/core/, src/adapter/, and src/util/ (excluding __tests__/).
    * Safe usages filtered: lines containing `stripSecrets` (already using seam).
    * Comment lines filtered: JSDoc mentioning process.env.
+   *
+   * Known-safe call-sites that read individual non-secret keys (XDG paths,
+   * diagnostic flags, explicit SDK apiKey forwarding) are grandfather'd in
+   * arch-allowlist.ts (invariant "B-6").
    */
-  it("grep finds no raw process.env references in src/core/ beyond the allowlist", () => {
-    const raw = grepE(`"process\\.env"`, "src/core");
-    const allMatches = parseGrepOutput(raw);
+  it("grep finds no raw process.env references in src/core/, src/adapter/, and src/util/ beyond the allowlist", () => {
+    const rawCore    = grepE(`"process\\.env"`, "src/core");
+    const rawAdapter = grepE(`"process\\.env"`, "src/adapter");
+    const rawUtil    = grepE(`"process\\.env"`, "src/util");
+    const allMatches = [
+      ...parseGrepOutput(rawCore),
+      ...parseGrepOutput(rawAdapter),
+      ...parseGrepOutput(rawUtil),
+    ];
 
     // Remove test files and lines that already use the stripSecrets seam.
     const candidates = allMatches.filter(

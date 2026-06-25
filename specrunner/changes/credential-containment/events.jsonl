@@ -17,3 +17,8 @@
 {"type":"transition","ts":"2026-06-25T11:05:21.800Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-25T11:05:21.800Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
 {"type":"transition","ts":"2026-06-25T11:05:21.802Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-06-25T11:07:28.161Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"8b139c82-ce84-4697-8c1b-a834c875197c","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-25T11:05:21.813Z","endedAt":"2026-06-25T11:07:26.745Z"}
+{"type":"lineage","step":"test-case-gen","ts":"2026-06-25T11:07:26.745Z","outputs":[{"path":"specrunner/changes/credential-containment/test-cases.md","hash":"sha256:2e5260c5d3f99bf134b4d7700baa10120cf40544fb27ee43140dc8f12660ae14"}],"inputs":[{"path":"specrunner/changes/credential-containment/design.md","hash":"sha256:8a71207d66742971a86500dd0d2e2821ef07deeaf4b54eac5da3fb760ef8e573"},{"path":"specrunner/changes/credential-containment/tasks.md","hash":"sha256:b9a308ac3b198b8253aa3ed4a2fb773ea6e700dbfbe863cdef4e989e82f3c9fa"}]}
+{"type":"transition","ts":"2026-06-25T11:07:28.164Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-06-25T11:07:28.165Z","step":"implementer-started","status":"started","message":"Starting implementer step"}

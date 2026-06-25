@@ -4,13 +4,13 @@
 
 **File**: `src/util/env-filter.ts`
 
-- [ ] Add `SECRET_PATTERNS: RegExp[]` constant after `SECRET_DENYLIST`:
+- [x] Add `SECRET_PATTERNS: RegExp[]` constant after `SECRET_DENYLIST`:
   ```ts
   const SECRET_PATTERNS: RegExp[] = [/_TOKEN$/i, /_API_KEY$/i, /_SECRET$/i];
   ```
-- [ ] In `stripSecrets`, after the fixed-key loop, add a second loop over `Object.keys(result)` that deletes any key for which `SECRET_PATTERNS.some((p) => p.test(key))` is true.
-- [ ] Do NOT remove existing `SECRET_DENYLIST` entries (they remain as explicit documentation).
-- [ ] Update the JSDoc comment on `stripSecrets` to mention pattern-based stripping.
+- [x] In `stripSecrets`, after the fixed-key loop, add a second loop over `Object.keys(result)` that deletes any key for which `SECRET_PATTERNS.some((p) => p.test(key))` is true.
+- [x] Do NOT remove existing `SECRET_DENYLIST` entries (they remain as explicit documentation).
+- [x] Update the JSDoc comment on `stripSecrets` to mention pattern-based stripping.
 
 **Acceptance Criteria**:
 - `stripSecrets({ MY_CORP_TOKEN: "v", SVC_API_KEY: "v", DB_SECRET: "v", PATH: "/usr" })` returns an object without the three secret keys but with `PATH` intact.
@@ -23,9 +23,9 @@
 
 **File**: `tests/unit/util/env-filter.test.ts`
 
-- [ ] Add test case `(e) removes pattern-matched keys (*_TOKEN / *_API_KEY / *_SECRET)` asserting the three wildcard patterns strip their keys.
-- [ ] Add test case `(f) preserves benign variables (PATH, HOME, XDG_*, SPECRUNNER_DEBUG)` asserting those survive stripping.
-- [ ] Existing test cases `(a)`–`(d)` must remain passing without modification.
+- [x] Add test case `(e) removes pattern-matched keys (*_TOKEN / *_API_KEY / *_SECRET)` asserting the three wildcard patterns strip their keys.
+- [x] Add test case `(f) preserves benign variables (PATH, HOME, XDG_*, SPECRUNNER_DEBUG)` asserting those survive stripping.
+- [x] Existing test cases `(a)`–`(d)` must remain passing without modification.
 
 **Acceptance Criteria**:
 - All tests in `env-filter.test.ts` pass.
@@ -36,7 +36,7 @@
 
 **File**: `src/logger/stdout.ts`
 
-- [ ] Refactor `MASK_PATTERNS` from `RegExp[]` to `Array<[RegExp, string]>`, where the second element is the replacement string using `$1` (the captured fixed prefix). Example:
+- [x] Refactor `MASK_PATTERNS` from `RegExp[]` to `Array<[RegExp, string]>`, where the second element is the replacement string using `$1` (the captured fixed prefix). Example:
   ```ts
   const MASK_PATTERNS: Array<[RegExp, string]> = [
     [/\b(sk-ant-)[A-Za-z0-9_-]+/gi, "$1..."],
@@ -47,8 +47,8 @@
     [/\b(sk-)[A-Za-z0-9_-]{20,}/gi, "$1..."],
   ];
   ```
-- [ ] Update `maskSensitive` to use `result.replace(pattern, replacer)` for each `[pattern, replacer]` pair (replacing the loop that used the old `match.indexOf("_")` logic).
-- [ ] Remove the old match-position calculation logic (`match.indexOf("_")`, `match.lastIndexOf("-")`, etc.).
+- [x] Update `maskSensitive` to use `result.replace(pattern, replacer)` for each `[pattern, replacer]` pair (replacing the loop that used the old `match.indexOf("_")` logic).
+- [x] Remove the old match-position calculation logic (`match.indexOf("_")`, `match.lastIndexOf("-")`, etc.).
 
 **Acceptance Criteria**:
 - `maskSensitive("sk-ant-api03-abc_xyz123")` returns `"sk-ant-..."` (no body leaks past prefix).
@@ -63,11 +63,11 @@
 
 **File**: `tests/unit/logger/stdout-mask.test.ts` (new file) or append to `tests/unit/logger/verbose-log.test.ts`
 
-- [ ] Test: `_`-containing sk-ant key body is fully masked (AC from spec §4 scenario 1).
-- [ ] Test: uppercase sk-ant variant is masked (AC from spec §4 scenario 2).
-- [ ] Test: sk-proj key with underscores is masked (AC from spec §4 scenario 3).
-- [ ] Test: non-secret string passes through unchanged.
-- [ ] Test: gho_ / ghr_ / etc. variants still work (regression guard for existing behaviour).
+- [x] Test: `_`-containing sk-ant key body is fully masked (AC from spec §4 scenario 1).
+- [x] Test: uppercase sk-ant variant is masked (AC from spec §4 scenario 2).
+- [x] Test: sk-proj key with underscores is masked (AC from spec §4 scenario 3).
+- [x] Test: non-secret string passes through unchanged.
+- [x] Test: gho_ / ghr_ / etc. variants still work (regression guard for existing behaviour).
 
 **Acceptance Criteria**:
 - All new tests pass.
@@ -78,8 +78,8 @@
 
 **File**: `src/util/git-exec.ts`
 
-- [ ] Import `stripSecrets` from `./env-filter.js` at the top of the file.
-- [ ] In `runSubprocess`, add `env: stripSecrets(process.env as Record<string, string | undefined>) as Record<string, string>` to the options object passed to `spawnFn`:
+- [x] Import `stripSecrets` from `./env-filter.js` at the top of the file.
+- [x] In `runSubprocess`, add `env: stripSecrets(process.env as Record<string, string | undefined>) as Record<string, string>` to the options object passed to `spawnFn`:
   ```ts
   const child = spawnFn(bin, args, {
     cwd: opts.cwd,
@@ -87,7 +87,7 @@
     env: stripSecrets(process.env as Record<string, string | undefined>) as Record<string, string>,
   });
   ```
-- [ ] Verify that `SpawnOptions` (from `node:child_process`) accepts the `env` field — it does; no type change needed.
+- [x] Verify that `SpawnOptions` (from `node:child_process`) accepts the `env` field — it does; no type change needed.
 
 **Acceptance Criteria**:
 - A spy wrapping `defaultSpawnFn` captures the `env` argument and confirms `GH_TOKEN` / `GITHUB_TOKEN` / `ANTHROPIC_API_KEY` are absent when those keys exist in `process.env`.
@@ -99,10 +99,10 @@
 
 **File**: `tests/unit/util/git-exec.test.ts` (new file, or append to existing if present)
 
-- [ ] Use a spy `SpawnFn` that captures the `opts` argument and resolves with `{ stdout: "", stderr: "", exitCode: 0 }`.
-- [ ] Test: call `gitExec(spyFn, "/tmp", ["status"])` with `GH_TOKEN` in `process.env` (via test env setup); assert the captured `opts.env` does not contain `GH_TOKEN`.
-- [ ] Test: same assertion for `gitExecExitCode`.
-- [ ] Test: `PATH` is preserved in `opts.env` (benign variable regression).
+- [x] Use a spy `SpawnFn` that captures the `opts` argument and resolves with `{ stdout: "", stderr: "", exitCode: 0 }`.
+- [x] Test: call `gitExec(spyFn, "/tmp", ["status"])` with `GH_TOKEN` in `process.env` (via test env setup); assert the captured `opts.env` does not contain `GH_TOKEN`.
+- [x] Test: same assertion for `gitExecExitCode`.
+- [x] Test: `PATH` is preserved in `opts.env` (benign variable regression).
 
 **Acceptance Criteria**:
 - All new tests pass.
@@ -113,8 +113,8 @@
 
 **File**: `src/core/verification/runner.ts`
 
-- [ ] `stripSecrets` is already imported at line 11. No new import needed.
-- [ ] Inside `checkPackageJsonScriptsIntegrity`, add `env: stripSecrets(process.env as Record<string, string | undefined>)` to the `spawn` options:
+- [x] `stripSecrets` is already imported at line 11. No new import needed.
+- [x] Inside `checkPackageJsonScriptsIntegrity`, add `env: stripSecrets(process.env as Record<string, string | undefined>)` to the `spawn` options:
   ```ts
   const child = spawn("git", ["show", `origin/${baseBranch}:package.json`], {
     cwd,
@@ -133,10 +133,10 @@
 
 **File**: `tests/unit/core/verification/runner-git-show-env.test.ts` (new file)
 
-- [ ] Mock `node:child_process` `spawn` to capture arguments and return a fake stdout of `{}` (valid empty package.json with no scripts), exit code 0.
-- [ ] Call `runVerification(slug, cwd, undefined, "main")` with a `GH_TOKEN` set in the test process env (or inject via a wrapper).
-- [ ] Assert that the `env` argument passed to the mocked `spawn` does not contain `GH_TOKEN`.
-- [ ] Assert `PATH` is present in the captured env (benign var preserved).
+- [x] Mock `node:child_process` `spawn` to capture arguments and return a fake stdout of `{}` (valid empty package.json with no scripts), exit code 0.
+- [x] Call `runVerification(slug, cwd, undefined, "main")` with a `GH_TOKEN` set in the test process env (or inject via a wrapper).
+- [x] Assert that the `env` argument passed to the mocked `spawn` does not contain `GH_TOKEN`.
+- [x] Assert `PATH` is present in the captured env (benign var preserved).
 
 **Acceptance Criteria**:
 - All new tests pass.
@@ -149,7 +149,7 @@
 
 ### sdk-loader.ts
 
-- [ ] Update the `CodexSdk` interface's `Codex` constructor signature:
+- [x] Update the `CodexSdk` interface's `Codex` constructor signature:
   ```ts
   export interface CodexSdk {
     Codex: new (opts?: { env?: Record<string, string>; apiKey?: string }) => CodexInstance;
@@ -158,8 +158,8 @@
 
 ### agent-runner.ts
 
-- [ ] Import `stripSecrets` from `../../util/env-filter.js`.
-- [ ] In the `run` method, replace the current default factory line:
+- [x] Import `stripSecrets` from `../../util/env-filter.js`.
+- [x] In the `run` method, replace the current default factory line:
   ```ts
   // BEFORE:
   const codexFactory = this.injectedCodexFactory ?? (() => new sdk!.Codex());
@@ -178,7 +178,7 @@
     })
   );
   ```
-- [ ] The injected `_codexFactory?: () => CodexInstance` in `CodexAgentRunnerDeps` is NOT changed (tests inject a fully-constructed mock).
+- [x] The injected `_codexFactory?: () => CodexInstance` in `CodexAgentRunnerDeps` is NOT changed (tests inject a fully-constructed mock).
 
 **Acceptance Criteria**:
 - `strippedEnv` passed to the default `Codex` factory does not contain `GH_TOKEN`, `GITHUB_TOKEN`, `ANTHROPIC_API_KEY`, or `SPECRUNNER_API_KEY`.
@@ -190,15 +190,15 @@
 
 **File**: `tests/unit/adapter/codex/agent-runner-env.test.ts` (new file)
 
-- [ ] Create a test that injects `_codexFactory` capturing what options it would receive if it were the default. To test the default factory path, use a test that:
+- [x] Create a test that injects `_codexFactory` capturing what options it would receive if it were the default. To test the default factory path, use a test that:
   - Sets `process.env.GH_TOKEN = "secret"` temporarily (restore in teardown).
   - Constructs a `CodexAgentRunner` with a spy `_loadSdkFn` that returns a fake `CodexSdk` capturing the `opts` passed to `new Codex(opts)`.
   - Runs a minimal `ctx` through the runner (or mocks `run` to just invoke the factory path).
   - Asserts captured `opts.env` contains no `GH_TOKEN`, `GITHUB_TOKEN`, `ANTHROPIC_API_KEY`, `SPECRUNNER_API_KEY`.
-- [ ] Test: when `process.env.OPENAI_API_KEY = "sk-openai-xxx"`, the factory receives `apiKey: "sk-openai-xxx"`.
-- [ ] Test: when `process.env.OPENAI_API_KEY` is unset, `apiKey` is not present in opts.
+- [x] Test: when `process.env.OPENAI_API_KEY = "sk-openai-xxx"`, the factory receives `apiKey: "sk-openai-xxx"`.
+- [x] Test: when `process.env.OPENAI_API_KEY` is unset, `apiKey` is not present in opts.
 
-> **Note**: if the factory invocation path is hard to reach via a unit test without running the full `run()` loop, an acceptable alternative is to extract the factory construction logic into a helper function `buildDefaultCodexFactory(sdk, stripFn, env)` and test that helper in isolation.
+> **Note**: The `buildDefaultCodexFactory` helper was extracted and exported from `agent-runner.ts` to enable isolated unit testing of the factory construction logic without running the full `run()` loop.
 
 **Acceptance Criteria**:
 - All new tests pass.
@@ -212,74 +212,19 @@
 
 ### arch-allowlist.ts
 
-- [ ] Add four allowlist entries under the `B-6` invariant section:
-
-  ```ts
-  {
-    file: "src/util/env-filter.ts",
-    pattern: "SPECRUNNER_DEBUG",
-    invariant: "B-6",
-    tracking: "B6-specrunner-debug-read",
-    comment: "getDebugSubsystems() reads a single non-secret diagnostic key; not passed to subprocess.",
-  },
-  {
-    file: "src/util/xdg.ts",
-    pattern: "XDG_CONFIG_HOME",
-    invariant: "B-6",
-    tracking: "B6-xdg-config-home-read",
-    comment: "XDG path read; not a secret, not passed to subprocess.",
-  },
-  {
-    file: "src/util/xdg.ts",
-    pattern: "XDG_STATE_HOME",
-    invariant: "B-6",
-    tracking: "B6-xdg-state-home-read",
-    comment: "XDG path read; not a secret, not passed to subprocess.",
-  },
-  {
-    file: "src/adapter/claude-code/agent-runner.ts",
-    pattern: "resolveClaudeCodeOAuthTokenFn",
-    invariant: "B-6",
-    tracking: "B6-claude-oauth-token-resolver-input",
-    comment:
-      "Token resolver reads process.env to extract CLAUDE_CODE_OAUTH_TOKEN; result is explicitly injected " +
-      "into the already-stripped sdkEnv — not passed raw to a subprocess. See agent-runner.ts:268-276.",
-  },
-  ```
-
-  > **Note on pattern matching**: allowlist matching requires `match.content.includes(entry.pattern)`. The `resolveClaudeCodeOAuthTokenFn` pattern matches lines around the call-site, not the bare `process.env` line itself. Verify that the flagged line (line 271 of claude-code/agent-runner.ts) is either: (a) on the same content line as the function name, or (b) that the allowlist pattern is adjusted to match the actual content. If line 271 content is just `process.env as Record<string, string | undefined>,` without the function name, use pattern `"as Record<string, string | undefined>"` instead and add a more specific comment.
+- [x] Add five allowlist entries under the `B-6` invariant section:
+  - `src/util/env-filter.ts` + `SPECRUNNER_DEBUG`
+  - `src/util/xdg.ts` + `XDG_CONFIG_HOME`
+  - `src/util/xdg.ts` + `XDG_STATE_HOME`
+  - `src/adapter/claude-code/agent-runner.ts` + `as Record<string, string | undefined>` (line 271; the function name is on the preceding line)
+  - `src/adapter/codex/agent-runner.ts` + `OPENAI_API_KEY` (new: reads single key for explicit SDK forwarding)
 
 ### core-invariants.test.ts
 
-- [ ] In the `"B-6: …"` describe block, extend the grep to also cover `src/adapter/` and `src/util/`:
-
-  ```ts
-  it("grep finds no raw process.env references in src/core/, src/adapter/, and src/util/ beyond the allowlist", () => {
-    const rawCore    = grepE(`"process\\.env"`, "src/core");
-    const rawAdapter = grepE(`"process\\.env"`, "src/adapter");
-    const rawUtil    = grepE(`"process\\.env"`, "src/util");
-    const allMatches = [
-      ...parseGrepOutput(rawCore),
-      ...parseGrepOutput(rawAdapter),
-      ...parseGrepOutput(rawUtil),
-    ];
-
-    const candidates = allMatches.filter(
-      (m) =>
-        !m.file.includes("__tests__/") &&
-        !m.content.includes("stripSecrets"),
-    );
-
-    const b6Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-6");
-    const violations = filterViolations(candidates, b6Entries);
-
-    expect(violationLines(violations)).toEqual([]);
-  });
-  ```
-
-- [ ] Update the `it` block description to reflect the new scope.
-- [ ] Update the JSDoc comment inside the `describe("B-6…")` block to mention `src/adapter/` and `src/util/` in the Scope line.
-- [ ] The regression-guard tests (B-6 detection / seam-exemption `it` blocks further down the file) can remain unchanged — they test the `filterViolations` helper with synthetic matches and are scope-agnostic.
+- [x] In the `"B-6: …"` describe block, extend the grep to also cover `src/adapter/` and `src/util/`.
+- [x] Update the `it` block description to reflect the new scope.
+- [x] Update the JSDoc comment inside the `describe("B-6…")` block to mention `src/adapter/` and `src/util/` in the Scope line.
+- [x] The regression-guard tests (B-6 detection / seam-exemption `it` blocks further down the file) remain unchanged — they test the `filterViolations` helper with synthetic matches and are scope-agnostic.
 
 **Acceptance Criteria**:
 - `bun run typecheck` passes.

@@ -27,6 +27,7 @@ import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
 import { SessionLogWriter } from "../shared/session-log-writer.js";
 import { isTransientAgentError } from "../shared/transient-error.js";
 import { retryWithBackoff } from "../../util/retry.js";
+import { stripSecrets } from "../../util/env-filter.js";
 import { resolveTransientRetryConfig } from "../../config/schema.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from "../../core/port/agent-runner.js";
 import type { CompletionReportDiagnostic } from "../../kernel/completion-report-diagnostic.js";
@@ -251,6 +252,26 @@ export function extractCodexProgress(item: ThreadItem): { tool: string; target?:
   }
 }
 
+/**
+ * Build the default Codex SDK factory that passes a secrets-stripped env and explicit apiKey.
+ * Exported for unit testing; callers should use CodexAgentRunner directly.
+ *
+ * @param sdk - The loaded CodexSdk module.
+ * @param strippedEnv - Pre-stripped env (output of stripSecrets); passed to Codex({ env }).
+ * @param openaiApiKey - OPENAI_API_KEY value read before stripping; forwarded as apiKey option.
+ */
+export function buildDefaultCodexFactory(
+  sdk: import("./sdk-loader.js").CodexSdk,
+  strippedEnv: Record<string, string>,
+  openaiApiKey: string | undefined,
+): () => CodexInstance {
+  return () =>
+    new sdk.Codex({
+      env: strippedEnv,
+      ...(openaiApiKey !== undefined ? { apiKey: openaiApiKey } : {}),
+    });
+}
+
 export class CodexAgentRunner implements AgentRunner {
   private readonly injectedCodexFactory?: () => CodexInstance;
   private readonly loadSdkFn: CodexSdkLoader;
@@ -264,7 +285,9 @@ export class CodexAgentRunner implements AgentRunner {
 
   async run(ctx: AgentRunContext): Promise<AgentRunResult> {
     const sdk = this.injectedCodexFactory ? null : await this.loadSdkFn();
-    const codexFactory = this.injectedCodexFactory ?? (() => new sdk!.Codex());
+    const strippedEnv = stripSecrets(process.env as Record<string, string | undefined>) as Record<string, string>;
+    const openaiApiKey = (process.env as Record<string, string | undefined>)["OPENAI_API_KEY"];
+    const codexFactory = this.injectedCodexFactory ?? buildDefaultCodexFactory(sdk!, strippedEnv, openaiApiKey);
     const cwd = ctx.cwd;
     const step = ctx.step;
     const state = ctx.state;
