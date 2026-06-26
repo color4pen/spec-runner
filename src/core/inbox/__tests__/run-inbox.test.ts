@@ -373,3 +373,140 @@ describe("runInboxOrchestrator — default isIssueLinked via JobStateStore", () 
     expect(startJob).toHaveBeenCalledOnce();
   });
 });
+
+// ---------------------------------------------------------------------------
+// T-05: stale-running job with no resumePoint is recovered in 1 cycle (not escalated)
+// ---------------------------------------------------------------------------
+
+describe("runInboxOrchestrator — stale-running job without resumePoint recovers in 1 cycle", () => {
+  beforeEach(() => {
+    vi.mocked(stderrWrite).mockClear();
+    vi.mocked(JobStateStore.list).mockReset();
+  });
+
+  it("T-05: recovers stale running job (resumePoint=null) without escalating", async () => {
+    // A job that hard-crashed: status=running, step="design", no resumePoint, no prior staleRecovery
+    const staleJob: JobState = {
+      version: 2,
+      jobId: "job-stale-001",
+      createdAt: "2026-06-01T00:00:00.000Z",
+      updatedAt: "2026-06-01T00:00:00.000Z",
+      request: {
+        path: "specrunner/changes/design-feature/request.md",
+        title: "Design feature",
+        type: "bug-fix",
+        slug: "design-feature",
+      },
+      repository: { owner: "test", name: "repo" },
+      session: null,
+      step: "design",
+      status: "running",
+      branch: "fix/design-feature",
+      history: [],
+      error: null,
+      steps: {},
+      // no resumePoint
+      // no staleRecovery
+    } as unknown as JobState;
+
+    vi.mocked(JobStateStore.list).mockResolvedValue([staleJob]);
+
+    const resumeJob = vi.fn().mockResolvedValue(undefined);
+    const persistState = vi.fn().mockResolvedValue(undefined);
+
+    const effects = makeEffects({
+      // isStale returns true → planner will classify this as a stale-running job
+      isStale: vi.fn().mockReturnValue(true),
+      resumeJob,
+      persistState,
+      isIssueLinked: vi.fn().mockResolvedValue(false),
+    });
+
+    const summary = await runInboxOrchestrator({
+      githubClient: makeGithubClient([]) as never,
+      owner: "test",
+      repo: "repo",
+      repoRoot: "/repo",
+      approveLabel: "specrunner:approve",
+      maxStartsPerRun: 5,
+      dryRun: false,
+      effects,
+    });
+
+    // The job should be in recovered (not escalated)
+    expect(summary.recovered).toHaveLength(1);
+    expect(summary.recovered[0]!.slug).toBe("design-feature");
+
+    // Not escalated — this is the critical AC
+    expect(summary.escalated).toHaveLength(0);
+
+    // resumeJob was called exactly once (1 cycle recovery)
+    expect(resumeJob).toHaveBeenCalledOnce();
+    expect(resumeJob).toHaveBeenCalledWith("design-feature", undefined);
+
+    // No errors
+    expect(summary.errors).toHaveLength(0);
+  });
+
+  it("T-05: job is only escalated after MAX_STALE_RECOVERY_ATTEMPTS consecutive failed recoveries at same stepCount", async () => {
+    // Simulate a job that has already been recovered MAX_STALE_RECOVERY_ATTEMPTS times
+    // with no progress (stepCount unchanged) — this should escalate, not recover
+    const staleJob: JobState = {
+      version: 2,
+      jobId: "job-stale-002",
+      createdAt: "2026-06-01T00:00:00.000Z",
+      updatedAt: "2026-06-01T00:00:00.000Z",
+      request: {
+        path: "specrunner/changes/crash-loop/request.md",
+        title: "Crash loop",
+        type: "bug-fix",
+        slug: "crash-loop",
+      },
+      repository: { owner: "test", name: "repo" },
+      session: null,
+      step: "implementer",
+      status: "running",
+      branch: "fix/crash-loop",
+      history: [],
+      error: null,
+      steps: {},
+      // Simulating 3 prior recovery attempts at the same stepCount (no progress)
+      staleRecovery: { attempts: 3, stepCount: 0 },
+    } as unknown as JobState;
+
+    vi.mocked(JobStateStore.list).mockResolvedValue([staleJob]);
+
+    const resumeJob = vi.fn().mockResolvedValue(undefined);
+    const notifyEscalation = vi.fn().mockResolvedValue(undefined);
+    const persistState = vi.fn().mockResolvedValue(undefined);
+
+    const effects = makeEffects({
+      isStale: vi.fn().mockReturnValue(true),
+      resumeJob,
+      persistState,
+      notifyEscalation,
+      isIssueLinked: vi.fn().mockResolvedValue(false),
+    });
+
+    const summary = await runInboxOrchestrator({
+      githubClient: makeGithubClient([]) as never,
+      owner: "test",
+      repo: "repo",
+      repoRoot: "/repo",
+      approveLabel: "specrunner:approve",
+      maxStartsPerRun: 5,
+      dryRun: false,
+      effects,
+    });
+
+    // After MAX attempts with no progress → escalate
+    expect(summary.escalated).toHaveLength(1);
+    expect(summary.escalated[0]!.slug).toBe("crash-loop");
+
+    // Not recovered
+    expect(summary.recovered).toHaveLength(0);
+
+    // resumeJob was NOT called (escalation path, not recovery)
+    expect(resumeJob).not.toHaveBeenCalled();
+  });
+});

@@ -243,16 +243,31 @@ describe("TC-RESUME-004: --force allows non-awaiting-resume", () => {
   });
 });
 
-// TC-RESUME-005: no resumePoint + no --from → exit 1 with message
-describe("TC-RESUME-005: no resumePoint and no --from", () => {
-  it("returns exit code 1 and outputs Japanese error message", async () => {
+// TC-RESUME-005: no resumePoint — hard-crash recovery via state.step
+//
+// Before the fix: resumePoint=null + no --from → exit 1 ("再開位置が不明").
+// After the fix: resumePoint=null but valid state.step → exit 0 (hard-crash recovery).
+// The "no resume position" case only fires when state.step is also absent/non-pipeline.
+describe("TC-RESUME-005: no resumePoint — hard-crash recovery and no-position failure", () => {
+  it("exits 0 (hard-crash recovery) when resumePoint=null but state.step is a valid pipeline step", async () => {
+    // state.step defaults to "code-review" — a valid pipeline step.
+    // No resumePoint (simulates hard-crash).
     await makeAwaitingResumeJob("no-resume-slug", { resumePoint: null });
 
     const { runResumeCore } = await import("../../../src/cli/resume.js");
     const exitCode = await runResumeCore("no-resume-slug", { cwd: tempDir });
+    // With the fix, state.step="code-review" is used as the resume position → success
+    expect(exitCode).toBe(0);
+  });
+
+  it("exits 1 when resumePoint=null and state.step is not a pipeline step (no resume position)", async () => {
+    // "init" is the initial step set at job creation — it's not a pipeline agent/CLI step,
+    // so it cannot be a valid resume position.
+    await makeAwaitingResumeJob("no-resume-init-slug", { resumePoint: null, step: "init" });
+
+    const { runResumeCore } = await import("../../../src/cli/resume.js");
+    const exitCode = await runResumeCore("no-resume-init-slug", { cwd: tempDir });
     expect(exitCode).toBe(1);
-    const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
-    expect(stderrCalls.some((args) => String(args[0]).includes("再開位置が不明"))).toBe(true);
   });
 });
 
