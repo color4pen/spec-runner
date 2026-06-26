@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { parseRemoteUrl } from "../src/git/remote.js";
 
 // TC-008: HTTPS URL から owner/name 解決
