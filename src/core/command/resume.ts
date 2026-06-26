@@ -159,15 +159,10 @@ export class ResumeCommand extends CommandRunner {
       stderrWrite(`Warning: Job '${this.slug}' was last updated more than 24 hours ago. The branch may have drifted.`);
     }
 
-    // resumePoint guard + resume step resolution
-    if (resumePoint === null && this.options.from === undefined) {
-      logError("再開位置が不明です。`--from` で再開 step を指定してください");
-      throw new PrepareError(1, "No resume point");
-    }
-
+    // Resume step resolution: --from > resumePoint.step > state.step (hard-crash fallback)
     let startStep: StepName;
     try {
-      startStep = resolveResumeStep(this.options.from, resumePoint);
+      startStep = resolveResumeStep(this.options.from, resumePoint, state.step);
     } catch (err) {
       logError((err as Error).message);
       throw new PrepareError(1, "Failed to resolve resume step");
