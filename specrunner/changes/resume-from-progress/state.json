@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6d7db08d-3f90-47a1-8160-06e349d1867c",
   "createdAt": "2026-06-26T13:08:21.730Z",
-  "updatedAt": "2026-06-26T13:39:38.983Z",
+  "updatedAt": "2026-06-26T13:42:24.826Z",
   "request": {
     "title": "hard-crash 後の resume を進捗(state.step)から再構築し、「再開位置が不明」での詰まりを解消する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "cross-boundary-invariants",
+  "step": "regression-gate",
   "status": "running",
   "branch": "fix/resume-from-progress-6d7db08d",
   "error": null,
@@ -47,8 +47,34 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "255341c8dea4f7222434655bdd0c5ec5637ee907",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 37,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -57,7 +83,9 @@
       "implementer": 1,
       "verification": 1,
       "code-review": 1,
-      "cross-boundary-invariants": 1
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
