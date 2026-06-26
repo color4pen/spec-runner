@@ -578,7 +578,7 @@ function commitStatusResponse(
 }
 
 /** Build an error response stub for any status. */
-function errorResponse(status: number): Response {
+function _errorResponse(status: number): Response {
   return {
     status,
     headers: { get: () => null },
