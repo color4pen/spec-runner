@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6d7db08d-3f90-47a1-8160-06e349d1867c",
   "createdAt": "2026-06-26T13:08:21.730Z",
-  "updatedAt": "2026-06-26T13:35:11.753Z",
+  "updatedAt": "2026-06-26T13:39:38.983Z",
   "request": {
     "title": "hard-crash 後の resume を進捗(state.step)から再構築し、「再開位置が不明」での詰まりを解消する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "cross-boundary-invariants",
   "status": "running",
   "branch": "fix/resume-from-progress-6d7db08d",
   "error": null,
@@ -48,14 +48,16 @@
     }
   ],
   "_journal": {
-    "historyCount": 25,
+    "historyCount": 31,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1
     }
   }
 }
