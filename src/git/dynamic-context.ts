@@ -5,15 +5,13 @@
  * need to discover this information themselves each run.
  *
  * Design constraint: do NOT import from src/adapter/ — this is a core utility.
- * Uses node:child_process execFile directly (not git-exec.ts).
+ * All git subprocess calls are routed through the git-exec.ts strip seam
+ * (stripSecrets applied automatically; no direct node:child_process import).
  */
-import { execFile as nodeExecFile } from "node:child_process";
-import { promisify } from "node:util";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { changesDirRel } from "../util/paths.js";
-
-const execFileAsync = promisify(nodeExecFile);
+import { gitExec, defaultSpawnFn } from "../util/git-exec.js";
 
 /**
  * Dynamic context collected at the start of each pipeline run.
@@ -36,14 +34,10 @@ export interface DynamicContext {
 /**
  * Run a git command and return trimmed stdout.
  * Returns null on any error (non-zero exit, no git binary, etc.).
+ * Delegates to the git-exec seam so secrets are stripped from the child env.
  */
 async function runGit(cwd: string, args: string[]): Promise<string | null> {
-  try {
-    const { stdout } = await execFileAsync("git", args, { cwd });
-    return stdout.trim();
-  } catch {
-    return null;
-  }
+  return gitExec(defaultSpawnFn, cwd, args);
 }
 
 /**

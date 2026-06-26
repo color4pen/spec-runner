@@ -130,13 +130,14 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
   },
   {
     file: "src/adapter/claude-code/agent-runner.ts",
-    pattern: "as Record<string, string | undefined>",
+    pattern: "resolveClaudeCodeOAuthTokenFn(",
     invariant: "B-6",
     tracking: "B6-claude-oauth-token-resolver-input",
     comment:
-      "Token resolver reads process.env to extract CLAUDE_CODE_OAUTH_TOKEN; result is explicitly injected " +
-      "into the already-stripped sdkEnv — not passed raw to a subprocess. See agent-runner.ts line that " +
-      "passes process.env to resolveClaudeCodeOAuthTokenFn (the function name is on the preceding line).",
+      "Single-site match: resolveClaudeCodeOAuthTokenFn is called with process.env to extract " +
+      "CLAUDE_CODE_OAUTH_TOKEN; the resolved token is explicitly injected into the already-stripped " +
+      "sdkEnv — not passed raw to a subprocess. Pattern is site-specific (resolver call identifier) " +
+      "so future cast-bearing raw-env spawns in the same file are NOT covered by this entry.",
   },
   {
     file: "src/adapter/codex/agent-runner.ts",
@@ -147,6 +148,61 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
       "Reads OPENAI_API_KEY from process.env to forward it as an explicit apiKey option to new Codex(). " +
       "The key is already stripped from strippedEnv by the preceding stripSecrets call. " +
       "Not passed as full env to a subprocess — only forwarded as a named SDK parameter.",
+  },
+
+  // ── B-12: direct `node:child_process` import banned outside seam modules ─────
+  //
+  // B-12: subprocess spawn must be confined to the two seam modules
+  // (util/spawn.ts / util/git-exec.ts). Direct node:child_process import
+  // in other files enables env-omission spawns that bypass stripSecrets
+  // and cannot be detected by the B-6 process.env grep.
+  //
+  // Allowed importers are listed here with a reason. All other files that
+  // import node:child_process are violations.
+  {
+    file: "src/util/spawn.ts",
+    pattern: "node:child_process",
+    invariant: "B-12",
+    tracking: "B12-spawn-seam",
+    comment:
+      "Seam module: spawnCommand is the stripSecrets strip point for util/spawn.ts. " +
+      "Direct import is required; all callers must go through this seam.",
+  },
+  {
+    file: "src/util/git-exec.ts",
+    pattern: "node:child_process",
+    invariant: "B-12",
+    tracking: "B12-git-exec-seam",
+    comment:
+      "Seam module: runSubprocess / gitExec are the stripSecrets strip points for git-exec.ts. " +
+      "Direct import is required; all git callers must go through this seam.",
+  },
+  {
+    file: "src/core/verification/commands.ts",
+    pattern: "node:child_process",
+    invariant: "B-12",
+    tracking: "B12-verification-commands",
+    comment:
+      "Composition-internal; already strips ({ ...stripSecrets(env), PATH }) at the call site. " +
+      "Pinned by verification env tests.",
+  },
+  {
+    file: "src/core/verification/runner.ts",
+    pattern: "node:child_process",
+    invariant: "B-12",
+    tracking: "B12-verification-runner",
+    comment:
+      "Composition-internal; already strips (stripSecrets(process.env)) at the call site. " +
+      "Pinned by runner-git-show-env.test.ts.",
+  },
+  {
+    file: "src/cli/doctor.ts",
+    pattern: "node:child_process",
+    invariant: "B-12",
+    tracking: "B12-doctor-composition-root",
+    comment:
+      "Composition-root; needs execFile timeout + AbortSignal not offered by the git-exec seam (D4). " +
+      "Strips secrets via stripSecrets at the call site in buildExecFile (T-04).",
   },
 
   // ── DSM: §3 全層 closure whitelist 違反 ────────────────────────────────────

@@ -1,9 +1,6 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { notGitRepoError, remoteNotGitHubError } from "../errors.js";
 import { SpecRunnerError } from "../errors.js";
-
-const execFileAsync = promisify(execFile);
+import { runSubprocess, gitExecExitCode, defaultSpawnFn } from "../util/git-exec.js";
 
 export interface OriginInfo {
   owner: string;
@@ -15,6 +12,9 @@ export interface OriginInfo {
  * Supports both HTTPS and SSH remote URL formats.
  * Strips credentials from HTTPS URLs.
  *
+ * All subprocess calls are routed through the git-exec.ts strip seam so
+ * secrets are never inherited by the child process.
+ *
  * Throws NOT_GIT_REPO if not a git repository.
  * Throws REMOTE_NOT_GITHUB if remote does not match the configured host.
  *
@@ -24,45 +24,25 @@ export interface OriginInfo {
 export async function getOriginInfo(cwd: string, host: string = "github.com"): Promise<OriginInfo> {
   let remoteUrl: string;
   try {
-    const { stdout } = await execFileAsync(
-      "git",
-      ["remote", "get-url", "origin"],
-      { cwd },
+    const { stdout, exitCode } = await runSubprocess(
+      defaultSpawnFn, "git", ["remote", "get-url", "origin"], { cwd },
     );
-    remoteUrl = stdout.trim();
-  } catch (err: unknown) {
-    const message = (err as Error).message ?? "";
-    if (
-      message.includes("not a git repository") ||
-      message.includes("fatal: not a git") ||
-      message.includes("128")
-    ) {
-      // Could be not a git repo
-      // Try to differentiate between "not a git repo" and "no remote"
-      try {
-        await execFileAsync("git", ["rev-parse", "--git-dir"], { cwd });
-        // Is a git repo but no origin
+    if (exitCode !== 0) {
+      // Distinguish "not a git repo" from "git repo but no origin".
+      const gitDirCode = await gitExecExitCode(defaultSpawnFn, cwd, ["rev-parse", "--git-dir"]);
+      if (gitDirCode === 0) {
         throw new SpecRunnerError(
           "NOT_GIT_REPO",
           "cd into a git repository before running specrunner.",
           "Origin remote not configured.",
         );
-      } catch (innerErr: unknown) {
-        if (innerErr instanceof SpecRunnerError) throw innerErr;
-        throw notGitRepoError();
       }
+      throw notGitRepoError();
     }
-    if (
-      message.includes("No such remote") ||
-      message.includes("not a remote")
-    ) {
-      throw new SpecRunnerError(
-        "NOT_GIT_REPO",
-        "cd into a git repository before running specrunner.",
-        "Origin remote not configured.",
-      );
-    }
-    throw notGitRepoError();
+    remoteUrl = stdout.trim();
+  } catch (err: unknown) {
+    if (err instanceof SpecRunnerError) throw err;
+    throw notGitRepoError(); // spawn-level failure (e.g. git binary missing)
   }
 
   if (!remoteUrl || remoteUrl.length === 0) {
