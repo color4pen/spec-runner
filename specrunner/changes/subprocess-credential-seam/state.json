@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "30ac2f8a-030b-4b4b-922c-9e127f57d773",
   "createdAt": "2026-06-26T13:07:34.442Z",
-  "updatedAt": "2026-06-26T13:26:30.850Z",
+  "updatedAt": "2026-06-26T13:29:18.505Z",
   "request": {
     "title": "全 subprocess spawn を stripSecrets seam に集約し、env 省略による credential 継承を構造的に塞ぐ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "implementer",
   "status": "running",
   "branch": "change/subprocess-credential-seam-30ac2f8a",
   "error": null,
@@ -48,11 +48,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }

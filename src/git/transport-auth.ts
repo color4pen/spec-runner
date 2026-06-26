@@ -8,12 +8,8 @@
  * D2: Sets `credential.helper=` to disable any credential helper prompts.
  * D3: SSH / non-HTTPS origins receive no injection (transparent pass-through).
  */
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import type { SpawnFn as UtilSpawnFn } from "../util/spawn.js";
-import type { SpawnFn as GitExecSpawnFn } from "../util/git-exec.js";
-
-const execFileAsync = promisify(execFile);
+import { gitExec, defaultSpawnFn, type SpawnFn as GitExecSpawnFn } from "../util/git-exec.js";
 
 /**
  * Git transport subcommands that require authentication.
@@ -151,20 +147,13 @@ export function wrapTransportGitExecSpawn(
 }
 
 /**
- * Resolve the raw git remote URL for "origin" using execFile.
+ * Resolve the raw git remote URL for "origin" via the git-exec seam.
  * Returns undefined on failure (not a git repo, no origin, etc.).
+ * Secrets are stripped from the child env by the seam.
  */
 async function getRawOriginUrl(cwd: string): Promise<string | undefined> {
-  try {
-    const { stdout } = await execFileAsync(
-      "git",
-      ["remote", "get-url", "origin"],
-      { cwd },
-    );
-    return stdout.trim() || undefined;
-  } catch {
-    return undefined;
-  }
+  const url = await gitExec(defaultSpawnFn, cwd, ["remote", "get-url", "origin"]);
+  return url && url.length > 0 ? url : undefined;
 }
 
 /**

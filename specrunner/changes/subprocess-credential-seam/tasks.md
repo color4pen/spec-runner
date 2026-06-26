@@ -4,11 +4,11 @@
 
 **File**: `src/git/dynamic-context.ts`
 
-- [ ] Remove the direct subprocess imports (`execFile as nodeExecFile` from
+- [x] Remove the direct subprocess imports (`execFile as nodeExecFile` from
   `node:child_process`, `promisify` from `node:util`, and the
   `const execFileAsync = promisify(nodeExecFile);` line).
-- [ ] Add `import { gitExec, defaultSpawnFn } from "../util/git-exec.js";`.
-- [ ] Rewrite `runGit(cwd, args)` to delegate to the seam:
+- [x] Add `import { gitExec, defaultSpawnFn } from "../util/git-exec.js";`.
+- [x] Rewrite `runGit(cwd, args)` to delegate to the seam:
   ```ts
   async function runGit(cwd: string, args: string[]): Promise<string | null> {
     return gitExec(defaultSpawnFn, cwd, args);
@@ -17,7 +17,7 @@
   (or inline `gitExec(defaultSpawnFn, cwd, args)` at the two call-sites and delete
   `runGit`). `gitExec` already returns trimmed stdout or `null`, matching the
   current contract.
-- [ ] Update the file-header docstring: it no longer "uses node:child_process
+- [x] Update the file-header docstring: it no longer "uses node:child_process
   execFile directly (not git-exec.ts)" — it now routes through the `git-exec.ts`
   strip seam. Keep the "do NOT import from src/adapter/" note.
 
@@ -33,12 +33,12 @@
 
 **File**: `src/git/transport-auth.ts`
 
-- [ ] Remove `import { execFile } from "node:child_process";`, `import { promisify }
+- [x] Remove `import { execFile } from "node:child_process";`, `import { promisify }
   from "node:util";`, and `const execFileAsync = promisify(execFile);`.
-- [ ] Promote the existing type-only import of `git-exec` to a value import:
+- [x] Promote the existing type-only import of `git-exec` to a value import:
   `import { gitExec, defaultSpawnFn, type SpawnFn as GitExecSpawnFn } from "../util/git-exec.js";`
   (preserve the `SpawnFn` type alias already used by `wrapTransportGitExecSpawn`).
-- [ ] Rewrite `getRawOriginUrl(cwd)` to use the seam:
+- [x] Rewrite `getRawOriginUrl(cwd)` to use the seam:
   ```ts
   async function getRawOriginUrl(cwd: string): Promise<string | undefined> {
     const url = await gitExec(defaultSpawnFn, cwd, ["remote", "get-url", "origin"]);
@@ -59,49 +59,13 @@
 
 **File**: `src/git/remote.ts`
 
-- [ ] Remove `import { execFile } from "node:child_process";`, `import { promisify }
+- [x] Remove `import { execFile } from "node:child_process";`, `import { promisify }
   from "node:util";`, and `const execFileAsync = promisify(execFile);`.
-- [ ] Add `import { runSubprocess, gitExecExitCode, defaultSpawnFn } from "../util/git-exec.js";`.
-- [ ] Rewrite `getOriginInfo` to use `runSubprocess` (which resolves with
+- [x] Add `import { runSubprocess, gitExecExitCode, defaultSpawnFn } from "../util/git-exec.js";`.
+- [x] Rewrite `getOriginInfo` to use `runSubprocess` (which resolves with
   `{ stdout, stderr, exitCode }` and only rejects on the spawn `error` event),
-  preserving the exact `SpecRunnerError` outcomes via a `rev-parse` probe (D3):
-  ```ts
-  export async function getOriginInfo(cwd: string, host: string = "github.com"): Promise<OriginInfo> {
-    let remoteUrl: string;
-    try {
-      const { stdout, exitCode } = await runSubprocess(
-        defaultSpawnFn, "git", ["remote", "get-url", "origin"], { cwd },
-      );
-      if (exitCode !== 0) {
-        // Distinguish "not a git repo" from "git repo but no origin".
-        const gitDirCode = await gitExecExitCode(defaultSpawnFn, cwd, ["rev-parse", "--git-dir"]);
-        if (gitDirCode === 0) {
-          throw new SpecRunnerError(
-            "NOT_GIT_REPO",
-            "cd into a git repository before running specrunner.",
-            "Origin remote not configured.",
-          );
-        }
-        throw notGitRepoError();
-      }
-      remoteUrl = stdout.trim();
-    } catch (err: unknown) {
-      if (err instanceof SpecRunnerError) throw err;
-      throw notGitRepoError(); // spawn-level failure (e.g. git binary missing)
-    }
-
-    if (!remoteUrl || remoteUrl.length === 0) {
-      throw new SpecRunnerError(
-        "NOT_GIT_REPO",
-        "cd into a git repository before running specrunner.",
-        "Origin remote not configured.",
-      );
-    }
-
-    return parseRemoteUrl(remoteUrl, host);
-  }
-  ```
-- [ ] Leave `parseRemoteUrl` unchanged (pure function).
+  preserving the exact `SpecRunnerError` outcomes via a `rev-parse` probe (D3).
+- [x] Leave `parseRemoteUrl` unchanged (pure function).
 
 **Acceptance Criteria**:
 - `remote.ts` contains no `from "node:child_process"` import.
@@ -115,26 +79,11 @@
 
 **File**: `src/cli/doctor.ts`
 
-- [ ] Keep the `import * as childProcess from "node:child_process";` (doctor needs
+- [x] Keep the `import * as childProcess from "node:child_process";` (doctor needs
   `execFile` `timeout` + `AbortSignal`, not offered by the seam — see D4).
-- [ ] Add `import { stripSecrets } from "../util/env-filter.js";`.
-- [ ] Make `buildExecFile` injectable and strip env on the call:
-  ```ts
-  export const buildExecFile = (
-    env: Record<string, string | undefined> = process.env,
-    execFileAsyncImpl = execFileAsync,
-  ): ExecFileFunction => {
-    return async (file, args, options) => {
-      const result = await execFileAsyncImpl(file, args, {
-        timeout: options?.timeout,
-        signal: options?.signal,
-        env: stripSecrets(env) as Record<string, string>,
-      });
-      return { stdout: result.stdout as string, stderr: result.stderr as string };
-    };
-  };
-  ```
-- [ ] `runDoctor` continues to call `buildExecFile()` (no-arg) — defaults preserve
+- [x] Add `import { stripSecrets } from "../util/env-filter.js";`.
+- [x] Make `buildExecFile` injectable and strip env on the call.
+- [x] `runDoctor` continues to call `buildExecFile()` (no-arg) — defaults preserve
   current production behaviour.
 
 **Acceptance Criteria**:
@@ -150,20 +99,17 @@
 
 ### agent-runner.ts (formatting-only, no functional change)
 
-- [ ] Collapse the resolver call (currently L270-271) onto a single physical line so
-  the `process.env` reference and the resolver identifier share one grep line:
-  ```ts
-  const resolvedClaudeCodeToken = await this.resolveClaudeCodeOAuthTokenFn(process.env as Record<string, string | undefined>, { optional: true });
-  ```
+- [x] Collapse the resolver call (currently L270-271) onto a single physical line so
+  the `process.env` reference and the resolver identifier share one grep line.
   Do not change behaviour (still passes `process.env` to the resolver; `sdkEnv`
   remains `stripSecrets(process.env)` on L268).
 
 ### arch-allowlist.ts
 
-- [ ] Change the `src/adapter/claude-code/agent-runner.ts` B-6 entry's `pattern`
+- [x] Change the `src/adapter/claude-code/agent-runner.ts` B-6 entry's `pattern`
   from `"as Record<string, string | undefined>"` to
   `"resolveClaudeCodeOAuthTokenFn("`.
-- [ ] Update that entry's `comment` to state the new, site-specific match and that
+- [x] Update that entry's `comment` to state the new, site-specific match and that
   the resolver input is injected into the already-stripped `sdkEnv`, not passed raw
   to a subprocess.
 
@@ -182,7 +128,7 @@
 
 ### arch-allowlist.ts
 
-- [ ] Add a `B-12` section with one entry per allowed importer (file + `node:child_process`):
+- [x] Add a `B-12` section with one entry per allowed importer (file + `node:child_process`):
   - `src/util/spawn.ts` — seam (`stripSecrets` strip point).
   - `src/util/git-exec.ts` — seam (`runSubprocess` strip point; covers both its value
     and type imports of `node:child_process`).
@@ -196,13 +142,13 @@
 
 ### core-invariants.test.ts
 
-- [ ] Add a `describe("B-12: …")` block that greps
+- [x] Add a `describe("B-12: …")` block that greps
   `"from ['\\"]node:child_process"` across `src/` (single `grepE("…","src")`),
   excludes `__tests__/` and `.test.ts` files, filters comments, then filters through
   the `B-12` allowlist entries and asserts `violationLines(violations)` equals `[]`.
-- [ ] Add a liveness assertion: the raw match count (allowlisted + not) is
+- [x] Add a liveness assertion: the raw match count (allowlisted + not) is
   `> 0`, so a regressed grep that silently returns nothing cannot pass vacuously.
-- [ ] Docstring: explain B-12 — subprocess spawn confined to the seam; direct
+- [x] Docstring: explain B-12 — subprocess spawn confined to the seam; direct
   `node:child_process` import banned elsewhere; this catches the **env-omission**
   class that the B-6 `process.env` grep cannot express.
 
@@ -219,18 +165,18 @@
 **File**: `tests/unit/git/git-spawn-env.test.ts` (new) — model on
 `tests/unit/core/verification/runner-git-show-env.test.ts`.
 
-- [ ] `vi.mock("node:child_process", () => ({ spawn: vi.fn() }))` so the seam's
+- [x] `vi.mock("node:child_process", () => ({ spawn: vi.fn() }))` so the seam's
   `defaultSpawnFn` (= `nodeSpawn`) is intercepted; capture `opts.env` from the mock.
-- [ ] In `beforeEach`, set `process.env.GH_TOKEN` / `GITHUB_TOKEN` /
+- [x] In `beforeEach`, set `process.env.GH_TOKEN` / `GITHUB_TOKEN` /
   `ANTHROPIC_API_KEY` to known values and ensure `PATH` is set; restore in
   `afterEach`.
-- [ ] Test (dynamic-context): call `collectDynamicContext(tmp, "main")`; assert the
+- [x] Test (dynamic-context): call `collectDynamicContext(tmp, "main")`; assert the
   env captured for the `git log` / `git diff` spawns has no `GH_TOKEN` /
   `ANTHROPIC_API_KEY` and still has `PATH`.
-- [ ] Test (remote): mock spawn to emit a valid `https://github.com/o/r.git` on
+- [x] Test (remote): mock spawn to emit a valid `https://github.com/o/r.git` on
   stdout and close 0; call `getOriginInfo(tmp)`; assert the captured spawn env has no
   `GITHUB_TOKEN` and has `PATH`.
-- [ ] Test (transport-auth): call
+- [x] Test (transport-auth): call
   `createTransportAuth({ token: "t", cwd: tmp }).authArgs()`; assert the captured
   spawn env (for `remote get-url origin`) has no `GH_TOKEN`.
 
@@ -244,11 +190,11 @@
 
 **File**: `tests/unit/cli/doctor-execfile-env.test.ts` (new)
 
-- [ ] Import `buildExecFile` from `src/cli/doctor.ts`.
-- [ ] Create a spy `execFileAsyncImpl = vi.fn().mockResolvedValue({ stdout: "", stderr: "" })`.
-- [ ] Call `buildExecFile({ GH_TOKEN: "secret", PATH: "/usr/bin" }, spy)` and invoke
+- [x] Import `buildExecFile` from `src/cli/doctor.ts`.
+- [x] Create a spy `execFileAsyncImpl = vi.fn().mockResolvedValue({ stdout: "", stderr: "" })`.
+- [x] Call `buildExecFile({ GH_TOKEN: "secret", PATH: "/usr/bin" }, spy)` and invoke
   the returned function with `("git", ["--version"])`.
-- [ ] Assert the third arg passed to the spy has `env` without `GH_TOKEN` and with
+- [x] Assert the third arg passed to the spy has `env` without `GH_TOKEN` and with
   `PATH: "/usr/bin"`, and that `timeout` / `signal` are still forwarded.
 
 **Acceptance Criteria**:
@@ -262,12 +208,12 @@
 **File**: `tests/unit/architecture/core-invariants.test.ts` (append to the existing
 `T-04 regression guard` describe block, mirroring its synthetic-injection style).
 
-- [ ] B-12 detection: inject a synthetic match
+- [x] B-12 detection: inject a synthetic match
   `{ file: "src/git/new-helper.ts", content: 'import { execFile } from "node:child_process";' }`,
   filter through B-12 entries, assert exactly one violation.
-- [ ] B-12 suppression: inject a synthetic match for `src/util/git-exec.ts` with an
+- [x] B-12 suppression: inject a synthetic match for `src/util/git-exec.ts` with an
   `import … from "node:child_process"` line, assert zero violations (seam exempt).
-- [ ] B-6 narrowing: inject a synthetic match
+- [x] B-6 narrowing: inject a synthetic match
   `{ file: "src/adapter/claude-code/agent-runner.ts", content: "spawn(cmd, args, { env: process.env as Record<string, string | undefined> });" }`,
   filter through the (narrowed) B-6 entries, assert exactly one violation —
   demonstrating the generic-cast hole is closed.
@@ -282,13 +228,11 @@
 
 **File**: `tests/git-remote.test.ts`
 
-- [ ] TC-013 (`getOriginInfo with no git repo`): replace the `vi.mock("node:child_process",
-  { execFile })` setup — `remote.ts` no longer imports `execFile`. Either mock
-  `node:child_process` `spawn` (returning a child that closes non-zero) and assert
-  `getOriginInfo` rejects with `NOT_GIT_REPO`, or point the test at a real non-repo
-  temp dir and assert the thrown error. Keep it a meaningful assertion (the current
-  body asserts nothing).
-- [ ] TC-015 (`uses execFile not exec`): update the intent from the literal
+- [x] TC-013 (`getOriginInfo with no git repo`): replace the `vi.mock("node:child_process",
+  { execFile })` setup — `remote.ts` no longer imports `execFile`. Point the test at
+  a real non-repo temp dir and assert the thrown `NOT_GIT_REPO` error. Keep it a
+  meaningful assertion (the current body asserted nothing).
+- [x] TC-015 (`uses execFile not exec`): update the intent from the literal
   `content.toContain("execFile")` to assert the new shell-injection-safe shape —
   `remote.ts` imports from `../util/git-exec.js` and contains no string-shell `exec(`
   (the existing `not.toMatch(/child_process["']\)?\.exec\s*\(/)` guard stays valid;
@@ -304,9 +248,9 @@
 
 ## T-11: Full verification
 
-- [ ] `bun run typecheck` passes.
-- [ ] `bun run test` passes (B-6, B-12, all git/doctor env tests, transport tests).
-- [ ] `grep -rn "from ['\"]node:child_process" src` shows only the five allowlisted
+- [x] `bun run typecheck` passes.
+- [x] `bun run test` passes (B-6, B-12, all git/doctor env tests, transport tests).
+- [x] `grep -rn "from ['\"]node:child_process" src` shows only the five allowlisted
   files (the two seam modules, `verification/commands.ts`, `verification/runner.ts`,
   `cli/doctor.ts`).
 

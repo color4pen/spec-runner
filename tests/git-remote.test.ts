@@ -51,26 +51,20 @@ describe("TC-012: non-GitHub remote", () => {
   });
 });
 
-// TC-013: git 未初期化 — handled via getOriginInfo (mock execFile)
+// TC-013: git 未初期化 — getOriginInfo throws NOT_GIT_REPO for a non-repo directory
 describe("TC-013: getOriginInfo with no git repo", () => {
-  it("throws NOT_GIT_REPO when git exits with error", async () => {
-    const { getOriginInfo: _getOriginInfo } = await import("../src/git/remote.js");
+  it("throws NOT_GIT_REPO when run in a non-git directory", async () => {
+    const os = await import("node:os");
+    const path = await import("node:path");
+    const fs = await import("node:fs/promises");
 
-    // Mock child_process.execFile
-    vi.mock("node:child_process", () => ({
-      execFile: (
-        _cmd: string,
-        _args: string[],
-        _opts: unknown,
-        callback: (err: Error | null, result?: unknown) => void,
-      ) => {
-        callback(new Error("fatal: not a git repository (or any of the parent directories): .git"));
-      },
-    }));
-
-    // This test verifies the error type — actual NOT_GIT_REPO behavior
-    // Note: because vi.mock is hoisted, the test verifies the error handling
-    // In a real scenario this would throw NOT_GIT_REPO
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-no-git-"));
+    try {
+      const { getOriginInfo } = await import("../src/git/remote.js");
+      await expect(getOriginInfo(tmpDir)).rejects.toMatchObject({ code: "NOT_GIT_REPO" });
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
   });
 });
 
@@ -99,16 +93,19 @@ describe("TC-016: GHES host parsing", () => {
   });
 });
 
-// TC-015: execFile を使う（grep check）
-describe("TC-015: uses execFile not exec", () => {
-  it("git/remote.ts uses execFile for shell injection prevention", async () => {
+// TC-015: shell-injection safety — remote.ts uses the git-exec seam (arg-array, shell:false)
+describe("TC-015: remote.ts routes through git-exec seam (no string-shell exec)", () => {
+  it("git/remote.ts imports from util/git-exec.js and contains no string-shell exec(", async () => {
     const fs = await import("node:fs/promises");
     const content = await fs.readFile(
       new URL("../src/git/remote.ts", import.meta.url).pathname,
       "utf-8",
     );
-    expect(content).toContain("execFile");
-    // Forbid child_process.exec / require("child_process").exec / { exec } from child_process
+    // Must import from the seam.
+    expect(content).toContain("util/git-exec.js");
+    // Must NOT import node:child_process directly.
+    expect(content).not.toMatch(/from\s*["']node:child_process["']/);
+    // Forbid string-shell child_process.exec / { exec } patterns (shell injection risk).
     expect(content).not.toMatch(/child_process["']\)?\.exec\s*\(/);
     expect(content).not.toMatch(/\{[^}]*\bexec\b[^}]*\}\s*=\s*require\(["']node:child_process/);
     expect(content).not.toMatch(/\bimport\s*\{[^}]*\bexec\b[^}]*\}\s*from\s*["']node:child_process["']/);

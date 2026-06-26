@@ -14,6 +14,7 @@ import { commonChecks, managedChecks, localChecks } from "../core/doctor/checks/
 import { formatHuman, formatJson } from "../core/doctor/formatter.js";
 import type { DoctorContext, DoctorFs, DoctorConfig, DoctorGitHubClient, ExecFileFunction } from "../core/doctor/types.js";
 import { loadConfig } from "../config/store.js";
+import { stripSecrets } from "../util/env-filter.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
@@ -61,12 +62,23 @@ function buildDoctorConfig(rawConfig: SpecRunnerConfig | null, loadError?: strin
 
 /**
  * Build the execFile adapter.
+ *
+ * Injectable for testing: pass a custom env snapshot and/or a mock execFileAsyncImpl.
+ * Production callers use no-arg form — defaults strip secrets from process.env.
+ *
+ * D4 allowlist note: doctor.ts is a composition-root that needs execFile's
+ * `timeout` + `AbortSignal` options, which are not offered by the git-exec seam.
+ * It strips secrets at the call site instead of routing through the seam.
  */
-const buildExecFile = (): ExecFileFunction => {
+export const buildExecFile = (
+  env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
+  execFileAsyncImpl: typeof execFileAsync = execFileAsync,
+): ExecFileFunction => {
   return async (file: string, args: string[], options?: { timeout?: number; signal?: AbortSignal }) => {
-    const result = await execFileAsync(file, args, {
+    const result = await execFileAsyncImpl(file, args, {
       timeout: options?.timeout,
       signal: options?.signal,
+      env: stripSecrets(env) as Record<string, string>,
     });
     return { stdout: result.stdout as string, stderr: result.stderr as string };
   };

@@ -267,10 +267,7 @@ export class ClaudeCodeRunner implements AgentRunner {
 
     const sdkEnv = stripSecrets(process.env as Record<string, string | undefined>);
     if (this.resolveClaudeCodeOAuthTokenFn) {
-      const resolvedClaudeCodeToken = await this.resolveClaudeCodeOAuthTokenFn(
-        process.env as Record<string, string | undefined>,
-        { optional: true },
-      );
+      const resolvedClaudeCodeToken = await this.resolveClaudeCodeOAuthTokenFn(process.env as Record<string, string | undefined>, { optional: true });
       if (resolvedClaudeCodeToken) {
         sdkEnv["CLAUDE_CODE_OAUTH_TOKEN"] = resolvedClaudeCodeToken.token;
       }

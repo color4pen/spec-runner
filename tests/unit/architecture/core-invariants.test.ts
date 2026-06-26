@@ -495,6 +495,44 @@ describe("B-9: status 直書き禁止 — JobState.status changes must go throug
   });
 });
 
+// ─── B-12: direct node:child_process import ban ──────────────────────────────
+
+describe("B-12: direct `node:child_process` import banned outside seam modules", () => {
+  /**
+   * B-12: subprocess spawn must be confined to the two seam modules
+   * (util/spawn.ts / util/git-exec.ts). Direct node:child_process import
+   * in other files enables env-omission spawns that bypass stripSecrets —
+   * the exact class of vulnerability that the B-6 process.env grep cannot
+   * detect (env-omission spawn writes no process.env reference at all).
+   *
+   * Allowed importers are listed in the B-12 section of arch-allowlist.ts.
+   * Any file not in that allowlist that imports node:child_process is a violation.
+   *
+   * Liveness: the raw match count must be > 0 so a broken grep that returns
+   * nothing cannot pass vacuously.
+   */
+  it("grep finds no direct node:child_process imports outside the B-12 allowlist", () => {
+    const raw = grepE(`"from ['\\\"]node:child_process"`, "src");
+    const allMatches = parseGrepOutput(raw);
+
+    // Exclude test files and comment lines.
+    const candidates = allMatches.filter(
+      (m) =>
+        !m.file.includes("__tests__/") &&
+        !m.file.includes(".test.ts") &&
+        !isCommentLine(m.content),
+    );
+
+    // Liveness: at least one import must be found (seams must exist).
+    expect(candidates.length).toBeGreaterThan(0);
+
+    const b12Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-12");
+    const violations = filterViolations(candidates, b12Entries);
+
+    expect(violationLines(violations)).toEqual([]);
+  });
+});
+
 // ─── T-04: regression guard ───────────────────────────────────────────────────
 
 describe("T-04 regression guard: new forbidden edge not in allowlist triggers detection", () => {
@@ -711,6 +749,67 @@ describe("T-04 regression guard: new forbidden edge not in allowlist triggers de
     expect(violations).toHaveLength(1);
     const first = violations.at(0);
     expect(first?.file).toBe("src/core/command/new-feature.ts");
+  });
+
+  // ── T-09: B-12 and narrowed B-6 regression guards ──────────────────────────
+
+  it("B-12 detection: direct node:child_process import in non-seam file is detected (T-09)", () => {
+    // Inject a synthetic match for a new git helper that directly imports child_process.
+    const injectedMatches: GrepMatch[] = [
+      {
+        file: "src/git/new-helper.ts",
+        line: 1,
+        content: 'import { execFile } from "node:child_process";',
+      },
+    ];
+
+    const b12Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-12");
+    const violations = filterViolations(injectedMatches, b12Entries);
+
+    // src/git/new-helper.ts is NOT in the B-12 allowlist — must be detected.
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.file).toBe("src/git/new-helper.ts");
+  });
+
+  it("B-12 suppression: direct node:child_process import in seam module is suppressed (T-09)", () => {
+    // Inject a synthetic match for the git-exec seam — should be suppressed.
+    const injectedMatches: GrepMatch[] = [
+      {
+        file: "src/util/git-exec.ts",
+        line: 1,
+        content: 'import { spawn as nodeSpawn } from "node:child_process";',
+      },
+    ];
+
+    const b12Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-12");
+    const violations = filterViolations(injectedMatches, b12Entries);
+
+    // src/util/git-exec.ts IS in the B-12 allowlist — must be suppressed.
+    expect(violations).toHaveLength(0);
+  });
+
+  it("B-6 narrowing: cast-bearing raw-env spawn in agent-runner.ts is detected by narrowed entry (T-09)", () => {
+    // Inject a synthetic match simulating a future raw-env spawn in the same file.
+    // The narrowed B-6 entry pattern is 'resolveClaudeCodeOAuthTokenFn(' — this line
+    // does NOT contain that pattern, so it must NOT be suppressed.
+    const injectedMatches: GrepMatch[] = [
+      {
+        file: "src/adapter/claude-code/agent-runner.ts",
+        line: 99,
+        content: "spawn(cmd, args, { env: process.env as Record<string, string | undefined> });",
+      },
+    ];
+
+    const b6Entries = ARCH_ALLOWLIST.filter((e) => e.invariant === "B-6");
+    // Not a stripSecrets call — apply allowlist.
+    const notSeam = injectedMatches.filter(
+      (m) => !m.content.includes("stripSecrets"),
+    );
+    const violations = filterViolations(notSeam, b6Entries);
+
+    // The narrowed entry does NOT cover this line (no resolveClaudeCodeOAuthTokenFn() on it).
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.file).toBe("src/adapter/claude-code/agent-runner.ts");
   });
 
 });
