@@ -17,3 +17,8 @@
 {"type":"transition","ts":"2026-06-26T13:27:07.684Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-26T13:27:07.684Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
 {"type":"transition","ts":"2026-06-26T13:27:07.687Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-06-26T13:30:09.713Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"f6fc221b-a515-406d-89d3-9fdc8ff3166a","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-26T13:27:07.699Z","endedAt":"2026-06-26T13:30:08.044Z"}
+{"type":"lineage","step":"test-case-gen","ts":"2026-06-26T13:30:08.044Z","outputs":[{"path":"specrunner/changes/github-merge-gate-determinism/test-cases.md","hash":"sha256:20c9299e23570db267a113066f4ce27bd92eeae6811d4f83e9e501da1c0d32b4"}],"inputs":[{"path":"specrunner/changes/github-merge-gate-determinism/design.md","hash":"sha256:29d353d7c19ac9a7171345f61b6eb9f54e243a67c97d4f736c0f50435f1e6616"},{"path":"specrunner/changes/github-merge-gate-determinism/tasks.md","hash":"sha256:f381cfd16f6d3c0ab1cd5eb7c8ab2bc5ace720e49f5ccc2bd37b92c851eb78a5"}]}
+{"type":"transition","ts":"2026-06-26T13:30:09.719Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-06-26T13:30:09.721Z","step":"implementer-started","status":"started","message":"Starting implementer step"}

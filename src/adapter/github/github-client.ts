@@ -5,8 +5,8 @@
  *   - Authorization / Accept / X-GitHub-Api-Version headers
  *   - 401 → githubTokenExpiredError() (no retry)
  *   - 429 → Retry-After wait → retry (max 5 retries)
- *   - X-RateLimit-Remaining: 0 → reset wait → retry (max 5 retries)
- *   - 5xx / network error → exponential backoff (max 3 retries)
+ *   - GET/DELETE 5xx / network error → exponential backoff (max 3 retries)
+ *   - POST/PUT 5xx / network error → immediate throw (non-idempotent, no retry)
  *
  * PR operations (D1: extend existing port):
  *   listPullRequests / createPullRequest / getPullRequest / mergePullRequest
@@ -70,6 +70,8 @@ export class GitHubApiClient implements GitHubClient {
         response = await this.fetchFn(url, { ...init, headers });
       } catch (err) {
         // Network / connection error
+        // POST/PUT are non-idempotent — do not retry on network error
+        if (init.method === "POST" || init.method === "PUT") throw err;
         if (attempt5xx >= MAX_5XX_RETRIES) throw err;
         const delay = jitterDelay(attempt5xx);
         await this.sleepFn(delay);
@@ -88,30 +90,20 @@ export class GitHubApiClient implements GitHubClient {
           throw githubApiError(429, `request(${url}): 429 after ${MAX_429_RETRIES} retries`);
         }
         const retryAfterHeader = response.headers.get("Retry-After");
-        const waitSec = retryAfterHeader ? Math.min(parseInt(retryAfterHeader, 10), 60) : 60;
+        const waitSec = retryAfterHeader ? parseRetryAfter(retryAfterHeader) : 60;
         await this.sleepFn(waitSec * 1000);
         attempt429++;
         continue;
       }
 
-      // Secondary rate limit: X-RateLimit-Remaining: 0 — wait until reset (max MAX_429_RETRIES retries)
-      const rateLimitRemaining = response.headers.get("X-RateLimit-Remaining");
-      if (rateLimitRemaining === "0") {
-        if (attempt429 >= MAX_429_RETRIES) {
-          throw githubApiError(429, `request(${url}): X-RateLimit-Remaining=0 after ${MAX_429_RETRIES} retries`);
-        }
-        const resetHeader = response.headers.get("X-RateLimit-Reset");
-        const resetEpochSec = resetHeader ? parseInt(resetHeader, 10) : 0;
-        const waitMs = resetEpochSec
-          ? Math.min(Math.max(resetEpochSec * 1000 - Date.now(), 0), 300_000)
-          : 60_000;
-        if (waitMs > 0) await this.sleepFn(waitMs);
-        attempt429++;
-        continue;
-      }
-
-      // 5xx: exponential backoff, max MAX_5XX_RETRIES retries
+      // 5xx: exponential backoff for GET/DELETE; immediate throw for POST/PUT (non-idempotent)
       if (response.status >= 500) {
+        if (init.method === "POST" || init.method === "PUT") {
+          throw githubApiError(
+            response.status,
+            `request(${url}): 5xx on non-idempotent method ${init.method ?? "POST/PUT"}`,
+          );
+        }
         if (attempt5xx >= MAX_5XX_RETRIES) {
           // Exhausted — throw so all callers handle 5xx consistently
           throw githubApiError(response.status, `request(${url}): 5xx after ${MAX_5XX_RETRIES} retries`);
@@ -319,6 +311,29 @@ export class GitHubApiClient implements GitHubClient {
     });
 
     if (resp.status !== 201) {
+      if (resp.status === 422) {
+        const body = (await resp.json().catch(() => ({}))) as {
+          message?: string;
+          errors?: Array<{ message?: string }>;
+        };
+        const allMessages = [
+          body.message ?? "",
+          ...(body.errors ?? []).map((e) => e.message ?? ""),
+        ].join(" ");
+        if (allMessages.toLowerCase().includes("already exists")) {
+          const existing = await this.listPullRequests(owner, repo, head, base);
+          const pr = existing.find((p) => p.state === "OPEN") ?? existing[0];
+          if (pr) return { url: pr.url, number: pr.number };
+          throw githubApiError(
+            422,
+            `createPullRequest(${owner}/${repo}): already exists but no matching PR found`,
+          );
+        }
+        throw githubApiError(
+          422,
+          `createPullRequest(${owner}/${repo}): ${allMessages.slice(0, 200) || "Unprocessable Entity"}`,
+        );
+      }
       const text = await resp.text().catch(() => "");
       throw githubApiError(resp.status, `createPullRequest(${owner}/${repo}): ${text.slice(0, 200)}`);
     }
@@ -385,6 +400,7 @@ export class GitHubApiClient implements GitHubClient {
       `${this.baseUrl}/repos/${owner}/${repo}/commits/${encodeURIComponent(ref)}/check-runs?per_page=100`;
 
     while (checkRunsUrl !== null) {
+      validateSameOrigin(checkRunsUrl, this.baseUrl);
       const resp = await this.request(checkRunsUrl);
       if (resp.status !== 200) {
         throw githubApiError(resp.status, `getCheckStatus check-runs(${owner}/${repo}@${ref})`);
@@ -399,17 +415,27 @@ export class GitHubApiClient implements GitHubClient {
       checkRunsUrl = parseNextLink(linkHeader);
     }
 
-    // Fetch combined commit statuses (no pagination support needed — max 100)
-    const statusUrl =
-      `${this.baseUrl}/repos/${owner}/${repo}/commits/${encodeURIComponent(ref)}/status`;
-    const statusResp = await this.request(statusUrl);
-    if (statusResp.status !== 200) {
-      throw githubApiError(statusResp.status, `getCheckStatus status(${owner}/${repo}@${ref})`);
+    // Fetch all commit statuses via paginated /statuses endpoint
+    const commitStatuses: Array<{ context: string; state: string }> = [];
+    const seenContexts = new Set<string>();
+    let statusesUrl: string | null =
+      `${this.baseUrl}/repos/${owner}/${repo}/commits/${encodeURIComponent(ref)}/statuses?per_page=100`;
+
+    while (statusesUrl !== null) {
+      validateSameOrigin(statusesUrl, this.baseUrl);
+      const statusResp = await this.request(statusesUrl);
+      if (statusResp.status !== 200) {
+        throw githubApiError(statusResp.status, `getCheckStatus statuses(${owner}/${repo}@${ref})`);
+      }
+      const page = (await statusResp.json()) as Array<{ context: string; state: string }>;
+      for (const s of page) {
+        if (!seenContexts.has(s.context)) {
+          seenContexts.add(s.context);
+          commitStatuses.push(s);
+        }
+      }
+      statusesUrl = parseNextLink(statusResp.headers.get("Link"));
     }
-    const statusData = (await statusResp.json()) as {
-      statuses: Array<{ context: string; state: string }>;
-    };
-    const commitStatuses = statusData.statuses;
 
     const total = checkRuns.length + commitStatuses.length;
 
@@ -491,6 +517,7 @@ export class GitHubApiClient implements GitHubClient {
       `${this.baseUrl}/repos/${owner}/${repo}/pulls/${prNumber}/files?per_page=100`;
 
     while (nextUrl !== null) {
+      validateSameOrigin(nextUrl, this.baseUrl);
       const resp = await this.request(nextUrl);
       if (resp.status !== 200) {
         throw githubApiError(resp.status, `listPullRequestFiles(${owner}/${repo}#${prNumber})`);
@@ -550,6 +577,10 @@ export class GitHubApiClient implements GitHubClient {
 
       if (resp.status === 405 || resp.status === 409) {
         const data = (await resp.json().catch(() => ({ message: "" }))) as { message?: string };
+        // 405 "already merged" → report as success (idempotent)
+        if (resp.status === 405 && (data.message ?? "").toLowerCase().includes("already merged")) {
+          return { merged: true, message: "Pull Request already merged" };
+        }
         return { merged: false, message: data.message ?? `Merge not allowed (status ${resp.status})` };
       }
 
@@ -589,6 +620,7 @@ export class GitHubApiClient implements GitHubClient {
       `${this.baseUrl}/repos/${owner}/${repo}/issues?labels=${encodeURIComponent(label)}&state=open&per_page=100`;
 
     while (nextUrl !== null) {
+      validateSameOrigin(nextUrl, this.baseUrl);
       const resp = await this.request(nextUrl);
       if (resp.status !== 200) {
         throw githubApiError(resp.status, `searchOpenIssuesByLabel(${owner}/${repo} label=${label})`);
@@ -644,6 +676,7 @@ export class GitHubApiClient implements GitHubClient {
       `${this.baseUrl}/repos/${owner}/${repo}/issues/${issueNumber}/comments?per_page=100`;
 
     while (nextUrl !== null) {
+      validateSameOrigin(nextUrl, this.baseUrl);
       const resp = await this.request(nextUrl);
       if (resp.status !== 200) {
         throw githubApiError(resp.status, `listIssueComments(${owner}/${repo}#${issueNumber})`);
@@ -777,6 +810,49 @@ function normalizeCommitStatus(state: string): "success" | "pending" | "failure"
   if (state === "success") return "success";
   if (state === "pending") return "pending";
   return "failure";
+}
+
+/**
+ * Parse the Retry-After header value.
+ *
+ * Supports:
+ *   - Integer seconds:  "30" → 30 s (capped at 60 s)
+ *   - HTTP-date:        "Wed, 21 Oct 2025 07:28:00 GMT" → seconds until that date (min 1, max 60)
+ *   - Unparseable:      any other value → safe fallback of 60 s (never instant)
+ */
+function parseRetryAfter(header: string): number {
+  // Try integer seconds
+  const asInt = parseInt(header, 10);
+  if (!isNaN(asInt) && asInt >= 0) {
+    return Math.min(asInt, 60);
+  }
+  // Try HTTP-date
+  const asDate = new Date(header).getTime();
+  if (!isNaN(asDate)) {
+    const delaySec = Math.ceil((asDate - Date.now()) / 1000);
+    return Math.min(Math.max(delaySec, 1), 60);
+  }
+  // Safe fallback — never instant
+  return 60;
+}
+
+/**
+ * Verify that `nextUrl` has the same origin (protocol + hostname + port) as `baseUrl`.
+ * Throws GITHUB_API_ERROR if the origins differ, preventing token exfiltration via
+ * a malicious Link header pointing to an attacker-controlled host.
+ *
+ * The initial URL (constructed from `this.baseUrl`) is trusted by construction and
+ * does not need to be validated; only Link-header-derived next URLs require this check.
+ */
+function validateSameOrigin(nextUrl: string, baseUrl: string): void {
+  const next = new URL(nextUrl);
+  const base = new URL(baseUrl);
+  if (next.protocol !== base.protocol || next.hostname !== base.hostname || next.port !== base.port) {
+    throw githubApiError(
+      0,
+      `Pagination next URL origin mismatch: expected ${base.origin}, got ${next.origin}`,
+    );
+  }
 }
 
 /**
