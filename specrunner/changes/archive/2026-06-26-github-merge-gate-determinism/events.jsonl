@@ -86,3 +86,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/github-merge-gate-determinism/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-26T13:58:54.781Z","endedAt":"2026-06-26T13:58:56.299Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-26T13:58:56.299Z","outputs":[{"path":"specrunner/changes/github-merge-gate-determinism/pr-create-result.md","hash":"sha256:53ce3dcfef25e86718a9500b1098a4df169764fcdc433c6438ff485667f2a887"}],"inputs":[{"path":"fix/github-merge-gate-determinism-125b0176","hash":null}]}
 {"type":"transition","ts":"2026-06-26T13:58:56.307Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-26T14:03:31.704Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
