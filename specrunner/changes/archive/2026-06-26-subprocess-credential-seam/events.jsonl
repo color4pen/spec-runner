@@ -98,3 +98,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/subprocess-credential-seam/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-26T13:58:00.557Z","endedAt":"2026-06-26T13:58:02.608Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-26T13:58:02.608Z","outputs":[{"path":"specrunner/changes/subprocess-credential-seam/pr-create-result.md","hash":"sha256:58734ea05f00b7bc09df3995e259b9e8afa30b73b26f8fcbd76b6ac2d15f8c46"}],"inputs":[{"path":"change/subprocess-credential-seam-30ac2f8a","hash":null}]}
 {"type":"transition","ts":"2026-06-26T13:58:02.618Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-26T14:01:22.475Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
