@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "125b0176-a13e-48e4-a13e-44077bcf9fb5",
   "createdAt": "2026-06-26T13:08:19.312Z",
-  "updatedAt": "2026-06-26T13:51:10.203Z",
+  "updatedAt": "2026-06-26T13:54:52.997Z",
   "request": {
     "title": "GitHub adapter の merge/finish ゲートの fail-open を塞ぐ（非冪等リトライ・チェック取りこぼし・Retry-After）",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "cross-boundary-invariants",
+  "step": "regression-gate",
   "status": "running",
   "branch": "fix/github-merge-gate-determinism-125b0176",
   "error": null,
@@ -47,8 +47,34 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "40a1164c89f880b409ad7683b7eb6736ff124688",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 39,
+    "historyCount": 45,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -58,7 +84,9 @@
       "verification": 2,
       "build-fixer": 1,
       "code-review": 1,
-      "cross-boundary-invariants": 1
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
