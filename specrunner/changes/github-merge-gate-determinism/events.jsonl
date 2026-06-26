@@ -78,3 +78,11 @@
 {"type":"transition","ts":"2026-06-26T13:58:30.709Z","step":"conformance","status":"ok","message":"conformance iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-26T13:58:30.709Z","step":"step-transition","status":"ok","message":"conformance → adr-gen"}
 {"type":"transition","ts":"2026-06-26T13:58:30.711Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-06-26T13:58:54.774Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"6d135234-6ff0-45e7-8f85-43cafcd9dc00","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-26T13:58:30.726Z","endedAt":"2026-06-26T13:58:53.309Z"}
+{"type":"transition","ts":"2026-06-26T13:58:54.778Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-06-26T13:58:54.780Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-06-26T13:58:56.300Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/github-merge-gate-determinism/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-26T13:58:54.781Z","endedAt":"2026-06-26T13:58:56.299Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-06-26T13:58:56.299Z","outputs":[{"path":"specrunner/changes/github-merge-gate-determinism/pr-create-result.md","hash":"sha256:53ce3dcfef25e86718a9500b1098a4df169764fcdc433c6438ff485667f2a887"}],"inputs":[{"path":"fix/github-merge-gate-determinism-125b0176","hash":null}]}
+{"type":"transition","ts":"2026-06-26T13:58:56.307Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
