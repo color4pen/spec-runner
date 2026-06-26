@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "125b0176-a13e-48e4-a13e-44077bcf9fb5",
   "createdAt": "2026-06-26T13:08:19.312Z",
-  "updatedAt": "2026-06-26T13:08:21.251Z",
+  "updatedAt": "2026-06-26T13:12:10.416Z",
   "request": {
     "title": "GitHub adapter の merge/finish ゲートの fail-open を塞ぐ（非冪等リトライ・チェック取りこぼし・Retry-After）",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "fix/github-merge-gate-determinism-125b0176",
   "error": null,
@@ -48,7 +48,9 @@
     }
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
