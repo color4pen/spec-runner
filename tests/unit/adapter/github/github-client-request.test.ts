@@ -1,20 +1,30 @@
 /**
  * Unit tests for GitHubApiClient request() middleware.
  *
- * Tests are exercised via public methods (getRefSha / verifyBranch) since
- * request() is private. sleepFn is injected so tests run without real delays.
+ * Tests are exercised via public methods (getRefSha / verifyBranch / createIssueComment /
+ * mergePullRequest) since request() is private. sleepFn is injected so tests run without
+ * real delays.
  *
  * TC-RC-001: X-GitHub-Api-Version header on every request
  * TC-RC-002: Authorization: token <token> header
  * TC-RC-003: 401 → immediate throw, no retry
  * TC-RC-004: 429 → wait Retry-After seconds, then retry
  * TC-RC-005: Retry-After capped at 60 seconds
- * TC-RC-006: X-RateLimit-Remaining: 0 → wait until X-RateLimit-Reset, then retry
- * TC-RC-007: 5xx → exponential backoff, succeeds on eventual 200
- * TC-RC-008: 5xx retry exhausted (4 total attempts) → throws GITHUB_API_ERROR
+ * TC-RC-006: 2xx + X-RateLimit-Remaining:0 → returned immediately (no rate-limit retry)
+ * TC-RC-007: GET 5xx → exponential backoff, succeeds on eventual 200 (unaffected by T-02)
+ * TC-RC-008: GET 5xx retry exhausted (4 total attempts) → throws GITHUB_API_ERROR
  * TC-RC-009: 429 retry exhausted (6 total attempts) → throws GITHUB_API_ERROR
- * TC-RC-010: X-RateLimit-Remaining=0 retry exhausted (6 total attempts) → throws GITHUB_API_ERROR
- * TC-RC-011: 429 and rate-limit mixed, total 6 attempts → throws GITHUB_API_ERROR
+ * TC-RC-010: 200 + X-RateLimit-Remaining=0 → returned immediately (not retried)
+ * TC-RC-012: POST 201 + X-RateLimit-Remaining:0 → returned immediately without second fetch
+ * TC-RC-013: POST 500 → throws GITHUB_API_ERROR after exactly 1 fetch, no backoff sleep
+ * TC-RC-014: PUT 502 → throws GITHUB_API_ERROR after exactly 1 fetch, no backoff sleep
+ * TC-RC-016: Retry-After HTTP-date ~30s future → sleepFn in [25_000, 60_000]
+ * TC-RC-017: Retry-After garbage → sleepFn(60_000) fallback
+ * TC-RC-018: Retry-After HTTP-date in past → sleepFn(1_000) floor
+ *
+ * Note: TC-RC-011 (429 + rate-limit mixed exhaustion) is removed — the X-RateLimit-Remaining:0
+ * retry block was eliminated (T-01). The 429 exhaustion path is covered by TC-RC-009 alone.
+ * Note: TC-RC-007/TC-RC-008 confirm that GET 5xx retry behavior is unaffected by T-02.
  */
 import { describe, it, expect, vi } from "vitest";
 import { GitHubApiClient } from "../../../../src/adapter/github/github-client.js";
@@ -25,6 +35,7 @@ const REPO = "testrepo";
 const BRANCH = "main";
 const TOKEN = "ghp_testtoken";
 const SHA = "abc123def456abc123def456abc123def456abc1";
+const PR_NUMBER = 42;
 
 /** Build a response stub with controllable headers. */
 function makeResponse(
@@ -177,50 +188,43 @@ describe("TC-RC-005: Retry-After 60s cap", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-RC-006: X-RateLimit-Remaining: 0 → wait until X-RateLimit-Reset
+// TC-RC-006: 2xx + X-RateLimit-Remaining:0 → returned immediately (no rate-limit retry)
+// The X-RateLimit-Remaining:0 retry block was removed (T-01). A successful response is
+// returned to the caller regardless of rate-limit headers.
 // ---------------------------------------------------------------------------
-describe("TC-RC-006: X-RateLimit-Remaining=0 → reset wait", () => {
-  it("waits until X-RateLimit-Reset epoch when remaining is 0", async () => {
-    // Reset epoch 30 seconds from now
-    const resetEpoch = Math.floor((Date.now() + 30_000) / 1000);
-
-    const mockFetch = vi
-      .fn()
-      .mockResolvedValueOnce(
-        makeResponse(200, { message: "rate limited" }, {
-          "X-RateLimit-Remaining": "0",
-          "X-RateLimit-Reset": String(resetEpoch),
-        }),
-      )
-      .mockResolvedValueOnce(okRefShaResponse());
-
+describe("TC-RC-006: 2xx + X-RateLimit-Remaining:0 → returned immediately", () => {
+  it("returns 200 result immediately when X-RateLimit-Remaining is 0 (GET)", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      makeResponse(200, { object: { sha: SHA } }, { "X-RateLimit-Remaining": "0" }),
+    );
     const sleepFn = vi.fn().mockResolvedValue(undefined);
     const client = buildClient(mockFetch as unknown as typeof fetch, sleepFn);
 
-    await client.getRefSha(OWNER, REPO, BRANCH);
+    const result = await client.getRefSha(OWNER, REPO, BRANCH);
 
-    expect(mockFetch).toHaveBeenCalledTimes(2);
-    expect(sleepFn).toHaveBeenCalledTimes(1);
-    // Sleep duration should be ~30s (within reasonable tolerance)
-    const [sleepMs] = sleepFn.mock.calls[0] as [number];
-    expect(sleepMs).toBeGreaterThan(25_000);
-    expect(sleepMs).toBeLessThanOrEqual(300_000);
+    expect(result).toBe(SHA);
+    // Exactly 1 fetch — no rate-limit retry
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    // No sleep — rate-limit wait was removed
+    expect(sleepFn).not.toHaveBeenCalled();
   });
 
-  it("falls back to 60s when X-RateLimit-Reset header is absent", async () => {
-    const mockFetch = vi
-      .fn()
-      .mockResolvedValueOnce(
-        makeResponse(200, {}, { "X-RateLimit-Remaining": "0" }),
-      )
-      .mockResolvedValueOnce(okRefShaResponse());
-
+  it("also returns immediately when X-RateLimit-Remaining:0 + X-RateLimit-Reset header present", async () => {
+    const resetEpoch = Math.floor((Date.now() + 30_000) / 1000);
+    const mockFetch = vi.fn().mockResolvedValue(
+      makeResponse(200, { object: { sha: SHA } }, {
+        "X-RateLimit-Remaining": "0",
+        "X-RateLimit-Reset": String(resetEpoch),
+      }),
+    );
     const sleepFn = vi.fn().mockResolvedValue(undefined);
     const client = buildClient(mockFetch as unknown as typeof fetch, sleepFn);
 
-    await client.getRefSha(OWNER, REPO, BRANCH);
+    const result = await client.getRefSha(OWNER, REPO, BRANCH);
 
-    expect(sleepFn).toHaveBeenCalledWith(60_000);
+    expect(result).toBe(SHA);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(sleepFn).not.toHaveBeenCalled();
   });
 });
 
@@ -328,58 +332,162 @@ describe("TC-RC-009: 429 retry exhausted → throw", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-RC-010: X-RateLimit-Remaining=0 retry exhausted → throws GITHUB_API_ERROR
+// TC-RC-010: 200 + X-RateLimit-Remaining:0 → returned immediately (not retried)
+// After T-01 removed the rate-limit retry block, a 200 with Remaining:0 is returned
+// to the caller. getRefSha should succeed with the SHA from the single response.
 // ---------------------------------------------------------------------------
-describe("TC-RC-010: X-RateLimit-Remaining=0 retry exhausted → throw", () => {
-  it("throws GITHUB_API_ERROR after 5 retries (6 total attempts) on persistent rate-limit", async () => {
-    // 6 responses: all status 200 with X-RateLimit-Remaining: 0
-    const mockFetch = vi
-      .fn()
-      .mockResolvedValue(
-        makeResponse(200, {}, { "X-RateLimit-Remaining": "0", "X-RateLimit-Reset": "0" }),
-      );
+describe("TC-RC-010: 200 + X-RateLimit-Remaining:0 → returned immediately", () => {
+  it("returns SHA from 200 response with Remaining:0, fetchFn called once", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      makeResponse(
+        200,
+        { object: { sha: SHA } },
+        { "X-RateLimit-Remaining": "0", "X-RateLimit-Reset": "0" },
+      ),
+    );
 
     const sleepFn = vi.fn().mockResolvedValue(undefined);
     const client = buildClient(mockFetch as unknown as typeof fetch, sleepFn);
 
-    await expect(client.getRefSha(OWNER, REPO, BRANCH)).rejects.toMatchObject({
-      code: ERROR_CODES.GITHUB_API_ERROR,
-    });
+    const result = await client.getRefSha(OWNER, REPO, BRANCH);
+    expect(result).toBe(SHA);
+    // Exactly 1 fetch — no rate-limit retry
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+});
 
-    // 6 total fetch calls
-    expect(mockFetch).toHaveBeenCalledTimes(6);
+// Note: TC-RC-011 (429 + rate-limit mixed exhaustion) has been removed.
+// The X-RateLimit-Remaining:0 retry block was eliminated in T-01, so the shared
+// attempt429 counter is no longer incremented by rate-limit responses. The 429
+// exhaustion path is fully covered by TC-RC-009.
+
+// ---------------------------------------------------------------------------
+// TC-RC-012: POST 201 + X-RateLimit-Remaining:0 → returned immediately (T-01)
+// ---------------------------------------------------------------------------
+describe("TC-RC-012: POST 201 + X-RateLimit-Remaining:0 → returned immediately", () => {
+  it("returns 201 result immediately without re-fire on rate-limit header", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      makeResponse(
+        201,
+        { id: 99, html_url: "https://github.com/testowner/testrepo/issues/1#issuecomment-99" },
+        { "X-RateLimit-Remaining": "0" },
+      ),
+    );
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const client = buildClient(mockFetch as unknown as typeof fetch, sleepFn);
+
+    const result = await client.createIssueComment(OWNER, REPO, 1, "hello");
+
+    expect(result.id).toBe(99);
+    // Exactly 1 fetch — no rate-limit re-fire
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    // No sleep called for rate-limit or any other reason
+    expect(sleepFn).not.toHaveBeenCalled();
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-RC-011: 429 and rate-limit mixed → combined attempt429 counter hits limit
+// TC-RC-013: POST 500 → immediate throw, no retry (T-02)
+// GET 5xx retries are unaffected (TC-RC-007 / TC-RC-008 confirm this).
 // ---------------------------------------------------------------------------
-describe("TC-RC-011: 429 and rate-limit mixed → throw after combined limit", () => {
-  it("throws GITHUB_API_ERROR when 429 and rate-limit together exhaust the retry budget", async () => {
-    // 3x 429, then 3x rate-limit (status 200 + Remaining=0) = 6 total → throw on 6th
+describe("TC-RC-013: POST 500 → immediate throw, no retry", () => {
+  it("throws GITHUB_API_ERROR after exactly 1 fetch for POST 5xx, no backoff sleep", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(makeResponse(500, {}));
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const client = buildClient(mockFetch as unknown as typeof fetch, sleepFn);
+
+    await expect(
+      client.createIssueComment(OWNER, REPO, 1, "hello"),
+    ).rejects.toMatchObject({ code: ERROR_CODES.GITHUB_API_ERROR });
+
+    // POST must not retry on 5xx — exactly 1 fetch
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    // No backoff sleep for non-retried POST
+    expect(sleepFn).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RC-014: PUT 502 → immediate throw, no retry (T-02)
+// ---------------------------------------------------------------------------
+describe("TC-RC-014: PUT 502 → immediate throw, no retry", () => {
+  it("throws GITHUB_API_ERROR after exactly 1 fetch for PUT 5xx, no backoff sleep", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(makeResponse(502, {}));
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const client = buildClient(mockFetch as unknown as typeof fetch, sleepFn);
+
+    await expect(
+      client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" }),
+    ).rejects.toMatchObject({ code: ERROR_CODES.GITHUB_API_ERROR });
+
+    // PUT must not retry on 5xx — exactly 1 fetch
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    // No backoff sleep for non-retried PUT (neither from request() nor from retryWithBackoff)
+    expect(sleepFn).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RC-016: Retry-After HTTP-date ~30s future → sleepFn in [25_000, 60_000] (T-06)
+// ---------------------------------------------------------------------------
+describe("TC-RC-016: Retry-After HTTP-date future → sleepFn in [25_000, 60_000]", () => {
+  it("sleeps for ~30s when Retry-After is an HTTP-date 30s in the future", async () => {
+    const futureDate = new Date(Date.now() + 30_000).toUTCString();
     const mockFetch = vi
       .fn()
-      .mockResolvedValueOnce(makeResponse(429, {}, { "Retry-After": "1" }))
-      .mockResolvedValueOnce(makeResponse(429, {}, { "Retry-After": "1" }))
-      .mockResolvedValueOnce(makeResponse(429, {}, { "Retry-After": "1" }))
-      .mockResolvedValueOnce(
-        makeResponse(200, {}, { "X-RateLimit-Remaining": "0", "X-RateLimit-Reset": "0" }),
-      )
-      .mockResolvedValueOnce(
-        makeResponse(200, {}, { "X-RateLimit-Remaining": "0", "X-RateLimit-Reset": "0" }),
-      )
-      .mockResolvedValueOnce(
-        makeResponse(200, {}, { "X-RateLimit-Remaining": "0", "X-RateLimit-Reset": "0" }),
-      );
+      .mockResolvedValueOnce(makeResponse(429, {}, { "Retry-After": futureDate }))
+      .mockResolvedValueOnce(okRefShaResponse());
 
     const sleepFn = vi.fn().mockResolvedValue(undefined);
     const client = buildClient(mockFetch as unknown as typeof fetch, sleepFn);
 
-    await expect(client.getRefSha(OWNER, REPO, BRANCH)).rejects.toMatchObject({
-      code: ERROR_CODES.GITHUB_API_ERROR,
-    });
+    const result = await client.getRefSha(OWNER, REPO, BRANCH);
+    expect(result).toBe(SHA);
 
-    // 6 fetch calls total (initial + 5 retries)
-    expect(mockFetch).toHaveBeenCalledTimes(6);
+    expect(sleepFn).toHaveBeenCalledTimes(1);
+    const [sleepMs] = sleepFn.mock.calls[0] as [number];
+    // Should be close to 30s, capped at 60s
+    expect(sleepMs).toBeGreaterThanOrEqual(25_000);
+    expect(sleepMs).toBeLessThanOrEqual(60_000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RC-017: Retry-After garbage → sleepFn(60_000) fallback (T-06)
+// ---------------------------------------------------------------------------
+describe("TC-RC-017: Retry-After garbage → sleepFn(60_000) fallback", () => {
+  it("uses 60s safe fallback for unparseable Retry-After value", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(makeResponse(429, {}, { "Retry-After": "garbage" }))
+      .mockResolvedValueOnce(okRefShaResponse());
+
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const client = buildClient(mockFetch as unknown as typeof fetch, sleepFn);
+
+    await client.getRefSha(OWNER, REPO, BRANCH);
+
+    expect(sleepFn).toHaveBeenCalledWith(60_000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RC-018: Retry-After HTTP-date in past → sleepFn(1_000) floor (T-06)
+// ---------------------------------------------------------------------------
+describe("TC-RC-018: Retry-After HTTP-date in past → sleepFn(1_000) floor", () => {
+  it("uses 1s floor when Retry-After HTTP-date is already in the past", async () => {
+    const pastDate = new Date(Date.now() - 5_000).toUTCString();
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(makeResponse(429, {}, { "Retry-After": pastDate }))
+      .mockResolvedValueOnce(okRefShaResponse());
+
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const client = buildClient(mockFetch as unknown as typeof fetch, sleepFn);
+
+    await client.getRefSha(OWNER, REPO, BRANCH);
+
+    // Past HTTP-date → Math.max(delay, 1) → 1s minimum, not 0 or negative
+    expect(sleepFn).toHaveBeenCalledWith(1_000);
   });
 });

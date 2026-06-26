@@ -20,6 +20,7 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { GitHubApiClient } from "../../../../src/adapter/github/github-client.js";
+import { ERROR_CODES } from "../../../../src/errors.js";
 
 const OWNER = "testowner";
 const REPO = "testrepo";
@@ -554,15 +555,35 @@ function checkRunsResponse(
   } as unknown as Response;
 }
 
-/** Build a combined status response stub. */
+/**
+ * Build a commit statuses response stub for GET /commits/{ref}/statuses.
+ * Returns the array directly (GitHub REST returns an array, not a wrapper object).
+ * The optional linkHeader simulates pagination Link headers.
+ */
 function commitStatusResponse(
   statuses: Array<{ context: string; state: string }>,
+  linkHeader?: string,
 ): Response {
   return {
     status: 200,
-    headers: { get: () => null },
-    json: () => Promise.resolve({ statuses }),
+    headers: {
+      get: (name: string) => {
+        if (name.toLowerCase() === "link") return linkHeader ?? null;
+        return null;
+      },
+    },
+    json: () => Promise.resolve(statuses),
     text: () => Promise.resolve(""),
+  } as unknown as Response;
+}
+
+/** Build an error response stub for any status. */
+function _errorResponse(status: number): Response {
+  return {
+    status,
+    headers: { get: () => null },
+    json: () => Promise.resolve({ message: "Error" }),
+    text: () => Promise.resolve("Error"),
   } as unknown as Response;
 }
 
@@ -740,5 +761,376 @@ describe("TC-CS: getCheckStatus", () => {
 
     expect(result.state).toBe("success");
     expect(result.total).toBe(2);
+  });
+
+  // ---------------------------------------------------------------------------
+  // TC-CS-013: Two-page /statuses response — page 2 failure visible in rollup (T-05)
+  // ---------------------------------------------------------------------------
+  it("TC-CS-013: two-page statuses, page 2 failure → in result.failing", async () => {
+    const page2Link =
+      `<https://api.github.com/repos/${OWNER}/${REPO}/commits/${REF}/statuses?per_page=100&page=2>; rel="next"`;
+
+    const mockFetch = vi.fn()
+      // check-runs (1 page, no items)
+      .mockResolvedValueOnce(checkRunsResponse([]))
+      // statuses page 1 with Link to page 2
+      .mockResolvedValueOnce(commitStatusResponse(
+        [{ context: "ci/fast-check", state: "success" }],
+        page2Link,
+      ))
+      // statuses page 2 (no Link)
+      .mockResolvedValueOnce(commitStatusResponse([
+        { context: "ci/slow-check", state: "failure" },
+      ]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getCheckStatus(OWNER, REPO, REF);
+
+    expect(result.state).toBe("failure");
+    expect(result.failing).toContain("ci/slow-check");
+    // 1 check-runs + 2 statuses pages = 3 fetches
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+  });
+
+  // ---------------------------------------------------------------------------
+  // TC-CS-014: Duplicate context across pages — first (newest) wins (T-05)
+  // ---------------------------------------------------------------------------
+  it("TC-CS-014: duplicate context across pages → first (newest) wins", async () => {
+    const page2Link =
+      `<https://api.github.com/repos/${OWNER}/${REPO}/commits/${REF}/statuses?per_page=100&page=2>; rel="next"`;
+
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(checkRunsResponse([]))
+      // Page 1: success for "ci/check"
+      .mockResolvedValueOnce(commitStatusResponse(
+        [{ context: "ci/check", state: "success" }],
+        page2Link,
+      ))
+      // Page 2: failure for same context (should be ignored — first seen wins)
+      .mockResolvedValueOnce(commitStatusResponse([
+        { context: "ci/check", state: "failure" },
+      ]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getCheckStatus(OWNER, REPO, REF);
+
+    // First occurrence (success) wins; duplicate failure is suppressed
+    expect(result.state).toBe("success");
+    expect(result.failing).not.toContain("ci/check");
+  });
+
+  // ---------------------------------------------------------------------------
+  // TC-CS-015: Single-page /statuses response with no Link header (T-05)
+  // ---------------------------------------------------------------------------
+  it("TC-CS-015: single-page statuses, no Link → no extra statuses fetch", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(checkRunsResponse([
+        { name: "ci/build", status: "completed", conclusion: "success" },
+      ]))
+      // Single statuses page — no Link header
+      .mockResolvedValueOnce(commitStatusResponse([
+        { context: "ci/status", state: "success" },
+      ]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getCheckStatus(OWNER, REPO, REF);
+
+    expect(result.state).toBe("success");
+    expect(result.total).toBe(2);
+    // 1 check-runs + 1 statuses = exactly 2 fetches (no extra statuses page fetch)
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-PM-023/024: mergePullRequest — 405 "already merged" → { merged: true } (T-04)
+// ---------------------------------------------------------------------------
+
+describe("TC-PM-023/024: mergePullRequest 405 already-merged idempotency", () => {
+  it("TC-PM-023: 405 'Pull Request already merged' → { merged: true }", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      mergeResponse(405, { message: "Pull Request already merged" }),
+    );
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result.merged).toBe(true);
+    // Already-merged is returned immediately — no retry
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("TC-PM-024: 405 'Pull request already merged' (lowercase r) → { merged: true }", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      mergeResponse(405, { message: "Pull request already merged" }),
+    );
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    // Case-insensitive match — lowercase 'r' is still recognized
+    expect(result.merged).toBe(true);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("TC-PM-002 (unchanged): 405 'not mergeable' → { merged: false }", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      mergeResponse(405, { message: "Pull Request is not mergeable" }),
+    );
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.mergePullRequest(OWNER, REPO, PR_NUMBER, { mergeMethod: "squash" });
+
+    expect(result.merged).toBe(false);
+    expect(result.message).toBeTruthy();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-CP: createPullRequest idempotency on 422 (T-03)
+// ---------------------------------------------------------------------------
+
+describe("TC-CP: createPullRequest 422 idempotency", () => {
+  /** Build a 422 response with "already exists" in the message body. */
+  function alreadyExistsResponse(): Response {
+    return {
+      status: 422,
+      headers: { get: () => null },
+      json: () =>
+        Promise.resolve({
+          message: "Validation Failed",
+          errors: [{ message: "A pull request already exists for testowner:feature/my-branch" }],
+        }),
+      text: () => Promise.resolve(""),
+    } as unknown as Response;
+  }
+
+  /** Build a 422 response with an unrelated message. */
+  function unrelatedValidationFailure(): Response {
+    return {
+      status: 422,
+      headers: { get: () => null },
+      json: () => Promise.resolve({ message: "Validation Failed", errors: [] }),
+      text: () => Promise.resolve(""),
+    } as unknown as Response;
+  }
+
+  /** Build a 200 listPullRequests response returning one open PR. */
+  function listPrsResponse(prs: Array<{
+    html_url: string;
+    number: number;
+    state: string;
+    merged_at: string | null;
+  }>): Response {
+    return {
+      status: 200,
+      headers: { get: () => null },
+      json: () => Promise.resolve(prs),
+      text: () => Promise.resolve(""),
+    } as unknown as Response;
+  }
+
+  it("TC-CP-001: 422 'already exists' → listPullRequests called → returns OPEN PR", async () => {
+    const mockFetch = vi.fn()
+      // POST /pulls → 422 "already exists"
+      .mockResolvedValueOnce(alreadyExistsResponse())
+      // GET /pulls?head=...&state=all → 200 with 1 OPEN PR
+      .mockResolvedValueOnce(listPrsResponse([
+        {
+          html_url: "https://github.com/testowner/testrepo/pull/99",
+          number: 99,
+          state: "open",
+          merged_at: null,
+        },
+      ]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.createPullRequest(
+      OWNER, REPO, "feature/my-branch", "main", "My PR", "body",
+    );
+
+    expect(result.number).toBe(99);
+    expect(result.url).toBe("https://github.com/testowner/testrepo/pull/99");
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("TC-CP-002: 422 unrelated error → throws GITHUB_API_ERROR", async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(unrelatedValidationFailure());
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    await expect(
+      client.createPullRequest(OWNER, REPO, "feature/my-branch", "main", "My PR", "body"),
+    ).rejects.toMatchObject({ code: ERROR_CODES.GITHUB_API_ERROR });
+
+    // No listPullRequests call — 422 without "already exists"
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("TC-CP-003: 422 'already exists' + listPullRequests returns [] → throws GITHUB_API_ERROR", async () => {
+    const mockFetch = vi.fn()
+      // POST /pulls → 422 "already exists"
+      .mockResolvedValueOnce(alreadyExistsResponse())
+      // GET /pulls?head=...&state=all → 200 with [] (no PR found)
+      .mockResolvedValueOnce(listPrsResponse([]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    await expect(
+      client.createPullRequest(OWNER, REPO, "feature/my-branch", "main", "My PR", "body"),
+    ).rejects.toMatchObject({ code: ERROR_CODES.GITHUB_API_ERROR });
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-SO: same-origin guard for pagination Link URLs (T-07)
+// ---------------------------------------------------------------------------
+
+describe("TC-SO: same-origin pagination guard", () => {
+  const EVIL_ORIGIN = "https://evil.example.com";
+
+  it("TC-SO-001: getCheckStatus check-runs cross-origin Link → GITHUB_API_ERROR, fetchFn called once", async () => {
+    const evilLink =
+      `<${EVIL_ORIGIN}/repos/${OWNER}/${REPO}/commits/${REF}/check-runs?page=2>; rel="next"`;
+
+    const mockFetch = vi.fn()
+      // Page 1 of check-runs with an evil Link header
+      .mockResolvedValueOnce(checkRunsResponse(
+        [{ name: "ci/build", status: "completed", conclusion: "success" }],
+        evilLink,
+      ));
+    // No second mock needed — the cross-origin URL must never be fetched
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    await expect(client.getCheckStatus(OWNER, REPO, REF)).rejects.toMatchObject({
+      code: ERROR_CODES.GITHUB_API_ERROR,
+    });
+
+    // Only the first page fetch happens; the evil URL is rejected before fetch
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("TC-SO-002: getCheckStatus commit-statuses cross-origin Link → GITHUB_API_ERROR", async () => {
+    const evilLink =
+      `<${EVIL_ORIGIN}/repos/${OWNER}/${REPO}/commits/${REF}/statuses?page=2>; rel="next"`;
+
+    const mockFetch = vi.fn()
+      // check-runs (1 page, no items)
+      .mockResolvedValueOnce(checkRunsResponse([]))
+      // statuses page 1 with evil Link
+      .mockResolvedValueOnce(commitStatusResponse(
+        [{ context: "ci/check", state: "success" }],
+        evilLink,
+      ));
+    // statuses page 2 evil URL must never be fetched
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    await expect(client.getCheckStatus(OWNER, REPO, REF)).rejects.toMatchObject({
+      code: ERROR_CODES.GITHUB_API_ERROR,
+    });
+
+    // check-runs (1) + statuses page 1 (1) = 2; evil URL not fetched
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("TC-SO-003: listPullRequestFiles cross-origin Link → GITHUB_API_ERROR, fetchFn called once", async () => {
+    const evilLink = `<${EVIL_ORIGIN}/repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}/files?page=2>; rel="next"`;
+
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({
+        status: 200,
+        headers: {
+          get: (name: string) =>
+            name.toLowerCase() === "link" ? evilLink : null,
+        },
+        json: () => Promise.resolve([{ filename: "README.md" }]),
+        text: () => Promise.resolve(""),
+      } as unknown as Response);
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    await expect(client.listPullRequestFiles(OWNER, REPO, PR_NUMBER)).rejects.toMatchObject({
+      code: ERROR_CODES.GITHUB_API_ERROR,
+    });
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("TC-SO-004: listIssueComments cross-origin Link → GITHUB_API_ERROR", async () => {
+    const evilLink =
+      `<${EVIL_ORIGIN}/repos/${OWNER}/${REPO}/issues/${PR_NUMBER}/comments?page=2>; rel="next"`;
+
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({
+        status: 200,
+        headers: {
+          get: (name: string) =>
+            name.toLowerCase() === "link" ? evilLink : null,
+        },
+        json: () =>
+          Promise.resolve([{
+            id: 1,
+            body: "hello",
+            author_association: "MEMBER",
+            created_at: "2024-01-01T00:00:00Z",
+          }]),
+        text: () => Promise.resolve(""),
+      } as unknown as Response);
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    await expect(client.listIssueComments(OWNER, REPO, PR_NUMBER)).rejects.toMatchObject({
+      code: ERROR_CODES.GITHUB_API_ERROR,
+    });
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("TC-SO-004b: searchOpenIssuesByLabel cross-origin Link → GITHUB_API_ERROR", async () => {
+    const evilLink =
+      `<${EVIL_ORIGIN}/repos/${OWNER}/${REPO}/issues?labels=bug&page=2>; rel="next"`;
+
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({
+        status: 200,
+        headers: {
+          get: (name: string) =>
+            name.toLowerCase() === "link" ? evilLink : null,
+        },
+        json: () =>
+          Promise.resolve([{ number: 1, title: "Issue 1", body: "body", pull_request: undefined }]),
+        text: () => Promise.resolve(""),
+      } as unknown as Response);
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    await expect(client.searchOpenIssuesByLabel(OWNER, REPO, "bug")).rejects.toMatchObject({
+      code: ERROR_CODES.GITHUB_API_ERROR,
+    });
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("TC-SO-005: same-origin next URL → pagination continues normally (TC-CS-012 regression)", async () => {
+    // TC-CS-012 already exercises same-origin check-runs pagination.
+    // This explicit test confirms that a same-origin next URL does not throw.
+    const sameOriginLink =
+      `<https://api.github.com/repos/${OWNER}/${REPO}/commits/${REF}/check-runs?per_page=100&page=2>; rel="next"`;
+
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce(checkRunsResponse(
+        [{ name: "ci/build", status: "completed", conclusion: "success" }],
+        sameOriginLink,
+      ))
+      .mockResolvedValueOnce(checkRunsResponse(
+        [{ name: "ci/test", status: "completed", conclusion: "success" }],
+      ))
+      .mockResolvedValueOnce(commitStatusResponse([]));
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getCheckStatus(OWNER, REPO, REF);
+
+    // No error — same-origin pagination continues normally
+    expect(result.state).toBe("success");
+    expect(result.total).toBe(2);
+    expect(mockFetch).toHaveBeenCalledTimes(3);
   });
 });
