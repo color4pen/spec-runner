@@ -142,3 +142,90 @@ describe("evaluateActivation — reason on success", () => {
     expect(result.reason).toBe("activated");
   });
 });
+
+// ---------------------------------------------------------------------------
+// changedFilesDerivable — fail-closed behavior
+// ---------------------------------------------------------------------------
+
+describe("evaluateActivation — changedFilesDerivable (fail-closed)", () => {
+  it("paths present + changedFilesDerivable:false + empty changedFiles → activated:true", () => {
+    const result = evaluateActivation(
+      { paths: ["src/auth/**"] },
+      { changedFiles: [], requestType: "bug-fix", changedFilesDerivable: false },
+    );
+    expect(result.activated).toBe(true);
+    expect(result.reason).toBe("activated");
+  });
+
+  it("paths present + changedFilesDerivable:false + non-matching changedFiles → activated:true (glob not attempted)", () => {
+    const result = evaluateActivation(
+      { paths: ["src/auth/**"] },
+      { changedFiles: ["src/util/helper.ts"], requestType: "bug-fix", changedFilesDerivable: false },
+    );
+    expect(result.activated).toBe(true);
+    expect(result.reason).toBe("activated");
+  });
+
+  it("requestTypes mismatch + paths present + changedFilesDerivable:false → activated:false, reason mentions requestType", () => {
+    const result = evaluateActivation(
+      { requestTypes: ["spec-change"], paths: ["src/auth/**"] },
+      { changedFiles: [], requestType: "bug-fix", changedFilesDerivable: false },
+    );
+    expect(result.activated).toBe(false);
+    expect(result.reason).toContain("requestType");
+    expect(result.reason).toContain("bug-fix");
+  });
+
+  it("requestTypes match + paths present + changedFilesDerivable:false → activated:true", () => {
+    const result = evaluateActivation(
+      { requestTypes: ["bug-fix"], paths: ["src/auth/**"] },
+      { changedFiles: [], requestType: "bug-fix", changedFilesDerivable: false },
+    );
+    expect(result.activated).toBe(true);
+    expect(result.reason).toBe("activated");
+  });
+
+  it("paths present + changedFilesDerivable:true + non-matching changedFiles → activated:false (regression: derivable-true still skips on no match)", () => {
+    const result = evaluateActivation(
+      { paths: ["src/auth/**"] },
+      { changedFiles: ["src/util/helper.ts"], requestType: "bug-fix", changedFilesDerivable: true },
+    );
+    expect(result.activated).toBe(false);
+    expect(result.reason).toContain("no changed files matched");
+    expect(result.reason).toContain("src/auth/**");
+  });
+
+  it("paths present + changedFilesDerivable omitted + non-matching changedFiles → activated:false (default-derivable equals true case)", () => {
+    const result = evaluateActivation(
+      { paths: ["src/auth/**"] },
+      { changedFiles: ["src/util/helper.ts"], requestType: "bug-fix" },
+    );
+    expect(result.activated).toBe(false);
+    expect(result.reason).toContain("no changed files matched");
+  });
+
+  it("no conditions ({}) + changedFilesDerivable:false → activated:true (unconditional reviewers unaffected)", () => {
+    const result = evaluateActivation(
+      {},
+      { changedFiles: [], requestType: "bug-fix", changedFilesDerivable: false },
+    );
+    expect(result.activated).toBe(true);
+  });
+
+  it("requestTypes-only (no paths) + changedFilesDerivable:false + matching requestType → activated:true", () => {
+    const result = evaluateActivation(
+      { requestTypes: ["bug-fix"] },
+      { changedFiles: [], requestType: "bug-fix", changedFilesDerivable: false },
+    );
+    expect(result.activated).toBe(true);
+  });
+
+  it("requestTypes-only (no paths) + changedFilesDerivable:false + mismatching requestType → activated:false", () => {
+    const result = evaluateActivation(
+      { requestTypes: ["spec-change"] },
+      { changedFiles: [], requestType: "bug-fix", changedFilesDerivable: false },
+    );
+    expect(result.activated).toBe(false);
+    expect(result.reason).toContain("bug-fix");
+  });
+});

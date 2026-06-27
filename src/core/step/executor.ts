@@ -217,15 +217,33 @@ export class StepExecutor {
     // Activation gate (reviewer-activation-conditions D5)
     // Only evaluated when step.activation is set (custom reviewers with conditions).
     // Standard pipeline steps and unconstrained reviewers are unaffected (no-op path).
+    //
+    // Fail-closed: when the runtime explicitly declares it cannot derive changed files
+    // (managed runtime — no local git worktree), listChangedFiles returns [] structurally,
+    // not because nothing changed. Evaluating a `paths` condition against that empty list
+    // would silently skip the reviewer (fail-open). Mirror scope-check (scope-check.ts):
+    // consult canDeriveChangedFiles() first and, when non-derivable, skip listChangedFiles
+    // entirely and let evaluateActivation activate paths-conditioned reviewers (fail-closed)
+    // rather than dropping them.
     // ---------------------------------------------------------------------------
     if (step.activation) {
       const baseBranch = deps.request.baseBranch ?? "main";
-      const changedFiles = deps.runtimeStrategy
-        ? await deps.runtimeStrategy.listChangedFiles(baseBranch, cwd, state.branch ?? null)
-        : [];
+      // Fail-closed: when the runtime explicitly declares it cannot derive changed
+      // files (managed runtime — no local git worktree), listChangedFiles returns []
+      // *structurally*, not because nothing changed. Evaluating a `paths` condition
+      // against that empty list would silently skip the reviewer (fail-open). Mirror
+      // scope-check (scope-check.ts): treat non-derivable as "paths unverifiable" and
+      // let evaluateActivation activate instead of skip.
+      const changedFilesDerivable =
+        deps.runtimeStrategy?.canDeriveChangedFiles?.() !== false;
+      const changedFiles =
+        deps.runtimeStrategy && changedFilesDerivable
+          ? await deps.runtimeStrategy.listChangedFiles(baseBranch, cwd, state.branch ?? null)
+          : [];
       const decision = evaluateActivation(step.activation, {
         changedFiles,
         requestType: deps.request.type,
+        changedFilesDerivable,
       });
       if (!decision.activated) {
         return this.finalizeSkippedStep(step, state, decision.reason);

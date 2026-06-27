@@ -382,18 +382,20 @@ export interface RuntimeStrategy {
   /**
    * Seam meta-information: whether this runtime can mechanically derive changed files.
    *
-   * Used exclusively by scope-check (fail-closed path). Reviewer activation consumers
-   * MUST NOT reference this predicate — they maintain fail-safe (under-activate) via
-   * listChangedFiles alone.
+   * Consumed by both scope-check and the reviewer activation gate as fail-closed signals:
+   *   - scope-check: `false` → synthesize an UNKNOWN finding instead of calling
+   *     `listChangedFiles` (which would silently return [] and appear as "no scope breach").
+   *   - Reviewer activation gate: `false` → activate `paths`-conditioned reviewers
+   *     (fail-closed) rather than silently skipping them on an unverifiable path condition.
    *
    * - `true`  — runtime can derive changed files (e.g. LocalRuntime with git worktree).
    * - `false` — runtime cannot derive changed files (e.g. ManagedRuntime, no local worktree).
-   * - absent  — fall through to the existing listChangedFiles path (= #689 behavior).
-   *             fail-closed scope evaluation does NOT fire for runtimes without this predicate.
+   * - absent  — treated as derivable: the existing `listChangedFiles` path is used, and
+   *             fail-closed behavior does NOT fire for runtimes without this predicate.
    *
    * Optional to preserve backward compatibility with test fakes typed as RuntimeStrategy:
    * absent is treated as "evaluate via listChangedFiles" (not as "cannot derive").
-   * Only predicate=false triggers fail-closed UNKNOWN escalation.
+   * Only predicate=false triggers fail-closed behavior in both consumers.
    *
    * listChangedFiles contract (return type, Never-throws, [] on error) is unaffected.
    */

@@ -4,7 +4,7 @@
 
 **File**: `src/core/reviewers/activation.ts`
 
-- [ ] Add an optional field to the `ActivationFacts` interface:
+- [x] Add an optional field to the `ActivationFacts` interface:
   ```typescript
   /**
    * Whether the runtime can mechanically derive `changedFiles`.
@@ -15,7 +15,7 @@
    */
   changedFilesDerivable?: boolean;
   ```
-- [ ] In `evaluateActivation`, inside the `if (cond.paths) { ... }` block, BEFORE the
+- [x] In `evaluateActivation`, inside the `if (cond.paths) { ... }` block, BEFORE the
   `const matched = ...` glob check, add the fail-closed guard:
   ```typescript
   // Fail-closed: when changed files cannot be derived (e.g. managed runtime, no
@@ -27,10 +27,10 @@
     return { activated: true, reason: "activated" };
   }
   ```
-- [ ] Do NOT change the `requestTypes` block or its position: `requestTypes` is still
+- [x] Do NOT change the `requestTypes` block or its position: `requestTypes` is still
   evaluated before `paths`, so a `requestTypes` mismatch skips deterministically even
   when `changedFilesDerivable === false`.
-- [ ] Do NOT change the "no conditions → always activate" early return or the existing
+- [x] Do NOT change the "no conditions → always activate" early return or the existing
   `matched`/skip logic.
 
 **Acceptance Criteria**:
@@ -46,7 +46,7 @@
 
 **File**: `src/core/step/executor.ts` (the `if (step.activation)` block, currently lines ~221-233 in `runAgentStep`)
 
-- [ ] Replace the current body of the `if (step.activation)` block. The current code is:
+- [x] Replace the current body of the `if (step.activation)` block. The current code is:
   ```typescript
   if (step.activation) {
     const baseBranch = deps.request.baseBranch ?? "main";
@@ -62,7 +62,7 @@
     }
   }
   ```
-- [ ] New body:
+- [x] New body:
   ```typescript
   if (step.activation) {
     const baseBranch = deps.request.baseBranch ?? "main";
@@ -88,7 +88,7 @@
     }
   }
   ```
-- [ ] Update the explanatory comment block immediately above the `if (step.activation)`
+- [x] Update the explanatory comment block immediately above the `if (step.activation)`
   block (currently "Activation gate (reviewer-activation-conditions D5)…") to note that
   the gate now consults `canDeriveChangedFiles()` and that a non-derivable runtime
   activates `paths`-conditioned reviewers (fail-closed) rather than skipping them.
@@ -105,7 +105,7 @@
 
 **File**: `src/core/runtime/managed.ts`
 
-- [ ] Update the JSDoc on `listChangedFiles` (currently lines ~505-513). Remove the
+- [x] Update the JSDoc on `listChangedFiles` (currently lines ~505-513). Remove the
   framing that calls the `[]` return a *"fail-safe: under-activate rather than evaluate
   against stale or fabricated data"* and that says path reviewers *"will be skipped"*.
   Replace it with: the managed runtime has no local git worktree, so it cannot derive
@@ -114,10 +114,10 @@
   `paths`-conditioned reviewers (fail-closed) rather than skipping them when changed
   files cannot be derived. State that the `[]` return MUST NOT be interpreted as
   "no changes".
-- [ ] Update the JSDoc on `canDeriveChangedFiles()` (currently lines ~522-526) if it
+- [x] Update the JSDoc on `canDeriveChangedFiles()` (currently lines ~522-526) if it
   still implies the predicate is consumed only by scope-check; note that the reviewer
   activation gate also consumes it (fail-closed activation).
-- [ ] Do NOT change the behavior of either method: `listChangedFiles` still returns `[]`
+- [x] Do NOT change the behavior of either method: `listChangedFiles` still returns `[]`
   and `canDeriveChangedFiles()` still returns `false`. Documentation only.
 
 **Acceptance Criteria**:
@@ -131,12 +131,12 @@
 
 **File**: `src/core/port/runtime-strategy.ts` (the `canDeriveChangedFiles?()` doc, currently lines ~382-400)
 
-- [ ] Remove the instruction that *"Reviewer activation consumers MUST NOT reference
+- [x] Remove the instruction that *"Reviewer activation consumers MUST NOT reference
   this predicate — they maintain fail-safe (under-activate) via listChangedFiles
   alone."* Replace it with: the predicate is consumed by both scope-check and the
   reviewer activation gate; both treat `false` as fail-closed (scope-check synthesizes
   an UNKNOWN finding; the activation gate activates `paths`-conditioned reviewers).
-- [ ] Keep the semantics of the return values unchanged (`true` derivable / `false`
+- [x] Keep the semantics of the return values unchanged (`true` derivable / `false`
   non-derivable / absent ⇒ treated as derivable). Keep the field optional and the
   `RealRuntimeStrategy` intersection type unchanged.
 
@@ -151,7 +151,7 @@
 
 **File**: `src/core/reviewers/__tests__/activation.test.ts`
 
-- [ ] Add a `describe("evaluateActivation — changedFilesDerivable (fail-closed)")` block covering:
+- [x] Add a `describe("evaluateActivation — changedFilesDerivable (fail-closed)")` block covering:
   - `paths` present + `changedFilesDerivable: false` + empty `changedFiles` → `activated: true`.
   - `paths` present + `changedFilesDerivable: false` + non-empty non-matching `changedFiles` → `activated: true` (the glob match is not even attempted).
   - `requestTypes` mismatch + `paths` present + `changedFilesDerivable: false` → `activated: false`, reason mentions `requestType` (requestTypes evaluated first).
@@ -172,12 +172,12 @@
 
 **File**: `tests/unit/step/executor-activation.test.ts`
 
-- [ ] Extend the `makeRuntimeStrategy` helper (or add a sibling helper) so a test can
+- [x] Extend the `makeRuntimeStrategy` helper (or add a sibling helper) so a test can
   set `canDeriveChangedFiles()` — e.g. add a second parameter
   `canDeriveChangedFiles?: () => boolean` and include it on the returned object only
   when provided (so existing tests, which omit it, keep the "derivable (absent)"
   behavior unchanged).
-- [ ] Add a `describe("executor activation gate — non-derivable runtime (fail-closed)")` block:
+- [x] Add a `describe("executor activation gate — non-derivable runtime (fail-closed)")` block:
   - **Managed/non-derivable + `paths` reviewer activates, does not skip**: strategy with
     `canDeriveChangedFiles: () => false` and a `listChangedFiles` spy; step with
     `activation: { paths: ["src/auth/**"] }`. Assert the agent runner IS called, the
@@ -186,11 +186,11 @@
   - **skipReason distinction**: in the same managed/non-derivable case, assert the
     reviewer has no `skipped` step result carrying a "no changed files matched paths"
     `skipReason`.
-- [ ] Add to the existing "skip when conditions not met" / "proceed when conditions met"
+- [x] Add to the existing "skip when conditions not met" / "proceed when conditions met"
   coverage a **local-runtime regression** pair using `canDeriveChangedFiles: () => true`:
   - `paths: ["src/auth/**"]` + `listChangedFiles → ["src/auth/login.ts"]` → agent called (activated).
   - `paths: ["src/auth/**"]` + `listChangedFiles → ["src/util/helper.ts"]` → skipped, `skipReason` contains `src/auth/**` (genuine condition mismatch).
-- [ ] Add a **no-paths-unaffected** case: a step with `activation: { requestTypes: ["bug-fix"] }`
+- [x] Add a **no-paths-unaffected** case: a step with `activation: { requestTypes: ["bug-fix"] }`
   (no `paths`) on a `canDeriveChangedFiles: () => false` strategy, request type
   `bug-fix` → agent called; and an unconditional reviewer (no `activation`) on a
   non-derivable strategy → agent called (and `listChangedFiles` not called, per the
@@ -207,9 +207,9 @@
 
 ## T-07: Verify `typecheck && test` green
 
-- [ ] Run `bun run typecheck` and confirm exit code 0.
-- [ ] Run `bun run test` and confirm exit code 0.
-- [ ] Confirm the existing pre-change tests in `tests/unit/step/executor-activation.test.ts`
+- [x] Run `bun run typecheck` and confirm exit code 0.
+- [x] Run `bun run test` and confirm exit code 0.
+- [x] Confirm the existing pre-change tests in `tests/unit/step/executor-activation.test.ts`
   and `src/core/reviewers/__tests__/activation.test.ts` still pass unchanged (local-runtime
   and no-activation behavior is not regressed).
 
