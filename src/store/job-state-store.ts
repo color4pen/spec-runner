@@ -222,7 +222,7 @@ export class JobStateStore {
     try {
       const entries = await fs.readdir(changesDir, { withFileTypes: true });
       for (const entry of entries) {
-        if (!entry.isDirectory() || entry.name === "archive") continue;
+        if (!entry.isDirectory() || entry.name === "archive" || entry.name === "canceled") continue;
         const slug = entry.name;
         const stateJsonPath = path.join(repoRoot, slugStateJsonPath(slug));
         const eventsPath = path.join(repoRoot, slugEventsPath(slug));
@@ -275,7 +275,7 @@ export class JobStateStore {
         try {
           const slugEntries = await fs.readdir(changesInWorktree, { withFileTypes: true });
           for (const slugEntry of slugEntries) {
-            if (!slugEntry.isDirectory() || slugEntry.name === "archive") continue;
+            if (!slugEntry.isDirectory() || slugEntry.name === "archive" || slugEntry.name === "canceled") continue;
             const slug = slugEntry.name;
             const stateJsonPath = path.join(worktreePath, slugStateJsonPath(slug));
             const eventsPath = path.join(worktreePath, slugEventsPath(slug));

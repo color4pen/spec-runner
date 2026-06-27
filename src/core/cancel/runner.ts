@@ -15,14 +15,22 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { loadStateByJobId } from "../job-access/load-by-job-id.js";
-import { resolveStateStoreByJobId } from "../job-access/resolve-state-store.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { stdoutWrite } from "../../logger/stdout.js";
 import { ERROR_CODES, SpecRunnerError } from "../../errors.js";
 import { gracefulKill } from "./pid-kill.js";
 import { buildWorktreePath } from "../worktree/manager.js";
 import { getJobSlug } from "../../state/job-slug.js";
-import { livenessJsonPath, managedMarkerPath, localSidecarDir, requestMdPath, draftPath } from "../../util/paths.js";
+import {
+  livenessJsonPath,
+  managedMarkerPath,
+  localSidecarDir,
+  requestMdPath,
+  draftPath,
+  canceledChangeFolderPath,
+  canceledChangesDirRel,
+  changeFolderPath,
+} from "../../util/paths.js";
 import * as requestStore from "../request/store.js";
 import type { WorktreeManager } from "../worktree/manager.js";
 import type { SpawnFn } from "../../util/spawn.js";
@@ -198,6 +206,88 @@ async function cleanupJobResources(
 }
 
 // ---------------------------------------------------------------------------
+// evacuateChangeFolder
+// ---------------------------------------------------------------------------
+
+/**
+ * Best-effort: move the job's change folder to specrunner/changes/canceled/<slug>-<jobId8>/.
+ * Move = copy-then-remove (cross-device safe).
+ *
+ * D9: wrapped in try/catch; failures append a warning and return null so that cleanup
+ * (worktree removal + branch deletion) can still proceed.
+ *
+ * Resolution order for source directory:
+ *   1. Worktree mode: <worktreePath>/specrunner/changes/<slug>/ (state.json present)
+ *   2. No-worktree mode: <repoRoot>/specrunner/changes/<slug>/ (canonical, state.json present)
+ *   3. Neither found: create empty tombstone directory only.
+ *
+ * Must be called BEFORE cleanupJobResources so the source is still accessible.
+ *
+ * Returns the absolute path of the evacuated directory, or null on failure.
+ */
+async function evacuateChangeFolder(
+  state: JobState,
+  deps: CancelDeps,
+  warnings: string[],
+  info: string[],
+): Promise<string | null> {
+  try {
+    const slug = getJobSlug(state);
+    if (!slug) {
+      warnings.push("Warning: cannot evacuate change folder: slug could not be derived");
+      return null;
+    }
+
+    const jobId8 = state.jobId.slice(0, 8);
+    const canceledDirName = `${slug}-${jobId8}`;
+    const canceledDirAbs = path.join(deps.repoRoot, canceledChangeFolderPath(canceledDirName));
+
+    // Ensure canceled/ parent directory exists
+    await fs.mkdir(path.join(deps.repoRoot, canceledChangesDirRel()), { recursive: true });
+
+    // Resolve source: worktree mode first, then canonical (no-worktree mode)
+    let srcDir: string | null = null;
+
+    const worktreePath = await resolveWorktreePathForJob(state, deps.repoRoot);
+    if (worktreePath) {
+      const wtStateJson = path.join(worktreePath, "specrunner", "changes", slug, "state.json");
+      try {
+        await fs.access(wtStateJson);
+        srcDir = path.join(worktreePath, "specrunner", "changes", slug);
+      } catch {
+        // Not in worktree — fall through to canonical
+      }
+    }
+
+    if (!srcDir) {
+      const canonDir = path.join(deps.repoRoot, changeFolderPath(slug));
+      try {
+        await fs.access(path.join(canonDir, "state.json"));
+        srcDir = canonDir;
+      } catch {
+        // Not in canonical either
+      }
+    }
+
+    if (srcDir) {
+      // Move: copy then remove (cross-device safe)
+      await fs.cp(srcDir, canceledDirAbs, { recursive: true });
+      await fs.rm(srcDir, { recursive: true, force: true });
+    } else {
+      // No source found — create empty tombstone directory
+      await fs.mkdir(canceledDirAbs, { recursive: true });
+    }
+
+    info.push(`Evacuated change folder to specrunner/changes/canceled/${canceledDirName}/`);
+    return canceledDirAbs;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    warnings.push(`Warning: failed to evacuate change folder: ${msg}`);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // cancelSingleJob
 // ---------------------------------------------------------------------------
 
@@ -269,7 +359,7 @@ export async function cancelSingleJob(opts: {
   }
 
   // ---------------------------------------------------------------------------
-  // Restore draft (best-effort, before cleanup so worktree is still present)
+  // Restore draft (best-effort, before evacuation so worktree is still present)
   // ---------------------------------------------------------------------------
 
   if (restoreDraft) {
@@ -277,15 +367,18 @@ export async function cancelSingleJob(opts: {
   }
 
   // ---------------------------------------------------------------------------
-  // Cleanup (best-effort)
+  // Evacuate change folder → canceled/<slug>-<jobId8>/ (before cleanup)
   // ---------------------------------------------------------------------------
 
-  await cleanupJobResources(state, deps, warnings);
+  // --purge leaves no trace (D1): skip evacuation/tombstone entirely; the change folder
+  // is removed in the purge block below. Only non-purge cancel evacuates to canceled/.
+  const canceledDirAbs = purge ? null : await evacuateChangeFolder(state, deps, warnings, info);
 
   // ---------------------------------------------------------------------------
-  // State update (skip for canceled — idempotent case)
+  // State update: transition to canceled, or reuse existing canceled state
   // ---------------------------------------------------------------------------
 
+  let canceledState: JobState;
   if (state.status !== "canceled") {
     const now = new Date().toISOString();
     const { state: updated } = transitionJob(state, "canceled", {
@@ -297,15 +390,33 @@ export async function cancelSingleJob(opts: {
         worktreePath: null,
       },
     });
+    canceledState = updated;
+  } else {
+    canceledState = state;
+  }
 
-    if (!purge) {
-      const cancelStore = await resolveStateStoreByJobId(deps.repoRoot, jobId);
-      if (cancelStore) await cancelStore.persist(updated);
+  // ---------------------------------------------------------------------------
+  // Persist canceled state to the evacuated tombstone (non-purge only).
+  // --purge leaves no trace (D1), so no tombstone is written.
+  // ---------------------------------------------------------------------------
+
+  if (!purge) {
+    if (canceledDirAbs) {
+      const cancelStore = new JobStateStore(jobId, deps.repoRoot, { changeDir: canceledDirAbs });
+      await cancelStore.persist(canceledState);
+    } else {
+      warnings.push("Warning: state not persisted: change folder evacuation failed");
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Managed marker unlink — D6: after canceled-state persist, best-effort
+  // Cleanup (best-effort): worktree + branches (after persist)
+  // ---------------------------------------------------------------------------
+
+  await cleanupJobResources(state, deps, warnings);
+
+  // ---------------------------------------------------------------------------
+  // Managed marker unlink — after canceled-state persist, best-effort
   // (idempotent canceled path also runs this; local runtime marker is no-op)
   // ---------------------------------------------------------------------------
 
@@ -328,6 +439,18 @@ export async function cancelSingleJob(opts: {
     if (slugForMarker) {
       try {
         await fs.rm(path.join(deps.repoRoot, localSidecarDir(slugForMarker)), {
+          recursive: true,
+          force: true,
+        });
+      } catch {
+        // Best-effort — directory may not exist
+      }
+      // Purge the canonical change folder too. Evacuation was skipped for --purge, so the
+      // no-worktree canonical changes/<slug>/ would otherwise remain. (Worktree-mode source
+      // is removed with the worktree by cleanupJobResources above.) This makes --purge
+      // leave no trace (D1).
+      try {
+        await fs.rm(path.join(deps.repoRoot, changeFolderPath(slugForMarker)), {
           recursive: true,
           force: true,
         });

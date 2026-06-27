@@ -112,6 +112,26 @@ export function archivedChangeFolderPath(datedSlug: string): string {
   return `${ARCHIVE_DIR}/${datedSlug}`;
 }
 
+/** Base directory for canceled changes. */
+const CANCELED_DIR = `${CHANGES_DIR}/canceled`;
+
+/**
+ * Returns the relative path to the canceled changes directory (no trailing slash).
+ * Example: canceledChangesDirRel() → "specrunner/changes/canceled"
+ */
+export function canceledChangesDirRel(): string {
+  return CANCELED_DIR;
+}
+
+/**
+ * Returns the relative path to the canceled change folder for the given dirName.
+ * The dirName is expected to be in the form "<slug>-<jobId8>".
+ * Example: canceledChangeFolderPath("my-change-12345678") → "specrunner/changes/canceled/my-change-12345678"
+ */
+export function canceledChangeFolderPath(dirName: string): string {
+  return `${CANCELED_DIR}/${dirName}`;
+}
+
 /**
  * Returns the relative path to the project-level context file.
  * Example: projectMdPath() → "specrunner/project.md"

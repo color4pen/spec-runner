@@ -4,14 +4,9 @@ import type { WorktreeManager } from "../../worktree/manager.js";
 import type { JobState } from "../../../state/schema.js";
 import type { SpawnFn, SpawnResult } from "../../../util/spawn.js";
 import { loadStateByJobId } from "../../job-access/load-by-job-id.js";
-import { resolveStateStoreByJobId } from "../../job-access/resolve-state-store.js";
 
 vi.mock("../../job-access/load-by-job-id.js", () => ({
   loadStateByJobId: vi.fn(),
-}));
-
-vi.mock("../../job-access/resolve-state-store.js", () => ({
-  resolveStateStoreByJobId: vi.fn(),
 }));
 
 const FAKE_REPO_ROOT = "/repo";
@@ -20,9 +15,6 @@ const FAKE_BRANCH = "fix/test";
 
 beforeEach(() => {
   vi.mocked(loadStateByJobId).mockResolvedValue(makeState() as never);
-  vi.mocked(resolveStateStoreByJobId).mockResolvedValue({
-    persist: vi.fn().mockResolvedValue(undefined),
-  } as never);
 });
 
 function makeState(overrides: Partial<JobState> = {}): JobState {
