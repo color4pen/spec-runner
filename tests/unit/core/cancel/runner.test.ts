@@ -363,6 +363,21 @@ describe("cancelSingleJob — canceled status (idempotent)", () => {
 
     expect(await sidecarAbsent(slug)).toBe(true);
   });
+
+  it("--purge leaves no trace: no tombstone, canonical removed, sidecar deleted", async () => {
+    const { jobId, slug } = await makeJob("failed");
+    const canonDir = path.join(tempDir, "specrunner", "changes", slug);
+    await nodefs.access(path.join(canonDir, "state.json"));
+
+    await cancelSingleJob({ jobId, force: false, purge: true, deps: makeDeps() });
+
+    const tombstone = path.join(
+      tempDir, "specrunner", "changes", "canceled", `${slug}-${jobId.slice(0, 8)}`,
+    );
+    await expect(nodefs.access(tombstone)).rejects.toThrow();
+    await expect(nodefs.access(canonDir)).rejects.toThrow();
+    expect(await sidecarAbsent(slug)).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -530,16 +545,6 @@ describe("cancelSingleJob — --purge flag", () => {
       expect.arrayContaining(["branch", "-D", "change/my-branch-abc123"]),
       expect.anything(),
     );
-  });
-
-  it("tombstone is created in canceled/ even with --purge", async () => {
-    const { jobId, slug } = await makeJob("failed");
-    await cancelSingleJob({ jobId, force: false, purge: true, deps: makeDeps() });
-
-    // Tombstone must exist despite purge (D9: purge only removes sidecar)
-    const state = await loadCanceledState(jobId, slug);
-    expect(state.status).toBe("canceled");
-    expect(await sidecarAbsent(slug)).toBe(true);
   });
 });
 
