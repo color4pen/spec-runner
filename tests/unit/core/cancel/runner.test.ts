@@ -12,7 +12,16 @@
  * - running + state.pid が null → warning + 続行
  * - worktree cleanup の best-effort (失敗時 warning)
  * - branch 削除の best-effort (失敗時 warning)
- * - cancel 後の state file に status: canceled, error.code: USER_CANCELED, canceledAt が記録
+ * - cancel 後の canceled/<slug>-<jobId8>/state.json に status: canceled, error.code: USER_CANCELED, canceledAt が記録
+ *
+ * 新規 acceptance テスト（TC-001 ～ TC-007, TC-012, TC-025, TC-026）:
+ * - worktree-only ジョブの cancel で canceled/ に記録が残る（記録喪失の回帰防止）
+ * - request.md が canceled/ に保全される
+ * - 同名 slug を同日に 2 回 cancel しても canceled/ で衝突しない
+ * - cancel 後に worktree と local/remote branch が削除される
+ * - --purge 時は canceled/ に墓標が作られない
+ * - 冪等 canceled 再 cancel で state が不変
+ * - canceled/ が存在しても JobStateStore.list が canceled を slug と誤認しない
  *
  * cancelAllTerminated:
  * - failed / terminated / canceled のみ対象
@@ -30,7 +39,9 @@ import type { CancelDeps } from "../../../../src/core/cancel/runner.js";
 import { JobStateStore, buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import type { JobState, JobStatus } from "../../../../src/state/schema.js";
 import type { WorktreeManager } from "../../../../src/core/worktree/manager.js";
+import { buildWorktreePath } from "../../../../src/core/worktree/manager.js";
 import type { SpawnResult } from "../../../../src/util/spawn.js";
+import { canceledChangeFolderPath, canceledDirName } from "../../../../src/util/paths.js";
 
 // ---------- Test fixtures ----------
 
@@ -48,28 +59,35 @@ afterEach(async () => {
 });
 
 /**
- * Create a job state with a specific status and write it to:
- *  1. Slug canonical dir at specrunner/changes/<slug>/ (for cancelSingleJob load/persist)
- *  2. Liveness sidecar at .specrunner/local/<slug>/liveness.json (for loadStateByJobId)
- *
- * cancelSingleJob loads via loadStateByJobId → liveness sidecar → slug canonical dir.
- * cancelSingleJob persists via resolveStateStoreByJobId → liveness sidecar → slug canonical dir.
+ * Create a job state with a specific status using worktree-only layout:
+ *  - state.json / events.jsonl / request.md are written to the worktree change folder
+ *    (NOT to main checkout — worktree-only reproduces the real local runtime).
+ *  - Liveness sidecar at .specrunner/local/<slug>/liveness.json points to worktreeDir.
+ *  - worktreeDir = extras.worktreePath ?? buildWorktreePath(tempDir, slug, jobId)
+ *    so that JobStateStore.list finds the job via section 2 (worktrees scan).
  */
 async function makeJob(
   status: JobStatus = "failed",
-  extras: Partial<{ pid: number | null | undefined; branch: string; worktreePath: string }> = {},
-): Promise<{ jobId: string; slug: string }> {
+  extras: Partial<{
+    pid: number | null | undefined;
+    branch: string;
+    worktreePath: string;
+    slug: string;
+  }> = {},
+): Promise<{ jobId: string; slug: string; worktreeDir: string }> {
   const state = buildInitialJobState({
     request: { path: "/test/request.md", title: "Test", type: "new-feature" },
     repository: { owner: "user", name: "repo" },
   });
   const jobId = state.jobId;
-  const slug = `cancel-${jobId.slice(0, 8)}`;
-
+  const slug = extras.slug ?? `cancel-${jobId.slice(0, 8)}`;
   const pid = "pid" in extras ? (extras.pid ?? null) : null;
 
-  // Write slug canonical state (what cancelSingleJob reads/writes)
-  const slugDir = path.join(tempDir, "specrunner", "changes", slug);
+  // Worktree directory — defaults to buildWorktreePath so JobStateStore.list can find it
+  const worktreeDir = extras.worktreePath ?? buildWorktreePath(tempDir, slug, jobId);
+
+  // Write state to worktree change folder (NOT main checkout)
+  const slugDir = path.join(worktreeDir, "specrunner", "changes", slug);
   await nodefs.mkdir(slugDir, { recursive: true });
   await nodefs.writeFile(
     path.join(slugDir, "state.json"),
@@ -78,7 +96,7 @@ async function makeJob(
       jobId,
       createdAt: state.createdAt,
       updatedAt: state.updatedAt,
-      request: { path: "/test/request.md", title: "Test", type: "new-feature", slug },
+      request: { path: "/test/request.md", title: "Test", type: "new-feature" },
       repository: state.repository,
       session: null,
       step: "init",
@@ -92,19 +110,22 @@ async function makeJob(
   );
   await nodefs.writeFile(path.join(slugDir, "events.jsonl"), "");
 
-  // Write liveness sidecar so loadStateByJobId can find the job
+  // Write request.md to the worktree change folder (evacuation copy target)
+  await nodefs.writeFile(path.join(slugDir, "request.md"), `# Test Request for ${slug}\n`);
+
+  // Write liveness sidecar so loadStateByJobId can find the job via worktreePath
   const livenessDir = path.join(tempDir, ".specrunner", "local", slug);
   await nodefs.mkdir(livenessDir, { recursive: true });
   await nodefs.writeFile(
     path.join(livenessDir, "liveness.json"),
     JSON.stringify({
       jobId,
-      worktreePath: extras.worktreePath ?? null,
+      worktreePath: worktreeDir,
       pid,
     }),
   );
 
-  return { jobId, slug };
+  return { jobId, slug, worktreeDir };
 }
 
 /** Build a minimal CancelDeps mock. */
@@ -127,15 +148,29 @@ function makeDeps(overrides: Partial<CancelDeps> = {}): CancelDeps {
   };
 }
 
-/** Load the latest state for a job via its slug canonical store. */
-async function loadState(jobId: string, slug: string): Promise<JobState> {
-  const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir });
+/**
+ * Load the canceled state from canceled/<slug>-<jobId8>/ in the repo root.
+ * This is the authoritative post-cancel location.
+ */
+async function loadCanceledState(jobId: string, slug: string): Promise<JobState> {
+  const store = new JobStateStore(jobId, tempDir, {
+    changeDir: path.join(tempDir, canceledChangeFolderPath(canceledDirName(slug, jobId))),
+  });
+  return (await store.load()) as JobState;
+}
+
+/**
+ * Load state from the worktree change folder (used for idempotent-cancel checks,
+ * where no evacuation or persist runs).
+ */
+async function loadWorktreeState(jobId: string, slug: string, worktreeDir: string): Promise<JobState> {
+  const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: worktreeDir });
   return (await store.load()) as JobState;
 }
 
 /**
  * Return true when the sidecar directory for a job is absent.
- * cancelSingleJob --purge deletes .specrunner/local/<slug>/.
+ * cancelSingleJob --purge / cancelAllTerminated delete .specrunner/local/<slug>/.
  */
 async function sidecarAbsent(slug: string): Promise<boolean> {
   const sidecarDir = path.join(tempDir, ".specrunner", "local", slug);
@@ -182,8 +217,10 @@ describe("cancelSingleJob — awaiting-merge status", () => {
 
     expect(result.exitCode).toBe(0);
 
-    const state = await loadState(jobId, slug);
+    const state = await loadCanceledState(jobId, slug);
     expect(state.status).toBe("canceled");
+    expect(state.error?.code).toBe("USER_CANCELED");
+    expect(state.canceledAt).toBeDefined();
   });
 });
 
@@ -199,8 +236,10 @@ describe("cancelSingleJob — running status", () => {
     expect(result.exitCode).toBe(0);
     expect(kill).toHaveBeenCalledWith(1234, "SIGTERM");
 
-    const state = await loadState(jobId, slug);
+    const state = await loadCanceledState(jobId, slug);
     expect(state.status).toBe("canceled");
+    expect(state.error?.code).toBe("USER_CANCELED");
+    expect(state.canceledAt).toBeDefined();
   });
 
   it("continues with warning when pid is null", async () => {
@@ -238,8 +277,10 @@ describe("cancelSingleJob — awaiting-resume status", () => {
 
     expect(result.exitCode).toBe(0);
 
-    const state = await loadState(jobId, slug);
+    const state = await loadCanceledState(jobId, slug);
     expect(state.status).toBe("canceled");
+    expect(state.error?.code).toBe("USER_CANCELED");
+    expect(state.canceledAt).toBeDefined();
   });
 });
 
@@ -250,8 +291,10 @@ describe("cancelSingleJob — failed status", () => {
 
     expect(result.exitCode).toBe(0);
 
-    const state = await loadState(jobId, slug);
+    const state = await loadCanceledState(jobId, slug);
     expect(state.status).toBe("canceled");
+    expect(state.error?.code).toBe("USER_CANCELED");
+    expect(state.canceledAt).toBeDefined();
   });
 });
 
@@ -262,24 +305,26 @@ describe("cancelSingleJob — terminated status", () => {
 
     expect(result.exitCode).toBe(0);
 
-    const state = await loadState(jobId, slug);
+    const state = await loadCanceledState(jobId, slug);
     expect(state.status).toBe("canceled");
+    expect(state.error?.code).toBe("USER_CANCELED");
+    expect(state.canceledAt).toBeDefined();
   });
 });
 
 describe("cancelSingleJob — canceled status (idempotent)", () => {
   it("succeeds without changing state", async () => {
-    const { jobId, slug } = await makeJob("canceled");
+    const { jobId, slug, worktreeDir } = await makeJob("canceled");
 
     // Record the state before
-    const stateBefore = await loadState(jobId, slug);
+    const stateBefore = await loadWorktreeState(jobId, slug, worktreeDir);
 
     const result = await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
 
     expect(result.exitCode).toBe(0);
 
-    // Status should still be canceled (not modified)
-    const stateAfter = await loadState(jobId, slug);
+    // Status should still be canceled (not modified — worktreeManager.remove is mocked, dir persists)
+    const stateAfter = await loadWorktreeState(jobId, slug, worktreeDir);
     expect(stateAfter.status).toBe("canceled");
     // updatedAt should NOT change (no write happened)
     expect(stateAfter.updatedAt).toBe(stateBefore.updatedAt);
@@ -298,13 +343,13 @@ describe("cancelSingleJob — canceled status (idempotent)", () => {
 // ---------------------------------------------------------------------------
 
 describe("cancelSingleJob — state file content", () => {
-  it("records status=canceled, error.code=USER_CANCELED, canceledAt on cancel", async () => {
+  it("records status=canceled, error.code=USER_CANCELED, canceledAt in canceled/ dir", async () => {
     const { jobId, slug } = await makeJob("failed");
     const before = new Date();
 
     await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
 
-    const state = await loadState(jobId, slug);
+    const state = await loadCanceledState(jobId, slug);
     expect(state.status).toBe("canceled");
     expect(state.error?.code).toBe("USER_CANCELED");
     expect(state.canceledAt).toBeDefined();
@@ -348,7 +393,7 @@ describe("cancelSingleJob — --purge flag", () => {
 
 describe("cancelSingleJob — cleanup best-effort", () => {
   it("emits warning when worktree removal fails", async () => {
-    const { jobId } = await makeJob("failed", { worktreePath: "/fake/worktree" });
+    const { jobId } = await makeJob("failed");
     const worktreeManager: WorktreeManager = {
       create: vi.fn(),
       remove: vi.fn().mockRejectedValue(new Error("git failed")),
@@ -442,13 +487,13 @@ describe("cancelSingleJob — sidecar jobId is a non-string (numeric)", () => {
     };
     const slug = "numeric-sidecar-test";
 
-    // Write slug canonical state
+    // Write slug canonical state (accessible via resolveCanonicalStateDir fallback)
     const slugDir = path.join(tempDir, "specrunner", "changes", slug);
     await nodefs.mkdir(slugDir, { recursive: true });
     await nodefs.writeFile(path.join(slugDir, "state.json"), JSON.stringify(state));
     await nodefs.writeFile(path.join(slugDir, "events.jsonl"), "");
 
-    // Write liveness sidecar with jobId as a number (not string)
+    // Write liveness sidecar with jobId as a number (not string) — skipped by listLocalSidecars
     const livenessDir = path.join(tempDir, ".specrunner", "local", slug);
     await nodefs.mkdir(livenessDir, { recursive: true });
     await nodefs.writeFile(
@@ -461,7 +506,7 @@ describe("cancelSingleJob — sidecar jobId is a non-string (numeric)", () => {
     );
 
     const deps = makeDeps();
-    // Should not throw — the guard rejects the sidecar worktreePath and falls through
+    // Should not throw — sidecar is skipped (numeric jobId), cancel returns "not found"
     const result = await cancelSingleJob({
       jobId: "numeric-sidecar-jobid",
       force: false,
@@ -490,7 +535,7 @@ describe("cancelSingleJob — --restore-draft flag", () => {
     const worktreePath = path.join(tempDir, "wt");
     const { jobId, slug } = await makeJob("failed", { worktreePath });
 
-    // Write source request.md in the worktree
+    // Overwrite request.md content for this test
     const sourceDir = path.join(worktreePath, "specrunner", "changes", slug);
     await nodefs.mkdir(sourceDir, { recursive: true });
     await nodefs.writeFile(path.join(sourceDir, "request.md"), "# Test Request\n");
@@ -511,10 +556,6 @@ describe("cancelSingleJob — --restore-draft flag", () => {
     const worktreePath = path.join(tempDir, "wt");
     const { jobId, slug } = await makeJob("failed", { worktreePath });
 
-    const sourceDir = path.join(worktreePath, "specrunner", "changes", slug);
-    await nodefs.mkdir(sourceDir, { recursive: true });
-    await nodefs.writeFile(path.join(sourceDir, "request.md"), "# Should Not Be Copied\n");
-
     await cancelSingleJob({ jobId, force: false, purge: false, restoreDraft: false, deps: makeDeps() });
 
     const draftFilePath = path.join(tempDir, "specrunner", "drafts", slug, "request.md");
@@ -524,10 +565,6 @@ describe("cancelSingleJob — --restore-draft flag", () => {
   it("does NOT write draft when restoreDraft is omitted (default)", async () => {
     const worktreePath = path.join(tempDir, "wt");
     const { jobId, slug } = await makeJob("failed", { worktreePath });
-
-    const sourceDir = path.join(worktreePath, "specrunner", "changes", slug);
-    await nodefs.mkdir(sourceDir, { recursive: true });
-    await nodefs.writeFile(path.join(sourceDir, "request.md"), "# Should Not Be Copied\n");
 
     await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
 
@@ -539,7 +576,7 @@ describe("cancelSingleJob — --restore-draft flag", () => {
     const worktreePath = path.join(tempDir, "wt");
     const { jobId, slug } = await makeJob("failed", { worktreePath });
 
-    // Write source in worktree
+    // Overwrite request.md in worktree
     const sourceDir = path.join(worktreePath, "specrunner", "changes", slug);
     await nodefs.mkdir(sourceDir, { recursive: true });
     await nodefs.writeFile(path.join(sourceDir, "request.md"), "# New Content\n");
@@ -565,8 +602,9 @@ describe("cancelSingleJob — --restore-draft flag", () => {
     const worktreePath = path.join(tempDir, "wt");
     const { jobId, slug } = await makeJob("failed", { worktreePath });
 
-    // No request.md in worktree — just create the worktree dir
-    await nodefs.mkdir(worktreePath, { recursive: true });
+    // Remove request.md that makeJob wrote (simulate missing)
+    const sourceDir = path.join(worktreePath, "specrunner", "changes", slug);
+    await nodefs.rm(path.join(sourceDir, "request.md"), { force: true });
 
     const result = await cancelSingleJob({ jobId, force: false, purge: false, restoreDraft: true, deps: makeDeps() });
 
@@ -583,8 +621,8 @@ describe("cancelSingleJob — --restore-draft flag", () => {
     const worktreePath = path.join(tempDir, "wt");
     const { jobId, slug } = await makeJob("failed", { worktreePath });
 
+    // Overwrite with specific content for this test
     const sourceDir = path.join(worktreePath, "specrunner", "changes", slug);
-    await nodefs.mkdir(sourceDir, { recursive: true });
     await nodefs.writeFile(path.join(sourceDir, "request.md"), "# Ordering Test\n");
 
     const worktreeManager: WorktreeManager = {
@@ -612,7 +650,233 @@ describe("cancelSingleJob — --restore-draft flag", () => {
 });
 
 // ---------------------------------------------------------------------------
-// cancelAllTerminated
+// TC-001 / TC-003: Record loss regression prevention
+// Worktree-only ジョブを cancel すると、worktree 撤去後も canceled/ に記録が残る
+// ---------------------------------------------------------------------------
+
+describe("cancelSingleJob — TC-001/TC-003: record loss regression prevention", () => {
+  it("persists USER_CANCELED/canceledAt to canceled/ even after worktree directory is removed", async () => {
+    const { jobId, slug } = await makeJob("failed");
+    const before = new Date();
+
+    // worktreeManager.remove actually deletes the worktree directory to reproduce the bug
+    const worktreeManager: WorktreeManager = {
+      create: vi.fn(),
+      remove: vi.fn().mockImplementation(async (wtPath: string) => {
+        await nodefs.rm(wtPath, { recursive: true, force: true });
+      }),
+      prune: vi.fn().mockResolvedValue(undefined),
+    };
+
+    await cancelSingleJob({
+      jobId, force: false, purge: false,
+      deps: makeDeps({ worktreeManager }),
+    });
+
+    // Worktree is gone — canceled/ state must survive
+    const state = await loadCanceledState(jobId, slug);
+    expect(state.status).toBe("canceled");
+    expect(state.error?.code).toBe("USER_CANCELED");
+    expect(state.canceledAt).toBeDefined();
+    const canceledAt = new Date(state.canceledAt!);
+    expect(canceledAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+  });
+
+  it("TC-022: makeJob does NOT write canonical state.json to main checkout (worktree-only)", async () => {
+    const { jobId: _jid, slug } = await makeJob("failed");
+    const canonicalStatePath = path.join(tempDir, "specrunner", "changes", slug, "state.json");
+    await expect(nodefs.access(canonicalStatePath)).rejects.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-002: request.md is preserved in canceled/
+// ---------------------------------------------------------------------------
+
+describe("cancelSingleJob — TC-002: request.md preserved in canceled/", () => {
+  it("request.md is present in canceled/<slug>-<jobId8>/ after cancel", async () => {
+    const { jobId, slug } = await makeJob("failed");
+    const expectedContent = `# Test Request for ${slug}\n`;
+
+    // Actual worktree removal to simulate real scenario
+    const worktreeManager: WorktreeManager = {
+      create: vi.fn(),
+      remove: vi.fn().mockImplementation(async (wtPath: string) => {
+        await nodefs.rm(wtPath, { recursive: true, force: true });
+      }),
+      prune: vi.fn().mockResolvedValue(undefined),
+    };
+
+    await cancelSingleJob({
+      jobId, force: false, purge: false,
+      deps: makeDeps({ worktreeManager }),
+    });
+
+    const canceledDir = path.join(tempDir, canceledChangeFolderPath(canceledDirName(slug, jobId)));
+    const requestMdContent = await nodefs.readFile(path.join(canceledDir, "request.md"), "utf-8");
+    expect(requestMdContent).toBe(expectedContent);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-004: Same-slug cancels do NOT collide in canceled/
+// ---------------------------------------------------------------------------
+
+describe("cancelSingleJob — TC-004: same-slug no collision", () => {
+  it("two jobs with same slug produce separate canceled/ dirs", async () => {
+    const sharedSlug = "shared-slug";
+
+    // Cancel jobIdA first (liveness sidecar → jobIdA), THEN create jobIdB.
+    // This avoids the second makeJob overwriting the liveness sidecar before jobIdA is canceled.
+    const { jobId: jobIdA } = await makeJob("failed", { slug: sharedSlug });
+    await cancelSingleJob({ jobId: jobIdA, force: false, purge: false, deps: makeDeps() });
+
+    // Now create jobIdB with the same slug (overwrites sidecar with jobIdB)
+    const { jobId: jobIdB } = await makeJob("failed", { slug: sharedSlug });
+    await cancelSingleJob({ jobId: jobIdB, force: false, purge: false, deps: makeDeps() });
+
+    const canceledDirA = path.join(tempDir, canceledChangeFolderPath(canceledDirName(sharedSlug, jobIdA)));
+    const canceledDirB = path.join(tempDir, canceledChangeFolderPath(canceledDirName(sharedSlug, jobIdB)));
+
+    // Both dirs exist and are distinct
+    await expect(nodefs.access(canceledDirA)).resolves.toBeUndefined();
+    await expect(nodefs.access(canceledDirB)).resolves.toBeUndefined();
+    expect(canceledDirA).not.toBe(canceledDirB);
+
+    // Each records its own jobId
+    const stateA = await loadCanceledState(jobIdA, sharedSlug);
+    const stateB = await loadCanceledState(jobIdB, sharedSlug);
+    expect(stateA.jobId).toBe(jobIdA);
+    expect(stateB.jobId).toBe(jobIdB);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-005: cancel maintains cleanup (worktree + branches deleted)
+// ---------------------------------------------------------------------------
+
+describe("cancelSingleJob — TC-005: cleanup maintained", () => {
+  it("calls worktreeManager.remove and branch deletion spawn commands", async () => {
+    const { jobId } = await makeJob("failed", { branch: "change/test-slug-abc12345" });
+    const worktreeManager: WorktreeManager = {
+      create: vi.fn(),
+      remove: vi.fn().mockResolvedValue(undefined),
+      prune: vi.fn().mockResolvedValue(undefined),
+    };
+    const spawnFn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
+
+    await cancelSingleJob({
+      jobId, force: false, purge: false,
+      deps: makeDeps({ worktreeManager, spawn: spawnFn }),
+    });
+
+    expect(worktreeManager.remove).toHaveBeenCalled();
+    expect(spawnFn).toHaveBeenCalledWith(
+      "git",
+      expect.arrayContaining(["branch", "-D", "change/test-slug-abc12345"]),
+      expect.anything(),
+    );
+    expect(spawnFn).toHaveBeenCalledWith(
+      "git",
+      expect.arrayContaining(["push", "origin", "--delete", "change/test-slug-abc12345"]),
+      expect.anything(),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-006: --purge leaves no gravestone in canceled/
+// ---------------------------------------------------------------------------
+
+describe("cancelSingleJob — TC-006: --purge no gravestone", () => {
+  it("does NOT create canceled/ dir when --purge is set", async () => {
+    const { jobId, slug } = await makeJob("failed");
+
+    await cancelSingleJob({ jobId, force: false, purge: true, deps: makeDeps() });
+
+    const canceledDir = path.join(tempDir, canceledChangeFolderPath(canceledDirName(slug, jobId)));
+    await expect(nodefs.access(canceledDir)).rejects.toThrow();
+  });
+
+  it("--purge still deletes sidecar", async () => {
+    const { jobId, slug } = await makeJob("failed");
+    await cancelSingleJob({ jobId, force: false, purge: true, deps: makeDeps() });
+    expect(await sidecarAbsent(slug)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-007: already-canceled job remains idempotent (no new canceled/ dir, state unchanged)
+// ---------------------------------------------------------------------------
+
+describe("cancelSingleJob — TC-007: idempotent already-canceled", () => {
+  it("does not create a new canceled/ dir for already-canceled job", async () => {
+    const { jobId, slug } = await makeJob("canceled");
+
+    await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
+
+    const canceledDir = path.join(tempDir, canceledChangeFolderPath(canceledDirName(slug, jobId)));
+    await expect(nodefs.access(canceledDir)).rejects.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-012: canceled/ exists but JobStateStore.list skips it (does not scan it as a slug)
+// ---------------------------------------------------------------------------
+
+describe("TC-012: JobStateStore.list skips canceled/ subdirectory", () => {
+  it("does not scan canceled/ as a slug dir, completes without error", async () => {
+    // Create a canceled/ dir in main checkout (simulating real gravestone)
+    const canceledDirPath = path.join(tempDir, "specrunner", "changes", "canceled", "some-slug-12345678");
+    await nodefs.mkdir(canceledDirPath, { recursive: true });
+    // Do NOT write a state.json — canceled/ subdirs are not slug dirs
+
+    // Also create a real job via worktree so list has something valid to return
+    const { slug: validSlug } = await makeJob("failed");
+    void validSlug;
+
+    // list should complete without throwing
+    let result: Awaited<ReturnType<typeof JobStateStore.list>> | undefined;
+    await expect(async () => {
+      result = await JobStateStore.list(tempDir);
+    }).not.toThrow();
+
+    // "canceled" should not appear as a slug in the results
+    const slugsFound = result?.map((s) => s.request?.slug).filter(Boolean) ?? [];
+    expect(slugsFound).not.toContain("canceled");
+  });
+
+  it("archive skip is still intact (regression)", async () => {
+    // Create archive/ dir in main checkout
+    const archiveDirPath = path.join(tempDir, "specrunner", "changes", "archive");
+    await nodefs.mkdir(archiveDirPath, { recursive: true });
+
+    // list should complete without throwing
+    await expect(JobStateStore.list(tempDir)).resolves.not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-025: various statuses with worktree-only layout end up in canceled/ with correct records
+// ---------------------------------------------------------------------------
+
+describe("TC-025: worktree-only jobs of various statuses all record to canceled/", () => {
+  const statuses: JobStatus[] = ["awaiting-resume", "failed", "terminated"];
+
+  for (const status of statuses) {
+    it(`status=${status} → canceled/ has USER_CANCELED / canceledAt`, async () => {
+      const { jobId, slug } = await makeJob(status);
+      await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
+      const state = await loadCanceledState(jobId, slug);
+      expect(state.status).toBe("canceled");
+      expect(state.error?.code).toBe("USER_CANCELED");
+      expect(state.canceledAt).toBeDefined();
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// cancelAllTerminated — TC-026
 // ---------------------------------------------------------------------------
 
 describe("cancelAllTerminated", () => {

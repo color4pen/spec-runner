@@ -12,7 +12,7 @@ import * as os from "node:os";
 import { LocalRuntime } from "../src/core/runtime/local.js";
 import { cancelSingleJob } from "../src/core/cancel/runner.js";
 import { createExitGuardHandler } from "../src/core/lifecycle/exit-guard.js";
-import { changeFolderPath } from "../src/util/paths.js";
+import { changeFolderPath, canceledChangeFolderPath, canceledDirName } from "../src/util/paths.js";
 
 let tempDir: string;
 
@@ -174,7 +174,7 @@ describe("TC-NJW-002: LocalRuntime.setupWorkspace() writes slug store, not .spec
 
 // TC-NJW-003: cancelSingleJob() for local job does not write to .specrunner/jobs/
 describe("TC-NJW-003: cancelSingleJob() for local job does not create .specrunner/jobs/ entry", () => {
-  it("persists to canonical slug store and leaves .specrunner/jobs/ untouched", async () => {
+  it("persists to canceled/ gravestone and leaves .specrunner/jobs/ untouched", async () => {
     const slug = "cancel-test-slug";
     const jobId = "f1234567-abcd-0000-0000-000000000001";
 
@@ -210,8 +210,9 @@ describe("TC-NJW-003: cancelSingleJob() for local job does not create .specrunne
     // jobs-dir must NOT have been touched by cancel
     expect(await jobsDirAbsent(jobId)).toBe(true);
 
-    // The canonical slug state should be updated to "canceled"
-    const stateRaw = await fs.readFile(path.join(canonDir, "state.json"), "utf-8");
+    // State should be persisted to canceled/<slug>-<jobId8>/ (not the canonical dir)
+    const canceledDir = path.join(tempDir, canceledChangeFolderPath(canceledDirName(slug, jobId)));
+    const stateRaw = await fs.readFile(path.join(canceledDir, "state.json"), "utf-8");
     const state = JSON.parse(stateRaw) as { status: string };
     expect(state.status).toBe("canceled");
   });

@@ -222,7 +222,8 @@ export class JobStateStore {
     try {
       const entries = await fs.readdir(changesDir, { withFileTypes: true });
       for (const entry of entries) {
-        if (!entry.isDirectory() || entry.name === "archive") continue;
+        // Skip reserved subdirectories: archive/ (finished jobs) and canceled/ (canceled gravestones)
+        if (!entry.isDirectory() || entry.name === "archive" || entry.name === "canceled") continue;
         const slug = entry.name;
         const stateJsonPath = path.join(repoRoot, slugStateJsonPath(slug));
         const eventsPath = path.join(repoRoot, slugEventsPath(slug));

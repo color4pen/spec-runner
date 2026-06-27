@@ -34,6 +34,9 @@ pnpm-lock.yaml
 # pipeline-integration test fixture residue (mock writes to repo cwd; harmless but pollutes list)
 specrunner/changes/test-slug/
 
+# Canceled job gravestones (local reference only — untracked, machine-local)
+specrunner/changes/canceled/
+
 # Machine-generated specrunner state (jobs, verbose logs); config.json is team-shared
 .specrunner/*
 !.specrunner/config.json

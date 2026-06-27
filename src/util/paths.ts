@@ -113,6 +113,44 @@ export function archivedChangeFolderPath(datedSlug: string): string {
 }
 
 /**
+ * Base directory for canceled change gravestones.
+ * Mirrors archive/ as a reserved subdirectory under changes/.
+ */
+const CANCELED_DIR = `${CHANGES_DIR}/canceled`;
+
+/**
+ * Returns the relative path to the canceled changes directory (no trailing slash).
+ * This is a reserved subdirectory under specrunner/changes/ — analogous to archive/.
+ * Example: canceledChangesDirRel() → "specrunner/changes/canceled"
+ */
+export function canceledChangesDirRel(): string {
+  return CANCELED_DIR;
+}
+
+/**
+ * Returns the relative path to the canceled change folder for the given dirName.
+ * The dirName is expected to be in the form "<slug>-<jobId8>".
+ * Example: canceledChangeFolderPath("foo-1234abcd") → "specrunner/changes/canceled/foo-1234abcd"
+ */
+export function canceledChangeFolderPath(dirName: string): string {
+  return `${CANCELED_DIR}/${dirName}`;
+}
+
+/**
+ * Returns the directory name for a canceled change folder, combining the slug
+ * and the first 8 hex characters of the jobId. Mirrors the naming convention
+ * used by buildWorktreePath / state.branch (same jobId.slice(0, 8) granularity).
+ *
+ * Same-slug jobs canceled on the same calendar day produce distinct directories
+ * because jobId8 is unique per job.
+ *
+ * Example: canceledDirName("foo", "1234abcd-aaaa-bbbb-cccc-ddddeeeeffff") → "foo-1234abcd"
+ */
+export function canceledDirName(slug: string, jobId: string): string {
+  return `${slug}-${jobId.slice(0, 8)}`;
+}
+
+/**
  * Returns the relative path to the project-level context file.
  * Example: projectMdPath() → "specrunner/project.md"
  */
