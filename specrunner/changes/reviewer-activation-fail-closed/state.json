@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "3c5a01c5-98d7-48a6-8bb9-c93e4b838796",
   "createdAt": "2026-06-27T00:24:59.210Z",
-  "updatedAt": "2026-06-27T00:58:27.689Z",
+  "updatedAt": "2026-06-27T00:58:56.186Z",
   "request": {
     "title": "reviewer 活性化ゲートの「変更ファイル導出不能時の無言 skip」を fail-closed に揃える",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/reviewer-activation-fail-closed-3c5a01c5",
   "error": null,
@@ -74,7 +74,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 37,
+    "historyCount": 42,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -85,7 +85,8 @@
       "code-review": 1,
       "scale-tolerance": 1,
       "cross-boundary-invariants": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
