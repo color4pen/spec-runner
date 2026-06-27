@@ -503,13 +503,18 @@ export class ManagedRuntime implements RealRuntimeStrategy {
   }
 
   /**
-   * Custom reviewer activation (listChangedFiles) is not supported in the managed runtime.
+   * Managed runtime has no local git worktree, so it cannot derive changed files.
    *
-   * Known constraint: managed runtime does not have a local git worktree to run
-   * `git diff --name-only`, so path-based activation conditions cannot be evaluated.
-   * Returns [] — reviewers with paths conditions will not match any file and will be
-   * skipped (fail-safe: under-activate rather than evaluate against stale or fabricated data).
-   * Reviewers without paths conditions are unaffected and activate normally.
+   * Returns [] as a structural limitation — NOT a signal that nothing changed. The `[]`
+   * return MUST NOT be interpreted as "no changes"; it reflects the absence of a local
+   * worktree, not the absence of file changes.
+   *
+   * The reviewer activation gate consults `canDeriveChangedFiles()` before calling this
+   * method. When `canDeriveChangedFiles()` returns `false`, the gate short-circuits and
+   * does NOT call `listChangedFiles`. Instead, it activates `paths`-conditioned reviewers
+   * (fail-closed) — they review the whole change rather than being silently skipped.
+   *
+   * Reviewers without `paths` conditions are unaffected and activate normally.
    */
   async listChangedFiles(
     _baseBranch: string,
@@ -521,8 +526,11 @@ export class ManagedRuntime implements RealRuntimeStrategy {
 
   /**
    * ManagedRuntime cannot derive changed files — no local git worktree is available.
-   * Returns false — scope-check will synthesize an UNKNOWN finding (fail-closed) instead
-   * of calling listChangedFiles, which would silently return [] (fail-open).
+   * Returns `false` — both scope-check and the reviewer activation gate consume this
+   * predicate as fail-closed signals:
+   *   - scope-check synthesizes an UNKNOWN finding instead of calling `listChangedFiles`.
+   *   - The activation gate activates `paths`-conditioned reviewers (fail-closed) rather
+   *     than silently skipping them on an unverifiable path condition.
    */
   canDeriveChangedFiles(): boolean {
     return false;

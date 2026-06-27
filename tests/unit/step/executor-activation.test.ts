@@ -114,8 +114,9 @@ function makeAgentStep(overrides: Partial<AgentStep> = {}): AgentStep {
 
 function makeRuntimeStrategy(
   listChangedFiles: (base: string, cwd: string, branch: string | null) => Promise<string[]>,
+  canDeriveChangedFilesImpl?: () => boolean,
 ): RuntimeStrategy {
-  return {
+  const base: RuntimeStrategy = {
     async *query() {},
     createAgentRunner() { return { async run() { return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 }; } }; },
     async setupWorkspace() { return { cwd: "" }; },
@@ -134,6 +135,10 @@ function makeRuntimeStrategy(
     async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
     listChangedFiles,
   };
+  if (canDeriveChangedFilesImpl !== undefined) {
+    return { ...base, canDeriveChangedFiles: canDeriveChangedFilesImpl };
+  }
+  return base;
 }
 
 // ---------------------------------------------------------------------------
@@ -284,5 +289,181 @@ describe("executor activation gate — no-op for steps without activation", () =
 
     expect(listChangedFiles).not.toHaveBeenCalled();
     expect(runMock).toHaveBeenCalledOnce();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test: non-derivable runtime (managed) + paths reviewer → activated (fail-closed)
+// ---------------------------------------------------------------------------
+
+describe("executor activation gate — non-derivable runtime (fail-closed)", () => {
+  it("managed/non-derivable + paths reviewer: agent IS called, listChangedFiles is NOT called", async () => {
+    const runMock = vi.fn().mockResolvedValue({
+      completionReason: "success" as const,
+      resultContent: null,
+      toolResult: null,
+      followUpAttempts: 0,
+    });
+    const mockRunner: AgentRunner = { run: runMock };
+    const listChangedFiles = vi.fn().mockResolvedValue([]);
+    const strategy = makeRuntimeStrategy(listChangedFiles, () => false);
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, mockRunner, makeStoreFactory(tempDir));
+
+    const step = makeAgentStep({
+      activation: { paths: ["src/auth/**"] },
+    });
+    const state = makeMinimalState();
+    await makeStoreFactory(tempDir)(state.jobId).persist(state);
+
+    const result = await executor.execute(step, state, makeMinimalDeps(strategy));
+
+    // Agent MUST be called (fail-closed: activate, not skip)
+    expect(runMock).toHaveBeenCalledOnce();
+    // listChangedFiles MUST NOT be called (short-circuit)
+    expect(listChangedFiles).not.toHaveBeenCalled();
+    // Step result must NOT be a skipped verdict
+    const run = result.steps?.["security"]?.[0];
+    expect(run?.outcome.verdict).not.toBe("skipped");
+  });
+
+  it("managed/non-derivable + paths reviewer: no skipped step result with 'no changed files matched' skipReason", async () => {
+    const runMock = vi.fn().mockResolvedValue({
+      completionReason: "success" as const,
+      resultContent: null,
+      toolResult: null,
+      followUpAttempts: 0,
+    });
+    const mockRunner: AgentRunner = { run: runMock };
+    const listChangedFiles = vi.fn().mockResolvedValue([]);
+    const strategy = makeRuntimeStrategy(listChangedFiles, () => false);
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, mockRunner, makeStoreFactory(tempDir));
+
+    const step = makeAgentStep({
+      activation: { paths: ["src/auth/**"] },
+    });
+    const state = makeMinimalState();
+    await makeStoreFactory(tempDir)(state.jobId).persist(state);
+
+    const result = await executor.execute(step, state, makeMinimalDeps(strategy));
+
+    const run = result.steps?.["security"]?.[0];
+    // The reviewer should be activated (not skipped), so either skipReason is absent
+    // or, if somehow set, it must not say "no changed files matched paths" (which would
+    // indicate a fail-open skip on an unverifiable path condition).
+    expect(run?.outcome.verdict).not.toBe("skipped");
+    const skipReason = run?.outcome.skipReason;
+    if (skipReason !== undefined) {
+      expect(skipReason).not.toContain("no changed files matched");
+    }
+  });
+
+  it("local-runtime regression: paths match → agent called (activated)", async () => {
+    const runMock = vi.fn().mockResolvedValue({
+      completionReason: "success" as const,
+      resultContent: null,
+      toolResult: null,
+      followUpAttempts: 0,
+    });
+    const mockRunner: AgentRunner = { run: runMock };
+    const listChangedFiles = vi.fn().mockResolvedValue(["src/auth/login.ts"]);
+    const strategy = makeRuntimeStrategy(listChangedFiles, () => true);
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, mockRunner, makeStoreFactory(tempDir));
+
+    const step = makeAgentStep({
+      activation: { paths: ["src/auth/**"] },
+    });
+    const state = makeMinimalState();
+    await makeStoreFactory(tempDir)(state.jobId).persist(state);
+
+    await executor.execute(step, state, makeMinimalDeps(strategy));
+
+    expect(runMock).toHaveBeenCalledOnce();
+    expect(listChangedFiles).toHaveBeenCalledOnce();
+  });
+
+  it("local-runtime regression: paths no-match → skipped, skipReason contains paths glob", async () => {
+    const runMock = vi.fn().mockResolvedValue({
+      completionReason: "success" as const,
+      resultContent: null,
+      toolResult: null,
+      followUpAttempts: 0,
+    });
+    const mockRunner: AgentRunner = { run: runMock };
+    const listChangedFiles = vi.fn().mockResolvedValue(["src/util/helper.ts"]);
+    const strategy = makeRuntimeStrategy(listChangedFiles, () => true);
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, mockRunner, makeStoreFactory(tempDir));
+
+    const step = makeAgentStep({
+      activation: { paths: ["src/auth/**"] },
+    });
+    const state = makeMinimalState();
+    await makeStoreFactory(tempDir)(state.jobId).persist(state);
+
+    const result = await executor.execute(step, state, makeMinimalDeps(strategy));
+
+    expect(runMock).not.toHaveBeenCalled();
+    const run = result.steps?.["security"]?.[0];
+    expect(run?.outcome.verdict).toBe("skipped");
+    expect(run?.outcome.skipReason).toContain("src/auth/**");
+  });
+
+  it("requestTypes-only reviewer on non-derivable runtime + matching requestType → agent called", async () => {
+    const runMock = vi.fn().mockResolvedValue({
+      completionReason: "success" as const,
+      resultContent: null,
+      toolResult: null,
+      followUpAttempts: 0,
+    });
+    const mockRunner: AgentRunner = { run: runMock };
+    const listChangedFiles = vi.fn().mockResolvedValue([]);
+    const strategy = makeRuntimeStrategy(listChangedFiles, () => false);
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, mockRunner, makeStoreFactory(tempDir));
+
+    const step = makeAgentStep({
+      activation: { requestTypes: ["bug-fix"] },
+    });
+    const state = makeMinimalState(); // requestType is "bug-fix"
+    await makeStoreFactory(tempDir)(state.jobId).persist(state);
+
+    await executor.execute(step, state, makeMinimalDeps(strategy));
+
+    expect(runMock).toHaveBeenCalledOnce();
+    // listChangedFiles not called: non-derivable but no paths condition, short-circuits at requestTypes match
+    expect(listChangedFiles).not.toHaveBeenCalled();
+  });
+
+  it("unconditional reviewer on non-derivable runtime → agent called, listChangedFiles not called", async () => {
+    const runMock = vi.fn().mockResolvedValue({
+      completionReason: "success" as const,
+      resultContent: null,
+      toolResult: null,
+      followUpAttempts: 0,
+    });
+    const mockRunner: AgentRunner = { run: runMock };
+    const listChangedFiles = vi.fn().mockResolvedValue([]);
+    const strategy = makeRuntimeStrategy(listChangedFiles, () => false);
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, mockRunner, makeStoreFactory(tempDir));
+
+    // No activation → unconditional
+    const step = makeAgentStep();
+    const state = makeMinimalState();
+    await makeStoreFactory(tempDir)(state.jobId).persist(state);
+
+    await executor.execute(step, state, makeMinimalDeps(strategy));
+
+    expect(runMock).toHaveBeenCalledOnce();
+    expect(listChangedFiles).not.toHaveBeenCalled();
   });
 });

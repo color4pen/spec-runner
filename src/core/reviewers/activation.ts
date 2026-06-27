@@ -18,6 +18,14 @@ export interface ActivationFacts {
   changedFiles: string[];
   /** Request type (e.g. "bug-fix", "new-feature", "spec-change"). */
   requestType: string;
+  /**
+   * Whether the runtime can mechanically derive `changedFiles`.
+   * Optional; defaults to `true` (derivable) when omitted, so existing call sites
+   * (e.g. computeInvalidations) are unaffected.
+   * When `false`, a `paths` condition cannot be evaluated; the reviewer is activated
+   * (fail-closed) rather than silently skipped on an unverifiable path condition.
+   */
+  changedFilesDerivable?: boolean;
 }
 
 /**
@@ -67,6 +75,14 @@ export function evaluateActivation(
 
   // Check paths
   if (cond.paths) {
+    // Fail-closed: when changed files cannot be derived (e.g. managed runtime, no
+    // git worktree), the `paths` condition is unverifiable. Activate the reviewer
+    // (it reviews the whole change) instead of silently skipping it —
+    // "判定できない＝該当しうる". Never drop a path reviewer because the runtime
+    // cannot list changed files.
+    if (facts.changedFilesDerivable === false) {
+      return { activated: true, reason: "activated" };
+    }
     const matched = facts.changedFiles.some((file) =>
       cond.paths!.some((pattern) => matchGlob(pattern, file)),
     );
