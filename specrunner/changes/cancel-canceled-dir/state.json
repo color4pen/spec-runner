@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "94843f12-ad54-4575-afb8-a90e3abbeb1a",
   "createdAt": "2026-06-27T00:25:02.251Z",
-  "updatedAt": "2026-06-27T01:18:51.990Z",
+  "updatedAt": "2026-06-27T01:20:54.219Z",
   "request": {
     "title": "cancel 時にジョブを canceled/<slug>-<jobId8>/ へ退避し、キャンセル記録・request の消失を解消する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "scale-tolerance",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/cancel-canceled-dir-94843f12",
   "error": null,
@@ -47,8 +47,34 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "69c31f600fde56263660ebb561c68f781b4a6a80",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "69c31f600fde56263660ebb561c68f781b4a6a80",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 37,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -57,7 +83,9 @@
       "implementer": 1,
       "verification": 1,
       "code-review": 1,
-      "scale-tolerance": 1
+      "scale-tolerance": 1,
+      "cross-boundary-invariants": 1,
+      "custom-reviewers": 1
     }
   }
 }
