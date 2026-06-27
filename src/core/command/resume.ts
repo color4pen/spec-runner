@@ -19,7 +19,7 @@ import { parseRequestMd } from "../../parser/request-md.js";
 import { resolveJobStateBySlug } from "../resume/resolve-job.js";
 import { resolveRequestPath } from "../resume/resolve-request-path.js";
 import { getJobSlug } from "../../state/job-slug.js";
-import { resolveResumeStep } from "../resume/resolve-step.js";
+import { resolveResumeStep, buildAllowedStepSet } from "../resume/resolve-step.js";
 import { checkConsecutiveEscalations, checkStaleState, isStaleRunning } from "../resume/safety.js";
 import { livenessJsonPath } from "../../util/paths.js";
 import { canTransition, transitionJob } from "../../state/lifecycle.js";
@@ -162,7 +162,8 @@ export class ResumeCommand extends CommandRunner {
     // Resume step resolution: --from > resumePoint.step > state.step (hard-crash fallback)
     let startStep: StepName;
     try {
-      startStep = resolveResumeStep(this.options.from, resumePoint, state.step);
+      const allowedSteps = buildAllowedStepSet(state.reviewers);
+      startStep = resolveResumeStep(this.options.from, resumePoint, state.step, allowedSteps);
     } catch (err) {
       logError((err as Error).message);
       throw new PrepareError(1, "Failed to resolve resume step");

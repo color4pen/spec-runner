@@ -4,14 +4,14 @@
 
 対象: `src/core/resume/resolve-step.ts`
 
-- [ ] `REGRESSION_GATE_STEP_NAME` を `../step/regression-gate.js` から import する
-- [ ] `buildAllowedStepSet(reviewers?: ReadonlyArray<{ name: string }>): ReadonlySet<string>` を export 関数として追加する
+- [x] `REGRESSION_GATE_STEP_NAME` を `../step/regression-gate.js` から import する
+- [x] `buildAllowedStepSet(reviewers?: ReadonlyArray<{ name: string }>): ReadonlySet<string>` を export 関数として追加する
   - 常に `AGENT_STEP_NAMES` + `CLI_STEP_NAMES` を含む
   - `reviewers` が truthy かつ length > 0 の場合のみ `REGRESSION_GATE_STEP_NAME` と各 `r.name` を追加する
-- [ ] `resolveResumeStep` の第 4 引数 `allowedSteps?: ReadonlySet<string>` を追加する
-- [ ] 関数内で `const allowed = allowedSteps ?? ALL_STEP_NAMES_SET;` とし、以降の全 `.has()` 呼び出しを `allowed` に統一する
-- [ ] `--from` 不正時のエラーメッセージの step 名列挙を `[...AGENT_STEP_NAMES, ...CLI_STEP_NAMES]` から `[...allowed]` に変更する
-- [ ] `ALL_STEP_NAMES_SET` のモジュールスコープ定数はそのまま残す（フォールバック用）
+- [x] `resolveResumeStep` の第 4 引数 `allowedSteps?: ReadonlySet<string>` を追加する
+- [x] 関数内で `const allowed = allowedSteps ?? ALL_STEP_NAMES_SET;` とし、以降の全 `.has()` 呼び出しを `allowed` に統一する
+- [x] `--from` 不正時のエラーメッセージの step 名列挙を `[...AGENT_STEP_NAMES, ...CLI_STEP_NAMES]` から `[...allowed]` に変更する
+- [x] `ALL_STEP_NAMES_SET` のモジュールスコープ定数はそのまま残す（フォールバック用）
 
 **Acceptance Criteria**:
 - `buildAllowedStepSet(undefined)` の返却集合に `"regression-gate"` が含まれない
@@ -26,9 +26,9 @@
 
 対象: `src/core/command/resume.ts`
 
-- [ ] `buildAllowedStepSet` を `../resume/resolve-step.js` から import する（`resolveResumeStep` と同一 import 文に追加）
-- [ ] `resolveResumeStep` 呼び出し直前（`resume.ts:164` 付近）に `const allowedSteps = buildAllowedStepSet(state.reviewers);` を追加する
-- [ ] `resolveResumeStep(this.options.from, resumePoint, state.step)` を `resolveResumeStep(this.options.from, resumePoint, state.step, allowedSteps)` に変更する
+- [x] `buildAllowedStepSet` を `../resume/resolve-step.js` から import する（`resolveResumeStep` と同一 import 文に追加）
+- [x] `resolveResumeStep` 呼び出し直前（`resume.ts:164` 付近）に `const allowedSteps = buildAllowedStepSet(state.reviewers);` を追加する
+- [x] `resolveResumeStep(this.options.from, resumePoint, state.step)` を `resolveResumeStep(this.options.from, resumePoint, state.step, allowedSteps)` に変更する
 
 **Acceptance Criteria**:
 - `state.reviewers` が `undefined` の job で既存の resume 動作が変わらない
@@ -44,26 +44,26 @@
 既存テストスイートはそのまま維持し、以下のスイートを末尾に追加する。
 
 **Suite A — `buildAllowedStepSet`**:
-- [ ] reviewers なし（`undefined`）→ 返却集合に `"regression-gate"` が含まれない
-- [ ] reviewers 空配列 → 返却集合に `"regression-gate"` が含まれない
-- [ ] reviewers 非 empty → 返却集合に `"regression-gate"` が含まれる
-- [ ] reviewers 非 empty → 各 reviewer.name（`"scale-tolerance"`, `"cross-boundary-invariants"` など）が含まれる
-- [ ] reviewers なしでも static step 名（`"design"`, `"verification"`, etc.）は含まれる
+- [x] reviewers なし（`undefined`）→ 返却集合に `"regression-gate"` が含まれない
+- [x] reviewers 空配列 → 返却集合に `"regression-gate"` が含まれない
+- [x] reviewers 非 empty → 返却集合に `"regression-gate"` が含まれる
+- [x] reviewers 非 empty → 各 reviewer.name（`"scale-tolerance"`, `"cross-boundary-invariants"` など）が含まれる
+- [x] reviewers なしでも static step 名（`"design"`, `"verification"`, etc.）は含まれる
 
 **Suite B — resolveResumeStep / stateStep フォールバック（hard-crash 経路）**:
-- [ ] `stateStep = "regression-gate"` + reviewers あり allowedSteps → `"regression-gate"` を返す
-- [ ] `stateStep = "scale-tolerance"` + reviewer "scale-tolerance" を含む allowedSteps → `"scale-tolerance"` を返す
-- [ ] `stateStep = "regression-gate"` + static-only allowedSteps（reviewers なし）→ throw する
-- [ ] `stateStep = "unknown-reviewer"` + reviewer "scale-tolerance" だけの allowedSteps → throw する
+- [x] `stateStep = "regression-gate"` + reviewers あり allowedSteps → `"regression-gate"` を返す
+- [x] `stateStep = "scale-tolerance"` + reviewer "scale-tolerance" を含む allowedSteps → `"scale-tolerance"` を返す
+- [x] `stateStep = "regression-gate"` + static-only allowedSteps（reviewers なし）→ throw する
+- [x] `stateStep = "unknown-reviewer"` + reviewer "scale-tolerance" だけの allowedSteps → throw する
 
 **Suite C — resolveResumeStep / --from 経路**:
-- [ ] `from = "regression-gate"` + reviewers あり allowedSteps → `"regression-gate"` を返す
-- [ ] `from = "scale-tolerance"` + reviewer "scale-tolerance" を含む allowedSteps → `"scale-tolerance"` を返す
-- [ ] `from = "typo-reviewer"` + reviewers あり allowedSteps → throw し、エラーに `"typo-reviewer"` が含まれる
-- [ ] `from = "typo-reviewer"` のエラーメッセージに dynamic reviewer 名（`"scale-tolerance"`）が列挙される
+- [x] `from = "regression-gate"` + reviewers あり allowedSteps → `"regression-gate"` を返す
+- [x] `from = "scale-tolerance"` + reviewer "scale-tolerance" を含む allowedSteps → `"scale-tolerance"` を返す
+- [x] `from = "typo-reviewer"` + reviewers あり allowedSteps → throw し、エラーに `"typo-reviewer"` が含まれる
+- [x] `from = "typo-reviewer"` のエラーメッセージに dynamic reviewer 名（`"scale-tolerance"`）が列挙される
 
 **Suite D — resumePoint 経路の後退なし確認**:
-- [ ] resumePoint あり + カスタム allowedSteps → `resumePoint.step` を verbatim 返す（集合の内容に依存しない）
+- [x] resumePoint あり + カスタム allowedSteps → `resumePoint.step` を verbatim 返す（集合の内容に依存しない）
 
 **Acceptance Criteria**:
 - 追加スイートが全 pass する
@@ -74,9 +74,9 @@
 
 ## T-04: 最終検証
 
-- [ ] `bun run typecheck` が pass する
-- [ ] `bun run test` が pass する（既存テスト後退なし）
-- [ ] `tests/unit/core/resume/resolve-step.test.ts` の新規スイートが全 pass する
+- [x] `bun run typecheck` が pass する
+- [x] `bun run test` が pass する（既存テスト後退なし）
+- [x] `tests/unit/core/resume/resolve-step.test.ts` の新規スイートが全 pass する
 
 **Acceptance Criteria**:
 - `typecheck && test` が両方 green
