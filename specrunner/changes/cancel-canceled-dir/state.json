@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "94843f12-ad54-4575-afb8-a90e3abbeb1a",
   "createdAt": "2026-06-27T00:25:02.251Z",
-  "updatedAt": "2026-06-27T01:14:31.378Z",
+  "updatedAt": "2026-06-27T01:18:51.990Z",
   "request": {
     "title": "cancel 時にジョブを canceled/<slug>-<jobId8>/ へ退避し、キャンセル記録・request の消失を解消する",
     "type": "spec-change",
@@ -48,7 +48,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 30,
+    "historyCount": 31,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -56,7 +56,8 @@
       "test-case-gen": 1,
       "implementer": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "scale-tolerance": 1
     }
   }
 }
