@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4355a2a4-4071-4227-aa93-d094380b970c",
   "createdAt": "2026-06-27T02:00:56.204Z",
-  "updatedAt": "2026-06-27T03:02:53.421Z",
+  "updatedAt": "2026-06-27T03:06:15.165Z",
   "request": {
     "title": "cancel 時にジョブを canceled/<slug>-<jobId8>/ へ退避し、キャンセル記録・request の消失を解消する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/cancel-canceled-dir-4355a2a4",
   "error": null,
   "pipelineId": "standard",
@@ -73,8 +73,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/722",
+    "number": 722,
+    "createdAt": "2026-06-27T03:06:15.132Z"
+  },
   "_journal": {
-    "historyCount": 54,
+    "historyCount": 59,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -88,7 +93,9 @@
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
