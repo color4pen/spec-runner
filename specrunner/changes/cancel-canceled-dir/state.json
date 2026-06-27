@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "94843f12-ad54-4575-afb8-a90e3abbeb1a",
   "createdAt": "2026-06-27T00:25:02.251Z",
-  "updatedAt": "2026-06-27T00:47:13.204Z",
+  "updatedAt": "2026-06-27T01:07:51.982Z",
   "request": {
     "title": "cancel 時にジョブを canceled/<slug>-<jobId8>/ へ退避し、キャンセル記録・request の消失を解消する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/cancel-canceled-dir-94843f12",
   "error": null,
@@ -48,12 +48,14 @@
     }
   ],
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 25,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1
     }
   }
 }
